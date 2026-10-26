@@ -50,8 +50,8 @@ go build -o ../bin/wsi7 . && go test ./...
 ```
 
 Then:
-1. **Cohort:** `wsi7 gen` builds the synthetic cohort. It needs `persons3.json` (Wikidata persons, about 15 MB, not committed).
-2. **Weights:** the encoder and scorer weights (`encoder_weights.json`, `lgb_stream.json`, about 17 MB) are regenerated from the encoder training code. Ask Anas for the files.
+1. **Cohort:** run `wsi7 gen -wasl ../data -reports ../data/evidence/reports43.json -pathology ../data/evidence/pathology_templates.json -out ../cohort`. This builds the synthetic cohort from `data/persons3.json`; see `data/README.md`. Its Emirates IDs are synthetic.
+2. **Run:** `wsi7 orchestrate -data ../cohort -wasl ../models -run ../run/main …`. See `pipeline/RESULTS.md` for the exact flags of the merged run.
 3. **Local reader:** start `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791`, then run `python reader/hybrid4b.py 8791`.
 4. **Booking sim:** `cd booking/sim && python sim.py 150 main '<cfg>'`. See `booking/RESULTS.md`.
 

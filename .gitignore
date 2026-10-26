@@ -9,6 +9,3 @@ __pycache__/
 .env.*
 run/
 booking/sim/raw_*.json
-models/encoder_weights.json
-models/lgb_stream.json
-data/persons3.json
