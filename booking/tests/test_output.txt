@@ -1,0 +1,3 @@
+test_optimality : assignment == ILP (HiGHS) on 40/40 random batches, max |gap| = 1.16e-10
+test_constraints : hard constraints held on 996 bookings
+test_interface : event->booking->FHIR ok: {"loop_id": "CRC-000123", "session_id": 17, "unit": "U2", "day": 12, "endoscopist_female": true, "overbooked": false, "predicted_no_show": 0.12717415919316266, "nurse_call": false, "prep_send_day": 8, "deadline": 31, "within_deadline": true, "booked_on": 0} | rebook after no-show -> day 19
