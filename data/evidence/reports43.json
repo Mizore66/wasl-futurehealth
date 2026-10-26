@@ -1,0 +1,1640 @@
+{
+ "source": "MTSamples (US dictations), 43 unique non-empty colonoscopy-tagged texts; key = team-labelled (Claude agent as labeller)",
+ "gemma": "gemma-4-26b-a4b-it-self cached verdicts from ws-students/teacher_test.json (0 new calls)",
+ "reports": [
+  {
+   "uid": "u0",
+   "name": "Flex Sig - 2",
+   "sha": "3805f32298d6e72f213fb19e07846e65ef614636f0d8adb6e69bbfcf329b2e13",
+   "text": "PROCEDURE IN DETAIL: , Following a barium enema prep and lidocaine ointment to the rectal vault, perirectal inspection and rectal exam were normal.  The Olympus video colonoscope then introduced into the rectum and passed by directed vision to the distal descending colon.  Withdrawal notes an otherwise normal descending, rectosigmoid and rectum.  Retroflexion noted no abnormality of the internal ring.  No hemorrhoids were noted.  Withdrawal from the patient terminated the procedure.",
+   "key_state": "not_closed",
+   "key_reason": "incomplete_exam",
+   "key_fields": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam"
+   },
+   "gemma": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam",
+    "quotes": {
+     "caecum_quote": "passed by directed vision to the distal descending colon",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u1",
+   "name": "Exploratory Laparotomy & Colon Resection",
+   "sha": "15f18bb0f494dece37d1877dee5b4f737d3cd452c469bcabca43862ace15d8d0",
+   "text": "PREOPERATIVE DIAGNOSIS: , Colovesical fistula.,POSTOPERATIVE DIAGNOSES:,1.  Colovesical fistula.,2.  Intraperitoneal abscess.,PROCEDURE PERFORMED:,1.  Exploratory laparotomy.,2.  Low anterior colon resection.,3.  Flexible colonoscopy.,4.  Transverse loop colostomy and JP placement.,ANESTHESIA: , General.,HISTORY:  ,This 74-year-old female who had a recent hip fracture and the patient was in rehab when she started having some stool coming out of the urethra.  The patient had retrograde cystogram, which revealed colovesical fistula.  Recommendation for a surgery was made.  The patient was explained the risks and benefits as well as the two sons and the daughter.  They understood that the patient can even die from this procedure.  All the three procedures were explained, without a colostomy, with Hartmann's colostomy, and with a transverse loop colostomy, and out of the three procedures, the patient's requested to have the loop colostomy and stated that the Hartmann's colostomy leaving the anastomosis with the risk of leaking.,PROCEDURE DETAILS: , The patient was taken to the operating room, prepped and draped in the sterile fashion and was given general anesthetic.  An incision was performed in the midline below the umbilicus to the pubis with a #10 blade Bard Parker.  Electrocautery was used for hemostasis down to the fascia.  The fascia was grasped with Ochsner's and then immediately the peritoneum was entered and the incision was carried cephalad and caudad with electrocautery.,Once within the peritoneum, adhesiolysis was performed to separate the small bowel from the attachment of the anterior abdominal wall.  At this point, immediately a small bowel was retracted cephalad.  The patient was taken to a slightly Trendelenburg position and the descending colon was seen.  The white line of Toldt was opened all the way down to the area of inflammation.  At this point, meticulous dissection was carried to separate the small bowel from the attachment to the abscess.  When the small bowel was completely freed of  abscess, bulk of the bladder was seen anteriorly to the uterus.  The abscess was cultured and sent it back to Bacteriology Department and immediately the opening into the bladder was visualized.  At this point, the entire sigmoid colon was separated posteriorly as well as laterally and it was all the way down to sigmoid down to the rectum.  At this point, decision to place a moist towel and retract old intestine superiorly as well as to place first self-retaining retractor in the abdominal cavity with a bladder blade was placed.  Immediately, a GIA was fired right across the descending colon and sigmoid colon junction and then with peons within the mesentery were placed all the way down to the rectosigmoid junction where a TA-55 balloon Roticulator was fired.  The specimen was cut with #10 blade Bard-Parker and sent it to Pathology.  Immediately copious amount of irrigation was used and the staple line in the descending colon was brought with Allis.  A pursestring device was fired.  The staple line was cut.  The dilators were used using #25 and #29, then _________ #29 EEA was placed and the suture was tied.  At this point, attention was directed down to the rectal stump where dilators #25 and #29 were passed from the anus into the rectum and then the #29 Ethicon GIA was introduced.  The spike came posteriorly through the staple line to avoid the inflammatory process anteriorly that was present in the area of the cul-de-sac as well as the uterine was present in this patient.  ,Immediately, the EEA was connected with a mushroom.  It was tied, fired, and a Doyen was placed above the anastomosis approximately four inches.  Fluid was placed within the _________ and immediately a colonoscope was introduced from the patient's anus insufflating air.  No air was seen evolving from the staple line.  All fluid was removed and pictures of the staple line were taken.  The scope was removed at this point.  The case was passed to Dr. X for repair of the vesicle fistula.  Dr. X did repair down the perforation of the bladder that was communicating with an abscess secondary to the perforated diverticulitis and the colon.  After this was performed, copious amount of irrigation was used again.  More lysis of adhesions were performed and decision to make a loop transverse colostomy was made to protect the anastomosis in a phase of a severe inflammatory process in the pelvis in the infected area.  The incision was performed in the right upper quadrant.,This incision was performed with cutting in the cautery, down into the fascia splitting the muscle and then the Penrose was passed under transverse colon, and was grasped on pulling the transverse colon at the level of the skin.  The wire was passed under the transverse colon.  It was left in place.  Moderate irrigation was used in the peritoneal cavity and in the right lower quadrant, a JP was placed in the pelvis posteriorly to the abscess cavity that was down on the pelvis.  At this point, immediately, yellow fluid was removed from the peritoneal cavity and the abdomen was closed with cephalad to caudad and caudad to cephalad with a loop PDS suture and then tied.  Electrocautery for hemostasis and the subcutaneous tissue.  Copious amount of irrigation was used.  The skin was approximated with staples.  At this point, immediately, the wound was covered with a moist towel and decision to mature the loop colostomy was made.  The colostomy was opened longitudinally and then matured with interrupted #3-0 Vicryl suture through the skin edge.  One it was completely matured, immediately the index finger was probed proximally and distally and both loops were completely opened.  As previously mentioned, the Penrose was removed and the Bard was secured with a #3-0 nylon suture.  The JP was secured with #3-0 nylon suture as well.  At this point, dressings were applied.  The patient tolerated the procedure well.  The stent from the left ureter was removed and the Foley was left in place.  The patient did tolerate the procedure well and will be followed up during the hospitalization.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u2",
+   "name": "Esophagogastroduodenoscopy - 4",
+   "sha": "c72c3e9111fcd2725e4adaa662c0467ceb4a4410efe479bd5ee40336784e2733",
+   "text": "PROCEDURE: , Esophagogastroduodenoscopy with biopsy and colonoscopy with biopsy.,INDICATIONS FOR PROCEDURE: , A 17-year-old with history of 40-pound weight loss, abdominal pain, status post appendectomy with recurrent abscess formation and drainage.  Currently, he has a fistula from his anterior abdominal wall out.  It does not appear to connect to the gastrointestinal tract, but merely connect from the ventral surface of the rectus muscles out the abdominal wall.  CT scans show thickened terminal ileum, which suggest that we are dealing with Crohn's disease.  Endoscopy is being done to evaluate for Crohn's disease.,MEDICATIONS:  ,General anesthesia.,INSTRUMENT:,  Olympus GIF-160 and PCF-160.,COMPLICATIONS: , None.,ESTIMATED BLOOD LOSS:,  Less than 5 mL.,FINDINGS: , With the patient in the supine position, intubated under general anesthesia.  The endoscope was inserted without difficulty into the hypopharynx.  The scope was advanced down the esophagus, which had normal mucosal coloration and vascular pattern.  Lower esophageal sphincter was located at 40 cm from the central incisors.  It appeared normal and appeared to function normally.  The endoscope was advanced into the stomach, which was distended with excess air.  Rugal folds were flattened completely.  There were multiple superficial erosions scattered throughout the fundus, body, and antral portions consistent with Crohn's involvement of the stomach.  The endoscope was advanced through normal-appearing pyloric valve into the first, second, and third portion of the duodenum, which had normal mucosal coloration and fold pattern.  Biopsies were obtained x2 in the second portion of the duodenum, antrum, body, and distal esophagus at 37 cm from the central incisors for histology.  Two additional biopsies were obtained in the antrum for CLO testing.  Excess air was evacuated from the stomach.  The scope was removed from the patient who tolerated that part of the procedure well.,The patient was turned and scope was changed for colonoscopy.  Prior to colonoscopy, it was noted that there was a perianal fistula at 7 o'clock.  The colonoscope was then inserted into the anal verge.  The colonic clean out was excellent.  The scope was advanced without difficulty to the cecum.  The cecal area had multiple ulcers with exudate.  The ileocecal valve was markedly distorted.  Biopsies were obtained x2 in the cecal area and then the scope was withdrawn through the ascending, transverse, descending, sigmoid, and rectum.  The colonic mucosa in these areas was well seen and there were a few scattered aphthous ulcers in the ascending and descending colon.  Biopsies were obtained in the cecum at 65 cm, transverse colon 50 cm, rectosigmoid 20 cm, and rectum at 5 cm.  No fistulas were noted in the colon.  Excess air was evacuated from the colon.  The scope was removed.  The patient tolerated the procedure well and was taken to recovery in satisfactory condition.,IMPRESSION: , Normal esophagus and duodenum.  There were multiple superficial erosions or aphthous ulcers in the stomach along with a very few scattered aphthous ulcers in the colon with marked cecal involvement with large ulcers and a very irregular ileocecal valve.  All these findings are consistent with Crohn's disease.,PLAN:  ,Begin prednisone 30 mg p.o. daily.  Await PPD results and chest x-ray results, as well as cocci serology results.  If these are normal, then we would recommend Remicade 5 mg/kg IV infusion.  We would start Modulon 50 mL/h for 20 hours to reverse the malnutrition state of this boy.  Check CMP and phosphate every Monday, Wednesday, and Friday for receding syndrome noted by following potassium and phosphate.  We will discuss with Dr. X possibly repeating the CT fistulogram if the findings on the previous ones are inconclusive as far as the noting whether we can rule in or out an enterocutaneous fistula.  He will need an upper GI to rule out small intestinal strictures and involvement of the small intestine that cannot be seen with upper and lower endoscopy.  If he has no stricture formation in the small bowel, we would then recommend a video endoscopy capsule to further evaluate any mucosal lesions consistent with Crohn's in the small intestine that we cannot visualize with endoscopy.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "The scope was advanced without difficulty to the cecum.",
+     "prep_quote": "The colonic clean out was excellent.",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u3",
+   "name": "Esophagogastroduodenoscopy - 3",
+   "sha": "513d7e1658f93bd71e22893959475172f03d217ffd0660a7da7f844f346495be",
+   "text": "PROCEDURES:,  Esophagogastroduodenoscopy and colonoscopy with biopsy and polypectomy.,REASON FOR PROCEDURE: , Child with abdominal pain and rectal bleeding.  Rule out inflammatory bowel disease, allergic enterocolitis, rectal polyps, and rectal vascular malformations.,CONSENT:,  History and physical examination was performed.  The procedure, indications, alternatives available, and complications, i.e. bleeding, perforation, infection, adverse medication reaction, the possible need for blood transfusion, and surgery should a complication occur were discussed with the parents who understood and indicated this.  Opportunity for questions was provided and informed consent was obtained.,MEDICATION:  ,General anesthesia.,INSTRUMENT: , Olympus GIF-160.,COMPLICATIONS:,  None.,FINDINGS: , With the patient in the supine position and intubated, the endoscope was inserted without difficulty into the hypopharynx.  The esophageal mucosa and vascular pattern appeared normal.  The lower esophageal sphincter was located at 25 cm from the central incisors.  It appeared normal.  A Z-line was identified within the lower esophageal sphincter.  The endoscope was advanced into the stomach, which distended with excess air.  Rugal folds flattened completely.  Gastric mucosa appeared normal throughout.  No hiatal hernia was noted.  Pyloric valve appeared normal.  The endoscope was advanced into the first, second, and third portions of duodenum, which had normal mucosa, coloration, and fold pattern.  Biopsies were obtained x2 in the second portion of duodenum, antrum, and distal esophagus at 22 cm from the central incisors for histology.  Additional 2 biopsies were obtained for CLO testing in the antrum.  Excess air was evacuated from the stomach.  The scope was removed from the patient who tolerated that part of procedure well.  The patient was turned and the scope was advanced with some difficulty to the terminal ileum.  The terminal ileum mucosa and the colonic mucosa throughout was normal except at approximately 10 cm where a 1 x 1 cm pedunculated juvenile-appearing polyp was noted.  Biopsies were obtained x2 in the terminal ileum, cecum, ascending colon, transverse colon, descending colon, sigmoid, and rectum.  Then, the polyp was snared right at the base of the polyp on the stalk and 20 watts of pure coag was applied in 2-second bursts x3.  The polyp was severed.  There was no bleeding at the stalk after removal of the polyp head.  The polyp head was removed by suction.  Excess air was evacuated from the colon.  The patient tolerated that part of the procedure well and was taken to recovery in satisfactory condition.  Estimated blood loss approximately 5 mL.,IMPRESSION: , Normal esophagus, stomach, duodenum, and colon as well as terminal ileum except for a 1 x 1-cm rectal polyp, which was removed successfully by polypectomy snare.,PLAN:  ,Histologic evaluation and CLO testing.  I will contact the parents next week with biopsy results and further management plans will be discussed at that time.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "the scope was advanced with some difficulty to the terminal ileum",
+     "prep_quote": "",
+     "polyps_quote": "The polyp was severed.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u4",
+   "name": "EGD & Colonoscopy",
+   "sha": "91e25741985824a7ebd584007298e2b6c26768e72dd500029535a6eeac333fab",
+   "text": "PREOPERATIVE DIAGNOSIS: , Blood loss anemia.,POSTOPERATIVE DIAGNOSES:,1.  Normal colon with no evidence of bleeding.,2.  Hiatal hernia.,3.  Fundal gastritis with polyps.,4.  Antral mass.,ANESTHESIA: , Conscious sedation with Demerol and Versed.,SPECIMEN:  ,Antrum and fundal polyps.,HISTORY: , The patient is a 66-year-old African-American female who presented to ABCD Hospital with mental status changes.  She has been anemic as well with no gross evidence of blood loss.  She has had a decreased appetite with weight loss greater than 20 lb over the past few months.  After discussion with the patient and her daughter, she was scheduled for EGD and colonoscopy for evaluation.,PROCEDURE: , After informed consent was obtained, the patient was brought to the endoscopy suite.  She was placed in the left lateral position and was given IV Demerol and Versed for sedation.  When adequate level of sedation was achieved, a digital rectal exam was performed, which demonstrated no masses and no hemorrhoids.  The colonoscope was inserted into the rectum and air was insufflated.  The scope was coursed through the rectum and sigmoid colon, descending colon, transverse colon, ascending colon to the level of the cecum.  There were no polyps, masses, diverticuli, or areas of inflammation.  The scope was then slowly withdrawn carefully examining all walls.  Air was aspirated.  Once in the rectum, the scope was retroflexed.  There was no evidence of perianal disease.  No source of the anemia was identified.,Attention was then taken for performing an EGD.  The gastroscope was inserted into the hypopharynx and was entered into the hypopharynx.  The esophagus was easily intubated and traversed.  There were no abnormalities of the esophagus.  The stomach was entered and was insufflated.  The scope was coursed along the greater curvature towards the antrum.  Adjacent to the pylorus, towards the anterior surface, was a mass like lesion with a central _______.  It was not clear if this represents a healing ulcer or neoplasm.  Several biopsies were taken.  The mass was soft.  The pylorus was then entered.  The duodenal bulb and sweep were examined.  There was no evidence of mass, ulceration, or bleeding.  The scope was then brought back into the antrum and was retroflexed.  In the fundus and body, there was evidence of streaking and inflammation.  There were also several small sessile polyps, which were removed with biopsy forceps.  Biopsy was also taken for CLO.  A hiatal hernia was present as well.  Air was aspirated.  The scope was slowly withdrawn.  The GE junction was unremarkable.  The scope was fully withdrawn.  The patient tolerated the procedure well and was transferred to recovery room in stable condition.  She will undergo a CAT scan of her abdomen and pelvis to further assess any possible adenopathy or gastric obstructional changes.  We will await the biopsy reports and further recommendations will follow.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "the level of the cecum",
+     "prep_quote": "",
+     "polyps_quote": "There were no polyps, masses, diverticuli, or areas of inflammation.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u5",
+   "name": "EGD - Colonoscopy - Polypectomy",
+   "sha": "40aba204abf8a601919f0862f1d046193dffca46bd082b334072c1b6c97282f5",
+   "text": "PROCEDURES:,1.  Esophagogastroduodenoscopy.,2.  Colonoscopy with polypectomy.,PREOPERATIVE DIAGNOSES:,1.  History of esophageal cancer.,2.  History of colonic polyps.,POSTOPERATIVE FINDINGS:,1.  Intact surgical intervention for a history of esophageal cancer.,2.  Melanosis coli.,3.  Transverse colon polyps in the setting of surgical changes related to partial and transverse colectomy.,MEDICATIONS:,  Fentanyl 250 mcg and 9 mg of Versed.,INDICATIONS:,  The patient is a 55-year-old dentist presenting for surveillance upper endoscopy in the setting of a history of esophageal cancer with staging at T2N0M0.,He also has a history of adenomatous polyps and presents for surveillance of this process.,Informed consent was obtained after explanation of the procedures, as well as risk factors of bleeding, perforation, and adverse medication reaction.,ESOPHAGOGASTRODUODENOSCOPY:,  The patient was placed in the left lateral decubitus position and medicated with the above medications to achieve and maintain a conscious sedation.  Vital signs were monitored throughout the procedure without evidence of hemodynamic compromise or desaturation.  The Olympus single-channel endoscope was passed under direct visualization, through the oral cavity, and advanced to the second portion of the duodenum.,FINDINGS:,1.  ESOPHAGUS:  Anatomy consistent with esophagectomy with colonic transposition.,2.  STOMACH:  Revealed colonic transposition with normal mucosa.,3.  DUODENUM:  Normal.,IMPRESSION: , Intact surgical intervention with esophagectomy colonic transposition.,COLONOSCOPY: , The patient was then turned and a colonic 140-series colonoscope was passed under direct visualization through the anal verge and advanced to the cecum as identified by the appendiceal orifice.  Circumferential visualization the colonic mucosa revealed the following:,1.  Cecum revealed melanosis coli.,2.  Ascending, melanosis coli.,3.  Transverse revealed two diminutive sessile polyps, excised by cold forceps technique and submitted to histology as specimen #1 with surgical changes consistent with partial colectomy related to the colonic transposition.,4.  Descending, melanosis coli.,5.  Sigmoid, melanosis coli.,6.  Rectum, melanosis coli.,IMPRESSION: , Diffuse melanosis coli with incidental finding of transverse colon polyps.,RECOMMENDATION: , Follow-up histology.  Continue fiber with avoidance of stimulant laxatives.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "advanced to the cecum as identified by the appendiceal orifice",
+     "prep_quote": "",
+     "polyps_quote": "two diminutive sessile polyps, excised by cold forceps technique",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u6",
+   "name": "Colonoscopy with Biopsy - 4",
+   "sha": "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d",
+   "text": "PREOPERATIVE DIAGNOSIS: , Antibiotic-associated diarrhea.  ,POSTOPERATIVE DIAGNOSIS:  ,Antibiotic-associated diarrhea.  ,OPERATION PERFORMED: , Colonoscopy with random biopsies and culture.,INDICATIONS: , The patient is a 50-year-old woman who underwent hemorrhoidectomy approximately one year ago.  She has been having difficulty since that time with intermittent diarrhea and abdominal pain.  She states this happens quite frequently and can even happen when she uses topical prednisone for her ears or for her eyes.  She presents today for screening colonoscopy, based on the same.,OPERATIVE COURSE:  , The risks and benefits of colonoscopy were explained to the patient in detail.  She provided her consent.  The morning of the operation, the patient was transported from the preoperative holding area to the endoscopy suite.  She was placed in the left lateral decubitus position.  In divided doses, she was given 7 mg of Versed and 125 mcg of fentanyl.  A digital rectal examination was performed, after which time the scope was intubated from the anus to the level of the hepatic flexure.  This was intubated fairly easily; however, the patient was clearly in some discomfort and was shouting out, despite the amount of anesthesia she was provided.  In truth, the pain she was experiencing was out of proportion to any maneuver or difficulty with the procedure.  While more medication could have been given, the patient is actually a fairly thin woman and diminutive and I was concerned that giving her any more sedation may lead to respiratory or cardiovascular collapse.  In addition, she was really having quite some difficulty staying still throughout the procedure and was putting us all at some risk.  For this reason, the procedure was aborted at the level of the hepatic flexure.  She was noted to have some pools of stool.  This was suctioned and sent to pathology for C difficile, ova and parasites, and fecal leukocytes.  Additionally, random biopsies were performed of the colon itself.  It is unfortunate we were unable to complete this procedure, as I would have liked to have taken biopsies of the terminal ileum.  However, given the degree of discomfort she had, again, coupled with the relative ease of the procedure itself, I am very suspicious of irritable bowel syndrome.  The patient tolerated the remainder of the procedure fairly well and was sent to the recovery room in stable condition, where it is anticipated she will be discharged to home.,PLAN:,  She needs to follow up with me in approximately 2 weeks' time, both to follow up with her biopsies and cultures.  She has been given a prescription for VSL3, a probiotic, to assist with reculturing the rectum.  She may also benefit from an antispasmodic and/or anxiolytic.  Lastly, it should be noted that when she next undergoes endoscopic procedure, propofol would be indicated.",
+   "key_state": "not_closed",
+   "key_reason": "incomplete_exam",
+   "key_fields": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam"
+   },
+   "gemma": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam",
+    "quotes": {
+     "caecum_quote": "For this reason, the procedure was aborted at the level of the hepatic flexure.",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u7",
+   "name": "Colonoscopy With Photos",
+   "sha": "5733a12bea68f5e1f949f657e3abecac845b790fea7731fc9be53205107548db",
+   "text": "PREOPERATIVE DIAGNOSIS: , Blood loss anemia.,POSTOPERATIVE DIAGNOSES:,1.  Diverticulosis coli.,2.  Internal hemorrhoids.,3.  Poor prep.,PROCEDURE PERFORMED:,  Colonoscopy with photos.,ANESTHESIA: , Conscious sedation per Anesthesia.,SPECIMENS:,  None.,HISTORY:,  The patient is an 85-year-old female who was admitted to the hospital with a markedly decreased hemoglobin and blood loss anemia.  She underwent an EGD and attempted colonoscopy; however, due to a very poor prep, only a flexible sigmoidoscopy was performed at that time.  A coloscopy is now being performed for completion.,PROCEDURE:,  After proper informed consent was obtained, the patient was brought to the Endoscopy Suite.  She was placed in the left lateral position and was given sedation by the Anesthesia Department.  A digital rectal exam was performed and there was no evidence of mass.  The colonoscope was then inserted into the rectum.  There was some solid stool encountered.  The scope was maneuvered around this.  There was relatively poor prep as the scope was advanced through the sigmoid colon and portions of the descending colon.  The scope was then passed through the transverse colon and ascending colon to the cecum.  No masses or polyps were noted.  Visualization of the portions of the colon was however somewhat limited.  There were scattered diverticuli noted in the sigmoid.,The scope was slowly withdrawn carefully examining all walls.  Once in the rectum, the scope was retroflexed and nonsurgical internal hemorrhoids were noted.  The scope was then completely withdrawn.  The patient tolerated the procedure well and was transferred to recovery room in stable condition.  She will be placed on a high-fiber diet and Colace and we will continue to monitor her hemoglobin.",
+   "key_state": "not_closed",
+   "key_reason": "inadequate_prep",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "inadequate_prep"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "inadequate_prep",
+    "quotes": {
+     "caecum_quote": "The scope was then passed through the transverse colon and ascending colon to the cecum.",
+     "prep_quote": "Poor prep.",
+     "polyps_quote": "No masses or polyps were noted.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u8",
+   "name": "Colonoscopy with Biopsy",
+   "sha": "f58b06785af544aa335fb862eb9fa76a8016fb9a35f8d7b7bc1f48718cb849ef",
+   "text": "INDICATIONS FOR PROCEDURE: , A 79-year-old Filipino woman referred for colonoscopy secondary to heme-positive stools.  Procedure done to rule out generalized diverticular change, colitis, and neoplasia.,DESCRIPTION OF PROCEDURE: , The patient was explained the procedure in detail, possible complications including infection, perforation, adverse reaction of medication, and bleeding.  Informed consent was signed by the patient.,With the patient in left decubitus position, had received a cumulative dose of 4 mg of Versed and 75 mg of Demerol, using Olympus video colonoscope under direct visualization was advanced to the cecum.  Photodocumentation of appendiceal orifice and the ileocecal valve obtained.  Cecum was slightly obscured with stool but the colon itself was adequately prepped.  There was no evidence of overt colitis, telangiectasia, or overt neoplasia.  There was moderately severe diverticular change, which was present throughout the colon and photodocumented.  The rectal mucosa was normal and retroflexed with mild internal hemorrhoids.  The patient tolerated the procedure well without any complications.,IMPRESSION:,1.  Colonoscopy to the cecum with adequate preparation.,2.  Long tortuous spastic colon.,3.  Moderately severe diverticular changes present throughout.,4.  Mild internal hemorrhoids.,RECOMMENDATIONS:,1.  Clear liquid diet today.,2.  Follow up with primary care physician as scheduled from time to time.,3.  Increase fiber in diet, strongly consider fiber supplementation.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "advanced to the cecum",
+     "prep_quote": "the colon itself was adequately prepped",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u9",
+   "name": "Colonoscopy with Biopsy - 2",
+   "sha": "e5f7e6c75207818c5261b9555bda4952043ce2e06a109a93818aacd543afb383",
+   "text": "PROCEDURE PERFORMED: , Colonoscopy and biopsy.,INDICATIONS:,  The patient is a 50-year-old female who has had a history of a nonspecific colitis, who was admitted 3 months ago at Hospital because of severe right-sided abdominal pains, was found to have multiple ulcers within the right colon, and was then readmitted approximately 2 weeks later because of a cecal volvulus, and had a right hemicolectomy.  Since then, she has had persistent right abdominal pains, as well as diarrhea, with up to 2-4 bowel movements per day.  She has had problems with recurrent seizures and has been seen by Dr. XYZ, who started her recently on methadone.,MEDICATIONS: , Fentanyl 200 mcg, Versed 10 mg, Phenergan 25 mg intravenously given throughout the procedure.,INSTRUMENT: , PCF-160L.,PROCEDURE REPORT: , Informed consent was obtained from the patient, after the risks and benefits of the procedure were carefully explained, which included but were not limited to bleeding, infection, perforation, and allergic reaction to the medications, as well as the possibility of missing polyps within the colon.,A colonoscope was then passed through the rectum, all the way toward the ileal colonic anastomosis, seen within the proximal transverse colon.  The distal ileum was examined, which was normal in appearance.  Random biopsies were obtained from the ileum and placed in jar #1.  Random biopsies were obtained from the normal-appearing colon and placed in jar #2.  Small internal hemorrhoids were noted within the rectum on retroflexion.,COMPLICATIONS: , None.,ASSESSMENT:,1.  Small internal hemorrhoids.,2.  Ileal colonic anastomosis seen in the proximal transverse colon.,3.  Otherwise normal colonoscopy and ileum examination.,PLAN:, Followup results of biopsies.  If the biopsies are unremarkable, the patient may benefit from a trial of tricyclic antidepressants, if it's okay with Dr. XYZ, for treatment of her chronic abdominal pains.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The distal ileum was examined",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": "Followup results of biopsies."
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u10",
+   "name": "Colonoscopy with Biopsy - 1",
+   "sha": "5f10014687a8ff07243a2dbf52878c4fa4b59327cae93b774dbf59b5f41a22bb",
+   "text": "PREPROCEDURE DIAGNOSIS:,  Change in bowel function.,POSTPROCEDURE DIAGNOSIS:,  Proctosigmoiditis.,PROCEDURE PERFORMED:,  Colonoscopy with biopsy.,ANESTHESIA: , IV sedation.,POSTPROCEDURE CONDITION: , Stable.  ,INDICATIONS:,  The patient is a 33-year-old with a recent change in bowel function and hematochezia.  He is here for colonoscopy.  He understands the risks and wishes to proceed.  ,PROCEDURE: , The patient was brought to the endoscopy suite where he was placed in left lateral Sims position, underwent IV sedation.  Digital rectal examination was performed, which showed no masses, and a boggy prostate.  The colonoscope was placed in the rectum and advanced, under direct vision, to the cecum.  In the rectum and sigmoid, there were ulcerations, edema, mucosal abnormalities, and loss of vascular pattern consistent with proctosigmoiditis.  Multiple random biopsies were taken of the left and right colon to see if this was in fact pan colitis.,RECOMMENDATIONS: , Follow up with me in 2 weeks and we will begin Canasa suppositories.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "advanced, under direct vision, to the cecum",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u11",
+   "name": "Colonoscopy with Biopsy - 3",
+   "sha": "e5ffa25ece2a63d8244e419269ffafdee49bcaa261d3cb993d708ebbd0398b08",
+   "text": "PREPROCEDURE DIAGNOSIS: , Abdominal pain, diarrhea, and fever.,POSTPROCEDURE DIAGNOSIS: , Pending pathology.,PROCEDURES PERFORMED: , Colonoscopy with multiple biopsies, including terminal ileum, cecum, hepatic flexure, and sigmoid colon.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "including terminal ileum, cecum, hepatic flexure, and sigmoid colon",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": "Pending pathology."
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u12",
+   "name": "Colonoscopy & Polypectomy - 3",
+   "sha": "5863fdb1ea6910b46b95215e29ca417cc5e527ddbb583f78306a0742e22480e2",
+   "text": "PREOPERATIVE DIAGNOSIS:,  Alternating hard and soft stools.,POSTOPERATIVE DIAGNOSIS:,Sigmoid diverticulosis.,Sessile polyp of the sigmoid colon.,Pedunculated polyp of the sigmoid colon.,PROCEDURE: , Total colonoscopy with biopsy and snare polypectomy.,PREP:,  4/4.,DIFFICULTY:,  1/4.,PREMEDICATION AND SEDATION: , Fentanyl 100, midazolam 5.,INDICATION FOR PROCEDURE:,  A 64-year-old male who has developed alternating hard and soft stools.  He has one bowel movement a day.,FINDINGS: , There is extensive sigmoid diverticulosis, without evidence of inflammation or bleeding.  There was a small, sessile polyp in the sigmoid colon, and a larger pedunculated polyp in the sigmoid colon, both appeared adenomatous.,DESCRIPTION OF PROCEDURE: , Preoperative counseling, including an explicit discussion of the risk and treatment of perforation was provided.  Preoperative physical examination was performed.  Informed consent was obtained.  The patient was placed in the left lateral decubitus position.  Premedications were given slowly by intravenous push.  Rectal examination was performed, which was normal.  The scope was introduced and passed with minimal difficulty to the cecum.  This was verified anatomically and video photographs were taken of the ileocecal valve and appendiceal orifice.  The scope was slowly withdrawn, the mucosa carefully visualized.  It was normal in its entirety until reaching the sigmoid colon.  Sigmoid colon had extensive diverticular disease, small-mouth, without inflammation or bleeding.  In addition, there was a small sessile polyp, which was cold biopsied and recovered, and approximately an 8 mm pedunculated polyp.  A snare was placed on the stalk of the polyp and divided with electrocautery.  The polyp was recovered and sent for pathologic examination.  Examination of the stalk showed good hemostasis.  The scope was slowly withdrawn and the remainder of the examination was normal.,ASSESSMENT: , Diverticular disease.  A diverticular disease handout was given to the patient's wife and a high fiber diet was recommended.  In addition, 2 polyps, one of which is assuredly an adenoma.  Patient needs a repeat colonoscopy in 3 years.",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "quotes": {
+     "caecum_quote": "the scope was introduced and passed with minimal difficulty to the cecum",
+     "prep_quote": "PREP:,  4/4.",
+     "polyps_quote": "A snare was placed on the stalk of the polyp and divided with electrocautery.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u16",
+   "name": "Colonoscopy Template - 4",
+   "sha": "9cacabd63c3efa651c5e0114a28b6c23a62200c97a8ebca3fd016d2beb154d3f",
+   "text": "A colonoscope was then passed through the rectum, all the way toward the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve.  This was done without difficulty and the bowel preparation was good.  The ileocecal valve was intubated and the distal 2 to 3 cm of terminal ileum was inspected and was normal.  The colonoscope was then slowly withdrawn and a careful examination of the mucosa was performed.,COMPLICATIONS: , None.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve",
+     "prep_quote": "the bowel preparation was good",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u18",
+   "name": "Colonoscopy & Polypectomy - 2",
+   "sha": "604af8a45d4f4234b17c49e8c546bb4f3acb84bf6622539592d798dfdd772b42",
+   "text": "PREPROCEDURE DIAGNOSIS: , Colon cancer screening.,POSTPROCEDURE DIAGNOSIS:  ,Colon polyps, diverticulosis, hemorrhoids.,PROCEDURE PERFORMED: , Colonoscopy, conscious sedation, and snare polypectomy.  ,INDICATIONS:  ,The patient is a 63-year-old male who has myelodysplastic syndrome, who was referred for colonoscopy.  He has had previous colonoscopy.  There is no family history of bleeding, no current problems with his bowels.  On examination, he has internal hemorrhoids.  His prostate is enlarged and increased somewhat in firmness.  He has scattered diverticular disease of a moderate degree and he has two polyps, one 1 cm in the mid ascending colon, and one in the left transverse colon, which is also 1 cm.  These were removed with snare polypectomy technique.  I would recommend that the patient have an increased fiber diet and repeat colonoscopy in 5 years or sooner if he develops bowel habit change or bleeding.,PROCEDURE: , After explaining the operative procedure, the risks and potential complications of bleeding and perforation, the patient was given 175 mcg fentanyl, and 8 mg Versed intravenously for conscious sedation.  Blood pressure 115/60, pulse 98, respiration 18, and saturation 92%.  A rectal examination was done and then the colonoscope was inserted through the anorectum, rectosigmoid, descending, transverse, and ascending colon, to the ileocecal valve.  The scope was withdrawn to the mid ascending colon, where the polyp was encircled with a snare and removed with a mixture of cutting and coagulating current, then retrieved through the suction port.  The scope was withdrawn into the left transverse colon, where the second polyp was identified.  It was encircled with a snare and removed with a mixture of cutting and coagulating current, and then removed through the suction port as well.  The scope was then gradually withdrawn the remaining distance and removed.  The patient tolerated the procedure well.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "to the ileocecal valve",
+     "prep_quote": "",
+     "polyps_quote": "These were removed with snare polypectomy technique.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u19",
+   "name": "Colonoscopy - 7",
+   "sha": "c36770d481f040165129d54c761766cc4d2b626183a5144c9486fc651d8b19cb",
+   "text": "PROCEDURE:,  Colonoscopy.,PREOPERATIVE DIAGNOSIS: , Follow up adenomas.,POSTOPERATIVE DIAGNOSES:,1.  Two colon polyps, removed.,2.  Small internal hemorrhoids.,3.  Otherwise normal examination of cecum.,MEDICATIONS: , Fentanyl 150 mcg and Versed 7 mg slow IV push.,INDICATIONS: , This is a 60-year-old white female with a history of adenomas.  She does have irregular bowel habits.,FINDINGS: , The patient was placed in the left lateral decubitus position and the above medications were administered.  The colonoscope was advanced to the cecum as identified by the ileocecal valve, appendiceal orifice, and blind pouch.  The colonoscope was slowly withdrawn and a careful examination of the colonic mucosa was made, including a retroflexed view of the rectum.  There was a 4 mm descending colon polyp, which was removed with jumbo forceps, and sent for histology in bottle one.  There was a 10 mm pale, flat polyp in the distal rectum, which was removed with jumbo forceps, and sent for histology in bottle 2.  There were small internal hemorrhoids.  The remainder of the examination was normal to the cecum.  The patient tolerated the procedure well without complication.,IMPRESSION:,1.  Two colon polyps, removed.,2.  Small internal hemorrhoids.,3.  Otherwise normal examination to cecum.,PLAN: , I will await the results of the colon polyp histology.  The patient was told the importance of daily fiber.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The colonoscope was advanced to the cecum as identified by the ileocecal valve, appendiceal orifice, and blind pouch.",
+     "prep_quote": "",
+     "polyps_quote": "There was a 4 mm descending colon polyp, which was removed with jumbo forceps",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u20",
+   "name": "Colonoscopy & Esophagogastroduodenoscopy",
+   "sha": "656beaf30f9c35c6d7d108f3189f421d2847a9aa534998f3f0c688a648f1f532",
+   "text": "PREOPERATIVE DIAGNOSES:,1.  Hematochezia.,2.  Refractory dyspepsia.,POSTOPERATIVE DIAGNOSES:,1.  Colonic polyps at 35 cm and 15 cm.,2.  Diverticulosis coli.,2.  Acute and chronic gastritis.,PROCEDURE PERFORMED:,1.  Colonoscopy to cecum with snare polypectomy.,2.  Esophagogastroduodenoscopy with biopsies.,INDICATIONS FOR PROCEDURES:  ,This is a 43-year-old white male who presents as an outpatient to the General Surgery Service with hematochezia with no explainable source at the anal verge.  He also had refractory dyspepsia despite b.i.d., Nexium therapy.  The patient does use alcohol and tobacco.  The patient gave informed consent for the procedure.,GROSS FINDINGS: , At the time of colonoscopy, the entire length of colon was visualized.  The patient was found to have a sigmoid diverticulosis.  He also was found to have some colonic polyps at 35 cm and 15 cm.  The polyps were large enough to be treated with snare cautery technique.  The polyps were achieved and submitted to pathology.  EGD did confirm acute and chronic gastritis.  The biopsies were performed for H&E and CLO testing.  The patient had no evidence of distal esophagitis or ulcers.  No mass lesions were seen.,PROCEDURE:  ,The patient was taken to the Endoscopy Suite with the heart and lungs examination unremarkable.  The vital signs were monitored and found to be stable throughout the procedure.  The patient was placed in the left lateral position where intravenous Demerol and Versed were given in a titrated fashion.,The video Olympus colonoscope was advanced per anus and without difficulty to the level of cecum.  Photographic documentation of the diverticulosis and polyps were obtained.  The patient's polyps were removed in a similar fashion, each removed with snare cautery.  The polyps were encircled at their stalk.  Increasing the tension and cautery was applied as coagulation and cutting blunt mode, 15/15 was utilized.  Good blanching was seen.  The polyp was retrieved with the suction port of the scope.  The patient was re-scoped to the polyp levels to confirm that there was no evidence of perforation or bleeding at the polypectomy site.  Diverticulosis coli was also noted.  With colonoscopy completed, the patient was then turned for EGD.  The oropharynx was previously anesthetized with Cetacaine spray and a biteblock was placed.  Video Olympus GIF gastroscope model was inserted per os and advanced without difficulty through the hypopharynx.  The esophagus revealed a GE junction at 39 cm.  The GE junction was grossly within normal limits.  The stomach was entered and distended with air.  Acute and chronic gastritis features as stated were appreciated.  The pylorus was traversed with normal duodenum.  The stomach was again reentered.  Retroflex maneuver of the scope confirmed that there was no evidence of hiatal hernia.  There were no ulcers or mass lesions seen.  The patient had biopsy performed of the antrum for H&E and CLO testing.  There was no evidence of untoward bleeding at biopsy sites.  Insufflated air was removed with withdrawal of the scope.  The patient will be placed on a reflux diet, given instruction and information on Nexium usage.  Additional recommendations will follow pending biopsy results.  He is to also abstain from alcohol and tobacco.  He will require follow-up colonoscopy again in three years for polyp disease.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The video Olympus colonoscope was advanced per anus and without difficulty to the level of cecum.",
+     "prep_quote": "",
+     "polyps_quote": "The patient's polyps were removed in a similar fashion, each removed with snare cautery.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u21",
+   "name": "Colonoscopy - 6",
+   "sha": "0af603d243ec7a0994934697fa4ab815dc533d0c9c9f50c8b397ff58963876df",
+   "text": "INDICATIONS: , This is a 55-year-old female who is having a colonoscopy to screen for colon cancer.  There is no family history of colon cancer and there has been no blood in the stool.,PROCEDURE PERFORMED:  ,Colonoscopy.,PREP: , Fentanyl 100 mcg IV and 3 mg Versed IV.,PROCEDURE:,  The tip of the endoscope was introduced into the rectum.  Retroflexion of the tip of the endoscope failed to reveal any distal rectal lesions.  The rest of the colon through to the cecum was well visualized.  The cecal strap, ileocecal valve, and light reflex in the right lower quadrant were all identified.  There was no evidence of tumor, polyp, mass, ulceration, or other focus of inflammation.  Adverse reactions none.,IMPRESSION:,  Normal colonic mucosa through to the cecum.  There was no evidence of tumor or polyp.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The rest of the colon through to the cecum was well visualized.",
+     "prep_quote": "",
+     "polyps_quote": "There was no evidence of tumor or polyp.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u22",
+   "name": "Colonoscopy - 9",
+   "sha": "f46be2966279dba07f03cd6acba72d5aebf449002192b8f78f6e36a2d5458c0c",
+   "text": "PREOPERATIVE DIAGNOSIS:,  Prior history of polyps.,POSTOPERATIVE DIAGNOSIS:,  Small polyps, no evidence of residual or recurrent polyp in the cecum.,PREMEDICATIONS: , Versed 5 mg, Demerol 100 mg IV.,REPORTED PROCEDURE:,  The rectal chamber revealed no external lesions.  Prostate was normal in size and consistency.,The colonoscope was inserted into the rectal ampulla and advanced under direct vision at all times until the tip of the scope was placed in the cecum.  The position of the scope within the cecum was verified by identification of the ileocecal valve.  Navigation was difficult because it seemed that the cecum took an upward turn at its final turn, but the examination was completed.,The cecum was extensively studied and no lesion was seen.  There was not even a scar representing the prior polyp.  I was able to see the area across from the ileocecal valve exactly where the polyp was two years ago, and I saw no lesion at all.  The scope was then slowly withdrawn.  In the mid transverse colon, was a small submucosal lesion, which appeared to be a lipoma.  It was freely mobile and very small with normal overlying mucosa.  There was a similar lesion in the descending colon.  Both of these appeared to be lipomatous, so no attempt was made to remove them.  There were diverticula present in the sigmoid colon.  In addition, there were two polyps in the sigmoid colon both of which were resected using electrocautery.  There was no bleeding.  The scope was then withdrawn.  The rectum was normal.  When the scope was retroflexed in the rectum, two very small polyps were noted just at the anorectal margin, and so these were obliterated using the electrocautery snare.  There was no specimen and there was no bleeding.  The scope was then straightened, withdrawn, and the procedure terminated.,ENDOSCOPIC IMPRESSION:,1.  Small polyps, sigmoid colon, resected them.,2.  Diverticulosis, sigmoid colon.,3.  Small rectal polyps, obliterated them.,4.  Submucosal lesions, consistent with lipomata as described.,5.  No evidence of residual or recurrent neoplasm in the cecum.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "until the tip of the scope was placed in the cecum",
+     "prep_quote": "",
+     "polyps_quote": "two polyps in the sigmoid colon both of which were resected using electrocautery",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u23",
+   "name": "Colonoscopy & Polypectomy - 1",
+   "sha": "ca9cdb0df6d1a8b22380f8efa5e6585e65ce8286443df2e04c1cd3e539f65ffa",
+   "text": "PREOPERATIVE DIAGNOSIS:,  History of colitis.,POSTOPERATIVE DIAGNOSIS: , Small left colon polyp.,PROCEDURE PERFORMED: , Total colonoscopy and polypectomy.,ANESTHESIA:,  IV Versed 8 mg and 175 mcg of IV fentanyl.,CLINICAL HISTORY: , This patient had a tough time with colitis 10 years ago and has intermittent problems with bleeding.  He has been admitted to the hospital now for colonoscopy and polyp surveillance.,PROCEDURE:  ,The patient was prepped and draped in a left lateral decubitus position.  The flexible 165 cm CF video Olympus colonoscope was inserted through the anus and passed under TV-directed monitor through the area of the rectum, sigmoid colon, left colon, transverse colon, right colon, and cecum.  He had an excellent prep.  He had a 2-3 mm polyp in the left colon that was removed with a jumbo biopsy forceps.  He tolerated the procedure well.  There was no other evidence of any cancer, growth, tumor, colitis, or problems throughout the entire colon.  His exam that he had in 1997 showed a small amount of colitis at that time and he has had some intermittent symptoms since.  Representative pictures were taken throughout the entire exam.  There was no other evidence any problems.  On withdrawal of the scope, the same findings were noted.,FINAL IMPRESSION: , Small, left colon polyp in a patient with intermittent colitis-like symptoms and bleeding.",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "quotes": {
+     "caecum_quote": "and cecum",
+     "prep_quote": "He had an excellent prep.",
+     "polyps_quote": "He had a 2-3 mm polyp in the left colon that was removed with a jumbo biopsy forceps.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u24",
+   "name": "Colonoscopy - 5",
+   "sha": "cf4937f7e7e49dc284f0d2a26de18603520f2d91fd35abd2427c7c03f7cb36f5",
+   "text": "PROCEDURE: , Colonoscopy.,INDICATIONS: , Hematochezia, Personal history of colonic polyps.,MEDICATIONS:,  Midazolam 2 mg IV, Fentanyl 100 mcg IV,PROCEDURE:,  A History and Physical has been performed, and patient medication allergies have been reviewed.  The patient's tolerance of previous anesthesia has been reviewed.  The risks and benefits of the procedure and the sedation options and risks were discussed with the patient.  All questions were answered and informed consent was obtained.  Mental Status Examination:  alert and oriented.  Airway Examination:  normal oropharyngeal airway and neck mobility.  Respiratory Examination:  clear to auscultation.  CV Examination:  RRR, no murmurs, no S3 or S4.  ASA Grade Assessment:  P1 A normal healthy patient.  After reviewing the risks and benefits, the patient was deemed in satisfactory condition to undergo the procedure.  The anesthesia plan was to use conscious sedation.  Immediately prior to administration of medications, the patient was re-assessed for adequacy to receive sedatives.  The heart rate, respiratory rate, oxygen saturations, blood pressure, adequacy of pulmonary ventilation, and response to care were monitored throughout the procedure.  The physical status of the patient was re-assessed after the procedure.  After I obtained informed consent, the scope was passed under direct vision.  Throughout the procedure, the patient's blood pressure, pulse, and oxygen saturations were monitored continuously.  The colonoscope was introduced through the anus and advanced to the cecum, identified by appendiceal orifice & IC valve.  The quality of the prep was good.  The patient tolerated the procedure well.,FINDINGS:,1.  A sessile, non-bleeding polyp was found in the rectum.  The polyp was 5 mm in size.  Polypectomy was performed with a saline injection-lift technique using the snare.  Resection and retrieval were complete.  Estimated blood loss was minimal.,2.  One pedunculated, non-bleeding polyp was found in the sigmoid colon.  The polyp was 7 mm in size.  Polypectomy was performed with a hot forceps.  Resection and retrieval were complete.  Estimated blood loss was minimal.,3.  Multiple large-mouthed diverticula were found in the descending colon.,4.  Internal, non-bleeding, prolapsed with spontaneous reduction (grade II) hemorrhoids were found on retroflexion.,IMPRESSION:,1.  One 5 mm benign appearing polyp in the rectum.  Resected and retrieved.,2.  One 7 mm polyp in the sigmoid colon.  Resected and retrieved.,3.  Diverticulosis.,4.  Internal hemorrhoids were found.,RECOMMENDATION:,1.  High fiber diet.,2.  Await pathology results.,3.  Repeat colonoscopy for surveillance in 3 years.,4.  The findings and recommendations were discussed with the patient.,CPT CODE(S):,45385, Colonoscopy, flexible, proximal to splenic flexure; with removal of tumor(s), polyp(s), or other lesion(s) by snare,technique.,45384, 59, Colonoscopy, flexible, proximal to splenic flexure; with removal of tumor(s), polyp(s), or other lesion(s) by hot,biopsy forceps or bipolar cautery.,45381, 59, Colonoscopy, flexible, proximal to splenic flexure; with directed submucosal injection(s), any substance.,ICD9 CODE(S):,211.4, Benign neoplasm of rectum and anal canal.,211.3, Benign neoplasm of colon.,562.10, Diverticulosis of colon (without mention of hemorrhage).,455.2, Internal hemorrhoids with other complication,578.1, Blood in stool.,v12.72, Personal history of colonic polyps.",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "quotes": {
+     "caecum_quote": "the colonoscope was introduced through the anus and advanced to the cecum, identified by appendiceal orifice & IC valve.",
+     "prep_quote": "The quality of the prep was good.",
+     "polyps_quote": "Polypectomy was performed with a saline injection-lift technique using the snare.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u25",
+   "name": "Colonoscopy - 8",
+   "sha": "c2d164be0a39915c5eaac8f8a4ce4344948b7a4887b55ca4ed630aa1d629e6df",
+   "text": "PROCEDURES PERFORMED:,  Colonoscopy.,INDICATIONS:,  Renewed symptoms likely consistent with active flare of Inflammatory Bowel Disease, not responsive to conventional therapy including sulfasalazine, cortisone, local therapy.,PROCEDURE: , Informed consent was obtained prior to the procedure with special attention to benefits, risks, alternatives.  Risks explained as bleeding, infection, bowel perforation, aspiration pneumonia, or reaction to the medications.  Vital signs were monitored by blood pressure, heart rate, and oxygen saturation.  Supplemental O2 given.  Specifics discussed.  Preprocedure physical exam performed.  Stable vital signs.  Lungs clear.  Cardiac exam showed regular rhythm.  Abdomen soft.  Her past history, her past workup, her past visitation with me for Inflammatory Bowel Disease, well responsive to sulfasalazine reviewed.  She currently has a flare and is not responding, therefore, likely may require steroid taper.  At the same token, her symptoms are mild.  She has rectal bleeding, essentially only some rusty stools.  There is not significant diarrhea, just some lower stools.  No significant pain.  Therefore, it is possible that we are just dealing with a hemorrhoidal bleed, therefore, colonoscopy now needed.  Past history reviewed.  Specifics of workup, need for followup, and similar discussed.  All questions answered.,A normal digital rectal examination was performed.  The PCF-160 AL was inserted into the anus and advanced to the cecum without difficulty, as identified by the ileocecal valve, cecal stump, and appendical orifice.  All mucosal aspects thoroughly inspected, including a retroflexed examination.  Withdrawal time was greater than six minutes.  Unfortunately, the terminal ileum could not be intubated despite multiple attempts.,Findings were those of a normal cecum, right colon, transverse colon, descending colon.  A small cecal polyp was noted, this was biopsy-removed, placed in bottle #1.  Random biopsies from the cecum obtained, bottle #2; random biopsies from the transverse colon obtained, as well as descending colon obtained, bottle #3.  There was an area of inflammation in the proximal sigmoid colon, which was biopsied, placed in bottle #4.  There was an area of relative sparing, with normal sigmoid lining, placed in bottle #5, randomly biopsied, and then inflammation again in the distal sigmoid colon and rectum biopsied, bottle #6, suggesting that we may be dealing with Crohn disease, given the relative sparing of the sigmoid colon and junk lesion.  Retroflexed showed hemorrhoidal disease.  Scope was then withdrawn, patient left in good condition.  ,IMPRESSION:,  Active flare of Inflammatory Bowel Disease, question of Crohn disease.,PLAN: , I will have the patient follow up with me, will follow up on histology, follow up on the polyps.  She will be put on a steroid taper and make an appointment and hopefully steroids alone will do the job.  If not, she may be started on immune suppressive medication, such as azathioprine, or similar.  All of this has been reviewed with the patient.  All questions answered.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "advanced to the cecum without difficulty, as identified by the ileocecal valve, cecal stump, and appendical orifice",
+     "prep_quote": "",
+     "polyps_quote": "A small cecal polyp was noted, this was biopsy-removed",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u26",
+   "name": "Colonoscopy - 4",
+   "sha": "77f2098c348466a5adebe7526ea682c802aff3f796f8489986df2cae6465455c",
+   "text": "PREOPERATIVE DIAGNOSIS:,  Diarrhea, suspected irritable bowel.,POSTOPERATIVE DIAGNOSIS:,  Normal colonoscopy., PREMEDICATIONS: , Versed 5 mg, Demerol 75 mg IV.,REPORTED PROCEDURE:,  The rectal exam revealed no external lesions.  The prostate was normal in size and consistency.,The colonoscope was inserted into the cecum with ease.  The cecum, ascending colon, hepatic flexure, transverse colon, splenic flexure, descending colon, sigmoid colon, and rectum were normal.  The scope was retroflexed in the rectum and no abnormality was seen, so the scope was straightened, withdrawn, and the procedure terminated.,ENDOSCOPIC IMPRESSION:,  Normal colonoscopy - no evidence of inflammatory disease, polyp, or other neoplasm.  These findings are certainly consistent with irritable bowel syndrome.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The colonoscope was inserted into the cecum with ease.",
+     "prep_quote": "",
+     "polyps_quote": "no evidence of inflammatory disease, polyp, or other neoplasm.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u27",
+   "name": "Colonoscopy - 3",
+   "sha": "62b59da1234225e886f9489ae3e61950223a5381afd489bdfe47d99b382a1a0e",
+   "text": "PREOPERATIVE DIAGNOSIS:,  Prior history of neoplastic polyps.,POSTOPERATIVE DIAGNOSIS:,  Small rectal polyps/removed and fulgurated.,PREMEDICATIONS:,  Prior to the colonoscopy, the patient complained of a sever headache and she was concerned that she might become ill.  I asked the nurse to give her 25 mg of Demerol IV.,Following the IV Demerol, she had a nausea reaction.  She was then given 25 mg of Phenergan IV.  Following this, her headache and nausea completely resolved.  She was then given a total of 7.5 mg of Versed with adequate sedation.  Rectal exam revealed no external lesions.  Digital exam revealed no mass.,REPORTED PROCEDURE:,  The P160 colonoscope was used.  The scope was placed in the rectal ampulla and advanced to the cecum.  Navigation through the sigmoid colon was difficult.  Beginning at 30 cm was a very tight bend.  With gentle maneuvering, the scope passed through and then entered the cecum.  The cecum, ascending colon, hepatic flexure, transverse colon, splenic flexure, and descending colon were normal.  The sigmoid colon was likewise normal.  There were five very small (punctate) polyps in the rectum.  One was resected using the electrocautery snare and the other four were ablated using the snare and cautery.  There was no specimen because the polyps were so small.  The scope was retroflexed in the rectum and no further abnormality was seen, so the scope was straightened, withdrawn, and the procedure terminated.,ENDOSCOPIC IMPRESSION:,1.  Five small polyps as described, all fulgurated.,2.  Otherwise unremarkable colonoscopy.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "entered the cecum",
+     "prep_quote": "",
+     "polyps_quote": "One was resected using the electrocautery snare and the other four were ablated using the snare and cautery.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u28",
+   "name": "Colonoscopy - 21",
+   "sha": "b1693b7d3766811b828d4ace654228c598f5c635f7a25ab1c39249e40103e721",
+   "text": "OPERATIVE PROCEDURES: , Colonoscopy and biopsies, epinephrine sclerotherapy, hot biopsy cautery, and snare polypectomy.,PREOPERATIVE DIAGNOSES:,1.  Colon cancer screening.,2.  Family history of colon polyps.,POSTOPERATIVE DIAGNOSES:,1.  Multiple colon polyps (5).,2.  Diverticulosis, sigmoid colon.,3.  Internal hemorrhoids.,ENDOSCOPE USED: , EC3870LK.,BIOPSIES:  ,Biopsies taken from all polyps.  Hot biopsy got applied to one.  Epinephrine sclerotherapy and snare polypectomy applied to four polyps.,ANESTHESIA: , Fentanyl 75 mcg, Versed 6 mg, and glucagon 1.5 units IV push in divided doses.  Also given epinephrine 1:20,000 total of 3 mL.,The patient tolerated the procedure well.,PROCEDURE:  ,The patient was placed in left lateral decubitus after appropriate sedation.  Digital rectal examination was done, which was normal.  Endoscope was introduced and passed through a rather spastic tortuous sigmoid colon with multiple diverticula seen all the way through transverse colon where about 1 cm x 1 cm sessile polyp was seen.  It was biopsied and then in piecemeal fashion removed using snare polypectomy after base was infiltrated with epinephrine.  Pedunculated polyp next to it was hard to see and there was a lot of peristalsis.  The scope then was advanced through rest of the transverse colon to ascending colon and cecum.  Terminal ileum was briefly reviewed, appeared normal and so did cecum after copious amount of fecal material was irrigated out.  Ascending colon was unremarkable.  At hepatic flexure may be proximal transverse colon, there was a sessile polyp about 1.2 cm x 1 cm that was removed in the same manner with a biopsy taken, base infiltrated with epinephrine and at least two passes of snare polypectomy and subsequent hot biopsy cautery removed to hold polypoid tissue, which could be seen.  In transverse colon on withdrawal and relaxation with epinephrine, an additional 1 mm to 2 mm sessile polyp was removed by hot biopsy.  Then in the transverse colon, additional larger polyp about 1.3 cm x 1.2 cm was removed in piecemeal fashion again with epinephrine, sclerotherapy, and snare polypectomy.  Subsequently pedunculated polyp in distal transverse colon near splenic flexure was removed with snare polypectomy.  The rest of the splenic flexure and descending colon were unremarkable.  Diverticulosis was again seen with almost constant spasm despite of glucagon.  Sigmoid colon did somewhat hinder the inspection of that area.  Rectum, retroflexion posterior anal canal showed internal hemorrhoids moderate to large.  Excess of air insufflated was removed.  The endoscope was withdrawn.,PLAN: , Await biopsy report.  Pending biopsy report, recommendation will be made when the next colonoscopy should be done at least three years perhaps sooner besides and due to multitude of the patient's polyps.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "scope then was advanced through rest of the transverse colon to ascending colon and cecum",
+     "prep_quote": "",
+     "polyps_quote": "snare polypectomy applied to four polyps",
+     "histology_quote": "Await biopsy report"
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u29",
+   "name": "Colonoscopy - 18",
+   "sha": "6d261e8c9f9e400578a6f04d36a8d611271ba530dbd941207f609c9a1d3fc828",
+   "text": "PREOPERATIVE DIAGNOSIS: , Possible inflammatory bowel disease.,POSTOPERATIVE DIAGNOSIS: , Polyp of the sigmoid colon.,PROCEDURE PERFORMED:  ,Total colonoscopy with photography and polypectomy.,GROSS FINDINGS: , The patient had a history of ischiorectal abscess.  He has been evaluated now for inflammatory bowel disease.  Upon endoscopy, the colon prep was good.  We were able to reach the cecum without difficulty.  There are no diverticluli, inflammatory bowel disease, strictures, or obstructing lesions.  There was a pedunculated polyp approximately 4.5 cm in size located in the sigmoid colon at approximately 35 cm.  This large polyp was removed using the snare technique.,OPERATIVE PROCEDURE:  ,The patient was taken to the endoscopy suite, prepped and draped in left lateral decubitus position.  IV sedation was given by Anesthesia Department.  The Olympus videoscope was inserted into anus.  Using air insufflation, the colonoscope was advanced through the anus to the rectum, sigmoid colon, descending colon, transverse colon, ascending colon and cecum, the above gross findings were noted.  The colonoscope was slowly withdrawn and carefully examined the lumen of the bowel.  When the polyp again was visualized, the snare was passed around the polyp.  It required at least two to three passes of the snare to remove the polyp in its totality.  There was a large stalk on the polyp.  ________ the polyp had been removed down to the junction of the polyp in the stalk, which appeared to be cauterized and no residual adenomatous tissue was present.  No bleeding was identified.  The colonoscope was then removed and patient was sent to recovery room in stable condition.",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "quotes": {
+     "caecum_quote": "We were able to reach the cecum without difficulty.",
+     "prep_quote": "the colon prep was good.",
+     "polyps_quote": "This large polyp was removed using the snare technique.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u30",
+   "name": "Colonoscopy - 22",
+   "sha": "bf83491445d1eaefb132ace07fece69a3e8f2e14f988acff6544380c5fab5951",
+   "text": "PROCEDURE: , Colonoscopy.,PREOPERATIVE DIAGNOSES:,  The patient is a 56-year-old female.  She was referred for a screening colonoscopy.  The patient has bowel movements every other day.  There is no blood in the stool, no abdominal pain.  She has hypertension, dyslipidemia, and gastroesophageal reflux disease.  She has had cesarean section twice in the past.  Physical examination is unremarkable.  There is no family history of colon cancer.,POSTOPERATIVE DIAGNOSIS: , Diverticulosis.,PROCEDURE IN DETAIL: , Procedure and possible complications were explained to the patient.  Ample opportunity was provided to her to ask questions.  Informed consent was obtained.  She was placed in left lateral position.  Inspection of perianal area was normal.  Digital exam of the rectum was normal.,Video Olympus colonoscope was introduced into the rectum.  The sigmoid colon is very tortuous.  The instrument was advanced to the cecum after placing the patient in a supine position.  The patient was well prepared and a good examination was possible.  The cecum was identified by the ileocecal valve and the appendiceal orifice.  Images were taken.  The instrument was then gradually withdrawn while examining the colon again in a circumferential manner.  Few diverticula were encountered in the sigmoid and descending colon.  Retroflex view of the rectum was unremarkable.  No polyps or malignancy was identified.,After obtaining images, the air was suctioned.  Instrument was withdrawn from the patient.  The patient tolerated the procedure well.  There were no complications.,SUMMARY OF FINDINGS:  ,Colonoscopy was performed to cecum and demonstrates the following:,1.  Mild-to-moderate diverticulosis.,2.  ,RECOMMENDATION:,1.  The patient was provided information on diverticulosis including dietary advice.,2.  She was advised repeat colonoscopy after 10 years.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "The instrument was advanced to the cecum",
+     "prep_quote": "The patient was well prepared and a good examination was possible.",
+     "polyps_quote": "No polyps or malignancy was identified.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u31",
+   "name": "Colonoscopy - 16",
+   "sha": "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a",
+   "text": "PROCEDURE: , Colonoscopy.,PREOPERATIVE DIAGNOSES: , Rectal bleeding and perirectal abscess.,POSTOPERATIVE DIAGNOSIS: , Perianal abscess.,MEDICATIONS:,  MAC.,DESCRIPTION OF PROCEDURE:  ,The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum.  The preparation was excellent and all surfaces were well seen.  The mucosa throughout the colon and in the terminal ileum was normal, with no evidence of colitis.  Special attention was paid to the rectum, including retroflexed views of the distal rectum and the anorectal junction.  There was no evidence of either inflammation or a fistulous opening.  The scope was withdrawn.  A careful exam of the anal canal and perianal area demonstrated a jagged 8-mm opening at the anorectal junction posteriorly (12 o'clock position).  Some purulent material could be expressed through the opening.  There was no suggestion of significant perianal reservoir of inflamed tissue or undrained material.  Specifically, the posterior wall of the distal rectum and anal canal were soft and unremarkable.  In addition, scars were noted in the perianal area.  The first was a small dimpled scar, 1 cm from the anal verge in the 11 o'clock position.  The second was a dimpled scar about 5 cm from the anal verge on the left buttock's cheek.  There were no other abnormalities noted.  The patient tolerated the procedure well and was sent to the recovery room.,FINAL DIAGNOSES:,1.  Normal colonoscopy to the terminal ileum.,2.  Opening in the skin at the external anal verge, consistent with drainage from a perianal abscess, with no palpable abscess at this time, and with no evidence of fistulous connection to the bowel lumen.,RECOMMENDATIONS:,1.  Continue antibiotics.,2.  Followup with Dr. X.,3.  If drainage persists, consider surgical drainage.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum",
+     "prep_quote": "The preparation was excellent and all surfaces were well seen",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u32",
+   "name": "Colonoscopy - 17",
+   "sha": "02c7863e25a2af659ae39b0caf2c96680f2ab41ee267a7753bca9cbbbf7e2bf5",
+   "text": "PREOPERATIVE DIAGNOSIS: , Colon polyps.,POSTOPERATIVE DIAGNOSES:,1.  Universal diverticulosis.,2.  Nonsurgical internal hemorrhoids.,PROCEDURE PERFORMED:, Total colonoscopy with photos.,ANESTHESIA:,  Demerol 100 mg IV with Versed 3 mg IV.,SPECIMENS: , None.,ESTIMATED BLOOD LOSS: , Minimal.,INDICATIONS FOR PROCEDURE:  ,The patient is a 62-year-old white male who presents to the office with a history of colon polyps and need for recheck.,PROCEDURE:,  Informed consent was obtained.  All risks and benefits of the procedure were explained and all questions were answered.  The patient was brought back to the Endoscopy Suite where he was connected to cardiopulmonary monitoring.  Demerol 100 mg IV and Versed 3 mg IV was given in a titrated fashion until appropriate anesthesia was obtained.  Upon appropriate anesthesia, a digital rectal exam was performed, which showed no masses.  The colonoscope was then placed into the anus and the air was insufflated.  The scope was then advanced under direct vision into the rectum, rectosigmoid colon, descending colon, transverse colon, ascending colon until it reached the cecum.  Upon entering the sigmoid colon and throughout the rest of the colon, there was noted diverticulosis.  After reaching the cecum, the scope was fully withdrawn visualizing all walls again noting universal diverticulosis.,Upon reaching the rectum, the scope was then retroflexed upon itself and there was noted to be nonsurgical internal hemorrhoids.  The scope was then subsequently removed.  The patient tolerated the procedure well and there were no complications.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "until it reached the cecum",
+     "prep_quote": "",
+     "polyps_quote": "SPECIMENS: , None.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u33",
+   "name": "Colonoscopy - 13",
+   "sha": "94f0219af04b4096f0f62aebff85d2cb148e70fe8a5ffae6691ecb10740734e8",
+   "text": "PREOPERATIVE DIAGNOSIS: , History of polyps.,POSTOPERATIVE DIAGNOSES:,1.  Normal colonoscopy, left colonic diverticular disease.,2.  3+ benign prostatic hypertrophy.,PROCEDURE PERFORMED: , Total colonoscopy and photography.,GROSS FINDINGS: , This is a 74-year-old white male here for recheck colonoscopy for a history of polyps.  After signed informed consent, blood pressure monitoring, EKG monitoring, and pulse oximetry monitoring, he was brought to the Endoscopic Suite.  He was given 100 mg of Demerol, 3 mg of Versed IV push slowly.  Digital examination revealed a large prostate for which he is following up with his urologist.  No nodules.  3+ BPH.  Anorectal canal was within normal limits.  No stricture tumor or ulcer.  The Olympus CF 20L video endoscope was inserted per anus.  The anorectal canal was visualized, was normal.  The sigmoid, descending, splenic, and transverse showed scattered diverticula.  The hepatic, ascending, cecum, and ileocecal valve was visualized and was normal.  The colonoscope was removed.  The air was aspirated.  The patient was discharged with high-fiber, diverticular diet.  Recheck colonoscopy three years.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The hepatic, ascending, cecum, and ileocecal valve was visualized and was normal.",
+     "prep_quote": "",
+     "polyps_quote": "Normal colonoscopy",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u34",
+   "name": "Colonoscopy - 12",
+   "sha": "14ef0d62d8d5bcc7e7af941aef071c9b3ad46f3ab167b25248d728c070f2f0bb",
+   "text": "PROCEDURE IN DETAIL: , Following instructions and completion of an oral colonoscopy prep, the patient, having been properly informed of, with signature consenting to total colonoscopy and indicated procedures, the patient received premedications of Vistaril 50 mg, Atropine 0.4 mg IM, and then intravenous medications of Demerol 50 mg and Versed 5 mg IV.  Perirectal inspection was normal.  The Olympus video colonoscope then was introduced into the rectum and passed by directed vision to the cecum and into the terminal ileum.  No abnormalities were seen of the terminal ileum, the ileocecal valve, cecum, ascending colon, hepatic flexure, transverse colon, splenic flexure, descending colon, rectosigmoid and rectum.  Retroflexion exam in the rectum revealed no other abnormality and withdrawal terminated the procedure.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "passed by directed vision to the cecum and into the terminal ileum",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u35",
+   "name": "Colonoscopy - 20",
+   "sha": "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796",
+   "text": "PREOPERATIVE DIAGNOSIS: , Screening. ,POSTOPERATIVE DIAGNOSIS:,  Tiny Polyps.,PROCEDURE PERFORMED:  , Colonoscopy.,PROCEDURE:  , The procedure, indications, and risks were explained to the patient, who understood and agreed.  He was sedated with Versed 3 mg, Demerol 25 mg during the examination.  ,A digital rectal exam was performed and the Pentax Video Colonoscope was advanced over the examiner's finger into the rectum.  It was passed to the level of the cecum.  The ileocecal valve was identified, as was the appendiceal orifice.  ,Slowly withdrawal through the colon revealed a small polyp in the transverse colon.  This was approximately 3 mm in size and was completely removed using multiple bites with cold biopsy forceps.  In addition, there was a 2 mm polyp versus lymphoid aggregate in the descending colon.  This was also removed using the cold biopsy forceps.  Further detail failed to reveal any other lesions with the exception of small hemorrhoids.  ,IMPRESSION:  , Tiny polyps.  ,PLAN:  , If adenomatous, repeat exam in five years.  Otherwise, repeat exam in 10 years.,",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "It was passed to the level of the cecum.",
+     "prep_quote": "",
+     "polyps_quote": "was completely removed using multiple bites with cold biopsy forceps",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u36",
+   "name": "Colonoscopy - 2",
+   "sha": "3deff2f0bab6dc95247f7eb3bb6c1143e180f8ab1b903a1b26629ebfcfa8160e",
+   "text": "PREOPERATIVE DIAGNOSES:,  Prior history of anemia, abdominal bloating.,POSTOPERATIVE DIAGNOSIS:,  External hemorrhoids, otherwise unremarkable colonoscopy.,PREMEDICATIONS:,  Versed 5 mg, Demerol 50 mg IV.,REPORT OF PROCEDURE:,  Digital rectal exam revealed external hemorrhoids.  The colonoscope was inserted into the rectal ampulla and advanced to the cecum.  The position of the scope within the cecum was verified by identification of the appendiceal orifice.  The cecum, the ascending colon, hepatic flexure, transverse colon, splenic flexure, descending colon, and rectum were normal.  The scope was retroflexed in the rectum and no abnormality was seen.  So the scope was straightened, withdrawn, and the procedure terminated.,ENDOSCOPIC IMPRESSION:,1.  Normal colonoscopy.,2.  External hemorrhoids.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "advanced to the cecum",
+     "prep_quote": "",
+     "polyps_quote": "Normal colonoscopy.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u37",
+   "name": "Colonoscopy - 11",
+   "sha": "f6c3bbe27bd96f2d406d57134d64bad2191a314b2600688cb42a32aaaa3a02f8",
+   "text": "MEDICATIONS:,1.  Versed intravenously.,2.  Demerol intravenously.,DESCRIPTION OF THE PROCEDURE: , After informed consent was obtained, the patient was placed in the left lateral decubitus position and sedated with the above medications.  The Olympus video colonoscope was inserted through the anus and was advanced in retrograde fashion through the sigmoid colon, descending colon, around the splenic flexure, into the transverse colon, around the hepatic flexure, down the ascending colon, into the cecum.  The cecum was identified by the presence of the appendiceal orifice and the ileocecal valve.  The colonoscope was then advanced through the ileocecal valve into the terminal ileum, which was normal on examination.  The scope was then pulled back into the cecum and then slowly withdrawn.  The mucosa was examined in detail.  The mucosa was entirely normal.  Upon reaching the rectum, retroflex examination of the rectum was normal.  The scope was then straightened out, the air removed and the scope withdrawn.  The patient tolerated the procedure well.  There were no apparent complications.,",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "into the cecum",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u38",
+   "name": "Colonoscopy - 19",
+   "sha": "24ecf4adf8f84b0a65a6c6412aaf12a2ff77749857e3ed0b59cacf2bf9cbebaa",
+   "text": "INDICATION: , Iron deficiency anemia.,PROCEDURE:  ,Colonoscopy with terminal ileum examination.,POSTOPERATIVE DIAGNOSIS:,  Normal examination.,WITHDRAWAL TIME: , 15 minutes.,SCOPE: , CF-H180AL.,MEDICATIONS: , Fentanyl 100 mcg and versed 10 mg.,PROCEDURE DETAIL:  ,Following the preprocedure patient assessment the procedure, goals, risks including bleeding, perforation, missed polyp rate as well as side effects of medications and alternatives were reviewed.  Questions were answered.  Pause preprocedure was performed.,Following titrated intravenous sedation the flexible video endoscope was introduced into the rectum and advanced to the cecum without difficulty.  The ileocecal valve looked normal.  Preparation was fair allowing examination of 85% of mucosa after washing and cleaning with tap water through the scope.  The terminal ileum was intubated through the ileocecal valve for a 5 cm extent.  Terminal ileum mucosa looked normal.,Then the scope was withdrawn while examining the mucosa carefully including the retroflexed views of the rectum.  No polyp, no diverticulum and no bleeding source was identified.,The patient was assessed upon completion of the procedure.  Okay to discharge once criteria met.  ,RECOMMENDATIONS:,  Follow up with primary care physician.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "advanced to the cecum without difficulty",
+     "prep_quote": "Preparation was fair",
+     "polyps_quote": "No polyp",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u39",
+   "name": "Colonoscopy - 10",
+   "sha": "aa31e6d09da418351dab30ed49f528ef26adc0808e4e00680acc4b9a2dc5aa35",
+   "text": "PREOPERATIVE DIAGNOSES: , Colon cancer screening and family history of polyps.,POSTOPERATIVE DIAGNOSIS:,  Colonic polyps.,PROCEDURE:,  Colonoscopy.,ANESTHESIA:,  MAC,DESCRIPTION OF PROCEDURE:  ,The Olympus pediatric variable colonoscope was introduced into the rectum and advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum.  The preparation was excellent and all surfaces were well seen.  The mucosa was normal throughout the colon and in the terminal ileum.  Two polyps were identified and were removed.  The first was a 7-mm sessile lesion in the mid transverse colon at 110 cm, removed with the snare without cautery and retrieved.  The second was a small 4-mm sessile lesion in the sigmoid colon at 20 cm also removed with the snare and retrieved.  No other lesions were identified.  Numerous diverticula were found in the sigmoid colon.  A retroflex through the anorectal junction showed moderate internal hemorrhoids.  The patient tolerated the procedure well and was sent to the recovery room.,FINAL DIAGNOSES:,1.  Sigmoid diverticulosis.,2.  Colonic polyps in the transverse colon and sigmoid colon, benign appearance, removed.,3.  Internal hemorrhoids.,4.  Otherwise normal colonoscopy to the terminal ileum.,RECOMMENDATIONS:,1.  Follow up biopsy report.,2.  Follow up with Dr. X as needed.,3.  Screening colonoscopy in 5 years.",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "yes",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "quotes": {
+     "caecum_quote": "advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum",
+     "prep_quote": "The preparation was excellent and all surfaces were well seen.",
+     "polyps_quote": "Two polyps were identified and were removed.",
+     "histology_quote": ""
+    }
+   },
+   "truth": "awaiting_histology",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u40",
+   "name": "Colonoscopy - 15",
+   "sha": "aca7ae21f7eccd6b980c5b9657dec561aefa4be0b1a87e31ed5895dab3611d76",
+   "text": "PROCEDURE:,  Colonoscopy.,PREOPERATIVE DIAGNOSES: , Change in bowel habits and rectal prolapse.,POSTOPERATIVE DIAGNOSIS: , Normal colonoscopy.,PROCEDURE:  ,The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon to the cecum identified by the ileocecal valve and the appendiceal orifice.  The preparation was poor, but mucosa was visible after lavage and suction.  Small lesions might have been missed in certain places, but no large lesions are likely to have been missed.  The mucosa was normal, was visualized.  In particular, there was no mucosal abnormality in the rectum and distal sigmoid, which is reported to be prolapsing.  Biopsies were taken from the rectal wall to look for microscopic changes.  The anal sphincter was considerably relaxed, with no tone and a gaping opening.  The patient tolerated the procedure well and was sent to recovery room.,FINAL DIAGNOSIS: , Normal colonic mucosa to the cecum.  No contraindications to consideration of a repair of the prolapse.",
+   "key_state": "not_closed",
+   "key_reason": "inadequate_prep",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "inadequate_prep"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "inadequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "inadequate_prep",
+    "quotes": {
+     "caecum_quote": "advanced carefully through the colon to the cecum identified by the ileocecal valve and the appendiceal orifice",
+     "prep_quote": "The preparation was poor",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u41",
+   "name": "Colonoscopy - 14",
+   "sha": "0410c223b7ad1abb00645e89ea139749f9818a8fe24502f1140faff0b47cd3ac",
+   "text": "PREPROCEDURE DIAGNOSIS: , History of colon polyps and partial colon resection, right colon.,POSTPROCEDURE DIAGNOSES:  ,1. Normal operative site.  ,2. Mild diverticulosis of the sigmoid colon.  ,3. Hemorrhoids.,PROCEDURE:  ,Total colonoscopy.,PROCEDURE IN DETAIL:  ,The patient is a 60-year-old of Dr. ABC's being evaluated for the above.  The patient also apparently had an x-ray done at the Hospital and it showed a dark spot, and because of this, a colonoscopy was felt to be needed.  She was prepped the night before and on the morning of the test with oral Fleet's, brought to the second floor and sedated with a total of 50 mg of Demerol and 3.75 mg of Versed IV push.  Digital rectal exam was done, unremarkable.  At that point, the Pentax video colonoscope was inserted.  The rectal vault appeared normal.  The sigmoid showed diverticula throughout, mild to moderate in nature.  The scope was then passed through the descending and transverse colon over to the hepatic flexure area and then the anastomosis site was visualized.  The scope was passed a short distance up the ileum, which appeared normal.  The scope was then withdrawn through the transverse, descending, sigmoid, and rectal vault area.  The scope was then retroflexed, and anal verge visualized showed some hemorrhoids.  The scope was then removed.  The patient tolerated the procedure well.,RECOMMENDATIONS:  ,Repeat colonoscopy in three years.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "The scope was passed a short distance up the ileum, which appeared normal.",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u42",
+   "name": "Colonoscopy - 1",
+   "sha": "5f5aeaba8fc49f4659c8a59a764f1f0e8ff2e48d888ed66cce579cb3d3cbc607",
+   "text": "INDICATION: ,  Rectal bleeding, constipation, abnormal CT scan, rule out inflammatory bowel disease.,PREMEDICATION: ,See procedure nurse NCS form.,PROCEDURE:  ,",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u43",
+   "name": "Colonoscopy",
+   "sha": "45d3f44bd854c04e4995677b56b62ca806cfdc0516c573c6f28570477ac4f9ca",
+   "text": "PREOPERATIVE DIAGNOSIS:,  Iron deficiency anemia.,POSTOPERATIVE DIAGNOSIS:,  Diverticulosis.,PROCEDURE:,  Colonoscopy.,MEDICATIONS: , MAC.,PROCEDURE: , The Olympus pediatric variable colonoscope was introduced into the rectum and advanced carefully through the colon to the cecum identified by the ileocecal valve and the appendiceal orifice.  Preparation was good, although there was some residual material in the cecum that was difficult to clear completely.  The mucosa was normal throughout the colon.  No polyps or other lesions were identified, and no blood was noted.  Some diverticula were seen of the sigmoid colon with no luminal narrowing or evidence of inflammation.  A retroflex view of the anorectal junction showed no hemorrhoids.  The patient tolerated the procedure well and was sent to the recovery room.,FINAL DIAGNOSES:,1.  Diverticulosis in the sigmoid.,2.  Otherwise normal colonoscopy to the cecum.,RECOMMENDATIONS:,1.  Follow up with Dr. X as needed.,2.  Screening colonoscopy in 2 years.,3.  Additional evaluation for other causes of anemia may be appropriate.",
+   "key_state": "closed",
+   "key_reason": "criteria_met",
+   "key_fields": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "gemma": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "quotes": {
+     "caecum_quote": "advanced carefully through the colon to the cecum identified by the ileocecal valve and the appendiceal orifice",
+     "prep_quote": "Preparation was good",
+     "polyps_quote": "No polyps or other lesions were identified",
+     "histology_quote": ""
+    }
+   },
+   "truth": "adequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u44",
+   "name": "Colon Polyps - Genetic Counseling",
+   "sha": "7c998af1f848c196afd55760d7d145f4080ece426dabef091874c99dcdfdfe5f",
+   "text": "REASON FOR CONSULT: , Genetic counseling.,HISTORY OF PRESENT ILLNESS: , The patient is a very pleasant 61-year-old female with a strong family history of colon polyps.  The patient reports her first polyps noted at the age of 50.  She has had colonoscopies required every five years and every time she has polyps were found.  She reports that of her 11 brothers and sister 7 have had precancerous polyps.  She does have an identical twice who is the one of the 11 who has never had a history of polyps.  She also has history of several malignancies in the family.  Her father died of a brain tumor at the age of 81.  There is no history of knowing whether this was a primary brain tumor or whether it is a metastatic brain involvement.  Her sister died at the age of 65 breast cancer.  She has two maternal aunts with history of lung cancer both of whom were smoker.  Also a paternal grandmother who was diagnosed with breast cancer at 86 and a paternal grandfather who had lung cancer.  There is no other cancer history.,PAST MEDICAL HISTORY:,  Significant for asthma.,CURRENT MEDICATIONS: , Include Serevent two puffs daily and Nasonex two sprays daily.,ALLERGIES: , Include penicillin.  She is also allergic seafood; crab and mobster.,SOCIAL HISTORY: , The patient is married.  She was born and raised in South Dakota.  She moved to Colorado 37 years ago.  She attended collage at the Colorado University.  She is certified public account.  She does not smoke.  She drinks socially.,REVIEW OF SYSTEMS:  ,The patient denies any dark stool or blood in her stool.  She has had occasional night sweats and shortness of breath, and cough associated with her asthma.  She also complains of some acid reflux as well as anxiety.  She does report having knee surgery for torn ACL on the left knee and has some arthritis in that knee.  The rest of her review of systems is negative.,PHYSICAL EXAM:,VITALS:",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 3
+  },
+  {
+   "uid": "u51",
+   "name": "Consult - Screening Colonoscopy",
+   "sha": "bd86c081d9a8beaee70a16206efcb11871a331f2b90f909b02daef7c83a2bd27",
+   "text": "HISTORY:,  A is a 55-year-old who I know well because I have been taking care of her husband.  She comes for discussion of a screening colonoscopy.  Her last colonoscopy was in 2002, and at that time she was told it was essentially normal.  Nonetheless, she has a strong family history of colon cancer, and it has been almost four to five years so she wants to have a repeat colonoscopy.  I told her that the interval was appropriate and that it made sense to do so.  She denies any significant weight change that she cannot explain.  She has had no hematochezia.  She denies any melena.  She says she has had no real change in her bowel habit but occasionally does have thin stools.,PAST MEDICAL HISTORY:,  On today's visit we reviewed her entire health history.  Surgically she has had a stomach operation for ulcer disease back in 1974, she says.  She does not know exactly what was done.  It was done at a hospital in California which she says no longer exists.  This makes it difficult to find out exactly what she had done.  She also had her gallbladder and appendix taken out in the 1970s at the same hospital.  Medically she has no significant problems and no true medical illnesses.  She does suffer from some mild gastroparesis, she says.,MEDICATIONS: , Reglan 10 mg once a day.,ALLERGIES: , She denies any allergies to medications but is sensitive to medications that cause her to have ulcers, she says.,SOCIAL HISTORY: , She still smokes one pack of cigarettes a day.  She was counseled to quit.  She occasionally uses alcohol.  She has never used illicit drugs.  She is married, is a housewife, and has four children.,FAMILY HISTORY: , Positive for diabetes and cancer.,REVIEW OF SYSTEMS: , Essentially as mentioned above.,PHYSICAL EXAMINATION:,GENERAL:  A is a healthy appearing female in no apparent distress.,VITAL SIGNS:  Her vital signs reveal a weight of 164 pounds, blood pressure 140/90, temperature of 97.6 degrees F.,HEENT:  No cervical bruits, thyromegaly, or masses.  She has no lymphadenopathy in the head and neck, supraclavicular, or axillary spaces bilaterally.,LUNGS:  Clear to auscultation bilaterally with no wheezes, rubs, or rhonchi.,HEART:  Regular rate and rhythm without murmur, rub, or gallop.,ABDOMEN:  Soft, nontender, nondistended.,EXTREMITIES:  No cyanosis, clubbing, or edema, with good pulses in the radial arteries bilaterally.,NEURO:  No focal deficits, is intact to soft touch in all four.,ASSESSMENT AND RECOMMENDATIONS: , In light of her history and physical, clearly the patient would be well served with an upper and lower endoscopy.  We do not know what the anatomy is, and if she did have an antrectomy, she needs to be checked for marginal ulcers.  She also complains of significant reflux and has not had an upper endoscopy in over five to six years as well.  I discussed the risks, benefits, and alternatives to upper and lower endoscopy, and these include over sedation, perforation, and dehydration, and she wants to proceed.,We will schedule her for an upper and lower endoscopy at her convenience.",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  },
+  {
+   "uid": "u91",
+   "name": "Blood per Rectum",
+   "sha": "f0c4d9310b35cf3be67e6b8078de24cfbd19eefb27927f15e4b7d5475e2ecaa0",
+   "text": "CHIEF COMPLAINT:, Bright red blood per rectum ,HISTORY OF PRESENT ILLNESS: ,This 73-year-old woman had a recent medical history significant for renal and bladder cancer, deep venous thrombosis of the right lower extremity, and anticoagulation therapy complicated by lower gastrointestinal bleeding. Colonoscopy during that admission showed internal hemorrhoids and diverticulosis, but a bleeding site was not identified. Five days after discharge to a nursing home, she again experienced bloody bowel movements and returned to the emergency department for evaluation. ,REVIEW OF SYMPTOMS: ,No chest pain, palpitations, abdominal pain or cramping, nausea, vomiting, or lightheadedness. Positive for generalized weakness and diarrhea the day of admission. ,PRIOR MEDICAL HISTORY:, Long-standing hypertension, intermittent atrial fibrillation, and hypercholesterolemia. Renal cell carcinoma and transitional cell bladder cancer status post left nephrectomy, radical cystectomy, and ileal loop diversion 6 weeks prior to presentation, postoperative course complicated by pneumonia, urinary tract infection, and retroperitoneal bleed. Deep venous thrombosis 2 weeks prior to presentation, management complicated by lower gastrointestinal bleeding, status post inferior vena cava filter placement. ,MEDICATIONS: ,Diltiazem 30 mg tid, pantoprazole 40 mg qd, epoetin alfa 40,000 units weekly, iron 325 mg bid, cholestyramine. Warfarin discontinued approximately 10 days earlier. ,ALLERGIES: ,Celecoxib (rash).,SOCIAL HISTORY:, Resided at nursing home. Denied alcohol, tobacco, and drug use. ,FAMILY HISTORY:, Non-contributory.,PHYSICAL EXAM: ,Temp = 38.3C BP =146/52 HR= 113 RR = 18 SaO2 = 98% room air ,General: Pale, ill-appearing elderly female. ,HEENT: Pale conjunctivae, oral mucous membranes moist. ,CVS: Irregularly irregular, tachycardia. ,Lungs: Decreased breath sounds at the bases. ,Abdomen: Positive bowel sounds, soft, nontender, nondistended, gross blood on rectal exam. ,Extremities: No cyanosis, clubbing, or edema. ,Skin: Warm, normal turgor. ,Neuro: Alert and oriented. Nonfocal. ,LABS: ,CBC: ,WBC count: 6,500 per mL ,Hemoglobin: 10.3 g/dL ,Hematocrit:31.8% ,Platelet count: 248 per mL ,Mean corpuscular volume: 86.5 fL ,RDW: 18% ,CHEM 7: ,Sodium: 131 mmol/L ,Potassium: 3.5 mmol/L ,Chloride: 98 mmol/L ,Bicarbonate: 23 mmol/L ,BUN: 11 mg/dL ,Creatinine: 1.1 mg/dL ,Glucose: 105 mg/dL ,COAGULATION STUDIES: ,PT 15.7 sec ,INR 1.6 ,PTT 29.5 sec ,HOSPITAL COURSE: ,The patient received 1 liter normal saline and diltiazem (a total of 20 mg intravenously and 30 mg orally) in the emergency department. Emergency department personnel made several attempts to place a nasogastric tube for gastric lavage, but were unsuccessful. During her evaluation, the patient was noted to desaturate to 80% on room air, with an increase in her respiratory rate to 34 breaths per minute. She was administered 50% oxygen by nonrebreadier mask, with improvement in her oxygen saturation to 89%. Computed tomographic angiography was negative for pulmonary embolism. ",
+   "key_state": "needs_human",
+   "key_reason": "missing_documentation",
+   "key_fields": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no"
+   },
+   "regex": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "yes",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "gemma": {
+    "caecum": "not_stated",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "quotes": {
+     "caecum_quote": "",
+     "prep_quote": "",
+     "polyps_quote": "",
+     "histology_quote": ""
+    }
+   },
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2
+  }
+ ]
+}

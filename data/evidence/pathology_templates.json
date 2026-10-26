@@ -1,0 +1,32 @@
+[
+ {
+  "id": "path-ta",
+  "histology": true,
+  "text": "SURGICAL PATHOLOGY REPORT. Specimen: colon polyps, cold snare (x2). Gross: two tan polypoid fragments, 0.3 and 0.4 cm, submitted entirely. Microscopic description: sections show colonic mucosa with tubular adenoma, low-grade dysplasia. No high-grade dysplasia or invasive carcinoma. DIAGNOSIS: Tubular adenoma (x2), margins not assessable."
+ },
+ {
+  "id": "path-hp",
+  "histology": true,
+  "text": "PATHOLOGY. Specimen: sigmoid polyp, forceps removal. Microscopic examination: serrated crypt architecture confined to the upper mucosa without cytologic dysplasia. DIAGNOSIS: Hyperplastic polyp. No adenomatous change identified."
+ },
+ {
+  "id": "path-ssl",
+  "histology": true,
+  "text": "Histopathology report, ascending colon polyp (snare). Microscopic description: dilated, boot-shaped crypt bases with horizontal growth. DIAGNOSIS: Sessile serrated lesion without dysplasia. Recommend surveillance per guideline."
+ },
+ {
+  "id": "path-tva",
+  "histology": true,
+  "text": "SURGICAL PATHOLOGY. Specimen: rectosigmoid polyp, 1.6 cm, hot snare. Microscopic description: tubulovillous adenoma with focal high-grade dysplasia; stalk free of tumour. No invasive adenocarcinoma seen. DIAGNOSIS: Tubulovillous adenoma with high-grade dysplasia, completely excised."
+ },
+ {
+  "id": "path-pend1",
+  "histology": false,
+  "text": "PATHOLOGY ADDENDUM. Specimen received in the laboratory: colon polyps (2 containers), in formalin. Processing in progress. Final report to follow."
+ },
+ {
+  "id": "path-pend2",
+  "histology": false,
+  "text": "Laboratory notice: specimen 'colon polyp, transverse' accessioned. Slides pending review by the reporting pathologist. No diagnosis has been issued yet."
+ }
+]
