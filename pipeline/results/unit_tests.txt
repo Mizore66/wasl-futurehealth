@@ -1,0 +1,20 @@
+=== RUN   TestRBACMatrix
+--- PASS: TestRBACMatrix (0.00s)
+=== RUN   TestCheckSignoffPerEventType
+--- PASS: TestCheckSignoffPerEventType (0.00s)
+=== RUN   TestConsentRBACInLinker
+--- PASS: TestConsentRBACInLinker (0.00s)
+=== RUN   TestSignoffRBACInLinker
+--- PASS: TestSignoffRBACInLinker (0.00s)
+=== RUN   TestOutreachGateAndConsent
+--- PASS: TestOutreachGateAndConsent (0.00s)
+=== RUN   TestDispatchRechecks
+--- PASS: TestDispatchRechecks (0.00s)
+=== RUN   TestReviewerErrorRateTimingAndDouble
+--- PASS: TestReviewerErrorRateTimingAndDouble (0.03s)
+=== RUN   TestClosureLedgerChains
+--- PASS: TestClosureLedgerChains (0.00s)
+=== RUN   TestDecisionCarriesOutreachAndSig
+--- PASS: TestDecisionCarriesOutreachAndSig (0.00s)
+PASS
+ok  	wsi	0.849s

@@ -1,0 +1,443 @@
+{
+ "3805f32298d6e72f213fb19e07846e65ef614636f0d8adb6e69bbfcf329b2e13": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "passed by directed vision to the distal descending colon",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u0"
+ },
+ "15f18bb0f494dece37d1877dee5b4f737d3cd452c469bcabca43862ace15d8d0": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u1"
+ },
+ "c72c3e9111fcd2725e4adaa662c0467ceb4a4410efe479bd5ee40336784e2733": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonic clean out was excellent.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u2"
+ },
+ "513d7e1658f93bd71e22893959475172f03d217ffd0660a7da7f844f346495be": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the scope was advanced with some difficulty to the terminal ileum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u3"
+ },
+ "91e25741985824a7ebd584007298e2b6c26768e72dd500029535a6eeac333fab": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the level of the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u4"
+ },
+ "40aba204abf8a601919f0862f1d046193dffca46bd082b334072c1b6c97282f5": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "advanced to the cecum as identified by the appendiceal orifice",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u5"
+ },
+ "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "For this reason, the procedure was aborted at the level of the hepatic flexure.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u6"
+ },
+ "5733a12bea68f5e1f949f657e3abecac845b790fea7731fc9be53205107548db": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Poor prep.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u7"
+ },
+ "f58b06785af544aa335fb862eb9fa76a8016fb9a35f8d7b7bc1f48718cb849ef": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the colon itself was adequately prepped",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u8"
+ },
+ "e5f7e6c75207818c5261b9555bda4952043ce2e06a109a93818aacd543afb383": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The distal ileum was examined",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u9"
+ },
+ "5f10014687a8ff07243a2dbf52878c4fa4b59327cae93b774dbf59b5f41a22bb": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "advanced, under direct vision, to the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u10"
+ },
+ "e5ffa25ece2a63d8244e419269ffafdee49bcaa261d3cb993d708ebbd0398b08": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "including terminal ileum, cecum, hepatic flexure, and sigmoid colon",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u11"
+ },
+ "5863fdb1ea6910b46b95215e29ca417cc5e527ddbb583f78306a0742e22480e2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "PREP:,  4/4.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u12"
+ },
+ "9cacabd63c3efa651c5e0114a28b6c23a62200c97a8ebca3fd016d2beb154d3f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the bowel preparation was good",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u16"
+ },
+ "604af8a45d4f4234b17c49e8c546bb4f3acb84bf6622539592d798dfdd772b42": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "to the ileocecal valve",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u18"
+ },
+ "c36770d481f040165129d54c761766cc4d2b626183a5144c9486fc651d8b19cb": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum as identified by the ileocecal valve, appendiceal orifice, and blind pouch.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u19"
+ },
+ "656beaf30f9c35c6d7d108f3189f421d2847a9aa534998f3f0c688a648f1f532": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The video Olympus colonoscope was advanced per anus and without difficulty to the level of cecum.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u20"
+ },
+ "0af603d243ec7a0994934697fa4ab815dc533d0c9c9f50c8b397ff58963876df": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The rest of the colon through to the cecum was well visualized.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u21"
+ },
+ "f46be2966279dba07f03cd6acba72d5aebf449002192b8f78f6e36a2d5458c0c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "until the tip of the scope was placed in the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u22"
+ },
+ "ca9cdb0df6d1a8b22380f8efa5e6585e65ce8286443df2e04c1cd3e539f65ffa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "He had an excellent prep.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u23"
+ },
+ "cf4937f7e7e49dc284f0d2a26de18603520f2d91fd35abd2427c7c03f7cb36f5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The quality of the prep was good.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u24"
+ },
+ "c2d164be0a39915c5eaac8f8a4ce4344948b7a4887b55ca4ed630aa1d629e6df": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "advanced to the cecum without difficulty, as identified by the ileocecal valve, cecal stump, and appendical orifice",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u25"
+ },
+ "77f2098c348466a5adebe7526ea682c802aff3f796f8489986df2cae6465455c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was inserted into the cecum with ease.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u26"
+ },
+ "62b59da1234225e886f9489ae3e61950223a5381afd489bdfe47d99b382a1a0e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "entered the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u27"
+ },
+ "b1693b7d3766811b828d4ace654228c598f5c635f7a25ab1c39249e40103e721": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "scope then was advanced through rest of the transverse colon to ascending colon and cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u28"
+ },
+ "6d261e8c9f9e400578a6f04d36a8d611271ba530dbd941207f609c9a1d3fc828": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the colon prep was good.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u29"
+ },
+ "bf83491445d1eaefb132ace07fece69a3e8f2e14f988acff6544380c5fab5951": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The patient was well prepared and a good examination was possible.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u30"
+ },
+ "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The preparation was excellent and all surfaces were well seen",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u31"
+ },
+ "02c7863e25a2af659ae39b0caf2c96680f2ab41ee267a7753bca9cbbbf7e2bf5": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "until it reached the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u32"
+ },
+ "94f0219af04b4096f0f62aebff85d2cb148e70fe8a5ffae6691ecb10740734e8": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The hepatic, ascending, cecum, and ileocecal valve was visualized and was normal.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u33"
+ },
+ "14ef0d62d8d5bcc7e7af941aef071c9b3ad46f3ab167b25248d728c070f2f0bb": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "passed by directed vision to the cecum and into the terminal ileum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u34"
+ },
+ "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "It was passed to the level of the cecum.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u35"
+ },
+ "3deff2f0bab6dc95247f7eb3bb6c1143e180f8ab1b903a1b26629ebfcfa8160e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "advanced to the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u36"
+ },
+ "f6c3bbe27bd96f2d406d57134d64bad2191a314b2600688cb42a32aaaa3a02f8": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "into the cecum",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u37"
+ },
+ "24ecf4adf8f84b0a65a6c6412aaf12a2ff77749857e3ed0b59cacf2bf9cbebaa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Preparation was fair",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u38"
+ },
+ "aa31e6d09da418351dab30ed49f528ef26adc0808e4e00680acc4b9a2dc5aa35": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The preparation was excellent and all surfaces were well seen.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u39"
+ },
+ "aca7ae21f7eccd6b980c5b9657dec561aefa4be0b1a87e31ed5895dab3611d76": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The preparation was poor",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u40"
+ },
+ "0410c223b7ad1abb00645e89ea139749f9818a8fe24502f1140faff0b47cd3ac": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope was passed a short distance up the ileum, which appeared normal.",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u41"
+ },
+ "5f5aeaba8fc49f4659c8a59a764f1f0e8ff2e48d888ed66cce579cb3d3cbc607": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u42"
+ },
+ "45d3f44bd854c04e4995677b56b62ca806cfdc0516c573c6f28570477ac4f9ca": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Preparation was good",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u43"
+ },
+ "7c998af1f848c196afd55760d7d145f4080ece426dabef091874c99dcdfdfe5f": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u44"
+ },
+ "bd86c081d9a8beaee70a16206efcb11871a331f2b90f909b02daef7c83a2bd27": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u51"
+ },
+ "f0c4d9310b35cf3be67e6b8078de24cfbd19eefb27927f15e4b7d5475e2ecaa0": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "src": "ws-students/teacher_test.json",
+  "uid": "u91"
+ },
+ "fd982a51704e7a1b0189bbafb4a359d69db370414aaf838434ea0b50316792d1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Microscopic description: sections show colonic mucosa with tubular adenoma, low-grade dysplasia.",
+  "src": "v5 proxy call",
+  "uid": "path-ta"
+ },
+ "bbd5ac84747ca236c5baba151be013771675cab27cfce3fe3802cf71818271fe": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "DIAGNOSIS: Hyperplastic polyp.",
+  "src": "v5 proxy call",
+  "uid": "path-hp"
+ },
+ "14a21aa16fbdea507b2a9974cf1cf060b330c673d9834353128964bfa120e618": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "DIAGNOSIS: Sessile serrated lesion without dysplasia.",
+  "src": "v5 proxy call",
+  "uid": "path-ssl"
+ },
+ "b7d3e16caee42c3a656b634f0a9cc978edfe3d2b01839ebbf6bf6ebba7240ccb": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "tubulovillous adenoma with focal high-grade dysplasia",
+  "src": "v5 proxy call",
+  "uid": "path-tva"
+ },
+ "7db74a9ff5331223316fea1b904da6e4087d71778a2a42df779fb2a13b2bc953": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Processing in progress. Final report to follow.",
+  "src": "v5 proxy call",
+  "uid": "path-pend1"
+ },
+ "078e1ef9cfecbf217d150e8092b9f3c6f8e445f7507fe66a765f408f7a3e0bf9": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "No diagnosis has been issued yet.",
+  "src": "v5 proxy call",
+  "uid": "path-pend2"
+ }
+}
