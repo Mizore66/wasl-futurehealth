@@ -744,9 +744,14 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 					m["statusReason"] = map[string]string{"text": "undeliverable"}
 				}
 			}
-			for k, v := range ext {
+			ks := make([]string, 0, len(ext)) // sorted: map order must not leak into the cohort bytes
+			for k := range ext {
+				ks = append(ks, k)
+			}
+			sort.Strings(ks)
+			for _, k := range ks {
 				xs, _ := m["extension"].([]interface{})
-				m["extension"] = append(xs, map[string]string{"url": k, "valueString": v})
+				m["extension"] = append(xs, map[string]string{"url": k, "valueString": ext[k]})
 			}
 			emit(src.ID, day+.01, m, nil)
 			return id

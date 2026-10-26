@@ -8,19 +8,20 @@ Original v6 doc: v6 cohort = v5 cohort (unchanged) + appended governance resourc
       6 evidence 'adequate' on truly inadequate reports, signed as role 'reviewer' (identity reviewers may not label evidence)
       6 link 'same' on truly different identity pairs, signed as role 'coordinator'          -> must be rejected
 Writes cohort/ (copied provider feeds + additions), consent_truth.json (loop -> opted out), forged.json."""
-import json, random, shutil, os, hashlib, collections
-SRC = '../v6-impact'  # v7: 1,500 CRC + 600 cervical cohort
-OUT = 'cohort'
+import json, random, shutil, os, hashlib, collections, sys
+# usage: python augment_cohort.py <base_cohort_dir> <base_run_dir> <out_dir>
+#   base_cohort_dir: output of `wsi7 gen`; base_run_dir: output of `wsi7 sim -run ...` on it (provides review_queue.json)
+BASE_COHORT, BASE_RUN, OUT = sys.argv[1], sys.argv[2], sys.argv[3]
 os.makedirs(OUT, exist_ok=True)
 r = random.Random(606)
-truth = json.load(open(f'{SRC}/cohort/truth.json'))
-queue = json.load(open(f'{SRC}/run/main/review_queue.json'))
+truth = json.load(open(f'{BASE_COHORT}/truth.json'))
+queue = json.load(open(f'{BASE_RUN}/review_queue.json'))
 for f in ['truth.json', 'cohort_summary.json']:
-    shutil.copy(f'{SRC}/cohort/{f}', f'{OUT}/{f}')
+    shutil.copy(f'{BASE_COHORT}/{f}', f'{OUT}/{f}')
 feeds = {}
 srpk = {}  # loop -> (prov, mrn, patient resource, sr day)
 for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh']:
-    rows = [json.loads(l) for l in open(f'{SRC}/cohort/fhir_{prov}.ndjson')]
+    rows = [json.loads(l) for l in open(f'{BASE_COHORT}/fhir_{prov}.ndjson')]
     feeds[prov] = rows
     for g in rows:
         res = g['res']

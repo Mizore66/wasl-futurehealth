@@ -44,16 +44,33 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 ## Build and run
 
+**Requirements:** Go ≥1.22, Python 3.10+, and `nats-server` v2.10+ (`brew install nats-server`).
+
 ```bash
-cd pipeline
-go build -o ../bin/wsi7 . && go test ./...
+scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
 ```
 
-Then:
-1. **Cohort:** run `wsi7 gen -wasl ../data -reports ../data/evidence/reports43.json -pathology ../data/evidence/pathology_templates.json -out ../cohort`. This builds the synthetic cohort from `data/persons3.json`; see `data/README.md`. Its Emirates IDs are synthetic.
-2. **Run:** `wsi7 orchestrate -data ../cohort -wasl ../models -run ../run/main …`. See `pipeline/RESULTS.md` for the exact flags of the merged run.
-3. **Local reader:** start `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791`, then run `python reader/hybrid4b.py 8791`.
-4. **Booking sim:** `cd booking/sim && python sim.py 150 main '<cfg>'`. See `booking/RESULTS.md`.
+The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|report`.
+
+Outputs go to `out/` (gitignored):
+- `out/cohort/`: the deterministic synthetic cohort (seed `WASL_SEED`, default 2026);
+- `out/run/main/report7.json`: all metrics;
+- `out/run/main/dashboard.json` and `review_queue.json`;
+- `out/run/tamper.json`.
+
+**Expected baseline** (one seed, simulated cohort):
+
+| | Result |
+|---|---|
+| CRC with review | P 1.000, R 0.960, 0/570 false closures |
+| Cervical with review | P 1.000, R 0.991, 0/217 false closures |
+| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.319 |
+| Exactly-once under process + NATS kills | 0 duplicates, 0 final-state mismatches |
+| Tamper | 17/17 attacks detected, 0 false alarms |
+| Forged events | 0/24 with any effect |
+| Known gap | 16 messages sent before a late opt-out was recorded. The fix is the consent hold, stage 3 of `docs/BACKEND-HANDOFF.md` |
+
+**Local reader (separate until stage 2):** start `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791`, then run `python reader/hybrid4b.py 8791`.
 
 ## Data and honesty
 - Names come from Wikidata (CC0).

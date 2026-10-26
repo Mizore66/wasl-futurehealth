@@ -555,7 +555,7 @@ func writeHTML(path string, dash map[string]interface{}) {
 }
 
 // sim: offline single-process run over the cohort in global arrival order (no broker): same cores, same metrics.
-func simOffline(data, wasl string, P int, withReview bool) {
+func simOffline(data, wasl string, P int, withReview bool, run string) {
 	type ge struct {
 		g    GenEvent
 		prov string
@@ -630,7 +630,10 @@ func simOffline(data, wasl string, P int, withReview bool) {
 		fmt.Fprintf(os.Stderr, "V6FP ann=%s outputs=%d outputs_sha=%s final_sha=%s clusters_sha=%s replay_s=%.2f linker_ms_p50=%.3f linker_ms_p99=%.3f\n", *annMode, len(rp.ids),
 			sha([]byte(strings.Join(rp.ids, "\n")))[:16], sha([]byte(strings.Join(fin, "\n")))[:16], sha([]byte(strings.Join(ck, "\n")))[:16], rs, pct(rp.svcL, .5), pct(rp.svcL, .99))
 	}
-	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, "")
+	if run != "" {
+		os.MkdirAll(run, 0755)
+	}
+	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
 	rb, _ := json.MarshalIndent(res, "", " ")
 	fmt.Println(string(rb))
 }

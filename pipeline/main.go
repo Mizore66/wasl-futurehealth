@@ -131,7 +131,11 @@ func main() {
 		}
 		orchestrate(*data, *wasl, absRun, *P, *preps, *threads, *speed, *chaos, *natsKill, *replicas, *noReview, *seed)
 	case "sim":
-		simOffline(*data, *wasl, *P, !*noReview)
+		simRun := ""
+		if *run != "../run/default" {
+			simRun = absRun
+		}
+		simOffline(*data, *wasl, *P, !*noReview, simRun)
 	case "audit":
 		audit(*data, *wasl, absRun, *P)
 	case "report7":
