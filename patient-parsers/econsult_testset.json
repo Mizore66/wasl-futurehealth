@@ -1,0 +1,702 @@
+[
+ {
+  "id": "ec001",
+  "label": "accept",
+  "style": "en",
+  "prog": "crc",
+  "text": "Referral accepted. Booked for colonoscopy 14/11 08:30, prep pack posted to patient."
+ },
+ {
+  "id": "ec002",
+  "label": "accept",
+  "style": "en",
+  "prog": "crc",
+  "text": "Seen the e-consult. No further info needed, we have slotted him for next Tuesday's list."
+ },
+ {
+  "id": "ec003",
+  "label": "accept",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "Thanks for clarifying the FIT date. That's all we needed, so we'll go ahead and arrange the scope ourselves and contact the patient directly."
+ },
+ {
+  "id": "ec004",
+  "label": "accept",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Accepted for colposcopy. Appointment 3 Dec, clinic 2. We will send the letter."
+ },
+ {
+  "id": "ec005",
+  "label": "accept",
+  "style": "en_polite",
+  "prog": "cervical",
+  "text": "Many thanks. Given the HSIL result we've prioritised her and she is now on the urgent colposcopy list for this week."
+ },
+ {
+  "id": "ec006",
+  "label": "accept",
+  "style": "msa",
+  "prog": "crc",
+  "text": "تم قبول الإحالة، وحُدد موعد منظار القولون يوم الأحد القادم الساعة التاسعة صباحًا، وسنتواصل مع المريض مباشرة."
+ },
+ {
+  "id": "ec007",
+  "label": "accept",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "نفيدكم بقبول الإحالة إلى عيادة التنظير المهبلي، وقد تم تحديد موعد للمريضة خلال أسبوعين."
+ },
+ {
+  "id": "ec008",
+  "label": "accept",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "تمام دكتور، استلمنا الإحالة وحجزنا له موعد المنظار الأسبوع الياي، ما يحتاج شي منكم."
+ },
+ {
+  "id": "ec009",
+  "label": "accept",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "وصلتنا الإحالة، المريضة محجوز لها في عيادة الكولبوسكوبي يوم الثلاثاء إن شاء الله."
+ },
+ {
+  "id": "ec010",
+  "label": "accept",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Dr, تم الـ booking للـ colonoscopy يوم 20 الشهر، والـ prep instructions انرسلت للمريض."
+ },
+ {
+  "id": "ec011",
+  "label": "accept",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Ok noted, we will accept him. الموعد confirmed on the morning list, no need to resend anything."
+ },
+ {
+  "id": "ec012",
+  "label": "accept",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Referral received و accepted، colposcopy appointment next week, سنرسل SMS للمريضة."
+ },
+ {
+  "id": "ec013",
+  "label": "accept",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Tamam doctor, 7jazna lah maw3ed el colonoscopy yom el 5amees, ma y7taj shay mnkom."
+ },
+ {
+  "id": "ec014",
+  "label": "accept",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Wsalatna el referral, 3tainaha maw3ed colpo el usboo3 el jay inshallah."
+ },
+ {
+  "id": "ec015",
+  "label": "accept",
+  "style": "en",
+  "prog": "crc",
+  "text": "Repeat colonoscopy with 2-day split prep arranged by us, date 02/12. Patient informed. Nothing outstanding from your side."
+ },
+ {
+  "id": "ec016",
+  "label": "accept",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "I don't think we need the previous report after all - we can see it on Malaffi. He has been booked."
+ },
+ {
+  "id": "ec017",
+  "label": "accept",
+  "style": "en",
+  "prog": "crc",
+  "text": "Previous rejection was an admin error, apologies. Now accepted and booked 9 Nov."
+ },
+ {
+  "id": "ec018",
+  "label": "accept",
+  "style": "msa",
+  "prog": "crc",
+  "text": "بعد مراجعة الاستشارة، لا مانع من إعادة المنظار مع تحضير ممتد، وقد قمنا بحجز الموعد وإبلاغ المريض بالتعليمات."
+ },
+ {
+  "id": "ec019",
+  "label": "accept",
+  "style": "en",
+  "prog": "cervical",
+  "text": "No issue with the HPV+/cytology-negative pathway, she meets criteria. Booked routine colposcopy 18/12."
+ },
+ {
+  "id": "ec020",
+  "label": "accept",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Sorry for the delay, الإحالة accepted الحين and she's booked بعد أسبوعين."
+ },
+ {
+  "id": "ec021",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "Happy to scope him once INR is below 1.5 - please arrange warfarin bridging with his cardiologist and confirm."
+ },
+ {
+  "id": "ec022",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "Accept in principle. Needs anaesthetic pre-assessment first (BMI 46). Please refer to pre-op clinic; we will book once cleared."
+ },
+ {
+  "id": "ec023",
+  "label": "conditional",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "We'd be glad to take her, but only after clopidogrel has been held for 7 days. Could you sort that with her and let us know the stop date?"
+ },
+ {
+  "id": "ec024",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "Will accept for repeat procedure provided she completes the extended 2-day prep and you confirm she has the sachets."
+ },
+ {
+  "id": "ec025",
+  "label": "conditional",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Colposcopy can go ahead after a negative pregnancy test - please do one in clinic and send the result, then we book."
+ },
+ {
+  "id": "ec026",
+  "label": "conditional",
+  "style": "en_polite",
+  "prog": "cervical",
+  "text": "We can see her, though we'd need the infection treated first. Once you've completed the antibiotic course, drop us a line and we'll book."
+ },
+ {
+  "id": "ec027",
+  "label": "conditional",
+  "style": "msa",
+  "prog": "crc",
+  "text": "يمكن قبول المريض بشرط إيقاف دواء الأبيكسابان قبل يومين من الإجراء، يرجى التنسيق معه وإفادتنا بتاريخ الإيقاف."
+ },
+ {
+  "id": "ec028",
+  "label": "conditional",
+  "style": "msa",
+  "prog": "crc",
+  "text": "نقبل الإحالة شريطة إجراء تقييم التخدير أولاً نظرًا لمرض القلب، ثم يتم الحجز."
+ },
+ {
+  "id": "ec029",
+  "label": "conditional",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "نقدر نشوفه بس لازم توقفون له دوا السيولة قبل أسبوع، خبرونا متى وقف ونحجز له."
+ },
+ {
+  "id": "ec030",
+  "label": "conditional",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "ما عندنا مانع، بس لازم تسوون لها فحص حمل أول وترسلون النتيجة."
+ },
+ {
+  "id": "ec031",
+  "label": "conditional",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Ok we can accept، بس he needs a recent Hb لأن آخر واحد 7.9. Please repeat CBC and if Hb > 9 we'll book."
+ },
+ {
+  "id": "ec032",
+  "label": "conditional",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Accepted بشرط إن المريض ياخذ الـ extended prep كامل، please confirm counselling done."
+ },
+ {
+  "id": "ec033",
+  "label": "conditional",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Fine to see her، بس lazim interpreter Urdu يكون موجود - please arrange from your side and confirm."
+ },
+ {
+  "id": "ec034",
+  "label": "conditional",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Ok nqdar nshoofa bs lazim y wagef dawa el seyoola 5 ayam gabl, 5abrona mata wagaf."
+ },
+ {
+  "id": "ec035",
+  "label": "conditional",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Mafi mushkila bs lazim fa7s 7aml awal, rslo lna el nateeja w n7jz."
+ },
+ {
+  "id": "ec036",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "Accepted subject to eGFR > 30 for the prep; please send renal function from the last 4 weeks before we can confirm the date."
+ },
+ {
+  "id": "ec037",
+  "label": "conditional",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "I would accept this, though not before his diabetes medication plan for the prep day is in place. Once your team has adjusted the insulin doses, we're good to go."
+ },
+ {
+  "id": "ec038",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "Booked provisionally 21/11 - slot will be released unless you confirm by Thursday that the patient has stopped iron tablets."
+ },
+ {
+  "id": "ec039",
+  "label": "conditional",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "نوافق على إجراء التنظير المهبلي بعد انتهاء الدورة الشهرية، يرجى تأكيد التاريخ مع المريضة وإبلاغنا."
+ },
+ {
+  "id": "ec040",
+  "label": "conditional",
+  "style": "en",
+  "prog": "crc",
+  "text": "We accept - however we need written consent from the guardian as patient lacks capacity. Please obtain and upload."
+ },
+ {
+  "id": "ec041",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "crc",
+  "text": "Unable to triage - referral missing FIT result date and value. Please resend with lab report attached."
+ },
+ {
+  "id": "ec042",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "crc",
+  "text": "Please send current medication list incl. anticoagulants before we can decide."
+ },
+ {
+  "id": "ec043",
+  "label": "needs_info",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "Before we take this further, would you mind letting us know whether he's had a colonoscopy elsewhere in the last 3 years?"
+ },
+ {
+  "id": "ec044",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Need the actual cytology report (not just 'abnormal') to prioritise. Please attach."
+ },
+ {
+  "id": "ec045",
+  "label": "needs_info",
+  "style": "en_polite",
+  "prog": "cervical",
+  "text": "Could you clarify if this is HPV positive with normal cytology, or ASC-US? The referral form doesn't say and it changes the urgency."
+ },
+ {
+  "id": "ec046",
+  "label": "needs_info",
+  "style": "msa",
+  "prog": "crc",
+  "text": "نرجو تزويدنا بنتيجة فحص الدم الخفي في البراز وتاريخه، حيث إن الإحالة لا تتضمنها، حتى نتمكن من البت في الطلب."
+ },
+ {
+  "id": "ec047",
+  "label": "needs_info",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "يرجى إرسال تقرير الخلايا الكامل ونتيجة فحص فيروس الورم الحليمي قبل تحديد الأولوية."
+ },
+ {
+  "id": "ec048",
+  "label": "needs_info",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "دكتور ممكن ترسلون لنا قائمة الأدوية؟ نبي نعرف إذا ياخذ دوا سيولة قبل لا نقرر."
+ },
+ {
+  "id": "ec049",
+  "label": "needs_info",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "الإحالة ناقصة، ما فيها نتيجة المسحة. أرسلوها لنا لو سمحتوا."
+ },
+ {
+  "id": "ec050",
+  "label": "needs_info",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Dr please send الـ FIT report والـ last colonoscopy إذا موجود، then we'll decide."
+ },
+ {
+  "id": "ec051",
+  "label": "needs_info",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Can't accept or decline yet - شو الـ indication بالضبط? Positive FIT ولا symptoms? Please clarify."
+ },
+ {
+  "id": "ec052",
+  "label": "needs_info",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Kindly share الـ HPV genotype result، we need it to know if 16/18 before booking."
+ },
+ {
+  "id": "ec053",
+  "label": "needs_info",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Doctor mumkin trslon lna el FIT result w el tareekh? Ma nqdar nqarer bdoona."
+ },
+ {
+  "id": "ec054",
+  "label": "needs_info",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "El referral naqsa, ma feeha el pap result. Rslooha lw sm7tu."
+ },
+ {
+  "id": "ec055",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "crc",
+  "text": "Is the patient still on rivaroxaban? Also need weight. Will review once received."
+ },
+ {
+  "id": "ec056",
+  "label": "needs_info",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "We'd be happy to look at this again - we just don't have his contact number or Emirates ID on file. Could you send those across?"
+ },
+ {
+  "id": "ec057",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "crc",
+  "text": "Re inadequate prep last time: was the prep taken as split dose? Need to know before deciding on repeat vs CTC."
+ },
+ {
+  "id": "ec058",
+  "label": "needs_info",
+  "style": "msa",
+  "prog": "crc",
+  "text": "هل سبق للمريض إجراء منظار قولون خلال السنوات الثلاث الماضية؟ نرجو الإفادة قبل اتخاذ القرار."
+ },
+ {
+  "id": "ec059",
+  "label": "needs_info",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Accepting depends on the cytology grade, which isn't stated. Please send the report so we can triage."
+ },
+ {
+  "id": "ec060",
+  "label": "needs_info",
+  "style": "mix",
+  "prog": "crc",
+  "text": "We don't reject it, بس نحتاج الـ consent form والـ ASA status قبل نقرر."
+ },
+ {
+  "id": "ec061",
+  "label": "redirect",
+  "style": "en",
+  "prog": "crc",
+  "text": "No anaesthetic support for high-risk cases here. Please refer to SKMC endoscopy, they run the anaesthesia list."
+ },
+ {
+  "id": "ec062",
+  "label": "redirect",
+  "style": "en",
+  "prog": "crc",
+  "text": "Out of our catchment. Patient lives in Al Ain - please send to Tawam GI."
+ },
+ {
+  "id": "ec063",
+  "label": "redirect",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "We'd love to help but she has asked for a female endoscopist and we don't have one this quarter. Corniche Hospital endoscopy may be able to accommodate her."
+ },
+ {
+  "id": "ec064",
+  "label": "redirect",
+  "style": "en",
+  "prog": "cervical",
+  "text": "We don't do colposcopy at this site anymore. Refer to the women's health colposcopy clinic at Corniche."
+ },
+ {
+  "id": "ec065",
+  "label": "redirect",
+  "style": "en_polite",
+  "prog": "cervical",
+  "text": "Given the HSIL+ and visible lesion, this would be better handled directly by the gynae-oncology team at Tawam rather than our general colposcopy clinic."
+ },
+ {
+  "id": "ec066",
+  "label": "redirect",
+  "style": "msa",
+  "prog": "crc",
+  "text": "نعتذر لعدم توفر قائمة تخدير لدينا، يرجى تحويل المريض إلى وحدة المناظير في مستشفى الشيخ خليفة."
+ },
+ {
+  "id": "ec067",
+  "label": "redirect",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "لا تتوفر خدمة التنظير المهبلي في هذا المركز حاليًا، يرجى إحالة المريضة إلى عيادة صحة المرأة في مستشفى الكورنيش."
+ },
+ {
+  "id": "ec068",
+  "label": "redirect",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "ما عندنا دكتورة حريم للمنظار هالفترة، حولوها على مستشفى الكورنيش أحسن."
+ },
+ {
+  "id": "ec069",
+  "label": "redirect",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "المريض ساكن في العين، الأفضل تحولونه على توام عشان أقرب له."
+ },
+ {
+  "id": "ec070",
+  "label": "redirect",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Sorry we can't, الـ insurance مالها ما تغطي عندنا. Please refer to Mafraq Hospital GI، they accept Thiqa basic."
+ },
+ {
+  "id": "ec071",
+  "label": "redirect",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "مب عندنا colposcopy هني، please send her to Corniche women's clinic."
+ },
+ {
+  "id": "ec072",
+  "label": "redirect",
+  "style": "mix",
+  "prog": "crc",
+  "text": "He needs a paediatric-size scope / specialist list - مب متوفر عندنا. Kindly refer to SKMC therapeutic endoscopy."
+ },
+ {
+  "id": "ec073",
+  "label": "redirect",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Ma 3ndna anaesthesia list, 7wlooh 3la SKMC a7san."
+ },
+ {
+  "id": "ec074",
+  "label": "redirect",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Mafi colpo 3ndna 7alyan, 7wlooha 3la Corniche."
+ },
+ {
+  "id": "ec075",
+  "label": "redirect",
+  "style": "en",
+  "prog": "crc",
+  "text": "Accepted? No - we're closing the unit for refurbishment until Feb. Please re-refer to NMC Royal endoscopy."
+ },
+ {
+  "id": "ec076",
+  "label": "redirect",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "I think Dr Rahman's IBD clinic would be the right home for him given the colitis history, rather than the screening list. I've copied her in."
+ },
+ {
+  "id": "ec077",
+  "label": "redirect",
+  "style": "en",
+  "prog": "crc",
+  "text": "Repeat after failed intubation should be done at a unit with a paediatric colonoscope and CO2 - send to Cleveland Clinic AD."
+ },
+ {
+  "id": "ec078",
+  "label": "redirect",
+  "style": "msa",
+  "prog": "crc",
+  "text": "نظرًا لعدم اكتمال الفحص بسبب ضيق القولون، ننصح بتحويل المريض إلى مركز يقدم تصوير القولون الافتراضي في مستشفى توام."
+ },
+ {
+  "id": "ec079",
+  "label": "redirect",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Pregnant at 20 weeks - colposcopy should be done by the antenatal colposcopy service at Corniche, not us."
+ },
+ {
+  "id": "ec080",
+  "label": "redirect",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Thanks Dr, بس هالحالة تحتاج therapeutic list. Better يروح Cleveland Clinic، they have EMR."
+ },
+ {
+  "id": "ec081",
+  "label": "reject",
+  "style": "en",
+  "prog": "crc",
+  "text": "Declined. Colonoscopy done 8 months ago, normal. FIT+ within surveillance interval not an indication. Manage in primary care."
+ },
+ {
+  "id": "ec082",
+  "label": "reject",
+  "style": "en",
+  "prog": "crc",
+  "text": "Duplicate referral - already declined on 2/10 for the same episode. Closing this one."
+ },
+ {
+  "id": "ec083",
+  "label": "reject",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "Unfortunately we're unable to accept this referral; the patient doesn't meet criteria for the screening pathway. Happy to discuss if circumstances change."
+ },
+ {
+  "id": "ec084",
+  "label": "reject",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Not indicated: ASC-US with negative HPV. Repeat co-test in 3 years per guideline. Referral returned."
+ },
+ {
+  "id": "ec085",
+  "label": "reject",
+  "style": "en_polite",
+  "prog": "cervical",
+  "text": "I'm afraid this doesn't need colposcopy - the result was unsatisfactory, not abnormal. Please repeat the smear in 6-12 weeks."
+ },
+ {
+  "id": "ec086",
+  "label": "reject",
+  "style": "msa",
+  "prog": "crc",
+  "text": "نعتذر عن قبول الإحالة لعدم استيفاء المعايير، حيث أجري للمريض منظار قولون طبيعي قبل سنة. يُعاد الملف إلى الطبيب المحيل."
+ },
+ {
+  "id": "ec087",
+  "label": "reject",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "الإحالة غير مستوفية لشروط التنظير المهبلي، يرجى إعادة الفحص بعد ثلاثة أشهر حسب المسار المعتمد."
+ },
+ {
+  "id": "ec088",
+  "label": "reject",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "هالإحالة مكررة، سبق ورفضناها. نسكرها."
+ },
+ {
+  "id": "ec089",
+  "label": "reject",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "ما يحتاج منظار، سوا واحد قبل ست شهور وكان سليم. تابعوه عندكم."
+ },
+ {
+  "id": "ec090",
+  "label": "reject",
+  "style": "mix",
+  "prog": "crc",
+  "text": "We cannot accept this referral، الـ patient عمره 82 والـ screening program لين 75 بس. Returned to sender."
+ },
+ {
+  "id": "ec091",
+  "label": "reject",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Not for colposcopy، الـ HPV negative والـ cytology normal. Routine recall only."
+ },
+ {
+  "id": "ec092",
+  "label": "reject",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Referral declined - مكررة مع اللي وصلنا أمس. No action from us."
+ },
+ {
+  "id": "ec093",
+  "label": "reject",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "El referral mukarara, rafadnaha gabl. Bnsakkerha."
+ },
+ {
+  "id": "ec094",
+  "label": "reject",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Ma t7taj colpo, el nateeja normal. Tab3ooha 3ndkom."
+ },
+ {
+  "id": "ec095",
+  "label": "reject",
+  "style": "en",
+  "prog": "crc",
+  "text": "Accept? Not this time - he declined colonoscopy twice and signed refusal. We will not re-book; please discuss FIT surveillance options with him."
+ },
+ {
+  "id": "ec096",
+  "label": "reject",
+  "style": "en_polite",
+  "prog": "crc",
+  "text": "I've looked at this carefully and don't think a further colonoscopy is warranted given the complete exam in March. We'll leave his ongoing care with you."
+ },
+ {
+  "id": "ec097",
+  "label": "reject",
+  "style": "en",
+  "prog": "crc",
+  "text": "Rejected - wrong form, e-referral must come via the DoH e-Cancer Screening Referral Form. Returned."
+ },
+ {
+  "id": "ec098",
+  "label": "reject",
+  "style": "msa",
+  "prog": "crc",
+  "text": "تم رفض الإحالة لأن المريض رفض الإجراء كتابيًا سابقًا، ونعيد الحالة إلى المركز الصحي."
+ },
+ {
+  "id": "ec099",
+  "label": "reject",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Declined. Post-hysterectomy for benign disease, no cervix - screening not applicable."
+ },
+ {
+  "id": "ec100",
+  "label": "reject",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Sorry, بنرفض هالـ referral لأن FIT date قديم أكثر من سنة. Please repeat FIT first."
+ }
+]

@@ -1,0 +1,702 @@
+[
+ {
+  "id": "tb001",
+  "label": "understood",
+  "style": "en",
+  "prog": "crc",
+  "text": "I need a colonoscopy at the hospital within the next month. They will call me to book and I have to drink the prep the day before."
+ },
+ {
+  "id": "tb002",
+  "label": "understood",
+  "style": "en",
+  "prog": "crc",
+  "text": "Camera test of the bowel within 4 weeks, endoscopy unit will phone me."
+ },
+ {
+  "id": "tb003",
+  "label": "understood",
+  "style": "en",
+  "prog": "cervical",
+  "text": "I have to go for a colposcopy at the women's clinic, they're sending me the appointment."
+ },
+ {
+  "id": "tb004",
+  "label": "understood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Doctor say I go hospital for camera inside, before one month. They call me for date."
+ },
+ {
+  "id": "tb005",
+  "label": "understood",
+  "style": "simple_en",
+  "prog": "cervical",
+  "text": "I go to the women clinic for the check with the microscope, the colposcopy. Appointment coming by SMS."
+ },
+ {
+  "id": "tb006",
+  "label": "understood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Next step is colonoscopy. Before that I drink the medicine to clean stomach. Within 31 days."
+ },
+ {
+  "id": "tb007",
+  "label": "understood",
+  "style": "msa",
+  "prog": "crc",
+  "text": "الخطوة التالية هي إجراء منظار للقولون في المستشفى خلال شهر، وسيتصلون بي لتحديد الموعد، وعليّ شرب محلول التحضير قبله."
+ },
+ {
+  "id": "tb008",
+  "label": "understood",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "عليّ مراجعة عيادة صحة المرأة لإجراء التنظير المهبلي في الموعد الذي سيرسلونه لي."
+ },
+ {
+  "id": "tb009",
+  "label": "understood",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "لازم أسوي منظار للقولون خلال شهر، المستشفى بيتصلون علي يحجزون، وأشرب الدوا اللي ينظف قبلها بيوم."
+ },
+ {
+  "id": "tb010",
+  "label": "understood",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "بروح عيادة الحريم يسوون لي فحص الكولبوسكوبي، قالوا بيرسلون لي الموعد."
+ },
+ {
+  "id": "tb011",
+  "label": "understood",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "فهمت، منظار خلال أربع أسابيع وبيتصلون علي من وحدة المناظير."
+ },
+ {
+  "id": "tb012",
+  "label": "understood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "OK so I need a colonoscopy خلال شهر، they will call me for the appointment and I take the prep."
+ },
+ {
+  "id": "tb013",
+  "label": "understood",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Next step colposcopy في عيادة صحة المرأة، they will send the date by SMS."
+ },
+ {
+  "id": "tb014",
+  "label": "understood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Colonoscopy within 31 days إن شاء الله، the hospital will book و بشرب الـ prep قبلها."
+ },
+ {
+  "id": "tb015",
+  "label": "understood",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Lazim asawi manzar lel qolon 5ilal shahar, el mustashfa byetaslon 3alay y7jzon."
+ },
+ {
+  "id": "tb016",
+  "label": "understood",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Bro7 3yadat el 7reem asawi colposcopy, byrslon li el maw3ed."
+ },
+ {
+  "id": "tb017",
+  "label": "understood",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Fahamt, colonoscopy gabl shahar w ashrab el dawa el ynadhef gabelha."
+ },
+ {
+  "id": "tb018",
+  "label": "understood",
+  "style": "en",
+  "prog": "crc",
+  "text": "Bowel camera test, within a month, and I'll do the laxative prep they send. I'll wait for the endoscopy unit's call and pick up if it's an unknown number."
+ },
+ {
+  "id": "tb019",
+  "label": "understood",
+  "style": "en",
+  "prog": "cervical",
+  "text": "The smear wasn't clear enough so the next step is a closer look at the cervix - colposcopy - at the clinic they referred me to."
+ },
+ {
+  "id": "tb020",
+  "label": "understood",
+  "style": "msa",
+  "prog": "crc",
+  "text": "سأجري تنظير القولون خلال واحد وثلاثين يومًا، وسيتواصل معي قسم المناظير لتحديد الموعد."
+ },
+ {
+  "id": "tb021",
+  "label": "understood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Ok I understand. Colonoscopy in hospital, within one month, they will call. I keep phone open."
+ },
+ {
+  "id": "tb022",
+  "label": "understood",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "المطلوب أروح أسوي التنظير المهبلي في عيادة النساء، وهم بيكلموني."
+ },
+ {
+  "id": "tb023",
+  "label": "understood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Sure, I'll do the colonoscopy - الموعد بيوصلني من الـ endoscopy unit، before end of month."
+ },
+ {
+  "id": "tb024",
+  "label": "understood",
+  "style": "en",
+  "prog": "crc",
+  "text": "Colonoscopy at the endoscopy unit, they ring me to book, must be done inside 31 days. Prep the day before, clear fluids only."
+ },
+ {
+  "id": "tb025",
+  "label": "understood",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "El step el jaya colpo fe el clinic, w hum by3tooni el maw3ed."
+ },
+ {
+  "id": "tb026",
+  "label": "partial",
+  "style": "en",
+  "prog": "crc",
+  "text": "I think I need some kind of scan? Not sure when, the GP will sort it."
+ },
+ {
+  "id": "tb027",
+  "label": "partial",
+  "style": "en",
+  "prog": "crc",
+  "text": "Colonoscopy, but I can do it whenever, maybe after the summer."
+ },
+ {
+  "id": "tb028",
+  "label": "partial",
+  "style": "en",
+  "prog": "cervical",
+  "text": "I need to repeat the smear test in a few months I think."
+ },
+ {
+  "id": "tb029",
+  "label": "partial",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Need to do another stool test I think. Then see doctor."
+ },
+ {
+  "id": "tb030",
+  "label": "partial",
+  "style": "simple_en",
+  "prog": "cervical",
+  "text": "Doctor say some test for women, I am not sure which one. I will wait."
+ },
+ {
+  "id": "tb031",
+  "label": "partial",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Hospital test yes, but I don't know who is booking, me or them?"
+ },
+ {
+  "id": "tb032",
+  "label": "partial",
+  "style": "msa",
+  "prog": "crc",
+  "text": "أظن أنني بحاجة إلى تحليل دم آخر، ثم سيخبرونني بالخطوة التالية."
+ },
+ {
+  "id": "tb033",
+  "label": "partial",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "عليّ إعادة مسحة عنق الرحم بعد سنة."
+ },
+ {
+  "id": "tb034",
+  "label": "partial",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "لازم أسوي فحص بس ما أدري شو بالضبط، يمكن أشعة."
+ },
+ {
+  "id": "tb035",
+  "label": "partial",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "منظار إيه، بس مب مستعجل، بسويه بعد رمضان."
+ },
+ {
+  "id": "tb036",
+  "label": "partial",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "قالوا لي أراجع بس نسيت وين وشو الفحص."
+ },
+ {
+  "id": "tb037",
+  "label": "partial",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Some test في المستشفى، I'm waiting for them يتصلون… or should I call? مب متأكد."
+ },
+ {
+  "id": "tb038",
+  "label": "partial",
+  "style": "mix",
+  "prog": "crc",
+  "text": "I need a CT scan للبطن I think, then follow up."
+ },
+ {
+  "id": "tb039",
+  "label": "partial",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Repeat Pap smear بعد 6 شهور، right?"
+ },
+ {
+  "id": "tb040",
+  "label": "partial",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Lazim asawi fa7s bs ma adri shu bil dabt, ymkn ash3a."
+ },
+ {
+  "id": "tb041",
+  "label": "partial",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Manzar ee, bs mb mista3jil, b sawee ba3d el eid."
+ },
+ {
+  "id": "tb042",
+  "label": "partial",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "9alo li arooj l clinic bs nseet shu el fa7s."
+ },
+ {
+  "id": "tb043",
+  "label": "partial",
+  "style": "en",
+  "prog": "crc",
+  "text": "Colonoscopy yes. I'll book it myself in the new year when my insurance renews."
+ },
+ {
+  "id": "tb044",
+  "label": "partial",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Colposcopy - but I thought that's only if the next smear is abnormal too?"
+ },
+ {
+  "id": "tb045",
+  "label": "partial",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "I go to clinic again next week to see doctor, then they tell me."
+ },
+ {
+  "id": "tb046",
+  "label": "partial",
+  "style": "en",
+  "prog": "crc",
+  "text": "Endoscopy of some sort - the stomach one? Down the throat I think."
+ },
+ {
+  "id": "tb047",
+  "label": "partial",
+  "style": "msa",
+  "prog": "crc",
+  "text": "سأنتظر حتى يتصل بي الطبيب العام ليخبرني ماذا أفعل."
+ },
+ {
+  "id": "tb048",
+  "label": "partial",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Colonoscopy within 3 months تقريبا، no rush."
+ },
+ {
+  "id": "tb049",
+  "label": "partial",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "بسوي تحليل فيروس مرة ثانية وبعدين نشوف."
+ },
+ {
+  "id": "tb050",
+  "label": "partial",
+  "style": "en",
+  "prog": "crc",
+  "text": "Got it, a scope. I assume my GP will do it at the health centre?"
+ },
+ {
+  "id": "tb051",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "crc",
+  "text": "Nothing for now, the doctor said the result was fine."
+ },
+ {
+  "id": "tb052",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "crc",
+  "text": "It was probably just from the beetroot I ate, so no need for anything else."
+ },
+ {
+  "id": "tb053",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "cervical",
+  "text": "The smear was normal so I come back in 3 years."
+ },
+ {
+  "id": "tb054",
+  "label": "misunderstood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "No need anything, I feel good, no pain. Thank you."
+ },
+ {
+  "id": "tb055",
+  "label": "misunderstood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "Doctor give me tablets for piles, so problem finish."
+ },
+ {
+  "id": "tb056",
+  "label": "misunderstood",
+  "style": "simple_en",
+  "prog": "cervical",
+  "text": "Everything ok, next check after some years."
+ },
+ {
+  "id": "tb057",
+  "label": "misunderstood",
+  "style": "msa",
+  "prog": "crc",
+  "text": "لا شيء، النتيجة كانت سليمة والحمد لله."
+ },
+ {
+  "id": "tb058",
+  "label": "misunderstood",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "الفحص طبيعي ولا داعي لأي إجراء الآن."
+ },
+ {
+  "id": "tb059",
+  "label": "misunderstood",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "ما في شي، الدكتور قال الفحص زين."
+ },
+ {
+  "id": "tb060",
+  "label": "misunderstood",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "هذا بسبب البواسير، ما يحتاج منظار."
+ },
+ {
+  "id": "tb061",
+  "label": "misunderstood",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "كل شي تمام، أرجع بعد ثلاث سنين."
+ },
+ {
+  "id": "tb062",
+  "label": "misunderstood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "No next step، the result was negative الحمد لله."
+ },
+ {
+  "id": "tb063",
+  "label": "misunderstood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Colonoscopy مب ضروري، it's optional, I'll skip it since I feel fine."
+ },
+ {
+  "id": "tb064",
+  "label": "misunderstood",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Everything normal, next smear بعد 3 سنوات."
+ },
+ {
+  "id": "tb065",
+  "label": "misunderstood",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Ma fee shay, el doctor 9al el nateeja zeena."
+ },
+ {
+  "id": "tb066",
+  "label": "misunderstood",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Hatha mn el bawaseer, ma y7taj manzar."
+ },
+ {
+  "id": "tb067",
+  "label": "misunderstood",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Kil shay tamam, arja3 ba3d 3 sneen."
+ },
+ {
+  "id": "tb068",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "crc",
+  "text": "The colonoscopy is only if I get symptoms, so nothing to do now."
+ },
+ {
+  "id": "tb069",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "crc",
+  "text": "Ok fine, thanks. All clear then."
+ },
+ {
+  "id": "tb070",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "cervical",
+  "text": "I had the HPV vaccine so the colposcopy isn't needed."
+ },
+ {
+  "id": "tb071",
+  "label": "misunderstood",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "I do the stool test again next year like normal."
+ },
+ {
+  "id": "tb072",
+  "label": "misunderstood",
+  "style": "msa",
+  "prog": "crc",
+  "text": "سأكرر فحص البراز في السنة القادمة كالمعتاد."
+ },
+ {
+  "id": "tb073",
+  "label": "misunderstood",
+  "style": "mix",
+  "prog": "crc",
+  "text": "The antibiotics fixed it، so no colonoscopy now."
+ },
+ {
+  "id": "tb074",
+  "label": "misunderstood",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "عطوني دوا وخلاص، ما يحتاج شي ثاني."
+ },
+ {
+  "id": "tb075",
+  "label": "misunderstood",
+  "style": "en",
+  "prog": "crc",
+  "text": "I already had a colonoscopy 12 years ago so I'm covered."
+ },
+ {
+  "id": "tb076",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "crc",
+  "text": "I know I need a colonoscopy but I'm terrified of the sedation after what happened to my father."
+ },
+ {
+  "id": "tb077",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "crc",
+  "text": "Colonoscopy within a month - but I don't have a car and the hospital is 2 hours away. How do I get there?"
+ },
+ {
+  "id": "tb078",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "cervical",
+  "text": "I won't do it unless it's a female doctor."
+ },
+ {
+  "id": "tb079",
+  "label": "needs_human",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "How much it cost? My insurance basic, I cannot pay big money."
+ },
+ {
+  "id": "tb080",
+  "label": "needs_human",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "I am on blood thinner tablets, should I stop them before the camera?"
+ },
+ {
+  "id": "tb081",
+  "label": "needs_human",
+  "style": "simple_en",
+  "prog": "cervical",
+  "text": "My husband not agree for this test. What I do?"
+ },
+ {
+  "id": "tb082",
+  "label": "needs_human",
+  "style": "msa",
+  "prog": "crc",
+  "text": "أعلم أن عليّ إجراء المنظار، لكنني خائف جدًا ولا أستطيع النوم منذ أن عرفت. هل يعني هذا أنني مصاب بالسرطان؟"
+ },
+ {
+  "id": "tb083",
+  "label": "needs_human",
+  "style": "msa",
+  "prog": "cervical",
+  "text": "لا أريد إجراء هذا الفحص، أرفض."
+ },
+ {
+  "id": "tb084",
+  "label": "needs_human",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "أدري لازم منظار بس ما عندي أحد يوديني ويرجعني، أعيش بروحي."
+ },
+ {
+  "id": "tb085",
+  "label": "needs_human",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "بسويه، بس عندي سكر وأخاف من الصيام قبل المنظار، شو أسوي بالأنسولين؟"
+ },
+ {
+  "id": "tb086",
+  "label": "needs_human",
+  "style": "gulf",
+  "prog": "cervical",
+  "text": "زوجي ما يرضى أسوي هالفحص."
+ },
+ {
+  "id": "tb087",
+  "label": "needs_human",
+  "style": "mix",
+  "prog": "crc",
+  "text": "I understand colonoscopy خلال شهر، بس I'm travelling home to Kerala for 2 months next week. Can it wait?"
+ },
+ {
+  "id": "tb088",
+  "label": "needs_human",
+  "style": "mix",
+  "prog": "crc",
+  "text": "Is it cancer? قولولي الصدق please, I'm scared."
+ },
+ {
+  "id": "tb089",
+  "label": "needs_human",
+  "style": "mix",
+  "prog": "cervical",
+  "text": "Colposcopy ok بس أنا pregnant 3 months، is it safe?"
+ },
+ {
+  "id": "tb090",
+  "label": "needs_human",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Adri lazim manzar bs 5ayf wayed, ma agdar."
+ },
+ {
+  "id": "tb091",
+  "label": "needs_human",
+  "style": "arabizi",
+  "prog": "crc",
+  "text": "Kam el si3r? El ta2meen ma ygh6y kil shay."
+ },
+ {
+  "id": "tb092",
+  "label": "needs_human",
+  "style": "arabizi",
+  "prog": "cervical",
+  "text": "Rayli ma yr9a asawi hal fa7s."
+ },
+ {
+  "id": "tb093",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "crc",
+  "text": "I'm not doing a colonoscopy. Last one was agony. Please stop messaging me."
+ },
+ {
+  "id": "tb094",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "crc",
+  "text": "Yes colonoscopy. Quick question - I had bleeding again today, quite a lot. Should I go to A&E?"
+ },
+ {
+  "id": "tb095",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "cervical",
+  "text": "Colposcopy, understood. But I can't take time off work - my employer won't allow it. Weekend slots?"
+ },
+ {
+  "id": "tb096",
+  "label": "needs_human",
+  "style": "simple_en",
+  "prog": "crc",
+  "text": "I understand the test. But my visa finish next month, I go back home. Who do it?"
+ },
+ {
+  "id": "tb097",
+  "label": "needs_human",
+  "style": "msa",
+  "prog": "crc",
+  "text": "مفهوم، منظار خلال شهر. لكن والدتي مريضة وأنا من يرعاها ولا أستطيع تركها يومًا كاملاً."
+ },
+ {
+  "id": "tb098",
+  "label": "needs_human",
+  "style": "gulf",
+  "prog": "crc",
+  "text": "والله ما أبي أسوي منظار، خلوني."
+ },
+ {
+  "id": "tb099",
+  "label": "needs_human",
+  "style": "mix",
+  "prog": "crc",
+  "text": "OK colonoscopy بس I can't read English well، the prep instructions مب واضحة. Can someone call me بالعربي؟"
+ },
+ {
+  "id": "tb100",
+  "label": "needs_human",
+  "style": "en",
+  "prog": "cervical",
+  "text": "I've been bleeding after sex for weeks, is that related? Should I be seen sooner?"
+ }
+]

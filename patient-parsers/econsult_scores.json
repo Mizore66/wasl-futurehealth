@@ -1,0 +1,156 @@
+{
+ "keyword_indep": {
+  "n": 100,
+  "correct": 43,
+  "accuracy": 0.43,
+  "acc_ci95": [
+   0.337,
+   0.528
+  ],
+  "macro_f1": 0.422,
+  "confusion": [
+   [
+    "conditional->needs_info",
+    13
+   ],
+   [
+    "redirect->needs_info",
+    12
+   ],
+   [
+    "reject->needs_info",
+    12
+   ],
+   [
+    "accept->needs_info",
+    8
+   ],
+   [
+    "conditional->accept",
+    3
+   ],
+   [
+    "accept->conditional",
+    2
+   ],
+   [
+    "needs_info->reject",
+    2
+   ],
+   [
+    "redirect->accept",
+    2
+   ],
+   [
+    "accept->reject",
+    1
+   ],
+   [
+    "redirect->reject",
+    1
+   ],
+   [
+    "reject->conditional",
+    1
+   ]
+  ],
+  "by_style": {
+   "arabizi": "2/10",
+   "en": "18/31",
+   "en_polite": "4/15",
+   "gulf": "5/10",
+   "mix": "9/19",
+   "msa": "5/15"
+  },
+  "unsafe_accept": "5/80",
+  "unsafe_accept_ci95": [
+   0.027,
+   0.138
+  ]
+ },
+ "keyword_tuned": {
+  "n": 100,
+  "correct": 85,
+  "accuracy": 0.85,
+  "acc_ci95": [
+   0.767,
+   0.907
+  ],
+  "macro_f1": 0.852,
+  "confusion": [
+   [
+    "accept->needs_info",
+    3
+   ],
+   [
+    "redirect->needs_info",
+    3
+   ],
+   [
+    "accept->reject",
+    2
+   ],
+   [
+    "needs_info->reject",
+    2
+   ],
+   [
+    "conditional->redirect",
+    1
+   ],
+   [
+    "conditional->accept",
+    1
+   ],
+   [
+    "needs_info->conditional",
+    1
+   ],
+   [
+    "reject->accept",
+    1
+   ],
+   [
+    "reject->needs_info",
+    1
+   ]
+  ],
+  "by_style": {
+   "arabizi": "10/10",
+   "en": "27/31",
+   "en_polite": "10/15",
+   "gulf": "9/10",
+   "mix": "15/19",
+   "msa": "14/15"
+  },
+  "unsafe_accept": "2/80",
+  "unsafe_accept_ci95": [
+   0.007,
+   0.087
+  ]
+ },
+ "gemma": {
+  "n": 100,
+  "correct": 100,
+  "accuracy": 1.0,
+  "acc_ci95": [
+   0.963,
+   1.0
+  ],
+  "macro_f1": 1.0,
+  "confusion": [],
+  "by_style": {
+   "arabizi": "10/10",
+   "en": "31/31",
+   "en_polite": "15/15",
+   "gulf": "10/10",
+   "mix": "19/19",
+   "msa": "15/15"
+  },
+  "unsafe_accept": "0/80",
+  "unsafe_accept_ci95": [
+   -0.0,
+   0.046
+  ]
+ }
+}
