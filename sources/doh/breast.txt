@@ -1,0 +1,926 @@
+1 
+TEMPLATE 5: 
+Standard
+Standard for Breast Cancer Screening & 
+Diagnosis 
+
+2 
+Document Title: Standard for Breast Cancer Screening & Diagnosis 
+Document Ref. Number: DoH/ST/BCSD/ADPHC/V2/2025 Version: V2 
+New / Revised: Revised 
+Publication Date: July 2025 
+Effective Date: August 2025 
+Document Control: DoH Strategy Sector 
+Applies To: 
+DoH licensed Healthcare Providers and Professionals 
+Owner: Community Health Sector,  Abu Dhabi Public Health Center 
+Revision Date: June 2028 
+Revision Period: Three years from the publication date 
+Contact: cancerprevention@adphc.gov.ae / chs@DoH.gov.ae 
+3 
+1. Standard Scope
+1.1 Purpose 
+The standard mandates: 
+1.1.1 The case mix, eligibility criteria and data reporting requirements for the screening and 
+diagnosis of breast cancer;  
+1.1.2 The clinical care to be provided and care pathways consistent with international 
+evidence-based guidelines and best practice and DoH breast cancer screening and 
+diagnosis pathway; and 
+1.1.3 The services and service specifications to be delivered for breast cancer screening and 
+diagnosis in the Emirate of Abu Dhabi. 
+1.2 Scope 
+1.2.1 This standard applies to all Healthcare Providers (Facilities and Professionals) licensed 
+by DoH in the Emirate of Abu Dhabi delivering health services for breast cancer 
+screening and diagnosis, including mobile units. 
+1.2.2 For this standard, breast cancer screening and diagnosis include the following services: 
+1.2.2.2 Breast Cancer Screening services.  
+1.2.2.3 Breast assessment and diagnosis; and 
+1.2.2.4 Familial/ Genetic High-risk Assessment. 
+1.2.3 This standard refers to females determined as eligible for breast cancer screening 
+services, in accordance with the criteria detailed in this Standard. 
+2. Definitions and Abbreviations
+No. Term / Abbreviation Definition 
+2.1 ADH Atypical Ductal Hyperplasia 
+2.2 ADPHC Abu Dhabi Public Health Center 
+2.3 BIRADS Breast Imaging Reporting and Data System 
+2.4 BRCA Breast Cancer Gene 
+2.5 CC Craniocaudal 
+2.6 DoH Department of Health 
+2.7 FDA United States Food and Drug Administration 
+4 
+2.8 IT Information Technology 
+2.9 LCIS Lobular Carcinoma in Situ 
+2.10 MDT Multidisciplinary Team 
+2.11 MLO Mediolateral Oblique 
+2.12 MRI Magnetic Resonance Imaging 
+2.13 NCCN National Comprehensive Cancer Network 
+2.14 NHS National Health System 
+2.15 QC Quality Control 
+3. Standard Requirements and Specifications
+3.1 Clinical Definitions 
+3.1.1 Breast Cancer Screening Case mix is the type or groups of patients to be screened and is 
+defined to include all females aged 20 years and above residing in Abu Dhabi, except 
+where exclusion criteria for mammogram apply. 
+3.1.2 Females are excluded from mammogram screening if they:  
+3.1.3.2 Have had a bilateral mammogram within the last 12-24 months; 
+3.1.3.3 Have had a bilateral mastectomy; 
+3.1.3.4 Are pregnant;  
+3.1.3.5 Are breastfeeding.  
+3.1.3 Screening shall not be carried out during pregnancy or lactation. Screening can be 
+resumed around 6 weeks after the cessation of breastfeeding. 
+3.1.4 Screening mammograms are carried out for healthy women, who have no symptoms of 
+breast cancer (following age criteria given in Appendix 2). 
+3.1.5 Diagnostic mammograms are performed to evaluate a breast complaint or abnormality 
+detected by clinical breast examination or routine screening mammogram. 
+3.1.6 Clinical breast examination (CBE) involves inspection and palpation of all breast tissue 
+including lymph nodes basins. 
+3.1.7 Breast Awareness: women shall be encouraged and educated on how to conduct breast 
+self-exam to become aware of the feel and shape of their breasts, so that they are familiar 
+with what is normal for them and able to report any changes immediately to their 
+healthcare provider. 
+3.1.8 Breast Assessment and Diagnosis involve triple assessment through further imaging, 
+clinical breast exam and needle biopsy. The aim of the assessment is to obtain a definitive 
+and timely diagnosis of all potential abnormalities detected during screening. 
+5 
+3.1.9 Genetic/Familial High-Risk Assessment : includes genetic counseling by a trained 
+physician with experience and expertise to deliver this service and referral for genetic 
+testing, for women with strong family history or genetic predisposition.  
+3.2  Service Specifications 
+Breast Cancer Screening services shall: 
+3.2.1 Comply with DoH breast cancer screening and diagnosis care pathways, recommendation 
+of breast cancer screening, clinical quality indicators, and timelines for referral in 
+accordance with Appendices 1, 2 and 3. 
+3.2.2 Comply with the requirement of breast screening unit, detailed in Appendix 5. 
+3.2.3 Assign a screening program director/coordinator who will be in charge of overall 
+performance and quality assurance of the unit and will be responsible for submitting data 
+on screening visits and outcomes to DoH. 
+3.2.4 Approved protocol for referral of women with screen detected abnormalities to 
+diagnostic breast assessment unit. 
+3.2.5 Establish and maintain record of mammogram outcomes audit program to follow up 
+positive mammography assessments and to correlate pathology results with the 
+interpreting physician’s findings. 
+3.2.6 Establish internal quality audit procedures to demonstrate compliance with this 
+standard and other associated regulatory policies and standards. 
+3.2.7 Ensure availability of evidence of compliance with DoH Clinical Quality indicators specified 
+at Appendix 3. 
+3.2.8 Thiqa holders participating in the Comprehensive Health Screening Program “IFHAS” shall 
+have their data submitted using the appropriate codes in Shafafiya Reporting 
+https://www.DoH.gov.ae/-/media/5ADAFA38E88748A6B0A9E6E2E241AD49.ashx  
+3.3 Breast Assessment and Diagnosis Services 
+Breast assessment and diagnosis services shall be carried out in a Diagnostic Breast 
+Assessment unit. The unit shall: 
+3.3.1 Comply with breast cancer screening and diagnosis care pathways, clinical quality 
+indicators, and timelines for referral in accordance with Appendices 1 and 4 
+respectively. 
+3.3.2 Comply with the requirements of Diagnostic Breast Assessment unit described at 
+Appendix 5. 
+3.3.3 Have approved written protocols for the screening assessment and diagnosis; that 
+clearly define the methods of assessment and the diagnostic pathways for all possible 
+assessment outcomes. 
+3.3.4 DoH recognizes guidance on screening assessment and diagnosis including those of the 
+National Comprehensive Cancer Network (NCCN) and, the National Health System (NHS) 
+the National Institute for Health and Clinical Excellence. 
+3.3.5 Establish internal audit procedures to demonstrate compliance with this standard and 
+other associated regulatory policies and standards. 
+3.3.6 Ensure availability of evidence of compliance with DoH Clinical Quality indicators 
+specified at Appendix 3. 
+3.3.7 Report breast screening assessment and diagnosis results to DoH through the appropriate 
+channels. 
+6 
+3.4  Licensed Healthcare Professionals 
+All licensed health professionals involved in the breast cancer screening, screening assessment 
+and diagnosis shall: 
+3.4.1 Satisfy the qualifications relevant to their position as defined by the DoH Professional 
+Qualification Requirements. 
+3.4.2 Comply with the DoH Standard for Clinical Privileging, including limiting their practice to 
+the skills, competencies and the privileges granted within the particular facility with which 
+they are associated. 
+3.4.3 Have knowledge of the principles of breast cancer screening, assessment, diagnosis and 
+management. 
+3.4.4 Participate in continuing medical education in accordance with DoH requirements. 
+3.4.5 Take part in any recognized external quality assessment schemes. 
+3.4.6 All units involved in screening and diagnostic activities shall ensure the formation of 
+proper multidisciplinary teamwork involving a full range of specially trained 
+professionals including a breast radiologist, mammographer, sonographer, pathologist, 
+breast surgeon, genetic counselor, nurse counselor and breast radiation 
+oncologist/radiotherapist. 
+3.5  Breast Screening and Diagnosis Communication 
+3.5.1 The woman is central to the screening process. Any communication with her shall take 
+into account the need to avoid direct or indirect harm and the requirement to balance 
+benefits against risks. 
+3.5.2 Women shall be provided with (verbal and written) education and information, regarding 
+benefits, risk and limitation of breast cancer screening, and about the screening test, 
+associated procedures and expected timeframes to receive results (consistent with those 
+specified in Appendix 3). 
+3.5.3 Adequate attention shall be given to the level of literacy, diversity, and linguistic 
+requirements of different populations. 
+3.6  Breast Cancer Screening 
+3.6.1 Breast Cancer Screening shall be provided in accordance with the DoH Breast screening 
+and diagnosis care pathway as provided at Appendix 1, including the following activities:  
+3.6.1.1 Review of family history & risk assessment. 
+3.6.1.2 Clinical breast exam (Physical exam). 
+3.6.1.3 Patient Risk Assessment Tool; Gail Model (Gail Model pathway provided at 
+Appendix 4). 
+3.6.1.3.1 Gail Model Risk Assessment Tool Questions: (Please refer to the online 
+Calculator at: https://bcrisktool.cancer.gov/calculator.html 
+• Patient Eligibility – excluding factors:
+- Availability of medical history of any breast cancer or of ductal carcinoma in situ
+(DCIS) or lobular carcinoma in situ (LCIS) or has she received previous radiation
+therapy to the chest for treatment of Hodgkin lymphoma.
+- Having a mutation in either the BRCA1 or BRCA2 gene, or a diagnosis of a genetic
+syndrome that may be associated with elevated risk of breast cancer.
+7 
+• Patient demographics:
+- Patient Age
+- Patient Ethnicity/Race
+• Patient & Family History:
+- Personal history of a breast biopsy with a benign (not cancer) diagnosis.
+- Patient’s age at the time of her first menstrual period.
+- Patient’s age when she gave birth to her first child.
+- Number of patient’s first-degree relatives (mother, sisters, daughters) have had
+breast cancer.
+3.6.1.4  Breast awareness; and 
+3.6.1.5  Screening mammogram. 
+3.6.1.6  Additional activities for high-risk individuals: 
+3.6.1.6.1 Screening MRI; and 
+3.6.1.6.2 Referral to a genetic counselor in cases of strong familial/genetic 
+predisposition. 
+3.6.2 Periodical screening shall be carried out as specified in DoH Breast Cancer Screening 
+recommendations at Appendix 2. 
+3.6.3 Detailed history shall be evaluated and completed by the screening facility nurse, each 
+time a woman visits for screening. The purpose of that is to identify patients at increased 
+risk and determine the appropriate screening tests or referral to genetic counseling. 
+3.6.4 Clinical breast exam (physical exam) shall be conducted by a trained physician, who will 
+then refer the woman for a screening mammogram.  
+3.6.5 Screening mammography shall involve two x-ray images for each breast: craniocaudal 
+(CC) and mediolateral oblique (MLO).
+3.6.6 Ultrasound of the breast is recommended as adjunct to screening mammogram for 
+women with dense breast/s, increased risk, or revealed equivocal or positive finding, in 
+accordance with Appendix 2.  
+3.7  Reporting of Screening Mammogram 
+3.7.1 Mammogram results shall be documented and communicated with the patient through 
+follow-up within 15 working days of the screening mammogram date. 
+3.7.2 Double reading of screening mammograms is mandatory. Mammograms shall be 
+interpreted by two independent breast radiologists; one shall be fellowship trained in 
+breast radiology, breast MRI. 
+3.7.3 In case of discordant opinions between two radiologists, either consensus or preferably 
+arbitration using a third expert screening radiologist shall be carried out. 
+3.7.4 The final assessment shall be reported using the FDA-approved Breast Imaging Reporting 
+and Data System (BIRADS®) Final Assessment Categories as described at Appendix 6. 
+3.7.5 A synoptic breast imaging report shall be used by a breast radiologist containing at least 
+the following: 
+3.7.5.1 Interpreting physicians’ names. 
+3.7.5.2 Date of examination. 
+3.7.5.3 Patient identification. 
+3.7.5.4 Reason for examination. 
+3.7.5.5 Breast density. 
+8 
+3.7.5.6 Description of significant imaging lesions: mammographic characteristics of the 
+lesion; calcification patterns; location (in quadrants); distance from the nipple (in 
+mm); and size (maximum diameter in mm). 
+3.7.5.7 Final Assessment (BIRADS). 
+3.7.5.8 Recommended next steps. 
+3.8  Screening Outcomes 
+3.8.1 All outcomes of the screening tests shall be documented and communicated with the 
+patient through follow- up visit. It is the responsibility of the reporting physician at the 
+screening facility to inform and provide the results to the patient regarding her screening 
+results. Report shall be routinely ready for outpatients in five working days. If positive the 
+result shall be reported immediately. 
+3.8.2 If mammogram is Normal/Benign (BIRADS 1/2), women are discharged to routine 
+screening.  Screening frequency will follow recommendations specified in Appendix 2. 
+3.8.3 If a woman requires further assessment for abnormal screening mammogram or clinical 
+breast exam, referral shall be to a Diagnostic Breast Assessment Unit for further 
+assessment and diagnosis described in Appendix 5. 
+3.9  Breast Assessment and Diagnosis 
+3.9.1 Breast cancer screening shall be provided in accordance with the Breast Cancer Screening 
+and Diagnosis Care Pathway (Appendix 1). 
+3.9.2 Assessment and diagnostic work up of screen detected abnormality is best achieved using 
+the triple assessment: 
+3.9.2.1 Imaging, usually diagnostic mammography, breast MRI, CEM, ultrasound in cases 
+of high risk and dense breast tissue. 
+3.9.2.2 clinical examination. 
+3.9.2.3 image-guided needle biopsy for histological examination, if indicated. 
+3.9.3 Cytology alone shall not be used to obtain a non-operative diagnosis of breast cancer. 
+3.9.4 Clinical examination is mandatory for every woman with a confirmed mammographic or 
+ultrasound abnormality that needs needle biopsy and for all women recalled because of 
+clinical signs or symptoms.  
+3.9.5 Clinical examination is not mandatory for women whose further imaging is entirely 
+normal. 
+3.9.6 Core needle stereotactic biopsy shall be performed under image guidance.  
+3.9.7 Clip shall be placed at site of biopsy during the procedure of needle sampling to identify 
+lesion location. 
+3.9.8 Results of assessments shall be evaluated and considered by a multidisciplinary team 
+(MDT). Particular attention shall be given to address radiology-pathology correlation. 
+3.9.9 Early recall for repeat mammography either in screening or diagnostic settings is not 
+recommended and shall never be used as a substitute for inexpert or inadequate 
+assessment.  
+3.9.10 Early recall rate shall be recorded, monitored, and audited. 
+3.9.11 Referral of histologically confirmed cancer cases for treatment shall be completed within 
+10 working days of the diagnosis. 
+3.9.12 All screen-detected cancers shall be reported to DoH through the appropriate channels. 
+9 
+3.10 Screening Women at Increased Risk 
+3.10.1  Details of women who have increased risk of developing cancer are specified in Appendix 
+2.   
+3.10.2 Screening tests and frequency shall be in line with specifications detailed in table 2, 
+Appendix 2. 
+3.10.3 Criteria of use of MRI as adjunct to mammogram for high-risk women are detailed in 
+Appendix 2. 
+3.10.4 MRI shall be performed in a specialized breast care unit that has a dedicated MRI 
+machine for breast MRI. 
+3.10.5 MRI examination shall be carried out in day 6-16 of the menstrual cycle and within two 
+weeks of mammography. 
+3.10.6 MRI examination shall be interpreted by a trained breast radiologist with privilege in 
+breast MRI reporting and MRI guided biopsy. 
+3.10.7 The radiologists interpreting breast MRIs shall be: 
+3.10.7.1 Experienced in interpreting mammography, breast ultrasound, and breast MRI 
+to carry out accurate, clinical comparisons. 
+3.10.7.2 Be able to perform an MRI-guided biopsy. 
+3.10.7.3 Reporting of MRI shall use the BIRADS Final Assessment Categories as described 
+at Appendix 6. 
+3.10.7.4 The use of synoptic MRI report is recommended. 
+3.10.7.5 Equipment shall be maintained and serviced in accordance with the DoH 
+Radiology and Medical Imaging Standard. 
+3.10.8 Technologists and medical physicists shall comply with all performance, maintenance, 
+and quality control (QC) measures as detailed in the DoH Radiology and Medical Imaging 
+Standard. 
+3.11 Genetic/Familial High-Risk Assessment 
+3.11.1 Women who have strong family history or genetic predisposition to breast cancer as 
+detailed in Appendix 2, shall be referred to Genetic Counselor. 
+3.11.2 Genetic counseling is highly recommended when genetic testing is offered and after 
+disclosing results. 
+3.11.3 Genetic counseling can be given by a genetic counselor, medical geneticist, oncologist, 
+surgeon, oncologist nurse or other healthcare professional with expertise and 
+experience in genetic counseling who is privileged by the facility to provide counseling. 
+3.11.4  Comprehensive gene testing includes full sequencing of BRCA1/2 and detection of large 
+genomic rearrangement. A list of genetic tests to be performed is provided in Appendix 
+7. 
+3.11.5 Women who have gene mutation shall be managed in accordance with DoH recognized 
+international best practices and guidelines; including the NCCN guidelines for 
+Genetic/Familial High-Risk Assessment: Breast and Ovary, V.2.2025. 
+3.11.6 Screening tests and frequency shall be in accordance with the recommendations 
+detailed in table 2, Appendix 2. 
+10 
+4. Key Stakeholder Roles and Responsibilities
+All licensed health professionals involved in breast cancer screening, screening assessment and 
+diagnosis shall: 
+4.1 Satisfy the qualifications relevant to their position as defined by the DoH Professional 
+Qualification Requirements. 
+4.2 Comply with the DoH Standard for Clinical Privileging, including limiting their practice to the 
+skills, competencies and the privileges granted within the particular facility with which they are 
+associated. 
+4.3 Have knowledge of the principles of breast cancer screening, assessment, diagnosis and 
+management. 
+4.4 Participate in continuing medical education in accordance with DoH requirements. 
+4.5 Take part in any recognized external quality assessment schemes. 
+4.6 All units involved in screening and diagnostic activities shall ensure the formation of proper 
+multidisciplinary teamwork involving a full range of specially trained professionals including a 
+radiologist, radiographer, pathologist, surgeon, nurse counselor and medical 
+oncologist/radiotherapist. 
+5. Monitoring and Evaluation
+All licensed healthcare providers (Facilities and Professionals) engaged in providing breast cancer 
+screening and diagnosis services shall: 
+5.1 Provide clinical services and patient care in accordance with this standard and in accordance 
+with DoH Policies and Standards and the laws and regulations of the Emirate of Abu Dhabi. 
+5.2 Comply with DoH Clinical Quality Indicators specified in Appendix 3. 
+5.2.1 Submit data to DoH in accordance with the DoH Reporting of Health Statistics Policy and 
+as set out in the DoH Data Standards and Procedures. 
+5.2.2 Collect and submit data to DoH on screening visits outcomes.  
+5.2.3 Report all histo-pathologically proven breast cancer positive cases to DoH. 
+5.2.4  managing and maintaining patient medical records, including developing effective 
+recording systems, maintaining confidentiality, privacy, and security of patient 
+information. 
+5.2.5 Comply with DoH requirements for Patient Education and consent: the licensed provider 
+shall provide appropriate patient education and information regarding the screening test 
+(physical and mammography) and other radiological examinations and procedures such 
+as biopsy and shall ensure that appropriate patient informed consent is obtained and 
+documented on the patient’s medical record consistent with the relevant DoH policies 
+and standards. 
+5.2.6 Comply with DoH requests to inspect and audit records and cooperate with DoH 
+authorized auditors as required by DoH. 
+5.2.7 Comply with DoH requirements for secure data management in line with Abu Dhabi 
+Healthcare Information and Cyber Security [ADHICS] Standard. 
+11 
+6. Enforcement and Sanctions
+6 DoH may impose sanctions in relation to any breach of requirements under this Standard in 
+accordance with the disciplinary regulation of the Healthcare sector. 
+7. Payment Mechanism
+Eligibility for reimbursement under the Health Insurance scheme is as follows: 
+7.1. For Thiqa holders, reimbursement shall be consistent with the DoH Standard for Thiqa 
+Preventive List of Interventions available at www.DoH.gov.ae. 
+7.2. For non-Thiqa holders, payment shall be consistent with the individual’s health insurance 
+product/plan. 
+8. Relevant Reference Documents
+No. Reference Date Reference Name Relation Explanation / Coding / Publication Links 
+1 2024 
+NCCN Clinical Practice Guidelines in 
+Oncology. Breast Cancer Screening 
+and Diagnosis 
+https://www.nccn.org/professionals/physician_gl
+s/pdf/breast.pdf 
+2 2024 
+The National Comprehensive Cancer 
+Network (NCCN) Genetic/Familial 
+High-Risk Assessment: Breast, 
+Ovarian, Pancreatic, and Prostate 
+https://www.nccn.org/professionals/physician_gl
+s/pdf/genetics_bopp.pdf 
+3 2013 
+European Guidelines for Quality 
+Assurance in Breast Cancer Screening 
+and Diagnosis 
+https://op.europa.eu/en/publication-detail/-
+/publication/4e74ee9b-df80-4c91-a5fb-
+85efb0fdda2b 
+4 2024 NHS. Breast Screening Programme Screening Standards 
+https://www.gov.uk/government/publications/br
+east-screening-consolidated-programme-
+standards/nhs-breast-screening-programme-
+screening-standards-valid-for-data-collected-
+from-1-april-2017 
+5 2020 
+European Commission.  Monitoring 
+and evaluation of breast cancer 
+screening programmes: selecting 
+candidate performance indicators 
+https://cancer-screening-and-
+care.jrc.ec.europa.eu/en/ecibc/methodologies/sc
+reening-indicators 
+6 2024 CDC. Genetic Testing for HereditaryBreast and Ovarian Cancer https://www.cdc.gov/breast-ovarian-cancer-hereditary/testing/index.html 
+12 
+7 2013 American College of Radiology. BI-RADS Atlas https://www.acr.org/Clinical-Resources/Reporting-and-Data-Systems/Bi-Rads 
+8 2016 
+NHS Breast Screening Programme. 
+Clinical guidance for breast cancer 
+screening assessment 
+https://assets.publishing.service.gov.uk/media/5
+a808356e5274a2e8ab50931/Clinical_guidance_f
+or_breast__cancer_screening__assessment_Nov
+_2016.pdf 
+9 2024 
+NHS Breast Screening Programme. 
+Technical guidelines for MRI for the 
+surveillance of women at higher risk 
+of developing breast cancer 
+https://www.gov.uk/government/publications/n
+hs-breast-screening-using-mri-with-higher-risk-
+women/technical-guidelines-for-mri-for-the-
+surveillance-of-women-at-higher-risk-of-
+developing-breast-cancer 
+10 Jan 2022 Circular USO/29/2022 Abu Dhabi 
+Healthcare Sector Cyberlearning 
+Program 
+https://www.DoH.gov.ae/en/resources/Circulars 
+11 May 2024 Abu Dhabi Healthcare Information 
+and Cyber Security [ADHICS] 
+Standard 
+https://www.DoH.gov.ae/en/resources/standard
+s 
+12 2024 DoH Radiology and Medical Imaging 
+Standard. 
+DoH/ST/HCFS/RMIS/V1/2024 
+https://www.DoH.gov.ae/en/resources/standard
+s 
+13 2025 DoH Guidelines on Somatic Testing in 
+Oncology 
+https://www.DoH.gov.ae/en/resources/standard
+s 
+14 2025 DoH Guidelines on Germline Testing 
+in Oncology 
+https://www.DoH.gov.ae/en/resources/standard
+s 
+13 
+Appendix 1- Breast Cancer Screening and Diagnosis Care Pathway 
+
+14 
+Appendix 2 - DoH Breast Cancer Screening Recommendation 
+Table 1 - Summary of DoH Screening Recommendations 1 
+Screening Category Age Screen Assessment tools 
+Women at average Risk 20 – 39 years • Breast Awareness
+• Clinical Breast Exam every three years
+• Gail Model risk assessment, from age 35
+years
+ ≥ 40 years • Breast Awareness and consultation
+• Mammography every two years
+Women at increased Riska • Breast Awareness and consultation
+• Clinical Breast Exam every 6-12 months
+• Annual Mammography screening
+• Annual MRI screening - as indicated
+• Referral to genetic counselor - for strong
+familial/genetic predisposition
+1. Adapted from: NCCN Clinical Practice Guidelines in Oncology. Breast Cancer Screening and Diagnosis. V.6.2024
+Women at Increased Risk 1 
+A woman is considered at higher risk of developing breast cancer if she has one or more of 
+the following criteria: 
+1 Previous treatment with chest radiation at a young age (between age of 10-30) 
+2 Previous history of breast cancer 
+3 Lobular carcinoma in situ (LCIS) or Atypical ductal hyperplasia (ADH) on previous breast biopsy 
+4 Strong family history or genetic predisposition 
+5 Women who have a lifetime risk of 20-25% as defined by models largely dependent of family history 
+6 Gail Model risk assessment result of 1.67% or more, indicating 5-year risk of developing invasive breast cancer in women aged ≥35 
+15 
+Table 2 - DoH Screening Recommendations for women at Increased Risk 1 
+Screening Category Age Screen Assessment tools 
+Previous treatment with 
+chest radiation at a young 
+age (between age of 10-30) 
+Age < 25 
+years 
+• Breast Awareness
+• Annual Clinical Breast Exam
+Age ≥25 • Breast Awareness
+• Clinical Breast Exam every 6-12 months
+• Annual Mammography screening (begin 8-10
+years after radiotherapy or age > 25 years,
+whichever comes last)
+• Annual MRI screening
+Strong family history or 
+genetic predisposition 
+Age < 25 
+years 
+• Breast Awareness
+• Annual Clinical Breast Exam
+• Referral to genetic counselor
+Age ≥25 
+years 
+• Breast Awareness
+• Clinical Breast Exam every 6-12 months
+• Annual Mammography screening
+• Annual MRI screening
+• Referral to genetic counselor
+Previous history of Breast Cancer • Clinical Breast Exam every 6-12 months in the
+first 5 years, annually thereafter.
+• Annual Mammography screening
+5-year risk of developing invasive breast
+cancer of ≥ 1.7 % in women aged ≥35
+(per Gail model) • Breast Awareness
+• Clinical Breast Exam every 6-12 months
+• Annual Mammography screening
+Lobular carcinoma in situ (LCIS) or 
+Atypical ductal hyperplasia (ADH) on 
+previous breast biopsy 
+Women who have a lifetime risk of 20-
+25% as defined by models largely 
+dependent of family history 
+• Breast Awareness
+• Clinical Breast Exam every 6-12 months
+• Annual Mammography screening
+• Annual MRI screening
+Criteria for use of MRI as adjunct to mammogram for high-risk women (at least one) 1 
+1 Having BRCA 1, 2 mutation 
+2 Having a first degree relative with BRCA 1, 2 mutation 
+3 Having a lifetime risk of 20-25% or more 
+4 Received chest radiation for cancer treatment between age 10-30 
+5 Carrying or having a first degree relative who carries mutation in TP 53 or PTEN genes 
+16 
+Criteria for Genetic Risk Evaluation 2 
+An affected individual with one or more of the following: 
+1 Early-age-onset breast cancer 
+2 Triple negative (ER -, PR-, HER- ) breast cancer 
+3 Two breast cancer primaries in a single individual 
+4 Breast cancer at any age and 
+a ≥ one closed blood relative with breast cancer≤ 50 years, or 
+b ≥ one close blood relative with epithelial ovarian cancer at any age, or 
+c ≥ two close blood relative with breast cancer and/or pancreatic cancer at any age, or 
+d 
+a combination of breast cancer with one or more of the following: thyroid cancer, 
+sarcoma, adrenocortical carcinoma, endometrial cancer, pancreatic cancer, brain 
+tumors, diffuse gastric cancer, dermatological manifestation and /or 
+macrocephaly, leukemia/ lymphoma on the same side of family (especially if early 
+onset) 
+5 Carrying or having a first degree relative who carries mutation in TP 53 or PTEN genes 
+6 Ovarian cancer 
+7 Male breast cancer 
+An affected individual with a family history of one or more of the following: 
+1 ≥ Two breast cancer primary, either in one individual or two different individuals from the same side of the family, maternal or paternal 
+2 ≥ One ovarian cancer primary from either side of family, maternal or paternal 
+3 First -or second –degree relative with breast cancer ≤45 years 
+4 
+A combination of breast cancer with one or more of the following: Thyroid cancer, 
+sarcoma, adrenocortical carcinoma, endometrial cancer, pancreatic cancer, brain 
+tumors, diffuse gastric cancer, dermatological manifestation and/or macrocephaly or 
+leukemia /Lymphoma on the same side of family (especially if early onset) 
+5 A known mutation in breast cancer suitability gene within the family 
+6 Male breast cancer 
+N. B. Maternal and paternal sides of the family should be considered independently for a 
+familial pattern of cancer: 1st degree: mother, sister, daughter, brother, father- 2nd 
+degree: grandmother, aunt, niece, nephew. 
+1. NCCN Clinical Practice Guidelines in Oncology. Breast Cancer Screening and Diagnosis. V.6.2024.
+2. The National Comprehensive Cancer Network (NCCN) Genetic/Familial High-Risk Assessment: Breast, Ovarian,
+Pancreatic, and Prostate. V.2.2025
+17 
+Appendix 3 - DoH Breast Cancer Screening Clinical Quality Indicators 
+Clinical Quality 
+Indicators 
+Definition Calculation Acceptable level Desirable level 
+1. Participation rate Percentage of women who have a 
+screening mammogram 
+(calculated biannually as a 
+proportion of the eligible 
+population 
+[Number of women screened at 
+least once (per 2-year period) / 
+Target population (1st & 2nd 
+year populations averaged from 
+census/forecast)] *100 
+>70% >80%
+2. Retention rate The estimated percentage of 
+women who are re-screened 
+within 30 months of their previous 
+screen. 
+>90% 100% 
+3. Technical repeat
+rate
+Proportion of women undergoing 
+a technical repeat screening 
+examination 
+[Number of women undergoing 
+a technical repeat / Number of 
+women screened]*100 
+<3% <2% 
+4. Abnormal Recall
+rate
+Proportion of women recalled for 
+further assessment 
+[Number of recalls due to 
+abnormal screens / Number of 
+women screened]*100 
+At Initial 
+screening 
+<15% <10% 
+At subsequent 
+testing 
+<10% <7% 
+5. Early recall rate Proportion of screened women 
+subjected to early recall following 
+diagnostic assessment   (Early recall 
+refers to the short term re 
+invitation of a woman for follow-
+up imaging—typically within 3 to 
+6 months)
+[Number of women subjected for 
+early recall / Number of women 
+screened]*100 
+<1 % 0% 
+18 
+6. Positive Predictive
+Value
+Proportion of abnormal cases with 
+completed follow-up found to 
+have breast cancer 
+[Number of screen detected 
+cancers / Number of abnormal 
+screens with complete work-up] 
+*100
+At Initial screening >5%
+At subsequent 
+screening
+>6%
+7. Invasive cancer
+detection rate
+Number of invasive cancers 
+detected per 1,000 screens. 
+[Number of invasive cancers 
+detected/ number of screened 
+cases] *1000 
+Initial screening >5 per1,000
+Subsequent screening > 3 per 1,000
+Clinical Quality 
+Indicators 
+Definition Calculation Acceptable level Desirable level 
+8. In Situ Cancer
+Detection Rate
+Number of in ductal carcinoma in 
+situ (DCIS) detected per 1,000 
+screens. 
+[Number of DCIS detected/ 
+number of abnormal screened 
+cases] *1000 
+Initial screening >0.4 per 1,000
+Subsequent screening >0.4 per 1,000
+9. Invasive Cancer
+Tumor Size
+Proportion of invasive screen-
+detected cancers that are <10 
+mm in size  
+[Number of invasive tumors 
+≤10mm / Total number of 
+invasive tumors] *100 
+Initial 
+screening
+20% ≥25% 
+Subsequent 
+screening 
+≥25% ≥30% 
+10. Interval cancer
+detection rate
+Number of women with a 
+diagnosis of invasive breast cancer 
+after a normal screening within 12 
+AND 24 months of the screen 
+date. 
+[Number of cancers detected in 
+the 0-12 month interval after a 
+normal screening episode /   
+Total person-years at risk (0-12 
+months post screen)]*10,000 
+Within the first year (0–
+11 months) 
+< 6 per 10,000 
+Within the second year 
+(12–23 months) 
+12 per 10,000 
+11. Time Interval -Screening mammography and result within    15 working days 95% >9 5 %
+-Screening and offered assessment within  5 working days 90% >9 0 %
+-Assessment and issuing of results within  5 working days 90% >9 0 %
+-Non-operative (needle) biopsy and result  5 working days >90% 100% 
+References: 
+European guidelines for quality assurance in breast cancer screening and diagnosis. Fourth Edit. 2006, supplemented 2013. 
+NHS Breast screening programme screening standards valid for data collected from 1 April 2017, updated 2024.  
+European Commission.  Monitoring and evaluation of breast cancer screening programmes: selecting candidate performance indicators. 2020. 
+  Public Health England (2021) NHS Breast Screening Programme: Consolidated Guidance on Standards for the NHS Breast Screening Programme.
+19 
+Appendix 4 - Gail Model Screening Pathway 
+
+20 
+Appendix 5 - Requirement for Breast Screening and Diagnosis Services 
+A. Requirement for Breast Screening Unit
+General 
+1 Assign a screening program director/coordinator to be in charge of overall 
+performance, quality assurance of the unit and will be responsible for 
+submitting data on screening visits and outcomes to DoH. 
+2 Perform at least 1,000 mammograms a year; 
+3 Be able to perform risk assessment, physical examinations and screening 
+mammogram; 
+4 Monitor data and feedback of results. Keep a formal record of mammogram 
+results, assessment processes and outcomes; 
+5 Establish and maintain records of mammogram outcomes; 
+6 Develop and implement an audit program to follow up positive 
+mammography assessments and to compare pathological results with the 
+interpreting physician’s findings. Develop an action plan to manage any 
+adverse findings. 
+Invitation System 
+1 Develop and implement a personalized invitation system and/or a 
+promotional campaign as well as a planned and structured system to re-
+invite all previously screened women. 
+Mammography Equipment 
+1 Equipment specifications shall meet DoH recognized standards including the 
+DoH Radiology and Medical Imaging Standard and the Mammogram Quality 
+Standards Act (MQSA) published by the FDA; 
+2 Equipment shall be subject to periodic Quality Control (QC) tests, as 
+specified by the MQSA for screen-film systems and by the manufacturer for 
+full-field Digital Mammography (FFDM) system including: 
+a Radiographic QC tests , by  mammographer s, radiographers or technologists trained in Mammography; and 
+b Medical Physics compliance QC tests at installation and at least annually thereafter, by a DoH licensed qualified Medical Physicist.  
+3 Equipment shall be maintained and serviced in accordance with the 
+manufacturers’ guidelines and service specifications, records shall be 
+maintained by providers. 
+Breast Radiographers 
+1 Breast radiographers, mammographers, sonographers or technologists 
+performing the mammographic examination shall:  
+a 
+Meet all requirements detailed in the DoH Radiology and Medical 
+Imaging Standard and Scope of Practice for Radiologists and for Allied 
+Health; 
+b Have had at least 40 hours of training specific to the radiographic aspects of mammography; and  
+c 
+Regularly participate in External Quality Assessment Schemes and 
+radiographic update courses. 
+21 
+Breast Radiologists 
+1 Breast radiologists shall: 
+a 
+Meet all requirements detailed in the DoH Radiology and Medical 
+Imaging Standard and Scope of Practice for Radiologists and for Allied 
+Health; 
+b Have at least 60 hours of training specific to mammography; 
+c Read mammograms from a minimum of 400 screening mammograms annually; and 
+d Have centralized reading or, in the case of a decentralized programmer, centralized double reading. 
+e Take full responsibility for the image quality of the mammograms reported; 
+f Ensure that where necessary images are repeated until they are of satisfactory standard and document all repeated examinations.  
+Referrals: Assessment and Feedback 
+1 Keep a formal record of mammogram results, assessment processes, referrals 
+and outcomes. 
+2 Maintain records of mammogram results, referrals, assessment processes and 
+outcomes. 
+3 Have an approved protocol for referral of women with screen detected 
+abnormalities to diagnostic breast assessment unit 
+B. Requirement for a Diagnostic Breast Assessment Unit
+General 
+1 The unit shall: 
+a Perform at least 2,000 mammograms a year; 
+b Be able to perform physical examinations and ultrasound examinations as well as the full range of radiographic procedures;  
+c Provide cytological examination and/or core biopsy; 
+d Provide sampling under radiological (including stereotactic) or sonographic guidance; 
+e Monitor data and feedback of results; and 
+f Keep a formal record of mammogram results, assessment processes and outcomes. 
+g Have a nominated lead in the radiographic aspects of quality control. 
+h 
+Have a multidisciplinary team who participate in regular review 
+meetings with all team members responsible for diagnostic and 
+treatment services. 
+Physico-technical 
+1 The unit shall: 
+a 
+Have dedicated equipment specifically designed for application in 
+diagnostic mammography e.g. mammography system with 
+magnification ability and dedicated processing;  
+b Be able to provide adequate viewing conditions for mammograms; 
+c Have dedicated ultrasound and stereotactic system and needle biopsy device for preoperative tissue diagnosis; and 
+22 
+d Provide sampling under radiological (including stereotactic) or sonographic guidance; 
+e Comply with specifications of DoH recognized standards such as the MQSA final rule published by the FDA. 
+Staff performing mammographic examination 
+1 The breast radiographers, technologists or other members of staff performing 
+the mammogram shall: 
+a 
+Have had at least 40 hours of training specific to the radiographic 
+aspects of mammography; 
+b Regularly participate in External Quality Assessment Schemes and radiographic update courses; 
+c Be able to perform good quality mammograms. 
+Radiologists 
+1 The unit shall: 
+a Employ a trained radiologist, i.e. a person who has: 
+i At least 60 hours of training specific to mammography; and 
+ii Who reads at least 1,000 mammograms per year. 
+Pathology Support 
+1 The unit shall: 
+a 
+Have organized and specialist cyto/histopathological support services 
+who can demonstrate compliance with DoH Clinical Laboratory 
+standards. 
+23 
+Appendix 6 - BI-RADS® Final Assessment Categories 
+Reference: 
+1. American College of Radiology. BI-RADS Atlas, 5th ed. 2013.
+CPT II EVALUATION 
+CODE 
+BIRADS 
+SCORE 
+DESCRIPTION DEFINITION 
+3340F 0 Need Additional Imaging 
+Evaluation 
+The mammogram or ultrasound didn't give enough information to make a clear diagnosis; 
+follow-up imaging is necessary and/or prior Mammogram for comparison 
+3341F 1 Negative Negative, there is a 5/10,000 chance of cancer being present. Continue annual screening 
+mammography (for women 40 and older). 
+3342F 2 Benign Finding Benign (non-cancerous) finding, same statistics and plan of follow-up as level 1. This category 
+is for cases that have a finding that is characteristically benign such as cyst or fibroadenoma 
+(see below for more detail). 
+3343F 3 Probably Benign Finding 
+Short Interval Follow-Up 
+Suggested 
+Probable benign finding, there is less than 2% chance of cancer. Usually receives a 6- month 
+follow-up mammogram; most level 3 abnormalities do not receive biopsy. 
+3344F 4 Suspicious Abnormality.  
+Biopsy Should Be 
+Considered 
+Suspicious abnormality. Most category 4 abnormalities are benign but may require biopsy 
+since this category can be malignant in 25-50% of cases. 
+3345F 5 Highly Suggestive of 
+Malignancy. Appropriate 
+Action Should Be Taken 
+Highly suggestive of malignancy. Classic signs of cancer are seen on the mammogram. All 
+category 5 abnormalities typically receive biopsy and if the biopsy results are benign, the 
+abnormality usually receives re-biopsy since the first biopsy may not have sampled the correct 
+area. Depending on how individual radiologists differentiate between category 4 and 5, the 
+percentage of category 5 abnormalities that will be cancer may vary between 75% and 99%. 
+3350F 6 Known Biopsy Proven 
+Malignancy 
+Lesions known to be malignant are being imaged prior to definitive treatment; assure that 
+treatment is completed 
+Appendix 7 - Genetic Tests 
+Available genetic tests for the patient or affected family member(s) that may be 
+recommended by the Cancer Genetics professional based on the assessment: 
+Disease Gene Method 
+BRCA1 & BRCA2 Hereditary Breast 
+and Ovarian Cancer 
+BRCA1 Sequencing 
+BRCA1 & BRCA2 Hereditary Breast 
+and Ovarian Cancer 
+BRCA1 Deletion/duplication analysis 
+BRCA1 & BRCA2 Hereditary Breast 
+and Ovarian Cancer 
+BRCA2 Sequencing 
+BRCA1 & BRCA2 Hereditary Breast 
+and Ovarian Cancer 
+BRCA2 Deletion/duplication analysis 
+Li-Fraumeni Syndrome TP53 Sequencing 
+Li-Fraumeni Syndrome TP53 Deletion/duplication analysis 
+Cowden Syndrome PTEN Sequencing 
+Cowden Syndrome PTEN Deletion/duplication analysis 
+CHEK2-Related Susceptibility to 
+Breast Cancer 
+CHEK2 Sequencing 
+CHEK2-Related Susceptibility to 
+Breast Cancer 
+CHEK2 Deletion/duplication analysis 
+RAD51C-Related Familial 
+Susceptibility to Breast-Ovarian 
+Cancer 
+RAD51C Sequencing 
+RAD51C-Related Familial 
+Susceptibility to Breast-Ovarian 
+Cancer 
+RAD51C Deletion/duplication analysis 
+RAD51D-Increased Risk for Ovarian 
+Cancer, possible Increased Risk for 
+Breast Cancer 
+RAD51D 
+BARD1-Related Susceptibility to 
+Breast Cancer 
+BARD1 Sequencing 
+BARD1-Related Susceptibility to 
+Breast Cancer 
+BARD1 Deletion/duplication analysis 
+PALB2-Breast Cancer Susceptibility PALB2 
+CDH1-Mutation Correlated with 
+Breast and Ovarian Cancers 
+CDH1 
+STK11-Mutation Predicts 
+Occurrence and/or Recurrence of 
+Breast Cancer 
+STK11 
+ATM-Increased Risk of Breast Cancer ATM 
+NF1-Breast Cancer Driver NF1 
+24
+1. CDC. Genetic Testing for Hereditary Breast and Ovarian Cancer. 2024
+2. UAE DoH. Guidelines on Germline Testing in Oncology. 2025
+3. UAE DoH. Guidelines on Somatic Testing in Oncology. 2025
+HER2-Promotes Growth of Cancer 
+Cells 
+HER-2 
+(ERBB2) 
+K1-67-Prognostic Biomarker in 
+Breast Cancer 
+K1-67 
+RT-PCR/cfDNA for 
+recurrent/advanced metastatic 
+breast cancer 
+PIK3CA/HER 
+2 
+AKT1-Somatic Mutation Observed in 
+Breast Cancer 
+AKT1 
+ESR1-Unique Transcriptional Profile 
+Favoring Tumor Progression 
+ESR1 
+MSI-H-Determines Genetic 
+Instability in Various Forms of 
+Cancer 
+MSI-H/dMMR 
+or TMB-H 
+PD-L1-Determines Potential Benefit 
+of Immunotherapy Treatment for 
+Cancer 
+PD-L1 
+NTRK-Fusions Lead to Abnormal 
+Proteins Possibly Causing Cancer 
+Growth 
+NTRK 
+Amplified ERBB2 Can Result in 
+Breast Cancer Cell Growth 
+ERBB2 
+Note: BRCA1 and BRCA2 Sequencing are the most ordered genetic tests for high-risk 
+patients.1 
+2

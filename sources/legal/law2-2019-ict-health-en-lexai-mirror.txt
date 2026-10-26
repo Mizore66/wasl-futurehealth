@@ -1,0 +1,620 @@
+Federal Law No. (2) of 2019, Concerning the Use of the… · LEXAI
+Skip to main contentLEXAI
+Case Match
+Legal ProfessionalsAI AssistantAsk a LawyerProducts & ServicesResources
+ENLog InSign Up
+In effectFederal Law
+UAE Healthcare / Pharma LawFederal Law No. (2) of 2019, Concerning the Use of the Information and Communications Technology in Health Fields
+UAE Federal Law·Federal Law No. (2) of 2019
+قانون اتحادي في شأن استخدام تقنية المعلومات والاتصالات في المجالات الصحية
+Authoritative Arabic version per the official UAE Legislation portal
+Law ID
+1209
+Issued DateFebruary 6, 2019
+Effective fromMay 14, 2019
+Articles32
+Last syncedOct 19, 2026
+Back to Legislations
+Download PDF
+Official source
+Cite
+Print
+Share
+Need a lawyer?
+UAE specialists in Healthcare / Pharma
+LEXAI's AI helps you find and compare UAE specialists in Healthcare / Pharma. Free to browse.
+Find your specialist
+Need help with this law?
+Describe your situation below. Your details go to our team, and a suitable lawyer in the LEXAI directory may receive them so they can contact you about it.
+Pick your situation so your enquiry can reach a suitable lawyer in the LEXAI directory who works in that area.Family and divorceEmployment and labourProperty and rentCompany and contractsCriminalImmigration and visaSomething else
+Full name
+Email
+Phone
+Briefly, what's happening?
+Website
+Send enquiryEmail me legal guides and updates, requests to review a lawyer I contacted, and offers on LEXAI's own products. You can unsubscribe at any time.
+Your details stay private and are used only to handle your enquiry. We may offer your enquiry automatically to a suitable lawyer in the LEXAI directory. If a lawyer declines it, or does not reply, we may offer it to another suitable lawyer. Only a lawyer who accepts it receives your name, contact details and what you wrote, so they can contact you about it. You can ask LEXAI to delete your enquiry at any time. Privacy policy
+This law text has not yet been reviewed by a lawyer. Check the official source before relying on it.
+Plain-language summary
+Governs digital technology use in UAE healthcare systems, hospitals, and clinics.
+Sets rules for storing, protecting, and sharing patient health information securely.
+Requires healthcare providers to adopt approved digital systems and standards.
+Applies to all public and private health facilities across the UAE.
+Establishes penalties for misuse or unauthorized access to patient data.
+Regulates the use of information and communications technology in health fields across the UAE, establishing frameworks for digital health systems, data managem…
+Synced from the official UAE Legislation portal · Plain-language summary by LEXAI
+Article-level text
+Key Articles
+32 articles
+1
+Chapter I
+Definitions and General Provisions: Definitions and General Provisions
+Article 1
+Article (1)
+Definitions
+In application of the provisions of this Law, the following words and expressions shall have
+the meanings ascribed thereto unless the context requires otherwise:
+State : The United Arab Emirates.
+The Ministry : Ministry of Health and Prevention.
+The Minister : Minister of Health and Prevention.
+Health Authority : Any federal or local governmental Health Authority in the State.
+Health Authority : Every authority in the State providing health services, medical
+insurance services, or health insurance, mediating therein,
+managing its requirements, or electronic services in the area of
+health or any authority associated directly or indirectly to the
+application of the provisions of this Law.
+person : Natural or legal person.
+Central System : A set of operations for the electronic exchange of the health
+data and information including, the set of parts or electronic
+elements which are related to each other by some relations
+working together in order to achieve certain objective.
+Data : Whichever that may be stored, processed, generated and
+-- 3 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+4
+transformed through the information and communication
+technology, such as numbers, letters, codes, images and the like.
+Health
+Information
+: The health data which had been processed and became with a
+meaning, whether visual, audio or legible, and characterised by
+the health feature, whether related to the health or insurance
+establishments or authorities or to the beneficiary from the
+health services.
+Process : Information creation, introduction, amendment, update or
+deletion electronically.
+Circulation of
+Health
+Information
+: Accessing, exchanging, copying, photocopying, transforming,
+storing, publishing, disclosing or sending the health data and
+information.
+Professional
+Guidance
+Manuals
+: A description for the methods, works and procedures that shall
+be used as instructions.
+Information and
+Communication
+Technology
+: Technological and electronic tools or systems or other means
+allowing the possibility of processing all types of information
+and data, including the possibility of storing, recovering,
+publishing and exchanging them.
+-- 4 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+5
+Read more
+Permalink
+2
+Article 2
+Article (2)
+Scope of Force of Law
+This Law shall apply to all methods and uses of the information and communication
+technology in the areas of health in State, including the free zones.
+Permalink
+3
+Article 3
+Article (3)
+Objectives of the Law
+This Law aims to the following:
+1. To ensure the optimal use of the information and communication technology in the
+areas of health.
+2. To ensure the compatibility of the approved bases, standards and practices with their
+internationally-approved counterparts.
+3. To allow the Ministry to collect, analyse and keep the health information at State level.
+4. To ensure the security and safety of the health data and information.
+Chapter II
+Controls of using the information and communication technology
+Permalink
+4
+Chapter II
+Controls of using the information and communication technology: Controls of using the information and communication technology
+Article 4
+Article (4)
+Obligations of using the information and communication technology
+Upon using the information and communication technology in the areas of health, it shall be
+committed to the following:
+1. To keep the confidentiality of health data and information by not allowing to circulate
+them in cases other than the permitted.
+2. To ensure the validity and credibility of the health data and information by keeping their
+safety from the non-authorised damage, amendment, alteration, deletion or addition.
+-- 5 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+6
+3. To ensure the availability of health data and information to the authorised thereof and
+facilitate the access thereto, if needed.
+Read more
+Permalink
+5
+Article 5
+Article (5)
+Establishment of the Central System
+Upon coordination with the Health Authority and Relevant Entities, the Ministry shall
+establish the central system to keep, exchange and collect the health data and information.
+Permalink
+6
+Article 6
+Article (6)
+Bases, standards and controls of the electronic systems
+The Health Authority shall set the bases, standards and controls required to the electronic
+systems of its health data and information, such as its operation methods and how to
+exchange the data and information, protect, access, copy and change and check them, as
+well as the proper and safe uses to them, and to manage the risk of the health information
+and data.
+Permalink
+7
+Article 7
+Article (7)
+Joining the Central System
+The Health Authority and Relevant Entity shall be committed to join the central system in
+accordance with the controls and procedures specified by the Executive Regulation of this
+Law.
+Permalink
+8
+Article 8
+Article (8)
+Obligations of using the central system
+1. The authorities authorised to use the central system shall be committed to the following:
+A. To specify the persons authorised to access and circulate the systems and bases
+of the health data and information and clarify their powers.
+B. To take all the procedures required to ensure the protection and safety of the
+-- 6 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+7
+health data and information and its confidentiality.
+2. The Executive Regulation of this Law shall specify the controls and procedures of
+applying the provision of this Article.
+Permalink
+9
+Article 9
+Article (9)
+Publishing and distributing the Professional Guidance Manuals
+The authority authorised to publish and distribute the professional guidance manual
+through the central system shall be specified by a resolution from the Minister in
+coordination with the Health Authority.
+Permalink
+10
+Article 10
+Article (10)
+Coordination between the Ministry and the Relevant Entity or the Health
+Authority
+In coordination with the Health Authority or the Relevant Entity, the Ministry shall conduct
+the following:
+1. To set and apply a national strategic plan in the area of using the information and
+communication technology in the areas of health.
+2. To set mandatory mechanisms and procedures for using the information and
+communication technology in the areas of health, according to provisions of this Law
+and the laws applicable in State.
+3. To apply the initiatives and programmes specified in the strategy and the technical
+standards and assess them.
+4. To set the controls, standards and procedures of the electronic operational programmes
+used in
+5. To set the mechanisms and procedures of the circulation of the health data and
+information.
+-- 7 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+8
+Read more
+Permalink
+11
+Article 11
+Article (11)
+Ensuring the compatibility of the used information systems
+The Health Authority and the Relevant Entity, each within its competence, shall ensure the
+validity, credibility and availability of the health data and information in a manner ensuring
+the compatibility of the used information systems and their inter-operation, in order to
+exchange and collect the health data and information.
+Permalink
+12
+Article 12
+Article (12)
+Storing the health data and information inside State
+The terms and controls of storing the health data and information inside State shall be
+specified by a resolution from the Minister in coordination with the health authorities.
+Permalink
+13
+Article 13
+Article (13)
+Storing and transforming the health data and information outside State
+It is not permissible to store, process, generate or transform the health data and information
+outside State -which are related to the health services provided inside State- except in the
+case where a resolution is issued from the Health Authority in coordination with the
+Ministry.
+Permalink
+14
+Article 14
+Article (14)
+Prohibitions of using the central system
+No person may use the central system unless being authorised by the Health Authority or
+the Relevant Entity, as specified by the Executive Regulation of this Law.
+-- 8 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+9
+Permalink
+15
+Article 15
+Article (15)
+Obligations of using the central system
+1. Persons authorised to use the central system shall be committed of the following:
+A. To handle the information necessary to complete the required work or the specified
+purpose.
+B. The information circulation shall be limited with the authorised persons only.
+C. Not to amend the health data and information by deletion or addition unless
+according to the specified controls.
+D. Not to publish the health data and information, as well as the statistics related to the
+area of health, unless according to the specified controls.
+2. The Executive Regulation of this Law shall specify the terms and controls of applying the
+provision of this Article.
+Read more
+Permalink
+16
+Article 16
+Article (16)
+Confidentiality of the patient information and exception therefrom
+Without violation to any applicable legislations, whoever circulates information related to
+the patients must keep its confidentiality and not to use them except in the health purposes
+without written approval from the patient, except in any of the following cases:
+1. The health data or information requested by the health insurance companies or any
+authority funding the health services regarding the health services received by the
+patient, for the review, approval or verification of the financial entitlements related to
+such services.
+2. Purposes of the scientific and clinical research, provided that not to disclose the identity
+of the patients and to observe the morals and rules of the scientific researches.
+3. To take the preventive and curative procedures related to the public health or to keep
+-- 9 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+10
+the health and safety of the patient or any other person contacting him.
+4. Upon a request by the competent judicial authorities.
+5. Upon a request by the Health Authority for purposes of monitoring and inspection and
+keeping the public health.
+Read more
+Permalink
+17
+Article 17
+Article (17)
+License of advertising
+It is not permissible to use the central system in publishing any health advertising without
+getting a license from the Ministry.
+Permalink
+18
+Article 18
+Article (18)
+Violating the controls and standards of the health advertising
+The Ministry may ask the competent authority, according to the procedures followed
+therein, to ban or block the websites, whether inside or outside State, which violate the
+controls and standards of the health advertising in State or present health advertising or
+information without permission or license from the Ministry.
+Permalink
+19
+Article 19
+Article (19)
+Training and qualifying the human cadres
+The Health Authority shall undertake the training and qualifying the human cadres and
+provide the possibilities and proper environment, in order to ensure the security and safety
+of the health data and information, in accordance with the best international practices.
+Permalink
+20
+Article 20
+Article (20)
+Keeping the health data and information
+1. The following shall be required to keep the health data and information through the
+-- 10 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+11
+information and communication technology:
+A. The keeping period shall commensurate with the need to the health data and
+information, provided that the keeping period shall not be less than (25) twenty-five
+years from the last date of the health procedure of the person concerned with such
+health data and information.
+B. To ensure the confidentiality standards and validity and credibility of the data and
+information.
+2. The Executive Regulation of this Law shall specify the controls and procedures of applying
+the provision of this Article.
+Read more
+Permalink
+21
+Article 21
+Article (21)
+Proving the ID number in the health transactions and files
+The Health Authority and the Relevant Entity shall be committed to prove the ID number in
+all the health transactions, records and files and shall use it in their regulation and keeping,
+except for the emergencies and others which are issued by a resolution from the Ministry in
+coordination with the Health Authority.
+Chapter III
+Punishments
+Permalink
+22
+Chapter III
+Punishments: Punishments
+Article 22
+Article (22)
+Application of the severe punishment
+Punishments stipulated in this Law shall not prejudice to any more severe punishment
+stipulated by any other law.
+Permalink
+23
+Chapter III
+Punishments: Punishments
+Article 23
+Article (23)
+Punishment of publishing a health advertising without license
+-- 11 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+12
+Whoever publishes a health advertising through the central system without license shall be
+punished of a penalty of no less than (100.000) one hundred thousand dirhams and no
+more than (200.000) two hundred thousand dirhams.
+Permalink
+24
+Chapter III
+Punishments: Punishments
+Article 24
+Article (24)
+Punishment of violating provisions of Article (13)
+Whoever violates the provision of Article (13) of this Law shall be punished of a penalty of
+no less than (500.000) five hundred thousand dirhams and no more than (700.000) seven
+hundred thousand dirhams.
+Permalink
+25
+Article 25
+Article (25)
+Disciplinary Sanctions
+Without violation to the disciplinary punishments prescribed in this Law or any other Laws,
+the Health Authority, each according to its competence, shall punish the establishments
+which provide health services or work in the area of the health researches, or the
+establishments authorised to use the central system, which violated the provisions of this
+Law, its Executive Regulation or its applying resolutions, by any of the following disciplinary
+sanctions:
+A. Written notice.
+B. Written Warning.
+C. The penalty which is no less than (1000) one thousand Dirham and no more than
+(1.000.000) one million Dirham.
+D. Suspending the license of using the central system temporary for no more than six
+months.
+E. Cancelling the license of using the central system.
+-- 12 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+13
+Read more
+Permalink
+25
+Article 25
+Article (25) of this Law, may complain of the resolution before the complaints committee
+which is formed in the Health Authority, within (15) fifteen days from date the
+complainer is notified of the resolution.
+3. The complain must be considered within (30) thirty days from the date it is submitted.
+The non-reply to the complain within such period shall be deemed as rejection thereto.
+4. The resolution issued in the complain shall be final.
+5. Whoever his complain is rejected may appeal before the competent courts in State
+within thirty days from the date of being notified of the rejection of the complain or the
+termination of the thirty days period mentioned in Clause (2) of this Article.
+Chapter IV
+Final Provisions
+Read more
+Permalink
+26
+Article 26
+Article (26)
+Complain of the Disciplinary Sanctions
+1. A committee to consider the disciplinary sanctions shall be established in the Health
+Authority. The committee shall be formed and its competence and the ways to submit
+the complain thereto shall be specified by a resolution from the Health Authority.
+2. Whoever a resolution of the disciplinary sanction is issued against him, according to
+Permalink
+27
+Chapter IV
+Final Provisions: Final Provisions
+Article 27
+Article (27)
+Judicial Officers
+Employees, who are determined by a resolution by the Minister of Justice in agreement with
+the Minister or Head of the Health Authority, shall be granted the status of law enforcement
+in establishing the violation to the provisions of this Law and the applying resolutions
+thereof, within their area of competence.
+-- 13 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+14
+Permalink
+28
+Chapter IV
+Final Provisions: Final Provisions
+Article 28
+Article (28)
+Regularisation of status of the Relevant Entities
+Each Relevant Entity shall regularise its status according to provisions of this Law, within the
+period specified by a resolution from the Cabinet.
+Permalink
+29
+Chapter IV
+Final Provisions: Final Provisions
+Article 29
+Article (29)
+Issuing the Executive Regulation of the Law
+The Cabinet shall issue the Executive Regulation of this Law, upon the proposal of the
+Minister, within six months as of the date of its publication.
+Permalink
+30
+Article 30
+Article (30)
+Repealing contrary and inconsistent provisions
+Any provision contrary to or inconsistent with the provisions of this Law shall be repealed.
+Permalink
+31
+Article 31
+Article (31)
+Publication and Enforcement
+This Law shall be published in the official Gazette and shall come into force three months
+after the date its publication.
+-- 14 of 15 --
+Federal Law No. (2) of 2019 Concerning the Use of the Information and Communications Technology in Health
+Fields
+15
+Signed
+Khalifa Bin Zayed Al Nahyan
+President of The United Arab Emirates
+Issued by Us at the Presidential Palace in Abu Dhabi:
+Dated: 1 Jumada-al- Akhar 1440 AH
+Corresponding to: 6 February 2019 AD
+-- 15 of 15 --
+Permalink
+Note: The Arabic text of this legislation is the authoritative version as per the official UAE Legislation portal.
+Articles in this law(32)▾1Article (1) Definitions In application of the provisions of this Law, the follow
+2Article (2) Scope of Force of Law This Law shall apply to all methods and uses o
+3Article (3) Objectives of the Law This Law aims to the following: 1. To ensure t
+4Article (4) Obligations of using the information and communication technology Up
+5Article (5) Establishment of the Central System Upon coordination with the Healt
+6Article (6) Bases, standards and controls of the electronic systems The Health A
+7Article (7) Joining the Central System The Health Authority and Relevant Entity 
+8Article (8) Obligations of using the central system 1. The authorities authorise
+9Article (9) Publishing and distributing the Professional Guidance Manuals The au
+10Article (10) Coordination between the Ministry and the Relevant Entity or the He
+11Article (11) Ensuring the compatibility of the used information systems The Heal
+12Article (12) Storing the health data and information inside State The terms and 
+13Article (13) Storing and transforming the health data and information outside St
+14Article (14) Prohibitions of using the central system No person may use the cent
+15Article (15) Obligations of using the central system 1. Persons authorised to us
+16Article (16) Confidentiality of the patient information and exception therefrom 
+17Article (17) License of advertising It is not permissible to use the central sys
+18Article (18) Violating the controls and standards of the health advertising The 
+19Article (19) Training and qualifying the human cadres The Health Authority shall
+20Article (20) Keeping the health data and information 1. The following shall be r
+21Article (21) Proving the ID number in the health transactions and files The Heal
+22Article (22) Application of the severe punishment Punishments stipulated in this
+23Article (23) Punishment of publishing a health advertising without license -- 11
+24Article (24) Punishment of violating provisions of Article (13) Whoever violates
+25Article (25) Disciplinary Sanctions Without violation to the disciplinary punish
+25Article (25) of this Law, may complain of the resolution before the complaints c
+26Article (26) Complain of the Disciplinary Sanctions 1. A committee to consider t
+27Article (27) Judicial Officers Employees, who are determined by a resolution by 
+28Article (28) Regularisation of status of the Relevant Entities Each Relevant Ent
+29Article (29) Issuing the Executive Regulation of the Law The Cabinet shall issue
+30Article (30) Repealing contrary and inconsistent provisions Any provision contra
+31Article (31) Publication and Enforcement This Law shall be published in the offi
+Table of Contents
+32
+1Article (1) Definitions In application of the provisions of 
+2Article (2) Scope of Force of Law This Law shall apply to al
+3Article (3) Objectives of the Law This Law aims to the follo
+4Article (4) Obligations of using the information and communi
+5Article (5) Establishment of the Central System Upon coordin
+6Article (6) Bases, standards and controls of the electronic 
+7Article (7) Joining the Central System The Health Authority 
+8Article (8) Obligations of using the central system 1. The a
+9Article (9) Publishing and distributing the Professional Gui
+10Article (10) Coordination between the Ministry and the Relev
+11Article (11) Ensuring the compatibility of the used informat
+12Article (12) Storing the health data and information inside 
+13Article (13) Storing and transforming the health data and in
+14Article (14) Prohibitions of using the central system No per
+15Article (15) Obligations of using the central system 1. Pers
+16Article (16) Confidentiality of the patient information and 
+17Article (17) License of advertising It is not permissible to
+18Article (18) Violating the controls and standards of the hea
+19Article (19) Training and qualifying the human cadres The He
+20Article (20) Keeping the health data and information 1. The 
+21Article (21) Proving the ID number in the health transaction
+22Article (22) Application of the severe punishment Punishment
+23Article (23) Punishment of publishing a health advertising w
+24Article (24) Punishment of violating provisions of Article (
+25Article (25) Disciplinary Sanctions Without violation to the
+25Article (25) of this Law, may complain of the resolution bef
+26Article (26) Complain of the Disciplinary Sanctions 1. A com
+27Article (27) Judicial Officers Employees, who are determined
+28Article (28) Regularisation of status of the Relevant Entiti
+29Article (29) Issuing the Executive Regulation of the Law The
+30Article (30) Repealing contrary and inconsistent provisions 
+31Article (31) Publication and Enforcement This Law shall be p
+Reading shortcut
+Ask LEXAI a question about Federal Law No. (2) of 2019.
+Plain-English answers, with a citation back to the exact article. Free with a LEXAI account.
+LEXAI provides general legal information, not legal advice. For your specific case, speak to a licensed UAE lawyer.
+Ask a question
+Related guides
+Guides that explain how this area of law applies to common situations.
+UAE Minimum Wage: Is There a Legal Minimum Salary, and Which Salary Floors Apply to You
+Lost Emirates ID? How to Report It and Get a Replacement
+Golden Visa Holders and Employment Disputes: What Changes and What Does Not
+Related laws
+Other UAE legislation in this category. Cross-reference before citing the law.
+Cabinet Resolution No. (16) of 2026 Regarding the Executive Regulations of Federal Decree by Law No. (25) of 2023 Regarding the Donation and Transplantation of Organs and Tissues· Cabinet Resolution No. (16) of 2026
+Cabinet Resolution No. (213) of 2025 Regarding the Executive Regulation of Federal Law No. (10) of 2023 Regarding Mental Health· Cabinet Resolution No. (213) of 2025
+Cabinet Resolution No. (176) of 2025 Regarding the Executive Regulations of Federal Law No. (6) of 2023 Regarding the Practice of Some Medical Professions by Persons Other Than Physicians and Pharmacists· Cabinet Resolution No. (176) of 2025
+Federal Decree by Law No. (21) of 2025 Regarding Veterinary Medical Products and Veterinary Pharmaceutical Establishments· Federal Decree by Law No. (21) of 2025
+Cabinet Resolution No. (105) of 2025 Regarding the Establishment of the UAE Council for Integrative Medicine· Cabinet Resolution No. (105) of 2025
+Keep reading
+Related guides
+Browse all guides
+Immigration
+Lost Emirates ID? How to Report It and Get a Replacement
+Who you must tell and by when, whether you need a police report, what the ICP replacement service asks for and costs, and when renewal rather than replacement may be the right application.
+5 min read
+Labour Employment
+UAE Minimum Wage: Is There a Legal Minimum Salary, and Which Salary Floors Apply to You
+The UAE Labour Law sets no general minimum wage, but one floor does exist: AED 6,000 a month for Emiratis in the private sector. Here is what the law guarantees instead, which salary thresholds are visa tests rather than wage rules, and what to do if you are paid less than agreed.
+5 min read
+Immigration
+Maid Visa in Dubai: How to Sponsor a Domestic Worker Legally
+The lawful ways to hire a maid, nanny or driver in Dubai, what the sponsor must meet, how the MOHRE permit, entry visa and residence fit together, what the contract must say, when you get a refund, and the fines for hiring outside the system.
+5 min read
+The UAE's first AI-powered legal directory, connecting clients with UAE legal professionals, with a Verified badge on profiles whose licence our team has checked, plus an AI legal assistant trained on UAE law. Free to browse, compare, and message. LEXAI is a directory and information platform compliant with UAE Decree-Law 34/2022. We do not provide legal advice or representation.
+Product
+Send an enquiry
+Legal Professionals
+AI Assistant
+Ask a Lawyer
+Resources
+UAE Legislations
+Legal Dictionary
+Tools
+Blog
+FAQs
+Company
+About
+Contact
+Press
+Join as a legal professional
+Legal
+Privacy Policy
+Terms of Service
+Lawyer Terms
+Cookie Policy
+AI Disclaimer
+Acceptable Use
+Refund & Cancellation Policy
+Sub-processors
+Accessibility
+© 2026 LEXAI · Dubai, UAE
+Arabic

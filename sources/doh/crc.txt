@@ -1,0 +1,1336 @@
+Page 1 of 28 
+ 
+ 
+ 
+DOH COLORECTAL CANCE R 
+SCREENING PROGRAM 
+SPECIFICATIONS  
+ 
+SEPTEMBER  2019 
+ 
+ 
+ 
+ 
+ 
+   Page 2 of 28 
+ 
+ 
+ 
+ 
+ 
+Document Title: DOH Colorectal Cancer Screening Program Specifications  
+ 
+Document Ref. Number: 
+ 
+DOH/ADCPH/CRCS/PS/1.0 
+ 
+Version: 
+ 
+1.0 
+    
+ 
+Approval Date: 04 September 2019 Effective Date: 05 September 2019 
+    
+ 
+Last Reviewed: August 2019 Next Review: October 2020 
+    
+ 
+Revision History: 
+ 
+Version 0.9 July, 2012   
+   
+ 
+Document Owner: 
+ 
+Public Health and Research Division  
+   
+ 
+Applies to: 
+ 
+All DOH Licensed Healthcare Providers  
+    
+Classification: Public   
+ 
+  
+
+ 
+ 
+ 
+ 
+   Page 3 of 28 
+ 
+Contents 
+1. Purpose .............................................................................................................................................................. 4 
+2. Scope ................................................................................................................................................................. 4 
+3. Definitions and Abbreviations: ............................................................................................................................ 4 
+4. Duties of CRCSP Participating Healthcare Providers ........................................................................................... 5 
+5. CRCSP Risk Assessment & Eligibility Criteria ...................................................................................................... 6 
+6. Enforcement and Sanctions ............................................................................................................................... 7 
+7. Payment for screening and follow up of Colorectal Cancer: ................................................................................ 8 
+8. Appendices ........................................................................................................................................................ 9 
+8.1. Appendix 1colorectal cancer screening –care-pathway ...................................................................................... 9 
+8.2. Appendix 2 -Colorectal Cancer Clinical Performance Indicators ...................................................................... 10 
+8.3. Appendix 3 - Pre- Colonoscopy Risk Assessment for Colorectal Cancer .......................................................... 11 
+8.4. Appendix 4 - Colorectal Cancer Screening Endoscopy Unit Infrastructure, Equipment and P ersonnel ............. 12 
+8.5. Appendix 5 - DOH Recommendation for colorectal cancer screening and surveillance, Increased and High Risk 
+Disease Family Group ...................................................................................................................................... 13 
+8.6. Appendix 6 - DOH Recommendations for Colorectal Cancer Screening and Surveillance in Moderate Risk 
+Disease Family Groups .................................................................................................................................... 14 
+8.7. Appendix 7 - DOH Summary of Recommendations for Colorectal Cancer Screening and Surveillance in High 
+Risk Disease Family Groups............................................................................................................................. 15 
+8.8. Appendix 8 - Genetic Test ............................................................................................................................... 17 
+8.9. Appendix 9 - Pre-Colonoscopy Assessment ..................................................................................................... 17 
+8.10. Appendix 10 - Pre- colonoscopy Assessment - American Society of Anesthesiology Classification System ..... 18 
+8.11. Appendix 11 - Colonoscopy Procedure ............................................................................................................ 19 
+8.12. Appendix 12 - Post-colonoscopy Procedures ................................................................................................... 20 
+8.13. Appendix 13 - Colonoscopy Findings ............................................................................................................... 21 
+8.14. Appendix 14 - Colonoscopy Report ................................................................................................................. 22 
+8.15. Appendix 15 – Example of -Techniques for Colonoscopic- Tattooing Protocol ................................................. 24 
+8.16. Appendix 16- E-Notification Cancer Screening Referral Form .......................................................................... 25 
+8.17. Appendix 17 - Cancer Screening Data Requirement – Screening Visit Outcome ............................................. 26 
+ 
+  
+ 
+ 
+ 
+ 
+   Page 4 of 28 
+ 
+ 
+1. Purpose 
+1.1. To set out  the minimum service specifications for DOH Colorectal Cancer Screening Program (CRCSP) through 
+identification of the following:  
+1.1.1. Duties of the participating healthcare providers; 
+1.1.2. Clinical and administrative service specifications; 
+1.1.3. Risk assessment & eligibility criteria;  
+1.1.4. Data reporting requirements.  
+2. Scope 
+2.1. All DOH licensed h ealthcare providers and professionals who are participating in DOH ’s Comprehensive Screening 
+Program for Adults and providing CRC screening services including mobile units.  
+3. Definitions and Abbreviations:    
+3.1. Colorectal Cancer Screening  Program (CRCSP) in the Emirate of Abu Dhabi  and for the purpose of this document 
+includes the following services:  
+3.1.1 Colorectal Cancer Screening services;   
+3.1.2 Colorectal Cancer assessment and follow up;   
+3.1.3 Familial and Genetic High Risk Assessment.  
+  
+3.2. Colonoscopy: is the endoscopic examination of the large bowel and the distal part of the small bowel with a Charge 
+Coupled Device (CCD) Camera or a fiber optic camera on a flexible tube passed through the anus. It can provide a visual 
+sight to detect adenomatous polyps and cancer diagnosis (e.g. ulceration, polyps). It also gives the opportunity for 
+biopsy or removal of suspected colorectal cancer lesions. 
+ 
+3.3. Fecal Immunochemical Test (FIT): is a test that investigates the stool sample for signs of cancer. 
+3.4. Case mix: includes males and females aged 40 -75 years determined eligible for colorectal cancer screening services, 
+in accordance with the criteria detailed in these Program Specifications: 
+3.4.1. People who are a symptomatic and  in good health and do not have any  
+3.4.2. For adults aged 76 to 85 years, the decision to screen should be - individualized, taking into account the 
+patient’s overall health prior screening history . The decision will be  based on the healthcare professional 
+judgement and the individual’s preference  
+3.4.3. People over 85 should no longer get colorectal cancer screening. 
+ 
+3.5. CT:      Computed Tomography. 
+ 
+3.6. LFT’s:   Liver Function Tests. 
+ 
+3.7. OLT:    Orthoptic Liver Transplant. 
+ 
+3.8. PSC:    Primary Sclerosing Cholangitis. 
+ 
+3.9. CRC:   Colorectal Cancer.  
+  
+ 
+ 
+ 
+ 
+   Page 5 of 28 
+ 
+4. Duties of CRCSP Participating Healthcare Providers  
+  
+All DOH licensed healthcare providers (facilities and professionals) engaged in CRCSP must:  
+4.1. Follow the pathway for CRC Screening as per Appendix 1; 
+4.2. Adhere to the clinical performance indicators and timelines in accordance with Appendix 2; 
+4.3. Include a CRC risk assessment and refer individuals to appropriate screening test based on risk categories as per 
+Appendix 3; 
+4.4. Assign a CRCSP coordinator/director who will be accountable to: 
+4.4.1. Report and submit screening outcome data to DOH specified in Section 4; 
+4.4.2. Maintain records for screening tests and outcomes;  
+4.4.3. Establish internal audit policies and procedures and conduc t regular audits, monitoring and evaluation to 
+demonstrate compliance with these Program Specifications and other associated regulatory policies and standards. 
+4.5. Has an endoscopy unit that meets the criteria for a competent  unit infrastructure, equipment and personnel, as per 
+Appendix 4; 
+4.6. Comply with DOH direct or DOH third -party independent quality assurance testing of laboratories providing CRC 
+screening test service;  
+4.7. Establish an invitation system to ensure successful participation of eligible population. The system may be manual or 
+electronic;  
+4.8. Provide clinical services and patient care in accordance with these program specifications and in accordance with 
+DOH policies and standards including data submission and cancer E-notification through DOH Data Dictionary Website;  
+4.9. Provide clinical services and patient care in accordance with laws and regulations of the UAE and the Emirate of Abu 
+Dhabi.   
+ 
+Laboratory Services Requirements:  
+DOH licensed healthcare providers engaged in CRCSP must provide laboratory services that:  
+4.10. Perform the CRC screening laboratory tests in accordance with the requirements and specifications of the CRCSP; 
+4.11. Use specimen identification and labelling in accordance with DOH Clinical Laborat ory Standards and industry best 
+practices;  
+4.12. Is accredited by an internationally accrediting body for CRC screening tests.  
+4.13. Ensure that laboratory performing the FIT test:  
+4.13.1. Follow the manufacturer’s instructions for use of the FIT testing kit; 
+4.13.2. Use an explicit definition for cut-off levels for hemoglobin concentration; 
+4.13.3. Make provision to record the information concerning the actual amount of hemoglobin, both for tests 
+classified as negative and for those classified as positive;  
+4.13.4. Employ licensed professionals who are privileged and have evidenced their ability to undertake different 
+types of fecal occult blood test and in -depth understanding of the technology required to perform the fecal 
+occult blood test.  
+4.14. Ensure that laboratory performing genetic testing must have a specialist cyto/histopathological support services.  
+ 
+Healthcare Professional Requirements:  
+DOH licensed healthcare providers engaged in CRCSP must:  
+4.15. Have a multi -disciplinary team that includes a gastroenterologist, colorectal surgeon, gastrointe stinal oncologist, 
+pathologist, radiologist, medical and a nurse to review the outcomes of screening for colorectal cancer;  
+4.16. All healthcare professionals participating in colorectal cancer screening must:    
+4.16.1. Obtain informed patient consent prior to screening;  
+4.16.2. Where consent is granted or refused, the treating physician must document and retain signed consent forms 
+on patients’ medical records;  
+4.16.3. Inform all patients of the procedures and expected timeframe to be screened and to receive results.   
+ 
+ 
+ 
+ 
+ 
+   Page 6 of 28 
+ 
+Reporting Requirements:  
+In addition to the routine e-Claims data, DOH licensed healthcare providers (facilities and professionals) engaged in 
+CRCSP must: 
+4.17. Collect and submit to DOH data on screening visits  and outcomes within 2 weeks of the screening date, through the  
+Cancer Screening Form of the cancer E-notification system on DOH Data Dictionary Website; 
+4.18. Report all screen ing-detected cancers to DOH, using Cancer Case Notification Form  (Cancer Notification Appendix 
+14) available on DOH Data Dictionary Website.   
+5. CRCSP Risk Assessment & Eligibility Criteria  
+  
+5.1. Risk Assessment  
+5.1.1 A detailed medical history of the screening candidate, such as that described in the Cancer Screening form 
+available at DOH e-services Website or as per Appendix 17  should be taken to determine if the candidate’s 
+risk category is average, increased or high as per Appendix 3;   
+5.1.2 Colorectal Screening Program- Screening individuals at increased risk for CRC:  
+5.1.2.1 Individuals with increased risk for CRC should be referred for assessment and screening to 
+specialized centers or hospitals that have specialized multidisciplinary teams providing 
+gastroenterology, genetic counseling, genetic testing, surgery, oncology, and preferably 
+psychosocial support services; 
+5.1.2.2 All individuals at increased risk must be managed  in accordance with Appendices 5, 6, and 
+international best practices and guidelines such as NICE Guidelines for Colorectal Cancer 
+Screening and Surveillance in Moderate and High -risk groups and NICE Guidelines for 
+Colonoscopy Surveillance for the Preventi on of Colorectal Cancer in People with Ulcerative 
+Colitis, Crohn's Disease or Adenomas. 
+5.1.3 Colorectal Screening Program-Familial/ Genetic High Risk Assessment: 
+5.1.3.1 All individuals with suspected or confirmed genetic/familial high risk as per Appendices 7 and 8 
+should be referred only to specialized centers or hospitals that have specialized multidisciplinary 
+teams providing gastroenterology, genetic counseling, genetic testing, surgery, oncology, and 
+preferably psychosocial support services for the purpose of assessment, genetic counselling and 
+mutation analysis of relevant genes where appropriate; 
+5.1.3.2 Individuals with gene mutation must be managed in accordance with international best practices 
+and guidelines;  
+5.1.3.3 Genetic counseling is highly recommended when genetic tes ting is offered and after disclosure 
+of results; 
+5.1.3.4 Genetic counseling can be given by a genetic counselor, medical geneticist, oncologist, surgeon, 
+oncologist or other healthcare professional with expertise and experience in genetic counseling 
+who is privileged by the facility to provide counseling;  
+5.1.3.5 A list of recommended genetic tests is available in Appendix 8. 
+ 
+5.2. Screening tests and frequency: 
+5.2.1 For individuals at average risk of colorectal cancer:  
+5.2.1.1 Eligible population must be offered the two options for colonoscopy screening as per Appendix 
+1 or FIT test in case of colonoscopy refusal; 
+5.2.1.2 Frequency of Screening should be as follows:   
+5.2.1.2.1 Colonoscopy screening, every 10 years; or 
+5.2.1.2.2 Fecal Immunochemical Test (FIT) every year (annually).  
+5.2.2 For individuals at increased or high risk of colorectal cancer:  
+5.2.2.1 Colonoscopy screening should be offered;  
+5.2.2.2 The frequency and age of initiation should be individualized for each person as described in  
+Appendices 5, 6 and 7;  
+ 
+ 
+ 
+ 
+   Page 7 of 28 
+ 
+5.2.2.3 Further investigations, genetic testing and counselling should be pursued for individuals with 
+suspected familial/ genetic high risk as per Appendices 7 and 8.  
+5.2.2.4 All healthcare providers must utilize evidence based -practice for CRC screening as per 
+Appendices 3 and 9-17.   
+5.2.3 For individuals who will go through CRCSP with  Fecal Immunochemical Test (FIT), the y must be provided 
+with clear and simple instructions regarding collection of the sample.  
+   
+5.3. Recruitment for screening 
+Individuals eligible for CRC screening may be recruited in healthcare facilities through one of the  following: 
+5.2.4 Targeted invitation which may be established via an electronic or manual invitation system call and recall 
+initiative with Daman; 
+5.2.5 Opportunistic:  
+5.2.5.1 New physician consultation for related or unrelated reason or  
+5.2.5.2 Engagement in a health promotion campaign. 5.4.  
+  
+5.4. Online booking to screening appointment 
+All DOH Licensed Healthcare Providers (Facilities and Professionals) engaged in CRCSP:   
+5.4.1. Are encouraged use optional online booking system for screening appointments in order to facilitate access to 
+screening services available at DOH website.    
+5.4.1.1. Facilities that utilize the provided appointment system must nominate a person to access the online 
+booking schedule by which secure access will be- provided by DOH. 
+5.4.2. Are encouraged to provide flexible timeslots to enable this functionality; 
+5.4.3. Ensure that they meet the available appointments to receive patients.  
+    
+5.5. Outcomes & Referrals 
+5.5.1. At the end of the screening  procedure, in case of positive outcome, the Screening U nit must provide the 
+candidate with a copy of the DOH e-Cancer Screening Referral Form (Appendix 16); 
+5.5.2. The time between completion of a screening test and receipt of results by the participant must be less than 15 
+working days (acceptable standard >90% within 15 days). 
+5.5.3. Screening with Colonoscopy 
+5.5.3.1. In case of normal results, (i.e. negative for polyps ) individuals must be re -invited for screening in 
+accordance with the frequencies specified in Section 5.2; 
+5.5.3.2. In case of the presence of adenoma, colonoscopy must be repeated in accordance with Appendix 
+1; 
+5.5.3.3. Adenoma detection rate must be monitored and audited. It is limited to screening colonoscopies , 
+surveillance procedures. Repeat endoscopic procedures are excluded; 
+5.5.3.4. The time interval between a positive colonoscopy (cancer) and beginning of definitive management 
+must be less than 31 working days (acceptable standard ≥ 95% of cases must be no more than 31 
+days); 
+5.5.3.5. Death within 30 days after colorectal cancer screening, attributed to complications caused by 
+colonoscopy, must be recorded by e-notification.  
+5.5.4. Screening with FIT test (Not applicable for increased and High Risk group) 
+5.5.4.1. Patients with a negative test result should be re-invited for screening as per frequencies specified 
+in Section 5.2; 
+5.5.4.2. Patients with a positive test result must be scheduled for follow-up colonoscopy within 31 days of 
+referral; 
+5.5.4.3. The FIT test must be repeated if results are unclear or spoilt in accordance with Appendix  8.  
+6. Enforcement and Sanctions  
+6.1. Healthcare providers participating in DOH Comprehensive Screening Program -Colorectal Screening Program, payers 
+and third party administrators must comply with the terms and requirements of these Program Specifications;  
+ 
+ 
+ 
+ 
+   Page 8 of 28 
+ 
+6.2. DOH may impose sanctions in relation to any breach of requirements under these Program Specifications in 
+accordance with the Chapter on Inspections, Complaints, Appeals and Sanction, the Healthcare Regulatory Manual . 
+7. Payment for screening and follow up of Colorectal Cancer: 
+7.1. Eligibility for reimbursement under the Health Insurance Scheme must be in accordance with the Standard Provider 
+Contract and as applicable by the Thiqa Prevention List, DOH Mandatory Tariff and associated Claims and Adjudication 
+Rules and the Coding Manual. All documents are available from the DOH website in Data Dictionary . 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 9 of 28 
+ 
+8. Appendices 
+8.1. Appendix 1colorectal cancer screening –care-pathway  
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+   Page 10 of 28 
+ 
+8.2. Appendix 2 -Colorectal Cancer Clinical Performance Indicators1 
+ 
+ 
+                                                      
+1NHS cancer screening programs quality assurance guidelines for colonoscopy.  
+European guidelines for quality assurance in colorectal cancer screening and diagnosis . 
+Indicator Acceptable Level Desirable Level 
+ 
+Screening uptake (participation) rate 
+ 
+>55% 
+ 
+>70% 
+Minimum number of screening colonoscopies 
+undertaken annually by each screening 
+colonoscopist. 
+ 
+>150 per annum 
+ 
+>250 
+Inadequate FIT Rate (proportion of people 
+screened with one or more FIT returned none of 
+which were adequate) 
+ 
+<3% 
+ 
+<1% 
+Maximum time between screening FIT test and 
+receipt of result should be 7 days from sample’s 
+dispatch 
+>90% 
+100% 
+Rate of referral to follow-up colonoscopy after 
+positive FIT test (detects cancer) 95%  >100% 
+Maximum time between referral after positive 
+screening FIT test and conducting a follow-up 
+colonoscopy should be within 31 days 
+>90%  >95% 
+Cecal intubation rate (CIR). Follow-up and 
+screening colonoscopies to be recorded 
+separately (unadjusted CIR with video recorded 
+and photographic evidence) 
+ 
+>90% 
+ 
+>95% 
+Adenoma detection rate on males  25%  Auditable outcome 
+Adenoma detection rate on females  15% Auditable outcome 
+Cancer Detection Rate 
+≥2 per 100 screened 
+by FIT ≥ 11 per 100   
+colonoscopies 
+Auditable outcome 
+Withdrawal time in negative colonoscopies 
+(withdrawal from cecal pole to anus)   ≥ 6 minutes  Auditable outcome 
+Polyp retrieval rate (retrieval of polypectomy 
+specimens for histological analysis per 
+colonoscopist)  ꭥ 
+ 
+>90% per 100 polyps excised 
+>95% per 100 polyps 
+excised 
+Rate of high-grade neoplasia reported by 
+pathologists in a FIT screening program 
+ 
+<10% 
+ 
+Endoscopic complications of colonoscopy 
+screening programs 
+Bleeding < 1:150 
+Perforation < 1:1000 
+ 
+ 
+ 
+ 
+ 
+   Page 11 of 28 
+ 
+ 
+ 
+ 
+Bowel cleansing should be- audited. 
+Proposed standard: at least more than 90 % of examinations should be rated as “adequate” bowel cleansing or 
+excellent  
+† Excellent: no or minimal solid stool and only clear fluid requiring suction.  
+Adequate: collections of semi-solid debris that are cleared with washing/suction.  
+Inadequate: solid or semi-solid debris that cannot be cleared effectively.  
+Ω Numerator: number of polyps with histological tissue retrieved for analysis.  
+Denominator: number of polyps recorded during lower GI endoscopies.  
+  
+8.3. Appendix 3 - Pre- Colonoscopy Risk Assessment for Colorectal Cancer 
+ 
+Average risk: 
+1. Age ≥ 40. 
+2. No history of adenoma or Colorectal Cancer. 
+3. No history of inflammatory bowel disease. 
+4. Negative family history. 
+ 
+Increased risk: 
+ 
+1. Personal or family history of adenoma, sessile serrated pol yp (SAP)**, Colorectal Cancer, Inflammatory Bowel 
+Disease. 
+2. Positive family history of first or second -degree relative with Colorectal Cancer (screening recommendations vary 
+depending on family history). 
+ 
+** Increased risk is based on personal history of adenoma(s)/ sessile serrated polyp(s) found at colonoscopy: 
+a) Low risk adenoma: ≤ 2polyps, < 1 cm, tubular.  
+b) Advanced or multiple adenomas: high -grade dysplasia, ≥ 1 cm, villous (> 25% villous), between 3 -10 polyps 
+(fewer than 10 polyps in the setting of a strong family history or younger age (<40 years) may sometime s be 
+associated with an inherited polyposis syndrome).  
+c) More than 10 cumulative adenomas (fewer than 10 polyps in the setting of a strong family history or younger 
+age (<40 years) may sometimes be associated with an inherited polyposis syndrome).  
+d) Incomplete or piecemeal polypectomy (ink lesion for later identification) or polypectomy of large cancer.  
+ 
+High risk: 
+1. Hereditary Non polyposis colorectal Cancer ( HNPCC). 
+2. Family history of  Polyposis syndromes ( Classical Familial Adenomatous Polyposis ( FAP -1), Attenuated Familial 
+Adenomatous Polyposis (AFAP -1), MYH associated Polyposis (MAP -1), Peutz -Jeghers Syndrome (PJS -1), Juvenile 
+Polyposis Syndrome (JPS-1), Hyperplastic Polyposis Syndrome (HPP-1 Cowden Syndrome, Li-Fraumeni Syndrome). 
+ 
+Post polypectomy perforation rate <1:500 Auditable outcome 
+Time interval between positive colonoscopy and 
+start of definitive management within 31 days 
+ 
+>90% >95% 
+ 
+ 
+ 
+ 
+   Page 12 of 28 
+ 
+8.4. Appendix 4 - Colorectal Cancer Screening Endoscopy Unit Infrastructure, Equipment and Personnel 
+ 
+ 
+Endoscopy Unit Infrastructure and Equipment must: 
+ 
+1. Include facilities for adequate pre-colonoscopy assessment, recovery and be designed to allow efficient patient flow.  
+2. Match the demand with respect to unit capacity (e.g. Equipment and Personnel).  
+3. Provide video-endoscopes that facilitate focal application of the dye for the detection and assessment of high -risk 
+colorectal lesions. 
+4. Provide adequate supply of accessories suited to the endoscopic interventions undertaken. 
+5. Provide properly maintained resuscitation equipment in the endoscopy rooms  and recovery areas.  
+6. Conduct regular review s of all the functioning and cleansing of the colonoscopies. Results of the reviews should be 
+available at all times in the unit. 
+7. Plan capacity that matches demand for screening. Referral to colonoscopy to be within 31 days from a positive FIT 
+test (detects the presence of occult blood in the fecal sample). 
+ 
+ 
+Criteria Colorectal Cancer Screening Core Team to include: 
+ 
+All members in the colorectal Cancer Core Team should participate in regular Multidisciplinary Team meetings to discuss each 
+patient with colorectal Cancer. 
+ 
+1. At least 2 Gastroenterologists: licensed by DOH, colonoscopy volume minimum 150 per colonoscopist per year with a 
+cecal completion rate of >95%. 
+ 
+2. Nurse: two nurses trained to provide support, assistance, information and advice to every patient. An in -depth 
+understanding of colorectal cancer (diagnosis,  treatment, prognosis, staging and im portance of stage at diagnosis), 
+an in -depth understanding of the colorectal screening process (including screening theory and particularly the 
+potential benefits and harms of screening, and the prime importance of quality assurance) and advanced 
+communication skills. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 13 of 28 
+ 
+8.5. Appendix 5 - DOH Recommendation for colorectal cancer screening and surveillance, Increased and High Risk 
+Disease Family Group 
+ 
+High-Risk 
+Disease Groups 
+Screening procedure Time of initial screen Screening  procedure  
+and interval 
+Colorectal Cancer 
+ Consultation, CT, LFT’s & Colonoscopy Colonoscopy within 6 months of 
+resection only if 
+colon evaluation pre-
+op is incomplete 
+CT Liver Scan within 
+2 years post-op. Colonoscopy 5 
+yearly until co-morbidity 
+outweighs 
+Colonic Adenomas 
+Low risk 1-2 adenomas, both <1cm Colonoscopy 5 years or no surveillance 
+Intermediate risk 3-4 adenomas, OR at least one adenoma ≥1 cm Colonoscopy Every 3 years 
+High risk ≥5 adenomas or ≥3 with at least  
+ 
+one ≥1cm Piecemeal polypectomy 
+Colonoscopy 
+ 
+Colonoscopy or flexi-
+si (depending on 
+polyp location) 
+Yearly 
+ 
+3 months consider open surgical 
+resection if incomplete healing 
+of polypectomy scar 
+Ulcerative colitis and Crohn’s colitis 
+Low risk Extensive colitis with no inflammation 
+or left sided colitis or Crohn’s colitis of <50% colon 
+Pancolonic dye spray 
+with targeted biopsy. 
+If no dye spray then 
+2-4 random biopsies 
+every 10cm. 
+Every 10 years from onset of 
+symptoms 
+Intermediate risk 
+ 
+Extensive colitis with mild active disease or post-
+inflammatory polyps or family history of Colorectal 
+cancer in a FDR <50 years 
+Extensive at least moderate colitis or stricture in 
+past 5 years or dysplasia in past 5 years (declining 
+surgery) or PSC or OLT for PSC) or colorectal cancer 
+in a FDR <50 years.  
+Ureterosigmoidostomy 
+After surgery by 10 years  
+Acromegaly 
+Acromegaly  
+- 
+Colonoscopy At 40 years  
+ 
+ 
+ 
+ 
+ 
+   Page 14 of 28 
+ 
+8.6. Appendix 6 - DOH Recommendations for Colorectal Cancer Screening and Surveillance in Moderate Risk Disease 
+Family Groups 
+ 
+Initial screening 10 years earlier than the youngest affected FDM 
+ 
+Family history  Screening 
+procedure 
+Screening interval  
+One first-degree relative with CRC or 
+advanced adenoma diagnosed before 
+60 years of age, or two first-degree 
+relatives diagnosed at any age 
+Colonoscopy  Start at 40 years of age or 10 years younger than the 
+earliest diagnosis in the patient's family, whichever 
+comes first; colonoscopy should be repeated every 
+five years. 
+One first-degree relative with CRC or 
+advanced adenoma diagnosed at 60 
+years or older, or two second-degree 
+relatives with CRC 
+Colonoscopy Start screening colonoscopy at 40 years of age; 
+colonoscopy should be repeated every 10 years 
+One second- or third-degree relative 
+with CRC 
+Colonoscopy Average-risk screening (e.g., start at 40). 
+Individuals who have Crohn disease 
+with colonic involvement or ulcerative 
+colitis. Screening -repeated every one 
+to three years. 
+Colonoscopy Colonoscopy screening should begin eight to 10 
+years after the onset of symptoms. 
+In individuals with hereditary 
+nonpolyposis colorectal cancer 
+Colonoscopy Colonoscopy should begin at 25 years of age and be 
+repeated annually. 
+Individuals with adenomatous 
+polyposis syndromes 
+Colonoscopy Colonoscopy between 10 to 20 years of age and be 
+repeated every one to two years. 
+Individuals with Peutz-Jeghers 
+syndrome. If results are, negative, 
+testing - repeated every three years. 
+Colonoscopy Esophagogastroduodenoscopy, colonoscopy, and 
+video capsule endoscopy should begin at eight years 
+of age If results are negative, testing -repeated every 
+three years. 
+individuals with sessile serrated 
+adenomatous polyposis 
+Colonoscopy Colonoscopy should begin as soon as the diagnosis 
+is established and be repeated annually. 
+ 
+ 
+ Affected relatives who are first-degree relatives of each other AND at least one is a first degree relative of the patient; 
+ Combinations of 3 affected relatives in a first-degree kinship include: parent and aunt/uncle and/or grandparent; OR 
+2 siblings/1 parent; OR 2 siblings/1offspring. Combinations of 2 affected relatives in a first degree kinship;  
+ Include a parent and grandparent, or >2 siblings, or >2 children, or child + sibling. Where both parents are affected, 
+these count as being within the first-degree kinship; 
+ Clinical Genetics referral recommended; 
+ Centers may vary depending on capacity and r eferral agreements. Ideally, all such cases should be flagged 
+systematically for future audit on an Emirate level. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 15 of 28 
+ 
+8.7. Appendix 7 - DOH Summary of Recommendations for Colorectal Cancer Screening and Surveillance in High Risk 
+Disease Family Groups 
+ 
+Family history 
+categories* Screening procedure Age at initial screen Screening interval and procedure 
+At-risk HNPCC (fulfils 
+modified Amsterdam 
+criteria, or untested 
+FDR of proven 
+mutation carrier) 
+MMR gene testing of 
+affected relative 
+Colonoscopy +/- OGD 
+Colonoscopy from age 
+25 years. 
+OGD from age 40 years 
+Or screening 10 years 
+earlier than the youngest 
+affected FDM 
+Colonoscopy every 18-24 
+months (OGD every 2 ears 
+from age 40 years). 
+ 
+MMR gene carrier Colonoscopy +/- 
+OGD 
+  
+At-risk FAP(member of 
+FAP family with no 
+mutation identified) 
+ 
+APC gene testing of 
+affected relative 
+Colonoscopy 
+ 
+Puberty 
+Flexible approach 
+Important making allowance 
+for variation in maturity 
+Annual colonoscopy or until 
+aged 30 years 
+Thereafter 3-5 yearly until 60 
+years procto-colectomy or 
+colectomy if positive.  
+ 
+Fulfils clinical FAP 
+criteria, or proven APC 
+mutation carrier 
+opting for deferred 
+surgery prophylactic 
+surgery normally 
+strongly 
+recommended 
+Colonoscopy 
+Colonoscopy/ OGD 
+Usually at diagnosis 
+Otherwise puberty. 
+Flexible approach 
+important 
+making allowance for 
+variation in maturity 
+Recommendation for procto-
+colectomy & 
+pouch/ colectomy before age 
+30 years. 
+ 
+Cancer risk increases 
+dramatically age >30 years. 
+ 
+Twice yearly colonoscopy. 
+FAP post colectomy 
+and IRA 
+Colonoscopy 
+OGD 
+After surgery 
+OGD from age 30 years 
+Colonoscopy Every 3 years 
+forward & side-viewing OGD. 
+FAP post procto-
+colectomy and pouch 
+DRE and pouch 
+endoscopy 
+Forward & side-
+viewing OGD 
+After surgery 
+OGD from age 30 years 
+Annual exams alternating 
+Flexible/rigid pouch 
+Endoscopy Every 3 years 
+forward & side-viewing OGD. 
+MUTYH-associated 
+polyposis (MAP) 
+Genetic testing 
+Colonoscopy 
++/- OGD 
+Colonoscopy from age 25 years. 
+OGD from age 30 years 
+Mutation carriers should be 
+counselled about the 
+available limited evidence; 
+Options include prophylactic 
+colectomy and ileorectal 
+anastomosis; or biennial 
+colonoscopy surveillance. 
+Every 3-5 years gastro-
+duodenoscopy. 
+FDR with MSI-H 
+colorectal 
+cancer AND IHC 
+shows loss of MSH2, 
+MSH6 or PMS2 
+expression. 
+Colonoscopy 
++/- OGD 
+Colonoscopy from age 25 years 
+OGD from age 40years 
+Colonoscopy every 2 years 
+(with OGD aged >40 years). 
+ 
+ 
+ 
+ 
+   Page 16 of 28 
+ 
+MLH1 loss and MSI 
+specifically excluded 
+(MLH1 
+loss in elderly patient 
+with 
+right sided tumor is 
+usually somatic 
+epigenetic event) 
+ 
+Peutz-Jeghers 
+Syndrome 
+Genetic testing of 
+affected relative 
+ 
+Colonoscopy +/- OGD 
+Colonoscopy from age 25 years. 
+ 
+OGD from age 25 years 
+Small bowel MRI/ 
+enteroclysis 
+2 yearly colonoscopy/  
+Consider colectomy and IRA 
+for colonic cancer.  
+ 
+Small Bowel VCE or 
+MRI/enteroclysis 
+2-4yearly. 
+OGD 2 yearly. 
+Juvenile polyposis Genetic testing of 
+affected relative 
+ 
+Colonoscopy +/- OGD 
+Colonoscopy from age 15 years 
+ 
+OGD from age 25 years 
+Every 2 years colonoscopy 
+and OGD. Extend interval >35 
+years. 
+ 
+ 
+ 
+1) The Amsterdam criteria for identifying HNPCC are three or more relatives with colorectal cancer: 
+ One patient a first degree relative of another; 
+ Two generations with cancer; and 
+ One cancer diagnosed under the age of 45 or other HNPCC-related cancers e.g. endometrial, ovarian, gastric, upper 
+urethelial and biliary tree. 
+2) Clinical Genetics referral and family assessment required, if not already in place or if Clinical Genetics did not initiate 
+referral. 
+3) FAP, familial adenomatosis polyposis; FDR, first degree relative (sibling, parent or child) with colorecta l cancer; HNPCC, 
+hereditary non-polyposis colorectal cancer; IHC, immunohistochemistry of tumor material from affected proband; MSI -H, 
+micro-satellite instability e high (two or more MSI markers show instability); OGD, esophagogastroduodenoscopy 
+endoscopy; VCE, video capsule endoscopy. 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 17 of 28 
+ 
+8.8. Appendix 8 - Genetic Test 
+ 
+Available genetic tests for the patient or his/ her affected family member(s) that may be recommended by the Cancer 
+Genetics professional based on the assessment. 
+  
+Disease Reasonable gene 
+Lynch syndrome/hereditary non-  Genes responsible: MLH1, MSH2, MSH6, PMS2. 
+polyposis colorectal  <OMIM 114500, 120435, 120436, 276300, 
+cancer (HNPCC) 609309, 600678, 
+ 600259. 
+   
+Familial Adenomatous Polyposis (FAP) 
+ APC. 
+ <OMIM 175100. 
+   
+PEUTZ-JEGHERS SYNDROME 
+ LKB1. 
+ <OMIM 175200. 
+   
+Juvenile Polyposis  SMAD4, BMPR1A (Juvenile polyposis). 
+  <OMIM 174900. 
+Rare subtype hereditary mixed  locus on chr15q (GREM1 or SGNE1 may be 
+juvenile/adenomatous  Responsible). 
+polyposis  <OMIM 601228. 
+  Mutyh Associated Polyposis (MAP)  MUTYH. <OMIM 608456. 
+ 
+ 
+8.9. Appendix 9 - Pre-Colonoscopy Assessment 
+ 
+1. Pre-colonoscopy documentation must include: 
+1.1 Patient demographics; 
+1.2. Anticoagulant use; 
+1.3. History of Diabetes Mellitus and use of Insulin; 
+1.4. Presence of implantable defibrillators or pacemakers; 
+1.5. Previous Gastrointestinal procedures; 
+2. Assessment of patient risk: physical status of the patient must be documented in accordance with the American Society 
+of Anesthesiology (ASA) (Appendix 10). 
+3. ASA class 3 or higher are at higher risk for cardiopulmonary events and appropriate measures must be taken in this respect. 
+4. Colonic cleansing: type of bowel preparation must be documented including documentation of careful preparation in 
+accordance with international standards and gu idelines. Written instruction to be given to patient concerning colonic 
+cleansing. 
+5. Inadequate bowel preparations must not exceed 10% of examinations. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 18 of 28 
+ 
+8.10. Appendix 10 - Pre- colonoscopy Assessment - American Society of Anesthesiology Classification System 
+ 
+Class Description 
+1 Patient has no organic, physiologic, biochemical, or psychiatric disturbance (healthy, no 
+comorbidity). 
+ 
+ 
+ 
+2 Mild-moderate systemic disturbance caused either by the condition to be treated surgically  
+or by other pathophysiologic pr ocesses (mild -moderate condition, well controlled with medical 
+management; examples include diabetes, stable coronary artery disease, stable chronic pulmonary 
+disease). 
+ 
+ 
+ 
+3 Severe, systemic disturbance or disease from whatever cause, even though it may not be possible to 
+define the degree of disability with finality (disease or illness that severely limits normal activity and 
+may require hospitalization or nursing home care; examples include severe stroke, poorly controlled 
+congestive heart failure, or renal failure). 
+  
+4 Severe systemic disorder that is already life threatening, not always correctable by the operation 
+(examples include, acute myocardial infarction, respiratory failure requiring ventilator support, renal 
+failure requiring urgent dialysis, bacterial sepsis with Hemodynamic instability). 
+  
+5 The moribund patient who has little chance of survival. 
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   Page 19 of 28 
+ 
+8.11. Appendix 11 - Colonoscopy Procedure 
+ 
+1. Facility specific Policies and Procedures must be in place for the following:  
+1.1 Colonoscopy decontamination including infection control in accordance with:  
+http://www.healthdesign.com.au/haad.hfg/Full_Index/haad_b_day_surgery_procedure_u nit.pdf 
+1.2 Sedation of patient, considering patient status and preferences and recording of all sedation methods and 
+outcomes; consider involving anesthesia service in patients with significant comorbidities such as patients 
+with ASA 3, 4 and 5 (Appendix 9); and 
+1.3 Patient support and comfort, including positioning during the colonoscopy; 
+ 
+2. To achieve high quality colonoscopic examination, complete intubation of the colon and careful inspection of the 
+mucosa during withdrawal is necessary. 
+2.1 If a complete colonosco py is not achieved, imaging for documentation of  incomplete intubation may be 
+necessary and reasons must be clearly documented; 
+2.2 Auditable photo documentation of colonoscopy completion must be available; including a panoramic image 
+of the appendiceal orifice, ileo-cecal valve and cecum or a video clip with a respective image; 
+2.3 Documentation of completion of rectal retroflexion (retroflexion of the endoscope during colonoscopy to 
+increase diagnostic yield) must be recorded; 
+2.4 Withdrawal times of the colonoscopy from cecum to anus must be documented and must be not less than 
+6 minutes (when no biopsies or polypectomies are performed). The times to be documented include when: 
+ Endoscope is inserted into the rectum; 
+ Withdrawal from cecum was started; and 
+ Endoscope is withdrawn completely. 
+A record of the actual model and instrument number used must be maintained by the unit staff to track 
+procedure volume, problems, and infection transmission and instrument repairs;  
+2.5 Any adverse clinical events (fall in blood pressure,  unplanned reversal of sedation medications, oxygen 
+desaturation etc.) that occur during colonoscopy as well all serious events (perforation, bleeding requiring 
+blood transfusion, and/or surgery) must be documented and attached to the colonoscopy report (Appendix 
+15 ) and reported in accordance with DOH Standard for Adverse Events Management and Reporting.  
+  
+ 
+ 
+ 
+ 
+   Page 20 of 28 
+ 
+ 
+8.12. Appendix 12 - Post-colonoscopy Procedures 
+ 
+1. Patients must be contacted 24 hours post - procedure or on the next working day to monitor any 
+complications; this contact must be documented; 
+2. Patients must receive instructions about management of any potential adverse events following discharge and 
+must be informed that complications may occur within 1 to 4 weeks post procedure;  
+3. A contact number must be prov ided to the patient for this purpose and documented in the 
+patient records; 
+4. Post procedure complications must be tracked over a 30-day interval after a Colonoscopy; and  
+5. Discharge instruction form should be - given to patient instructing him to call endosco py unit or the 
+gastroenterology physician on call or to come to ER in case there is any abdominal pain or any complication or 
+concerns after the procedure. Patient should sign this form acknowledging that he understood the post 
+colonoscopy and the pre-discharge instructions. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+   Page 21 of 28 
+ 
+8.13. Appendix 13 - Colonoscopy Findings 
+ 
+Colonoscopy Findings 
+1. If use of vague terms to describe polyps in the report should be avoided; 
+2. An estimation of the size and dimension of all polyps must be documented . Terms such as “large” or “small” must 
+not be used; 
+3. Tattoos must be placed for all lesions ≥ 10 mm and those with concerning appearance for cancer to mark the 
+location of colon lesions for repeat colonoscopy or surgery as per  international updated recommendations and 
+best practice; 
+4. Lesions that are too large to be safely- removed must be biopsied and a tattoo injection performed in the - vicinity 
+of the lesion and not into the lesion,  
+5. Specimen Identification and labelling must be in accordance with DOH Clinical Laboratory Standards and industry 
+best practices;  
+6. Procedures and protocols for adequate specimen collection, handling, labelling and reporting must be i n 
+accordance with DOH Clinical L aboratory Standard and must be -communicated to clinical staff and other clients 
+who are involved in the procedures for processing of colorectal specimens. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+   Page 22 of 28 
+ 
+8.14. Appendix 14 - Colonoscopy Report 
+  
+1. Each facility must develop a patient colonoscopy report form, retained on the patient’s medical record and made 
+available to DOH auditors.  
+2. The Report must include at least the following information:  
+2.1 Patient demographics and history;  
+2.2 Assessment of patient risk and comorbidity;  
+2.3 Procedure indications;  
+2.4 Procedure: technical description;  
+2.5 Colonoscopy findings;  
+2.6. Interventions/ unplanned events;  
+2.7 Assessment;  
+2.8 Follow–up plan; and  
+2.9 Pathology. 
+ 
+Section 1: Patient demographics 
+ Name  Date of Gender  MRN  Associated diagnosis 
+   birth  
+Male 
+   
+         
+      Female    
+Section 2: Colonoscopy procedure 
+ Informed consent signed Indication for colonoscopy  ASA risk 
+  Yes           
+  No          
+ Date Time (24  Physical exam conducted  Patient, procedure confirmed 
+  hrs.)   
+ yes  no 
+ 
+ yes  no       
+Performed by Preparation and technique  
+Bowel preparation 
+Protocol 
+ 
+Quality 
+Antibiotic prophylaxis given? 
+ yes no  
+ 
+ 
+ 
+ 
+   Page 23 of 28 
+ 
+ 
+ Monitoring during procedure 
+ Premedication       Patient position 
+              
+ Endoscope model       Endoscope manufacturer 
+              
+ Procedure tolerated?  Complications (state any):    
+ 
+  yes  
+  no           
+             
+Section3: Colonoscopy findings 
+ Route of entry     Extent of examination 
+            
+ If incomplete examination, state reason         
+         
+ Method of verifying extent    Duration of colonoscopy withdrawal (minutes) 
+ Rectal retro flexion performed.  Cecum identified by 
+ yes                no 
+Photographic of appendicular orifice? yes     no         
+             
+ Positive Findings  Finding        
+ yes no            
+           
+ Extent         Severity 
+             
+ Characterized by           
+             
+ Consistent with           
+             
+ Removal method           
+       
+ Mass  Number   Size (mm, mention all) 
+             
+Location(s)            
+ Descriptors           
+         
+Removal method       Retrieve 
+ Photo documentation attached.      Other findings? 
+ Yes      no           
+            
+ Discussed with patient?            
+ yes no           
+ 
+ 
+ 
+ 
+   Page 24 of 28 
+ 
+ 
+8.15. Appendix 15 – Example of -Techniques for Colonoscopic- Tattooing Protocol 
+ 
+ 
+ 
+  
+
+ 
+ 
+ 
+ 
+   Page 25 of 28 
+ 
+ 
+8.16. Appendix 16- E-Notification Cancer Screening Referral Form 
+ 
+ 
+Cancer 
+Screening ID: 
+ 
+First Name: 
+ 
+ 
+Last Name : 
+ 
+ 
+Date of Birth: 
+ 
+ 
+Emirate I.D. 
+ 
+ 
+Colonoscopy  
+Report: 
+ 
+Recommended 
+next step: 
+ 
+FIT Report : 
+ 
+ 
+Recommended 
+next step: 
+ 
+Referred to : 
+ 
+ 
+Date of referral: 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+   Page 26 of 28 
+ 
+8.17. Appendix 17 - Cancer Screening Data Requirement – Screening Visit Outcome  
+ 
+ 
+   
+   
+   
+    
+    
+    
+    
+Personal health history  
+ 
+  
+  
+  
+ 
+  
+  
+  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+   Page 27 of 28 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+   
+ 
+    
+   
+ 
+ 
+ 
+   
+   
+ 
+ 
+    
+  
+ 
+  
+ 
+   
+ 
+
+ 
+ 
+ 
+ 
+   Page 28 of 28 
+ 
+ 
+  
+ 
+ 
+ 
+  
+     
+       
+ 
+ 
+  
+ 
+ 
+ 
+   
+ 
+ 
+  
+  
+     
+ 
+     
+ 
+ 
+ 
+     
+ 
+ 
+ 
+ 
+ 

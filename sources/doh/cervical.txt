@@ -1,0 +1,618 @@
+ 
+Page 1 of 15 
+ 
+ 
+ 
+CERVICAL CANCER 
+SCREENING PROGRAM  
+REQUIRMENTS  
+ 
+MARCH 2022  
+ 
+ 
+ 
+Page 2 of 15 
+ 
+ 
+ 
+1. Purpose  
+1.1 This document mandates the clinical serv ice specifications and data reporting for DOH’s Cervical 
+Cancer Screening Program in the Emirate of Abu Dhabi;  
+1.2 It specifies the clinical care pathway and minimum service specifications to ensure that women 
+screened for cervical cancer receive quality and safe care and timely referral for diagnosis and/or 
+treatment. 
+ 
+2. Scope  
+ 
+ 
+ 
+ 
+  
+ 
+Document Title:  Cervical Cancer Screening Program Requirements 
+Document Ref. Number:   DOH/CCSC/SD/1.1 
+ 
+Version:  1.2 
+Last Reviewed: March 2021 Next Review: March 2024 
+Approval Date: 3rd, March 2022 Effective Date: 16th, March 2022 
+Document Owner :  Cancer Prevention and Control Section, NCD, Abu Dhabi Public Health Center 
+ 
+Applies to:  
+ 
+All Licensed Healthcare Providers in the Emirate of Abu Dhabi participating in 
+DOH’s Cervical Cancer Screening Program 
+ 
+Classification:   Public 
+This Standard should 
+be read in conjunction 
+with related UAE laws, 
+DOH standards, 
+policies, and circulars 
+including but not 
+limited to:  
+ 
+• Federal laws on Medical Liability and the Practice of Human Medicine.  
+• DOH Providers Manual-Chapter on Standards of Care. 
+• DOH Professionals Manual-Chapter on Professional Duties and Obligations. 
+• DOH Regulator Manual-Chapter on Data Management  
+• DOH Standard for Clinical Privileging Framework. 
+• DOH Standard for Adverse Events reporting and Management. 
+• Federal Charter on Patient’s Rights and Responsibilities. 
+• DOH Standard for Complaints Management in Healthcare Facilities. 
+• DOH Data Management Policy and DOH Data Standards.  
+• DOH Standard on Telemedicine  
+• DOH Policy on Cultural Sensitivity.  
+
+ 
+Page 3 of 15 
+ 
+2.1 These program specifications apply to all Healthcare Providers (Facilities, laboratories, Professionals) 
+licensed by DOH in the Emirate of Abu Dhabi who are participating in DOH’s Cervica l Cancer Screening 
+Program. 
+2.2  Participating Healthcare Providers are to provide the following services as applicable based on their 
+license category: 
+2.2.1 Risk assessment and physical examination; 
+2.2.2 Specimen collection and preparation of adequate cervical smear; 
+2.2.3 Handling and reporting of cervical smears; and  
+2.2.4 Follow up and referral. 
+2.3  Follow reporting terminologies defined by DOH as per appendix 1.   
+ 
+3. General Duties of the Health care Providers  
+All licensed and eligible healthcare providers participating in DOH’s C ervical Cancer Screening 
+Program must: 
+3.1. Provide clinical services and patient care in accordance with DOH Policies and Standards, and the 
+laws and regulations of the Emirate of Abu Dhabi; 
+3.2. Submit data to DOH via e-Claims in accordance with the DOH Reporting of Health Statistics Policy 
+and as set out in the DOH Data Standards and Procedures (found online at  
+https://www.doh.gov.ae/en/Shafafiya/dictionary ); 
+3.3. Comply with relevant DOH Policies and Standards with special attention to: 
+3.3.1. Policies and standards on Patient Education  and Consent: The licensed provider 
+must provide appropriate patient education and information regarding the screening test 
+and must ensure that appropriate patient consent is obta ined and documented on the 
+Patient’s medical record; 
+3.3.2. Policies and standards on managing patient medical records including developing 
+effective recording systems, maintaining patient records, maintaining confidentiality, 
+privacy and security of patient info rmation; and educating patients on services provided 
+and satisfying the requirements of patient informed consent and patient rights and 
+responsibilities charter; 
+3.3.3. DOH Data Standards and Procedures. 
+3.4. Comply with DOH’s requests to inspect and audit records and  cooperate with DOH authorized 
+auditors as required by DOH; and 
+3.5. Comply with requirements for information technology (IT) and data management including sharing 
+of screening/diagnosis and where applicable, pathology results, electronic patient records and 
+disease management systems; 
+ 
+4. Enforcement and Sanctions  
+4.1 Healthcare providers, professionals and laboratories participating in the DOH’s Cancer 
+Screening Program must comply with the terms and requirements of this document. 
+4.2 Health care providers must comply with the DOH Standard Provider Contract.   
+4.3 DOH may impose sanctions in relation to any breach of requirements under this program 
+specification in accordance with the [DOH Policy on Inspections, Complaints, Appeals and 
+Sanctions]. 
+ 
+5. Payment Mechani sm 
+Eligibility for reimbursement under the Health Insurance scheme is as follows: 
+ 
+Page 4 of 15 
+ 
+5.1. For Thiqa holders, reimbursement must be consistent with the DOH Standard for Thiqa Preventive 
+List of Interventions available at www.doh.gov.ae; and 
+5.2. For non -Thiqa holders, payment must be consistent with the individual’s health insurance 
+product/plan. 
+ 
+6. Cervical Cancer Screening Program Specifications  for Facilities:  
+ Facilities participating in DOH’s Cervical Cancer Screening Program must:  
+6.1. Be Licensed by the DOH; 
+6.2. Fulfill the eligibility criteria for a cervical cancer screening Program participating facilities in 
+accordance with Appendix 2 and approved by DOH as eligible cervical cancer screening program 
+facilities; 
+6.3. Comply with DOH cervic al cancer screening care pathways, clinical quality indicators and time 
+lines for referral in accordance with Appendices 3, 4 and 5 respectively; 
+6.4. Assign a screening program coordinator responsible for submitting data on screening visits and 
+outcomes to DOH, who will fulfill the responsibilities in accordance with Appendix 6; 
+6.5. Collect and submit data on screening visits and outcomes within 3 weeks of the screening date, 
+to DOH through the Electronic Cancer Screening Notification (e -cancer notification) that c an be 
+accessed at: https://www.doh.gov.ae/en/e-services  
+6.6. Report all screen-detected cancer cases to DOH, through Cancer Case Notification Form, of the 
+e-cancer notification, specified in 4.2;  
+6.7. Maintain records for screening tests and outcomes; 
+6.8. Establish internal audit procedures to demonstrate compliance with this document  and other 
+associated regulatory policies and standards; 
+6.9. Ensure availability of evidence of compliance with the Cervical Cancer Screeni ng Program Clinical 
+Quality indicators specified in Appendix 4 including:  
+6.9.1. Collection and preparation of adequate cervical smear; 
+6.9.2. Handling and transporting of specimens to DOH Licensed clinical laboratories;  
+6.9.3. Have an approved protocol for  referral of women  with abnormal results or physical 
+examination to a diagnostic or treatment centers. 
+ 
+7. Cervical Cancer Screening Program  Specifications  for Laboratories:  
+  Laboratories participating in DOH Cervical Cancer Screening Program must: 
+7.1. Be Licensed by the DOH; 
+7.2. Comply with the applicable elements of the Screening Program and other DOH clinical quality 
+indicators in accordance with Appendix 4 and ensure availability of evidence of compliance with 
+these indicators such as laboratory records required for accreditation purposes; 
+7.3. Comply with the DOH Clinical Laboratory Standards; 
+7.4. Attain accreditation by an international body recognized by the DOH; such as, CAP - ISO 
+15189(2007), or JCI /Lab; 
+7.5. Participate in an international external proficiency test by all personnel involv ed in screening and 
+reporting Pap test; 
+7.6. Establish internal audit procedures to demonstrate compliance with this program specification  
+and with other associated regulatory policies and standards; 
+7.7. Develop, implement, and monitor policies and standard operati ng procedures for management of 
+smears in accordance with DOH Clinical Laboratory standards. 
+ 
+8. Cervical Cancer Screening Program Specifications for Healthcare professionals:   
+ 
+Page 5 of 15 
+ 
+Health professionals participating in the DOH’s Cervical Cancer Screening Program must be: 
+8.1. Licensed by the DOH; 
+8.2. Comply with the clinical standards detailed in this program specification  to provide the most 
+appropriate care, taking responsibility for deciding the best care options for managing cervical 
+cancer cases;  
+8.3. Provide women with  culturally and socially relevant education on women’s’ health and with 
+information (oral and written) regarding the screening benefits and limitations of cervical 
+screening, potential outcomes and next steps that may be required for care management. 
+8.4. Participate in continuing medical education (CME) in accordance with DOH requirements; 
+ 
+9. Cervical Cancer Screening Program Screening tests and frequency:  
+9.1. Screening tests:  
+9.1.1. Papanicolaou test, (also called Pap test). Liquid based cytology (LBC) is the accepted 
+standard method for Pap test specimen collection. 
+9.1.2. HPV test, as co -testing, for women age of 30 years and above. Only FDA HPV approved 
+tests are the accepted test for screening 
+9.2. Frequency of screening:  
+The frequency for repeat screening for average risk, symptom free women is:  
+9.2.1. Every three years for women aged 25-29 years. 
+9.2.3. Every 5 years for women 30-65 years.  
+9.2.4. Annually for women who are immune-compromised due to disease or medication. 
+ 
+10. Cervical Cancer Screening Program Service Specifications:   
+10.1. Eligibility for S creening Criteria  
+10.1.1. All sexually active women (past or present), symptom free, aged 25- 65 years residing in the 
+Emirate of Abu Dhabi, except where exclusion criteria for screening apply. 
+10.1.2. Women are excluded from screening if:  
+10.1.2.1. They have received a total hysterectomy for benign indications; or 
+10.1.2.2. They are over 65 years, (if the last three previous smears were negative). 
+10.1.3. Women who have had subtotal hysterectomy (preserving the cervix) or hysterectomy due to 
+cervical cancer or precancerous condition should continue to have cervical screening; and 
+10.1.4. Screening recommendations remain the same regardless of whether or not they have 
+received the HPV vaccination. 
+ 
+10.2. Recruitment to screening  
+Recruitment of eligible women for screening can be made through:  Targeted invitation from the eligible 
+screening facilities. 
+1.1.2. Opportunistic by: 
+1.1.2.1. Approaching women who are enrolled in other existing screening programs; e.g. 
+breast cancer); 
+1.1.2.2. Physician consultation for related or unrelated reason; or 
+1.1.2.3. As an outcome of a health promotion campaign. 
+ 
+10.3 Risk assessment and physical examination  
+10.3.1Women must receive adequate information regarding the screening, Pap test 
+procedure and expected outcomes and timeframe to receive results. 
+ 
+Page 6 of 15 
+ 
+10.3.1 Detailed history must be taken to assess risk and frequency of repe ating screening, 
+including at least: 
+10.3.2 Menstrual status (L ast menstrual period , hysterectomy, pregnant, postpartum, use of 
+contraceptive or hormone therapy); 
+10.3.3 Previous screening, results of screening, (negative, abnormal or positive) and any 
+previous treatment, (biopsy, chemotherapy, radiotherapy or surgery; 
+10.3.4 Immune-compromised status due to diseases (including HIV) or medication; 
+10.3.5 Full clinical examination must be performed including visual inspection of the cervix. 
+ 
+10.4 Specimen collection and preparation of adequ ate Pap test  
+10.4.1 The following categories of DOH Licensed healthcare physicians are eligible to perform a 
+Pap test: 
+10.4.1.1 Licensed gynecologists, obstetricians and family medicine physicians; and 
+10.4.1.2 Physicians already privileged to do so by their institution.  
+10.4.2 Eligible Physicians must: 
+10.4.2.1 Complete the required form with relevant clinical information in accordance with 
+Article 9. 1.2; 
+10.4.2.2 Collect and manage specimens in accordance with the facility internal policies and 
+procedures and DOH Standards. 
+10.4.3 Smear taking must be avoided  in the following circumstances and women must be 
+advised when to return for a pap test: 
+10.4.3.1 Menstruation, blood loss, breakthrough bleeding;   
+10.4.3.2 Vaginal inflammation/ infection; 
+10.4.3.3 Pregnancy (Unless a previous smear was abnormal and in the interim the woman 
+becomes pregnant, then the follow-up smear must not be delayed). 
+ 
+10.5  Cytology smear handling and reporting  
+Clinical Laboratories handling and reporting of cytology specimens and cytology smears 
+testing must: 
+10.5.1 Manage cervical cytology smears and perform the cytopath ology testing as indicated and 
+in accordance with the specifications of the DOH Clinical Laboratory Standards, including 
+without limitation “Processes for Laboratory Specialties” and “Cytopathology of the HAAD 
+Clinical Laboratory Standards”.  
+10.5.2 Make final re ports of cervical cytology smear using the Bethesda System (The Bethesda 
+System for Reporting Cervical Cytology).  
+10.5.3 The report must be verified by a pathologist for all abnormal and reactive cases, while 
+negative cases can be verified by licensed cytotechno logist using standard synoptic 
+reporting format and containing minimum elements consistent with those of 
+internationally Reputable accrediting bodies.  
+10.5.4 The report must minimally include the following details:  
+10.5.4.1 Patient’s name;  
+10.5.4.2 Age/date of birth;  
+10.5.4.3 Menstrual status (LMP, hysterectomy, pregnant, postpartum, hormone therapy); 
+10.5.4.4 Relevant clinical information such as if the patient has previously had a positive test 
+or had other types of cancer, etc.  
+10.5.4.5 Specimen Description (source). 
+ 
+Page 7 of 15 
+ 
+10.5.5 The reporting pathologist is the professional responsible for confirming the positive 
+cancer results.  
+10.5.6 Reports for Specimen adequacy and Cytological findings must be returned to the 
+referring physician at the screening center within 8 working days of receiving the 
+specimen.  
+10.5.7 The DOH may, at its discretion, conduct third-party independent quality assurance testing 
+of laboratories providing cervical smear laboratory test service.  Where it does so, 
+providers must comply with DOH’s direction and cooperate with the DOH appointed 
+party. 
+ 
+10.6 Screen ing outcomes and referrals  
+10.6.1 All women must be notified in writing of the result of their screening tests. 
+10.6.2 It is the responsibility of the physician at the screening facility to notify and provide a 
+written report to a woman regarding her screening results within 21 days (3 weeks) of the 
+date of specimen taken.  
+10.6.3 If the test outcome is normal, the woman is discharged to routine screening as per 
+frequency mentioned in this document. 
+10.6.4 If the test outcome is unsatisfactory, it must be repeated within 6 -12 weeks, t reating 
+infection, if present, as indicated. 
+10.6.5 If the Pap test outcome is abnormal (cytology showed intraepithelial lesions or 
+malignancy and/or HPV positive), the woman’s test should be managed according to 
+Appendix 3. 
+10.6.6 If a suspicious visible abnormality is  identified during visualization of the cervix, the 
+woman must be referred immediately to a Gynecologist oncologist without receipt of her 
+test results. 
+10.6.7 If a woman requires referral for colposcopy or treatment, the physician must make the 
+referral to an ap propriately DOH licensed healthcare professional, privileged to provide 
+the specialty/oncology service. Timelines for referral should be in compliance  with 
+Appendix 5 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Page 8 of 15 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Appendix 1  
+ 
+Definitions  
+ 
+Term  Definition  
+The Bethesda system 
+(TBS) 
+is a system for reporting cervical  or vaginal cytological  diagnoses, used for 
+reporting  Pap smear results., The name comes from the location ( Bethesda , 
+Maryland) of the conference that established the system of reporting  
+HPV  Human papilloma virus  
+HPV co-testing Is a test is done along with the pap test in women aged 30 years and above, 
+to screen for a high -risk HPV viral types.  Only FDA approved test are 
+accepted 
+ASC-US Atypical squamous cells of undetermined significance. It is a finding of 
+abnormal cells in the tissue that lines the outer part of the cervix 
+ASC-H Suspicious for high grade dysplasia 
+LGSIL or LSIL Low-grade squamous intraepithelial lesion 
+HGSIL or HSIL 
+ 
+High-grade squamous intraepithelial lesion 
+AIS  Adenocarcinoma in situ 
+AGC Atypical Glandular Cells  
+ 
+Page 9 of 15 
+ 
+ 
+Appendix 2  
+ 
+Eligibility Criteria for a Facility to Participate in DOH’s Cervical Cancer Screening Program  
+ 
+1. General  
+In addition, to the requirements of this program specification  the healthcare facility must fulfill 
+the following criteria: 
+1.1 Plan capacity to match the demand for screening and the facility capacity. 
+1.2 Allocate appointment slots for cervical cancer screening linked to the DOH online booking system 
+(when available). 
+1.3 Have available adequate equipment to provide safe and quality screening;  
+1.3.1 Send cervical cytology smears only to DOH licensed Laboratories that meet the requirements 
+of this program specification; and 
+1.3.2 Ensure patient privacy, comfort and confidentiality at all times. 
+ 
+2. Human Resources  
+2.1 The core team must include at least: 
+2.1.1 A program coordinator; 
+2.1.2 A licensed Physician, Family Medicine Physician, Gynecologist or Obstetrician, physician 
+privileged to deliver cervical screening care and services; 
+2.1.3 A licensed nurse for each clinic with a minimum of 2 years of experience in Gynecology 
+or obstetric nursing. 
+2.2 Training of licensed health professionals must be delivered using CME/CPD courses 
+accredited by DOH CME department at https://www.doh.gov.ae/en/programs-
+initiatives/meed  including  
+2.2.1 For physicians; training for Pap smear taking in  accordance with international evidence based 
+training standards and guidelines. 
+ 
+3. Registration as DOH S creening F acilities  
+Facilities meeting DOH cervical cancer screening requirements should follow DOH facilities’ 
+registration process: 
+3.1 Register through DOH facility registration website.   
+ 
+ 
+Page 10 of 15 
+ 
+Appendix 3: Cervical cancer screening care -pathway  
+Assessment & physical 
+examination 
+Screening test *
+Abnormal 
+Repeat in 6 
+month 
+≠Visible 
+Suspicious 
+lesions 
+LSIL or more 
+Ω Cytology 
+negativ e, HP V 
+positive 
+ASC-US
+<30  < Or =30
+○HPV test 
++ve
+Normal/
+Negativ e 
+-ve
+Gynecologic /
+oncology center  
+Repeat test 
+after 3 month 
+ 
+Key  
+*Screen as per screening guidelines women 25-29 years with cytology, women 30—69 years with cytology 
+and HPV as co-testing  
+◊Rescreening interval for 25- 29 every 3 years, for 30-65 every 5 years  
+○HPV ttest is done as triage for women ≥25 and co-testing for women ≥30 
+≠Women with suspicious visible lesions should be refer immediately to Gyna/oncologists  
+ΩAll negative cytology with positive HPV test refer to colposcopy specialized centers  
+ 
+◊Rescreen 
+*Check 
+eligibility 
+Start 
+End 
+Colposcopy
+Normal/
+Negativ e Unsatisfacto ry
+AGC
+ 
+ 
+Page 11 of 15 
+ 
+ 
+Appendix 4  
+ 
+Cervical Ca ncer Screening Program -Clinical Quality Indicators  
+ 
+Quality Indicator  
+ 
+ Acceptable level  Desirable level  
+Coverage  
+ 
+Retention Rate Percentage of eligible women re-screened within 
+three years after a negative Pap test in a 12-month 
+period. 
+40% 50% 
+ 
+Cytology Performance Indicators 
+ 
+Specimen Adequacy 
+Unsatisfactory proportion 
+ 
+Percentage of Pap tests that are reported as 
+unsatisfactory in a 12 month period 
+4.7% 1.3 
+Screening test results 
+Negative  
+ 
+Percentage of women by their most severe Pap test 
+result in a 12-month period. 
+90% 97% 
+System Capacity Indicators 
+ 
+Cytology Turn Around Time 
+2 weeks 
+ 
+The average time from the date the specimen is 
+taken to the date the finalized report is issued over a 
+12-month period. 
+>80% >90% 
+Time to Colposcopy 
+ 
+Percentage of women with a positive Pap test 
+(HSIL+/ASC-H) who had follow-up colposcopy within 
+3, 6, 9 and 12 months subsequent to the index Pap 
+test. 
+ 
+ 
+80% 88% 
+ 
+Page 12 of 15 
+ 
+Follow – up 
+ 
+Biopsy Rate 
+ 
+Percentage of women with a positive screening test 
+result (HSIL+/ASC-H) who received a histological 
+diagnosis in a 12 month period 
+To be determined 11% 
+Cytology-Histology 
+Agreement 
+ 
+Proportion of positive Pap tests with histological 
+work-up found to have a pre-cancerous lesion or 
+invasive cervical cancer in a 12 month period A. 
+To be determined  
+Outcome Indicators 
+ 
+Pre-Cancer Detection Rate 
+ 
+Number of pre-cancerous lesions detected per 1,000 
+women who had a Pap test in a 12-month period. 
+To be determined 7.1 per 1000 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Page 13 of 15 
+ 
+ 
+ 
+ 
+ 
+Appendix 5  
+ 
+Cervical Cancer Screening  Program - Timeframes for Appointments  
+ 
+Cytological pattern  Priority  Appointment  
+HSIL or greater  
+ 
+Urgent 1-2 weeks 
+LSIL soon 2-4 weeks 
+ASC-US/ ASC -H Routine 4-8 weeks 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+ 
+ 
+Page 14 of 15 
+ 
+Appendix 6  
+Responsibilities of the Facility Cancer Screening Program Coo rdinator  
+ 
+The healthcare facility cervical cancer screening program coordinator must: 
+1.1. Be a licensed healthcare professional;  
+1.2. Have comprehensive and high quality knowledge in cervical cancer as a disease and its prevention;  
+1.3. Be responsible for:  
+1.3.1. Recruitment of eligible women;  
+1.3.2. Follow up and tracking of screening results to ensure the timeliness and completeness of 
+follow-up; 
+1.3.3. Assessing relationships between planned care and approved protocols for care;  
+1.3.4. Assessing women’s’ needs for support to remove barriers to screening and follow-up; 
+1.3.5. Developing and promoting recall systems that include reminders to patients as appropriate; 
+and 
+1.3.6. Submitting data on screening visit and outcomes to DOH via the [cancer screening e-
+notification system]. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+Page 15 of 15 
+ 
+ 
+References:  
+NHS Cervical Screening Program 
+https://www.bsccp.org.uk/assets/file/uploads/resources/NHSCSP_20_Colposcopy_and_Progr
+amme_Management_(3rd_Edition)_(2).pdf 
+ 
+The American Cancer Society Guidelines for the Prevention and Early Detection of Cervical Cancer 
+https://www.cancer.org/cancer/cervical-cancer/prevention-and-early-detection/cervical-cancer-
+screening-guidelines.html 
+ 
+Performance Monitoring for cervical Cancer Screening Programs in Canada 
+http://www.phac-aspc.gc.ca/cd-mc/cancer/pmccspc-srpdccuc/pdf/cervical-eng.pdf 
+ 
+Ontario Cervical Screening Guidelines  
+https://www.cancercare.on.ca/common/pages/UserFile.aspx?fileId=13104 
+ 
+NCCN cervical cancer screening guidelines  
+https://www.cancercare.on.ca/common/pages/UserFile.aspx?fileId=13104 
+ 
+ACOG-cervical cancer screening guidelines  
+https://www.acog.org/Patients/FAQs/Cervical-Cancer-Screening 
+ 
+Implementation of cancer screening in the European Union (2017) 
+https://ec.europa.eu/health/sites/health/files/major_chronic_diseases/docs/2017_cancerscr
+eening_2ndreportimplementation_en.pdf 
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2826099/ 
+ 
+European guidelines for quality assurance in cervical cancer screening 
+http://screening.iarc.fr/doc/ND7007117ENC_002.pdf 
+ 
+ 
+ 
