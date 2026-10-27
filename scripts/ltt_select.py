@@ -19,6 +19,8 @@ ap.add_argument("dir")
 ap.add_argument("--alpha-fc", type=float, default=0.001)
 ap.add_argument("--alpha-wp", type=float, default=0.001)
 ap.add_argument("--delta", type=float, default=0.05)
+ap.add_argument("--min-tau", type=float, default=0.99,
+                help="design floor: operating tier must exceed the 0.989 uncorroborated-edge cap (added after the final-code evaluation)")
 a = ap.parse_args()
 
 rows = [r for f in sorted(glob.glob(os.path.join(a.dir, "counts_*.json"))) for r in json.load(open(f))["rows"]]
@@ -70,7 +72,7 @@ for review in (True, False):
                       "p_fc_binom": p_fc, "p_fc_hb": p_hb(k_fc, n, a.alpha_fc), "p_wp_binom": p_wp, "p_wp_hb": p_hb(k_wp, n, a.alpha_wp),
                       "certified": ok, "alpha_fc_certifiable": a_min})
     mode = "with_review" if review else "no_review"
-    cert = [x for x in table if x["certified"]]
+    cert = [x for x in table if x["certified"] and x["tau_close"] >= a.min_tau]
     best = max((x["recall"] for x in cert), default=None)
     # pre-declared operating rule: strictest certified tier whose recall is within 0.5 pp of the best certified recall
     op = next((x["tau_close"] for x in cert if best is not None and x["recall"] >= best - 0.005), None)
@@ -83,6 +85,8 @@ for review in (True, False):
                   f"{x['p_fc_binom']:.2e} | {x['p_wp_binom']:.2e} | {'yes' if x['certified'] else 'no'} | {x['alpha_fc_certifiable']:.2e} |")
 md.append(f"\nWith 0 observed errors, certifying α = {min(a.alpha_fc, a.alpha_wp)} at δ/2 = {a.delta/2} needs n ≥ "
           f"{out['modes']['with_review']['n_needed_zero_errors']} calibration loops.\n")
+md.append(f"**Design floor:** the operating tier must be ≥ {a.min_tau}, above the 0.989 cap on uncorroborated model edges, so a name-only link cannot auto-close a loop. "
+          "This floor was added after the final-code evaluation found one wrong-patient closure at the cap under τ 0.98; it is a disclosed post-hoc change.\n")
 md.append("**Operating rule (pre-declared):** FWER control means every certified tier satisfies both risk bounds simultaneously with probability ≥ 1−δ, "
           "so any choice inside the certified set keeps the guarantee. Wasl uses the strictest certified tier whose recall is within 0.5 pp of the best certified recall: "
           "looser tiers that buy <0.5 pp recall for observed false closures are not worth it.\n")

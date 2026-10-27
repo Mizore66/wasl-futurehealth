@@ -98,3 +98,9 @@ func TestLTTTau(t *testing.T) {
 	}()
 	lttTau(p)
 }
+
+func TestV7StrictTauAboveUncorroboratedCap(t *testing.T) {
+	if TauV7Strict <= UncorrCap {
+		t.Fatalf("v7strict tau %.3f must exceed the uncorroborated cap %.3f, or a name-only link can auto-close a loop", TauV7Strict, UncorrCap)
+	}
+}

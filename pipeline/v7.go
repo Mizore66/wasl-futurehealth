@@ -21,6 +21,12 @@ var V7Guard = false
 
 // TauClose: closure link tier under V7Cal (default = TauHigh). Messaging always uses TauHigh + the second-identifier guard.
 var TauClose = TauHigh
+
+// UncorrCap is the ceiling on calibrated p for model edges without DOB/sex/surname corroboration (calib/recal3.py).
+const UncorrCap = 0.989
+
+// TauV7Strict is v7strict's closure tier. It must exceed UncorrCap (see TestV7StrictTauAboveUncorroboratedCap).
+const TauV7Strict = 0.99
 var EvPolicy = "v6"
 
 // TauFromLTT marks a closure tier chosen by Learn-then-Test (policy v7ltt) rather than by hand.
