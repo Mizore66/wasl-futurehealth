@@ -5,8 +5,11 @@ usage: python booking/suggest.py <run_dir> [--slots-per-fit 1.2] [--seed 2026] [
 Reads the run's final decisions (out_log.ndjson) + referral demographics (fhir_log.ndjson), takes every CRC loop that is
 still open at the end of the run and would need a colonoscopy slot, and feeds them to the real booking engine
 (booking/engine.py: constraint-safe batch assignment, overbooking, nurse calls) on a SYNTHETIC endoscopy calendar.
-Writes <run_dir>/booking.json (schema "wasl-booking/1"): calendar summary, capacity condition, per-case suggestion,
-and whether network pooling is relevant (only when capacity is geographically misallocated).
+Writes <run_dir>/booking.json (schema "wasl-booking/2"; every wasl-booking/1 field is kept): calendar summary, capacity
+condition, per-case suggestion, whether network pooling is relevant (only when capacity is geographically misallocated),
+and per case the queue-lever suggestions (booking/booking/levers.py): `pathway` (direct-to-procedure vs GI clinic, from
+SYNTHETIC App 9 fields) and `prep_risk` (Dik 2015 published score, cut-off >=2, suggested prep intervention; any regimen
+change requires a clinician order).
 The optimiser does NOT beat greedy in our tests; we make no optimisation claim (see booking/RESULTS.md).
 """
 from __future__ import annotations
@@ -16,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
 from booking.calendar import Calendar
 from booking.engine import BookingEngine
+from booking import levers
 
 REG = ["AD", "AA", "DH"]
 UNITS = {"AD": 3, "AA": 2, "DH": 1}
@@ -114,17 +118,18 @@ def main():
     for k, (d, prefs, day) in meta.items():
         b = out.get(k)
         reg_demand[prefs.region] += 1
+        lv = levers.assess(k)
         if b is None:
             unbooked += 1
             cases[k] = {"status": "no_slot_within_horizon", "requested_day": day, "region": prefs.region,
-                        "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"]}
+                        "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"], **lv}
             continue
         ru = b.unit.split("-")[0]
         if ru != prefs.region:
             reg_booked_out[prefs.region] += 1
         cases[k] = {"status": "suggested", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
-                    "wait_days": b.day - day}
+                    "wait_days": b.day - day, **lv}
     sugg = [c for c in cases.values() if c["status"] == "suggested"]
     within = sum(1 for c in sugg if c["booking"]["within_deadline"])
     n = len(cases)
@@ -136,7 +141,7 @@ def main():
     misalloc = any(dem[r] and ratio[r] < 1.0 for r in REG) and (total_ratio or 0) >= 1.0
     condition = ("short_overall" if (total_ratio or 0) < 1.0 else "misallocated" if misalloc else "adequate")
     res = {
-        "schema": "wasl-booking/1", "data_mode": "simulated", "decision_support_only": True,
+        "schema": "wasl-booking/2", "data_mode": "simulated", "decision_support_only": True,
         "note": "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
         "inputs": {"run": os.path.basename(os.path.abspath(a.run)), "seed": a.seed, "slots_per_open_case": a.slots_per_fit,
                    "capacity_share_by_region": dict(zip(REG, map(float, share))), "misallocated_scenario": a.misallocated},
@@ -153,13 +158,19 @@ def main():
                     "overbooked": sum(1 for c in sugg if c["booking"]["overbooked"]),
                     "nurse_call": sum(1 for c in sugg if c["booking"]["nurse_call"]),
                     "median_wait_days": float(np.median([c["wait_days"] for c in sugg])) if sugg else None},
+        "levers": {"schema": levers.SCHEMA, "data_mode": "synthetic App 9 fields; Dik 2015 published score weights",
+                   "pathway": dict(collections.Counter(c["pathway"]["route"] for c in cases.values())),
+                   "prep_risk_band": dict(collections.Counter(c["prep_risk"]["band"] for c in cases.values())),
+                   "requires_clinician_order": True,
+                   "simulated_effect": "booking/RESULTS.md, Queue levers (simulated)"},
         "cases": cases,
     }
     json.dump(res, open(os.path.join(a.run, "booking.json"), "w"), indent=1)
     s = res["summary"]; c = res["capacity"]
     print(f"booking (simulated): {n} open CRC cases; capacity {c['condition']} ({c['slots']} slots, {c['slots_per_case']}/case); "
           f"suggested {s['suggested']}, within 31 d {s['within_31d']} ({s['within_31d_share']}), cross-region {s['cross_region']}, "
-          f"no slot {s['no_slot']}; pooling relevant: {c['pooling_relevant']}")
+          f"no slot {s['no_slot']}; pooling relevant: {c['pooling_relevant']}; pathway {res['levers']['pathway']}, "
+          f"prep risk {res['levers']['prep_risk_band']}")
 
 
 if __name__ == "__main__":
