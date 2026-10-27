@@ -288,3 +288,40 @@ This is the trade-off the gate is designed to make: lost recall becomes review w
 - Cached 26B reader answers were used. Results for the live 4B reader are in the stage 2 section.
 - Only the FHIR source was run. HL7 is covered in stage 4.
 - The v7 rules were designed on earlier v1-noise seeds, which is why v2 is the honest held-out number.
+
+## Learn-then-Test closure gate (replaces the hand-set tier)
+
+**Problem it fixes.** v7strict's closure link tier τ_close = 0.98 was picked by hand after looking at eval errors.
+
+**What we built.** Learn-then-Test (Angelopoulos, Bates, Candès, Jordan, Lei; *Ann. Appl. Stat.* 2025) picks the tier from a separate calibration set and comes with a finite-sample guarantee:
+
+> P( false-closure rate ≤ α_fc **and** wrong-patient-message rate ≤ α_wp ) ≥ 1 − δ, with α = 0.001 and δ = 0.05.
+
+**How it works:**
+1. **Calibration cohorts:** `scripts/ltt_cohorts.sh` builds 6 cohorts, 12,600 loops in total.
+   - People come from the persons3 **`cal` split**. It is disjoint from the `eval` split behind every reported result, and from the training split.
+   - Corruptions use the held-out v2 noise model.
+   - Review is the same as the main run: 4% reviewer error, merge+close double review.
+2. **Loss counts:** `wsi7 ltt` replays each cohort through the same deterministic linker and closure cores at each candidate tier, with and without review. It counts per-loop losses.
+3. **Threshold choice:** `scripts/ltt_select.py` computes exact binomial-tail p-values (Hoeffding–Bentkus values are shown alongside). It tests tiers from strict to loose in a fixed sequence, splitting δ across the 2 risks (Bonferroni).
+4. **Using it:** `-policy v7ltt` reads the selected tier, and decisions are stamped `…+ltt`. `scripts/demo.sh ltt` reruns the calibration. Full table: [`results/ltt/LTT.md`](results/ltt/LTT.md).
+
+**Results:**
+
+| | With review | No review |
+|---|---|---|
+| Tiers certified (both risks) | 0.999 … 0.70 | 0.999 … 0.50 |
+| False closures at τ = 0.98 | 0/12,600 | 0/12,600 |
+| False closures at the loosest certified tier | 3/12,600 (τ 0.70) | 2/12,600 (τ 0.50) |
+| Wrong-patient message loops, every tier | 0/12,600 | 0/12,600 |
+| **Operating tier** (pre-declared rule: strictest certified tier with recall within 0.5 pp of the best) | **0.98** (recall 0.874) | 0.50 (recall 0.387) |
+
+**What this shows:**
+- **The hand-set tier is now justified.** The with-review LTT operating tier is the same 0.98 v7strict used, but it now comes from data the rules were never designed on, with a stated guarantee.
+- **Looser tiers aren't worth it.** They certify (3 false closures in 12,600 is still below α at δ/2), but gain only 0.3 pp recall.
+- **They held on unseen data.** On held-out eval cohort v2-s23, τ = 0.90 and τ = 0.70 also gave 0 false closures, with recall 0.890 vs 0.870.
+
+**Limits:**
+- The guarantee covers loops that are exchangeable with the calibration cohorts: the same synthetic generator, cal-split persons, v2 noise and reviewer model. **It is not a guarantee on real Abu Dhabi data.**
+- The pilot must rerun the calibration on locally adjudicated loops. With 0 errors, certifying α = 0.001 at δ/2 needs about 3.7k loops per stratum.
+- Origin-stratified guarantees would need about 3.7k loops per origin. We don't have those yet.

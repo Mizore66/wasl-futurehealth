@@ -249,6 +249,9 @@ var disclosuresCerv = []struct{ lang, text string }{
 
 var rejectReasons = []string{"incomplete-referral", "out-of-network", "capacity", "duplicate-referral"}
 
+// GenSplit selects the person split a cohort is drawn from: eval (default) | cal (Learn-then-Test calibration cohorts).
+var GenSplit = "eval"
+
 func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools) {
 	b, err := os.ReadFile(filepath.Join(dataDir, "persons3.json"))
 	if err != nil {
@@ -258,7 +261,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	json.Unmarshal(b, &all)
 	ps := []Person{}
 	for _, p := range all {
-		if p.Spl == "eval" { // held out from encoder, scorer and calibrator training
+		if p.Spl == GenSplit { // default "eval": held out from encoder, scorer and calibrator training; "cal" for Learn-then-Test calibration
 			ps = append(ps, p)
 		}
 	}
