@@ -1,7 +1,9 @@
 """Mine real name variants for persons3 QIDs from Wikidata (CC0).
 
-For every person in data/persons3.json, fetch labels + aliases via wbgetentities
-(50 ids per request, ~1 request/s, identifying User-Agent, maxlag honoured) and keep:
+For every person in data/persons3.json, fetch labels + aliases via wbgetentities and keep the variants below.
+Politeness: 50 ids per request, strictly serial, 1 s pause between requests, identifying User-Agent, back-off on
+errors. Requests are read-only, so maxlag is not sent (it tracks query-service lag and can block reads for hours).
+Kept:
   - Latin-script labels/aliases in en, fr, de, es, it, nl, tr, id, ms
   - Arabic-script labels/aliases in ar, arz
 Output (JSONL, one line per QID, resumable): {"qid", "split", "lat": [...], "ar": [...]}
@@ -27,7 +29,7 @@ LAT_RE = re.compile(r"[A-Za-z]")
 
 def fetch(ids, tries=8):
     q = urllib.parse.urlencode({"action": "wbgetentities", "ids": "|".join(ids), "props": "labels|aliases",
-                                "languages": "|".join(LAT_LANGS + AR_LANGS), "format": "json", "maxlag": "5"})
+                                "languages": "|".join(LAT_LANGS + AR_LANGS), "format": "json"})
     for t in range(tries):
         try:
             req = urllib.request.Request(API + "?" + q, headers={"User-Agent": UA})
@@ -40,7 +42,7 @@ def fetch(ids, tries=8):
                 raise RuntimeError(j["error"])
             return j.get("entities", {})
         except Exception as e:  # network hiccup / 429: back off
-            print("retry", t, e, file=sys.stderr)
+            print("retry", t, e, file=sys.stderr, flush=True)
             time.sleep(10 * (t + 1))
     raise RuntimeError("giving up on batch " + ids[0])
 
@@ -63,7 +65,14 @@ def variants(ent):
     return lat, ar
 
 
-def main(persons_path, out_path):
+def main(persons_path, out_path, passes=5):
+    """Batches that keep failing are skipped and retried in a later pass (the output is resumable)."""
+    for _ in range(passes):
+        if one_pass(persons_path, out_path) == 0:
+            return
+
+
+def one_pass(persons_path, out_path):
     persons = json.load(open(persons_path))
     split = {p["qid"]: p["split"] for p in persons}
     done = set()
@@ -72,11 +81,16 @@ def main(persons_path, out_path):
             done.add(json.loads(line)["qid"])
     order = {"eval": 0, "dev": 1, "cal": 2, "train": 3}  # held-out splits first: they gate test sets and leakage filters
     todo = sorted((q for q in split if q not in done and q.startswith("Q")), key=lambda q: order.get(split[q], 4))
-    print(f"{len(done)} done, {len(todo)} to fetch", file=sys.stderr)
+    print(f"{len(done)} done, {len(todo)} to fetch", file=sys.stderr, flush=True)
     with open(out_path, "a") as f:
         for i in range(0, len(todo), 50):
             ids = todo[i:i + 50]
-            ents = fetch(ids)
+            try:
+                ents = fetch(ids)
+            except RuntimeError as e:
+                print("skipped:", e, file=sys.stderr, flush=True)
+                time.sleep(60)
+                continue
             for q in ids:
                 e = ents.get(q, {})
                 lat, ar = variants(e) if "missing" not in e else ([], [])
@@ -85,6 +99,7 @@ def main(persons_path, out_path):
             if (i // 50) % 50 == 0:
                 print(f"{i + len(ids)}/{len(todo)}", file=sys.stderr, flush=True)
             time.sleep(1.0)
+    return len(todo)
 
 
 if __name__ == "__main__":
