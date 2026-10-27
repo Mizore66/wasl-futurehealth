@@ -86,6 +86,7 @@ The same cohort was run with photo references attached (`-imgphotos`; photos onl
 ```bash
 image/download.sh /tmp/hk                          # ~770 MB, six classes + labels + official split
 python image/train.py /tmp/hk /tmp/hk/model grouped # ~3 min on an M2 Pro (MPS); writes metrics + verdicts
-python image/serve.py /tmp/hk/model /tmp/hk/img     # optional live sidecar on :8792
+image/download.sh ~/hk                                  # images only (weights are in models/image/)
+python image/serve.py models/image ~/hk/img          # optional live sidecar on :8792
 WASL_IMAGE=cached scripts/demo.sh                   # integrated run with photo references
 ```

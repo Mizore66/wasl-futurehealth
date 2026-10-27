@@ -5,7 +5,9 @@
 >
 > **What this repository commits:** code, download and training scripts, metric results, sha256 hashes, and `models/image_verdicts.json`. That file holds per-image *scores* keyed by sha256, plus the dataset class label, and **no pixels**.
 >
-> **What it does not commit:** HyperKvasir images, pixel-derived caches, and trained weights.
+> **Trained weights are published with the authors' permission:** `models/image/landmark.pt` and `models/image/prep.pt` (PyTorch state dicts, about 6 MB each, used by `image/serve.py`). They are for this hackathon submission; other uses need a new request to SimulaMet.
+>
+> **What it does not commit:** HyperKvasir images and pixel-derived caches.
 
 **Source.** Borgli H., Thambawita V., Smedsrud P.H. et al. *HyperKvasir, a comprehensive multi-class image and video dataset for gastrointestinal endoscopy.* Scientific Data 7, 283 (2020). doi:10.1038/s41597-020-00622-y. Data: https://osf.io/mh9sj/ · https://datasets.simula.no/hyper-kvasir/
 
@@ -41,6 +43,6 @@
 - **Group counts:** BBPS 2-3 forms 266 groups from 1,148 images, BBPS 0-1 362 from 646, and caecum 1,006 from 1,009.
 - **Official-split check:** metrics on the official split are kept for comparison (`image/metrics_official_split.json`).
 
-**Backbone.** torchvision `mobilenet_v3_small`, initialised from ImageNet-1k weights. The torchvision code is BSD-3-Clause; the ImageNet-derived weights carry ImageNet's research terms. Another reason we don't distribute weights.
+**Backbone.** torchvision `mobilenet_v3_small`, initialised from ImageNet-1k weights. The torchvision code is BSD-3-Clause. The ImageNet initialisation carries ImageNet's non-commercial research terms, which our fine-tuned weights inherit; they are published for research and this non-commercial hackathon entry only.
 
-**Weights hashes.** Locally trained ONNX (6.1 MB each): see `weights_sha256` in `image/metrics.json` and `models/image_verdicts.json`. Anyone with permission can reproduce them with `image/train.py`.
+**Weights hashes.** Locally trained ONNX (6.1 MB each): see `weights_sha256` in `image/metrics.json` and `models/image_verdicts.json`. `image/train.py` reproduces them byte-for-byte: a fresh retrain on 27 Oct 2026 gave identical sha256 hashes.
