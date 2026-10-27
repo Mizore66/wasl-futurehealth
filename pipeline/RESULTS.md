@@ -1,5 +1,7 @@
 # v7-merged: one pipeline, one integrated run
 
+> **Stage 1 (27 Oct):** the canonical pipeline now runs the **v7strict** gate by default (`-policy v7strict`). The table below is the v6 legacy baseline. Current numbers: `results/v7strict/summary.txt`. Comparison: the "Stage 1: v6 vs v7strict" section at the end.
+
 **Merge:**
 - git 3-way merge in `pipeline/`: v5 base → gov, impact, ann, fhir. Forks untouched.
 - Conflicts hand-fixed (main/services/linker). 9/9 `go test` pass.
@@ -74,3 +76,31 @@
 - Ports: NATS 14822–4/16822–4/18822–4, Malaffi 28880/28890. Kills own PIDs only.
 
 **Limits:** simulated patients/reviewer, independent errors, one seed.
+
+
+## Stage 1: v6 vs v7strict (same cohort and seed, full integrated NATS run)
+
+`scripts/demo.sh` (`WASL_POLICY=v7strict` is the default; `v6` is kept for comparison). Every decision carries its `policy` field, and the signature covers it.
+
+| Metric | v6 (legacy) | **v7strict (canonical)** |
+|---|---|---|
+| CRC with review: P / R / false closures | 1.000 / 0.960 / 0/570 | **1.000 / 0.961 / 0/571** |
+| CRC no review: R | 0.242 | 0.232 |
+| Cervical with review: false closures | 0/217 | 0/217 |
+| Cervical no review: R | 0.785 | 0.744 |
+| CRC ≤31-day KPI (Wasl vs truth 0.330) | 0.319 | 0.320 |
+| Wrong-patient messages released | 0 | 0 |
+| Messages released before a late opt-out was recorded | 16–17 | **5** (the DOB guard holds more; the consent hold removes the rest in stage 3) |
+| Reviewer-h per 1k loops | 15.7 | 21.5 (strict prep plus guard items) |
+| Exactly-once / tamper / forged | 0 dup · 17/17 · 0/24 | 0 dup · 17/17 · 0/24 |
+
+**v7strict means:**
+- **Stratified calibrator** (`models/iso_v7.json`): links not corroborated by DOB, sex and surname are capped below the 0.99 trust tier.
+- **Closure link tier** τ = 0.98.
+- **Second-identifier guard:** messages on EID-chain or model-only links need an exact non-placeholder DOB match or human confirmation.
+- **Per-field two-reader consensus.**
+- **Strict prep:** an ungraded prep never closes.
+
+**Tests:** `v7_test.go` covers the strict prep hold, per-field consensus, the DOB guard, the calibrator cap, and policy in the signature.
+
+*Simulated cohort, one seed. The final 5-seed frozen evaluation is stage 7.*

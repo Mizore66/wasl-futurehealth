@@ -86,6 +86,7 @@ type Signoff struct {
 	Role      string   `json:"role,omitempty"`      // RBAC role of the signing actor
 	Reads     []string `json:"reads,omitempty"`     // distinct reviewer ids that concurred (double review)
 	DurationS float64  `json:"dur_s,omitempty"`     // simulated reviewer seconds spent on this item (all reads)
+	Purpose   string   `json:"purpose,omitempty"`   // v7: second_identifier = messaging confirmation only (never cuts a cluster)
 }
 
 // Prep is the output of the stateless normalise+embed stage; keyed by FHIR stream sequence.
@@ -106,6 +107,7 @@ type Edge struct {
 	P     float64 `json:"p"`
 	Basis string  `json:"basis"` // wasl|eid|human
 }
+
 
 type TaskFact struct {
 	Day    float64 `json:"day"`
@@ -128,6 +130,11 @@ type DownFact struct {
 	Weak     Edge    `json:"weak"`
 	Hops     int     `json:"hops"`
 	NearMiss bool    `json:"near_miss,omitempty"` // linked only by a sub-threshold score (possible missed link)
+	// v7 (set only when V7Cal / V7Guard are on; omitempty keeps v6 facts byte-identical)
+	PCal     float64 `json:"pcal7,omitempty"`    // min calibrated edge probability along the widest path (eid/human edges = 1)
+	AllHuman bool    `json:"all_human,omitempty"` // every edge on the path is a human-confirmed link
+	RecPk    string  `json:"rec_pk,omitempty"`    // downstream registration (endpoint of the path)
+	RecDob   string  `json:"rec_dob,omitempty"`
 }
 
 // LoopFacts: everything the linker knows about one FIT+ loop, recomputed whenever its patient cluster changes.
@@ -148,6 +155,7 @@ type LoopFacts struct {
 	Signoffs []Signoff           `json:"signoffs,omitempty"`
 	EvOver   map[string]string   `json:"ev_over,omitempty"` // reportID -> human evidence label
 	MsgOptOut bool               `json:"msg_opt_out,omitempty"` // v6: referral patient withheld consent to automated outreach
+	SRDob     string             `json:"sr_dob,omitempty"`      // v7: referral registration DOB (second-identifier guard)
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.
@@ -183,6 +191,7 @@ type ReviewItem struct {
 	Head     string    `json:"head"`
 	InSeq    uint64    `json:"in_seq"`
 	OverdueAtRaise bool `json:"overdue"`
+	Reason   string    `json:"reason,omitempty"` // v7: second_identifier (outreach guard confirmation)
 }
 
 type Decision struct {
@@ -216,6 +225,7 @@ type Decision struct {
 	EcTurns        int      `json:"ec_turns,omitempty"`
 	TBState        string   `json:"tb_state,omitempty"`  // none|prompted|understood|partial|misunderstood|needs_human|unparsed
 	Chain          []Block  `json:"chain,omitempty"`
+	Policy         string   `json:"policy,omitempty"` // gate policy that produced this decision (v6 | v7strict+...)
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
 }
@@ -229,7 +239,9 @@ type Outreach struct {
 	Basis    string  `json:"basis"` // trusted link basis: p_cal|eid|human|below_tau
 	PCal     float64 `json:"p_cal"`
 	Released bool    `json:"released"`
-	Suppress string  `json:"suppress,omitempty"` // link_below_tau_unconfirmed|consent_withheld
+	Suppress string  `json:"suppress,omitempty"` // link_below_tau_unconfirmed|consent_withheld|second_identifier_unconfirmed
+	Guard    string  `json:"guard,omitempty"`    // v7: dob_match|human_path|held
+	Pair     [2]string `json:"pair,omitempty"`   // v7: referral registration, downstream registration
 }
 
 func sha(b []byte) string {

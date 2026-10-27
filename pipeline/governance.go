@@ -103,6 +103,7 @@ func distinct(xs []string) int {
 const (
 	SupBelowTau = "link_below_tau_unconfirmed"
 	SupConsent  = "consent_withheld"
+	SupSecondID = "second_identifier_unconfirmed"
 )
 
 func outreachKind(d DownFact) string {
@@ -145,14 +146,47 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 		case pc >= TauHigh:
 			basis = "p_cal"
 		}
+		if V7Cal != nil {
+			pc = d.PCal
+			switch {
+			case d.AllHuman:
+				basis = "human"
+			case pc >= TauHigh && d.Weak.Basis == "eid":
+				basis = "eid"
+			case pc >= TauHigh:
+				basis = "p_cal"
+			default:
+				basis = "below_tau"
+			}
+		}
 		o := Outreach{Kind: k, Event: ev, Basis: basis, PCal: round4(pc)}
+		if V7Guard {
+			o.Pair = [2]string{f.SRRec, d.RecPk}
+		}
 		switch {
+		case basis == "below_tau" && V7Guard && V7Cal != nil && !d.NearMiss && pc >= TauClose && !msgConfirmed(f, f.SRRec, d.RecPk):
+			o.Suppress, o.Guard = SupSecondID, "held_needs_human"
+		case basis == "below_tau" && V7Guard && V7Cal != nil && !d.NearMiss && pc >= TauClose:
+			o.Released, o.Guard = !f.MsgOptOut, "human_confirmed"
+			if f.MsgOptOut {
+				o.Suppress = SupConsent
+			}
 		case basis == "below_tau":
 			o.Suppress = SupBelowTau
 		case f.MsgOptOut:
 			o.Suppress = SupConsent
+		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !msgConfirmed(f, f.SRRec, d.RecPk):
+			o.Suppress, o.Guard = SupSecondID, "held"
 		default:
 			o.Released = true
+			if V7Guard {
+				o.Guard = "dob_match"
+				if basis == "human" || d.AllHuman {
+					o.Guard = "human_path"
+				} else if !secondID(f.SRDob, d.RecDob) {
+					o.Guard = "human_confirmed"
+				}
+			}
 		}
 		out = append(out, o)
 	}
@@ -167,6 +201,9 @@ func Dispatch(role string, o Outreach, optOut bool) error {
 	}
 	if o.Basis == "below_tau" {
 		return fmt.Errorf("gate: %s held until link confirmed", o.Event)
+	}
+	if o.Suppress == SupSecondID {
+		return fmt.Errorf("guard: %s held until a second identifier or a human confirms the link", o.Event)
 	}
 	if optOut {
 		return fmt.Errorf("consent: patient opted out of outreach")
@@ -252,6 +289,10 @@ func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
 		return r.link == "same"
 	case "merge+close":
 		return r.link == "same" || r.ev == "adequate" || r.ev == "histology"
+	case "merge+close+g1": // v7: as merge+close, but messaging-only guard confirmations get a single read
+		return (r.link == "same" && it.Reason != "second_identifier") || r.ev == "adequate" || r.ev == "histology"
+	case "close+guard": // v7: double-read closures and messaging confirmations; identity merges single-read
+		return (r.link == "same" && it.Reason == "second_identifier") || r.ev == "adequate" || r.ev == "histology"
 	}
 	return false
 }
@@ -259,7 +300,7 @@ func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
 // Review produces the sign-off for one item: one read, a second independent read for high-risk answers, and a
 // third (senior) read only if the first two disagree. Role follows the item kind (RBAC).
 func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
-	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, SignedHead: it.Head}
+	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, SignedHead: it.Head, Purpose: it.Reason}
 	so.Role = RoleReviewer
 	if it.Kinds[0] == "evidence" {
 		so.Role = RoleClinician
@@ -277,4 +318,14 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 	so.Link, so.Evidence, so.Reads, so.DurationS = final.link, final.ev, reads, math.Round(secs*10)/10
 	so.Reviewer = fmt.Sprintf("sim-%s e=%.3f double=%s reads=%v", so.Role, c.Err, c.Double, reads)
 	return so
+}
+
+// msgConfirmed (v7): a human confirmed (second-identifier item answered "same") that the downstream registration is this patient.
+func msgConfirmed(f *LoopFacts, a, b string) bool {
+	for _, s := range f.Signoffs {
+		if s.Purpose == "second_identifier" && s.Link == "same" && s.Pair[0] == a && s.Pair[1] == b {
+			return true
+		}
+	}
+	return false
 }

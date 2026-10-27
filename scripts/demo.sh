@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Wasl one-command baseline: check assets → build → cohort → integrated NATS run → audit → tamper → report.
 # Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|report|test]   (default: all)
-# Outputs: out/cohort/ (synthetic data), out/run/main/ (logs, report7.json, dashboard.json, review_queue.json).
+# Outputs: out/cohort/ (synthetic data), out/run/<policy>/ (logs, report7.json, dashboard.json, review_queue.json).
+# Env: WASL_POLICY=v7strict|v6 (default v7strict), WASL_SEED (default 2026), WASL_OUT (default ./out).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$ROOT/bin"; OUT="${WASL_OUT:-$ROOT/out}"; SEED="${WASL_SEED:-2026}"
-COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/main"
+POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v6 (legacy comparison)
+COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY"
 need() { echo "MISSING: $1"; echo "  → $2"; exit 1; }
 
 check() {
@@ -14,7 +16,7 @@ check() {
   [ -x "$BIN/nats-server" ] || command -v nats-server >/dev/null || need "nats-server v2.10+" \
     "brew install nats-server   (or download from https://github.com/nats-io/nats-server/releases) — then: ln -s \$(command -v nats-server) bin/nats-server"
   [ -x "$BIN/nats-server" ] || { mkdir -p "$BIN"; ln -sf "$(command -v nats-server)" "$BIN/nats-server"; }
-  for f in data/persons3.json models/encoder_weights.json models/lgb_stream.json models/iso.json models/gemma_cache.json models/parse_cache.json \
+  for f in data/persons3.json models/encoder_weights.json models/lgb_stream.json models/iso.json models/gemma_cache.json models/parse_cache.json models/iso_v7.json \
            data/evidence/reports43.json data/evidence/pathology_templates.json patient-parsers/econsult_testset.json patient-parsers/teachback_testset.json; do
     [ -s "$ROOT/$f" ] || need "$f" "it is committed in the repo — re-clone or git lfs/pull"
   done
@@ -36,12 +38,12 @@ cohort() {
 }
 run_() {
   (cd "$BIN" && ./wsi7 orchestrate -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -preps 3 -threads 8 \
-     -source fhir -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" | tee "$OUT/run/main.stdout")
+     -source fhir -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" -policy "$POLICY" | tee "$OUT/run/$POLICY.stdout")
 }
-audit()  { (cd "$BIN" && ./wsi7 audit -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual > "$RUN/audit.stdout" 2>&1); echo "audit → $RUN/audit.stdout"; }
-tamper() { (cd "$BIN" && ./wsi7 tamper -role auditor -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual > "$OUT/run/tamper.json" 2> "$OUT/run/tamper.log"); tail -3 "$OUT/run/tamper.log"; }
+audit()  { (cd "$BIN" && ./wsi7 audit -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" > "$RUN/audit.stdout" 2>&1); echo "audit → $RUN/audit.stdout"; }
+tamper() { (cd "$BIN" && ./wsi7 tamper -role auditor -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" > "$RUN/tamper.json" 2> "$RUN/tamper.log"); tail -3 "$RUN/tamper.log"; }
 report() {
-  (cd "$BIN" && ./wsi7 report7 -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual > /dev/null)
+  (cd "$BIN" && ./wsi7 report7 -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" > /dev/null)
   python3 "$ROOT/scripts/summary.py" "$RUN/report7.json"
 }
 mkdir -p "$OUT/run"

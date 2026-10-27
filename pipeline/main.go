@@ -91,9 +91,44 @@ func main() {
 	fReo := fs.Float64("freorder", 0.05, "mock fault: P(reordered notification)")
 	fDrop := fs.Float64("fdrop", 0.03, "mock fault: P(dropped notification)")
 	subKill := fs.Int("subkill", 1, "kill/restart cycles of the FHIR subscription consumer (source=fhir)")
+	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
+	v7guard := fs.Bool("v7guard", false, "v7: second-identifier guard on EID-chain / p_cal outreach")
+	tauClose := fs.Float64("tauclose", 0, "v7: closure link tier under -v7cal (default 0.99)")
+	evpol := fs.String("evpolicy", "v6", "evidence policy v6|v7|v7strict (v7strict: ungraded prep never closes)")
+	sweepSet := fs.String("sweepset", "full", "v7: full|v7 (err 0,.02,.04,.06 x none,merge+close x 5 seeds)")
+	policy := fs.String("policy", "", "named policy bundle: v6 | v7strict (sets -v7cal/-v7guard/-tauclose/-evpolicy)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	DualMerge = *dual
+	switch *policy {
+	case "v7strict":
+		if *v7cal == "" {
+			*v7cal = filepath.Join(*wasl, "iso_v7.json")
+		}
+		*v7guard, *evpol = true, "v7strict"
+		if *tauClose == 0 {
+			*tauClose = 0.98
+		}
+	case "", "v6":
+	default:
+		panic("unknown -policy " + *policy)
+	}
+	if *v7cal != "" {
+		V7Cal = LoadCal7(*v7cal)
+	}
+	V7Guard, EvPolicy = *v7guard, *evpol
+	if *tauClose > 0 {
+		TauClose = *tauClose
+	}
+	PolicyName = policyName()
+	if *sweepSet == "v7" {
+		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
+	}
+	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose)}
+	if *v7cal != "" {
+		abs, _ := filepath.Abs(*v7cal)
+		v7Args = append(v7Args, "-v7cal", abs)
+	}
 	rcfg := DefaultReviewer
 	rcfg.Err, rcfg.Double, rcfg.Seed = *rerr, *rdouble, *rseed
 	if rcfg.Err == 0 && *revNoise > 0 { // v6-impact flag name kept as an alias
@@ -126,6 +161,7 @@ func main() {
 			RevArgs = append(RevArgs, "-hold", *hold)
 		}
 		govArgs = []string{"-rerr", fmt.Sprint(rcfg.Err), "-rdouble", *rdouble, "-rseed", fmt.Sprint(*rseed), fmt.Sprintf("-dual=%v", *dual), "-ann", *annMode}
+		govArgs = append(govArgs, v7Args...)
 		if *annCB != "" {
 			govArgs = append(govArgs, "-codebook", *annCB)
 		}

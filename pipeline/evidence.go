@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -32,6 +33,8 @@ type TwoVerdict struct {
 	GemmaHit bool          `json:"gemma_hit"`
 	Agree    bool          `json:"agree"`
 	Label    string        `json:"label"` // adequate|inadequate|awaiting_histology|histology|needs_human|disagree
+	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
+	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
 }
 
 const seg = `(?:distal|proximal|mid)?\s*(?:descending|sigmoid|transverse|splenic|hepatic|ascending|rectosigmoid)`
@@ -106,6 +109,7 @@ type gemmaEntry struct {
 	Polyps    string `json:"polyps"`
 	Histology string `json:"histology"`
 	Quote     string `json:"quote"`
+	Quotes    map[string]string `json:"quotes,omitempty"` // v7: per-field verbatim quotes (cached, no new calls)
 }
 
 type Judge2 struct{ cache map[string]gemmaEntry }
@@ -142,6 +146,9 @@ func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 	} else {
 		s, r := dohState(g.Caecum, g.Prep, g.Polyps, g.Histology)
 		v.Gemma = ReaderVerdict{State: s, Reason: r, Caecum: g.Caecum, Prep: g.Prep, Polyps: g.Polyps, Histology: g.Histology, Quote: g.Quote}
+	}
+	if (EvPolicy == "v7" || EvPolicy == "v7strict") && ok && kind != "pathology" {
+		return judgeV7(v, g, text)
 	}
 	v.Agree = ok && v.Regex.State == v.Gemma.State && v.Regex.Reason == v.Gemma.Reason
 	switch {
@@ -322,6 +329,90 @@ func (j *Judge2) Judge6(text, kind, coded string) *TwoVerdict {
 		v.Label = "no_histology"
 	default:
 		v.Label = "needs_human"
+	}
+	return v
+}
+
+// ---------------- v7 evidence policy ----------------
+// Per-field consensus: each field (caecum, prep, polyps, histology) is fixed where both readers agree; where they disagree
+// both values are kept and the report is decided only if every combination gives the same DoH state (else review).
+// Two documentation rules from the DoH CRC Programme Specifications (sources/doh-standards/crc.txt):
+//   R1 completion not documented: neither reader finds caecal intubation -> "inadequate" (loop stays open, escalated),
+//      App. 11 s2.1-2.2 (completion must be documented with landmark photo-documentation).
+//   R2 prep ungraded: caecum reached and prep not stated -> treated as the completed follow-up colonoscopy, ONLY if
+//      Gemma's caecum quote is verbatim in the report, names a caecal landmark (caecum / ileocaecal valve / appendiceal
+//      orifice / terminal ileum) and the regex reader independently finds caecum=yes. The missing prep grade is passed
+//      to the unit as a documentation flag (App. 3 item 4; App. 2 bowel-cleansing audit). The Specifications set no
+//      rule that an ungraded-prep colonoscopy fails the follow-up; prep quality is an audited unit indicator.
+var reLandmark = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)\b|ileo-?c(?:a)?ecal|appendiceal orifice|terminal ileum`)
+
+func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
+	R := map[string]string{"caecum": v.Regex.Caecum, "prep": v.Regex.Prep, "polyps": v.Regex.Polyps, "histology": v.Regex.Histology}
+	G := map[string]string{"caecum": g.Caecum, "prep": g.Prep, "polyps": g.Polyps, "histology": g.Histology}
+	opts := func(f string) []string {
+		if R[f] == G[f] {
+			return []string{R[f]}
+		}
+		return []string{R[f], G[f]}
+	}
+	cq := g.Quote
+	if g.Quotes != nil {
+		cq = g.Quotes["caecum"]
+	}
+	landmarkOK := cq != "" && strings.Contains(text, cq) && reLandmark.MatchString(cq) && v.Regex.Caecum == "yes"
+	outs := map[string]bool{}
+	rules := map[string]bool{}
+	for _, c := range opts("caecum") {
+		for _, p := range opts("prep") {
+			for _, po := range opts("polyps") {
+				for _, h := range opts("histology") {
+					pp := p
+					if c == "yes" && p == "not_stated" && landmarkOK && EvPolicy != "v7strict" { // v7strict: ungraded prep never closes (closure rule v10)
+						pp = "adequate"
+						rules["R2_prep_ungraded_caecum_landmark"] = true
+					}
+					s, r := dohState(c, pp, po, h)
+					lab := ""
+					switch {
+					case s == "closed":
+						lab = "adequate"
+					case r == "awaiting_histology":
+						lab = "awaiting_histology"
+					case s == "not_closed":
+						lab = "inadequate"
+					default:
+						lab = "needs_human"
+						if c == "not_stated" && R["caecum"] == "not_stated" && G["caecum"] == "not_stated" {
+							lab = "inadequate"
+							rules["R1_completion_not_documented"] = true
+						}
+					}
+					outs[lab] = true
+				}
+			}
+		}
+	}
+	v.Agree, v.Label = false, "disagree"
+	if len(outs) == 1 {
+		for l := range outs {
+			if l != "needs_human" {
+				v.Agree, v.Label = true, l
+			}
+		}
+	}
+	if v.Agree {
+		rs := []string{}
+		for k := range rules {
+			rs = append(rs, k)
+		}
+		sort.Strings(rs)
+		v.Rule = strings.Join(rs, "+")
+		if v.Rule == "" {
+			v.Rule = "per_field_consensus"
+		}
+		if rules["R2_prep_ungraded_caecum_landmark"] && v.Label != "inadequate" {
+			v.Flags = []string{"prep_grade_not_documented"}
+		}
 	}
 	return v
 }

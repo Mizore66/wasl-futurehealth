@@ -12,6 +12,7 @@ package main
 //   EvPolicy v7: per-field two-reader consensus + DoH documentation rules (see evidence.go judgeV7).
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 )
@@ -21,6 +22,16 @@ var V7Guard = false
 // TauClose: closure link tier under V7Cal (default = TauHigh). Messaging always uses TauHigh + the second-identifier guard.
 var TauClose = TauHigh
 var EvPolicy = "v6"
+
+// PolicyName is stamped on every decision so outputs from different gate policies are never mixed.
+var PolicyName = "v6"
+
+func policyName() string {
+	if V7Cal == nil && !V7Guard && EvPolicy == "v6" {
+		return "v6"
+	}
+	return fmt.Sprintf("%s+cal=%v+guard=%v+tau=%.2f", EvPolicy, V7Cal != nil, V7Guard, TauClose)
+}
 
 type Cal7 struct{ Corr, Unc *Iso }
 

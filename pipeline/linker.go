@@ -57,6 +57,7 @@ type LinkerCore struct {
 	lastTick     int
 	PSeq         []uint64
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
+	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
 	ann          ANNIndex
 }
 
@@ -81,7 +82,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, pcal7: map[[2]int]float64{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -424,6 +425,9 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			continue
 		}
 		if c.p >= L.Thr {
+			if V7Cal != nil {
+				L.pcal7[pk2(r.idx, c.j)] = V7Cal.Predict(c.p, corroborated(r, o, c.feat))
+			}
 			L.Link(r.idx, c.j, c.p, false, "wasl")
 		} else if c.p >= L.Lo {
 			if L.near[r.idx] == nil {
@@ -461,6 +465,12 @@ func keysOf(m map[int]bool) []int {
 
 // widest-path (max bottleneck) from src within the cluster; returns strength, weakest edge, hops.
 func (L *LinkerCore) widest(src int, members []int) (map[int]float64, map[int][2]int, map[int]int) {
+	b, w, h, _ := L.widestP(src, members)
+	return b, w, h
+}
+
+func (L *LinkerCore) widestP(src int, members []int) (map[int]float64, map[int][2]int, map[int]int, map[int]int) {
+	pred := map[int]int{src: -1}
 	in := map[int]bool{}
 	for _, m := range members {
 		in[m] = true
@@ -495,10 +505,38 @@ func (L *LinkerCore) widest(src int, members []int) (map[int]float64, map[int][2
 				best[y] = s
 				weak[y] = we
 				hops[y] = hops[u] + 1
+				pred[y] = u
 			}
 		}
 	}
-	return best, weak, hops
+	return best, weak, hops, pred
+}
+
+// pathCal (v7): min calibrated edge probability and all-human flag along the widest path src->y.
+func (L *LinkerCore) pathCal(pred map[int]int, y int) (float64, bool) {
+	pc, allHuman := 1.0, true
+	for y >= 0 && pred[y] >= 0 {
+		u := pred[y]
+		k := pk2(u, y)
+		e := 1.0
+		switch L.basis[k] {
+		case "human":
+		case "eid":
+			allHuman = false
+		default:
+			allHuman = false
+			if v, ok := L.pcal7[k]; ok {
+				e = v
+			} else if V7Cal != nil {
+				e = V7Cal.Predict(L.adj[u][y], false)
+			}
+		}
+		if e < pc {
+			pc = e
+		}
+		y = u
+	}
+	return pc, allHuman
 }
 
 func (L *LinkerCore) edgeOf(we [2]int) Edge {
@@ -550,7 +588,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: L.optOut[base.SRRec]}
 	s := L.loopRec[loop]
 	ms := L.clusterOf(s)
-	best, weak, hops := L.widest(s, ms)
+	best, weak, hops, pred := L.widestP(s, ms)
+	if V7Cal != nil || V7Guard {
+		f.SRDob = L.recs[s].Dob
+	}
 	inC := map[int]bool{}
 	for _, y := range ms {
 		inC[y] = true
@@ -561,7 +602,18 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		if !ok {
 			continue
 		}
-		f.Down = append(f.Down, L.downOf(L.recs[y], st, L.edgeOf(weak[y]), hops[y], false)...)
+		ds := L.downOf(L.recs[y], st, L.edgeOf(weak[y]), hops[y], false)
+		if V7Cal != nil || V7Guard {
+			pc, ah := L.pathCal(pred, y)
+			ah = ah || L.basis[pk2(s, y)] == "human"
+			if V7Cal == nil {
+				pc = 0
+			}
+			for i := range ds {
+				ds[i].PCal, ds[i].AllHuman, ds[i].RecPk, ds[i].RecDob = round4(pc), ah, L.recs[y].Pk, L.recs[y].Dob
+			}
+		}
+		f.Down = append(f.Down, ds...)
 	}
 	// near-miss hospital records (scored lo<=p<thr against any cluster member): candidates for a missed link
 	nm := map[int][2]float64{}
@@ -584,7 +636,16 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	for _, z := range zs {
 		x := int(nm[z][1])
 		e := Edge{A: L.recs[x].Pk, B: L.recs[z].Pk, P: round4(nm[z][0]), Basis: "wasl-subthreshold"}
-		f.Down = append(f.Down, L.downOf(L.recs[z], nm[z][0], e, 1, true)...)
+		ds := L.downOf(L.recs[z], nm[z][0], e, 1, true)
+		if V7Cal != nil || V7Guard {
+			for i := range ds {
+				if V7Cal != nil {
+					ds[i].PCal = round4(V7Cal.Predict(nm[z][0], false))
+				}
+				ds[i].RecPk, ds[i].RecDob = L.recs[z].Pk, L.recs[z].Dob
+			}
+		}
+		f.Down = append(f.Down, ds...)
 	}
 	return f
 }
@@ -607,6 +668,13 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		L.Stats["signoffs"]++
+		if so.Purpose == "second_identifier" {
+			// messaging confirmation: "same" is recorded on the sign-off (outreach released), "different" keeps the
+			// message held and is escalated to identity review; neither changes the clusters
+			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
+			affLoops[so.LoopID] = true
+			break
+		}
 		if so.Link != "" {
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]

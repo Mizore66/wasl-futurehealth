@@ -12,5 +12,5 @@ cr = r['crash_recovery']; f = r['forged']; p = r['provenance']; ct = r['consent_
 print(f"exactly-once: duplicates {cr['duplicate_outputs']} / {cr['expected_outputs']} outputs; final-state mismatches {cr['final_state_mismatch_loops']}")
 print(f"provenance chains verified {p['hash_verified']}/{p['closed_chains']}; forged events with effect {f['forged_with_any_effect']}/{f['forged_events']}")
 print(f"wrong-patient messages released {sum(v['wrong_released'] for v in r['outreach_live']['by_origin'].values())}; "
-      f"messages before late opt-out recorded {ct['released_before_opt_out_recorded']} (known gap → consent hold, stage 3)")
+      f"messages before late opt-out recorded {ct['released_before_opt_out_recorded']}")
 print(f"throughput {r['throughput_ev_s']:.0f} ev/s; reviewer-h/1k loops {r['reviewer']['by_kind']['all']['reviewer_hours_per_1k_loops']:.1f}")

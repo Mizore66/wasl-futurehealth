@@ -32,8 +32,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 | Folder | What | Status |
 |---|---|---|
-| `pipeline/` | Go + NATS JetStream streaming pipeline: FHIR ingest, linker, closure gate, reviewer, provenance, tamper audit | Built; one merged run (`RESULTS.md`) |
-| `pipeline/v7-gate/` | v7 gate: stratified calibration, DOB guard, per-field reader consensus, strict prep rule (`*.go.v7` = files to merge) | Tested offline; **to merge** |
+| `pipeline/` | Go + NATS JetStream streaming pipeline: FHIR ingest, linker, **v7strict closure gate**, reviewer, provenance, tamper audit | Built; integrated runs in `pipeline/results/` |
 | `booking/` | Constraint-safe booking engine (Python) + simulator, including the network-pooling test | Simulated; **to merge** |
 | `reader/` | Local Gemma 3 4B hybrid evidence reader + regex baseline | Verified on 43 reports; **to merge** |
 | `patient-parsers/` | Frozen test sets and scores for the teach-back / e-consult parsers | Evaluated |
@@ -54,21 +53,21 @@ The script checks assets and ports before it starts. If anything is missing, it 
 
 Outputs go to `out/` (gitignored):
 - `out/cohort/`: the deterministic synthetic cohort (seed `WASL_SEED`, default 2026);
-- `out/run/main/report7.json`: all metrics;
-- `out/run/main/dashboard.json` and `review_queue.json`;
-- `out/run/tamper.json`.
+- `out/run/<policy>/report7.json`: all metrics;
+- `out/run/<policy>/dashboard.json` and `review_queue.json`;
+- `out/run/<policy>/tamper.json`.
 
-**Expected baseline** (one seed, simulated cohort):
+**Expected baseline** (`v7strict` policy, one seed, simulated cohort; `WASL_POLICY=v6` gives the legacy run):
 
 | | Result |
 |---|---|
-| CRC with review | P 1.000, R 0.960, 0/570 false closures |
+| CRC with review | P 1.000, R 0.961, 0/571 false closures |
 | Cervical with review | P 1.000, R 0.991, 0/217 false closures |
-| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.319 |
+| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.320 |
 | Exactly-once under process + NATS kills | 0 duplicates, 0 final-state mismatches |
 | Tamper | 17/17 attacks detected, 0 false alarms |
 | Forged events | 0/24 with any effect |
-| Known gap | 16 messages sent before a late opt-out was recorded. The fix is the consent hold, stage 3 of `docs/BACKEND-HANDOFF.md` |
+| Known gap | 5 messages sent before a late opt-out was recorded (16 under v6). The fix is the consent hold, stage 3 of `docs/BACKEND-HANDOFF.md` |
 
 **Local reader (separate until stage 2):** start `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791`, then run `python reader/hybrid4b.py 8791`.
 

@@ -182,6 +182,8 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 	wrongPre := map[string]int{}
 	wrongList := []string{}
 	dobHeld, dobHeldWrong, dobReleasedWrong := 0, 0, 0
+	sidHeld, sidHeldWrong := 0, 0
+	guardRel := map[string]int{}
 	for k, x := range intents {
 		lt := o.tr.Loops[k.loop]
 		if lt == nil {
@@ -210,6 +212,9 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		} else if released[k] {
 			dobReleasedWrong += w
 		}
+		if released[k] && x.Guard != "" {
+			guardRel[x.Guard]++
+		}
 		if released[k] {
 			postGate.n++
 			postGate.wrong += w
@@ -220,6 +225,9 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 			byBasis[b].n++
 			byBasis[b].wrong += w
 			byOrigin[lt.Origin].wrong += w
+		} else if x.Suppress == SupSecondID {
+			sidHeld++
+			sidHeldWrong += w
 		} else if x.Suppress == SupConsent {
 			consentSup.n++
 			consentSup.wrong += w
@@ -259,6 +267,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		"messages_per_loop_pre_gate": math.Round(1000*float64(preGate.n)/loops) / 1000,
 		"linker_stats": rp.L.Stats, "wrong_list": wrongList,
 		"dob_guard": map[string]int{"held": dobHeld, "held_wrong": dobHeldWrong, "released_wrong": dobReleasedWrong},
+		"v7_second_id_held": sidHeld, "v7_second_id_held_wrong": sidHeldWrong, "v7_released_by_guard": guardRel,
 	}
 }
 
@@ -295,13 +304,17 @@ func sweep(data, wasl string, P int, out string) {
 		cfg.Err, cfg.Double, cfg.Seed = j.err, j.double, j.seed
 		rp, sos, iters := reviewLoop(o, P, cfg)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
-		secs, reads, linkS, evS := 0.0, 0, 0.0, 0.0
+		secs, reads, linkS, evS, guardS, guardN := 0.0, 0, 0.0, 0.0, 0.0, 0
 		kinds := map[string]int{}
 		wrongSO := map[string]int{}
 		for _, so := range sos {
 			secs += so.DurationS
 			reads += len(so.Reads)
 			kinds[so.Kinds[0]]++
+			if it, ok := rp.items[so.ItemID]; ok && it.Reason == "second_identifier" {
+				guardS += so.DurationS
+				guardN++
+			}
 			if so.Kinds[0] == "link" {
 				linkS += so.DurationS
 				truth := map[bool]string{true: "same", false: "different"}[o.tr.PKQid[so.Pair[0]] == o.tr.PKQid[so.Pair[1]]]
@@ -326,6 +339,7 @@ func sweep(data, wasl string, P int, out string) {
 			"items": len(sos), "items_by_kind": kinds, "reads": reads, "wrong_signoffs": wrongSO,
 			"reviewer_hours": secs / 3600, "reviewer_hours_per_1k_loops": 1000 * secs / 3600 / loops,
 			"link_hours_per_1k_loops": 1000 * linkS / 3600 / loops, "evidence_hours_per_1k_loops": 1000 * evS / 3600 / loops,
+			"guard_items": guardN, "guard_hours_per_1k_loops": 1000 * guardS / 3600 / loops, "closed_auto": acc["closed_auto"], "closed_human_assisted": acc["closed_human_assisted"],
 			"gov": govMetrics(o, rp)}
 		fmt.Fprintf(os.Stderr, "err=%.2f double=%-11s seed=%d P=%v R=%v FC=%v items=%d reads=%d h/1k=%.1f\n", j.err, j.double, j.seed,
 			acc["precision"], acc["recall"], acc["false_closures"], len(sos), reads, 1000*secs/3600/loops)
@@ -341,7 +355,7 @@ func sweep(data, wasl string, P int, out string) {
 		rp := replay(nil, o.preps, o.gbm, o.iso, P, true)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		res[len(jobs)] = map[string]interface{}{"err": -1, "double": "no_review", "precision": acc["precision"], "recall": acc["recall"],
-			"false_closures": acc["false_closures"], "gov": govMetrics(o, rp)}
+			"false_closures": acc["false_closures"], "closed_pred": acc["closed_pred"], "fc_upper95": acc["false_closure_rate_upper95"], "items_raised": len(rp.items), "attribution": acc["attribution"], "gov": govMetrics(o, rp)}
 	}()
 	wg.Wait()
 	os.MkdirAll(filepath.Dir(out), 0755)

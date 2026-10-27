@@ -256,6 +256,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		pc := c.pcal(d.Strength)
 		trusted := !d.NearMiss && (pc >= TauHigh || d.Weak.Basis == "eid" || d.Weak.Basis == "human")
+		if V7Cal != nil {
+			pc = d.PCal
+			trusted = !d.NearMiss && (pc >= TauClose || d.AllHuman)
+		}
 		if d.Strength < LinkReview {
 			continue
 		}
@@ -507,7 +511,24 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	d.Escalations = esc
 	if OutreachOn {
 		d.Outreach = BuildOutreach(f, c.pcal)
+		// v7 guard: a held message raises one human confirmation item for its registration pair
+		for _, o := range d.Outreach {
+			if o.Suppress != SupSecondID {
+				continue
+			}
+			id := "rv-" + sha([]byte(f.LoopID + "|link|" + o.Pair[0] + "|" + o.Pair[1]))[:16]
+			if _, ok := signed[id]; ok {
+				continue
+			}
+			if _, ok := ls.raised[id]; !ok {
+				ch := appendBlock(nil, "outreach_guard", map[string]interface{}{"loop": f.LoopID, "pair": o.Pair, "event": o.Event, "basis": o.Basis, "p_cal": o.PCal, "rule": "second identifier (exact non-placeholder DOB) or human confirmation"})
+				it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{"link"}, Pair: o.Pair, P: o.PCal, Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, Reason: "second_identifier"}
+				ls.raised[id] = it
+				newItems = append(newItems, it)
+			}
+		}
 	}
+	d.Policy = PolicyName
 	d.Sig = sha(canon(d))
 	if ls.last == nil || ls.last.Sig != d.Sig {
 		d.Now, d.InSeq = now, inSeq
