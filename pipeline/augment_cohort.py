@@ -20,7 +20,10 @@ for f in ['truth.json', 'cohort_summary.json']:
     shutil.copy(f'{BASE_COHORT}/{f}', f'{OUT}/{f}')
 feeds = {}
 srpk = {}  # loop -> (prov, mrn, patient resource, sr day)
-for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh']:
+# lung-nodule feeds (wsi7 gen -lung N) are copied unchanged: no consent/forgery additions, so the screening additions
+# (and their RNG draws) are identical with or without the lung programme
+LUNG = [p for p in ['rad-imaging', 'mafraq-rad'] if os.path.exists(f'{BASE_COHORT}/fhir_{p}.ndjson')]
+for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh'] + LUNG:
     rows = [json.loads(l) for l in open(f'{BASE_COHORT}/fhir_{prov}.ndjson')]
     feeds[prov] = rows
     for g in rows:
@@ -87,6 +90,7 @@ for i, (prov, mrn) in enumerate(forged_targets):
     forged.append({"type": "consent_deny", "role": role, "loops": by_pk[(prov, mrn)]})
 ev_inad = [q for q in queue if q['kinds'] == ['evidence'] and truth['reports'].get(q['report']) == 'inadequate'
            and truth['loops'][q['loop']]['state'] != 'closed']
+queue = [q for q in queue if truth['loops'][q['loop']].get('prog') != 'lung_nodule']  # forgeries target screening loops only
 link_diff = [q for q in queue if q['kinds'] == ['link'] and truth['pk_qid'].get(q['pair'][0]) != truth['pk_qid'].get(q['pair'][1])]
 r.shuffle(ev_inad)
 picks = [(q, 'evidence', 'reviewer') for q in ev_inad[:6]] + [(q, 'link', 'coordinator') for q in link_diff[:6]]

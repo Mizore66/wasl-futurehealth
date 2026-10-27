@@ -302,6 +302,9 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 		}
 		if wrong {
 			alts := evAlt[t]
+			if alts == nil {
+				alts = lungEvAlt(t) // lung-nodule labels (lung.go)
+			}
 			if len(alts) > 0 {
 				t = alts[int(u01(c.Seed, it.ItemID, reader, "alt")*float64(len(alts)))]
 			}
@@ -313,6 +316,9 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 }
 
 func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
+	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && lungClosingAnswer(r.ev) { // lung-nodule closing answers get the same double read
+		return true
+	}
 	switch c.Double {
 	case "merge":
 		return r.link == "same"

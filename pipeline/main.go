@@ -114,8 +114,15 @@ func main() {
 	imageURL := fs.String("image-url", "http://127.0.0.1:8792", "image reader sidecar")
 	imgPhotos := fs.Bool("imgphotos", false, "gen: attach synthetic caecal / mucosal photo references (HyperKvasir held-out test images) to colonoscopy reports")
 	imgCache := fs.String("imgcache", "", "gen/image: image verdict cache (default <wasl>/image_verdicts.json)")
+	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
+	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
+	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
+		EnableLung()
+		os.Setenv("WSI_LUNG_PROVIDERS", "1")
+	}
 	DualMerge = *dual
 	switch *policy {
 	case "v7strict":
@@ -217,7 +224,7 @@ func main() {
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
-		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool))
+		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData)
 	case "setup":
 		setupStreams(*replicas, *P)
 	case "producer":
@@ -240,6 +247,8 @@ func main() {
 		runFhirSub("http://"+*hieAddr+"/fhir", *hookAddr, *content, absRun)
 	case "serve":
 		runServe(absRun, *data, *apiAddr)
+	case "lungcache": // ask local Gemma 3 4B once per unique lung corpus text; write the replayable cache + reader scores
+		runLungCache(*lungData, *readerURL, *out)
 	case "readerwarm":
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readerwarm needs -reader live")

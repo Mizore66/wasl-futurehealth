@@ -341,3 +341,65 @@ Details are in [`image/RESULTS.md`](../image/RESULTS.md). **HyperKvasir competit
 - 321 one-click prep-grade items. Evidence reviewer-h per 1k loops fall 11.3 → 6.1. That gain is an assumption: 20 s per one-click grade.
 
 **Limits.** Domain shift: Norwegian video frames vs UAE stills, so local recalibration is mandatory before any pilot.
+
+## Second loop type: incidental lung nodules (Fleischner 2017)
+
+**Claim tested:** one engine closes every follow-up loop; a new loop type is a rule row, two report readers and a generator, not a new pipeline. The lung loop runs through the same mock Malaffi → NATS → prep → identity linker → closure → reviewer/RBAC → audit/tamper path as CRC and cervical, in the same integrated run.
+
+**Rule (built).** `fleischner2017` = `fleischnerRec(type, size, count, risk)` in `fleischner.go`, a pure function over the Fleischner Society 2017 table (MacMahon et al., *Radiology* 2017;284(1):228–243, PMID 28240562). `fleischner_test.go` covers every cell (solid single/multiple × low/high risk × <6 / 6–8 / >8 mm; subsolid ground-glass / part-solid / multiple × <6 / ≥6 mm), mean-diameter rounding (6 × 5 mm → 6 mm band) and scope. Window policy is ours, not Fleischner's: "6–12 mo" → [6, 12] months, "3–6 mo" → [3, 6], a single point "12 mo" → [10, 13], "CT at 3 mo, PET/CT or tissue sampling" → [0, 3]. "Optional CT at 12 months" is tracked like a recommended CT (flagged `optional`); unknown risk is treated as high.
+
+**State machine (built, `lung.go`).** Same gates as the screening programmes:
+
+| Condition | State | Provenance block |
+|---|---|---|
+| age < 35, known primary cancer or immunosuppressed | `out_of_scope` (clinician decides; never closed by the rule) | `hold_decision` |
+| index CT: readers disagree / unavailable | open, evidence review item | `hold_decision` |
+| index CT agreed, Fleischner cell = no routine follow-up | `no_followup_needed` | `evidence` → `recommendation` → `closure_decision` |
+| follow-up CT on an untrusted link (p_cal < τ, near miss) | open, link review item, dropoff `unlinked` | `hold_decision` |
+| follow-up CT trusted, readers disagree | open, evidence review item; a later CT cannot close past an unread earlier one | `hold_decision` |
+| trusted + agreed `stable` / `resolved` | `closed` (next interval or discharge, `within_window` recorded) | … → `closure_decision` |
+| trusted + agreed `growing` (mean diameter +>1.5 mm) / solid component ≥ 6 mm | `escalated` to specialist / MDT (end state) | … → `escalation_decision` |
+| trusted + agreed `not_assessable` | `not_assessable` (repeat CT) | `hold_decision` |
+
+Overdue clock = window end. A clinician sign-off on an evidence item substitutes for reader agreement, exactly as for CRC (double read on closing answers under `merge+close`).
+
+**Readers (built; corpus simulated).** `data/lung/` holds a synthetic templated corpus written for this work by `scripts/lung_corpus.py` (seed 17): 38 index-CT texts and 48 follow-up texts with a labelled key, phrasing / unit (mm, cm) / section-order variants and traps (6 × 5 mm rounding, "stable" wording over > 1.5 mm growth, "slightly larger" within 1.5 mm, part-solid solid component reaching 7–8 mm, motion-degraded study, slice thickness "1.25 mm"). Reader A is regex/rules; reader B is the local **Gemma 3 4B** (Q4_K_M via `llama-server`, JSON-schema constrained, verbatim-quote grounding), asked once per unique text by `wsi7 lungcache` and replayed from `models/lung_gemma_cache.json` (no model calls in the run; a miss or ungrounded quote = unavailable → review). Both readers only extract fields; one shared rule turns fields into the label.
+
+| Corpus (labelled key) | Index CT, n=38 | Follow-up CT, n=48 |
+|---|---|---|
+| Reader A (regex) correct | 38 | 48 |
+| Reader B (Gemma 3 4B), prompt v1 → v2 → **v3 (frozen)** | 29 → 38 → **38** | 42 → 38 → **47** |
+| Both agree (v3) / agreed but wrong vs key | 38 / **0** | 47 / **0** |
+
+Read with care: reader A was written against the same templates it is scored on, and the Gemma prompt was revised twice on this corpus (v1 missed "multiple" counts and cm conversion and called resolved nodules non-assessable; v2 over-called "resolved"). There is no held-out lung text. Every reader-B error in every round was a disagreement routed to review, never an agreed wrong label; the one remaining v3 error (lu10, a 7×6 → 9×8 mm nodule read as stable) is exactly the case the gate exists for.
+
+**Generator (built; cohort simulated).** `wsi7 gen -lung N` (`genlung.go`): an outpatient imaging centre reports the incidental nodule (DiagnosticReport) and opens a tracking ServiceRequest (age, exclusion, clinical risk from the EHR); the follow-up CT happens at a regional hospital radiology department under a name variant, with the CRC linkage noise model (script, typos, DOB noise, 62/26/12% EID capture). Other people's chest CTs at that hospital are distractors. Index CTs fall on days −420…90 (a look-back cohort, because Fleischner windows are 3–13 months and the observation window is the same 120 days as CRC). Simulated parameters: 4% under 35, 5% exclusions, 8% risk not recorded; follow-up within window 40%, late 22%, never 38% (tuned near the ~38% appropriate-follow-up rate in `docs/ROADMAP.md`); outcomes stable / resolved / growing / solid-component / not-assessable. Separate RNG stream and background persons only.
+
+**CRC/cervical unchanged (verified).** With `-lung 0` the generator output is **byte-identical** to the pre-lung generator (sha256 of all 7 cohort files, `-noise v1` and `v2`, seed 2026, demo sizes). With `-lung 800` the five screening provider feeds are still byte-identical (only `truth.json`, `cohort_summary.json` and the two lung feeds differ). On the `-lung 0` cohort, `wsi7 sim` from the old and new binaries gives identical outputs, final states, clusters and metrics JSON. `genlung_test.go` pins the feed invariance.
+
+**Integrated run (built, simulated data).** `WASL_LUNG=800 scripts/demo.sh all`, seed 2026, v7strict, cached reader, FHIR source, chaos on (FHIR consumer, linker, closure-0 + prep-0, NATS node kills), reviewer 4% error with double read on merges and closing answers. 1,500 CRC + 600 cervical + **800 lung** loops in one run, 33,801 FHIR messages, 19,650 outputs, 713 ev/s.
+
+| Lung nodule (n=800) | Wasl live + review | Wasl, no review |
+|---|---|---|
+| Closure (closed + no_followup_needed) P / R | **1.000 / 0.993** | 1.000 / 0.957 |
+| **False closures** | **0 of 297** (95% UB 1.3%) | 0 of 286 |
+| Escalation (growing / solid ≥ 6 mm) recall / precision | 0.973 / 1.000 (36 of 37) | 0.757 / 1.000 |
+| Overdue-flag accuracy (clock = window end) | 0.996 | 0.974 |
+| Recommendation accuracy (action + window vs truth) | **1.000** (719 of 719 in-scope loops, coverage 1.000) | 1.000 |
+| State accuracy | 0.996 | 0.973 |
+| Appropriate follow-up within window (n=349 elapsed windows) | truth 0.418, **Wasl-measured 0.413**, per-loop agreement 0.994 | |
+
+- Out of scope: 81/81 held as `out_of_scope`, none closed. No-follow-up-needed: 107/107.
+- Two readers in the run: index CT 800/800 agree (38 unique texts), follow-up 361/362 agree (48 unique texts); agreed-but-wrong vs truth 0.
+- Review: 29 lung items (3.6 per 100 loops), 55 reads, 0.98 reviewer-h per 1k loops, 0 wrong final sign-offs.
+- The 3 misses (2 closed, 1 escalated, all predicted `open`): the follow-up CT registration was never linked, not even as a near miss. A linker recall loss, safe direction.
+- Same run, screening programmes: CRC P/R/false closures 1.000 / 0.961 / 0 of 571, cervical 1.000 / 0.991 / 0 of 217 — the same closure numbers as the committed screening-only v7strict summary (`results/v7strict/summary.txt`). Exactly-once 0 duplicate / 0 lost of 19,650 outputs; provenance chains 1,739/1,739 verified; tamper 17/17 attacks detected, untampered baseline fires nothing; live-vs-replay final mismatch 0. Outreach counts (e.g. 546 released, 0 without granted consent) shift slightly against the screening-only run because reviewer answers interleave differently with the extra events; the consent invariant holds.
+
+**What is designed, not built:**
+- The next surveillance interval (e.g. CT at 18–24 months, ground-glass every 2 years) is recorded as `next_step` on the closure; it does not yet open a new loop.
+- PET/CT or tissue sampling as closing evidence for the > 8 mm solid cell (only follow-up CT reports are read).
+- Lung outreach: no consent records are generated for lung patients, so contact stays `unknown` and nothing is sent.
+- HL7 v2 mapping of the lung reports (the run used the FHIR source only).
+- Real radiology text: the corpus is synthetic and small; local reports need a new labelled set before any claim about reader accuracy.
+
+**Reproduce:** `python3 scripts/lung_corpus.py` (corpus), `wsi7 lungcache -lungdata data/lung -out models/lung_gemma_cache.json` with `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4` (cache, ~2.5 min), `WASL_LUNG=800 scripts/demo.sh all` (run, ~10 min). Metrics: `report7.json` → `programmes_live.lung_nodule`.
