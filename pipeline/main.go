@@ -105,6 +105,10 @@ func main() {
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
 	readerTimeout := fs.Duration("reader-timeout", 60*time.Second, "per-call reader timeout")
 	readerRetries := fs.Int("reader-retries", 2, "bounded reader retries")
+	imageMode := fs.String("image", "off", "third (image) evidence reader, hold-only: off | cached (models/image_verdicts.json) | live (image/serve.py) | replay")
+	imageURL := fs.String("image-url", "http://127.0.0.1:8792", "image reader sidecar")
+	imgPhotos := fs.Bool("imgphotos", false, "gen: attach synthetic caecal / mucosal photo references (HyperKvasir held-out test images) to colonoscopy reports")
+	imgCache := fs.String("imgcache", "", "gen/image: image verdict cache (default <wasl>/image_verdicts.json)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	DualMerge = *dual
@@ -148,6 +152,33 @@ func main() {
 	default:
 		panic("unknown -reader " + *readerMode)
 	}
+	if *imgCache == "" {
+		*imgCache = filepath.Join(*wasl, "image_verdicts.json")
+	}
+	switch *imageMode {
+	case "off":
+	case "cached":
+		ImageR = LoadImageCache(*imgCache)
+	case "live", "replay":
+		c := LoadImageCache(*imgCache) // thresholds are frozen with the model; live answers go to the ledger
+		absRunI, _ := filepath.Abs(*run)
+		os.MkdirAll(absRunI, 0755)
+		url := *imageURL
+		if *imageMode == "replay" {
+			url = "http://127.0.0.1:1"
+		}
+		ImageR = NewImageClient(*imageMode, url, filepath.Join(absRunI, "image_ledger.jsonl"), c.ThrLand, c.ThrPr)
+		if *imageMode == "live" && cmd == "orchestrate" && !ImageR.Healthy() {
+			fmt.Fprintf(os.Stderr, "image reader: %s is not healthy; start it with: python image/serve.py\n", url)
+			os.Exit(3)
+		}
+	default:
+		panic("unknown -image " + *imageMode)
+	}
+	if ImageR != nil {
+		PolicyName += "+image=" + ImageR.Mode
+	}
+	ImgPhotos, ImgCachePath = *imgPhotos, *imgCache
 	if *sweepSet == "v7" {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
@@ -158,6 +189,10 @@ func main() {
 	if *v7cal != "" {
 		abs, _ := filepath.Abs(*v7cal)
 		v7Args = append(v7Args, "-v7cal", abs)
+	}
+	if *imageMode != "off" {
+		absC, _ := filepath.Abs(*imgCache)
+		v7Args = append(v7Args, "-image", *imageMode, "-image-url", *imageURL, "-imgcache", absC)
 	}
 	rcfg := DefaultReviewer
 	rcfg.Err, rcfg.Double, rcfg.Seed = *rerr, *rdouble, *rseed
@@ -378,12 +413,16 @@ cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 }
 
 func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, chaos int, natsKill bool, replicas int, noReview bool, seed int64) {
-	led := filepath.Join(run, "reader_ledger.jsonl") // keep the live-reader ledger across reruns (model answers are reused, not re-asked)
-	keep, _ := os.ReadFile(led)
+	keepFiles := map[string][]byte{} // keep the live-reader ledgers across reruns (model answers are reused, not re-asked)
+	for _, n := range []string{"reader_ledger.jsonl", "image_ledger.jsonl"} {
+		if b, _ := os.ReadFile(filepath.Join(run, n)); len(b) > 0 {
+			keepFiles[n] = b
+		}
+	}
 	os.RemoveAll(run)
 	os.MkdirAll(run, 0755)
-	if len(keep) > 0 {
-		os.WriteFile(led, keep, 0644)
+	for n, b := range keepFiles {
+		os.WriteFile(filepath.Join(run, n), b, 0644)
 	}
 	self, _ := os.Executable()
 	o := &Orch{run: run, bin: self, procs: map[string]*proc{}}

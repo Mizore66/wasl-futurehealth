@@ -285,6 +285,9 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 	kind := it.Kinds[0]
 	wrong := u01(c.Seed, it.ItemID, reader, "err") < c.Err
 	med := c.EvMedS
+	if kind == "evidence" && it.Reason == "prep_grade_one_click" {
+		med = OneClickMedS
+	}
 	if kind == "link" {
 		med = c.LinkMedS
 		same := tr.PKQid[it.Pair[0]] != "" && tr.PKQid[it.Pair[0]] == tr.PKQid[it.Pair[1]]

@@ -134,6 +134,11 @@ func evBlock(d DownFact, human string) map[string]interface{} {
 		if len(d.Ev.Flags) > 0 {
 			b["flags"] = d.Ev.Flags
 		}
+		if d.Ev.Image != nil { // third reader (hold-only): model version + verdict
+			b["image_reader"] = map[string]interface{}{"model": d.Ev.Image.Model, "photos": d.Ev.Image.Photos, "caecal_photo": d.Ev.Image.Caecal,
+				"landmark_p": d.Ev.Image.LandmarkP, "prep": d.Ev.Image.Prep, "prep_p": d.Ev.Image.PrepP, "unavailable": d.Ev.Image.Unavailable,
+				"photo_shas": d.Ev.Image.Shas, "label_before_image": d.Ev.PreImage, "hint": d.Ev.ReviewHint}
+		}
 		b["fields"] = map[string]string{"regex": d.Ev.Regex.Caecum + "/" + d.Ev.Regex.Prep + "/" + d.Ev.Regex.Polyps + "/" + d.Ev.Regex.Histology,
 			"reader": d.Ev.Gemma.Caecum + "/" + d.Ev.Gemma.Prep + "/" + d.Ev.Gemma.Polyps + "/" + d.Ev.Gemma.Histology}
 	}
@@ -346,6 +351,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, OverdueAtRaise: now-f.SRDay > SLADays}
 			if r.d.Ev != nil {
 				it.Verdict, it.Quote = r.d.Ev.Label, r.d.Ev.Gemma.Quote
+				if kind == "evidence" {
+					it.Reason = r.d.Ev.ReviewHint // image reader: prep_grade_one_click etc. (human still decides)
+				}
 			}
 			ls.raised[id] = it
 			newItems = append(newItems, it)
