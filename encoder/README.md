@@ -16,6 +16,8 @@ the synthetic protocol. Results: [`RESULTS.md`](RESULTS.md).
 | `eval.py` | R@1/R@10 on the real-variant test and the synthetic protocol (plus same-script retrieval) |
 | `train.py` | InfoNCE training with own-index hard negatives; checkpoint selection on the dev split |
 | `fit_scorer.py` | Refits the LightGBM pair scorer, `iso` and the stratified `iso_v7` calibrators on cosines from a given encoder |
+| `paired_ci.py` | Paired, person-clustered bootstrap CI for the old-vs-new real-variant recall difference |
+| `showlog.py` | Compact view of a training log |
 | `run_all.sh` | The whole pipeline, end to end |
 
 Go side (`pipeline/encdev.go`): `wsi encembed` (Go embeddings for parity), `wsi encnoise` (synthetic protocol pairs,
@@ -37,7 +39,7 @@ Neither raw dataset is committed. They are downloaded into a scratch directory b
 
 **Split hygiene.**
 - Persons keep their persons3 split everywhere. Only train-split persons feed training; dev picks the checkpoint; cal fits the calibrators; eval is the test.
-- NETransliteration is Wikidata-derived, so it can contain held-out people. Any pair whose English or Arabic side, once normalised, equals **any** name string of a dev, cal or eval person (canonical name, persons3 alias or mined variant) is dropped. That removed 5,944 pairs.
+- NETransliteration is Wikidata-derived, so it can contain held-out people. Any pair whose English or Arabic side, once normalised, equals **any** name string of a dev, cal or eval person (canonical name, persons3 alias or mined variant) is dropped. That removed 6,154 pairs.
 - Leading honorifics (Dr, Sheikh, الدكتور, الشيخ, …) are stripped from mined variants. Tokens that are also given names (Amir, Sultan, Sayed, Haji) are kept.
 
 ## Test sets
