@@ -632,7 +632,7 @@ func (s *apiServer) capacity() map[string]interface{} {
 		return map[string]interface{}{"status": "not_generated", "how": "python booking/suggest.py <run dir>", "data_mode": "simulated"}
 	}
 	return map[string]interface{}{"status": "simulated_decision_support", "data_mode": "simulated", "condition": s.booking["capacity"],
-		"summary": s.booking["summary"], "inputs": s.booking["inputs"], "note": s.booking["note"]}
+		"summary": s.booking["summary"], "inputs": s.booking["inputs"], "note": s.booking["note"], "levers": s.booking["levers"]}
 }
 
 // bookingFor: this case's simulated booking suggestion and the capacity condition that governs it.

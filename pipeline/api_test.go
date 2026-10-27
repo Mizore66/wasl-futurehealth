@@ -187,6 +187,14 @@ func TestAPIBookingSupport(t *testing.T) {
 	if b["data_mode"] != "simulated" || b["capacity_condition"] == nil || (b["status"] != "suggested" && b["status"] != "no_slot_within_horizon") {
 		t.Fatalf("open case booking: %v", b)
 	}
+	// wasl-booking/2: queue-lever suggestions ride along (simulated; any regimen change needs a clinician order)
+	if s.booking["schema"] == "wasl-booking/2" {
+		pw, _ := b["pathway"].(map[string]interface{})
+		pr, _ := b["prep_risk"].(map[string]interface{})
+		if pw == nil || (pw["route"] != "direct" && pw["route"] != "clinic") || pr == nil || pr["requires_clinician_order"] != true || cap["levers"] == nil {
+			t.Fatalf("lever fields missing: pathway=%v prep_risk=%v levers=%v", pw, pr, cap["levers"])
+		}
+	}
 	_, c = getJ(t, srv.URL+"/api/cases/"+s.fixtures["evidence_closure"])
 	if c["booking"].(map[string]interface{})["status"] != "not_applicable" {
 		t.Fatalf("closed case should not get a booking suggestion")
