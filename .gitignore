@@ -12,3 +12,4 @@ booking/sim/raw_*.json
 out/
 .venv*/
 ml-data/
+!models/image/*.pt
