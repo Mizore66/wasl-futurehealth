@@ -538,6 +538,9 @@ func report7(data, wasl, run string, P int) {
 			return n
 		}(),
 	}
+	if lm, ok := res["programmes_live"].(map[string]interface{})["lung_nodule"].(map[string]interface{}); ok {
+		lm["two_reader"] = lungTwoReader(preps, &tr) // second loop type: CT-report reader agreement end to end
+	}
 	rb, _ := json.MarshalIndent(res, "", " ")
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)
 	fmt.Println(string(rb))

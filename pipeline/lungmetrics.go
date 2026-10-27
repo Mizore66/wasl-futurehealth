@@ -108,3 +108,32 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			"per_loop_agreement": frac(afAgree, afN), "published_reference": 0.38},
 	}
 }
+
+// lungTwoReader: end-to-end two-reader statistics over every lung CT report version in the run's FHIR log.
+func lungTwoReader(preps []*Prep, tr *Truth) map[string]interface{} {
+	out := map[string]interface{}{}
+	for _, kind := range []string{"lung-finding", "lung-ct"} {
+		n, hit, agree, wrong := 0, 0, 0, 0
+		uniq := map[string]bool{}
+		for _, p := range preps {
+			if p == nil || p.Ev == nil || p.Ev.Category != kind || p.Ev.Ev == nil {
+				continue
+			}
+			v := p.Ev.Ev
+			n++
+			uniq[p.Ev.TextSha] = true
+			if v.GemmaHit {
+				hit++
+			}
+			if v.Agree {
+				agree++
+				if t, ok := tr.Reports[p.Ev.ReportID]; ok && t != v.Label {
+					wrong++
+				}
+			}
+		}
+		out[kind] = map[string]interface{}{"report_instances": n, "unique_texts": len(uniq), "reader_b_cache_hits": hit, "agree": agree,
+			"agreement_rate": frac(agree, n), "agree_but_wrong_vs_truth": wrong, "to_review": n - agree}
+	}
+	return out
+}
