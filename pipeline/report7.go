@@ -358,16 +358,24 @@ func report7(data, wasl, run string, P int) {
 			}
 		}
 	}
-	// forged link sign-offs: the pair must not have been merged on the strength of the forged 'same'
+	// forged link sign-offs: the pair must not have been merged on the strength of the forged 'same'.
+	// A forged event that RBAC denied cannot have had an effect; if its target pair is falsely merged anyway, that is a
+	// linker error (counted in linkage.false_merge_pairs), reported separately rather than credited to the forgery.
+	forgedPairMergedIndep := 0
 	for _, p := range preps {
 		if p != nil && p.Kind == "signoff" && p.So != nil && strings.HasPrefix(fhir[p.Seq-1].Hdr["Nats-Msg-Id"], "medlab/Provenance/forged") && p.So.Link == "same" {
 			if c0, c1 := clusters[p.So.Pair[0]], clusters[p.So.Pair[1]]; c0 != "" && c0 == c1 && tr.PKQid[p.So.Pair[0]] != tr.PKQid[p.So.Pair[1]] {
-				effect++
+				if CheckSignoff(p.So, DualMerge) != nil {
+					forgedPairMergedIndep++
+				} else {
+					effect++
+				}
 			}
 		}
 	}
 	forgedOut := map[string]interface{}{"forged_events": len(forged), "rbac_denied_signoff": lstats["rbac_denied_signoff"],
-		"rbac_denied_consent": lstats["rbac_denied_consent"], "consent_records_accepted": lstats["consent_records"], "forged_with_any_effect": effect}
+		"rbac_denied_consent": lstats["rbac_denied_consent"], "consent_records_accepted": lstats["consent_records"], "forged_with_any_effect": effect,
+		"forged_target_pair_falsely_merged_by_linker": forgedPairMergedIndep}
 
 	// ---- drop-off reasons per programme (live)
 	drop := map[string]interface{}{}
