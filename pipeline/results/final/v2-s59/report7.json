@@ -924,7 +924,7 @@
   "last_out_seq": 18257,
   "wrong": 41
  },
- "run": "/Users/anasqumhiyeh/Documents/Codex/wasl-clean/out/final/v2-s59/run/main",
+ "run": "./out/final/v2-s59/run/main",
  "source": {
   "Content": "full-resource",
   "Drop": 0.03,

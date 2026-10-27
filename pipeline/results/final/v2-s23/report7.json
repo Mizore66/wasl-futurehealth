@@ -919,7 +919,7 @@
   "last_out_seq": 19646,
   "wrong": 45
  },
- "run": "/Users/anasqumhiyeh/Documents/Codex/wasl-clean/out/final/v2-s23/run/main",
+ "run": "./out/final/v2-s23/run/main",
  "source": {
   "Content": "full-resource",
   "Drop": 0.03,

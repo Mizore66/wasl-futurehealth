@@ -372,7 +372,7 @@
  ],
  "fhir_msgs": 31827,
  "out_msgs": 18631,
- "run": "/Users/anasqumhiyeh/Documents/Codex/wasl-clean/out/final/v1-s23/run/main",
+ "run": "./out/final/v1-s23/run/main",
  "target_loop": "ahs-mushrif/ServiceRequest/AHS-sr-1004",
  "target_signoff": "rv-2fa5b9409e5c6cdf",
  "v6_ledger": true
