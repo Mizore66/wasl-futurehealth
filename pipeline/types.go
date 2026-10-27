@@ -54,6 +54,7 @@ type Event struct {
 	Thread   string  `json:"thread,omitempty"`   // e-consult thread = loop id (clinician-to-clinician, keyed by referral, no identity linking)
 	Parse    string  `json:"parse,omitempty"`    // LLM parse of an inbound free-text reply (e-consult or teach-back)
 	Coded    string  `json:"coded,omitempty"`    // coded conclusion on a colposcopy report (second reader)
+	Images   []ImgRef `json:"imgs,omitempty"`    // DiagnosticReport.media photo references (sha256 + capture station)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).

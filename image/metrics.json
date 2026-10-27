@@ -1,0 +1,99 @@
+{
+ "model_version": "hk-mnv3s-v1",
+ "backbone": "torchvision mobilenet_v3_small, ImageNet-1k weights (BSD-3-Clause torchvision)",
+ "split": "near-duplicate-grouped 2-fold (256-bit dHash, Hamming<=20 union-find per class; whole groups per fold): fold 0 train/val (85/15), fold 1 held-out test",
+ "split_mode": "grouped",
+ "seed": 2026,
+ "tasks": {
+  "landmark": {
+   "n_train": 1240,
+   "n_val": 218,
+   "n_test": 1413,
+   "test_pos": 498,
+   "classes": {
+    "pos": [
+     "cecum"
+    ],
+    "neg": [
+     "retroflex-rectum",
+     "polyps",
+     "ulcerative-colitis-grade-2"
+    ]
+   },
+   "temperature": 0.9298,
+   "threshold": 0.12,
+   "operating_point_rule": "first threshold with val specificity >= 0.95",
+   "test_auc": 0.9975,
+   "test_auc_ci95": [
+    0.9953,
+    0.9988
+   ],
+   "test_sensitivity": 0.994,
+   "test_sensitivity_ci95": [
+    0.9861,
+    1.0
+   ],
+   "test_specificity": 0.9596,
+   "test_specificity_ci95": [
+    0.9458,
+    0.972
+   ],
+   "test_ece": 0.0111,
+   "test_ece_ci95": [
+    0.0083,
+    0.0198
+   ],
+   "near_duplicate_test_images": 179,
+   "test_auc_without_near_duplicates": 0.9978,
+   "train_seconds": 95.7
+  },
+  "prep": {
+   "n_train": 709,
+   "n_val": 124,
+   "n_test": 961,
+   "test_pos": 606,
+   "classes": {
+    "pos": [
+     "bbps-2-3"
+    ],
+    "neg": [
+     "bbps-0-1"
+    ]
+   },
+   "temperature": 1.2044,
+   "threshold": 0.25,
+   "operating_point_rule": "first threshold with val specificity >= 0.95",
+   "test_auc": 0.9912,
+   "test_auc_ci95": [
+    0.9866,
+    0.9953
+   ],
+   "test_sensitivity": 0.9983,
+   "test_sensitivity_ci95": [
+    0.995,
+    1.0
+   ],
+   "test_specificity": 0.8338,
+   "test_specificity_ci95": [
+    0.7972,
+    0.8701
+   ],
+   "test_ece": 0.061,
+   "test_ece_ci95": [
+    0.0488,
+    0.0741
+   ],
+   "near_duplicate_test_images": 272,
+   "test_auc_without_near_duplicates": 0.9927,
+   "train_seconds": 62.5
+  }
+ },
+ "onnx_bytes": {
+  "landmark": 6085135,
+  "prep": 6085135
+ },
+ "weights_sha256": {
+  "landmark.onnx": "deebba8bf2c5bcad9f9409b006b83c762a5358f074e9c9c301ca0e1bc34af417",
+  "prep.onnx": "f46002d051a7c9c357fd5ca2b83b2cb05377aa435f924fa807bd7825a754e245"
+ }
+}

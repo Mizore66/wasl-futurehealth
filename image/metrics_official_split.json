@@ -1,0 +1,98 @@
+{
+ "model_version": "hk-mnv3s-v1",
+ "backbone": "torchvision mobilenet_v3_small, ImageNet-1k weights (BSD-3-Clause torchvision)",
+ "split": "official HyperKvasir 2_fold_split.csv: fold 0 train/val (85/15), fold 1 held-out test",
+ "seed": 2026,
+ "tasks": {
+  "landmark": {
+   "n_train": 1219,
+   "n_val": 215,
+   "n_test": 1437,
+   "test_pos": 505,
+   "classes": {
+    "pos": [
+     "cecum"
+    ],
+    "neg": [
+     "retroflex-rectum",
+     "polyps",
+     "ulcerative-colitis-grade-2"
+    ]
+   },
+   "temperature": 1.5602,
+   "threshold": 0.28,
+   "operating_point_rule": "first threshold with val specificity >= 0.95",
+   "test_auc": 0.9983,
+   "test_auc_ci95": [
+    0.9972,
+    0.9991
+   ],
+   "test_sensitivity": 0.996,
+   "test_sensitivity_ci95": [
+    0.99,
+    1.0
+   ],
+   "test_specificity": 0.9388,
+   "test_specificity_ci95": [
+    0.9236,
+    0.9542
+   ],
+   "test_ece": 0.0302,
+   "test_ece_ci95": [
+    0.024,
+    0.0378
+   ],
+   "near_duplicate_test_images": 174,
+   "test_auc_without_near_duplicates": 0.9986,
+   "train_seconds": 164.8
+  },
+  "prep": {
+   "n_train": 763,
+   "n_val": 134,
+   "n_test": 897,
+   "test_pos": 574,
+   "classes": {
+    "pos": [
+     "bbps-2-3"
+    ],
+    "neg": [
+     "bbps-0-1"
+    ]
+   },
+   "temperature": 1.3059,
+   "threshold": 0.87,
+   "operating_point_rule": "first threshold with val specificity >= 0.95",
+   "test_auc": 0.9968,
+   "test_auc_ci95": [
+    0.9925,
+    0.9994
+   ],
+   "test_sensitivity": 0.9983,
+   "test_sensitivity_ci95": [
+    0.9947,
+    1.0
+   ],
+   "test_specificity": 0.9381,
+   "test_specificity_ci95": [
+    0.9105,
+    0.9624
+   ],
+   "test_ece": 0.0881,
+   "test_ece_ci95": [
+    0.075,
+    0.1021
+   ],
+   "near_duplicate_test_images": 714,
+   "test_auc_without_near_duplicates": 0.9999,
+   "train_seconds": 65.5
+  }
+ },
+ "onnx_bytes": {
+  "landmark": 6085135,
+  "prep": 6085135
+ },
+ "weights_sha256": {
+  "landmark.onnx": "4eb87d09d32c08c2075739bf91d33b219be317428c7189a72a0b5a9e67e524f3",
+  "prep.onnx": "968bd543796de2597884065dc910619e53401fc8429f4bbdb7216b595ef135e7"
+ }
+}
