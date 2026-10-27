@@ -361,9 +361,9 @@ func tamper(data, wasl, run string, P int, role string, seed int64) {
 	if b, err := os.ReadFile(filepath.Join(run, "anchors.json")); err == nil && t.v6 {
 		json.Unmarshal(b, &t.anchors)
 	}
-	t.enc = LoadEncoder(filepath.Join(wasl, "encoder_weights.json"))
-	t.gbm = LoadGBM(filepath.Join(wasl, "lgb_stream.json"))
-	t.iso = LoadIso(filepath.Join(wasl, "iso.json"))
+	t.enc = LoadEncoder(filepath.Join(wasl, mf("encoder_weights.json")))
+	t.gbm = LoadGBM(filepath.Join(wasl, mf("lgb_stream.json")))
+	t.iso = LoadIso(filepath.Join(wasl, mf("iso.json")))
 	Judge = LoadJudge2(filepath.Join(wasl, "gemma_cache.json"))
 	Parse = LoadParser(filepath.Join(wasl, "parse_cache.json")) // v7 merge fix: v6-impact prep parses replies via this cache
 	for i := range t.fhir {

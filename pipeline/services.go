@@ -198,7 +198,7 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 	Parse = LoadParser(filepath.Join(dataDir, "parse_cache.json"))
 	nc, js := connect("prep-" + name)
 	defer nc.Close()
-	enc := LoadEncoder(filepath.Join(dataDir, "encoder_weights.json"))
+	enc := LoadEncoder(filepath.Join(dataDir, mf("encoder_weights.json")))
 	ctx := context.Background()
 	var cons jetstream.Consumer
 	retry("prep consumer", func() (err error) { cons, err = js.Consumer(ctx, "FHIR", "prep"); return })
@@ -388,7 +388,7 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 func runLinker(dataDir string, P int, runDir string) {
 	nc, js := connect("linker")
 	defer nc.Close()
-	gbm := LoadGBM(filepath.Join(dataDir, "lgb_stream.json"))
+	gbm := LoadGBM(filepath.Join(dataDir, mf("lgb_stream.json")))
 	L := NewLinkerCoreANN(gbm, P)
 	present := presentIDs(js, "FACTS", ">")
 	hwm := uint64(len(present))
@@ -478,7 +478,7 @@ type OutEnvelope struct {
 func runClosure(dataDir string, part int, runDir string) {
 	nc, js := connect("closure-" + itoa(part))
 	defer nc.Close()
-	C := NewClosureCore(part, LoadIso(filepath.Join(dataDir, "iso.json"))) // dataDir = models dir
+	C := NewClosureCore(part, LoadIso(filepath.Join(dataDir, mf("iso.json")))) // dataDir = models dir
 	subj := "out.p" + itoa(part)
 	present := presentIDs(js, "OUT", subj)
 	hwm := uint64(len(present))
