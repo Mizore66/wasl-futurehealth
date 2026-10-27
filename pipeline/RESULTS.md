@@ -170,3 +170,34 @@ The live ledger for this run is committed (`results/v7strict-live/reader_ledger.
 | Intents held for consent, then released / cancelled | n/a | 373 held, 216 released after grant, 12 cancelled |
 | CRC with review: P / R / false closures | 1.000 / 0.961 / 0/571 | 1.000 / 0.961 / 0/571 |
 | Tamper / forged / duplicates | 17/17 · 0/24 · 0 | 17/17 · 0/24 · 0 |
+
+
+## Stage 4: HL7 v2 ingest over MLLP (production-shaped)
+
+`WASL_SOURCE=hl7 scripts/demo.sh`. Malaffi's public interface is HL7 v2, so this is the production tier; FHIR remains the mock tier.
+
+**How it works (`pipeline/hl7.go`):**
+- **Mock HIE sender (`hl7send`):** encodes each cohort resource as HL7 v2.5.1 and sends it over MLLP: ADT^A04 (encounter), ORM^O01 (referral and task), ORU^R01 (colonoscopy, pathology and colposcopy result), SIU^S12 (appointment) and MDM^T02 (communication, consent, sign-off).
+  - Faults: duplicate re-sends, adjacent reorders, mid-stream TCP drops (resumed from the last ACK with an at-least-once re-send).
+- **Listener (`hl7mllp`):** parses MSH, PID, ORC, OBR, OBX, SCH, PV1 and TXA, and maps them to the **same internal event schema** as the FHIR path. There is no parallel closure path.
+  - Patient identity (MRN, Emirates ID, name, DOB, sex) comes from PID; report text and coded conclusions come from OBX.
+  - Wasl-specific fields with no standard v2 home travel in a Z-segment (ZWS).
+  - It publishes with `Nats-Msg-Id = <prov>/<Type>/<id>/v<vid>`, so JetStream dedupe absorbs duplicates and replays. It returns `MSA|AA` only after JetStream acknowledges the publish.
+  - Provenance headers: raw-message sha256, source system (MSH-4), control id (MSH-10).
+- **Tests (`hl7_test.go`):**
+  - 4,395 cohort resources of every type round-trip FHIR → HL7 → event identically to the FHIR path;
+  - escaping (`| ^ & ~ \`) and Arabic names survive;
+  - MLLP framing.
+
+**Integrated run:** HL7 source, v7strict, cached reader, same cohort and seed. Chaos: kill the linker, kill closure plus prep, kill the MLLP listener, kill a NATS node, 2 TCP drops, 3% duplicates, 3% reorders.
+
+| Metric | FHIR mock source | **HL7 v2 MLLP source** |
+|---|---|---|
+| Resources ingested exactly once | 30,668 / 30,668 | **30,668 / 30,668** (0 lost, 0 duplicates; 888 duplicate re-sends absorbed) |
+| CRC with review: P / R / false closures | 1.000 / 0.961 / 0/571 | **1.000 / 0.966 / 0/574** |
+| Cervical with review | 0/217 | 0/217 |
+| Duplicate / lost outputs; final-state mismatches | 0 / 0; 0 | **0 / 0; 0** |
+| Releases without granted consent | 0 / 619 | **0 / 1,082** (independently re-verified) |
+| Tamper / forged | 17/17 · 0/24 | 17/17 · 0/24 |
+
+The HL7 feed is delivered in arrival order (the FHIR mock adds heavy reordering), so consent records arrive before the facts that need them. That is why no intents were held for consent in this run, and why more referral-side facts reach the gate.

@@ -32,7 +32,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 | Folder | What | Status |
 |---|---|---|
-| `pipeline/` | Go + NATS JetStream streaming pipeline: FHIR ingest, linker, **v7strict closure gate**, reviewer, provenance, tamper audit | Built; integrated runs in `pipeline/results/` |
+| `pipeline/` | Go + NATS JetStream streaming pipeline: **HL7 v2 MLLP** + FHIR ingest, linker, **v7strict closure gate**, live/cached evidence reader, consent hold, reviewer, provenance, tamper audit | Built; integrated runs in `pipeline/results/` |
 | `booking/` | Constraint-safe booking engine (Python) + simulator, including the network-pooling test | Simulated; **to merge** |
 | `reader/` | Python reference for the hybrid reader prompt (the Go client in `pipeline/reader.go` is canonical) | Reference |
 | `patient-parsers/` | Frozen test sets and scores for the teach-back / e-consult parsers | Evaluated |

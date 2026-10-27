@@ -91,6 +91,8 @@ func main() {
 	fReo := fs.Float64("freorder", 0.05, "mock fault: P(reordered notification)")
 	fDrop := fs.Float64("fdrop", 0.03, "mock fault: P(dropped notification)")
 	subKill := fs.Int("subkill", 1, "kill/restart cycles of the FHIR subscription consumer (source=fhir)")
+	hl7Addr := fs.String("hl7", "127.0.0.1:28870", "HL7 v2 MLLP listener addr (source=hl7)")
+	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
 	v7guard := fs.Bool("v7guard", false, "v7: second-identifier guard on EID-chain / p_cal outreach")
 	tauClose := fs.Float64("tauclose", 0, "v7: closure link tier under -v7cal (default 0.99)")
@@ -177,6 +179,10 @@ func main() {
 		runReviewer(*data, absRun, rcfg, *revLat, *hold, *seed)
 	case "malaffi":
 		runMalaffi(*data, *hieAddr, *speed, *seed, *fDup, *fReo, *fDrop, absRun)
+	case "hl7mllp":
+		runHL7Listener(*hl7Addr, absRun)
+	case "hl7send":
+		runHL7Sender(*data, *hl7Addr, *seed, *fDup, *fReo, *hl7Drops, absRun)
 	case "fhirsub":
 		runFhirSub("http://"+*hieAddr+"/fhir", *hookAddr, *content, absRun)
 	case "readerwarm":
@@ -186,7 +192,7 @@ func main() {
 		asked, ok := WarmReader(*data, 4)
 		fmt.Printf("reader warm: %d unique report bodies, %d read OK, %d unavailable (will route to review)\n", asked, ok, asked-ok)
 	case "orchestrate":
-		SrcCfg = srcCfg{*source, *content, *hieAddr, *hookAddr, *fDup, *fReo, *fDrop, *subKill}
+		SrcCfg = srcCfg{*source, *content, *hieAddr, *hookAddr, *fDup, *fReo, *fDrop, *subKill, *hl7Addr, *hl7Drops}
 		RevArgs = []string{"-revlat", fmt.Sprint(*revLat), "-seed", fmt.Sprint(*seed)}
 		if *hold != "" {
 			RevArgs = append(RevArgs, "-hold", *hold)
@@ -238,6 +244,8 @@ type srcCfg struct {
 	Source, Content, Hie, Hook string
 	Dup, Reorder, Drop         float64
 	SubKill                    int
+	HL7Addr                    string
+	HL7Drops                   int
 }
 
 var SrcCfg = srcCfg{Source: "file"}
@@ -296,7 +304,7 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		cmd.Wait()
 		time.Sleep(300 * time.Millisecond)
 		o.mu.Lock()
-		restart := !o.stopping && p.gen == gen && !strings.HasPrefix(name, "producer-")
+		restart := !o.stopping && p.gen == gen && !strings.HasPrefix(name, "producer-") && name != "hl7send" // one-shot jobs exit when done
 		if restart {
 			p.crashes++
 		}
@@ -409,6 +417,12 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		time.Sleep(700 * time.Millisecond) // mock loads + sorts the cohort
 		t0 = time.Now()
 		o.start("fhirsub", "", c("fhirsub", "-hie", SrcCfg.Hie, "-hook", SrcCfg.Hook, "-content", SrcCfg.Content)...)
+	} else if SrcCfg.Source == "hl7" {
+		o.start("hl7mllp", "", c("hl7mllp", "-hl7", SrcCfg.HL7Addr)...)
+		time.Sleep(400 * time.Millisecond)
+		t0 = time.Now()
+		o.start("hl7send", "", c("hl7send", "-hl7", SrcCfg.HL7Addr, "-seed", fmt.Sprint(seed), "-fdup", fmt.Sprint(SrcCfg.Dup),
+			"-freorder", fmt.Sprint(SrcCfg.Reorder), "-hl7drops", fmt.Sprint(SrcCfg.HL7Drops))...)
 	} else {
 		for _, pc := range Providers {
 			o.start("producer-"+pc.ID, "", c("producer", "-prov", pc.ID, "-speed", fmt.Sprint(speed))...)
@@ -429,6 +443,26 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	subExpect := 6.0 // full-speed feed length (s) measured on this cohort
 	if speed > 0 {
 		subExpect = expect
+	}
+	if SrcCfg.Source == "hl7" && SrcCfg.SubKill > 0 { // kill/restart the MLLP listener mid-feed (sender reconnects, re-sends unACKed)
+		subDone.Add(1)
+		go func() {
+			defer subDone.Done()
+			for k := 0; k < SrcCfg.SubKill; k++ {
+				at := subExpect * 3 * (float64(k) + 0.45) / float64(SrcCfg.SubKill)
+				if d := time.Until(t0.Add(time.Duration(at * float64(time.Second)))); d > 0 {
+					time.Sleep(d)
+				}
+				o.kill("hl7mllp")
+				down := 1.5 + subRng.Float64()
+				time.Sleep(time.Duration(down * float64(time.Second)))
+				o.start("hl7mllp", "")
+				evMu.Lock()
+				events = append(events, map[string]interface{}{"cycle": fmt.Sprintf("hl7mllp-%d", k+1), "victims": []string{"hl7mllp"}, "t_kill": at, "down_s": down})
+				evMu.Unlock()
+				fmt.Printf("chaos: killed HL7 MLLP listener at %.1fs, restarted after %.1fs\n", at, down)
+			}
+		}()
 	}
 	if SrcCfg.Source == "fhir" && SrcCfg.SubKill > 0 {
 		subDone.Add(1)
@@ -507,6 +541,10 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		ok := chaosDone
 		if SrcCfg.Source == "fhir" {
 			if st := readStatus(run, "fhirsub"); st == nil || st["done"] != true {
+				ok = false
+			}
+		} else if SrcCfg.Source == "hl7" {
+			if st := readStatus(run, "hl7send"); st == nil || st["done"] != true {
 				ok = false
 			}
 		} else {

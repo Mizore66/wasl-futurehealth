@@ -2,15 +2,16 @@
 # Wasl one-command baseline: check assets → build → cohort → integrated NATS run → audit → tamper → report.
 # Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|report|test]   (default: all)
 # Outputs: out/cohort/ (synthetic data), out/run/<policy>/ (logs, report7.json, dashboard.json, review_queue.json).
-# Env: WASL_POLICY=v7strict|v6 (default v7strict), WASL_READER=cached|live (default cached), WASL_SEED, WASL_OUT.
+# Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 # Live reader: llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$ROOT/bin"; OUT="${WASL_OUT:-$ROOT/out}"; SEED="${WASL_SEED:-2026}"
 POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v6 (legacy comparison)
+SOURCE="${WASL_SOURCE:-fhir}"      # fhir (mock Malaffi FHIR Subscription) | hl7 (HL7 v2 over MLLP, production-shaped)
 READER="${WASL_READER:-cached}"    # cached (Gemma 26B answers, no model needed) | live (local llama-server) 
 READER_URL="${WASL_READER_URL:-http://127.0.0.1:8791}"
-COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER"
+COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"
 RARGS=(-reader "$READER" -reader-url "$READER_URL")
 # audit/tamper/report never call the model: they replay the run's reader ledger
 AARGS=(-reader cached); [ "$READER" = cached ] || AARGS=(-reader replay)
@@ -26,7 +27,7 @@ check() {
            data/evidence/reports43.json data/evidence/pathology_templates.json patient-parsers/econsult_testset.json patient-parsers/teachback_testset.json; do
     [ -s "$ROOT/$f" ] || need "$f" "it is committed in the repo — re-clone or git lfs/pull"
   done
-  for p in 14822 14823 14824 28880 28890; do
+  for p in 14822 14823 14824 28870 28880 28890; do
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
   echo "assets OK"
@@ -47,7 +48,7 @@ run_() {
     (cd "$BIN" && ./wsi7 readerwarm -data "$COHORT" -run "$RUN" "${RARGS[@]}") || exit 1
   fi
   (cd "$BIN" && ./wsi7 orchestrate -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -preps 3 -threads 8 \
-     -source fhir -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" -policy "$POLICY" "${RARGS[@]}" | tee "$RUN.stdout")
+     -source "$SOURCE" -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" -policy "$POLICY" "${RARGS[@]}" | tee "$RUN.stdout")
 }
 audit()  { (cd "$BIN" && ./wsi7 audit -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > "$RUN/audit.stdout" 2>&1); echo "audit → $RUN/audit.stdout"; }
 tamper() { (cd "$BIN" && ./wsi7 tamper -role auditor -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > "$RUN/tamper.json" 2> "$RUN/tamper.log"); tail -3 "$RUN/tamper.log"; }
