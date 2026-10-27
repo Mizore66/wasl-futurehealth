@@ -12,10 +12,13 @@ POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v6 (legacy comparis
 SOURCE="${WASL_SOURCE:-fhir}"      # fhir (mock Malaffi FHIR Subscription) | hl7 (HL7 v2 over MLLP, production-shaped)
 READER="${WASL_READER:-cached}"    # cached (Gemma 26B answers, no model needed) | live (local llama-server) 
 READER_URL="${WASL_READER_URL:-http://127.0.0.1:8791}"
-COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"
-RARGS=(-reader "$READER" -reader-url "$READER_URL")
+COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
+IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
+RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json")
+GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
 # audit/tamper/report never call the model: they replay the run's reader ledger
 AARGS=(-reader cached); [ "$READER" = cached ] || AARGS=(-reader replay)
+IMG_A=cached; [ "$IMAGE" = live ] && IMG_A=replay; [ "$IMAGE" = off ] && IMG_A=off; AARGS+=(-image "$IMG_A" -imgcache "$ROOT/models/image_verdicts.json")
 need() { echo "MISSING: $1"; echo "  → $2"; exit 1; }
 
 check() {
@@ -40,7 +43,7 @@ cohort() {
   rm -rf "$BASE" "$COHORT" "$OUT/run/base"; mkdir -p "$BASE" "$COHORT"
   "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" \
     -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-    -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 > "$OUT/gen.json"
+    -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
   "$BIN/wsi7" sim -data "$BASE" -wasl "$ROOT/models" -run "$OUT/run/base" > "$OUT/run/base.json" 2> "$OUT/run/base.err"
   python3 "$ROOT/pipeline/augment_cohort.py" "$BASE" "$OUT/run/base" "$COHORT"
   echo "cohort → $COHORT"

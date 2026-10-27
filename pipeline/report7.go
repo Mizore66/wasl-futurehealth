@@ -516,7 +516,9 @@ func report7(data, wasl, run string, P int) {
 			}
 		}
 	}
+	imgOut := imageReport(preps, fhir, &tr, liveFinal)
 	res := map[string]interface{}{
+		"image_reader": imgOut,
 		"run": run, "loops": total, "loops_by_programme": nLoops,
 		"closure": closure, "programmes_live": analyze6(liveFinal, &tr), "programmes_no_review": analyze6(noRev.final, &tr),
 		"reviewer": review, "outreach_live": gov, "outreach_no_review": govNoRev, "forged": forgedOut, "consent_timing": consentTiming, "dropoff": drop,

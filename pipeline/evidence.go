@@ -37,6 +37,9 @@ type TwoVerdict struct {
 	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
 	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
 	ReaderLatencyMs int64  `json:"reader_ms,omitempty"`
+	Image      *ImageVerdict `json:"image,omitempty"`    // third (image) reader, hold-only (image.go)
+	PreImage   string        `json:"pre_image,omitempty"` // label before the image reader (hold-only audit)
+	ReviewHint string        `json:"hint,omitempty"`      // prep_grade_one_click | image_prep_inadequate | image_prep_conflict
 }
 
 const seg = `(?:distal|proximal|mid)?\s*(?:descending|sigmoid|transverse|splenic|hepatic|ascending|rectosigmoid)`

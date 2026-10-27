@@ -137,6 +137,14 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 		if e.Text == "" {
 			e.Text = gs(res, "conclusion")
 		}
+		if md, ok := res["media"].([]interface{}); ok {
+			for _, x := range md {
+				xm, _ := x.(map[string]interface{})
+				if d := gs(xm, "link", "display"); strings.HasPrefix(d, "sha256:") {
+					e.Images = append(e.Images, ImgRef{Sha: strings.TrimPrefix(d, "sha256:"), Station: gs(xm, "comment")})
+				}
+			}
+		}
 	case "Encounter":
 		e.Day = tsToDay(gs(res, "period", "start"))
 	case "Consent": // v6: patient outreach consent (provision deny = opt out of automated messages)

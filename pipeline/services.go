@@ -282,6 +282,10 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 				kind = "colonoscopy" // procedure-report slot; Judge6 routes on the presence of a coded conclusion
 			}
 			ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
+			if ImageR != nil && kind == "colonoscopy" && ev.Coded == "" && ev.Category == "colonoscopy" {
+				applyImage(ev.Ev, ImageR.Read(ev.Images))
+			}
+			ev.Images = nil
 			ev.Text = "" // the full body stays in the immutable FHIR log; downstream carries the verdict + hash
 		}
 		if ev.RType == "Communication" && (ev.Category == "teachback-reply" || ev.Category == "econsult-reply") {
