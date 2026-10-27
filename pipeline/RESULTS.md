@@ -403,3 +403,34 @@ Read with care: reader A was written against the same templates it is scored on,
 - Real radiology text: the corpus is synthetic and small; local reports need a new labelled set before any claim about reader accuracy.
 
 **Reproduce:** `python3 scripts/lung_corpus.py` (corpus), `wsi7 lungcache -lungdata data/lung -out models/lung_gemma_cache.json` with `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4` (cache, ~2.5 min), `WASL_LUNG=800 scripts/demo.sh all` (run, ~10 min). Metrics: `report7.json` → `programmes_live.lung_nodule`.
+
+## Showcase run: every component in one integrated run
+
+`WASL_POLICY=v7ltt WASL_READER=live WASL_SOURCE=hl7 WASL_IMAGE=cached WASL_LUNG=800 scripts/demo.sh all` (seed 2026; chaos on: process kills plus a NATS node kill; HL7 connection drops and duplicate re-sends). Outputs: [`results/showcase/`](results/showcase/).
+
+**Configuration:**
+- live local Gemma 3 4B reader;
+- HL7 v2.5.1 over MLLP;
+- Learn-then-Test closure tier;
+- hold-only image reader;
+- consent hold;
+- lung-nodule loop;
+- materialised API inputs.
+
+| | Result |
+|---|---|
+| CRC with review | P 1.000, R 0.958, **0/569 false closures** |
+| Cervical with review | P 1.000, R 0.991, 0/217 |
+| Lung nodules (800 loops) | P 1.000, R 0.993, 0/297; recommendation accuracy 1.000 |
+| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.322 |
+| HL7 ingest | 32,630 resources, 0 lost, 0 duplicated |
+| Exactly-once | 0 duplicates in 25,620 outputs; 0 final-state mismatches |
+| Provenance / forged / tamper | 1,741/1,741 chains verified; 0/24 forged events with effect; every tamper attack detected |
+| Wrong-patient messages / messages without granted consent | 0 / 0 |
+| Policy stamp | `v7strict+cal=true+guard=true+tau=0.98+ltt+image=cached` on every decision |
+
+**Why nothing was held for consent in this run** (`intents_ever_held_for_consent` = 0; the FHIR runs hold about 350):
+- **Not a consent bug.** In true arrival order, every patient's consent is on file before any outreach trigger. Checked: 581/581 triggers arrive at least 0.5 days after the first consent.
+- **HL7 keeps that order.** The mock HIE sends one arrival-ordered stream, so the gate never has to wait.
+- **The FHIR mock doesn't.** It publishes each provider's feed separately and they drift apart, so a downstream trigger can be processed before the referral and its consent. That is exactly when the hold fires.
+- **Where the hold is tested:** the stage 3 tests and the FHIR runs. The invariant (0 released without granted consent) holds in both paths.
