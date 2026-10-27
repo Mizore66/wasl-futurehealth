@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"encoding/json"
+	"testing"
+)
 
 func lungFacts(age int, excl, risk, findLabel string, fus ...DownFact) *LoopFacts {
 	f := &LoopFacts{LoopID: "rad-imaging/ServiceRequest/RAD-sr-1", Provider: "rad-imaging", SRDay: -200, SRRec: "rad-imaging|RAD-MRN000001",
@@ -119,6 +122,23 @@ func TestLungNoFollowupNeededGrowingAndScope(t *testing.T) {
 	d, _ = runLung(t, lungFacts(60, "none", "low", "solid/6-8/single", lungFU("MAF-ct-1", 50, "not_assessable", "eid", 1, false)), 120)
 	if d.State != "not_assessable" || lastBlock(d) != "hold_decision" {
 		t.Fatalf("non-diagnostic follow-up must hold, got %s", d.State)
+	}
+}
+
+// Audit and tamper re-verify DECODED decisions: chain hashes and the decision signature must survive a JSON round trip.
+func TestLungDecisionSurvivesJSONRoundTrip(t *testing.T) {
+	fu := lungFU("MAF-ct-1", 50, "stable", "eid", 1, false)
+	fu.Ev.Regex.Lung = &LungFields{Long: 7, Short: 6, PriorLong: 7, PriorShort: 6, Stated: "stable", Label: "stable", Quote: "q"}
+	fu.Ev.Gemma.Lung = &LungFields{Long: 7, Short: 6, Label: "stable"}
+	f := lungFacts(60, "none", "low", "solid/6-8/single", fu)
+	f.Down[0].Ev.Regex.Lung = &LungFields{Type: FlSolid, Long: 7, Short: 6, Count: FlSingle, Mean: 7, Label: "solid/6-8/single"}
+	d, _ := runLung(t, f, 120)
+	var d2 Decision
+	if err := json.Unmarshal(canon(d), &d2); err != nil {
+		t.Fatal(err)
+	}
+	if d2.State != "closed" || !verifyChain(d2.Chain) || decSig(&d2) != d2.Sig {
+		t.Fatalf("decoded lung decision does not verify: chain %v sig %v", verifyChain(d2.Chain), decSig(&d2) == d2.Sig)
 	}
 }
 
