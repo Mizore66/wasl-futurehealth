@@ -118,6 +118,8 @@ func main() {
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
+	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
+	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
@@ -125,11 +127,12 @@ func main() {
 		EnableLung()
 		os.Setenv("WSI_LUNG_PROVIDERS", "1")
 	}
+	ModelSet = *modelSet
 	DualMerge = *dual
 	switch *policy {
 	case "v7strict":
 		if *v7cal == "" {
-			*v7cal = filepath.Join(*wasl, "iso_v7.json")
+			*v7cal = filepath.Join(*wasl, mf("iso_v7.json"))
 		}
 		*v7guard, *evpol = true, "v7strict"
 		if *tauClose == 0 {
@@ -137,7 +140,7 @@ func main() {
 		}
 	case "v7ltt": // v7strict with the closure tier chosen by Learn-then-Test (scripts/ltt_select.py), not by hand
 		if *v7cal == "" {
-			*v7cal = filepath.Join(*wasl, "iso_v7.json")
+			*v7cal = filepath.Join(*wasl, mf("iso_v7.json"))
 		}
 		*v7guard, *evpol = true, "v7strict"
 		if *tauClose == 0 {
@@ -156,6 +159,9 @@ func main() {
 	}
 	TauFromLTT = TauFromLTT || *tauLTT
 	PolicyName = policyName()
+	if ModelSet != "" {
+		PolicyName += "+models=" + ModelSet
+	}
 	NoiseModel = *noise
 	GenSplit = *split
 	ReaderMode = *readerMode
@@ -207,6 +213,9 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
+	if ModelSet != "" {
+		v7Args = append(v7Args, "-modelset", ModelSet)
+	}
 	if *readerMode != "cached" {
 		v7Args = append(v7Args, "-reader", *readerMode, "-reader-url", *readerURL, "-reader-timeout", readerTimeout.String(), "-reader-retries", fmt.Sprint(*readerRetries))
 	}
@@ -298,6 +307,8 @@ func main() {
 		runEncEmbed(*encFile, *inFile, *out)
 	case "encnoise":
 		runEncNoise(*wasl, *split, *out, *seed)
+	case "featdump":
+		runFeatDump(*wasl, *encFile, *gbmFile, *split, *out, *persons, *seed)
 	case "annsynth":
 		runAnnSynth(*wasl, *models, *out, *nRegs, *seed, *threads)
 	case "annbench":

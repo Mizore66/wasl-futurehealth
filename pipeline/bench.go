@@ -112,7 +112,7 @@ func runAnnSynth(wasl, models, out string, n int, seed int64, threads int) {
 	}
 	var pool []Person
 	json.Unmarshal(b, &pool)
-	enc := LoadEncoder(filepath.Join(models, "encoder_weights.json"))
+	enc := LoadEncoder(filepath.Join(models, mf("encoder_weights.json")))
 	os.MkdirAll(out, 0755)
 	do := func(tag string, n int, seed int64) {
 		t0 := time.Now()
