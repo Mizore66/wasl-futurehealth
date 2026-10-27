@@ -14,10 +14,11 @@ REPO = os.path.dirname(HERE)
 PERSONS = os.path.join(REPO, "data", "persons3.json")
 
 # Leading honorifics stripped from mined variants (registrations do not carry them).
-AR_TITLES = {"الدكتور", "دكتور", "د", "الشيخ", "شيخ", "السيد", "الامير", "الأمير", "امير", "الملك", "الامام", "الإمام",
-             "الحاج", "الاستاذ", "الأستاذ", "المهندس", "السلطان", "الرئيس", "اللواء", "العميد", "الفريق", "المشير"}
-LAT_TITLES = {"dr", "dr.", "sheikh", "shaikh", "shaykh", "sheik", "prince", "king", "imam", "sir", "sayyid", "sayed",
-              "haji", "hajji", "hadji", "sultan", "emir", "amir", "president", "general", "gen.", "prof.", "prof", "mr", "mr.", "mrs", "mrs."}
+AR_TITLES = {"الدكتور", "دكتور", "د", "الشيخ", "شيخ", "السيد", "الامير", "الأمير", "الملك", "الامام", "الإمام",
+             "الحاج", "الاستاذ", "الأستاذ", "المهندس", "السلطان", "الرئيس", "اللواء", "العميد", "الفريق", "المشير", "د."}
+# (Ambiguous tokens that are also given names, e.g. Amir, Sultan, Sayed, Haji, are deliberately not stripped.)
+LAT_TITLES = {"dr", "dr.", "sheikh", "shaikh", "shaykh", "sheik", "sheikha", "shaikha", "prince", "king", "imam", "sir",
+              "president", "general", "gen.", "prof", "prof.", "mr", "mr.", "mrs", "mrs.", "dame", "lord", "lady"}
 
 
 def strip_titles(s, ar):

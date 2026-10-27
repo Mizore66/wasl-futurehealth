@@ -116,7 +116,7 @@ class DualEncoder(nn.Module):
 
     def batch(self, names, ar, device):
         seqs = [self.ids(n, ar) for n in names]
-        T = max(len(s) for s in seqs)
+        T = min(self.cfg["L"], -(-max(len(s) for s in seqs) // 8) * 8)  # few distinct shapes (MPS graph cache)
         x = torch.zeros(len(seqs), T, dtype=torch.long)
         for i, s in enumerate(seqs):
             x[i, :len(s)] = torch.tensor(s)
