@@ -438,6 +438,62 @@ func report7(data, wasl, run string, P int) {
 	}
 	consentTiming := map[string]int{"opted_out_loops": len(o.optT), "released_after_opt_out_on_file": len(after),
 		"released_before_opt_out_recorded": len(before)}
+	// stage 3 invariant: every released intent must have had a *granted* contact permission (authorised permit, not
+	// later withdrawn) earlier in the FHIR log than the input that produced the decision.
+	type cev struct {
+		seq  uint64
+		kind string
+	}
+	cons := map[string][]cev{}
+	for _, p := range preps {
+		if p != nil && p.Ev != nil && p.Kind == "event" && p.Ev.RType == "Consent" && Authorize(p.Ev.Owner, ActRecordConsent) == nil {
+			cons[p.Ev.PatientKey] = append(cons[p.Ev.PatientKey], cev{p.Seq, p.Ev.Status})
+		}
+	}
+	grantedAt := func(pk string, at uint64) bool {
+		st := ""
+		for _, c := range cons[pk] { // replay the same state machine as the linker
+			if c.seq > at {
+				break
+			}
+			switch {
+			case c.kind == "permit" && st != "opted_out":
+				st = "granted"
+			case c.kind == "deny" && (st == "granted" || st == "opted_out"):
+				st = "opted_out"
+			case c.kind == "deny":
+				st = "denied"
+			}
+		}
+		return st == "granted"
+	}
+	relNoGrant, relTotal, held, cancelled := map[relKey]bool{}, map[relKey]bool{}, map[relKey]bool{}, map[relKey]bool{}
+	for _, m := range outLog {
+		var oe OutEnvelope
+		json.Unmarshal(m.Data, &oe)
+		d := oe.Dec
+		if d == nil {
+			continue
+		}
+		for _, x := range d.Outreach {
+			k := relKey{d.LoopID, x.Event, x.Kind}
+			switch {
+			case x.Released:
+				relTotal[k] = true
+				if !grantedAt(srPK[d.LoopID], d.InSeq) {
+					relNoGrant[k] = true
+				}
+			case x.Suppress == SupConsentHold:
+				held[k] = true
+			case x.Suppress == SupConsent:
+				cancelled[k] = true
+			}
+		}
+	}
+	consentTiming["released_total"] = len(relTotal)
+	consentTiming["released_without_granted_consent"] = len(relNoGrant)
+	consentTiming["intents_ever_held_for_consent"] = len(held)
+	consentTiming["intents_cancelled_by_consent"] = len(cancelled)
 	var orch, aud map[string]interface{}
 	ob, _ := os.ReadFile(filepath.Join(run, "orchestrate.json"))
 	json.Unmarshal(ob, &orch)

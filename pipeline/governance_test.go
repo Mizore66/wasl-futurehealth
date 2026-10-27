@@ -132,7 +132,7 @@ func df(rtype, status string, strength float64, basis string, near bool) DownFac
 
 func TestOutreachGateAndConsent(t *testing.T) {
 	id := func(p float64) float64 { return p }
-	f := &LoopFacts{LoopID: "L", SRDay: 1, Down: []DownFact{
+	f := &LoopFacts{LoopID: "L", SRDay: 1, Contact: "granted", Down: []DownFact{
 		df("Appointment", "booked", 0.995, "wasl", false),   // p_cal >= tau -> released
 		df("Appointment", "booked", 0.95, "wasl", false),    // below tau -> held
 		df("Appointment", "noshow", 0.60, "eid", false),     // EID -> released

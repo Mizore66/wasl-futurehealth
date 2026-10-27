@@ -51,15 +51,31 @@ def consent(prov, mrn, pt, day, role, kind, cid):
     import datetime
     res['dateTime'] = res['meta']['lastUpdated'] = (datetime.datetime(2026, 5, 1, tzinfo=datetime.timezone.utc) + datetime.timedelta(days=day)).strftime('%Y-%m-%dT%H:%M:%SZ')
     return res
-for i, (prov, mrn) in enumerate(opt):
+# Stage 3: every referral patient has a contact-permission record ("screening-outreach-messaging"):
+#   4% deny (opt-out), the rest permit, each arriving 0-0.5 d after the referral (so referral-before-consent is common).
+#   A further 5% of permits are re-sent (duplicate) and 2% of patients later opt out after granting (permit then deny).
+# consent_truth.json: loop -> {"final": "permit"|"deny", "first_day": d} ; opted-out loops keep value True for back-compat.
+optset = set(opt)
+consent_detail = {}
+for i, (prov, mrn) in enumerate(pks):
     loop0 = by_pk[(prov, mrn)][0]
     _, _, pt, arr = srpk[loop0]
     day = arr + r.uniform(0.01, 0.5)
     role = 'coordinator' if r.random() < 0.8 else 'clinician'
+    kind = 'deny' if (prov, mrn) in optset else 'permit'
     cid = f'consent-{i}'
-    add[prov].append({"arrival": day, "prov": prov, "msgid": f"{prov}/Consent/{cid}/v1", "res": consent(prov, mrn, pt, day, role, "deny", cid)})
+    add[prov].append({"arrival": day, "prov": prov, "msgid": f"{prov}/Consent/{cid}/v1", "res": consent(prov, mrn, pt, day, role, kind, cid)})
+    final = kind
+    if kind == 'permit' and r.random() < 0.05:   # duplicate delivery of the same record (idempotency)
+        add[prov].append({"arrival": day + r.uniform(0.01, 2), "prov": prov, "msgid": f"{prov}/Consent/{cid}/v1", "res": consent(prov, mrn, pt, day, role, kind, cid)})
+    if kind == 'permit' and r.random() < 0.02:   # later withdrawal
+        d2 = day + r.uniform(3, 30)
+        add[prov].append({"arrival": d2, "prov": prov, "msgid": f"{prov}/Consent/{cid}-w/v1", "res": consent(prov, mrn, pt, d2, role, 'deny', cid + '-w')})
+        final = 'deny'
     for l in by_pk[(prov, mrn)]:
-        consent_truth[l] = True
+        if kind == 'deny':
+            consent_truth[l] = True
+        consent_detail[l] = {"first": kind, "final": final, "first_day": round(day, 4)}
 forged = []
 for i, (prov, mrn) in enumerate(forged_targets):
     loop0 = by_pk[(prov, mrn)][0]
@@ -94,6 +110,7 @@ for prov, rows in feeds.items():
         for g in rows:
             f.write(json.dumps(g, ensure_ascii=False, separators=(',', ':')) + '\n')
 json.dump(consent_truth, open(f'{OUT}/consent_truth.json', 'w'), indent=0)
+json.dump(consent_detail, open(f'{OUT}/consent_detail.json', 'w'), indent=0)
 json.dump(forged, open(f'{OUT}/forged.json', 'w'), indent=1)
 print('referral pks', len(pks), 'opted out', len(opt), 'loops opted out', len(consent_truth), 'forged', len(forged),
       'added', {k: len(v) for k, v in add.items()})

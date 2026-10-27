@@ -155,6 +155,7 @@ type LoopFacts struct {
 	Signoffs []Signoff           `json:"signoffs,omitempty"`
 	EvOver   map[string]string   `json:"ev_over,omitempty"` // reportID -> human evidence label
 	MsgOptOut bool               `json:"msg_opt_out,omitempty"` // v6: referral patient withheld consent to automated outreach
+	Contact   string             `json:"contact,omitempty"`     // stage 3: contact permission at fact time: unknown|granted|denied|opted_out
 	SRDob     string             `json:"sr_dob,omitempty"`      // v7: referral registration DOB (second-identifier guard)
 }
 
@@ -226,6 +227,7 @@ type Decision struct {
 	TBState        string   `json:"tb_state,omitempty"`  // none|prompted|understood|partial|misunderstood|needs_human|unparsed
 	Chain          []Block  `json:"chain,omitempty"`
 	Policy         string   `json:"policy,omitempty"` // gate policy that produced this decision (v6 | v7strict+...)
+	ConsentLog     []ConsentTransition `json:"consent_log,omitempty"` // stage 3: hold/release/cancel transitions at this decision
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
 }
@@ -277,4 +279,13 @@ func verifyChain(chain []Block) bool {
 		prev = b.Hash
 	}
 	return true
+}
+
+// ConsentTransition records an outreach intent entering or leaving the consent hold (stage 3 audit trail).
+type ConsentTransition struct {
+	Event   string `json:"ev"`
+	Kind    string `json:"kind"`
+	From    string `json:"from,omitempty"` // "" = first seen
+	To      string `json:"to"`             // held | released | cancelled | other
+	Contact string `json:"contact"`        // contact permission at decision time
 }

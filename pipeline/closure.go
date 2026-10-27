@@ -22,9 +22,10 @@ const (
 )
 
 type loopState struct {
-	facts  *LoopFacts
-	last   *Decision
-	raised map[string]*ReviewItem
+	facts   *LoopFacts
+	last    *Decision
+	raised  map[string]*ReviewItem
+	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 }
 
 type ClosureCore struct {
@@ -538,6 +539,27 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				newItems = append(newItems, it)
 			}
 		}
+	}
+	// stage 3 audit: append a consent_transition event whenever an intent enters/leaves the consent hold
+	// (history is appended, never overwritten; each transition is part of the decision's signed content)
+	if ls.contact == nil {
+		ls.contact = map[string]string{}
+	}
+	for _, o := range d.Outreach {
+		st := "other"
+		switch {
+		case o.Released:
+			st = "released"
+		case o.Suppress == SupConsentHold:
+			st = "held"
+		case o.Suppress == SupConsent:
+			st = "cancelled"
+		}
+		k := o.Event + "|" + o.Kind
+		if prev, seen := ls.contact[k]; (seen && prev != st) || (!seen && (st == "held" || st == "cancelled")) {
+			d.ConsentLog = append(d.ConsentLog, ConsentTransition{Event: o.Event, Kind: o.Kind, From: prev, To: st, Contact: f.Contact})
+		}
+		ls.contact[k] = st
 	}
 	d.Policy = PolicyName
 	d.Sig = sha(canon(d))

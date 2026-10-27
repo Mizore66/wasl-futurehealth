@@ -67,7 +67,7 @@ Outputs go to `out/` (gitignored):
 | Exactly-once under process + NATS kills | 0 duplicates, 0 final-state mismatches |
 | Tamper | 17/17 attacks detected, 0 false alarms |
 | Forged events | 0/24 with any effect |
-| Known gap | 5 messages sent before a late opt-out was recorded (16 under v6). The fix is the consent hold, stage 3 of `docs/BACKEND-HANDOFF.md` |
+| Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
 **Live local reader:** run `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4`, then `WASL_READER=live scripts/demo.sh`. The default (`cached`) replays recorded Gemma 26B answers and needs no model. Results for both are in `pipeline/RESULTS.md`.
 

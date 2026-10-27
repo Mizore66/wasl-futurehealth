@@ -104,6 +104,7 @@ const (
 	SupBelowTau = "link_below_tau_unconfirmed"
 	SupConsent  = "consent_withheld"
 	SupSecondID = "second_identifier_unconfirmed"
+	SupConsentHold = "consent_unknown_hold" // stage 3: queued until contact permission is granted
 )
 
 func outreachKind(d DownFact) string {
@@ -170,11 +171,24 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 			o.Released, o.Guard = !f.MsgOptOut, "human_confirmed"
 			if f.MsgOptOut {
 				o.Suppress = SupConsent
+			} else if ConsentHold && f.Contact != "granted" {
+				o.Released = false
+				if f.Contact == "unknown" || f.Contact == "" {
+					o.Suppress, o.Guard = SupConsentHold, "held_until_consent"
+				} else {
+					o.Suppress = SupConsent
+				}
 			}
 		case basis == "below_tau":
 			o.Suppress = SupBelowTau
 		case f.MsgOptOut:
 			o.Suppress = SupConsent
+		case ConsentHold && f.Contact != "granted":
+			if f.Contact == "unknown" || f.Contact == "" {
+				o.Suppress, o.Guard = SupConsentHold, "held_until_consent"
+			} else {
+				o.Suppress = SupConsent
+			}
 		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !msgConfirmed(f, f.SRRec, d.RecPk):
 			o.Suppress, o.Guard = SupSecondID, "held"
 		default:
@@ -196,6 +210,11 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 
 // Dispatch is the single exit point to the messaging gateway: RBAC + gate + consent, re-checked at send time.
 func Dispatch(role string, o Outreach, optOut bool) error {
+	return DispatchC(role, o, optOut, "granted")
+}
+
+// DispatchC is Dispatch with the stage-3 invariant: a message may leave only if contact permission is granted *now*.
+func DispatchC(role string, o Outreach, optOut bool, contact string) error {
 	if err := Authorize(role, ActDispatch); err != nil {
 		return err
 	}
@@ -208,8 +227,15 @@ func Dispatch(role string, o Outreach, optOut bool) error {
 	if optOut {
 		return fmt.Errorf("consent: patient opted out of outreach")
 	}
+	if ConsentHold && contact != "granted" {
+		return fmt.Errorf("consent: contact permission is %s (dispatch requires granted)", contact)
+	}
 	return nil
 }
+
+// ConsentHold (stage 3, default on): outreach needs an explicit granted contact permission at dispatch time;
+// unknown -> held (queued, re-evaluated when consent arrives), denied/opted_out -> cancelled.
+var ConsentHold = true
 
 // ---------------- noisy, timed reviewer ----------------
 

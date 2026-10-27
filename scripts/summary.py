@@ -13,4 +13,7 @@ print(f"exactly-once: duplicates {cr['duplicate_outputs']} / {cr['expected_outpu
 print(f"provenance chains verified {p['hash_verified']}/{p['closed_chains']}; forged events with effect {f['forged_with_any_effect']}/{f['forged_events']}")
 print(f"wrong-patient messages released {sum(v['wrong_released'] for v in r['outreach_live']['by_origin'].values())}; "
       f"messages before late opt-out recorded {ct['released_before_opt_out_recorded']}")
+if 'released_without_granted_consent' in ct:
+    print(f"consent hold: released {ct['released_total']}, without granted consent {ct['released_without_granted_consent']}; "
+          f"held-for-consent {ct['intents_ever_held_for_consent']}, cancelled {ct['intents_cancelled_by_consent']}")
 print(f"throughput {r['throughput_ev_s']:.0f} ev/s; reviewer-h/1k loops {r['reviewer']['by_kind']['all']['reviewer_hours_per_1k_loops']:.1f}")

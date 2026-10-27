@@ -57,6 +57,7 @@ type LinkerCore struct {
 	lastTick     int
 	PSeq         []uint64
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
+	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
 	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
 	ann          ANNIndex
 }
@@ -82,7 +83,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, pcal7: map[[2]int]float64{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -585,7 +586,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	base := L.loops[loop]
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
 		Prog: base.Prog, Priority: base.Priority, Cat: base.Cat, IndexDay: base.IndexDay,
-		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: L.optOut[base.SRRec]}
+		Signoffs: L.signoffs[loop], EvOver: L.evOver[loop], MsgOptOut: L.optOut[base.SRRec], Contact: contactOf(L.contact, base.SRRec)}
 	s := L.loopRec[loop]
 	ms := L.clusterOf(s)
 	best, weak, hops, pred := L.widestP(s, ms)
@@ -730,6 +731,22 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 			L.Stats["consent_records"]++
 			L.optOut[e.PatientKey] = e.Status == "deny"
+			prev := L.contact[e.PatientKey]
+			switch e.Status { // idempotent: re-applying the same record (duplicate/replay) is a no-op
+			case "permit":
+				if prev != "opted_out" { // a stale permit never overrides a later withdrawal
+					L.contact[e.PatientKey] = "granted"
+				}
+			case "deny":
+				if prev == "granted" || prev == "opted_out" {
+					L.contact[e.PatientKey] = "opted_out" // withdrawal after granting
+				} else {
+					L.contact[e.PatientKey] = "denied"
+				}
+			}
+			if L.contact[e.PatientKey] != prev {
+				L.Stats["contact_"+L.contact[e.PatientKey]]++
+			}
 			if i, ok := L.byPk[e.PatientKey]; ok {
 				for _, lp := range L.recs[i].srs {
 					affLoops[lp] = true
@@ -831,4 +848,11 @@ func (L *LinkerCore) Clusters() map[string]string {
 		m[r.Pk] = L.recs[L.Find(i)].Pk
 	}
 	return m
+}
+
+func contactOf(m map[string]string, pk string) string {
+	if s, ok := m[pk]; ok {
+		return s
+	}
+	return "unknown"
 }

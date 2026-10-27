@@ -137,3 +137,36 @@
 | Exactly-once / tamper / forged | 0 dup · 17/17 · 0/24 | 0 dup · 17/17 · 0/24 |
 
 The live ledger for this run is committed (`results/v7strict-live/reader_ledger.jsonl`), so the live result can be replayed without the model: `-reader replay`.
+
+
+## Stage 3: consent hold and outreach lifecycle
+
+**What changed:**
+- **Contact permission** per patient: `unknown | granted | denied | opted_out`, built by the linker from authorised Consent records (`screening-outreach-messaging`).
+  - Idempotent: a duplicate record is a no-op.
+  - A stale `permit` never overrides a later withdrawal.
+- **Outreach gate** (`BuildOutreach`) and **send-time check** (`DispatchC`):
+  - a message is released only if permission is `granted` at that point;
+  - `unknown` is **held** (`consent_unknown_hold`) and re-evaluated when consent arrives;
+  - `denied` / `opted_out` is **cancelled**.
+- **Audit trail:** every hold, release or cancel transition is appended to the decision as `consent_log` (signed with the decision; history is never overwritten).
+- **Metric** (`report7.json`: `consent_timing.released_without_granted_consent`): it replays the same state machine from the FHIR log and counts any release that lacked a prior granted permission.
+- **Cohort:** every referral patient now has a contact-permission record arriving 0–0.5 days after referral. 4% deny, 5% of permits are delivered twice, and 2% withdraw later.
+- **Tests** (`consent_test.go`):
+  - referral before consent (hold, then release on grant);
+  - consent before referral;
+  - opt-out after queueing (cancel);
+  - withdrawal after grant, and a stale permit afterwards;
+  - duplicate consent;
+  - replay determinism;
+  - no dispatch without a grant.
+
+**Integrated run** (v7strict, cached reader, regenerated cohort):
+
+| Metric | Before (stage 2) | **Stage 3** |
+|---|---|---|
+| Messages released before a late opt-out was recorded | 5 | **0** |
+| Releases without granted consent | not measured | **0 / 619** |
+| Intents held for consent, then released / cancelled | n/a | 373 held, 216 released after grant, 12 cancelled |
+| CRC with review: P / R / false closures | 1.000 / 0.961 / 0/571 | 1.000 / 0.961 / 0/571 |
+| Tamper / forged / duplicates | 17/17 · 0/24 · 0 | 17/17 · 0/24 · 0 |
