@@ -16,7 +16,7 @@ v3 cross-script eval (7,540 vs 7,540 records); same LightGBM for every method.
 
 - **Ours wins** (+2.0 F1; the confidence intervals don't overlap).
 - LaBSE (1.88 GB) is over the size limit.
-- **Caveat:** it was trained on the eval's noise model.
+- **Caveat:** it was trained on the eval's noise model. Addressed since: the default encoder is now retrained on real Wikidata/NETransliteration name variants; held-out real-variant R@1 0.548 → 0.660 ([`encoder/RESULTS.md`](../../encoder/RESULTS.md)). The table above is the previous (v3) encoder.
 
 ## 2. EID-chain wrong-patient sends
 **Rule (enforced).** Messages on EID-chain or model-only links need an exact real DOB match or a human confirmation (the feeds have no phones).
