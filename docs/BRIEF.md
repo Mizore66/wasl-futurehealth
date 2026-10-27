@@ -43,7 +43,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 ### Built (one Go codebase; every item below ran in an integrated NATS run with chaos testing)
 - **Streaming backbone:** NATS JetStream, exactly-once decisions. Two ingest paths: a FHIR R4 Subscription from a mock Malaffi, and **HL7 v2.5.1 over MLLP** (the production-shaped tier).
 - **Self-trained Arabic↔Latin name encoder** (2.3 MB, Go), deterministic HNSW matching, a LightGBM scorer, stratified calibration, union-find with human merge/split.
-- **Safety gate (v7strict):** a loop auto-closes only when the patient link is trusted *and* two evidence readers agree field by field (DoH rules plus Gemma; the local Gemma 3 4B runs live). Messages also need a second identifier (exact DOB) or a human confirmation. Everything else goes to double human review.
+- **Safety gate (v7strict, closure tier 0.99, above the 0.989 cap on name-only links):** a loop auto-closes only when the patient link is trusted *and* two evidence readers agree field by field (DoH rules plus Gemma; the local Gemma 3 4B runs live). Messages also need a second identifier (exact DOB) or a human confirmation. Everything else goes to double human review.
 - **Learn-then-Test certification** of the closure tier on a separate calibration split (`-policy v7ltt`).
 - **Hold-only image reader:** caecal-landmark and bowel-prep photos can hold a loop or route it to a one-click endoscopist grade, never close it.
 - **Consent hold:** no message is released until contact permission is granted; opt-outs cancel queued messages.
@@ -68,9 +68,9 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 
 | What | Result |
 |---|---|
-| Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills | CRC precision 1.000, recall 0.970, **0/576 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends. |
-| **Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning | Held-out v2 noise: CRC P 1.000, R 0.873 (0.862–0.883), **0/2,498 false closures** (95% UB 0.15%), 0/4,063 wrong-patient messages, 0/2,778 sent without consent, KPI error 0.035 vs EID-only 0.201. Dev noise: R 0.956, **1/2,757 false closures** (one wrong-patient link at the uncorroborated cap). |
-| Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise) | τ_close 0.98 certified with 1 false closure and 0 wrong-patient messages (0.99 certifies with 0): P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. |
+| Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills | CRC precision 1.000, recall 0.948, **0/563 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends. |
+| **Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning | Held-out v2 noise: CRC P 1.000, R 0.862 (0.858–0.866), **0/2,468 false closures** (95% UB 0.15%), 0/4,453 wrong-patient messages, 0/3,032 sent without consent, KPI error 0.039 vs EID-only 0.201. Dev noise: R 0.945, 0/2,724. A run at τ 0.98 found one wrong-patient closure, so the tier is now 0.99 (disclosed post-hoc change). |
+| Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise) | τ_close 0.99 certified with 0 false closures and 0 wrong-patient messages: P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. |
 | Consent hold | 0 messages released without granted permission (stage 3: 0/619 released; 373 held until the grant). |
 | HL7 v2 over MLLP, with connection drops and duplicate re-sends | 30,668/30,668 resources delivered exactly once; 888 duplicate re-sends absorbed; CRC 0/574 false closures. |
 | Local Gemma 3 4B reader, live in the integrated run | CRC P 1.000, R 0.955, 0/567 false closures; histology question 43/43. |
