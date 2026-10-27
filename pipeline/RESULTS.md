@@ -288,3 +288,20 @@ This is the trade-off the gate is designed to make: lost recall becomes review w
 - Cached 26B reader answers were used. Results for the live 4B reader are in the stage 2 section.
 - Only the FHIR source was run. HL7 is covered in stage 4.
 - The v7 rules were designed on earlier v1-noise seeds, which is why v2 is the honest held-out number.
+
+## Image evidence reader (third reader, hold-only)
+
+Details are in [`image/RESULTS.md`](../image/RESULTS.md). **HyperKvasir competition use is pending written permission from SimulaMet; weights are not distributed.**
+
+**What it is.** Two MobileNetV3-small CNNs, trained on a near-duplicate-grouped split of HyperKvasir:
+- **landmark:** caecum vs other lower-GI views, AUC 0.998;
+- **prep:** BBPS 2–3 vs 0–1, AUC 0.991, specificity 0.83.
+
+`-image cached|live` wires them in as a third reader. It can only hold or route a report to a human (`prep_grade_one_click`, `image_prep_inadequate`, `image_prep_conflict`) and raise the `missing_caecal_photo` audit flag. It never closes a loop; this is tested exhaustively in `image_test.go`. It is off by default, so all results above are unchanged.
+
+**Integrated run** (seed 2026, simulated photo attachments):
+- CRC false closures 0/571 and recall 0.961, the same as without the image reader.
+- 0 labels upgraded; 2 held on photo/text prep conflict; 152 `missing_caecal_photo` flags.
+- 321 one-click prep-grade items. Evidence reviewer-h per 1k loops fall 11.3 → 6.1. That gain is an assumption: 20 s per one-click grade.
+
+**Limits.** Domain shift: Norwegian video frames vs UAE stills, so local recalibration is mandatory before any pilot.
