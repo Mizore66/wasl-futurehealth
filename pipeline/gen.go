@@ -100,6 +100,7 @@ type Truth struct {
 	Reports map[string]string     `json:"reports"` // report id -> adequate|inadequate|awaiting_histology|histology|no_histology
 	ReportUID map[string]string   `json:"report_uid"` // report id -> MTSamples uid or pathology template id
 	Distract map[string]bool      `json:"distract_reports"`
+	Photos   map[string][]PhotoTruth `json:"report_photos,omitempty"` // -imgphotos: photo refs attached to each report, with true class
 }
 
 // ---------- noise (port of wasl/src/common.py) ----------
@@ -220,9 +221,10 @@ type reg struct {
 }
 
 type RepSrc struct {
-	UID   string `json:"uid"`
-	Text  string `json:"text"`
-	Truth string `json:"truth"`
+	UID       string            `json:"uid"`
+	Text      string            `json:"text"`
+	Truth     string            `json:"truth"`
+	KeyFields map[string]string `json:"key_fields"` // caecum/prep/polyps/histology answer key (used only for synthetic photos)
 }
 
 type PathTpl struct {
@@ -296,6 +298,10 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 	}
 	r := rand.New(rand.NewSource(seed))
+	var photos *photoPool
+	if ImgPhotos {
+		photos = loadPhotoPool(ImgCachePath)
+	}
 	r.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 	if nPersons > 0 && nPersons < len(ps) {
 		ps = ps[:nPersons]
@@ -303,7 +309,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	if nLoops+nDistract+nCerv > len(ps) {
 		panic("not enough persons")
 	}
-	tr := &Truth{Loops: map[string]*LoopTruth{}, PKQid: map[string]string{}, PKCc: map[string]string{}, Reports: map[string]string{},
+	tr := &Truth{Photos: map[string][]PhotoTruth{}, Loops: map[string]*LoopTruth{}, PKQid: map[string]string{}, PKCc: map[string]string{}, Reports: map[string]string{},
 		ReportUID: map[string]string{}, Distract: map[string]bool{}}
 	evs := []GenEvent{}
 	regs := map[string]*reg{}
@@ -472,10 +478,18 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			arr += 5 + 15*r.Float64()
 		}
 		c.reportArr = arr
-		emit(hosp.ID, arr, map[string]interface{}{"resourceType": "DiagnosticReport", "id": c.reportID, "status": "final",
+		dr := map[string]interface{}{"resourceType": "DiagnosticReport", "id": c.reportID, "status": "final",
 			"code": map[string]interface{}{"coding": []interface{}{map[string]string{"system": "http://loinc.org", "code": "18746-8", "display": "Colonoscopy study"}}},
 			"effectiveDateTime": dayToTS(day),
-			"presentedForm": []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": b64(src.Text), "title": "MTSamples " + src.UID}}}, g)
+			"presentedForm": []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": b64(src.Text), "title": "MTSamples " + src.UID}}}
+		if photos != nil { // separate seeded stream: the rest of the cohort is byte-identical with or without photos
+			media, pt := photos.attach(seed, c.reportID, src)
+			dr["media"] = media
+			if arr <= TEnd {
+				tr.Photos[c.reportID] = pt
+			}
+		}
+		emit(hosp.ID, arr, dr, g)
 		if arr <= TEnd {
 			tr.Reports[c.reportID] = src.Truth
 			tr.ReportUID[c.reportID] = src.UID
