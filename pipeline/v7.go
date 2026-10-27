@@ -23,6 +23,9 @@ var V7Guard = false
 var TauClose = TauHigh
 var EvPolicy = "v6"
 
+// TauFromLTT marks a closure tier chosen by Learn-then-Test (policy v7ltt) rather than by hand.
+var TauFromLTT = false
+
 // PolicyName is stamped on every decision so outputs from different gate policies are never mixed.
 var PolicyName = "v6"
 
@@ -30,7 +33,11 @@ func policyName() string {
 	if V7Cal == nil && !V7Guard && EvPolicy == "v6" {
 		return "v6"
 	}
-	return fmt.Sprintf("%s+cal=%v+guard=%v+tau=%.2f", EvPolicy, V7Cal != nil, V7Guard, TauClose)
+	n := fmt.Sprintf("%s+cal=%v+guard=%v+tau=%.2f", EvPolicy, V7Cal != nil, V7Guard, TauClose)
+	if TauFromLTT {
+		n += "+ltt"
+	}
+	return n
 }
 
 type Cal7 struct{ Corr, Unc *Iso }

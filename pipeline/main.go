@@ -99,7 +99,12 @@ func main() {
 	tauClose := fs.Float64("tauclose", 0, "v7: closure link tier under -v7cal (default 0.99)")
 	evpol := fs.String("evpolicy", "v6", "evidence policy v6|v7|v7strict (v7strict: ungraded prep never closes)")
 	sweepSet := fs.String("sweepset", "full", "v7: full|v7 (err 0,.02,.04,.06 x none,merge+close x 5 seeds)")
-	policy := fs.String("policy", "", "named policy bundle: v6 | v7strict (sets -v7cal/-v7guard/-tauclose/-evpolicy)")
+	policy := fs.String("policy", "", "named policy bundle: v6 | v7strict | v7ltt (sets -v7cal/-v7guard/-tauclose/-evpolicy)")
+	lttGrid := fs.String("lttgrid", "0.999,0.995,0.99,0.98,0.95,0.90,0.80,0.70,0.50", "ltt: candidate closure link tiers, strict to loose")
+	tauLTT := fs.Bool("taultt", false, "internal: -tauclose came from Learn-then-Test (forwarded to workers by v7ltt)")
+	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
+	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
+	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
@@ -117,6 +122,14 @@ func main() {
 		if *tauClose == 0 {
 			*tauClose = 0.98
 		}
+	case "v7ltt": // v7strict with the closure tier chosen by Learn-then-Test (scripts/ltt_select.py), not by hand
+		if *v7cal == "" {
+			*v7cal = filepath.Join(*wasl, "iso_v7.json")
+		}
+		*v7guard, *evpol = true, "v7strict"
+		if *tauClose == 0 {
+			*tauClose, TauFromLTT = lttTau(*lttSel), true
+		}
 	case "", "v6":
 	default:
 		panic("unknown -policy " + *policy)
@@ -128,8 +141,10 @@ func main() {
 	if *tauClose > 0 {
 		TauClose = *tauClose
 	}
+	TauFromLTT = TauFromLTT || *tauLTT
 	PolicyName = policyName()
 	NoiseModel = *noise
+	GenSplit = *split
 	ReaderMode = *readerMode
 	switch *readerMode {
 	case "cached":
@@ -151,7 +166,7 @@ func main() {
 	if *sweepSet == "v7" {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
-	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose)}
+	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
 	if *readerMode != "cached" {
 		v7Args = append(v7Args, "-reader", *readerMode, "-reader-url", *readerURL, "-reader-timeout", readerTimeout.String(), "-reader-retries", fmt.Sprint(*readerRetries))
 	}
@@ -229,6 +244,8 @@ func main() {
 			SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.04}, []string{"none", "merge+close"}, 1
 		}
 		sweep(*data, *wasl, *P, *sweepOut)
+	case "ltt":
+		lttCollect(*data, *wasl, *P, *lttGrid, rcfg, *lttOut)
 	case "tamper":
 		tamper(*data, *wasl, absRun, *P, *role, *seed)
 	case "annsynth":
@@ -245,6 +262,7 @@ func main() {
 // ---------------- orchestrator ----------------
 
 var RevArgs []string
+
 type srcCfg struct {
 	Source, Content, Hie, Hook string
 	Dup, Reorder, Drop         float64

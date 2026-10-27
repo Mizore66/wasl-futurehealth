@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 // v7 strict policy: an ungraded prep must never close, even when both readers agree on caecum + a verbatim landmark quote.
 func TestV7StrictUngradedPrepHolds(t *testing.T) {
@@ -78,4 +82,19 @@ func TestDecisionPolicyInSignature(t *testing.T) {
 	if decSig(d) == s6 {
 		t.Fatal("policy must be covered by the decision signature")
 	}
+}
+
+func TestLTTTau(t *testing.T) {
+	p := filepath.Join(t.TempDir(), "sel.json")
+	os.WriteFile(p, []byte(`{"modes":{"with_review":{"operating_tau_close":0.98},"no_review":{"operating_tau_close":0.5}}}`), 0644)
+	if got := lttTau(p); got != 0.98 {
+		t.Fatalf("lttTau = %v, want the with-review operating tier 0.98", got)
+	}
+	os.WriteFile(p, []byte(`{"modes":{"with_review":{"operating_tau_close":null}}}`), 0644)
+	defer func() {
+		if recover() == nil {
+			t.Fatal("lttTau must refuse a selection with no certified tier")
+		}
+	}()
+	lttTau(p)
 }
