@@ -17,17 +17,17 @@ WSI="$ROOT/bin/wsi7"
 COMMON=(--variants "$S/raw/wikidata_variants.jsonl" --wsi "$WSI" --work "$S/work")
 
 # 2. the PyTorch twin must reproduce the Go encoder before anything is trained
-"$PY" "$ROOT/encoder/parity.py" "$ROOT/models/encoder_weights.json" "$WSI" "$S/work"
+"$PY" "$ROOT/encoder/parity.py" "$ROOT/models/encoder_v3.json" "$WSI" "$S/work"
 
 # 3. honest baseline: current encoder on the held-out real-variant test + synthetic protocol (eval split)
-"$PY" "$ROOT/encoder/eval.py" "${COMMON[@]}" --enc "$ROOT/models/encoder_weights.json" --out "$S/out/heldout_old.json"
+"$PY" "$ROOT/encoder/eval.py" "${COMMON[@]}" --enc "$ROOT/models/encoder_v3.json" --out "$S/out/heldout_old.json"
 
 # 4. retrain (train split; dev selects the checkpoint)
 "$PY" "$ROOT/encoder/train.py" "${COMMON[@]}" --netrans "$S/raw/wd_arabic" --out "$S/out/train_$SET" --epochs 40
 cp "$S/out/train_$SET/best.json" "$S/out/encoder_$SET.json"
 
 # 5. evaluate new vs old on the eval split; Go must match PyTorch on the exported weights
-"$PY" "$ROOT/encoder/eval.py" "${COMMON[@]}" --enc "$ROOT/models/encoder_weights.json" --enc "$S/out/encoder_$SET.json" \
+"$PY" "$ROOT/encoder/eval.py" "${COMMON[@]}" --enc "$ROOT/models/encoder_v3.json" --enc "$S/out/encoder_$SET.json" \
   --out "$S/out/heldout_$SET.json"
 "$PY" "$ROOT/encoder/parity.py" "$S/out/encoder_$SET.json" "$WSI" "$S/work"
 
