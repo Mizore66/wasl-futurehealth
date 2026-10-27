@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Wasl one-command baseline: check assets → build → cohort → integrated NATS run → audit → tamper → report.
-# Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|report|test]   (default: all)
+# Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|booking|report|test|serve|snapshot|final]   (default: all)
+#   final [seeds...]: stage 7 frozen evaluation, 5 seeds x {v1, v2 noise} -> pipeline/results/final/ (~45 min)
 # Outputs: out/cohort/ (synthetic data), out/run/<policy>/ (logs, report7.json, dashboard.json, review_queue.json).
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 # Live reader: llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4
@@ -84,5 +85,6 @@ case "${1:-all}" in
   serve) serve;; snapshot) snapshot;;
   all) check; build; test_; cohort; run_; audit; tamper; booking; report;;
   booking) booking;;
+  final) shift; exec "$ROOT/scripts/final_eval.sh" "$@";;
   *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|snapshot|final]"; exit 2;;
 esac

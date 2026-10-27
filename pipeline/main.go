@@ -100,6 +100,7 @@ func main() {
 	evpol := fs.String("evpolicy", "v6", "evidence policy v6|v7|v7strict (v7strict: ungraded prep never closes)")
 	sweepSet := fs.String("sweepset", "full", "v7: full|v7 (err 0,.02,.04,.06 x none,merge+close x 5 seeds)")
 	policy := fs.String("policy", "", "named policy bundle: v6 | v7strict (sets -v7cal/-v7guard/-tauclose/-evpolicy)")
+	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
 	readerTimeout := fs.Duration("reader-timeout", 60*time.Second, "per-call reader timeout")
@@ -128,6 +129,7 @@ func main() {
 		TauClose = *tauClose
 	}
 	PolicyName = policyName()
+	NoiseModel = *noise
 	ReaderMode = *readerMode
 	switch *readerMode {
 	case "cached":
