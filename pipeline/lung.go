@@ -15,6 +15,7 @@ package main
 //   overdue   : the clock is the end of the Fleischner window.
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable) raises a review item and holds.
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strconv"
@@ -77,16 +78,24 @@ func lungFindingFacts(rec *Rec) []DownFact {
 	return out
 }
 
+// asMap: block bodies must hash identically after a JSON round trip (audit/tamper re-verify decoded chains), so a
+// struct is stored as the map it decodes to (canonical, sorted keys) rather than in struct field order.
+func asMap(v interface{}) map[string]interface{} {
+	m := map[string]interface{}{}
+	json.Unmarshal(canon(v), &m)
+	return m
+}
+
 func lungEvBlock(d DownFact, human string) map[string]interface{} {
 	b := map[string]interface{}{"report": d.Provider + "/DiagnosticReport/" + d.ReportID, "human_override": human}
 	if d.Ev != nil {
 		b["reader_a_regex"], b["reader_b"] = d.Ev.Regex.State, d.Ev.Gemma.State
 		b["agree"], b["label"], b["reader_model"] = d.Ev.Agree, d.Ev.Label, d.Ev.Model
 		if d.Ev.Regex.Lung != nil {
-			b["reader_a_fields"] = d.Ev.Regex.Lung
+			b["reader_a_fields"] = asMap(d.Ev.Regex.Lung)
 		}
 		if d.Ev.Gemma.Lung != nil {
-			b["reader_b_fields"] = d.Ev.Gemma.Lung
+			b["reader_b_fields"] = asMap(d.Ev.Gemma.Lung)
 		}
 		if d.Ev.Rule != "" {
 			b["rule"] = d.Ev.Rule
