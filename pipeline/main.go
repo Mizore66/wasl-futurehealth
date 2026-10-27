@@ -116,6 +116,8 @@ func main() {
 	imgCache := fs.String("imgcache", "", "gen/image: image verdict cache (default <wasl>/image_verdicts.json)")
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
+	encFile := fs.String("encfile", "", "encembed: encoder weights json")
+	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
@@ -292,6 +294,10 @@ func main() {
 		lttCollect(*data, *wasl, *P, *lttGrid, rcfg, *lttOut)
 	case "tamper":
 		tamper(*data, *wasl, absRun, *P, *role, *seed)
+	case "encembed":
+		runEncEmbed(*encFile, *inFile, *out)
+	case "encnoise":
+		runEncNoise(*wasl, *split, *out, *seed)
 	case "annsynth":
 		runAnnSynth(*wasl, *models, *out, *nRegs, *seed, *threads)
 	case "annbench":
