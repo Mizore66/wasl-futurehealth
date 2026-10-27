@@ -84,13 +84,16 @@ def eq_mask(strs, dev):
 def hard_batches(model, items, bs, group, r, dev, k=32):
     """Neighbourhood batches from the model's own index: Arabic canonical of item i vs Latin canonical of all items."""
     model.eval()
-    A = torch.tensor(model.encode([wenc.norm_ar(x[0]) for x in items.ar], True, dev, 4096), device=dev)
-    Lm = torch.tensor(model.encode([wenc.norm_lat(x[0]) for x in items.lat], False, dev, 4096), device=dev)
+    A = torch.tensor(model.encode([wenc.norm_ar(x[0]) for x in items.ar], True, dev, 1024))
+    Lm = torch.tensor(model.encode([wenc.norm_lat(x[0]) for x in items.lat], False, dev, 1024))
     nbr = np.zeros((items.n, k), np.int64)
-    for i in range(0, items.n, 4096):
-        s = A[i:i + 4096] @ Lm.T
+    for i in range(0, items.n, 1024):  # CPU, bounded memory
+        s = A[i:i + 1024] @ Lm.T
         s[torch.arange(s.shape[0]), torch.arange(i, i + s.shape[0])] = -2
-        nbr[i:i + 4096] = s.topk(k, dim=1).indices.cpu().numpy()
+        nbr[i:i + 1024] = s.topk(k, dim=1).indices.numpy()
+    del A, Lm
+    if dev == "mps":
+        torch.mps.empty_cache()
     model.train()
     order = list(range(items.n))
     r.shuffle(order)
@@ -170,11 +173,13 @@ def run(a):
             sched.step()
             tot += loss.item()
             nb += 1
-        rec = {"epoch": ep, "loss": tot / max(nb, 1), "sec": round(time.time() - t0, 1), "scale": float(model.logit_scale.exp())}
+        rec = {"epoch": ep, "loss": tot / max(nb, 1), "sec": round(time.time() - t0, 1), "scale": model.logit_scale.exp().item()}
         if (ep + 1) % a.eval_every == 0 or ep == a.epochs - 1:
             model.eval()
             res = ev.evaluate(model, people, "dev", a.wsi, a.work, dev)
             model.train()
+            if dev == "mps":
+                torch.mps.empty_cache()
             score = res["real"]["R@1"] + res["syn_v1"]["R@1"] + 0.5 * (res["same_lat"]["R@1"] + res["same_ar"]["R@1"])
             rec |= {"dev_real_R1": res["real"]["R@1"], "dev_real_R10": res["real"]["R@10"], "dev_syn_v1_R1": res["syn_v1"]["R@1"],
                     "dev_syn_v1_R10": res["syn_v1"]["R@10"], "dev_syn_v2_R1": res["syn_v2"]["R@1"],
