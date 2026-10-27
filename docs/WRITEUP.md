@@ -11,7 +11,7 @@
 |---|---|
 | EID-only tracking | **12.4%** |
 | Truth | **33.0%** |
-| Wasl | **31.9%** |
+| Wasl | **32.0%** |
 
 - If you count only patients seen at colonoscopy, EID-only is close (65.5% vs 63.7%).
 - Either way the true rate is far below the >90% target (CRC spec, Appendix 2).
@@ -22,7 +22,7 @@
 - Reminders, navigation and automated referral are standard, proven levers. Their weak point is *targeting*: a clinic can only chase patients it believes haven't had their colonoscopy.
 - With EID-only tracking, 20.6 of every 100 referrals had their colonoscopy on time but look lost, because it happened at another provider under a Latin spelling with no Emirates ID. That is **62% of real completions invisible**, and **about 1 in 4 patients on the "chase" list (23.5%) already done**.
 - So nurse calls and reminders get spent on patients who are fine, and the genuinely lost patients get the same diluted attention.
-- Wasl's linkage gets the measured rate within about 1 point of truth (31.9% vs 33.0%), so the levers land on the patients who actually need them. It also says *why* each one is stuck (never notified, not understood, referral rejected, not booked), so each gets the right lever, not a generic reminder.
+- Wasl's linkage gets the measured rate within about 1 point of truth (32.0% vs 33.0%), so the levers land on the patients who actually need them. It also says *why* each one is stuck (never notified, not understood, referral rejected, not booked), so each gets the right lever, not a generic reminder.
 - The levers are commodity; knowing exactly who to point them at, across providers, is what Wasl adds.
 
 **Constraints, stated up front (all numbers are sourced below):**
@@ -33,10 +33,10 @@
 | **Who pays for the extra colonoscopies?** | **Not Wasl.** Providers perform and bill them. The **payer** (Thiqa, i.e. government via Daman, or the patient's insurer) funds them. They are care the programme already mandates: the DoH CRC spec requires every FIT+ referral to get a colonoscopy within 31 days (5.5.4.2, target >90%), and about two-thirds currently don't happen. Delivering them does raise the payer's spend, by ≈AED 3M a year at the base case (≈740 extra colonoscopies at ≈AED 4k), partly offset by ≈AED 0.55M in earlier-stage treatment savings. So the system-level test is health gained per dirham: ≈AED 43k–77k per life-year all-in, under the WHO-CHOICE threshold (≈AED 185k). Wasl's own price is a separate, placeholder question. |
 | **Every health-system entry runs through a regulated buyer** (true of any entry in this challenge) | A staged plan with a gate at each step: **(0–3 mo)** unpaid shadow pilot, 1 PHC → 1 endoscopy unit, via the Future Health pathway; DDGO assessment in parallel; exit criteria 0 false closures and recall ≥0.95 vs the coordinator's list. **(4–9 mo)** live outreach, stepped-wedge across 6–8 PHCs (power 0.81–0.94); go/no-go = uplift's lower bound >0 and 0 audited false closures. **(9–12 mo)** contract: ADHDS vendor agreement (precedents Orion, VitalHub, the UAE SME Digi7; DoH–ADHDS–Philips AI PoC) or, fallback, a direct DoH limited tender. Second door: on-premise for a provider network tracking its own patients (HIE 4.3.13.2.1.3). **(12 mo+)** cervical, then breast, then other loop types on the same engine, spreading the fixed cost (AED 0.54–1.39M year 1) toward ≈AED 5–28 per loop. |
 
-**System (merged Go codebase and run; the v7 gate rules and booking were tested separately and are not yet merged):**
-- **Streaming:** NATS JetStream (3 nodes, 13 processes), FHIR R4 Subscription ingest from a mock Malaffi server.
+**System (one Go codebase; every component below ran in an integrated NATS run with chaos testing):**
+- **Streaming:** NATS JetStream (3 nodes), FHIR R4 Subscription ingest from a mock Malaffi server, and HL7 v2.5.1 over MLLP.
 - **Real Malaffi interface:** public documents describe HL7 v2 only: real-time ADT feeds, the HIE Policy's "HL7 2.x/3.0", and LOINC codes in OBX segments. No public source documents FHIR. Ingestion is therefore tiered behind one idempotency key, `source|type|id|version`, sent as the NATS message ID:
-  - (a) HL7 v2 ORU/ADT over MLLP, ACKed only after JetStream persists the message. This is the expected production tier, designed. Corrected results become new versions.
+  - (a) HL7 v2 ADT/ORM/ORU/SIU/MDM over MLLP, ACKed only after JetStream persists the message. This is the expected production tier, **built**: 30,668/30,668 resources delivered exactly once through 2 connection drops and 888 duplicate re-sends; CRC 0/574 false closures. Corrected results become new versions.
   - (b) FHIR R4 Subscription. Built and run against the mock: 20,906 versions processed exactly once despite 392 drops, 568 duplicates and 682 reorders.
   - (c) FHIR polling on `_lastUpdated`, with a watermark that advances only after the ack.
   - (d) Nightly bulk reconciliation.
@@ -44,20 +44,19 @@
   JetStream dedupes within 1 hour; older replays are caught by a create-if-absent ledger (designed).
 - **Our own model:** an Arabic↔Latin character transformer in Go; deterministic HNSW blocking; LightGBM scorer; union-find with human merge/split.
 - **Gate:** auto-close only if the patient link is trusted AND both evidence readers agree; otherwise human review.
-  - Merged run: isotonic p≥0.99, valid EID, or a human decision.
-  - v7 copies: DOB/sex/surname-stratified recalibration; exact DOB match before messaging on EID-chain or model-only links; per-field reader consensus.
+  - **v7strict (canonical, built):** DOB/sex/surname-stratified recalibration; closure tier 0.98; exact DOB match (or a human confirmation) before messaging on EID-chain or model-only links; per-field two-reader consensus; ungraded prep never closes.
   - Readers: regex/DoH rules and open-weights Gemma (cervical uses a coded field).
-  - **Third reader, images (designed; can hold a loop, never close one):**
+  - **Third reader, images (built; can hold a loop, never close one):**
     - DoH App 11 already requires caecal-landmark photos. A classifier trained on HyperKvasir (CC BY 4.0) uses its cecum (1,009 images), retroflex (391) and BBPS 0–1 / 2–3 (646 / 1,148) classes.
-    - Published results: ICV AUC 0.98, AO AUC 0.95, BBPS ≈92%.
+    - Our held-out results (near-duplicate-grouped split): caecum AUC 0.998, prep AUC 0.991 (specificity 0.83). In the integrated run: 0/571 false closures and 0 labels upgraded. Weights published with the dataset authors' permission.
     - **Job:** for "prep ungraded" reports, ask the endoscopist to grade prep **blind** from the stored photos first. Only then is the image reader's suggestion shown. If the two disagree, the case goes to a second reader.
     - The agreement rate between the endoscopist and the reader is audited monthly, to detect automation bias.
     - The reader also flags missing caecal photos.
     - This recovers part of the 0.766 → 0.273 auto-closure drop without breaking the DoH rule, because a human still grades.
     - Domain shift (Norwegian video frames vs UAE stills) means local recalibration in the pilot.
-  - **Learn-then-Test gate (designed; replaces the hand-set thresholds):**
+  - **Learn-then-Test gate (built; replaces the hand-set thresholds, `-policy v7ltt`):**
     - It gives a finite-sample guarantee that P(false-closure rate ≤ α) ≥ 1−δ, run separately for wrong-patient and false-adequate risks.
-    - At α = 0.001 and δ = 0.05 it needs 2,995 held-out calibration loops with 0 errors.
+    - On 12,600 calibration loops from a separate person split (held-out noise), the 0.98 tier certifies at α = 0.001, δ = 0.05 with 0 false closures and 0 wrong-patient messages. The guarantee covers loops like the calibration set, not real data.
     - This directly answers "rules were chosen after seeing eval errors". We found no published application to record linkage.
   - **Closure rule, per the CRC standard:** a loop closes only with caecum documented (App 11.2.2), prep graded Excellent or Adequate (App 9.4–9.5, App 14), and, **if tissue was taken**, histology back. A no-polyp, no-biopsy report with those two fields closes as `closed_normal` on the report alone. An ungraded prep stays open as `done_quality_unverified`, and Wasl queries the endoscopy-unit lead, who has 5 working days to reply [A]. With no reply, it escalates to the programme coordinator. If the grade still isn't documented by day 15, a clinician decides between `closed_normal` with a documentation flag and `repeat_required`. This replaces our earlier v7 "ungraded prep can close" assumption.
   - **End-states (CRC 5.5.3, App 5).** A loop closes only into a named state with an owner and a next date:
@@ -221,14 +220,16 @@
 
 | Area | Result |
 |---|---|
-| Merged run, one seed: 1,500 CRC + 600 cervical; 4% independent reviewer error; 3 process kills + 1 NATS kill | CRC P 1.000, R 0.960, 0/570 false closures (upper bound 0.67%). Cervical 0/217. No review: CRC R 0.242. 15.6 reviewer-h/1k. 0/15,769 duplicates or losses. Tamper 17/17. Forged 24/24 denied. 0 wrong-patient sends (6 held; upper bound 18/10k). |
+| Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; 4% independent reviewer error; 3 process kills + 1 NATS kill | CRC P 1.000, R 0.961, 0/571 false closures. Cervical 0/217. No review: CRC R 0.232. 20.4 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
+| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.864 (0.855–0.872), **0/2,473 false closures** (UB 0.15%), 0/3,720 wrong-patient messages, 0/2,652 messages without consent, KPI error 0.038 vs EID-only 0.201. Dev v1: R 0.954, 0/2,750. |
+| Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. |
 | Rule baselines | EID-only: P 0.834, R 0.364. Any procedure ≤120 d: P 0.661, R 0.431. |
 | v7 gate under the **current closure rule** (ungraded prep stays open; offline, one cohort, 5 seeds × 3 reviewer error rates) | Double review: 0/8,422 false closures (upper bound 0.04%); recall 0.973 / 0.958 / 0.943 at 2 / 4 / 6% error. No-review recall 0.273; 27.0 reviewer-h per 1k loops. Single review: 21 false closures, so double review is mandatory. |
 | *Same gate, old rule (ungraded prep closes); superseded* | No-review recall 0.766; 0/8,553; 16.1 h/1k. 20 of the 43 MTSamples reports never grade prep, so this cohort is a worst case. The DoH report template (App 14) has a prep-quality field. Rules were chosen after seeing eval errors. |
 | v7 calibration | 0/5,142 wrong at p≥0.99 (was 20). Calibration error .025 → .051, by design: Clopper–Pearson lower bounds and a cap at 0.989 for uncorroborated pairs. Over-confidence at the gate means a wrong-patient closure; under-confidence elsewhere costs only review time. |
-| Encoder vs off-the-shelf | Recall@10 0.932 vs 0.604 (best single) and 0.928 (all four combined). F1 .954 [.950–.958] vs .946 [.942–.951] for the combination. Against the combination, the gain is **deployability, not accuracy**: 2.3 MB in-process Go vs 236 MB across four models plus ONNX/Python, deterministic, and CPU-only. Stacking ours with ICU + Double Metaphone gives R@10 .962. Trained on the eval's noise model. **Planned upgrade:** retrain on *real* Arabic↔Latin person pairs (JRC-Names ~19.5k Arabic persons; ANETAC 79,924 pairs; licences to verify) with self-mined same-surname hard negatives, then test on held-out real variants. |
+| Encoder vs off-the-shelf | Recall@10 0.932 vs 0.604 (best single) and 0.928 (all four combined). F1 .954 [.950–.958] vs .946 [.942–.951] for the combination. Against the combination, the gain is **deployability, not accuracy**: 2.3 MB in-process Go vs 236 MB across four models plus ONNX/Python, deterministic, and CPU-only. Stacking ours with ICU + Double Metaphone gives R@10 .962. Trained on the eval's noise model. **Upgrade in progress:** retraining on *real* Arabic↔Latin person pairs (Wikidata variants and NETransliteration, both CC0; JRC-Names and ANETAC rejected on licence) with self-mined same-surname hard negatives, tested on held-out real variants. |
 | Scale (synthetic 1M) | HNSW recall@10 0.999; p50 0.42 ms (p99 ≈8 ms under load). |
-| Local inference (43 reports) | Gemma 3 4B hybrid reader, on a laptop with no proxy: 40/43 agreement with the 26B; gate 13 vs 14 auto-closures; 0 wrong; 7.5 s/report. Not yet in the merged run. |
+| Local inference (43 reports) | Gemma 3 4B hybrid reader, on a laptop with no proxy: 40/43 agreement with the 26B; 0 wrong; 7.5 s/report. Live in the integrated run: CRC P 1.000, R 0.955, 0/567 false closures. |
 | Booking (calibrated to SEHA; capacity assumed) | Over completed colonoscopies: 94.5% at ~1.5 ring-fenced slots per FIT+/yr (status quo 23%; first-available booking 90%, so most of the gain is from booking at all plus capacity). Over all FIT+: 52% (status quo 6%). Optimiser ≈ greedy. Female-endoscopist patients: 79% vs 97%. |
 | Parsers (one non-clinician labeller) | E-consult 100/100 vs keyword 43 (tuned 85). Teach-back 98/100, 0/50 missed escalations. |
 | Report text | 43 US MTSamples (6 not colonoscopies), LLM-labelled key, reused 17–44×. Readers agree on 41/43; 0/455 agreed labels wrong. |
@@ -323,7 +324,7 @@
       - The DoH Mandatory Tariff gives a DRG base rate of AED 8,500 (Basic product), but the colectomy weights are only in the tariff spreadsheet.
       - No GCC navigation trial exists. PRECISE used bilingual (English/Spanish) navigators in a US safety-net population; Wasl's language-concordant notices follow that design, but the transfer is still an assumption.
       - So these are sensitivity ranges, not forecasts. The pilot measures the local uplift, and DoH can rebase stage and cost on registry and tariff data, which it holds. NordICC's 13-year per-protocol RR of 0.70 was not significant, which is why we don't use the colonoscopy-invitation trials for the base.
-- **One headline rate:** the ≤31-day-from-referral KPI (sim truth 33.0%; Wasl measures 31.9%). The other completion rates come from the projection model and use other denominators (Appendix B).
+- **One headline rate:** the ≤31-day-from-referral KPI (sim truth 33.0%; Wasl measures 32.0%). The other completion rates come from the projection model and use other denominators (Appendix B).
 - **Volume:** 1.8k–12.6k FIT+/yr. This can't be narrowed from public data: there are no FIT counts, and the signals conflict ("<10% screened" vs a "+280%" rise in screenings in 2025). AHS alone had ~1,429 FIT+ in 2015–16, which is the floor. Plan on 5.7k; the pilot's first deliverable is one count query on the Malaffi Screenings registry.
 - **Contracting route:**
   1. A 90-day unpaid shadow pilot through the Future Health pathway, with ADPHC as programme owner and the DDGO assessment in parallel.
@@ -411,9 +412,9 @@
 
 ---
 
-## Roadmap (designed, not built; fenced from the product above)
+## Roadmap (fenced from the product above; build status marked per item)
 
-### Phase 2: Queue control (designed; this is what makes Wasl raise completion, not just measure it)
+### Phase 2: Queue control (direct-to-procedure and prep-risk built as simulated decision support; this is what makes Wasl raise completion, not just measure it)
   - **Direct-to-procedure:**
     - 36.3% of Abu Dhabi FIT+ non-completers were "referred to a gastroenterologist but did not attend" (SEHA, PMC8343888). This is the largest single local leak.
     - The DoH spec requires a referral form (5.5.1) and the App 9 pre-colonoscopy assessment, not a GI consult.
@@ -471,11 +472,10 @@
 
 **Limits (after v2 design):**
 - Capacity still caps the ceiling. v2 creates slots (prep) and reallocates them (pooling, direct booking), but DoH funds the endoscopy lists.
-- Queue control, the image reader, the LTT gate and the other loop types are designed, not built. Wider-loop volumes are estimates until registry queries.
+- Queue levers are simulated decision support with trial-borrowed effect sizes. The image reader is hold-only and needs UAE recalibration. The LTT guarantee covers synthetic loops only. Only one extra loop type (lung nodules) is built; wider-loop volumes are estimates until registry queries.
 - Simulated patients, reviewer, noise and capacity; no clinician labels. These are expected hackathon limits.
-- v7 gate, booking and local reader not merged; single seed.
 - The 26B reader ran via a third-party proxy, on public and synthetic text only. Production uses the in-UAE 4B.
-- Malaffi's interface is inferred from public documents (HL7 v2); the HL7 adapter is designed, not built.
+- Malaffi's interface is inferred from public documents (HL7 v2); the HL7 adapter is built and tested against a mock, not a real feed.
 - The 43 evaluation reports come from MTSamples. The site permits "print, share, or link… for educational purposes" with credit; the Kaggle CC0 tag is the uploader's own. Evaluation use only; never shipped.
   - **Replacement corpus spec:**
     - ~300 synthetic colonoscopy and pathology reports in the DoH App 14 field layout: indication, prep protocol and quality, extent and landmarks, findings, polyps, interventions, impression.

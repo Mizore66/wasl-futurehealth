@@ -13,31 +13,35 @@
 |---|---|
 | Emirates-ID-only tracking | 12.4% |
 | Truth | 33.0% |
-| Wasl | 31.9% |
+| Wasl | 32.0% |
 
 Wasl shows the evidence behind the programme's number, case by case. It is a DoH public-health and quality-assurance use (HIE Policy 4.3.12.1).
 
 **Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. Wasl gets the measured rate within about 1 point of truth, so the levers land on the patients who are actually lost.
 
 **What it is (built and run):**
-- **Streaming backbone:** Go + NATS JetStream, 13 processes. 0 of 15,769 events duplicated or lost across process and broker kills.
+- **Streaming backbone:** Go + NATS JetStream. Ingests FHIR R4 and **HL7 v2 over MLLP**. Across 10 frozen-evaluation runs with process and broker kills: 0 of 188,171 outputs duplicated or lost.
 - **Our own Arabic↔Latin name encoder:** 2.3 MB, in-process. It matches four off-the-shelf models combined (R@10 0.932 vs 0.928) at about 1/100 of the size.
 - **Matching:** deterministic HNSW (1M records, R@10 0.999) plus a LightGBM scorer.
-- **Safety gate:** a loop auto-closes only when the patient link is trusted *and* two evidence readers (DoH rules plus a local Gemma 3 4B) agree. Everything else goes to double human review.
+- **Safety gate:** a loop auto-closes only when the patient link is trusted *and* two evidence readers (DoH rules plus a local Gemma 3 4B) agree. Everything else goes to double human review. The closure threshold is **certified by Learn-then-Test** on a separate calibration split, not hand-tuned.
+- **Photos as a third, hold-only reader:** caecal-landmark and bowel-prep photos can hold a loop or send it to a one-click endoscopist grade, never close it.
+- **Consent hold:** no message goes out until contact permission is granted.
 - **Closure rule from the DoH CRC standard:**
   - Caecum documented, prep graded and, if tissue was taken, histology back.
   - End-states with owners: normal, surveillance, MDT, specialist, repeat, declined.
   - Suspected cancer never waits for histology.
 - **Patient layer:** owner-named notices, teach-back, consultation routing, and the rights to contest, opt out and get an explanation.
 - **Governance:** hash-chained provenance (tamper 17/17 detected), RBAC, a 12-item hazard log, model cards, and a DoH RAI control map (self-classified High risk).
+- **One engine, more loops:** incidental lung nodules (Fleischner 2017) already run on the same engine: 0/297 false closures in an 800-loop run.
 
 **Measured safety (simulated cohorts, honest limits):**
-- Merged run: CRC precision 1.000, recall 0.960, 0/570 false closures; 0 wrong-patient messages released.
+- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.864, **0/2,473 false closures** (95% upper bound 0.15%); 0/3,720 wrong-patient messages; 0/2,652 messages sent without consent.
+- **Learn-then-Test:** the 0.98 closure tier is certified on 12,600 calibration loops: P(false-closure and wrong-patient rates ≤ 0.1%) ≥ 95% for loops like the calibration set.
 - Gate under the strict DoH closure rule (5 seeds × 3 reviewer error rates): 0/8,422 false closures with double review. Single review gives 21, so double review is mandatory.
 
 **Deployment and money:**
 - **Hosting:** UAE-sovereign (Core42 / Azure UAE North), keys held in-country, egress denied.
-- **Malaffi interface:** public docs show HL7 v2, so the HL7 adapter is the primary production tier.
+- **Malaffi interface:** public docs show HL7 v2, so the HL7 v2 MLLP adapter is the primary production tier. It is built: 30,668/30,668 resources delivered exactly once through connection drops and duplicate re-sends.
 - **Year-1 cost:** AED 0.54–1.39M, about AED 112–290 per closed loop at 12.6k FIT+/yr. Wasl's own price is a placeholder pending a separate pricing study.
 - **Who pays for the extra colonoscopies:** not Wasl. Providers bill them and the payer (Thiqa or the insurer) funds them. It is mandated care (CRC 5.5.4.2), but new spend: ≈AED 3M a year at the base case, partly offset by ≈AED 0.55M in savings.
 - **Value (base case: 5.7k FIT+/yr, +13 pp completion; automated levers alone project +18 pp):** ~18 extra cancers found a year, ≈AED 550k in treatment avoided, ≈3 deaths averted a year. That is ≈AED 43k–77k per life-year **all-in** (Wasl plus the extra colonoscopies, net of savings), under the WHO-CHOICE threshold (≈AED 185k). So the system-level case is health gained per dirham.
@@ -47,15 +51,14 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
   - 9–12 mo: ADHDS vendor contract (precedents: Orion, VitalHub, Digi7, the Philips AI PoC); fallback: DoH limited tender.
   - 12 mo+: cervical, breast, then other loop types.
 
+**Queue control (simulated decision support, built):** how Wasl raises completion, not just measures it.
+- Direct-to-procedure booking with a nurse doing the App 9 checklist. It targets the 36.3% of non-completers lost at the GI consult.
+- Prep-risk targeting (Dik 2015 score), the only lever that creates capacity: about 88 repeat colonoscopies avoided per 1,000.
+- Together at 1.2 slots per FIT+: **+13 pp** ≤31-day completion in simulation. Below 1.0 slot, no lever helps.
+- Network pooling across a group's sites: when slots are in the wrong places, ≤31-day completion goes from 22% to 42%. No gain when capacity is short overall.
+
 **Roadmap (designed, not built):**
-- **Phase 2, queue control.** This is how Wasl raises completion, not just measures it.
-  - Direct-to-procedure booking with a nurse doing the App 9 checklist. It targets the 36.3% of non-completers lost at the GI consult.
-  - Prep-failure prevention, the only lever that creates capacity: +62–197 slots per 1,000 exams.
-  - Network pooling across a group's sites. Simulated: when slots are in the wrong places, ≤31-day completion goes from 22% to 42%. No gain when capacity is short overall.
-- **Phase 3, one engine for every follow-up loop:** incidental imaging, diabetic retinopathy, IFHAS, breast and lung. That is ≈50–110k loops a year at ≈AED 5–28 per loop.
-- **Depth:**
-  - an image reader that the endoscopist sees only after grading blind;
-  - a Learn-then-Test gate that guarantees false closures ≤ α.
+- **Phase 3, more loop types:** incidental imaging, diabetic retinopathy, IFHAS and breast. That is ≈50–110k loops a year at ≈AED 5–28 per loop.
 - **Second route to market:** an on-premise deployment for a provider network tracking its own patients.
 - **Tested and dropped:** we tested whether booking optimisation beats greedy when capacity is scarce. It doesn't, so we make no claim.
 
@@ -68,11 +71,9 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 4. A reader disagreement is held, a human signs, and the chain verifies.
 5. Network pooling (22% → 42%) and the gated pilot plan.
 
-**Limits (what still needs building):**
-- The v7 gate, booking engine and local reader aren't merged into one run yet; the merged run is a single seed.
-- Frozen 5-seed evaluation not run.
-- HL7 adapter not built.
-- Consent hold not coded.
-- Fairness remedies and the correlated-reviewer sweep not evaluated.
-- The data is simulated, with no clinician labels, as expected for a hackathon.
+**Limits:**
+- The data is simulated, with no clinician labels, as expected for a hackathon. The 43 report texts carry an LLM-produced key until our human double-labelling is done.
+- The Learn-then-Test guarantee covers synthetic loops like the calibration set; a pilot must recalibrate on locally adjudicated loops.
+- The image reader was trained on Norwegian video frames; UAE photos need local recalibration.
+- Queue-lever effect sizes are borrowed from published trials.
 - Measurement alone doesn't raise attendance; the gain comes from the patient levers and from capacity.

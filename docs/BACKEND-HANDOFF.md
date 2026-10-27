@@ -285,14 +285,18 @@ The frontend owner is responsible for presentation. The backend owner is respons
 - UI data is generated from the final run.
 - Submission language labels every result as built, simulated or designed.
 
-## Explicitly out of scope until the gates above pass
+## Formerly out of scope: now built (Oct 2026)
 
-- Image reader / HyperKvasir.
-- Learn-then-Test statistical gate.
-- Lung-nodule/Fleischner loop.
-- Direct-to-procedure workflow.
-- Prep-risk model.
-- Encoder retraining on external Arabic↔Latin datasets.
+These were listed as out of scope until the gates above passed. After stages 0–7, all six were built. Each is optional and off by default, so the baseline is unchanged.
+
+| Item | Where | Status |
+|---|---|---|
+| Image reader / HyperKvasir | `image/`, `pipeline/image.go`, `-image cached\|live` | Built, hold-only (it can never close a loop); weights published with the dataset authors' permission |
+| Learn-then-Test statistical gate | `pipeline/ltt.go`, `scripts/ltt_*`, `-policy v7ltt` | Built; certifies τ_close = 0.98 on 12,600 cal-split loops |
+| Lung-nodule/Fleischner loop | `pipeline/lung*.go`, `fleischner.go`, `-lung N` | Built on a synthetic CT report corpus |
+| Direct-to-procedure workflow | `booking/booking/levers.py`, `booking/sim/levers_sim.py` | Simulated decision support |
+| Prep-risk model | same (Dik 2015 score) | Simulated decision support; suggestions need a clinician order |
+| Encoder retraining on external Arabic↔Latin data | `encoder/` (branch `feat/encoder-real-pairs`) | In progress: Wikidata + NETransliteration (CC0); JRC-Names and ANETAC rejected on licence |
 
 ## Working conventions
 
