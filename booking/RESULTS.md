@@ -99,3 +99,118 @@ booking (simulated): 774 open CRC cases; capacity short_overall (612 slots, 0.79
 - **Misallocated capacity is absorbed by cross-region suggestions:** 155 vs 51 cross-region bookings, with ≤31-day share 0.994.
 - **When capacity is short overall, about 1 in 4 cases gets no slot within the horizon whatever the routing.** That shortfall is the number DoH needs for planning.
 - **No optimisation claim:** the optimiser ties greedy in our tests.
+
+## Queue levers (simulated): direct-to-procedure and prep-failure targeting
+
+**Status:** built as decision support. The effects below are **simulated**: effect sizes are borrowed from cited trials, and every App 9 field is **synthetic**.
+- **Code:**
+  - `booking/booking/levers.py`: per-case pathway and prep risk;
+  - `booking/sim/levers_sim.py`: the simulated arms;
+  - `booking/tests/test_levers.py`: tests.
+- **Rerun:** `cd booking/sim && python levers_sim.py 30`, about 3.5 minutes. It writes `levers_summary.json`.
+
+### What the levers do
+
+**Direct-to-procedure** (DoH CRC spec 5.5.1 + App 9: no GI consult is required, only a pre-colonoscopy assessment):
+- A nurse completes the App 9 checklist call.
+- Patients with **ASA ≥3, anticoagulation/antiplatelet, or an implanted cardiac device** keep the GI clinic pathway. Everyone else is booked straight into a colonoscopy slot.
+- Insulin-treated diabetes stays on the direct pathway, with a dose-adjustment note in the checklist.
+
+**Prep-failure risk:**
+- **The score:** Dik et al., GIE 2015;81(3):665–672 (PMID 25600879). Published points:
+
+  | Factor | Points |
+  |---|---|
+  | ASA ≥3 | 2 |
+  | Tricyclic antidepressants | 3 |
+  | Chronic constipation | 2 |
+  | Opioids | 1 |
+  | Diabetes | 1 |
+  | Prior abdominal/pelvic surgery | 1 |
+  | Current hospitalisation | 1 |
+  | History of inadequate prep | 1 |
+
+  The score runs from 0 to 12.
+- **Cut-off ≥2:** sensitivity 66%, specificity 79%, PPV 29%, NPV 95%.
+- **Bands and interventions:**
+  - Low band: an SMS prep sequence.
+  - High band: a nurse prep call plus a split/extended regimen. The regimen change is **suggested only** (`requires_clinician_order: true`).
+
+**In the pipeline:** both levers are attached to every open case in `booking.json` (`pathway`, `prep_risk`, `app9`). The API serves them at `/api/cases/{id}` → `booking`, and the summary counts at `/api/dashboard` → `capacity.levers`.
+
+On the stage 6 run (774 open CRC cases):
+
+| Pathway | Cases | | Prep risk | Cases |
+|---|---|---|---|---|
+| Direct | 648 | | Low | 630 |
+| Clinic | 126 | | High | 144 |
+
+### How the simulation is calibrated
+
+- **Consult leak** (SEHA, PMC8343888 T5): 360 of 1,429 FIT+ patients were "referred to a GI but did not attend". That is 36.3% of non-completers and 57.2% of the convertible pool.
+  - Under the consult pathway, a convertible non-attender is lost at the consult with p = 0.572 and is never booked.
+- **Direct access** brings back only part of that leak:
+  - the checklist call is completed with probability U(0.4, 0.7) [A];
+  - patients who complete it then attend with U(0.3, 0.6) [A].
+  - Patients who don't complete the call go to a navigator and use no slot.
+- **The `direct_ungated` sensitivity arm** books everyone without the call gate. This is the unnavigated direct access that was *slower* in a US system (JGIM 2026, HR 0.59).
+- **Consult delay:** median 9 days. This is the Banerjea 2017 gap: first test at 22 days vs 13 days straight-to-test. The nurse call takes a median of 2 days [A].
+- **Prep failure:**
+  - The population inadequate-prep rate is U(0.12, 0.22) [A]. The DoH App 9.5 cap is 10%.
+  - Per-patient risk is logistic in the Dik score. The slope, ln 1.6 per point, is an assumption [A].
+  - An inadequate exam uses a slot and needs a repeat (at most 2). A loop counts as done only on an adequate exam.
+- **Prep intervention effects:**
+  - SMS: relative risk reduction (RRR) U(0.12, 0.38), centred on the pooled 7-RCT RRR of 0.25 (IJCD 2022).
+  - High band: RRR U(0.3, 0.7), applied only if the clinician orders it, which happens with p = U(0.6, 0.9) [A]. The range is shrunk from 94% vs 49% adequate in one trial (DLD 2023).
+- **No double counting:** the SMS no-show effect is not added, because every arm already assumes reminders.
+
+**Statistics:** 30 parameter draws, about 2,100 FIT+ per draw, measured on year 2. Every arm uses the same engine, cohort, calendar and random numbers, so differences are paired.
+- Values are means, with 2.5–97.5 percentile intervals over draws.
+- "≤31 d" is the share of **all FIT+** with an adequate colonoscopy within 31 days.
+- "Completion" is an adequate colonoscopy within a year.
+
+### ≤31-day completion (all FIT+, %), adequate capacity allocation
+
+| Slots per FIT+ | Base (consult) | + Direct | + Prep | + Both | Direct, ungated |
+|---|---|---|---|---|---|
+| 0.8 | 0.3 | 0.2 | 0.4 | 0.2 | 0.3 |
+| 1.0 | 4.0 | 3.5 | 7.4 | 7.2 | 1.3 |
+| 1.2 | 31.1 | 35.2 | 38.9 | **44.5** | 16.3 |
+| 1.5 | 44.9 | 51.9 | 46.8 | **53.7** | 49.6 |
+
+### Paired change vs base (percentage points, [95% interval]; share of draws where the arm was better)
+
+| Slots | Arm | Δ ≤31 d | Δ completion | Repeat colonoscopies avoided per 1,000 adequate exams |
+|---|---|---|---|---|
+| 1.0 | Direct | −0.5 [−7.2, 7.8] (43%) | +2.4 [0.2, 4.8] | 2 |
+| 1.0 | Prep | +3.4 [−0.3, 13.8] (90%) | +0.7 [0.0, 1.9] | **88 [52, 132]** |
+| 1.0 | Both | +3.2 [−4.8, 27.1] (73%) | +3.2 [1.2, 5.2] | 88 |
+| 1.2 | Direct | +4.1 [−18.3, 14.1] (80%) | +2.6 [0.2, 4.9] | 2 |
+| 1.2 | Prep | +7.8 [1.0, 29.4] (100%) | +0.4 [0.0, 1.0] | 88 |
+| 1.2 | **Both** | **+13.4 [−2.5, 37.5] (93%)** | **+3.1 [1.1, 5.4]** | 88 |
+| 1.5 | Direct | +7.0 [4.4, 9.8] (100%) | +2.7 [0.3, 4.9] | 2 |
+| 1.5 | Prep | +1.9 [0.6, 4.5] (100%) | +0.5 [0.1, 1.1] | 88 |
+| 1.5 | **Both** | **+8.7 [6.3, 12.5] (100%)** | **+3.2 [1.0, 5.5]** | 88 |
+| 1.2 | Direct, ungated | −14.8 [−34.5, 10.4] (13%) | +2.4 [0.1, 4.8] | 2 |
+
+With capacity misallocated across regions, the pattern is the same. At 1.2 slots, Both gives +11.7 [1.6, 25.2] (97%). At 1.5, it gives +9.4 [6.5, 13.5] (100%). Full grid: `booking/sim/levers_summary.json`.
+
+### What this shows
+
+- **Prep targeting is the only lever that frees capacity.** The inadequate-prep rate falls from 18.8% to 12.7%. That avoids about **88 repeat colonoscopies per 1,000 adequate exams**, consistent with the 62–197 range in the queue-levers research.
+  - The freed slots matter most when capacity is tight but not collapsed: +7.8 pp at 1.2 slots, better in 30/30 draws.
+  - The rate is still above the DoH 10% cap. Targeting alone doesn't meet App 9.5.
+- **Direct-to-procedure raises total completion by about 2.5 pp at every capacity level.** It recovers patients who would have been lost at the GI consult: 131 → 21 per 1,000.
+  - It improves the 31-day share only when there is spare capacity (1.5 slots: +7.0 pp, 30/30 draws).
+  - At 1.0–1.2 slots, the extra patients compete for the same slots. The interval crosses zero, and at 1.0 it loses in most draws.
+- **Navigation is required.** Booking everyone directly without the checklist call gate (`direct_ungated`) **lowers** 31-day completion at 1.2 slots by 14.8 pp, because booked non-attenders waste slots. This matches the US finding that unnavigated direct access was slower.
+- **Below 1.0 slot per FIT+, no lever helps the 31-day share** (≤0.4 pp at 0.8 slots). Total completion still rises by 2–4 pp. This confirms the earlier finding: only more capacity moves that regime.
+- **Both levers together** are the best arm from 1.2 slots up. They are not additive below that.
+
+### Limitations
+
+- **Synthetic inputs.** Every App 9 and Dik field is synthetic, drawn with assumed prevalences [A]; no Abu Dhabi data was used. Note that hospitalisation is 0 for outpatient FIT+ referrals.
+- **Score population mismatch.** The Dik score was derived on 1,996 split-dose colonoscopies at 4 Dutch centres, with inadequate defined as total BBPS <6. That is not a FIT+ cohort and not a UAE population, and AUC falls to 0.62–0.74 externally. Local recalibration is required.
+- **Assumed parameters.** The per-point slope linking the Dik score to risk is assumed. So are the checklist-call completion rate and post-call attendance for patients who would have been lost at consult. These parameters drive the direct-to-procedure result.
+- **Borrowed effect sizes.** Intervention effects come from single trials or meta-analyses in other health systems and are shrunk toward the null. The stepped-wedge pilot would measure them locally.
+- **No clinical decisions.** The engine suggests a pathway and a prep plan. A nurse confirms the checklist, and a clinician orders any regimen change.
