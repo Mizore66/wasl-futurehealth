@@ -55,6 +55,7 @@ type Event struct {
 	Parse    string  `json:"parse,omitempty"`    // LLM parse of an inbound free-text reply (e-consult or teach-back)
 	Coded    string  `json:"coded,omitempty"`    // coded conclusion on a colposcopy report (second reader)
 	Images   []ImgRef `json:"imgs,omitempty"`    // DiagnosticReport.media photo references (sha256 + capture station)
+	Lung     *LungSR  `json:"lung,omitempty"`    // lung-nodule tracking ServiceRequest: age, exclusion, risk, index report (lung.go)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
@@ -158,6 +159,7 @@ type LoopFacts struct {
 	MsgOptOut bool               `json:"msg_opt_out,omitempty"` // v6: referral patient withheld consent to automated outreach
 	Contact   string             `json:"contact,omitempty"`     // stage 3: contact permission at fact time: unknown|granted|denied|opted_out
 	SRDob     string             `json:"sr_dob,omitempty"`      // v7: referral registration DOB (second-identifier guard)
+	Lung      *LungSR            `json:"lung,omitempty"`        // lung-nodule loop: scope and risk from the tracking ServiceRequest
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.
@@ -232,6 +234,7 @@ type Decision struct {
 	Contact        string   `json:"contact,omitempty"` // contact permission of the referral patient at this decision
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
+	Lung           *LungDecision `json:"lung,omitempty"` // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.

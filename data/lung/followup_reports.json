@@ -1,0 +1,773 @@
+{
+ "source": "synthetic templated corpus (scripts/lung_corpus.py, seed 17)",
+ "reports": [
+  {
+   "id": "lu01",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The previously noted solid noncalcified nodule in the right lower lobe is unchanged, now measuring 0.6 x 0.5 cm (previously 0.6 x 0.5 cm). No pleural effusion. No new nodules.\nIMPRESSION: Stable solid noncalcified nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 6,
+    "prior_short": 5,
+    "cur_long": 6,
+    "cur_short": 5,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu02",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted solid noncalcified nodule in the left upper lobe is stable, now measuring 7 x 6 mm (previously 7 x 6 mm). No new pulmonary nodules.\nIMPRESSION: No change in the left upper lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 7,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu03",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 12 months prior.\nFINDINGS: The previously noted noncalcified solid nodule in the right middle lobe is unchanged, now measuring 8 x 7 mm (previously 8 x 7 mm). No new nodules. No lymphadenopathy.\nIMPRESSION: Stable noncalcified solid nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 8,
+    "prior_short": 7,
+    "cur_long": 8,
+    "cur_short": 7,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu04",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted solid noncalcified nodule in the right upper lobe is stable, now measuring 5 x 4 mm (previously 5 x 4 mm). No pleural effusion. No new nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable",
+    "prior_long": 5,
+    "prior_short": 4,
+    "cur_long": 5,
+    "cur_short": 4,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu05",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The noncalcified solid nodule in the right middle lobe is perhaps slightly larger, measuring 8 x 6 mm versus 7 x 6 mm previously, within measurement variability. No pleural effusion. No new nodules.\nIMPRESSION: Pulmonary nodule without significant interval change.",
+   "key": {
+    "type": "solid",
+    "variant": "slightly_larger",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 8,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu06",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The solid noncalcified nodule in the lingula is perhaps slightly larger, measuring 7 x 6 mm versus 6 x 6 mm previously, within measurement variability. No new nodules. No lymphadenopathy.\nIMPRESSION: Pulmonary nodule without significant interval change.",
+   "key": {
+    "type": "solid",
+    "variant": "slightly_larger",
+    "prior_long": 6,
+    "prior_short": 6,
+    "cur_long": 7,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu07",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The previously noted noncalcified solid nodule in the right upper lobe is unchanged, now measuring 12 x 10 mm (previously 12 x 10 mm). No new nodules. No lymphadenopathy.\nIMPRESSION: Stable noncalcified solid nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 12,
+    "prior_short": 10,
+    "cur_long": 12,
+    "cur_short": 10,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu08",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted solid noncalcified nodule in the lingula is stable, now measuring 9 x 8 mm (previously 9 x 8 mm). No new pulmonary nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable",
+    "prior_long": 9,
+    "prior_short": 8,
+    "cur_long": 9,
+    "cur_short": 8,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu09",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 12 months prior.\nFINDINGS: The previously noted solid pulmonary nodule in the right lower lobe is stable in appearance, now measuring 8 x 7 mm (previously 6 x 5 mm). No new nodules. No lymphadenopathy.\nIMPRESSION: Stable solid pulmonary nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable_trap",
+    "prior_long": 6,
+    "prior_short": 5,
+    "cur_long": 8,
+    "cur_short": 7,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu10",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The noncalcified solid nodule in the right upper lobe has increased in size, now 0.9 x 0.8 cm, previously 0.7 x 0.6 cm. No new nodules. No lymphadenopathy.\nIMPRESSION: Interval growth of the right upper lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "grown",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 9,
+    "cur_short": 8,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu11",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The noncalcified solid nodule in the right upper lobe has increased in size, now 11 x 9 mm, previously 8 x 7 mm. No new nodules. No lymphadenopathy.\nIMPRESSION: Interval growth of the right upper lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "grown",
+    "prior_long": 8,
+    "prior_short": 7,
+    "cur_long": 11,
+    "cur_short": 9,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu12",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The solid noncalcified nodule in the right upper lobe has increased in size, now 8 x 6 mm, previously 5 x 4 mm. No new pulmonary nodules.\nIMPRESSION: Enlarging pulmonary nodule; recommend specialist review.",
+   "key": {
+    "type": "solid",
+    "variant": "grown",
+    "prior_long": 5,
+    "prior_short": 4,
+    "cur_long": 8,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu13",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The noncalcified solid nodule in the right middle lobe has increased in size, now 15 x 13 mm, previously 12 x 10 mm. No pleural effusion. No new nodules.\nIMPRESSION: Enlarging pulmonary nodule; recommend specialist review.",
+   "key": {
+    "type": "solid",
+    "variant": "grown",
+    "prior_long": 12,
+    "prior_short": 10,
+    "cur_long": 15,
+    "cur_short": 13,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu14",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The lingula nodule seen on the prior study is no longer visualised. No new pulmonary nodules.\nIMPRESSION: Resolution of the previously seen pulmonary nodule, consistent with an inflammatory cause.",
+   "key": {
+    "type": "solid",
+    "variant": "resolved",
+    "prior_long": 7,
+    "prior_short": 5,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu15",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The right middle lobe nodule seen on the prior study is no longer visualised. No new pulmonary nodules.\nIMPRESSION: Previously seen nodule has resolved.",
+   "key": {
+    "type": "solid",
+    "variant": "resolved",
+    "prior_long": 6,
+    "prior_short": 5,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu16",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The right lower lobe nodule seen on the prior study is no longer visualised. No new pulmonary nodules.\nIMPRESSION: Resolution of the previously seen pulmonary nodule, consistent with an inflammatory cause.",
+   "key": {
+    "type": "solid",
+    "variant": "resolved",
+    "prior_long": 9,
+    "prior_short": 8,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu17",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: Marked respiratory motion artefact degrades the lung windows; the lingula nodule cannot be reliably measured or compared. No new nodules. No lymphadenopathy.\nIMPRESSION: Non-diagnostic for nodule follow-up due to motion artefact; repeat CT recommended.",
+   "key": {
+    "type": "solid",
+    "variant": "motion",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 7,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": true,
+    "outcome": "not_assessable"
+   }
+  },
+  {
+   "id": "lu18",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The previously noted noncalcified solid nodule in the left upper lobe is unchanged, now measuring 10 x 9 mm (previously 10 x 9 mm). No new pulmonary nodules.\nIMPRESSION: No change in the left upper lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 10,
+    "prior_short": 9,
+    "cur_long": 10,
+    "cur_short": 9,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu19",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The previously noted pure ground-glass nodule in the left upper lobe is unchanged, now measuring 7 x 6 mm (previously 7 x 6 mm). No pleural effusion. No new nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "unchanged",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 7,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu20",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted pure ground-glass nodule in the right middle lobe is stable, now measuring 12 x 9 mm (previously 12 x 9 mm). No new nodules. No lymphadenopathy.\nIMPRESSION: Stable pure ground-glass nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "stable",
+    "prior_long": 12,
+    "prior_short": 9,
+    "cur_long": 12,
+    "cur_short": 9,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu21",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 12 months prior.\nFINDINGS: The previously noted pure ground-glass nodule in the left lower lobe is stable, now measuring 6 x 5 mm (previously 6 x 5 mm). No pleural effusion. No new nodules.\nIMPRESSION: Stable pure ground-glass nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "stable",
+    "prior_long": 6,
+    "prior_short": 5,
+    "cur_long": 6,
+    "cur_short": 5,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu22",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The ground-glass opacity nodule in the left upper lobe has increased in size, now 12 x 10 mm, previously 9 x 7 mm. No new pulmonary nodules.\nIMPRESSION: Interval growth of the left upper lobe nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "grown",
+    "prior_long": 9,
+    "prior_short": 7,
+    "cur_long": 12,
+    "cur_short": 10,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu23",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The left upper lobe nodule seen on the prior study is no longer visualised. No new nodules. No lymphadenopathy.\nIMPRESSION: Previously seen nodule has resolved.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "resolved",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu24",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously described pure ground-glass nodule in the left lower lobe (5 x 4 mm) has resolved. No new nodules. No lymphadenopathy.\nIMPRESSION: Resolution of the previously seen pulmonary nodule, consistent with an inflammatory cause.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "resolved",
+    "prior_long": 5,
+    "prior_short": 4,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu25",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted nonsolid (ground-glass) nodule in the right upper lobe is stable in appearance, now measuring 1.4 x 1.1 cm (previously 1.2 x 0.9 cm). No new pulmonary nodules.\nIMPRESSION: Stable nonsolid (ground-glass) nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "stable_trap",
+    "prior_long": 12,
+    "prior_short": 9,
+    "cur_long": 14,
+    "cur_short": 11,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu26",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The pure ground-glass nodule in the left upper lobe is perhaps slightly larger, measuring 5 x 4 mm versus 4 x 4 mm previously, within measurement variability. No new pulmonary nodules.\nIMPRESSION: Pulmonary nodule without significant interval change.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "slightly_larger",
+    "prior_long": 4,
+    "prior_short": 4,
+    "cur_long": 5,
+    "cur_short": 4,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu27",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: Marked respiratory motion artefact degrades the lung windows; the right middle lobe nodule cannot be reliably measured or compared. No new nodules. No lymphadenopathy.\nIMPRESSION: Non-diagnostic for nodule follow-up due to motion artefact; repeat CT recommended.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "motion",
+    "prior_long": 9,
+    "prior_short": 7,
+    "cur_long": 9,
+    "cur_short": 7,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": true,
+    "outcome": "not_assessable"
+   }
+  },
+  {
+   "id": "lu28",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The previously noted part-solid nodule in the left upper lobe is unchanged, now measuring 0.9 x 0.7 cm (previously 0.9 x 0.7 cm). The solid component measures 3 mm. No pleural effusion. No new nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "unchanged",
+    "prior_long": 9,
+    "prior_short": 7,
+    "cur_long": 9,
+    "cur_short": 7,
+    "solid_mm": 3,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu29",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted subsolid nodule with a solid component in the right lower lobe is stable, now measuring 14 x 11 mm (previously 14 x 11 mm). The solid component measures 4 mm. No new nodules. No lymphadenopathy.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "stable",
+    "prior_long": 14,
+    "prior_short": 11,
+    "cur_long": 14,
+    "cur_short": 11,
+    "solid_mm": 4,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu30",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The previously noted part-solid nodule in the lingula is unchanged, now measuring 11 x 9 mm (previously 11 x 9 mm). The solid component measures 5 mm. No pleural effusion. No new nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "unchanged",
+    "prior_long": 11,
+    "prior_short": 9,
+    "cur_long": 11,
+    "cur_short": 9,
+    "solid_mm": 5,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu31",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The subsolid nodule with a solid component in the right lower lobe measures 10 x 8 mm (previously 9 x 7 mm). The solid component has increased and now measures 7 mm. No pleural effusion. No new nodules.\nIMPRESSION: Part-solid nodule with enlarging solid component, suspicious for malignancy.",
+   "key": {
+    "type": "part_solid",
+    "variant": "solid_grew",
+    "prior_long": 9,
+    "prior_short": 7,
+    "cur_long": 10,
+    "cur_short": 8,
+    "solid_mm": 7,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "suspicious_solid"
+   }
+  },
+  {
+   "id": "lu32",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The part-solid (mixed) nodule in the right upper lobe measures 14 x 12 mm (previously 14 x 11 mm). The solid component has increased and now measures 8 mm. No new nodules. No lymphadenopathy.\nIMPRESSION: Part-solid nodule with enlarging solid component, suspicious for malignancy.",
+   "key": {
+    "type": "part_solid",
+    "variant": "solid_grew",
+    "prior_long": 14,
+    "prior_short": 11,
+    "cur_long": 14,
+    "cur_short": 12,
+    "solid_mm": 8,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "suspicious_solid"
+   }
+  },
+  {
+   "id": "lu33",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The subsolid nodule with a solid component in the right middle lobe has increased in size, now 1.3 x 1.1 cm, previously 1.0 x 0.8 cm. The solid component measures 4 mm. No new nodules. No lymphadenopathy.\nIMPRESSION: Enlarging pulmonary nodule; recommend specialist review.",
+   "key": {
+    "type": "part_solid",
+    "variant": "grown",
+    "prior_long": 10,
+    "prior_short": 8,
+    "cur_long": 13,
+    "cur_short": 11,
+    "solid_mm": 4,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu34",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The left upper lobe nodule seen on the prior study is no longer visualised. No new pulmonary nodules.\nIMPRESSION: Resolution of the previously seen pulmonary nodule, consistent with an inflammatory cause.",
+   "key": {
+    "type": "part_solid",
+    "variant": "resolved",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu35",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The previously noted part-solid nodule in the lingula is stable, now measuring 5 x 5 mm (previously 5 x 5 mm). The solid component measures 2 mm. No new pulmonary nodules.\nIMPRESSION: No change in the lingula nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "stable",
+    "prior_long": 5,
+    "prior_short": 5,
+    "cur_long": 5,
+    "cur_short": 5,
+    "solid_mm": 2,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu36",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: Marked respiratory motion artefact degrades the lung windows; the lingula nodule cannot be reliably measured or compared. No pleural effusion. No new nodules.\nIMPRESSION: Non-diagnostic for nodule follow-up due to motion artefact; repeat CT recommended.",
+   "key": {
+    "type": "part_solid",
+    "variant": "motion",
+    "prior_long": 10,
+    "prior_short": 8,
+    "cur_long": 10,
+    "cur_short": 8,
+    "solid_mm": 3,
+    "resolved": false,
+    "not_assessable": true,
+    "outcome": "not_assessable"
+   }
+  },
+  {
+   "id": "lu37",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 8 months prior.\nFINDINGS: The previously noted solid pulmonary nodule in the left upper lobe is stable, now measuring 8 x 6 mm (previously 8 x 6 mm). No pleural effusion. No new nodules.\nIMPRESSION: Stable solid pulmonary nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable",
+    "prior_long": 8,
+    "prior_short": 6,
+    "cur_long": 8,
+    "cur_short": 6,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu38",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The previously noted noncalcified solid nodule in the right middle lobe is unchanged, now measuring 13 x 11 mm (previously 13 x 11 mm). No new nodules. No lymphadenopathy.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 13,
+    "prior_short": 11,
+    "cur_long": 13,
+    "cur_short": 11,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu39",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The noncalcified solid nodule in the right upper lobe has increased in size, now 1.2 x 1.1 cm, previously 1.0 x 0.9 cm. No new nodules. No lymphadenopathy.\nIMPRESSION: Interval growth of the right upper lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "grown",
+    "prior_long": 10,
+    "prior_short": 9,
+    "cur_long": 12,
+    "cur_short": 11,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  },
+  {
+   "id": "lu40",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The previously noted nonsolid (ground-glass) nodule in the right middle lobe is unchanged, now measuring 18 x 15 mm (previously 18 x 15 mm). No pleural effusion. No new nodules.\nIMPRESSION: No change in the right middle lobe nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "unchanged",
+    "prior_long": 18,
+    "prior_short": 15,
+    "cur_long": 18,
+    "cur_short": 15,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu41",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The previously noted ground-glass opacity nodule in the right lower lobe is stable, now measuring 0.5 x 0.5 cm (previously 0.5 x 0.5 cm). No new pulmonary nodules.\nIMPRESSION: No change in the right lower lobe nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "stable",
+    "prior_long": 5,
+    "prior_short": 5,
+    "cur_long": 5,
+    "cur_short": 5,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu42",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The previously noted part-solid (mixed) nodule in the left lower lobe is stable, now measuring 0.7 x 0.6 cm (previously 0.7 x 0.6 cm). The solid component measures 2 mm. No new nodules. No lymphadenopathy.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "stable",
+    "prior_long": 7,
+    "prior_short": 6,
+    "cur_long": 7,
+    "cur_short": 6,
+    "solid_mm": 2,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu43",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The previously noted solid noncalcified nodule in the left lower lobe is stable, now measuring 4 x 3 mm (previously 4 x 3 mm). No new pulmonary nodules.\nIMPRESSION: No change in the left lower lobe nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "stable",
+    "prior_long": 4,
+    "prior_short": 3,
+    "cur_long": 4,
+    "cur_short": 3,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu44",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 12 months prior.\nFINDINGS: The noncalcified solid nodule in the lingula is perhaps slightly larger, measuring 6 x 5 mm versus 5 x 5 mm previously, within measurement variability. No new pulmonary nodules.\nIMPRESSION: Pulmonary nodule without significant interval change.",
+   "key": {
+    "type": "solid",
+    "variant": "slightly_larger",
+    "prior_long": 5,
+    "prior_short": 5,
+    "cur_long": 6,
+    "cur_short": 5,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu45",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The previously noted noncalcified solid nodule in the left lower lobe is unchanged, now measuring 11 x 11 mm (previously 11 x 11 mm). No pleural effusion. No new nodules.\nIMPRESSION: Stable noncalcified solid nodule.",
+   "key": {
+    "type": "solid",
+    "variant": "unchanged",
+    "prior_long": 11,
+    "prior_short": 11,
+    "cur_long": 11,
+    "cur_short": 11,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu46",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 4 months prior.\nFINDINGS: The previously noted ground-glass opacity nodule in the right lower lobe is unchanged, now measuring 0.4 x 0.3 cm (previously 0.4 x 0.3 cm). No pleural effusion. No new nodules.\nIMPRESSION: Stable pulmonary nodule.",
+   "key": {
+    "type": "ground_glass",
+    "variant": "unchanged",
+    "prior_long": 4,
+    "prior_short": 3,
+    "cur_long": 4,
+    "cur_short": 3,
+    "solid_mm": 0,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "stable"
+   }
+  },
+  {
+   "id": "lu47",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 3 months prior.\nFINDINGS: The previously described solid noncalcified nodule in the right middle lobe (6 x 4 mm) has resolved. No new pulmonary nodules.\nIMPRESSION: Previously seen nodule has resolved.",
+   "key": {
+    "type": "solid",
+    "variant": "resolved",
+    "prior_long": 6,
+    "prior_short": 4,
+    "cur_long": 0,
+    "cur_short": 0,
+    "solid_mm": 0,
+    "resolved": true,
+    "not_assessable": false,
+    "outcome": "resolved"
+   }
+  },
+  {
+   "id": "lu48",
+   "text": "CT CHEST (NODULE FOLLOW-UP)\nCOMPARISON: CT chest 6 months prior.\nFINDINGS: The subsolid nodule with a solid component in the left upper lobe has increased in size, now 17 x 14 mm, previously 14 x 11 mm. The solid component measures 5 mm. No pleural effusion. No new nodules.\nIMPRESSION: Interval growth of the left upper lobe nodule.",
+   "key": {
+    "type": "part_solid",
+    "variant": "grown",
+    "prior_long": 14,
+    "prior_short": 11,
+    "cur_long": 17,
+    "cur_short": 14,
+    "solid_mm": 5,
+    "resolved": false,
+    "not_assessable": false,
+    "outcome": "growing"
+   }
+  }
+ ]
+}

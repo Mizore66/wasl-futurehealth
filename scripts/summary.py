@@ -17,3 +17,9 @@ if 'released_without_granted_consent' in ct:
     print(f"consent hold: released {ct['released_total']}, without granted consent {ct['released_without_granted_consent']}; "
           f"held-for-consent {ct['intents_ever_held_for_consent']}, cancelled {ct['intents_cancelled_by_consent']}")
 print(f"throughput {r['throughput_ev_s']:.0f} ev/s; reviewer-h/1k loops {r['reviewer']['by_kind']['all']['reviewer_hours_per_1k_loops']:.1f}")
+lung = r.get('programmes_live', {}).get('lung_nodule')
+if lung and 'closure' in lung:  # second loop type (WASL_LUNG=N)
+    lc, rec, af = lung['closure'], lung['recommendation'], lung['appropriate_followup_within_window']
+    print(f"lung_nodule (Fleischner 2017): P {lc['precision']:.3f}  R {lc['recall']:.3f}  false closures {lc['false_closures']}/{lc['pred_closed']}; "
+          f"escalation recall {lung['escalation']['recall']:.3f}; overdue acc {lung['overdue_flag_accuracy']:.3f}; "
+          f"recommendation acc {rec['accuracy']:.3f} (coverage {rec['coverage']:.3f}); appropriate follow-up truth {af['truth']:.3f} vs Wasl {af['wasl_measured']:.3f}")

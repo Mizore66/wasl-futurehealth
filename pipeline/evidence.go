@@ -11,6 +11,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
@@ -24,6 +25,7 @@ type ReaderVerdict struct {
 	Polyps    string `json:"polyps,omitempty"`
 	Histology string `json:"histology,omitempty"`
 	Quote     string `json:"quote,omitempty"`
+	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
 }
 
 type TwoVerdict struct {
@@ -128,6 +130,7 @@ func LoadJudge2(path string) *Judge2 {
 	if err := json.Unmarshal(b, &j.cache); err != nil {
 		panic(err)
 	}
+	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
 	return j
 }
 

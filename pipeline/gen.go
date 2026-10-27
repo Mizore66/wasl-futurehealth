@@ -91,6 +91,7 @@ type LoopTruth struct {
 	EcTrigger  string   `json:"ec_trigger,omitempty"` // rejected|unanswered|inadequate
 	TBState    string   `json:"tb_state"`             // last teach-back state by TEnd
 	TBLatent   string   `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
+	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
 }
 
 type Truth struct {
@@ -254,7 +255,7 @@ var rejectReasons = []string{"incomplete-referral", "out-of-network", "capacity"
 // GenSplit selects the person split a cohort is drawn from: eval (default) | cal (Learn-then-Test calibration cohorts).
 var GenSplit = "eval"
 
-func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools) {
+func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools, nLung int, lungDir string) {
 	b, err := os.ReadFile(filepath.Join(dataDir, "persons3.json"))
 	if err != nil {
 		panic(err)
@@ -1217,6 +1218,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		for k := 0; k < 1+r.Intn(2); k++ {
 			encounter(p, prov, r.Float64()*TEnd)
 		}
+	}
+	if nLung > 0 { // incidental lung-nodule loops (genlung.go): own RNG stream, background persons only
+		bg := []*Person{}
+		for k := nLoops + nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genLung(lungDirFor(lungDir, reportsPath), seed, nLung, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	sort.SliceStable(evs, func(i, j int) bool { return evs[i].Arrival < evs[j].Arrival })
 	os.MkdirAll(outDir, 0755)

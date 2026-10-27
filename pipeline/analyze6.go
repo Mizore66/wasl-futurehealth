@@ -147,5 +147,8 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			out[pg].(map[string]interface{})["cervical_kpi_colposcopy_within_3_months_hsil_asch"] = map[string]interface{}{"eligible": a.k90N, "truth": frac(a.k90T, a.k90N), "pipeline": frac(a.k90P, a.k90N), "doh_acceptable": 0.80}
 		}
 	}
+	if lm := lungMetrics(final, tr); lm != nil { // second loop type: Fleischner-specific metrics replace the screening ones
+		out["lung_nodule"] = lm
+	}
 	return out
 }

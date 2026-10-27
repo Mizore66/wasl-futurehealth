@@ -281,7 +281,11 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colposcopy" {
 				kind = "colonoscopy" // procedure-report slot; Judge6 routes on the presence of a coded conclusion
 			}
-			ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
+			if kind == "lung-finding" || kind == "lung-ct" {
+				ev.Ev = LungJudge(ev.Text, kind) // lungread.go: regex + cached Gemma 3 4B
+			} else {
+				ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
+			}
 			if ImageR != nil && kind == "colonoscopy" && ev.Coded == "" && ev.Category == "colonoscopy" {
 				applyImage(ev.Ev, ImageR.Read(ev.Images))
 			}
