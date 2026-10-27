@@ -55,9 +55,9 @@ func loadOffline(data, wasl string) *offline {
 	for i, pc := range Providers {
 		o.fhir = append(o.fhir, LogMsg{Seq: uint64(len(all) + i + 1), Subject: "fhir." + pc.ID + ".ctl", Hdr: map[string]string{"Wsi-Arr": "120"}, Data: []byte(`{"eof":true}`)})
 	}
-	enc := LoadEncoder(filepath.Join(wasl, "encoder_weights.json"))
-	o.gbm = LoadGBM(filepath.Join(wasl, "lgb_stream.json"))
-	o.iso = LoadIso(filepath.Join(wasl, "iso.json"))
+	enc := LoadEncoder(filepath.Join(wasl, mf("encoder_weights.json")))
+	o.gbm = LoadGBM(filepath.Join(wasl, mf("lgb_stream.json")))
+	o.iso = LoadIso(filepath.Join(wasl, mf("iso.json")))
 	Judge = LoadJudge2(filepath.Join(wasl, "gemma_cache.json"))
 	Parse = LoadParser(filepath.Join(wasl, "parse_cache.json")) // v7 merge fix: v6-impact prep parses replies via this cache
 	o.tr = &Truth{}

@@ -584,9 +584,9 @@ func simOffline(data, wasl string, P int, withReview bool, run string) {
 	for i, pc := range Providers {
 		fhir = append(fhir, LogMsg{Seq: uint64(len(all) + i + 1), Subject: "fhir." + pc.ID + ".ctl", Hdr: map[string]string{"Wsi-Arr": "120"}, Data: []byte(`{"eof":true}`)})
 	}
-	enc := LoadEncoder(filepath.Join(wasl, "encoder_weights.json"))
-	gbm := LoadGBM(filepath.Join(wasl, "lgb_stream.json"))
-	iso := LoadIso(filepath.Join(wasl, "iso.json"))
+	enc := LoadEncoder(filepath.Join(wasl, mf("encoder_weights.json")))
+	gbm := LoadGBM(filepath.Join(wasl, mf("lgb_stream.json")))
+	iso := LoadIso(filepath.Join(wasl, mf("iso.json")))
 	Judge = LoadJudge2(filepath.Join(wasl, "gemma_cache.json"))
 	Parse = LoadParser(filepath.Join(wasl, "parse_cache.json"))
 	var tr Truth
