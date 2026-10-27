@@ -104,3 +104,36 @@
 **Tests:** `v7_test.go` covers the strict prep hold, per-field consensus, the DOB guard, the calibrator cap, and policy in the signature.
 
 *Simulated cohort, one seed. The final 5-seed frozen evaluation is stage 7.*
+
+
+## Stage 2: live local reader (Gemma 3 4B), integrated
+
+`WASL_READER=live scripts/demo.sh` needs a local server: `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4`.
+
+**How it works:**
+- **Reader client:** `pipeline/reader.go`, a Go client for the OpenAI-compatible endpoint. It has a health check, timeout, bounded retries, JSON-schema output, a singleflight per report and a sha256-keyed ledger.
+- **Two calls per report (the hybrid):**
+  1. a full-context schema call for caecum, prep and polyps;
+  2. a dedicated histology question with a verbatim quote, a diagnosis-lexicon check and a visual-impression guard.
+- **Grounding:** a positive claim without a grounded quote is downgraded to its conservative value, so an ungrounded answer can only make closure *less* likely.
+- **Fail-safe:** a timeout, HTTP error, schema violation or unhealthy server gives "reader unavailable". The two readers then cannot agree, so the case goes to human review. It never closes automatically (`reader_test.go`).
+- **Replay determinism:** live answers go to `<run>/reader_ledger.jsonl`. Audit, tamper and report replay the ledger instead of calling the model. Warm-up (`wsi7 readerwarm`) asks each unique report body once before the stream starts.
+- **Provenance:** every evidence block records `reader_model`, the per-field values from both readers, the rule and any documentation flags.
+
+**4B reader alone on the 43 MTSamples reports** (answer key LLM-labelled and cross-checked):
+- histology field correct on 43/43;
+- state agrees with the cached 26B on 35/43;
+- 1 report the 4B alone would call "adequate" is actually inadequate. The regex reader disagrees there ("incomplete exam"), so the two-reader gate holds it.
+- Median 8.9 s per report on an M-series laptop, 2 calls.
+
+**Integrated runs** (same cohort and seed, v7strict):
+
+| Metric | Cached 26B answers | **Live local 4B** |
+|---|---|---|
+| CRC with review: P / R / false closures | 1.000 / 0.961 / 0/571 | **1.000 / 0.955 / 0/567** |
+| CRC no review: R | 0.232 | 0.123 (the 4B is more conservative, so more cases go to review) |
+| Cervical with review | 0/217 | 0/217 |
+| Reviewer-h per 1k loops | 21.3 | 25.8 |
+| Exactly-once / tamper / forged | 0 dup · 17/17 · 0/24 | 0 dup · 17/17 · 0/24 |
+
+The live ledger for this run is committed (`results/v7strict-live/reader_ledger.jsonl`), so the live result can be replayed without the model: `-reader replay`.

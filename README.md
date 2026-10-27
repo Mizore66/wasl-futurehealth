@@ -34,7 +34,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 |---|---|---|
 | `pipeline/` | Go + NATS JetStream streaming pipeline: FHIR ingest, linker, **v7strict closure gate**, reviewer, provenance, tamper audit | Built; integrated runs in `pipeline/results/` |
 | `booking/` | Constraint-safe booking engine (Python) + simulator, including the network-pooling test | Simulated; **to merge** |
-| `reader/` | Local Gemma 3 4B hybrid evidence reader + regex baseline | Verified on 43 reports; **to merge** |
+| `reader/` | Python reference for the hybrid reader prompt (the Go client in `pipeline/reader.go` is canonical) | Reference |
 | `patient-parsers/` | Frozen test sets and scores for the teach-back / e-consult parsers | Evaluated |
 | `projection/` | Before/after uplift projection from published trial effects | Projection, not a result |
 | `models/` | Small model artefacts (isotonic calibrator, cached reader outputs) | |
@@ -69,7 +69,7 @@ Outputs go to `out/` (gitignored):
 | Forged events | 0/24 with any effect |
 | Known gap | 5 messages sent before a late opt-out was recorded (16 under v6). The fix is the consent hold, stage 3 of `docs/BACKEND-HANDOFF.md` |
 
-**Local reader (separate until stage 2):** start `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791`, then run `python reader/hybrid4b.py 8791`.
+**Live local reader:** run `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4`, then `WASL_READER=live scripts/demo.sh`. The default (`cached`) replays recorded Gemma 26B answers and needs no model. Results for both are in `pipeline/RESULTS.md`.
 
 ## Data and honesty
 - Names come from Wikidata (CC0).

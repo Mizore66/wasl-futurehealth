@@ -35,6 +35,8 @@ type TwoVerdict struct {
 	Label    string        `json:"label"` // adequate|inadequate|awaiting_histology|histology|needs_human|disagree
 	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
 	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
+	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
+	ReaderLatencyMs int64  `json:"reader_ms,omitempty"`
 }
 
 const seg = `(?:distal|proximal|mid)?\s*(?:descending|sigmoid|transverse|splenic|hepatic|ascending|rectosigmoid)`
@@ -133,10 +135,19 @@ func textSha(t string) string {
 
 func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 	v := &TwoVerdict{Kind: kind, Regex: RegexReader(text, kind)}
-	g, ok := j.cache[textSha(text)]
+	var g gemmaEntry
+	var ok bool
+	if LiveReader != nil {
+		r, live := LiveReader.Read(text)
+		ok, g = live, r.asGemmaEntry()
+		v.Model, v.ReaderLatencyMs = r.Model, r.LatencyMs
+	} else {
+		g, ok = j.cache[textSha(text)]
+		v.Model = "gemma-4-26b/cached"
+	}
 	v.GemmaHit = ok
 	if !ok {
-		v.Gemma = ReaderVerdict{State: "unavailable", Reason: "gemma_cache_miss"}
+		v.Gemma = ReaderVerdict{State: "unavailable", Reason: "reader_unavailable"}
 	} else if kind == "pathology" {
 		if g.Histology == "yes" {
 			v.Gemma = ReaderVerdict{State: "histology", Reason: "histology_present", Histology: "yes", Quote: g.Quote}

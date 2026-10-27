@@ -124,6 +124,17 @@ func evBlock(d DownFact, human string) map[string]interface{} {
 		b["agree"] = d.Ev.Agree
 		b["label"] = d.Ev.Label
 		b["quote"] = d.Ev.Gemma.Quote
+		if d.Ev.Model != "" { // stage 2 provenance: which second reader, which rule, which documentation flags
+			b["reader_model"] = d.Ev.Model
+		}
+		if d.Ev.Rule != "" {
+			b["rule"] = d.Ev.Rule
+		}
+		if len(d.Ev.Flags) > 0 {
+			b["flags"] = d.Ev.Flags
+		}
+		b["fields"] = map[string]string{"regex": d.Ev.Regex.Caecum + "/" + d.Ev.Regex.Prep + "/" + d.Ev.Regex.Polyps + "/" + d.Ev.Regex.Histology,
+			"reader": d.Ev.Gemma.Caecum + "/" + d.Ev.Gemma.Prep + "/" + d.Ev.Gemma.Polyps + "/" + d.Ev.Gemma.Histology}
 	}
 	return b
 }

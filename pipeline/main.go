@@ -97,6 +97,10 @@ func main() {
 	evpol := fs.String("evpolicy", "v6", "evidence policy v6|v7|v7strict (v7strict: ungraded prep never closes)")
 	sweepSet := fs.String("sweepset", "full", "v7: full|v7 (err 0,.02,.04,.06 x none,merge+close x 5 seeds)")
 	policy := fs.String("policy", "", "named policy bundle: v6 | v7strict (sets -v7cal/-v7guard/-tauclose/-evpolicy)")
+	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
+	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
+	readerTimeout := fs.Duration("reader-timeout", 60*time.Second, "per-call reader timeout")
+	readerRetries := fs.Int("reader-retries", 2, "bounded reader retries")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	DualMerge = *dual
@@ -121,10 +125,31 @@ func main() {
 		TauClose = *tauClose
 	}
 	PolicyName = policyName()
+	ReaderMode = *readerMode
+	switch *readerMode {
+	case "cached":
+	case "live", "replay":
+		absRunR, _ := filepath.Abs(*run)
+		os.MkdirAll(absRunR, 0755)
+		url := *readerURL
+		if *readerMode == "replay" {
+			url = "http://127.0.0.1:1" // nothing listens: ledger hits only, misses fail safe to review
+		}
+		LiveReader = NewReaderClient(url, *readerTimeout, *readerRetries, filepath.Join(absRunR, "reader_ledger.jsonl"))
+		if *readerMode == "live" && (cmd == "orchestrate" || cmd == "readerwarm") && !LiveReader.Healthy() {
+			fmt.Fprintf(os.Stderr, "reader: %s is not healthy; start it with: llama-server -m <gemma-3-4b-it-Q4_K_M.gguf> --port 8791 -c 8192 -ngl 99\n", url)
+			os.Exit(3)
+		}
+	default:
+		panic("unknown -reader " + *readerMode)
+	}
 	if *sweepSet == "v7" {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose)}
+	if *readerMode != "cached" {
+		v7Args = append(v7Args, "-reader", *readerMode, "-reader-url", *readerURL, "-reader-timeout", readerTimeout.String(), "-reader-retries", fmt.Sprint(*readerRetries))
+	}
 	if *v7cal != "" {
 		abs, _ := filepath.Abs(*v7cal)
 		v7Args = append(v7Args, "-v7cal", abs)
@@ -154,6 +179,12 @@ func main() {
 		runMalaffi(*data, *hieAddr, *speed, *seed, *fDup, *fReo, *fDrop, absRun)
 	case "fhirsub":
 		runFhirSub("http://"+*hieAddr+"/fhir", *hookAddr, *content, absRun)
+	case "readerwarm":
+		if LiveReader == nil || ReaderMode != "live" {
+			panic("readerwarm needs -reader live")
+		}
+		asked, ok := WarmReader(*data, 4)
+		fmt.Printf("reader warm: %d unique report bodies, %d read OK, %d unavailable (will route to review)\n", asked, ok, asked-ok)
 	case "orchestrate":
 		SrcCfg = srcCfg{*source, *content, *hieAddr, *hookAddr, *fDup, *fReo, *fDrop, *subKill}
 		RevArgs = []string{"-revlat", fmt.Sprint(*revLat), "-seed", fmt.Sprint(*seed)}
@@ -334,8 +365,13 @@ cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 }
 
 func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, chaos int, natsKill bool, replicas int, noReview bool, seed int64) {
+	led := filepath.Join(run, "reader_ledger.jsonl") // keep the live-reader ledger across reruns (model answers are reused, not re-asked)
+	keep, _ := os.ReadFile(led)
 	os.RemoveAll(run)
 	os.MkdirAll(run, 0755)
+	if len(keep) > 0 {
+		os.WriteFile(led, keep, 0644)
+	}
 	self, _ := os.Executable()
 	o := &Orch{run: run, bin: self, procs: map[string]*proc{}}
 	sig := make(chan os.Signal, 1)
