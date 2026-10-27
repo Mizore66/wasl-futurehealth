@@ -201,3 +201,32 @@ The live ledger for this run is committed (`results/v7strict-live/reader_ledger.
 | Tamper / forged | 17/17 · 0/24 | 17/17 · 0/24 |
 
 The HL7 feed is delivered in arrival order (the FHIR mock adds heavy reordering), so consent records arrive before the facts that need them. That is why no intents were held for consent in this run, and why more referral-side facts reach the gate.
+
+
+## Stage 5: API for the frontend
+
+`scripts/demo.sh serve` starts the API (`wsi7 serve`) over the materialised run. **The contract is in `docs/API.md`; static responses are in `docs/api-samples/`.**
+
+**Endpoints:**
+- `/healthz`, `/api/dashboard`, `/api/fixtures`
+- `/api/cases` (filters and paging), `/api/cases/{id}`, `/api/cases/{id}/audit`
+- `POST /api/cases/{id}/review` (RBAC, append-only, hash-chained review ledger)
+
+**Data:** everything comes from the run's logs. `meta.data_mode = simulated`, plus the policy and reader model actually used.
+
+**Pipeline additions for the frontend:**
+- **`hold_decision` provenance block:** records why an inadequate or awaiting-histology loop was not closed (used for the false-closure trap).
+- **Decisions carry `contact`:** the consent status at that point.
+
+**The three demo fixtures,** picked deterministically from the run:
+- `evidence_closure`: a cross-provider link plus agreeing readers plus granted consent, closed, chain verified.
+- `false_closure_trap`: inadequate evidence, held.
+- `review_hold`: signed double review of the link and evidence, outreach held for consent, then closed.
+
+**Tests (`api_test.go`):**
+- fixture contracts;
+- filters and paging;
+- 404 for an unknown case;
+- RBAC: an auditor or coordinator cannot sign, the actor is required, unknown items are rejected;
+- review actions append a hash-chained ledger and never mutate the decision log;
+- no `null` lists.

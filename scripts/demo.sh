@@ -56,9 +56,28 @@ report() {
   (cd "$BIN" && ./wsi7 report7 -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > /dev/null)
   python3 "$ROOT/scripts/summary.py" "$RUN/report7.json"
 }
+serve() {
+  echo "Wasl API on http://${WASL_API_ADDR:-127.0.0.1:8088} (run: $RUN)"
+  (cd "$BIN" && exec ./wsi7 serve -run "$RUN" -data "$COHORT" -wasl "$ROOT/models" -policy "$POLICY" -addr "${WASL_API_ADDR:-127.0.0.1:8088}")
+}
+snapshot() {  # write static API responses for frontend development (no backend needed): docs/api-samples/
+  local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="$ROOT/docs/api-samples"
+  mkdir -p "$D"
+  curl -sf "http://$A/healthz" > "$D/healthz.json"
+  curl -sf "http://$A/api/dashboard" > "$D/dashboard.json"
+  curl -sf "http://$A/api/fixtures" > "$D/fixtures.json"
+  curl -sf "http://$A/api/cases?programme=crc&limit=25" > "$D/cases_crc_page1.json"
+  for tag in evidence_closure false_closure_trap review_hold; do
+    id=$(python3 -c "import json;print(json.load(open('$D/fixtures.json'))['fixtures']['$tag']['id'])")
+    curl -sf "http://$A/api/cases/$id" > "$D/case_$tag.json"
+    curl -sf "http://$A/api/cases/$id/audit" > "$D/case_${tag}_audit.json"
+  done
+  echo "API samples → $D"
+}
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;
+  serve) serve;; snapshot) snapshot;;
   all) check; build; test_; cohort; run_; audit; tamper; report;;
-  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|report]"; exit 2;;
+  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|report|serve|snapshot]"; exit 2;;
 esac

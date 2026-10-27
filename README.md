@@ -27,6 +27,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase 2–3 design: queue control, multi-loop engine, image reader, Learn-then-Test gate |
 | [`docs/CHALLENGE.md`](docs/CHALLENGE.md) | The official challenge statements |
 | [`docs/research/`](docs/research/) | Sourced research: costs, deployment, governance, standards, value model, notices |
+| [`docs/API.md`](docs/API.md) | **Frontend contract**: endpoints, fields, the three demo cases. Static samples are in [`docs/api-samples/`](docs/api-samples/) |
 
 ## Code
 
@@ -49,7 +50,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
 ```
 
-The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|report`.
+The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|report`. Then `scripts/demo.sh serve` starts the API for the frontend (see `docs/API.md`).
 
 Outputs go to `out/` (gitignored):
 - `out/cohort/`: the deterministic synthetic cohort (seed `WASL_SEED`, default 2026);

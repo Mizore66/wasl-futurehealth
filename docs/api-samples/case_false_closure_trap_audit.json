@@ -1,0 +1,136 @@
+{
+ "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+ "anchors": {
+  "fhir": "8bdf68ae71b383df45fb183511001879df804b940ff6cba376338b6eb3b3d968",
+  "out.p0": "3a13d754c2a316186d522ed66cc58641ef24011d1b2bb0e7de09c46a66c9cb8c",
+  "out.p1": "bfa45f93f6bff06a4bbb2733b581c294f46db5e94ae5f3d2be7931aa05a251bc",
+  "out.p2": "996521b1b2d378903c9c135bce2483b78bf3fa364d48e2a091a7aa04b23acf40",
+  "out.p3": "0c490cec3564426c051dbe859e5dc9ab0964fe3cbb85846c8883237cbef793f9"
+ },
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+ "chain": [
+  {
+   "type": "link_decision",
+   "body": {
+    "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-241",
+    "hops": 1,
+    "linker": "wasl-v3-retrained+iso+eid",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+    "near_miss": false,
+    "path_p_cal": 1,
+    "path_strength": 1,
+    "referral_patient": "ahs-mushrif|AHS-MRN001064",
+    "tau": 0.99,
+    "weakest_edge": {
+     "a": "ahs-mushrif|AHS-MRN001064",
+     "b": "skmc-endo|SKM-MRN000412",
+     "basis": "eid",
+     "p": 1
+    }
+   },
+   "prev": "genesis",
+   "hash": "6b6e7ce60a483d61b50a057deaa7201b185f350cfd4275bab7a1e2b77410bbbd"
+  },
+  {
+   "type": "evidence",
+   "body": {
+    "agree": true,
+    "fields": {
+     "reader": "not_stated/not_stated/no/no",
+     "regex": "not_stated/not_stated/no/no"
+    },
+    "gemma": "needs_human/missing_documentation",
+    "human_override": "",
+    "label": "inadequate",
+    "quote": "",
+    "reader_model": "gemma-4-26b/cached",
+    "regex": "needs_human/missing_documentation",
+    "report": "skmc-endo/DiagnosticReport/SKM-dr-241",
+    "rule": "R1_completion_not_documented"
+   },
+   "prev": "6b6e7ce60a483d61b50a057deaa7201b185f350cfd4275bab7a1e2b77410bbbd",
+   "hash": "d75ff3da06d5c8ebfcc56fbe365aee21a279cf9a40ad9af0b5053a6e9cc47267"
+  },
+  {
+   "type": "hold_decision",
+   "body": {
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+    "policy": "no closure without two-reader adequate evidence or authorised human decision",
+    "programme": "crc",
+    "report": "skmc-endo/DiagnosticReport/SKM-dr-241",
+    "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
+    "state": "inadequate_evidence"
+   },
+   "prev": "d75ff3da06d5c8ebfcc56fbe365aee21a279cf9a40ad9af0b5053a6e9cc47267",
+   "hash": "9cd3083023b753b870dfce4574992cf69d3d3a60f00b3ebc3542bc9654c1b792"
+  }
+ ],
+ "chain_length": 3,
+ "chain_verified": true,
+ "decision_signatures": [
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27754",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "c25fb887bf5f655482511408438c1ebf2d92878a45d00f0315a4ea86eccd997b",
+   "sig": "c25fb887bf5f655482511408438c1ebf2d92878a45d00f0315a4ea86eccd997b"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27799",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "87d02d2c06d3aad11c84c8801eee44d8d87311b370d571c28586b02b9d450d5a",
+   "sig": "87d02d2c06d3aad11c84c8801eee44d8d87311b370d571c28586b02b9d450d5a"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d88-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "9fe8ec07f87716569f0c285a2197cdf6f370d5c536a4dcb10f05010162627921",
+   "sig": "9fe8ec07f87716569f0c285a2197cdf6f370d5c536a4dcb10f05010162627921"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d89-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "ba1b3603830505bd2eeda722f0114bf5cc09a28bb9bf4ce122abf42f1af8671f",
+   "sig": "ba1b3603830505bd2eeda722f0114bf5cc09a28bb9bf4ce122abf42f1af8671f"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@28293",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "28f5e31e622afc7bc413dbfb88bd7d1dabd3eaa4fb0d170feeb04c0cb7fbdbf4",
+   "sig": "28f5e31e622afc7bc413dbfb88bd7d1dabd3eaa4fb0d170feeb04c0cb7fbdbf4"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d112-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "3faa1fec20690416e91f3aedcdbc328638b4396f62222afb53ffbaf0bdb51e33",
+   "sig": "3faa1fec20690416e91f3aedcdbc328638b4396f62222afb53ffbaf0bdb51e33"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d116-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "b6e00e56057672ab7f6399a8af92fa048e0cb157cbfd9722eba9aee36c050031",
+   "sig": "b6e00e56057672ab7f6399a8af92fa048e0cb157cbfd9722eba9aee36c050031"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d117-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "c1707ece06894caa08abbd5605e65af66f46612cfe6543a2950c9b52eb5db902",
+   "sig": "c1707ece06894caa08abbd5605e65af66f46612cfe6543a2950c9b52eb5db902"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@tick-d119-p3",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "recomputed": "6c69bd8d52d2d04923e9584f6f33e19ddf97cc4d190b4f78e1905a19b9f0cfee",
+   "sig": "6c69bd8d52d2d04923e9584f6f33e19ddf97cc4d190b4f78e1905a19b9f0cfee"
+  }
+ ],
+ "history": [],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-10-27T04:21:21Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.98",
+  "reader_model": "gemma-4-26b/cached",
+  "run": "v7strict-cached-fhir"
+ }
+}

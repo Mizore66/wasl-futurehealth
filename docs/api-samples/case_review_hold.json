@@ -1,0 +1,588 @@
+{
+ "api_reviews": [],
+ "case": {
+  "closed": true,
+  "closed_day": 69.918,
+  "consent": "granted",
+  "deadline_day": 31,
+  "decisions": 13,
+  "dropoff": "",
+  "fixture": "review_hold",
+  "id": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+  "overdue": false,
+  "owner": "Practitioner/ahs-mushrif-nurse-4",
+  "priority": "",
+  "programme": "crc",
+  "provider": "ahs-mushrif",
+  "referral_day": 26.9144,
+  "review": "signed",
+  "state": "closed"
+ },
+ "current": {
+  "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@31055",
+  "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+  "in_seq": 31055,
+  "prov": "ahs-mushrif",
+  "sr_day": 26.91435185185185,
+  "now": 120,
+  "state": "closed",
+  "overdue": false,
+  "unowned": false,
+  "owner": "Practitioner/ahs-mushrif-nurse-4",
+  "reported_closed": false,
+  "closed_day": 69.91804398148147,
+  "closing_report": "SKM-dr-317",
+  "notif_day": 45.401747685185185,
+  "ack_day": 50.466006944444445,
+  "ref_status": "accepted",
+  "ref_day": 29.7846875,
+  "dropoff": "",
+  "human_assisted": true,
+  "prog": "crc",
+  "deadline": 31,
+  "proc_day": 69.91804398148147,
+  "ec_state": "none",
+  "tb_state": "prompted",
+  "chain": [
+   {
+    "type": "link_decision",
+    "body": {
+     "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-317",
+     "hops": 1,
+     "linker": "wasl-v3-retrained+iso+eid",
+     "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+     "near_miss": false,
+     "path_p_cal": 1,
+     "path_strength": 1,
+     "referral_patient": "ahs-mushrif|AHS-MRN001202",
+     "tau": 0.99,
+     "weakest_edge": {
+      "a": "ahs-mushrif|AHS-MRN001202",
+      "b": "skmc-endo|SKM-MRN000522",
+      "basis": "eid",
+      "p": 1
+     }
+    },
+    "prev": "genesis",
+    "hash": "f8afe0d1858a35f6f74fd1996975f21e6471bfad8592eb723325f3f32dda4ba4"
+   },
+   {
+    "type": "evidence",
+    "body": {
+     "agree": false,
+     "fields": {
+      "reader": "yes/not_stated/no/no",
+      "regex": "yes/not_stated/no/no"
+     },
+     "gemma": "needs_human/missing_documentation",
+     "human_override": "adequate",
+     "label": "disagree",
+     "quote": "until it reached the cecum",
+     "reader_model": "gemma-4-26b/cached",
+     "regex": "needs_human/missing_documentation",
+     "report": "skmc-endo/DiagnosticReport/SKM-dr-317"
+    },
+    "prev": "f8afe0d1858a35f6f74fd1996975f21e6471bfad8592eb723325f3f32dda4ba4",
+    "hash": "89fa72d90d2d2543e10d619ecc916fd89fae9f4f6743d97125b3f2b084ab9cb9"
+   },
+   {
+    "type": "human_signoff",
+    "body": {
+     "evidence": "adequate",
+     "item": "rv-760628148a34d79a",
+     "link": "",
+     "reviewer": "sim-clinician e=0.040 double=merge+close reads=[r1 r2]",
+     "signed_head": "6d22975e198854b4ce0304ed2c39701fa711f6e7724c3c88d8a242e0194cb0bf"
+    },
+    "prev": "89fa72d90d2d2543e10d619ecc916fd89fae9f4f6743d97125b3f2b084ab9cb9",
+    "hash": "67fb97bcc5c91522becbfe9b5324646570de2648ef03f10da4863da3fcaa9e18"
+   },
+   {
+    "type": "closure_decision",
+    "body": {
+     "closed_day": 69.918,
+     "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+     "policy": "p_cal\u003e=0.99|eid|human AND two-reader agreement|human",
+     "priority": "",
+     "programme": "crc",
+     "rule": "doh:crc",
+     "sla_days": 31,
+     "state": "closed",
+     "within_sla": false
+    },
+    "prev": "67fb97bcc5c91522becbfe9b5324646570de2648ef03f10da4863da3fcaa9e18",
+    "hash": "afb8015e5dca6e99a15e41eef39eea7991e0d51dc1e6a6c8b6535a187f00f2ea"
+   }
+  ],
+  "policy": "v7strict+cal=true+guard=true+tau=0.98",
+  "contact": "granted",
+  "sig": "1a184f62f5f4a982bd529860644eebd6a7165b34f4732ca77849d5d3d86a5665"
+ },
+ "decisions": [
+  {
+   "consent_log": [
+    {
+     "ev": "skmc-endo/Appointment/SKM-appt-354",
+     "kind": "appointment_reminder",
+     "to": "held",
+     "contact": "unknown"
+    }
+   ],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@11494",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 11494,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "405c847636e983217db0b17216dd0dd64ffbc8d60e16d0d2e4e0277267e66066",
+   "state": "booked"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@11509",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 11509,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "e8c0632f8b1d90ad95ddb06b6f0b40f6f59e00793cd57fbae2dea4727836a5cd",
+   "state": "booked"
+  },
+  {
+   "consent_log": [
+    {
+     "ev": "skmc-endo/Appointment/SKM-appt-354",
+     "kind": "appointment_reminder",
+     "from": "held",
+     "to": "other",
+     "contact": "granted"
+    }
+   ],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@11555",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 11555,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "720df421577085c6470fabdfc682fc8f2764efd4aefa69f499e78de5dec6e81b",
+   "state": "booked"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d28-p3",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 11881,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "47a0fa56bc6310a937e4fc97ca04e9471f057c7850e5aaa293ae8cf4c8d40f25",
+   "state": "booked"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@12151",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 12151,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "5622768f34e5ab740dab97b525220a0e87eb413431ded29d8d8302b3eadb92ef",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@12294",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 12294,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "9b9f56497e88621f43b82e4e586b28b3f1ad821a27f14e975b1917745145aa9f",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d30-p3",
+   "dropoff": "in_progress",
+   "escalations": [
+    "unowned"
+   ],
+   "in_seq": 12792,
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "9494897b55fcbbfc58c26c1ea302de56590403326f9589d05137e70beb7b27e3",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@15453",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 15453,
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "8a60ca043ee5b37b8117d70d05b6aed745881423d1f84601f1ebe0c5c6286726",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d46-p3",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 20781,
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "b082e1d0bf2ddf679f57ca960a4ad14c364fe250bf80ecfa2e62c226cdaf11e1",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d51-p3",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 22390,
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "8558d6e85eb10c80eb403af0d713b0a6c80f1b9e4fad51ca07b767c229bc1a0a",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d58-p3",
+   "dropoff": "in_progress",
+   "escalations": [
+    "overdue_crc_deadline"
+   ],
+   "in_seq": 24039,
+   "overdue": true,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "1991470e55707e8d3178ae7f71c8e9e940f8dbc3eb1a05c4741a3d60b4d89404",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@tick-d70-p3",
+   "dropoff": "in_progress",
+   "escalations": [
+    "overdue_crc_deadline"
+   ],
+   "in_seq": 25739,
+   "overdue": true,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "3b0f187a9f964b8c7cb9043242ac2fc7277fbb219da7b50f398de0521d61ca21",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1142@ahs-mushrif/ServiceRequest/AHS-sr-1142@31055",
+   "dropoff": "",
+   "escalations": [],
+   "in_seq": 31055,
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "policy": "v7strict+cal=true+guard=true+tau=0.98",
+   "sig": "1a184f62f5f4a982bd529860644eebd6a7165b34f4732ca77849d5d3d86a5665",
+   "state": "closed"
+  }
+ ],
+ "evidence": [
+  {
+   "agree": false,
+   "fields": {
+    "reader": "yes/not_stated/no/no",
+    "regex": "yes/not_stated/no/no"
+   },
+   "gemma": "needs_human/missing_documentation",
+   "human_override": "adequate",
+   "label": "disagree",
+   "quote": "until it reached the cecum",
+   "reader_model": "gemma-4-26b/cached",
+   "regex": "needs_human/missing_documentation",
+   "report": "skmc-endo/DiagnosticReport/SKM-dr-317"
+  }
+ ],
+ "holds": [],
+ "identities": [
+  {
+   "provider": "ahs-mushrif",
+   "registration": "ahs-mushrif|AHS-MRN001202",
+   "role": "referral"
+  },
+  {
+   "provider": "skmc-endo",
+   "registration": "skmc-endo|SKM-MRN000522",
+   "role": "downstream"
+  }
+ ],
+ "links": [
+  {
+   "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-317",
+   "hops": 1,
+   "linker": "wasl-v3-retrained+iso+eid",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "near_miss": false,
+   "path_p_cal": 1,
+   "path_strength": 1,
+   "referral_patient": "ahs-mushrif|AHS-MRN001202",
+   "tau": 0.99,
+   "weakest_edge": {
+    "a": "ahs-mushrif|AHS-MRN001202",
+    "b": "skmc-endo|SKM-MRN000522",
+    "basis": "eid",
+    "p": 1
+   }
+  }
+ ],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-10-27T04:21:21Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.98",
+  "reader_model": "gemma-4-26b/cached",
+  "run": "v7strict-cached-fhir"
+ },
+ "outreach": [],
+ "review_items": [
+  {
+   "item": "rv-aa582252f89ec977",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "kinds": [
+    "link"
+   ],
+   "pair": [
+    "ahs-mushrif|AHS-MRN001202",
+    "skmc-endo|SKM-MRN000522"
+   ],
+   "p": 1,
+   "report": "",
+   "verdict": "",
+   "conf": 0,
+   "quote": "",
+   "chain": [
+    {
+     "type": "outreach_guard",
+     "body": {
+      "basis": "eid",
+      "event": "skmc-endo/Appointment/SKM-appt-354",
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+      "p_cal": 1,
+      "pair": [
+       "ahs-mushrif|AHS-MRN001202",
+       "skmc-endo|SKM-MRN000522"
+      ],
+      "rule": "second identifier (exact non-placeholder DOB) or human confirmation"
+     },
+     "prev": "genesis",
+     "hash": "316583cc05b3b47748a61671ca8c27bdc178a6a5876ed35202b46d8adf1a984c"
+    }
+   ],
+   "head": "316583cc05b3b47748a61671ca8c27bdc178a6a5876ed35202b46d8adf1a984c",
+   "in_seq": 11555,
+   "overdue": false,
+   "reason": "second_identifier"
+  },
+  {
+   "item": "rv-760628148a34d79a",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "kinds": [
+    "evidence"
+   ],
+   "pair": [
+    "ahs-mushrif|AHS-MRN001202",
+    "skmc-endo|SKM-MRN000522"
+   ],
+   "p": 1,
+   "report": "SKM-dr-317",
+   "verdict": "disagree",
+   "conf": 0,
+   "quote": "until it reached the cecum",
+   "chain": [
+    {
+     "type": "link_decision",
+     "body": {
+      "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-317",
+      "hops": 1,
+      "linker": "wasl-v3-retrained+iso+eid",
+      "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+      "near_miss": false,
+      "path_p_cal": 1,
+      "path_strength": 1,
+      "referral_patient": "ahs-mushrif|AHS-MRN001202",
+      "tau": 0.99,
+      "weakest_edge": {
+       "a": "ahs-mushrif|AHS-MRN001202",
+       "b": "skmc-endo|SKM-MRN000522",
+       "basis": "eid",
+       "p": 1
+      }
+     },
+     "prev": "genesis",
+     "hash": "f8afe0d1858a35f6f74fd1996975f21e6471bfad8592eb723325f3f32dda4ba4"
+    },
+    {
+     "type": "evidence",
+     "body": {
+      "agree": false,
+      "fields": {
+       "reader": "yes/not_stated/no/no",
+       "regex": "yes/not_stated/no/no"
+      },
+      "gemma": "needs_human/missing_documentation",
+      "human_override": "",
+      "label": "disagree",
+      "quote": "until it reached the cecum",
+      "reader_model": "gemma-4-26b/cached",
+      "regex": "needs_human/missing_documentation",
+      "report": "skmc-endo/DiagnosticReport/SKM-dr-317"
+     },
+     "prev": "f8afe0d1858a35f6f74fd1996975f21e6471bfad8592eb723325f3f32dda4ba4",
+     "hash": "6d22975e198854b4ce0304ed2c39701fa711f6e7724c3c88d8a242e0194cb0bf"
+    }
+   ],
+   "head": "6d22975e198854b4ce0304ed2c39701fa711f6e7724c3c88d8a242e0194cb0bf",
+   "in_seq": 12294,
+   "overdue": false
+  }
+ ],
+ "signoffs": [
+  {
+   "evidence": "",
+   "item": "rv-aa582252f89ec977",
+   "kinds": [
+    "link"
+   ],
+   "link": "same",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "ms": 0,
+   "reads": [
+    "r1",
+    "r2"
+   ],
+   "reviewer": "sim-reviewer e=0.040 double=merge+close reads=[r1 r2]",
+   "role": "reviewer",
+   "sim_s": 105.5,
+   "t": 1793074550531328000,
+   "verdict": "",
+   "wrong": false
+  },
+  {
+   "evidence": "adequate",
+   "item": "rv-760628148a34d79a",
+   "kinds": [
+    "evidence"
+   ],
+   "link": "",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "ms": 0,
+   "reads": [
+    "r1",
+    "r2"
+   ],
+   "reviewer": "sim-clinician e=0.040 double=merge+close reads=[r1 r2]",
+   "role": "clinician",
+   "sim_s": 162.6,
+   "t": 1793074550800306000,
+   "verdict": "disagree",
+   "wrong": false
+  }
+ ],
+ "timeline": [
+  {
+   "arrival_day": 11.416,
+   "category": "",
+   "day": 11.406,
+   "id": "ahs-mushrif/Encounter/AHS-enc-616",
+   "provider": "ahs-mushrif",
+   "raw_sha": "f1f0a01d6b825132",
+   "seq": 4242,
+   "source": "fhir",
+   "status": "finished",
+   "type": "Encounter"
+  },
+  {
+   "arrival_day": 29.8047,
+   "category": "referral-intake",
+   "day": 29.7847,
+   "id": "skmc-endo/ServiceRequest/SKM-intake-552",
+   "provider": "skmc-endo",
+   "raw_sha": "00e2b2c522503a2a",
+   "seq": 4372,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 57.3994,
+   "category": "",
+   "day": 69.918,
+   "id": "skmc-endo/Appointment/SKM-appt-354",
+   "provider": "skmc-endo",
+   "raw_sha": "e41ff939d29031d2",
+   "seq": 9219,
+   "source": "fhir",
+   "status": "booked",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 26.9202,
+   "category": "",
+   "day": 26.9144,
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "provider": "ahs-mushrif",
+   "raw_sha": "6d7b50e9308b5011",
+   "seq": 11494,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 27.1418,
+   "category": "",
+   "day": 27.1418,
+   "id": "ahs-mushrif/Consent/consent-475",
+   "provider": "ahs-mushrif",
+   "raw_sha": "fd318a2e896fc3a2",
+   "seq": 11555,
+   "source": "fhir",
+   "status": "permit",
+   "type": "Consent"
+  },
+  {
+   "arrival_day": 70.5995,
+   "category": "",
+   "day": 69.918,
+   "id": "skmc-endo/Appointment/SKM-appt-354",
+   "provider": "skmc-endo",
+   "raw_sha": "9d497c2da80663d0",
+   "seq": 12151,
+   "source": "fhir",
+   "status": "fulfilled",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 71.4589,
+   "category": "colonoscopy",
+   "day": 69.918,
+   "id": "skmc-endo/DiagnosticReport/SKM-dr-317",
+   "provider": "skmc-endo",
+   "raw_sha": "f360839cad4b40b2",
+   "seq": 12294,
+   "source": "fhir",
+   "status": "final",
+   "type": "DiagnosticReport"
+  }
+ ]
+}

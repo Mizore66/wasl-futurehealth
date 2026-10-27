@@ -92,6 +92,7 @@ func main() {
 	fDrop := fs.Float64("fdrop", 0.03, "mock fault: P(dropped notification)")
 	subKill := fs.Int("subkill", 1, "kill/restart cycles of the FHIR subscription consumer (source=fhir)")
 	hl7Addr := fs.String("hl7", "127.0.0.1:28870", "HL7 v2 MLLP listener addr (source=hl7)")
+	apiAddr := fs.String("addr", "127.0.0.1:8088", "serve: API listen address")
 	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
 	v7guard := fs.Bool("v7guard", false, "v7: second-identifier guard on EID-chain / p_cal outreach")
@@ -185,6 +186,8 @@ func main() {
 		runHL7Sender(*data, *hl7Addr, *seed, *fDup, *fReo, *hl7Drops, absRun)
 	case "fhirsub":
 		runFhirSub("http://"+*hieAddr+"/fhir", *hookAddr, *content, absRun)
+	case "serve":
+		runServe(absRun, *data, *apiAddr)
 	case "readerwarm":
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readerwarm needs -reader live")

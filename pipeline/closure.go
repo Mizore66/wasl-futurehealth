@@ -318,6 +318,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	closing := ""
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
+	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	pending := []string{}
 	pendSet := map[string]bool{}
 	unlinked := false
@@ -405,6 +406,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			if !has {
 				awaiting = true
+				if holdRow == nil {
+					rr := r
+					holdRow = &rr
+				}
 				continue
 			}
 			label = "adequate"
@@ -424,6 +429,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		case "inadequate":
 			inadequate = true
+			if holdRow == nil || holdRow.d.Ev == nil || holdRow.d.Ev.Label != "inadequate" {
+				rr := r
+				holdRow = &rr
+			}
 		}
 	}
 	if state == "closed" {
@@ -433,6 +442,17 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		pending = nil
 		unlinked = false
 	} else {
+		if (awaiting || inadequate) && holdRow != nil { // record WHY the loop was not closed (false-closure trap)
+			why := "awaiting_histology"
+			if inadequate && !awaiting {
+				why = "inadequate_evidence"
+			}
+			chain = appendBlock(nil, "link_decision", linkBlock(f, holdRow.d, holdRow.pc))
+			chain = appendBlock(chain, "evidence", evBlock(holdRow.d, ""))
+			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": why, "programme": prog,
+				"report": holdRow.d.Provider + "/DiagnosticReport/" + holdRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
+				"policy": "no closure without two-reader adequate evidence or authorised human decision"})
+		}
 		switch {
 		case awaiting:
 			state = "awaiting_histology"
@@ -561,6 +581,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		ls.contact[k] = st
 	}
+	d.Contact = f.Contact
 	d.Policy = PolicyName
 	d.Sig = sha(canon(d))
 	if ls.last == nil || ls.last.Sig != d.Sig {

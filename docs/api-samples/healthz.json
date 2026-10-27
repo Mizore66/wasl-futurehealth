@@ -1,0 +1,19 @@
+{
+ "cases": 2100,
+ "dependencies": {
+  "ingest_adapter": "fhir",
+  "materialised_run": "loaded",
+  "nats": "not_required_for_read_api",
+  "reader": "cached"
+ },
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-10-27T04:21:21Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.98",
+  "reader_model": "gemma-4-26b/cached",
+  "run": "v7strict-cached-fhir"
+ },
+ "status": "ok"
+}

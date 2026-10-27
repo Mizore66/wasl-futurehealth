@@ -228,6 +228,7 @@ type Decision struct {
 	Chain          []Block  `json:"chain,omitempty"`
 	Policy         string   `json:"policy,omitempty"` // gate policy that produced this decision (v6 | v7strict+...)
 	ConsentLog     []ConsentTransition `json:"consent_log,omitempty"` // stage 3: hold/release/cancel transitions at this decision
+	Contact        string   `json:"contact,omitempty"` // contact permission of the referral patient at this decision
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
 }
