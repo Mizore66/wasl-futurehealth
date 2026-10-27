@@ -1,0 +1,418 @@
+{
+ "manifest": {
+  "frozen_at": "2026-10-27T04:49:27.187797Z",
+  "code_revision": "45ed3a0ee0d4f45813fb5311f839f48d97e12888",
+  "policy": "v7strict",
+  "thresholds": {
+   "tau_high_messaging": 0.99,
+   "tau_close_v7strict": 0.98,
+   "uncorroborated_cap": 0.989,
+   "calibrator": "models/iso_v7.json (stratified)",
+   "dob_second_id_guard": true,
+   "reviewer_error": 0.04,
+   "double_review": "merge+close"
+  },
+  "reader": "cached (Gemma 4 26B answers, sha256-keyed; live 4B reported separately in pipeline/RESULTS.md stage 2)",
+  "source": "fhir",
+  "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
+  "noise_models": {
+   "v1": "training-time corruptions (gen.go)",
+   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
+  },
+  "seeds": [
+   11,
+   23,
+   37,
+   41,
+   59
+  ],
+  "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
+  "hashes": {
+   "models/encoder_weights.json": "6334a8ae1e010f7995bff75d3d0084e9b353ced502ce78a509fd418d4fba79f0",
+   "models/lgb_stream.json": "0da0141a1574690ae230d7b36d6aa0a21fff3ac2268585cd9c46c60e46a940da",
+   "models/iso.json": "3da130b8091f38c1c1fdfb778f6249868b4692466e624eb5861165cb52e35707",
+   "models/iso_v7.json": "10f051be7a11f30589d3ca58b8cddf34be0c97000b6f61f9ba98910ada27d06a",
+   "models/gemma_cache.json": "3df007c3673992257f44df8c86c6b7a7abc38d44e214d4cfdb3a5d3c0fb250b6",
+   "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
+   "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+   "data/evidence/reports43.json": "014803d365994ca136994036e9457cdbba46b8f8365cadf9b6553ef732e9f9ee",
+   "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7"
+  },
+  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
+  "limitations": [
+   "the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test",
+   "synthetic cohorts, reviewers, capacity; no clinician labels",
+   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
+   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
+   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
+  ],
+  "report_revision": "5bb022a9709406b57bdabd02a7e8a839eb401fce",
+  "report_note": "runs executed at code_revision; report7 re-scored from the unchanged run logs at report_revision (forged-effect attribution fix only)"
+ },
+ "by_noise": {
+  "v1": {
+   "seeds": 5,
+   "metrics": {
+    "crc_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "crc_recall": [
+     0.9542,
+     0.9436,
+     0.9648
+    ],
+    "crc_recall_no_review": [
+     0.2604,
+     0.2429,
+     0.2779
+    ],
+    "cervical_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "cervical_recall": [
+     0.9642,
+     0.9397,
+     0.9887
+    ],
+    "cervical_recall_no_review": [
+     0.7068,
+     0.6604,
+     0.7532
+    ],
+    "kpi_wasl": [
+     0.319,
+     0.3,
+     0.338
+    ],
+    "kpi_truth": [
+     0.3282,
+     0.3114,
+     0.345
+    ],
+    "kpi_eid_only": [
+     0.1274,
+     0.1193,
+     0.1355
+    ],
+    "kpi_abs_error_wasl": [
+     0.0092,
+     0.006,
+     0.0124
+    ],
+    "kpi_abs_error_eid_only": [
+     0.2008,
+     0.1917,
+     0.2099
+    ],
+    "linkage_pair_f1": [
+     0.9706,
+     0.9677,
+     0.9735
+    ],
+    "reviewer_h_per_1k": [
+     20.0708,
+     18.9874,
+     21.1542
+    ],
+    "review_items_per_100_loops": [
+     55.2286,
+     52.3296,
+     58.1276
+    ],
+    "review_items_per_100_arab": [
+     56.9034,
+     53.2267,
+     60.5801
+    ],
+    "reviewer_h_per_1k_arab": [
+     20.3464,
+     18.8412,
+     21.8516
+    ],
+    "review_items_per_100_filipino": [
+     53.209,
+     46.8466,
+     59.5714
+    ],
+    "reviewer_h_per_1k_filipino": [
+     19.8818,
+     17.257,
+     22.5066
+    ],
+    "review_items_per_100_south_asian": [
+     51.8858,
+     48.7424,
+     55.0292
+    ],
+    "reviewer_h_per_1k_south_asian": [
+     18.7852,
+     17.751,
+     19.8194
+    ],
+    "review_items_per_100_western": [
+     55.223,
+     52.7242,
+     57.7218
+    ],
+    "reviewer_h_per_1k_western": [
+     21.0756,
+     19.9758,
+     22.1754
+    ],
+    "review_load_ratio_max_min_origin": [
+     1.1239,
+     1.0217,
+     1.2261
+    ],
+    "throughput_ev_s": [
+     713.7351,
+     654.83,
+     772.6401
+    ]
+   },
+   "safety_pooled": {
+    "crc_false_closures": [
+     0,
+     2750,
+     0.00134
+    ],
+    "cervical_false_closures": [
+     0,
+     1017,
+     0.00362
+    ],
+    "wrong_patient_released": [
+     0,
+     4260,
+     0.00087
+    ],
+    "released_without_granted_consent": [
+     0,
+     2910,
+     0.00127
+    ],
+    "duplicate_or_lost_outputs": [
+     0,
+     94523,
+     4e-05
+    ],
+    "ingest_lost_or_duplicated": [
+     0,
+     153118,
+     null
+    ],
+    "final_state_mismatch_loops": [
+     0,
+     null,
+     null
+    ],
+    "forged_with_effect": [
+     0,
+     120,
+     null
+    ],
+    "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
+     0,
+     null,
+     null
+    ],
+    "tamper_detected": [
+     85,
+     85,
+     null
+    ],
+    "tamper_false_alarms": [
+     0,
+     5,
+     null
+    ]
+   }
+  },
+  "v2": {
+   "seeds": 5,
+   "metrics": {
+    "crc_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "crc_recall": [
+     0.8638,
+     0.8553,
+     0.8723
+    ],
+    "crc_recall_no_review": [
+     0.2146,
+     0.177,
+     0.2522
+    ],
+    "cervical_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "cervical_recall": [
+     0.8886,
+     0.8524,
+     0.9248
+    ],
+    "cervical_recall_no_review": [
+     0.6412,
+     0.6003,
+     0.6821
+    ],
+    "kpi_wasl": [
+     0.2836,
+     0.2734,
+     0.2938
+    ],
+    "kpi_truth": [
+     0.3218,
+     0.3091,
+     0.3345
+    ],
+    "kpi_eid_only": [
+     0.121,
+     0.1089,
+     0.1331
+    ],
+    "kpi_abs_error_wasl": [
+     0.0382,
+     0.0344,
+     0.042
+    ],
+    "kpi_abs_error_eid_only": [
+     0.2008,
+     0.1877,
+     0.2139
+    ],
+    "linkage_pair_f1": [
+     0.9278,
+     0.9241,
+     0.9315
+    ],
+    "reviewer_h_per_1k": [
+     18.4738,
+     17.2013,
+     19.7463
+    ],
+    "review_items_per_100_loops": [
+     51.6382,
+     48.0387,
+     55.2377
+    ],
+    "review_items_per_100_arab": [
+     52.5608,
+     48.2884,
+     56.8332
+    ],
+    "reviewer_h_per_1k_arab": [
+     18.5848,
+     17.2064,
+     19.9632
+    ],
+    "review_items_per_100_filipino": [
+     52.4374,
+     45.9282,
+     58.9466
+    ],
+    "reviewer_h_per_1k_filipino": [
+     18.4534,
+     15.6833,
+     21.2235
+    ],
+    "review_items_per_100_south_asian": [
+     51.0792,
+     47.0141,
+     55.1443
+    ],
+    "reviewer_h_per_1k_south_asian": [
+     18.427,
+     16.9599,
+     19.8941
+    ],
+    "review_items_per_100_western": [
+     48.8532,
+     44.4281,
+     53.2783
+    ],
+    "reviewer_h_per_1k_western": [
+     18.0764,
+     16.8952,
+     19.2576
+    ],
+    "review_load_ratio_max_min_origin": [
+     1.1393,
+     1.0305,
+     1.2482
+    ],
+    "throughput_ev_s": [
+     665.5325,
+     567.0341,
+     764.0308
+    ]
+   },
+   "safety_pooled": {
+    "crc_false_closures": [
+     0,
+     2473,
+     0.00149
+    ],
+    "cervical_false_closures": [
+     0,
+     912,
+     0.00404
+    ],
+    "wrong_patient_released": [
+     0,
+     3720,
+     0.00099
+    ],
+    "released_without_granted_consent": [
+     0,
+     2652,
+     0.00139
+    ],
+    "duplicate_or_lost_outputs": [
+     0,
+     93648,
+     4e-05
+    ],
+    "ingest_lost_or_duplicated": [
+     0,
+     152539,
+     null
+    ],
+    "final_state_mismatch_loops": [
+     0,
+     null,
+     null
+    ],
+    "forged_with_effect": [
+     0,
+     120,
+     null
+    ],
+    "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
+     2,
+     null,
+     null
+    ],
+    "tamper_detected": [
+     85,
+     85,
+     null
+    ],
+    "tamper_false_alarms": [
+     0,
+     5,
+     null
+    ]
+   }
+  }
+ }
+}

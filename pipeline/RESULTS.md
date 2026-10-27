@@ -230,3 +230,61 @@ The HL7 feed is delivered in arrival order (the FHIR mock adds heavy reordering)
 - RBAC: an auditor or coordinator cannot sign, the actor is required, unknown items are rejected;
 - review actions append a hash-chained ledger and never mutate the decision log;
 - no `null` lists.
+
+## Stage 7: frozen final evaluation (5 seeds × 2 noise models)
+
+**Frozen setup.** `scripts/demo.sh final` won't run on uncommitted code. Before any run, it writes [`results/final/manifest.json`](results/final/manifest.json), which records:
+- the code revision (`45ed3a0`);
+- the policy, `v7strict`;
+- every threshold;
+- sha256 of each model and data file;
+- the seed list (11, 23, 37, 41, 59).
+
+**The runs.** Every run is a full integrated NATS run with chaos testing. All of them use the held-out Wikidata eval split of persons, under two noise models:
+- **v1:** the corruption model the encoder, calibrator and v7 rules were developed on.
+- **v2** ([`noise2.go`](noise2.go)): an independent model never used for training, calibration or rule design. It adds:
+  - phonetic respellings, dropped particles, swapped name order and initials;
+  - OCR confusions;
+  - Arabic hamza, ya and ta-marbuta variants;
+  - 15% missing DOB, plus DOB transpositions and shifts.
+
+**Statistics.** Each mean comes with a 95% t-interval over the 5 seeds. Zero-event safety counts are pooled over seeds, with a Clopper–Pearson 95% upper bound. Full tables: [`results/final/SUMMARY.md`](results/final/SUMMARY.md).
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall (with review) | 1.000 / 0.954 (0.944–0.965) | **1.000 / 0.864 (0.855–0.872)** |
+| CRC recall, no review | 0.260 | 0.215 |
+| Cervical precision / recall | 1.000 / 0.964 | 1.000 / 0.889 |
+| **CRC false closures** (pooled) | 0/2,750 (UB 0.13%) | **0/2,473 (UB 0.15%)** |
+| Cervical false closures | 0/1,017 (UB 0.36%) | 0/912 (UB 0.40%) |
+| **Wrong-patient messages released** | 0/4,260 (UB 0.09%) | **0/3,720 (UB 0.10%)** |
+| Messages released without granted consent | 0/2,910 | 0/2,652 |
+| ≤31-day KPI: truth / Wasl / EID-only | 0.328 / 0.319 / 0.127 | 0.322 / 0.284 / 0.121 |
+| KPI absolute error: Wasl / EID-only | 0.009 / 0.201 | 0.038 / 0.201 |
+| Linkage pair F1 | 0.971 | 0.928 |
+| Reviewer hours per 1k loops | 20.1 (19.0–21.2) | 18.5 (17.2–19.7) |
+| Review items per 100 loops, by name origin (arab / filipino / south_asian / western) | 56.9 / 53.2 / 51.9 / 55.2 | 52.6 / 52.4 / 51.1 / 48.9 |
+| Review-load ratio, max/min origin | 1.12 (1.02–1.23) | 1.14 (1.03–1.25) |
+| Duplicates or losses (outputs; ingest) | 0/94,523; 0/153,118 | 0/93,648; 0/152,539 |
+| Tamper detected / false alarms | 85/85 / 0 | 85/85 / 0 |
+| Forged events with effect | 0/120 | 0/120 |
+
+**What the held-out test shows:**
+- **Safety holds.** No false closures, wrong-patient messages or consent leaks on noise the system never saw.
+- **Recall is lower.** It falls by about 9 points, because the gate *holds* the links it can no longer trust; it doesn't close them.
+- **The KPI cost.** Wasl under-reports the 31-day KPI by about 4 points instead of about 1. That is still 5× closer to truth than EID-only tracking.
+
+This is the trade-off the gate is designed to make: lost recall becomes review work or open cases, never wrong closures.
+
+**Forged-event accounting fix** (re-scored from unchanged logs at `5bb022a`):
+- In 2 v2 seeds, RBAC denied a forged "same" sign-off, but the linker had independently merged the targeted pair, a true false merge.
+- The first scoring counted this as a forged-event effect. It is now reported separately, as `forged_target_pair_falsely_merged_by_linker`. It is also already counted in `linkage.false_merge_pairs`.
+- Neither merge led to a false closure or a wrong-patient message.
+
+**Not done: needs both team members.** The 43 report texts still carry an LLM-produced answer key. [`docs/labelling/`](../docs/labelling/) holds blind labelling sheets and a Cohen's κ script. Each of you labels separately, about 1.5–2 h. Until that is done, every evidence number is measured against the LLM key, not human labels.
+
+**Other limits:**
+- Reviewers, capacity and cohorts are synthetic.
+- Cached 26B reader answers were used. Results for the live 4B reader are in the stage 2 section.
+- Only the FHIR source was run. HL7 is covered in stage 4.
+- The v7 rules were designed on earlier v1-noise seeds, which is why v2 is the honest held-out number.

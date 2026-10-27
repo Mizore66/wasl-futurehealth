@@ -28,7 +28,7 @@ def cp_ub(k, n):
 
 out = {"manifest": man, "by_noise": {}}
 md = [f"# Final frozen evaluation\n", f"Code revision `{man['code_revision'][:12]}` · policy `{man['policy']}` · seeds {man['seeds']} · source `{man['source']}` · "
-      f"held-out persons only · frozen {man['frozen_at']}\n",
+      f"held-out persons only · frozen {man['frozen_at']}\n" + (f"\n{man['report_note']} (`{man['report_revision'][:12]}`).\n" if man.get('report_revision') else ""),
       "Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, with a Clopper–Pearson 95% upper bound.\n"]
 for noise in ["v1", "v2"]:
     runs = sorted(glob.glob(os.path.join(F, f"{noise}-s*", "report7.json")))
@@ -67,6 +67,7 @@ for noise in ["v1", "v2"]:
         ct = r['consent_timing']
         pool["released"] += ct.get('released_total', 0); pool["released_without_granted_consent"] += ct.get('released_without_granted_consent', 0)
         pool["forged"] += r['forged']['forged_events']; pool["forged_effect"] += r['forged']['forged_with_any_effect']
+        pool["forged_target_falsely_merged_by_linker"] += r['forged'].get('forged_target_pair_falsely_merged_by_linker', 0)
         att = [a for a in t['attacks'] if a['attacker'] != '-']
         pool["tamper_attacks"] += len(att); pool["tamper_detected"] += sum(a['detected'] for a in att)
         pool["tamper_false_alarm"] += sum(a['detected'] for a in t['attacks'] if a['attacker'] == '-')
@@ -81,6 +82,7 @@ for noise in ["v1", "v2"]:
         "ingest_lost_or_duplicated": [pool["ingest_lost"] + pool["ingest_duplicates"], pool["resources"], None],
         "final_state_mismatch_loops": [pool["final_state_mismatch"], None, None],
         "forged_with_effect": [pool["forged_effect"], pool["forged"], None],
+        "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [pool["forged_target_falsely_merged_by_linker"], None, None],
         "tamper_detected": [pool["tamper_detected"], pool["tamper_attacks"], None],
         "tamper_false_alarms": [pool["tamper_false_alarm"], len(T), None],
     }

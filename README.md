@@ -50,7 +50,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
 ```
 
-The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|report`. Then `scripts/demo.sh serve` starts the API for the frontend (see `docs/API.md`).
+The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|booking|report|final`. Then `scripts/demo.sh serve` starts the API for the frontend (see `docs/API.md`).
 
 Outputs go to `out/` (gitignored):
 - `out/cohort/`: the deterministic synthetic cohort (seed `WASL_SEED`, default 2026);
@@ -69,6 +69,14 @@ Outputs go to `out/` (gitignored):
 | Tamper | 17/17 attacks detected, 0 false alarms |
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
+
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `45ed3a0`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+- CRC P 1.000, R 0.864 (95% CI 0.855–0.872).
+- **0/2,473 false closures** (95% upper bound 0.15%).
+- 0/3,720 wrong-patient messages; 0/2,652 messages sent without granted consent.
+- KPI error 0.038 vs 0.201 for EID-only tracking.
+
+On dev noise, recall is 0.954. The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Live local reader:** run `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4`, then `WASL_READER=live scripts/demo.sh`. The default (`cached`) replays recorded Gemma 26B answers and needs no model. Results for both are in `pipeline/RESULTS.md`.
 
