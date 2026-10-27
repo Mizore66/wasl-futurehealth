@@ -56,7 +56,7 @@
     - Domain shift (Norwegian video frames vs UAE stills) means local recalibration in the pilot.
   - **Learn-then-Test gate (built; replaces the hand-set thresholds, `-policy v7ltt`):**
     - It gives a finite-sample guarantee that P(false-closure rate ≤ α) ≥ 1−δ, run separately for wrong-patient and false-adequate risks.
-    - On 12,600 calibration loops from a separate person split (held-out noise), the 0.98 tier certifies at α = 0.001, δ = 0.05 with 0 false closures and 0 wrong-patient messages. The guarantee covers loops like the calibration set, not real data.
+    - On 12,600 calibration loops from a separate person split (held-out noise), the 0.98 tier certifies at α = 0.001, δ = 0.05 with 1 false closure and 0 wrong-patient messages (0.99 certifies with 0). The guarantee covers loops like the calibration set, not real data.
     - This directly answers "rules were chosen after seeing eval errors". We found no published application to record linkage.
   - **Closure rule, per the CRC standard:** a loop closes only with caecum documented (App 11.2.2), prep graded Excellent or Adequate (App 9.4–9.5, App 14), and, **if tissue was taken**, histology back. A no-polyp, no-biopsy report with those two fields closes as `closed_normal` on the report alone. An ungraded prep stays open as `done_quality_unverified`, and Wasl queries the endoscopy-unit lead, who has 5 working days to reply [A]. With no reply, it escalates to the programme coordinator. If the grade still isn't documented by day 15, a clinician decides between `closed_normal` with a documentation flag and `repeat_required`. This replaces our earlier v7 "ungraded prep can close" assumption.
   - **End-states (CRC 5.5.3, App 5).** A loop closes only into a named state with an owner and a next date:
@@ -220,8 +220,8 @@
 
 | Area | Result |
 |---|---|
-| Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; 4% independent reviewer error; 3 process kills + 1 NATS kill | CRC P 1.000, R 0.961, 0/571 false closures. Cervical 0/217. No review: CRC R 0.232. 20.4 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
-| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.864 (0.855–0.872), **0/2,473 false closures** (UB 0.15%), 0/3,720 wrong-patient messages, 0/2,652 messages without consent, KPI error 0.038 vs EID-only 0.201. Dev v1: R 0.954, 0/2,750. |
+| Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; 4% independent reviewer error; 3 process kills + 1 NATS kill | CRC P 1.000, R 0.970, 0/576 false closures. Cervical 0/219. No review: CRC R 0.258. 19.3 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
+| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.873 (0.862–0.883), **0/2,498 false closures** (UB 0.15%), 0/4,063 wrong-patient messages, 0/2,778 messages without consent, KPI error 0.035 vs EID-only 0.201. Dev v1: R 0.956, 1/2,757 (one wrong-patient link at the 0.989 uncorroborated cap, closed under τ 0.98). |
 | Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. |
 | Rule baselines | EID-only: P 0.834, R 0.364. Any procedure ≤120 d: P 0.661, R 0.431. |
 | v7 gate under the **current closure rule** (ungraded prep stays open; offline, one cohort, 5 seeds × 3 reviewer error rates) | Double review: 0/8,422 false closures (upper bound 0.04%); recall 0.973 / 0.958 / 0.943 at 2 / 4 / 6% error. No-review recall 0.273; 27.0 reviewer-h per 1k loops. Single review: 21 false closures, so double review is mandatory. |

@@ -68,9 +68,9 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 
 | What | Result |
 |---|---|
-| Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills | CRC precision 1.000, recall 0.961, **0/571 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends. |
-| **Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning | Held-out v2 noise: CRC P 1.000, R 0.864 (0.855–0.872), **0/2,473 false closures** (95% UB 0.15%), 0/3,720 wrong-patient messages, 0/2,652 sent without consent, KPI error 0.038 vs EID-only 0.201. Dev noise: R 0.954. |
-| Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise) | τ_close 0.98 certified with 0 false closures and 0 wrong-patient messages: P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. |
+| Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills | CRC precision 1.000, recall 0.970, **0/576 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends. |
+| **Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning | Held-out v2 noise: CRC P 1.000, R 0.873 (0.862–0.883), **0/2,498 false closures** (95% UB 0.15%), 0/4,063 wrong-patient messages, 0/2,778 sent without consent, KPI error 0.035 vs EID-only 0.201. Dev noise: R 0.956, **1/2,757 false closures** (one wrong-patient link at the uncorroborated cap). |
+| Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise) | τ_close 0.98 certified with 1 false closure and 0 wrong-patient messages (0.99 certifies with 0): P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. |
 | Consent hold | 0 messages released without granted permission (stage 3: 0/619 released; 373 held until the grant). |
 | HL7 v2 over MLLP, with connection drops and duplicate re-sends | 30,668/30,668 resources delivered exactly once; 888 duplicate re-sends absorbed; CRC 0/574 false closures. |
 | Local Gemma 3 4B reader, live in the integrated run | CRC P 1.000, R 0.955, 0/567 false closures; histology question 43/43. |

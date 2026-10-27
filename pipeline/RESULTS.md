@@ -434,3 +434,37 @@ Read with care: reader A was written against the same templates it is scored on,
 - **HL7 keeps that order.** The mock HIE sends one arrival-ordered stream, so the gate never has to wait.
 - **The FHIR mock doesn't.** It publishes each provider's feed separately and they drift apart, so a downstream trigger can be processed before the referral and its consent. That is exactly when the hold fires.
 - **Where the hold is tested:** the stage 3 tests and the FHIR runs. The invariant (0 released without granted consent) holds in both paths.
+
+## Final code: frozen evaluation and Learn-then-Test re-run (new encoder chain)
+
+**What was re-run.** Both evaluations were run again on the final code, `ebf85a9`: v7strict, the retrained encoder, the refit scorer and calibrators, and every merged feature (each optional and off by default). They replace the files in [`results/final/`](results/final/SUMMARY.md) and [`results/ltt/`](results/ltt/LTT.md). The earlier stage 7 and LTT sections above describe the previous chain (`45ed3a0`).
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.956 (0.945–0.968) | **1.000 / 0.873 (0.862–0.883)** |
+| CRC false closures (pooled) | **1/2,757** (UB 0.20%) | **0/2,498** (UB 0.15%) |
+| Cervical false closures | 0/1,031 | 0/917 |
+| Wrong-patient messages / messages without consent | 0/3,991 / 0/2,791 | 0/4,063 / 0/2,778 |
+| KPI absolute error, Wasl vs EID-only | 0.008 vs 0.201 | 0.035 vs 0.201 |
+| Linkage pair F1 | 0.979 (was 0.971) | 0.935 (was 0.928) |
+| Duplicates/losses · tamper · forged with effect | 0/92,329 · 85/85 · 0/120 | 0/94,015 · 85/85 · 0/120 |
+
+**The new chain links better.** Held-out recall is up 0.9 pp, linkage F1 is up, and KPI error is down.
+
+**One false closure** (dev noise, seed 37, loop `medlab/ServiceRequest/MED-sr-225`). Its colonoscopy report belonged to a different person.
+- **The link:** a 2-hop path whose weakest edge was a model-only name match (`skmc-endo|SKM-MRN000390` ↔ `noor-endo|NOO-MRN000837`), with no corroborating DOB, sex or surname. Its calibrated p was **0.989**, exactly the cap for uncorroborated pairs.
+- **The evidence:** the readers disagreed, double review signed the report as adequate, and nobody was asked about the *link*.
+- **Why it closed:** v7strict closes at τ_close = 0.98, below the 0.989 cap. So a capped, uncorroborated model link can close a loop, provided the evidence passes.
+- **Why it appeared now:** the new encoder and scorer put more pairs at that cap.
+- **The old chain** never showed this: 0/2,750 and 0/12,600.
+
+**Learn-then-Test on the new chain** (12,600 cal-split loops):
+
+| τ_close | False closures | Recall | Certified |
+|---|---|---|---|
+| 0.99 | **0** | 0.873 | yes |
+| 0.98 | 1 | 0.883 | yes (operating tier under the pre-declared rule) |
+| 0.90 | 3 | 0.886 | yes |
+| 0.70 | 13 | 0.887 | no |
+
+The certificate still holds at 0.98 (1/12,600 is below α = 0.001 at δ/2). But 0.99, the tier that keeps uncorroborated links out of auto-closure entirely, costs about 1 pp of recall and showed 0 false closures in both the calibration and evaluation data. **Open decision:** keep 0.98 (certified, slightly higher recall) or move v7strict to 0.99. Choosing after seeing this error would be a post-hoc change and must be disclosed as one.

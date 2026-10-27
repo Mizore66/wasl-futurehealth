@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-27T04:49:27.187797Z",
- "code_revision": "45ed3a0ee0d4f45813fb5311f839f48d97e12888",
+ "frozen_at": "2026-10-27T18:55:31.515600Z",
+ "code_revision": "ebf85a955ab11b4dea866cdae87475a13402d037",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -27,10 +27,10 @@
  ],
  "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
  "hashes": {
-  "models/encoder_weights.json": "6334a8ae1e010f7995bff75d3d0084e9b353ced502ce78a509fd418d4fba79f0",
-  "models/lgb_stream.json": "0da0141a1574690ae230d7b36d6aa0a21fff3ac2268585cd9c46c60e46a940da",
-  "models/iso.json": "3da130b8091f38c1c1fdfb778f6249868b4692466e624eb5861165cb52e35707",
-  "models/iso_v7.json": "10f051be7a11f30589d3ca58b8cddf34be0c97000b6f61f9ba98910ada27d06a",
+  "models/encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+  "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
+  "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
+  "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
   "models/gemma_cache.json": "3df007c3673992257f44df8c86c6b7a7abc38d44e214d4cfdb3a5d3c0fb250b6",
   "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
   "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
@@ -44,7 +44,5 @@
   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
- ],
- "report_revision": "5bb022a9709406b57bdabd02a7e8a839eb401fce",
- "report_note": "runs executed at code_revision; report7 re-scored from the unchanged run logs at report_revision (forged-effect attribution fix only)"
+ ]
 }

@@ -3,7 +3,7 @@
 # scripts/final_eval.sh), held-out v2 noise, then per-tier loss counts via `wsi7 ltt` (offline replay, same cores).
 # Usage: scripts/ltt_cohorts.sh [seeds...]  (default 101..106) -> pipeline/results/ltt/counts_<seed>.json
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"; B="$ROOT/bin"; W="${WASL_LTT_WORK:-$ROOT/out/ltt}"; R="$ROOT/pipeline/results/ltt"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"; B="$ROOT/bin"; W="${WASL_LTT_WORK:-$ROOT/out/ltt}"; R="${WASL_LTT_DIR:-$ROOT/pipeline/results/ltt}"
 if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(101 102 103 104 105 106); fi
 mkdir -p "$W" "$R"
 one() {
