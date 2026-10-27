@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Download the six HyperKvasir lower-GI classes used by the image reader (~770 MB) + labels + official split.
-# HyperKvasir is CC BY 4.0, but its Terms of Use require prior written permission for competition or commercial use
-# (see image/DATA.md). Use for local research/evaluation only until that permission is obtained.
+# HyperKvasir is CC BY 4.0; its Terms of Use require prior written permission for competition or commercial use.
+# Permission was granted for our hackathon submission (see image/DATA.md); other uses need a new request.
 # Usage: image/download.sh <data_dir>
 set -euo pipefail
 D="${1:?data dir}"; mkdir -p "$D/zips" "$D/img"

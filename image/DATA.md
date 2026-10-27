@@ -1,8 +1,7 @@
 # Image reader data: HyperKvasir
 
-> **Competition use is pending written permission from SimulaMet. The weights are not distributed.**
-> HyperKvasir is licensed CC BY 4.0. The dataset's Terms of Use (GitHub README) also say: "released fully open for research and educational purposes. The use of the dataset for purposes such as competitions and commercial purposes needs prior written permission."
-> A hackathon may count as a competition, and we have not asked for or received that permission.
+> **Competition use: written permission received from the HyperKvasir authors (SimulaMet), October 2026**, for use in our Future Health Challenge 2026 hackathon submission and demo (non-commercial). Any use beyond the hackathon, such as a pilot or a commercial product, needs a new request.
+> HyperKvasir is licensed CC BY 4.0. The dataset's [Terms of Use](https://github.com/simula/hyper-kvasir#terms-of-use) also say: "released fully open for research and educational purposes. The use of the dataset for purposes such as competitions and commercial purposes needs prior written permission."
 >
 > **What this repository commits:** code, download and training scripts, metric results, sha256 hashes, and `models/image_verdicts.json`. That file holds per-image *scores* keyed by sha256, plus the dataset class label, and **no pixels**.
 >

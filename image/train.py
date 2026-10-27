@@ -1,4 +1,4 @@
-"""Train the two hold-only image readers on HyperKvasir (CC BY 4.0; see DATA.md for the competition-use caveat).
+"""Train the two hold-only image readers on HyperKvasir (CC BY 4.0; competition use permitted for our hackathon submission, see DATA.md).
 
   landmark: caecum photo (positive) vs other lower-GI views (retroflex-rectum, polyp, ulcerative-colitis-grade-2)
   prep:     BBPS 2-3 "adequate" (positive) vs BBPS 0-1 "inadequate"

@@ -327,7 +327,7 @@ This is the trade-off the gate is designed to make: lost recall becomes review w
 - Origin-stratified guarantees would need about 3.7k loops per origin. We don't have those yet.
 ## Image evidence reader (third reader, hold-only)
 
-Details are in [`image/RESULTS.md`](../image/RESULTS.md). **HyperKvasir competition use is pending written permission from SimulaMet; weights are not distributed.**
+Details are in [`image/RESULTS.md`](../image/RESULTS.md). **HyperKvasir competition use: written permission received from SimulaMet (October 2026) for this hackathon submission.**
 
 **What it is.** Two MobileNetV3-small CNNs, trained on a near-duplicate-grouped split of HyperKvasir:
 - **landmark:** caecum vs other lower-GI views, AUC 0.998;

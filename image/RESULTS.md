@@ -1,7 +1,6 @@
 # Image evidence reader (third reader, hold-only): results
 
-> **Competition use is pending written permission from SimulaMet; weights are not distributed.** See [DATA.md](DATA.md).
-> HyperKvasir's Terms of Use require prior written permission for competition or commercial use.
+> **Competition use: written permission received from the HyperKvasir authors (SimulaMet), October 2026**, for this hackathon submission (non-commercial). See [DATA.md](DATA.md).
 > Everything below was trained and evaluated locally, for research and evaluation.
 
 **Status:** built (code, training, Go wiring, tests) and evaluated on HyperKvasir held-out images. The pipeline wiring is exercised on a **simulated** cohort whose reports carry synthetic photo references.
@@ -81,7 +80,7 @@ The same cohort was run with photo references attached (`-imgphotos`; photos onl
 - **The photos are synthetic attachments.** Real reports may carry no photos, photos in other stations, or PDFs; we have no UAE photo documentation rates.
 - **No live UAE images were read,** and no clinician validated the labels beyond HyperKvasir's own annotations.
 - **BBPS is binary here** (0–1 vs 2–3, as labelled in HyperKvasir). It is not the per-segment 0–9 score the DoH audit uses.
-- **Permission:** for competition use, the trained weights need SimulaMet's written permission, or retraining on a dataset licensed for that use.
+- **Permission:** granted for this hackathon submission only. A pilot or commercial use needs a new request to SimulaMet.
 
 ## Reproduce (local research/evaluation only)
 ```bash
