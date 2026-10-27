@@ -13,3 +13,4 @@ out/
 .venv*/
 ml-data/
 !models/image/*.pt
+.claude/worktrees/
