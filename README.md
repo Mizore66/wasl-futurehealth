@@ -68,21 +68,21 @@ Outputs go to `out/` (gitignored):
 
 | | Result |
 |---|---|
-| CRC with review | P 1.000, R 0.970, 0/576 false closures |
+| CRC with review | P 1.000, R 0.948, 0/563 false closures |
 | Cervical with review | P 1.000, R 0.991, 0/217 false closures |
-| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.320 |
+| ≤31-day KPI | EID-only 0.124, truth 0.330, Wasl 0.316 |
 | Exactly-once under process + NATS kills | 0 duplicates, 0 final-state mismatches |
 | Tamper | 17/17 attacks detected, 0 false alarms |
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
-**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `ebf85a9`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
-- CRC P 1.000, R 0.873 (95% CI 0.862–0.883).
-- **0/2,498 false closures** (95% upper bound 0.15%).
-- 0/4,063 wrong-patient messages; 0/2,778 messages sent without granted consent.
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `82bceb2`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+- CRC P 1.000, R 0.862 (95% CI 0.858–0.866).
+- **0/2,468 false closures** (95% upper bound 0.15%).
+- 0/4,453 wrong-patient messages; 0/3,032 messages sent without granted consent.
 - KPI error 0.038 vs 0.201 for EID-only tracking.
 
-On dev noise, recall is 0.956 with **1/2,757 false closures**: one wrong-patient link (see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
+On dev noise, recall is 0.945 with 0/2,724 false closures. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Options** (environment variables for `scripts/demo.sh`):
 
@@ -98,7 +98,7 @@ On dev noise, recall is 0.956 with **1/2,757 false closures**: one wrong-patient
 
 | Feature | Result | Status |
 |---|---|---|
-| Learn-then-Test gate | Tier 0.98 certified on 12,600 calibration loops (1 false closure, 0 wrong-patient messages): P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. 0.99 also certifies, with 0 false closures | Built; guarantee covers simulated data only |
+| Learn-then-Test gate | Tier 0.99 certified on 12,600 calibration loops (0 false closures, 0 wrong-patient messages): P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set | Built; guarantee covers simulated data only |
 | Image reader | Caecum AUC 0.998, prep AUC 0.991 on held-out photos; in an integrated run 0/571 false closures and 0 upgrades | Built, hold-only |
 | Lung-nodule loop | 800 loops: P 1.000, R 0.993, 0/297 false closures, Fleischner recommendation accuracy 1.000 | Built on synthetic CT reports |
 | Queue levers | At 1.2 slots per FIT+, direct-to-procedure plus prep targeting adds about +13 pp ≤31-day completion; no lever helps below 1.0 slot | Simulated |

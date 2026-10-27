@@ -20,7 +20,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 **Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. Wasl gets the measured rate within about 1 point of truth, so the levers land on the patients who are actually lost.
 
 **What it is (built and run):**
-- **Streaming backbone:** Go + NATS JetStream. Ingests FHIR R4 and **HL7 v2 over MLLP**. Across 10 frozen-evaluation runs with process and broker kills: 0 of 186,344 outputs duplicated or lost.
+- **Streaming backbone:** Go + NATS JetStream. Ingests FHIR R4 and **HL7 v2 over MLLP**. Across 10 frozen-evaluation runs with process and broker kills: 0 of 201,285 outputs duplicated or lost.
 - **Our own Arabic↔Latin name encoder:** 2.3 MB, in-process. It matches four off-the-shelf models combined (R@10 0.932 vs 0.928) at about 1/100 of the size.
 - **Matching:** deterministic HNSW (1M records, R@10 0.999) plus a LightGBM scorer.
 - **Safety gate:** a loop auto-closes only when the patient link is trusted *and* two evidence readers (DoH rules plus a local Gemma 3 4B) agree. Everything else goes to double human review. The closure threshold is **certified by Learn-then-Test** on a separate calibration split, not hand-tuned.
@@ -35,8 +35,8 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 - **One engine, more loops:** incidental lung nodules (Fleischner 2017) already run on the same engine: 0/297 false closures in an 800-loop run.
 
 **Measured safety (simulated cohorts, honest limits):**
-- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.873, **0/2,498 false closures** (95% upper bound 0.15%); 0/4,063 wrong-patient messages; 0/2,778 messages sent without consent. On the development noise model, one wrong-patient closure in 2,757 (we show it, and the fix).
-- **Learn-then-Test:** the 0.98 closure tier is certified on 12,600 calibration loops (1 false closure; 0.99 certifies with none): P(false-closure and wrong-patient rates ≤ 0.1%) ≥ 95% for loops like the calibration set.
+- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.862, **0/2,468 false closures** (95% upper bound 0.15%); 0/4,453 wrong-patient messages; 0/3,032 messages sent without consent. An earlier run found one wrong-patient closure; we traced it to a name-only link at our confidence cap, raised the closure tier above the cap, and re-ran: zero.
+- **Learn-then-Test:** the 0.99 closure tier is certified on 12,600 calibration loops: P(false-closure and wrong-patient rates ≤ 0.1%) ≥ 95% for loops like the calibration set.
 - Gate under the strict DoH closure rule (5 seeds × 3 reviewer error rates): 0/8,422 false closures with double review. Single review gives 21, so double review is mandatory.
 
 **Deployment and money:**

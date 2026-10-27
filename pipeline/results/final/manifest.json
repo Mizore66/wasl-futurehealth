@@ -1,10 +1,10 @@
 {
- "frozen_at": "2026-10-27T18:55:31.515600Z",
- "code_revision": "ebf85a955ab11b4dea866cdae87475a13402d037",
+ "frozen_at": "2026-10-27T22:05:21.182599Z",
+ "code_revision": "82bceb2c2b978e41c3156bcb3ca0b623c06ac4c5",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
-  "tau_close_v7strict": 0.98,
+  "tau_close_v7strict": 0.99,
   "uncorroborated_cap": 0.989,
   "calibrator": "models/iso_v7.json (stratified)",
   "dob_second_id_guard": true,

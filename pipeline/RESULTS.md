@@ -467,4 +467,23 @@ Read with care: reader A was written against the same templates it is scored on,
 | 0.90 | 3 | 0.886 | yes |
 | 0.70 | 13 | 0.887 | no |
 
-The certificate still holds at 0.98 (1/12,600 is below α = 0.001 at δ/2). But 0.99, the tier that keeps uncorroborated links out of auto-closure entirely, costs about 1 pp of recall and showed 0 false closures in both the calibration and evaluation data. **Open decision:** keep 0.98 (certified, slightly higher recall) or move v7strict to 0.99. Choosing after seeing this error would be a post-hoc change and must be disclosed as one.
+**Decision: τ_close raised to 0.99** (`82bceb2`), above the 0.989 cap. A name-only model link can no longer auto-close a loop alone; it needs corroboration (DOB, sex, surname), an Emirates-ID chain or a human. This change was made *after* seeing the error, and we disclose it as post-hoc. `TestV7StrictTauAboveUncorroboratedCap` pins the tier above the cap. The LTT operating rule gets the same floor; it now selects 0.995, which behaves identically to 0.99 on the calibration data.
+
+**Frozen evaluation at τ 0.99** (`82bceb2`, same seeds; these are the files in `results/final/` now):
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.945 (0.933–0.957) | **1.000 / 0.862 (0.858–0.866)** |
+| CRC false closures (pooled) | **0/2,724** (UB 0.14%) | **0/2,468** (UB 0.15%) |
+| Cervical false closures | 0/1,012 | 0/911 |
+| Wrong-patient messages / messages without consent | 0/4,798 / 0/3,274 | 0/4,453 / 0/3,032 |
+| KPI absolute error, Wasl vs EID-only | 0.011 vs 0.201 | 0.039 vs 0.201 |
+| Reviewer hours per 1k loops | 25.7 | 22.2 |
+| Review-load ratio, max/min origin | 1.16 (1.08–1.24) | 1.18 (1.09–1.27) |
+| Duplicates/losses · tamper · forged with effect | 0/101,747 · 85/85 · 0/120 | 0/99,538 · 85/85 · 0/120 |
+
+**What the change cost:**
+- Recall fell about 1 pp.
+- Review work rose by about 20–35%. Links the new chain would have auto-closed at the cap now go to a human.
+- On held-out noise, the review-load ratio's upper interval (1.27) now crosses the 1.25 fairness limit, although the mean (1.18) is below it.
+- Default one-seed demo: CRC R 0.948, 0/563.
