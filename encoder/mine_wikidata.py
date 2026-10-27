@@ -70,7 +70,8 @@ def main(persons_path, out_path):
     if os.path.exists(out_path):
         for line in open(out_path):
             done.add(json.loads(line)["qid"])
-    todo = [q for q in split if q not in done and q.startswith("Q")]
+    order = {"eval": 0, "dev": 1, "cal": 2, "train": 3}  # held-out splits first: they gate test sets and leakage filters
+    todo = sorted((q for q in split if q not in done and q.startswith("Q")), key=lambda q: order.get(split[q], 4))
     print(f"{len(done)} done, {len(todo)} to fetch", file=sys.stderr)
     with open(out_path, "a") as f:
         for i in range(0, len(todo), 50):
