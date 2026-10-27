@@ -19,36 +19,52 @@ import data  # noqa: E402
 import wenc  # noqa: E402
 
 
-def retrieve(model, q_raw, q_target, gal_raw, ks=(1, 10), dev="cpu"):
-    """q_target[i] = raw gallery string of the query's own person. Returns {R@k}."""
+def retrieve(model, q_raw, q_target, gal_raw, ks=(1, 10), dev="cpu", subset=None):
+    """q_target[i] = raw gallery string of the query's own person. Returns {R@k}, plus {sub_R@k} over the queries
+    flagged in `subset`."""
     gnorm = [wenc.norm_name(g) for g in gal_raw]
     uniq = sorted(set(gnorm))
     idx = {s: i for i, s in enumerate(uniq)}
     G = torch.tensor(model.embed_raw(uniq, dev))
     Q = torch.tensor(model.embed_raw(q_raw, dev))
     tgt = torch.tensor([idx[wenc.norm_name(t)] for t in q_target])
-    hits = {k: 0 for k in ks}
     K = max(ks)
+    hit = {k: [] for k in ks}
     for i in range(0, len(q_raw), 2048):
         s = Q[i:i + 2048] @ G.T
         top = s.topk(min(K, s.shape[1]), dim=1).indices
         t = tgt[i:i + 2048, None]
         for k in ks:
-            hits[k] += int((top[:, :k] == t).any(1).sum())
+            hit[k].append((top[:, :k] == t).any(1))
     n = len(q_raw)
-    return {f"R@{k}": hits[k] / max(n, 1) for k in ks} | {"n": n, "gallery": len(uniq)}
+    hit = {k: torch.cat(v).numpy() if v else np.zeros(0, bool) for k, v in hit.items()}
+    out = {f"R@{k}": float(hit[k].mean()) if n else 0.0 for k in ks} | {"n": n, "gallery": len(uniq)}
+    if subset is not None:
+        m = np.asarray(subset, bool)
+        out |= {f"sub_R@{k}": float(hit[k][m].mean()) if m.any() else 0.0 for k in ks} | {"sub_n": int(m.sum())}
+    return out
 
 
 def real_eval(model, people, split, dev="cpu"):
     q, g_ar, g_lat = data.real_test(people, split)
+    # same-surname subset: the person's canonical surname (last normalised Latin token) is shared by another person
+    # of the split, so the gallery holds same-surname distractors
+    sur = {qid: (wenc.norm_lat(en).split() or [""])[-1] for qid, en in g_lat.items()}
+    cnt = {}
+    for v in sur.values():
+        cnt[v] = cnt.get(v, 0) + 1
     res = {}
     for key, gal in (("lat2ar", g_ar), ("ar2lat", g_lat)):
         qs = q[key]
-        res[key] = retrieve(model, [x for x, _ in qs], [gal[qid] for _, qid in qs], list(gal.values()), dev=dev)
+        res[key] = retrieve(model, [x for x, _ in qs], [gal[qid] for _, qid in qs], list(gal.values()), dev=dev,
+                            subset=[cnt[sur[qid]] > 1 for _, qid in qs])
     n = res["lat2ar"]["n"] + res["ar2lat"]["n"]
+    sn = res["lat2ar"]["sub_n"] + res["ar2lat"]["sub_n"]
     for k in ("R@1", "R@10"):
         res[k] = (res["lat2ar"][k] * res["lat2ar"]["n"] + res["ar2lat"][k] * res["ar2lat"]["n"]) / max(n, 1)
-    res["n"] = n
+        res["same_surname_" + k] = (res["lat2ar"]["sub_" + k] * res["lat2ar"]["sub_n"] +
+                                    res["ar2lat"]["sub_" + k] * res["ar2lat"]["sub_n"]) / max(sn, 1)
+    res["n"], res["same_surname_n"] = n, sn
     return res
 
 
