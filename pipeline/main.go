@@ -136,7 +136,10 @@ func main() {
 		}
 		*v7guard, *evpol = true, "v7strict"
 		if *tauClose == 0 {
-			*tauClose = 0.98
+			// 0.99 > the 0.989 cap on uncorroborated model edges, so a name-only link can never auto-close a loop alone.
+			// Was 0.98 until the final evaluation on the retrained chain found one wrong-patient closure at the cap
+			// (pipeline/RESULTS.md, "Final code"); raised after that finding, disclosed as a post-hoc change.
+			*tauClose = TauV7Strict
 		}
 	case "v7ltt": // v7strict with the closure tier chosen by Learn-then-Test (scripts/ltt_select.py), not by hand
 		if *v7cal == "" {

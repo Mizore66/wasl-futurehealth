@@ -21,7 +21,7 @@ root, out, seeds = sys.argv[1], sys.argv[2], [int(s) for s in sys.argv[3:]]
 h = lambda p: hashlib.sha256(open(os.path.join(root, p), 'rb').read()).hexdigest()
 rev = subprocess.check_output(['git', '-C', root, 'rev-parse', 'HEAD']).decode().strip()
 m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision": rev,
-     "policy": "v7strict", "thresholds": {"tau_high_messaging": 0.99, "tau_close_v7strict": 0.98, "uncorroborated_cap": 0.989, "calibrator": "models/iso_v7.json (stratified)", "dob_second_id_guard": True, "reviewer_error": 0.04, "double_review": "merge+close"},
+     "policy": "v7strict", "thresholds": {"tau_high_messaging": 0.99, "tau_close_v7strict": 0.99, "uncorroborated_cap": 0.989, "calibrator": "models/iso_v7.json (stratified)", "dob_second_id_guard": True, "reviewer_error": 0.04, "double_review": "merge+close"},
      "reader": "cached (Gemma 4 26B answers, sha256-keyed; live 4B reported separately in pipeline/RESULTS.md stage 2)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},

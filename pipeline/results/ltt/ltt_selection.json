@@ -15,7 +15,7 @@
  "modes": {
   "with_review": {
    "loosest_certified_tau_close": 0.8,
-   "operating_tau_close": 0.98,
+   "operating_tau_close": 0.995,
    "table": [
     {
      "tau_close": 0.999,
@@ -157,7 +157,7 @@
   },
   "no_review": {
    "loosest_certified_tau_close": 0.5,
-   "operating_tau_close": 0.7,
+   "operating_tau_close": 0.995,
    "table": [
     {
      "tau_close": 0.999,
