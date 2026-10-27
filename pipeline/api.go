@@ -583,6 +583,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
 		"confirm_contact": ActRecordConsent}[req.Decision]
+	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(req.Decision) != nil { // lung evidence labels (stable, solid/6-8/single, ...)
+		act = ActSignEvidence
+	}
 	if act == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact"}))
 		return
