@@ -273,6 +273,9 @@ func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P 
 			continue
 		}
 		t := tl[ri.kind]
+		if t == nil { // lung CT reports: reported by report7 programmes_live.lung_nodule.two_reader
+			continue
+		}
 		t.n++
 		uniq[ri.kind][ri.sha] = true
 		if ri.v.GemmaHit {

@@ -565,7 +565,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
-			prog = map[string]string{"colposcopy": "cervical"}[e.Category]
+			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -592,6 +592,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	best, weak, hops, pred := L.widestP(s, ms)
 	if V7Cal != nil || V7Guard {
 		f.SRDob = L.recs[s].Dob
+	}
+	if base.Lung != nil {
+		f.Lung = base.Lung
+		f.Down = append(f.Down, lungFindingFacts(L.recs[s])...) // index CT on the referral's own registration
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
@@ -779,7 +783,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}
