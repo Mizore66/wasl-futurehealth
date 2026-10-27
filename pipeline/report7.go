@@ -205,9 +205,9 @@ func crcKPI(tr *Truth, final map[string]*Decision, noRev map[string]*Decision, r
 func report7(data, wasl, run string, P int) {
 	fhir := readLog(filepath.Join(run, "fhir_log.ndjson"))
 	outLog := readLog(filepath.Join(run, "out_log.ndjson"))
-	enc := LoadEncoder(filepath.Join(wasl, "encoder_weights.json"))
-	gbm := LoadGBM(filepath.Join(wasl, "lgb_stream.json"))
-	iso := LoadIso(filepath.Join(wasl, "iso.json"))
+	enc := LoadEncoder(filepath.Join(wasl, mf("encoder_weights.json")))
+	gbm := LoadGBM(filepath.Join(wasl, mf("lgb_stream.json")))
+	iso := LoadIso(filepath.Join(wasl, mf("iso.json")))
 	Judge = LoadJudge2(filepath.Join(wasl, "gemma_cache.json"))
 	Parse = LoadParser(filepath.Join(wasl, "parse_cache.json"))
 	var tr Truth
