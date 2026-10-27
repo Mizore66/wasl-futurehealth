@@ -11,12 +11,12 @@
 | `docs/WRITEUP.md` | Full sourced write-up (≈9.6k words; condense after the build). |
 | `docs/ROADMAP.md` | Roadmap design. |
 
-Measured results live in `pipeline/RESULTS.md`, `pipeline/v7-gate/RESULTS.md`, `booking/RESULTS.md` and `reader/RESULTS-gemma4b.md`.
+Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader, lung nodules), `pipeline/results/final/SUMMARY.md` (frozen evaluation), `booking/RESULTS.md`, `image/RESULTS.md`, `reader/RESULTS-gemma4b.md` and `docs/research/v7-gate-offline-results.md`.
 
-**Status (23 Oct):**
-- **Judging:** we stress-tested the write-up against 5 simulated judge personas (clinician, health system, technical, hackathon veteran, responsible AI) over many blind rounds. Latest mean is **47.2/60** on the official criteria.
-- **What's left:** about 9–11 points per judge are build work. About 1–2.5 points are inherent limits.
-- **Writing:** further writing gains are spent.
+**Status (28 Oct):**
+- **Backend:** all 8 handoff stages are built and pushed (one-command demo, v7 gate, live 4B reader, consent hold, HL7 v2, API, booking, frozen 5-seed eval). The six roadmap depth items are built too: Learn-then-Test gate, image reader, lung-nodule loop, direct-to-procedure and prep-risk levers. The encoder retrain on real name pairs is finishing.
+- **Left:** human double-labelling of the 43 reports (both team members), the Next.js frontend (Kai), the demo video, and condensing the write-up.
+- **Judging (23 Oct, before the build):** 5 simulated judge personas over many blind rounds; latest mean **47.2/60**, with about 9–11 points per judge attributed to build work that is now done.
 
 ## The problem in plain words
 - **The patient.** A woman has a positive stool test (FIT+) at her clinic. Her colonoscopy, if it happens, may be at another hospital, under a Latin spelling of her name, with no Emirates ID. Her clinic never sees it.
@@ -30,7 +30,7 @@ Measured results live in `pipeline/RESULTS.md`, `pipeline/v7-gate/RESULTS.md`, `
   |---|---|
   | EID-only tracking | **12.4%** |
   | Truth | **33.0%** |
-  | Wasl | **31.9%** |
+  | Wasl | **32.0%** |
 
 - **Why it matters: targeting.** Under EID-only tracking:
   - 62% of real completions look lost;
@@ -40,43 +40,46 @@ Measured results live in `pipeline/RESULTS.md`, `pipeline/v7-gate/RESULTS.md`, `
 
 ## What Wasl is
 
-### Built (merged Go codebase and runs)
-- **Streaming backbone:** NATS JetStream with 13 processes and exactly-once decisions. Ingest is a FHIR R4 Subscription from a mock Malaffi.
-- **Self-trained Arabic↔Latin name encoder** (2.3 MB, Go), with deterministic HNSW matching, a LightGBM scorer, and union-find with human merge/split.
-- **Safety gate:** a loop auto-closes only when the patient link is trusted *and* two evidence readers agree. The readers are DoH rules plus Gemma; the local Gemma 3 4B reader is verified. Everything else goes to double human review.
-- **Closure rule from the DoH CRC spec:**
-  - caecum documented;
-  - prep graded;
-  - histology back if tissue was taken.
-- **Named end-states:** normal, surveillance, MDT, specialist, repeat, declined. `suspected_malignancy` never waits for histology.
+### Built (one Go codebase; every item below ran in an integrated NATS run with chaos testing)
+- **Streaming backbone:** NATS JetStream, exactly-once decisions. Two ingest paths: a FHIR R4 Subscription from a mock Malaffi, and **HL7 v2.5.1 over MLLP** (the production-shaped tier).
+- **Self-trained Arabic↔Latin name encoder** (2.3 MB, Go), deterministic HNSW matching, a LightGBM scorer, stratified calibration, union-find with human merge/split.
+- **Safety gate (v7strict):** a loop auto-closes only when the patient link is trusted *and* two evidence readers agree field by field (DoH rules plus Gemma; the local Gemma 3 4B runs live). Messages also need a second identifier (exact DOB) or a human confirmation. Everything else goes to double human review.
+- **Learn-then-Test certification** of the closure tier on a separate calibration split (`-policy v7ltt`).
+- **Hold-only image reader:** caecal-landmark and bowel-prep photos can hold a loop or route it to a one-click endoscopist grade, never close it.
+- **Consent hold:** no message is released until contact permission is granted; opt-outs cancel queued messages.
+- **Closure rule from the DoH CRC spec:** caecum documented, prep graded, histology back if tissue was taken. Named end-states; `suspected_malignancy` never waits for histology.
+- **Second loop type:** incidental lung nodules (Fleischner 2017) on the same engine.
+- **API for the frontend:** materialised run, RBAC, append-only hash-chained review ledger, three deterministic demo fixtures.
 - **Patient layer:** owner-named notices, teach-back, consultation routing, and the rights to contest, opt out and get an explanation.
-- **Governance:** hash-chained provenance, RBAC, a 12-item hazard log, model cards, and a DoH RAI control map (self-classified High risk).
+- **Governance:** hash-chained provenance, tamper detectors, RBAC, a 12-item hazard log, model cards, and a DoH RAI control map (self-classified High risk).
 
 ### Simulated
-- Booking engine (constraint-safe, with overbooking and rebooking).
+- Booking engine as decision support (constraint-safe, overbooking, rebooking), with per-case suggestions.
 - Network pooling.
+- Queue levers: direct-to-procedure (DoH App 9 checklist) and prep-risk targeting (Dik 2015).
 - Cervical programme.
 
 ### Designed (roadmap)
-- **Phase 2, queue control.** Raises completion instead of only measuring it:
-  - direct-to-procedure booking;
-  - prep-failure prevention;
-  - network pooling.
-- **Phase 3, one engine for every follow-up loop:** breast, lung LDCT, incidental nodules, diabetic retinopathy, IFHAS.
-- **Depth:**
-  - image reader (blind-first grading);
-  - Learn-then-Test gate.
+- **Phase 3, more loop types:** breast, lung LDCT, diabetic retinopathy, IFHAS.
 - **Second route:** on-premise deployment for a provider network.
+- Multi-period booking lookahead (the current optimiser ties greedy).
 
 ## Evidence (synthetic cohorts with real Wikidata names; real US report texts)
 
 | What | Result |
 |---|---|
-| Merged run: 1,500 CRC + 600 cervical loops, noisy reviewer, chaos testing | CRC precision 1.000, recall 0.960, **0/570 false closures**. 0/15,769 duplicates or losses. Tamper 17/17 detected. Forged events 24/24 denied. 0 wrong-patient sends. |
-| v7 gate under the strict closure rule (ungraded prep stays open; 5 seeds × 3 reviewer error rates) | Double review: **0/8,422 false closures**, recall 0.94–0.97. No-review recall 0.273. 27 reviewer-h per 1k loops. Single review gives 21 false closures, so double review is mandatory. |
+| Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills | CRC precision 1.000, recall 0.961, **0/571 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends. |
+| **Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning | Held-out v2 noise: CRC P 1.000, R 0.864 (0.855–0.872), **0/2,473 false closures** (95% UB 0.15%), 0/3,720 wrong-patient messages, 0/2,652 sent without consent, KPI error 0.038 vs EID-only 0.201. Dev noise: R 0.954. |
+| Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise) | τ_close 0.98 certified with 0 false closures and 0 wrong-patient messages: P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set. |
+| Consent hold | 0 messages released without granted permission (stage 3: 0/619 released; 373 held until the grant). |
+| HL7 v2 over MLLP, with connection drops and duplicate re-sends | 30,668/30,668 resources delivered exactly once; 888 duplicate re-sends absorbed; CRC 0/574 false closures. |
+| Local Gemma 3 4B reader, live in the integrated run | CRC P 1.000, R 0.955, 0/567 false closures; histology question 43/43. |
+| v7 gate offline sweep (5 seeds × 3 reviewer error rates) | Double review: **0/8,422 false closures**. Single review gives 21, so double review is mandatory. |
+| Image reader (HyperKvasir, grouped held-out split) | Caecum AUC 0.998; prep AUC 0.991 (specificity 0.83, so "adequate" only routes to a human). Integrated: 0/571 false closures, 0 upgrades. |
+| Lung-nodule loop, 800 loops | P 1.000, R 0.993, 0/297 false closures, recommendation accuracy 1.000. |
 | Encoder vs off-the-shelf | R@10 0.932 vs 0.604 (best single) and 0.928 (four combined). The gain over the combination is deployability (2.3 MB vs 236 MB), not accuracy. |
-| Local Gemma 3 4B hybrid reader | 40/43 agreement with the 26B; 0 wrong closures; 7.5 s per report on a laptop. |
-| Booking simulator | 94.5% KPI at 1.5 slots per FIT+. The optimiser ties greedy *even when capacity is scarce* (tested), so we make no optimisation claim. Below 1 slot per FIT+, the queue collapses under any policy. |
+| Booking simulator | 94.5% KPI at 1.5 slots per FIT+. The optimiser ties greedy even when capacity is scarce, so we make no optimisation claim. Below 1 slot per FIT+, the queue collapses under any policy. |
+| Queue levers (simulated) | At 1.2 slots per FIT+: direct-to-procedure plus prep targeting +13 pp ≤31-day completion (93% of draws better). Prep targeting frees about 88 repeat colonoscopies per 1,000. No lever helps below 1.0 slot. |
 | Network pooling, capacity misallocated across regions | ≤31 days for all FIT+ rises from 22.2% (no cross-site booking) to **42.1%** (pooled). No gain when capacity is short overall. |
 | Projection from published trial effects | Day-120 completion 22.5% → 40.7% with automated levers only (+18 pp); the base case uses +13 pp. |
 
@@ -101,21 +104,17 @@ Measured results live in `pipeline/RESULTS.md`, `pipeline/v7-gate/RESULTS.md`, `
 | 9–12 | Contract. Primary: ADHDS vendor agreement (precedents: Orion, VitalHub, Digi7; DoH–ADHDS–Philips AI PoC). Fallback: DoH limited tender. Second door: on-premise for a provider network (HIE 4.3.13.2.1.3). | Contract signed |
 | 12+ | Cervical, then breast, then other loop types | Fixed cost (AED 0.54–1.39M year 1) falls toward ≈AED 5–28 per loop |
 
-## Build plan to 21 Nov (2 devs; code mostly exists in `pipeline/`, `booking/`, `reader/`)
+## Plan to 21 Nov
 
-| Week | Dev A (Go/systems) | Dev B (ML/front end) |
+| Item | Owner | Status |
 |---|---|---|
-| 24–30 Oct | **Merge** the v7 gate, booking and local 4B reader into one pipeline. Code the consent hold. | **Frozen 5-seed eval** with an independent noise generator. Hand-label the 43 reports between you and report κ. |
-| 31 Oct–6 Nov | HL7 v2 MLLP adapter against a mock. Create-if-absent replay ledger. | Queue-lever arms in the booking sim (direct-to-procedure, prep-failure). Learn-then-Test gate on a held-out calibration cohort. |
-| 7–13 Nov | Second loop type (lung nodules / Fleischner) on the same engine. Failover test. | Image reader on HyperKvasir (cecum + BBPS), hold-only wiring. Next.js dashboard and coordinator worklist. |
-| 14–21 Nov | One-command demo, deterministic seed. Record the demo video. | Condense the write-up into the submission document, with real numbers from the build. **Submit by 21 Nov.** |
-
-**If time is short, cut in this order:**
-1. image reader;
-2. second loop type;
-3. Learn-then-Test.
-
-**Never cut:** the merge, the frozen eval, the consent hold, the HL7 adapter.
+| Backend stages 0–7 and the six depth items | Anas (backend) | Done |
+| Encoder retrain on real name pairs | Anas | Finishing |
+| Re-run the frozen 5-seed evaluation on the final code | Anas | After the encoder lands |
+| Next.js dashboard and coordinator worklist on `docs/API.md` | Kai (frontend) | In progress |
+| Human double-labelling of the 43 reports; report κ (`docs/labelling/`) | Both | Not started |
+| Record the 3-minute demo video | Both | After the frontend |
+| Condense the write-up into the submission document | Both | After the final evaluation |
 
 ## 3-minute demo
 1. **0:00–0:30:** the patient story. The dashboard shows 12% under EID-only tracking vs 33% truth. "Here's the evidence behind your KPI, and who to chase."
@@ -130,18 +129,15 @@ Measured results live in `pipeline/RESULTS.md`, `pipeline/v7-gate/RESULTS.md`, `
 
 ## Honest limits (say them out loud)
 - Patients, reviewers, noise and capacity are simulated. No clinician labels.
-- The 43 report texts are LLM-labelled and reused. They will be replaced by a synthetic App 14 corpus.
-- Thresholds were chosen after seeing eval errors. The frozen eval and the Learn-then-Test gate fix this.
-- Two fairness thresholds currently fail:
-  - review-load ratio 1.26 vs the 1.25 limit;
-  - female-list access gap 18 pp vs the 5 pp limit.
-
-  The remedies are designed.
-- 16 messages went out before contact-consent status was known; the hold is being coded.
+- The 43 report texts carry an LLM-produced answer key until the human double-labelling is done. The lung CT reports are synthetic.
+- The Learn-then-Test guarantee covers loops like the synthetic calibration set, not real Abu Dhabi data; a pilot must recalibrate on locally adjudicated loops (≈3.7k).
+- The image reader was trained on Norwegian video frames; UAE stills need local recalibration. Its weights inherit ImageNet's non-commercial terms.
+- Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.
+- Female-list access gap (18 pp vs the 5 pp limit) is not yet re-tested on the current booking engine. The review-load ratio across name origins now passes (1.14 vs 1.25 on held-out noise).
 - Non-English notices are machine-drafted and need professional translation before the pilot.
 
 ## Top risks
 1. **"It's measurement, not care."** Answer: targeting (1 in 4 on the chase list is wrong), queue control, network pooling.
 2. **Synthetic data.** Answer: real names and report texts; frozen eval; we never claim outcomes.
-3. **Malaffi is HL7 v2, not FHIR.** Answer: the HL7 adapter is the primary production tier.
-4. **Build slips.** Answer: follow the cut order above.
+3. **Malaffi is HL7 v2, not FHIR.** Answer: the HL7 v2 MLLP adapter is built and tested under drops and duplicates.
+4. **"Your thresholds were tuned on your test data."** Answer: frozen evaluation on an independent noise model, and a Learn-then-Test certificate on a separate calibration split.

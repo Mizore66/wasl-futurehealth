@@ -9,13 +9,17 @@ A woman has a positive stool test (FIT+) at her clinic. Her colonoscopy, if it h
 
 In Abu Dhabi only **30.5%** of FIT+ patients had a colonoscopy, after a median **72 days**, against a 31-day standard (SEHA, BMC Cancer 2021).
 
-In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reaching colonoscopy within 31 days. The true figure is **33.0%**; Wasl measures **31.9%**. With EID-only tracking, about 1 in 4 patients on the "chase" list have already had their colonoscopy.
+In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reaching colonoscopy within 31 days. The true figure is **33.0%**; Wasl measures **32.0%**. With EID-only tracking, about 1 in 4 patients on the "chase" list have already had their colonoscopy.
 
 ## What Wasl does
 - **Links** a patient's records across providers and scripts (Arabic ↔ Latin), using a self-trained name encoder, HNSW matching and a calibrated scorer.
 - **Closes** a loop only with evidence: two readers (DoH rules plus a local Gemma 3 4B) must agree on the colonoscopy report. Anything uncertain goes to double human review.
 - **Owns every step:** named owner, SLA clocks, teach-back, consultation routing, escalation.
 - **Proves it:** hash-chained provenance for every closure decision.
+- **Certifies its own threshold:** the closure link tier is chosen by Learn-then-Test on a separate calibration cohort, with a finite-sample bound on false closures and wrong-patient messages.
+- **Reads photos too (hold-only):** a third reader checks caecal-landmark and bowel-prep photos. It can hold a loop or route it to a one-click human grade; it can never close one.
+- **Runs more than one loop type:** incidental lung nodules (Fleischner 2017) run on the same engine as CRC and cervical screening.
+- **Suggests the next step:** simulated booking decision support, direct-to-procedure pathways (DoH App 9 checklist) and bowel-prep risk (Dik 2015 score), always as suggestions a clinician confirms.
 
 ## Read first
 
@@ -35,11 +39,13 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 |---|---|---|
 | `pipeline/` | Go + NATS JetStream streaming pipeline: **HL7 v2 MLLP** + FHIR ingest, linker, **v7strict closure gate**, live/cached evidence reader, consent hold, reviewer, provenance, tamper audit | Built; integrated runs in `pipeline/results/` |
 | `booking/` | Constraint-safe booking engine (Python), simulator and network-pooling test; `suggest.py` attaches simulated booking suggestions and the capacity condition to pipeline cases | Simulated decision support (not live scheduling) |
+| `image/` | Hold-only image reader: HyperKvasir training, evaluation, live sidecar. Weights in `models/image/` (published with the dataset authors' permission) | Built; hold-only |
 | `reader/` | Python reference for the hybrid reader prompt (the Go client in `pipeline/reader.go` is canonical) | Reference |
 | `patient-parsers/` | Frozen test sets and scores for the teach-back / e-consult parsers | Evaluated |
 | `projection/` | Before/after uplift projection from published trial effects | Projection, not a result |
 | `models/` | Small model artefacts (isotonic calibrator, cached reader outputs) | |
 | `data/evidence/` | 43 MTSamples colonoscopy reports with answer key; pathology templates | Evaluation only |
+| `data/lung/` | Synthetic CT index-finding and follow-up report corpus with answer key (lung-nodule loop) | Synthetic |
 | `sources/` | DoH CRC/cervical/breast/RAI standards and legal texts (text) | Reference |
 
 ## Build and run
@@ -50,7 +56,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
 ```
 
-The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|booking|report|final`. Then `scripts/demo.sh serve` starts the API for the frontend (see `docs/API.md`).
+The script checks assets and ports before it starts. If anything is missing, it stops with the exact fix. Steps can also be run one at a time: `scripts/demo.sh check|build|test|cohort|run|audit|tamper|booking|report|ltt|final`. Then `scripts/demo.sh serve` starts the API for the frontend (see `docs/API.md`).
 
 Outputs go to `out/` (gitignored):
 - `out/cohort/`: the deterministic synthetic cohort (seed `WASL_SEED`, default 2026);
@@ -78,10 +84,32 @@ Outputs go to `out/` (gitignored):
 
 On dev noise, recall is 0.954. The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
+**Options** (environment variables for `scripts/demo.sh`):
+
+| Variable | Values | What it does |
+|---|---|---|
+| `WASL_POLICY` | `v7strict` (default), `v7ltt`, `v6` | `v7ltt` uses the closure tier certified by Learn-then-Test (`scripts/demo.sh ltt` re-runs the calibration) |
+| `WASL_READER` | `cached` (default), `live` | `live` calls the local Gemma 3 4B reader |
+| `WASL_SOURCE` | `fhir` (default), `hl7` | `hl7` ingests HL7 v2.5.1 over MLLP |
+| `WASL_IMAGE` | `off` (default), `cached`, `live` | Hold-only photo reader |
+| `WASL_LUNG` | `0` (default) or a loop count, e.g. `800` | Adds the incidental lung-nodule programme |
+
+**Beyond the core loop** (each is optional and off by default, so the baseline above is unchanged):
+
+| Feature | Result | Status |
+|---|---|---|
+| Learn-then-Test gate | Tier 0.98 certified on 12,600 calibration loops (0 false closures, 0 wrong-patient messages): P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set | Built; guarantee covers simulated data only |
+| Image reader | Caecum AUC 0.998, prep AUC 0.991 on held-out photos; in an integrated run 0/571 false closures and 0 upgrades | Built, hold-only |
+| Lung-nodule loop | 800 loops: P 1.000, R 0.993, 0/297 false closures, Fleischner recommendation accuracy 1.000 | Built on synthetic CT reports |
+| Queue levers | At 1.2 slots per FIT+, direct-to-procedure plus prep targeting adds about +13 pp ≤31-day completion; no lever helps below 1.0 slot | Simulated |
+
+Details: [`pipeline/RESULTS.md`](pipeline/RESULTS.md), [`image/RESULTS.md`](image/RESULTS.md), [`booking/RESULTS.md`](booking/RESULTS.md), [`pipeline/results/ltt/LTT.md`](pipeline/results/ltt/LTT.md).
+
 **Live local reader:** run `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4`, then `WASL_READER=live scripts/demo.sh`. The default (`cached`) replays recorded Gemma 26B answers and needs no model. Results for both are in `pipeline/RESULTS.md`.
 
 ## Data and honesty
 - Names come from Wikidata (CC0).
+- Endoscopy photos come from HyperKvasir (Borgli et al., *Sci Data* 2020; CC BY 4.0). Competition use is with the authors' written permission.
 - Report texts are MTSamples. The site permits educational use with credit; we use them for evaluation only, and they will be replaced by a synthetic DoH App 14 corpus.
 - **All patients, cohorts, reviewers and capacity are simulated.** No real patient data is used anywhere.
 - Each claim in the docs is marked *built*, *simulated* or *designed*.
