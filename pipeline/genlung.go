@@ -341,7 +341,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			}
 			lt.Lung.FollowUps = append(lt.Lung.FollowUps, id)
 			lt.ScriptHosp = y.script
-			if lt.ProcDay < 0 {
+			if len(lt.Lung.FollowUps) == 1 { // days can be negative here (look-back cohort): -1 is not a usable sentinel
 				lt.ProcDay = t
 			}
 			if lt.Lung.Outcome == "" {

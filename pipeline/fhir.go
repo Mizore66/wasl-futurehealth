@@ -62,7 +62,14 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Cat = gs(xm, "valueString")
 				case "urn:wsi:specimen-date":
 					e.IndexDay = tsToDay(gs(xm, "valueString"))
+				case "urn:wsi:patient-age", "urn:wsi:fleischner-exclusion", "urn:wsi:fleischner-risk":
+					e.Lung = lungSRExt(e.Lung, gs(xm, "url"), gs(xm, "valueString"))
 				}
+			}
+		}
+		if e.Lung != nil {
+			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
+				e.Lung.Finding = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
 			}
 		}
 	case "Communication":
@@ -114,6 +121,8 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
+				case "lung-finding", "lung-ct": // incidental-nodule index CT | follow-up CT (lung.go)
+					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}
 		}

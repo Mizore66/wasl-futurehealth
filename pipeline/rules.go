@@ -62,6 +62,9 @@ func InKPICohort(prog, cat string) bool {
 
 func progOfText(s string) string {
 	s = strings.ToLower(s)
+	if strings.Contains(s, "pulmonary nodule") || strings.Contains(s, "fleischner") {
+		return "lung_nodule"
+	}
 	if strings.Contains(s, "colposcop") || strings.Contains(s, "cervical") {
 		return "cervical"
 	}
