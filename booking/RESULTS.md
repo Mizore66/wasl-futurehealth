@@ -72,3 +72,30 @@ Sensitivity, chosen post hoc: aggressive overbooking (κ=0.6) gives 95.7 [91–9
   - no real Abu Dhabi capacity data;
   - refusal is untouched;
   - completion is about 55%, so the all-FIT+ rate stays well below 90%.
+
+
+## Stage 6: booking as simulated decision support, attached to pipeline cases
+
+`python booking/suggest.py <run dir>` (also run by `scripts/demo.sh all`) writes `<run>/booking.json`.
+
+**How it works:**
+- It takes every CRC case that still needs a colonoscopy at the end of the integrated run (open, no-show, inadequate, referral rejected) and feeds it to the real engine (`booking/engine.py`) on a **synthetic** endoscopy calendar.
+- Constraints are derived from the case: female-endoscopist preference for women, Arabic-only, region from the provider, travel willingness, prior no-show.
+- The API attaches each case's suggestion: `/api/cases/{id}` → `booking`, and `/api/dashboard` → `capacity`.
+
+**Capacity condition** is reported per run:
+- `adequate`
+- `misallocated`: slots exist, but in the wrong region, so **network pooling is relevant**
+- `short_overall`: pooling only spreads the shortage
+
+**Same run, three capacity scenarios** (774 open CRC cases):
+```
+booking (simulated): 774 open CRC cases; capacity adequate (924 slots, 1.19/case); suggested 774, within 31 d 774 (1.0), cross-region 51, no slot 0; pooling relevant: False
+booking (simulated): 774 open CRC cases; capacity misallocated (924 slots, 1.19/case); suggested 774, within 31 d 769 (0.994), cross-region 155, no slot 0; pooling relevant: True
+booking (simulated): 774 open CRC cases; capacity short_overall (612 slots, 0.79/case); suggested 576, within 31 d 325 (0.42), cross-region 55, no slot 198; pooling relevant: False
+```
+
+**What these show:**
+- **Misallocated capacity is absorbed by cross-region suggestions:** 155 vs 51 cross-region bookings, with ≤31-day share 0.994.
+- **When capacity is short overall, about 1 in 4 cases gets no slot within the horizon whatever the routing.** That shortfall is the number DoH needs for planning.
+- **No optimisation claim:** the optimiser ties greedy in our tests.

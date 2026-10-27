@@ -1,11 +1,11 @@
 {
  "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
  "anchors": {
-  "fhir": "8bdf68ae71b383df45fb183511001879df804b940ff6cba376338b6eb3b3d968",
-  "out.p0": "3a13d754c2a316186d522ed66cc58641ef24011d1b2bb0e7de09c46a66c9cb8c",
-  "out.p1": "bfa45f93f6bff06a4bbb2733b581c294f46db5e94ae5f3d2be7931aa05a251bc",
-  "out.p2": "996521b1b2d378903c9c135bce2483b78bf3fa364d48e2a091a7aa04b23acf40",
-  "out.p3": "0c490cec3564426c051dbe859e5dc9ab0964fe3cbb85846c8883237cbef793f9"
+  "fhir": "07fea17bad047ab26eeca8ca52d34cd1efc22e00018cc9507de9054cce6e1636",
+  "out.p0": "2bee9d0a86ec961bb0639642cf9fc041dbb47dedf540ccd6be4c6d40a1a0a565",
+  "out.p1": "e57281ecfe5142442f559021e2dc83d438f794d84612985e06a9c8abc49a28aa",
+  "out.p2": "d2241598a0ab43b48b60300905956eb963a62a498c3dd9fb21761691dbeaef2c",
+  "out.p3": "e0b41ec189e26606a8497150291eda7a90cd4d38adf1355204cf80bac51f67e2"
  },
  "case": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
  "chain": [
@@ -69,13 +69,13 @@
  "chain_verified": true,
  "decision_signatures": [
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27754",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27714",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
    "recomputed": "c25fb887bf5f655482511408438c1ebf2d92878a45d00f0315a4ea86eccd997b",
    "sig": "c25fb887bf5f655482511408438c1ebf2d92878a45d00f0315a4ea86eccd997b"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27799",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@27759",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
    "recomputed": "87d02d2c06d3aad11c84c8801eee44d8d87311b370d571c28586b02b9d450d5a",
    "sig": "87d02d2c06d3aad11c84c8801eee44d8d87311b370d571c28586b02b9d450d5a"
@@ -93,7 +93,7 @@
    "sig": "ba1b3603830505bd2eeda722f0114bf5cc09a28bb9bf4ce122abf42f1af8671f"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@28293",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1021@ahs-mushrif/ServiceRequest/AHS-sr-1021@28253",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
    "recomputed": "28f5e31e622afc7bc413dbfb88bd7d1dabd3eaa4fb0d170feeb04c0cb7fbdbf4",
    "sig": "28f5e31e622afc7bc413dbfb88bd7d1dabd3eaa4fb0d170feeb04c0cb7fbdbf4"
@@ -127,7 +127,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:21:21Z",
+  "loaded_at": "2026-10-27T04:31:43Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.98",
   "reader_model": "gemma-4-26b/cached",

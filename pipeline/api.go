@@ -60,6 +60,7 @@ type apiServer struct {
 	dashboard map[string]interface{}
 	report    map[string]interface{}
 	anchors   map[string]string
+	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
 	fixtures  map[string]string
 	mu        sync.Mutex
 	reviews   []map[string]interface{}
@@ -100,6 +101,7 @@ func loadAPI(run, data string) *apiServer {
 	readJSON("dashboard.json", &s.dashboard)
 	readJSON("report7.json", &s.report)
 	readJSON("anchors.json", &s.anchors)
+	readJSON("booking.json", &s.booking)
 	// decisions (OUT stream log): every decision kept; the last per loop is the current state
 	for _, m := range readLog(filepath.Join(run, "out_log.ndjson")) {
 		oe := decodeEnv(m)
@@ -420,7 +422,7 @@ func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
 		"cases": len(s.cases), "closed": closed, "overdue": overdue, "states": states, "dropoff": drop, "review": review,
 		"by_programme": byProg, "sla": s.dashboard["sla"], "providers": s.dashboard["providers"], "origins": s.dashboard["origins"],
 		"small_cell_rule": s.dashboard["small_cell_rule"], "metrics": rep, "fixtures": s.fixtures,
-		"capacity": map[string]interface{}{"status": "simulated_separately", "see": "booking/RESULTS.md (stage 6 attaches booking suggestions)"},
+		"capacity": s.capacity(),
 	}))
 }
 
@@ -528,7 +530,7 @@ func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "current": c.last,
+		"api_reviews": s.reviewsFor(c.ID), "current": c.last, "booking": s.bookingFor(c.ID),
 	}))
 }
 
@@ -622,4 +624,33 @@ func nz[T any](v []T) []T {
 		return []T{}
 	}
 	return v
+}
+
+// capacity: the booking decision-support summary (simulated) or a pointer to generate it.
+func (s *apiServer) capacity() map[string]interface{} {
+	if s.booking == nil {
+		return map[string]interface{}{"status": "not_generated", "how": "python booking/suggest.py <run dir>", "data_mode": "simulated"}
+	}
+	return map[string]interface{}{"status": "simulated_decision_support", "data_mode": "simulated", "condition": s.booking["capacity"],
+		"summary": s.booking["summary"], "inputs": s.booking["inputs"], "note": s.booking["note"]}
+}
+
+// bookingFor: this case's simulated booking suggestion and the capacity condition that governs it.
+func (s *apiServer) bookingFor(id string) map[string]interface{} {
+	if s.booking == nil {
+		return map[string]interface{}{"status": "not_generated"}
+	}
+	cs, _ := s.booking["cases"].(map[string]interface{})
+	c, ok := cs[id].(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{"status": "not_applicable", "reason": "case does not need a colonoscopy slot at the end of the run", "data_mode": "simulated"}
+	}
+	out := map[string]interface{}{"data_mode": "simulated", "decision_support_only": true}
+	for k, v := range c {
+		out[k] = v
+	}
+	if cap, ok := s.booking["capacity"].(map[string]interface{}); ok {
+		out["capacity_condition"], out["pooling_relevant"], out["pooling_note"] = cap["condition"], cap["pooling_relevant"], cap["pooling_note"]
+	}
+	return out
 }

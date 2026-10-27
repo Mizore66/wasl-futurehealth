@@ -1,5 +1,10 @@
 {
  "api_reviews": [],
+ "booking": {
+  "data_mode": "simulated",
+  "reason": "case does not need a colonoscopy slot at the end of the run",
+  "status": "not_applicable"
+ },
  "case": {
   "closed": true,
   "closed_day": 57.4415,
@@ -21,7 +26,7 @@
  "current": {
   "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@tick-d58-p3",
   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
-  "in_seq": 24039,
+  "in_seq": 23999,
   "prov": "ahs-mushrif",
   "sr_day": 30.836886574074075,
   "now": 58,
@@ -109,10 +114,10 @@
  "decisions": [
   {
    "consent_log": [],
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13093",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13112",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 13093,
+   "in_seq": 13112,
    "overdue": false,
    "owner": "",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -121,10 +126,10 @@
   },
   {
    "consent_log": [],
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13100",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13126",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 13100,
+   "in_seq": 13126,
    "overdue": false,
    "owner": "Practitioner/ahs-mushrif-nurse-2",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -133,10 +138,10 @@
   },
   {
    "consent_log": [],
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13102",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@ahs-mushrif/ServiceRequest/AHS-sr-1007@13130",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 13102,
+   "in_seq": 13130,
    "overdue": false,
    "owner": "Practitioner/ahs-mushrif-nurse-2",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -148,7 +153,7 @@
    "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@tick-d36-p3",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 15172,
+   "in_seq": 16420,
    "overdue": false,
    "owner": "Practitioner/ahs-mushrif-nurse-2",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -160,7 +165,7 @@
    "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@tick-d37-p3",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 15738,
+   "in_seq": 16974,
    "overdue": false,
    "owner": "Practitioner/ahs-mushrif-nurse-2",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -172,7 +177,7 @@
    "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1007@tick-d58-p3",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 24039,
+   "in_seq": 23999,
    "overdue": false,
    "owner": "Practitioner/ahs-mushrif-nurse-2",
    "policy": "v7strict+cal=true+guard=true+tau=0.98",
@@ -232,7 +237,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:21:21Z",
+  "loaded_at": "2026-10-27T04:31:43Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.98",
   "reader_model": "gemma-4-26b/cached",
@@ -249,7 +254,7 @@
    "id": "skmc-endo/ServiceRequest/SKM-intake-428",
    "provider": "skmc-endo",
    "raw_sha": "d3c439425bb09025",
-   "seq": 4958,
+   "seq": 4581,
    "source": "fhir",
    "status": "active",
    "type": "ServiceRequest"
@@ -261,7 +266,7 @@
    "id": "skmc-endo/Appointment/SKM-appt-263",
    "provider": "skmc-endo",
    "raw_sha": "46e92209a260d0b0",
-   "seq": 6549,
+   "seq": 6174,
    "source": "fhir",
    "status": "booked",
    "type": "Appointment"
@@ -273,7 +278,7 @@
    "id": "skmc-endo/Appointment/SKM-appt-263",
    "provider": "skmc-endo",
    "raw_sha": "b1f75ef858408bce",
-   "seq": 9261,
+   "seq": 8937,
    "source": "fhir",
    "status": "fulfilled",
    "type": "Appointment"
@@ -285,7 +290,7 @@
    "id": "skmc-endo/DiagnosticReport/SKM-dr-237",
    "provider": "skmc-endo",
    "raw_sha": "6588443a40b1d485",
-   "seq": 10436,
+   "seq": 10049,
    "source": "fhir",
    "status": "final",
    "type": "DiagnosticReport"
@@ -297,7 +302,7 @@
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
    "provider": "ahs-mushrif",
    "raw_sha": "aedec96eed9ae61f",
-   "seq": 13093,
+   "seq": 13112,
    "source": "fhir",
    "status": "active",
    "type": "ServiceRequest"
@@ -309,7 +314,7 @@
    "id": "ahs-mushrif/Consent/consent-156",
    "provider": "ahs-mushrif",
    "raw_sha": "ee6196431b39c71f",
-   "seq": 13102,
+   "seq": 13130,
    "source": "fhir",
    "status": "permit",
    "type": "Consent"

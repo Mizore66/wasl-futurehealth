@@ -12,8 +12,56 @@
   }
  },
  "capacity": {
-  "see": "booking/RESULTS.md (stage 6 attaches booking suggestions)",
-  "status": "simulated_separately"
+  "condition": {
+   "by_region": {
+    "AA": {
+     "cases": 279,
+     "slots": 324,
+     "slots_per_case": 1.16
+    },
+    "AD": {
+     "cases": 495,
+     "slots": 508,
+     "slots_per_case": 1.03
+    },
+    "DH": {
+     "cases": 0,
+     "slots": 92,
+     "slots_per_case": 0
+    }
+   },
+   "condition": "adequate",
+   "open_cases_needing_slot": 774,
+   "pooling_note": "no capacity constraint at this demand",
+   "pooling_relevant": false,
+   "shortfall_slots": 0,
+   "slots": 924,
+   "slots_per_case": 1.19
+  },
+  "data_mode": "simulated",
+  "inputs": {
+   "capacity_share_by_region": {
+    "AA": 0.35,
+    "AD": 0.55,
+    "DH": 0.1
+   },
+   "misallocated_scenario": false,
+   "run": "v7strict-cached-fhir",
+   "seed": 2026,
+   "slots_per_open_case": 1.2
+  },
+  "note": "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
+  "status": "simulated_decision_support",
+  "summary": {
+   "cross_region": 51,
+   "median_wait_days": 17,
+   "no_slot": 0,
+   "nurse_call": 70,
+   "overbooked": 0,
+   "suggested": 774,
+   "within_31d": 774,
+   "within_31d_share": 1
+  }
  },
  "cases": 2100,
  "closed": 788,
@@ -32,12 +80,12 @@
  "fixtures": {
   "evidence_closure": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
   "false_closure_trap": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
-  "review_hold": "ahs-mushrif/ServiceRequest/AHS-sr-1142"
+  "review_hold": "ahs-mushrif/ServiceRequest/AHS-sr-1474"
  },
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:21:21Z",
+  "loaded_at": "2026-10-27T04:31:43Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.98",
   "reader_model": "gemma-4-26b/cached",
@@ -125,12 +173,12 @@
    }
   },
   "consent_timing": {
-   "intents_cancelled_by_consent": 33,
-   "intents_ever_held_for_consent": 384,
+   "intents_cancelled_by_consent": 30,
+   "intents_ever_held_for_consent": 366,
    "opted_out_loops": 84,
    "released_after_opt_out_on_file": 0,
    "released_before_opt_out_recorded": 0,
-   "released_total": 627,
+   "released_total": 594,
    "released_without_granted_consent": 0
   },
   "crc_kpi_31d": {
@@ -195,7 +243,7 @@
    "tamper_detected": true,
    "with_human_signoff": 407
   },
-  "throughput_ev_s": 688.6645082762936
+  "throughput_ev_s": 740.5464292714761
  },
  "origins": [
   {
@@ -458,8 +506,8 @@
   }
  ],
  "review": {
-  "none": 1122,
-  "signed": 978
+  "none": 1134,
+  "signed": 966
  },
  "sla": {
   "ack_days": 7,

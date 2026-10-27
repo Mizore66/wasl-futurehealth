@@ -23,7 +23,7 @@ func apiFixture(t *testing.T) (*apiServer, *httptest.Server) {
 		t.Skipf("no materialised run at %s (run scripts/demo.sh first)", src)
 	}
 	run := t.TempDir()
-	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "review_queue.json", "reviewer_decisions.ndjson", "anchors.json", "report7.json", "dashboard.json"} {
+	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "review_queue.json", "reviewer_decisions.ndjson", "anchors.json", "report7.json", "dashboard.json", "booking.json"} {
 		b, _ := os.ReadFile(filepath.Join(src, f))
 		os.WriteFile(filepath.Join(run, f), b, 0644)
 	}
@@ -160,5 +160,35 @@ func TestAPIReviewRBACAndAppendOnly(t *testing.T) {
 	_, a := getJ(t, srv.URL+"/api/cases/"+id+"/audit")
 	if len(a["history"].([]interface{})) != 2 {
 		t.Fatalf("audit history should show both review events")
+	}
+}
+
+func TestAPIBookingSupport(t *testing.T) {
+	s, srv := apiFixture(t)
+	defer srv.Close()
+	if s.booking == nil {
+		t.Skip("no booking.json in run (python booking/suggest.py <run>)")
+	}
+	_, d := getJ(t, srv.URL+"/api/dashboard")
+	cap := d["capacity"].(map[string]interface{})
+	if cap["data_mode"] != "simulated" || cap["condition"] == nil {
+		t.Fatalf("dashboard capacity: %v", cap)
+	}
+	// an open CRC case gets a suggestion with the governing capacity condition; a closed one does not
+	var open string
+	for id, c := range s.cases {
+		if c.Programme == "crc" && (c.State == "open" || c.State == "no_show") {
+			open = id
+			break
+		}
+	}
+	_, c := getJ(t, srv.URL+"/api/cases/"+open)
+	b := c["booking"].(map[string]interface{})
+	if b["data_mode"] != "simulated" || b["capacity_condition"] == nil || (b["status"] != "suggested" && b["status"] != "no_slot_within_horizon") {
+		t.Fatalf("open case booking: %v", b)
+	}
+	_, c = getJ(t, srv.URL+"/api/cases/"+s.fixtures["evidence_closure"])
+	if c["booking"].(map[string]interface{})["status"] != "not_applicable" {
+		t.Fatalf("closed case should not get a booking suggestion")
 	}
 }

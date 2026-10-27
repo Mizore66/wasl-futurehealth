@@ -38,19 +38,19 @@
   },
   "review_hold": {
    "closed": true,
-   "closed_day": 69.918,
+   "closed_day": 67.4124,
    "consent": "granted",
    "deadline_day": 31,
-   "decisions": 13,
+   "decisions": 11,
    "dropoff": "",
    "fixture": "review_hold",
-   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1142",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
    "overdue": false,
-   "owner": "Practitioner/ahs-mushrif-nurse-4",
+   "owner": "Practitioner/ahs-mushrif-nurse-3",
    "priority": "",
    "programme": "crc",
    "provider": "ahs-mushrif",
-   "referral_day": 26.9144,
+   "referral_day": 16.9241,
    "review": "signed",
    "state": "closed"
   }
@@ -58,7 +58,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:21:21Z",
+  "loaded_at": "2026-10-27T04:31:43Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.98",
   "reader_model": "gemma-4-26b/cached",
