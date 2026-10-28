@@ -531,7 +531,7 @@ func report7(data, wasl, run string, P int) {
 		"run": run, "loops": total, "loops_by_programme": nLoops,
 		"closure": closure, "programmes_live": analyze6(liveFinal, &tr), "programmes_no_review": analyze6(noRev.final, &tr),
 		"reviewer": review, "outreach_live": gov, "outreach_no_review": govNoRev, "forged": forgedOut, "consent_timing": consentTiming, "dropoff": drop,
-		"crc_kpi_31d": crcKPI(&tr, liveFinal, noRev.final, rules),
+		"crc_kpi_31d": crcKPI(&tr, liveFinal, noRev.final, rules), "patient_side": patientSide(outLog, &tr, liveFinal),
 		"reviewer_cfg": orch["reviewer"], "throughput_ev_s": orch["throughput_ev_s"], "wall_s": orch["wall_s"], "fhir_msgs": orch["fhir_msgs"],
 		"chaos": orch["chaos"], "source": orch["source"], "fhirsub": orch["fhirsub"], "malaffi": orch["malaffi"],
 		"crash_recovery": aud["crash_recovery"], "latency_ms": aud["latency_ms"], "linkage": aud["linkage"], "two_reader": aud["two_reader"],
