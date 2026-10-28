@@ -40,6 +40,7 @@ func readerScore(reportsPath string) map[string]interface{} {
 	byTag := map[string]map[string]int{}
 	unsafeList := []map[string]string{}
 	confusion := map[string]int{}
+	misses := map[string][]string{} // first few field misses per reader, uid:got!=key
 	for _, r := range rf.Reports {
 		if t := r.KeyFields["tissue_taken"]; t != "" { // v3 field: the second reader's "polyps" slot now means any tissue taken
 			r.KeyFields["polyps"] = t
@@ -57,6 +58,8 @@ func readerScore(reportsPath string) map[string]interface{} {
 				fieldAcc[rd][f].n++
 				if m[f] == r.KeyFields[f] {
 					fieldAcc[rd][f].ok++
+				} else if len(misses[rd+"/"+f]) < 8 {
+					misses[rd+"/"+f] = append(misses[rd+"/"+f], r.UID+":"+m[f]+"!="+r.KeyFields[f])
 				}
 			}
 			fieldAcc[rd]["state"].n++
@@ -108,5 +111,5 @@ func readerScore(reportsPath string) map[string]interface{} {
 	return map[string]interface{}{"reports": len(rf.Reports), "reader2_model": Judge.model, "reader2_cache_hits": hits,
 		"field_accuracy_vs_key": acc, "auto_decided": auto, "auto_correct_vs_truth": autoRight,
 		"auto_unsafe_adequate_when_truth_not": unsafe, "auto_wrong_safe_direction": safeWrong, "unsafe": unsafeList,
-		"label_vs_truth": confusion, "by_tag": byTag}
+		"label_vs_truth": confusion, "field_misses": misses, "by_tag": byTag}
 }
