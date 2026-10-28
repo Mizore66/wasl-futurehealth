@@ -104,3 +104,27 @@ func TestV7StrictTauAboveUncorroboratedCap(t *testing.T) {
 		t.Fatalf("v7strict tau %.3f must exceed the uncorroborated cap %.3f, or a name-only link can auto-close a loop", TauV7Strict, UncorrCap)
 	}
 }
+
+// A placeholder DOB only corroborates when every name token agrees; a shared surname is not enough.
+func TestCorroboratedPlaceholderDob(t *testing.T) {
+	feat := make([]float64, 23)
+	feat[13], feat[19], feat[6] = 1, 1, 1
+	rec := func(name, dob string) *Rec {
+		return &Rec{Dob: dob, skel: skeleton(tokensOf(latinForm(name)))}
+	}
+	for _, c := range []struct {
+		a, b, dob string
+		want      bool
+	}{
+		{"Fatima Hassan Ali", "Fatima Hasan Ali", "1979-03-14", true},
+		{"Fatima Hassan Ali", "Mariam Hassan Ali", "1979-03-14", true},
+		{"Fatima Hassan Ali", "Ali Fatima Hassan", "1979-01-01", true},
+		{"Fatima Hassan Ali", "Mariam Hassan Ali", "1979-01-01", false},
+		{"Fatima Ali", "Fatima Ali Hassan", "1979-07-01", false},
+		{"Ali", "Ali", "1979-01-01", false},
+	} {
+		if got := corroborated(rec(c.a, c.dob), rec(c.b, c.dob), feat); got != c.want {
+			t.Errorf("%q vs %q dob %s: corroborated=%v, want %v", c.a, c.b, c.dob, got, c.want)
+		}
+	}
+}
