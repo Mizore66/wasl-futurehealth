@@ -292,11 +292,11 @@ These were listed as out of scope until the gates above passed. After stages 0�
 | Item | Where | Status |
 |---|---|---|
 | Image reader / HyperKvasir | `image/`, `pipeline/image.go`, `-image cached\|live` | Built, hold-only (it can never close a loop); weights published with the dataset authors' permission |
-| Learn-then-Test statistical gate | `pipeline/ltt.go`, `scripts/ltt_*`, `-policy v7ltt` | Built; certifies τ_close = 0.98 on 12,600 cal-split loops |
+| Learn-then-Test statistical gate | `pipeline/ltt.go`, `scripts/ltt_*`, `-policy v7ltt` | Built; operating tier 0.995 (design floor 0.99, above the 0.989 uncorroborated cap), 0 errors on 12,600 cal-split loops |
 | Lung-nodule/Fleischner loop | `pipeline/lung*.go`, `fleischner.go`, `-lung N` | Built on a synthetic CT report corpus |
 | Direct-to-procedure workflow | `booking/booking/levers.py`, `booking/sim/levers_sim.py` | Simulated decision support |
 | Prep-risk model | same (Dik 2015 score) | Simulated decision support; suggestions need a clinician order |
-| Encoder retraining on external Arabic↔Latin data | `encoder/` (branch `feat/encoder-real-pairs`) | In progress: Wikidata + NETransliteration (CC0); JRC-Names and ANETAC rejected on licence |
+| Encoder retraining on external Arabic↔Latin data | `encoder/`, `-modelset v3` | Built and merged: Wikidata + NETransliteration (CC0), real-variant R@1 0.548 → 0.660; JRC-Names and ANETAC rejected on licence |
 
 ## Working conventions
 

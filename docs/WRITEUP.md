@@ -120,9 +120,9 @@
   - **We tested whether optimisation beats greedy when capacity is scarce, and it doesn't.** Capacity sweep at 0.8–1.2 slots per FIT+, 40 draws, plus a 10%-female-list variant: the daily ILP beats greedy by ≤0.5 pp at every level (best case 15.7% vs 13.3%, winning 29/40 draws). Every interval crosses 0.
   - The published 12–16% gains need multi-period lookahead, which we don't do. So we make no optimisation claim.
   - **Below 1.0 slot per FIT+, ≤31-day completion collapses to 0–14% under *any* booking policy.** Only levers that create capacity help there (see "Queue control" below).
-- **Fairness remedies (designed, not yet evaluated):**
-  - reserve female-endoscopist slots (the simulator sweep shows ~91% at 40% of lists);
-  - per-origin gate calibration to equalise review load.
+- **Fairness remedies (built and evaluated):**
+  - Female-list protection in the booking engine: a demand-sized hold on female-list slots, released 7 days out. It cuts the access gap from 18.5 to 12.6 pp at a 15–30% female-list share, to 4.5 pp at 30% and 0.6 pp at 40% (`booking/RESULTS.md`).
+  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.16 (1.09–1.23). Per-origin gate calibration was not needed.
 - **Dashboard:** reported vs evidenced closure per provider; drop-off reasons (never notified, not understood, referral rejected, no-show, inadequate, unlinked); review load by name origin; small-cell suppression.
 - **Governance:**
   - RBAC and consent in code;
@@ -147,9 +147,9 @@
     - H3, missed surveillance interval: clinician confirms.
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
-    - H6, outreach sent before consent: **open gap**.
+    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/3,709 held-out).
     - H7, correlated reviewer error: ρ sweep planned.
-    - H8, unequal burden or access: monitored; the 79% vs 97% gap is open.
+    - H8, unequal burden or access: review-load ratio 1.16 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
     - H10, silent message loss: *measured* 0/15,769.
     - H11, tampering: *measured* 17/17 detected.
@@ -161,7 +161,7 @@
     - **Two separate consent questions:**
       - **Processing the data** (linkage and evidence): no patient consent is needed, because the lawful basis is DoH public-health and QA use (HIE 4.3.12.1, Art. 16).
       - **Contacting the patient** (SMS, WhatsApp or calls): this needs the patient's recorded contact-channel preference and opt-out status from the referring facility, held as a FHIR `Consent` resource or an HL7 PD1/CON segment.
-      - Wasl holds outreach until that status is known, and never contacts a patient who has opted out. The 16 early messages broke this second rule (contact status not yet known), not the first.
+      - Wasl holds outreach until that status is known, and never contacts a patient who has opted out. An early build sent 16 messages before the status was known; the consent hold now prevents this (0 in every frozen run).
   - **Data protection impact (summary).** Each purpose gets only the fields it needs:
 
     | Purpose | Fields |
@@ -230,7 +230,7 @@
 | Encoder vs off-the-shelf | Recall@10 0.932 vs 0.604 (best single) and 0.928 (all four combined). F1 .954 [.950–.958] vs .946 [.942–.951] for the combination. Against the combination, the gain is **deployability, not accuracy**: 2.3 MB in-process Go vs 236 MB across four models plus ONNX/Python, deterministic, and CPU-only. Stacking ours with ICU + Double Metaphone gives R@10 .962. Trained on the eval's noise model. **Upgrade in progress:** retraining on *real* Arabic↔Latin person pairs (Wikidata variants and NETransliteration, both CC0; JRC-Names and ANETAC rejected on licence) with self-mined same-surname hard negatives, tested on held-out real variants. |
 | Scale (synthetic 1M) | HNSW recall@10 0.999; p50 0.42 ms (p99 ≈8 ms under load). |
 | Local inference (43 reports) | Gemma 3 4B hybrid reader, on a laptop with no proxy: 40/43 agreement with the 26B; 0 wrong; 7.5 s/report. Live in the integrated run: CRC P 1.000, R 0.955, 0/567 false closures. |
-| Booking (calibrated to SEHA; capacity assumed) | Over completed colonoscopies: 94.5% at ~1.5 ring-fenced slots per FIT+/yr (status quo 23%; first-available booking 90%, so most of the gain is from booking at all plus capacity). Over all FIT+: 52% (status quo 6%). Optimiser ≈ greedy. Female-endoscopist patients: 79% vs 97%. |
+| Booking (calibrated to SEHA; capacity assumed) | Over completed colonoscopies: 94.5% at ~1.5 ring-fenced slots per FIT+/yr (status quo 23%; first-available booking 90%, so most of the gain is from booking at all plus capacity). Over all FIT+: 52% (status quo 6%). Optimiser ≈ greedy. Female-endoscopist patients: 79% vs 97% without protection; female-list protection narrows the gap to 12.6 pp, and to 0.6 pp at 40% female lists. |
 | Parsers (one non-clinician labeller) | E-consult 100/100 vs keyword 43 (tuned 85). Teach-back 98/100, 0/50 missed escalations. |
 | Report text | 43 US MTSamples (6 not colonoscopies), LLM-labelled key, reused 17–44×. Readers agree on 41/43; 0/455 agreed labels wrong. |
 
@@ -481,7 +481,7 @@
     - ~300 synthetic colonoscopy and pathology reports in the DoH App 14 field layout: indication, prep protocol and quality, extent and landmarks, findings, polyps, interventions, impression.
     - Variation: ungraded prep, incomplete extent, suspicious impressions, mixed Arabic/English, OCR noise.
     - Each is generated from a spec that is its own answer key, written and frozen before any reader is run.
-- 16 messages were sent before the patient's contact-channel consent status was known. Fix designed: hold outreach until the status arrives. Not yet coded.
+- Fixed: an early build sent 16 messages before the patient's contact-channel consent status was known. The consent hold now keeps messages until the status arrives (0 released without consent in every frozen run).
 - Measurement doesn't raise the ~33% true rate; the trial-effect projection reached only 9.8%.
 
 
