@@ -374,7 +374,66 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	for _, it := range newItems {
 		out = append(out, OutMsg{ID: it.ItemID, Kind: "review", Item: it})
 	}
+	if fu := c.surveillanceLoop(f, ld, state, closedDay, fus, now); fu != nil && (ls.lastFU == nil || ls.lastFU.Sig != fu.Sig) {
+		fu.Now, fu.InSeq = now, inSeq
+		fu.ID = fmt.Sprintf("dec-%s@%s", fu.LoopID, mid)
+		ls.lastFU = fu
+		out = append(out, OutMsg{ID: fu.ID, Kind: "decision", Dec: fu})
+	}
 	return out
+}
+
+// surveillanceLoop: a stable follow-up whose Fleischner cell recommends a further CT opens a new loop (<loop>#surv) with
+// its own window and overdue clock. A later trusted, agreed follow-up CT inside the window closes it; growth or a
+// suspicious solid component escalates it. It carries the parent's chain head, so the hand-off is provenance-linked.
+func (c *ClosureCore) surveillanceLoop(f *LoopFacts, ld *LungDecision, parentState string, parentClosed float64, fus []row, now float64) *Decision {
+	if parentState != "closed" || ld.Rec == nil || ld.Rec.NextHi == 0 || ld.Outcome != "stable" {
+		return nil
+	}
+	from := f.SRDay
+	if ld.Rec.NextFrom == "followup" {
+		from = parentClosed
+	}
+	lo, hi := from+float64(ld.Rec.NextLo), from+float64(ld.Rec.NextHi)
+	state, closedDay, closing := "open", 0.0, ""
+	for _, r := range fus {
+		if !r.trusted || r.d.Day <= parentClosed || r.d.Ev == nil || !r.d.Ev.Agree {
+			continue
+		}
+		switch r.d.Ev.Label {
+		case "stable", "resolved":
+			state, closedDay, closing = "closed", r.d.Day, r.d.ReportID
+		case "growing", "suspicious_solid":
+			state = "escalated"
+		}
+		break
+	}
+	id := f.LoopID + "#surv"
+	chain := appendBlock(nil, "surveillance_opened", map[string]interface{}{"loop": id, "parent": f.LoopID, "parent_closing_report": ld.FollowUp,
+		"rule": "fleischner2017", "cell": ld.Rec.Cell, "next_step": ld.Rec.Next, "optional": ld.Rec.NextOpt, "from": ld.Rec.NextFrom,
+		"window": []float64{round4(lo), round4(hi)}})
+	if state == "closed" {
+		chain = appendBlock(chain, "closure_decision", map[string]interface{}{"loop": id, "state": "closed", "programme": "lung_nodule",
+			"rule": "fleischner2017", "closed_day": round4(closedDay), "within_window": closedDay <= hi})
+	}
+	d := &Decision{LoopID: id, Provider: f.Provider, SRDay: parentClosed, State: state, Prog: "lung_nodule", Deadline: hi - parentClosed,
+		ClosingReport: closing, Chain: chain, NotifDay: -1, AckDay: -1, RefStatus: "none", RefDay: -1, ProcDay: -1,
+		Lung: &LungDecision{Scope: "in_scope", Risk: ld.Risk, RiskRecorded: ld.RiskRecorded, Rec: ld.Rec, WindowStart: lo, WindowEnd: hi}}
+	if state == "closed" {
+		d.ClosedDay = closedDay
+	}
+	d.Overdue = state == "open" && now > hi
+	if d.Overdue {
+		d.Escalations = append(d.Escalations, "overdue_lung_nodule_window")
+	}
+	if state == "escalated" {
+		d.Escalations = append(d.Escalations, "refer_specialist_mdt")
+	}
+	d.Dropoff = lungDropoff(state, false)
+	d.Contact = f.Contact
+	d.Policy = PolicyName
+	d.Sig = sha(canon(d))
+	return d
 }
 
 // ---------------- simulated reviewer support (governance.go) ----------------

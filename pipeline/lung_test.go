@@ -152,3 +152,40 @@ func TestLungHumanSignoffResolvesDisagreement(t *testing.T) {
 		t.Fatalf("want open -> closed after sign-off, got %s -> %s (human %v)", d.State, d2.State, d2.HumanAssisted)
 	}
 }
+
+// A stable follow-up whose Fleischner cell recommends a further CT opens a surveillance loop with its own clock.
+func TestLungStableFollowUpOpensSurveillanceLoop(t *testing.T) {
+	f := lungFacts(60, "none", "high", "solid/6-8/single", lungFU("MAF-ct-1", 50, "stable", "eid", 1, false))
+	_, _ = runLung(t, f, 120)
+	run := func(now float64, fus ...DownFact) *Decision {
+		g := lungFacts(60, "none", "high", "solid/6-8/single", append([]DownFact{lungFU("MAF-ct-1", 50, "stable", "eid", 1, false)}, fus...)...)
+		savedCal := V7Cal
+		V7Cal = nil
+		defer func() { V7Cal = savedCal }()
+		c := NewClosureCore(0, nil)
+		c.Apply(&FactsMsg{ID: "f1", InSeq: 1, Facts: g})
+		c.Apply(&FactsMsg{ID: "tick", InSeq: 2, IsTick: true, TickDay: now})
+		return c.Final()[g.LoopID+"#surv"]
+	}
+	d := run(120)
+	if d == nil || d.State != "open" || d.Overdue {
+		t.Fatalf("want an open, not yet overdue surveillance loop, got %+v", d)
+	}
+	lo, hi := -200+float64(months(18)), -200+float64(months(24))
+	if d.Lung.WindowStart != lo || d.Lung.WindowEnd != hi || d.Chain[0].Type != "surveillance_opened" {
+		t.Fatalf("window %v-%v, want %v-%v (from the index CT)", d.Lung.WindowStart, d.Lung.WindowEnd, lo, hi)
+	}
+	if d := run(hi + 1); !d.Overdue {
+		t.Fatal("surveillance loop past its window should be overdue")
+	}
+	if d := run(hi+1, lungFU("MAF-ct-2", lo+10, "stable", "eid", 1, false)); d.State != "closed" || d.ClosingReport != "MAF-ct-2" {
+		t.Fatalf("a stable CT inside the window should close it, got %s", d.State)
+	}
+	if d := run(120, lungFU("MAF-ct-2", 400, "growing", "eid", 1, false)); d.State != "escalated" {
+		t.Fatalf("growth on the surveillance CT should escalate, got %s", d.State)
+	}
+	g := lungFacts(60, "none", "low", "solid/<6/single", lungFU("MAF-ct-1", 50, "stable", "eid", 1, false))
+	if _, ok := func() (*Decision, bool) { c := NewClosureCore(0, nil); c.Apply(&FactsMsg{ID: "f", InSeq: 1, Facts: g}); d, ok := c.Final()[g.LoopID+"#surv"]; return d, ok }(); ok {
+		t.Fatal("no follow-up recommended -> no surveillance loop")
+	}
+}
