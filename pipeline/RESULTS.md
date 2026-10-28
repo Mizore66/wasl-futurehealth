@@ -598,3 +598,26 @@ Read with care: reader A was written against the same templates it is scored on,
 - **Repeat after an unsatisfactory exam:** 6–12 weeks later (DoH 10.6.4). It is booked when the result arrives, using `Event.earliest`.
 - **On the five held-out runs:** 127/127 repeats landed inside the 6–12 week window. First colposcopies landed inside their window 83–88% of the time; most misses are the 14-day urgent windows.
 - **Assumption:** half of colposcopy clinics are run by a female clinician [A].
+
+### H7: correlated reviewer error (`a38d35e`)
+
+**Question:** the double review assumes the two readers make independent mistakes. What happens if they don't?
+- `ReviewerCfg.Rho` (ρ) is the chance that the second (and tie-break) reader copies the first reader's random draw for an item. At ρ=1 both readers make the same mistake on the same item, so a double read catches nothing.
+- **Both the error rate and ρ are assumed stress-test values.** Nothing here is evidence that clinicians err, or err together.
+
+**Run:** one calibration cohort (`ltt5 cal-s101`), v7strict, 5 reviewer seeds per cell, error rates 2/4/6%, ρ 0/0.25/0.5/1. Full table: [`results/h7/H7.md`](results/h7/H7.md).
+
+| Error rate | Single read | Double, ρ=0 | ρ=0.25 | ρ=0.5 | ρ=1 |
+|---|---|---|---|---|---|
+| 2% | 1 / 2,442 | 0 / 3,395 | 0 / 3,396 | 1 / 3,397 | 2 / 3,399 |
+| 4% | 3 / 2,418 | 0 / 3,328 | 1 / 3,331 | 3 / 3,334 | 4 / 3,336 |
+| 6% | 4 / 2,401 | 0 / 3,270 | 1 / 3,277 | 4 / 3,282 | 5 / 3,286 |
+
+(False closures / closures, summed over 5 seeds.)
+
+**What it shows:**
+- Double review removes every false closure only when the two reads are independent.
+- The protection fades fast: at ρ=0.5 the false-closure rate per closure is already close to single review. At ρ=1 it is the same (4% error: 0.12% vs 0.12%).
+- Reviewer hours barely change with ρ (27.5–28.1 per 1k loops), so cost doesn't reveal the problem. Only an audit does.
+
+**So the correlated-error mitigations matter more than the double read itself:** different roles for the two reads, a blinded second read, reviewer-pair rotation, and the 2% weekly senior audit sample, which is how a pilot would measure ρ. The override block (above) covers the worst case, two humans overriding a report that states an inadequacy. It does not cover correlated errors on reports that are silent.

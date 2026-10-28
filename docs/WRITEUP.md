@@ -148,7 +148,7 @@
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
     - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/3,709 held-out).
-    - H7, correlated reviewer error: ρ sweep planned.
+    - H7, correlated reviewer error: mitigations designed (different roles, blinded second read, pair rotation, 2% senior audit). *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
     - H8, unequal burden or access: review-load ratio 1.16 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
     - H10, silent message loss: *measured* 0/15,769.
@@ -240,7 +240,7 @@
 3. 5 fresh seeds on unseen persons.
 4. Report means with 95% intervals.
 5. Pre-committed revert-on-miss.
-6. Correlated-reviewer sensitivity at ρ = 0–1.
+6. Correlated-reviewer sensitivity at ρ = 0–1 (run: `pipeline/results/h7/`).
 
 **Path to pilot:**
 - Delivered as a Malaffi module through ADHDS, inside UAE hosting. ADPHC funds it as KPI assurance; providers pay nothing extra.

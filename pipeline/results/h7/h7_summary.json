@@ -1,0 +1,422 @@
+{
+ "cohort": "ltt5 cal-s101 (synthetic)",
+ "policy": "v7strict",
+ "reviewer_seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "note": "err and rho are assumed stress-test values, not measured clinician rates",
+ "rows": [
+  {
+   "err": 0.02,
+   "double": "merge+close",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3395,
+   "recall_mean": 0.897,
+   "reviewer_h_per_1k": 28.1
+  },
+  {
+   "err": 0.02,
+   "double": "merge+close",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3396,
+   "recall_mean": 0.897,
+   "reviewer_h_per_1k": 28.0
+  },
+  {
+   "err": 0.02,
+   "double": "merge+close",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 3397,
+   "recall_mean": 0.897,
+   "reviewer_h_per_1k": 28.0
+  },
+  {
+   "err": 0.02,
+   "double": "merge+close",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    2
+   ],
+   "closed": 3399,
+   "recall_mean": 0.897,
+   "reviewer_h_per_1k": 27.8
+  },
+  {
+   "err": 0.02,
+   "double": "none",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2442,
+   "recall_mean": 0.645,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.02,
+   "double": "none",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2442,
+   "recall_mean": 0.645,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.02,
+   "double": "none",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2442,
+   "recall_mean": 0.645,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.02,
+   "double": "none",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2442,
+   "recall_mean": 0.645,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.04,
+   "double": "merge+close",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3328,
+   "recall_mean": 0.879,
+   "reviewer_h_per_1k": 28.1
+  },
+  {
+   "err": 0.04,
+   "double": "merge+close",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3331,
+   "recall_mean": 0.88,
+   "reviewer_h_per_1k": 27.9
+  },
+  {
+   "err": 0.04,
+   "double": "merge+close",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 3334,
+   "recall_mean": 0.88,
+   "reviewer_h_per_1k": 27.8
+  },
+  {
+   "err": 0.04,
+   "double": "merge+close",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    2
+   ],
+   "closed": 3336,
+   "recall_mean": 0.88,
+   "reviewer_h_per_1k": 27.5
+  },
+  {
+   "err": 0.04,
+   "double": "none",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2418,
+   "recall_mean": 0.638,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.04,
+   "double": "none",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2418,
+   "recall_mean": 0.638,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.04,
+   "double": "none",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2418,
+   "recall_mean": 0.638,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.04,
+   "double": "none",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    0,
+    1
+   ],
+   "closed": 2418,
+   "recall_mean": 0.638,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.06,
+   "double": "merge+close",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3270,
+   "recall_mean": 0.864,
+   "reviewer_h_per_1k": 28.1
+  },
+  {
+   "err": 0.06,
+   "double": "merge+close",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    1,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3277,
+   "recall_mean": 0.866,
+   "reviewer_h_per_1k": 27.8
+  },
+  {
+   "err": 0.06,
+   "double": "merge+close",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    1
+   ],
+   "closed": 3282,
+   "recall_mean": 0.866,
+   "reviewer_h_per_1k": 27.7
+  },
+  {
+   "err": 0.06,
+   "double": "merge+close",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 5,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    2
+   ],
+   "closed": 3286,
+   "recall_mean": 0.867,
+   "reviewer_h_per_1k": 27.3
+  },
+  {
+   "err": 0.06,
+   "double": "none",
+   "rho": 0,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    1
+   ],
+   "closed": 2401,
+   "recall_mean": 0.633,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.06,
+   "double": "none",
+   "rho": 0.25,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    1
+   ],
+   "closed": 2401,
+   "recall_mean": 0.633,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.06,
+   "double": "none",
+   "rho": 0.5,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    1
+   ],
+   "closed": 2401,
+   "recall_mean": 0.633,
+   "reviewer_h_per_1k": 13.0
+  },
+  {
+   "err": 0.06,
+   "double": "none",
+   "rho": 1,
+   "seeds": 5,
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    2,
+    0,
+    0,
+    1,
+    1
+   ],
+   "closed": 2401,
+   "recall_mean": 0.633,
+   "reviewer_h_per_1k": 13.0
+  }
+ ]
+}
