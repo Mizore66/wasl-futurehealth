@@ -83,7 +83,7 @@ Outputs go to `out/` (gitignored):
 - KPI error 0.035 vs 0.205 for EID-only tracking.
 - Review load across name origins: max/min ratio 1.16 (95% CI 1.10–1.21), under the 1.25 limit.
 
-On dev noise, recall is 0.948 with 0/2,703 CRC false closures (one cervical false closure, 1/1,008, from a simulated double clinician error). The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
+On dev noise, recall is 0.948 with 0/2,703 CRC false closures (one cervical false closure, 1/1,008: both simulated reviewers erred at an assumed 4% error rate; the override block now holds such a case for confirmation). The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Options** (environment variables for `scripts/demo.sh`):
 
