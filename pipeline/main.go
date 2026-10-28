@@ -492,10 +492,15 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	// encryption at rest (ChaCha20-Poly1305) for every JetStream store, stream and KV. The key comes from WASL_JS_KEY (a
 	// deployment keeps it in a KMS/HSM); the demo makes a random one per run and passes it only through the environment,
 	// never into the run directory, so the on-disk stores are unreadable without it.
+	// The nats-server config parser reads the substituted value as a token: one that starts with a digit is taken as a
+	// number and the server refuses to start, so the key must start with a letter.
 	if os.Getenv("WASL_JS_KEY") == "" {
 		k := make([]byte, 32)
 		crand.Read(k)
-		os.Setenv("WASL_JS_KEY", hex.EncodeToString(k))
+		os.Setenv("WASL_JS_KEY", "k"+hex.EncodeToString(k))
+	}
+	if c := os.Getenv("WASL_JS_KEY")[0]; !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
+		panic("WASL_JS_KEY must start with a letter (nats-server parses a leading digit as a number)")
 	}
 	natsBin := filepath.Join(filepath.Dir(self), "..", "bin", "nats-server")
 	for i := 0; i < 3; i++ {
