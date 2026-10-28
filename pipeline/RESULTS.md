@@ -469,7 +469,7 @@ Read with care: reader A was written against the same templates it is scored on,
 
 **Decision: τ_close raised to 0.99** (`82bceb2`), above the 0.989 cap. A name-only model link can no longer auto-close a loop alone; it needs corroboration (DOB, sex, surname), an Emirates-ID chain or a human. This change was made *after* seeing the error, and we disclose it as post-hoc. `TestV7StrictTauAboveUncorroboratedCap` pins the tier above the cap. The LTT operating rule gets the same floor; it now selects 0.995, which behaves identically to 0.99 on the calibration data.
 
-**Frozen evaluation at τ 0.99** (`82bceb2`, same seeds; these are the files in `results/final/` now):
+**Frozen evaluation at τ 0.99** (`82bceb2`, same seeds; superseded by the fairness fix below):
 
 | | v1 noise (dev) | **v2 noise (held out)** |
 |---|---|---|
@@ -485,5 +485,37 @@ Read with care: reader A was written against the same templates it is scored on,
 **What the change cost:**
 - Recall fell about 1 pp.
 - Review work rose by about 20–35%. Links the new chain would have auto-closed at the cap now go to a human.
-- On held-out noise, the review-load ratio's upper interval (1.27) now crosses the 1.25 fairness limit, although the mean (1.18) is below it.
+- On held-out noise, the review-load ratio's upper interval (1.27) crossed the 1.25 fairness limit, although the mean (1.18) was below it. The fix below brings it back under.
 - Default one-seed demo: CRC R 0.948, 0/563.
+
+### Fairness fix: placeholder birth dates (`cab895f`)
+
+**Why Arab patients got more link reviews.** On held-out seed v2-s11 they had 46 link items per 100 loops vs 34 for Western patients.
+- **Ruled out:** the share of loops needing a model link (≈63% for every origin), cross-script pairs (≈50% of items everywhere) and registrations per person.
+- **The cause:** placeholder birth dates (1 Jan / 1 Jul). They make up 26% of Arab patients, 18% South Asian, 11% Western and 8% Filipino.
+  - The gate correctly refuses a placeholder DOB as corroboration, because many people share it.
+  - So exact-DOB agreement on true non-EID pairs was 0.38 for Arab patients vs 0.52 for Filipino patients, and fewer Arab links could auto-close.
+
+**The fix.** A placeholder DOB now corroborates only when every name token agrees (same set of at least two skeleton tokens, any order), with the same sex.
+- **How the rule was chosen:** on the persons3 `cal` split only (cohorts 101–106), never the eval seeds.
+- **Calibration result:** 840 true pairs, 0 false. The existing surname-only rule had 3 false raw pairs on the same data.
+- **Test:** `TestCorroboratedPlaceholderDob`.
+
+**Frozen evaluation at `cab895f`** (same seeds; these are the files in `results/final/` now):
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.947 (0.934–0.959) | **1.000 / 0.864 (0.859–0.870)** |
+| CRC recall without review | 0.196 (was 0.184) | 0.184 (was 0.166) |
+| CRC false closures (pooled) | **0/2,728** (UB 0.14%) | **0/2,475** (UB 0.15%) |
+| Cervical false closures | 0/1,014 | 0/911 |
+| Wrong-patient messages / messages without consent | 0/4,904 / 0/3,278 | 0/3,686 / 0/2,650 |
+| Reviewer hours per 1k loops | 25.0 (was 25.7) | **20.8 (was 22.2)** |
+| Review-load ratio, max/min origin | 1.15 (1.09–1.20) | **1.14 (1.07–1.21)**, was 1.18 (1.09–1.27) |
+| Duplicates/losses · tamper · forged with effect | 0/101,413 · 85/85 · 0/120 | 0/95,868 · 85/85 · 0/120 |
+
+**Result.** The review-load ratio's upper interval is now under the 1.25 limit on both noise models. Safety is unchanged: 0 false closures and 0 wrong-patient messages. Reviewer work fell about 6%.
+
+**Caveat on message counts.** Fewer v2 messages were released (3,686 vs 4,453), but the change did not cause this.
+- Outreach intents are counted before any gate, and they track each run's ingest order under chaos. These v2 runs were slower: the linker had processed 1.9k vs 4.1k events at the first kill.
+- Replaying the same run log with the old binary gives the same intent count (664 for v2-s41).

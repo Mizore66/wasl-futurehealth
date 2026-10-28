@@ -55,7 +55,7 @@ for noise in v1 v2; do
     (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$ROOT/models" -run "$R" -ann hnsw -dual -policy v7strict > /dev/null)
     mkdir -p "$FINAL/$tag"
     cp "$R/report7.json" "$R/tamper.json" "$FINAL/$tag/"
-    sed -i.bak "s#$ROOT/#./#g" "$FINAL/$tag/report7.json" "$FINAL/$tag/tamper.json" && rm -f "$FINAL/$tag/"*.bak   # no local paths in committed results
+    sed -i.bak -e "s#$WORK/#./out/final/#g" -e "s#$ROOT/#./#g" "$FINAL/$tag/report7.json" "$FINAL/$tag/tamper.json" && rm -f "$FINAL/$tag/"*.bak   # no local paths in committed results
     python3 "$ROOT/scripts/summary.py" "$R/report7.json" > "$FINAL/$tag/summary.txt"
     echo "done $tag: $(sed -n 2p "$FINAL/$tag/summary.txt")"
     rm -rf "$O/run/main/nats-"* "$O/run/base"   # keep logs, drop NATS stores
