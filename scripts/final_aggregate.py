@@ -73,6 +73,12 @@ for noise in ["v1", "v2"]:
         pool["tamper_attacks"] += len(att); pool["tamper_detected"] += sum(a['detected'] for a in att)
         pool["tamper_false_alarm"] += sum(a['detected'] for a in t['attacks'] if a['attacker'] == '-')
         m["throughput_ev_s"].append(r['throughput_ev_s'])
+        ps = r.get('patient_side')
+        if ps:
+            m["stalled_days_after_deadline_flagged_median"].append(ps['days_after_deadline_flagged_median'])
+            m["stalled_days_before_deadline_first_escalation_median"].append(ps['days_before_deadline_first_escalation_median'])
+            m["stalled_share_flagged"].append(ps['stalled_flagged_overdue'] / max(1, ps['stalled_loops_truth']))
+            m["results_within_21d_agreement"].append(ps['results_communicated_within_21d_agreement'])
     agg = {k: ci(v) for k, v in m.items()}
     safety = {
         "crc_false_closures": [pool["crc_false_closures"], pool["crc_closed"], cp_ub(pool["crc_false_closures"], pool["crc_closed"])],
