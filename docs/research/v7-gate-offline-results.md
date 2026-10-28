@@ -81,4 +81,4 @@ Eval bins, as n / observed-true / wrong:
 ## Limits
 - The corroboration rule and τ were chosen after inspecting the eval; the cal split agrees, but a fresh split is needed.
 - R2 is an interpretation of the rules.
-- Data are synthetic, and reviewer errors are modelled as independent.
+- Data are synthetic, and reviewer errors here are modelled as independent. With correlated errors the double-review benefit fades (H7, `pipeline/results/h7/H7.md`).

@@ -18,17 +18,17 @@ Only 3.3.1.2.2.2 is specific to High risk; 3.1.8 also covers "high-impact" syste
 |---|---|---|
 | 3.3.1.2.2.2 High risk: "conformity assessments both prior to and following deployment", with DDGO | Pilot step | **Gap** |
 | 3.1.8 "Sustainability impact assessments… high-impact AI" | 0.74 H100-h/1k loops (S); no energy report | **Gap** |
-| 3.3.1.1.1–3, 3.3.1.4.1 Risk register, owners, communicate to DoH | None | **Gap** |
+| 3.3.1.1.1–3, 3.3.1.4.1 Risk register, owners, communicate to DoH | Hazard log H1–H12 with controls and owner roles (WRITEUP §RAI) | **Evidence** |
 | 3.1.1.2.1–2 Human-in-the-loop, escalation | CRC recall 0.242 without review, 0.960 with; 0/570 false closures (M) | **Evidence** |
 | 3.1.1.1.1 Co-design with clinicians and patients | None | **Gap** |
 | 3.1.2.1.1–2 Robustness, degradation | 0/15,769 duplicates or losses across 4 kills (M) | **Evidence** |
 | 3.1.2.1.3–4, 3.1.3.1.3–4, 3.2.3.3 Monitoring, alerts | Triggers in §2 | **Designed** |
-| 3.1.3.1.1–2 Validation, diverse data | Synthetic data, one seed; 5-seed frozen protocol pending | **Evidence (synthetic)** |
+| 3.1.3.1.1–2 Validation, diverse data | Synthetic data; frozen 5-seed × 2-noise-model evaluation run (`pipeline/results/final`) | **Evidence (synthetic)** |
 | 3.1.3.1.5, 3.1.6.2.3, 3.1.7.1.3, 3.1.7.2.3 Traceability, override | Hash-chained audit; tamper 17/17 (GOV) | **Evidence** |
 | 3.1.4.2.1–3 RBAC, MFA | 24/24 forged events denied (GOV); MFA not built | **Evidence / Gap** |
 | 3.1.4.3.1 Secure code review | None | **Gap** |
-| 3.1.4.4.1, 3.1.6.1.3 Privacy, opt-out | 0 sends after opt-out; 16 before Consent arrived, fix not coded (M) | **Evidence / Gap** |
-| 3.1.4.4.2 Encryption; "Production data shall not be used to train" | Public and synthetic training data only; encryption not built | **Evidence / Gap** |
+| 3.1.4.4.1, 3.1.6.1.3 Privacy, opt-out | 0 sends after opt-out; consent hold built, 0 sends without granted consent in every frozen run (M) | **Evidence** |
+| 3.1.4.4.2 Encryption; "Production data shall not be used to train" | Public and synthetic training data only; JetStream store encrypted at rest (ChaCha20-Poly1305, key from env/HSM), no plaintext identifiers on disk (M); TLS in transit not yet configured | **Evidence / Gap** |
 | 3.1.4.4.3 Anonymisation, DP, federated learning | Linkage needs identifiers | **Gap** |
 | 3.1.4.5.1 Compute in the UAE | Local 4B reader (G4); the 26B used a proxy | **Designed** |
 | 3.1.4.5.2–3, 3.1.4.6 Network, IDS, physical | Assumed from ADHDS hosting | **Gap** |
