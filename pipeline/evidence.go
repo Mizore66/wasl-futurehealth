@@ -7,6 +7,7 @@ package main
 // A report verdict is trusted only if both readers return the same (state, reason). Anything else -> review.
 // The judge runs in the stateless prep stage, so the live pipeline and the audit replay compute identical verdicts.
 import (
+	"fmt"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -51,8 +52,15 @@ var (
 	reCaecYes  = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)|ileoc(?:a)?ecal|terminal ileum|appendiceal orifice`)
 	reScope    = regexp.MustCompile(`(?i)colonoscop|scope`)
 	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory)`)
-	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|fair|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|fair|satisfactory)|well[- ]prep|boston bowel prep[^.]{0,20}\d`)
+	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|fair|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|fair|satisfactory)|well[- ]prep`)
 	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved)|(?:removed|resected|excised|snared)[^.]{0,60}polyp`)
+	// v3 (after the App 14 corpus, disclosed): "tissue taken" = a polyp removed OR any biopsy (DoH: if tissue was taken,
+	// histology must be back), and a Boston score is graded by its numbers (adequate = total >= 6 with every segment >= 2).
+	reBiopsy   = regexp.MustCompile(`(?i)biops(?:y|ies)[^.]{0,60}(?:taken|obtained|performed|sent|done)|(?:took|taken|obtained|performed)[^.]{0,40}biops`)
+	reNoBiopsy = regexp.MustCompile(`(?i)\bno biops`)
+	reBBPS     = regexp.MustCompile(`(?i)(?:boston bowel prep[a-z]* scale|bbps)[^0-9.]{0,15}(\d{1,2})(?:\s*/\s*9)?`)
+	reBBPSSeg  = regexp.MustCompile(`(?i)(right|transverse|left)\s*(?:colon\s*)?[:=]?\s*(\d)\b`)
+	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
 
@@ -65,7 +73,9 @@ func regexFields(t string) (c, p, po, h string) {
 	default:
 		c = "not_stated"
 	}
-	switch {
+	switch g := bbpsGrade(t); {
+	case g != "":
+		p = g
 	case rePrepBad.MatchString(t):
 		p = "inadequate"
 	case rePrepOK.MatchString(t):
@@ -74,13 +84,52 @@ func regexFields(t string) (c, p, po, h string) {
 		p = "not_stated"
 	}
 	po, h = "no", "no"
-	if rePolyps.MatchString(t) {
-		po = "yes"
+	if rePolyps.MatchString(t) || reBiopsy.MatchString(t) && !reNoBiopsy.MatchString(t) {
+		po = "yes" // tissue taken (v3)
 	}
 	if reHisto.MatchString(t) {
 		h = "yes"
 	}
 	return
+}
+
+// bbpsGrade: "" if no Boston score is written, else adequate (total >= 6 and every listed segment >= 2) or inadequate.
+func bbpsGrade(t string) string {
+	m := reBBPS.FindStringSubmatchIndex(t)
+	if m == nil {
+		return ""
+	}
+	total := 0
+	fmt.Sscan(t[m[2]:m[3]], &total)
+	if total > 9 {
+		return ""
+	}
+	ok := total >= 6
+	tail := t[m[1]:]
+	if len(tail) > 80 {
+		tail = tail[:80]
+	}
+	for _, s := range reBBPSSeg.FindAllStringSubmatch(tail, -1) {
+		if s[2] < "2" {
+			ok = false
+		}
+	}
+	if ok {
+		return "adequate"
+	}
+	return "inadequate"
+}
+
+// checkPrepQuote: code-side check of the second reader's prep answer against its own quote. A Boston score in the quote
+// decides the grade; "adequate" with a quote that holds no grade word or score (e.g. only the product name) is not_stated.
+func checkPrepQuote(prep, quote string) string {
+	if g := bbpsGrade(quote); g != "" {
+		return g
+	}
+	if prep == "adequate" && quote != "" && !reGradeWd.MatchString(quote) {
+		return "not_stated"
+	}
+	return prep
 }
 
 // dohState: DoH-style closure rules (identical to ws-students make_labels_human.state).
@@ -156,6 +205,9 @@ func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 	} else {
 		g, ok = j.cache[textSha(text)]
 		v.Model = j.model
+		if ok && g.Quotes != nil {
+			g.Prep = checkPrepQuote(g.Prep, g.Quotes["prep"])
+		}
 	}
 	v.GemmaHit = ok
 	if !ok {

@@ -25,9 +25,9 @@ def ask(sha):
                                         {"Content-Type": "application/json", "Authorization": "Bearer " + KEY})
             j = pj(json.load(urllib.request.urlopen(rq, timeout=300))["choices"][0]["message"]["content"])
             if j.get("caecum_reached") in ("yes", "no", "not_stated") and j.get("prep") in ("adequate", "inadequate", "not_stated"):
-                q = {"caecum": j.get("caecum_quote", ""), "prep": j.get("prep_quote", ""), "polyps": j.get("polyps_quote", ""),
+                q = {"caecum": j.get("caecum_quote", ""), "prep": j.get("prep_quote", ""), "polyps": j.get("tissue_quote", ""),
                      "histology": j.get("histology_quote", "")}
-                return sha, {"caecum": j["caecum_reached"], "prep": j["prep"], "polyps": j.get("polyps_removed", "no"),
+                return sha, {"caecum": j["caecum_reached"], "prep": j["prep"], "polyps": j.get("tissue_taken", "no"),
                              "histology": j.get("histology_present", "no"), "quote": q["caecum"], "quotes": q}
         except Exception as e:  # noqa: BLE001
             print(sha[:8], "retry", attempt, str(e)[:80], file=sys.stderr)
