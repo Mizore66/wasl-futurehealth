@@ -1,7 +1,7 @@
 {
  "manifest": {
-  "frozen_at": "2026-10-28T02:11:37.720931Z",
-  "code_revision": "cab895f295fc0cb8b10cd8b4f7458d88b368f075",
+  "frozen_at": "2026-10-28T03:35:34.711234Z",
+  "code_revision": "a66b6a254c3cef92204a648637e82c582b71ebda",
   "policy": "v7strict",
   "thresholds": {
    "tau_high_messaging": 0.99,
@@ -45,7 +45,11 @@
    "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
    "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
    "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
-  ]
+  ],
+  "rescored": {
+   "report_code_revision": "f7e5cf1",
+   "why": "report7 counted messages suppressed by a patient's genuine opt-out as the effect of a forged (RBAC-denied) consent denial on that patient; pipeline runs unchanged, only report7 re-run"
+  }
  },
  "by_noise": {
   "v1": {
@@ -57,150 +61,150 @@
      1.0
     ],
     "crc_recall": [
-     0.9466,
-     0.9344,
-     0.9588
+     0.948,
+     0.9396,
+     0.9564
     ],
     "crc_recall_no_review": [
-     0.1956,
-     0.1723,
-     0.2189
+     0.19,
+     0.1704,
+     0.2096
     ],
     "cervical_precision": [
-     1,
-     1.0,
-     1.0
+     0.999,
+     0.9962,
+     1.0018
     ],
     "cervical_recall": [
-     0.9616,
-     0.9396,
-     0.9836
+     0.9706,
+     0.9531,
+     0.9881
     ],
     "cervical_recall_no_review": [
-     0.5488,
-     0.5022,
-     0.5954
+     0.5546,
+     0.507,
+     0.6022
     ],
     "kpi_wasl": [
-     0.3172,
-     0.2984,
-     0.336
+     0.3216,
+     0.2952,
+     0.348
     ],
     "kpi_truth": [
-     0.3282,
-     0.3114,
-     0.345
+     0.3312,
+     0.3022,
+     0.3602
     ],
     "kpi_eid_only": [
-     0.1274,
-     0.1193,
-     0.1355
+     0.1238,
+     0.1093,
+     0.1383
     ],
     "kpi_abs_error_wasl": [
-     0.011,
-     0.0088,
-     0.0132
+     0.0096,
+     0.0058,
+     0.0134
     ],
     "kpi_abs_error_eid_only": [
-     0.2008,
-     0.1917,
-     0.2099
+     0.2074,
+     0.1857,
+     0.2291
     ],
     "linkage_pair_f1": [
-     0.9736,
-     0.9713,
-     0.9759
+     0.9788,
+     0.9737,
+     0.9839
     ],
     "reviewer_h_per_1k": [
-     24.9774,
-     24.2319,
-     25.7229
+     25.846,
+     24.8163,
+     26.8757
     ],
     "review_items_per_100_loops": [
-     71.5238,
-     69.8614,
-     73.1862
+     74.495,
+     71.5944,
+     77.3956
     ],
     "review_items_per_100_arab": [
-     74.0894,
-     71.8033,
-     76.3755
+     76.416,
+     71.5296,
+     81.3024
     ],
     "reviewer_h_per_1k_arab": [
-     25.4982,
-     24.4209,
-     26.5755
+     26.6114,
+     24.937,
+     28.2858
     ],
     "review_items_per_100_filipino": [
-     68.8218,
-     62.4357,
-     75.2079
+     66.2554,
+     63.6499,
+     68.8609
     ],
     "reviewer_h_per_1k_filipino": [
-     24.812,
-     23.0757,
-     26.5483
+     24.1558,
+     21.9817,
+     26.3299
     ],
     "review_items_per_100_south_asian": [
-     66.3672,
-     62.178,
-     70.5564
+     74.6774,
+     72.4497,
+     76.9051
     ],
     "reviewer_h_per_1k_south_asian": [
-     23.2728,
-     21.8028,
-     24.7428
+     25.5874,
+     24.8905,
+     26.2843
     ],
     "review_items_per_100_western": [
-     71.3932,
-     68.4381,
-     74.3483
+     72.6122,
+     68.7446,
+     76.4798
     ],
     "reviewer_h_per_1k_western": [
-     25.7324,
-     24.7038,
-     26.761
+     24.6946,
+     22.9336,
+     26.4556
     ],
     "review_load_ratio_max_min_origin": [
-     1.145,
-     1.0886,
-     1.2015
+     1.1693,
+     1.0885,
+     1.2502
     ],
     "throughput_ev_s": [
-     708.7567,
-     674.5917,
-     742.9218
+     678.1907,
+     612.986,
+     743.3955
     ]
    },
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     2728,
-     0.00135
+     2703,
+     0.00136
     ],
     "cervical_false_closures": [
-     0,
-     1014,
-     0.00363
+     1,
+     1008,
+     0.00551
     ],
     "wrong_patient_released": [
      0,
-     4904,
-     0.00075
+     5160,
+     0.00071
     ],
     "released_without_granted_consent": [
      0,
-     3278,
-     0.00112
+     3638,
+     0.00101
     ],
     "duplicate_or_lost_outputs": [
      0,
-     101413,
+     99302,
      4e-05
     ],
     "ingest_lost_or_duplicated": [
      0,
-     153118,
+     153646,
      null
     ],
     "final_state_mismatch_loops": [
@@ -210,11 +214,16 @@
     ],
     "forged_with_effect": [
      0,
-     120,
+     114,
      null
     ],
     "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
      0,
+     null,
+     null
+    ],
+    "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
+     2,
      null,
      null
     ],
@@ -239,14 +248,14 @@
      1.0
     ],
     "crc_recall": [
-     0.8644,
-     0.8592,
-     0.8696
+     0.8782,
+     0.8627,
+     0.8937
     ],
     "crc_recall_no_review": [
-     0.1838,
-     0.1498,
-     0.2178
+     0.1946,
+     0.1789,
+     0.2103
     ],
     "cervical_precision": [
      1,
@@ -254,135 +263,135 @@
      1.0
     ],
     "cervical_recall": [
-     0.8872,
-     0.8549,
-     0.9195
+     0.9114,
+     0.9002,
+     0.9226
     ],
     "cervical_recall_no_review": [
-     0.5372,
-     0.5084,
-     0.566
+     0.57,
+     0.5427,
+     0.5973
     ],
     "kpi_wasl": [
-     0.2834,
-     0.2723,
-     0.2945
+     0.2914,
+     0.2745,
+     0.3083
     ],
     "kpi_truth": [
-     0.3218,
-     0.3091,
-     0.3345
+     0.3266,
+     0.3071,
+     0.3461
     ],
     "kpi_eid_only": [
-     0.121,
-     0.1089,
-     0.1331
+     0.1212,
+     0.1107,
+     0.1317
     ],
     "kpi_abs_error_wasl": [
-     0.0384,
-     0.036,
-     0.0408
+     0.0352,
+     0.0268,
+     0.0436
     ],
     "kpi_abs_error_eid_only": [
-     0.2008,
-     0.1877,
-     0.2139
+     0.2054,
+     0.1954,
+     0.2154
     ],
     "linkage_pair_f1": [
-     0.9314,
-     0.9258,
-     0.937
+     0.9422,
+     0.9374,
+     0.947
     ],
     "reviewer_h_per_1k": [
-     20.8076,
-     19.8425,
-     21.7727
+     23.0036,
+     22.1091,
+     23.8981
     ],
     "review_items_per_100_loops": [
-     59.2954,
-     57.1731,
-     61.4177
+     65.9048,
+     63.4865,
+     68.3231
     ],
     "review_items_per_100_arab": [
-     60.2736,
-     56.9286,
-     63.6186
+     67.5824,
+     64.8284,
+     70.3364
     ],
     "reviewer_h_per_1k_arab": [
-     20.9726,
-     19.8944,
-     22.0508
+     23.6188,
+     22.7493,
+     24.4883
     ],
     "review_items_per_100_filipino": [
-     59.0822,
-     52.9024,
-     65.262
+     62.866,
+     56.9949,
+     68.7371
     ],
     "reviewer_h_per_1k_filipino": [
-     20.6882,
-     18.1336,
-     23.2428
+     21.5158,
+     20.3057,
+     22.7259
     ],
     "review_items_per_100_south_asian": [
-     59.1368,
-     54.7497,
-     63.5239
+     66.2978,
+     62.2402,
+     70.3554
     ],
     "reviewer_h_per_1k_south_asian": [
-     20.8006,
-     18.7785,
-     22.8227
+     23.0094,
+     20.8524,
+     25.1664
     ],
     "review_items_per_100_western": [
-     56.1012,
-     51.9471,
-     60.2553
+     61.2056,
+     56.2482,
+     66.163
     ],
     "reviewer_h_per_1k_western": [
-     20.187,
-     19.1161,
-     21.2579
+     21.747,
+     19.3729,
+     24.1211
     ],
     "review_load_ratio_max_min_origin": [
-     1.1431,
-     1.0744,
-     1.2118
+     1.156,
+     1.0977,
+     1.2144
     ],
     "throughput_ev_s": [
-     641.0756,
-     549.1128,
-     733.0384
+     680.5455,
+     631.042,
+     730.049
     ]
    },
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     2475,
-     0.00149
+     2532,
+     0.00146
     ],
     "cervical_false_closures": [
      0,
-     911,
-     0.00404
+     966,
+     0.00381
     ],
     "wrong_patient_released": [
      0,
-     3686,
-     0.001
+     5136,
+     0.00072
     ],
     "released_without_granted_consent": [
      0,
-     2650,
-     0.00139
+     3541,
+     0.00104
     ],
     "duplicate_or_lost_outputs": [
      0,
-     95868,
+     98126,
      4e-05
     ],
     "ingest_lost_or_duplicated": [
      0,
-     152539,
+     153692,
      null
     ],
     "final_state_mismatch_loops": [
@@ -392,11 +401,16 @@
     ],
     "forged_with_effect": [
      0,
-     120,
+     111,
      null
     ],
     "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
-     3,
+     0,
+     null,
+     null
+    ],
+    "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
+     2,
      null,
      null
     ],

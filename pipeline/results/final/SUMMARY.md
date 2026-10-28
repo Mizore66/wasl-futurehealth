@@ -1,6 +1,6 @@
 # Final frozen evaluation
 
-Code revision `cab895f295fc` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-10-28T02:11:37.720931Z
+Code revision `a66b6a254c3c` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-10-28T03:35:34.711234Z
 
 Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, with a Clopper–Pearson 95% upper bound.
 
@@ -10,40 +10,41 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.9466 | 0.9344 – 0.9588 |
-| crc_recall_no_review | 0.1956 | 0.1723 – 0.2189 |
-| cervical_precision | 1 | 1.0 – 1.0 |
-| cervical_recall | 0.9616 | 0.9396 – 0.9836 |
-| kpi_truth | 0.3282 | 0.3114 – 0.345 |
-| kpi_wasl | 0.3172 | 0.2984 – 0.336 |
-| kpi_eid_only | 0.1274 | 0.1193 – 0.1355 |
-| kpi_abs_error_wasl | 0.011 | 0.0088 – 0.0132 |
-| kpi_abs_error_eid_only | 0.2008 | 0.1917 – 0.2099 |
-| linkage_pair_f1 | 0.9736 | 0.9713 – 0.9759 |
-| reviewer_h_per_1k | 24.9774 | 24.2319 – 25.7229 |
-| review_items_per_100_loops | 71.5238 | 69.8614 – 73.1862 |
-| throughput_ev_s | 708.7567 | 674.5917 – 742.9218 |
-| review_items_per_100_arab | 74.0894 | 71.8033 – 76.3755 |
-| review_items_per_100_filipino | 68.8218 | 62.4357 – 75.2079 |
-| review_items_per_100_south_asian | 66.3672 | 62.178 – 70.5564 |
-| review_items_per_100_western | 71.3932 | 68.4381 – 74.3483 |
-| reviewer_h_per_1k_arab | 25.4982 | 24.4209 – 26.5755 |
-| reviewer_h_per_1k_filipino | 24.812 | 23.0757 – 26.5483 |
-| reviewer_h_per_1k_south_asian | 23.2728 | 21.8028 – 24.7428 |
-| reviewer_h_per_1k_western | 25.7324 | 24.7038 – 26.761 |
-| review_load_ratio_max_min_origin | 1.145 | 1.0886 – 1.2015 |
+| crc_recall | 0.948 | 0.9396 – 0.9564 |
+| crc_recall_no_review | 0.19 | 0.1704 – 0.2096 |
+| cervical_precision | 0.999 | 0.9962 – 1.0018 |
+| cervical_recall | 0.9706 | 0.9531 – 0.9881 |
+| kpi_truth | 0.3312 | 0.3022 – 0.3602 |
+| kpi_wasl | 0.3216 | 0.2952 – 0.348 |
+| kpi_eid_only | 0.1238 | 0.1093 – 0.1383 |
+| kpi_abs_error_wasl | 0.0096 | 0.0058 – 0.0134 |
+| kpi_abs_error_eid_only | 0.2074 | 0.1857 – 0.2291 |
+| linkage_pair_f1 | 0.9788 | 0.9737 – 0.9839 |
+| reviewer_h_per_1k | 25.846 | 24.8163 – 26.8757 |
+| review_items_per_100_loops | 74.495 | 71.5944 – 77.3956 |
+| throughput_ev_s | 678.1907 | 612.986 – 743.3955 |
+| review_items_per_100_arab | 76.416 | 71.5296 – 81.3024 |
+| review_items_per_100_filipino | 66.2554 | 63.6499 – 68.8609 |
+| review_items_per_100_south_asian | 74.6774 | 72.4497 – 76.9051 |
+| review_items_per_100_western | 72.6122 | 68.7446 – 76.4798 |
+| reviewer_h_per_1k_arab | 26.6114 | 24.937 – 28.2858 |
+| reviewer_h_per_1k_filipino | 24.1558 | 21.9817 – 26.3299 |
+| reviewer_h_per_1k_south_asian | 25.5874 | 24.8905 – 26.2843 |
+| reviewer_h_per_1k_western | 24.6946 | 22.9336 – 26.4556 |
+| review_load_ratio_max_min_origin | 1.1693 | 1.0885 – 1.2502 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 2728 | 0.1350% |
-| cervical_false_closures | 0 | 1014 | 0.3630% |
-| wrong_patient_released | 0 | 4904 | 0.0750% |
-| released_without_granted_consent | 0 | 3278 | 0.1120% |
-| duplicate_or_lost_outputs | 0 | 101413 | 0.0040% |
-| ingest_lost_or_duplicated | 0 | 153118 | – |
+| crc_false_closures | 0 | 2703 | 0.1360% |
+| cervical_false_closures | 1 | 1008 | 0.5510% |
+| wrong_patient_released | 0 | 5160 | 0.0710% |
+| released_without_granted_consent | 0 | 3638 | 0.1010% |
+| duplicate_or_lost_outputs | 0 | 99302 | 0.0040% |
+| ingest_lost_or_duplicated | 0 | 153646 | – |
 | final_state_mismatch_loops | 0 | – | – |
-| forged_with_effect | 0 | 120 | – |
+| forged_with_effect | 0 | 114 | – |
 | forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery) | 0 | – | – |
+| forged_consent_target_genuinely_opted_out (RBAC denied the forgery) | 2 | – | – |
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
 
@@ -52,40 +53,41 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.8644 | 0.8592 – 0.8696 |
-| crc_recall_no_review | 0.1838 | 0.1498 – 0.2178 |
+| crc_recall | 0.8782 | 0.8627 – 0.8937 |
+| crc_recall_no_review | 0.1946 | 0.1789 – 0.2103 |
 | cervical_precision | 1 | 1.0 – 1.0 |
-| cervical_recall | 0.8872 | 0.8549 – 0.9195 |
-| kpi_truth | 0.3218 | 0.3091 – 0.3345 |
-| kpi_wasl | 0.2834 | 0.2723 – 0.2945 |
-| kpi_eid_only | 0.121 | 0.1089 – 0.1331 |
-| kpi_abs_error_wasl | 0.0384 | 0.036 – 0.0408 |
-| kpi_abs_error_eid_only | 0.2008 | 0.1877 – 0.2139 |
-| linkage_pair_f1 | 0.9314 | 0.9258 – 0.937 |
-| reviewer_h_per_1k | 20.8076 | 19.8425 – 21.7727 |
-| review_items_per_100_loops | 59.2954 | 57.1731 – 61.4177 |
-| throughput_ev_s | 641.0756 | 549.1128 – 733.0384 |
-| review_items_per_100_arab | 60.2736 | 56.9286 – 63.6186 |
-| review_items_per_100_filipino | 59.0822 | 52.9024 – 65.262 |
-| review_items_per_100_south_asian | 59.1368 | 54.7497 – 63.5239 |
-| review_items_per_100_western | 56.1012 | 51.9471 – 60.2553 |
-| reviewer_h_per_1k_arab | 20.9726 | 19.8944 – 22.0508 |
-| reviewer_h_per_1k_filipino | 20.6882 | 18.1336 – 23.2428 |
-| reviewer_h_per_1k_south_asian | 20.8006 | 18.7785 – 22.8227 |
-| reviewer_h_per_1k_western | 20.187 | 19.1161 – 21.2579 |
-| review_load_ratio_max_min_origin | 1.1431 | 1.0744 – 1.2118 |
+| cervical_recall | 0.9114 | 0.9002 – 0.9226 |
+| kpi_truth | 0.3266 | 0.3071 – 0.3461 |
+| kpi_wasl | 0.2914 | 0.2745 – 0.3083 |
+| kpi_eid_only | 0.1212 | 0.1107 – 0.1317 |
+| kpi_abs_error_wasl | 0.0352 | 0.0268 – 0.0436 |
+| kpi_abs_error_eid_only | 0.2054 | 0.1954 – 0.2154 |
+| linkage_pair_f1 | 0.9422 | 0.9374 – 0.947 |
+| reviewer_h_per_1k | 23.0036 | 22.1091 – 23.8981 |
+| review_items_per_100_loops | 65.9048 | 63.4865 – 68.3231 |
+| throughput_ev_s | 680.5455 | 631.042 – 730.049 |
+| review_items_per_100_arab | 67.5824 | 64.8284 – 70.3364 |
+| review_items_per_100_filipino | 62.866 | 56.9949 – 68.7371 |
+| review_items_per_100_south_asian | 66.2978 | 62.2402 – 70.3554 |
+| review_items_per_100_western | 61.2056 | 56.2482 – 66.163 |
+| reviewer_h_per_1k_arab | 23.6188 | 22.7493 – 24.4883 |
+| reviewer_h_per_1k_filipino | 21.5158 | 20.3057 – 22.7259 |
+| reviewer_h_per_1k_south_asian | 23.0094 | 20.8524 – 25.1664 |
+| reviewer_h_per_1k_western | 21.747 | 19.3729 – 24.1211 |
+| review_load_ratio_max_min_origin | 1.156 | 1.0977 – 1.2144 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 2475 | 0.1490% |
-| cervical_false_closures | 0 | 911 | 0.4040% |
-| wrong_patient_released | 0 | 3686 | 0.1000% |
-| released_without_granted_consent | 0 | 2650 | 0.1390% |
-| duplicate_or_lost_outputs | 0 | 95868 | 0.0040% |
-| ingest_lost_or_duplicated | 0 | 152539 | – |
+| crc_false_closures | 0 | 2532 | 0.1460% |
+| cervical_false_closures | 0 | 966 | 0.3810% |
+| wrong_patient_released | 0 | 5136 | 0.0720% |
+| released_without_granted_consent | 0 | 3541 | 0.1040% |
+| duplicate_or_lost_outputs | 0 | 98126 | 0.0040% |
+| ingest_lost_or_duplicated | 0 | 153692 | – |
 | final_state_mismatch_loops | 0 | – | – |
-| forged_with_effect | 0 | 120 | – |
-| forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery) | 3 | – | – |
+| forged_with_effect | 0 | 111 | – |
+| forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery) | 0 | – | – |
+| forged_consent_target_genuinely_opted_out (RBAC denied the forgery) | 2 | – | – |
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
 
