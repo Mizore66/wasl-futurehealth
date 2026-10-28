@@ -35,9 +35,9 @@ def ask(sha):
     return sha, None  # left out: a cache miss routes the report to review
 
 
-cache = {}
-with cf.ThreadPoolExecutor(4) as ex:
-    for sha, entry in ex.map(ask, list(texts)):
+cache = json.load(open(out)) if os.path.exists(out) else {}  # resume: only texts not yet answered are asked
+with cf.ThreadPoolExecutor(int(os.environ.get("WASL_LLM_WORKERS", "4"))) as ex:
+    for sha, entry in ex.map(ask, [s for s in texts if s not in cache]):
         if entry:
             cache[sha] = entry
 json.dump(cache, open(out, "w"), indent=1)
