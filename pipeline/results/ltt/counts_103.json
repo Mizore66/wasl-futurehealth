@@ -10,7 +10,7 @@
   0.7,
   0.5
  ],
- "policy": "v7strict+cal=true+guard=true+tau=0.98",
+ "policy": "v7strict+cal=true+guard=true+tau=0.99",
  "reviewer": {
   "Err": 0.04,
   "Double": "merge+close",
@@ -33,8 +33,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1374,
    "wrong_patient_released": 0,
-   "review_items": 1814,
-   "reviewer_hours_per_1k_loops": 28.872
+   "review_items": 1815,
+   "reviewer_hours_per_1k_loops": 28.88
   },
   {
    "cohort": "cal-s103",
@@ -47,10 +47,10 @@
    "truth_closed": 766,
    "recall": 0.886,
    "loops_with_wrong_patient_message": 0,
-   "messages_released": 1382,
+   "messages_released": 1381,
    "wrong_patient_released": 0,
-   "review_items": 1416,
-   "reviewer_hours_per_1k_loops": 23.3
+   "review_items": 1374,
+   "reviewer_hours_per_1k_loops": 22.64
   },
   {
    "cohort": "cal-s103",
@@ -63,10 +63,10 @@
    "truth_closed": 766,
    "recall": 0.886,
    "loops_with_wrong_patient_message": 0,
-   "messages_released": 1382,
+   "messages_released": 1381,
    "wrong_patient_released": 0,
-   "review_items": 1416,
-   "reviewer_hours_per_1k_loops": 23.3
+   "review_items": 1374,
+   "reviewer_hours_per_1k_loops": 22.64
   },
   {
    "cohort": "cal-s103",
@@ -81,8 +81,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1253,
-   "reviewer_hours_per_1k_loops": 20.941
+   "review_items": 1249,
+   "reviewer_hours_per_1k_loops": 20.873
   },
   {
    "cohort": "cal-s103",
@@ -97,8 +97,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1233,
-   "reviewer_hours_per_1k_loops": 20.67
+   "review_items": 1230,
+   "reviewer_hours_per_1k_loops": 20.627
   },
   {
    "cohort": "cal-s103",
@@ -113,8 +113,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1191,
-   "reviewer_hours_per_1k_loops": 20.079
+   "review_items": 1190,
+   "reviewer_hours_per_1k_loops": 20.06
   },
   {
    "cohort": "cal-s103",
@@ -129,8 +129,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1186,
-   "reviewer_hours_per_1k_loops": 19.999
+   "review_items": 1185,
+   "reviewer_hours_per_1k_loops": 19.979
   },
   {
    "cohort": "cal-s103",
@@ -145,8 +145,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1174,
-   "reviewer_hours_per_1k_loops": 19.86
+   "review_items": 1173,
+   "reviewer_hours_per_1k_loops": 19.84
   },
   {
    "cohort": "cal-s103",
@@ -161,8 +161,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1382,
    "wrong_patient_released": 0,
-   "review_items": 1174,
-   "reviewer_hours_per_1k_loops": 19.86
+   "review_items": 1173,
+   "reviewer_hours_per_1k_loops": 19.84
   },
   {
    "cohort": "cal-s103",
@@ -185,11 +185,11 @@
    "with_review": false,
    "tau_close": 0.995,
    "loops": 2100,
-   "closed": 210,
-   "tp": 210,
+   "closed": 228,
+   "tp": 228,
    "false_closures": 0,
    "truth_closed": 766,
-   "recall": 0.274,
+   "recall": 0.298,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -201,11 +201,11 @@
    "with_review": false,
    "tau_close": 0.99,
    "loops": 2100,
-   "closed": 210,
-   "tp": 210,
+   "closed": 228,
+   "tp": 228,
    "false_closures": 0,
    "truth_closed": 766,
-   "recall": 0.274,
+   "recall": 0.298,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -217,11 +217,11 @@
    "with_review": false,
    "tau_close": 0.98,
    "loops": 2100,
-   "closed": 278,
-   "tp": 278,
+   "closed": 279,
+   "tp": 279,
    "false_closures": 0,
    "truth_closed": 766,
-   "recall": 0.363,
+   "recall": 0.364,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -233,11 +233,11 @@
    "with_review": false,
    "tau_close": 0.95,
    "loops": 2100,
-   "closed": 290,
-   "tp": 290,
+   "closed": 291,
+   "tp": 291,
    "false_closures": 0,
    "truth_closed": 766,
-   "recall": 0.379,
+   "recall": 0.38,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
