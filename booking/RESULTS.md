@@ -214,3 +214,44 @@ With capacity misallocated across regions, the pattern is the same. At 1.2 slots
 - **Assumed parameters.** The per-point slope linking the Dik score to risk is assumed. So are the checklist-call completion rate and post-call attendance for patients who would have been lost at consult. These parameters drive the direct-to-procedure result.
 - **Borrowed effect sizes.** Intervention effects come from single trials or meta-analyses in other health systems and are shrunk toward the null. The stepped-wedge pilot would measure them locally.
 - **No clinical decisions.** The engine suggests a pathway and a prep plan. A nurse confirms the checklist, and a clinician orders any regimen change.
+
+## Female-list access gap: protection for women who require a female endoscopist
+
+**The gap.** Under (c) at 1.5 slots, the ≤31-day KPI for women who require a female endoscopist was 79%, vs 97% for everyone else. The acceptance limit is 5 points.
+- **Why:** these women (about 12% of FIT+) can only use female lists, which are 15–30% of lists [A]. Other patients were filling female lists weeks ahead.
+- **The remaining structural limit:** female lists are infrequent. On one draw, Abu Dhabi had 0.8 a week and Al Dhafra 0.13. So a rebook after a no-show can still miss 31 days.
+
+**The engine change** (`BookingEngine(protect=4.0)`, off by default; on in `suggest.py`):
+- **Protection:** each female list holds back ⌈frac × cap⌉ free slots for women who require one.
+  - frac = 4 × (recent arrivals of such women in the region per day) ÷ (female-list slots per day in the region).
+  - Overbook copies of a holding list are held too.
+- **Release:** held slots are released 7 days before the list, so unused ones still get filled.
+- **Why demand-sized:** it holds almost nothing when female lists are plentiful.
+- **Rejected alternative:** a fixed 7-day window (`c_res7`, kept as an ablation) also closes the gap but over-reserves. At a 40% share, everyone else loses up to 10 points.
+- **Test:** `tests/test_engine.py::test_female_protection`. The assignment still equals the HiGHS ILP with protection on (30/30 batches).
+
+**How it was chosen:** factor and window were picked on design draws 150–189. The results below are on draws 0–149 (`sim/fem_summarise.py` → `sim/fem_summary.json`).
+
+Gap is the KPI for everyone else minus the KPI for women who require a female list, paired per draw; 150 draws, medians [95% interval].
+
+| Female-list share | No protection | **With protection** | Draws with gap ≤5 pts | All-FIT+ ≤31 d, paired change |
+|---|---|---|---|---|
+| 15–30% [A], as today | 18.5 [4.0, 52.2] | 12.6 [−0.2, 42.5] | 18% (was 5%) | +0.1 [−1.6, 1.0] |
+| 30% | 10.6 [0.5, 22.6] | **4.5 [−2.9, 14.7]** | 55% (was 16%) | −0.3 [−2.1, 0.5] |
+| 40% | 5.6 [−1.8, 13.6] | **0.6 [−6.0, 8.7]** | 86% (was 47%) | −0.6 [−3.0, 0.2] |
+
+KPI for women who require a female list, with protection: 84% at 15–30%, 91% at 30%, 94% at 40%.
+
+**What this shows:**
+- **Protection removes the competition part of the gap.** It cuts about 6 points at every share, at essentially no cost to anyone else.
+- **Getting under 5 points also needs enough female lists:** about 30% gets the median there, and 40% makes it reliable.
+  - Wasl can't create female endoscopists. It reports the shortfall.
+  - This matches the earlier planning figure of about 40% of ring-fenced slots on female lists.
+
+Rerun:
+```
+cd booking/sim && python sim.py 150 fem '{"c_main": 1.5, "policies": ["c", "c_res7", "c_fem"], "variants": [{"name": "f_share=0.3", "override": {"f_share": 0.3}, "runs": [["c", 1.5], ["c_res7", 1.5], ["c_fem", 1.5]]}, {"name": "f_share=0.4", "override": {"f_share": 0.4}, "runs": [["c", 1.5], ["c_res7", 1.5], ["c_fem", 1.5]]}]}' && python fem_summarise.py
+```
+About 2.5 minutes.
+
+**Pipeline caveat:** the integrated pipeline cohorts have no women in CRC loops. Cervical loops take the women from a male-skewed Wikidata pool (22% female). So `booking.json`'s per-group female-list figures are empty on those runs, and this gap is measured only in this simulator (69.6% women, per SEHA).

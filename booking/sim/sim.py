@@ -43,7 +43,10 @@ from booking.engine import Weights as _W
 # c_aggr: overbooking penalty kappa=0.6 (a collision priced at ~60 days of delay) with eps=0.10; reported as an
 # operator trade-off, chosen AFTER seeing kappa_check.json (so it is a sensitivity row, not the pre-registered arm)
 ABLATIONS = {"c_aggr": {"w": _W(kappa_overbook=0.6), "eps": 0.10}, "c_greedy": {"solver": "greedy"}, "c_noob": {"eps": 0.0}, "c_norebook": {"max_rebooks": 0},
-             "c_nonurse": {"nurse_threshold": 2.0}}
+             "c_nonurse": {"nurse_threshold": 2.0},
+             # female-list reservation: c_res7 = fixed 7-day window (ablation); c_fem = demand-sized protection, factor 4
+             # (chosen on design draws 150-189, reported on 0-149)
+             "c_res7": {"reserve_days": 7}, "c_fem": {"protect": 4.0}}
 
 
 def in_ramadan(d):
@@ -294,7 +297,7 @@ def measures(C, colo, cal, st, P):
     )
     groups = {
         "women_hard_pref": C["fem_pref"] == 2, "women_soft_pref": C["fem_pref"] == 1,
-        "women_no_pref": C["female"] & (C["fem_pref"] == 0), "men": ~C["female"],
+        "women_no_pref": C["female"] & (C["fem_pref"] == 0), "men": ~C["female"], "not_hard_pref": C["fem_pref"] != 2,
         "al_dhafra": C["region"] == 2, "after_hours": C["after"], "arabic_only": C["arabic"],
     }
     elig = np.isin(C["pool"], [0, 1, 4])[m]
@@ -328,7 +331,8 @@ def calibrate_sq(P, C, seed, c):
                                   completion=float(len(t) / C["n"]))
 
 
-KEEP = ("d1_31", "d2_31", "d3_31", "sched_31", "g_women_hard_pref_d3", "g_women_hard_pref_d2", "median_days", "utilisation", "collisions_per_1000", "bumped_per_1000",
+KEEP = ("d1_31", "d2_31", "d3_31", "sched_31", "g_women_hard_pref_d3", "g_women_hard_pref_d2", "g_not_hard_pref_d3",
+        "g_not_hard_pref_d2", "median_days", "utilisation", "collisions_per_1000", "bumped_per_1000",
         "overbooked_per_1000", "completion", "no_show_first")
 
 

@@ -55,8 +55,19 @@ class BookingEngine:
 
     def __init__(self, cal: Calendar, nsm: NoShowModel | None = None, eps: float = 0.05, horizon: int = 150,
                  prep_lead: int = 5, w: Weights | None = None, nurse_threshold: float = 0.20,
-                 max_rebooks: int = 2, max_candidates: int = 40, solver: str = "assignment"):
+                 max_rebooks: int = 2, max_candidates: int = 40, solver: str = "assignment",
+                 reserve_days: int | None = None, protect: float | None = None, protect_window: int = 120):
         self.cal, self.nsm, self.eps, self.H = cal, nsm or NoShowModel(), eps, horizon
+        # Female-list reservation (both off by default). Women who require a female endoscopist can only use female
+        # lists, so other patients filling those lists early is what pushed them past 31 days.
+        #   reserve_days: other patients may book a female list only within reserve_days of today.
+        #   protect: demand-sized nesting instead. Each female list holds back ceil(frac * cap) free slots for
+        #     women who require one, frac = protect * (recent arrivals of such women in the region per day) /
+        #     (female-list slots per day in the region). Held slots are released reserve_days (default 7) out.
+        self.reserve_days, self.protect, self.protect_window = reserve_days, protect, protect_window
+        if protect is not None and reserve_days is None:
+            self.reserve_days = 7
+        self._hard_arr: list[tuple[int, str]] = []
         self.prep_lead, self.w, self.nurse_thr = prep_lead, w or Weights(), nurse_threshold
         self.max_rebooks, self.K, self.solver = max_rebooks, max_candidates, solver
         self.pending: dict[str, _Pending] = {}
@@ -73,6 +84,8 @@ class BookingEngine:
                          ev.day + self.prep_lead, 0, self.prep_lead)
             self.meta[ev.loop_id] = p
             self.pending[ev.loop_id] = p
+            if p.prefs.female_endoscopist == "hard":
+                self._hard_arr.append((ev.day, p.prefs.region))
             return
         p = self.meta[ev.loop_id]
         s = self.where.pop(ev.loop_id, None)
@@ -173,6 +186,8 @@ class BookingEngine:
             m &= reg
             if pr.female_endoscopist == "hard":
                 m &= cal.female[S]
+            elif self.reserve_days is not None and self.protect is None:
+                m &= ~cal.female[S] | (cal.day[S] <= day + self.reserve_days)
             if pr.avoid_ramadan:
                 m &= ~cal.ramadan[S]
             idx = S[m]
@@ -188,17 +203,21 @@ class BookingEngine:
         p_mean /= len(P)
         sess_needed = np.unique(np.concatenate(cand)) if cand else np.array([], int)
         n = len(P)
+        held = self._held(day, sess_needed) if self.protect is not None else {}
+        cols_held = []                      # column is a held female-list slot (women who require one only)
         for s in sess_needed:
             s = int(s)
             free = max(0, int(cal.cap[s] - cal.nb[s]))
+            h = held.get(s, 0)
             js = []
-            for _ in range(min(free, n)):
-                js.append(len(cols_s)); cols_s.append(s); cols_cost.append(0.0)
+            for q in range(min(free, n)):
+                js.append(len(cols_s)); cols_s.append(s); cols_cost.append(0.0); cols_held.append(q >= free - h)
             if self.eps > 0 and free < n and cal.day[s] <= day + 45:
                 mcs = self._overbook_costs(s, p_mean, n - min(free, n))
                 # enforce non-decreasing marginal cost (convexity) so the slot-copy expansion stays exact
                 for mc in (np.maximum.accumulate(mcs) if mcs else []):
                     js.append(len(cols_s)); cols_s.append(s); cols_cost.append(w.kappa_overbook * mc * 100)
+                    cols_held.append(h > 0)   # overbooking a list that is holding slots would use them up
             col_index[s] = js
         m_cols = len(cols_s)
         C = np.full((n, m_cols + n), BIG)
@@ -206,6 +225,7 @@ class BookingEngine:
             C[i, m_cols + i] = w.unassigned
         cols_s_arr = np.array(cols_s, int)
         cols_cost_arr = np.array(cols_cost)
+        cols_held_arr = np.array(cols_held, bool)
         for i, (p, idx) in enumerate(zip(P, cand)):
             if len(idx) == 0:
                 continue
@@ -226,8 +246,27 @@ class BookingEngine:
                     + w.female_soft * ((pr.female_endoscopist == "soft") & ~fem)
                     + w.language * (pr.arabic_only & ~ara) + w.after_hours * (pr.after_hours & ~aft)
                     + w.travel * (cal.region[ss] != pr.region) + w.p_no_show * pred + cols_cost_arr[cols])
+            if pr.female_endoscopist != "hard" and held:
+                cost = np.where(cols_held_arr[cols], BIG, cost)
             C[i, cols] = cost
         return P, C, m_cols, cols_s_arr
+
+    def _held(self, day, sess):
+        """Free slots each female list in `sess` holds back for women who require a female endoscopist."""
+        cal, out = self.cal, {}
+        lo = day - self.protect_window
+        self._hard_arr = [x for x in self._hard_arr if x[0] >= lo]
+        a, b = cal.window(day, day + self.H)
+        for reg in np.unique(cal.region[sess]) if len(sess) else []:
+            rate = sum(1 for _, r in self._hard_arr if r == reg) / self.protect_window
+            fm = cal.female[a:b] & (cal.region[a:b] == reg)
+            supply = cal.cap[a:b][fm].sum() / max(1, self.H)
+            frac = 1.0 if supply == 0 else min(1.0, self.protect * rate / supply)
+            for s in sess:
+                s = int(s)
+                if cal.female[s] and cal.region[s] == reg and cal.day[s] > day + self.reserve_days:
+                    out[s] = int(math.ceil(frac * cal.cap[s]))
+        return out
 
     def step(self, day: int) -> list[Booking]:
         if not self.pending:
