@@ -374,7 +374,7 @@ func (s *apiServer) envelope(body map[string]interface{}) map[string]interface{}
 
 func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 	nats := "not_required_for_read_api"
-	if conn, err := net.DialTimeout("tcp", "127.0.0.1:14822", 300*time.Millisecond); err == nil {
+	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", 14822+PortOff), 300*time.Millisecond); err == nil {
 		conn.Close()
 		nats = "up"
 	}

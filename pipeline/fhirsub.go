@@ -54,7 +54,8 @@ type SubConsumer struct {
 	subID                   string
 
 	mu        sync.Mutex
-	next      int64 // next event number to dispatch
+	paced     *sync.Cond // publishers wait on it to stay within PaceWindow events of the ack high-water mark
+	next      int64      // next event number to dispatch
 	buf       map[int64]*subEvent
 	gapSince  time.Time
 	maxSeen   int64 // highest events-since-subscription-start reported by the HIE
@@ -81,6 +82,7 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 	c := &SubConsumer{base: base, hookAddr: hookAddr, content: content, runDir: runDir, js: js,
 		http: &http.Client{Timeout: 10 * time.Second}, buf: map[int64]*subEvent{}, inbox: make(chan []byte, 4096),
 		provCh: map[string]chan *subEvent{}, acked: map[int64]bool{}, stats: map[string]int64{}, start: time.Now()}
+	c.paced = sync.NewCond(&c.mu)
 	retry("kv", func() (err error) {
 		c.kv, err = js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 3, Storage: jetstream.FileStorage})
 		return
@@ -341,13 +343,33 @@ func (c *SubConsumer) dispatchLocked(e *subEvent) {
 	if !ok {
 		c.stats["unknown_source"]++
 		c.acked[e.Num] = true // nothing to publish; still advances the checkpoint
+		c.advanceLocked()
 		return
 	}
 	ch <- e
 }
 
+// PaceWindow bounds how far one provider's publisher may run ahead of the slowest: an event is published only once
+// every event more than PaceWindow numbers older is acked. Event numbers follow HIE arrival order (about 250 a
+// simulated day), so the feeds reach the stream within about half a day of their arrival order, as they would live.
+// Without it, a replay at full speed let the big feeds fall ~60 simulated days behind the small ones.
+const PaceWindow = 128
+
+func (c *SubConsumer) advanceLocked() {
+	for c.acked[c.ackHWM+1] {
+		delete(c.acked, c.ackHWM+1)
+		c.ackHWM++
+	}
+	c.paced.Broadcast()
+}
+
 func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 	for e := range ch {
+		c.mu.Lock()
+		for e.Num > c.ackHWM+PaceWindow {
+			c.paced.Wait()
+		}
+		c.mu.Unlock()
 		t, id, vid := splitFocus(e.Focus)
 		occ, _ := time.Parse(time.RFC3339Nano, e.Occurred)
 		arr := occ.Sub(baseTime).Seconds() / 86400
@@ -367,10 +389,7 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 		atomic.AddInt64(&c.published, 1)
 		c.mu.Lock()
 		c.acked[e.Num] = true
-		for c.acked[c.ackHWM+1] {
-			delete(c.acked, c.ackHWM+1)
-			c.ackHWM++
-		}
+		c.advanceLocked()
 		c.mu.Unlock()
 	}
 }

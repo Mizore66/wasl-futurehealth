@@ -89,13 +89,13 @@ func main() {
 	annCB = fs.String("codebook", "", "IVF codebook path")
 	source := fs.String("source", "file", "file = v5 ndjson producers | fhir = mock Malaffi + FHIR Subscription consumer")
 	content := fs.String("content", "full-resource", "subscription payload: full-resource | id-only")
-	hieAddr := fs.String("hie", "127.0.0.1:28880", "mock Malaffi listen addr")
-	hookAddr := fs.String("hook", "127.0.0.1:28890", "consumer rest-hook listen addr")
+	hieAddr := fs.String("hie", fmt.Sprintf("127.0.0.1:%d", 28880+PortOff), "mock Malaffi listen addr")
+	hookAddr := fs.String("hook", fmt.Sprintf("127.0.0.1:%d", 28890+PortOff), "consumer rest-hook listen addr")
 	fDup := fs.Float64("fdup", 0.05, "mock fault: P(duplicate notification)")
 	fReo := fs.Float64("freorder", 0.05, "mock fault: P(reordered notification)")
 	fDrop := fs.Float64("fdrop", 0.03, "mock fault: P(dropped notification)")
 	subKill := fs.Int("subkill", 1, "kill/restart cycles of the FHIR subscription consumer (source=fhir)")
-	hl7Addr := fs.String("hl7", "127.0.0.1:28870", "HL7 v2 MLLP listener addr (source=hl7)")
+	hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
 	apiAddr := fs.String("addr", "127.0.0.1:8088", "serve: API listen address")
 	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
@@ -458,14 +458,14 @@ func natsConf(run string, i int) string {
 	os.MkdirAll(dir, 0755)
 	routes := []string{}
 	for j := 0; j < 3; j++ {
-		routes = append(routes, fmt.Sprintf("nats-route://127.0.0.1:%d", 16822+j))
+		routes = append(routes, fmt.Sprintf("nats-route://127.0.0.1:%d", 16822+PortOff+j))
 	}
 	conf := fmt.Sprintf(`server_name: n%d
 listen: 127.0.0.1:%d
 http: 127.0.0.1:%d
 jetstream { store_dir: "%s", max_memory_store: 256MB, max_file_store: 4GB, cipher: chachapoly, key: $WASL_JS_KEY }
 cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
-`, i, 14822+i, 18822+i, dir, 16822+i, strings.Join(routes, ", "))
+`, i, 14822+PortOff+i, 18822+PortOff+i, dir, 16822+PortOff+i, strings.Join(routes, ", "))
 	p := filepath.Join(dir, "nats.conf")
 	os.WriteFile(p, []byte(conf), 0644)
 	return p
