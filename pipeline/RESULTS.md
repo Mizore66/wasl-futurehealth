@@ -395,8 +395,9 @@ Read with care: reader A was written against the same templates it is scored on,
 - The 3 misses (2 closed, 1 escalated, all predicted `open`): the follow-up CT registration was never linked, not even as a near miss. A linker recall loss, safe direction.
 - Same run, screening programmes: CRC P/R/false closures 1.000 / 0.961 / 0 of 571, cervical 1.000 / 0.991 / 0 of 217 — the same closure numbers as the committed screening-only v7strict summary (`results/v7strict/summary.txt`). Exactly-once 0 duplicate / 0 lost of 19,650 outputs; provenance chains 1,739/1,739 verified; tamper 17/17 attacks detected, untampered baseline fires nothing; live-vs-replay final mismatch 0. Outreach counts (e.g. 546 released, 0 without granted consent) shift slightly against the screening-only run because reviewer answers interleave differently with the extra events; the consent invariant holds.
 
+**Built since (`727c804`):** a stable follow-up now opens the next surveillance loop (`<loop>#surv`) with the Fleischner window (e.g. CT at 18–24 months from the index scan for a multiple solid nodule; 22–26 months from the follow-up for ground-glass ≥ 6 mm). A later agreed CT that says stable or resolved closes it; growth escalates it; it goes overdue at the window end. In the 800-loop lung run, 77 of 152 stable closures opened one; the other 75 are cells where Fleischner stops after a stable scan. All 77 are open and none overdue, because the run ends before any 18-month window does. Test: `TestLungStableFollowUpOpensSurveillanceLoop`.
+
 **What is designed, not built:**
-- The next surveillance interval (e.g. CT at 18–24 months, ground-glass every 2 years) is recorded as `next_step` on the closure; it does not yet open a new loop.
 - PET/CT or tissue sampling as closing evidence for the > 8 mm solid cell (only follow-up CT reports are read).
 - Lung outreach: no consent records are generated for lung patients, so contact stays `unknown` and nothing is sent.
 - HL7 v2 mapping of the lung reports (the run used the FHIR source only).

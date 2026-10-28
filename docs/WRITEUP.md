@@ -140,7 +140,7 @@
     - Designed: monitoring, explanations, owners.
     - Written in this document: risk register (hazard log H1–H12 below, 3.3.1.1–2), sustainability note (3.1.8), data-protection note (3.1.4.4), model cards (3.2.4–5).
     - Data licence gap: the 43 MTSamples evaluation reports. mtsamples.com permits "print, share, or link… for educational purposes" with credit and is silent on other uses. The Kaggle CC0 label is the uploader's own. They were used for evaluation only and will be replaced by the synthetic App 14 corpus.
-    - Remaining gaps, all deployment-stage: the DDGO conformity assessment before and after deployment (3.3.1.2.2.2, the only clause specific to High-risk systems), MFA and encryption at rest (build), clinician co-design and an AI-literacy programme (pilot stage).
+    - Remaining gaps, all deployment-stage: the DDGO conformity assessment before and after deployment (3.3.1.2.2.2, the only clause specific to High-risk systems), MFA and TLS between services (build; the event store is already encrypted at rest), clinician co-design and an AI-literacy programme (pilot stage).
   - **Hazard log / risk register (RAI 3.3.1.1–3.3.1.2): 12 hazards, each rated, with controls and a named owner role. Reviewed quarterly and after any audited false closure.**
     - H1, wrong-patient closure: p≥0.99 gate, DOB guard, double review. *Measured:* 0/8,422 false closures; 0 wrong-patient sends.
     - H2, false "adequate": two readers, and an ungraded prep stays open. *Measured:* 0.
