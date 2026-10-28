@@ -1,11 +1,11 @@
 ── Wasl baseline (simulated cohort; one seed) ──
-crc       with review : P 1.000  R 0.860  false closures 0/498
-crc       no review   : P 1.000  R 0.207  false closures 0/120
-cervical  with review : P 1.000  R 0.894  false closures 0/193
-cervical  no review   : P 1.000  R 0.556  false closures 0/120
-CRC ≤31-day KPI (all referrals): EID-only 0.131 | truth 0.338 | Wasl 0.298
-exactly-once: duplicates 0 / 18796 outputs; final-state mismatches 0
-provenance chains verified 859/859; forged events with effect 0/24
+crc       with review : P 1.000  R 0.889  false closures 0/498
+crc       no review   : P 1.000  R 0.209  false closures 0/117
+cervical  with review : P 1.000  R 0.910  false closures 0/192
+cervical  no review   : P 1.000  R 0.592  false closures 0/125
+CRC ≤31-day KPI (all referrals): EID-only 0.124 | truth 0.337 | Wasl 0.309
+exactly-once: duplicates 0 / 20148 outputs; final-state mismatches 0
+provenance chains verified 857/857; forged events with effect 0/20
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 485, without granted consent 0; held-for-consent 390, cancelled 31
-throughput 605 ev/s; reviewer-h/1k loops 19.8
+consent hold: released 745, without granted consent 0; held-for-consent 369, cancelled 50
+throughput 744 ev/s; reviewer-h/1k loops 22.9

@@ -501,7 +501,7 @@ Read with care: reader A was written against the same templates it is scored on,
 - **Calibration result:** 840 true pairs, 0 false. The existing surname-only rule had 3 false raw pairs on the same data.
 - **Test:** `TestCorroboratedPlaceholderDob`.
 
-**Frozen evaluation at `cab895f`** (same seeds; these are the files in `results/final/` now):
+**Frozen evaluation at `cab895f`** (same seeds; superseded by the cohort fix below):
 
 | | v1 noise (dev) | **v2 noise (held out)** |
 |---|---|---|
@@ -520,6 +520,49 @@ Read with care: reader A was written against the same templates it is scored on,
 - Outreach intents are counted before any gate, and they track each run's ingest order under chaos. These v2 runs were slower: the linker had processed 1.9k vs 4.1k events at the first kill.
 - Replaying the same run log with the old binary gives the same intent count (664 for v2-s41).
 
-**Learn-then-Test re-run at `cab895f`** (same 12,600 cal-split loops; files in [`results/ltt/`](results/ltt/LTT.md)): the operating tier is still **0.995**, with 0 false closures and 0 wrong-patient messages.
+**Learn-then-Test re-run at `cab895f`** (same 12,600 cal-split loops; superseded by the cohort fix below): the operating tier is still **0.995**, with 0 false closures and 0 wrong-patient messages.
 - With review: recall 0.874 (was 0.873); review items 68.4 per 100 loops (was 70.2).
 - Without review: recall 0.275 (was 0.256).
+
+### Cohort fix: women in CRC loops (`a66b6a2`)
+
+**The problem:** CRC loops had no women. Cervical loops took the women first from a Wikidata pool that is 22% female, so every CRC patient was a man. The real Abu Dhabi FIT+ population is 69.6% women (SEHA, PMC8343888).
+
+**The fix:**
+- Sampling keeps every woman in the split.
+- 69.6% of CRC loops are women, drawn from all women in the sample, so some also hold a cervical loop. Those women have the same registrations under both programmes.
+- **Eval cohorts:** 69.6% women in CRC; 315 of them also have a cervical loop (seed 11).
+- **Calibration cohorts:** the cal split has only 779 women, so they reach 51.9%, with 600 also having a cervical loop. The Learn-then-Test cohorts are therefore less female than the eval cohorts. This is disclosed as a limit of the guarantee's scope.
+
+**Frozen evaluation at `a66b6a2`** (same seeds; these are the files in `results/final/` now):
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.948 (0.940–0.956) | **1.000 / 0.878 (0.863–0.894)** |
+| CRC false closures (pooled) | **0/2,703** (UB 0.14%) | **0/2,532** (UB 0.15%) |
+| Cervical false closures | **1/1,008** | 0/966 |
+| Wrong-patient messages / messages without consent | 0/5,160 / 0/3,638 | 0/5,136 / 0/3,541 |
+| KPI absolute error, Wasl vs EID-only | 0.010 vs 0.207 | 0.035 vs 0.205 |
+| Linkage pair F1 | 0.979 | 0.942 |
+| Reviewer hours per 1k loops | 25.8 | 23.0 |
+| Review-load ratio, max/min origin | 1.17 (1.09–1.25) | **1.16 (1.10–1.21)** |
+| Duplicates/losses · tamper · forged with effect | 0/99,302 · 85/85 · 0/114 | 0/98,126 · 85/85 · 0/111 |
+
+**The cervical false closure** (dev noise, seed 23, loop `ahs-mushrif/ServiceRequest/AHS-sr-160`) was simulated human error. Linkage was not involved.
+- The patient link was correct (an Emirates-ID / human-confirmed path).
+- Both machine readers said "not closed / unsatisfactory".
+- Both simulated clinicians in the double review wrongly signed it "adequate". Each has a 4% error rate, so this happens about 0.16% of the time per item.
+- The patient's other loop (CRC) played no part.
+- Held-out noise has 0/966. This residual risk is the reason for local reviewer QA in the pilot.
+
+**Forged-event counter fix** (`f7e5cf1`; the pipeline runs were unchanged, only the report was re-scored):
+- Four forged consent denials happened to target patients who genuinely withdrew consent later.
+- The report had counted those patients' suppressed messages as the forgeries' effect.
+- RBAC rejected every forged consent record, so these are now counted separately (`forged_consent_target_genuinely_opted_out`).
+- Forged events with effect: 0.
+
+**Learn-then-Test on the new calibration cohorts** (12,600 loops, 51.9% of CRC loops women; files in [`results/ltt/`](results/ltt/LTT.md)):
+- The operating tier is still **0.995**, with 0 false closures and 0 wrong-patient messages.
+- With review, recall is 0.883; without review, 0.295.
+
+**Female-list booking in the pipeline:** across the five v2 runs there are 133–170 open CRC cases per run that require a female endoscopist. All were suggested a slot within 31 days, vs 97–100% for everyone else (`booking.json` → `summary.female_list`).

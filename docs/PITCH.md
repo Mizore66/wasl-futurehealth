@@ -35,7 +35,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 - **One engine, more loops:** incidental lung nodules (Fleischner 2017) already run on the same engine: 0/297 false closures in an 800-loop run.
 
 **Measured safety (simulated cohorts, honest limits):**
-- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.864, **0/2,475 false closures** (95% upper bound 0.15%); 0/3,686 wrong-patient messages; 0/2,650 messages sent without consent; review load even across name origins (max/min 1.14). An earlier run found one wrong-patient closure; we traced it to a name-only link at our confidence cap, raised the closure tier above the cap, and re-ran: zero.
+- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.878, **0/2,532 false closures** (95% upper bound 0.15%); 0/5,136 wrong-patient messages; 0/3,541 messages sent without consent; review load even across name origins (max/min 1.16). An earlier run found one wrong-patient closure; we traced it to a name-only link at our confidence cap, raised the closure tier above the cap, and re-ran: zero.
 - **Learn-then-Test:** the 0.99 closure tier is certified on 12,600 calibration loops: P(false-closure and wrong-patient rates ≤ 0.1%) ≥ 95% for loops like the calibration set.
 - Gate under the strict DoH closure rule (5 seeds × 3 reviewer error rates): 0/8,422 false closures with double review. Single review gives 21, so double review is mandatory.
 

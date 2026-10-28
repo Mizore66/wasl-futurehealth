@@ -254,4 +254,4 @@ cd booking/sim && python sim.py 150 fem '{"c_main": 1.5, "policies": ["c", "c_re
 ```
 About 2.5 minutes.
 
-**Pipeline caveat:** the integrated pipeline cohorts have no women in CRC loops. Cervical loops take the women from a male-skewed Wikidata pool (22% female). So `booking.json`'s per-group female-list figures are empty on those runs, and this gap is measured only in this simulator (69.6% women, per SEHA).
+**In the pipeline:** since `a66b6a2`, 69.6% of the pipeline's CRC loops are women. On the five held-out runs, `booking.json` had 133–170 open cases per run that require a female list. All got a slot within 31 days, vs 97–100% for everyone else. That is a 95-day snapshot at 1.2 slots per case, easier than the full-year simulation above.
