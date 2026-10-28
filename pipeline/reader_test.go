@@ -39,7 +39,7 @@ func fakeLLM2(t *testing.T, content, hist string, delay time.Duration, status in
 	}))
 }
 
-const goodAnswer = `{"caecum_reached":"yes","caecum_quote":"advanced to the cecum","prep":"adequate","prep_quote":"Prep was good","polyps_removed":"no","polyps_quote":"","histology_present":"no","histology_quote":""}`
+const goodAnswer = `{"caecum_reached":"yes","caecum_quote":"advanced to the cecum","prep":"adequate","prep_quote":"Prep was good","tissue_taken":"no","tissue_quote":"","histology_present":"no","histology_quote":""}`
 
 func TestReaderLiveOKAndLedgerReplay(t *testing.T) {
 	srv := fakeLLM(t, goodAnswer, 0, 200)
@@ -64,7 +64,7 @@ func TestReaderFailSafe(t *testing.T) {
 	cases := map[string]*httptest.Server{
 		"timeout":        fakeLLM(t, goodAnswer, 600*time.Millisecond, 200),
 		"http_500":       fakeLLM(t, goodAnswer, 0, 500),
-		"bad_enum":       fakeLLM(t, `{"caecum_reached":"probably","caecum_quote":"","prep":"adequate","prep_quote":"","polyps_removed":"no","polyps_quote":"","histology_present":"no","histology_quote":""}`, 0, 200),
+		"bad_enum":       fakeLLM(t, `{"caecum_reached":"probably","caecum_quote":"","prep":"adequate","prep_quote":"","tissue_taken":"no","tissue_quote":"","histology_present":"no","histology_quote":""}`, 0, 200),
 		"not_json":       fakeLLM(t, `the scope reached the caecum`, 0, 200),
 	}
 	for name, srv := range cases {
@@ -104,14 +104,14 @@ func TestReaderAgreementCloses(t *testing.T) {
 
 // An invented quote cannot support a positive claim: the field is downgraded, so closure becomes impossible.
 func TestReaderUngroundedQuoteDowngrades(t *testing.T) {
-	srv := fakeLLM(t, `{"caecum_reached":"yes","caecum_quote":"terminal ileum intubated","prep":"adequate","prep_quote":"Prep was good","polyps_removed":"no","polyps_quote":"","histology_present":"no","histology_quote":""}`, 0, 200)
+	srv := fakeLLM(t, `{"caecum_reached":"yes","caecum_quote":"terminal ileum intubated","prep":"adequate","prep_quote":"Prep was good","tissue_taken":"no","tissue_quote":"","histology_present":"no","histology_quote":""}`, 0, 200)
 	defer srv.Close()
 	r, ok := NewReaderClient(srv.URL, time.Second, 0, "").Read(rptText)
 	if !ok || r.Caecum != "not_stated" || r.State == "closed" || len(r.Downgraded) != 1 {
 		t.Fatalf("want caecum downgraded and not closed, got %+v", r)
 	}
 	// Punctuation/spacing differences are not fabrication.
-	srv2 := fakeLLM(t, `{"caecum_reached":"yes","caecum_quote":"advanced to the cecum","prep":"adequate","prep_quote":"Prep was good","polyps_removed":"no","polyps_quote":"","histology_present":"no","histology_quote":""}`, 0, 200)
+	srv2 := fakeLLM(t, `{"caecum_reached":"yes","caecum_quote":"advanced to the cecum","prep":"adequate","prep_quote":"Prep was good","tissue_taken":"no","tissue_quote":"","histology_present":"no","histology_quote":""}`, 0, 200)
 	defer srv2.Close()
 	r2, _ := NewReaderClient(srv2.URL, time.Second, 0, "").Read("Prep  was good,.  The colonoscope was advanced, to the cecum.")
 	if r2.Caecum != "yes" || len(r2.Downgraded) != 0 {
@@ -122,7 +122,7 @@ func TestReaderUngroundedQuoteDowngrades(t *testing.T) {
 // Hybrid: an endoscopic impression is not a histology result, even if the schema call says so.
 func TestReaderHistologyCheckOverridesSchema(t *testing.T) {
 	txt := "Prep was good. The cecum was reached. A 5 mm polyp was removed with a snare; it appeared adenomatous. Specimen sent to pathology."
-	srv := fakeLLM2(t, `{"caecum_reached":"yes","caecum_quote":"The cecum was reached","prep":"adequate","prep_quote":"Prep was good","polyps_removed":"yes","polyps_quote":"polyp was removed with a snare","histology_present":"yes","histology_quote":"it appeared adenomatous"}`,
+	srv := fakeLLM2(t, `{"caecum_reached":"yes","caecum_quote":"The cecum was reached","prep":"adequate","prep_quote":"Prep was good","tissue_taken":"yes","tissue_quote":"polyp was removed with a snare","histology_present":"yes","histology_quote":"it appeared adenomatous"}`,
 		`{"answer":"yes","quote":"it appeared adenomatous"}`, 0, 200)
 	defer srv.Close()
 	r, ok := NewReaderClient(srv.URL, time.Second, 0, "").Read(txt)

@@ -22,19 +22,19 @@ import (
 	"time"
 )
 
-const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)"
+const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v3(schema+histology-check+tissue+bbps)"
 
 // ReaderPrompt mirrors reader/prompt.py (ONE): keep the two in sync.
 const ReaderPrompt = `You extract colonoscopy screening-closure evidence from a clinical document.
 Fields (use ONLY what the text explicitly states; never infer):
 - caecum_reached: "yes" if the text documents the scope reached the caecum/cecum, ileocaecal valve or terminal ileum; "no" if it documents the exam stopped short of the caecum; "not_stated" otherwise (including no colonoscopy performed, or caecum surgically absent).
-- prep: "adequate" if bowel preparation quality is explicitly graded acceptable (excellent/good/adequate/fair/well prepared/Boston >=6); "inadequate" if graded poor/inadequate; "not_stated" if not graded (taking a prep is not a grade).
-- polyps_removed: "yes" if at least one COLONIC polyp was removed during this procedure (snare/forceps/ablation/fulguration); else "no".
+- prep: "adequate" if bowel preparation quality is explicitly graded acceptable (excellent/good/adequate/fair/well prepared, or a Boston Bowel Preparation Scale total >=6 with every segment >=2); "inadequate" if graded poor/inadequate, or a Boston total <6 or any segment <2; "not_stated" if not graded (naming or taking a preparation product is not a grade).
+- tissue_taken: "yes" if any tissue was removed or sampled during this procedure: a colonic polyp removed (snare/forceps/ablation/fulguration) OR any biopsy taken (of a mass, ulcer or stricture, or random/mucosal biopsies); else "no".
 - histology_present: "yes" only if the document contains a histopathology RESULT (e.g. tubular adenoma, adenocarcinoma, microscopic description); "no" if absent or pending.
 For every field give a SHORT verbatim quote copied exactly from the text that supports the label ("" if not_stated/no with no supporting text).
 Document:
 <<<%s>>>
-Return ONLY JSON: {"caecum_reached":"yes|no|not_stated","caecum_quote":"","prep":"adequate|inadequate|not_stated","prep_quote":"","polyps_removed":"yes|no","polyps_quote":"","histology_present":"yes|no","histology_quote":""}`
+Return ONLY JSON: {"caecum_reached":"yes|no|not_stated","caecum_quote":"","prep":"adequate|inadequate|not_stated","prep_quote":"","tissue_taken":"yes|no","tissue_quote":"","histology_present":"yes|no","histology_quote":""}`
 
 // ReaderResult is the stable reader contract persisted for provenance.
 type ReaderResult struct {
@@ -43,8 +43,10 @@ type ReaderResult struct {
 	CaecumQuote string `json:"caecum_quote"`
 	Prep        string `json:"prep"`
 	PrepQuote   string `json:"prep_quote"`
-	Polyps      string `json:"polyps_removed"`
-	PolypsQuote string `json:"polyps_quote"`
+	Polyps      string `json:"tissue_taken"` // any tissue taken: polyp removed OR biopsy (v3; was polyps_removed)
+	PolypsQuote string `json:"tissue_quote"`
+	OldPolyps   string `json:"polyps_removed,omitempty"` // v2 ledgers: read back for replay
+	OldPolypsQ  string `json:"polyps_quote,omitempty"`
 	Histology   string `json:"histology_present"`
 	HistQuote   string `json:"histology_quote"`
 	State       string `json:"state"`
@@ -88,6 +90,9 @@ func (c *ReaderClient) loadLedger() {
 	for sc.Scan() {
 		var r ReaderResult
 		if json.Unmarshal(sc.Bytes(), &r) == nil && r.ReportSha != "" && r.Error == "" {
+			if r.Polyps == "" && r.OldPolyps != "" { // v2 ledger
+				r.Polyps, r.PolypsQuote = r.OldPolyps, r.OldPolypsQ
+			}
 			c.ledger[r.ReportSha] = r
 		}
 	}
@@ -121,18 +126,15 @@ func (c *ReaderClient) Healthy() bool {
 
 var readerEnums = map[string][]string{
 	"caecum_reached": {"yes", "no", "not_stated"}, "prep": {"adequate", "inadequate", "not_stated"},
-	"polyps_removed": {"yes", "no"}, "histology_present": {"yes", "no"},
+	"tissue_taken": {"yes", "no"}, "histology_present": {"yes", "no"},
 }
 
 func readerSchema() map[string]interface{} {
 	props := map[string]interface{}{}
 	req := []string{}
-	for _, f := range []string{"caecum_reached", "prep", "polyps_removed", "histology_present"} {
+	for _, f := range []string{"caecum_reached", "prep", "tissue_taken", "histology_present"} {
 		props[f] = map[string]interface{}{"type": "string", "enum": readerEnums[f]}
 		q := strings.Split(f, "_")[0] + "_quote"
-		if f == "histology_present" {
-			q = "histology_quote"
-		}
 		props[q] = map[string]interface{}{"type": "string", "maxLength": 160}
 		req = append(req, f, q)
 	}
@@ -144,7 +146,7 @@ func readerSchema() map[string]interface{} {
 // conservative value, so an ungrounded answer can only ever make closure LESS likely:
 //   caecum yes->not_stated, prep adequate->not_stated, histology yes->no, polyps no->yes (i.e. wait for histology).
 func validateReader(r *ReaderResult, text string) error {
-	for f, v := range map[string]string{"caecum_reached": r.Caecum, "prep": r.Prep, "polyps_removed": r.Polyps, "histology_present": r.Histology} {
+	for f, v := range map[string]string{"caecum_reached": r.Caecum, "prep": r.Prep, "tissue_taken": r.Polyps, "histology_present": r.Histology} {
 		okv := false
 		for _, e := range readerEnums[f] {
 			okv = okv || v == e
@@ -178,6 +180,9 @@ func validateReader(r *ReaderResult, text string) error {
 	}
 	if r.Prep == "adequate" && !grounded(r.PrepQuote) {
 		r.Prep, down = "not_stated", append(down, "prep")
+	}
+	if p := checkPrepQuote(r.Prep, r.PrepQuote); p != r.Prep {
+		r.Prep, down = p, append(down, "prep_grade")
 	}
 	if r.Histology == "yes" && !grounded(r.HistQuote) {
 		r.Histology, down = "no", append(down, "histology")

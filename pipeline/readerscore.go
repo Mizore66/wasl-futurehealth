@@ -41,6 +41,10 @@ func readerScore(reportsPath string) map[string]interface{} {
 	unsafeList := []map[string]string{}
 	confusion := map[string]int{}
 	for _, r := range rf.Reports {
+		if t := r.KeyFields["tissue_taken"]; t != "" { // v3 field: the second reader's "polyps" slot now means any tissue taken
+			r.KeyFields["polyps"] = t
+			r.KeyState, r.KeyReason = dohState(r.KeyFields["caecum"], r.KeyFields["prep"], t, r.KeyFields["histology"])
+		}
 		v := Judge.Judge(r.Text, "colonoscopy")
 		if v.GemmaHit {
 			hits++
