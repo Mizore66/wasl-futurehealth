@@ -111,29 +111,15 @@ func (s *SeenLedger) CatchUp(js jetstream.JetStream, stream string, n uint64) in
 	if last >= n && last-n+1 > from {
 		from = last - n + 1
 	}
-	cons, err := st.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{DeliverPolicy: jetstream.DeliverByStartSequencePolicy, OptStartSeq: from})
-	if err != nil {
-		return 0
-	}
 	done := 0
-	for {
-		batch, err := cons.FetchNoWait(500)
+	for seq := from; seq <= last; seq++ {
+		m, err := st.GetMsg(ctx, seq)
 		if err != nil {
-			break
+			continue // deleted or purged
 		}
-		got, top := 0, uint64(0)
-		for m := range batch.Messages() {
-			got++
-			if md, err := m.Metadata(); err == nil {
-				top = md.Sequence.Stream
-			}
-			if id := m.Headers().Get(jetstream.MsgIDHeader); id != "" {
-				s.record(seenKey(id))
-				done++
-			}
-		}
-		if got == 0 || top >= last {
-			break
+		if id := m.Header.Get(jetstream.MsgIDHeader); id != "" {
+			s.record(seenKey(id))
+			done++
 		}
 	}
 	return done
