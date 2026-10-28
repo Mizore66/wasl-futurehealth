@@ -10,7 +10,7 @@
   0.7,
   0.5
  ],
- "policy": "v7strict+cal=true+guard=true+tau=0.98",
+ "policy": "v7strict+cal=true+guard=true+tau=0.99",
  "reviewer": {
   "Err": 0.04,
   "Double": "merge+close",
@@ -33,40 +33,40 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1419,
    "wrong_patient_released": 0,
-   "review_items": 1862,
-   "reviewer_hours_per_1k_loops": 29.694
+   "review_items": 1866,
+   "reviewer_hours_per_1k_loops": 29.742
   },
   {
    "cohort": "cal-s101",
    "with_review": true,
    "tau_close": 0.995,
    "loops": 2100,
-   "closed": 672,
-   "tp": 672,
+   "closed": 673,
+   "tp": 673,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.859,
+   "recall": 0.861,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1473,
-   "reviewer_hours_per_1k_loops": 24.262
+   "review_items": 1434,
+   "reviewer_hours_per_1k_loops": 23.737
   },
   {
    "cohort": "cal-s101",
    "with_review": true,
    "tau_close": 0.99,
    "loops": 2100,
-   "closed": 672,
-   "tp": 672,
+   "closed": 673,
+   "tp": 673,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.859,
+   "recall": 0.861,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1473,
-   "reviewer_hours_per_1k_loops": 24.262
+   "review_items": 1434,
+   "reviewer_hours_per_1k_loops": 23.737
   },
   {
    "cohort": "cal-s101",
@@ -81,8 +81,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1319,
-   "reviewer_hours_per_1k_loops": 22.186
+   "review_items": 1312,
+   "reviewer_hours_per_1k_loops": 22.08
   },
   {
    "cohort": "cal-s101",
@@ -97,8 +97,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1293,
-   "reviewer_hours_per_1k_loops": 21.897
+   "review_items": 1286,
+   "reviewer_hours_per_1k_loops": 21.792
   },
   {
    "cohort": "cal-s101",
@@ -113,8 +113,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1430,
    "wrong_patient_released": 0,
-   "review_items": 1255,
-   "reviewer_hours_per_1k_loops": 21.455
+   "review_items": 1249,
+   "reviewer_hours_per_1k_loops": 21.366
   },
   {
    "cohort": "cal-s101",
@@ -129,8 +129,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1430,
    "wrong_patient_released": 0,
-   "review_items": 1252,
-   "reviewer_hours_per_1k_loops": 21.428
+   "review_items": 1246,
+   "reviewer_hours_per_1k_loops": 21.339
   },
   {
    "cohort": "cal-s101",
@@ -145,8 +145,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1229,
-   "reviewer_hours_per_1k_loops": 21.13
+   "review_items": 1226,
+   "reviewer_hours_per_1k_loops": 21.072
   },
   {
    "cohort": "cal-s101",
@@ -161,8 +161,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1431,
    "wrong_patient_released": 0,
-   "review_items": 1229,
-   "reviewer_hours_per_1k_loops": 21.13
+   "review_items": 1226,
+   "reviewer_hours_per_1k_loops": 21.072
   },
   {
    "cohort": "cal-s101",
@@ -185,11 +185,11 @@
    "with_review": false,
    "tau_close": 0.995,
    "loops": 2100,
-   "closed": 209,
-   "tp": 209,
+   "closed": 221,
+   "tp": 221,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.267,
+   "recall": 0.283,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -201,11 +201,11 @@
    "with_review": false,
    "tau_close": 0.99,
    "loops": 2100,
-   "closed": 209,
-   "tp": 209,
+   "closed": 221,
+   "tp": 221,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.267,
+   "recall": 0.283,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -217,11 +217,11 @@
    "with_review": false,
    "tau_close": 0.98,
    "loops": 2100,
-   "closed": 272,
-   "tp": 272,
+   "closed": 273,
+   "tp": 273,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.348,
+   "recall": 0.349,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -233,11 +233,11 @@
    "with_review": false,
    "tau_close": 0.95,
    "loops": 2100,
-   "closed": 283,
-   "tp": 283,
+   "closed": 284,
+   "tp": 284,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.362,
+   "recall": 0.363,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -249,11 +249,11 @@
    "with_review": false,
    "tau_close": 0.9,
    "loops": 2100,
-   "closed": 292,
-   "tp": 292,
+   "closed": 293,
+   "tp": 293,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.373,
+   "recall": 0.375,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,
@@ -265,11 +265,11 @@
    "with_review": false,
    "tau_close": 0.8,
    "loops": 2100,
-   "closed": 294,
-   "tp": 294,
+   "closed": 295,
+   "tp": 295,
    "false_closures": 0,
    "truth_closed": 782,
-   "recall": 0.376,
+   "recall": 0.377,
    "loops_with_wrong_patient_message": 0,
    "messages_released": 569,
    "wrong_patient_released": 0,

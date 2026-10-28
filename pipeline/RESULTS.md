@@ -519,3 +519,7 @@ Read with care: reader A was written against the same templates it is scored on,
 **Caveat on message counts.** Fewer v2 messages were released (3,686 vs 4,453), but the change did not cause this.
 - Outreach intents are counted before any gate, and they track each run's ingest order under chaos. These v2 runs were slower: the linker had processed 1.9k vs 4.1k events at the first kill.
 - Replaying the same run log with the old binary gives the same intent count (664 for v2-s41).
+
+**Learn-then-Test re-run at `cab895f`** (same 12,600 cal-split loops; files in [`results/ltt/`](results/ltt/LTT.md)): the operating tier is still **0.995**, with 0 false closures and 0 wrong-patient messages.
+- With review: recall 0.874 (was 0.873); review items 68.4 per 100 loops (was 70.2).
+- Without review: recall 0.275 (was 0.256).
