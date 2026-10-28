@@ -274,22 +274,26 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 var SweepErrs = []float64{0, 0.02, 0.04, 0.06, 0.08}
 var SweepDoubles = []string{"none", "merge", "merge+close"}
 var SweepSeeds = 5
+var SweepRhos = []float64{0} // H7: correlation between a reader and the first read (governance.go)
 
 func sweep(data, wasl string, P int, out string) {
 	o := loadOffline(data, wasl)
 	type job struct {
 		err    float64
+		rho    float64
 		double string
 		seed   int64
 	}
 	jobs := []job{}
-	for _, e := range SweepErrs {
-		for _, d := range SweepDoubles {
-			for s := int64(1); s <= int64(SweepSeeds); s++ {
-				if e == 0 && s > 1 {
-					continue
+	for _, rho := range SweepRhos {
+		for _, e := range SweepErrs {
+			for _, d := range SweepDoubles {
+				for s := int64(1); s <= int64(SweepSeeds); s++ {
+					if e == 0 && (s > 1 || rho > 0) {
+						continue
+					}
+					jobs = append(jobs, job{e, rho, d, s})
 				}
-				jobs = append(jobs, job{e, d, s})
 			}
 		}
 	}
@@ -301,7 +305,7 @@ func sweep(data, wasl string, P int, out string) {
 		sem <- true
 		defer func() { <-sem }()
 		cfg := DefaultReviewer
-		cfg.Err, cfg.Double, cfg.Seed = j.err, j.double, j.seed
+		cfg.Err, cfg.Rho, cfg.Double, cfg.Seed = j.err, j.rho, j.double, j.seed
 		rp, sos, iters := reviewLoop(o, P, cfg)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		secs, reads, linkS, evS, guardS, guardN := 0.0, 0, 0.0, 0.0, 0.0, 0
@@ -333,7 +337,7 @@ func sweep(data, wasl string, P int, out string) {
 			}
 		}
 		loops := float64(len(o.tr.Loops))
-		res[i] = map[string]interface{}{"err": j.err, "double": j.double, "seed": j.seed, "iterations": iters,
+		res[i] = map[string]interface{}{"err": j.err, "rho": j.rho, "double": j.double, "seed": j.seed, "iterations": iters,
 			"precision": acc["precision"], "recall": acc["recall"], "false_closures": acc["false_closures"], "closed_pred": acc["closed_pred"],
 			"fc_upper95": acc["false_closure_rate_upper95"], "attribution": acc["attribution"], "state_accuracy": acc["state_accuracy"],
 			"items": len(sos), "items_by_kind": kinds, "reads": reads, "wrong_signoffs": wrongSO,
@@ -341,7 +345,7 @@ func sweep(data, wasl string, P int, out string) {
 			"link_hours_per_1k_loops": 1000 * linkS / 3600 / loops, "evidence_hours_per_1k_loops": 1000 * evS / 3600 / loops,
 			"guard_items": guardN, "guard_hours_per_1k_loops": 1000 * guardS / 3600 / loops, "closed_auto": acc["closed_auto"], "closed_human_assisted": acc["closed_human_assisted"],
 			"gov": govMetrics(o, rp)}
-		fmt.Fprintf(os.Stderr, "err=%.2f double=%-11s seed=%d P=%v R=%v FC=%v items=%d reads=%d h/1k=%.1f\n", j.err, j.double, j.seed,
+		fmt.Fprintf(os.Stderr, "err=%.2f rho=%.2f double=%-11s seed=%d P=%v R=%v FC=%v items=%d reads=%d h/1k=%.1f\n", j.err, j.rho, j.double, j.seed,
 			acc["precision"], acc["recall"], acc["false_closures"], len(sos), reads, 1000*secs/3600/loops)
 	}
 	for i, j := range jobs {

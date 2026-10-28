@@ -241,6 +241,7 @@ var ConsentHold = true
 
 type ReviewerCfg struct {
 	Err      float64 // per-read error probability
+	Rho      float64 // H7: P(a later read repeats the first read's outcome, right or wrong) instead of an independent draw
 	Double   string  // none | merge | merge+close
 	Seed     int64
 	LinkMedS float64 // median seconds per link read
@@ -283,7 +284,11 @@ type read struct {
 func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 	r := read{reader: reader}
 	kind := it.Kinds[0]
-	wrong := u01(c.Seed, it.ItemID, reader, "err") < c.Err
+	draw := reader // correlated reads (H7): with probability Rho a later reader shares the first reader's error draw
+	if reader != "r1" && c.Rho > 0 && u01(c.Seed, it.ItemID, reader, "corr") < c.Rho {
+		draw = "r1"
+	}
+	wrong := u01(c.Seed, it.ItemID, draw, "err") < c.Err
 	med := c.EvMedS
 	if kind == "evidence" && it.Reason == "prep_grade_one_click" {
 		med = OneClickMedS
@@ -306,7 +311,7 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 				alts = lungEvAlt(t) // lung-nodule labels (lung.go)
 			}
 			if len(alts) > 0 {
-				t = alts[int(u01(c.Seed, it.ItemID, reader, "alt")*float64(len(alts)))]
+				t = alts[int(u01(c.Seed, it.ItemID, draw, "alt")*float64(len(alts)))]
 			}
 		}
 		r.ev = t
@@ -352,6 +357,9 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 	}
 	so.Link, so.Evidence, so.Reads, so.DurationS = final.link, final.ev, reads, math.Round(secs*10)/10
 	so.Reviewer = fmt.Sprintf("sim-%s e=%.3f double=%s reads=%v", so.Role, c.Err, c.Double, reads)
+	if c.Rho > 0 {
+		so.Reviewer += fmt.Sprintf(" rho=%.2f", c.Rho)
+	}
 	return so
 }
 
