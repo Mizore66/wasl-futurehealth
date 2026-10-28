@@ -122,7 +122,7 @@
   - **Below 1.0 slot per FIT+, ≤31-day completion collapses to 0–14% under *any* booking policy.** Only levers that create capacity help there (see "Queue control" below).
 - **Fairness remedies (built and evaluated):**
   - Female-list protection in the booking engine: a demand-sized hold on female-list slots, released 7 days out. It cuts the access gap from 18.5 to 12.6 pp at a 15–30% female-list share, to 4.5 pp at 30% and 0.6 pp at 40% (`booking/RESULTS.md`).
-  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.16 (1.09–1.23). Per-origin gate calibration was not needed.
+  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.17 (1.12–1.23). Per-origin gate calibration was not needed.
 - **Dashboard:** reported vs evidenced closure per provider; drop-off reasons (never notified, not understood, referral rejected, no-show, inadequate, unlinked); review load by name origin; small-cell suppression.
 - **Governance:**
   - RBAC and consent in code;
@@ -147,9 +147,9 @@
     - H3, missed surveillance interval: clinician confirms.
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
-    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/3,709 held-out).
+    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/5,467 held-out).
     - H7, correlated reviewer error: mitigations designed (different roles, blinded second read, pair rotation, 2% senior audit). *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
-    - H8, unequal burden or access: review-load ratio 1.16 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
+    - H8, unequal burden or access: review-load ratio 1.17 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
     - H10, silent message loss: *measured* 0/15,769.
     - H11, tampering: *measured* 17/17 detected.
@@ -183,7 +183,7 @@
     - **Access:** RBAC, with every access hash-logged.
     - **Residual risk:** linkage inherently needs identifiers, so de-identification isn't possible (RAI 3.1.4.4.3, accepted with controls).
   - **Fairness acceptance thresholds** (checked before go-live and monthly [A]):
-    - review-load ratio between name-origin groups ≤1.25 (measured 1.16, 95% CI 1.09–1.23 on held-out noise. The gap came from placeholder 1 Jan / 1 Jul birth dates, which are commoner for some origins and can't corroborate a link alone. A placeholder DOB now corroborates only on a full name match);
+    - review-load ratio between name-origin groups ≤1.25 (measured 1.17, 95% CI 1.12–1.23 on held-out noise. The gap came from placeholder 1 Jan / 1 Jul birth dates, which are commoner for some origins and can't corroborate a link alone. A placeholder DOB now corroborates only on a full name match);
     - access gap in ≤31-day booking between female-list and other patients ≤5 pp. Measured 18.5 pp without reservation and 12.6 pp with the engine's demand-sized female-list protection at a 15–30% female-list share. It passes once ≈30–40% of lists are female lists (4.5 / 0.6 pp), so female-list staffing is a go-live condition;
     - false-closure rate: 0 in every group.
   - **Clinical safety officer:** a named ADPHC clinician (role [A]). Any change to closure rules, intervals or reader models goes through change control: hazard-log impact, regression on the frozen sets, and CSO sign-off per release.
@@ -221,7 +221,7 @@
 | Area | Result |
 |---|---|
 | Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; an assumed 4% independent reviewer error per read (stress test, not a measured rate); 3 process kills + 1 NATS kill | CRC P 1.000, R 0.948, 0/563 false closures. Cervical 0/216. No review: CRC R 0.167. 26.3 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
-| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.878 (0.863–0.894), **0/2,532 false closures** (UB 0.15%), 0/5,493 wrong-patient messages, 0/3,709 messages without consent, KPI error 0.035 vs EID-only 0.205, review-load ratio across origins 1.16 (1.09–1.23). Dev v1: R 0.948, CRC 0/2,703, cervical 0/1,008. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
+| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.879 (0.862–0.896), **0/2,533 false closures** (UB 0.15%), 0/9,398 wrong-patient messages, 0/5,467 messages without consent, KPI error 0.035 vs EID-only 0.205, review-load ratio across origins 1.17 (1.12–1.23). Dev v1: R 0.946, CRC 0/2,698, cervical 0/1,004. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
 | Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. |
 | Rule baselines | EID-only: P 0.834, R 0.364. Any procedure ≤120 d: P 0.661, R 0.431. |
 | v7 gate under the **current closure rule** (ungraded prep stays open; offline, one cohort, 5 seeds × 3 reviewer error rates) | Double review: 0/8,422 false closures (upper bound 0.04%); recall 0.973 / 0.958 / 0.943 at 2 / 4 / 6% error. No-review recall 0.273; 27.0 reviewer-h per 1k loops. Single review: 21 false closures, so double review is mandatory. |
