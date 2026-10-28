@@ -86,6 +86,7 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 		return
 	})
 	c.seen = openSeen(js)
+	c.seen.CatchUp(js, "FHIR", 4*seenQueue)
 	c.next, c.ackHWM = 1, 0
 	if e, err := c.kv.Get(ctx, "checkpoint"); err == nil {
 		var cp struct {

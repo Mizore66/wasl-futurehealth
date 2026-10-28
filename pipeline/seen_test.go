@@ -13,8 +13,8 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-// Old replays (outside the stream's dedupe window) are dropped by the seen ledger; a crash between the ledger write and
-// the publish never loses the message. Needs bin/nats-server (skipped otherwise).
+// Old replays (outside the stream's dedupe window) are dropped by the seen ledger; ids a crash left unrecorded are
+// re-recorded by CatchUp. Needs bin/nats-server (skipped otherwise).
 func TestSeenLedgerDropsOldReplays(t *testing.T) {
 	bin, _ := filepath.Abs("../bin/nats-server")
 	if _, err := os.Stat(bin); err != nil {
@@ -66,13 +66,21 @@ func TestSeenLedgerDropsOldReplays(t *testing.T) {
 	if count() != 3 {
 		t.Fatalf("control: without the ledger an old replay is stored again; msgs=%d", count())
 	}
-	// crash after the ledger write, before the publish: the message must still be published
-	seen.kv.Create(ctx, seenKey("medlab/DiagnosticReport/R3/v1"), []byte("pending"))
-	if _, replay := seen.Publish(js, msg("medlab/DiagnosticReport/R3/v1")); replay || count() != 4 {
-		t.Fatalf("pending entry must re-publish: replay=%v msgs=%d", replay, count())
+	// crash after the publish, before the id was recorded: CatchUp re-records it, so a later replay is still dropped
+	pubSync(js, msg("medlab/DiagnosticReport/R3/v1"))
+	if n := seen.CatchUp(js, "FHIR", 10); n != 4 {
+		t.Fatalf("catch-up re-recorded %d ids, want 4", n)
 	}
-	e, _ := seen.kv.Get(ctx, seenKey("medlab/DiagnosticReport/R3/v1"))
-	if string(e.Value()) != "done" {
-		t.Fatal(fmt.Sprint("ledger not marked done: ", string(e.Value())))
+	time.Sleep(400 * time.Millisecond)
+	if _, replay := seen.Publish(js, msg("medlab/DiagnosticReport/R3/v1")); !replay || count() != 4 {
+		t.Fatalf("unrecorded id not caught up: replay=%v msgs=%d", replay, count())
+	}
+	// a new id is still published once
+	if _, replay := seen.Publish(js, msg("medlab/DiagnosticReport/R4/v1")); replay || count() != 5 {
+		t.Fatalf("new id: replay=%v msgs=%d", replay, count())
+	}
+	seen.Flush()
+	if _, err := seen.kv.Get(ctx, seenKey("medlab/DiagnosticReport/R4/v1")); err != nil {
+		t.Fatal(fmt.Sprint("ledger not recorded after flush: ", err))
 	}
 }
