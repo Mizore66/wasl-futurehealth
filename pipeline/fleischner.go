@@ -32,6 +32,12 @@ type FlRec struct {
 	Next     string `json:"next_step"`          // what follows a stable follow-up
 	Optional bool   `json:"optional,omitempty"` // Fleischner says "optional"; tracked anyway
 	Cell     string `json:"cell"`               // table cell, e.g. solid/single/low/6-8
+	// Next surveillance CT after a stable follow-up (0 = none). Counted from the index CT ("CT at 18-24 months") or from
+	// the stable follow-up ("CT every 2 years", "annual CT"). Wasl window policy: a single time point T -> [T-2, T+2] months.
+	NextLo   int    `json:"next_lo_days,omitempty"`
+	NextHi   int    `json:"next_hi_days,omitempty"`
+	NextFrom string `json:"next_from,omitempty"` // index | followup
+	NextOpt  bool   `json:"next_optional,omitempty"`
 }
 
 func months(m float64) int { return int(math.Round(m * 30.44)) }
@@ -82,6 +88,9 @@ func fleischnerRec(typ string, sizeMM int, count, risk string) FlRec {
 	ct := func(lo, hi float64, next string) {
 		r.Action, r.WinLo, r.WinHi, r.Next = FlCT, months(lo), months(hi), next
 	}
+	then := func(lo, hi float64, from string, optional bool) {
+		r.NextLo, r.NextHi, r.NextFrom, r.NextOpt = months(lo), months(hi), from, optional
+	}
 	if typ == FlSolid {
 		r.Cell = "solid/" + count + "/" + risk + "/" + band
 		switch {
@@ -92,15 +101,19 @@ func fleischnerRec(typ string, sizeMM int, count, risk string) FlRec {
 			r.Optional = true
 		case count == FlSingle && band == "6-8" && risk == "low":
 			ct(6, 12, "consider CT at 18-24 months")
+			then(18, 24, "index", true)
 		case count == FlSingle && band == "6-8":
 			ct(6, 12, "CT at 18-24 months")
+			then(18, 24, "index", false)
 		case count == FlSingle: // >8 mm, either risk
 			r.Action, r.WinLo, r.WinHi = FlCTPET, 0, months(3)
 			r.Next = "consider CT at 3 months, PET/CT or tissue sampling; manage by result"
 		case risk == "low": // multiple, 6-8 or >8
 			ct(3, 6, "consider CT at 18-24 months")
+			then(18, 24, "index", true)
 		default:
 			ct(3, 6, "CT at 18-24 months")
+			then(18, 24, "index", false)
 		}
 		return r
 	}
@@ -109,14 +122,17 @@ func fleischnerRec(typ string, sizeMM int, count, risk string) FlRec {
 	switch {
 	case count == FlMulti && band == "<6":
 		ct(3, 6, "if stable, consider CT at 2 and 4 years")
+		then(22, 26, "index", true)
 	case count == FlMulti:
 		ct(3, 6, "manage by the most suspicious nodule")
 	case band == "<6":
 		r.Next = "no routine follow-up"
 	case typ == FlGG:
 		ct(6, 12, "if unchanged, CT every 2 years until 5 years")
+		then(22, 26, "followup", false)
 	default: // single part-solid >=6 mm
 		ct(3, 6, "if unchanged and solid component <6 mm, annual CT for 5 years; solid component >=6 mm is highly suspicious")
+		then(10, 14, "followup", false)
 	}
 	return r
 }

@@ -24,6 +24,7 @@ const (
 type loopState struct {
 	facts   *LoopFacts
 	last    *Decision
+	lastFU  *Decision // lung: the surveillance loop opened by a stable follow-up (lung.go)
 	raised  map[string]*ReviewItem
 	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 }
@@ -633,6 +634,9 @@ func (c *ClosureCore) Final() map[string]*Decision {
 	m := map[string]*Decision{}
 	for k, v := range c.loops {
 		m[k] = v.last
+		if v.lastFU != nil {
+			m[v.lastFU.LoopID] = v.lastFU
+		}
 	}
 	return m
 }
