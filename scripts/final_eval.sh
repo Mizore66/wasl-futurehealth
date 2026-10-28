@@ -9,6 +9,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(11 23 37 41 59); fi
 FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK:-$ROOT/out/final}"
+# WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
+REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -19,10 +21,12 @@ python3 - "$ROOT" "$FINAL/manifest.json" "${SEEDS[@]}" <<'P'
 import json, sys, hashlib, subprocess, os, datetime
 root, out, seeds = sys.argv[1], sys.argv[2], [int(s) for s in sys.argv[3:]]
 h = lambda p: hashlib.sha256(open(os.path.join(root, p), 'rb').read()).hexdigest()
+alias = {"models/gemma_cache.json": os.path.join(os.environ["MODELS"], "gemma_cache.json"), "data/evidence/reports43.json": os.environ["REPORTS"]}
+h = lambda p: hashlib.sha256(open(alias.get(p, os.path.join(root, p)), 'rb').read()).hexdigest()
 rev = subprocess.check_output(['git', '-C', root, 'rev-parse', 'HEAD']).decode().strip()
 m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision": rev,
      "policy": "v7strict", "thresholds": {"tau_high_messaging": 0.99, "tau_close_v7strict": 0.99, "uncorroborated_cap": 0.989, "calibrator": "models/iso_v7.json (stratified)", "dob_second_id_guard": True, "reviewer_error": 0.04, "double_review": "merge+close"},
-     "reader": "cached (Gemma 4 26B answers, sha256-keyed; live 4B reported separately in pipeline/RESULTS.md stage 2)",
+     "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
      "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
@@ -41,17 +45,17 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
-    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" \
+    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
       -out "$O/base" -seed "$seed" -persons 6500 -cerv 600 -noise "$noise" > /dev/null
-    "$B/wsi7" sim -data "$O/base" -wasl "$ROOT/models" -run "$O/run/base" > /dev/null 2>&1
+    "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
-    (cd "$B" && ./wsi7 orchestrate -data "$O/cohort" -wasl "$ROOT/models" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
+    (cd "$B" && ./wsi7 orchestrate -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
         -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict > "$O/orchestrate.log" 2>&1)
-    (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$ROOT/models" -run "$R" -ann hnsw -dual -policy v7strict > "$R/audit.stdout" 2>&1)
-    (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$ROOT/models" -run "$R" -ann hnsw -dual -policy v7strict -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
-    (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$ROOT/models" -run "$R" -ann hnsw -dual -policy v7strict > /dev/null)
+    (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict > "$R/audit.stdout" 2>&1)
+    (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
+    (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict > /dev/null)
     mkdir -p "$FINAL/$tag"
     cp "$R/report7.json" "$R/tamper.json" "$FINAL/$tag/"
     sed -i.bak -e "s#$WORK/#./out/final/#g" -e "s#$ROOT/#./#g" "$FINAL/$tag/report7.json" "$FINAL/$tag/tamper.json" && rm -f "$FINAL/$tag/"*.bak   # no local paths in committed results
@@ -62,7 +66,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
 JOBS="${WASL_JOBS:-3}"   # runs in parallel, each on its own ports; throughput_ev_s is then per-run under contention
 TAGS=(); for noise in v1 v2; do for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done; done
 for ((lane = 0; lane < JOBS; lane++)); do
-  ( export WASL_PORT_OFFSET=$((lane * 100))
+  ( export WASL_PORT_OFFSET=$((${WASL_PORT_BASE:-0} + lane * 100))
     for ((k = lane; k < ${#TAGS[@]}; k += JOBS)); do run_one "${TAGS[$k]%%:*}" "${TAGS[$k]##*:}"; done ) &
 done
 wait

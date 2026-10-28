@@ -402,3 +402,58 @@ func WarmReader(data string, workers int) (asked, ok int) {
 	wg.Wait()
 	return
 }
+
+// ReaderCache reads every report text of a corpus file (reports43.json layout) plus the pathology templates with the live
+// reader and writes the answers in the gemma_cache.json layout (keyed by text SHA-256), so a frozen evaluation can replay
+// this reader exactly like the cached 26B answers. Unreadable texts are left out (a cache miss routes to review).
+func ReaderCache(reportsPath, pathPath, out string, workers int) (n, ok int) {
+	var rf struct {
+		Reports []RepSrc `json:"reports"`
+	}
+	b, err := os.ReadFile(reportsPath)
+	if err != nil {
+		panic(err)
+	}
+	json.Unmarshal(b, &rf)
+	var pt []PathTpl
+	if b, err := os.ReadFile(pathPath); err == nil {
+		json.Unmarshal(b, &pt)
+	}
+	texts := map[string]string{}
+	for _, r := range rf.Reports {
+		texts[textSha(r.Text)] = r.Text
+	}
+	for _, p := range pt {
+		texts[textSha(p.Text)] = p.Text
+	}
+	cache := map[string]gemmaEntry{}
+	ch := make(chan string)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for sha := range ch {
+				res, good := LiveReader.Read(texts[sha])
+				mu.Lock()
+				n++
+				if good {
+					ok++
+					cache[sha] = res.asGemmaEntry()
+				}
+				mu.Unlock()
+			}
+		}()
+	}
+	for sha := range texts {
+		ch <- sha
+	}
+	close(ch)
+	wg.Wait()
+	b, _ = json.MarshalIndent(cache, "", " ")
+	if err := os.WriteFile(out, b, 0644); err != nil {
+		panic(err)
+	}
+	return
+}
