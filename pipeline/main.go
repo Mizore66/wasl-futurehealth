@@ -267,6 +267,16 @@ func main() {
 		runServe(absRun, *data, *apiAddr)
 	case "lungcache": // ask local Gemma 3 4B once per unique lung corpus text; write the replayable cache + reader scores
 		runLungCache(*lungData, *readerURL, *out)
+	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
+		if LiveReader == nil || ReaderMode != "live" {
+			panic("readercache needs -reader live")
+		}
+		n, ok := ReaderCache(*reports, *pathT, *out, 4)
+		fmt.Printf("reader cache: %d texts, %d read OK -> %s\n", n, ok, *out)
+	case "readerscore": // score regex + cached second reader against a keyed corpus (see readerscore.go)
+		Judge = LoadJudge2(filepath.Join(*wasl, "gemma_cache.json"))
+		b, _ := json.MarshalIndent(readerScore(*reports), "", " ")
+		fmt.Println(string(b))
 	case "readerwarm":
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readerwarm needs -reader live")

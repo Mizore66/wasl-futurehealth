@@ -119,14 +119,20 @@ type gemmaEntry struct {
 	Quotes    map[string]string `json:"quotes,omitempty"` // v7: per-field verbatim quotes (cached, no new calls)
 }
 
-type Judge2 struct{ cache map[string]gemmaEntry }
+type Judge2 struct {
+	cache map[string]gemmaEntry
+	model string // provenance label of the cached second reader (gemma_cache.model next to the cache; default the 26B)
+}
 
 func LoadJudge2(path string) *Judge2 {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}
-	j := &Judge2{cache: map[string]gemmaEntry{}}
+	j := &Judge2{cache: map[string]gemmaEntry{}, model: "gemma-4-26b/cached"}
+	if m, err := os.ReadFile(strings.TrimSuffix(path, ".json") + ".model"); err == nil {
+		j.model = strings.TrimSpace(string(m)) + "/cached"
+	}
 	if err := json.Unmarshal(b, &j.cache); err != nil {
 		panic(err)
 	}
@@ -149,7 +155,7 @@ func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 		v.Model, v.ReaderLatencyMs = r.Model, r.LatencyMs
 	} else {
 		g, ok = j.cache[textSha(text)]
-		v.Model = "gemma-4-26b/cached"
+		v.Model = j.model
 	}
 	v.GemmaHit = ok
 	if !ok {
