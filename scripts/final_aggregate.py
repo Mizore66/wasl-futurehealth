@@ -68,6 +68,7 @@ for noise in ["v1", "v2"]:
         pool["released"] += ct.get('released_total', 0); pool["released_without_granted_consent"] += ct.get('released_without_granted_consent', 0)
         pool["forged"] += r['forged']['forged_events']; pool["forged_effect"] += r['forged']['forged_with_any_effect']
         pool["forged_target_falsely_merged_by_linker"] += r['forged'].get('forged_target_pair_falsely_merged_by_linker', 0)
+        pool["forged_consent_target_opted_out"] += r['forged'].get('forged_consent_target_genuinely_opted_out', 0)
         att = [a for a in t['attacks'] if a['attacker'] != '-']
         pool["tamper_attacks"] += len(att); pool["tamper_detected"] += sum(a['detected'] for a in att)
         pool["tamper_false_alarm"] += sum(a['detected'] for a in t['attacks'] if a['attacker'] == '-')
@@ -83,6 +84,7 @@ for noise in ["v1", "v2"]:
         "final_state_mismatch_loops": [pool["final_state_mismatch"], None, None],
         "forged_with_effect": [pool["forged_effect"], pool["forged"], None],
         "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [pool["forged_target_falsely_merged_by_linker"], None, None],
+        "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [pool["forged_consent_target_opted_out"], None, None],
         "tamper_detected": [pool["tamper_detected"], pool["tamper_attacks"], None],
         "tamper_false_alarms": [pool["tamper_false_alarm"], len(T), None],
     }
