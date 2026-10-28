@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-28T03:35:34.711234Z",
- "code_revision": "a66b6a254c3cef92204a648637e82c582b71ebda",
+ "frozen_at": "2026-10-28T05:43:09.122606Z",
+ "code_revision": "cdeac0a6fbccf8c067b0077812db11b4137dc4a2",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -44,9 +44,5 @@
   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
- ],
- "rescored": {
-  "report_code_revision": "f7e5cf1",
-  "why": "report7 counted messages suppressed by a patient's genuine opt-out as the effect of a forged (RBAC-denied) consent denial on that patient; pipeline runs unchanged, only report7 re-run"
- }
+ ]
 }

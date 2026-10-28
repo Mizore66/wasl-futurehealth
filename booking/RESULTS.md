@@ -255,3 +255,14 @@ cd booking/sim && python sim.py 150 fem '{"c_main": 1.5, "policies": ["c", "c_re
 About 2.5 minutes.
 
 **In the pipeline:** since `a66b6a2`, 69.6% of the pipeline's CRC loops are women. On the five held-out runs, `booking.json` had 133–170 open cases per run that require a female list. All got a slot within 31 days, vs 97–100% for everyone else. That is a 95-day snapshot at 1.2 slots per case, easier than the full-year simulation above.
+
+## Cervical colposcopy and the repeat after an unsatisfactory exam
+
+`suggest.py` now also books cervical loops that still need a colposcopy. It uses the same engine on a synthetic colposcopy-clinic calendar, at the CRC calendar's slot density per day.
+- **First colposcopy:** must fall inside the loop's DoH App 5 window (HSIL+ 14 days, LSIL 28, ASC-US 56).
+- **Repeat after an unsatisfactory exam:** 6–12 weeks later (DoH cervical standard 10.6.4).
+  - It is booked when the unsatisfactory result arrives. `Event.earliest` sets the earliest allowed day, so the slot is held weeks ahead rather than requested at week 6.
+  - Requesting at week 6 left 8 of 25 repeats late on one run, because first colposcopies had already taken the slots.
+- **Results on the five held-out pipeline runs:** 127/127 repeats inside the window. First colposcopies inside their window 83–88% of the time; the misses are mostly 14-day urgent windows.
+- **Assumed [A]:** half of colposcopy clinics have a female clinician. Female-list protection applies here as well.
+- **Test:** `tests/test_engine.py::test_earliest`.

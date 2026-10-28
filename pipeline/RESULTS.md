@@ -534,7 +534,7 @@ Read with care: reader A was written against the same templates it is scored on,
 - **Eval cohorts:** 69.6% women in CRC; 315 of them also have a cervical loop (seed 11).
 - **Calibration cohorts:** the cal split has only 779 women, so they reach 51.9%, with 600 also having a cervical loop. The Learn-then-Test cohorts are therefore less female than the eval cohorts. This is disclosed as a limit of the guarantee's scope.
 
-**Frozen evaluation at `a66b6a2`** (same seeds; these are the files in `results/final/` now):
+**Frozen evaluation at `a66b6a2`** (same seeds; superseded by the override block below):
 
 | | v1 noise (dev) | **v2 noise (held out)** |
 |---|---|---|
@@ -561,8 +561,40 @@ Read with care: reader A was written against the same templates it is scored on,
 - RBAC rejected every forged consent record, so these are now counted separately (`forged_consent_target_genuinely_opted_out`).
 - Forged events with effect: 0.
 
-**Learn-then-Test on the new calibration cohorts** (12,600 loops, 51.9% of CRC loops women; files in [`results/ltt/`](results/ltt/LTT.md)):
+**Learn-then-Test on the new calibration cohorts** (12,600 loops, 51.9% of CRC loops women):
 - The operating tier is still **0.995**, with 0 false closures and 0 wrong-patient messages.
 - With review, recall is 0.883; without review, 0.295.
 
 **Female-list booking in the pipeline:** across the five v2 runs there are 133–170 open CRC cases per run that require a female endoscopist. All were suggested a slot within 31 days, vs 97–100% for everyone else (`booking.json` → `summary.female_list`).
+
+### Override block and cervical repeat booking (`9c3f969`)
+
+**Override block** (post-hoc: added after the `a66b6a2` evaluation's cervical false closure, and disclosed as such).
+- **The rule:** a reader may extract an explicit inadequacy from a report (coded "unsatisfactory", caecum not reached, inadequate prep). If a human then signs "adequate" on that report, the loop stays open, and a confirming review is raised that shows the quote. Only the confirmation decides.
+- **Why:** the simulated reviewers' 4% error rate is an assumption, not evidence that clinicians err. The block closes a path the double review couldn't catch: two humans overriding the report itself.
+- **Test:** `TestOverrideAgainstReportNeedsConfirmation`.
+- **In the frozen evaluation** it fired once in 10 runs, on the original case (`v1-s23`, `AHS-sr-160`).
+  - The confirming review said "inadequate".
+  - The loop stayed open with the `rejected_inadequate`, `econsult_re_refer` and overdue escalations.
+  - Reviewer hours rose by about 0.1–0.2 per 1,000 loops.
+
+**Frozen evaluation at `cdeac0a`** (same seeds; these are the files in `results/final/` now):
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.948 (0.940–0.956) | **1.000 / 0.878 (0.863–0.894)** |
+| CRC false closures (pooled) | **0/2,703** (UB 0.14%) | **0/2,532** (UB 0.15%) |
+| Cervical false closures | **0/1,008** (was 1) | 0/966 |
+| Wrong-patient messages / messages without consent | 0/5,523 / 0/3,846 | 0/5,493 / 0/3,709 |
+| KPI absolute error, Wasl vs EID-only | 0.010 vs 0.207 | 0.035 vs 0.205 |
+| Reviewer hours per 1k loops | 26.0 | 23.2 |
+| Review-load ratio, max/min origin | 1.17 (1.10–1.24) | **1.16 (1.09–1.23)** |
+| Duplicates/losses · tamper · forged with effect | 0/100,576 · 85/85 · 0/114 | 0/99,254 · 85/85 · 0/111 |
+
+**Learn-then-Test** (same cohorts; files in [`results/ltt/`](results/ltt/LTT.md)) is unchanged: τ 0.995, 0 false closures, 0 wrong-patient messages, recall 0.883.
+
+**Cervical repeat booking** (`booking.json` → `cervical`). Suggestions now cover cervical loops that still need a colposcopy, at the same slot density per day as the CRC calendar.
+- **First colposcopy:** inside the DoH App 5 window.
+- **Repeat after an unsatisfactory exam:** 6–12 weeks later (DoH 10.6.4). It is booked when the result arrives, using `Event.earliest`.
+- **On the five held-out runs:** 127/127 repeats landed inside the 6–12 week window. First colposcopies landed inside their window 83–88% of the time; most misses are the 14-day urgent windows.
+- **Assumption:** half of colposcopy clinics are run by a female clinician [A].

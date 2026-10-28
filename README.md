@@ -76,14 +76,14 @@ Outputs go to `out/` (gitignored):
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
-**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `a66b6a2`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `cdeac0a`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
 - CRC P 1.000, R 0.878 (95% CI 0.863–0.894).
 - **0/2,532 false closures** (95% upper bound 0.15%).
-- 0/5,136 wrong-patient messages; 0/3,541 messages sent without granted consent.
+- 0/5,493 wrong-patient messages; 0/3,709 messages sent without granted consent.
 - KPI error 0.035 vs 0.205 for EID-only tracking.
-- Review load across name origins: max/min ratio 1.16 (95% CI 1.10–1.21), under the 1.25 limit.
+- Review load across name origins: max/min ratio 1.16 (95% CI 1.09–1.23), under the 1.25 limit.
 
-On dev noise, recall is 0.948 with 0/2,703 CRC false closures (one cervical false closure, 1/1,008: both simulated reviewers erred at an assumed 4% error rate; the override block now holds such a case for confirmation). The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
+On dev noise, recall is 0.948 with 0/2,703 CRC and 0/1,008 cervical false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Options** (environment variables for `scripts/demo.sh`):
 
