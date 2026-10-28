@@ -339,7 +339,12 @@ func report7(data, wasl, run string, P int) {
 	ls := readStatus(run, "linker")
 	lstats, _ := ls["stats"].(map[string]interface{})
 	clusters := rp.L.Clusters()
-	effect := 0
+	// genuine consent outcome per loop: a forged 'deny' aimed at a patient who really withdrew consent later is not the
+	// cause of that patient's suppressed messages (RBAC denied every forged consent record; see rbac_denied_consent)
+	var consentDetail map[string]struct{ Final string }
+	cdb, _ := os.ReadFile(filepath.Join(data, "consent_detail.json"))
+	json.Unmarshal(cdb, &consentDetail)
+	effect, forgedTargetGenuineOptOut := 0, 0
 	for _, f := range forged {
 		switch f["type"] {
 		case "signoff_evidence":
@@ -348,6 +353,10 @@ func report7(data, wasl, run string, P int) {
 			}
 		case "consent_deny":
 			for _, l := range f["loops"].([]interface{}) {
+				if consentDetail[fmt.Sprint(l)].Final == "deny" {
+					forgedTargetGenuineOptOut++
+					continue
+				}
 				if d := liveFinal[fmt.Sprint(l)]; d != nil {
 					for _, x := range d.Outreach {
 						if x.Suppress == SupConsent {
@@ -375,7 +384,7 @@ func report7(data, wasl, run string, P int) {
 	}
 	forgedOut := map[string]interface{}{"forged_events": len(forged), "rbac_denied_signoff": lstats["rbac_denied_signoff"],
 		"rbac_denied_consent": lstats["rbac_denied_consent"], "consent_records_accepted": lstats["consent_records"], "forged_with_any_effect": effect,
-		"forged_target_pair_falsely_merged_by_linker": forgedPairMergedIndep}
+		"forged_target_pair_falsely_merged_by_linker": forgedPairMergedIndep, "forged_consent_target_genuinely_opted_out": forgedTargetGenuineOptOut}
 
 	// ---- drop-off reasons per programme (live)
 	drop := map[string]interface{}{}
