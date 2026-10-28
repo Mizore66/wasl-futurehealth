@@ -333,11 +333,14 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var newItems []*ReviewItem
 	// one review item per uncertain identity edge (link) or per report whose two readers disagree (evidence);
 	// evidence is only asked once the link is trusted, so a reviewer never judges a report for the wrong patient
-	raise := func(r row, kind string) {
+	raiseFor := func(r row, kind, purpose string) {
 		pair := [2]string{r.d.Weak.A, r.d.Weak.B}
 		key, report := pair[0]+"|"+pair[1], ""
 		if kind == "evidence" {
 			key, report = r.d.ReportID, r.d.ReportID
+		}
+		if purpose == OverrideConfirm {
+			key += "#confirm"
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		if _, ok := signed[id]; ok || pendSet[id] {
@@ -358,10 +361,14 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					it.Reason = r.d.Ev.ReviewHint // image reader: prep_grade_one_click etc. (human still decides)
 				}
 			}
+			if purpose != "" {
+				it.Reason = purpose
+			}
 			ls.raised[id] = it
 			newItems = append(newItems, it)
 		}
 	}
+	raise := func(r row, kind string) { raiseFor(r, kind, "") }
 	signoffFor := func(report string) *Signoff {
 		ids := make([]string, 0, len(ls.raised))
 		for id := range ls.raised {
@@ -389,6 +396,21 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		label, human := "", ""
 		if h, ok := f.EvOver[r.d.ReportID]; ok {
 			label, human = h, h
+			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not
+			// reached, inadequate prep) needs a confirming review that sees the quote; until then the loop stays open
+			if h == "adequate" && explicitInadequate(r.d.Ev) {
+				if c, ok := f.EvOver[r.d.ReportID+"#confirm"]; ok {
+					label, human = c, c+"_confirmed_against_report"
+				} else {
+					raiseFor(r, "evidence", OverrideConfirm)
+					inadequate = true
+					if holdRow == nil {
+						rr := r
+						holdRow = &rr
+					}
+					continue
+				}
+			}
 		} else if r.d.Ev != nil && r.d.Ev.Agree && r.d.Ev.Label != "needs_human" {
 			label = r.d.Ev.Label
 		}

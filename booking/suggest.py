@@ -3,7 +3,8 @@
 usage: python booking/suggest.py <run_dir> [--slots-per-fit 1.2] [--seed 2026] [--misallocated]
 
 Reads the run's final decisions (out_log.ndjson) + referral demographics (fhir_log.ndjson), takes every CRC loop that is
-still open at the end of the run and would need a colonoscopy slot, and feeds them to the real booking engine
+still open at the end of the run and would need a colonoscopy slot (and every cervical loop that needs a colposcopy,
+including the DoH 10.6.4 repeat 6-12 weeks after an unsatisfactory exam), and feeds them to the real booking engine
 (booking/engine.py: constraint-safe batch assignment, overbooking, nurse calls) on a SYNTHETIC endoscopy calendar.
 Writes <run_dir>/booking.json (schema "wasl-booking/2"; every wasl-booking/1 field is kept): calendar summary, capacity
 condition, per-case suggestion, whether network pooling is relevant (only when capacity is geographically misallocated),
@@ -80,6 +81,58 @@ def wd(xs):
     return round(sum(1 for c in xs if c["status"] == "suggested" and c["booking"]["within_deadline"]) / len(xs), 3) if xs else None
 
 
+REPEAT_WINDOW = (42, 84)   # DoH cervical standard 10.6.4: unsatisfactory colposcopy -> repeat in 6-12 weeks
+COLPO_FEMALE_SHARE = 0.5   # assumed share of colposcopy clinics run by a female clinician [A]
+
+
+def cervical(last, sr, a, rng):
+    """Cervical loops that still need a colposcopy: a repeat 6-12 weeks after an unsatisfactory exam (DoH 10.6.4), or a
+    first colposcopy inside the loop's DoH window (App 5). Same engine, SYNTHETIC colposcopy-clinic calendar."""
+    need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT]
+    # same slot density per day as the CRC calendar (slots_per_fit over its 95-day window), over 160 days so repeats fit
+    cal, _ = calendar(len(need), a.slots_per_fit * 160 / 95, rng, a.misallocated, f_share=COLPO_FEMALE_SHARE, days=160)
+    eng = BookingEngine(cal, NoShowModel(), eps=0.05, prep_lead=1, protect=a.female_protect or None)
+    meta, by_day = {}, collections.defaultdict(list)
+    for k, d in need:
+        demo = sr.get(k, {})
+        u = stable_u(k, "fem")
+        prefs = Prefs(female_endoscopist="hard" if u < 0.25 else ("soft" if u < 0.6 else "none"),
+                      arabic_only=demo.get("lang") == "ar" and stable_u(k, "ar") < 0.3, region=PROV_REGION.get(d["prov"], "AD"),
+                      travel_ok=stable_u(k, "travel") < 0.3, prior_no_show=d["state"] == "no_show")
+        day = int(stable_u(k, "arr") * 60)
+        repeat = d["state"] == "inadequate"
+        lo, hi = (day + REPEAT_WINDOW[0], day + REPEAT_WINDOW[1]) if repeat else (day, day + int(d.get("deadline") or 56))
+        meta[k] = (d, prefs, day, repeat, lo, hi)
+        by_day[day].append(Event("result_accepted", k, day, prefs, hi, lo))   # booked when the result arrives
+    out = {}
+    for day in range(0, 200):
+        for ev in by_day.get(day, []):
+            eng.submit(ev)
+        for b in eng.step(day):
+            out[b.loop_id] = b
+        if day > max(by_day, default=0) and not eng.pending:
+            break
+    cases = {}
+    for k, (d, prefs, day, repeat, lo, hi) in meta.items():
+        base = {"procedure": "colposcopy", "repeat_after_unsatisfactory": repeat, "requested_day": day, "window_days": [lo, hi],
+                "rule": "doh:cervical 10.6.4 repeat 6-12 wk" if repeat else "doh:cervical App 5 colposcopy window",
+                "region": prefs.region, "constraints": prefs.__dict__, "state_at_run_end": d["state"]}
+        b = out.get(k)
+        if b is None:
+            cases[k] = {"status": "no_slot_within_horizon", "reason": "capacity", **base}
+        else:
+            cases[k] = {"status": "suggested", "booking": b.to_json(), "within_window": lo <= b.day <= hi,
+                        "cross_region": b.unit.split("-")[0] != prefs.region, "wait_days": b.day - day, **base}
+    sugg = [c for c in cases.values() if c["status"] == "suggested"]
+    within = sum(1 for c in sugg if c["within_window"])
+    return {"cases": cases, "summary": {
+        "cases": len(cases), "repeat_after_unsatisfactory": sum(1 for c in cases.values() if c["repeat_after_unsatisfactory"]),
+        "suggested": len(sugg), "no_slot": len(cases) - len(sugg), "within_window": within,
+        "within_window_share": round(within / len(cases), 3) if cases else None,
+        "repeat_window_days": list(REPEAT_WINDOW), "colposcopy_female_clinic_share_assumed": COLPO_FEMALE_SHARE,
+        "note": "Synthetic colposcopy-clinic calendar at the same slots-per-case assumption; decision support only."}}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("run")
@@ -129,15 +182,16 @@ def main():
         lv = levers.assess(k)
         if b is None:
             unbooked += 1
-            cases[k] = {"status": "no_slot_within_horizon", "requested_day": day, "region": prefs.region,
+            cases[k] = {"status": "no_slot_within_horizon", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region,
                         "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"], **lv}
             continue
         ru = b.unit.split("-")[0]
         if ru != prefs.region:
             reg_booked_out[prefs.region] += 1
-        cases[k] = {"status": "suggested", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
+        cases[k] = {"status": "suggested", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
                     "wait_days": b.day - day, **lv}
+    cerv = cervical(last, sr, a, rng)
     sugg = [c for c in cases.values() if c["status"] == "suggested"]
     within = sum(1 for c in sugg if c["booking"]["within_deadline"])
     n = len(cases)
@@ -174,7 +228,8 @@ def main():
                    "prep_risk_band": dict(collections.Counter(c["prep_risk"]["band"] for c in cases.values())),
                    "requires_clinician_order": True,
                    "simulated_effect": "booking/RESULTS.md, Queue levers (simulated)"},
-        "cases": cases,
+        "cases": {**cases, **cerv["cases"]},
+        "cervical": cerv["summary"],
     }
     json.dump(res, open(os.path.join(a.run, "booking.json"), "w"), indent=1)
     s = res["summary"]; c = res["capacity"]
@@ -182,6 +237,9 @@ def main():
           f"suggested {s['suggested']}, within 31 d {s['within_31d']} ({s['within_31d_share']}), cross-region {s['cross_region']}, "
           f"no slot {s['no_slot']}; pooling relevant: {c['pooling_relevant']}; pathway {res['levers']['pathway']}, "
           f"prep risk {res['levers']['prep_risk_band']}")
+    cs = res["cervical"]
+    print(f"booking (simulated): {cs['cases']} cervical cases needing colposcopy ({cs['repeat_after_unsatisfactory']} repeats after "
+          f"an unsatisfactory exam); suggested {cs['suggested']}, inside the DoH window {cs['within_window']} ({cs['within_window_share']})")
 
 
 if __name__ == "__main__":

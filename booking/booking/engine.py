@@ -81,7 +81,7 @@ class BookingEngine:
     def submit(self, ev: Event):
         if ev.kind == "result_accepted":
             p = _Pending(ev.loop_id, ev.prefs or Prefs(), ev.deadline if ev.deadline is not None else ev.day + 31,
-                         ev.day + self.prep_lead, 0, self.prep_lead)
+                         max(ev.day + self.prep_lead, ev.earliest or 0), 0, self.prep_lead)
             self.meta[ev.loop_id] = p
             self.pending[ev.loop_id] = p
             if p.prefs.female_endoscopist == "hard":
