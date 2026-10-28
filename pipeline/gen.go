@@ -252,6 +252,19 @@ var disclosuresCerv = []struct{ lang, text string }{
 
 var rejectReasons = []string{"incomplete-referral", "out-of-network", "capacity", "duplicate-referral"}
 
+// CRCFemaleShare: share of CRC (FIT+) loops for women; 69.6% of FIT+ patients were women in the SEHA cohort (PMC8343888).
+const CRCFemaleShare = 0.696
+
+func crcFemale(ps []Person, crc []int) float64 {
+	n := 0
+	for _, i := range crc {
+		if ps[i].Sex == "F" {
+			n++
+		}
+	}
+	return float64(n) / float64(len(crc))
+}
+
 // GenSplit selects the person split a cohort is drawn from: eval (default) | cal (Learn-then-Test calibration cohorts).
 var GenSplit = "eval"
 
@@ -305,7 +318,10 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	r.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 	if nPersons > 0 && nPersons < len(ps) {
+		// keep every woman: the Wikidata splits are ~22% female, and cervical loops plus 69.6% of CRC loops need women
+		sort.SliceStable(ps, func(i, j int) bool { return ps[i].Sex == "F" && ps[j].Sex != "F" })
 		ps = ps[:nPersons]
+		r.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 	}
 	if nLoops+nDistract+nCerv > len(ps) {
 		panic("not enough persons")
@@ -1183,18 +1199,50 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			nc++
 		}
 	}
+	// CRC loops: CRCFemaleShare women (SEHA FIT+ cohort). Women are drawn from every woman in the sample, so some also
+	// hold a cervical loop (same registrations, other programme). If the split has too few women, the rest are men.
+	women, others := []int{}, []int{}
+	for i := range ps {
+		if ps[i].Sex == "F" {
+			women = append(women, i)
+		} else if !used[i] {
+			others = append(others, i)
+		}
+	}
+	r.Shuffle(len(women), func(i, j int) { women[i], women[j] = women[j], women[i] }) // cervical took the first women
+	nF := int(math.Round(CRCFemaleShare * float64(nLoops)))
+	if nF > len(women) {
+		nF = len(women)
+	}
+	for _, i := range women[nF:] { // small samples: top up with the remaining unused women if men run out
+		if !used[i] && len(others) < nLoops-nF {
+			others = append(others, i)
+		}
+	}
+	if nLoops-nF > len(others) {
+		panic("not enough persons for CRC loops")
+	}
+	crc := append(append([]int{}, women[:nF]...), others[:nLoops-nF]...)
+	r.Shuffle(len(crc), func(i, j int) { crc[i], crc[j] = crc[j], crc[i] })
+	crcBoth := 0
+	for _, i := range crc {
+		if used[i] {
+			crcBoth++
+		}
+		genLoop(&ps[i], "crc")
+	}
+	for _, i := range crc {
+		used[i] = true
+	}
 	rest := []int{}
 	for i := range ps {
 		if !used[i] {
 			rest = append(rest, i)
 		}
 	}
-	for k := 0; k < nLoops; k++ {
-		genLoop(&ps[rest[k]], "crc")
-	}
 	// ---------- distractors: diagnostic colonoscopies for other people at the same hospitals ----------
 	allRep := append(append([]RepSrc{}, poolOK...), poolBad...)
-	for k := nLoops; k < nLoops+nDistract && k < len(rest); k++ {
+	for k := 0; k < nDistract && k < len(rest); k++ {
 		p := &ps[rest[k]]
 		hosp := Providers[2+r.Intn(2)]
 		bk := r.Float64() * 110
@@ -1212,7 +1260,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 	}
 	// ---------- background primary-care / lab encounters ----------
-	for k := nLoops + nDistract; k < len(rest); k++ {
+	for k := nDistract; k < len(rest); k++ {
 		p := &ps[rest[k]]
 		prov := Providers[r.Intn(2)]
 		for k := 0; k < 1+r.Intn(2); k++ {
@@ -1221,7 +1269,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	if nLung > 0 { // incidental lung-nodule loops (genlung.go): own RNG stream, background persons only
 		bg := []*Person{}
-		for k := nLoops + nDistract; k < len(rest); k++ {
+		for k := nDistract; k < len(rest); k++ {
 			bg = append(bg, &ps[rest[k]])
 		}
 		genLung(lungDirFor(lungDir, reportsPath), seed, nLung, bg, tr, &evs, regs, mrnN, ctr, textUse)
@@ -1263,7 +1311,8 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	summary := map[string]interface{}{"events": len(evs), "by_provider_type": cnt, "loops": len(tr.Loops), "truth_states": states,
 		"pathways": paths2, "dropoff_truth": drops, "loop_origins": origins, "lang_true_vs_expected": langs, "registrations": len(regs),
-		"reports_in_window": len(tr.Reports), "text_use": textUse, "unique_mtsamples_texts_used": uniq, "persons_used": len(ps)}
+		"reports_in_window": len(tr.Reports), "text_use": textUse, "unique_mtsamples_texts_used": uniq, "persons_used": len(ps),
+		"crc_female_share": crcFemale(ps, crc), "crc_women_with_cervical_loop": crcBoth}
 	wj("cohort_summary.json", summary)
 	bb, _ := json.Marshal(summary)
 	fmt.Println(string(bb))
