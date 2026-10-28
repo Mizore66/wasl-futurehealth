@@ -13,7 +13,7 @@
 **The run** (`run/main`, seed 2026):
 - 1,500 CRC + 600 cervical loops, 84 opt-outs, 24 forged events.
 - Mock Malaffi → FHIR Subscription; HNSW blocking.
-- Reviewer: 4% error, double review on merges and "adequate", dual-reader merges.
+- Reviewer: an assumed 4% error rate per simulated read (a stress test, not a measured clinician rate; the offline sweep also ran 2% and 6%), double review on merges and "adequate", dual-reader merges.
 - RBAC/consent, e-consult/teach-back, anchors.
 - Chaos: kills of FHIR consumer, linker, closure-0+prep-0, NATS node n2. Feed: 18 drops, 26 duplicates, 36 reorders.
 - **0 new LLM calls** (1,680 replies parsed from Gemma cache).
@@ -551,9 +551,9 @@ Read with care: reader A was written against the same templates it is scored on,
 **The cervical false closure** (dev noise, seed 23, loop `ahs-mushrif/ServiceRequest/AHS-sr-160`) was simulated human error. Linkage was not involved.
 - The patient link was correct (an Emirates-ID / human-confirmed path).
 - Both machine readers said "not closed / unsatisfactory".
-- Both simulated clinicians in the double review wrongly signed it "adequate". Each has a 4% error rate, so this happens about 0.16% of the time per item.
+- Both simulated clinicians in the double review wrongly signed it "adequate". The simulation gives each read an assumed 4% error rate, a stress test rather than a measured rate for real clinicians. With independent errors, a double error happens about 0.16% of the time per item. Real error rates are unknown until the pilot measures them.
 - The patient's other loop (CRC) played no part.
-- Held-out noise has 0/966. This residual risk is the reason for local reviewer QA in the pilot.
+- Held-out noise has 0/966. The result shows that the double review has no backstop when both reviews override the report. It does not show that real clinicians make this mistake.
 
 **Forged-event counter fix** (`f7e5cf1`; the pipeline runs were unchanged, only the report was re-scored):
 - Four forged consent denials happened to target patients who genuinely withdrew consent later.
