@@ -430,7 +430,7 @@ Read with care: reader A was written against the same templates it is scored on,
 | Wrong-patient messages / messages without granted consent | 0 / 0 |
 | Policy stamp | `v7strict+cal=true+guard=true+tau=0.98+ltt+image=cached` on every decision |
 
-**Why nothing was held for consent in this run** (`intents_ever_held_for_consent` = 0; the FHIR runs hold about 350):
+**Why nothing was held for consent in this run** (`intents_ever_held_for_consent` = 0; the FHIR runs held about 350 before feed pacing, 7–17 after):
 - **Not a consent bug.** In true arrival order, every patient's consent is on file before any outreach trigger. Checked: 581/581 triggers arrive at least 0.5 days after the first consent.
 - **HL7 keeps that order.** The mock HIE sends one arrival-ordered stream, so the gate never has to wait.
 - **The FHIR mock doesn't.** It publishes each provider's feed separately and they drift apart, so a downstream trigger can be processed before the referral and its consent. That is exactly when the hold fires.
@@ -622,3 +622,44 @@ Read with care: reader A was written against the same templates it is scored on,
 - Reviewer hours barely change with ρ (27.5–28.1 per 1k loops), so cost doesn't reveal the problem. Only an audit does.
 
 **So the correlated-error mitigations matter more than the double read itself:** different roles for the two reads, a blinded second read, reviewer-pair rotation, and the 2% weekly senior audit sample, which is how a pilot would measure ρ. The override block (above) covers the worst case, two humans overriding a report that states an inadequacy. It does not cover correlated errors on reports that are silent.
+
+### Ingest pacing, replay ledger, encryption at rest: final evaluation at `d61c29a`
+
+**What changed in the pipeline:**
+- **Replay ledger** (`seen.go`): every ingested message id is kept in a replicated KV bucket, so an old version that a source re-sends after the 1 h dedupe window is dropped, not stored twice. The check is one KV read; the id is written after the publish ack; at start-up the adapter re-records the stream tail a crash may have left unrecorded. Per run it dropped 90–225 re-deliveries; ingest lost 0 and duplicated 0. Test: `TestSeenLedgerDropsOldReplays`.
+- **Encryption at rest:** every JetStream store (streams and KV) uses ChaCha20-Poly1305. The key comes only from the environment (`WASL_JS_KEY`; an HSM in deployment); a run without it gets a random key. The store files contain no plaintext names.
+- **Feed pacing** (`fhirsub.go`): a provider's publisher waits until every event more than 128 numbers older is acked. Event numbers follow HIE arrival order (about 250 a simulated day).
+
+**Why pacing changed the outreach numbers.** The replay harness pushes the whole feed as fast as it can, and each provider publishes in parallel. Before pacing, the big feeds fell up to ~60 simulated days behind the small ones. So a referral could reach the stream after its own appointment, or a message intent before the patient's consent record. Wasl handled both correctly (no reminder for a past appointment; hold until consent), but the counts reflected the harness, not the system. With pacing, per v1-s23:
+
+| | Before pacing (`cdeac0a`) | Paced (`d61c29a`) |
+|---|---|---|
+| Outreach intents | 1,188 | 2,029 |
+| Released / without granted consent | 852 / 0 | 1,150 / 0 |
+| Intents held for consent | 373 | 7 |
+| Outputs | 20,528 | 25,011 |
+
+- The consent hold is still needed when consent genuinely arrives late; in paced runs that is about 7–17 intents a run, not ~350.
+- Reviewer hours rose (v2 23.2 → 25.9 per 1k loops) because more outreach reaches the second-identifier guard.
+- Closure is unchanged within noise.
+
+**Frozen evaluation** (files in `results/final/`; 3 runs in parallel, so throughput is per run under contention):
+
+| | v1 noise (dev) | **v2 noise (held out)** |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.946 (0.939–0.953) | **1.000 / 0.879 (0.862–0.896)** |
+| CRC false closures (pooled) | **0/2,698** (UB 0.14%) | **0/2,533** (UB 0.15%) |
+| Cervical false closures | 0/1,004 | 0/968 |
+| Wrong-patient messages / messages without consent | 0/10,090 / 0/5,540 | **0/9,398 / 0/5,467** |
+| KPI absolute error, Wasl vs EID-only | 0.010 vs 0.207 | 0.035 vs 0.205 |
+| Reviewer hours per 1k loops | 28.7 | 25.9 |
+| Review-load ratio, max/min origin | 1.15 (1.07–1.22) | **1.17 (1.12–1.23)** |
+| Duplicates/losses · tamper · forged with effect | 0/124,601 · 85/85 · 0/114 | 0/121,060 · 85/85 · 0/111 |
+| Throughput (3 runs sharing the machine) | 560 ev/s | 627 ev/s |
+
+**Patient-side measures** (new in `report7.json` → `patient_side`, from the event log, not the decision state):
+- Stalled loops flagged overdue: 5,236/5,236 (v1) and 5,233/5,233 (v2), a median 0.5 days after the deadline (one decision tick).
+- First escalation: a median 23.7–23.9 days before the deadline, so most stalls get a warning well before they breach.
+- Results communicated within 21 days (15 working days): Wasl's measure equals the truth in every run (0.855–0.887).
+
+**Learn-then-Test** is not re-run: the closure gate and calibrator are unchanged since `results/ltt/` (τ 0.995, 0 false closures).
