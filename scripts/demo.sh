@@ -46,7 +46,7 @@ check() {
   if [ -n "$MODELSET" ]; then for f in encoder_$MODELSET lgb_stream_$MODELSET iso_$MODELSET iso_v7_$MODELSET; do
     [ -s "$ROOT/models/$f.json" ] || need "models/$f.json" "WASL_MODELSET=$MODELSET needs the full chain (encoder/README.md)"; done; fi
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
-  for p in 14822 14823 14824 28870 28880 28890; do
+  for p in 14822 14823 14824 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
   echo "assets OK"

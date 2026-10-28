@@ -24,7 +24,11 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
-var NatsURL = "nats://127.0.0.1:14822,nats://127.0.0.1:14823,nats://127.0.0.1:14824" // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+// PortOff shifts every local port (NATS client/monitor/cluster, mock HIE, rest-hook, MLLP) so several runs can share a
+// machine: WASL_PORT_OFFSET=100 moves 14822 to 14922, and so on. Child processes inherit the variable.
+var PortOff = func() int { n, _ := strconv.Atoi(os.Getenv("WASL_PORT_OFFSET")); return n }()
+
+var NatsURL = fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+PortOff, 14823+PortOff, 14824+PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
 
 // retry runs f until it succeeds (broker leader elections make control-plane calls fail transiently).
 func retry(what string, f func() error) {

@@ -36,10 +36,9 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
-for noise in v1 v2; do
-  for seed in "${SEEDS[@]}"; do
-    tag="$noise-s$seed"; O="$WORK/$tag"
-    if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; continue; fi
+run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
+    local noise="$1" seed="$2"; local tag="$noise-s$seed"; local O="$WORK/$tag"
+    if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
     "$B/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" \
@@ -59,6 +58,12 @@ for noise in v1 v2; do
     python3 "$ROOT/scripts/summary.py" "$R/report7.json" > "$FINAL/$tag/summary.txt"
     echo "done $tag: $(sed -n 2p "$FINAL/$tag/summary.txt")"
     rm -rf "$O/run/main/nats-"* "$O/run/base"   # keep logs, drop NATS stores
-  done
+}
+JOBS="${WASL_JOBS:-3}"   # runs in parallel, each on its own ports; throughput_ev_s is then per-run under contention
+TAGS=(); for noise in v1 v2; do for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done; done
+for ((lane = 0; lane < JOBS; lane++)); do
+  ( export WASL_PORT_OFFSET=$((lane * 100))
+    for ((k = lane; k < ${#TAGS[@]}; k += JOBS)); do run_one "${TAGS[$k]%%:*}" "${TAGS[$k]##*:}"; done ) &
 done
+wait
 python3 "$ROOT/scripts/final_aggregate.py" "$FINAL"
