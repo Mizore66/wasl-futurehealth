@@ -126,6 +126,18 @@ def test_female_protection():
     return f"protection off: {far_female(b_off, off.cal)} far female-list slots taken by others; on: 0, released inside 7 d"
 
 
+def test_earliest():
+    # a repeat booked today for 6-12 weeks out: never earlier than `earliest`, inside the deadline
+    rng = np.random.default_rng(5)
+    days = np.arange(0, 120)
+    cal = Calendar(days, ["U0"] * len(days), ["AD"] * len(days), [2] * len(days), [False] * len(days), [True] * len(days),
+                   [False] * len(days), [False] * len(days))
+    eng = BookingEngine(cal, NoShowModel(), eps=0.0, prep_lead=1)
+    out = eng.handle(Event("result_accepted", "R", 10, Prefs(region="AD"), 10 + 84, 10 + 42))
+    assert len(out) == 1 and 52 <= out[0].day <= 94, out
+    return f"repeat booked on day 10 for day {out[0].day} (window 52-94)"
+
+
 if __name__ == "__main__":
-    for f in (test_optimality, test_constraints, test_interface, test_female_protection):
+    for f in (test_optimality, test_constraints, test_interface, test_female_protection, test_earliest):
         print(f.__name__, ":", f())

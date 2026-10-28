@@ -295,3 +295,46 @@ func TestDecisionCarriesOutreachAndSig(t *testing.T) {
 		t.Fatal("outreach not covered by the decision signature")
 	}
 }
+
+// A human "adequate" against a report a reader found explicitly inadequate holds the loop until a confirming review.
+func TestOverrideAgainstReportNeedsConfirmation(t *testing.T) {
+	rep := df("DiagnosticReport", "final", 1.0, "eid", false)
+	rep.ReportID, rep.Prog = "R1", "cervical"
+	rep.Ev = &TwoVerdict{Kind: "colposcopy", Label: "disagree",
+		Regex: ReaderVerdict{State: "needs_human", Reason: "missing_documentation"},
+		Gemma: ReaderVerdict{State: "not_closed", Reason: "unsatisfactory_exam", Quote: "conclusionCode=unsatisfactory"}}
+	run := func(over map[string]string) *Decision {
+		C := NewClosureCore(0, nil)
+		return lastDec(C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", SRDay: 0, Prog: "cervical", Down: []DownFact{rep}, EvOver: over}, InSeq: 1}))
+	}
+	d := run(map[string]string{"R1": "adequate"})
+	if d == nil || d.State == "closed" {
+		t.Fatalf("override against an explicit unsatisfactory report closed the loop: %+v", d)
+	}
+	if len(d.Pending) != 1 {
+		t.Fatalf("want one confirmation item pending, got %v", d.Pending)
+	}
+	if d := run(map[string]string{"R1": "adequate", "R1#confirm": "inadequate"}); d.State == "closed" {
+		t.Fatal("confirmation said inadequate but the loop closed")
+	}
+	if d := run(map[string]string{"R1": "adequate", "R1#confirm": "adequate"}); d.State != "closed" {
+		t.Fatalf("confirmed override should close, got %s", d.State)
+	}
+	clean := rep
+	clean.Ev = &TwoVerdict{Kind: "colposcopy", Label: "disagree", Regex: ReaderVerdict{State: "needs_human"}, Gemma: ReaderVerdict{State: "closed", Reason: "criteria_met"}}
+	C := NewClosureCore(0, nil)
+	outs := C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", SRDay: 0, Prog: "cervical", Down: []DownFact{clean}, EvOver: map[string]string{"R1": "adequate"}}, InSeq: 1})
+	if d := lastDec(outs); d.State != "closed" {
+		t.Fatalf("override without an explicit inadequacy should still close, got %s", d.State)
+	}
+}
+
+func lastDec(outs []OutMsg) *Decision {
+	var d *Decision
+	for _, o := range outs {
+		if o.Dec != nil {
+			d = o.Dec
+		}
+	}
+	return d
+}

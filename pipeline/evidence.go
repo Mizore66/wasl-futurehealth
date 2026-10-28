@@ -433,3 +433,21 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 	}
 	return v
 }
+
+// OverrideConfirm is the purpose of the review item raised when a human signs "adequate" on a report that a reader found
+// explicitly inadequate. Added after the a66b6a2 evaluation showed one cervical false closure from a simulated double
+// clinician error against a coded "unsatisfactory" conclusion; disclosed as a post-hoc rule.
+const OverrideConfirm = "override_confirm"
+
+// explicitInadequate: a reader extracted an explicit inadequacy statement from the report (not just missing documentation).
+func explicitInadequate(v *TwoVerdict) bool {
+	if v == nil {
+		return false
+	}
+	for _, r := range []ReaderVerdict{v.Regex, v.Gemma} {
+		if r.State == "not_closed" && (r.Reason == "unsatisfactory_exam" || r.Reason == "incomplete_exam" || r.Reason == "inadequate_prep") {
+			return true
+		}
+	}
+	return false
+}

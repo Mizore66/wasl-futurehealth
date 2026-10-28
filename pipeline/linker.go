@@ -699,7 +699,11 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			if L.evOver[so.LoopID] == nil {
 				L.evOver[so.LoopID] = map[string]string{}
 			}
-			L.evOver[so.LoopID][so.ReportID] = so.Evidence
+			key := so.ReportID
+			if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
+				key += "#confirm"
+			}
+			L.evOver[so.LoopID][key] = so.Evidence
 		}
 		L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
 		affLoops[so.LoopID] = true

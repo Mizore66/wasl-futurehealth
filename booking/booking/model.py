@@ -31,11 +31,12 @@ class Event:
     day: int
     prefs: Prefs | None = None
     deadline: int | None = None
+    earliest: int | None = None   # book now for a slot no earlier than this day (e.g. a repeat 6-12 weeks out)
 
     @staticmethod
     def from_json(d: dict) -> "Event":
         p = d.get("prefs")
-        return Event(d["kind"], d["loop_id"], int(d["day"]), Prefs(**p) if p else None, d.get("deadline"))
+        return Event(d["kind"], d["loop_id"], int(d["day"]), Prefs(**p) if p else None, d.get("deadline"), d.get("earliest"))
 
 
 @dataclass
