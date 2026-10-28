@@ -1,6 +1,7 @@
 """Checks: (1) batch assignment equals the explicit ILP optimum (HiGHS via scipy.milp) on random instances;
 (2) hard constraints (female endoscopist, Ramadan, region, prep lead) are never violated;
-(3) the Wasl interface round-trips: JSON event in -> booking out -> FHIR Appointment.
+(3) the Wasl interface round-trips: JSON event in -> booking out -> FHIR Appointment;
+(4) female-list protection holds slots for women who require a female endoscopist and releases them 7 days out.
 Run: python tests/test_engine.py"""
 import sys, os, json
 import numpy as np
@@ -103,6 +104,28 @@ def test_interface():
     return "event->booking->FHIR ok: " + json.dumps(b.to_json()) + " | rebook after no-show -> day " + str(out2[0].day)
 
 
+def test_female_protection():
+    # one region: a male list on day 20, female lists on days 5 and 20; recent demand from women who require one
+    cal = Calendar([5, 20, 20], ["U0", "U1", "U2"], ["AD"] * 3, [4, 4, 4], [True, True, False], [True] * 3, [False] * 3, [False] * 3)
+    off = BookingEngine(cal, NoShowModel(), eps=0.0, prep_lead=3, horizon=60)
+    on = BookingEngine(Calendar([5, 20, 20], ["U0", "U1", "U2"], ["AD"] * 3, [4, 4, 4], [True, True, False], [True] * 3,
+                                [False] * 3, [False] * 3), NoShowModel(), eps=0.0, prep_lead=3, horizon=60, protect=4.0)
+    for e in (off, on):
+        for i in range(10):   # 10 such arrivals in the last 120 days -> the far female list holds all its slots
+            e._hard_arr.append((0, "AD"))
+        for i in range(10):
+            e.submit(Event("result_accepted", f"m{i}", 0, Prefs(region="AD"), 40))
+    b_off, b_on = off.step(0), on.step(0)
+    far_female = lambda out, cal: sum(1 for b in out if cal.female[b.session_id] and b.day > 7)
+    assert far_female(b_off, off.cal) > 0, "without protection other patients fill the far female list"
+    assert far_female(b_on, on.cal) == 0, "protected far female list must stay free for women who require it"
+    assert any(on.cal.female[b.session_id] and b.day <= 7 for b in b_on), "female list inside 7 days is released"
+    on.submit(Event("result_accepted", "w0", 0, Prefs(female_endoscopist="hard", region="AD"), 40))
+    w = [b for b in on.step(0) if b.loop_id == "w0"]
+    assert w and on.cal.female[w[0].session_id]
+    return f"protection off: {far_female(b_off, off.cal)} far female-list slots taken by others; on: 0, released inside 7 d"
+
+
 if __name__ == "__main__":
-    for f in (test_optimality, test_constraints, test_interface):
+    for f in (test_optimality, test_constraints, test_interface, test_female_protection):
         print(f.__name__, ":", f())

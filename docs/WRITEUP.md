@@ -184,7 +184,7 @@
     - **Residual risk:** linkage inherently needs identifiers, so de-identification isn't possible (RAI 3.1.4.4.3, accepted with controls).
   - **Fairness acceptance thresholds** (checked before go-live and monthly [A]):
     - review-load ratio between name-origin groups ≤1.25 (measured 1.14, 95% CI 1.07–1.21 on held-out noise. The gap came from placeholder 1 Jan / 1 Jul birth dates, which are commoner for some origins and can't corroborate a link alone. A placeholder DOB now corroborates only on a full name match);
-    - access gap in ≤31-day booking between female-list and other patients ≤5 pp (measured 18 pp: fails, so slot reservation is required);
+    - access gap in ≤31-day booking between female-list and other patients ≤5 pp. Measured 18.5 pp without reservation and 12.6 pp with the engine's demand-sized female-list protection at a 15–30% female-list share. It passes once ≈30–40% of lists are female lists (4.5 / 0.6 pp), so female-list staffing is a go-live condition;
     - false-closure rate: 0 in every group.
   - **Clinical safety officer:** a named ADPHC clinician (role [A]). Any change to closure rules, intervals or reader models goes through change control: hazard-log impact, regression on the frozen sets, and CSO sign-off per release.
   - **Sovereignty:**

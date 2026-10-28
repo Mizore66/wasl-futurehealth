@@ -1,0 +1,354 @@
+{
+ "n_draws": 150,
+ "capacity_slots_per_fit_pos": 1.5,
+ "arms": {
+  "f_share 0.15-0.30 (main)": {
+   "c": {
+    "kpi_women_requiring_female_list": [
+     78.8,
+     44.4,
+     93.8
+    ],
+    "kpi_everyone_else": [
+     96.9,
+     92.9,
+     98.7
+    ],
+    "gap_kpi_pts": [
+     18.5,
+     4.0,
+     52.2
+    ],
+    "P(gap<=5pts)": 0.047,
+    "gap_referred_pts": [
+     13.7,
+     -2.1,
+     37.4
+    ],
+    "all_fit_pos_31d": [
+     52.2,
+     34.6,
+     74.3
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "c_res7": {
+    "kpi_women_requiring_female_list": [
+     83.6,
+     54.1,
+     96.1
+    ],
+    "kpi_everyone_else": [
+     96.2,
+     89.5,
+     98.4
+    ],
+    "gap_kpi_pts": [
+     12.3,
+     -0.8,
+     42.1
+    ],
+    "P(gap<=5pts)": 0.2,
+    "gap_referred_pts": [
+     8.4,
+     -6.6,
+     30.1
+    ],
+    "all_fit_pos_31d": [
+     51.9,
+     34.7,
+     74.3
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     0.0,
+     -2.2,
+     0.9
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -0.8,
+     -4.7,
+     0.5
+    ]
+   },
+   "c_fem": {
+    "kpi_women_requiring_female_list": [
+     83.6,
+     54.1,
+     94.9
+    ],
+    "kpi_everyone_else": [
+     96.2,
+     90.8,
+     98.6
+    ],
+    "gap_kpi_pts": [
+     12.6,
+     -0.2,
+     42.5
+    ],
+    "P(gap<=5pts)": 0.18,
+    "gap_referred_pts": [
+     9.4,
+     -5.5,
+     30.1
+    ],
+    "all_fit_pos_31d": [
+     52.1,
+     34.7,
+     74.7
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     0.1,
+     -1.6,
+     1.0
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -0.5,
+     -3.4,
+     0.5
+    ]
+   }
+  },
+  "f_share 0.3": {
+   "c": {
+    "kpi_women_requiring_female_list": [
+     86.2,
+     73.7,
+     96.1
+    ],
+    "kpi_everyone_else": [
+     96.9,
+     93.2,
+     98.9
+    ],
+    "gap_kpi_pts": [
+     10.6,
+     0.5,
+     22.6
+    ],
+    "P(gap<=5pts)": 0.16,
+    "gap_referred_pts": [
+     8.1,
+     -2.8,
+     17.7
+    ],
+    "all_fit_pos_31d": [
+     53.4,
+     35.4,
+     75.6
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "c_res7": {
+    "kpi_women_requiring_female_list": [
+     90.8,
+     81.4,
+     98.5
+    ],
+    "kpi_everyone_else": [
+     95.2,
+     87.4,
+     98.2
+    ],
+    "gap_kpi_pts": [
+     3.4,
+     -5.6,
+     14.4
+    ],
+    "P(gap<=5pts)": 0.613,
+    "gap_referred_pts": [
+     2.1,
+     -8.3,
+     13.9
+    ],
+    "all_fit_pos_31d": [
+     52.2,
+     35.1,
+     74.6
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     -0.5,
+     -3.3,
+     0.5
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -1.5,
+     -6.9,
+     0.1
+    ]
+   },
+   "c_fem": {
+    "kpi_women_requiring_female_list": [
+     90.6,
+     80.6,
+     98.3
+    ],
+    "kpi_everyone_else": [
+     95.7,
+     89.6,
+     98.4
+    ],
+    "gap_kpi_pts": [
+     4.5,
+     -2.9,
+     14.7
+    ],
+    "P(gap<=5pts)": 0.553,
+    "gap_referred_pts": [
+     3.3,
+     -6.8,
+     14.4
+    ],
+    "all_fit_pos_31d": [
+     53.1,
+     35.0,
+     75.2
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     -0.3,
+     -2.1,
+     0.5
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -1.0,
+     -4.7,
+     0.4
+    ]
+   }
+  },
+  "f_share 0.4": {
+   "c": {
+    "kpi_women_requiring_female_list": [
+     91.4,
+     82.1,
+     98.8
+    ],
+    "kpi_everyone_else": [
+     97.0,
+     93.0,
+     98.9
+    ],
+    "gap_kpi_pts": [
+     5.6,
+     -1.8,
+     13.6
+    ],
+    "P(gap<=5pts)": 0.473,
+    "gap_referred_pts": [
+     4.2,
+     -6.4,
+     14.0
+    ],
+    "all_fit_pos_31d": [
+     53.6,
+     35.4,
+     75.9
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     0.0,
+     0.0,
+     0.0
+    ]
+   },
+   "c_res7": {
+    "kpi_women_requiring_female_list": [
+     94.5,
+     86.0,
+     100.0
+    ],
+    "kpi_everyone_else": [
+     93.4,
+     75.3,
+     97.8
+    ],
+    "gap_kpi_pts": [
+     -1.7,
+     -18.1,
+     8.2
+    ],
+    "P(gap<=5pts)": 0.92,
+    "gap_referred_pts": [
+     -1.6,
+     -17.4,
+     10.4
+    ],
+    "all_fit_pos_31d": [
+     50.9,
+     34.4,
+     74.2
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     -1.6,
+     -10.3,
+     0.0
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -3.2,
+     -20.7,
+     -0.3
+    ]
+   },
+   "c_fem": {
+    "kpi_women_requiring_female_list": [
+     93.9,
+     86.7,
+     100.0
+    ],
+    "kpi_everyone_else": [
+     95.2,
+     88.7,
+     97.9
+    ],
+    "gap_kpi_pts": [
+     0.6,
+     -6.0,
+     8.7
+    ],
+    "P(gap<=5pts)": 0.86,
+    "gap_referred_pts": [
+     0.5,
+     -9.4,
+     11.0
+    ],
+    "all_fit_pos_31d": [
+     53.0,
+     34.9,
+     75.7
+    ],
+    "paired_all_fit_pos_31d_vs_c_pts": [
+     -0.6,
+     -3.0,
+     0.2
+    ],
+    "paired_everyone_else_kpi_vs_c_pts": [
+     -1.5,
+     -6.2,
+     0.2
+    ]
+   }
+  }
+ }
+}

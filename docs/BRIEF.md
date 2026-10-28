@@ -133,7 +133,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 - The Learn-then-Test guarantee covers loops like the synthetic calibration set, not real Abu Dhabi data; a pilot must recalibrate on locally adjudicated loops (≈3.7k).
 - The image reader was trained on Norwegian video frames; UAE stills need local recalibration. Its weights inherit ImageNet's non-commercial terms.
 - Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.
-- Female-list access gap (18 pp vs the 5 pp limit) is not yet re-tested on the current booking engine. The review-load ratio across name origins now passes: 1.14 (95% CI 1.07–1.21) vs the 1.25 limit on held-out noise, after placeholder birth dates were allowed to corroborate on a full name match.
+- Female-list access gap: female-list protection in the booking engine cuts it from 18.5 to 12.6 pp at the assumed 15–30% female-list share. Getting under the 5 pp limit also needs about 30% (median 4.5 pp) to 40% (0.6 pp) of lists to be female lists. Wasl reports that staffing shortfall but can't fix it. The review-load ratio across name origins now passes: 1.14 (95% CI 1.07–1.21) vs the 1.25 limit on held-out noise, after placeholder birth dates were allowed to corroborate on a full name match.
 - Non-English notices are machine-drafted and need professional translation before the pilot.
 
 ## Top risks

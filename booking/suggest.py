@@ -73,12 +73,20 @@ def calendar(n_fit, slots_per_fit, rng, misallocated, f_share=0.25, start=0, day
     return Calendar(dd, un, rg, cp, fe, ar, af, ra), share
 
 
+FEMALE_PROTECT = 4.0   # demand-sized female-list protection, released 7 days out (booking/RESULTS.md, female-list gap)
+
+
+def wd(xs):
+    return round(sum(1 for c in xs if c["status"] == "suggested" and c["booking"]["within_deadline"]) / len(xs), 3) if xs else None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("run")
     ap.add_argument("--slots-per-fit", type=float, default=1.2, help="assumed endoscopy capacity (slots per open FIT+ case)")
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--misallocated", action="store_true", help="put capacity in the wrong regions (pooling scenario)")
+    ap.add_argument("--female-protect", type=float, default=FEMALE_PROTECT, help="female-list protection factor (0 = off)")
     a = ap.parse_args()
     last, sr = load(a.run)
     rng = np.random.default_rng(a.seed)
@@ -87,7 +95,7 @@ def main():
     cal, share = calendar(len(open_cases), a.slots_per_fit, rng, a.misallocated)
     for _ in range(90):
         pass
-    eng = BookingEngine(cal, NoShowModel(), eps=0.05, prep_lead=5)
+    eng = BookingEngine(cal, NoShowModel(), eps=0.05, prep_lead=5, protect=a.female_protect or None)  # female-list protection
     meta = {}
     for k, d in open_cases:
         demo = sr.get(k, {})
@@ -157,7 +165,10 @@ def main():
                     "cross_region": sum(1 for c in sugg if c["cross_region"]),
                     "overbooked": sum(1 for c in sugg if c["booking"]["overbooked"]),
                     "nurse_call": sum(1 for c in sugg if c["booking"]["nurse_call"]),
-                    "median_wait_days": float(np.median([c["wait_days"] for c in sugg])) if sugg else None},
+                    "median_wait_days": float(np.median([c["wait_days"] for c in sugg])) if sugg else None,
+                    "female_list": {"protect": a.female_protect, "release_days": eng.reserve_days,
+                                    "within_31d_share_women_requiring_female_list": wd([c for c in cases.values() if c["constraints"]["female_endoscopist"] == "hard"]),
+                                    "within_31d_share_everyone_else": wd([c for c in cases.values() if c["constraints"]["female_endoscopist"] != "hard"])}},
         "levers": {"schema": levers.SCHEMA, "data_mode": "synthetic App 9 fields; Dik 2015 published score weights",
                    "pathway": dict(collections.Counter(c["pathway"]["route"] for c in cases.values())),
                    "prep_risk_band": dict(collections.Counter(c["prep_risk"]["band"] for c in cases.values())),
