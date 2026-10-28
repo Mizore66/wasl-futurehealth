@@ -274,6 +274,7 @@ func runHL7Listener(addr, runDir string) {
 	}
 	var msgs, dups, naks, conns, replays int64
 	seen := openSeen(js)
+	seen.CatchUp(js, "FHIR", 4*seenQueue)
 	start := time.Now()
 	go func() {
 		for {
