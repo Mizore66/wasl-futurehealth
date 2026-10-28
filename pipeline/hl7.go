@@ -272,13 +272,15 @@ func runHL7Listener(addr, runDir string) {
 	if err != nil {
 		panic(err)
 	}
-	var msgs, dups, naks, conns int64
+	var msgs, dups, naks, conns, replays int64
+	seen := openSeen(js)
 	start := time.Now()
 	go func() {
 		for {
 			time.Sleep(300 * time.Millisecond)
 			writeStatus(runDir, "hl7mllp", map[string]interface{}{"msgs": atomic.LoadInt64(&msgs), "dedup_absorbed": atomic.LoadInt64(&dups),
-				"nak": atomic.LoadInt64(&naks), "connections": atomic.LoadInt64(&conns), "secs": time.Since(start).Seconds()})
+				"nak": atomic.LoadInt64(&naks), "connections": atomic.LoadInt64(&conns), "already_ingested_dropped": atomic.LoadInt64(&replays),
+				"secs": time.Since(start).Seconds()})
 		}
 	}()
 	for {
@@ -328,8 +330,12 @@ func runHL7Listener(addr, runDir string) {
 				nm.Header.Set("Wsi-Ctl", m.Control)
 				nm.Header.Set("Wsi-Arr", m.arrival())
 				nm.Header.Set("Wsi-Ots", strconv.FormatInt(time.Now().UnixNano(), 10))
-				if pubSync(js, nm) {
+				dup, replay := seen.Publish(js, nm)
+				if dup {
 					atomic.AddInt64(&dups, 1)
+				}
+				if replay {
+					atomic.AddInt64(&replays, 1)
 				}
 				atomic.AddInt64(&msgs, 1)
 				c.Write(mllpFrame(hl7Ack(m, "AA", ""))) // ACK only after JetStream acknowledged the publish

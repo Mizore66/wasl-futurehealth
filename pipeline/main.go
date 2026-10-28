@@ -7,6 +7,8 @@ package main
 //   wsi producer|prep|linker|closure|reviewer|setup   individual services (spawned by orchestrate)
 import (
 	"context"
+	crand "crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -16,6 +18,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -65,6 +68,7 @@ func main() {
 	sweepOut := fs.String("sweepout", "../results/sweep.json", "v6: sweep output")
 	role := fs.String("role", "", "v6: caller role (tamper verifier requires auditor)")
 	quick := fs.Bool("quick", false, "v6: sweep only err 0/0.05, no double, 1 seed")
+	sweepRho := fs.String("sweeprho", "0", "H7: comma-separated reviewer error correlations to sweep (e.g. 0,0.25,0.5,1)")
 	norbac := fs.Bool("norbac", false, "v6: counterfactual sweep with RBAC disabled (err 0 only)")
 	models := fs.String("models", "../models", "")
 	nRegs := fs.Int("n", 1000000, "")
@@ -301,6 +305,14 @@ func main() {
 		if *quick {
 			SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.04}, []string{"none", "merge+close"}, 1
 		}
+		SweepRhos = nil
+		for _, x := range strings.Split(*sweepRho, ",") {
+			v, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
+			if err != nil {
+				panic("bad -sweeprho " + x)
+			}
+			SweepRhos = append(SweepRhos, v)
+		}
 		sweep(*data, *wasl, *P, *sweepOut)
 	case "ltt":
 		lttCollect(*data, *wasl, *P, *lttGrid, rcfg, *lttOut)
@@ -451,7 +463,7 @@ func natsConf(run string, i int) string {
 	conf := fmt.Sprintf(`server_name: n%d
 listen: 127.0.0.1:%d
 http: 127.0.0.1:%d
-jetstream { store_dir: "%s", max_memory_store: 256MB, max_file_store: 4GB }
+jetstream { store_dir: "%s", max_memory_store: 256MB, max_file_store: 4GB, cipher: chachapoly, key: $WASL_JS_KEY }
 cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 `, i, 14822+i, 18822+i, dir, 16822+i, strings.Join(routes, ", "))
 	p := filepath.Join(dir, "nats.conf")
@@ -477,6 +489,14 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	go func() { <-sig; o.stopAll(); os.Exit(1) }()
 	defer o.stopAll()
+	// encryption at rest (ChaCha20-Poly1305) for every JetStream store, stream and KV. The key comes from WASL_JS_KEY (a
+	// deployment keeps it in a KMS/HSM); the demo makes a random one per run and passes it only through the environment,
+	// never into the run directory, so the on-disk stores are unreadable without it.
+	if os.Getenv("WASL_JS_KEY") == "" {
+		k := make([]byte, 32)
+		crand.Read(k)
+		os.Setenv("WASL_JS_KEY", hex.EncodeToString(k))
+	}
 	natsBin := filepath.Join(filepath.Dir(self), "..", "bin", "nats-server")
 	for i := 0; i < 3; i++ {
 		o.start(fmt.Sprintf("nats-%d", i), natsBin, "-c", natsConf(run, i))

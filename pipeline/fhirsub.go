@@ -49,6 +49,8 @@ type SubConsumer struct {
 	http                    *http.Client
 	js                      jetstream.JetStream
 	kv                      jetstream.KeyValue
+	seen                    *SeenLedger
+	replays                 int64 // re-deliveries of already-ingested messages dropped by the seen ledger (seen.go)
 	subID                   string
 
 	mu        sync.Mutex
@@ -83,6 +85,7 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 		c.kv, err = js.CreateOrUpdateKeyValue(ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 3, Storage: jetstream.FileStorage})
 		return
 	})
+	c.seen = openSeen(js)
 	c.next, c.ackHWM = 1, 0
 	if e, err := c.kv.Get(ctx, "checkpoint"); err == nil {
 		var cp struct {
@@ -353,8 +356,12 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 		m.Header.Set("Wsi-Ots", strconv.FormatInt(time.Now().UnixNano(), 10))
 		m.Header.Set("Wsi-Arr", strconv.FormatFloat(arr, 'f', 6, 64))
 		m.Header.Set("Wsi-Evn", strconv.FormatInt(e.Num, 10))
-		if pubSync(c.js, m) {
+		dup, replay := c.seen.Publish(c.js, m)
+		if dup {
 			atomic.AddInt64(&c.pubDup, 1)
+		}
+		if replay {
+			atomic.AddInt64(&c.replays, 1)
 		}
 		atomic.AddInt64(&c.published, 1)
 		c.mu.Lock()
@@ -497,6 +504,7 @@ func (c *SubConsumer) statusLoop() {
 		}
 		c.mu.Unlock()
 		st["stats"], st["published"], st["nats_dup_suppressed"] = s, atomic.LoadInt64(&c.published), atomic.LoadInt64(&c.pubDup)
+		st["already_ingested_dropped"] = atomic.LoadInt64(&c.replays)
 		writeStatus(c.runDir, "fhirsub", st)
 		writeStatus(c.runDir, "fhirsub-pid"+strconv.Itoa(os.Getpid()), st)
 		time.Sleep(300 * time.Millisecond)
