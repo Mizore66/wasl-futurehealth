@@ -1,0 +1,286 @@
+{
+ "auto_correct_vs_truth": 159,
+ "auto_decided": 223,
+ "auto_unsafe_adequate_when_truth_not": 0,
+ "auto_wrong_safe_direction": 64,
+ "by_tag": {
+  "all": {
+   "auto": 223,
+   "n": 300
+  },
+  "fmt:addendum": {
+   "auto": 12,
+   "n": 16
+  },
+  "fmt:arabic_bilingual": {
+   "auto": 23,
+   "n": 33
+  },
+  "fmt:clinical_letter": {
+   "auto": 29,
+   "n": 37
+  },
+  "fmt:compact": {
+   "auto": 26,
+   "n": 37
+  },
+  "fmt:dictated": {
+   "auto": 17,
+   "n": 37
+  },
+  "fmt:discharge": {
+   "auto": 30,
+   "n": 37
+  },
+  "fmt:impression_first": {
+   "auto": 32,
+   "n": 38
+  },
+  "fmt:narrative": {
+   "auto": 26,
+   "n": 38
+  },
+  "fmt:ocr_scan": {
+   "auto": 20,
+   "n": 25
+  },
+  "fmt:structured": {
+   "auto": 30,
+   "n": 38
+  },
+  "fmt:tabulated": {
+   "auto": 33,
+   "n": 38
+  },
+  "hard:addendum_correction": {
+   "auto": 12,
+   "n": 16
+  },
+  "hard:bbps_total_trap": {
+   "auto": 12,
+   "n": 12
+  },
+  "hard:extent_by_landmarks": {
+   "auto": 9,
+   "n": 18
+  },
+  "hard:histology_request_not_result": {
+   "auto": 8,
+   "n": 14
+  },
+  "hard:impression_only_failure": {
+   "auto": 9,
+   "n": 12
+  },
+  "hard:missing_documentation": {
+   "auto": 56,
+   "n": 87
+  },
+  "hard:negated_tissue": {
+   "auto": 16,
+   "n": 28
+  },
+  "hard:no_polyps_but_biopsied": {
+   "auto": 9,
+   "n": 12
+  },
+  "hard:non_polyp_biopsy": {
+   "auto": 22,
+   "n": 36
+  },
+  "hard:ocr_noise": {
+   "auto": 20,
+   "n": 25
+  },
+  "hard:planned_not_done": {
+   "auto": 10,
+   "n": 10
+  },
+  "hard:polyp_seen_not_removed": {
+   "auto": 5,
+   "n": 12
+  },
+  "hard:prep_rescue": {
+   "auto": 6,
+   "n": 12
+  },
+  "hard:prep_segment_overrides_overall": {
+   "auto": 10,
+   "n": 10
+  },
+  "hard:prior_histology_not_current": {
+   "auto": 6,
+   "n": 8
+  },
+  "hard:prior_incomplete_not_current": {
+   "auto": 3,
+   "n": 8
+  },
+  "hard:prior_procedure": {
+   "auto": 15,
+   "n": 24
+  },
+  "hard:specimen_no_result": {
+   "auto": 5,
+   "n": 8
+  },
+  "hard:ti_implies_caecum": {
+   "auto": 8,
+   "n": 12
+  },
+  "hard:withdrawal_phrase": {
+   "auto": 3,
+   "n": 12
+  },
+  "hidden:undocumented_failure": {
+   "auto": 9,
+   "n": 12
+  },
+  "prep:boston": {
+   "auto": 36,
+   "n": 48
+  },
+  "prep:ungraded": {
+   "auto": 26,
+   "n": 50
+  },
+  "prep:verbal": {
+   "auto": 161,
+   "n": 202
+  },
+  "spelling:uk": {
+   "auto": 118,
+   "n": 150
+  },
+  "spelling:us": {
+   "auto": 105,
+   "n": 150
+  },
+  "tissue:biopsy": {
+   "auto": 46,
+   "n": 70
+  },
+  "tissue:none": {
+   "auto": 63,
+   "n": 83
+  },
+  "tissue:planned_not_done": {
+   "auto": 10,
+   "n": 10
+  },
+  "tissue:polyp_not_removed": {
+   "auto": 5,
+   "n": 12
+  },
+  "tissue:polypectomy": {
+   "auto": 99,
+   "n": 125
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "227/300",
+   "histology": "272/300",
+   "polyps": "298/300",
+   "prep": "277/300",
+   "state": "242/300"
+  },
+  "regex": {
+   "caecum": "222/300",
+   "histology": "293/300",
+   "polyps": "271/300",
+   "prep": "269/300",
+   "state": "244/300"
+  }
+ },
+ "field_misses": {
+  "reader2/caecum": [
+   "u001:yes!=no",
+   "u002:no!=yes",
+   "u003:no!=yes",
+   "u005:no!=yes",
+   "u011:not_stated!=yes",
+   "u012:not_stated!=yes",
+   "u015:not_stated!=yes",
+   "u019:not_stated!=yes"
+  ],
+  "reader2/histology": [
+   "u028:no!=yes",
+   "u044:no!=yes",
+   "u052:no!=yes",
+   "u057:no!=yes",
+   "u060:no!=yes",
+   "u068:no!=yes",
+   "u071:no!=yes",
+   "u087:no!=yes"
+  ],
+  "reader2/polyps": [
+   "u027:yes!=no",
+   "u090:yes!=no"
+  ],
+  "reader2/prep": [
+   "u006:inadequate!=adequate",
+   "u008:inadequate!=adequate",
+   "u009:inadequate!=adequate",
+   "u072:not_stated!=adequate",
+   "u074:not_stated!=adequate",
+   "u082:not_stated!=adequate",
+   "u088:not_stated!=adequate",
+   "u093:not_stated!=adequate"
+  ],
+  "regex/caecum": [
+   "u002:no!=yes",
+   "u003:no!=yes",
+   "u005:no!=yes",
+   "u006:not_stated!=yes",
+   "u011:not_stated!=yes",
+   "u012:not_stated!=yes",
+   "u014:not_stated!=yes",
+   "u015:not_stated!=yes"
+  ],
+  "regex/histology": [
+   "u088:no!=yes",
+   "u100:no!=yes",
+   "u157:no!=yes",
+   "u175:no!=yes",
+   "u184:no!=yes",
+   "u205:no!=yes",
+   "u211:no!=yes"
+  ],
+  "regex/polyps": [
+   "u016:yes!=no",
+   "u022:yes!=no",
+   "u023:yes!=no",
+   "u027:yes!=no",
+   "u034:yes!=no",
+   "u037:yes!=no",
+   "u043:yes!=no",
+   "u051:yes!=no"
+  ],
+  "regex/prep": [
+   "u006:inadequate!=adequate",
+   "u008:inadequate!=adequate",
+   "u009:inadequate!=adequate",
+   "u024:inadequate!=not_stated",
+   "u027:inadequate!=not_stated",
+   "u072:not_stated!=adequate",
+   "u074:not_stated!=adequate",
+   "u078:not_stated!=adequate"
+  ]
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 36,
+  "awaiting_histology/adequate": 3,
+  "awaiting_histology/awaiting_histology": 40,
+  "inadequate/adequate": 38,
+  "inadequate/awaiting_histology": 23,
+  "inadequate/inadequate": 83,
+  "review/adequate": 43,
+  "review/awaiting_histology": 27,
+  "review/inadequate": 7
+ },
+ "reader2_cache_hits": 300,
+ "reader2_model": "gemma-3-4b-it-Q4_K_M/hybrid-v7/cached",
+ "reports": 300,
+ "unsafe": []
+}

@@ -1,0 +1,416 @@
+{
+ "auto_correct_vs_truth": 126,
+ "auto_decided": 154,
+ "auto_unsafe_adequate_when_truth_not": 0,
+ "auto_wrong_safe_direction": 28,
+ "by_tag": {
+  "all": {
+   "auto": 154,
+   "n": 300
+  },
+  "extent:abbrev": {
+   "auto": 8,
+   "n": 16
+  },
+  "extent:anastomosis": {
+   "auto": 3,
+   "n": 9
+  },
+  "extent:arabic": {
+   "auto": 4,
+   "n": 4
+  },
+  "extent:benign_neg": {
+   "auto": 6,
+   "n": 13
+  },
+  "extent:correction": {
+   "auto": 10,
+   "n": 21
+  },
+  "extent:hedged": {
+   "auto": 3,
+   "n": 15
+  },
+  "extent:recovered": {
+   "auto": 4,
+   "n": 12
+  },
+  "extent:self_correction": {
+   "auto": 5,
+   "n": 10
+  },
+  "extent:stated": {
+   "auto": 67,
+   "n": 135
+  },
+  "extent:template_contra": {
+   "auto": 8,
+   "n": 11
+  },
+  "extent:ti": {
+   "auto": 9,
+   "n": 21
+  },
+  "extent:unstated": {
+   "auto": 27,
+   "n": 33
+  },
+  "fmt:bilingual": {
+   "auto": 12,
+   "n": 27
+  },
+  "fmt:dictation": {
+   "auto": 17,
+   "n": 34
+  },
+  "fmt:form": {
+   "auto": 15,
+   "n": 35
+  },
+  "fmt:free_text": {
+   "auto": 26,
+   "n": 50
+  },
+  "fmt:headed": {
+   "auto": 25,
+   "n": 45
+  },
+  "fmt:hl7": {
+   "auto": 6,
+   "n": 16
+  },
+  "fmt:key_value": {
+   "auto": 17,
+   "n": 29
+  },
+  "fmt:letter": {
+   "auto": 22,
+   "n": 34
+  },
+  "fmt:table": {
+   "auto": 14,
+   "n": 30
+  },
+  "hard:abbreviation_heavy": {
+   "auto": 8,
+   "n": 16
+  },
+  "hard:addendum_correction": {
+   "auto": 34,
+   "n": 75
+  },
+  "hard:addendum_histology": {
+   "auto": 5,
+   "n": 23
+  },
+  "hard:arabic_key_statement": {
+   "auto": 8,
+   "n": 15
+  },
+  "hard:bbps_nonstandard_order": {
+   "auto": 2,
+   "n": 6
+  },
+  "hard:bbps_segment_fail": {
+   "auto": 9,
+   "n": 11
+  },
+  "hard:bbps_total_only": {
+   "auto": 4,
+   "n": 15
+  },
+  "hard:benign_negation": {
+   "auto": 6,
+   "n": 13
+  },
+  "hard:bidirectional_session": {
+   "auto": 8,
+   "n": 14
+  },
+  "hard:blank_form_field": {
+   "auto": 4,
+   "n": 13
+  },
+  "hard:descriptive_prep": {
+   "auto": 5,
+   "n": 15
+  },
+  "hard:dictation_self_correction": {
+   "auto": 5,
+   "n": 10
+  },
+  "hard:hedged_extent": {
+   "auto": 3,
+   "n": 15
+  },
+  "hard:negated_tissue": {
+   "auto": 59,
+   "n": 94
+  },
+  "hard:ocr_noise": {
+   "auto": 19,
+   "n": 43
+  },
+  "hard:planned_not_done": {
+   "auto": 3,
+   "n": 9
+  },
+  "hard:polyp_not_resected": {
+   "auto": 7,
+   "n": 15
+  },
+  "hard:post_resection_extent": {
+   "auto": 3,
+   "n": 9
+  },
+  "hard:prep_agent_only": {
+   "auto": 4,
+   "n": 9
+  },
+  "hard:prep_compliance_not_quality": {
+   "auto": 4,
+   "n": 15
+  },
+  "hard:prior_procedure": {
+   "auto": 22,
+   "n": 52
+  },
+  "hard:recovered_extent": {
+   "auto": 4,
+   "n": 12
+  },
+  "hard:request_not_result": {
+   "auto": 15,
+   "n": 27
+  },
+  "hard:score_lookalike": {
+   "auto": 2,
+   "n": 12
+  },
+  "hard:segmental_prep": {
+   "auto": 8,
+   "n": 10
+  },
+  "hard:specimen_label_only": {
+   "auto": 8,
+   "n": 18
+  },
+  "hard:template_default_contradicted": {
+   "auto": 8,
+   "n": 11
+  },
+  "hard:ti_implies_caecum": {
+   "auto": 9,
+   "n": 21
+  },
+  "hidden:undocumented_failure": {
+   "auto": 5,
+   "n": 10
+  },
+  "hist:addendum": {
+   "auto": 6,
+   "n": 31
+  },
+  "hist:inline": {
+   "auto": 19,
+   "n": 42
+  },
+  "hist:na": {
+   "auto": 20,
+   "n": 30
+  },
+  "hist:none": {
+   "auto": 62,
+   "n": 104
+  },
+  "hist:pending": {
+   "auto": 22,
+   "n": 50
+  },
+  "hist:pending_prior": {
+   "auto": 10,
+   "n": 16
+  },
+  "hist:request": {
+   "auto": 15,
+   "n": 27
+  },
+  "lang:arabic": {
+   "auto": 35,
+   "n": 69
+  },
+  "noise:ocr": {
+   "auto": 19,
+   "n": 43
+  },
+  "prep:arabic_verbal": {
+   "auto": 2,
+   "n": 6
+  },
+  "prep:bbps_segments": {
+   "auto": 30,
+   "n": 55
+  },
+  "prep:bbps_total": {
+   "auto": 4,
+   "n": 15
+  },
+  "prep:boston": {
+   "auto": 43,
+   "n": 90
+  },
+  "prep:corrected": {
+   "auto": 13,
+   "n": 24
+  },
+  "prep:descriptive": {
+   "auto": 5,
+   "n": 15
+  },
+  "prep:segmental_verbal": {
+   "auto": 8,
+   "n": 10
+  },
+  "prep:ungraded": {
+   "auto": 19,
+   "n": 61
+  },
+  "prep:verbal": {
+   "auto": 73,
+   "n": 114
+  },
+  "spelling:uk": {
+   "auto": 98,
+   "n": 185
+  },
+  "spelling:us": {
+   "auto": 56,
+   "n": 115
+  },
+  "tissue:biopsy": {
+   "auto": 42,
+   "n": 105
+  },
+  "tissue:negated": {
+   "auto": 59,
+   "n": 94
+  },
+  "tissue:none": {
+   "auto": 74,
+   "n": 114
+  },
+  "tissue:polypectomy": {
+   "auto": 47,
+   "n": 96
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "275/300",
+   "histology": "295/300",
+   "polyps": "294/300",
+   "prep": "282/300",
+   "state": "270/300"
+  },
+  "regex": {
+   "caecum": "234/300",
+   "histology": "256/300",
+   "polyps": "217/300",
+   "prep": "234/300",
+   "state": "198/300"
+  }
+ },
+ "field_misses": {
+  "reader2/caecum": [
+   "q001:not_stated!=yes",
+   "q028:not_stated!=yes",
+   "q033:not_stated!=yes",
+   "q040:not_stated!=yes",
+   "q043:not_stated!=yes",
+   "q045:yes!=not_stated",
+   "q074:yes!=not_stated",
+   "q080:yes!=not_stated"
+  ],
+  "reader2/histology": [
+   "q018:yes!=no",
+   "q038:no!=yes",
+   "q102:yes!=no",
+   "q133:yes!=no",
+   "q275:yes!=no"
+  ],
+  "reader2/polyps": [
+   "q102:yes!=no",
+   "q192:yes!=no",
+   "q249:yes!=no",
+   "q268:yes!=no",
+   "q290:yes!=no",
+   "q292:yes!=no"
+  ],
+  "reader2/prep": [
+   "q020:not_stated!=adequate",
+   "q026:not_stated!=adequate",
+   "q053:not_stated!=adequate",
+   "q096:not_stated!=adequate",
+   "q105:not_stated!=adequate",
+   "q125:not_stated!=adequate",
+   "q140:not_stated!=adequate",
+   "q148:not_stated!=adequate"
+  ],
+  "regex/caecum": [
+   "q001:not_stated!=yes",
+   "q010:no!=yes",
+   "q011:yes!=not_stated",
+   "q020:yes!=not_stated",
+   "q023:no!=yes",
+   "q028:no!=yes",
+   "q032:yes!=no",
+   "q042:yes!=not_stated"
+  ],
+  "regex/histology": [
+   "q003:no!=yes",
+   "q011:no!=yes",
+   "q017:no!=yes",
+   "q019:no!=yes",
+   "q020:no!=yes",
+   "q029:no!=yes",
+   "q030:no!=yes",
+   "q031:no!=yes"
+  ],
+  "regex/polyps": [
+   "q003:no!=yes",
+   "q006:yes!=no",
+   "q014:yes!=no",
+   "q016:no!=yes",
+   "q017:no!=yes",
+   "q019:no!=yes",
+   "q020:no!=yes",
+   "q022:no!=yes"
+  ],
+  "regex/prep": [
+   "q004:not_stated!=adequate",
+   "q006:not_stated!=adequate",
+   "q013:adequate!=not_stated",
+   "q019:inadequate!=not_stated",
+   "q020:not_stated!=adequate",
+   "q026:not_stated!=adequate",
+   "q035:not_stated!=inadequate",
+   "q046:not_stated!=adequate"
+  ]
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 24,
+  "awaiting_histology/adequate": 2,
+  "awaiting_histology/awaiting_histology": 25,
+  "inadequate/adequate": 15,
+  "inadequate/awaiting_histology": 11,
+  "inadequate/inadequate": 77,
+  "review/adequate": 79,
+  "review/awaiting_histology": 54,
+  "review/inadequate": 13
+ },
+ "reader2_cache_hits": 300,
+ "reader2_model": "gemma-4-26b-a4b-it-self/cached",
+ "reports": 300,
+ "unsafe": []
+}

@@ -712,6 +712,8 @@ Read with care: reader A was written against the same templates it is scored on,
 
 ### Three independent report corpora, and readers v4 and v5
 
+*Continued in the next section: corpora 5 and 6, written by other model families, broke v5 and v6. The current reader is v7.1 and the headline numbers are from it.*
+
 The App 14 fix above was designed on the corpus that found the problem, so the 0 needed a fresh test. Each new corpus is 300 synthetic colonoscopy reports with an answer key, written by an independent author (a separate Claude agent) from a brief alone, without the Wasl code or the other corpora. Each was committed before any reader ran on it. Every corpus that broke a reader version then became tuning data, and the next corpus is the fair test of the fix.
 
 | Corpus | Seed | Commit | Hard cases | Fair test of |
@@ -774,3 +776,57 @@ Generators and dataset cards: `scripts/heldout/`, `scripts/heldout3/`, `scripts/
 - The 26B decides more reports and is more accurate on every field. The 4B stays safe by sending more to review (+3 reviewer hours per 1k loops on corpus 4).
 - All four corpora are synthetic and written by Claude agents; they share a model family even with separate authors. Real Abu Dhabi reports have not been tested.
 - Caches: `models/heldout{,3,4}/gemma_cache_{26b,4b}.json`. Reproduce: `WASL_REPORTS=data/evidence/reports_heldout4.json WASL_MODELS=<dir with one cache as gemma_cache.json> scripts/final_eval.sh`; reader score: `wsi readerscore -policy v7strict -wasl <dir> -reports <corpus>`.
+
+### Corpora 5–7 by other model families, and readers v6, v7, v7.1
+
+Corpora 2–4 were all written by Claude agents, which share one model family and may share blind spots. Corpora 5–7 were each written by a different model family from the same brief ([`scripts/heldout6/brief.md`](../scripts/heldout6/brief.md); corpus 5 used the same text by hand). The author scripts only run the generator and return validation errors to the model; we never edit the generator. Each corpus was committed before any reader ran on it.
+
+| Corpus | Author | Seed | Commit | Hard cases | Fair test of |
+|---|---|---|---|---|---|
+| 5: [`reports_heldout5.json`](../data/evidence/reports_heldout5.json) | GPT-6.1 Sol (OpenAI), via Codex | 5051 | `1c6dcbc` | 98% | v5 |
+| 6: [`reports_heldout6.json`](../data/evidence/reports_heldout6.json) | Gemini 4 Argon (Google) | 6067 | `b667b86` | 49% | v6 |
+| 7: [`reports_heldout7.json`](../data/evidence/reports_heldout7.json) | Kimi K3.1 Pro (Moonshot AI) | 7079 | `3eb4d03` | 59% | v7 |
+
+**Corpus 5, fair test of v5: failed with both readers** (3 unsafe auto-closures each).
+- Every case: this procedure's result was still pending ("Current accession …: histology awaited"; "received; gross description only"), while a diagnosis from an earlier procedure or the stomach sat in wording the v4 filter did not know ("Historical surveillance record (2024 colonoscopy): tubular adenoma"; "that accession is separate from today's procedure"). Both readers took it as this procedure's histology.
+- Frozen evaluation, v5, 26B (`results/heldout5/v5-26b`): **5/2,129 · 7/2,109** CRC false closures (95% upper bounds 0.55%, 0.68%).
+- **v6 (`9bb60ee`, disclosed):** a report that says this procedure's result is pending, awaited or only received, and also holds a tissue diagnosis, is never auto-closed. More wordings mark a sentence as an earlier procedure.
+
+**Corpus 6, fair test of v6: failed** (26B 3 unsafe, 4B 5 unsafe; `results/heldout6/`).
+- Every case: the scope reached the ileocaecal valve, or saw the caecum at a distance, but did not reach it ("reached the distal lip of the ileocecal valve, but … could not be advanced past the valve"; "caecal pole visualised at a distance, though severe looping prevented advancing the tip into the caecum"). The reader prompt itself counted the valve as the caecum, so both readers followed our own definition.
+- **v7 (`a3f9ccd`, `03862fe`, disclosed):** checked in code, with no new model calls. The caecum counts as reached only with an explicit caecum statement, the appendiceal orifice or the terminal ileum, as in the DoH caecal-landmark standard. Any clause saying the caecum, its landmarks or the scope tip could not be reached, or was seen only at a distance, means "not reached".
+
+**Corpus 7, fair test of v7: passed with both readers.**
+
+| | 26B | Local 4B |
+|---|---|---|
+| Unsafe auto-closures | **0** | **0** |
+| Auto-decided / right / wrong in the safe direction | 216 / 177 / 39 | 223 / 159 / 64 |
+| Frozen eval, CRC false closures v1 / v2 | **0/2,245 · 0/2,021** | **0/1,889 · 0/1,720** |
+| CRC recall v1 / v2 | 0.779 / 0.719 | 0.656 / 0.612 (v7; most of the gap is the "appendiceal opening" synonym fixed in v7.1) |
+
+**v7.1 (`54ff4ba`, recall only, disclosed).** v7 cost recall: 17 complete exams in corpus 7 said "appendiceal *opening*", and on MTSamples "retroflexion … failed to reveal lesions" and "the terminal ileum could not be intubated" read as caecum not reached. MTSamples recall fell from 0.947 / 0.879 to 0.917 / 0.850, still with 0 false closures (`results/mts-v7`). v7.1 counts inability only with movement verbs (reach, advance, intubate, pass, manoeuvre…), skips clauses about the terminal ileum alone, and adds "appendiceal opening". Re-scored on all seven corpora and MTSamples, with 0 unsafe for either reader (`results/v7.1-reader-scores/`). One MTSamples report ("to the ileocecal valve") now goes to review, where the team key counted it as complete.
+
+**MTSamples headline at v7.1** (`results/final/`, code `54ff4ba`): CRC P 1.000, recall 0.918 / 0.851, **0/2,617 · 0/2,452** CRC false closures, cervical 0/1,004 · 0/969, 0/9,410 wrong-patient and 0/5,315 without consent on held-out noise, review-load ratio across origins 1.18 (1.11–1.24). Recall is 3 points below reader v5 (0.947 / 0.879) because of one report reused across about 40 loops: "advanced to the ileocecal valve" no longer counts as caecal completion without the appendiceal orifice (the DoH landmark standard). The team key counted it complete. This is a deliberate trade: counting the valve alone is what failed on corpus 6.
+
+**Every fair test** (unsafe auto-closures, reader score, 300 unseen reports each):
+
+| Corpus | Author | Reader tested | 26B | Local 4B |
+|---|---|---|---|---|
+| 2 | Claude | v3 | 0 | 0 |
+| 3 | Claude | v4 | 0 | 2 |
+| 4 | Claude | v5 | 0 | 0 |
+| 5 | GPT-6.1 Sol | v5 | 3 | 3 |
+| 6 | Gemini 4 Argon | v6 | 3 | 5 |
+| 7 | Kimi K3.1 Pro | v7 | 0 | 0 |
+| **Total** | | | **6 / 1,800 (0.33%)** | **10 / 1,800 (0.56%)** |
+
+**What this shows:**
+- **On unseen phrasing, the readers are not perfect.** Three of six fresh corpora found a phrasing family that both readers agreed on wrongly. The measured rate is 6 of 1,800 unseen reports with the 26B (0.33%, 95% upper bound 0.72%) and 10 of 1,800 with the local 4B (0.56%, upper bound 1.02%). In a frozen run, the corpus 5 failure became about 0.3% of CRC closures.
+- **Each failure was a whole class, not a random error.** Each was fixed by a generic rule (corrections, pending results, landmarks) and stayed fixed on every other corpus. v7.1 has 0 unsafe on all seven corpora and MTSamples with either reader.
+- **Other model families found what Claude-written corpora did not.** The two classes found by GPT and Gemini were invisible in three Claude corpora.
+- **A pilot needs an audit sample of auto-closures.** The next unseen phrasing class will exist in real Abu Dhabi reports. We propose a pilot in which a clinician re-reads a random 10% of auto-closed reports (and 100% for the first month). Any confirmed error class becomes a new rule plus a regression test, as here.
+- The local 4B is less accurate than the 26B on every field. It stays safe mainly by sending more to review, and it had more unsafe cases on the hardest corpus (6).
+- All corpora are synthetic. Real reports have not been tested.
+
+Caches: `models/heldout{5,6,7}/gemma_cache_{26b,4b}.json`. Reader score: `wsi readerscore -policy v7strict -wasl <dir> -reports <corpus>`.

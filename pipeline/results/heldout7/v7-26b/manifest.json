@@ -1,0 +1,50 @@
+{
+ "frozen_at": "2026-10-29T08:06:14.287983Z",
+ "code_revision": "3eb4d03e6db2ffd8351ffcf7deb2cbfd39bb5bfc",
+ "policy": "v7strict",
+ "thresholds": {
+  "tau_high_messaging": 0.99,
+  "tau_close_v7strict": 0.99,
+  "uncorroborated_cap": 0.989,
+  "calibrator": "models/iso_v7.json (stratified)",
+  "dob_second_id_guard": true,
+  "reviewer_error": 0.04,
+  "double_review": "merge+close"
+ },
+ "reader": "cached second reader: gemma-4-26b-a4b-it-self (sha256-keyed)",
+ "reports": "data/evidence/reports_heldout7.json",
+ "models_dir": "external (see reader)",
+ "source": "fhir",
+ "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
+ "noise_models": {
+  "v1": "training-time corruptions (gen.go)",
+  "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
+ },
+ "seeds": [
+  11,
+  23,
+  37,
+  41,
+  59
+ ],
+ "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
+ "hashes": {
+  "models/encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+  "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
+  "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
+  "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
+  "models/gemma_cache.json": "d7821088c7f056bafa1414fa85dbb2122334981a9ae3fd741efa36ae37abdf18",
+  "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
+  "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+  "data/evidence/reports43.json": "a930c347e5d4eb6aff0f73de0cc4786243045f33e27d6676fe51bed3f6f03c7d",
+  "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7"
+ },
+ "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
+ "limitations": [
+  "the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test",
+  "synthetic cohorts, reviewers, capacity; no clinician labels",
+  "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
+  "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
+  "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
+ ]
+}

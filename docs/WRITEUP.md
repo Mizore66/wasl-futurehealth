@@ -122,7 +122,7 @@
   - **Below 1.0 slot per FIT+, ≤31-day completion collapses to 0–14% under *any* booking policy.** Only levers that create capacity help there (see "Queue control" below).
 - **Fairness remedies (built and evaluated):**
   - Female-list protection in the booking engine: a demand-sized hold on female-list slots, released 7 days out. It cuts the access gap from 18.5 to 12.6 pp at a 15–30% female-list share, to 4.5 pp at 30% and 0.6 pp at 40% (`booking/RESULTS.md`).
-  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.18 (1.11–1.25). Per-origin gate calibration was not needed.
+  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.18 (1.11–1.24). Per-origin gate calibration was not needed.
 - **Dashboard:** reported vs evidenced closure per provider; drop-off reasons (never notified, not understood, referral rejected, no-show, inadequate, unlinked); review load by name origin; small-cell suppression.
 - **Governance:**
   - RBAC and consent in code;
@@ -147,7 +147,7 @@
     - H3, missed surveillance interval: clinician confirms.
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
-    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/6,285 held-out).
+    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/5,315 held-out).
     - H7, correlated reviewer error: mitigations designed (different roles, blinded second read, pair rotation, 2% senior audit). *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
     - H8, unequal burden or access: review-load ratio 1.18 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
@@ -221,7 +221,7 @@
 | Area | Result |
 |---|---|
 | Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; an assumed 4% independent reviewer error per read (stress test, not a measured rate); 3 process kills + 1 NATS kill | CRC P 1.000, R 0.948, 0/563 false closures. Cervical 0/216. No review: CRC R 0.167. 26.3 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
-| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.879 (0.863–0.896), **0/2,534 false closures** (UB 0.15%), 0/9,386 wrong-patient messages, 0/6,285 messages without consent, KPI error 0.035 vs EID-only 0.205, review-load ratio across origins 1.18 (1.11–1.25). Dev v1: R 0.947, CRC 0/2,700, cervical 0/1,005. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
+| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.851 (0.830–0.871), **0/2,452 false closures** (UB 0.15%), 0/9,410 wrong-patient messages, 0/5,315 messages without consent, KPI error 0.035 vs EID-only 0.205, review-load ratio across origins 1.18 (1.11–1.24). Dev v1: R 0.918, CRC 0/2,617, cervical 0/1,004. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
 | Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. |
 | Rule baselines | EID-only: P 0.834, R 0.364. Any procedure ≤120 d: P 0.661, R 0.431. |
 | v7 gate under the **current closure rule** (ungraded prep stays open; offline, one cohort, 5 seeds × 3 reviewer error rates) | Double review: 0/8,422 false closures (upper bound 0.04%); recall 0.973 / 0.958 / 0.943 at 2 / 4 / 6% error. No-review recall 0.273; 27.0 reviewer-h per 1k loops. Single review: 21 false closures, so double review is mandatory. |
@@ -481,10 +481,14 @@
     - 300 colonoscopy reports in the DoH App 14 field layout, generated from a spec that is its own answer key, frozen before any reader ran. Variation: ungraded prep, short or unstated extent, Arabic/English, OCR noise, mass and random biopsies.
     - **It found two blind spots** that MTSamples never exercised. The readers took "tissue" to mean only a polyp removed, so a biopsy with no result closed the loop, and a low Boston score was read as adequate prep. With both the local 4B and the 26B this gave 50–52 CRC false closures in the frozen evaluation.
     - **Fixed (post-hoc, disclosed):** "tissue taken" now includes any biopsy, and Boston scores are graded by number. After the fix: 0 false closures with either reader on both noise models; MTSamples unchanged. A fresh held-out corpus is needed before claiming the 0.
-  - **Three independent held-out corpora (built):** 300 reports each, written by separate Claude agents from a brief alone (no Wasl code, no other corpus), each committed before any reader ran. Each one was the fair test of the previous fix:
+  - **Six held-out corpora (built):** 300 reports each, written by separate agents (Claude ×3, then GPT-6.1 Sol, Gemini 4 Argon, Kimi K3.1 Pro) from a brief alone (no Wasl code, no other corpus), each committed before any reader ran. Each one was the fair test of the previous fix:
     - corpus 2 (fair test of v3): 0 false closures, but low recall (a Boston parser bug; histology from an earlier procedure). Fixed in v4, disclosed.
     - corpus 3 (fair test of v4): the 26B stayed at 0 unsafe auto-closures; the local 4B auto-closed 2 inadequate reports that a signed correction addendum had regraded (18 frozen-eval false closures). Fixed in v5: a self-correcting report is never auto-closed, and conflicting Boston scores decide nothing.
     - corpus 4 (fair test of v5, 91% hard cases, 75 correction addenda): **0 false closures with both readers** (26B 0/2,270, 4B 0/2,140 on held-out noise). One clean corpus is evidence, not proof; every auto-closure still needs two agreeing readers.
+    - corpus 5 (fair test of v5, written by GPT-6.1 Sol): 3 unsafe auto-closures with each reader: an earlier procedure's histology next to "this result pending". Fixed in v6.
+    - corpus 6 (fair test of v6, Gemini 4 Argon): 3 (26B) and 5 (4B) unsafe: the scope reached the ileocaecal valve, or saw the caecum at a distance, but did not reach it; our own prompt counted the valve. Fixed in v7: the DoH caecal landmarks are required, and any "could not reach / seen at a distance" clause means not reached.
+    - corpus 7 (fair test of v7, Kimi K3.1 Pro): **0 unsafe with both readers**; 26B frozen eval 0/2,245 · 0/2,021. v7.1 then fixed three recall-only over-readings (disclosed).
+    - **Over the six fair tests: 6/1,800 unseen reports auto-closed unsafely with the 26B (0.33%, upper bound 0.72%), 10/1,800 with the 4B.** Unseen phrasing will exist in real reports, so the pilot includes a clinician audit of a random sample of auto-closures, and every confirmed error class becomes a rule plus a regression test.
 - Fixed: an early build sent 16 messages before the patient's contact-channel consent status was known. The consent hold now keeps messages until the status arrives (0 released without consent in every frozen run).
 - Measurement doesn't raise the ~33% true rate; the trial-effect projection reached only 9.8%.
 

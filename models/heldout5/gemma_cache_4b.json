@@ -1,0 +1,3980 @@
+{
+ "011d70dc2e8c7ed94dce9dabc42bed68e7ccfb705ea7e471645b85ab5eb752d6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum WAS reached, with appendiceal orifice and valve documented",
+  "quotes": {
+   "caecum": "the cecum WAS reached, with appendiceal orifice and valve documented",
+   "histology": "No current tissue histology requested",
+   "polyps": "no tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "02433015d771429d78d7bdd7b86f39fb4dcf7152099cff5cdc62d2bd3c7c71ea": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; caecum not reached. Procedure stopped for discomfort.",
+  "quotes": {
+   "caecum": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; caecum not reached. Procedure stopped for discomfort.",
+   "histology": "benign polyp histology",
+   "polyps": "Specimens: none. Neither biopsies nor polyp removal were undertaken.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "04dcacc8439307ed42a133af4da9914f151999f353a8618de2299b34dabe4288": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "06209a209c21713db73fd9c284d63bb456766d447c206c1fef7e9db0e35cf489": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "EXTENT / Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "Current colon pathology, C26-H5-162, final signed result",
+   "polyps": "containers A and B, accession C26-H5-162.",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 2/3/2 (sum 7)."
+  }
+ },
+ "078e1ef9cfecbf217d150e8092b9f3c6f8e445f7507fe66a765f408f7a3e0bf9": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "07ed514942810bbb686d149c6b6cc2f60fb47e247a1c2eb189c31e08ff59b481": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "observations monitored",
+  "quotes": {
+   "caecum": "observations monitored",
+   "histology": "",
+   "polyps": "A 7 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-105.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "08695b777c6014fdb662b23a7c2d18aadc72efd9c28ecd66362cab0038d3a581": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "Original signed extent entry: cecum reached.",
+  "quotes": {
+   "caecum": "Original signed extent entry: cecum reached.",
+   "histology": "tubular adenoma on histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "095c6fe6dd549c655f8c2f2330c804878d85efe1a2d7ed2372c28223897104f7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum WAS reached, with appendiceal orifice and valve documented",
+  "quotes": {
+   "caecum": "the cecum WAS reached, with appendiceal orifice and valve documented",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "0bd20598fead13a833aa5ae3ed87dc65e85dfe802a8fd79d941b238f76ff87ba": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "Specimens: none. Neither biopsies nor polyp removal were undertaken.",
+   "prep": "Preparation, Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "0cede53e552db5b2a6c6a08519506f2db5b852a9ce54c321a4d6f2544befc284": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-264) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-264.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "0cf3a36e0a6ba477733d36d211600476fec4b1c986bf2ea01c41b2067b7d4872": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "PATHOLOGY / Laboratory tracking C26-H5-002 final diagnosis pending",
+   "polyps": "A 8 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-002.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "0d455045196d5a5f12dfc1ff7ef5566b14dfc57bbc592d149cc36122c104938f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-044.",
+   "prep": "split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "0e1da691f1c476894789a04f37678cfa23d4dcc20489225b5f57130f40dac7a9": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "EXTENT / Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "no tissue was taken",
+   "prep": "Later signed quality correction: 'good' was a selection error. Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "0e76e767eae23b2d767bcc5cd207e9bd45b9d667d971e24a9a0ab0d9750cdeea": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "1078b3cfd3ae9d38cf2172f2cdfdafebe87938f06aa91078690a7187c3d47c66": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "A 3 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-080.",
+   "prep": "Final bowel preparation grade: adequate. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "1143f9ee4d9812a2c4dc889dc5ecacd7b0edbad68fc6e12667e2b889a639d89c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No biopsy or polypectomy was performed PATHOLOGY / No current tissue histology requested",
+   "polyps": "no tissue was taken.",
+   "prep": "BBPS, post-lavage: total 7; segment order RIGHT | TRANSVERSE | LEFT: 3 | 3 | 1."
+  }
+ },
+ "13d6407fc26acaa3f33ac939ec05e14ea58fe1c2366c269293b29e9361cdc132": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "no colon diagnosis is available",
+   "polyps": "containers A and B, accession C26-H5-219",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "14a21aa16fbdea507b2a9974cf1cf060b330c673d9834353128964bfa120e618": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Sessile serrated lesion without dysplasia",
+   "polyps": "Snare",
+   "prep": ""
+  }
+ },
+ "1523f7374ef3450bd1e10179ca8da2b0bf32ee8a0b7f9c55a0a46910b982bade": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "",
+   "polyps": "Specimens: none. Neither biopsies nor polyp removal were undertaken.",
+   "prep": "Preparation, Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "154a0b723a395708a18906750444591993014f0b410f42362aad9d41f8df80fa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "final diagnosis pending",
+   "polyps": "A 4 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "1639a5d0ad3d31c4ff21fa919496ad08d6dbc9e289782e27d93b53ed31ef3792": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "EXTENT / Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "EXTENT / Original signed extent entry: caecum reached.",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "165160d99c6b63122f84dc6bd7c95085f32396635a8d6d5062477d7610f8a174": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "EXTENT / Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "EXTENT / Original signed extent entry: caecum reached.",
+   "histology": "polypectomy with tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "1692bfa109ccac9ae06ff55f26ab121a7e7aa37c678dcda6d623cd82401083be": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "173f55058a4710274120a2bbadbd12c4a2cf43f561527c1294f5d8b32ff09bd9": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "189bb57bc29123ad60927db76953e6d59585f45129dd70d1c3f6d2d781bfc3a2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "accession C26-H5-037 sigmoid tubular adenoma, low-grade dysplasia",
+   "polyps": "A 5 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-037.",
+   "prep": "BBPS, post-lavage: total 8; segment order RIGHT | TRANSVERSE | LEFT: 3 | 2 | 3."
+  }
+ },
+ "190fcdb417880b1b7e36502d27a14b7662aa6aef0bfadfaccda2b8d2ab70cc72": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "Original signed extent entry: caecum reached.",
+   "histology": "benign polyp histology",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "19759f369ab99f683582ade0e420cbcaedb703040ab61bdd9518bbc1645051a7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout."
+  }
+ },
+ "19a2b4dbbb95f2c01f38823b8f87ca73262df409dfc25981de145a79cdf71c7f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum WAS reached, with appendiceal orifice and valve documented",
+  "quotes": {
+   "caecum": "the caecum WAS reached, with appendiceal orifice and valve documented",
+   "histology": "No current tissue histology requested",
+   "polyps": "no tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "1b486112a3bee0d74d51655fc8c50647163c5f8fed47ea68a04b62bf47d41bd0": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "تم الوصول إلى الأعور",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور",
+   "histology": "\"tubular adenoma, low-grade dysplasia\"",
+   "polyps": "A 4 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "1ca3f6f78ab88c811a7affd0906e1e8808d65a33d8d26a8e0a052d04ba9bbb61": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Endoscope passed under direct vision; mucosa inspected during withdrawal for 8 minutes.",
+  "quotes": {
+   "caecum": "Endoscope passed under direct vision; mucosa inspected during withdrawal for 8 minutes.",
+   "histology": "benign polyp histology",
+   "polyps": "Specimens: none.",
+   "prep": "Preparation history: prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "1d60c4df6187545d12a107241d15c1199a62ad0d2dad84c90e4df41e34e24307": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "1d728ad2f3a74c8cb146a89037e9cfd73a45aa5b7ef66582eb63f0b5b5e94833": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "1d9ae901cf42d17c2d0f5282872683db25886e2aaad887e95e27ae7dcb4512ac": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 6 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-198.",
+   "prep": ""
+  }
+ },
+ "20031fee5cb875eaf27ce620a7e788ff3f24ff58ec75d320527f12f8af7ed7c1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "tubular adenoma",
+   "polyps": "cold snare and retrieved for histology, accession C26-H5-051",
+   "prep": ""
+  }
+ },
+ "2084c65c4aecb9b740f894b0e1ad38337238f08924c1552719069ef8d92bd93c": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "benign polyp histology",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "20a9454767dbd77e264972a9e523e783ef2e5a2ac2c00b38bbc5ac9a12759447": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص."
+  }
+ },
+ "21465fecc5f596b98f395eef4c5c62576216209f2cf08b657c81840bf160c03c": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "Histology for current colon specimens (C26-H5-188) is pending",
+   "polyps": "containers A and B, accession C26-H5-188",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "22090509648f751f3988064f24454d128cfc533e15e06ff4914af8900062682d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "Histology for current colon specimens (C26-H5-081) is pending",
+   "polyps": "One 18 mm sigmoid polyp removed piecemeal with cold snare",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 2/3/2 (sum 7)"
+  }
+ },
+ "22a1c0794a3eec5fe61e646cf9778a1112b9b325b10851fd9245a65516ca3093": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-297) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-297.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "2310fabae97b9250e8ae4cf2c16866e50260fd1e9df7cad434b4178cdd16c757": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "238a8b06697be78fd8088c19e41cfa5d459e7d9e72711c122db4e1bcd5cc1468": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "PATHOLOGY / Histology for current colon specimens (C26-H5-082) is pending",
+   "polyps": "containers A and B, accession C26-H5-082.",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "2505d6ff6c8eeb612c731d507fbfd6635ea654838d4f6ebb3fc155b420917a31": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 7 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-124.",
+   "prep": "Boston preparation assessment, after suction: L=3, T=2, R=3; aggregate 8/9."
+  }
+ },
+ "256e3a34c0db05c132e6a9882eea812f1d37f6246658095dea141c2bfba718d9": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 3 mm transverse polyp was excised completely by cold snare.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "263a02bccb5e8db5d15ff50b0d9b6b8252af8010fd96cc3fda6bf42194274f3a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 6 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-232.",
+   "prep": ""
+  }
+ },
+ "26c68f280d43ef28bbc17e52bace4d56bd8658b26189c5b5bae6c75c13de0e06": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue was taken.",
+   "prep": "Preparation, Final bowel preparation grade: fair."
+  }
+ },
+ "2740d3c36ede5f4db347d5f3fb9a0cdde08b8f74224736faf5c1a78aae7c0cd9": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 7 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-286.",
+   "prep": ""
+  }
+ },
+ "28241c18f2cb333369e479be50a26c3caba09f52d11acfba9b0d042ff48fa8e4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "benign polyp histology",
+   "polyps": "",
+   "prep": "Boston preparation assessment, after suction: L=1, T=3, R=3; aggregate 7/9"
+  }
+ },
+ "2a532fafcd4afef15414585b6634164307ef2b7566436474185080796336cd81": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "EXTENT / cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "No current tissue histology requested",
+   "polyps": "Specimens: none.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "2a83d211849e0fe68a05ff67d17276adfaf3be00b44840bc87c43b86355b9067": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "2a8898c1fb1f3dcf7bb02f979600beed4fa72de7afd295490cfa8b8f9f46088d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Final bowel preparation grade: good. Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Final bowel preparation grade: good. Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "no colon diagnosis is available",
+   "polyps": "containers A and B, accession C26-H5-147.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "2aec531d3548a4704a35b0296da6e88e37b6bdb35f20d404cb6ceba05fca2a17": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "prepared two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "2d578ff24f6b6492775bfddf10969e5000a888ed585250487019a198923627bd": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "2d66afe9977f8d2c608b8c88d8b80cd8641381f0d70602ecb4aca8cf538c5080": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Final bowel preparation grade: fair",
+  "quotes": {
+   "caecum": "Final bowel preparation grade: fair",
+   "histology": "Histology for current colon specimens (C26-H5-017) is pending",
+   "polyps": "A 8 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-017.",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "2d958c642a0874350414edff8e3834a034df2240b8a2ef8df54cb79a0d7b223b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "Histology for current colon specimens (C26-H5-021) is pending",
+   "polyps": "One 16 mm sigmoid polyp removed piecemeal with cold snare",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "2e3488862166e4ce3b6408595440012a54801e33bf13b7bb97b5b4c477840c41": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No biopsy or polypectomy was performed Specimen follow-through No current tissue histology requested",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "2e7c4f8ab7c8bc5ac745d680daae791a4d9c8f83da84bf10b521606c65b3488e": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Procedure stopped for discomfort.",
+  "quotes": {
+   "caecum": "Procedure stopped for discomfort.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "2eb7835800a3bdf4f51d7a81a74bbdd6d0396cbda1ae91e7187cf1b4298c80f6": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "306b5d403eef9c50eaaa57d6ca6f1cb45c04302a4fc4b6f87895c4870fcb122a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "3225de64c326df3f0e36eb1ea99ff4dfb9949c5f82b58bbc4fe370d4f73a8a98": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "accession C26-H5-070 final diagnosis pending",
+   "polyps": "A 3 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-070.",
+   "prep": "Cleansing record -\u003e Final bowel preparation grade: good."
+  }
+ },
+ "3231cbd393b922da151eb874707208d3457f1c42fbbd0a27d23441ed8e0faca3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "Final bowel preparation grade no mucosal biopsies and no polypectomy during this procedure",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "336c5461c3d299e712525953f5ad62eef766d230503e1bae43662e5ec477c38c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 6 mm sessile transverse polyp was removed by cold snare",
+   "prep": "Bowel cleansing (Boston): 3-3-3, listed proximal to distal; total = 9."
+  }
+ },
+ "35d1d036ee2bdd7a4c8b63160279a3865aa927907e74a79755622b446ba102c1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum WAS reached, with appendiceal orifice and valve documented",
+  "quotes": {
+   "caecum": "the caecum WAS reached, with appendiceal orifice and valve documented",
+   "histology": "",
+   "polyps": "Specimens: none",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "36eecf4afbfe2805e35eb65a11f3ca7eeae702de46b0643987b5907fa6caa41e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "C26-H5-165, final signed result",
+   "polyps": "containers A and B",
+   "prep": "Bowel cleansing (Boston): 3-2-3, listed proximal to distal; total = 8"
+  }
+ },
+ "36f4413b2f2fd8b61394f50c65cbe4ebb6eaa070f5bae6d0d926c2e7842b0342": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "no colon diagnosis is available",
+   "polyps": "containers A and B, accession C26-H5-230. Random right and left colon mucosal biopsies obtained for diarrhea",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "38fe10799fe54f4b64dfd68206ba4e4b828adcaa0836d01299efbde805e11a0c": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "C26-H5-272, final signed result",
+   "polyps": "containers A and B, accession C26-H5-272.",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "39972b5ee64aff8218a12dbc5e55d0ef18158378be535532a27c7e4e5e2b2012": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No biopsy or polypectomy was performed PATHOLOGY / No current tissue histology requested",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Boston preparation assessment, after suction: L=1, T=3, R=3; aggregate 7/9."
+  }
+ },
+ "3c1c4ecbd0d83654f73354205b874a3dba5641022874b05ee8826e7bfa124d76": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Insertion completed to the caecum.",
+   "histology": "No current tissue histology requested",
+   "polyps": "Tissue record -\u003e No focal mucosal lesion in the examined bowel. Specimens: none.",
+   "prep": "Cleansing record -\u003e On insertion, preparation was poor with liquid stool."
+  }
+ },
+ "3cae1033a1bf63123d66ceaf6de050d79675bafaaa70211492cc36e233fab16b": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "3dc738eb899746faa4f29d52331929e512fe70d8a24131859098b19bd9519dfe": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-193) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-193.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "3e19ee803475d707b7491301f167906801f1c2eee69fbfae7c5e41ef8f02ee08": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "",
+   "polyps": "",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "3ea7a5af99314f027e075f9cac3e8530254e9efb8516f7946a80e5e224dae45f": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "3f92ef61e701a74ccc8af26a6ae267373effa871430a0854b04c8304a07d644b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "prepared two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "405209775936824364383792cb5155c50f66fd30c1110e9851a65f8992bc4f55": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "tubular adenoma",
+   "polyps": "",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص."
+  }
+ },
+ "4068d02322e8ea904db652b6770d3763c208baa2963cb118884a1b345998e485": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-265.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "41ae3b59b082fdbd91846731e6596ad5b54ec8ecd2b8091eda4d1dbf1b029fe5": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "Specimens: none.",
+   "prep": "Later signed quality correction: 'good' was a selection error. Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "433549ee4d56ff12a0349e56d48e1e56323a5358684f5219ea6b43c1d057e1c9": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "A 4 mm transverse polyp was excised completely by cold snare.",
+   "prep": "Preparation, Final bowel preparation grade: fair."
+  }
+ },
+ "4682046a449bdc8e65a7328504cad43ffce1e7c199e3c0943663eab258d83c7c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "",
+   "polyps": "no tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "474a0f232924090571de265879058e09c0fa473ec60d2339c798221e200f9a5f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-144",
+   "prep": "Bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "47728044204e2e1f90d774e33ddb4a6c2956f180abd8dc8d502b4e23e241f93d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Insertion completed to the cecum.",
+   "histology": "Histology for current colon specimens (C26-H5-038) is pending",
+   "polyps": "Tissue record -\u003e Normal visual mucosa, no polyps. Original signed specimen entry: none; no biopsies taken.",
+   "prep": "Cleansing record -\u003e Final bowel preparation grade: adequate."
+  }
+ },
+ "4b2ad4dadb0b99d911d254908776e30c388658ce983d1c4cb8e7bf1d08e32739": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "4b33dc44dd9e2b0df57c793fea5afe14a024f9d01bce24beef3f27f1df3b9e81": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "4bada3879840014abe622921fb4468a25859a162ce0c004160b51262fd46323d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "Histology for current colon specimens (C26-H5-118) is pending",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure, accession C26-H5-118",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "4caf128c946f652ac9ef0674e9a500f5a844b73d337570699d12745672d4c63d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "4cc02562c00bad7a620071af8cc46a34ec8f48f2789b22794ab8477e6df99163": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "\"tubular adenoma, low-grade dysplasia\"",
+   "polyps": "A 6 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-296.",
+   "prep": "BBPS, post-lavage: total 9; segment order RIGHT | TRANSVERSE | LEFT: 3 | 3 | 3."
+  }
+ },
+ "4d08395e132f4904491084bc92f8bf3ce28139ef6a1853275a6c36f2958bd882": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "Final bowel preparation grade no mucosal biopsies and no polypectomy during this procedure",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "4d9e101e69d37652cd5af61b4235e96f769efbfa08a90fa868a9e3e6fee0a878": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور",
+   "histology": "PATHOLOGY / No current tissue histology requested",
+   "polyps": "",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص"
+  }
+ },
+ "4dacd33bd3ec79bda4d58938fb87225ff183621382456e31374f2a7e50b09f11": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "benign polyp histology",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "4ded10fd106badf5585953b58e6e4bf0fd0bb94c0c931d75c2523c39f61ebc0f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "PATHOLOGY / Histology for current colon specimens (C26-H5-034) is pending",
+   "polyps": "containers A and B, accession C26-H5-034.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing. Last dose taken before admission."
+  }
+ },
+ "4f14466f43236bc89eaa90a6776be0e90bfe0e25a98d9451dcf07435fc1c99d1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "EXTENT / Original signed extent entry: cecum reached.",
+  "quotes": {
+   "caecum": "EXTENT / Original signed extent entry: cecum reached.",
+   "histology": "benign polyp histology",
+   "polyps": "Specimens: none.",
+   "prep": "PREPARATION / Final bowel preparation grade: good."
+  }
+ },
+ "501737702da2b5aaeb67ed7bbc81a84f1fafa8a95a46008b5aea3b08b91db20c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "Current colon pathology, C26-H5-008, final signed result",
+   "polyps": "containers A and B, accession C26-H5-008",
+   "prep": "Boston preparation assessment, after suction: L=2, T=2, R=2; aggregate 6/9"
+  }
+ },
+ "51be81b6c516e50630e8f8920b34949979154cdf33fd185bfab77c9d900313e1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "",
+   "polyps": "no",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "52a84c9217b8c6749e7b68d204c8849d46590645b7ec9c4f0539037d435a196e": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "530f302b9610370ac357d3f78d72939be817f8e28e9ffeb73e936b18f348856d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "53d563ac6083c40f7d535669efeca7bb6df40e335face38e40fd4c894c196c83": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified",
+   "histology": "Histology for current colon specimens (C26-H5-115) is pending",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "53ebdbddfff83db75419b0457dd78ec5f4b0f7e7ad2aba2f32c36dcd0aa031e2": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No biopsy or polypectomy was performed Laboratory update, No current tissue histology requested",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "54b0c4c1e6556b0c99b04c8fd24852548a04798dba8e82566a8a3368d02e0a30": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "5530f6f2e92d8ce8f157c4f78e280c0cffdc48178c583eb25e1bba1509bbeff7": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached",
+  "quotes": {
+   "caecum": "caecum not reached",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "55426cacaa4dac22d115f1f65edd906f547e6e27fa1ba9bfe70b24ac971155b8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 6 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-020.",
+   "prep": "Boston preparation assessment, after suction: L=2, T=2, R=2; aggregate 6/9."
+  }
+ },
+ "55e0248ea9927ddcee67ebbb448fb81f28aabf628875683409c0908acfdef907": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "",
+   "polyps": "Specimens: none",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/3/1 (sum 7)"
+  }
+ },
+ "56130c53600a4e47efa508216a1df521c1202d7d0eed79f5e2876649bd753524": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "Histology for current colon specimens (C26-H5-109) is pending",
+   "polyps": "containers A and B, accession C26-H5-109.",
+   "prep": "Preparation, Preparation history: prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "563da5fb0eac79edce4b3c1abf2d5555c995d78ec7c27bd533a3736e3c7a8482": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "benign polyp histology",
+   "polyps": "",
+   "prep": "On insertion, preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout."
+  }
+ },
+ "57e512a875c18840406a0d0a8185e8f0a11f08ffe0e998c7cb1a21b573944726": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "58147dbd8838c43eaa4443c19af9f9256e1253ad56b7ccd4211aabfe2f40c251": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation, Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "586fca78fda65fd31ab5d8282cb4d46cbd8d703dd79123ee8a5dd55280bda5e9": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "bowel preparation medication: PEG solution, split dosing",
+  "quotes": {
+   "caecum": "bowel preparation medication: PEG solution, split dosing",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "5906e27f0d2f6d7f71d04154af2463ed69e342b7aab594861642ed60a7e5b93c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "Specimens: none.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "592600d677ed9434df7470f40d942670c3ef2199bfe38ee77504cca456bcb4b5": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "5941626d023118a0fdf61335412034fe0b2caee5e02ecf0962412c1e1e2c5285": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "Current colon pathology, C26-H5-223, final signed result",
+   "polyps": "containers A and B, accession C26-H5-223.",
+   "prep": ""
+  }
+ },
+ "598c4b7d088decb8504274c5ce56dca9c27422aad07bfb1a5768abb1196688c3": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "59e39dd3148cf56e597625acdfed45672cf5ef5089af5bef5852b45e28f3985f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "",
+   "polyps": "no tissue was taken",
+   "prep": "Bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "5a793eb0b640ed75fc8a88e1f6f4a4d2499bd5aecf611ffcd3fb7d1d6b2e4f8c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "5abd1912481ad2633c7c085d2b758c4bc62aade8caf267dc45e5c6c9efae161d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was reached",
+  "quotes": {
+   "caecum": "the cecum was reached",
+   "histology": "Histology for current colon specimens (C26-H5-195) is pending",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "5b2cb8f2ccda57912cfdee70cf27817bdeabb109050c232859463a98990f408c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 4 mm sessile descending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 2/2/2 (sum 6)"
+  }
+ },
+ "5ba32eebda23f2729497387c4fb8a2b364adc2a16d6b7e74eaf9d066fd6521c0": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 4 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-005.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "5cb4ab711a4c2cc1fe1e4ef1a17e7bca2f38c90fd8a67579d0da89b1555e4662": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the caecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the caecum was not reached.",
+   "histology": "No biopsy or polypectomy was performed Laboratory update, No current tissue histology requested",
+   "polyps": "",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "5cdc6f56a17c72df3a3e0c9d4667172595c96a8440fb2dc4b949b29329678d26": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached. Procedure stopped for comfort.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached. Procedure stopped for comfort.",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Cleansing record -\u003e Final bowel preparation grade: excellent."
+  }
+ },
+ "5d7bc9112fab52485e2df951029f1003aa8b271f36507eb019e764136a05fd5e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "5ea1bd8cdf72e458116381b751a9894134eac9ea60fe66b4b3e526d4aac5b2ae": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the caecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the caecum was not reached.",
+   "histology": "",
+   "polyps": "",
+   "prep": "prepared two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "5f8e02b9c500fc8073fb0cf21509a77bfafe778ff9fcae0663c927b0f6fa0ade": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 7 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-238.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "61e9f9e192a652d8b605f77c2e372f10dc8d376f0c69fe7474252ae4708aea7d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses"
+  }
+ },
+ "62d8e91ba5bcf1bda918d1d8162c6566c9c2243b1b0868a330e41dd8e31c43a3": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "Histology for current colon specimens (C26-H5-006) is pending",
+   "polyps": "Tissue record -\u003e No polyps seen. Random right and left colon mucosal biopsies obtained for diarrhea; containers A and B, accession C26-H5-006.",
+   "prep": "Cleansing record -\u003e Preparation history: prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "6430ab6482e02dac6dc3b71bb1a4f6d0cc0a1506c5bd829acdeaeb3610497857": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 7 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-127.",
+   "prep": "تم الوصول إلى الأعور. تم شرح الإجراء وتعليمات ما بعد الفحص للمريض. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "64b263f441e4e8c9b83dfa9274793296b29974ff664c9b1ac97992e724efdd38": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "6acdcf241c652ed1a8eafec79c035faeead97e677cb1671d83db9ac266a2df6e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "prepared two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "6b714a8179d116f881e4fa85b9a1dd37a3a5999b0b909e1850c7a6417ea74cac": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 5 mm ascending polyp was excised completely by cold snare.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "6f3e2c0af13488be55f6847a0f3b5b5b073cadb478931d678331261d5e83acf9": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecum, identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "caecum, identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "720d3f84eb26d92bb801eac5c2471218e42749ef216e51901070f880be4b4902": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "741b4569ccfd4aeca90452b4dae89b38787e24992d6eeacea28a60ebe52e8d67": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "benign polyp histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "This replaces the original preparation entry. Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "74f928252c136b85c3f2373831d3b6fbb49b710d80532780bba5b784200df4e2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "benign polyp histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "752734e75675abbd72718a1ef11ad025ba04028f7ab4574dc8f15aca97f251d4": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 7 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: poor"
+  }
+ },
+ "75e8a1da4fff9b94691c093d3c49a8db6187f28a9101693c39413a67fc832272": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "\"the caecum WAS reached, with appendiceal orifice and valve documented\"",
+  "quotes": {
+   "caecum": "\"the caecum WAS reached, with appendiceal orifice and valve documented\"",
+   "histology": "benign polyp histology",
+   "polyps": "\"No tissue obtained: no mucosal biopsies and no polypectomy during this procedure\"",
+   "prep": "\"Final bowel preparation grade: adequate\""
+  }
+ },
+ "772612eddb7b0817d506cc51709d841b83895238e67631724de271b5f66e674b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "\"Histology for current colon specimens (C26-H5-294) is pending\"",
+   "polyps": "One 18 mm sigmoid polyp removed piecemeal with cold snare. Three retrieved fragments divided between containers A and B; both belong to this procedure, accessi",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "773edfa14c25bc17eea60e1926ff344025a93da6e6dfa036ca2797955699cf70": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "77a392693c6c21f0c1456a766e2659b78710c8d2c06ced6c141b4bd782cb8405": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "benign polyp histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "798ff99fc31a023db21a5a430e07aec22974dc65919c032ab4b27bffd415bfa3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "Final bowel preparation grade: fair.",
+  "quotes": {
+   "caecum": "Final bowel preparation grade: fair.",
+   "histology": "polypectomy with tubular adenoma on histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "79adf3f0420ee61ab57d15a1febbd8537dcd57217bd420acf3cd1530d2fff040": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure, accession C26-H5-015",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "7aa16a30cb6ed3f6a4c3e25c3ace340ae6a0e2985e581841d80d7025d34d013f": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "A 7 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-291.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "7ab82a5e1a6a8e978a984c59485de9c8079a399acc6ae028112818f23771c765": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation",
+   "histology": "",
+   "polyps": "",
+   "prep": "prescribed two-dose PEG regimen completed"
+  }
+ },
+ "7c3bb46d57e0a048bb65b7f432eb1713a71eed3779a11a94e6b95d5c3e0f463a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "No biopsy or polypectomy was performed Results record -\u003e No current tissue histology requested",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "7c6419fc1149eea5663a4d9af22314dd5acb60c1a4e36b7e496360569ec515a0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "Original signed extent entry: caecum reached.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation, Final bowel preparation grade: adequate."
+  }
+ },
+ "7d65dcdbe2c46c4e716e265d0d7dbd0faf6b245cd2298a0ee65cee43c8bb4b3e": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-253) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-253.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "7db74a9ff5331223316fea1b904da6e4087d71778a2a42df779fb2a13b2bc953": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "7e4557542dbdf44653f9b395cfbcdc9119fc511f57303b8f95ce3d7c6b2f7cdd": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "Histopathology record sigmoid tubular adenoma, low-grade dysplasia",
+   "polyps": "A 5 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-039.",
+   "prep": ""
+  }
+ },
+ "7e79a11b21701889fdb21bc745430b045d9f375aea1e9637597bc3adc6f78cd8": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 4 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-108.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "7ec78cf41fbb0c37af566c29c5645a9521e71b7d59d5458eb081d2a72876ac66": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "accession C26-H5-045 sigmoid tubular adenoma, low-grade dysplasia",
+   "polyps": "A 5 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-045.",
+   "prep": "Preparation, Final Boston scores: right colon=3; transverse colon=3; left colon=3. Overall: 9 of 9."
+  }
+ },
+ "7f0dde6f84b0b0515f4fb0908cd8304e136307dc2d33d78664794ce533de8309": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 6 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-047.",
+   "prep": "Bowel cleansing (Boston): 3-2-3, listed proximal to distal; total = 8."
+  }
+ },
+ "7fa9feb4beb3967986a8548dcba9278672144c6fe92781610523865837d6104f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "",
+   "polyps": "Specimens: none",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses"
+  }
+ },
+ "80536c4d6569ab779c799d8b6af1903da2aa020cfdb02398631fbdc8cf604bfd": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور",
+   "histology": "final diagnosis pending",
+   "polyps": "one tan fragment",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "807b4dc83ee9682c801d79c6454ce4158d34a86229f4ddae01d5a7a5e40f47b0": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "8112fa6e32e0d56795b3a81b6bc45c708d671b289335326f7b1c4d67dd408e8a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "8336a5b20f20eb4fdf8ad480f11713c00063a18c3bbaef421a8c294f52ec1110": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion and inspection, Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "tubular adenoma",
+   "polyps": "A 4 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-173.",
+   "prep": "BBPS, post-lavage: total 8; segment order RIGHT | TRANSVERSE | LEFT: 3 | 2 | 3."
+  }
+ },
+ "85c6691a1f5a958648d589d47b61aef6839677f18d0226ebaa40c0a74f11a39f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "Histology for current colon specimens (C26-H5-270) is pending",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "89bb26550f956126a7026c7b8a563aad5c9e27bded4ae2211becad789a0a2291": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "Specimen follow-through Histology for current colon specimens (C26-H5-244) is pending",
+   "polyps": "One 14 mm sigmoid polyp removed piecemeal with cold snare",
+   "prep": ""
+  }
+ },
+ "8a757ebf7663ebf4829282c73eff11529b9bec54a4b1bd1de1c9d947f3220f70": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "Final bowel preparation grade: good. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "8c362ed6f8d26d12f5b1e0252036b8ef7f771d53053392e8cbfac5d67f4f7d9f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "8ebb9337f01e38a4f752a6906a817f22a6b7123a8a9b7a40101f06a7a1d6472e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/3/1 (sum 7)"
+  }
+ },
+ "8ec101f0006400cfdd3770ff8b6bff177304bb3298455d6a40dcc1228597ebc8": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "A 8 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-179.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "90c62da0debd7645fa2eaf2518678938cd518bb09a40493740f5edd552312ad2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "cold snare",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/2/3 (sum 8)"
+  }
+ },
+ "922d24e568234559f28e4e7a0f4ac7079199f7c4e3908c38af7d350a86af8189": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "Histology for current colon specimens (C26-H5-212) is pending",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "92d1eaf50137d9e54e6a6e98cb040d3937541e873dac367c0a86425a2cf2b816": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation medication: PEG solution, split dosing"
+  }
+ },
+ "9415dc7c705b2c5525dd785be9f3a7609b0beee148fb5e35bc80f5e251cb7d5d": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-178) is pending",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "950701d1427b3517c2a2651046daebfb0f46891e8d5cc39ca0354c25f799667c": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Histology for current colon specimens (C26-H5-133) is pending",
+   "polyps": "A 8 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-133.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "953f56ef225d46b5206c36120c2d659faacd9a837f6014680628cfa5af68cdda": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Boston preparation assessment, after suction: L=1, T=3, R=3; aggregate 7/9."
+  }
+ },
+ "9681e61a2b8c96c2e3623629cbe6f70872ccdc313da182a53039a0837635cba3": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "accession C26-H5-084 Specimen follow-through final diagnosis pending",
+   "polyps": "A 7 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-084.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "99cb52c643b35c436a98bd818f673fc0d6975e422e81c21b37e2dfe990cea998": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached. Procedure stopped for discomfort.",
+  "quotes": {
+   "caecum": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached. Procedure stopped for discomfort.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "99df6dcdbcd5d9a11db634efe4a3512d7061a4e4fbaa93746c3350168fda9cf2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "tubular adenoma",
+   "polyps": "one tan fragment",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "99fab33c4d2f82b25162ac2fd2dccee56a51d09e5386d97379b6a0ad062652f0": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "benign polyp histology",
+   "polyps": "",
+   "prep": "This replaces the original preparation entry. Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "9a757b17bb4257212b714d3acb83e290bd48ab120075f1179f990a7271d032f6": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "9b3e87faf9ee63ddcda67778b5bb42fe4944024d1fa18f3706d0ff715b01d4c1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 3 mm sessile transverse polyp was removed by cold snare and retrieved for histology",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 2/3/2 (sum 7)"
+  }
+ },
+ "9dea0a3f00f3d6bbc047c4f631413f3eb2d9b587800808a7ae01828401e9340d": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "Original signed extent entry: caecum reached.",
+   "histology": "",
+   "polyps": "Specimens: none. Neither biopsies nor polyp removal were undertaken.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "9e0604076f757a838b6f644d09d804f478a65309caec508d51616ddb0bd920d0": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "stopped in sigmoid colon",
+  "quotes": {
+   "caecum": "stopped in sigmoid colon",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "9fc378adb1840613409f9f4a23659deb1ad4d65c15d64c03b8b5e4166fb565fa": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-300) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-300.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "9ff6fa47836111c5616f9485b7aed8ae58adb554efe54c68c59c620fd3a9ccf6": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "Specimens: none.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "9ff91ae1f8916f03d95e44cc8bd9df062397f11c53aa59bcdf7ac471035297ea": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Histology for current colon specimens (C26-H5-182) is pending",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "a010486f6200967790abf158f3d63e0e636969ba9fc1206a385a9a89ecfee48e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "Current colon pathology, C26-H5-222, final signed result",
+   "polyps": "Random right and left colon mucosal biopsies obtained for diarrhoea",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "a0229eb7dd298eea8fa805636c370d01a5d1e5c1198acced9d6238fafb709f00": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; caecum not reached. Procedure stopped for discomfort.",
+  "quotes": {
+   "caecum": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; caecum not reached. Procedure stopped for discomfort.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "a1c596041c1a7d495be2529a0f5687104918c3111dc87798f529d2a60e943eab": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "a201061bf1826f6b7911707a22381b5cabe50f1fe62990c937beaae8b4f8d0b0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+  "quotes": {
+   "caecum": "The caecum was reached; the appendiceal orifice and ileocaecal valve were photographed.",
+   "histology": "Histology for current colon specimens (C26-H5-183) is pending",
+   "polyps": "One 14 mm sigmoid polyp removed piecemeal with cold snare. Three retrieved fragments divided between containers A and B; both belong to this procedure, accesson",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/2/3 (sum 8)."
+  }
+ },
+ "a23e3cb3c43405da6f406f422b700e5f8508d53c7a2a23f7669e6fbd274f0ac3": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-071) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-071.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "a30a385a0694a1dffe803dfeb1be0ded277c948869f82dbc23de72187432e287": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 5 mm ascending polyp was excised completely by cold snare",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "a42a77e1d381f1e7dff720d030a9f5073e55bb932c11c586d526a284205d5f99": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "a5c2da0b0164e380f03e423a4ce650fd29f5aa4e27e83d39e3cb4ade3ac054de": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "a5df8a9fc8f56ff6af473b68eface8b313b6820484fa45f5ab5e5b14e55522a2": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 3 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "a5ec469f6c53e0107e85921cddcf14d0a4aa51bc271ddb7a5c2668e0e6336e4d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached;",
+  "quotes": {
+   "caecum": "The caecum was reached;",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "a65b79b274a0b6d50842b4c279dc33c05357e7c08a420d1da1600f80d6c581cc": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "a78944b39c8084d9f372d515b49df133405fba3132ea999c203eb44300c2a5dd": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 6 mm sessile descending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: poor"
+  }
+ },
+ "a7be21177b00dabc078e3047b6060ff6f85d4a55f0c710ef0ccf65bae7908891": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "tubular adenoma on histology",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "On insertion, preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout."
+  }
+ },
+ "a8a94da6f9781eff6d083631b0315dabaf3f8a52fa442dc7484559fa6c5c89da": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "ac39dd080c7a7e4645e270d9fea3295778bfa310789919f5c2eb9efff894de80": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "ac48de5b3857d1693d74c3f93d2771e1c02018f7a771c9cce7cfa950c7626712": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "No current tissue histology requested",
+   "polyps": "Neither biopsies nor polyp removal were undertaken.",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "ac847411afe248aab4f5b52a1e5bfcff15bdd4bbb6c32deaae948eb00b0da44a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached;",
+  "quotes": {
+   "caecum": "The caecum was reached;",
+   "histology": "Histopathology record Histology for current colon specimens (C26-H5-087) is pending",
+   "polyps": "One 18 mm sigmoid polyp removed piecemeal with cold snare.",
+   "prep": "BBPS after washing: right 2, transverse 2, left 2; total 6/9"
+  }
+ },
+ "acfdc310a39c6bb7306042696b9c839cf84f055f3d39146fe4b1e8098169fcdb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "Histology for current colon specimens (C26-H5-283) is pending",
+   "polyps": "containers A and B, accession C26-H5-283",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "ade1b7c0f88e4bbaafc026a3456bf188a1a01180f52dd0e193f2f14e81c520d9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "b0184d025df8a37d987614734f635b5a664c26f18de9a32fe6d4d9d42d7866a9": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "hyperplastic polyp",
+   "polyps": "A 7 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-111.",
+   "prep": ""
+  }
+ },
+ "b100632836efe3afbbe25c3bcbe705adca2d9c1b4567b2ff9bec63523450c20f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "no colon diagnosis is available",
+   "polyps": "Random right and left colon mucosal biopsies obtained",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "b15802f801fbcd209bfc05c959ada48f4c48d5fc2c5d7b79c14bef75a4cb3c79": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 8 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/3/3 (sum 9)"
+  }
+ },
+ "b1fbfa6a5f981af9066392e825ea0b1b53e268df5945b559237580c02a8c57ef": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No current tissue histology requested",
+   "polyps": "Specimens: none.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "b284c74000a6f830cd26283dee3d7293d5b4fffbd55327578e5b2cc30b8b6284": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 6 mm ascending polyp was excised completely by cold snare.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "b3612633437df09fa6dd4fc69b312954900b390394cbeb24dba760aa7cc5a62d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "Specimens: none.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "b3af9b76bad87c77873717aef19e46f8e7cd631690b20bc058d59ea8e11829b9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 8 mm transverse polyp was excised completely by cold snare",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "b543e50656a5f620f3ae879e13abd450235ebdfdbb6e99320f7b9f1e47a75404": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached.",
+  "quotes": {
+   "caecum": "Insertion length 140 cm with marked sigmoid looping. Maximum extent was transverse colon; cecum not reached.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "b545d237beca44b622bc5bf7846153ab6dd114772dc20cac4b3be81d4faa65f0": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "b6681ceae73c2c9508e4273f65e3a124fa22212f20c31dd99e7fb9aac1d3358b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "Histology for current colon specimens (C26-H5-030) is pending",
+   "polyps": "containers A and B, accession C26-H5-030.",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "b6b247a4524db136e2fb6dc0e7f996316a38839089f2b38880f42902686b6767": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "benign polyp histology",
+   "polyps": "A 7 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-214.",
+   "prep": "Final bowel preparation grade: excellent. تم الوصول إلى الأعور. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "b6bf89a6c550da6969f68acb216824f655ef35b2b5ebb1b12a6c23c68cc4e78b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout"
+  }
+ },
+ "b6efd4fca8faedbb6fd38643e2eae3d9246016fc08c1a9835da624966eaf3a96": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 3 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology",
+   "prep": "Boston preparation assessment, after suction: L=2, T=2, R=2; aggregate 6/9"
+  }
+ },
+ "b6f24775a057e1f98eb70dd36f6193c0253d6d216de4077fd6cd988e73867be7": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "PATHOLOGY / No current tissue histology requested",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good."
+  }
+ },
+ "b790557c34ea52955504f5773d62d58e79f7968adb2838a0b167edd9560a13fa": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached",
+  "quotes": {
+   "caecum": "caecum not reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "b7d3e16caee42c3a656b634f0a9cc978edfe3d2b01839ebbf6bf6ebba7240ccb": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubulovillous adenoma with focal high-grade dysplasia",
+   "polyps": "completely excised",
+   "prep": ""
+  }
+ },
+ "b8ea0914c0e3433177719c00cba6710efa86b6ca3e89c5abf0ff5c82af8c5132": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "b962e58895a5e6052f4be25f245882b501641e49e57ee6fd3fc7d51615e98e53": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-268",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "ba1402aef448f0d42137592eff743f89794561a6935bbf07009534b0546082ac": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Insertion completed to the cecum.",
+   "histology": "Histology for current colon specimens (C26-H5-022) is pending",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "babce0661bc0bc864dc60eda25e47dc2ef69c9bf2d1876b77eb62edda764beb6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "bbab0a3bf5149ac4c614f142419b7561c7ac3c6b9f2aaf6fcd0e5b685a1c64c0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "hyperplastic polyp",
+   "polyps": "A 6 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-245.",
+   "prep": "Boston preparation assessment, after suction: L=3, T=2, R=3; aggregate 8/9."
+  }
+ },
+ "bbd5ac84747ca236c5baba151be013771675cab27cfce3fe3802cf71818271fe": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Hyperplastic polyp",
+   "polyps": "Forceps removal",
+   "prep": ""
+  }
+ },
+ "bc051ba595a93a7cf6933800e6906017c76d3e72a25df3a4e93452d4d2258eb4": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubular adenoma",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "bc532b869ed930d9c22e4e445c340208211f363cb80d348d8ba5ac2b38591b1b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "Histology for current colon specimens (C26-H5-067) is pending",
+   "polyps": "One 17 mm sigmoid polyp removed piecemeal with cold snare. Three retrieved fragments divided between containers A and B; both belong to this procedure, accesson",
+   "prep": "BBPS, post-lavage: total 6; segment order RIGHT | TRANSVERSE | LEFT: 2 | 2 | 2."
+  }
+ },
+ "bd2539a1173c6ee6132dba5ecfc056203a2c43ab5606247408897a8ab468b2ce": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; caecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-103) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-103.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "bdb1be77634f65ab439097faa6c10dfbcdf1c10314ccb2cb5ee438174a3f3e6a": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extents: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extents: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "bdb9ff0400bb03d66ab13bb33da6d984215777da9f299788b3635a512f8f3fe5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-130",
+   "prep": "Final bowel preparation grade: adequate"
+  }
+ },
+ "bdcc1130e42ff213a064d480a8997b91d35b08079d6287b5c5c44cbfb5a8fbff": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: excellent. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "be9134afa09ea7c86f8de132f7c942466fa37fda9ae3b1b4f13a03f850765b81": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "final diagnosis pending",
+   "polyps": "gross description 'one tan fragment'",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "c00da8a46469a5dcb98ef7d547b002e4f7c72184b08f2521041a38d314cc9260": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 8 mm sessile descending polyp was removed by cold snare and retrieved for histology",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "c0b45d938a53f07202db292bcb5b2fd38872022111079e28941315b257e3aca1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "c14187bd8d1452ecc0b2aa2e6e9e44dc4d76103bb428cee8ba65e571746e7f81": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "c297b9c8c1b4495f2c20133f4babcc9723055f264b18f9184a9e4d806a65288d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "accession C26-H5-284 Specimen follow-through final diagnosis pending",
+   "polyps": "A 8 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "c3349d0147f823970e2c7acbfc243b9406673bead825d1778af55cff060f83fe": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "No focal mucosal lesion in the examined bowel.",
+  "quotes": {
+   "caecum": "No focal mucosal lesion in the examined bowel.",
+   "histology": "",
+   "polyps": "no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "c38ed620b4214814b044e1280d80369d1380e8df4591a8a475fd2993e0e3cdc7": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "PATHOLOGY / No current tissue histology requested",
+   "polyps": "",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص."
+  }
+ },
+ "c3ce77ed8710a2159a4ce510b05751f6fc3844ee8a16122a1bc8e805bdaeb9e0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "c475f80dbbdb4f07fdc17e201823bc84bf5c13e0e474fbec1d2abd499cc28cdf": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "c5c6bdf0fc892ca68d01e03f907a34be1242210a24985bf128cbb940d3bb706b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "no colon diagnosis is available",
+   "polyps": "containers A and B, accession C26-H5-057.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "c5d2344296125201dc2b8caf9c8e47fe83446d3b80b2cf31f9b0a0dbe5a02d05": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extents: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extents: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout."
+  }
+ },
+ "c7ed554bd914c9bd401d1cbbdb00b8579f3edc0e16f07585cd8474616903d0bc": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 5 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-204.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "c80c7cfefb0836a1a7994e28ff49fd19a4578b139c5ad4737c38f13ee61b2376": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "tubular adenoma on histology",
+   "polyps": "A 4 mm ascending polyp was excised completely by cold snare.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "ca016d29e0daff92d8547a498b2a8d86181d14f79c8e1f3491c8b1690839a5d1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "tubular adenoma on histology",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "cb4a6828475faff8be87bec2339a40c075193acc4c4669376c3b94ab8952ae3f": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Original signed extent entry: caecum reached.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Original signed extent entry: caecum reached.",
+   "histology": "",
+   "polyps": "Tissue record -\u003e No focal mucosal lesion in the examined bowel. No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Cleansing record -\u003e Final bowel preparation grade: excellent."
+  }
+ },
+ "cbbc3201f0c923a664b2f4d4692de557ff78c518afc024a9522f3fdd62874ecb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "C26-H5-093, final signed result",
+   "polyps": "containers A and B, accession C26-H5-093.",
+   "prep": "Final Boston scores: right colon=2; transverse colon=2; left colon=2. Overall: 6 of 9."
+  }
+ },
+ "d1563ce8216546cf465b946ba0d2f6734728e4614d80a5ba21b6ddaba3f7c79e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Final bowel preparation grade: good. Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Final bowel preparation grade: good. Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure, accession C26-H5-120",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "d2092c66ec6d5195eaddbebd07af80e08a519346be767fe668ff88c3082f3dd2": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "d283161b921ec634e15dbd5cd2ff6bf41e691837284359201611271bd308de2d": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "\"No focal mucosal lesion in the examined bowel.\"",
+  "quotes": {
+   "caecum": "\"No focal mucosal lesion in the examined bowel.\"",
+   "histology": "",
+   "polyps": "\"No biopsy or polypectomy was performed; no tissue was taken.\"",
+   "prep": "\"prescribed two-dose PEG regimen completed\""
+  }
+ },
+ "d4b74e889cc2d96896807a83f1cde6183caed0235988baf9876a5849abcdee88": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "EXTENT / Original signed extent entry: cecum reached.",
+  "quotes": {
+   "caecum": "EXTENT / Original signed extent entry: cecum reached.",
+   "histology": "No current tissue histology requested",
+   "polyps": "Specimens: none.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "d55becc3fbdb6a7b03b9382fb8717f1b9a4b5beca10b2c18b38e247251a2051a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "tubular adenoma",
+   "polyps": "A 3 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-089.",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "d648021f1fe5f9b9e8c95d7acb2eb759944378523d4d4f9bb7acdfafd0f39a7c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum.",
+   "histology": "Current colon pathology, C26-H5-263, final signed result",
+   "polyps": "containers A and B, accession C26-H5-263.",
+   "prep": ""
+  }
+ },
+ "d666ff63d7410bf77155555a22d2ec4b97d79507727ca6110e1524ef5651badf": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "Final bowel preparation grade no mucosal biopsies and no polypectomy during this procedure",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "d69db2ca6edddaf36175d08e33d499af060896aa816991be7882380a807f8695": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "d6c7dcdcfbfb862ce96e744f4c451798f4d94c131b2af22ab57112dd6e49f746": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "d81febd38a37174fa907f3ab9e97a7bf3ef8ad104d20f1ddd7a3406c7c8950ce": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses"
+  }
+ },
+ "d8918cd03d100fd06d42228991f28f4f989b663877f23e01b147c6df0beec73b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "PATHOLOGY / No current tissue histology requested",
+   "polyps": "Specimens: none.",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "d90f9db86c23ed211bea1a7e80644c7eabd5f90276a8a1b364d0d625a49b747e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "Histology for current colon specimens (C26-H5-102) is pending",
+   "polyps": "containers A and B, accession C26-H5-102.",
+   "prep": "Preparation history: prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "d92515ba9673bfafcdb2d70d28afa2aa5635a115b02b1003bd748f019933ab86": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "containers A and B, accession C26-H5-206.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "d978445d19c19be03fca2c4827da5f372358b8160d240956e4d1c9501ba4e3aa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "Histology for current colon specimens (C26-H5-215) is pending",
+   "polyps": "containers A and B, accession C26-H5-215",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ },
+ "da5b462c5552ed88e5c0c12a25aec665c2c21d7eb6e0867da23bd5aa649dec4c": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 7 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-061.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "db18e83f38e108c6c605959b17644271a556f37a078d8033e693f5ac3a3db41a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "Final bowel preparation grade: excellent. تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "db440753b6758a971833f273c95a220fbe03246966cfa6d9e5dabe66c891d3e1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "db65de73ce1e0b9da3e479c7ec0632cff8d51a9c0a8701cf17d2e1274ed56d56": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses"
+  }
+ },
+ "db6ab9203eba6ea1282d7bed9338580150249fd111adec179a904b5e3fc374fa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "",
+   "polyps": "Specimens: none.",
+   "prep": "Bowel cleansing (Boston): 3-3-1, listed proximal to distal; total = 7."
+  }
+ },
+ "dbb14cf4506b8f137afb23df24b3ecf22918cda51bd48750d54259b6b44fc407": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "No biopsy or polypectomy was performed PATHOLOGY / No current tissue histology requested",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Preparation history: prescribed two-dose PEG regimen completed; no vomiting reported."
+  }
+ },
+ "dc1a74eabf45ee6ebd0aba842a55f91ca3944fc4fdbf99b1935ea7f9e753adfb": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "dc8a2a6f334dbb3a7022f3778cff657a5099a0d59242c04eb9158eb9e2bdbce3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion record -\u003e Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "Histology for current colon specimens (C26-H5-166) is pending",
+   "polyps": "containers A and B, accession C26-H5-166.",
+   "prep": "Cleansing record -\u003e Final bowel preparation grade: excellent."
+  }
+ },
+ "df9e1b40c6c75b23edb836d1cd9229015ec2aa7338ecd31f7adcec0ae7e2da6d": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+  "quotes": {
+   "caecum": "Stopped at the splenic flexure because of fixed angulation; the cecum was not reached.",
+   "histology": "",
+   "polyps": "Specimens: none. Neither biopsies nor polyp removal were undertaken.",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "e05e0eaca145b671a572214308b4033da337135385c93846c607d99c764c2f6a": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "e0887781b553c973072a449cef8bcaf3d5e86d9a259ef433a236107736c67be2": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "Final Boston scores Histopathology record Histology for current colon specimens (C26-H5-023) is pending",
+   "polyps": "One 17 mm sigmoid polyp removed piecemeal with cold snare.",
+   "prep": ""
+  }
+ },
+ "e17b3386efb99e46c00d91a515133c252e642362ac423ac595db8fb62d2841a5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 5 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-229.",
+   "prep": "BBPS after washing: right 2, transverse 2, left 2; total 6/9."
+  }
+ },
+ "e2f6d6bc19e6b9228308e905c2a616c355941a33253645059e4e544daf7ce9a1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecum, identified by the appendiceal orifice and caecal pole with valve view",
+  "quotes": {
+   "caecum": "caecum, identified by the appendiceal orifice and caecal pole with valve view",
+   "histology": "Histology for current colon specimens (C26-H5-041) is pending",
+   "polyps": "containers A and B, accession C26-H5-041",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "e3b4fd8e266886fe77d1f916afe1bc7cd094cf1361faf5642fa871efb9dc1f7f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion and inspection, Procedure images stored.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Procedure images stored.",
+   "histology": "Preparation, Final bowel preparation grade Mucosal findings and action, A 5 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-149 Laboratory update, ",
+   "polyps": "A 5 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-149.",
+   "prep": "Preparation, Final bowel preparation grade: adequate."
+  }
+ },
+ "e5612d8e50bdff8b0fe43b49b17bf6beb2641e00060ad6791c6c0f2245bc04e4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "Current colon pathology, C26-H5-062, final signed result",
+   "polyps": "containers A and B, accession C26-H5-062",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 3/3/3 (sum 9)"
+  }
+ },
+ "e68598af8954ce25ccc6c6f97794f7041ecb04cf5743cf5dfafc67e8ccb13267": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "hyperplastic polyp, no dysplasia",
+   "polyps": "A 4 mm sessile ascending polyp was removed by cold snare and retrieved for histology, accession C26-H5-255.",
+   "prep": ""
+  }
+ },
+ "e7188ea674a372f3c1d81686c9384a376e6d35af57e01426a696815859a392f8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Final bowel preparation grade: excellent. Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Final bowel preparation grade: excellent. Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "no colon diagnosis is available",
+   "polyps": "containers A and B, accession C26-H5-104.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "e894309505cb119b6109a2005f05f2111381ae5b96afcccf5837cfd663bfafb6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "\"cecum reached\"",
+  "quotes": {
+   "caecum": "\"cecum reached\"",
+   "histology": "No current tissue histology requested",
+   "polyps": "\"No tissue obtained: no mucosal biopsies and no polypectomy during this procedure\"",
+   "prep": "\"Final bowel preparation grade: good\""
+  }
+ },
+ "e89592ecac00c3cefca75ebca21b7fb20d94d8f7eddee6c09a8ffdbf44a97d90": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-171) is pending",
+   "polyps": "\"Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-171.\"",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "e9558f0f84f3af79211608a81df2c733fd1e704d5491a56ad3bcec3eb8aaae94": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "tubular adenoma on histology",
+   "polyps": "random right and left colon mucosal biopsies obtained for diarrhea; containers A and B, accession C26-H5-073.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "ea02cc33a54da4a5fe2e0f35af85747be3cd2e8fc11148c57e2fea59264d51d3": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "cecum, identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "cecum, identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 6 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: poor"
+  }
+ },
+ "eb36f48a09ea5ea927e769c06e67ab11571b4f4c9a9c2ea752160d97132bcbfb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "tubular adenoma",
+   "polyps": "A 3 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-243.",
+   "prep": "Boston Bowel Preparation Scale (final): R/T/L = 2/2/2 (sum 6)"
+  }
+ },
+ "eb71b49d0cf2c793f158ab8478691c4784f1681dd7ccf65fa08bc5fd3da76e01": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 4 mm sessile descending polyp was removed by cold snare and retrieved for histology, accession C26-H5-146.",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "ebb9994a315585e67b699a8c6df527286b2938faa85ccb513cf7717aafc93840": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور",
+   "histology": "no mucosal biopsies",
+   "polyps": "",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "ee649163a70729be70c4aea0da8127e55b5a01e471ac4e24600568be050c947d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "Histology for current colon specimens (C26-H5-143) is pending",
+   "polyps": "containers A and B, accession C26-H5-143.",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "eebead337235a61308807690f214f5e4b15cc62cf4fb368eabc2b1b3a6da64f7": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecum not reached",
+  "quotes": {
+   "caecum": "cecum not reached",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "eec5293f1764b8448b1cc8e551e7722f9179f0c18178058b15dd83899f32dbcc": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubular adenoma on histology",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "eef0ee280f6e35fcc3c519dc47f4a76bacd2c4b5488f1837b39292c12dc28367": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "\"accession C26-H5-280 sigmoid tubular adenoma, low-grade dysplasia\"",
+   "polyps": "A 5 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "تم الوصول إلى الأعور. تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "ef165d14431389d3cdbb23ead43cdc27b9c31d5f410182340a99afeb77b3487f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion and inspection, Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Insertion and inspection, Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "C26-H5-181, final signed result",
+   "polyps": "containers A and B, accession C26-H5-181.",
+   "prep": "Preparation, BBPS, post-lavage: total 8; segment order RIGHT | TRANSVERSE | LEFT: 3 | 2 | 3."
+  }
+ },
+ "efeb1c43dd70772cd995ff85cdb4029e26fb6de2f33327869f837d4e13f36d17": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "benign polyp histology",
+   "polyps": "Specimens: none.",
+   "prep": "Final bowel preparation grade: fair."
+  }
+ },
+ "f0435472c6275e6e34c0f03b6a712bca6cfc2e3d4f02310d4e757ffb950d0c31": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+  "quotes": {
+   "caecum": "Scope stopped in sigmoid colon at 35 cm; cecum not reached.",
+   "histology": "Histology for current colon specimens (C26-H5-227) is pending",
+   "polyps": "Erythematous sigmoid mucosa biopsied in the examined segment, accession C26-H5-227.",
+   "prep": "Final bowel preparation grade: poor."
+  }
+ },
+ "f0568c016dc46968955638b9630bf1a51ac10bcbe889af9f8957e64b9169abfe": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "f064dd5b6685c88514df9509a6fac6876929c2ce4c68af2bcd605246fceb4600": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "\"cecum not reached\"",
+  "quotes": {
+   "caecum": "\"cecum not reached\"",
+   "histology": "No current tissue histology requested",
+   "polyps": "\"No tissue obtained: no mucosal biopsies and no polypectomy during this procedure\"",
+   "prep": "\"Final bowel preparation grade: adequate\""
+  }
+ },
+ "f0f9fdd01ce1f637fae528a7f39ad83788e7de1f84af4950038fb6df663a4810": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No biopsy or polypectomy was performed PATHOLOGY / No current tissue histology requested",
+   "polyps": "no tissue was taken",
+   "prep": "Bowel preparation medication: PEG solution, split dosing."
+  }
+ },
+ "f17b82debabf3d5415149169752bad5b50d37c51b9db07ac8cc4653cdf0917eb": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "This replaces the original preparation entry. Final preparation was poor, with adherent stool obscuring mucosa despite washing."
+  }
+ },
+ "f1ec17a4b151778a3411f81351983fbf0bc0f92d681e6ae9c3dd1aa92424cad3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum",
+   "histology": "Histology for current colon specimens (C26-H5-152) is pending",
+   "polyps": "containers A and B, accession C26-H5-152",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "f2485797ea6df43bdd9a17afbe4f312e7f7d577b1c4e93c05c930f9af2bc5dbe": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+  "quotes": {
+   "caecum": "Extent: cecum, identified by the appendiceal orifice and cecal pole with valve view.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 5 mm sessile ascending polyp was removed by cold snare and retrieved for histology",
+   "prep": "Final bowel preparation grade: inadequate."
+  }
+ },
+ "f26b317510c2f3f62fe0795b8c0a16695a5af31acbf364d91205d58c1038ccf8": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 6 mm ascending polyp was excised completely by cold snare",
+   "prep": "تحضير الأمعاء كافٍ للفحص"
+  }
+ },
+ "f2861187b696ba59dbb5a96dbab075fc34a163630e5e57d8c1837d07ebe02859": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+  "quotes": {
+   "caecum": "EXTENT / Extent: caecum, identified by the appendiceal orifice and caecal pole with valve view.",
+   "histology": "Laboratory tracking C26-H5-282 final diagnosis pending",
+   "polyps": "one tan fragment",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "f32a48b4176ca48b36a11a7043f21c4c2ae649961a32c5648de04ea2e967be0e": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "A 5 mm sessile transverse polyp was removed by cold snare and retrieved for histology, accession C26-H5-224.",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "f396a42d37f89603ae7c455be8c57e6d15358eb3c75af6d09a43a06d0e4030a3": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "f426db9ae3f3dddc13a7d0f862024118d3b8d4730df9509b24fe9a3f69f227dc": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "",
+   "polyps": "no tissue was taken.",
+   "prep": "Preparation regimen: split-dose polyethylene glycol; patient reports completing both doses."
+  }
+ },
+ "f57add1bf9539cdf7e7ad7cf4071964483276a4a24e710e087e50725da786a5d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "No current tissue histology requested",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "Final bowel preparation grade: adequate."
+  }
+ },
+ "f6cf9921a3cad1cd8ea1eacc11798b9cbab12638e1d9e21926889dcb53933779": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum",
+   "histology": "",
+   "polyps": "Right and left colon mucosal biopsies WERE taken during this procedure",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "f885cab692688e87ecac9bc92a3202c33af8f9fe7445aa0ab2362cdc1677a2b9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached",
+  "quotes": {
+   "caecum": "The cecum was reached",
+   "histology": "No current tissue histology requested",
+   "polyps": "",
+   "prep": "Final bowel preparation grade: good"
+  }
+ },
+ "f8f42398511db1f5de32bfe2df5b851a070bd8671e270ef94b7b7c4457c1f4c6": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum. Both defining landmarks were identified and images saved.",
+   "histology": "",
+   "polyps": "No tissue obtained: no mucosal biopsies and no polypectomy during this procedure.",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص."
+  }
+ },
+ "f9eee9ec85a45e9acb12fdb1f240e124c831d8f61ef7976e8b35bfc5bd6b809b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "Histology for current colon specimens (C26-H5-012) is pending",
+   "polyps": "containers A and B, accession C26-H5-012.",
+   "prep": "Final bowel preparation grade: good."
+  }
+ },
+ "fa897d71416a39cc5ed039f26398552eb1108e20940a8dc7d307802b666a57b0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Insertion completed to the caecum.",
+  "quotes": {
+   "caecum": "Insertion completed to the caecum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "preparation was poor with liquid stool. After extensive lavage and suction, the final preparation grade was good throughout."
+  }
+ },
+ "fbd4f2b2cb7b85b29aace655fe6b9f7e29888300212d24c1e577de2565bf0c1d": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "\"tubular adenoma\"",
+   "polyps": "A 6 mm sessile sigmoid polyp was removed by cold snare and retrieved for histology, accession C26-H5-026.",
+   "prep": "Final bowel preparation grade: excellent."
+  }
+ },
+ "fbeb4d5d395703329acc376e9803e4e659028b743999ccdd39bd336cc8aa0fe4": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+  "quotes": {
+   "caecum": "The cecum was reached; the appendiceal orifice and ileocecal valve were photographed.",
+   "histology": "",
+   "polyps": "No biopsy or polypectomy was performed; no tissue was taken.",
+   "prep": "تحضير الأمعاء غير كافٍ للفحص."
+  }
+ },
+ "fcc167777c80d1772f7b4419df4def6955e423aac1bf99673c8988e69c29778a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+  "quotes": {
+   "caecum": "Insertion completed to the cecum. Both defining landmarks were identified and images saved.",
+   "histology": "Histology for current colon specimens (C26-H5-101) is pending",
+   "polyps": "One 16 mm sigmoid polyp removed piecemeal with cold snare. Three retrieved fragments divided between containers A and B; both belong to this procedure, accesson",
+   "prep": "BBPS, post-lavage: total 6; segment order RIGHT | TRANSVERSE | LEFT: 2 | 2 | 2."
+  }
+ },
+ "fd39caf6a541a8c55fe716eea285d7e2febbb3b3353b2d0ba3c05d2f40a8b0a7": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "\"cecum, identified by the appendiceal orifice and cecal pole with valve view.\"",
+  "quotes": {
+   "caecum": "\"cecum, identified by the appendiceal orifice and cecal pole with valve view.\"",
+   "histology": "Histology for current colon specimens (C26-H5-065) is pending",
+   "polyps": "\"containers A and B, accession C26-H5-065.\"",
+   "prep": "\"Final bowel preparation grade: fair.\""
+  }
+ },
+ "fd61acfc9efa12b77261e449c126c1161a201375597e44608027e6d6cb098317": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "تم الوصول إلى الأعور.",
+  "quotes": {
+   "caecum": "تم الوصول إلى الأعور.",
+   "histology": "",
+   "polyps": "",
+   "prep": "تحضير الأمعاء كافٍ للفحص."
+  }
+ },
+ "fd982a51704e7a1b0189bbafb4a359d69db370414aaf838434ea0b50316792d1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Tubular adenoma (x2)",
+   "polyps": "two tan polypoid fragments, 0.3 and 0.4 cm, submitted entirely",
+   "prep": ""
+  }
+ },
+ "fe81fd4fcb373e2d920e75310e43d209ab365fd4bdc27e59c17d2cb9b2e98852": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached",
+  "quotes": {
+   "caecum": "The caecum was reached",
+   "histology": "\"PATHOLOGY / Histology for current colon specimens (C26-H5-234) is pending\"",
+   "polyps": "One 13 mm sigmoid polyp removed piecemeal with cold snare. Three retrieved fragments divided between containers A and B; both belong to this procedure, accesson",
+   "prep": "BBPS, post-lavage: total 8; segment order RIGHT | TRANSVERSE | LEFT: 3 | 2 | 3"
+  }
+ },
+ "ff50052cf75f798c2935aa7cdfbf10e2ee30ead113f2c083c606e493197aa655": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "cecum, identified by the appendiceal orifice and cecal pole with valve view",
+  "quotes": {
+   "caecum": "cecum, identified by the appendiceal orifice and cecal pole with valve view",
+   "histology": "No histology result resected polyp not retrieved and no specimen submitted",
+   "polyps": "A 5 mm descending polyp was excised completely by cold snare",
+   "prep": "Final bowel preparation grade: fair"
+  }
+ }
+}
