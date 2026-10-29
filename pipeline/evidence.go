@@ -62,6 +62,8 @@ var (
 	reBBPSNamed  = regexp.MustCompile(`(?i)\b(right|transverse|left|r|t|l)\s*(?:colon\s*)?[:=]?\s*([0-3])\b`)
 	reBBPSTriple = regexp.MustCompile(`\b([0-3])\s*[-/+,]\s*([0-3])\s*[-/+,]\s*([0-3])\b`)
 	reBBPSTotal  = regexp.MustCompile(`(?i)total\s*(?:score)?\s*(?:of\s*)?[:=]?\s*(\d{1,2})|=\s*(\d{1,2})|\b(\d{1,2})\s*/\s*9\b|(?:scale|bbps)\s*[:=]?\s*(\d{1,2})\b(?:\s*[^-/+,\d]|$)`)
+	// v5: a report that says part of it was wrong (a correction, not an ordinary addendum) is never auto-closed.
+	reCorrection = regexp.MustCompile(`(?i)\bcorrect(?:ion|ed)\b|\b(?:entered|recorded|documented|reported|dictated|transcribed) in error\b|\berroneous(?:ly)?\b|\bamend(?:ed|ment)\b|\berrat(?:um|a)\b|\bcorrigend|\bshould (?:read|have read)\b|\brevised (?:report|extent|findings)\b|\bas previously (?:stated|reported|documented)\b|template default|تصحيح`)
 	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
@@ -100,11 +102,28 @@ func regexFields(t string) (c, p, po, h string) {
 // with any stated total (adequate = total >= 6 with every segment >= 2), or when only a total below 6 is written (no
 // segment split can pass). Anything else (a total >= 6 without segments, totals that disagree) is "" = not decided here.
 func bbpsGrade(t string) (grade string, found bool) {
-	m := reBBPS.FindStringIndex(t)
-	if m == nil {
+	gs := bbpsGrades(t)
+	if len(gs) == 0 {
 		return "", false
 	}
-	w := t[m[0]:]
+	for _, g := range gs[1:] {
+		if g != gs[0] {
+			return "", true // v5: two Boston scores that grade differently (e.g. a correction) decide nothing
+		}
+	}
+	return gs[0], true
+}
+
+// bbpsGrades: the grade of every Boston score mention in t, in order ("" = that mention is not decidable).
+func bbpsGrades(t string) []string {
+	gs := []string{}
+	for _, m := range reBBPS.FindAllStringIndex(t, -1) {
+		gs = append(gs, bbpsGradeAt(t[m[0]:]))
+	}
+	return gs
+}
+
+func bbpsGradeAt(w string) string {
 	if k := strings.IndexByte(w, '\n'); k > 0 {
 		w = w[:k]
 	}
@@ -134,7 +153,7 @@ func bbpsGrade(t string) (grade string, found bool) {
 		}
 	}
 	if total > 9 {
-		return "", true
+		return ""
 	}
 	if len(segs) == 3 {
 		sum, ok := 0, true
@@ -143,17 +162,17 @@ func bbpsGrade(t string) (grade string, found bool) {
 			ok = ok && v >= 2
 		}
 		if total >= 0 && total != sum {
-			return "", true
+			return ""
 		}
 		if ok && sum >= 6 {
-			return "adequate", true
+			return "adequate"
 		}
-		return "inadequate", true
+		return "inadequate"
 	}
 	if total >= 0 && total < 6 {
-		return "inadequate", true
+		return "inadequate"
 	}
-	return "", true
+	return ""
 }
 
 // v4: a histology result counts only if it is about this procedure. A tissue diagnosis inside a sentence about an earlier
@@ -184,8 +203,12 @@ func checkHistQuote(hist, quote, text string) string {
 // checkPrepQuote: code-side check of the second reader's prep answer against its own quote. A Boston score in the quote
 // decides the grade; "adequate" with a quote that holds no grade word or score (e.g. only the product name) is not_stated.
 func checkPrepQuote(prep, quote string) string {
-	if g, _ := bbpsGrade(quote); g != "" {
+	g, found := bbpsGrade(quote)
+	if g != "" {
 		return g
+	}
+	if found && len(bbpsGrades(quote)) > 1 {
+		return "not_stated" // v5: the quote holds Boston scores that disagree
 	}
 	if prep == "adequate" && quote != "" && !reGradeWd.MatchString(quote) {
 		return "not_stated"
@@ -546,6 +569,11 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 		v.Rule = strings.Join(rs, "+")
 		if v.Rule == "" {
 			v.Rule = "per_field_consensus"
+		}
+		if v.Label == "adequate" && reCorrection.MatchString(text) {
+			v.Agree, v.Label, v.Rule = false, "disagree", v.Rule+"+corrected_report"
+			v.Flags = appendUniq(v.Flags, "corrected_report")
+			return v
 		}
 		if rules["R2_prep_ungraded_caecum_landmark"] && v.Label != "inadequate" {
 			v.Flags = []string{"prep_grade_not_documented"}
