@@ -247,9 +247,41 @@ type ReviewerCfg struct {
 	LinkMedS float64 // median seconds per link read
 	EvMedS   float64 // median seconds per evidence read
 	Sigma    float64 // lognormal sigma
+	// H7 mitigations (all off by default; with all three off every read is byte-identical to the pre-mitigation model).
+	// Correlation model, where Rho is the current design (reader 2 sees reader 1's answer, fixed reader pairs):
+	//   effective rho = Rho * (1 - BlindFactor if Blind) * (1 - RotateFactor if Rotate)
+	// Blind: the second read does not see the first. BlindFactor is the share of Rho that comes from seeing the first
+	// answer (anchoring); the rest (items hard for anyone, shared habits) survives blinding.
+	// Rotate: reader pairs rotate instead of staying fixed. Of the correlation left after blinding, a pair-specific part
+	// (two fixed colleagues converging on the same habits) is broken by rotation; the item-specific part (an item that
+	// is hard for anyone) is not. RotateFactor is that pair-specific share. Without Blind it applies to all of Rho.
+	// The same u01 draw decides "copies the first read" in every variant, so a mitigated run copies on a subset of the
+	// items the unmitigated run copies on (common random numbers: the comparison is paired, not resampled).
+	Blind        bool
+	BlindFactor  float64 // share of Rho removed by blinding (evidence-informed default 0.5, range 0.15-0.85)
+	Rotate       bool
+	RotateFactor float64 // share of the remaining correlation removed by pair rotation (assumption 0.1, range 0-0.3)
+	// SeniorAudit: fraction p of signed closing answers (evidence adequate/histology, lung closing answers) that get one
+	// extra senior read, chosen by a seeded hash of the item id (replay-identical). The senior read never copies r1/r2
+	// and has error rate SeniorErrRel*Err. If it disagrees, the signed answer becomes the senior answer.
+	SeniorAudit  float64
+	SeniorErrRel float64 // senior per-read error rate relative to Err (assumption 0.5, range 0.25-0.8)
 }
 
-var DefaultReviewer = ReviewerCfg{Err: 0, Double: "none", Seed: 1, LinkMedS: 45, EvMedS: 90, Sigma: 0.6}
+var DefaultReviewer = ReviewerCfg{Err: 0, Double: "none", Seed: 1, LinkMedS: 45, EvMedS: 90, Sigma: 0.6,
+	BlindFactor: 0.5, RotateFactor: 0.1, SeniorErrRel: 0.5}
+
+// effRho is the probability that a later read copies the first read, after the enabled mitigations.
+func (c ReviewerCfg) effRho() float64 {
+	r := c.Rho
+	if c.Blind {
+		r *= 1 - c.BlindFactor
+	}
+	if c.Rotate {
+		r *= 1 - c.RotateFactor
+	}
+	return r
+}
 
 func u01(seed int64, parts ...string) float64 {
 	h := sha256.New()
@@ -284,11 +316,15 @@ type read struct {
 func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 	r := read{reader: reader}
 	kind := it.Kinds[0]
-	draw := reader // correlated reads (H7): with probability Rho a later reader shares the first reader's error draw
-	if reader != "r1" && c.Rho > 0 && u01(c.Seed, it.ItemID, reader, "corr") < c.Rho {
+	draw := reader // correlated reads (H7): with probability effRho a later reader shares the first reader's error draw
+	if rho := c.effRho(); reader != "r1" && reader != "s1" && rho > 0 && u01(c.Seed, it.ItemID, reader, "corr") < rho {
 		draw = "r1"
 	}
-	wrong := u01(c.Seed, it.ItemID, draw, "err") < c.Err
+	e := c.Err
+	if reader == "s1" { // senior audit read: independent draw, its own (lower) assumed error rate
+		e = c.Err * c.SeniorErrRel
+	}
+	wrong := u01(c.Seed, it.ItemID, draw, "err") < e
 	med := c.EvMedS
 	if kind == "evidence" && it.Reason == "prep_grade_one_click" {
 		med = OneClickMedS
@@ -355,12 +391,44 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
 		}
 	}
+	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, it.ItemID, "audit") < c.SeniorAudit {
+		// Senior audit of a signed closing answer. Overriding the answer (rather than re-opening the item) keeps the
+		// one-sign-off-per-item model: in the offline replay the sign-off sits where the item was raised, so the loop
+		// ends in the state a re-opened and re-decided loop would reach. A real weekly audit corrects it days later.
+		s := c.oneRead(it, tr, "s1")
+		so.audit = &auditRec{prevLink: final.link, prevEv: final.ev, disagree: s.link != final.link || s.ev != final.ev}
+		reads, secs = append(reads, "s1"), secs+s.secs
+		if so.audit.disagree {
+			final = s
+		}
+	}
 	so.Link, so.Evidence, so.Reads, so.DurationS = final.link, final.ev, reads, math.Round(secs*10)/10
 	so.Reviewer = fmt.Sprintf("sim-%s e=%.3f double=%s reads=%v", so.Role, c.Err, c.Double, reads)
 	if c.Rho > 0 {
 		so.Reviewer += fmt.Sprintf(" rho=%.2f", c.Rho)
 	}
+	if c.Blind {
+		so.Reviewer += fmt.Sprintf(" blind=%.2f", c.BlindFactor)
+	}
+	if c.Rotate {
+		so.Reviewer += fmt.Sprintf(" rotate=%.2f", c.RotateFactor)
+	}
+	if c.SeniorAudit > 0 {
+		so.Reviewer += fmt.Sprintf(" audit=%.3f", c.SeniorAudit)
+	}
 	return so
+}
+
+// auditRec records a senior audit on a sign-off (in memory only, never serialised): the answer before the audit and
+// whether the senior read disagreed. The sweep scores both against the truth.
+type auditRec struct {
+	prevLink, prevEv string
+	disagree         bool
+}
+
+// closingAnswer: a signed evidence answer that lets a loop close (the audit sample frame).
+func closingAnswer(r read) bool {
+	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev)
 }
 
 // msgConfirmed (v7): a human confirmed (second-identifier item answered "same") that the downstream registration is this patient.
