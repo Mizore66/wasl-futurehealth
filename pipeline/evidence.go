@@ -64,6 +64,9 @@ var (
 	reBBPSTotal  = regexp.MustCompile(`(?i)total\s*(?:score)?\s*(?:of\s*)?[:=]?\s*(\d{1,2})|=\s*(\d{1,2})|\b(\d{1,2})\s*/\s*9\b|(?:scale|bbps)\s*[:=]?\s*(\d{1,2})\b(?:\s*[^-/+,\d]|$)`)
 	// v5: a report that says part of it was wrong (a correction, not an ordinary addendum) is never auto-closed.
 	reCorrection = regexp.MustCompile(`(?i)\bcorrect(?:ion|ed)\b|\b(?:entered|recorded|documented|reported|dictated|transcribed) in error\b|\berroneous(?:ly)?\b|\bamend(?:ed|ment)\b|\berrat(?:um|a)\b|\bcorrigend|\bshould (?:read|have read)\b|\brevised (?:report|extent|findings)\b|\bas previously (?:stated|reported|documented)\b|template default|تصحيح`)
+	// v6: this procedure's result is still pending (or only received, not reported). A tissue diagnosis elsewhere in such
+	// a text is not this procedure's result, so the report is not auto-closed.
+	reHistPending = regexp.MustCompile(`(?i)(?:histolog\w*|patholog\w*|result|specimen|accession)[^.\n]{0,50}\b(?:awaited|pending|to follow|not (?:yet )?(?:available|back|reported))|\b(?:awaiting|pending)\b[^.\n]{0,20}(?:histolog|patholog|result)|\bno (?:\w+ )?diagnosis (?:is )?(?:yet )?available|(?:laboratory|lab|patholog\w*)[^.\n]{0,40}\breceived\b|\breceived\b[^.\n]{0,20}(?:in|by) (?:the )?(?:lab|laboratory|pathology)|gross description`)
 	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
@@ -177,7 +180,7 @@ func bbpsGradeAt(w string) string {
 
 // v4: a histology result counts only if it is about this procedure. A tissue diagnosis inside a sentence about an earlier
 // procedure ("colonoscopy in 2019 removed 2 tubular adenomas", "history of adenomas") is not this procedure's result.
-var rePriorCtx = regexp.MustCompile(`(?i)previous|prior|history of|hx of|in (?:19|20)\d\d|\d+ (?:years?|months?) ago|last (?:colonoscopy|scope)|earlier colonoscopy|surveillance:`)
+var rePriorCtx = regexp.MustCompile(`(?i)previous|prior|histor(?:y|ical)|hx of|in (?:19|20)\d\d|\((?:19|20)\d\d\b|\b(?:19|20)\d\d (?:colonoscopy|endoscopy|procedure|scope)|separate from today|not (?:the|today's) current|\d+ (?:years?|months?) ago|last (?:colonoscopy|scope)|earlier colonoscopy|surveillance:`)
 
 // currentHistology: some match of re lies outside a prior-procedure sentence.
 func currentHistology(t string, re *regexp.Regexp) bool {
@@ -569,6 +572,11 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 		v.Rule = strings.Join(rs, "+")
 		if v.Rule == "" {
 			v.Rule = "per_field_consensus"
+		}
+		if v.Label == "adequate" && (R["polyps"] == "yes" || G["polyps"] == "yes") && reHistPending.MatchString(text) {
+			v.Agree, v.Label, v.Rule = false, "disagree", v.Rule+"+histology_pending_conflict"
+			v.Flags = appendUniq(v.Flags, "histology_pending_conflict")
+			return v
 		}
 		if v.Label == "adequate" && reCorrection.MatchString(text) {
 			v.Agree, v.Label, v.Rule = false, "disagree", v.Rule+"+corrected_report"
