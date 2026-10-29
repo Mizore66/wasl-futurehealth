@@ -77,6 +77,12 @@ const (
 	auditSeed     = 7                // fixed: audit sampling must replay identically in every process (closure, audit, report)
 )
 
+// The senior who adjudicates a shadow rejection: per-read error (assumed; -rerr when given) and hashed-draw seed (-rseed).
+var (
+	PilotAdjErr        = 0.04
+	PilotAdjSeed int64 = 1
+)
+
 // ShadowMode and AutoAuditP are run configuration set once from flags (never mutated by the engine).
 var (
 	ShadowMode bool
@@ -125,19 +131,23 @@ func evidenceAutomatic(d *Decision) bool {
 	return auto
 }
 
-// shadowObs is one signed shadow confirmation in review order.
+// shadowObs is one signed shadow confirmation in review order. resets: this rejection ends the streak.
 type shadowObs struct {
 	day       float64
 	confirmed bool
+	resets    bool
 }
 
 // streakDay returns the simulated day on which n consecutive confirmations were first reached (-1 if never) and the
-// longest run of consecutive confirmations.
+// longest run of consecutive confirmations. A rejection resets the run only when it is marked resets; a rejection that
+// the adjudicator traced to the reviewer, not the reader, neither resets nor extends it.
 func streakDay(obs []shadowObs, n int) (float64, int) {
 	run, best, at := 0, 0, -1.0
 	for _, o := range obs {
 		if !o.confirmed {
-			run = 0
+			if o.resets {
+				run = 0
+			}
 			continue
 		}
 		run++
@@ -170,7 +180,8 @@ func pilotReport(items map[string]*ReviewItem, sos []*Signoff, final map[string]
 		secs                                                           float64
 	}
 	a := map[string]*acc{ShadowConfirm: {}, AutoAudit: {}}
-	var obs []shadowObs
+	var obs, strict []shadowObs
+	adjReader, adjReviewer := 0, 0
 	seen := map[string]bool{}
 	for _, so := range sos {
 		x := a[so.Purpose]
@@ -196,7 +207,20 @@ func pilotReport(items map[string]*ReviewItem, sos []*Signoff, final map[string]
 			}
 		}
 		if so.Purpose == ShadowConfirm {
-			obs = append(obs, shadowObs{it.Day, so.Evidence == it.Verdict})
+			ok := so.Evidence == it.Verdict
+			// A rejection goes to a senior adjudicator who reads the report (simulated: truth, with PilotAdjErr).
+			// Only an adjudicated reader error resets the streak.
+			adjReaderErr := false
+			if !ok {
+				adjReaderErr = !readerRight != (u01(PilotAdjSeed, so.ItemID, "adjudicate") < PilotAdjErr)
+				if adjReaderErr {
+					adjReader++
+				} else {
+					adjReviewer++
+				}
+			}
+			obs = append(obs, shadowObs{it.Day, ok, adjReaderErr})
+			strict = append(strict, shadowObs{it.Day, ok, !ok})
 		}
 	}
 	n := math.Max(1, float64(len(tr.Loops)))
@@ -216,7 +240,12 @@ func pilotReport(items map[string]*ReviewItem, sos []*Signoff, final map[string]
 		} else {
 			s["first_day_streak_reached"] = nil
 		}
-		s["note"] = "rejected = clinician did not confirm the automatic verdict (errors caught when rejected_reader_error); streak in review order"
+		_, bestStrict := streakDay(strict, PilotStreak)
+		s["longest_streak_if_any_rejection_resets"] = bestStrict
+		s["adjudicated_reader_error"], s["adjudicated_reviewer_error"] = adjReader, adjReviewer
+		s["note"] = "rejected = clinician did not confirm the automatic verdict (errors caught when rejected_reader_error); " +
+			"a rejection goes to a senior adjudicator (assumed per-read error PilotAdjErr) and only an adjudicated reader " +
+			"error resets the streak; streak in review order"
 		out["shadow"] = s
 	}
 	if AutoAuditP > 0 && !ShadowMode {
