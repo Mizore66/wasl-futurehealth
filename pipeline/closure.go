@@ -329,6 +329,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
 	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
+	var auditNote map[string]interface{} // pilot: a post-closure audit that disagreed with the automatic verdict
 	pending := []string{}
 	pendSet := map[string]bool{}
 	unlinked := false
@@ -343,6 +344,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 		if purpose == OverrideConfirm {
 			key += "#confirm"
+		} else if k := pilotKey(purpose); k != "" { // shadow / audit items are distinct from the report's own review
+			key += k
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		if _, ok := signed[id]; ok || pendSet[id] {
@@ -366,6 +369,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if purpose != "" {
 				it.Reason = purpose
 			}
+			if pilotKey(purpose) != "" {
+				it.Day = round4(now)
+			}
 			ls.raised[id] = it
 			newItems = append(newItems, it)
 		}
@@ -379,6 +385,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := ls.raised[id]
+			if it.Reason == AutoAudit { // a post-closure audit does not make the closure human-assisted
+				continue
+			}
 			if s, ok := signed[id]; ok && it.ReportID == report && s.SignedHead == it.Head {
 				s := s
 				return &s
@@ -415,6 +424,18 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		} else if r.d.Ev != nil && r.d.Ev.Agree && r.d.Ev.Label != "needs_human" {
 			label = r.d.Ev.Label
+			if ShadowMode { // pilot: an automatic closure is only a suggestion until a clinician signs it
+				if s, ok := f.EvOver[r.d.ReportID+pilotKey(ShadowConfirm)]; ok {
+					label, human = s, "shadow:"+s // the signed answer decides, whether or not it confirms the readers
+				} else if label == "adequate" && state != "closed" {
+					raiseFor(r, "evidence", ShadowConfirm)
+					continue
+				}
+			} else if s, ok := f.EvOver[r.d.ReportID+pilotKey(AutoAudit)]; ok && AutoAuditP > 0 && s != label {
+				// pilot: the post-closure audit disagreed; the loop follows the clinician and re-opens
+				auditNote = map[string]interface{}{"loop": f.LoopID, "report": r.d.ReportID, "auto_verdict": label, "audit_answer": s, "result": "reopened"}
+				label, human = s, "audit:"+s
+			}
 		}
 		if label == "" && PrepQuery && r.d.Ev != nil && r.d.Ev.PrepUngraded {
 			// ungraded prep: no reviewer can grade it from the text either, so query the unit (done_quality_unverified);
@@ -469,6 +490,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				}
 				continue
 			}
+			if ShadowMode && human == "" && state != "closed" { // both reports read automatically: the closure is a suggestion (shadow item on the procedure report)
+				raiseFor(r, "evidence", ShadowConfirm)
+				continue
+			}
 			label = "adequate"
 		}
 		switch label {
@@ -483,6 +508,16 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 						"link": s.Link, "evidence": s.Evidence, "signed_head": s.SignedHead})
 					humanAssisted = true
 				}
+				if !ShadowMode && human == "" && auditSampled(f.LoopID, r.d.ReportID) {
+					// pilot: sampled automatic closure -> post-closure clinician audit; the loop stays closed meanwhile
+					raiseFor(r, "evidence", AutoAudit)
+					st := "sampled"
+					if s, ok := f.EvOver[r.d.ReportID+pilotKey(AutoAudit)]; ok {
+						st = "confirmed:" + s
+					}
+					chain = appendBlock(chain, "auto_audit", map[string]interface{}{"loop": f.LoopID, "report": r.d.ReportID,
+						"item": "rv-" + sha([]byte(f.LoopID + "|evidence|" + r.d.ReportID + pilotKey(AutoAudit)))[:16], "p": AutoAuditP, "status": st})
+				}
 			}
 		case "inadequate":
 			inadequate = true
@@ -493,6 +528,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	if state == "closed" {
+		if auditNote != nil {
+			auditNote["result"] = "closed_after_audit"
+			chain = appendBlock(chain, "auto_audit", auditNote)
+		}
 		chain = appendBlock(chain, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "closed", "programme": prog,
 			"priority": f.Priority, "closed_day": round4(closedDay), "sla_days": deadline, "within_sla": closedDay-f.SRDay <= deadline,
 			"policy": "p_cal>=0.99|eid|human AND two-reader agreement|human", "rule": "doh:" + prog})
@@ -509,6 +548,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": why, "programme": prog,
 				"report": holdRow.d.Provider + "/DiagnosticReport/" + holdRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
 				"policy": "no closure without two-reader adequate evidence or authorised human decision"})
+		}
+		if auditNote != nil { // the audit re-opened an automatic closure: record it in the chain
+			chain = appendBlock(chain, "auto_audit", auditNote)
 		}
 		switch {
 		case awaiting:
@@ -537,6 +579,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}
+	d.AuditReopened = auditNote != nil && state != "closed"
 	d.Overdue = state != "closed" && age > deadline
 	d.Unowned = owner == "" && age > OwnerGrace
 	d.Dropoff = dropoffCode(state, unlinked, refStatus, notif >= 0, ack >= 0, refDay >= 0)
@@ -546,6 +589,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	if d.Unowned {
 		esc = append(esc, "unowned")
+	}
+	if d.AuditReopened {
+		esc = append(esc, "audit_reopened")
 	}
 	if state != "closed" {
 		if notif < 0 && now-notifStart > rule.NotifDays {

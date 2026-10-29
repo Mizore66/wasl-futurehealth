@@ -7,6 +7,8 @@
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 #      WASL_LUNG=N adds N incidental lung-nodule loops (Fleischner 2017, second loop type; default 0 = screening cohort only).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
+#      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
+#      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
 # Live reader: llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,12 +22,15 @@ LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop t
 [ "$LUNG" = 0 ] || RUN="$RUN-lung"
 MODELSET="${WASL_MODELSET:-}"; [ -z "$MODELSET" ] || RUN="$RUN-$MODELSET"
 MARGS=(); [ -z "$MODELSET" ] || MARGS=(-modelset "$MODELSET")
+SHADOW="${WASL_SHADOW:-0}"; AUTOAUDIT="${WASL_AUTOAUDIT:-0}"   # pilot switches (pipeline/pilot.go); 0 = off
+PARGS=(); [ "$SHADOW" = 0 ] || { PARGS+=(-shadow); RUN="$RUN-shadow"; }   # cohort generation never sees them
+[ "$AUTOAUDIT" = 0 ] || { PARGS+=(-autoaudit "$AUTOAUDIT"); RUN="$RUN-autoaudit$AUTOAUDIT"; }
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
-RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"})
+RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
 # audit/tamper/report never call the model: they replay the run's reader ledger
 AARGS=(-reader cached); [ "$READER" = cached ] || AARGS=(-reader replay)
-IMG_A=cached; [ "$IMAGE" = live ] && IMG_A=replay; [ "$IMAGE" = off ] && IMG_A=off; AARGS+=(-image "$IMG_A" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"})
+IMG_A=cached; [ "$IMAGE" = live ] && IMG_A=replay; [ "$IMAGE" = off ] && IMG_A=off; AARGS+=(-image "$IMG_A" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 need() { echo "MISSING: $1"; echo "  → $2"; exit 1; }
 
 check() {
@@ -80,7 +85,7 @@ report() {
 }
 serve() {
   echo "Wasl API on http://${WASL_API_ADDR:-127.0.0.1:8088} (run: $RUN)"
-  (cd "$BIN" && exec ./wsi7 serve -run "$RUN" -data "$COHORT" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} -addr "${WASL_API_ADDR:-127.0.0.1:8088}")
+  (cd "$BIN" && exec ./wsi7 serve -run "$RUN" -data "$COHORT" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "${WASL_API_ADDR:-127.0.0.1:8088}")
 }
 snapshot() {  # write static API responses for frontend development (no backend needed): docs/api-samples/
   local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="$ROOT/docs/api-samples"
