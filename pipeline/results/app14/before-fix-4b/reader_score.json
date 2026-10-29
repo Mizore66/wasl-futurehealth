@@ -1,0 +1,131 @@
+{
+ "auto_correct_vs_truth": 83,
+ "auto_decided": 97,
+ "auto_unsafe_adequate_when_truth_not": 8,
+ "auto_wrong_safe_direction": 6,
+ "by_tag": {
+  "all": {
+   "auto": 97,
+   "n": 300,
+   "unsafe": 8
+  },
+  "bilingual": {
+   "auto": 13,
+   "n": 42,
+   "unsafe": 1
+  },
+  "extent_not_stated": {
+   "auto": 9,
+   "n": 27
+  },
+  "mass_biopsy": {
+   "auto": 3,
+   "n": 8,
+   "unsafe": 3
+  },
+  "narrative": {
+   "auto": 32,
+   "n": 128,
+   "unsafe": 3
+  },
+  "ocr": {
+   "auto": 9,
+   "n": 32
+  },
+  "prep_arabic_only": {
+   "auto": 2,
+   "n": 14
+  },
+  "prep_ungraded": {
+   "auto": 5,
+   "n": 52
+  },
+  "random_biopsy": {
+   "auto": 7,
+   "n": 20,
+   "unsafe": 3
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "260/300",
+   "histology": "287/300",
+   "polyps": "300/300",
+   "prep": "196/300",
+   "state": "187/300"
+  },
+  "regex": {
+   "caecum": "299/300",
+   "histology": "300/300",
+   "polyps": "300/300",
+   "prep": "179/300",
+   "state": "200/300"
+  }
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 22,
+  "adequate/awaiting_histology": 6,
+  "adequate/inadequate": 2,
+  "awaiting_histology/awaiting_histology": 15,
+  "awaiting_histology/inadequate": 1,
+  "inadequate/adequate": 2,
+  "inadequate/awaiting_histology": 3,
+  "inadequate/inadequate": 46,
+  "review/adequate": 109,
+  "review/awaiting_histology": 60,
+  "review/inadequate": 34
+ },
+ "reader2_cache_hits": 300,
+ "reader2_model": "gemma-3-4b-it-Q4_K_M/hybrid-v2/cached",
+ "reports": 300,
+ "unsafe": [
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "inadequate",
+   "uid": "a78"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a106"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a146"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a150"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a169"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a179"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "inadequate",
+   "uid": "a219"
+  },
+  {
+   "label": "adequate",
+   "rule": "per_field_consensus",
+   "truth": "awaiting_histology",
+   "uid": "a277"
+  }
+ ]
+}

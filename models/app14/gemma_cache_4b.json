@@ -1,0 +1,3980 @@
+{
+ "00a89e18e9284cdeba12477ef59de65a65facc63920f95c6b72f1c32950437dd": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached. Landmarks: intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Extents: cecum reached. Landmarks: intubation of the terminal ileum",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "polypectomy by cold forceps, retrieved",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was excellent"
+  }
+ },
+ "0229a659b86cd0e8abbd54ceeedc51ad87328fd286bfaa348e481298019feb46": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: caecum reached",
+  "quotes": {
+   "caecum": "Extents: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "التحضير ممتاز"
+  }
+ },
+ "03940a8d19c08123f91e9d43f70f965656d235c42850eb6c7780530f9ed36fb4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "polyp removed with cold forceps and sent to histology; polypectomy by cold snare, retrieved",
+   "prep": "Bowel preparation: Prep (split-dose PEG 2 L + bisacodyl) was good, with minimal residual fluid"
+  }
+ },
+ "03bde9889503573697f2cb65737782f6ebfa2f4c5201274bcb55feea0a267cd7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: excellent"
+  }
+ },
+ "03f61cad40b1200f7b2741675d872d80ce699920cdd898f165b453b1e90adc8a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscopee was advanced to the caecum, identified by the ileocaecal valve andd appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscopee was advanced to the caecum, identified by the ileocaecal valve andd appendiceal orifice",
+   "histology": "\"6 mm polyp removed with cold forceps and sent to histology Fo11ow-up per pathology.\"",
+   "polyps": "removed with cold forceps and sent to histology",
+   "prep": "Bowel preparation with low-volum PEG-ascorbate 2 L as instructed"
+  }
+ },
+ "054a030852b54fd69c4338d5af2f36280ea82a11a6a30be991f84f8c5dbb2ed1": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Examination was incomplete to the sigmoid-descending junction",
+  "quotes": {
+   "caecum": "Examination was incomplete to the sigmoid-descending junction",
+   "histology": "",
+   "polyps": "No mucosal abnormality",
+   "prep": "Preparation split-dose PEG 4 L; BBPS total 7"
+  }
+ },
+ "06772ffc67801507f385b2937b64b7aedfb3b84b8f6e0d9dbd71b38dcdfe3439": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached",
+  "quotes": {
+   "caecum": "Extents: cecum reached",
+   "histology": "Follow-up per pathology.",
+   "polyps": "polypectomy by hot snare, retrieved",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 2, transverse 3, left 3)"
+  }
+ },
+ "06cdb2ed847eafaacc7f133c273c1fc47911bb233c9f3f834f67a2a3b1b9c70c": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination was incomplete to the hepatic flexure because of a fixed sigmoid angulation.",
+  "quotes": {
+   "caecum": "Examination was incomplete to the hepatic flexure because of a fixed sigmoid angulation.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: good, with minimal residual fluid."
+  }
+ },
+ "078e1ef9cfecbf217d150e8092b9f3c6f8e445f7507fe66a765f408f7a3e0bf9": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "086fb4bcadcf02124cc91d6f854f8e00bff2cadb23b0a8c1c2637745746ab7f2": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached",
+  "quotes": {
+   "caecum": "Extents: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: adequate"
+  }
+ },
+ "0927f1bf1166424aba8d94279dbd51c198d7a63b7117fe6d2180991937cdba22": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination was incomplete to the hepatic flexure because of poor preparation.",
+  "quotes": {
+   "caecum": "Examination was incomplete to the hepatic flexure because of poor preparation.",
+   "histology": "",
+   "polyps": "",
+   "prep": "تنظيف الأمعاء غير كاف."
+  }
+ },
+ "09dcedb07916a98c475b2b843b0e0345606595933a7a9b5991a3c869c653586d": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Sessile serrated lesion without dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "",
+   "prep": "Preparation low-volume PEG-ascorbate 2 L; BBPS total 8 (right 2, transverse 3, left 3)."
+  }
+ },
+ "0a6bf27816d33406182d06a3c250c7aadcddeded4d85c0e835731d2499e28f18": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 8/9"
+  }
+ },
+ "0bf7b0c65668c9e0aaca83d2af286f3811a0b0476d087857304415b4a1a60f75": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terrninal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terrninal ileum intubated for 5 cm",
+   "histology": "Await histology",
+   "polyps": "Polypectomy by EMR, retrieved; descending colon: polypectomy by hot snare, retrieved",
+   "prep": "Patient took low-volume PEG-ascorbate 2 L"
+  }
+ },
+ "0c37ce09c94c471da4b905b9cd1bb57c6975cba1bb48bf297ea71070eb30f181": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice and ileocecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep: sodium picosulfate / magnesium citrate"
+  }
+ },
+ "0c90787815b53089aaa33886b1e311f08fc6bd3ab14950381d9723a5157d51e8": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "",
+   "polyps": "8 mm polyp removed with cold snare and sent to histology; EMR resection of the caecum polyp, specimen retrieved.",
+   "prep": ""
+  }
+ },
+ "0d4eebb1d1f9657a3c14cdd54f50e3b6bb5b4635a74024dfc682bbfcebb01e58": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was good."
+  }
+ },
+ "0ec02a60c64479314a83228c085ced9d2a8a3619961a05ef3bd014f52df87c62": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the splenic flexure",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the splenic flexure",
+   "histology": "",
+   "polyps": "no polyps",
+   "prep": "Boston Bowel Preparation Scale 6/9"
+  }
+ },
+ "0ef74facd50abee04586386507eb7eacd4f91d1730f3a1d98ea75e5b448eb82b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Tubular adenoma with low-grade dysplasia. Tubulovillous adenoma, low-grade dysplasia, completely excised.",
+   "polyps": "hepatic flexure: polypectomy by cold snare, retrieved; descending colon: polypectomy by cold snare, retrieved; descending colon: polypectomy by cold forceps, re",
+   "prep": ""
+  }
+ },
+ "10e17b2615dbc01fa9aac87b3d0f95bdd973557fc4b67949d4107c5eed0c78f1": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Examination was incomplete to the hepatic flexure because of patient discomfort.",
+  "quotes": {
+   "caecum": "Examination was incomplete to the hepatic flexure because of patient discomfort.",
+   "histology": "tubular adenoma with low-grade dysplasia. Hyperplastic polyp no dysplasia. Sessile serrated lesion without dysplasia.",
+   "polyps": "cold forceps resection of the descending colon polyp, specimen retrieved; 4 mm polyp removed with cold snare and sent to histology; 6 mm polyp removed with cold",
+   "prep": "Bowel cleansing excellent (split-dose PEG 4 L)."
+  }
+ },
+ "117a8e570c898751f10e0a14a3f1c72150470825e1d4e4712f65271b23447dc3": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached because of patient discomfort",
+  "quotes": {
+   "caecum": "caecum not reached because of patient discomfort",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (sodium picosulfate / magnesium citrate) was good, with minimal residual fluid."
+  }
+ },
+ "125b3de568168e98dbeabc4561b092fab86238739f03b964017b4e6894cdfb42": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Standard colonoscope used.",
+  "quotes": {
+   "caecum": "Standard colonoscope used.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "12b7c812b8f68b0d4bd8255d068ba6a6eace347e8a9f5b973ebe1aac487d0f25": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+   "histology": "Hyperplastic polyp no dysplasia",
+   "polyps": "retrieved",
+   "prep": "Bowel cleansing excellent (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "133d470c74320273a43b40dcbf12914ba7cec11792de0d76e0fe6ec82eb0cf1e": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+   "histology": "Biopsies taken await histology",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": "Prep (split-dose PEG 2 L + bisacodyl) was inadequate"
+  }
+ },
+ "142096ed3430864ff7fcb745e6e1aced77fc281d59b0659903e91e5ee86636d4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "12 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8"
+  }
+ },
+ "1497b5d8274b875e81470cea6ef1caee557c45bcf2da069315cb9328bfec64fe": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon for microscopic colitis.",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 9 (right 3, transverse 3, left 3)."
+  }
+ },
+ "14a21aa16fbdea507b2a9974cf1cf060b330c673d9834353128964bfa120e618": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Sessile serrated lesion without dysplasia",
+   "polyps": "Snare",
+   "prep": ""
+  }
+ },
+ "15669bd2b4be0d689205af26213df758b14bc2efa07faa91f302b8ef28f377b9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "Follow-up per pathology.",
+   "polyps": "15 mm Paris 0-Ip polyp in the ascending colon. ascending colon: polypectomy by EMR, retrieved.",
+   "prep": "Bowel cleansing good, with minimal residual fluid (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "15bccd33c4965e25e31d4b725e4223c4fb251079d9349adb9dbd5de875e558c3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve",
+   "histology": "Tubulovillous adenoma",
+   "polyps": "1 polyp(s) removed. hepatic flexure: polypectomy by cold forceps, retrieved",
+   "prep": "split-dose PEG 4 L. Boston Bowel Preparation Scale 7/9"
+  }
+ },
+ "16ff5736afbff9626001abd4f84fa19451ec97e7c2d6008883df966fdcbb93db": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good, with minimal residual fluid"
+  }
+ },
+ "1722ef1901359cf0998cca0695f7c534bc03e7c0970a4899c7d0ee44ea9728ad": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached. Landmarks: the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Extents: cecum reached. Landmarks: the appendiceal orifice and ileocecal valve",
+   "histology": "",
+   "polyps": "specimen retrieved",
+   "prep": ""
+  }
+ },
+ "18606e499e54fe132c9623382e21946f1c1719932d664f84cfe775a49a8b081a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 9"
+  }
+ },
+ "19703fd6135519a08b9ce56228418e5e7520f918059091183f0477709a396d11": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: excellent"
+  }
+ },
+ "1adabbea01d030b6f05e018e2ac31411e5f79e0e22d769791c6ab85173cf47c6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "cold forceps resection of the cecum polyp, specimen retrieved; cold forceps resection of the cecum polyp, specimen retrieved",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 3, left 2)"
+  }
+ },
+ "1afa550fb2a295839031021ac8df004047113f0b113798f1f0ec87eb660eba76": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing fair, adequate for detection of polyps \u003e5 mm (split-dose PEG 4 L)."
+  }
+ },
+ "1cd2b73890db76e7b817b1fde9b474cebd564cc9f8eaeeb7efcf39ee81b303b2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Await histology",
+   "polyps": "hepatic flexure: polypectomy by cold snare, retrieved.",
+   "prep": "Bowel preparation: Prep (split-dose PEG 2 L + bisacodyl) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "1cd3b2e1fa67e333a8bf620219259a356183dd6448be952e7ef541a1c49fa75f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 6/9 (right 2, transverse 2, left 2)"
+  }
+ },
+ "1cee05db7dba3943ba2901108795037d1716632b5efc19e344323df64804738c": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecums not reached because of poor preparation",
+  "quotes": {
+   "caecum": "cecums not reached because of poor preparation",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 4 (right 2, transverse 1, left 1)"
+  }
+ },
+ "1d47dd30572acbce115d26ffaaacebc464e5b13f60c4e2df9db48e0cb6cc3b54": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Hyperplastic polyp no dysplasia. Sessile serrated lesion without dysplasia.",
+   "polyps": "cold snare resection of the ascending colon polyp, specimen retrieved; 12 mm polyp removed with hot snare and sent to histology",
+   "prep": "Quality of preparation: excellent"
+  }
+ },
+ "1e4eb8a9d983d3221c34198183363fc524f63ab7fd2b27854e461892923cc029": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 6 (right 2, transverse 2, left 2)."
+  }
+ },
+ "1f011fc0e8269e01a8bfac5d94d09f2188f7d92f356230fe8fabecdc0d8bd4af": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "4 mm polyp removed with cold snare and sent to histology",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 7"
+  }
+ },
+ "1fba3f1379271b4d1d25c61a340754ec7839c9ec46ff27f40fb9d4b6f8ae4c93": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extents: caecum reached",
+  "quotes": {
+   "caecum": "Extents: caecum reached",
+   "histology": "Tubular adenoma with low-grade dysplasia. Sessile serrated lesion without dysplasia.",
+   "polyps": "specimen retrieved; 10 mm polyp removed with EMR and sent to histology",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was good, with minimal residual fluid."
+  }
+ },
+ "1fe1d8b5c2b7afea4b713ca77bb265fad8693bcd98900e5c31262d81c96c3e87": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "Multiple biopsies taken from the mass.",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 3, left 2)."
+  }
+ },
+ "210c2afe7ee9919d813a377e81f1b2781b497d147bb16a48ab88fe565d5cdac9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was inserted and advanced under direct vision.",
+  "quotes": {
+   "caecum": "The colonoscope was inserted and advanced under direct vision.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: excellent."
+  }
+ },
+ "221b83ede4b2722d704ab6f6fd8518ecf2919727eeafed73527c56888e6c7099": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (low-volume PEG-ascorbate 2 L)."
+  }
+ },
+ "22520108081084f63237ff913c3c3c953a7d1ec82177c509404714386b36ef51": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "8 mm polyp removed with cold snare and sent to histology.",
+   "prep": "Preparation split-dose PEG 4 L; BBPS total 7 (right 2, transverse 3, left 2)."
+  }
+ },
+ "234abf7313bc92a0dbd789e1cd3ac54e74c7e38378e2e5aa0ace5f1eef84dc64": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "23ac1cc6128f0c270e31facd7fa46101842fb63fa93ba9e386a70e8eb5d817c9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum.",
+   "histology": "Tubular adenoma with low-grade dysplasia",
+   "polyps": "15 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Quality of preparation: good."
+  }
+ },
+ "23ca33bc37a34863fb6ceadb0e8724907a3960d438461c865f7da00cfe98fcab": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "Await histology",
+   "polyps": "cold snare resection of the ascending colon polyp, specimen retrieved",
+   "prep": "Patient took sodium picosulfate / magnesium citrate"
+  }
+ },
+ "23ff8e21a1dfd6da8b9d91928bf138f6218636e0c7540149416bf62c98e8df79": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "no further follow-up needed",
+  "quotes": {
+   "caecum": "no further follow-up needed",
+   "histology": "",
+   "polyps": "No polyps",
+   "prep": "Quality of preparation: good, with minimal residual fluid"
+  }
+ },
+ "2469591c8fa5677c8fb72d8a524e581cdf441dfdf7f317cbeb055f576f501f2c": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached because of a fixed angulated stricture",
+  "quotes": {
+   "caecum": "caecum not reached because of a fixed angulated stricture",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: split-dose PEG 4 L. Boston Bowel Preparation Scale 6/9"
+  }
+ },
+ "24aaae039a6e2b2812c9a3afa7e03609a924d1faecca7132af655d8e5f996469": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing adequate (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "27be3c9aff17e7d11c5097eb2194aa6059179097d34495c3344b499a8a464094": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 0/9"
+  }
+ },
+ "29817bfd11c77e9877347f326317fd2d94bc18dcaec9021f6cc2fa4a3cd6b1a0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep (split-dose PEG 2 L + bisacodyl) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "2a0e32b6e4180b9b9d1a63df9907ce4ef20af103378af512e086230fb79faeb5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "Surveillance interval based on histology",
+   "polyps": "1 polyp(s) removed",
+   "prep": "Quality of preparation: good"
+  }
+ },
+ "2a8c829472faa089f597b8e6e2f96a860aac00ed6940c189c10184fb6cb0ccf0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Caecum identified by intubation of the terminal ileum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (sodium picosulfate / magnesium citrate) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "2ae311f7c6f088b26a745eb69fc4063995dcab350134ae8dd76f43572a7973ba": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "cold snare resection of the rectum polyp, specimen retrieved",
+   "prep": "Quality of preparation: poor, with solid stool throughout the right colon"
+  }
+ },
+ "2c544df6e4766b5aafcdf3432e858be3abc0e750cd3bbcbad7dcba0839c58d8e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Tubular adenoma with low-grade dysplasia",
+   "polyps": "cold forceps resection of the sigmoid colon polyp, specimen retrieved; polypectomy by cold snare, retrieved",
+   "prep": ""
+  }
+ },
+ "2d90890ad3c8518ca610b866d9f1d4e42cf532230efe3a1db2a999fe7b670ae4": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "5 mm polyp removed with cold snare and sent to histology; cold snare resection of the hepatic flexure polyp, specimen retrieved; cold forceps resection of the  ",
+   "prep": "تنظيف الأمعاء جيد."
+  }
+ },
+ "2dcddc400420fcb4b536d532d1d96c9029efb9687f0d630c41a216b00e755e99": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation with split-dose PEG 4 L"
+  }
+ },
+ "2e6e5ad1ca6ff9088d53011206502929f09482051a5bdad084b6d6dc91aace90": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised.",
+   "polyps": "3 mm polyp removed with cold snare and sent to histology.",
+   "prep": "Bowel cleansing good (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "2eb5deb71827563749d320019d52ad350a2ba6d5d1b89795295dfae167b0215c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "specimen retrieved; 10 mm polyp removed with hot snare and sent to histology; cold snare resection of the descending colon polyp, specimen retrieved; 10 mm poly",
+   "prep": "Bowel cleansing excellent (sodium picosulfate / magnesium citrate)."
+  }
+ },
+ "2f33628ce6a00d5ac98086eaa04c6b5a72bd41dde68e39905f5e493079a19cd8": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "\"tubular adenoma with low-grade dysplasia\"",
+   "polyps": "",
+   "prep": "Bowel cleansing adequate (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "2f50b362944740c4bff251298038226ab709bc5430cda5ca3c81c4a9d735f72a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good, with minimal residual fluid (sodium picosulfate / magnesium citrate)."
+  }
+ },
+ "33860259cd508e0b4067a5e76d126f88c09d5f053200360a492c89636fdfa425": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the splenic flexure",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the splenic flexure",
+   "histology": "",
+   "polyps": "No polyps",
+   "prep": "Bowel preparation with split-dose PEG 4 L as instructed."
+  }
+ },
+ "34797fb6f0bf0370e218e52e38f87b008e4548c1481f99a91682bc87a02e1370": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "Follow-up per pathology.",
+   "polyps": "polypectomy by cold snare, retrieved; polypectomy by cold snare, retrieved",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was adequate."
+  }
+ },
+ "351ab2249eec076fa35d4570ac1f667caadb971e039fb87c85bcdbf5acda4d26": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Hyperplastic polyp no dysplasia. Sessile serrated lesion without dysplasia.",
+   "polyps": "cold snare resection of the descending colon polyp, specimen retrieved",
+   "prep": ""
+  }
+ },
+ "363fbe6d3e5629a0b4292e2fbe4f4e434683a58fcfdea71c9aea0729eaf7e339": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "Biopsies taken",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was good, with minimal residual fluid"
+  }
+ },
+ "369c1289acf159a9c20ec9d1a01d007e535bb45d4839dc51e532eb638ced1809": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached because of patient discomfort",
+  "quotes": {
+   "caecum": "caecum not reached because of patient discomfort",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing adequate (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "37403207d5fb2eed23c06763812ae2f2dbeb735af70949ea5467fa50c5ce6bb4": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached",
+  "quotes": {
+   "caecum": "Extents: cecum reached",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8"
+  }
+ },
+ "3872296aeb2a1e2abdc12701b294ac94833ef88729684b7a358e86b80e9f4c71": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "polypectomy by cold forceps, retrieved.",
+   "prep": "Bowel cleansing inadequate (low-volume PEG-ascorbate 2 L)."
+  }
+ },
+ "3893035342886cbc28760bf6e832f1f608a709791a89b49acab75f2e855198f8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: good."
+  }
+ },
+ "399bd3cdac00a59a00011edf323e57452b63e4b6eff379b33c75afa7f3c6737e": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "3 mm polyp removed with cold forceps and sent to histology; 10 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Quality of preparation: poor, with solid stool throughout the right colon"
+  }
+ },
+ "39d6b0ef2c22a5280c87f6fe1103c31b046260911680f4340cdbb6721dadc6ba": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "No mucosal abnormality",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8"
+  }
+ },
+ "39d9543f8ce7b62f2367c787f465f838eabbf29043525d67cb49822a2a803397": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation with split-dose PEG 2 L + bisacodyl as instructed."
+  }
+ },
+ "39f73b47b9e3f5bb4e569335ebbcfd31c627023e380bf5e91c51ad6c03187b07": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "cold forceps resection of the transverse colon polyp, specimen retrieved.",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 7 (right 2, transverse 3, left 2)."
+  }
+ },
+ "3c61bae94531b91b9122098467c10aac501d05d3e2a0d6190203b8259e5250ae": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached Landmarks:: the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Extent: caecum reached Landmarks:: the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "retrieved",
+   "prep": ""
+  }
+ },
+ "3d21e41d0043a8f12b4c2f208233e0f8c1f1ce81d7898095f77cc4a4d3d52837": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "3d294212bc7b85cb8a3eb46d8a74a282bd328b234d488935e4a33157b00deb47": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing adequate (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "3daaab247c0447b1234de72e7155b21b71362d072c10cc5966482a32d5c42ec3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "3de36e17c4961bdde91d14f78570c76994266f4f3738c6d394d3d5381ad97d29": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold snare resection of the sigmoid colon polyp, specimen retrieved.",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "3df1053124369c4d53473f228ab1701abb8d83c06d610a8c63b3d244829a91eb": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing poor (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "3e274c05c0f04f9ecf3e55a276b988027ae07533d1af4d7663f82ee23eac15ea": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "\"Tubulovillous adenoma, low-grade dysplasia, completely excised. Hyperplastic polyp no dysplasia. Hyperplastic polyp no dysplasia. Tubular adenoma with low-grade dysplasia.\"",
+   "polyps": "",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 9 (right 3, transverse 3, left 3)."
+  }
+ },
+ "3fc9f57c76bc7c60dcea900f9f1775b6f75d0211cac6cb094196984fc50ebbdc": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was inserted and advanced under direct vision.",
+  "quotes": {
+   "caecum": "The colonoscope was inserted and advanced under direct vision.",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 7 (right 2, transverse 3, left 2)."
+  }
+ },
+ "40b8e2eea9cd8755cb7d2c7ae217a1a9b8d429ccb8ebedc0f44eeeb68ade064a": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: cecum reached",
+  "quotes": {
+   "caecum": "Extents: cecum reached",
+   "histology": "",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": ""
+  }
+ },
+ "4255399baf6b24a8bc59a79155192ad6c4eada4344ae3873cd9dfe1d2351a088": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the splenic flexure only; cecum not reached because of persistent looping despite abdominal pressure and position change.",
+  "quotes": {
+   "caecum": "the splenic flexure only; cecum not reached because of persistent looping despite abdominal pressure and position change.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep: split-dose PEG 2 L + bisacodyl."
+  }
+ },
+ "42edb8ef0d3a57ba923a8cdb8a527091594981fc0f0f5d8329ff0c2bde9e605c": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "Biopsies taken await histology",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": "Bowel cleansing poor (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "442a7d0b9b18be32a516bf9989da5d65a39097358eaa88270e9f84b4b21756f4": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Thee colonoscope was advanced to the caecum, identified by intubation off the terminal ileum",
+  "quotes": {
+   "caecum": "Thee colonoscope was advanced to the caecum, identified by intubation off the terminal ileum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Patient took sodium picosulfate / magnesium citrate"
+  }
+ },
+ "45d1e212a8f1d48e582ede3fa14f76b239a09aad8d2f2ad01e1f4e639b8a9909": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Tubulovillous adenoma, low-grade dysplasia, completely excised. Hyperplastic polyp no dysplasia.",
+   "polyps": "6 mm polyp removed with cold snare and sent to histology",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 7/9"
+  }
+ },
+ "47447a4d17efbd4a2e184ca8aed100f4bbcfd586413492d068cef1add25b6bb4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Sessile serrated lesion without dysplasia. Tubular adenoma with low-grade dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "descending colon: polypectomy by cold snare, retrieved; descending colon: polypectomy by cold forceps, retrieved; cold forceps resection of the transverse colon",
+   "prep": "Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "487a860ae351a25d8c5a88f349040761afebbaa27501020abe3321136e918fb9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing adequate (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "49d1d4fceb306fa55913e057b30603783c4fcdc0a641aff48ba578a23f91b207": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: caecum reached",
+  "quotes": {
+   "caecum": "Extents: caecum reached",
+   "histology": "",
+   "polyps": "10 mm polyp removed with cold forceps and sent to histology",
+   "prep": "split-dose PEG 4 L"
+  }
+ },
+ "4a1b29e2da4d74bab779f4c5df8125a48d045c882b100022b5c02f0fe3e330fe": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was excellent."
+  }
+ },
+ "4a8874173b129506852bd5534a6e6b3b10fcec8a43d00f6f8531b4c8acef140a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps"
+  }
+ },
+ "4afa1031d78774ace81039a8793ecbc21812c0fd1f113ed8b9bae1eea5638742": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "EMR resection of the hepatic flexure polyp, specimen retrieved",
+   "prep": "split-dose PEG 4 L"
+  }
+ },
+ "4b90e90a968016e0507c2c63a4a7e774074b39c1c8ff50570ac5b729f2f9b349": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice,",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice,",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia",
+   "polyps": "12 mm polyp rcmovcd with cold snare and sent to histology.",
+   "prep": "Patient took sodium picosulfate / magnesium citratc."
+  }
+ },
+ "4cc31ec029aaca9f6e666c88830835979f418c533b04b685246ed4ed9d2ef84d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "4cdbc68d1729a3059b2ec8b49e946fd80fe33c436e6e54d53a7a096b23267f9a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "No neoplasia seen.",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "4dc887377131c00ba8ca96aad5fb76174bb16ae213233c11c6cd5394686096b3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: good"
+  }
+ },
+ "4e16b84ecebb7e5e6a265985ba4c8493e31f92927c17702f623f8083f0ce4115": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the descending colon only; caecum not reached because of a fixed angulated stricture",
+  "quotes": {
+   "caecum": "the descending colon only; caecum not reached because of a fixed angulated stricture",
+   "histology": "",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": "Prep (split-dose PEG 2 L + bisacodyl) was excellent"
+  }
+ },
+ "4e61c673d65c4bf8dfcfdf65dc1c885666f4cc4ee4695cd1777682e5568a8783": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the descending colon only; cecum not reached because of persistent looping despite abdominal pressure and position change.",
+  "quotes": {
+   "caecum": "the descending colon only; cecum not reached because of persistent looping despite abdominal pressure and position change.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "4ea69abed699d40d10e7cdbe3dcb9e9776c4f87d5663ecb3f95906b74ebf350f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 2, transverse 3, left 3)"
+  }
+ },
+ "4ef62c7295b39083d9fa40303f9858dab49d0d3d15a5893b37c1ce1ee8cbcbf6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8 (right 2, transverse 3, left 3)."
+  }
+ },
+ "4fb3e48ccb54c4ebb96025c8c1fd0ac883afac72f351b6cafab94ce0c292a7c3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "cecum reached",
+  "quotes": {
+   "caecum": "cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was excellent"
+  }
+ },
+ "4fc872c35e83f9ec9161e64a9cbfa79b530ec799fd7ea478289f385d5e92169f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8"
+  }
+ },
+ "53ee64f029db9b740ec8c55762d9bf02e7fab51dbce7f4cf114d5379c5fbd15e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "hot snare resection of the transverse colon polyp, specimen retrieved Follow-up per pathology.",
+   "polyps": "hot snare resection of the transverse colon polyp, specimen retrieved",
+   "prep": ""
+  }
+ },
+ "551ef87dc6b97c5157bac6daf467f658bc4231c2244020ae7eaf9dd4f354030d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon for microscopic colitis.",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 2, transverse 3, left 3)."
+  }
+ },
+ "55f06009a0d28e88cb1457dba8bcecb14868448ffaa8fcd56677d18e853664dd": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "No polyps",
+   "prep": "تنظيف الأمعاء جيد"
+  }
+ },
+ "56786aba8d7c1083a74bdf53e6741cebd477fc84968f3311c5c4845732352554": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm"
+  }
+ },
+ "56a92bcdeb1631c9948677daeb00a197ae74fdd33e090e7825aef25ede4e6e37": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Examination was incomplete to the hepatic flexure because of persistent looping",
+  "quotes": {
+   "caecum": "Examination was incomplete to the hepatic flexure because of persistent looping",
+   "histology": "\"Tubulovillous adenoma, low-grade dysplasia, completely excised.\"",
+   "polyps": "specimen retrieved",
+   "prep": "Bowel cleansing good, with minimal residual fluid"
+  }
+ },
+ "5871478a16b4d6f66f3670c5a044ff6164952950e78c39ccf9413228d4728e91": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was good."
+  }
+ },
+ "58efc5f30d1e4c89562acf05bfa10d2d644f96b3764b6924812a407c5335dcb7": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "Await histology",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved; hepatic flexure: polypectomy by EMR, retrieved; ascending colon: polypectomy by cold...",
+   "prep": "Prep: low-volume PEG-ascorbate 2 L."
+  }
+ },
+ "58f0b33fac688b0da280c73942334e1545e83f3edac3f2fce6fff856616688fc": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecum not reached because of poor preparation",
+  "quotes": {
+   "caecum": "caecum not reached because of poor preparation",
+   "histology": "",
+   "polyps": "Randomm biopsies taken from the right and left colon",
+   "prep": "Bowel cleansing inadequate (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "59c6ae11ed5414cd488632fe7bff703f03f546ac6a168b2588ca6a8290caaf69": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extents: caecum reached",
+  "quotes": {
+   "caecum": "Extents: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 2, left 3)"
+  }
+ },
+ "5a9016b86d52e34579f6e3bb4a42f68ca10fb7d1dfb16ab879b8e49b4879d51e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)."
+  }
+ },
+ "5b41f15a6f87aec264213729291e876d7c8a933a357bf4a267a28cc69362d803": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "screening programme referral",
+  "quotes": {
+   "caecum": "screening programme referral",
+   "histology": "",
+   "polyps": "",
+   "prep": "split-dose PEG 2 L + bisacodyl"
+  }
+ },
+ "5d32b0e8cacfda50976112249aa49a481642a871487b0eb1457c1a3b50e2e437": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "\"6 mm polyp removed with cold snare and sent to histology Follow-up per pathology.\"",
+   "polyps": "polypectomy by cold forceps, retrieved; 6 mm polyp removed with cold snare and sent to histology",
+   "prep": "Boston Bowel Preparation Scale 6/9 (right 2, transverse 2, left 2)"
+  }
+ },
+ "5db113263470abd58943924c2bb6284698733497352bc8ad6dd30edef0a686f2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "5f39c089718b4759ab45d68703f9831e0e7ce63effddcd4d9ab9c9b6ef5c1f33": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "5f608748da3ead965218def19766e8caa787c3fce91b7bdcddae08a6bbcbfca5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 3, left 2)"
+  }
+ },
+ "5f652cf5886170415a87fbc9f121b87389244b0df9e23c9090c835f6470cd096": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "cold forceps resection of the ascending colon polyp, specimen retrieved",
+   "prep": "Quality of preparation: adequate"
+  }
+ },
+ "620842dd9ca4990a7fcdaf1c06112047835c431ff0ee4753208db9209bbb0dab": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon",
+   "prep": "Bowel preparation: Prep (split-dose PEG 2 L + bisacodyl) was good, with minimal residual fluid."
+  }
+ },
+ "627b5406d1461130d037b7f7bcdc8a90bb6eaae2ee094ac83dc95dddd37f9d14": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 2/9"
+  }
+ },
+ "630000fe344d21f994a60cf5a23c6f3d2b98da8213f687cb7c07a8fce8a0ef7a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold forceps resection of the transverse colon polyp, specimen retrieved.",
+   "prep": "Quality of preparation: excellent."
+  }
+ },
+ "638e641db7af73ebfa999d4f2795046f645d6af70ad4229893c4412f9b344ba0": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Tubular adenoma with low-grade dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 6/9 (right 2, transverse 2, left 2)."
+  }
+ },
+ "665af82b5497a6f6a6e262310adab2aea00fa53641e2b07c2137199d5fbf9626": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "No polyps or mass lesions seen.",
+   "prep": "التحضير ممتاز."
+  }
+ },
+ "685edc3dd91fa8ac5c66dc4a2c959a8962bfcbea65a94687bd582ac65272e3f2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Preparation split-dose PEG 2 L + bisacodyl; BBPS total 7 (right 3, transverse 2, left 2)."
+  }
+ },
+ "6a529c6ded4ea837d6a4f94f82b89fe2e53c62a43e3ab706b38170fa5d65c930": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: split-dose PEG 4 L. Boston Bowel Preparation Scale 7/9 (right 2, transverse 2, left 3)."
+  }
+ },
+ "6ce2781846116095544f07e28a029a1e341d19d78bbac3aa7bfa8c3f37889c10": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm.",
+   "histology": "",
+   "polyps": "cold forceps resection of the transverse colon polyp, specimen retrieved; 5 mm polyp removed with cold snare and sent to histology; cecum: polypectomy by hot sn",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 2 (right 1, transverse 1, left 0)."
+  }
+ },
+ "6da43430a4ad2c363f707cb6a97b23f157dd137628e5318143ad475f1ebba0cf": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "specimen retrieved",
+   "prep": "Quality of preparation: poor, with solid stool throughout the right colon"
+  }
+ },
+ "6dfaf4dc45392132ae25a22a9d2f5adce83f7260e6dec0ae33d19cc2f6fda804": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing fair, adequate for detection of polyps \u003e5 mm (low-volume PEG-ascorbate 2 L)."
+  }
+ },
+ "6e9f045e54ac69d466c773b72e03d9792623b39f9c1759b58b9afa74ede2c22a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: good, with minimal residual fluid"
+  }
+ },
+ "6ed85afc27794d366e68e930fc429b31c2104828c8b2c87ca5afe80ed1c066b5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Follow-up per pathology.",
+   "polyps": "polypectomy by cold snare, retrieved.",
+   "prep": "Bowel cleansing excellent (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "711d7bb791b73f42b6b6ae2426b4b811c577f03897812142474a8a5386a30068": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "cold forceps resection of the rectum polyp, specimen retrieved.",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8 (right 3, transverse 3, left 2)."
+  }
+ },
+ "7196a503d3efdb0bc0a2dc41b9385c3015fd1cf8f04d75bbb16a712dda910ef3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "hot snare resection of the sigmoid colon polyp, specimen retrieved.",
+   "prep": "Bowel cleansing adequate (split-dose PEG 4 L)."
+  }
+ },
+ "724842dfa5ba27667237a6a2d9466c0f8fb208431ad24ce5e50f59bd29146fcd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum reached",
+  "quotes": {
+   "caecum": "caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was good"
+  }
+ },
+ "72dcb8503be47b75454d81c73a7dfde9f0e57533081af7b751cbfabf044c7827": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "مدى الفحص / Extent: caecum reached. Landmarks: the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "مدى الفحص / Extent: caecum reached. Landmarks: the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "\"Tubulovillous adenoma, low-grade dysplasia, completely excised.\"",
+   "polyps": "cold snare resection of the ascending colon polyp, specimen retrieved.",
+   "prep": "التحضير جيد."
+  }
+ },
+ "7319eb46d09caea7be65857523454e473cba6a976cc27c24e4c5f751a6609d1a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "cold snare resection of the hepatic flexure polyp, specimen retrieved Follow-up per pathology.",
+   "polyps": "cold snare resection of the hepatic flexure polyp, specimen retrieved",
+   "prep": "Quality of preparation: good, with minimal residual fluid"
+  }
+ },
+ "737ca43179f5a844dbdd87aa298ceabb3a3672ded82a39f063b4e9f40ba4f412": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the sigmoid-descending junction",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the sigmoid-descending junction",
+   "histology": "",
+   "polyps": "No polyps or mass lesions seen",
+   "prep": "Bowel cleansing poor, with solid stool throughout the right colon"
+  }
+ },
+ "74582b347a0c217dea728548514457981bb8690cf018338d03cb84ea7d81b738": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Patient took low-volume PEG-ascorbate 2 L"
+  }
+ },
+ "7546a1001256f988ab017dcaa58ff92e131592e370c3494ae8625da15a766f25": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "Extent: Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "retrieved. 12 mm polyp removed with EMR and sent to histology",
+   "prep": "Bowel cleansing good (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "75a41577435281adf4a16f2a88efe2f5c8f570cd23b92594dce4bcfb2661f4f6": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "cold snare and sent to histology; cold forceps resection of the ascending colon polyp, specimen retrieved",
+   "prep": "Quality of preparation: poor, with solid stool throughout the right colon"
+  }
+ },
+ "76895aae3c30bccdb886a04aaae89cd2635dbec06601370e76d0133fb384533a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good, with minimal residual fluid"
+  }
+ },
+ "76e0c3fb3af81e57b5438474ca21ef0a90691e779e4ca18f93568bd2b61e6e02": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "Hyperplastic polyp no dysplasia.",
+   "polyps": "6 mm polyp removed with cold forceps and sent to histology; cold forceps resection of the transverse colon polyp, specimen retrieved.",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was good."
+  }
+ },
+ "77855e2939df623622c597645d9b785e4dea9e6a23c0fd5a1ef669c6f36ab0aa": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "No polyps or mass lesions seen.",
+   "prep": "Bowel preparation with sodium picosulfate / magnesium citrate as instructed."
+  }
+ },
+ "782b8bb68022ad5df3ab0defea42a47fb854b217337a0c7522ca79796429cb41": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "7ae9f1f3deb233253aaf5eb7847146ba6d469e0ac325cd4dbb0be4da57ac6ed8": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Patient took split-dose PEG 4 L."
+  }
+ },
+ "7b3ef31aec3630fb401bf3ae861505a037024e057e5b8a7fdc20c6d31178a8ef": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "Biopsies taken await histology",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": ""
+  }
+ },
+ "7b84b00a754db4800d9e64ad5dadbd6ffc0da87cfbbd4207f7227231abc4f2ab": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass.",
+   "prep": ""
+  }
+ },
+ "7c651eacf3c8744edda8609ec9c141dcdba0402dda4521e448292f4f57a8cb7c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good, with minimal residual fluid (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "7d599f0407d2ffc9e7325b2cf7d5ba242b00b5936b8ed670bd57e2a9debb2220": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "\"8 mm polyp removed with cold forceps and sent to histology\"",
+   "polyps": "8 mm polyp removed with cold forceps and sent to histology",
+   "prep": ""
+  }
+ },
+ "7db74a9ff5331223316fea1b904da6e4087d71778a2a42df779fb2a13b2bc953": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "7dbc92f9e2ba64a46eb01c216060ed92322c3014f5e37106248222aa40ba1cc7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "7e0d4aec78aa10e945efa0bee3b0cb45e54263ffe5e473239a2f5459050d082b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecum reached",
+  "quotes": {
+   "caecum": "caecum reached",
+   "histology": "",
+   "polyps": "6 mm polyp removed with cold snare and sent to histology",
+   "prep": "Bowel preparation with low-volume PEG-ascorbate 2 L"
+  }
+ },
+ "7e0f551918ea7356cf4cf8dfe8cb68869ebb3e2b064c0e7b6c924f81ea8eb946": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "7e3577e430044f71fc372e6bb6865de982b008939a875bf9b04204867e5f1920": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 7/9 (right 3, transverse 2, left 2)."
+  }
+ },
+ "7fd89bef6c6598822d0a76fca9491f19ffa80c53bd1b986ff155193deb80b159": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice and ileocecal valve.",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass.",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8 (right 2, transverse 3, left 3)."
+  }
+ },
+ "804440bd72afb9adef0fc7630b77881704ab037a6e9b668ffc7a4eac4b68037c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "cecum reached",
+  "quotes": {
+   "caecum": "cecum reached",
+   "histology": "Tubular adenoma with low-grade dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "cecum: polypectomy by cold snare, retrieved sigmoid colon: polypectomy by cold forceps, retrieved.",
+   "prep": "\"Preparation sodium picosulfate / magnesium citrate; BBPS total 7 (rightt 2, transverse 2, left 3)\""
+  }
+ },
+ "8356712a8f0e167cc98aa226fba6cf15db0b5d32fa810b1d06c60f31cafef70e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "8357af35c26acd95865845bd2ed9ad5310a5f2e4a990f26a422956e8631efb48": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "851297472b67f60fd5f998b6db46a317f38875d375b0a5c467d6ac25a1ac8eb3": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the hepatic flexure",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the hepatic flexure",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Bowel preparation: Prep: split-dose PEG 4 L."
+  }
+ },
+ "859030083572f2962d5289a485fa75f708a033b43004de65bcdafc18c31dc012": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "Random biopsies taken",
+   "prep": "Quality of preparation: adequate"
+  }
+ },
+ "85bcefa7ce33fcb7c906beca99c4d0a0ed5845bea9dadd22f250c67fab5a56e4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: adequate"
+  }
+ },
+ "8625eddebf99ae4ed065c4aab0c457e596578c2b9301b520ac37afeeef1bfba4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was good, with minimal residual fluid."
+  }
+ },
+ "86547d1798723c1cc296ce6c03e1b9fd755ed56b77e17fa2b9be0ef4bfe802fe": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation low-volume PEG-ascorbate 2 L; BBPS total 7 (right 2, transverse 2, left 3)"
+  }
+ },
+ "88f2d43a87a183af553e9f02fec2743e467c38d4428b2bf856723f793d58a5c6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia. Tubular adenoma with low-grade dysplasia.",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved; rectum: polypectomy by cold snare, retrieved; 5 mm polyp removed with cold snare and ...",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was good, with minimal residual fluid."
+  }
+ },
+ "88feb5712db9ae33d798d227bb4bda939155a6cf11acc6a2fff3d245bb661f15": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "Surveillance interval based on histology",
+   "polyps": "polypectomy by cold forceps, retrieved",
+   "prep": "Prep (low-volume PEG-ascorbate 2 L) was good"
+  }
+ },
+ "89ce60f0ecbeb52936ef041d2e10f79e612edbf0f6e7cd3128c091dcc3b77cd2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "cold forceps resection of the sigmoid colon polyp, specimen retrieved; 6 mm polyp removed with cold snare and sent to histology. EMR and sent to histology",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8 (right 3, transverse 2, left 3)"
+  }
+ },
+ "8a7b77e50a1d21f39740065d27cffe0544f81a650663a3e4d7ec641f78217af0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing excellent (split-dose PEG 4 L)"
+  }
+ },
+ "8ae49a01cfc8b61934e8930bd6adf39d7abe89a8f9e94913909c302145a10fb9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Await histology",
+   "polyps": "cold snare resection of the cecum polyp, specimen retrieved",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was good, with minimal residual fluid"
+  }
+ },
+ "8af5ac38a4e4e30782873d727fddd88b69beea9f62310e23c3b815957764b804": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (split-dose PEG 2 L + bisacodyl)."
+  }
+ },
+ "8b0118c1d9225ef7e896deae340e47aa0aebf59ddd43541bd0afed1feda1c2f9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "cold snare resection of the descending colon polyp, specimen retrieved Follow-up per pathology.",
+   "polyps": "cold snare resection of the descending colon polyp, specimen retrieved.",
+   "prep": "Prep (low-volume PEG-ascorbate 2 L) was excellent."
+  }
+ },
+ "8c7bbda40c286f28433adffed593a64cb34f7ed55e421ddc7074b38f4f6bda31": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached. Landmarks: the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "Extent: caecum reached. Landmarks: the appendiceal orifice and ileocaecal valve.",
+   "histology": "",
+   "polyps": "cold forceps resection of the sigmoid colon polyp, specimen retrieved; descending colon: polypectomy by cold forceps, retrieved",
+   "prep": "Bowel cleansing fair, adequate for detection of polyps \u003e5 mm (split-dose PEG 2 L + bisacodyl)."
+  }
+ },
+ "8ca743a3054d6862e4ac00f23e7c406523f073eb7de7cb00a6b5b3de16c9d758": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Patient took split-dose PEG 2 L + bisacodyl"
+  }
+ },
+ "8d32895766bf28fd305df34e9397f5e7a5a1b2e1de837394d4261516d5265ef1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by intubation of the terminal ileum",
+   "histology": "3 mm polyp removed with cold forceps and sent to histology",
+   "polyps": "cold forceps and sent to histology",
+   "prep": ""
+  }
+ },
+ "8d5de806e16a22091f4fbe868cbb50e71be71bc19a083c46285370e14cc13458": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "No polyps",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8"
+  }
+ },
+ "9035d32771a5608534417d98fac45b2778a007bdf11bcf8088ac53a6a8e2da8b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice,",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice,",
+   "histology": "specimen retrieved Follow-up per pathology.",
+   "polyps": "cold snare resection of the hepatic flexure polyp, specimen retrieved; cold snare polypectomy by cold forceps, retrieved; ascending colon: polypectomy by cold",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was good, with minimal residual fluid."
+  }
+ },
+ "90b436154975507c8722d3451b8344884ded8a235699581cda958f1d8206b239": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "cold forceps resection of the rectum polyp, specimen retrieved Surveillance interval based on histology.",
+   "polyps": "specimen retrieved.",
+   "prep": "التحضير جيد."
+  }
+ },
+ "91f2a66b1894fb4a0ef5f281b729654cd4ffdc2e5167be3b26e2995d342ceb9e": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "cold snare resection of thee hepatic flexure polyp, specimen retrieved; rectum: polypectomy by cold snare, retrieved; cold snare resection of the hepatic flexur",
+   "prep": "Bowel preparation: Prep (sodium picosulfate / magnesium citrate)) was inadequate."
+  }
+ },
+ "92ce2eb4f073bf855e1dbae10fff19e1c4d385f520f7c4c27b36c60699a58796": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Patient took low-volume PEG-ascorbate 2 L."
+  }
+ },
+ "938f55f8bfb7b17d37eb39c5fa7aa4fbcf21c5b511ce5fbd8def2a6d6237cdf2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "Multiple biopsies taken from the mass",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was adequate."
+  }
+ },
+ "93fc0067905c84d7af2a128db3d7e035d89df4d34b774709a32ba7fdb4c32b95": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken)",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken)",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (split-dose PEG 2 L + bisacodyl)"
+  }
+ },
+ "940f6bfec79a6444ece84ba3af1d5cabcb542104352fb2cacd3e3ae1fbc90201": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice,",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice,",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 7"
+  }
+ },
+ "9643dab9915c25611e841919004d12892f7cac0911e248be93dd5764d25b80ae": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecums not reached because of persistent looping despite abdominal pressure and position change",
+  "quotes": {
+   "caecum": "cecums not reached because of persistent looping despite abdominal pressure and position change",
+   "histology": "",
+   "polyps": "",
+   "prep": "sodium picosulfate / magnesium citrate. Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "9749599a1977244571a4727d40ef56b319641317484058cdb5cb81dbdae4296d": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubular adenoma with low-grade dysplasia, Hyperplastic polyp no dysplasia, Sessile serrated lesion without dysplasia",
+   "polyps": "4 mm polyp removed with cold snare and sent to histology; descending colon: polypectomy by cold snare, retrieved; rectum: polypectomy by cold forceps, retrieved",
+   "prep": "split-dose PEG 4 L. Boston Bowel Preparation Scale 8/9"
+  }
+ },
+ "989a0d11bd09fbaa9a234c30aae10ca6667b3353e6eb7f55b1ccbaac3ac4149f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon",
+   "prep": "Bowel cleansing adequate (split-dose PEG 2 L + bisacodyl)."
+  }
+ },
+ "9a5a08fb468aaf1c45fc0115a7f2cef5b87d057b7a0f99a0b1e3b04f55c814a9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass.",
+   "prep": "Bowel cleansing good, with minimal residual fluid (split-dose PEG 4 L)."
+  }
+ },
+ "9d26e775c45c123f7cecb5c685ff68fb38abe0a25b17b96486a7791a3d072fd4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: good, with minimal residual fluid"
+  }
+ },
+ "9ef38655809b0885c9668cb5d1ad59fd682136e7a8e347fe4a26c401f3321053": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken)",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken)",
+   "histology": "Tubular adenoma with low-grade dysplasia. Tubular adenoma with low-grade dysplasia. Tubulovillous adenoma, low-grade dysplasia, completely excised. Tubular adenoma with low-grade dysplasia.",
+   "polyps": "cold snare resection of the rectum polyp, specimen retrieved; hepatic flexure: polypectomy by cold forceps, retrieved",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 7 (right 2, transverse 3, left 2)"
+  }
+ },
+ "9f2d5a706516a529969a241556d44a85e1f445e407d09845742b79afbb821faa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold snare resection of the rectum polyp, specimen retrieved; 5 mm polyp removed with cold forceps and sent to histology; 8 mm polyp removed with cold snare and",
+   "prep": "Preparation split-dose PEG 4 L; BBPS total 8 (right 3, transverse 2, left 3)."
+  }
+ },
+ "a022edeaaa5f68d4fde0b46b1810e98c56502f0a2119d9599dcdcc49c8958e86": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice and ileocaecal valve",
+   "histology": "",
+   "polyps": "3 mm polyp removed with cold snare and sent to histology; cold forceps resection of the descending colon polyp, specimen retrieved; 8 mm polyp removed with cold",
+   "prep": " التحضير ممتاز"
+  }
+ },
+ "a0e7b4670d968ab916eebe5ca13c3a722571db2046684535da8880cd4eb6e820": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "\"Tubular adenoma with low-grade dysplasia\"",
+   "polyps": "cold snare resection of the ascending colon polyp, specimen retrieved.",
+   "prep": ""
+  }
+ },
+ "a21368f6d455d86c4d365f1cc555de6bf71a4e4dd0c63fdada638014fad43696": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum not reached because of poor preparation",
+  "quotes": {
+   "caecum": "caecum not reached because of poor preparation",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: inadequate"
+  }
+ },
+ "a26b617020d33a82324a8ba6ce7da98586da3aa2842e7a2bdde57ffc1a9f5051": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "\"Tubular adenoma with low-grade dysplasia\"",
+   "polyps": "cold snare resection of the cecum polyp, specimen retrieved.",
+   "prep": "Boston Bowel Preparation Scale 3/9"
+  }
+ },
+ "a2819c8eb0224ee3ab5765a6d7190f5a2c555fbadd8deca4f6089dc2079b230b": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "6 mm polyp removed with cold snare and sent to histology; 10 mm polyp removed with hot snare and sent to histology",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 3"
+  }
+ },
+ "a2968e35276e08d9623ea0c3b005580f16db347fecf5a9522929fb6c5f125e63": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Standard colonoscope used.",
+  "quotes": {
+   "caecum": "Standard colonoscope used.",
+   "histology": "",
+   "polyps": "polypectomy by cold snare, retrieved.",
+   "prep": "Bowel preparation: Prep (low-volume PEG-ascorbate 2 L) was adequate."
+  }
+ },
+ "a29eedca364c633af771cdfd484d6d1f46b25410576d4017e79ac163cf866e24": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope introduced per rectum and advanced.",
+  "quotes": {
+   "caecum": "Scope introduced per rectum and advanced.",
+   "histology": "",
+   "polyps": "Biopsies taken",
+   "prep": "التحضير ممتاز."
+  }
+ },
+ "a2c44f7f78944430bee2823f51aa0fd438b12685cb9e456946e698bf0cfa8fbd": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (split-dose PEG 4 L)"
+  }
+ },
+ "a37593888be57fe164de864e41900452d9af5eea780b1f68a257b8719e7dac59": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm"
+  }
+ },
+ "a4567a4d7688a1b734569629279b6c0dab65fcd483ed9bc2135eff3f25204692": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing poor, with solid stool throughout the right colon"
+  }
+ },
+ "a4df2302b5bd3852c2f3a773192555e5c592ac14e31c28198936408f62a762b0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum",
+   "histology": "\"tubular adenoma with low-grade dysplasia\"",
+   "polyps": "5 mm polyp removed with cold snare and sent to histology; 4 mm polyp removed with cold snare and sent to histology",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 7/9 (right 3, transverse 2, left 2)"
+  }
+ },
+ "a51108944f28d656860b092a7f42fb2385cf7d7ac9c71d0d96259742b8f30ad2": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "a611c9d0c4206d69d10c65c6076866b29d3f0e828e97936c0de0fa78a15bbb24": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the cecum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum.",
+   "histology": "Hyperplastic polyp no dysplasia",
+   "polyps": "5 mm polyp removed with cold snare and sent to histology; 4 mm polyp removed with cold snare and sent to histology; sigmoid colon: polypectomy by cold snare,",
+   "prep": ""
+  }
+ },
+ "a6f81d016b8d7c76afa902fd8bd6cb42e8da016e69d7cb2760ece2b761eaaaa6": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "No mucosal abnormality",
+   "prep": "Quality of preparation: inadequate"
+  }
+ },
+ "a76cb34dfa115826257e8f7b4d3879e841a6bd0d1fb6605c60e710471b469fc9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "6 mm polyp removed with cold snare and sent to histology.",
+   "prep": "Quality of preparation: excellent."
+  }
+ },
+ "a7b5f7d1ebbda6f23102abc399c3848872081af7f8289e17430aa3638e07db3a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "a94e328738501ba1feb95a9c39fca5c4ffb45bcedcf899cc94c6533dc552f428": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "retrieved",
+   "prep": ""
+  }
+ },
+ "a9f9002afee5544e03bcab7bea5016685b0d0809b406182eea62202ae047e6ce": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileumm intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileumm intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation with low-volume PEG-ascorbate 2 L as instructed"
+  }
+ },
+ "aac0c5b3e3ba6ddfc72e23167a8d7594d923b391ba3c44e142ce293293381aed": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "5 mm polyp removed with cold snare and sent to histology",
+   "prep": "split-dose PEG 4 L. Boston Bowel Preparation Scale 1/9 (right 0, transverse 0, left 1)"
+  }
+ },
+ "abd8c7f443e968dca173f050b1d7f97e230981087fe2563bb9e588118704dc71": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass.",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was good, with minimal residual fluid."
+  }
+ },
+ "ac127b4c1bdfad5216f1eccfa479f91ac66b4c6f70a7228894536c34e25509e0": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Caecum identified by intubation of the terminal ileum",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised.",
+   "polyps": "cold forceps, retrieved",
+   "prep": ""
+  }
+ },
+ "ad909b5fd17a4da121b929bee5fe3c22f1a9dbb5fc8802de51e714b39b67656a": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the hepatic flexure because of poor preparation.",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the hepatic flexure because of poor preparation.",
+   "histology": "Biopsies taken await histology",
+   "polyps": "Biopsies taken",
+   "prep": "Quality of preparation: inadequate."
+  }
+ },
+ "aef177fd78fb5003430d1c873163e7e700677cb1af162b5eec48dbdfe356a9fb": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the descending colon because of persistent looping",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the descending colon because of persistent looping",
+   "histology": "",
+   "polyps": "",
+   "prep": "split-dose PEG 2 L + bisacodyl. Boston Bowel Preparation Scale 7/9"
+  }
+ },
+ "b01f3fe378db037f20b2bddb8d39497e17290ccbe30ce1cf74041c8353260a0d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 4 L; BBPS total 3"
+  }
+ },
+ "b08946bcaf75606837843c30bba6b66c97067bbdfca2dd0b84055502dfea8382": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "cold forceps resection of the transverse colon polyp, specimen retrieved; cold forceps resection of the transverse colon polyp, specimen retrieved",
+   "prep": "Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "b0d62d08fbae2fa2f7eb3e3d1c2b05fea02423855f38feb39b2fc73e220f62c9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Preparation sodium picosulfate / magnesium citrate; BBPS total 7"
+  }
+ },
+ "b3a956aee83025ffcc7ff6c2e83dbe7f95d8a0621e19d82b5e02e2b19eddd209": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "sent to histology",
+   "polyps": "12 mm polyp rcmovcd with cold forceps",
+   "prep": "التحضير ممتاز"
+  }
+ },
+ "b51c0ad042e5882bbdf01fdfb92caf472256300b4ace64b1d8fa1ffad1e38b9b": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Examination was incomplete to the splenic flexure",
+  "quotes": {
+   "caecum": "Examination was incomplete to the splenic flexure",
+   "histology": "",
+   "polyps": "No neoplasia seen",
+   "prep": "Quality of preparation: poor"
+  }
+ },
+ "b572860bf9688d2fe11ccfd85236cb26d4200fb50a7529452ced0deb5078a3ee": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm",
+   "histology": "Hyperplastic polyp no dysplasia.",
+   "polyps": "cold forceps resection of the descending colon polyp, specimen retrieved",
+   "prep": "split-dose PEG 2 L + bisacodyl. Boston Bowel Preparation Scale 2/9"
+  }
+ },
+ "b5c17d6ac8539e41126828d8169dbc66dfc8d4c00947589d80dcd9b5c8fbd771": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "sent to histology",
+   "polyps": "15 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8"
+  }
+ },
+ "b5e7ea8ec129c07cc996fb04dc1bacf60817ce038bf9fd28d282f8ecebbec9ba": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "cecum not reached because of a fixed sigmoid angulation",
+  "quotes": {
+   "caecum": "cecum not reached because of a fixed sigmoid angulation",
+   "histology": "",
+   "polyps": "8 mm polyp removed with cold forceps and sent to histology; 5 mm polyp removed with cold snare and sent to histology",
+   "prep": "Patient took split-dose PEG 2 L + bisacodyl."
+  }
+ },
+ "b7d3e16caee42c3a656b634f0a9cc978edfe3d2b01839ebbf6bf6ebba7240ccb": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubulovillous adenoma with focal high-grade dysplasia",
+   "polyps": "completely excised",
+   "prep": ""
+  }
+ },
+ "b826d25a24ecb232cee7039ad97a64bcdc82176266aed8a3674fde86939beb51": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum reached",
+  "quotes": {
+   "caecum": "caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Patient took low-volume PEG-ascorbate 2 L"
+  }
+ },
+ "ba2c1de6ae56e67e27d74ccebd90b2e6d14b4f0bc040d6f896948564d354f0f1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecum identified by the appendiceal orifice and ileocaecal valve",
+  "quotes": {
+   "caecum": "Caecum identified by the appendiceal orifice and ileocaecal valve",
+   "histology": "Tubulovillous adenoma",
+   "polyps": "polypectomy by cold snare, retrieved",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 7"
+  }
+ },
+ "baeb8c7700ebecc6118e1dd6e8e54381f0c60735ac5d55f6d3e0fc28769a6607": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "polypectomy by cold snare, retrieved; polypectomy by cold forceps, retrieved; polypectomy by cold forceps, retrieved; polypectomy by cold snare, retrieved",
+   "prep": "split-dose PEG 2 L + bisacodyl"
+  }
+ },
+ "bb3138cf994b9591645fe8ac89095d23439f865073b077b1259edc758b658763": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "\"specimen retrieved\"",
+   "polyps": "cold snare",
+   "prep": "sodium picosulfate / magnesium citrate; BBPS total 8"
+  }
+ },
+ "bbc9599d7eeb6ae769af4059ce1edd889debb3a6b958b586359d3f30371d9f21": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Landmarks: the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Landmarks: the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "specimen retrieved; 10 mm polyp removed with cold forceps and sent to histology.",
+   "prep": ""
+  }
+ },
+ "bbd5ac84747ca236c5baba151be013771675cab27cfce3fe3802cf71818271fe": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Hyperplastic polyp",
+   "polyps": "Forceps removal",
+   "prep": ""
+  }
+ },
+ "bbf6b96eaf3867a4df05b54649e6f04846d027fcce8f4174bbfe77b120745c6e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "No mucosal abnormality",
+  "quotes": {
+   "caecum": "No mucosal abnormality",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "bd3b18abb7d47aa7f19c341b0d874862f9882144c8673f8d84ff0eed9f14f07e": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was inserted and advanced under direct vision.",
+  "quotes": {
+   "caecum": "The colonoscope was inserted and advanced under direct vision.",
+   "histology": "",
+   "polyps": "descending colon: polypectomy by cold snare, retrieved.",
+   "prep": "Quality of preparation: poor."
+  }
+ },
+ "c08a06af1cadbca8043ad1590802b59285eabaa2f6550badfe3116b56a279542": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice and ileocecal valve",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: inadequate; views obscured by residual stool"
+  }
+ },
+ "c0f305f4120eeacf243dfd7f4bf4060ec67c79bf051d5f35fedf0b18cdd45429": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing fair, adequate for detection of polyps \u003e5 mm (split-dose PEG 4 L)."
+  }
+ },
+ "c13769e403faf725afbfda2bcc45e11f31e24b05d851314d8dbd6bbf3f3622f8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon for microscopic colitis.",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "c1a9d5d991564e6bf3fff03b3c365275cec1fde16e71808843d04f01fdde4836": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the splenic flexure",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the splenic flexure",
+   "histology": "",
+   "polyps": "cold forceps resection of the rectum polyp, specimen retrieved; cold forceps resection of the sigmoid colon polyp, specimen retrieved",
+   "prep": "Boston Bowel Preparation Scale 2/9"
+  }
+ },
+ "c34ebf294d680d7bc6ff9a6a19cd23b20779b3a76ccb066477762ef804e5c70f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm"
+  }
+ },
+ "c375d59582ed4dbdfd524ccfb3ea104b7b71252e4c1639b6dcd5d0e4a283b018": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Sessile serrated lesion without dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "15 mm polyp removed with hot snare and sent to histology",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8 (right 3, transverse 2, left 3)."
+  }
+ },
+ "c3d548a54ef9370e28312e28142ac19d297188ac4e1c8c5fc51ee0176a2e5132": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": ""
+  }
+ },
+ "c437c3f6a8660ecf6c3d1296c169216e8c8fda83f7d7a2ec1f70ed6e1784f044": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination was incomplete to the hepatic flexure",
+  "quotes": {
+   "caecum": "Examination was incomplete to the hepatic flexure",
+   "histology": "",
+   "polyps": "Otherwise normal",
+   "prep": "Prep: split-dose PEG 2 L + bisacodyl"
+  }
+ },
+ "c6200e0bbc3b5209d0afad5f39d7c0cd9f1bca86d3e2fc5952df1ce6550b9657": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 6/9"
+  }
+ },
+ "c79f4c5744c7b18c4c0ff6957319d130d8680ca97b4848cc64d0e8d349f7f5b9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "cold forceps resection of the rectum polyp, specimen retrieved",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 8 (right 3, transverse 2, left 3)"
+  }
+ },
+ "c82bfa24f145a3e408f91bce8d1e2406834e9840eb58b860831c762b14f817de": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "الاستطباب / Indication: Positive faecal immunochemical test (FIT) on population screening.",
+  "quotes": {
+   "caecum": "الاستطباب / Indication: Positive faecal immunochemical test (FIT) on population screening.",
+   "histology": "",
+   "polyps": "6 mm polyp removed with cold forceps and sent to histology; cold snare resection of the descending colon polyp, specimen retrieved; cold snare resection of the",
+   "prep": "التحضير جيد."
+  }
+ },
+ "c9ffd577cdb6f3fc93df5787f0458f71b6cccb4ca3faff0760a405fa7a9d0864": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecum not reached because of patient discomfort",
+  "quotes": {
+   "caecum": "cecum not reached because of patient discomfort",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good, with minimal residual fluid (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "cba5810e410abacad1d460ebce6fc825364bcecb4fd0ae67478da82c16a3573c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (split-dose PEG 2 L + bisacodyl) was adequate."
+  }
+ },
+ "cfe6a902de870064fefd087a2b44fe5a4c0c38b5bbf2672c3fc8a178d8b82a0f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve; terminal ileum intubated for 5 cm.",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Sessile serrated lesion without dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "cold forceps resection of the sigmoid colon polyp, specimen retrieved; rectum: polypectomy by cold forceps, retrieved; 6 mm polyp removed with cold snare and *[",
+   "prep": "Quality of preparation: good."
+  }
+ },
+ "d0f61b39fbf65b3154935e2d2b1cac8e55145ca8fd4c7bc52bd79602d1ee5ed3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "cold forceps resection of the rectum polyp, specimen retrieved; cold snare resection of the cecum polyp, specimen retrieved; cold forceps resection of the trans",
+   "prep": "Bowel preparation: Prep (sodium picosulfate / magnesium citrate) was excellent."
+  }
+ },
+ "d19ecfe16b325114f19b543649884e7326ab47328c407bfb62ddb2917c587ceb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "",
+   "prep": "split-dose PEG 2 L + bisacodyl. Boston Bowel Preparation Scale 8/9 (right 3, transverse 2, left 3)."
+  }
+ },
+ "d1f2b99d1ac97a166564722ef8acb1e4219bcb7b8089d8a841a47acde380b855": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "tubular adenoma with low-grade dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "sent to histology",
+   "prep": ""
+  }
+ },
+ "d2808d5dccd742effa0fcc662a0adb9a57282cb4b86af4a6a92666729acaf786": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "d2f77ac7a50e03d27525af0e35fd3d05b715ec9a6cc892b5023d51812c5a046f": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extents: caecum reached",
+  "quotes": {
+   "caecum": "Extents: caecum reached",
+   "histology": "Await histology",
+   "polyps": "polypectomy by cold snare, retrieved",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 7"
+  }
+ },
+ "d33596c20201f73e6ae128f4de768cc2de448793f6bf3b1f52cae475f86aae05": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved.",
+   "prep": ""
+  }
+ },
+ "d354bc45858d23ed54d7b3337743498b9ee2a48c3030309edf0c5aa9b64188c3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "d4afb8de096cdcff00831c782656838506a5042f4c6a6cc2adffac2bb54543ac": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination was incomplete to the sigmoid-descending junction",
+  "quotes": {
+   "caecum": "Examination was incomplete to the sigmoid-descending junction",
+   "histology": "",
+   "polyps": "No polyps",
+   "prep": "Boston Bowel Preparation Scale 6/9"
+  }
+ },
+ "d66c0db4a59d8aafe299383a66abd3cf7aa20afd7802f3919cae5abdc3ead093": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "مدى الفحص / Extent Completee colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "مدى الفحص / Extent Completee colonoscopy to the cecum. Cecum identified by the ileocecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "5 mm polyp removed with col forceps and sent to histology.",
+   "prep": "Preparation split-dose PEG 2 LL + bisacodyl; BBPS total 8 (right 3, transverse 3, left 2)."
+  }
+ },
+ "d6f35aa725af91980c37f6fd655537007530f13db2b3911623ec723c159051bb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Multiple biopsies taken from the mass biopsies sent Await histology",
+   "polyps": "Multiple biopsies taken from the mass",
+   "prep": "Bowel cleansing adequate (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "d75171516812147a3d71ee5fc97fe24eea9dc475a4a89988db902a9e7382dbf8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "Hyperplastic polyp no dysplasia. Tubulovillous adenoma, low-grade dysplasia, completely excised.",
+   "polyps": "cold forceps and sent to histology; cold snare resection of the transverse colon polyp, specimen retrieved",
+   "prep": "Prep (split-dose PEG 2 L + bisacodyl) was adequate"
+  }
+ },
+ "d7f93383e06fb43ee00aa9904217a0494e7b7d52f3629cb651dc41cbd8507210": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extents: cecum reached",
+  "quotes": {
+   "caecum": "Extents: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (split-dose PEG 4 L) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "d9a0f03cf53922abb27f4ffe75c1f8ecc30ea1f6f8dbcb374afbbfc2fd3e30fa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "3 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Boston Bowel Preparation Scale 8/9"
+  }
+ },
+ "da08e4ed75482ffbb67733808a55cc6a112a40863858c91037aeacda85fe3ece": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "cold snare and sent to histology",
+   "prep": "BBPS total 8"
+  }
+ },
+ "da8bbae3b21447d206af31559fe77d89960f7710cdfed10108ff9621de3498e7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination was incomplete to the descending colon because of persistent looping",
+  "quotes": {
+   "caecum": "Examination was incomplete to the descending colon because of persistent looping",
+   "histology": "",
+   "polyps": "",
+   "prep": "low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 6/9"
+  }
+ },
+ "daeaf765e0bf4308ddc5dd432c99e2204e168cd806bb6b8b26d00d738add289d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "\"Tubulovillous adenoma, low-grade dysplasia, completely excised.\"",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved",
+   "prep": "Quality of preparation: excellent"
+  }
+ },
+ "db0a8da08f548930a62f2a1ac80984f507a595176d100f2fbb680e9a857f7ad0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by intubation of the terminal ileum",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by intubation of the terminal ileum",
+   "histology": "",
+   "polyps": "Interventions: Random biopsies taken from the right and left colon",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "dc2fc80d59d04429119634825c88b4f79046da08e57a6464ed772ac01149278d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 8 (right 3, transverse 3, left 2)"
+  }
+ },
+ "dc68a0c8e850c10eaff5014f206c4e02ae0dd4ba2155fce8c17fb5495ad45442": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete colonoscopy to the cecum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum.",
+   "histology": "\"Tubulovillous adenoma, low-grade dysplasia, completely excised.\"",
+   "polyps": "specimen retrieved",
+   "prep": ""
+  }
+ },
+ "dc953702f6ebfa1254b4798d3993b7e860083bf1d263b09f18af5a8786069677": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Examination was incomplete to the mid-transverse colon because of patient discomfort.",
+  "quotes": {
+   "caecum": "Examination was incomplete to the mid-transverse colon because of patient discomfort.",
+   "histology": "",
+   "polyps": "8 mm polyp removed with cold snare and sent to histology; cold forceps resection of the sigmoid colon polyp, specimen retrieved; hot snare resection of the rect",
+   "prep": "Bowel cleansing adequate (low-volume PEG-ascorbate 2 L)"
+  }
+ },
+ "ddac240397f4872448168ab015aa8964e11e27fe324cf4b01cf6a3c7f3293633": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "tubular adenoma with low-grade dysplasia",
+   "polyps": "sigmoid colon: polypectomy by EMR, retrieved; sigmoid colon: polypectomy by cold forceps, retrieved.",
+   "prep": "Preparation low-volume PEG-ascorbate 2 L; BBPS total 7 (right 2, transverse 2, left 3)."
+  }
+ },
+ "ddf210c2ab8171d86a54c9a58d1f6db866525598552a12f0c11a3370d6b771c1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the ileocaecal valve and appendiceal orifice",
+   "histology": "",
+   "polyps": "Random biopsies taken from the right and left colon",
+   "prep": ""
+  }
+ },
+ "de83bcc8a573f79c5ee9405da8815b412c2551e081a341a5d0594dc35ead5fb8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice and ileocaecal valve.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice and ileocaecal valve.",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "polyp removed with cold snare and sent to histology",
+   "prep": "\"Preparation split-dose PEG 2 L + bisacodyl; BBPS total 7 (right 2, transverse 3, left 2)\""
+  }
+ },
+ "de8f7760e03de602644f02705435fcea8e029bf2498a1edbeebed1963cef744c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum. Cecum identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Preparation split-dose PEG 4 L; BBPS total 6 (right 2, transverse 2, left 2)."
+  }
+ },
+ "df22725f72e56493b099a1e85719e42558bb461f077c000308aa1ff98e8f253e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "Random biopsies taken from the right and left colon for microscopic colitis.",
+   "prep": "Preparation low-volume PEG-ascorbate 2 L; BBPS total 8 (right 3, transverse 2, left 3)."
+  }
+ },
+ "e02c692af11d0e4fe6119f3bfe5430af17996d327a1ef910295501bd8f881c5a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecum reached",
+  "quotes": {
+   "caecum": "caecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep (low-volume PEG-ascorbate 2 L) was good, with minimal residual fluid"
+  }
+ },
+ "e074233e87fdcaee298a5ba1104049f8c88c1fceb1321c31b7527a6e7bab4e33": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum idcntificd by the appendiceal orific (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum idcntificd by the appendiceal orific (photo taken).",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia. Hyperplastic polyp. Sessile serrated lesion without dysplasia.",
+   "polyps": "cold snare resection of the rectum polyp, specimen retrieved;; 5 mm polyp removed with cold snare and sent to histology; 5 mm polyp rcmovcd with cold forceps",
+   "prep": "split-dose PEG 4 L. Boston Bowel Preparation Scale 6/9 (right 2, transverse 2, leftt 2)."
+  }
+ },
+ "e23d6a35894a08385ce447e74ea06e1da8ba981d1df62c203b32b79f70803b3e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope wass advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope wass advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "15 mm polyp removed with cold forceps and sent to histology; descending colon: polypectomy by cold snare, retrieved; EMR resection of the caecum polyp, specimen",
+   "prep": "Prep (split-dose PEG 2 L + bisacodyl) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "e58a7cacb244377993447fe915fc1e83902bcfe17cd1ad0a0eebb3b5c3768f9d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "مدى الفحص / Extent: cecum reached",
+  "quotes": {
+   "caecum": "مدى الفحص / Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "تحضير الأمعاء / Bowel preparation: Protocol split-dose PEG 4 L. تنظيف الأمعاء جيد."
+  }
+ },
+ "e66c8276292f336e754d501119f0424ec37950c75dbfa3cac1437f07c0283fa7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Preparation sodium picosulfate / magnesium citrate; BBPS total 7"
+  }
+ },
+ "e73509f7a0816548eaf46bef5a9718694d10ec43bd7e6da61c7089ea86235727": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "e7be0704acf0c468e6fdb0c4e78de13b0967f400479129630bdf805f640a3950": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the appendiceal orifice and ileocaecal valve",
+   "histology": "Await histology",
+   "polyps": "1 polyp(s) removed.",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 2, transverse 3, left 2)"
+  }
+ },
+ "e7bee7c61720a2fb868b2675939a3c6d9a15cb4d4868b50d7dd787679d5be6c4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the ileocecal valve; terminal ileum intubated for 5 cm",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing excellent (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "e7fb4c8458d9412fa1a52602b7c397026d59c923922fc0e7a2d35b9b3d1ef34f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Sessile serrated lesion without dysplasia. Hyperplastic polyp no dysplasia. Tubulovillous adenoma, low-grade dysplasia, completely",
+   "polyps": "15 mm polyp removed with cold forceps and sent to histology; 10 mm polyp removed with cold forceps and sent to histology",
+   "prep": "Quality of preparation: adequate"
+  }
+ },
+ "e80ec349c6dbd1c204fa7f4e37751a949639169869c12de78dd0a5d27bbb9f07": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the cecum; cecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved; hepatic flexure: polypectomy by cold snare, retrieved.",
+   "prep": "Quality of preparation: excellent."
+  }
+ },
+ "e85c47ce2259522e01bcadcef390feb75266871c7561f2c08ed94097a98d2ecf": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice,",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the ileocaecal valve and appendiceal orifice,",
+   "histology": "Surveillance interval based on histology",
+   "polyps": "ascending colon: polypectomy by cold forceps, retrieved.",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 2, left 3)."
+  }
+ },
+ "e8e839d4aa2c0a84ea407a2aca8fc87589223c98e522efc3b600cd49868e6ac4": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecums not reached because of poor preparation",
+  "quotes": {
+   "caecum": "cecums not reached because of poor preparation",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 4/9"
+  }
+ },
+ "ebd1e24a73ec2811bac520cf617fe26d88c5cae670780b5aa35c6a66850307f3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "",
+   "prep": "Prep (sodium picosulfate / magnesium citrate) was good, with minimal residual fluid"
+  }
+ },
+ "ec368179cf5b7d683e7b5b6ee3144fa8769822c2279bf2054b76b9c57eecb051": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: caecum reached",
+  "quotes": {
+   "caecum": "Extent: caecum reached",
+   "histology": "",
+   "polyps": "hot snare resection of the hepatic flexure polyp, specimen retrieved; caecum: polypectomy by cold snare, retrieved; sigmoid colon: polypectomy by cold snare,ret",
+   "prep": "Bowel preparation: split-dose PEG 4 L. Boston Bowel Preparation Scale 2/9"
+  }
+ },
+ "ed20aa2ca3a8ff4ed8d90fbded54954e2a7e9848d6b6b4b92243f4d2eb816db2": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "\"Tubular adenoma with low-grade dysplasia\"",
+   "polyps": "specimen retrieved",
+   "prep": "Bowel cleansing inadequate; views obscured by residual stool"
+  }
+ },
+ "ee49d90ea89c4abf1a096b3b098eedadf5afaa694395809acc2b62a7d8f4cb02": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was inserted and advanced under direct vision.",
+  "quotes": {
+   "caecum": "The colonoscope was inserted and advanced under direct vision.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Quality of preparation: fair, adequate for detection of polyps \u003e5 mm"
+  }
+ },
+ "ef888e7d9f24f77a391504f7d37c54f82acb0cc5e772466f0a61023b0abee058": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum",
+   "histology": "Sessile serrated lesion without dysplasia.",
+   "polyps": "cold forceps resection of the hepatic flexure polyp, specimen retrieved; cold forceps resection of the transverse colon polyp, specimen retrieved",
+   "prep": "التحضير ممتاز"
+  }
+ },
+ "f11868aa7726300bdab1d6bd413a0c1e6210c77856b405d307bf37a6f79ea8b0": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The c0l0n0sc0pe was advanced to the cecum, identified by intubation of the termina1 ileum.",
+  "quotes": {
+   "caecum": "The c0l0n0sc0pe was advanced to the cecum, identified by intubation of the termina1 ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing good (sodium picosulfate / magnesium citrate)."
+  }
+ },
+ "f131adb734eff6666bb6fb892e670117a226cf430fc240d69bfd61a9d49a0484": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "cecum not reached because of a fixed angulated stricture",
+  "quotes": {
+   "caecum": "cecum not reached because of a fixed angulated stricture",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: low-volume PEG-ascorbate 2 L. Boston Bowel Preparation Scale 6/99"
+  }
+ },
+ "f2b8d81fd12655a9b8d3778c816cef829acda292e0def5a8d9478b7b8931f517": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by the appendiceal orifice (photo taken).",
+   "histology": "",
+   "polyps": "cold forceps resection of the rectum polyp, specimen retrieved.",
+   "prep": "Patient took low-volume PEG-ascorbate 2 L."
+  }
+ },
+ "f2faf363eae37dfa8b00e12313e443ed037b31218b3e7dca98b88f6cdab9d59d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum. Caecum identified by the ileocaecal valve and appendiceal orifice, photo-documented.",
+   "histology": "",
+   "polyps": "cold snare resection of the hepatic flexure polyp, specimen retrieved; 6 mm polyp removed with cold forceps and sent to histology.",
+   "prep": ""
+  }
+ },
+ "f40ded2f67930553f729538b59153649cb66e6eb709c8a965d45e5eadec551dd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "\"sent to histology\"",
+   "polyps": "12 mm polyp removed with cold forceps and sent to histology.",
+   "prep": "Bowel cleansing good, with minimal residual fluid (split-dose PEG 4 L)."
+  }
+ },
+ "f486ed5de639c74bd93d77be4403e3e7600ed3813188373672d05b5d2908e8cd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum, identified by intubation of the terminal ileum.",
+   "histology": "specimen retrieved Surveillance interval based on histology.",
+   "polyps": "10 mm polyp removed with cold snare and sent to histology; cold snare resection of the hepatic flexure polyp, specimen retrieved.",
+   "prep": "Boston Bowel Preparation Scale 8/9 (right 3, transverse 2, left 3)."
+  }
+ },
+ "f55f1e7dc71638cb803390eaf9bb0c5556ebe6753cd8cf6aa1f47deefcdc1dfd": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by the appendiceal orifice (photo taken).",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised. Tubulovillous adenoma, low-grade dysplasia, completely excised. Hyperplastic polyp no dysplasia. Tubular adenoma with low-grade dyslpaia",
+   "polyps": "cold snare resection of the descending colon polyp, specimen retrieved; rectum: polypectomy by EMR, retrieved; ascending colon: polypectomy by EMR, retrieved.",
+   "prep": "Bowel preparation: Prep: split-dose PEG 4 L."
+  }
+ },
+ "f5f75c6e49b3dc431b2f5e8b2798c3287cce38aea315580c02d4217b3857ae8c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia. Sessile serrated lesion without dysplasia.",
+   "polyps": "cold forceps resection of the hepatic flexure polyp, specimen retrieved; sigmoid colon: polypectomy by cold snare, retrieved; descending colon: polypectomy by冷冷",
+   "prep": "Preparation sodium picosulfate / magnesium citrate; BBPS total 6 (right 2, transverse 2, left 2)"
+  }
+ },
+ "f62e3dfbefffd428ba3d9915c357dd17ea67ea1d45358024d9a3e6b0d9eedd83": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the cecum",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the cecum",
+   "histology": "",
+   "polyps": "no",
+   "prep": "Preparation split-dose PEG 2 L + bisacodyl; BBPS total 3"
+  }
+ },
+ "f69bfd44c4d761dd6ade241cfe891aa3a2ff664b209d09907c5c2ed2e8867947": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "caecum reached",
+  "quotes": {
+   "caecum": "caecum reached",
+   "histology": "Sessile serrated lesion without dysplasia. Hyperplastic polyp no dysplasia.",
+   "polyps": "6 mm polyp removed with cold snare and sent to histology; 12 mm polyp removed with hot snare and sent to histology",
+   "prep": ""
+  }
+ },
+ "f7fb46542400b22c0d661106feb672e17b83be08736d2374c24636dcf8fd18d8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the mid-transverse colon",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the mid-transverse colon",
+   "histology": "",
+   "polyps": "No neoplasia seen",
+   "prep": "Boston Bowel Preparation Scale 9/9 (right 3, transverse 3, left 3)"
+  }
+ },
+ "fa4f66f9826e93d53c8cc41e20f748f257bfb3ce061d4462396adea13dc74c3e": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The scope could not be advanced beyond the splenic flexure",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the splenic flexure",
+   "histology": "",
+   "polyps": "no polyps",
+   "prep": "Boston Bowel Preparation Scale 8/9"
+  }
+ },
+ "fb99a207948a2dc321de61a0f77e45175eeb2e144e15e5b1fd8dd88fb37faeb1": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The scope could not be advanced beyond the descending colon because of poor preparation.",
+  "quotes": {
+   "caecum": "The scope could not be advanced beyond the descending colon because of poor preparation.",
+   "histology": "Tubulovillous adenoma, low-grade dysplasia, completely excised.",
+   "polyps": "hot snare resection of the rectum polyp, specimen retrieved; descending colon: polypectomy by cold forceps, retrieved.",
+   "prep": "Bowel cleansing poor, with solid stool throughout the right colon (split-dose PEG 4 L)."
+  }
+ },
+ "fbefe151f811fd0a90369009047d4d29088d44507e66379d114611bce1090c0b": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Scope introduced per recturn and advanced",
+  "quotes": {
+   "caecum": "Scope introduced per recturn and advanced",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel cleansing poor (sodium picosulfate / magnesium citrate)"
+  }
+ },
+ "fc9831b25d532e7c80053c7cf00a1250c4a49480bfe1f9a2636d21ec21e4e8f3": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "",
+   "polyps": "cold snare resection of the transverse colon polyp, specimen retrieved; sigmoid colon: polypectomy by cold snare, retrieved; rectum: polypectomy by cold forceps",
+   "prep": "adequate for detection of polyps \u003e5 mm (low-volume PEG-ascorbate 2 L)."
+  }
+ },
+ "fd06ced684ee08e1c62274593a9c20cb8e743ed1a95899e4f4e3f3a246df4fb2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent: cecum reached",
+  "quotes": {
+   "caecum": "Extent: cecum reached",
+   "histology": "",
+   "polyps": "",
+   "prep": "Boston Bowel Preparation Scale 7/9 (right 3, transverse 2, left 2)"
+  }
+ },
+ "fd92aad30ba93739a39ce01ba351965c9a3d887b00da54f6a47d95c108ed7e86": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the caecum, identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "split-dose PEG 2 L + bisacodyl. Boston Bowel Preparation Scale 7/9 (right 2, transverse 2, left 3)."
+  }
+ },
+ "fd982a51704e7a1b0189bbafb4a359d69db370414aaf838434ea0b50316792d1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "histology": "Tubular adenoma (x2)",
+   "polyps": "two tan polypoid fragments, 0.3 and 0.4 cm, submitted entirely",
+   "prep": ""
+  }
+ },
+ "fee4866b22792c0dc70020a10614d83bba1875ce7c614b8908d4a96e56eccb50": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete colonoscopy to the caecum.",
+  "quotes": {
+   "caecum": "Complete colonoscopy to the caecum.",
+   "histology": "",
+   "polyps": "",
+   "prep": "Bowel preparation: Prep (sodium picosulfate / magnesium citrate) was fair, adequate for detection of polyps \u003e5 mm."
+  }
+ },
+ "ff992cac0a0ae83920c0df8e24c8f4e3d500b8748de64497013c949c876a194b": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum.",
+  "quotes": {
+   "caecum": "Scope passed to the caecum; caecum identified by intubation of the terminal ileum.",
+   "histology": "",
+   "polyps": "cold forceps resection of the ascending colon polyp, specimen retrieved; ascending colon: polypectomy by hot snare, retrieved; hepatic flexure: polypectomy by E",
+   "prep": "تنظيف الأمعاء غير كاف."
+  }
+ }
+}

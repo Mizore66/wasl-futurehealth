@@ -4,8 +4,8 @@ crc       no review   : P 1.000  R 0.198  false closures 0/115
 cervical  with review : P 1.000  R 0.926  false closures 0/199
 cervical  no review   : P 1.000  R 0.535  false closures 0/115
 CRC ≤31-day KPI (all referrals): EID-only 0.117 | truth 0.322 | Wasl 0.286
-exactly-once: duplicates 0 / 24392 outputs; final-state mismatches 0
+exactly-once: duplicates 0 / 24364 outputs; final-state mismatches 0
 provenance chains verified 873/873; forged events with effect 0/24
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 1129, without granted consent 0; held-for-consent 17, cancelled 82
-throughput 558 ev/s; reviewer-h/1k loops 26.6
+consent hold: released 1072, without granted consent 0; held-for-consent 17, cancelled 80
+throughput 346 ev/s; reviewer-h/1k loops 26.7
