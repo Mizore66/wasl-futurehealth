@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-28T09:17:27.203509Z",
- "code_revision": "d61c29a8b051c298537fd848412e30f3ac1d775d",
+ "frozen_at": "2026-10-28T23:09:26.342761Z",
+ "code_revision": "315a9147e9bda49be5fea7ccb265d850a0316ac1",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -11,7 +11,9 @@
   "reviewer_error": 0.04,
   "double_review": "merge+close"
  },
- "reader": "cached (Gemma 4 26B answers, sha256-keyed; live 4B reported separately in pipeline/RESULTS.md stage 2)",
+ "reader": "cached second reader: gemma-4-26b-a4b-it-self (sha256-keyed)",
+ "reports": "data/evidence/reports43.json",
+ "models_dir": "models",
  "source": "fhir",
  "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
  "noise_models": {
@@ -31,7 +33,7 @@
   "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
   "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
   "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
-  "models/gemma_cache.json": "3df007c3673992257f44df8c86c6b7a7abc38d44e214d4cfdb3a5d3c0fb250b6",
+  "models/gemma_cache.json": "176e152f42ffd63b5fb2af83a2f927cae57d8d6b04e13840e328a4dae7784bcd",
   "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
   "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
   "data/evidence/reports43.json": "014803d365994ca136994036e9457cdbba46b8f8365cadf9b6553ef732e9f9ee",

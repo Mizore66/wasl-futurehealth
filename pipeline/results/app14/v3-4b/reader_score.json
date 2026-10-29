@@ -1,0 +1,129 @@
+{
+ "auto_correct_vs_truth": 156,
+ "auto_decided": 163,
+ "auto_unsafe_adequate_when_truth_not": 0,
+ "auto_wrong_safe_direction": 7,
+ "by_tag": {
+  "all": {
+   "auto": 163,
+   "n": 300
+  },
+  "bilingual": {
+   "auto": 17,
+   "n": 42
+  },
+  "extent_not_stated": {
+   "auto": 12,
+   "n": 27
+  },
+  "mass_biopsy": {
+   "auto": 6,
+   "n": 8
+  },
+  "narrative": {
+   "auto": 58,
+   "n": 128
+  },
+  "ocr": {
+   "auto": 15,
+   "n": 32
+  },
+  "prep_arabic_only": {
+   "auto": 2,
+   "n": 14
+  },
+  "prep_ungraded": {
+   "auto": 5,
+   "n": 52
+  },
+  "random_biopsy": {
+   "auto": 11,
+   "n": 20
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "264/300",
+   "histology": "287/300",
+   "polyps": "289/300",
+   "prep": "284/300",
+   "state": "250/300"
+  },
+  "regex": {
+   "caecum": "299/300",
+   "histology": "300/300",
+   "polyps": "300/300",
+   "prep": "236/300",
+   "state": "247/300"
+  }
+ },
+ "field_misses": {
+  "reader2/caecum": [
+   "a5:yes!=not_stated",
+   "a13:yes!=no",
+   "a20:not_stated!=yes",
+   "a44:not_stated!=no",
+   "a55:not_stated!=yes",
+   "a57:yes!=not_stated",
+   "a65:yes!=not_stated",
+   "a76:not_stated!=yes"
+  ],
+  "reader2/histology": [
+   "a7:no!=yes",
+   "a25:no!=yes",
+   "a33:no!=yes",
+   "a35:no!=yes",
+   "a36:no!=yes",
+   "a145:no!=yes",
+   "a174:no!=yes",
+   "a191:no!=yes"
+  ],
+  "reader2/polyps": [
+   "a48:yes!=no",
+   "a55:yes!=no",
+   "a99:yes!=no",
+   "a108:yes!=no",
+   "a135:yes!=no",
+   "a151:yes!=no",
+   "a204:yes!=no",
+   "a215:yes!=no"
+  ],
+  "reader2/prep": [
+   "a0:not_stated!=inadequate",
+   "a5:not_stated!=adequate",
+   "a35:not_stated!=adequate",
+   "a42:not_stated!=adequate",
+   "a57:not_stated!=inadequate",
+   "a69:not_stated!=adequate",
+   "a84:not_stated!=adequate",
+   "a109:not_stated!=adequate"
+  ],
+  "regex/caecum": [
+   "a44:yes!=no"
+  ],
+  "regex/prep": [
+   "a4:not_stated!=adequate",
+   "a5:not_stated!=adequate",
+   "a13:not_stated!=adequate",
+   "a15:not_stated!=inadequate",
+   "a19:not_stated!=adequate",
+   "a26:not_stated!=adequate",
+   "a27:not_stated!=adequate",
+   "a34:not_stated!=adequate"
+  ]
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 58,
+  "awaiting_histology/awaiting_histology": 41,
+  "inadequate/adequate": 4,
+  "inadequate/awaiting_histology": 3,
+  "inadequate/inadequate": 57,
+  "review/adequate": 71,
+  "review/awaiting_histology": 40,
+  "review/inadequate": 26
+ },
+ "reader2_cache_hits": 300,
+ "reader2_model": "gemma-3-4b-it-Q4_K_M/hybrid-v3/cached",
+ "reports": 300,
+ "unsafe": []
+}

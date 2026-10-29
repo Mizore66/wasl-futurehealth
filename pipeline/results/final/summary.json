@@ -1,7 +1,7 @@
 {
  "manifest": {
-  "frozen_at": "2026-10-28T09:17:27.203509Z",
-  "code_revision": "d61c29a8b051c298537fd848412e30f3ac1d775d",
+  "frozen_at": "2026-10-28T23:09:26.342761Z",
+  "code_revision": "315a9147e9bda49be5fea7ccb265d850a0316ac1",
   "policy": "v7strict",
   "thresholds": {
    "tau_high_messaging": 0.99,
@@ -12,7 +12,9 @@
    "reviewer_error": 0.04,
    "double_review": "merge+close"
   },
-  "reader": "cached (Gemma 4 26B answers, sha256-keyed; live 4B reported separately in pipeline/RESULTS.md stage 2)",
+  "reader": "cached second reader: gemma-4-26b-a4b-it-self (sha256-keyed)",
+  "reports": "data/evidence/reports43.json",
+  "models_dir": "models",
   "source": "fhir",
   "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
   "noise_models": {
@@ -32,7 +34,7 @@
    "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
    "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
    "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
-   "models/gemma_cache.json": "3df007c3673992257f44df8c86c6b7a7abc38d44e214d4cfdb3a5d3c0fb250b6",
+   "models/gemma_cache.json": "176e152f42ffd63b5fb2af83a2f927cae57d8d6b04e13840e328a4dae7784bcd",
    "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
    "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
    "data/evidence/reports43.json": "014803d365994ca136994036e9457cdbba46b8f8365cadf9b6553ef732e9f9ee",
@@ -107,69 +109,69 @@
      0.2291
     ],
     "linkage_pair_f1": [
-     0.9786,
-     0.9742,
-     0.983
+     0.9784,
+     0.9736,
+     0.9832
     ],
     "reviewer_h_per_1k": [
-     28.6986,
-     27.7299,
-     29.6673
+     28.713,
+     27.6606,
+     29.7654
     ],
     "review_items_per_100_loops": [
-     84.0668,
-     81.1484,
-     86.9852
+     84.1046,
+     80.9356,
+     87.2736
     ],
     "review_items_per_100_arab": [
-     86.5344,
-     81.824,
-     91.2448
+     86.441,
+     81.6361,
+     91.2459
     ],
     "reviewer_h_per_1k_arab": [
-     29.6584,
-     28.0092,
-     31.3076
+     29.6366,
+     27.9569,
+     31.3163
     ],
     "review_items_per_100_filipino": [
-     75.6874,
-     74.29,
-     77.0848
+     75.4658,
+     73.8667,
+     77.0649
     ],
     "reviewer_h_per_1k_filipino": [
-     26.7268,
-     24.561,
-     28.8926
+     26.6688,
+     24.4426,
+     28.895
     ],
     "review_items_per_100_south_asian": [
-     84.411,
-     81.5646,
-     87.2574
+     84.64,
+     80.8469,
+     88.4331
     ],
     "reviewer_h_per_1k_south_asian": [
-     28.5172,
-     27.5133,
-     29.5211
+     28.5968,
+     27.2894,
+     29.9042
     ],
     "review_items_per_100_western": [
-     80.01,
-     76.6366,
-     83.3834
+     80.3458,
+     76.7411,
+     83.9505
     ],
     "reviewer_h_per_1k_western": [
-     26.8812,
-     25.1941,
-     28.5683
+     26.9578,
+     25.0865,
+     28.8291
     ],
     "review_load_ratio_max_min_origin": [
-     1.1468,
-     1.0723,
-     1.2214
+     1.1484,
+     1.0685,
+     1.2283
     ],
     "throughput_ev_s": [
-     560.2923,
-     522.0601,
-     598.5245
+     315.0867,
+     305.9975,
+     324.1758
     ],
     "stalled_days_after_deadline_flagged_median": [
      0.5,
@@ -205,17 +207,17 @@
     ],
     "wrong_patient_released": [
      0,
-     10090,
+     10089,
      0.00037
     ],
     "released_without_granted_consent": [
      0,
-     5540,
-     0.00067
+     5455,
+     0.00068
     ],
     "duplicate_or_lost_outputs": [
      0,
-     124601,
+     124775,
      3e-05
     ],
     "ingest_lost_or_duplicated": [
@@ -279,9 +281,9 @@
      1.0
     ],
     "cervical_recall": [
-     0.9132,
-     0.9014,
-     0.925
+     0.9142,
+     0.9031,
+     0.9253
     ],
     "cervical_recall_no_review": [
      0.569,
@@ -289,9 +291,9 @@
      0.5955
     ],
     "kpi_wasl": [
-     0.2916,
-     0.2742,
-     0.309
+     0.2914,
+     0.2744,
+     0.3084
     ],
     "kpi_truth": [
      0.3266,
@@ -304,9 +306,9 @@
      0.1317
     ],
     "kpi_abs_error_wasl": [
-     0.035,
-     0.026,
-     0.044
+     0.0352,
+     0.0265,
+     0.0439
     ],
     "kpi_abs_error_eid_only": [
      0.2054,
@@ -319,64 +321,64 @@
      0.9464
     ],
     "reviewer_h_per_1k": [
-     25.8588,
-     25.2242,
-     26.4934
+     25.9126,
+     25.257,
+     26.5682
     ],
     "review_items_per_100_loops": [
-     75.4,
-     73.6628,
-     77.1372
+     75.5524,
+     73.7655,
+     77.3393
     ],
     "review_items_per_100_arab": [
-     78.4464,
-     77.5152,
-     79.3776
+     78.6318,
+     77.2155,
+     80.0481
     ],
     "reviewer_h_per_1k_arab": [
-     26.881,
-     26.4825,
-     27.2795
+     26.9406,
+     26.47,
+     27.4112
     ],
     "review_items_per_100_filipino": [
-     69.2248,
-     62.7469,
-     75.7027
+     68.9094,
+     62.2126,
+     75.6062
     ],
     "reviewer_h_per_1k_filipino": [
-     23.5008,
-     21.9397,
-     25.0619
+     23.3976,
+     21.6982,
+     25.097
     ],
     "review_items_per_100_south_asian": [
-     75.188,
-     70.1383,
-     80.2377
+     75.4536,
+     70.0921,
+     80.8151
     ],
     "reviewer_h_per_1k_south_asian": [
-     25.7806,
-     23.2599,
-     28.3013
+     25.8864,
+     23.2684,
+     28.5044
     ],
     "review_items_per_100_western": [
-     68.8596,
-     66.4701,
-     71.2491
+     68.9928,
+     66.8549,
+     71.1307
     ],
     "reviewer_h_per_1k_western": [
-     23.8566,
-     22.5284,
-     25.1848
+     23.8994,
+     22.6009,
+     25.1979
     ],
     "review_load_ratio_max_min_origin": [
-     1.1735,
-     1.1161,
-     1.2309
+     1.1796,
+     1.107,
+     1.2523
     ],
     "throughput_ev_s": [
-     626.7072,
-     549.4446,
-     703.9699
+     402.6835,
+     188.0286,
+     617.3383
     ],
     "stalled_days_after_deadline_flagged_median": [
      0.5,
@@ -407,22 +409,22 @@
     ],
     "cervical_false_closures": [
      0,
-     968,
+     969,
      0.0038
     ],
     "wrong_patient_released": [
      0,
-     9398,
+     9408,
      0.00039
     ],
     "released_without_granted_consent": [
      0,
-     5467,
-     0.00067
+     5191,
+     0.00071
     ],
     "duplicate_or_lost_outputs": [
      0,
-     121060,
+     120721,
      3e-05
     ],
     "ingest_lost_or_duplicated": [
@@ -441,7 +443,7 @@
      null
     ],
     "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
-     1,
+     0,
      null,
      null
     ],

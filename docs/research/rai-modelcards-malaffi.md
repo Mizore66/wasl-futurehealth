@@ -79,14 +79,16 @@ The owner of each model is our **assumption**, using RAI §4 roles: the ADPHC pr
 **Evidence readers** (regex/DoH rules plus Gemma 3 4B or 26B, zero-shot)
 - **Use:** extracts caecum, prep, polyps and histology. Closure needs both readers to agree.
 - **Out of scope:** diagnosis.
-- **Data:** 43 US MTSamples reports, team-labelled.
+- **Data:** 300 synthetic DoH App 14 reports (spec = answer key) and 43 US MTSamples reports, team-labelled.
 - **Evaluation:**
-  - 4B hybrid 40/43 against the key; 13 auto-closures, 0 wrong (G4);
+  - App 14 corpus, after the v3 fix: 26B 300/300 on every field, 4B 264–289/300; 0 unsafe auto-closures for either; frozen evaluation 0 CRC false closures with either reader;
+  - before the fix the corpus showed a field-definition gap (biopsies not counted as tissue) giving 50–52 false closures with either reader;
+  - 4B hybrid 40/43 against the MTSamples key; 13 auto-closures, 0 wrong (G4);
   - 0/455 agreed labels wrong (V5).
 - **Failure modes:**
   - the 4B over-calls histology;
   - each text was reused 17–44 times;
-  - untested on Arabic or Abu Dhabi reports.
+  - tested only on synthetic Arabic/English headings, not real Abu Dhabi reports.
 - **Oversight:** clinician on disagreement; double review on "adequate".
 - **Triggers:** disagreement rate rises; any false "adequate"; a new report template.
 

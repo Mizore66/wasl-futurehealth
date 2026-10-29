@@ -44,7 +44,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 | `patient-parsers/` | Frozen test sets and scores for the teach-back / e-consult parsers | Evaluated |
 | `projection/` | Before/after uplift projection from published trial effects | Projection, not a result |
 | `models/` | Small model artefacts (isotonic calibrator, cached reader outputs) | |
-| `data/evidence/` | 43 MTSamples colonoscopy reports with answer key; pathology templates | Evaluation only |
+| `data/evidence/` | 300 synthetic App 14 colonoscopy reports (spec = answer key), 43 MTSamples reports, pathology templates | Evaluation only |
 | `data/lung/` | Synthetic CT index-finding and follow-up report corpus with answer key (lung-nodule loop) | Synthetic |
 | `sources/` | DoH CRC/cervical/breast/RAI standards and legal texts (text) | Reference |
 
@@ -76,12 +76,12 @@ Outputs go to `out/` (gitignored):
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
-**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `d61c29a`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `315a914`; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
 - CRC P 1.000, R 0.879 (95% CI 0.862–0.896).
 - **0/2,533 false closures** (95% upper bound 0.15%).
-- 0/9,398 wrong-patient messages; 0/5,467 messages sent without granted consent.
+- 0/9,408 wrong-patient messages; 0/5,191 messages sent without granted consent.
 - KPI error 0.035 vs 0.205 for EID-only tracking.
-- Review load across name origins: max/min ratio 1.17 (95% CI 1.12–1.23), under the 1.25 limit.
+- Review load across name origins: max/min ratio 1.18 (95% CI 1.11–1.25), under the 1.25 limit.
 
 On dev noise, recall is 0.946 with 0/2,698 CRC and 0/1,004 cervical false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
@@ -111,6 +111,6 @@ Details: [`pipeline/RESULTS.md`](pipeline/RESULTS.md), [`image/RESULTS.md`](imag
 ## Data and honesty
 - Names come from Wikidata (CC0).
 - Endoscopy photos come from HyperKvasir (Borgli et al., *Sci Data* 2020; CC BY 4.0). Competition use is with the authors' written permission.
-- Report texts are MTSamples. The site permits educational use with credit; we use them for evaluation only, and they will be replaced by a synthetic DoH App 14 corpus.
+- Report texts: a 300-report synthetic DoH App 14 corpus (main reader test) plus 43 MTSamples texts (real dictation; the site permits educational use with credit). The synthetic corpus found two reader blind spots, now fixed and disclosed (biopsies as tissue taken; Boston scores graded by number): see "Synthetic App 14 report corpus" in [`pipeline/RESULTS.md`](pipeline/RESULTS.md).
 - **All patients, cohorts, reviewers and capacity are simulated.** No real patient data is used anywhere.
 - Each claim in the docs is marked *built*, *simulated* or *designed*.

@@ -5,35 +5,27 @@
    "down_s": 1.3563751934023696,
    "status_before_kill": {
     "linker": {
-     "first_new_output_s": 3.366208834,
-     "inflight": 6,
+     "first_new_output_s": 4.374739416,
+     "inflight": 0,
      "present_at_start": 0,
-     "processed": 2388,
+     "processed": 139,
      "pseq": [
-      341,
-      297,
-      334,
-      375
+      1,
+      1,
+      1,
+      1
      ],
      "pub_retries": 0,
-     "published": 1347,
-     "records": 1239,
+     "published": 4,
+     "records": 139,
      "stats": {
-      "consent_records": 232,
-      "contact_denied": 5,
-      "contact_granted": 227,
-      "eid_conflicts": 4933,
-      "eid_links": 81,
-      "merges": 170,
-      "rbac_denied_consent": 1,
-      "signoffs": 46,
-      "splits": 4
+      "eid_conflicts": 453
      },
      "suppressed": 0,
-     "uptime": 5.437251875
+     "uptime": 4.521641
     }
    },
-   "t_kill": 2.569357125,
+   "t_kill": 2.5702271249999997,
    "victims": [
     "linker"
    ]
@@ -43,29 +35,28 @@
    "down_s": 1.872514744091037,
    "status_before_kill": {
     "fhirsub": {
-     "ack_hwm": 2889,
-     "already_ingested_dropped": 14,
-     "buffered": 12788,
+     "ack_hwm": 456,
+     "already_ingested_dropped": 1,
+     "buffered": 16650,
      "done": false,
      "eof_sent": false,
-     "feed_off": true,
-     "max_seen": 31038,
+     "feed_off": false,
+     "max_seen": 18500,
      "nats_dup_suppressed": 0,
-     "next": 17751,
-     "published": 2950,
+     "next": 1151,
+     "published": 518,
      "stats": {
-      "accepted_events": 650,
-      "accepted_push": 29888,
-      "buffered_ahead_push": 29188,
-      "dup_dropped_push": 1450,
-      "gap_events": 650,
-      "gap_fills": 12,
-      "recv_event-notification": 627,
-      "recv_handshake": 1,
-      "recv_heartbeat": 1
+      "accepted_events": 50,
+      "accepted_push": 17750,
+      "buffered_ahead_push": 17050,
+      "dup_dropped_push": 850,
+      "gap_events": 50,
+      "gap_fills": 1,
+      "recv_event-notification": 372,
+      "recv_handshake": 1
      },
-     "sub": "wsi-crc-231351000",
-     "uptime": 2.582353958
+     "sub": "wsi-crc-62232000",
+     "uptime": 2.58093175
     }
    },
    "t_kill": 2.7,
@@ -79,26 +70,26 @@
    "status_before_kill": {
     "closure-3": {
      "dup_suppressed": 0,
-     "first_new_output_s": 3.6319568330000003,
+     "first_new_output_s": 5.528932291,
      "inflight": 0,
-     "last_fseq": 1983,
-     "ledger_head": "9716919a98155db75f9d68fea0baf0f2c9d77d35125fe8900f951ea02f6952e3",
-     "ledger_oseq": 517,
-     "loops": 83,
-     "next_pseq": 545,
+     "last_fseq": 1311,
+     "ledger_head": "f8d027c921378959d317e30c23d909e2400efacff9eced58c21b2d02f21d2f9e",
+     "ledger_oseq": 325,
+     "loops": 62,
+     "next_pseq": 364,
      "present_at_start": 0,
-     "processed": 544,
+     "processed": 363,
      "pub_retries": 0,
-     "published": 517,
+     "published": 325,
      "suppressed": 0,
-     "uptime": 11.749391375
+     "uptime": 11.75233075
     },
     "prep-0": {
-     "done": 1728,
+     "done": 791,
      "dup_suppressed": 0
     }
    },
-   "t_kill": 8.940761666,
+   "t_kill": 8.941952541,
    "victims": [
     "closure-3",
     "prep-0"
@@ -106,7 +97,7 @@
   },
   {
    "cycle": "nats",
-   "t_kill": 12.480587666,
+   "t_kill": 12.487717041,
    "victims": [
     "nats-2"
    ]
@@ -193,29 +184,29 @@
   }
  },
  "consent_timing": {
-  "intents_cancelled_by_consent": 82,
+  "intents_cancelled_by_consent": 80,
   "intents_ever_held_for_consent": 17,
   "opted_out_loops": 81,
   "released_after_opt_out_on_file": 0,
   "released_before_opt_out_recorded": 0,
-  "released_total": 1129,
+  "released_total": 1072,
   "released_without_granted_consent": 0
  },
  "crash_recovery": {
   "duplicate_outputs": 0,
-  "expected_outputs": 24392,
-  "facts_msgs_replay": 23164,
-  "fhir_msgs": 32580,
+  "expected_outputs": 24364,
+  "facts_msgs_replay": 23171,
+  "fhir_msgs": 32585,
   "final_state_mismatch_loops": 0,
   "generated_resources": 30941,
   "ingest_duplicates": 0,
   "ingest_lost": 0,
-  "live_outputs": 24392,
+  "live_outputs": 24364,
   "logical_duplicate_decisions": 0,
   "lost_outputs": 0,
   "prep_content_mismatch": 0,
   "prep_duplicates": 0,
-  "prep_live_msgs": 32580,
+  "prep_live_msgs": 32585,
   "prep_lost": 0,
   "unexpected_outputs": 0,
   "writer_processes_seen": 5
@@ -319,28 +310,28 @@
    }
   }
  },
- "fhir_msgs": 32580,
+ "fhir_msgs": 32585,
  "fhirsub": {
   "ack_hwm": 31038,
-  "already_ingested_dropped": 211,
+  "already_ingested_dropped": 155,
   "buffered": 0,
   "done": true,
   "eof_sent": true,
   "feed_off": true,
   "max_seen": 31038,
-  "nats_dup_suppressed": 54,
+  "nats_dup_suppressed": 53,
   "next": 31039,
-  "published": 28105,
+  "published": 30582,
   "stats": {
-   "accepted_events": 28105,
-   "gap_events": 28105,
-   "gap_fills": 29,
-   "recv_heartbeat": 55,
-   "resumed_from": 2933,
+   "accepted_events": 30582,
+   "gap_events": 30582,
+   "gap_fills": 31,
+   "recv_heartbeat": 92,
+   "resumed_from": 456,
    "status_polls": 1
   },
-  "sub": "wsi-crc-231351000",
-  "uptime": 57.284254875
+  "sub": "wsi-crc-62232000",
+  "uptime": 92.623781292
  },
  "forged": {
   "consent_records_accepted": 1920,
@@ -355,11 +346,11 @@
   "mode": "off"
  },
  "latency_ms": {
-  "max": 39238.341,
-  "n": 12888,
-  "p50": 32878.97,
-  "p90": 34203.618,
-  "p99": 39123.419
+  "max": 46729.366,
+  "n": 12829,
+  "p50": 37270.471,
+  "p90": 45889.093,
+  "p99": 46505.312
  },
  "linkage": {
   "false_merge_pairs": 35,
@@ -374,13 +365,13 @@
    "contact_denied": 75,
    "contact_granted": 1810,
    "contact_opted_out": 35,
-   "eid_conflicts": 78198,
+   "eid_conflicts": 78199,
    "eid_links": 1368,
    "guard_rejects": 1,
    "merges": 2489,
    "rbac_denied_consent": 12,
    "rbac_denied_signoff": 12,
-   "signoffs": 1634,
+   "signoffs": 1639,
    "splits": 21
   },
   "true_pairs": 3625
@@ -395,16 +386,17 @@
   "events": 31038,
   "released": 31038,
   "stats": {
-   "events_queries": 41,
-   "events_replayed": 28755,
+   "events_queries": 32,
+   "events_replayed": 30632,
    "fault_dropped": 23,
    "fault_duplicated": 29,
    "fault_reordered": 36,
    "notifications": 621,
-   "post_failed_heartbeat": 4,
-   "posted_event": 627,
+   "post_failed_event": 215,
+   "post_failed_heartbeat": 1,
+   "posted_event": 412,
    "posted_handshake": 1,
-   "posted_heartbeat": 56,
+   "posted_heartbeat": 92,
    "status_queries": 1
   },
   "status": "off"
@@ -433,38 +425,38 @@
    }
   },
   "dob_guard": {
-   "held": 34,
+   "held": 33,
    "held_wrong": 0,
    "released_wrong": 0
   },
-  "held_below_tau_never_confirmed": 320,
+  "held_below_tau_never_confirmed": 347,
   "held_below_tau_never_confirmed_wrong": 1,
   "messages_per_loop_pre_gate": 0.918,
   "opted_out_loops_truth": 81,
   "outreach_intents": 1927,
-  "released": 1129,
+  "released": 1072,
   "released_by_basis": {
    "eid": {
-    "released": 504,
+    "released": 485,
     "wrong_patient": 0
    },
    "human": {
-    "released": 183,
+    "released": 151,
     "wrong_patient": 0
    },
    "p_cal": {
-    "released": 442,
+    "released": 436,
     "wrong_patient": 0
    }
   },
   "released_to_opted_out": 0,
-  "suppressed_consent": 76,
+  "suppressed_consent": 74,
   "v7_released_by_guard": {
    "dob_match": 681,
-   "human_confirmed": 259,
-   "human_path": 183
+   "human_confirmed": 234,
+   "human_path": 151
   },
-  "v7_second_id_held": 402,
+  "v7_second_id_held": 434,
   "v7_second_id_held_wrong": 0,
   "wrong_list": [
    "ahs-mushrif/ServiceRequest/AHS-sr-779 skmc-endo/Appointment/SKM-appt-803 appointment_reminder basis=below_tau p_cal=0.9485 released=false"
@@ -787,10 +779,10 @@
   "arab": {
    "evidence_items": 241,
    "evidence_per_100_loops": 22.757,
-   "link_items": 588,
-   "link_per_100_loops": 55.524,
+   "link_items": 591,
+   "link_per_100_loops": 55.807,
    "loops": 1059,
-   "total_per_100_loops": 78.281
+   "total_per_100_loops": 78.565
   },
   "filipino": {
    "evidence_items": 41,
@@ -803,10 +795,10 @@
   "south_asian": {
    "evidence_items": 123,
    "evidence_per_100_loops": 23.077,
-   "link_items": 310,
-   "link_per_100_loops": 58.161,
+   "link_items": 312,
+   "link_per_100_loops": 58.537,
    "loops": 533,
-   "total_per_100_loops": 81.238
+   "total_per_100_loops": 81.614
   },
   "western": {
    "evidence_items": 62,
@@ -820,12 +812,12 @@
  "reviewer": {
   "by_kind": {
    "all": {
-    "items": 1634,
-    "items_per_100_loops": 77.81,
+    "items": 1639,
+    "items_per_100_loops": 78.048,
     "loops": 2100,
-    "reads": 3013,
-    "reviewer_hours_per_1k_loops": 26.633,
-    "sim_hours": 55.929,
+    "reads": 3023,
+    "reviewer_hours_per_1k_loops": 26.741,
+    "sim_hours": 56.157,
     "wrong_final_signoffs": 63
    },
    "evidence": {
@@ -838,23 +830,23 @@
     "wrong_final_signoffs": 23
    },
    "link": {
-    "items": 1167,
-    "items_per_100_loops": 55.571,
+    "items": 1172,
+    "items_per_100_loops": 55.81,
     "loops": 2100,
-    "reads": 2325,
-    "reviewer_hours_per_1k_loops": 16.519,
-    "sim_hours": 34.69,
+    "reads": 2335,
+    "reviewer_hours_per_1k_loops": 16.628,
+    "sim_hours": 34.918,
     "wrong_final_signoffs": 40
    }
   },
   "by_origin": {
    "arab": {
-    "items": 829,
-    "items_per_100_loops": 78.281,
+    "items": 832,
+    "items_per_100_loops": 78.565,
     "loops": 1059,
-    "reads": 1529,
-    "reviewer_hours_per_1k_loops": 26.613,
-    "sim_hours": 28.183,
+    "reads": 1535,
+    "reviewer_hours_per_1k_loops": 26.793,
+    "sim_hours": 28.374,
     "wrong_final_signoffs": 29
    },
    "filipino": {
@@ -867,12 +859,12 @@
     "wrong_final_signoffs": 5
    },
    "south_asian": {
-    "items": 433,
-    "items_per_100_loops": 81.238,
+    "items": 435,
+    "items_per_100_loops": 81.614,
     "loops": 533,
-    "reads": 791,
-    "reviewer_hours_per_1k_loops": 28.175,
-    "sim_hours": 15.017,
+    "reads": 795,
+    "reviewer_hours_per_1k_loops": 28.244,
+    "sim_hours": 15.054,
     "wrong_final_signoffs": 18
    },
    "western": {
@@ -887,21 +879,21 @@
   },
   "by_programme": {
    "cervical": {
-    "items": 405,
-    "items_per_100_loops": 67.5,
+    "items": 408,
+    "items_per_100_loops": 68,
     "loops": 600,
-    "reads": 784,
-    "reviewer_hours_per_1k_loops": 21.356,
-    "sim_hours": 12.814,
+    "reads": 790,
+    "reviewer_hours_per_1k_loops": 21.479,
+    "sim_hours": 12.888,
     "wrong_final_signoffs": 11
    },
    "crc": {
-    "items": 1229,
-    "items_per_100_loops": 81.933,
+    "items": 1231,
+    "items_per_100_loops": 82.067,
     "loops": 1500,
-    "reads": 2229,
-    "reviewer_hours_per_1k_loops": 28.744,
-    "sim_hours": 43.116,
+    "reads": 2233,
+    "reviewer_hours_per_1k_loops": 28.846,
+    "sim_hours": 43.27,
     "wrong_final_signoffs": 52
    }
   },
@@ -914,7 +906,7 @@
   }
  },
  "reviewer_cfg": {
-  "answered": 1634,
+  "answered": 1639,
   "cfg": {
    "Double": "merge+close",
    "Err": 0.04,
@@ -924,7 +916,7 @@
    "Seed": 23,
    "Sigma": 0.6
   },
-  "last_out_seq": 24392,
+  "last_out_seq": 24364,
   "wrong": 63
  },
  "run": "./out/final/v2-s23/run/main",
@@ -932,15 +924,15 @@
   "Content": "full-resource",
   "Drop": 0.03,
   "Dup": 0.05,
-  "HL7Addr": "127.0.0.1:28870",
+  "HL7Addr": "127.0.0.1:29170",
   "HL7Drops": 2,
-  "Hie": "127.0.0.1:28880",
-  "Hook": "127.0.0.1:28890",
+  "Hie": "127.0.0.1:29180",
+  "Hook": "127.0.0.1:29190",
   "Reorder": 0.05,
   "Source": "fhir",
   "SubKill": 1
  },
- "throughput_ev_s": 557.5969399737139,
+ "throughput_ev_s": 345.64570686021494,
  "two_reader": {
   "colonoscopy": {
    "agree": 551,
@@ -977,5 +969,5 @@
    "unique_texts": 10
   }
  },
- "wall_s": 58.429302
+ "wall_s": 94.272833
 }

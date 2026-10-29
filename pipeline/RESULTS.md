@@ -663,3 +663,49 @@ Read with care: reader A was written against the same templates it is scored on,
 - Results communicated within 21 days (15 working days): Wasl's measure equals the truth in every run (0.855–0.887).
 
 **Learn-then-Test** is not re-run: the closure gate and calibrator are unchanged since `results/ltt/` (τ 0.995, 0 false closures).
+
+### Synthetic App 14 report corpus, and the v3 reader fix
+
+**Corpus** ([`data/evidence/reports_app14.json`](../data/evidence/reports_app14.json), `scripts/app14_corpus.py`, committed in `7ee951d` before any reader saw it). 300 colonoscopy reports in the DoH App 14 field layout (indication, prep protocol and quality, extent and landmarks, findings, interventions, impression, recommendations, optional pathology addendum).
+- **Answer key = the generation spec.** `key_fields` is what the text documents, per the reader field definitions. `truth` is what happened, per the DoH rule: not adequate if the caecum was not reached or prep was poor; awaiting histology if any tissue was taken and no result is in the document. Undocumented items keep a hidden true value.
+- **Variation:** 52 ungraded preps, 27 with no stated extent, 42 with Arabic/English headings (14 grade prep only in Arabic), 32 with OCR noise, 128 narrative, 8 mass biopsies, 20 random biopsies, Boston scores in about half of the graded preps.
+- It replaces the 43 MTSamples texts as the main reader test. MTSamples stays as a second, real-text set.
+
+**What it found** (`results/app14/before-fix-*`): both second readers, and the regex reader, had two blind spots that MTSamples never exercised.
+
+| Reader check vs the key, 300 reports | Local 4B | 26B (third-party proxy) |
+|---|---|---|
+| Fields right: caecum / prep / polyps / histology | 260 / 196 / 300 / 287 | 300 / 299 / 300 / 300 |
+| Auto-decided (both readers agree, no human) | 97 | 156 |
+| **Unsafe auto-closures** | **8** | **9** |
+| Frozen eval, CRC false closures v1 / v2 | **24/2,664 · 26/2,512** | **23/2,553 · 29/2,413** |
+
+- **Biopsies:** the field asked for "a colonic polyp removed". A mass or random biopsy with no result yet therefore read as "nothing awaited", and the loop closed. This is a definition gap, so the more accurate 26B fell into it just as often.
+- **Boston scores:** the regex counted any written Boston score as a grade, and the 4B read "Boston 2/9" as adequate.
+- Every one of the 50 + 52 false closures traces to these 8–9 report texts. Cervical, wrong-patient and consent results were unaffected.
+
+**Fix (`be441e7`, post-hoc, disclosed):**
+- The field is now **`tissue_taken`**: a polyp removed or any biopsy taken (prompt, both readers, regex).
+- A **Boston score is graded by its numbers**: adequate only with total ≥ 6 and every segment ≥ 2 (regex, and a code-side check of the second reader's own prep quote).
+- A second-reader "adequate" whose quote has no grade word (only a product name) counts as not stated.
+- Both readers re-read both corpora; the main cache (`models/gemma_cache.json`) is the 26B with the v3 prompt.
+
+**After the fix** (`results/app14/v3-*`):
+
+| | Local 4B | 26B |
+|---|---|---|
+| Fields right: caecum / prep / tissue / histology | 264 / 284 / 289 / 287 | **300 / 300 / 300 / 300** |
+| Auto-decided / unsafe auto-closures | 163 / **0** | 202 / **0** |
+| Frozen eval, CRC false closures v1 / v2 | **0/2,633 · 0/2,487** | **0/2,544 · 0/2,398** |
+| CRC recall v1 / v2 | 0.911 / 0.856 | 0.880 / 0.825 |
+| Reviewer hours per 1k loops v1 / v2 | 28.4 / 25.9 | 25.1 / 22.8 |
+| Wrong-patient / without consent, v2 | 0/9,483 · 0/5,664 | 0/9,487 · 0/5,311 |
+
+- The 4B's remaining tissue errors over-call "taken", so they only keep loops open.
+- The 26B decides more reports without review (fewer hours). Its lower recall comes from reports with no documented extent. When both readers agree it is "not stated", the DoH completion rule (R1) keeps the loop open even when the hidden truth is complete. That is the safe direction.
+- **MTSamples, re-run with the v3 readers** (`results/final/`, code `315a914`): unchanged. 0/2,698 and 0/2,533 CRC false closures, recall 0.946 / 0.879. Throughput in that run is lower (315 ev/s) because six evaluation runs shared the machine.
+
+**Limits:**
+- The corpus is synthetic and template-written, so it is cleaner than real dictation. The 43 MTSamples texts remain the real-text check.
+- The fix was designed after seeing the failures on this corpus, so a fresh held-out corpus (new seed, phrasing written by someone else) is needed before claiming the 0.
+- Caches: `models/app14/gemma_cache_{4b,26b}.json`. Reproduce: `WASL_REPORTS=data/evidence/reports_app14.json WASL_MODELS=<dir with one of them as gemma_cache.json> scripts/final_eval.sh`.
