@@ -71,11 +71,44 @@ var (
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
 
+// v7: the caecum counts as reached only with an explicit caecum statement, the appendiceal orifice or the terminal ileum
+// (the ileocaecal valve alone is not a completed examination), and a sentence that says the caecum, its pole or base,
+// or the appendiceal orifice was not reached, or could not be advanced to or intubated, means "no".
+var (
+	reCaecExplicit = regexp.MustCompile(`(?i)\bc(?:a)?ec(?:um|al)\b|appendi(?:ceal|x) orifice|terminal ileum|\bTI\b|neo-?terminal|ileocolic anastomosis`)
+	reCaecNeg      = regexp.MustCompile(`(?i)(?:could not|couldn't|unable to|not able to|failed to|cannot)(?: be)? (?:reach|advanc|intubat|pass|negotiat|enter)|\b(?:was|were|is) not (?:reached|intubated|entered)|\bnot (?:be )?(?:reached|intubated)\b|short of the c(?:a)?ecum|did not reach`)
+	reCaecSite     = regexp.MustCompile(`(?i)c(?:a)?ec|appendi|valve|extent`)
+)
+
+// caecNegated: a sentence of t says the caecum (or its landmarks) was not reached.
+func caecNegated(t string) bool {
+	for _, m := range reCaecNeg.FindAllStringIndex(t, -1) {
+		if reCaecSite.MatchString(sentenceAt(t, m[0])) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkCaecQuote: code-side check of the second reader's caecum answer against its own quote and the text around it.
+func checkCaecQuote(caec, quote, text string) string {
+	if caec != "yes" || quote == "" {
+		return caec
+	}
+	if i := strings.Index(text, quote); i >= 0 && caecNegated(sentenceAt(text, i)) {
+		return "no"
+	}
+	if !reCaecExplicit.MatchString(quote) {
+		return "not_stated"
+	}
+	return caec
+}
+
 func regexFields(t string) (c, p, po, h string) {
 	switch {
-	case reCaecNo.MatchString(t):
+	case reCaecNo.MatchString(t) || caecNegated(t):
 		c = "no"
-	case reCaecYes.MatchString(t) && reScope.MatchString(t):
+	case reCaecExplicit.MatchString(t) && reScope.MatchString(t):
 		c = "yes"
 	default:
 		c = "not_stated"
@@ -294,6 +327,7 @@ func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 		v.Model = j.model
 		if ok && g.Quotes != nil {
 			g.Prep = checkPrepQuote(g.Prep, g.Quotes["prep"])
+			g.Caecum = checkCaecQuote(g.Caecum, g.Quotes["caecum"], text)
 			g.Histology = checkHistQuote(g.Histology, g.Quotes["histology"], text)
 		}
 	}

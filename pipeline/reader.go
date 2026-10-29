@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v6(schema+histology-check+tissue+bbps+prior+corrections+pending)"
+const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)"
 
 // ReaderPrompt mirrors reader/prompt.py (ONE): keep the two in sync.
 const ReaderPrompt = `You extract colonoscopy screening-closure evidence from a clinical document.
@@ -180,6 +180,9 @@ func validateReader(r *ReaderResult, text string) error {
 	}
 	if r.Prep == "adequate" && !grounded(r.PrepQuote) {
 		r.Prep, down = "not_stated", append(down, "prep")
+	}
+	if c := checkCaecQuote(r.Caecum, r.CaecumQuote, text); c != r.Caecum {
+		r.Caecum, down = c, append(down, "caecum_quote")
 	}
 	if p := checkPrepQuote(r.Prep, r.PrepQuote); p != r.Prep {
 		r.Prep, down = p, append(down, "prep_grade")
