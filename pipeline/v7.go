@@ -39,13 +39,13 @@ var PolicyName = "v6"
 
 func policyName() string {
 	if V7Cal == nil && !V7Guard && EvPolicy == "v6" {
-		return "v6"
+		return "v6" + pilotPolicySuffix()
 	}
 	n := fmt.Sprintf("%s+cal=%v+guard=%v+tau=%.2f", EvPolicy, V7Cal != nil, V7Guard, TauClose)
 	if TauFromLTT {
 		n += "+ltt"
 	}
-	return n
+	return n + pilotPolicySuffix()
 }
 
 type Cal7 struct{ Corr, Unc *Iso }

@@ -11,6 +11,8 @@ if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(11 23 37 41 59); fi
 FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK:-$ROOT/out/final}"
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
+# pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
+PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -37,6 +39,8 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
                      "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
                      "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
                      "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"]}
+if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_AUTOAUDIT", "0") not in ("", "0"):
+    m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
@@ -52,10 +56,10 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
     (cd "$B" && ./wsi7 orchestrate -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
-        -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict > "$O/orchestrate.log" 2>&1)
-    (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict > "$R/audit.stdout" 2>&1)
-    (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
-    (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict > /dev/null)
+        -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > "$O/orchestrate.log" 2>&1)
+    (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > "$R/audit.stdout" 2>&1)
+    (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
+    (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > /dev/null)
     mkdir -p "$FINAL/$tag"
     cp "$R/report7.json" "$R/tamper.json" "$FINAL/$tag/"
     sed -i.bak -e "s#$WORK/#./out/final/#g" -e "s#$ROOT/#./#g" "$FINAL/$tag/report7.json" "$FINAL/$tag/tamper.json" && rm -f "$FINAL/$tag/"*.bak   # no local paths in committed results

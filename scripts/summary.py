@@ -2,7 +2,8 @@
 import json, sys
 r = json.load(open(sys.argv[1]))
 c, k = r['closure'], r['crc_kpi_31d']
-row = lambda d: f"P {d['precision']:.3f}  R {d['recall']:.3f}  false closures {d['false_closures']}/{d['closed_pred']}"
+f3 = lambda x: "n/a" if x is None else f"{x:.3f}"  # null = undefined ratio (e.g. no closures without review in shadow mode)
+row = lambda d: f"P {f3(d['precision'])}  R {f3(d['recall'])}  false closures {d['false_closures']}/{d['closed_pred']}"
 print("── Wasl baseline (simulated cohort; one seed) ──")
 for prog in ('crc', 'cervical'):
     print(f"{prog:9s} with review : {row(c[prog]['wasl_live_with_review'])}")
@@ -23,3 +24,15 @@ if lung and 'closure' in lung:  # second loop type (WASL_LUNG=N)
     print(f"lung_nodule (Fleischner 2017): P {lc['precision']:.3f}  R {lc['recall']:.3f}  false closures {lc['false_closures']}/{lc['pred_closed']}; "
           f"escalation recall {lung['escalation']['recall']:.3f}; overdue acc {lung['overdue_flag_accuracy']:.3f}; "
           f"recommendation acc {rec['accuracy']:.3f} (coverage {rec['coverage']:.3f}); appropriate follow-up truth {af['truth']:.3f} vs Wasl {af['wasl_measured']:.3f}")
+pl = r.get('pilot')  # pilot switches (WASL_SHADOW / WASL_AUTOAUDIT); absent when off
+if pl and 'shadow' in pl:
+    s = pl['shadow']
+    print(f"shadow mode: items {s['items_raised']}, signed {s['signed']}, confirmed {s['confirmed']}, rejected {s['rejected']} "
+          f"(reader errors caught {s['rejected_reader_error']}, reviewer errors {s['rejected_reviewer_error']}); "
+          f"extra reviewer-h {s['reviewer_hours']} ({s['reviewer_hours_per_1k_loops']}/1k loops); "
+          f"{s['streak_target']} in a row reached on day {s['first_day_streak_reached']} (longest streak {s['longest_confirmation_streak']})")
+if pl and 'autoaudit' in pl:
+    s = pl['autoaudit']
+    print(f"auto-audit p={pl['autoaudit_p']}: audits {s['items_raised']} of {s['evidence_automatic_closures_final']} automatic closures, signed {s['signed']}, "
+          f"re-opened {s['reopened_loops']} (truly false {s['reopened_truly_false_closures']}); audited truly false {s['audited_truly_false_closures']}; "
+          f"reviewer-h {s['reviewer_hours']}")
