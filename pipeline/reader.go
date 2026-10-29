@@ -184,6 +184,9 @@ func validateReader(r *ReaderResult, text string) error {
 	if p := checkPrepQuote(r.Prep, r.PrepQuote); p != r.Prep {
 		r.Prep, down = p, append(down, "prep_grade")
 	}
+	if h := checkHistQuote(r.Histology, r.HistQuote, text); h != r.Histology {
+		r.Histology, down = h, append(down, "histology_prior")
+	}
 	if r.Histology == "yes" && !grounded(r.HistQuote) {
 		r.Histology, down = "no", append(down, "histology")
 	}

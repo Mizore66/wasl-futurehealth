@@ -58,8 +58,10 @@ var (
 	// histology must be back), and a Boston score is graded by its numbers (adequate = total >= 6 with every segment >= 2).
 	reBiopsy   = regexp.MustCompile(`(?i)biops(?:y|ies)[^.]{0,60}(?:taken|obtained|performed|sent|done)|(?:took|taken|obtained|performed)[^.]{0,40}biops`)
 	reNoBiopsy = regexp.MustCompile(`(?i)\bno biops`)
-	reBBPS     = regexp.MustCompile(`(?i)(?:boston bowel prep[a-z]* scale|bbps)[^0-9.]{0,15}(\d{1,2})(?:\s*/\s*9)?`)
-	reBBPSSeg  = regexp.MustCompile(`(?i)(right|transverse|left)\s*(?:colon\s*)?[:=]?\s*(\d)\b`)
+	reBBPS       = regexp.MustCompile(`(?i)boston bowel prep[a-z]* scale|\bbbps\b`)
+	reBBPSNamed  = regexp.MustCompile(`(?i)\b(right|transverse|left|r|t|l)\s*(?:colon\s*)?[:=]?\s*([0-3])\b`)
+	reBBPSTriple = regexp.MustCompile(`\b([0-3])\s*[-/+,]\s*([0-3])\s*[-/+,]\s*([0-3])\b`)
+	reBBPSTotal  = regexp.MustCompile(`(?i)total\s*(?:score)?\s*(?:of\s*)?[:=]?\s*(\d{1,2})|=\s*(\d{1,2})|\b(\d{1,2})\s*/\s*9\b|(?:scale|bbps)\s*[:=]?\s*(\d{1,2})\b(?:\s*[^-/+,\d]|$)`)
 	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
@@ -73,7 +75,7 @@ func regexFields(t string) (c, p, po, h string) {
 	default:
 		c = "not_stated"
 	}
-	switch g := bbpsGrade(t); {
+	switch g, _ := bbpsGrade(t); {
 	case g != "":
 		p = g
 	case rePrepBad.MatchString(t):
@@ -87,43 +89,102 @@ func regexFields(t string) (c, p, po, h string) {
 	if rePolyps.MatchString(t) || reBiopsy.MatchString(t) && !reNoBiopsy.MatchString(t) {
 		po = "yes" // tissue taken (v3)
 	}
-	if reHisto.MatchString(t) {
+	if currentHistology(t, reHisto) {
 		h = "yes"
 	}
 	return
 }
 
-// bbpsGrade: "" if no Boston score is written, else adequate (total >= 6 and every listed segment >= 2) or inadequate.
-func bbpsGrade(t string) string {
-	m := reBBPS.FindStringSubmatchIndex(t)
+// bbpsGrade (v4): grade a written Boston score only when it is unambiguous. found = a Boston score is mentioned. grade =
+// adequate / inadequate when all three segment scores are read (named "right 2 … left 3", "R1 T3 L3", or "3-2-3") and agree
+// with any stated total (adequate = total >= 6 with every segment >= 2), or when only a total below 6 is written (no
+// segment split can pass). Anything else (a total >= 6 without segments, totals that disagree) is "" = not decided here.
+func bbpsGrade(t string) (grade string, found bool) {
+	m := reBBPS.FindStringIndex(t)
 	if m == nil {
-		return ""
+		return "", false
 	}
-	total := 0
-	fmt.Sscan(t[m[2]:m[3]], &total)
-	if total > 9 {
-		return ""
+	w := t[m[0]:]
+	if k := strings.IndexByte(w, '\n'); k > 0 {
+		w = w[:k]
 	}
-	ok := total >= 6
-	tail := t[m[1]:]
-	if len(tail) > 80 {
-		tail = tail[:80]
+	if len(w) > 110 {
+		w = w[:110]
 	}
-	for _, s := range reBBPSSeg.FindAllStringSubmatch(tail, -1) {
-		if s[2] < "2" {
-			ok = false
+	seg := map[byte]int{}
+	for _, x := range reBBPSNamed.FindAllStringSubmatch(w, -1) {
+		k := strings.ToLower(x[1])[0]
+		if _, dup := seg[k]; !dup {
+			seg[k] = int(x[2][0] - '0')
 		}
 	}
-	if ok {
-		return "adequate"
+	segs := []int{}
+	if len(seg) == 3 {
+		segs = []int{seg['r'], seg['t'], seg['l']}
+	} else if x := reBBPSTriple.FindStringSubmatch(w); x != nil {
+		segs = []int{int(x[1][0] - '0'), int(x[2][0] - '0'), int(x[3][0] - '0')}
 	}
-	return "inadequate"
+	total := -1
+	if x := reBBPSTotal.FindStringSubmatch(w); x != nil {
+		for _, g := range x[1:] {
+			if g != "" {
+				fmt.Sscan(g, &total)
+				break
+			}
+		}
+	}
+	if total > 9 {
+		return "", true
+	}
+	if len(segs) == 3 {
+		sum, ok := 0, true
+		for _, v := range segs {
+			sum += v
+			ok = ok && v >= 2
+		}
+		if total >= 0 && total != sum {
+			return "", true
+		}
+		if ok && sum >= 6 {
+			return "adequate", true
+		}
+		return "inadequate", true
+	}
+	if total >= 0 && total < 6 {
+		return "inadequate", true
+	}
+	return "", true
+}
+
+// v4: a histology result counts only if it is about this procedure. A tissue diagnosis inside a sentence about an earlier
+// procedure ("colonoscopy in 2019 removed 2 tubular adenomas", "history of adenomas") is not this procedure's result.
+var rePriorCtx = regexp.MustCompile(`(?i)previous|prior|history of|hx of|in (?:19|20)\d\d|\d+ (?:years?|months?) ago|last (?:colonoscopy|scope)|earlier colonoscopy|surveillance:`)
+
+// currentHistology: some match of re lies outside a prior-procedure sentence.
+func currentHistology(t string, re *regexp.Regexp) bool {
+	for _, m := range re.FindAllStringIndex(t, -1) {
+		if !rePriorCtx.MatchString(sentenceAt(t, m[0])) {
+			return true
+		}
+	}
+	return false
+}
+
+// checkHistQuote: the second reader's histology "yes" must quote a result that is not in a prior-procedure sentence.
+func checkHistQuote(hist, quote, text string) string {
+	if hist != "yes" || quote == "" {
+		return hist
+	}
+	if i := strings.Index(text, quote); i >= 0 && rePriorCtx.MatchString(sentenceAt(text, i)) {
+		return "no"
+	}
+	return hist
 }
 
 // checkPrepQuote: code-side check of the second reader's prep answer against its own quote. A Boston score in the quote
 // decides the grade; "adequate" with a quote that holds no grade word or score (e.g. only the product name) is not_stated.
 func checkPrepQuote(prep, quote string) string {
-	if g := bbpsGrade(quote); g != "" {
+	if g, _ := bbpsGrade(quote); g != "" {
 		return g
 	}
 	if prep == "adequate" && quote != "" && !reGradeWd.MatchString(quote) {
@@ -207,6 +268,7 @@ func (j *Judge2) Judge(text, kind string) *TwoVerdict {
 		v.Model = j.model
 		if ok && g.Quotes != nil {
 			g.Prep = checkPrepQuote(g.Prep, g.Quotes["prep"])
+			g.Histology = checkHistQuote(g.Histology, g.Quotes["histology"], text)
 		}
 	}
 	v.GemmaHit = ok
