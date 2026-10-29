@@ -1,0 +1,468 @@
+{
+ "manifest": {
+  "frozen_at": "2026-10-29T02:46:15.596424Z",
+  "code_revision": "ab6daa2463ae29b27b043bde017b2c710d8e0f7e",
+  "policy": "v7strict",
+  "thresholds": {
+   "tau_high_messaging": 0.99,
+   "tau_close_v7strict": 0.99,
+   "uncorroborated_cap": 0.989,
+   "calibrator": "models/iso_v7.json (stratified)",
+   "dob_second_id_guard": true,
+   "reviewer_error": 0.04,
+   "double_review": "merge+close"
+  },
+  "reader": "cached second reader: gemma-3-4b-it-Q4_K_M/hybrid-v3 (sha256-keyed)",
+  "reports": "data/evidence/reports_heldout.json",
+  "models_dir": "external (see reader)",
+  "source": "fhir",
+  "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
+  "noise_models": {
+   "v1": "training-time corruptions (gen.go)",
+   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
+  },
+  "seeds": [
+   11,
+   23,
+   37,
+   41,
+   59
+  ],
+  "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
+  "hashes": {
+   "models/encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+   "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
+   "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
+   "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
+   "models/gemma_cache.json": "57a0a59ee0dd3fe37c974913d3f8fe60cc2acfb8add2e53342c8cd28a913d532",
+   "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
+   "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+   "data/evidence/reports43.json": "087fca4d9d5c2c1db790aaa0bd4862cfedb83c7e763bc4131f3dc08baa021b12",
+   "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7"
+  },
+  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
+  "limitations": [
+   "the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test",
+   "synthetic cohorts, reviewers, capacity; no clinician labels",
+   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
+   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
+   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
+  ]
+ },
+ "by_noise": {
+  "v1": {
+   "seeds": 5,
+   "metrics": {
+    "crc_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "crc_recall": [
+     0.5806,
+     0.5546,
+     0.6066
+    ],
+    "crc_recall_no_review": [
+     0.0548,
+     0.0428,
+     0.0668
+    ],
+    "cervical_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "cervical_recall": [
+     0.9668,
+     0.9475,
+     0.9861
+    ],
+    "cervical_recall_no_review": [
+     0.5546,
+     0.5062,
+     0.603
+    ],
+    "kpi_wasl": [
+     0.3156,
+     0.3022,
+     0.329
+    ],
+    "kpi_truth": [
+     0.3258,
+     0.3131,
+     0.3385
+    ],
+    "kpi_eid_only": [
+     0.1216,
+     0.1089,
+     0.1343
+    ],
+    "kpi_abs_error_wasl": [
+     0.0102,
+     0.008,
+     0.0124
+    ],
+    "kpi_abs_error_eid_only": [
+     0.2042,
+     0.1935,
+     0.2149
+    ],
+    "linkage_pair_f1": [
+     0.9782,
+     0.9743,
+     0.9821
+    ],
+    "reviewer_h_per_1k": [
+     28.4924,
+     27.3854,
+     29.5994
+    ],
+    "review_items_per_100_loops": [
+     82.0286,
+     79.9301,
+     84.1271
+    ],
+    "review_items_per_100_arab": [
+     84.3964,
+     81.5134,
+     87.2794
+    ],
+    "reviewer_h_per_1k_arab": [
+     29.3196,
+     28.1765,
+     30.4627
+    ],
+    "review_items_per_100_filipino": [
+     77.5328,
+     69.249,
+     85.8166
+    ],
+    "reviewer_h_per_1k_filipino": [
+     27.346,
+     23.5938,
+     31.0982
+    ],
+    "review_items_per_100_south_asian": [
+     82.102,
+     78.4818,
+     85.7222
+    ],
+    "reviewer_h_per_1k_south_asian": [
+     28.025,
+     26.9177,
+     29.1323
+    ],
+    "review_items_per_100_western": [
+     76.4126,
+     69.0087,
+     83.8165
+    ],
+    "reviewer_h_per_1k_western": [
+     27.1196,
+     23.8502,
+     30.389
+    ],
+    "review_load_ratio_max_min_origin": [
+     1.1384,
+     1.0111,
+     1.2657
+    ],
+    "throughput_ev_s": [
+     339.1508,
+     313.5536,
+     364.7479
+    ],
+    "stalled_days_after_deadline_flagged_median": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "stalled_days_before_deadline_first_escalation_median": [
+     23.74,
+     23.672,
+     23.808
+    ],
+    "stalled_share_flagged": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "results_within_21d_agreement": [
+     1,
+     1.0,
+     1.0
+    ]
+   },
+   "safety_pooled": {
+    "crc_false_closures": [
+     0,
+     1670,
+     0.00221
+    ],
+    "cervical_false_closures": [
+     0,
+     1003,
+     0.00367
+    ],
+    "wrong_patient_released": [
+     0,
+     10192,
+     0.00036
+    ],
+    "released_without_granted_consent": [
+     0,
+     5873,
+     0.00063
+    ],
+    "duplicate_or_lost_outputs": [
+     0,
+     125414,
+     3e-05
+    ],
+    "ingest_lost_or_duplicated": [
+     0,
+     153442,
+     null
+    ],
+    "final_state_mismatch_loops": [
+     0,
+     null,
+     null
+    ],
+    "forged_with_effect": [
+     0,
+     112,
+     null
+    ],
+    "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
+     0,
+     null,
+     null
+    ],
+    "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
+     4,
+     null,
+     null
+    ],
+    "tamper_detected": [
+     85,
+     85,
+     null
+    ],
+    "tamper_false_alarms": [
+     0,
+     5,
+     null
+    ]
+   }
+  },
+  "v2": {
+   "seeds": 5,
+   "metrics": {
+    "crc_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "crc_recall": [
+     0.5494,
+     0.5294,
+     0.5694
+    ],
+    "crc_recall_no_review": [
+     0.0656,
+     0.0486,
+     0.0826
+    ],
+    "cervical_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "cervical_recall": [
+     0.9124,
+     0.9046,
+     0.9202
+    ],
+    "cervical_recall_no_review": [
+     0.573,
+     0.5402,
+     0.6058
+    ],
+    "kpi_wasl": [
+     0.2946,
+     0.2787,
+     0.3105
+    ],
+    "kpi_truth": [
+     0.3252,
+     0.3098,
+     0.3406
+    ],
+    "kpi_eid_only": [
+     0.1318,
+     0.1197,
+     0.1439
+    ],
+    "kpi_abs_error_wasl": [
+     0.0306,
+     0.0279,
+     0.0333
+    ],
+    "kpi_abs_error_eid_only": [
+     0.1934,
+     0.1814,
+     0.2054
+    ],
+    "linkage_pair_f1": [
+     0.9422,
+     0.9381,
+     0.9463
+    ],
+    "reviewer_h_per_1k": [
+     26.0668,
+     24.4822,
+     27.6514
+    ],
+    "review_items_per_100_loops": [
+     74.5616,
+     71.3859,
+     77.7373
+    ],
+    "review_items_per_100_arab": [
+     79.141,
+     75.6971,
+     82.5849
+    ],
+    "reviewer_h_per_1k_arab": [
+     27.7258,
+     25.9403,
+     29.5113
+    ],
+    "review_items_per_100_filipino": [
+     70.6668,
+     64.0224,
+     77.3112
+    ],
+    "reviewer_h_per_1k_filipino": [
+     24.4332,
+     22.8871,
+     25.9793
+    ],
+    "review_items_per_100_south_asian": [
+     71.0258,
+     67.0193,
+     75.0323
+    ],
+    "reviewer_h_per_1k_south_asian": [
+     24.3624,
+     22.8096,
+     25.9152
+    ],
+    "review_items_per_100_western": [
+     66.9734,
+     59.1267,
+     74.8201
+    ],
+    "reviewer_h_per_1k_western": [
+     24.1768,
+     20.4045,
+     27.9491
+    ],
+    "review_load_ratio_max_min_origin": [
+     1.2158,
+     1.144,
+     1.2875
+    ],
+    "throughput_ev_s": [
+     394.3771,
+     241.8509,
+     546.9033
+    ],
+    "stalled_days_after_deadline_flagged_median": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "stalled_days_before_deadline_first_escalation_median": [
+     23.74,
+     23.629,
+     23.851
+    ],
+    "stalled_share_flagged": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "results_within_21d_agreement": [
+     1,
+     1.0,
+     1.0
+    ]
+   },
+   "safety_pooled": {
+    "crc_false_closures": [
+     0,
+     1584,
+     0.00233
+    ],
+    "cervical_false_closures": [
+     0,
+     967,
+     0.00381
+    ],
+    "wrong_patient_released": [
+     0,
+     9432,
+     0.00039
+    ],
+    "released_without_granted_consent": [
+     0,
+     5254,
+     0.0007
+    ],
+    "duplicate_or_lost_outputs": [
+     0,
+     120854,
+     3e-05
+    ],
+    "ingest_lost_or_duplicated": [
+     0,
+     153841,
+     null
+    ],
+    "final_state_mismatch_loops": [
+     0,
+     null,
+     null
+    ],
+    "forged_with_effect": [
+     0,
+     114,
+     null
+    ],
+    "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
+     0,
+     null,
+     null
+    ],
+    "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
+     3,
+     null,
+     null
+    ],
+    "tamper_detected": [
+     85,
+     85,
+     null
+    ],
+    "tamper_false_alarms": [
+     0,
+     5,
+     null
+    ]
+   }
+  }
+ }
+}
