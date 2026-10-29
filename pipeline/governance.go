@@ -288,7 +288,7 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 	if reader != "r1" && c.Rho > 0 && u01(c.Seed, it.ItemID, reader, "corr") < c.Rho {
 		draw = "r1"
 	}
-	wrong := u01(c.Seed, it.ItemID, draw, "err") < c.Err
+	wrong := u01(c.Seed, it.ItemID, draw, "err") < c.errFor(it)
 	med := c.EvMedS
 	if kind == "evidence" && it.Reason == "prep_grade_one_click" {
 		med = OneClickMedS

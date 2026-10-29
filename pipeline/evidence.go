@@ -36,6 +36,10 @@ type TwoVerdict struct {
 	GemmaHit bool          `json:"gemma_hit"`
 	Agree    bool          `json:"agree"`
 	Label    string        `json:"label"` // adequate|inadequate|awaiting_histology|histology|needs_human|disagree
+	// Ungraded prep (PrepQuery): both readers say prep is not stated and every other field agrees; GradedLabel is the label
+	// the report would get once prep is graded adequate. Closure then queries the endoscopy unit instead of a reviewer.
+	PrepUngraded bool   `json:"prep_ungraded,omitempty"`
+	GradedLabel  string `json:"graded_label,omitempty"`
 	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
 	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
 	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
@@ -604,6 +608,27 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 		}
 	}
 	v.Agree, v.Label = false, "disagree"
+	if PrepQuery && R["prep"] == "not_stated" && G["prep"] == "not_stated" && R["caecum"] == "yes" && G["caecum"] == "yes" {
+		gl := map[string]bool{}
+		for _, po := range opts("polyps") {
+			for _, h := range opts("histology") {
+				s, r := dohState("yes", "adequate", po, h)
+				switch {
+				case s == "closed":
+					gl["adequate"] = true
+				case r == "awaiting_histology":
+					gl["awaiting_histology"] = true
+				default:
+					gl["?"] = true
+				}
+			}
+		}
+		if len(gl) == 1 && !gl["?"] {
+			for l := range gl {
+				v.PrepUngraded, v.GradedLabel = true, l
+			}
+		}
+	}
 	if len(outs) == 1 {
 		for l := range outs {
 			if l != "needs_human" {

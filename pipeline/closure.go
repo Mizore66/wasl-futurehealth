@@ -325,6 +325,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	state := "open"
 	closedDay := 0.0
 	closing := ""
+	pqs, prepQ := prepStates(f.Comms, now), "" // ungraded-prep query threads per report (prepquery.go)
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
 	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
@@ -414,6 +415,28 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		} else if r.d.Ev != nil && r.d.Ev.Agree && r.d.Ev.Label != "needs_human" {
 			label = r.d.Ev.Label
+		}
+		if label == "" && PrepQuery && r.d.Ev != nil && r.d.Ev.PrepUngraded {
+			// ungraded prep: no reviewer can grade it from the text either, so query the unit (done_quality_unverified);
+			// a unit grade resolves it; "cannot determine" or no grade by day 15 goes to a clinician decision
+			ps := pqs[r.d.ReportID]
+			switch {
+			case ps != nil && (ps.grade == "adequate" || ps.grade == "inadequate"):
+				prepQ, human = "unit_graded", "unit_prep_grade_"+ps.grade
+				label = map[bool]string{true: r.d.Ev.GradedLabel, false: "inadequate"}[ps.grade == "adequate"]
+			case ps != nil && ps.grade == "cannot_determine",
+				ps != nil && ps.queryDay >= 0 && now >= ps.queryDay+PrepDecideDays,
+				ps == nil && now >= r.d.Day+PrepDecideDays+2: // no query thread ever seen: same day-15 decision
+				prepQ = "clinician_day15"
+				raiseFor(r, "evidence", PrepDay15Purpose)
+				continue
+			default:
+				prepQ = "awaiting_unit"
+				if ps != nil && ps.escalated {
+					prepQ = "escalated"
+				}
+				continue
+			}
 		}
 		if label == "" {
 			raise(r, "evidence")
@@ -508,7 +531,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	age := now - f.SRDay
 	d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: state, Owner: owner, Prog: prog, Priority: f.Priority,
-		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState,
+		Deadline: deadline, ProcDay: procDay, EcState: ecState, EcTurns: ecTurns, TBState: tbState, PrepQ: prepQ,
 		ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: notif, AckDay: ack, RefStatus: refStatus, RefDay: refDay,
 		CommFlags: commFlags, HumanAssisted: humanAssisted && state == "closed"}
 	if state == "closed" {
@@ -560,6 +583,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			esc = append(esc, "econsult_rejected_clinician_review")
 		case "unparsed":
 			esc = append(esc, "econsult_unparsed_human")
+		}
+		switch prepQ { // ungraded prep (prepquery.go): coordinator after 5 working days, clinician at day 15
+		case "escalated":
+			esc = append(esc, "prep_grade_unanswered_5wd")
+		case "clinician_day15":
+			esc = append(esc, "prep_ungraded_clinician_decision")
 		}
 		// teach-back: the acknowledgement must restate the next step
 		switch tbState {
