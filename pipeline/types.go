@@ -91,6 +91,8 @@ type Signoff struct {
 	Reads     []string `json:"reads,omitempty"`     // distinct reviewer ids that concurred (double review)
 	DurationS float64  `json:"dur_s,omitempty"`     // simulated reviewer seconds spent on this item (all reads)
 	Purpose   string   `json:"purpose,omitempty"`   // v7: second_identifier = messaging confirmation only (never cuts a cluster)
+
+	audit *auditRec // H7 senior audit (governance.go); unexported, so never serialised
 }
 
 // Prep is the output of the stateless normalise+embed stage; keyed by FHIR stream sequence.
