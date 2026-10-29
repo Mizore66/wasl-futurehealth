@@ -87,3 +87,21 @@ func TestErrForDay15(t *testing.T) {
 		t.Fatal("errFor")
 	}
 }
+
+// The day-15 decision is about prep only: "adequate" on an ungraded report with tissue taken still waits for histology.
+func TestDay15AdequateKeepsHistologyWait(t *testing.T) {
+	defer func(q bool) { PrepQuery = q }(PrepQuery)
+	PrepQuery = true
+	r := df("DiagnosticReport", "final", 1.0, "eid", false)
+	r.ReportID = "R1"
+	r.Ev = &TwoVerdict{Kind: "colonoscopy", Label: "disagree", PrepUngraded: true, GradedLabel: "awaiting_histology",
+		Regex: ReaderVerdict{Caecum: "yes", Prep: "not_stated", Polyps: "yes", Histology: "no"}}
+	_, d := pilotRun([]DownFact{r}, map[string]string{"R1": "adequate"})
+	if d == nil || d.State == "closed" {
+		t.Fatalf("closed on a day-15 prep answer while histology is pending: %+v", d)
+	}
+	r.Ev.GradedLabel = "adequate" // no tissue taken: the prep answer alone closes it
+	if _, d = pilotRun([]DownFact{r}, map[string]string{"R1": "adequate"}); d.State != "closed" {
+		t.Fatalf("no-tissue report with a day-15 adequate answer: %s", d.State)
+	}
+}
