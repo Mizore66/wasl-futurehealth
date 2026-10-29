@@ -41,7 +41,7 @@
   - (c) FHIR polling on `_lastUpdated`, with a watermark that advances only after the ack.
   - (d) Nightly bulk reconciliation.
 
-  JetStream dedupes within 1 hour; older replays are caught by a create-if-absent ledger (designed).
+  JetStream dedupes within 1 hour; older replays are caught by a KV seen-ledger (built: checked before each publish, recorded after the ack; see "Ingest pacing, replay ledger" in `pipeline/RESULTS.md`).
 - **Our own model:** an Arabic↔Latin character transformer in Go; deterministic HNSW blocking; LightGBM scorer; union-find with human merge/split.
 - **Gate:** auto-close only if the patient link is trusted AND both evidence readers agree; otherwise human review.
   - **v7strict (canonical, built):** DOB/sex/surname-stratified recalibration; closure tier 0.99 (above the 0.989 cap on uncorroborated links); exact DOB match (or a human confirmation) before messaging on EID-chain or model-only links; per-field two-reader consensus; ungraded prep never closes.
