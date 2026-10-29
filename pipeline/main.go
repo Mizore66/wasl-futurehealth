@@ -124,6 +124,8 @@ func main() {
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
+	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
+	autoAudit := fs.Float64("autoaudit", 0, "pilot: fraction of automatic closures given a post-closure clinician audit (normal mode only; 0 = off)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
@@ -160,6 +162,7 @@ func main() {
 	if *v7cal != "" {
 		V7Cal = LoadCal7(*v7cal)
 	}
+	ShadowMode, AutoAuditP = *shadow, *autoAudit
 	V7Guard, EvPolicy = *v7guard, *evpol
 	if *tauClose > 0 {
 		TauClose = *tauClose
@@ -222,6 +225,12 @@ func main() {
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
+	}
+	if ShadowMode { // pilot switches reach every child (closure engines, reviewer, linker) only when on
+		v7Args = append(v7Args, "-shadow")
+	}
+	if AutoAuditP > 0 {
+		v7Args = append(v7Args, "-autoaudit", fmt.Sprint(AutoAuditP))
 	}
 	if *readerMode != "cached" {
 		v7Args = append(v7Args, "-reader", *readerMode, "-reader-url", *readerURL, "-reader-timeout", readerTimeout.String(), "-reader-retries", fmt.Sprint(*readerRetries))

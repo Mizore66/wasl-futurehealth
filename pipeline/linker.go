@@ -702,6 +702,8 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			key := so.ReportID
 			if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
 				key += "#confirm"
+			} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
+				key += k
 			}
 			L.evOver[so.LoopID][key] = so.Evidence
 		}

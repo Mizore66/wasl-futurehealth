@@ -637,6 +637,6 @@ func simOffline(data, wasl string, P int, withReview bool, run string) {
 		os.MkdirAll(run, 0755)
 	}
 	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
-	rb, _ := json.MarshalIndent(res, "", " ")
+	rb := marshalReport(res)
 	fmt.Println(string(rb))
 }
