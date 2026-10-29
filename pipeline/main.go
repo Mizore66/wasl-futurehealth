@@ -62,6 +62,8 @@ func main() {
 	revLat := fs.Float64("revlat", 0, "simulated reviewer median latency per item (ms, wall)")
 	hold := fs.String("hold", "", "demo: loop id whose two-reader disagreement is held for the presenter")
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
+	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
+	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
 	rdouble := fs.String("rdouble", "none", "v6: double review policy none|merge|merge+close")
 	rseed := fs.Int64("rseed", 1, "v6: reviewer noise seed")
 	dual := fs.Bool("dual", false, "v6: linker requires two distinct reads for a human merge")
@@ -126,6 +128,7 @@ func main() {
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	PrepQuery, ErrUngraded = *prepQ, *errUng
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -220,6 +223,7 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
 	}

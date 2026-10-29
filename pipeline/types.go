@@ -70,6 +70,8 @@ type CommFact struct {
 	Status   string  `json:"status"`
 	Parse    string  `json:"parse,omitempty"`
 	Sha      string  `json:"tsha,omitempty"`
+	Report   string  `json:"rep,omitempty"`   // prep-query thread: the colonoscopy report the query is about
+	Grade    string  `json:"grade,omitempty"` // prep-reply: adequate|inadequate|cannot_determine (structured, not free text)
 }
 
 // Signoff is a human reviewer decision on a unified review item (published as a FHIR Provenance).
@@ -228,6 +230,7 @@ type Decision struct {
 	EcState        string   `json:"ec_state,omitempty"`  // none|awaiting_reply|accept|conditional|needs_info|redirect|reject|unparsed
 	EcTurns        int      `json:"ec_turns,omitempty"`
 	TBState        string   `json:"tb_state,omitempty"`  // none|prompted|understood|partial|misunderstood|needs_human|unparsed
+	PrepQ          string   `json:"prep_q,omitempty"`    // ungraded prep: awaiting_unit|escalated|clinician_day15|unit_graded|cannot_determine
 	Chain          []Block  `json:"chain,omitempty"`
 	Policy         string   `json:"policy,omitempty"` // gate policy that produced this decision (v6 | v7strict+...)
 	ConsentLog     []ConsentTransition `json:"consent_log,omitempty"` // stage 3: hold/release/cancel transitions at this decision

@@ -447,6 +447,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		reportID            string
 		reportArr, fulArr   float64
 		histArr             float64 // arrival of a final pathology report with histology; Inf = none by TEnd
+		prepUngraded        bool    // the report text never grades bowel prep (answer key prep = not_stated)
 	}
 	intake := func(p *Person, hosp ProvCfg, day float64, status, reason, ref, prog string) {
 		g := getReg(p, hosp)
@@ -489,6 +490,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			src = poolBad[r.Intn(len(poolBad))]
 		}
 		c.truth = src.Truth
+		c.prepUngraded = src.KeyFields["prep"] == "not_stated"
 		c.reportID = nextID(hosp.ID, "dr")
 		arr := day + lognorm(1, 0.7)
 		if r.Float64() < .10 {
@@ -767,17 +769,17 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			if lang != "" {
 				m["language"] = lang
 			}
-			inbound := cat == "acknowledgement" || cat == "teachback-reply" || cat == "econsult-reply"
+			inbound := cat == "acknowledgement" || cat == "teachback-reply" || cat == "econsult-reply" || cat == "prep-reply"
 			if inbound {
 				m["received"] = dayToTS(day)
 				if inResp != "" {
 					m["inResponseTo"] = []interface{}{map[string]string{"reference": "Communication/" + inResp}}
 				}
-				m["medium"] = []interface{}{map[string]string{"text": map[bool]string{true: "econsult", false: "sms-reply"}[cat == "econsult-reply"]}}
+				m["medium"] = []interface{}{map[string]string{"text": map[bool]string{true: "econsult", false: "sms-reply"}[cat == "econsult-reply" || cat == "prep-reply"]}}
 			} else {
 				m["sent"] = dayToTS(day)
 				med := []string{"sms", "app"}[r.Intn(2)]
-				if cat == "econsult-question" {
+				if cat == "econsult-question" || cat == "prep-query" || cat == "prep-escalation" {
 					med = "econsult"
 				} else if cat == "callback" {
 					med = "phone"
@@ -1131,6 +1133,24 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		for _, c := range cs {
 			if c.reportID != "" && c.reportArr <= TEnd {
 				lt.Reports = append(lt.Reports, tr.ReportUID[c.reportID])
+				if PrepQuery && c.prepUngraded { // ungraded prep: unit-lead query thread (prepquery.go), own hashed stream
+					for _, pm := range prepThread(seed, c.reportID, c.reportArr+.1, c.truth != "inadequate") {
+						if pm.Day > TEnd {
+							continue
+						}
+						text := map[string]string{"prep-query": "Please grade the bowel preparation (Boston or Aronchick) for colonoscopy " + c.reportID + ".",
+							"prep-escalation": "Escalation: bowel-preparation grade for colonoscopy " + c.reportID + " not received within 5 working days.",
+							"prep-reply": "Bowel preparation for " + c.reportID + ": " + strings.ReplaceAll(pm.Grade, "_", " ") + "."}[pm.Cat]
+						ext := map[string]string{"urn:wsi:report": c.reportID}
+						if pm.Cat == "prep-reply" {
+							ext["urn:wsi:prep-grade"] = pm.Grade
+							ext["urn:wsi:sender"] = c.hosp
+						} else {
+							ext["urn:wsi:recipient"] = c.hosp
+						}
+						comm(pm.Day, pm.Cat, "", "en", text, "completed", "", ext)
+					}
+				}
 			}
 			if c.status == "fulfilled" && c.fulArr <= TEnd && (lt.ProcDay < 0 || c.day < lt.ProcDay) {
 				lt.ProcDay = c.day

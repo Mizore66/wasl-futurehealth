@@ -723,6 +723,12 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if e.RType == "Communication" {
 			loop := e.Provider + "/" + e.Focus
 			cf := CommFact{ID: e.ID, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha}
+			if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
+				cf.Report = e.ReportID
+				if e.Category == "prep-reply" {
+					cf.Grade = e.Reason
+				}
+			}
 			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
 				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only
 			}

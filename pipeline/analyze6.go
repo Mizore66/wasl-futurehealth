@@ -25,6 +25,8 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		ecTrig                                                 map[string]int
 		ecTruth, tbTruth                                       map[string]int
 		overdueOK, k90N, k90T, k90P                            int
+		prepQ                                                  map[string]int // ungraded prep: final prep_q state
+		prepQClosed, prepQFalse                                int            // closed loops that went through the query, and false ones
 	}
 	A := map[string]*agg{}
 	for id, lt := range tr.Loops {
@@ -103,6 +105,18 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 				a.notifP++
 			}
 		}
+		if d.PrepQ != "" {
+			if a.prepQ == nil {
+				a.prepQ = map[string]int{}
+			}
+			a.prepQ[d.PrepQ]++
+			if d.State == "closed" {
+				a.prepQClosed++
+				if lt.State != "closed" {
+					a.prepQFalse++
+				}
+			}
+		}
 		if lt.EcState != "none" {
 			a.ecLoops++
 			a.ecTrig[lt.EcTrigger]++
@@ -135,6 +149,7 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			"loops": a.n, "truth_closed": a.tClosed, "pred_closed": a.pClosed, "false_closures": a.fp,
 			"precision": frac(a.tp, a.tp+a.fp), "recall": frac(a.tp, a.tClosed), "state_accuracy": frac(a.stateOK, a.n),
 			"overdue_flag_accuracy": frac(a.overdueOK, a.n),
+			"prep_query":            map[string]interface{}{"final_state": a.prepQ, "closed": a.prepQClosed, "false_closures": a.prepQFalse},
 			"kpi_procedure_within_deadline": map[string]interface{}{"eligible": a.kpiN, "truth": frac(a.kpiT, a.kpiN), "pipeline": frac(a.kpiP, a.kpiN)},
 			"notified_within_21d":           map[string]interface{}{"eligible": a.notifN, "truth": frac(a.notifT, a.notifN), "pipeline": frac(a.notifP, a.notifN)},
 			"days_to_procedure_median":      map[string]interface{}{"truth": r3(median(a.tProc)), "pipeline": r3(median(a.pProc)), "n_truth": len(a.tProc), "n_pipeline": len(a.pProc)},

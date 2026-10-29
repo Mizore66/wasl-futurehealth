@@ -45,13 +45,13 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
-    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" \
+    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
       -out "$O/base" -seed "$seed" -persons 6500 -cerv 600 -noise "$noise" > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
-    (cd "$B" && ./wsi7 orchestrate -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
+    (cd "$B" && ./wsi7 orchestrate -prepquery="${WASL_PREPQUERY:-true}" -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
         -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict > "$O/orchestrate.log" 2>&1)
     (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict > "$R/audit.stdout" 2>&1)
     (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
