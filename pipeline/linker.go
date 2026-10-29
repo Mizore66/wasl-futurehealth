@@ -565,7 +565,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
-			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule"}[e.Category]
+			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -730,6 +730,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 				if e.Category == "prep-reply" {
 					cf.Grade = e.Reason
 				}
+			}
+			if e.Category == "handoff-reply" { // referrer's structured answer to a hand-off packet (handoff.go)
+				cf.Action = e.Reason
 			}
 			if e.Category == "result-notification" || e.Category == "teachback-prompt" {
 				cf.Text = e.Text // outbound: re-verified against the approved template; inbound free text stays in the FHIR log only

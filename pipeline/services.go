@@ -287,6 +287,8 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			}
 			if kind == "lung-finding" || kind == "lung-ct" {
 				ev.Ev = LungJudge(ev.Text, kind) // lungread.go: regex + cached Gemma 3 4B
+			} else if lungWorkupKind(kind) {
+				ev.Ev = LungCodedJudge(ev.Text, kind, ev.Coded) // lungworkup.go: regex + coded result
 			} else {
 				ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
 			}

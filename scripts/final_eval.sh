@@ -4,13 +4,15 @@
 #   2. Held-out persons only (gen uses the Wikidata eval split). Two noise models: v1 (training-time) and v2 (independent).
 #   3. Five seeds x {v1, v2}: full integrated NATS run (chaos on) + audit + tamper + report.
 #   4. Aggregates with 95% intervals (t over seeds) and Clopper-Pearson upper bounds for zero-event safety metrics.
-# Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir).
+# Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir),
+#   WASL_LUNG=N incidental lung-nodule loops per run (default 800; 0 = screening cohort only).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(11 23 37 41 59); fi
 FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK:-$ROOT/out/final}"
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
+LUNG="${WASL_LUNG:-800}"; export LUNG
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
@@ -31,9 +33,11 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
      "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
+     "lung_loops_per_run": int(os.environ.get("LUNG", "0")),
      "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
      "hashes": {p: h(p) for p in ["models/encoder_weights.json", "models/lgb_stream.json", "models/iso.json", "models/iso_v7.json", "models/gemma_cache.json",
-                                  "models/parse_cache.json", "data/persons3.json", "data/evidence/reports43.json", "data/evidence/pathology_templates.json"]},
+                                  "models/parse_cache.json", "data/persons3.json", "data/evidence/reports43.json", "data/evidence/pathology_templates.json",
+                                  "models/lung_gemma_cache.json", "data/lung/finding_reports.json", "data/lung/followup_reports.json"]},
      "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
      "limitations": ["the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test","synthetic cohorts, reviewers, capacity; no clinician labels",
                      "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
@@ -55,13 +59,13 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
-    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" \
+    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-      -out "$O/base" -seed "$seed" -persons 6500 -cerv 600 -noise "$noise" > /dev/null
+      -out "$O/base" -seed "$seed" -persons 6500 -cerv 600 -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
-    (cd "$B" && ./wsi7 orchestrate -prepquery="${WASL_PREPQUERY:-true}" -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
+    (cd "$B" && ./wsi7 orchestrate -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
         -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict ${PARGS[@]+"${PARGS[@]}"} ${HARGS[@]+"${HARGS[@]}"} > "$O/orchestrate.log" 2>&1)
     (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > "$R/audit.stdout" 2>&1)
     (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")

@@ -266,6 +266,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	var appts []appt
 	refStatus, refDay, refLast := "none", -1.0, -1.0
+	var srs []srFact
 	rows, paths := []row{}, map[string][]row{}
 	procDay := -1.0
 	for _, d := range f.Down {
@@ -298,6 +299,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		case "ServiceRequest":
 			if trusted {
 				st := map[string]string{"active": "accepted", "revoked": "rejected"}[d.Status]
+				srs = append(srs, srFact{day: d.Day, status: st, prov: d.Provider, reason: d.Reason, ev: d.EventID})
 				if refDay < 0 || d.Day < refDay {
 					refDay = d.Day
 				}
@@ -579,6 +581,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if state == "closed" {
 		d.ClosedDay = closedDay
 	}
+	if Handoff {
+		d.Handoff = buildHandoff(f, prog, srs, ecState, ecDay, refDay, now, f.Contact)
+	}
 	d.AuditReopened = auditNote != nil && state != "closed"
 	d.Overdue = state != "closed" && age > deadline
 	d.Unowned = owner == "" && age > OwnerGrace
@@ -630,6 +635,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		case "unparsed":
 			esc = append(esc, "econsult_unparsed_human")
 		}
+		esc = append(esc, d.Handoff.escalations(f.SRDay, now)...)
 		switch prepQ { // ungraded prep (prepquery.go): coordinator after 5 working days, clinician at day 15
 		case "escalated":
 			esc = append(esc, "prep_grade_unanswered_5wd")
@@ -652,6 +658,11 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	d.Escalations = esc
 	if OutreachOn {
 		d.Outreach = BuildOutreach(f, c.pcal)
+		if d.Handoff != nil {
+			for _, o := range d.Outreach {
+				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (o.Kind == "referral_rejected" && o.Released)
+			}
+		}
 		// v7 guard: a held message raises one human confirmation item for its registration pair
 		for _, o := range d.Outreach {
 			if o.Suppress != SupSecondID {

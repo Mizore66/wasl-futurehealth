@@ -114,6 +114,10 @@ func EncodeHL7(prov string, res map[string]interface{}, ctl string) []byte {
 		segs = append(segs, fmt.Sprintf("ORC|NW|%s||||%s", hl7Esc(gs(res, "id")), hl7Esc(gs(res, "status"))))
 		segs = append(segs, fmt.Sprintf("OBR|1|%s||^%s|%s|%s", hl7Esc(gs(res, "id")), hl7Esc(gs(res, "code", "text")), hl7Esc(gs(res, "priority")), hl7TS(gs(res, "authoredOn"))))
 	case "DiagnosticReport":
+		if lc := hl7LungCode(res); lc != "" { // lung-nodule reports: LOINC-coded ORU (hl7lung.go)
+			segs = append(segs, hl7LungORU(res, lc)...)
+			break
+		}
 		code := ""
 		if cs, ok := res["code"].(map[string]interface{}); ok {
 			if cd, ok := cs["coding"].([]interface{}); ok && len(cd) > 0 {
@@ -224,6 +228,9 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		if pt["gender"] == "" {
 			pt["gender"] = "unknown"
 		}
+	}
+	if gs(res, "resourceType") == "DiagnosticReport" && m.hl7LungRebuild(res) {
+		return prov, msgID, res, nil
 	}
 	if gs(res, "resourceType") == "DiagnosticReport" {
 		for _, obx := range m.Segs["OBX"] {
