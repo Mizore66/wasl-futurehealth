@@ -979,10 +979,18 @@ The headline evaluation now runs with the ungraded-prep query, the rejected-refe
 | Wrong-patient messages | 0 / 12,421 | 0 / 11,685 |
 | Sent without granted consent | 0 / 7,278 | 0 / 7,138 |
 | KPI error, Wasl vs EID-only | 0.010 vs 0.208 | 0.029 vs 0.191 |
-| Review-load ratio across origins | 1.19 (1.11–1.28) | 1.18 (1.05–1.31) |
+| Review-load ratio across origins, per-seed mean (95% CI) | 1.19 (1.11–1.28) | 1.18 (1.05–1.31) |
+| Review-load ratio across origins, pooled over seeds (no-bias 95th pct) | 1.15 (1.10), p = 0.002 | 1.13 (1.11), p = 0.02 |
 | Reviewer hours per 1k loops | 19.1 | 17.2 |
 | Duplicate or lost outputs; tamper detected | 0 / 141,181; 85 / 85 | 0 / 137,134; 85 / 85 |
 
 **Recall fell** from 0.918 / 0.851 at `54ff4ba` because 20 of the 43 MTSamples reports never grade the bowel prep. Those loops used to be closed by a simulated reviewer who graded prep from text that contains no grade. Now they wait for the unit's grade or the day-15 clinician, as the DoH standard requires, and the unit's replies are simulated with assumed rates. Under those assumptions the lower recall is the honest number; with real units it depends on how often reports carry a grade (1–65% missing in published audits).
 
-**Review-load ratio:** the upper bound of the 95% interval now crosses the 1.25 limit on both noise models (point estimate unchanged at 1.18–1.19). It has not been investigated yet.
+**Review-load ratio (investigated):** the per-seed interval crossing 1.25 is mostly how the metric behaves, and a small real gap sits under it.
+
+- **The metric is noisy and above 1 by construction.** It is max/min over four origin groups of unequal size (about 250 Filipino to 1,500 Arab loops per run). With the origin labels shuffled across loops, so that origin has no effect at all, the per-seed ratio still has a median of 1.11–1.13 and a 95th percentile of 1.24–1.28. Per seed, 1 of 5 runs on each noise model is above that range at p < 0.05. The old headline (`0665072`) already had one seed at 1.254.
+- **Pooled over the five seeds, the gap is real but under the limit:** 1.15 on dev noise and 1.13 on held-out noise, against a no-bias pooled median of about 1.05 (p = 0.002 and 0.02).
+- **Where it comes from:** patient-link review items. Pooled link items per 100 loops (Arab / Filipino / South Asian / Western) are 49.1 / 49.3 / 47.9 / 42.8 on dev noise and 43.5 / 39.9 / 40.7 / 38.2 on held-out noise; evidence items differ by at most 1.7. Western names get the fewest link reviews on both noise models. We have not yet traced which name features cause this.
+- **It is reviewer time, not accuracy:** 0 wrong-patient messages and 0 false closures in every origin.
+
+The aggregate now reports the pooled ratio and both no-bias references (`scripts/origin_null.py`, `results/final/*/origin_null.json`). The pipeline is unchanged.
