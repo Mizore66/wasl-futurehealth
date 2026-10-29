@@ -1,0 +1,2621 @@
+{
+ "cohort": "ltt5 cal-s101 (synthetic)",
+ "policy": "v7strict",
+ "double": "merge+close",
+ "reviewer_seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "note": "err and rho are assumed stress-test values, not measured clinician rates; mitigation parameters in SUMMARY.md",
+ "check_rho0_blind_rotate_equal_double": true,
+ "no_review_reference": {
+  "false_closures": 0,
+  "closed": 221,
+  "recall": 0.283
+ },
+ "rows": [
+  {
+   "mitigation": "all",
+   "err": 0,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0
+   ],
+   "closed": 686,
+   "recall_mean": 0.877,
+   "reads": 2635,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 5,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0
+   ],
+   "closed": 686,
+   "recall_mean": 0.877,
+   "reads": 2635,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 5,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0
+   ],
+   "closed": 686,
+   "recall_mean": 0.877,
+   "reads": 2630,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0
+   ],
+   "closed": 686,
+   "recall_mean": 0.877,
+   "reads": 2630,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0
+   ],
+   "closed": 686,
+   "recall_mean": 0.877,
+   "reads": 2630,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.02,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3385,
+   "recall_mean": 0.866,
+   "reads": 13178,
+   "reviewer_h_per_1k": 23.5,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.02,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3385,
+   "recall_mean": 0.866,
+   "reads": 13178,
+   "reviewer_h_per_1k": 23.5,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.02,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3385,
+   "recall_mean": 0.866,
+   "reads": 13154,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.02,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3385,
+   "recall_mean": 0.866,
+   "reads": 13154,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.02,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3385,
+   "recall_mean": 0.866,
+   "reads": 13154,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.02,
+   "rho": 0.25,
+   "effective_rho": 0.1125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3387,
+   "recall_mean": 0.866,
+   "reads": 13168,
+   "reviewer_h_per_1k": 23.5,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.02,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "closed": 3388,
+   "recall_mean": 0.866,
+   "reads": 13149,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.02,
+   "rho": 0.25,
+   "effective_rho": 0.125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3387,
+   "recall_mean": 0.866,
+   "reads": 13144,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.02,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "closed": 3388,
+   "recall_mean": 0.866,
+   "reads": 13125,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.02,
+   "rho": 0.25,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "closed": 3388,
+   "recall_mean": 0.866,
+   "reads": 13128,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.02,
+   "rho": 0.5,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "closed": 3388,
+   "recall_mean": 0.866,
+   "reads": 13152,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.02,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13113,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.02,
+   "rho": 0.5,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    0,
+    0
+   ],
+   "closed": 3388,
+   "recall_mean": 0.866,
+   "reads": 13125,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.02,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13089,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.02,
+   "rho": 0.5,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13099,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.02,
+   "rho": 1,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13123,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.02,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13052,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.02,
+   "rho": 1,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13089,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.02,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13028,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.02,
+   "rho": 1,
+   "effective_rho": 0.9,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    0,
+    0
+   ],
+   "closed": 3389,
+   "recall_mean": 0.866,
+   "reads": 13044,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.04,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3330,
+   "recall_mean": 0.852,
+   "reads": 13176,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.04,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3330,
+   "recall_mean": 0.852,
+   "reads": 13176,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.04,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3330,
+   "recall_mean": 0.852,
+   "reads": 13152,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.04,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3330,
+   "recall_mean": 0.852,
+   "reads": 13152,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.04,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3330,
+   "recall_mean": 0.852,
+   "reads": 13152,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.1125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3332,
+   "recall_mean": 0.852,
+   "reads": 13152,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13112,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.02_senior0.8e",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3334,
+   "recall_mean": 0.852,
+   "reads": 13112,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.05",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13147,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 59,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3332,
+   "recall_mean": 0.852,
+   "reads": 13123,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.15",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.2125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13096,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.85",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.037500000000000006,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3332,
+   "recall_mean": 0.852,
+   "reads": 13144,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13088,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13093,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate_f0.3",
+   "err": 0.04,
+   "rho": 0.25,
+   "effective_rho": 0.175,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 2,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    1,
+    0
+   ],
+   "closed": 3334,
+   "recall_mean": 0.852,
+   "reads": 13106,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13117,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13048,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.02_senior0.8e",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3336,
+   "recall_mean": 0.852,
+   "reads": 13048,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.05",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13084,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 60,
+    "wrong_before": 1,
+    "disagreed": 1,
+    "fixed": 1,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3335,
+   "recall_mean": 0.852,
+   "reads": 13088,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.15",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.425,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13045,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.85",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.07500000000000001,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3332,
+   "recall_mean": 0.852,
+   "reads": 13137,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13024,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13038,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate_f0.3",
+   "err": 0.04,
+   "rho": 0.5,
+   "effective_rho": 0.35,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3336,
+   "recall_mean": 0.852,
+   "reads": 13058,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13062,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12919,
+   "reviewer_h_per_1k": 23.0,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.02_senior0.8e",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3336,
+   "recall_mean": 0.852,
+   "reads": 12919,
+   "reviewer_h_per_1k": 23.0,
+   "audit": {
+    "audited": 24,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit_p0.05",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12955,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 60,
+    "wrong_before": 1,
+    "disagreed": 1,
+    "fixed": 1,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 13024,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.15",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.85,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12934,
+   "reviewer_h_per_1k": 23.0,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind_f0.85",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.15000000000000002,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3332,
+   "recall_mean": 0.852,
+   "reads": 13115,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12895,
+   "reviewer_h_per_1k": 23.0,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.9,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12919,
+   "reviewer_h_per_1k": 23.0,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate_f0.3",
+   "err": 0.04,
+   "rho": 1,
+   "effective_rho": 0.7,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3337,
+   "recall_mean": 0.852,
+   "reads": 12975,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.06,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3283,
+   "recall_mean": 0.84,
+   "reads": 13178,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.06,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3283,
+   "recall_mean": 0.84,
+   "reads": 13178,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.06,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3284,
+   "recall_mean": 0.84,
+   "reads": 13155,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.06,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3284,
+   "recall_mean": 0.84,
+   "reads": 13155,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.06,
+   "rho": 0,
+   "effective_rho": 0,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 0,
+   "false_closures_by_seed": [
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "closed": 3284,
+   "recall_mean": 0.84,
+   "reads": 13155,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.06,
+   "rho": 0.25,
+   "effective_rho": 0.1125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3288,
+   "recall_mean": 0.841,
+   "reads": 13140,
+   "reviewer_h_per_1k": 23.4,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.06,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3292,
+   "recall_mean": 0.841,
+   "reads": 13076,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.06,
+   "rho": 0.25,
+   "effective_rho": 0.125,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 1,
+   "false_closures_by_seed": [
+    0,
+    1,
+    0,
+    0,
+    0
+   ],
+   "closed": 3290,
+   "recall_mean": 0.841,
+   "reads": 13108,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.06,
+   "rho": 0.25,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3293,
+   "recall_mean": 0.842,
+   "reads": 13053,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.06,
+   "rho": 0.25,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3293,
+   "recall_mean": 0.842,
+   "reads": 13062,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.06,
+   "rho": 0.5,
+   "effective_rho": 0.225,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3292,
+   "recall_mean": 0.841,
+   "reads": 13085,
+   "reviewer_h_per_1k": 23.3,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.06,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3295,
+   "recall_mean": 0.842,
+   "reads": 12985,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.06,
+   "rho": 0.5,
+   "effective_rho": 0.25,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 3,
+   "false_closures_by_seed": [
+    0,
+    1,
+    1,
+    1,
+    0
+   ],
+   "closed": 3293,
+   "recall_mean": 0.842,
+   "reads": 13053,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.06,
+   "rho": 0.5,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3296,
+   "recall_mean": 0.842,
+   "reads": 12962,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.06,
+   "rho": 0.5,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3296,
+   "recall_mean": 0.842,
+   "reads": 12982,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "all",
+   "err": 0.06,
+   "rho": 1,
+   "effective_rho": 0.45,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3295,
+   "recall_mean": 0.842,
+   "reads": 13005,
+   "reviewer_h_per_1k": 23.2,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "audit",
+   "err": 0.06,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3295,
+   "recall_mean": 0.842,
+   "reads": 12811,
+   "reviewer_h_per_1k": 22.8,
+   "audit": {
+    "audited": 23,
+    "wrong_before": 0,
+    "disagreed": 1,
+    "fixed": 0,
+    "introduced": 1,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "blind",
+   "err": 0.06,
+   "rho": 1,
+   "effective_rho": 0.5,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3296,
+   "recall_mean": 0.842,
+   "reads": 12962,
+   "reviewer_h_per_1k": 23.1,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "double",
+   "err": 0.06,
+   "rho": 1,
+   "effective_rho": 1,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3296,
+   "recall_mean": 0.842,
+   "reads": 12788,
+   "reviewer_h_per_1k": 22.8,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  },
+  {
+   "mitigation": "rotate",
+   "err": 0.06,
+   "rho": 1,
+   "effective_rho": 0.9,
+   "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "false_closures": 4,
+   "false_closures_by_seed": [
+    0,
+    1,
+    2,
+    1,
+    0
+   ],
+   "closed": 3296,
+   "recall_mean": 0.842,
+   "reads": 12822,
+   "reviewer_h_per_1k": 22.8,
+   "audit": {
+    "audited": 0,
+    "wrong_before": 0,
+    "disagreed": 0,
+    "fixed": 0,
+    "introduced": 0,
+    "missed": 0
+   }
+  }
+ ]
+}

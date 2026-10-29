@@ -276,6 +276,35 @@ var SweepDoubles = []string{"none", "merge", "merge+close"}
 var SweepSeeds = 5
 var SweepRhos = []float64{0} // H7: correlation between a reader and the first read (governance.go)
 
+// SweepMits (H7 mitigations, -sweepmit): "" = the pre-mitigation sweep, output byte-identical (no mitigation key);
+// double = the current design labelled; blind | rotate | audit | all = the double read plus that mitigation.
+// SweepMitBase carries the mitigation parameters (factors, audit fraction) from the command line.
+var SweepMits = []string{""}
+
+// SweepPar: sweep jobs replayed at once (-sweepjobs). Replays running concurrently in one process were observed to
+// differ slightly between runs of the same sweep; with 1 every job is replayed alone and the output repeats exactly.
+var SweepPar = 5
+var SweepMitBase = DefaultReviewer
+
+// withMitigation switches on the named mitigation(s) in cfg, taking the parameters from base.
+func withMitigation(cfg, base ReviewerCfg, mit string) ReviewerCfg {
+	cfg.BlindFactor, cfg.RotateFactor, cfg.SeniorErrRel = base.BlindFactor, base.RotateFactor, base.SeniorErrRel
+	switch mit {
+	case "", "double":
+	case "blind":
+		cfg.Blind = true
+	case "rotate":
+		cfg.Rotate = true
+	case "audit":
+		cfg.SeniorAudit = base.SeniorAudit
+	case "all":
+		cfg.Blind, cfg.Rotate, cfg.SeniorAudit = true, true, base.SeniorAudit
+	default:
+		panic("unknown -sweepmit " + mit)
+	}
+	return cfg
+}
+
 func sweep(data, wasl string, P int, out string) {
 	o := loadOffline(data, wasl)
 	type job struct {
@@ -283,29 +312,33 @@ func sweep(data, wasl string, P int, out string) {
 		rho    float64
 		double string
 		seed   int64
+		mit    string
 	}
 	jobs := []job{}
-	for _, rho := range SweepRhos {
-		for _, e := range SweepErrs {
-			for _, d := range SweepDoubles {
-				for s := int64(1); s <= int64(SweepSeeds); s++ {
-					if e == 0 && (s > 1 || rho > 0) {
-						continue
+	for _, mit := range SweepMits {
+		for _, rho := range SweepRhos {
+			for _, e := range SweepErrs {
+				for _, d := range SweepDoubles {
+					for s := int64(1); s <= int64(SweepSeeds); s++ {
+						if e == 0 && (s > 1 || rho > 0) {
+							continue
+						}
+						jobs = append(jobs, job{e, rho, d, s, mit})
 					}
-					jobs = append(jobs, job{e, rho, d, s})
 				}
 			}
 		}
 	}
 	res := make([]map[string]interface{}, len(jobs)+1)
 	var wg sync.WaitGroup
-	sem := make(chan bool, 5)
+	sem := make(chan bool, SweepPar)
 	run := func(i int, j job) {
 		defer wg.Done()
 		sem <- true
 		defer func() { <-sem }()
 		cfg := DefaultReviewer
 		cfg.Err, cfg.Rho, cfg.Double, cfg.Seed = j.err, j.rho, j.double, j.seed
+		cfg = withMitigation(cfg, SweepMitBase, j.mit)
 		rp, sos, iters := reviewLoop(o, P, cfg)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		secs, reads, linkS, evS, guardS, guardN := 0.0, 0, 0.0, 0.0, 0.0, 0
@@ -345,6 +378,10 @@ func sweep(data, wasl string, P int, out string) {
 			"link_hours_per_1k_loops": 1000 * linkS / 3600 / loops, "evidence_hours_per_1k_loops": 1000 * evS / 3600 / loops,
 			"guard_items": guardN, "guard_hours_per_1k_loops": 1000 * guardS / 3600 / loops, "closed_auto": acc["closed_auto"], "closed_human_assisted": acc["closed_human_assisted"],
 			"gov": govMetrics(o, rp)}
+		if j.mit != "" { // keys only in mitigation sweeps, so the pre-mitigation sweep output is unchanged
+			res[i]["mitigation"], res[i]["effective_rho"], res[i]["audit"] = j.mit, cfg.effRho(), auditStats(sos, o.tr)
+			fmt.Fprintf(os.Stderr, "mit=%-6s ", j.mit)
+		}
 		fmt.Fprintf(os.Stderr, "err=%.2f rho=%.2f double=%-11s seed=%d P=%v R=%v FC=%v items=%d reads=%d h/1k=%.1f\n", j.err, j.rho, j.double, j.seed,
 			acc["precision"], acc["recall"], acc["false_closures"], len(sos), reads, 1000*secs/3600/loops)
 	}
@@ -356,6 +393,10 @@ func sweep(data, wasl string, P int, out string) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		if SweepPar == 1 { // sequential sweep: the reference replay also waits its turn
+			sem <- true
+			defer func() { <-sem }()
+		}
 		rp := replay(nil, o.preps, o.gbm, o.iso, P, true)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		res[len(jobs)] = map[string]interface{}{"err": -1, "double": "no_review", "precision": acc["precision"], "recall": acc["recall"],
@@ -365,6 +406,39 @@ func sweep(data, wasl string, P int, out string) {
 	os.MkdirAll(filepath.Dir(out), 0755)
 	b, _ := json.MarshalIndent(res, "", " ")
 	os.WriteFile(out, b, 0644)
+}
+
+// auditStats scores the senior audits against the truth (analysis only; the reviewer never sees the truth):
+// audited sign-offs, how many of the audited answers were wrong before the audit, how often the senior read disagreed,
+// and of the disagreements how many fixed a wrong answer or overturned a right one.
+func auditStats(sos map[string]*Signoff, tr *Truth) map[string]int {
+	st := map[string]int{"audited": 0, "wrong_before": 0, "disagreed": 0, "fixed": 0, "introduced": 0, "missed": 0}
+	for _, so := range sos {
+		if so.audit == nil {
+			continue
+		}
+		t := tr.Reports[so.ReportID]
+		if t == "" {
+			t = "inadequate"
+		}
+		before, after := so.audit.prevEv != t, so.Evidence != t
+		st["audited"]++
+		if before {
+			st["wrong_before"]++
+		}
+		if so.audit.disagree {
+			st["disagreed"]++
+		}
+		switch {
+		case before && !after:
+			st["fixed"]++
+		case !before && after:
+			st["introduced"]++
+		case before && after:
+			st["missed"]++
+		}
+	}
+	return st
 }
 
 func repPKOf(preps []*Prep) map[string]string {
