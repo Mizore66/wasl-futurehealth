@@ -1,0 +1,72 @@
+{
+ "seed": 2026,
+ "policy": "v7strict",
+ "reader": "cached 26B",
+ "note": "same cohort (seed 2026); reviewer per-read error 0.04 and adjudicator error 0.04 are assumed stress-test rates, not evidence that clinicians err",
+ "runs": {
+  "normal": {
+   "crc_recall": 0.781,
+   "crc_false_closures": 0,
+   "crc_pred_closed": 443,
+   "crc_recall_no_review": 0.302,
+   "reviewer_hours_per_1k_loops": 24.947,
+   "pilot": null
+  },
+  "shadow": {
+   "crc_recall": 0.765,
+   "crc_false_closures": 0,
+   "crc_pred_closed": 434,
+   "crc_recall_no_review": 0.115,
+   "reviewer_hours_per_1k_loops": 33.244,
+   "pilot": {
+    "autoaudit_p": 0,
+    "shadow": {
+     "adjudicated_reader_error": 0,
+     "adjudicated_reviewer_error": 13,
+     "confirmed": 326,
+     "confirmed_but_reader_wrong": 0,
+     "first_day_streak_reached": 120,
+     "items_raised": 339,
+     "longest_confirmation_streak": 326,
+     "longest_streak_if_any_rejection_resets": 81,
+     "note": "rejected = clinician did not confirm the automatic verdict (errors caught when rejected_reader_error); a rejection goes to a senior adjudicator (assumed per-read error PilotAdjErr) and only an adjudicated reader error resets the streak; streak in review order",
+     "rejected": 13,
+     "rejected_reader_error": 0,
+     "rejected_reviewer_error": 13,
+     "reviewer_hours": 17.305,
+     "reviewer_hours_per_1k_loops": 8.241,
+     "signed": 339,
+     "streak_target": 300
+    },
+    "shadow_mode": true
+   }
+  },
+  "autoaudit_0.1": {
+   "crc_recall": 0.776,
+   "crc_false_closures": 0,
+   "crc_pred_closed": 440,
+   "crc_recall_no_review": 0.302,
+   "reviewer_hours_per_1k_loops": 25.771,
+   "pilot": {
+    "autoaudit": {
+     "audited_truly_false_closures": 0,
+     "automatic_closures_final": 219,
+     "confirmed": 29,
+     "confirmed_but_reader_wrong": 0,
+     "evidence_automatic_closures_final": 333,
+     "items_raised": 33,
+     "rejected": 4,
+     "rejected_reader_error": 0,
+     "rejected_reviewer_error": 4,
+     "reopened_loops": 4,
+     "reopened_truly_false_closures": 0,
+     "reviewer_hours": 1.651,
+     "reviewer_hours_per_1k_loops": 0.786,
+     "signed": 33
+    },
+    "autoaudit_p": 0.1,
+    "shadow_mode": false
+   }
+  }
+ }
+}
