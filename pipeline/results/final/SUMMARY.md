@@ -54,6 +54,10 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | lung_false_closures | 0 | 1506 | 0.2450% |
 | handoff_false_closures | 0 | 66 | 5.4360% |
 
+Review load by name origin: pooled over seeds {'arab': 60.4, 'filipino': 60.8, 'south_asian': 58.2, 'western': 52.6} items per 100 loops, max/min **1.1545**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1149 and 95th percentile 1.2442 (mean over seeds); 1 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0502 and 95th percentile 1.097; the observed pooled 1.1545 has p = 0.002.
+
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |
 |---|---|
 | handoff_acted_state_correct | 206 |
@@ -124,6 +128,10 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | tamper_false_alarms | 0 | 5 | – |
 | lung_false_closures | 0 | 1463 | 0.2520% |
 | handoff_false_closures | 0 | 44 | 8.0420% |
+
+Review load by name origin: pooled over seeds {'arab': 54.0, 'filipino': 49.6, 'south_asian': 51.2, 'western': 48.0} items per 100 loops, max/min **1.1264**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1296 and 95th percentile 1.2677 (mean over seeds); 1 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0552 and 95th percentile 1.1094; the observed pooled 1.1264 has p = 0.02.
 
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |
 |---|---|

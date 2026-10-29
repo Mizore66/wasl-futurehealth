@@ -1,5 +1,5 @@
 """Aggregate pipeline/results/final/<noise>-s<seed>/ into summary.json + SUMMARY.md (means, 95% t-intervals, Clopper-Pearson UBs)."""
-import json, os, sys, glob, math, collections
+import json, os, sys, glob, math, collections, random
 from statistics import mean, stdev
 try:
     from scipy.stats import beta, t as tdist
@@ -57,6 +57,8 @@ for noise in ["v1", "v2"]:
         bo = r['reviewer']['by_origin']
         rates = [v['items_per_100_loops'] for v in bo.values()]
         m["review_load_ratio_max_min_origin"].append(max(rates) / min(rates))
+        for o, v in bo.items():
+            pool[f"origin_items_{o}"] += v['items']; pool[f"origin_loops_{o}"] += v['loops']
         cr = r['crash_recovery']
         pool["duplicate_outputs"] += cr['duplicate_outputs']; pool["lost_outputs"] += cr.get('lost_outputs', 0); pool["outputs"] += cr['expected_outputs']
         pool["ingest_lost"] += cr['ingest_lost']; pool["ingest_duplicates"] += cr['ingest_duplicates']; pool["resources"] += cr['generated_resources']
@@ -111,7 +113,32 @@ for noise in ["v1", "v2"]:
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
     extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_")}
-    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra}
+    # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
+    # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)
+    pooled_rates = {k[len("origin_items_"):]: 100 * v / pool["origin_loops_" + k[len("origin_items_"):]] for k, v in pool.items() if k.startswith("origin_items_")}
+    origin_ratio = {"per_seed_mean_ci": agg.get("review_load_ratio_max_min_origin"),
+                    "pooled_items_per_100": {k: round(v, 1) for k, v in sorted(pooled_rates.items())},
+                    "pooled_ratio": round(max(pooled_rates.values()) / min(pooled_rates.values()), 4) if pooled_rates else None}
+    nulls = [json.load(open(x)) for x in sorted(glob.glob(os.path.join(F, f"{noise}-s*", "origin_null.json")))]
+    if nulls:
+        origin_ratio.update({"no_bias_median_mean": round(mean(x["null_median"] for x in nulls), 4),
+                             "no_bias_p95_mean": round(mean(x["null_p95"] for x in nulls), 4),
+                             "seeds_above_no_bias_p05": sum(x["p_value"] < 0.05 for x in nulls), "seeds_with_reference": len(nulls)})
+        if all("items_per_loop_hist" in x for x in nulls):  # pooled test: shuffle origin labels within each seed, pool, max/min
+            rng, groups, null = random.Random(20261030), sorted(nulls[0]["loops"]), []
+            seeds = [([o for o in groups for _ in range(x["loops"][o])], [int(c) for c, n in x["items_per_loop_hist"].items() for _ in range(n)]) for x in nulls]
+            for _ in range(1000):
+                L, I = collections.Counter(), collections.Counter()
+                for labels, counts in seeds:
+                    rng.shuffle(labels)
+                    for o, c in zip(labels, counts):
+                        L[o] += 1; I[o] += c
+                rates = [I[o] / L[o] for o in groups]
+                null.append(max(rates) / min(rates))
+            null.sort()
+            origin_ratio.update({"pooled_no_bias_median": round(null[500], 4), "pooled_no_bias_p95": round(null[950], 4),
+                                 "pooled_p_value": round(sum(x >= origin_ratio["pooled_ratio"] for x in null) / 1000, 4)})
+    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra, "review_load_by_origin": origin_ratio}
     md.append(f"\n## Noise {noise}: {man['noise_models'][noise]} ({len(R)} seeds)\n")
     md.append("| Metric | Mean | 95% interval |\n|---|---|---|")
     for k in ["crc_precision", "crc_recall", "crc_recall_no_review", "cervical_precision", "cervical_recall", "kpi_truth", "kpi_wasl", "kpi_eid_only",
@@ -123,6 +150,14 @@ for noise in ["v1", "v2"]:
     md.append("\n| Safety (pooled over seeds) | Events | Denominator | 95% upper bound |\n|---|---|---|---|")
     for k, (e, n, ub) in safety.items():
         md.append(f"| {k} | {e} | {'–' if n is None else n} | {'–' if ub is None else f'{ub:.4%}'} |")
+    o = origin_ratio
+    md.append(f"\nReview load by name origin: pooled over seeds {o['pooled_items_per_100']} items per 100 loops, max/min **{o['pooled_ratio']}**.")
+    if "no_bias_median_mean" in o:
+        md.append(f"With origin labels shuffled (no origin effect), the per-seed max/min has median {o['no_bias_median_mean']} and 95th percentile "
+                  f"{o['no_bias_p95_mean']} (mean over seeds); {o['seeds_above_no_bias_p05']} of {o['seeds_with_reference']} seeds are above it at p < 0.05.")
+    if "pooled_p_value" in o:
+        md.append(f"Pooled over seeds, the no-bias max/min has median {o['pooled_no_bias_median']} and 95th percentile {o['pooled_no_bias_p95']}; "
+                  f"the observed pooled {o['pooled_ratio']} has p = {o['pooled_p_value']}.")
     if extra:
         md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))

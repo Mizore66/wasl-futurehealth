@@ -74,6 +74,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     cp "$R/report7.json" "$R/tamper.json" "$FINAL/$tag/"
     sed -i.bak -e "s#$WORK/#./out/final/#g" -e "s#$ROOT/#./#g" "$FINAL/$tag/report7.json" "$FINAL/$tag/tamper.json" && rm -f "$FINAL/$tag/"*.bak   # no local paths in committed results
     python3 "$ROOT/scripts/summary.py" "$R/report7.json" > "$FINAL/$tag/summary.txt"
+    python3 "$ROOT/scripts/origin_null.py" "$O/cohort/truth.json" "$R/reviewer_decisions.ndjson" > "$FINAL/$tag/origin_null.json"   # review-load ratio vs no-bias reference
     echo "done $tag: $(sed -n 2p "$FINAL/$tag/summary.txt")"
     rm -rf "$O/run/main/nats-"* "$O/run/base"   # keep logs, drop NATS stores
 }

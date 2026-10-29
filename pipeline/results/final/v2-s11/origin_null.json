@@ -1,0 +1,26 @@
+{
+ "observed": 1.2082,
+ "null_median": 1.1327,
+ "null_p95": 1.2761,
+ "p_value": 0.164,
+ "permutations": 1000,
+ "loops": {
+  "arab": 1519,
+  "western": 431,
+  "south_asian": 691,
+  "filipino": 259
+ },
+ "items": {
+  "arab": 792,
+  "filipino": 132,
+  "south_asian": 352,
+  "western": 186
+ },
+ "items_per_loop_hist": {
+  "0": 1756,
+  "1": 865,
+  "2": 242,
+  "3": 35,
+  "4": 2
+ }
+}
