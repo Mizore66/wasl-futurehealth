@@ -14,6 +14,8 @@ func TestValveAloneIsNotCaecum(t *testing.T) {
 		{"The scope was advanced to the mid-ascending colon. From this vantage point, the cecal pole and appendiceal orifice were visualized at a distance, though severe looping prevented advancing the tip into the cecum itself.", "no"},
 		{"Colonoscopy: the caecal caput was seen distally across a fluid-filled segment, but the colonoscope tip could not be manoeuvred into the caecum.", "no"},
 		{"Colonoscopy: the caecum was reached and the appendiceal orifice photographed; the terminal ileum could not be intubated.", "yes"},
+		{"Colonoscopy to the caecum. Retroflexion of the tip of the endoscope failed to reveal any distal rectal lesions.", "yes"},
+		{"The scope was advanced to the cecum. Unfortunately, the terminal ileum could not be intubated despite multiple attempts.", "yes"},
 	}
 	for _, c := range cases {
 		if got, _, _, _ := regexFields(c.text); got != c.want {
@@ -23,6 +25,9 @@ func TestValveAloneIsNotCaecum(t *testing.T) {
 	text := cases[0].text
 	if got := checkCaecQuote("yes", "The instrument tip reached the distal lip of the ileocecal valve", text); got == "yes" {
 		t.Fatal("valve-only quote kept as caecum reached")
+	}
+	if got := checkCaecQuote("yes", "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.", "The ileocecal valve, appendiceal opening and blind-ending pole were all seen."); got != "yes" {
+		t.Fatalf("appendiceal opening quote changed to %q", got)
 	}
 	if got := checkCaecQuote("yes", "advanced to the caecum, identified by the appendiceal orifice", "The colonoscope was advanced to the caecum, identified by the appendiceal orifice."); got != "yes" {
 		t.Fatalf("explicit caecum quote changed to %q", got)
