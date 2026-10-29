@@ -76,14 +76,14 @@ Outputs go to `out/` (gitignored):
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
-**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `54ff4ba`, reader v7.1; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
-- CRC P 1.000, R 0.851 (95% CI 0.830–0.871).
-- **0/2,452 false closures** (95% upper bound 0.15%).
-- 0/9,410 wrong-patient messages; 0/5,315 messages sent without granted consent.
-- KPI error 0.035 vs 0.205 for EID-only tracking.
-- Review load across name origins: max/min ratio 1.18 (95% CI 1.11–1.24), under the 1.25 limit.
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `a3ad83a`, reader v7.1, with the ungraded-prep query, the rejected-referral hand-off and 800 lung-nodule loops per run; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+- CRC P 1.000, R 0.703 (95% CI 0.680–0.726).
+- **0/2,061 CRC false closures** (95% upper bound 0.18%); cervical 0/987; lung 0/1,463 (lung recall 0.949).
+- 0/11,685 wrong-patient messages; 0/7,138 messages sent without granted consent.
+- KPI error 0.029 vs 0.191 for EID-only tracking.
+- Review load across name origins: max/min ratio 1.18 (95% CI 1.05–1.31). The interval now crosses the 1.25 limit.
 
-Recall is 3 points below the reader-v5 run because the ileocaecal valve alone no longer counts as caecal completion (one MTSamples report, reused across ~40 loops; see [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). On dev noise, recall is 0.918 with 0/2,617 CRC and 0/1,004 cervical false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
+Recall is lower than in earlier runs (0.851 held-out at `54ff4ba`) for one main reason: 20 of the 43 MTSamples reports never grade the bowel prep, and those loops now wait for the endoscopy unit's grade or a day-15 clinician decision instead of a reviewer grading prep from text that has no grade. The unit's replies are simulated with assumed rates (see "Ungraded bowel prep" in [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The first run of this evaluation (at `b53ce89`) found 4 CRC false closures, all one bug: a day-15 "adequate" answer on an ungraded report closed the loop while histology was still pending. It is fixed (the day-15 answer decides the prep only) and disclosed. On dev noise, recall is 0.761 with 0/2,185 CRC, 0/1,023 cervical and 0/1,506 lung false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Options** (environment variables for `scripts/demo.sh`):
 
