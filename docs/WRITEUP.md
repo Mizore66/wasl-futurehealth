@@ -58,7 +58,7 @@
     - It gives a finite-sample guarantee that P(false-closure rate ≤ α) ≥ 1−δ, run separately for wrong-patient and false-adequate risks.
     - On 12,600 calibration loops from a separate person split (held-out noise), the 0.99 tier certifies at α = 0.001, δ = 0.05 with 0 false closures and 0 wrong-patient messages. The guarantee covers loops like the calibration set, not real data.
     - This directly answers "rules were chosen after seeing eval errors". We found no published application to record linkage.
-  - **Closure rule, per the CRC standard:** a loop closes only with caecum documented (App 11.2.2), prep graded Excellent or Adequate (App 9.4–9.5, App 14), and, **if tissue was taken**, histology back. A no-polyp, no-biopsy report with those two fields closes as `closed_normal` on the report alone. An ungraded prep stays open as `done_quality_unverified`, and Wasl queries the endoscopy-unit lead, who has 5 working days to reply [A]. With no reply, it escalates to the programme coordinator. If the grade still isn't documented by day 15, a clinician decides between `closed_normal` with a documentation flag and `repeat_required`. This replaces our earlier v7 "ungraded prep can close" assumption.
+  - **Closure rule, per the CRC standard:** a loop closes only with caecum documented (App 11.2.2), prep graded Excellent or Adequate (App 9.4–9.5, App 14), and, **if tissue was taken**, histology back. A no-polyp, no-biopsy report with those two fields closes as `closed_normal` on the report alone. An ungraded prep stays open as `done_quality_unverified`, and Wasl queries the endoscopy-unit lead, who has 5 working days to reply [A]. With no reply, it escalates to the programme coordinator. If the grade still isn't documented by day 15, a clinician decides between `closed_normal` with a documentation flag and `repeat_required`. This replaces our earlier v7 "ungraded prep can close" assumption. *Built; the unit's replies are simulated* with assumed rates from proxy data (55% reply within 5 working days, 20% after escalation, 25% never; half the replies give a usable grade; `docs/research/prep-query-rates.md`).
   - **End-states (CRC 5.5.3, App 5).** A loop closes only into a named state with an owner and a next date:
 
     | End-state | Condition | Next step |
@@ -74,11 +74,12 @@
     | `suspected_malignancy` (open, never auto-closes) | Endoscopist's impression says suspicious, mass or stricture, or an urgent flag is set | Same-day MDT coordinator alert with a pre-filled referral. The 5.5.3.4 clock runs from the endoscopy date, not from histology. Histology then moves it to `closed_to_mdt` or back to the table above, with clinician sign-off. |
 
     Wasl reads the interval from the report; a clinician confirms it. A mismatch between histology and interval goes to review.
-  - Double review on merges and on "adequate" verdicts. Correlated-error mitigations (designed):
+  - Double review on merges and on "adequate" verdicts. Correlated-error mitigations (built as switches; effect simulated):
     - different roles for the two reads (coordinator for links, clinician for evidence);
     - a blinded second read;
     - reviewer-pair rotation;
     - a 2% weekly senior audit sample to estimate correlated error.
+    - *Simulated (assumed 4% error):* only blinding helps, and only while the reviewers' errors are partly correlated (false closures at ρ = 0.25: 3 → 1 per ~3,330). Rotation and a 2% audit change nothing measurable; the audit measures the error rate rather than fixing it. Effect sizes come from mammography double reading (see "H7 mitigations" in `pipeline/RESULTS.md`).
 - **Patient layer:**
   - Template notices that name the case owner.
     - **Languages:** English source text now. Arabic is machine-drafted, as are the other languages, and every non-English template needs professional translation before the pilot. Urdu, Hindi, Malayalam, Bengali and Tagalog drafts are attached alongside it (Appendix A), matching the UAE's largest non-Arab groups (India ~38%, Pakistan ~17%, Bangladesh ~7%, Philippines ~7%; secondary UAE-wide estimates, since SCAD publishes no Abu Dhabi nationality breakdown).
@@ -112,10 +113,11 @@
     - nurse callback within 2 working days for misunderstood replies (0/50 missed escalations on the frozen set);
     - SURE 4-item decisional-certainty screen (Légaré 2010). We found no Arabic-validated version, so before use the plan is forward/back translation plus cognitive interviews with ~10 patients per language (ISPOR translation guidance). Until then it is reported as exploratory. For reassurance specifically (the brief's word), the primary measure is the anxiety subscale of the HADS (HADS-A), which has published Arabic validations. We pair it with the exploratory 6-item short-form STAI (Marteau & Bekker 1992), for which Arabic versions of the full STAI exist; the short form's Arabic validity is unconfirmed, so it is also exploratory;
     - share of normal results communicated within 15 working days. The measure it moves directly is **days until a stalled loop is noticed**: today that only happens through manual audit; with Wasl it happens on the day the deadline passes. Not yet measured; it falls out of the event log.
-- **Rejected-referral hand-off (designed):**
-  - The sender keeps ownership and sends a structured packet: result, quoted rejection reason, preferences.
-  - The receiving unit must accept, accept with conditions, redirect or query by a deadline.
-  - A redirect creates a new owned referral; silence escalates to the coordinator.
+- **Rejected-referral hand-off (built; referrer behaviour simulated):**
+  - The receiving unit accepts, accepts with conditions, redirects or rejects through the e-consult thread; silence escalates to the coordinator.
+  - A final rejection hands responsibility back to the referring doctor (DoH PHC standard 4.9.5) with a structured packet: coded reason, advice, a suggested unit, information requested, the responsible clinician, whether the patient was told, consent, and an act-by date (2 business days urgent, 5 routine; an assumption, as no DoH deadline exists).
+  - No action by act-by chases the care coordinator, then the medical director; an urgent loop not re-referred 14 days after the original referral is flagged.
+  - *Simulated:* 36 of 37 finally rejected loops got a complete packet; 15 later closed after re-referral, Wasl closed 12 of them, 0 false.
 - **Booking engine (separate, simulated):** constraint-safe booking with overbooking and auto-rebooking. Female-endoscopist, Ramadan and region constraints were honoured on 996/996 bookings. The value comes from booking at all, plus overbooking and rebooking. It reports both the KPI and the all-FIT+ rate, because dropping no-shows games the KPI.
   - **We tested whether optimisation beats greedy when capacity is scarce, and it doesn't.** Capacity sweep at 0.8–1.2 slots per FIT+, 40 draws, plus a 10%-female-list variant: the daily ILP beats greedy by ≤0.5 pp at every level (best case 15.7% vs 13.3%, winning 29/40 draws). Every interval crosses 0.
   - The published 12–16% gains need multi-period lookahead, which we don't do. So we make no optimisation claim.
@@ -148,7 +150,7 @@
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
     - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/5,315 held-out).
-    - H7, correlated reviewer error: mitigations designed (different roles, blinded second read, pair rotation, 2% senior audit). *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
+    - H7, correlated reviewer error: mitigations built as switches (different roles, blinded second read, pair rotation, 2% senior audit); only blinding reduced false closures in simulation, and only at partial correlation. *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
     - H8, unequal burden or access: review-load ratio 1.18 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
     - H10, silent message loss: *measured* 0/15,769.
@@ -392,7 +394,7 @@
     - Four clusters would be underpowered at the upper ICC, so we plan 6–8 PHCs.
     - If the volume isn't reached, the pilot reports an estimate with a CI rather than a test.
   - **Secondary endpoints:** ≤31-day KPI, days-to-notice, teach-back first-pass, contest rate, false closures.
-  - **Automatic closure starts in shadow mode:** a clinician confirms every report-based auto-closure until 300 in a row are correct, then a random 10% audit continues; any confirmed error returns that phrasing class to shadow mode (see "Seven held-out corpora" below).
+  - **Automatic closure starts in shadow mode:** a clinician confirms every report-based auto-closure until 300 in a row are correct, then a random 10% audit continues; any confirmed error returns that phrasing class to shadow mode (see "Seven held-out corpora" below). Both are built as switches. A clinician's rejection goes to a senior adjudicator, and only a confirmed reader error resets the count: with the assumed 4% reviewer error, wrong rejections alone would otherwise reset it about every 25 checks. *Simulated:* 300 in a row reached on day 120 of the demo cohort, at +8 reviewer-hours per 1k loops.
   - **Scale-up decision:** the lower 95% bound of the uplift is above 0 and there are 0 audited false closures. Otherwise we stop, or redesign the patient levers.
 - **Rollout [A]:**
 

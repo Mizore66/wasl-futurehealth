@@ -1,0 +1,38 @@
+{
+ "seed": 2026,
+ "policy": "v7strict",
+ "reader": "cached 26B",
+ "note": "unit reply rates and the 25% day-15 decision error are assumptions (docs/research/prep-query-rates.md); prep flow off = earlier behaviour, where a simulated reviewer graded prep from a report that states no grade",
+ "runs": {
+  "prep_flow_on": {
+   "crc_recall": 0.781,
+   "crc_recall_no_review": 0.302,
+   "crc_false_closures": 0,
+   "crc_pred_closed": 443,
+   "crc_truth_closed": 567,
+   "reviewer_hours_per_1k_loops": 24.947,
+   "prep_query": {
+    "closed": 99,
+    "false_closures": 0,
+    "final_state": {
+     "awaiting_unit": 26,
+     "escalated": 9,
+     "unit_graded": 127
+    }
+   }
+  },
+  "prep_flow_off": {
+   "crc_recall": 0.925,
+   "crc_recall_no_review": 0.219,
+   "crc_false_closures": 0,
+   "crc_pred_closed": 540,
+   "crc_truth_closed": 584,
+   "reviewer_hours_per_1k_loops": 28.653,
+   "prep_query": {
+    "closed": 0,
+    "false_closures": 0,
+    "final_state": null
+   }
+  }
+ }
+}

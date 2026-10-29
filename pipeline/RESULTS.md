@@ -397,10 +397,9 @@ Read with care: reader A was written against the same templates it is scored on,
 
 **Built since (`727c804`):** a stable follow-up now opens the next surveillance loop (`<loop>#surv`) with the Fleischner window (e.g. CT at 18–24 months from the index scan for a multiple solid nodule; 22–26 months from the follow-up for ground-glass ≥ 6 mm). A later agreed CT that says stable or resolved closes it; growth escalates it; it goes overdue at the window end. In the 800-loop lung run, 77 of 152 stable closures opened one; the other 75 are cells where Fleischner stops after a stable scan. All 77 are open and none overdue, because the run ends before any 18-month window does. Test: `TestLungStableFollowUpOpensSurveillanceLoop`.
 
+**Built since (`b53ce89`, see "Lung loop: PET/CT and tissue, patient outreach, HL7 v2" below):** PET/CT and tissue as closing evidence for the > 8 mm cell, consent records and outreach for lung patients, and the HL7 v2 mapping of lung reports.
+
 **What is designed, not built:**
-- PET/CT or tissue sampling as closing evidence for the > 8 mm solid cell (only follow-up CT reports are read).
-- Lung outreach: no consent records are generated for lung patients, so contact stays `unknown` and nothing is sent.
-- HL7 v2 mapping of the lung reports (the run used the FHIR source only).
 - Real radiology text: the corpus is synthetic and small; local reports need a new labelled set before any claim about reader accuracy.
 
 **Reproduce:** `python3 scripts/lung_corpus.py` (corpus), `wsi7 lungcache -lungdata data/lung -out models/lung_gemma_cache.json` with `llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4` (cache, ~2.5 min), `WASL_LUNG=800 scripts/demo.sh all` (run, ~10 min). Metrics: `report7.json` → `programmes_live.lung_nodule`.
@@ -844,3 +843,120 @@ Corpora 2–4 were all written by Claude agents, which share one model family an
 - All corpora are synthetic. Real reports have not been tested.
 
 Caches: `models/heldout{5,6,7,8}/gemma_cache_{26b,4b}.json`. Reader score: `wsi readerscore -policy v7strict -wasl <dir> -reports <corpus>`.
+
+### Ungraded bowel prep: query the unit, escalate, clinician at day 15 (`e344a1a`)
+
+**What changed.** A colonoscopy report that records the caecum but no bowel-prep grade no longer goes to a reviewer, because a reviewer cannot grade prep from a report that does not state it. Wasl now queries the endoscopy-unit lead, escalates to the programme coordinator after 5 working days, and at day 15 a clinician decides. A usable grade from the unit closes the loop as usual; "cannot determine", or no answer by day 15, goes to the clinician (`pipeline/prepquery.go`).
+
+**Simulated unit.** No published study measures how units answer this query, so every rate is an assumption built from proxies ([`docs/research/prep-query-rates.md`](../docs/research/prep-query-rates.md)): 55% answer within 5 working days, 20% only after escalation, 25% never; 50% of answers are a usable grade. The day-15 clinician decision is given a 25% per-read error because the clinician decides without a grade. **This is a stress-test rate, not evidence that clinicians make errors.**
+
+**Demo cohort** (seed 2026, `results/prep-query/`):
+
+| | Prep flow off (before) | Prep flow on |
+|---|---|---|
+| CRC recall (with review) | 0.925 | 0.781 |
+| CRC false closures | 0 / 540 | 0 / 443 |
+| Reviewer hours per 1k loops | 28.7 | 24.9 |
+| Ungraded-prep loops: unit graded / escalated / awaiting unit | – | 127 / 9 / 26 |
+| Closed after the query | – | 99, 0 false |
+
+Recall falls because the old simulation was too generous: its reviewer graded prep from text that contains no grade. The new number is the honest one under these assumptions.
+
+### Pilot switches: shadow mode and the audit sample (`4796f3b`, `b699ab9`)
+
+**What changed.** Two switches, off by default:
+- **Shadow mode** (`-shadow`, `WASL_SHADOW=1`): every automatic closure becomes a suggestion that a clinician confirms.
+- **Audit sample** (`-autoaudit p`, `WASL_AUTOAUDIT=p`): after automatic closure starts, a random share p of automatic closures is re-read by a clinician, and a disagreement re-opens the loop.
+
+**Streak rule fix.** The pilot rule needs 300 confirmations in a row. With a 4% assumed reviewer error, a clinician wrongly rejects a correct closure about once every 25 checks, so the count would almost never reach 300 (longest run 81). A rejection now goes to a senior adjudicator (same assumed error rate), and **only an adjudicated reader error resets the count.**
+
+**Demo cohort** (seed 2026, `results/pilot/`):
+
+| | Normal | Shadow mode | 10% audit sample |
+|---|---|---|---|
+| CRC recall / false closures | 0.781 / 0 | 0.765 / 0 | 0.776 / 0 |
+| Reviewer hours per 1k loops | 24.9 | 33.2 | 25.8 |
+| Clinician checks | – | 339: 326 confirmed, 13 rejected | 33 audits |
+| Rejections traced to the reader / to the reviewer | – | 0 / 13 | 0 / 4 |
+| 300 in a row reached | – | day 120 (longest 326) | – |
+
+The 4 audit rejections re-opened 4 correct closures: a cost in reviewer time, not a safety failure. Neither switch found a reader error on this cohort.
+
+### H7 mitigations: blinded second read, pair rotation, senior audit (`d9e243e`)
+
+H7 showed that double review loses its protection when the two reviewers' errors are correlated. Three standard mitigations are now switches (`-reviewblind`, `-reviewrotate`, `-senioraudit p`). Effect sizes come from published screening-mammography double reading, so they transfer only partly to document review:
+- **Blinding** removes 50% of the copying (range 15–85%). Discordance rose when the second reader was blinded (Klompenhouwer, *Eur J Cancer* 2015; Cooper, *Eur Radiol* 2022); 45–75% of readers followed a wrong prior suggestion (Dratsch, *Radiology* 2023).
+- **Rotation** removes 10% (range 0–30%). This is an assumption: no evidence of pair-specific correlated error was found (Gommers, *Radiology* 2023).
+- **Senior audit:** 2% of signed closing answers, with the senior at half the reviewer's error rate (assumption; RADPEER disagreement 2.9%, Borgstede, *JACR* 2004).
+
+**False closures, 4% reviewer error, merge+close double read, 5 seeds** (`results/h7-mitigations/`; about 3,330 closures per cell):
+
+| Design | ρ = 0 | ρ = 0.25 | ρ = 0.5 | ρ = 1 |
+|---|---|---|---|---|
+| Double read | 0 | 3 | 4 | 4 |
+| + blinded second read | 0 | 1 | 3 | 4 |
+| + pair rotation | 0 | 3 | 4 | 4 |
+| + 2% senior audit | 0 | 3 | 4 | 4 |
+| All three | 0 | 1 | 3 | 4 |
+
+ρ is the assumed correlation between the two reviewers; every rate here is a stress-test assumption. **Blinding is the only mitigation that helps**, and only while correlation is partial; at a blind factor of 0.85 every ρ gives 1. A 2% audit is too small to catch 4 bad closures in 3,330; it measures the error rate, it does not fix it. All false closures come from about 4 items that are hard for any reader. Reviewer time is unchanged (23.0–23.4 h per 1k loops).
+
+### Rejected-referral hand-off packet (`b53ce89`)
+
+**What changed.** When a referral is finally rejected, responsibility goes back to the referring doctor (DoH Standard for Primary Healthcare Services 2022, 4.9.5). Wasl now builds a structured hand-off packet for them (`pipeline/handoff.go`). "Finally rejected" means one of: the e-consult outcome is reject; a redirect that the second unit also rejects; or a rejected referral whose e-consult is still unanswered after 5 business days.
+
+The packet holds: the referral, a reason code from a closed list, advice to the referrer, a suggested unit, any information requested, the responsible clinician, timestamps, whether the patient was told, the outreach consent, and an **act-by date** (2 business days for urgent, 5 for routine). If the referrer has not acted by then, the care coordinator is chased; after the same number of business days again, the medical director; and an urgent loop still not re-referred 14 days after the original referral is flagged.
+
+Fields and clocks come from NHS e-RS, Ontario eReferral, CPSO and FHIR Task, with the DoH roles ([`docs/research/referral-handoff-lung.md`](../docs/research/referral-handoff-lung.md), part A). No public DoH rule sets a deadline for the referrer, so the act-by dates are assumptions. So are the referrer's simulated actions: 45% act by act-by, 20% after the coordinator, 10% after the medical director, 25% never.
+
+**Same cohort with and without it** (seed 2026, `results/handoff/`). The referrer is simulated after every other loop on its own random stream. With the switch off, the cohort is byte-identical to the previous generator; with it on, only the rejected loops differ.
+
+| | Off | On |
+|---|---|---|
+| CRC recall / false closures | 0.783 / 0 | 0.784 / 0 (9 more closures, all correct) |
+| Cervical recall / false closures | 0.966 / 0 | 0.962 / 0 |
+| Finally rejected loops (CRC + cervical) | 37, all stuck | 37 packets in truth, 31 built by Wasl (+5 the truth does not have) |
+| Packets with every required field | – | 36 / 36 |
+| Referrer acted (truth) / acted by act-by | – | 28 / 17 |
+| Loops closed after re-referral (truth / Wasl) | 0 / 0 | 15 / 12, 0 false |
+
+The 6 missed packets have not been analysed yet. Their loops still raise the existing e-consult escalations.
+
+### Lung loop: PET/CT and tissue, patient outreach, HL7 v2 (`b53ce89`)
+
+This closes the three lung gaps listed above.
+
+**PET/CT and tissue as closing evidence** (`pipeline/lungworkup.go`). Fleischner 2017 allows "CT at 3 months, PET/CT, or tissue sampling" for a solid nodule over 8 mm, but only a follow-up CT could close the loop.
+- PET/CT with low uptake closes the loop (next step: CT surveillance, BTS 2015).
+- An FDG-avid PET refers to the lung MDT and waits for tissue within 28 days (NHS optimal lung pathway). After 28 days it is overdue.
+- Benign tissue closes the loop; malignant tissue escalates to the MDT; non-diagnostic tissue holds for repeat sampling.
+- PET/CT applies only to the over-8 mm cell; it never closes a loop whose Fleischner cell asks for CT.
+
+PET and pathology reports carry a coded result. Reader A is a regex on the text and reader B is the coded result; the loop moves only when they agree, or a clinician signs. In the simulation, 3% of coded results contradict the text.
+
+Simulated parameters: recommendation to PET median 11 days and PET to procedure median 13 days (sourced). The rest are assumptions: work-up choice (CT 40%, PET/CT 45%, tissue 15%), 35% FDG-avid, biopsy after an avid PET 85%, and the result mixes. Texts are synthetic templates, so the regex reader was written against them.
+
+**Patient outreach and consent.** Lung patients now get consent records from the imaging centre: 4% deny, and an assumed 10% have no record yet. Two messages are added: a follow-up reminder in the last 14 days of the Fleischner window, and an overdue recall. Both are sent in the imaging centre's name, phone first then letter, and **only with granted consent**: held while consent is unknown, cancelled on deny (UAE Federal Law 2/2019 Art. 16; DoH PHC 4.10.2).
+
+**HL7 v2** (`pipeline/hl7lung.go`). Lung reports travel as ORU^R01:
+- OBR-4: LOINC with the local code as the alternate identifier (CT chest 24627-2, PET/CT 81555-5, pathology 11526-1).
+- OBR-25: result status.
+- OBX: one per report section (findings 18782-3, impression 19005-8, recommendation 18783-1), plus the coded result in a CWE OBX.
+
+The listener rebuilds code, date, status, text and coded result from the segments, not from the Z-segment copy (test `TestHL7LungReportFromSegments`). The full-cohort HL7 round-trip test passes on a cohort with lung loops.
+
+**Integrated run over HL7 v2** (seed 2026, 800 lung loops, chaos on, `results/lung-workup/`):
+
+| | Value |
+|---|---|
+| Lung state accuracy | 0.994 |
+| Lung closures | 296 of 301 true, **0 false** (95% UB 1.3%) |
+| Escalations | 30 of 30, 0 extra |
+| Over-8 mm loops closed by CT / PET/CT / tissue | 10 / 15 / 4 |
+| Lung messages released / held for consent / cancelled | 148 / 18 / 7 |
+| Messages released without granted consent (whole run) | **0 / 1,450** |
+| CRC / cervical false closures in the same run | 0 / 0 |
+
+With `-handoff=false -lungworkup=false` the generator output is byte-identical to the previous one, with and without `-lung 800`.
+
+**Still open:** PET/CT closures do not yet open a surveillance-CT child loop. Lung loops have no e-consult or hand-off packet. The reader-B coded result is synthetic, not from a real PACS or LIS.
