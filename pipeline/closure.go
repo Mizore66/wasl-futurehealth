@@ -409,6 +409,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		label, human := "", ""
 		if h, ok := f.EvOver[r.d.ReportID]; ok {
 			label, human = h, h
+			// ungraded prep (prepquery.go): the day-15 clinician decides the prep only, "closed with a documentation flag"
+			// or "repeat required". Closing still follows the report's own tissue/histology fields, so with tissue taken
+			// the loop waits for histology (post-hoc fix after the frozen evaluation at b53ce89, disclosed).
+			if PrepQuery && h == "adequate" && r.d.Ev != nil && r.d.Ev.PrepUngraded {
+				label = r.d.Ev.GradedLabel
+			}
 			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not
 			// reached, inadequate prep) needs a confirming review that sees the quote; until then the loop stays open
 			if h == "adequate" && explicitInadequate(r.d.Ev) {
