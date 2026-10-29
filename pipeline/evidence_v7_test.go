@@ -11,6 +11,9 @@ func TestValveAloneIsNotCaecum(t *testing.T) {
 		{"Extent: advanced proximally. Aphthous erosions noted near the ileocaecal valve. Colonoscopy.", "not_stated"},
 		{"The colonoscope was advanced to the caecum, identified by the appendiceal orifice and ileocaecal valve.", "yes"},
 		{"Colonoscopy: terminal ileum intubated.", "yes"},
+		{"The scope was advanced to the mid-ascending colon. From this vantage point, the cecal pole and appendiceal orifice were visualized at a distance, though severe looping prevented advancing the tip into the cecum itself.", "no"},
+		{"Colonoscopy: the caecal caput was seen distally across a fluid-filled segment, but the colonoscope tip could not be manoeuvred into the caecum.", "no"},
+		{"Colonoscopy: the caecum was reached and the appendiceal orifice photographed; the terminal ileum could not be intubated.", "yes"},
 	}
 	for _, c := range cases {
 		if got, _, _, _ := regexFields(c.text); got != c.want {
