@@ -22,7 +22,7 @@ import (
 	"time"
 )
 
-const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v5(schema+histology-check+tissue+bbps+prior+corrections)"
+const ReaderModelVersion = "gemma-3-4b-it-Q4_K_M/hybrid-v6(schema+histology-check+tissue+bbps+prior+corrections+pending)"
 
 // ReaderPrompt mirrors reader/prompt.py (ONE): keep the two in sync.
 const ReaderPrompt = `You extract colonoscopy screening-closure evidence from a clinical document.
