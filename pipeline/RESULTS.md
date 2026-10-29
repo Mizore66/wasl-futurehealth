@@ -960,3 +960,29 @@ The listener rebuilds code, date, status, text and coded result from the segment
 With `-handoff=false -lungworkup=false` the generator output is byte-identical to the previous one, with and without `-lung 800`.
 
 **Still open:** PET/CT closures do not yet open a surveillance-CT child loop. Lung loops have no e-consult or hand-off packet. The reader-B coded result is synthetic, not from a real PACS or LIS.
+
+### Frozen evaluation with every new piece on (`a3ad83a`)
+
+The headline evaluation now runs with the ungraded-prep query, the rejected-referral hand-off and **800 lung-nodule loops per run**, on MTSamples with reader v7.1 (`results/final/`).
+
+**First run (`b53ce89`): 4 CRC false closures** (3/2,285 dev noise, 1/2,164 held-out), all one class. The report had ungraded prep and tissue taken, with histology still pending. The day-15 clinician answered "adequate" (25% assumed error) and the engine closed the loop without histology. This was a bug against the documented design, where the clinician decides the prep only. **Fix (`a3ad83a`, post-hoc, disclosed):** the day-15 answer sets the prep grade, and closure still follows the report's tissue and histology fields (test `TestDay15AdequateKeepsHistologyWait`). Raw results of the failed run are kept outside the repo.
+
+**Re-run at `a3ad83a`:**
+
+| | Dev noise v1 | Held-out noise v2 |
+|---|---|---|
+| CRC precision / recall | 1.000 / 0.761 (0.734–0.788) | 1.000 / 0.703 (0.680–0.726) |
+| CRC false closures | **0 / 2,185** | **0 / 2,061** (UB 0.18%) |
+| Cervical false closures | 0 / 1,023 | 0 / 987 |
+| Lung false closures / recall | **0 / 1,506** / 0.984 | **0 / 1,463** / 0.949 |
+| Hand-off: packets matched / closed after re-referral | 206 of 223 / 66, 0 false | 176 of 210 / 44, 0 false |
+| Wrong-patient messages | 0 / 12,421 | 0 / 11,685 |
+| Sent without granted consent | 0 / 7,278 | 0 / 7,138 |
+| KPI error, Wasl vs EID-only | 0.010 vs 0.208 | 0.029 vs 0.191 |
+| Review-load ratio across origins | 1.19 (1.11–1.28) | 1.18 (1.05–1.31) |
+| Reviewer hours per 1k loops | 19.1 | 17.2 |
+| Duplicate or lost outputs; tamper detected | 0 / 141,181; 85 / 85 | 0 / 137,134; 85 / 85 |
+
+**Recall fell** from 0.918 / 0.851 at `54ff4ba` because 20 of the 43 MTSamples reports never grade the bowel prep. Those loops used to be closed by a simulated reviewer who graded prep from text that contains no grade. Now they wait for the unit's grade or the day-15 clinician, as the DoH standard requires, and the unit's replies are simulated with assumed rates. Under those assumptions the lower recall is the honest number; with real units it depends on how often reports carry a grade (1–65% missing in published audits).
+
+**Review-load ratio:** the upper bound of the 95% interval now crosses the 1.25 limit on both noise models (point estimate unchanged at 1.18–1.19). It has not been investigated yet.

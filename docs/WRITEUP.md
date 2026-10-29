@@ -124,7 +124,7 @@
   - **Below 1.0 slot per FIT+, ≤31-day completion collapses to 0–14% under *any* booking policy.** Only levers that create capacity help there (see "Queue control" below).
 - **Fairness remedies (built and evaluated):**
   - Female-list protection in the booking engine: a demand-sized hold on female-list slots, released 7 days out. It cuts the access gap from 18.5 to 12.6 pp at a 15–30% female-list share, to 4.5 pp at 30% and 0.6 pp at 40% (`booking/RESULTS.md`).
-  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brings the ratio to 1.18 (1.11–1.24). Per-origin gate calibration was not needed.
+  - Review load across name origins: placeholder birth dates (1 Jan / 1 Jul) were the cause. They now corroborate on a full name match, which brought the ratio to 1.18 (1.11–1.24); in the latest frozen run it is 1.18 (1.05–1.31), so the upper end now crosses the 1.25 limit. Per-origin gate calibration was not needed.
 - **Dashboard:** reported vs evidenced closure per provider; drop-off reasons (never notified, not understood, referral rejected, no-show, inadequate, unlinked); review load by name origin; small-cell suppression.
 - **Governance:**
   - RBAC and consent in code;
@@ -149,7 +149,7 @@
     - H3, missed surveillance interval: clinician confirms.
     - H4, cancer delayed until histology: the `suspected_malignancy` state.
     - H5, contest ignored: a contest blocks auto-closure.
-    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/5,315 held-out).
+    - H6, outreach sent before consent: consent hold built. *Measured:* 0 messages released without granted consent in every frozen run (0/7,138 held-out at `a3ad83a`).
     - H7, correlated reviewer error: mitigations built as switches (different roles, blinded second read, pair rotation, 2% senior audit); only blinding reduced false closures in simulation, and only at partial correlation. *Simulated:* at an assumed 4% error rate, double review gives 0 false closures when reads are independent, but 3/3,334 at ρ=0.5 and 4/3,336 at ρ=1, the same rate as a single read. ρ is unknown until the pilot audit measures it.
     - H8, unequal burden or access: review-load ratio 1.18 (passes); female-list access gap 12.6 pp with protection at the assumed 15–30% female-list share, so female-list staffing is a go-live condition.
     - H9, data leaving the UAE: local 4B, egress denied.
@@ -223,8 +223,8 @@
 | Area | Result |
 |---|---|
 | Integrated baseline run (v7strict), one seed: 1,500 CRC + 600 cervical; an assumed 4% independent reviewer error per read (stress test, not a measured rate); 3 process kills + 1 NATS kill | CRC P 1.000, R 0.948, 0/563 false closures. Cervical 0/216. No review: CRC R 0.167. 26.3 reviewer-h/1k. 0 duplicates or losses. Tamper 17/17. Forged 0/24 with effect. 0 wrong-patient sends. 0 messages without granted consent. |
-| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Held-out v2: CRC P 1.000, R 0.851 (0.830–0.871), **0/2,452 false closures** (UB 0.15%), 0/9,410 wrong-patient messages, 0/5,315 messages without consent, KPI error 0.035 vs EID-only 0.205, review-load ratio across origins 1.18 (1.11–1.24). Dev v1: R 0.918, CRC 0/2,617, cervical 0/1,004. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
-| Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. |
+| **Frozen final evaluation**, 5 seeds × 2 noise models; v2 = an independent corruption model never used for training or tuning | Code `a3ad83a`, with the ungraded-prep query, the rejected-referral hand-off and 800 lung loops per run. Held-out v2: CRC P 1.000, R 0.703 (0.680–0.726), **0/2,061 false closures** (UB 0.18%), lung 0/1,463 (R 0.949), 0/11,685 wrong-patient messages, 0/7,138 messages without consent, KPI error 0.029 vs EID-only 0.191, review-load ratio across origins 1.18 (1.05–1.31). Dev v1: R 0.761, CRC 0/2,185, cervical 0/1,023, lung 0/1,506. Recall fell from 0.851 because ungraded-prep reports now wait for the unit's grade (simulated, assumed rates). The first run (`b53ce89`) found 4 CRC false closures from one bug (a day-15 "adequate" closed a loop with histology pending); fixed and disclosed. At τ 0.98 a run had found 1/2,757 (a name-only link at the 0.989 cap); τ is now 0.99, a disclosed post-hoc change. |
+| Lung-nodule loop (Fleischner 2017), 800 loops on the same engine | P 1.000, R 0.993, 0/297 false closures; recommendation accuracy 1.000. Synthetic CT report corpus. Now in the frozen evaluation with PET/CT and tissue as closers for > 8 mm nodules: 0/1,506 · 0/1,463 false closures, recall 0.984 / 0.949. |
 | Rule baselines | EID-only: P 0.834, R 0.364. Any procedure ≤120 d: P 0.661, R 0.431. |
 | v7 gate under the **current closure rule** (ungraded prep stays open; offline, one cohort, 5 seeds × 3 reviewer error rates) | Double review: 0/8,422 false closures (upper bound 0.04%); recall 0.973 / 0.958 / 0.943 at 2 / 4 / 6% error. No-review recall 0.273; 27.0 reviewer-h per 1k loops. Single review: 21 false closures, so double review is mandatory. |
 | *Same gate, old rule (ungraded prep closes); superseded* | No-review recall 0.766; 0/8,553; 16.1 h/1k. 20 of the 43 MTSamples reports never grade prep, so this cohort is a worst case. The DoH report template (App 14) has a prep-quality field. Rules were chosen after seeing eval errors. |

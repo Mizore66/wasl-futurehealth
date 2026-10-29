@@ -1,11 +1,12 @@
 ── Wasl baseline (simulated cohort; one seed) ──
-crc       with review : P 1.000  R 0.832  false closures 0/486
-crc       no review   : P 1.000  R 0.180  false closures 0/105
-cervical  with review : P 1.000  R 0.902  false closures 0/193
+crc       with review : P 1.000  R 0.682  false closures 0/382
+crc       no review   : P 1.000  R 0.311  false closures 0/174
+cervical  with review : P 1.000  R 0.921  false closures 0/197
 cervical  no review   : P 1.000  R 0.575  false closures 0/123
-CRC ≤31-day KPI (all referrals): EID-only 0.131 | truth 0.338 | Wasl 0.293
-exactly-once: duplicates 0 / 24028 outputs; final-state mismatches 0
-provenance chains verified 867/867; forged events with effect 0/22
+CRC ≤31-day KPI (all referrals): EID-only 0.134 | truth 0.307 | Wasl 0.284
+exactly-once: duplicates 0 / 27001 outputs; final-state mismatches 0
+provenance chains verified 1727/1727; forged events with effect 0/22
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 1073, without granted consent 0; held-for-consent 17, cancelled 110
-throughput 516 ev/s; reviewer-h/1k loops 25.3
+consent hold: released 1325, without granted consent 0; held-for-consent 240, cancelled 93
+throughput 409 ev/s; reviewer-h/1k loops 16.6
+lung_nodule (Fleischner 2017): P 1.000  R 0.941  false closures 0/272; escalation recall 0.879; overdue acc 0.978; recommendation acc 1.000 (coverage 1.000); appropriate follow-up truth 0.385 vs Wasl 0.329
