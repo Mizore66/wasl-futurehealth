@@ -9,7 +9,7 @@
   4,
   5
  ],
- "note": "err and rho are assumed stress-test values, not measured clinician rates; mitigation parameters in SUMMARY.md",
+ "note": "err and rho are assumed stress-test values, not measured clinician rates; mitigation parameters and sources in pipeline/RESULTS.md, \"H7 mitigations\"",
  "check_rho0_blind_rotate_equal_double": true,
  "no_review_reference": {
   "false_closures": 0,
