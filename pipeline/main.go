@@ -249,6 +249,10 @@ func main() {
 	}
 	rcfg := DefaultReviewer
 	rcfg.Err, rcfg.Double, rcfg.Seed = *rerr, *rdouble, *rseed
+	PilotAdjSeed = *rseed
+	if *rerr > 0 { // report7 runs without -rerr: keep the assumed 4%
+		PilotAdjErr = *rerr
+	}
 	if rcfg.Err == 0 && *revNoise > 0 { // v6-impact flag name kept as an alias
 		rcfg.Err = *revNoise
 	}

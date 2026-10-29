@@ -162,13 +162,17 @@ func TestLinkerStoresPilotSignoffsUnderOwnKey(t *testing.T) {
 func TestStreakDay(t *testing.T) {
 	var obs []shadowObs
 	for i := 0; i < 10; i++ {
-		obs = append(obs, shadowObs{float64(i), i != 3})
+		obs = append(obs, shadowObs{float64(i), i != 3, i == 3})
 	}
 	if day, best := streakDay(obs, 5); day != 8 || best != 6 {
 		t.Fatalf("streak: day %v best %d", day, best)
 	}
 	if day, _ := streakDay(obs, 7); day != -1 {
 		t.Fatalf("unreached streak should be -1, got %v", day)
+	}
+	obs[3].resets = false // adjudicated as the reviewer's error: the run continues through it
+	if day, best := streakDay(obs, 7); day != 7 || best != 9 {
+		t.Fatalf("non-resetting rejection: day %v best %d", day, best)
 	}
 }
 
