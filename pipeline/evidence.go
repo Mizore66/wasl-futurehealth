@@ -76,18 +76,30 @@ var (
 // or the appendiceal orifice was not reached, or could not be advanced to or intubated, means "no".
 var (
 	reCaecExplicit = regexp.MustCompile(`(?i)\bc(?:a)?ec(?:um|al)\b|appendi(?:ceal|x) orifice|terminal ileum|\bTI\b|neo-?terminal|ileocolic anastomosis`)
-	reCaecNeg      = regexp.MustCompile(`(?i)(?:could not|couldn't|unable to|not able to|failed to|cannot)(?: be)? (?:reach|advanc|intubat|pass|negotiat|enter)|\b(?:was|were|is) not (?:reached|intubated|entered)|\bnot (?:be )?(?:reached|intubated)\b|short of the c(?:a)?ecum|did not reach`)
-	reCaecSite     = regexp.MustCompile(`(?i)c(?:a)?ec|appendi|valve|extent`)
+	reCaecNeg      = regexp.MustCompile(`(?i)\b(?:could not|couldn't|cannot|unable to|not able to|failed to)(?: be)? \w+|\bprevent(?:ed|s|ing)\b|\b(?:at|from) a distance\b|\bseen distally\b|\bbeyond reach\b|\b(?:was|were|is) not (?:reached|intubated|entered|achieved)|\bnot (?:be )?(?:reached|intubated)\b|short of the c(?:a)?ecum|did not reach`)
+	reClause       = regexp.MustCompile(`(?i);|,?\s+\b(?:but|though|although|however|whereas)\b`)
+	reCaecSite     = regexp.MustCompile(`(?i)c(?:a)?ec|appendi|valve|extent|tip|scope|insertion`)
 )
 
 // caecNegated: a sentence of t says the caecum (or its landmarks) was not reached.
 func caecNegated(t string) bool {
 	for _, m := range reCaecNeg.FindAllStringIndex(t, -1) {
-		if reCaecSite.MatchString(sentenceAt(t, m[0])) {
+		if reCaecSite.MatchString(clauseAt(sentenceAt(t, m[0]), t[m[0]:m[1]])) {
 			return true
 		}
 	}
 	return false
+}
+
+// clauseAt: the clause of sentence s that holds match (clauses split at ";", "but", "though", "however"...), so
+// "caecum reached; terminal ileum could not be intubated" does not negate the caecum.
+func clauseAt(s, match string) string {
+	for _, c := range reClause.Split(s, -1) {
+		if strings.Contains(c, match) {
+			return c
+		}
+	}
+	return s
 }
 
 // checkCaecQuote: code-side check of the second reader's caecum answer against its own quote and the text around it.
