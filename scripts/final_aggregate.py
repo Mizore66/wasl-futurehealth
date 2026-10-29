@@ -73,6 +73,18 @@ for noise in ["v1", "v2"]:
         pool["tamper_attacks"] += len(att); pool["tamper_detected"] += sum(a['detected'] for a in att)
         pool["tamper_false_alarm"] += sum(a['detected'] for a in t['attacks'] if a['attacker'] == '-')
         m["throughput_ev_s"].append(r['throughput_ev_s'])
+        lu = r.get('programmes_live', {}).get('lung_nodule')
+        if lu:  # incidental lung-nodule loops (second loop type), when the run has them
+            lc = lu['closure']
+            m["lung_precision"].append(lc['precision']); m["lung_recall"].append(lc['recall'])
+            m["lung_state_accuracy"].append(lu['state_accuracy']); m["lung_escalation_recall"].append(lu['escalation']['recall'])
+            pool["lung_false_closures"] += lc['false_closures']; pool["lung_closed"] += lc['pred_closed']
+            for k2, v2 in (lu.get('workup_gt8mm') or {}).items():
+                pool["lung_workup_" + k2] += v2
+        for prog in ("crc", "cervical"):  # rejected-referral hand-off packet (handoff.go)
+            ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
+            for k2, v2 in ho.items():
+                pool[f"handoff_{k2}"] += v2
         ps = r.get('patient_side')
         if ps:
             m["stalled_days_after_deadline_flagged_median"].append(ps['days_after_deadline_flagged_median'])
@@ -94,11 +106,16 @@ for noise in ["v1", "v2"]:
         "tamper_detected": [pool["tamper_detected"], pool["tamper_attacks"], None],
         "tamper_false_alarms": [pool["tamper_false_alarm"], len(T), None],
     }
-    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety}
+    if pool["lung_closed"]:
+        safety["lung_false_closures"] = [pool["lung_false_closures"], pool["lung_closed"], cp_ub(pool["lung_false_closures"], pool["lung_closed"])]
+    if pool["handoff_closed"]:
+        safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
+    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_")}
+    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra}
     md.append(f"\n## Noise {noise}: {man['noise_models'][noise]} ({len(R)} seeds)\n")
     md.append("| Metric | Mean | 95% interval |\n|---|---|---|")
     for k in ["crc_precision", "crc_recall", "crc_recall_no_review", "cervical_precision", "cervical_recall", "kpi_truth", "kpi_wasl", "kpi_eid_only",
-              "kpi_abs_error_wasl", "kpi_abs_error_eid_only", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
+              "kpi_abs_error_wasl", "kpi_abs_error_eid_only", "lung_precision", "lung_recall", "lung_state_accuracy", "lung_escalation_recall", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
              sorted(x for x in agg if (x.startswith("review_items_per_100_") and x != "review_items_per_100_loops") or (x.startswith("reviewer_h_per_1k_"))) + ["review_load_ratio_max_min_origin"]:
         if k in agg:
             a = agg[k]
@@ -106,6 +123,9 @@ for noise in ["v1", "v2"]:
     md.append("\n| Safety (pooled over seeds) | Events | Denominator | 95% upper bound |\n|---|---|---|---|")
     for k, (e, n, ub) in safety.items():
         md.append(f"| {k} | {e} | {'–' if n is None else n} | {'–' if ub is None else f'{ub:.4%}'} |")
+    if extra:
+        md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |\n|---|---|")
+        md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
 md.append("\n## Limitations\n" + "\n".join(f"- {x}" for x in man["limitations"]))
 json.dump(out, open(os.path.join(F, 'summary.json'), 'w'), indent=1)
 open(os.path.join(F, 'SUMMARY.md'), 'w').write("\n".join(md) + "\n")

@@ -12,6 +12,7 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	escT, escP, escBoth, recN, recOK, inScope := 0, 0, 0, 0, 0, 0
 	afN, afT, afP, afAgree := 0, 0, 0, 0
 	conf, attr := map[string]map[string]int{}, map[string]int{}
+	wk, wkOut := map[string]int{}, map[string]int{} // > 8 mm work-up paths and closers; patient outreach intents
 	ids := make([]string, 0, len(tr.Loops))
 	for id, lt := range tr.Loops {
 		if lt.Prog == "lung_nodule" && lt.Lung != nil {
@@ -67,6 +68,30 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		if d != nil && d.Overdue == lt.Overdue {
 			ovOK++
 		}
+		if lt.Lung.Path != "" {
+			wk["truth_path_"+lt.Lung.Path]++
+			if lt.State == "awaiting_tissue" {
+				wk["truth_awaiting_tissue"]++
+			}
+		}
+		if d != nil && d.Lung != nil && d.Lung.Closer != "" && lungResolved(d.State) {
+			wk["pred_closed_by_"+d.Lung.Closer]++
+			if !lungResolved(lt.State) {
+				wk["pred_closed_by_"+d.Lung.Closer+"_false"]++
+			}
+		}
+		if ps == "awaiting_tissue" {
+			wk["pred_awaiting_tissue"]++
+		}
+		if d != nil {
+			for _, o := range d.Outreach {
+				st := "released"
+				if !o.Released {
+					st = o.Suppress
+				}
+				wkOut[o.Kind+":"+st]++
+			}
+		}
 		if !lt.Lung.InScope {
 			continue
 		}
@@ -96,12 +121,13 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	}
 	return map[string]interface{}{
 		"loops": n, "rule": "fleischner2017", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
-		"closure": map[string]interface{}{"definition": "closed (follow-up CT stable/resolved) + no_followup_needed", "truth_closed": tp + fn,
+		"closure": map[string]interface{}{"definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed", "truth_closed": tp + fn,
 			"pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn),
 			"false_closure_rate_upper95": r3(wilsonUp(fp, tp+fp)), "attribution": attr},
 		"escalation": map[string]interface{}{"truth_escalated": escT, "pred_escalated": escP, "both": escBoth,
 			"recall": frac(escBoth, escT), "precision": frac(escBoth, escP)},
 		"overdue_flag_accuracy": frac(ovOK, n),
+		"workup_gt8mm":          wk, "patient_outreach_final": wkOut,
 		"recommendation": map[string]interface{}{"in_scope_loops": inScope, "with_pipeline_rec": recN, "coverage": frac(recN, inScope),
 			"accuracy": frac(recOK, recN), "correct": recOK},
 		"appropriate_followup_within_window": map[string]interface{}{"eligible": afN, "truth": frac(afT, afN), "wasl_measured": frac(afP, afN),
@@ -112,7 +138,7 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 // lungTwoReader: end-to-end two-reader statistics over every lung CT report version in the run's FHIR log.
 func lungTwoReader(preps []*Prep, tr *Truth) map[string]interface{} {
 	out := map[string]interface{}{}
-	for _, kind := range []string{"lung-finding", "lung-ct"} {
+	for _, kind := range []string{"lung-finding", "lung-ct", LungPETCode, LungPathCode} {
 		n, hit, agree, wrong := 0, 0, 0, 0
 		uniq := map[string]bool{}
 		for _, p := range preps {

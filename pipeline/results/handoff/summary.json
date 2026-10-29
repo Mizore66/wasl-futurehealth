@@ -1,0 +1,80 @@
+{
+ "seed": 2026,
+ "policy": "v7strict",
+ "reader": "cached 26B",
+ "note": "same cohort with and without the hand-off (the hand-off is simulated last on its own random stream; with it off the cohort is byte-identical to the previous generator). Referrer action rates are assumptions (pipeline/handoff.go).",
+ "runs": {
+  "off": {
+   "crc": {
+    "recall": 0.783,
+    "false_closures": 0,
+    "pred_closed": 444,
+    "truth_closed": 567,
+    "state_accuracy": 0.894
+   },
+   "cervical": {
+    "recall": 0.966,
+    "false_closures": 0,
+    "pred_closed": 200,
+    "truth_closed": 207,
+    "state_accuracy": 0.988
+   },
+   "released_without_granted_consent": 0
+  },
+  "on": {
+   "crc": {
+    "recall": 0.784,
+    "false_closures": 0,
+    "pred_closed": 453,
+    "truth_closed": 578,
+    "state_accuracy": 0.893,
+    "handoff": {
+     "counts": {
+      "acted_state_correct": 22,
+      "closed": 8,
+      "packets_all_required_fields": 25,
+      "packets_matched": 22,
+      "packets_missed": 5,
+      "packets_pipeline_only": 3,
+      "truth_acted_by_act_by": 11,
+      "truth_closed_after_handoff": 11,
+      "truth_packets": 27,
+      "truth_referrer_acted": 21,
+      "truth_urgent": 27
+     },
+     "final_status": {
+      "medical_director": 8,
+      "referrer_acted": 17
+     }
+    }
+   },
+   "cervical": {
+    "recall": 0.962,
+    "false_closures": 0,
+    "pred_closed": 203,
+    "truth_closed": 211,
+    "state_accuracy": 0.987,
+    "handoff": {
+     "counts": {
+      "acted_state_correct": 9,
+      "closed": 4,
+      "packets_all_required_fields": 11,
+      "packets_matched": 9,
+      "packets_missed": 1,
+      "packets_pipeline_only": 2,
+      "truth_acted_by_act_by": 6,
+      "truth_closed_after_handoff": 4,
+      "truth_packets": 10,
+      "truth_referrer_acted": 7
+     },
+     "final_status": {
+      "coordinator": 2,
+      "medical_director": 3,
+      "referrer_acted": 6
+     }
+    }
+   },
+   "released_without_granted_consent": 0
+  }
+ }
+}

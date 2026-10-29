@@ -1,0 +1,71 @@
+{
+ "seed": 2026,
+ "source": "hl7 (HL7 v2 over MLLP; lung reports as LOINC-coded ORU^R01)",
+ "lung_loops": 800,
+ "policy": "v7strict",
+ "note": "PET/CT and tissue texts and coded results are synthetic templates; work-up path mix, FDG-avid share, result mixes and lung consent coverage are assumptions (pipeline/lungworkup.go, pipeline/augment_cohort.py)",
+ "lung": {
+  "loops": 800,
+  "state_accuracy": 0.994,
+  "closure": {
+   "attribution": {
+    "missed_pred_open": 5
+   },
+   "definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed",
+   "false_closure_rate_upper95": 0.013,
+   "false_closures": 0,
+   "missed": 5,
+   "precision": 1,
+   "pred_closed": 296,
+   "recall": 0.983,
+   "tp": 296,
+   "truth_closed": 301
+  },
+  "escalation": {
+   "both": 30,
+   "precision": 1,
+   "pred_escalated": 30,
+   "recall": 1,
+   "truth_escalated": 30
+  },
+  "overdue_flag_accuracy": 0.995,
+  "workup_gt8mm": {
+   "pred_awaiting_tissue": 1,
+   "pred_closed_by_ct": 10,
+   "pred_closed_by_pet": 15,
+   "pred_closed_by_tissue": 4,
+   "truth_awaiting_tissue": 1,
+   "truth_path_ct": 12,
+   "truth_path_pet": 21,
+   "truth_path_tissue": 9
+  },
+  "patient_outreach_final": {
+   "lung_followup_due:consent_unknown_hold": 2,
+   "lung_followup_due:released": 14,
+   "lung_overdue_recall:consent_unknown_hold": 16,
+   "lung_overdue_recall:consent_withheld": 7,
+   "lung_overdue_recall:released": 134
+  }
+ },
+ "consent_timing": {
+  "intents_cancelled_by_consent": 101,
+  "intents_ever_held_for_consent": 240,
+  "opted_out_loops": 111,
+  "released_after_opt_out_on_file": 0,
+  "released_before_opt_out_recorded": 0,
+  "released_total": 1450,
+  "released_without_granted_consent": 0
+ },
+ "screening": {
+  "crc": {
+   "recall": 0.782,
+   "false_closures": 0,
+   "pred_closed": 452
+  },
+  "cervical": {
+   "recall": 0.962,
+   "false_closures": 0,
+   "pred_closed": 203
+  }
+ }
+}

@@ -72,6 +72,7 @@ type CommFact struct {
 	Sha      string  `json:"tsha,omitempty"`
 	Report   string  `json:"rep,omitempty"`   // prep-query thread: the colonoscopy report the query is about
 	Grade    string  `json:"grade,omitempty"` // prep-reply: adequate|inadequate|cannot_determine (structured, not free text)
+	Action   string  `json:"action,omitempty"` // handoff-reply: what the referrer did (re_referred)
 }
 
 // Signoff is a human reviewer decision on a unified review item (published as a FHIR Provenance).
@@ -241,6 +242,7 @@ type Decision struct {
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
 	Lung           *LungDecision `json:"lung,omitempty"` // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
+	Handoff        *HandoffPacket `json:"handoff,omitempty"` // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
 }
 
@@ -256,6 +258,8 @@ type Outreach struct {
 	Suppress string  `json:"suppress,omitempty"` // link_below_tau_unconfirmed|consent_withheld|second_identifier_unconfirmed
 	Guard    string  `json:"guard,omitempty"`    // v7: dob_match|human_path|held
 	Pair     [2]string `json:"pair,omitempty"`   // v7: referral registration, downstream registration
+	Channel  string  `json:"channel,omitempty"` // lung outreach: phone_then_letter
+	Sender   string  `json:"sender,omitempty"`  // lung outreach: the facility the message is sent in the name of
 }
 
 func sha(b []byte) string {

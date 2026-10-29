@@ -57,6 +57,8 @@ type LungDecision struct {
 	FollowUp     string  `json:"followup_report,omitempty"`
 	WithinWindow bool    `json:"within_window,omitempty"`
 	FollowUpCT   bool    `json:"followup_ct_seen,omitempty"` // a trusted follow-up CT exists (Decision.ProcDay is its day)
+	Closer       string  `json:"closer,omitempty"`          // > 8 mm work-up (lungworkup.go): ct | pet | tissue
+	TissueDue    float64 `json:"tissue_due_day,omitempty"`  // FDG-avid PET/CT: tissue result expected by this day
 	Scope        string  `json:"scope"`                      // in_scope | <exclusion reason>
 }
 
@@ -266,6 +268,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 		ld.WindowStart, ld.WindowEnd = f.SRDay+float64(rec.WinLo), f.SRDay+float64(rec.WinHi)
 		var holdRow *row
+		var avidChain []Block // FDG-avid PET/CT: the loop waits for tissue (lungworkup.go)
 		for _, r := range fus {
 			if !r.trusted {
 				unlinked = true
@@ -284,13 +287,39 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 				}
 				break // an unread earlier follow-up blocks a decision on a later one
 			}
-			if lab == "not_assessable" {
+			if lab == "not_assessable" || lab == "nondiagnostic" {
 				rr := r
 				holdRow, state = &rr, "not_assessable"
 				continue
 			}
+			if lungWorkupLabel(lab) && rec.Action != FlCTPET { // PET/CT and tissue close only the > 8 mm work-up
+				rr := r
+				holdRow = &rr
+				break
+			}
+			base := fchain
+			if avidChain != nil {
+				base = avidChain
+			}
+			if lab == "pet_avid" {
+				ld.Outcome, ld.FollowUp, ld.Closer, ld.TissueDue = lab, r.d.ReportID, "pet", r.d.Day+TissueDueDays
+				ch := appendBlock(base, "link_decision", linkBlock(f, r.d, r.pc))
+				ch = appendBlock(ch, "evidence", lungEvBlock(r.d, h))
+				ch, hs := withSignoff(ch, r.d.ReportID)
+				human = human || hs || h != ""
+				avidChain = appendBlock(ch, "escalation_decision", map[string]interface{}{"loop": f.LoopID, "state": "awaiting_tissue",
+					"programme": "lung_nodule", "rule": "fleischner2017", "outcome": lab, "to": "lung MDT; tissue sampling", "day": round4(r.d.Day),
+					"tissue_due_day": round4(ld.TissueDue), "basis": "FDG-avid nodule (BTS 2015: Herder risk); tissue within 28 days (NHS optimal lung cancer pathway)"})
+				state = "awaiting_tissue"
+				continue
+			}
 			ld.Outcome, ld.FollowUp = lab, r.d.ReportID
-			ch := appendBlock(fchain, "link_decision", linkBlock(f, r.d, r.pc))
+			if lungWorkupLabel(lab) {
+				ld.Closer = map[bool]string{true: "pet", false: "tissue"}[lab == "pet_low"]
+			} else if rec.Action == FlCTPET {
+				ld.Closer = "ct"
+			}
+			ch := appendBlock(base, "link_decision", linkBlock(f, r.d, r.pc))
 			ch = appendBlock(ch, "evidence", lungEvBlock(r.d, h))
 			ch, hs := withSignoff(ch, r.d.ReportID)
 			human = human || hs || h != "" || r.d.Weak.Basis == "human"
@@ -306,6 +335,16 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 					"rule": "fleischner2017", "outcome": lab, "closed_day": round4(closedDay), "window": []float64{round4(ld.WindowStart), round4(ld.WindowEnd)},
 					"within_window": ld.WithinWindow, "next_step": next,
 					"policy": "trusted link (p_cal>=tau|eid|human) AND two-reader agreement on the follow-up CT (or clinician sign-off)"})
+			case "pet_low", "benign":
+				state, closedDay, closing = "closed", r.d.Day, r.d.ReportID
+				chain = appendBlock(ch, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "closed", "programme": "lung_nodule",
+					"rule": "fleischner2017", "outcome": lab, "closer": ld.Closer, "closed_day": round4(closedDay),
+					"next_step": map[string]string{"pet_low": "CT surveillance (BTS 2015: Herder < 10%)", "benign": "benign tissue diagnosis: management per lung MDT"}[lab],
+					"policy": "trusted link AND the coded result agrees with the report text (or clinician sign-off); Fleischner > 8 mm: CT at 3 months, PET/CT or tissue sampling"})
+			case "malignant":
+				state = "escalated"
+				chain = appendBlock(ch, "escalation_decision", map[string]interface{}{"loop": f.LoopID, "state": "escalated", "programme": "lung_nodule",
+					"rule": "fleischner2017", "outcome": lab, "to": "lung MDT / cancer pathway", "day": round4(r.d.Day)})
 			case "growing", "suspicious_solid":
 				state = "escalated"
 				chain = appendBlock(ch, "escalation_decision", map[string]interface{}{"loop": f.LoopID, "state": "escalated", "programme": "lung_nodule",
@@ -316,6 +355,10 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 				state = "open"
 			}
 			break
+		}
+		if state == "awaiting_tissue" {
+			chain = appendBlock(avidChain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": "awaiting_tissue",
+				"programme": "lung_nodule", "rule": "fleischner2017", "policy": "an FDG-avid nodule stays open until a tissue result is read"})
 		}
 		if state == "open" || state == "not_assessable" {
 			chain = fchain
@@ -343,14 +386,20 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		d.HumanAssisted = human
 		unlinked = false
 	}
-	d.Overdue = (state == "open" || state == "not_assessable") && rec.Action != "" && rec.Action != FlNone && age > float64(rec.WinHi)
+	d.Overdue = (state == "open" || state == "not_assessable") && rec.Action != "" && rec.Action != FlNone && age > float64(rec.WinHi) ||
+		state == "awaiting_tissue" && now > ld.TissueDue
 	d.Unowned = owner == "" && age > OwnerGrace
 	d.Dropoff = lungDropoff(state, unlinked)
 	esc := []string{}
-	if d.Overdue {
+	if d.Overdue && state != "awaiting_tissue" {
 		esc = append(esc, "overdue_lung_nodule_window")
 	}
 	switch state {
+	case "awaiting_tissue":
+		esc = append(esc, "refer_specialist_mdt")
+		if d.Overdue {
+			esc = append(esc, "tissue_after_avid_pet_overdue")
+		}
 	case "escalated":
 		esc = append(esc, "refer_specialist_mdt")
 	case "not_assessable":
@@ -362,6 +411,25 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		esc = append(esc, "risk_not_recorded_treated_high")
 	}
 	d.Escalations = esc
+	if OutreachOn {
+		d.Outreach = lungOutreach(f, ld, state, d.Overdue, now)
+		if ls.contact == nil {
+			ls.contact = map[string]string{}
+		}
+		for _, o := range d.Outreach { // consent hold / cancel history, as for the screening programmes
+			st := map[bool]string{true: "released", false: "other"}[o.Released]
+			if o.Suppress == SupConsentHold {
+				st = "held"
+			} else if o.Suppress == SupConsent {
+				st = "cancelled"
+			}
+			k := o.Event + "|" + o.Kind
+			if prev, seen := ls.contact[k]; (seen && prev != st) || (!seen && (st == "held" || st == "cancelled")) {
+				d.ConsentLog = append(d.ConsentLog, ConsentTransition{Event: o.Event, Kind: o.Kind, From: prev, To: st, Contact: f.Contact})
+			}
+			ls.contact[k] = st
+		}
+	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
 	d.Sig = sha(canon(d))
@@ -449,6 +517,14 @@ func lungEvAlt(t string) []string {
 		return []string{"stable"}
 	case "not_assessable":
 		return []string{"stable"}
+	case "pet_low":
+		return []string{"pet_avid"}
+	case "pet_avid":
+		return []string{"pet_low"}
+	case "benign", "nondiagnostic":
+		return []string{"malignant"}
+	case "malignant":
+		return []string{"benign"}
 	}
 	if _, _, cnt, ok := parseFindingLabel(t); ok { // index CT: misread the count
 		return []string{t[:len(t)-len(cnt)] + map[string]string{FlSingle: FlMulti, FlMulti: FlSingle}[cnt]}
@@ -458,7 +534,7 @@ func lungEvAlt(t string) []string {
 
 // lungClosingAnswer: answers that would let a lung loop close (double-read under close-review policies).
 func lungClosingAnswer(t string) bool {
-	if t == "stable" || t == "resolved" {
+	if t == "stable" || t == "resolved" || t == "pet_low" || t == "benign" {
 		return true
 	}
 	_, mm, _, ok := parseFindingLabel(t)

@@ -27,6 +27,8 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		overdueOK, k90N, k90T, k90P                            int
 		prepQ                                                  map[string]int // ungraded prep: final prep_q state
 		prepQClosed, prepQFalse                                int            // closed loops that went through the query, and false ones
+		ho                                                     map[string]int // hand-off packet (handoff.go): detection, action, outcome
+		hoStatus                                               map[string]int
 	}
 	A := map[string]*agg{}
 	for id, lt := range tr.Loops {
@@ -117,6 +119,53 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 				}
 			}
 		}
+		if lt.Handoff != nil || d.Handoff != nil {
+			if a.ho == nil {
+				a.ho, a.hoStatus = map[string]int{}, map[string]int{}
+			}
+			t, q := lt.Handoff, d.Handoff
+			switch {
+			case t != nil && q != nil:
+				a.ho["packets_matched"]++
+			case t != nil:
+				a.ho["packets_missed"]++
+			default:
+				a.ho["packets_pipeline_only"]++
+			}
+			if t != nil {
+				a.ho["truth_packets"]++
+				if t.Urgent {
+					a.ho["truth_urgent"]++
+				}
+				if t.ActDay >= 0 {
+					a.ho["truth_referrer_acted"]++
+					if t.ActDay <= t.ActBy {
+						a.ho["truth_acted_by_act_by"]++
+					}
+				}
+				if lt.State == "closed" {
+					a.ho["truth_closed_after_handoff"]++
+				}
+			}
+			if q != nil {
+				a.hoStatus[q.Status]++
+				if q.ReferralID != "" && q.ReasonCode != "" && q.Advice != "" && q.Alternative != "" && q.Responsible != "" && q.DecidedBy != "" && q.Consent != "" {
+					a.ho["packets_all_required_fields"]++
+				}
+				if q.PatientInformed {
+					a.ho["patient_informed"]++
+				}
+				if t != nil && (q.ActedAt >= 0) == (t.ActDay >= 0) {
+					a.ho["acted_state_correct"]++
+				}
+				if d.State == "closed" {
+					a.ho["closed"]++
+					if lt.State != "closed" {
+						a.ho["false_closures"]++
+					}
+				}
+			}
+		}
 		if lt.EcState != "none" {
 			a.ecLoops++
 			a.ecTrig[lt.EcTrigger]++
@@ -150,6 +199,7 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			"precision": frac(a.tp, a.tp+a.fp), "recall": frac(a.tp, a.tClosed), "state_accuracy": frac(a.stateOK, a.n),
 			"overdue_flag_accuracy": frac(a.overdueOK, a.n),
 			"prep_query":            map[string]interface{}{"final_state": a.prepQ, "closed": a.prepQClosed, "false_closures": a.prepQFalse},
+			"handoff":               map[string]interface{}{"counts": a.ho, "final_status": a.hoStatus},
 			"kpi_procedure_within_deadline": map[string]interface{}{"eligible": a.kpiN, "truth": frac(a.kpiT, a.kpiN), "pipeline": frac(a.kpiP, a.kpiN)},
 			"notified_within_21d":           map[string]interface{}{"eligible": a.notifN, "truth": frac(a.notifT, a.notifN), "pipeline": frac(a.notifP, a.notifN)},
 			"days_to_procedure_median":      map[string]interface{}{"truth": r3(median(a.tProc)), "pipeline": r3(median(a.pProc)), "n_truth": len(a.tProc), "n_pipeline": len(a.pProc)},

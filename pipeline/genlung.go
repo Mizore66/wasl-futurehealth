@@ -62,6 +62,8 @@ type LungTruth struct {
 	Adherence string   `json:"adherence"`         // within | late | never | n/a
 	Outcome   string   `json:"outcome,omitempty"` // first observed follow-up outcome
 	FollowUps []string `json:"followups,omitempty"`
+	Path      string   `json:"workup_path,omitempty"` // > 8 mm solid (lungworkup.go): ct | pet | tissue
+	PETDay    float64  `json:"pet_day,omitempty"`     // FDG-avid PET/CT day (tissue expected within 28 days)
 }
 
 type lungGen struct {
@@ -299,6 +301,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		tr.Loops[loop] = lt
 		// --- follow-up behaviour (simulated adherence; published appropriate follow-up for incidental nodules ~38%)
 		var cts []float64
+		wkPath, wkT0 := "", 0.0
 		switch {
 		case !inScope:
 			if r.Float64() < .5 { // clinician-directed imaging; the Fleischner rule must still not decide these
@@ -319,6 +322,23 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 				cts = append(cts, F+float64(rec.WinHi)+5+175*r.Float64())
 			default:
 				lt.Lung.Adherence = "never"
+			}
+			if LungWorkup && rec.Action == FlCTPET && len(cts) == 1 { // Fleischner: CT at 3 months, PET/CT or tissue
+				lt.Lung.Path = "ct"
+				if x := r.Float64(); x >= lwPathCT {
+					wkPath, wkT0 = "tissue", cts[0]
+					if x < lwPathCT+lwPathPET {
+						wkPath = "pet"
+					}
+					if lt.Lung.Adherence == "within" {
+						med, minD := 27.0, 5.0
+						if wkPath == "pet" {
+							med, minD = 11, 3
+						}
+						wkT0 = F + math.Max(minD, math.Min(g.lognorm(med, .5), float64(rec.WinHi)-1))
+					}
+					lt.Lung.Path, cts = wkPath, nil
+				}
 			}
 		}
 		state, closed := "open", 0.0
@@ -361,11 +381,15 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 				}
 			}
 		}
+		if wkPath != "" {
+			state, closed = g.workup(p, hosp, lt, wkPath, wkT0, mean)
+		}
 		lt.State = state
 		if state == "closed" || state == "no_followup_needed" {
 			lt.ClosedDay = closed
 		}
-		lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-F > float64(rec.WinHi)
+		lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-F > float64(rec.WinHi) ||
+			state == "awaiting_tissue" && TEnd-lt.Lung.PETDay > TissueDueDays
 		lt.Dropoff = lungDropoff(state, false)
 		lt.Pathway = "lung_" + lt.Lung.Adherence + "_" + state
 	}
@@ -378,6 +402,15 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		id := g.ctReport(hosp.ID, y, t, t+g.lognorm(1, .7), "lung-ct", d, fmt.Sprint(d.Key["outcome"]))
 		tr.Distract[id] = true
 	}
+	if LungWorkup { // other people's PET/CTs at the same hospital
+		for k := 0; k < nLung/16; k++ {
+			p := pick(false)
+			y := g.getReg(p, hosp)
+			t := -200 + 320*r.Float64()
+			text, lab := petText(r, 9+r.Intn(15), r.Float64() < lwAvid)
+			tr.Distract[g.workupReport(hosp.ID, y, t, t+g.lognorm(1, .7), LungPETCode, text, lab)] = true
+		}
+	}
 }
 
 // lungDropoff: where an unresolved lung loop is stuck (same function for truth and pipeline).
@@ -385,7 +418,7 @@ func lungDropoff(state string, unlinked bool) string {
 	switch state {
 	case "closed", "no_followup_needed":
 		return ""
-	case "escalated", "out_of_scope", "not_assessable":
+	case "escalated", "out_of_scope", "not_assessable", "awaiting_tissue":
 		return state
 	}
 	if unlinked {

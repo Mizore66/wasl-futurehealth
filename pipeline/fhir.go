@@ -96,7 +96,7 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 				switch gs(xm, "url") {
 				case "urn:wsi:template":
 					e.Template = gs(xm, "valueString")
-				case "urn:wsi:econsult-trigger", "urn:wsi:callback-reason", "urn:wsi:prep-grade":
+				case "urn:wsi:econsult-trigger", "urn:wsi:callback-reason", "urn:wsi:prep-grade", "urn:wsi:handoff-action":
 					e.Reason = gs(xm, "valueString")
 				case "urn:wsi:report":
 					e.ReportID = gs(xm, "valueString")
@@ -123,7 +123,7 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
-				case "lung-finding", "lung-ct": // incidental-nodule index CT | follow-up CT (lung.go)
+				case "lung-finding", "lung-ct", LungPETCode, LungPathCode: // incidental-nodule index CT | follow-up CT | PET/CT | tissue (lung.go)
 					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}

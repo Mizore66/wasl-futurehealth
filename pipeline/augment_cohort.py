@@ -107,6 +107,33 @@ for j, (q, kind, role) in enumerate(picks):
            "meta": {"source": "urn:ae:provider:medlab", "versionId": "1", "lastUpdated": "2026-08-28T00:00:00Z"}}
     add['medlab'].append({"arrival": 119.0 + j * 0.01, "prov": "medlab", "msgid": f"medlab/Provenance/forged-prov-{j}/v1", "res": res})
     forged.append({"type": f"signoff_{kind}", "role": role, "loop": q['loop'], "item": q['item'], "truth_state": truth['loops'][q['loop']]['state']})
+# Lung patients (only when the lung feeds exist): the imaging centre that opened the tracking request records the
+# contact permission. Own RNG (seed 707), drawn after every screening addition, so the screening feeds are unchanged.
+# 4% deny (the screening rate; no lung-specific figure found) and 10% with no record yet (ASSUMPTION: incidental-finding
+# pathways capture consent less reliably), which leaves those patients' messages held until consent arrives.
+if 'rad-imaging' in feeds:
+    r2 = random.Random(707)
+    for g in feeds['rad-imaging']:
+        res = g['res']
+        if res['resourceType'] != 'ServiceRequest':
+            continue
+        loop = f"rad-imaging/ServiceRequest/{res['id']}"
+        if loop not in truth['loops']:
+            continue
+        pt = res['contained'][0]
+        mrn = [i['value'] for i in pt['identifier'] if i['system'].endswith(':mrn')][0]
+        x = r2.random()
+        if x < 0.10:
+            consent_detail[loop] = {"first": "none", "final": "none", "first_day": None}
+            continue
+        kind = 'deny' if x < 0.14 else 'permit'
+        day = g['arrival'] + r2.uniform(0.01, 0.5)
+        cid = f'lung-consent-{res["id"]}'
+        add['rad-imaging'].append({"arrival": day, "prov": 'rad-imaging', "msgid": f"rad-imaging/Consent/{cid}/v1",
+                                   "res": consent('rad-imaging', mrn, pt, day, 'coordinator', kind, cid)})
+        if kind == 'deny':
+            consent_truth[loop] = True
+        consent_detail[loop] = {"first": kind, "final": kind, "first_day": round(day, 4)}
 for prov, rows in feeds.items():
     rows = rows + add[prov]
     rows.sort(key=lambda g: g['arrival'])

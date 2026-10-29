@@ -92,6 +92,15 @@ type LoopTruth struct {
 	TBState    string   `json:"tb_state"`             // last teach-back state by TEnd
 	TBLatent   string   `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
 	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
+	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
+}
+
+// HandoffTruth: the simulated hand-off of a finally rejected referral.
+type HandoffTruth struct {
+	Decided float64 `json:"decided"`
+	ActBy   float64 `json:"act_by"`
+	ActDay  float64 `json:"act_day"` // -1 = never (or after TEnd)
+	Urgent  bool    `json:"urgent"`
 }
 
 type Truth struct {
@@ -659,6 +668,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		return other(h)
 	}
+	var handoffJobs []func() // deferred hand-off simulations (run last: see genLoop)
 	genLoop := func(p *Person, prog string) {
 		rule := Rules[prog]
 		src := Providers[0]
@@ -769,17 +779,17 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			if lang != "" {
 				m["language"] = lang
 			}
-			inbound := cat == "acknowledgement" || cat == "teachback-reply" || cat == "econsult-reply" || cat == "prep-reply"
+			inbound := cat == "acknowledgement" || cat == "teachback-reply" || cat == "econsult-reply" || cat == "prep-reply" || cat == "handoff-reply"
 			if inbound {
 				m["received"] = dayToTS(day)
 				if inResp != "" {
 					m["inResponseTo"] = []interface{}{map[string]string{"reference": "Communication/" + inResp}}
 				}
-				m["medium"] = []interface{}{map[string]string{"text": map[bool]string{true: "econsult", false: "sms-reply"}[cat == "econsult-reply" || cat == "prep-reply"]}}
+				m["medium"] = []interface{}{map[string]string{"text": map[bool]string{true: "econsult", false: "sms-reply"}[cat == "econsult-reply" || cat == "prep-reply" || cat == "handoff-reply"]}}
 			} else {
 				m["sent"] = dayToTS(day)
 				med := []string{"sms", "app"}[r.Intn(2)]
-				if cat == "econsult-question" || cat == "prep-query" || cat == "prep-escalation" {
+				if cat == "econsult-question" || cat == "prep-query" || cat == "prep-escalation" || strings.HasPrefix(cat, "handoff-") {
 					med = "econsult"
 				} else if cat == "callback" {
 					med = "phone"
@@ -962,7 +972,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			ecQ(t, trig)
 			for turn := 0; turn < 3; turn++ {
 				if r.Float64() < .08 {
-					return "none", inf
+					return "none", t // t: the last unanswered question
 				}
 				t += lognorm(2, .6)
 				var lab string
@@ -978,11 +988,12 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 				t += lognorm(3, .5) // referrer meets the condition / sends the info
 				ecQ(t, "followup")
 			}
-			return "none", inf
+			return "none", t
 		}
 		// --- receiving unit response to the referral (hospital intake ServiceRequest, linked by identity only)
 		respDay := inf
 		rejectedFinal, unanswered := false, false
+		rejDay := inf // day the referral was finally rejected (hand-off packet)
 		lastResp, lastRespDay := "none", -1.0
 		setResp := func(st string, d float64) {
 			if d <= TEnd {
@@ -1011,9 +1022,14 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 					intake(p, hosp, respDay, "revoked", rejectReasons[r.Intn(len(rejectReasons))], loop, prog)
 					setResp("rejected", respDay+.02)
 					*failState = true
+					rejDay = respDay
 				}
 			default:
 				*failState = true
+				rejDay = t
+				if o == "none" { // rejected referral, e-consult never answered: the packet goes after 5 business days
+					rejDay = addBD(t, HandoffBDRoutine)
+				}
 			}
 		}
 		rx := r.Float64()
@@ -1072,6 +1088,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		var cs []*colo
 		pw := ""
+		var finalize func(cs []*colo, pw string) // defined below; a deferred hand-off calls it again
 		if r.Float64() < pBook {
 			start := respDay
 			if notif < inf && notif > start {
@@ -1112,6 +1129,53 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 					}
 				}
 			}
+		} else if Handoff && rejectedFinal && rejDay < TEnd {
+			// hand-off packet to the referrer (handoff.go). Simulated after every other loop and on its own random
+			// stream, so the rest of the cohort is byte-identical with or without it.
+			pw = "referral_rejected_handoff_no_action"
+			urgent := handoffUrgent(prog, prio)
+			actBy, medDir, act := handoffPlan(seed, loop, rejDay, urgent)
+			lt.Handoff = &HandoffTruth{Decided: rejDay, ActBy: actBy, ActDay: -1, Urgent: urgent}
+			handoffJobs = append(handoffJobs, func() {
+				saved := r
+				r = rand.New(rand.NewSource(seed ^ int64(fnv32(loop+"|handoff"))))
+				var cs []*colo
+				pw := "referral_rejected_handoff_no_action"
+				to := map[string]string{"urn:wsi:recipient": src.ID}
+				comm(rejDay+.05, "handoff-packet", "", "en", "Referral "+srID+" was declined by "+hosp.ID+". You are responsible for the next step. Act by "+dayToTS(actBy)+".", "completed", "", to)
+				if act < 0 || act > actBy {
+					comm(actBy, "handoff-coordinator", "", "en", "Care coordinator: declined referral "+srID+" has no action from the referrer.", "completed", "", to)
+				}
+				if act < 0 || act > medDir {
+					comm(medDir, "handoff-medical-director", "", "en", "Medical director: declined referral "+srID+" is still without action.", "completed", "", to)
+				}
+				if act >= 0 && act <= TEnd {
+					lt.Handoff.ActDay = act
+					nh := otherFor(prog, hosp)
+					comm(act, "handoff-reply", "", "en", "Re-referred to "+nh.ID+".", "completed", "", map[string]string{"urn:wsi:handoff-action": "re_referred", "urn:wsi:sender": src.ID})
+					hosp = nh
+					lt.Hosp = hosp.ID
+					rd := act + lognorm(2.5, .6)
+					if r.Float64() < .9 {
+						intake(p, hosp, rd, "active", "", loop, prog)
+						setResp("accepted", rd+.02)
+						pw = "handoff_rereferred_not_booked"
+						if r.Float64() < .85 {
+							book := rd + lognorm(4, .6)
+							c := doProc(p, prog, hosp, book, book+procGap(), "fulfilled", r.Float64() < .82, loop)
+							cs = append(cs, c)
+							pw = "handoff_rereferred_" + c.truth
+						}
+					} else {
+						intake(p, hosp, rd, "revoked", rejectReasons[r.Intn(len(rejectReasons))], loop, prog)
+						setResp("rejected", rd+.02)
+						pw = "handoff_rereferred_rejected"
+					}
+					lt.RefStatus = lastResp
+				}
+				r = saved
+				finalize(cs, pw)
+			})
 		} else {
 			switch {
 			case rejectedFinal:
@@ -1126,85 +1190,89 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 				pw = "ack_not_booked"
 			}
 		}
-		lt.Pathway = pw
-		if len(cs) > 0 {
-			lt.ScriptHosp = cs[0].g.script
-		}
-		for _, c := range cs {
-			if c.reportID != "" && c.reportArr <= TEnd {
-				lt.Reports = append(lt.Reports, tr.ReportUID[c.reportID])
-				if PrepQuery && c.prepUngraded { // ungraded prep: unit-lead query thread (prepquery.go), own hashed stream
-					for _, pm := range prepThread(seed, c.reportID, c.reportArr+.1, c.truth != "inadequate") {
-						if pm.Day > TEnd {
-							continue
+		// finalize: the loop's truth from its procedures (a deferred hand-off re-runs it with the re-referral's procedures)
+		finalize = func(cs []*colo, pw string) {
+	lt.Pathway = pw
+			if len(cs) > 0 {
+				lt.ScriptHosp = cs[0].g.script
+			}
+			for _, c := range cs {
+				if c.reportID != "" && c.reportArr <= TEnd {
+					lt.Reports = append(lt.Reports, tr.ReportUID[c.reportID])
+					if PrepQuery && c.prepUngraded { // ungraded prep: unit-lead query thread (prepquery.go), own hashed stream
+						for _, pm := range prepThread(seed, c.reportID, c.reportArr+.1, c.truth != "inadequate") {
+							if pm.Day > TEnd {
+								continue
+							}
+							text := map[string]string{"prep-query": "Please grade the bowel preparation (Boston or Aronchick) for colonoscopy " + c.reportID + ".",
+								"prep-escalation": "Escalation: bowel-preparation grade for colonoscopy " + c.reportID + " not received within 5 working days.",
+								"prep-reply": "Bowel preparation for " + c.reportID + ": " + strings.ReplaceAll(pm.Grade, "_", " ") + "."}[pm.Cat]
+							ext := map[string]string{"urn:wsi:report": c.reportID}
+							if pm.Cat == "prep-reply" {
+								ext["urn:wsi:prep-grade"] = pm.Grade
+								ext["urn:wsi:sender"] = c.hosp
+							} else {
+								ext["urn:wsi:recipient"] = c.hosp
+							}
+							comm(pm.Day, pm.Cat, "", "en", text, "completed", "", ext)
 						}
-						text := map[string]string{"prep-query": "Please grade the bowel preparation (Boston or Aronchick) for colonoscopy " + c.reportID + ".",
-							"prep-escalation": "Escalation: bowel-preparation grade for colonoscopy " + c.reportID + " not received within 5 working days.",
-							"prep-reply": "Bowel preparation for " + c.reportID + ": " + strings.ReplaceAll(pm.Grade, "_", " ") + "."}[pm.Cat]
-						ext := map[string]string{"urn:wsi:report": c.reportID}
-						if pm.Cat == "prep-reply" {
-							ext["urn:wsi:prep-grade"] = pm.Grade
-							ext["urn:wsi:sender"] = c.hosp
-						} else {
-							ext["urn:wsi:recipient"] = c.hosp
-						}
-						comm(pm.Day, pm.Cat, "", "en", text, "completed", "", ext)
 					}
 				}
+				if c.status == "fulfilled" && c.fulArr <= TEnd && (lt.ProcDay < 0 || c.day < lt.ProcDay) {
+					lt.ProcDay = c.day
+				}
 			}
-			if c.status == "fulfilled" && c.fulArr <= TEnd && (lt.ProcDay < 0 || c.day < lt.ProcDay) {
-				lt.ProcDay = c.day
-			}
-		}
-		closed := inf
-		awaiting, inadequate := false, false
-		lastAppt, lastApptDay := "", -1.0
-		for _, c := range cs {
-			if c.reportID != "" && c.reportArr <= TEnd {
-				switch c.truth {
-				case "adequate":
-					closed = math.Min(closed, c.day)
-				case "awaiting_histology":
-					if c.histArr <= TEnd {
+			closed := inf
+			awaiting, inadequate := false, false
+			lastAppt, lastApptDay := "", -1.0
+			for _, c := range cs {
+				if c.reportID != "" && c.reportArr <= TEnd {
+					switch c.truth {
+					case "adequate":
 						closed = math.Min(closed, c.day)
-					} else {
-						awaiting = true
+					case "awaiting_histology":
+						if c.histArr <= TEnd {
+							closed = math.Min(closed, c.day)
+						} else {
+							awaiting = true
+						}
+					case "inadequate":
+						inadequate = true
 					}
-				case "inadequate":
-					inadequate = true
+				}
+				st := ""
+				if c.fulArr <= TEnd {
+					st = c.status
+				} else if c.bookArr <= TEnd {
+					st = "booked"
+				}
+				if st != "" && c.day >= lastApptDay {
+					lastAppt, lastApptDay = st, c.day
 				}
 			}
-			st := ""
-			if c.fulArr <= TEnd {
-				st = c.status
-			} else if c.bookArr <= TEnd {
-				st = "booked"
+			state := "open"
+			switch {
+			case closed < inf:
+				state = "closed"
+				lt.ClosedDay = closed
+			case awaiting:
+				state = "awaiting_histology"
+			case inadequate:
+				state = "inadequate"
+			case lastAppt == "fulfilled":
+				state = "procedure_done"
+			case lastAppt == "noshow":
+				state = "no_show"
+			case lastAppt == "booked":
+				state = "booked"
+			case lastResp == "rejected":
+				state = "referral_rejected"
 			}
-			if st != "" && c.day >= lastApptDay {
-				lastAppt, lastApptDay = st, c.day
-			}
+			lt.State = state
+			lt.Overdue = state != "closed" && TEnd-sr > deadline
+			lt.Dropoff = dropoffCode(state, false, lastResp, lt.NotifDay >= 0, lt.AckDay >= 0, lt.RefDay >= 0)
 		}
-		state := "open"
-		switch {
-		case closed < inf:
-			state = "closed"
-			lt.ClosedDay = closed
-		case awaiting:
-			state = "awaiting_histology"
-		case inadequate:
-			state = "inadequate"
-		case lastAppt == "fulfilled":
-			state = "procedure_done"
-		case lastAppt == "noshow":
-			state = "no_show"
-		case lastAppt == "booked":
-			state = "booked"
-		case lastResp == "rejected":
-			state = "referral_rejected"
-		}
-		lt.State = state
-		lt.Overdue = state != "closed" && TEnd-sr > deadline
-		lt.Dropoff = dropoffCode(state, false, lastResp, lt.NotifDay >= 0, lt.AckDay >= 0, lt.RefDay >= 0)
+		finalize(cs, pw)
 	}
 	// persons: cervical loops use women; CRC loops, distractors and background use the rest
 	used := map[int]bool{}
@@ -1293,6 +1361,9 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			bg = append(bg, &ps[rest[k]])
 		}
 		genLung(lungDirFor(lungDir, reportsPath), seed, nLung, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	for _, job := range handoffJobs {
+		job()
 	}
 	sort.SliceStable(evs, func(i, j int) bool { return evs[i].Arrival < evs[j].Arrival })
 	os.MkdirAll(outDir, 0755)
