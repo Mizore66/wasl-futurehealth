@@ -709,3 +709,68 @@ Read with care: reader A was written against the same templates it is scored on,
 - The corpus is synthetic and template-written, so it is cleaner than real dictation. The 43 MTSamples texts remain the real-text check.
 - The fix was designed after seeing the failures on this corpus, so a fresh held-out corpus (new seed, phrasing written by someone else) is needed before claiming the 0.
 - Caches: `models/app14/gemma_cache_{4b,26b}.json`. Reproduce: `WASL_REPORTS=data/evidence/reports_app14.json WASL_MODELS=<dir with one of them as gemma_cache.json> scripts/final_eval.sh`.
+
+### Three independent report corpora, and readers v4 and v5
+
+The App 14 fix above was designed on the corpus that found the problem, so the 0 needed a fresh test. Each new corpus is 300 synthetic colonoscopy reports with an answer key, written by an independent author (a separate Claude agent) from a brief alone, without the Wasl code or the other corpora. Each was committed before any reader ran on it. Every corpus that broke a reader version then became tuning data, and the next corpus is the fair test of the fix.
+
+| Corpus | Seed | Commit | Hard cases | Fair test of |
+|---|---|---|---|---|
+| 2: [`reports_heldout.json`](../data/evidence/reports_heldout.json) | 2027 | `ab6daa2` | 51% | v3 |
+| 3: [`reports_heldout3.json`](../data/evidence/reports_heldout3.json) | 3031 | `7f72a6e` | 39% | v4 |
+| 4: [`reports_heldout4.json`](../data/evidence/reports_heldout4.json) | 4049 | `8916058` | 91% (23 invented families, 75 correction addenda) | v5 |
+
+Generators and dataset cards: `scripts/heldout/`, `scripts/heldout3/`, `scripts/heldout4/`.
+
+**Corpus 2, fair test of v3: safe, but low recall** (`results/heldout/v3-*`). 0 false closures with either reader. CRC recall on v2 noise fell to 0.65 (26B) and 0.55 (4B). Two causes:
+- the Boston parser read the first digit of "Boston 2+3+2 = 7" as the total, so good preps went to review;
+- a tissue diagnosis from an earlier procedure ("2019: two tubular adenomas removed") was read as this procedure's histology, which only became visible once prep was fixed.
+
+**v4 (`7962054`, tuned on corpus 2, disclosed):** a Boston score is graded only when all three segments are read and agree with any stated total (or the total is below 6); otherwise prep is undecided. A histology mention inside a sentence about an earlier procedure is ignored, in the regex and in the second reader's quote. Corpus 2 recall on v2 noise: 26B 0.76, 4B 0.64; 0 false closures.
+
+**Corpus 3, fair test of v4: the 4B failed** (`results/heldout3/v4-*`).
+
+| | 26B | Local 4B |
+|---|---|---|
+| Unsafe auto-closures (reader score) | 0 | **2** (t258, t287) |
+| Frozen eval, CRC false closures v1 / v2 | 0/2,275 · 1/2,105 | **9/2,324 · 9/2,183** |
+
+- Both 4B cases were correction addenda: the body says one thing, a signed addendum corrects it ("BBPS 2-2-3 entered in error … BBPS 1-2-2, total 5"; "recorded as caecum because of a template default … the caecum was NOT reached"). The readers took the first statement. In t258 the 4B quoted the correction, but the v4 quote check took the first of the two Boston scores in the quote and overrode it. All 18 4B false closures trace to these two texts.
+- The single 26B false closure is not a reader error. Both readers said "prep not stated", the report went to review, and the simulated reviewer marked it adequate. The 4% reviewer error rate is an assumed stress-test rate.
+
+**v5 (`533360b`, tuned on corpus 3, disclosed):**
+- A report that says part of it was wrong (correction, "entered in error", amended, "should read", template default, تصحيح) is never auto-closed; it goes to review. An ordinary addendum (for example a histology result) does not trigger this. A first version that also matched "addendum" cost about 5% of auto-decisions on corpus 1 and was narrowed.
+- Two Boston scores in one text that grade differently decide nothing, in the regex and in the second reader's quote.
+- Re-scored on corpora 1–3 and MTSamples: 0 unsafe with either reader; the only change elsewhere is one auto-decision fewer for the 4B on corpus 3.
+
+**Corpus 4, fair test of v5: passed with both readers** (`results/heldout4/v5-*`).
+
+| | 26B | Local 4B |
+|---|---|---|
+| Fields right vs key: caecum / prep / tissue / histology | 291 / 282 / 294 / 296 | 198 / 227 / 269 / 245 |
+| Auto-decided / right / wrong in the safe direction | 135 / 118 / 17 | 122 / 93 / 29 |
+| **Unsafe auto-closures** (v4 code on the same caches) | **0** (0) | **0** (1, q005) |
+| Frozen eval, CRC false closures v1 / v2 | **0/2,507 · 0/2,270** | **0/2,338 · 0/2,140** |
+| CRC recall v1 / v2 | 0.877 / 0.805 | 0.817 / 0.759 |
+| Reviewer hours per 1k loops v1 / v2 | 29.3 / 26.3 | 32.1 / 29.3 |
+| Wrong-patient / without consent, v2 | 0/9,363 · 0/6,076 | 0/9,359 · 0/6,834 |
+
+**All frozen evaluations, CRC false closures on held-out v2 noise:**
+
+| Corpus | v3 26B | v3 4B | v4 26B | v4 4B | v5 26B | v5 4B |
+|---|---|---|---|---|---|---|
+| MTSamples (43) | 0/2,533 | – | 0/2,534 | – | **0/2,534** | – |
+| 1: App 14 | 0/2,398 | 0/2,487 | 0/2,397 | 0/2,485 | = v4 (reader score unchanged) | = v4 |
+| 2 | 0/1,867 | 0/1,584 | 0/2,182 | 0/1,837 | = v4 | = v4 |
+| 3 | – | – | 1/2,105 (reviewer) | **9/2,183** | reader score 0 unsafe | reader score 0 unsafe |
+| 4 | – | – | – | – | **0/2,270** | **0/2,140** |
+
+- MTSamples headline at v5 (`results/final/`, code `8916058`): CRC P 1.000, recall 0.947 / 0.879, 0/2,700 · 0/2,534 false closures, 0/9,386 wrong-patient, 0/6,285 without consent, review-load ratio across origins 1.18 (1.11–1.25).
+- Where v5 did not change the reader score (corpora 1, 2, MTSamples), the v4 frozen runs stand in for v5; v5 frozen runs were made where it matters (corpus 4, MTSamples).
+
+**What this does and does not show:**
+- Each reader version that a fresh corpus broke was fixed on that corpus and passed the next one. Two of three fresh corpora found a real gap; the 26B never produced an unsafe auto-closure on a fresh corpus, the 4B did once (corpus 3).
+- Corpus 4 is the only fair test of v5. One clean corpus is evidence, not proof; the next unseen phrasing family may break it again, which is why every auto-closure is still double-checked by a second reader and every disagreement goes to a human.
+- The 26B decides more reports and is more accurate on every field. The 4B stays safe by sending more to review (+3 reviewer hours per 1k loops on corpus 4).
+- All four corpora are synthetic and written by Claude agents; they share a model family even with separate authors. Real Abu Dhabi reports have not been tested.
+- Caches: `models/heldout{,3,4}/gemma_cache_{26b,4b}.json`. Reproduce: `WASL_REPORTS=data/evidence/reports_heldout4.json WASL_MODELS=<dir with one cache as gemma_cache.json> scripts/final_eval.sh`; reader score: `wsi readerscore -policy v7strict -wasl <dir> -reports <corpus>`.
