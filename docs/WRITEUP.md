@@ -392,6 +392,7 @@
     - Four clusters would be underpowered at the upper ICC, so we plan 6–8 PHCs.
     - If the volume isn't reached, the pilot reports an estimate with a CI rather than a test.
   - **Secondary endpoints:** ≤31-day KPI, days-to-notice, teach-back first-pass, contest rate, false closures.
+  - **Automatic closure starts in shadow mode:** a clinician confirms every report-based auto-closure until 300 in a row are correct, then a random 10% audit continues; any confirmed error returns that phrasing class to shadow mode (see "Seven held-out corpora" below).
   - **Scale-up decision:** the lower 95% bound of the uplift is above 0 and there are 0 audited false closures. Otherwise we stop, or redesign the patient levers.
 - **Rollout [A]:**
 
@@ -489,7 +490,7 @@
     - corpus 6 (fair test of v6, Gemini 4 Argon): 3 (26B) and 5 (4B) unsafe: the scope reached the ileocaecal valve, or saw the caecum at a distance, but did not reach it; our own prompt counted the valve. Fixed in v7: the DoH caecal landmarks are required, and any "could not reach / seen at a distance" clause means not reached.
     - corpus 7 (fair test of v7, Kimi K3.1 Pro): **0 unsafe with both readers**; 26B frozen eval 0/2,245 · 0/2,021. v7.1 then fixed three recall-only over-readings (disclosed).
     - corpus 8 (fair test of the shipped v7.1, GPT-6.1 Sol again, 100% hard cases): **0 unsafe with both readers**.
-    - **Over the seven fair tests: 6/2,100 unseen reports auto-closed unsafely with the 26B (0.29%, upper bound 0.62%), 10/2,100 with the 4B.** Unseen phrasing will exist in real reports, so the pilot includes a clinician audit of a random sample of auto-closures, and every confirmed error class becomes a rule plus a regression test.
+    - **Over the seven fair tests: 6 of 211 automatic closures by the 26B were wrong (2.8%, upper bound 6.1%; 6/2,100 reports), and 10 of 137 with the 4B (7.3%).** All came from corpora 3, 5 and 6; the shipped v7.1 and v7 had 0 of 71 on corpora 7 and 8. **Pilot rule (proposed):** start in shadow mode, where every automatic closure is only a suggestion and a clinician confirms it, until 300 in a row are confirmed correct (0/300 gives a 95% upper bound of 1.2%). Then auto-close with a random 10% clinician audit. Any confirmed error returns that phrasing class to shadow mode, becomes a rule plus a regression test, and restarts the count of 300.
 - Fixed: an early build sent 16 messages before the patient's contact-channel consent status was known. The consent hold now keeps messages until the status arrives (0 released without consent in every frozen run).
 - Measurement doesn't raise the ~33% true rate; the trial-effect projection reached only 9.8%.
 

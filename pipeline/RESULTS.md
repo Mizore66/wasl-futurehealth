@@ -831,13 +831,15 @@ Corpora 2–4 were all written by Claude agents, which share one model family an
 | 6 | Gemini 4 Argon | v6 | 3 | 5 |
 | 7 | Kimi K3.1 Pro | v7 | 0 | 0 |
 | 8 | GPT-6.1 Sol | v7.1 | 0 | 0 |
-| **Total** | | | **6 / 2,100 (0.29%)** | **10 / 2,100 (0.48%)** |
+| **Total, per report** | | | **6 / 2,100 (0.29%)** | **10 / 2,100 (0.48%)** |
+| **Total, per automatic closure** | | | **6 / 211 (2.8%, 95% UB 6.1%)** | **10 / 137 (7.3%, UB 13.0%)** |
+| Shipped v7.1 and v7 only (corpora 7, 8) | | | 0 / 71 auto-closures (UB 5.1%) | 0 / 47 (UB 7.6%) |
 
 **What this shows:**
-- **On unseen phrasing, the readers are not perfect.** Three of seven fresh corpora found a phrasing family that both readers agreed on wrongly. The measured rate is 6 of 2,100 unseen reports with the 26B (0.29%, 95% upper bound 0.62%) and 10 of 2,100 with the local 4B (0.48%, upper bound 0.87%). The last two fresh corpora (for v7 and for the shipped v7.1) found none. In a frozen run, the corpus 5 failure became about 0.3% of CRC closures.
+- **On unseen phrasing, the readers are not perfect.** Three of seven fresh corpora found a phrasing family that both readers agreed on wrongly. Per report that is 6 of 2,100 with the 26B (0.29%) and 10 of 2,100 with the local 4B (0.48%). But most reports go to a human anyway, so the rate that matters for an automatic closure is **6 of 211 auto-closures with the 26B (2.8%, 95% upper bound 6.1%) and 10 of 137 with the 4B (7.3%)**: about 1 in 35 automatic 26B closures on these corpora was wrong. All of them came from corpora 3, 5 and 6; the shipped v7.1 and v7 had 0 of 71 on corpora 7 and 8, which still only bounds the rate below 5.1%. These corpora were built to be hard (49–100% hard cases), so real reports should do better, but that is unmeasured.
 - **Each failure was a whole class, not a random error.** Each was fixed by a generic rule (corrections, pending results, landmarks) and stayed fixed on every other corpus. v7.1 has 0 unsafe on all seven corpora and MTSamples with either reader.
 - **Other model families found what Claude-written corpora did not.** The two classes found by GPT and Gemini were invisible in three Claude corpora.
-- **A pilot needs an audit sample of auto-closures.** The next unseen phrasing class will exist in real Abu Dhabi reports. We propose a pilot in which a clinician re-reads a random 10% of auto-closed reports (and 100% for the first month). Any confirmed error class becomes a new rule plus a regression test, as here.
+- **A pilot cannot start with unchecked automatic closure.** To catch a new error class that affects 3% of auto-closures with 95% probability, a clinician must re-read about 100 of them; a 10% sample alone would need about 1,000 auto-closures to get there. **Pilot rule (proposed):** start in shadow mode, where every automatic closure is only a suggestion and a clinician confirms it, until 300 in a row are confirmed correct (0/300 gives a 95% upper bound of 1.2%). Then auto-close with a random 10% clinician audit. Any confirmed error returns that phrasing class to shadow mode, becomes a rule plus a regression test, and restarts the count of 300.
 - The local 4B is less accurate than the 26B on every field. It stays safe mainly by sending more to review, and it had more unsafe cases on the hardest corpus (6).
 - All corpora are synthetic. Real reports have not been tested.
 
