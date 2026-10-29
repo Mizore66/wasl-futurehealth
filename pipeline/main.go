@@ -71,6 +71,17 @@ func main() {
 	role := fs.String("role", "", "v6: caller role (tamper verifier requires auditor)")
 	quick := fs.Bool("quick", false, "v6: sweep only err 0/0.05, no double, 1 seed")
 	sweepRho := fs.String("sweeprho", "0", "H7: comma-separated reviewer error correlations to sweep (e.g. 0,0.25,0.5,1)")
+	rrho := fs.Float64("rrho", 0, "H7: reviewer error correlation rho (P a later read repeats the first read)")
+	revBlind := fs.Bool("reviewblind", false, "H7 mitigation: blinded second read (removes -blindfactor of rho)")
+	blindF := fs.Float64("blindfactor", DefaultReviewer.BlindFactor, "H7: share of rho removed by a blinded second read")
+	revRotate := fs.Bool("reviewrotate", false, "H7 mitigation: reader-pair rotation (removes -rotatefactor of the remaining rho)")
+	rotateF := fs.Float64("rotatefactor", DefaultReviewer.RotateFactor, "H7: share of the remaining rho removed by pair rotation")
+	seniorAudit := fs.Float64("senioraudit", 0, "H7 mitigation: fraction of signed closing answers re-read by a senior (e.g. 0.02)")
+	seniorErr := fs.Float64("seniorerr", DefaultReviewer.SeniorErrRel, "H7: senior audit error rate relative to -rerr")
+	sweepMit := fs.String("sweepmit", "", "H7: comma-separated mitigation sets to sweep: double,blind,rotate,audit,all (empty = pre-mitigation sweep)")
+	sweepDouble := fs.String("sweepdouble", "", "sweep: comma-separated double-review policies (overrides -sweepset's list)")
+	sweepErr := fs.String("sweeperr", "", "sweep: comma-separated reviewer error rates (overrides -sweepset's list)")
+	sweepJobs := fs.Int("sweepjobs", 5, "sweep: jobs replayed concurrently (1 = sequential, repeatable output)")
 	norbac := fs.Bool("norbac", false, "v6: counterfactual sweep with RBAC disabled (err 0 only)")
 	models := fs.String("models", "../models", "")
 	nRegs := fs.Int("n", 1000000, "")
@@ -256,6 +267,45 @@ func main() {
 	if rcfg.Err == 0 && *revNoise > 0 { // v6-impact flag name kept as an alias
 		rcfg.Err = *revNoise
 	}
+	rcfg.Rho, rcfg.Blind, rcfg.BlindFactor, rcfg.Rotate, rcfg.RotateFactor = *rrho, *revBlind, *blindF, *revRotate, *rotateF
+	rcfg.SeniorAudit, rcfg.SeniorErrRel = *seniorAudit, *seniorErr
+	SweepMitBase = rcfg
+	if SweepMitBase.SeniorAudit == 0 {
+		SweepMitBase.SeniorAudit = 0.02 // -sweepmit audit|all without -senioraudit: the designed 2% sample
+	}
+	if *sweepMit != "" {
+		SweepMits = strings.Split(*sweepMit, ",")
+	}
+	if *sweepDouble != "" {
+		SweepDoubles = strings.Split(*sweepDouble, ",")
+	}
+	if *sweepErr != "" {
+		SweepErrs = nil
+		for _, x := range strings.Split(*sweepErr, ",") {
+			v, err := strconv.ParseFloat(strings.TrimSpace(x), 64)
+			if err != nil {
+				panic("bad -sweeperr " + x)
+			}
+			SweepErrs = append(SweepErrs, v)
+		}
+	}
+	if *sweepJobs >= 1 {
+		SweepPar = *sweepJobs
+	}
+	// H7 reviewer flags are forwarded to child processes only when set, so default runs keep their argv
+	h7Args := []string{}
+	if *rrho > 0 {
+		h7Args = append(h7Args, "-rrho", fmt.Sprint(*rrho))
+	}
+	if *revBlind {
+		h7Args = append(h7Args, "-reviewblind", "-blindfactor", fmt.Sprint(*blindF))
+	}
+	if *revRotate {
+		h7Args = append(h7Args, "-reviewrotate", "-rotatefactor", fmt.Sprint(*rotateF))
+	}
+	if *seniorAudit > 0 {
+		h7Args = append(h7Args, "-senioraudit", fmt.Sprint(*seniorAudit), "-seniorerr", fmt.Sprint(*seniorErr))
+	}
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
@@ -308,6 +358,7 @@ func main() {
 		}
 		govArgs = []string{"-rerr", fmt.Sprint(rcfg.Err), "-rdouble", *rdouble, "-rseed", fmt.Sprint(*rseed), fmt.Sprintf("-dual=%v", *dual), "-ann", *annMode}
 		govArgs = append(govArgs, v7Args...)
+		govArgs = append(govArgs, h7Args...)
 		if *annCB != "" {
 			govArgs = append(govArgs, "-codebook", *annCB)
 		}

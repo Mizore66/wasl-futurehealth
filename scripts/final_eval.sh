@@ -46,6 +46,12 @@ print("frozen", rev[:12], "seeds", seeds)
 P
 run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     local noise="$1" seed="$2"; local tag="$noise-s$seed"; local O="$WORK/$tag"
+    # H7 simulated-reviewer stress test and mitigations, all off by default (same env as scripts/demo.sh)
+    local HARGS=()
+    [ -z "${WASL_REVIEW_RHO:-}" ] || HARGS+=(-rrho "$WASL_REVIEW_RHO")
+    [ "${WASL_REVIEW_BLIND:-0}" = 0 ] || HARGS+=(-reviewblind)
+    [ "${WASL_REVIEW_ROTATE:-0}" = 0 ] || HARGS+=(-reviewrotate)
+    [ -z "${WASL_SENIOR_AUDIT:-}" ] || HARGS+=(-senioraudit "$WASL_SENIOR_AUDIT")
     if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
@@ -56,7 +62,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
     (cd "$B" && ./wsi7 orchestrate -prepquery="${WASL_PREPQUERY:-true}" -data "$O/cohort" -wasl "$MODELS" -run "$R" -preps 3 -threads 8 -source "${WASL_SOURCE:-fhir}" \
-        -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > "$O/orchestrate.log" 2>&1)
+        -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed "$seed" -seed "$seed" -policy v7strict ${PARGS[@]+"${PARGS[@]}"} ${HARGS[@]+"${HARGS[@]}"} > "$O/orchestrate.log" 2>&1)
     (cd "$B" && ./wsi7 audit -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > "$R/audit.stdout" 2>&1)
     (cd "$B" && ./wsi7 tamper -role auditor -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} -seed "$seed" > "$R/tamper.json" 2> "$R/tamper.log")
     (cd "$B" && ./wsi7 report7 -data "$O/cohort" -wasl "$MODELS" -run "$R" -ann hnsw -dual -policy v7strict ${PARGS[@]+"${PARGS[@]}"} > /dev/null)
