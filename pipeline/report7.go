@@ -547,10 +547,27 @@ func report7(data, wasl, run string, P int) {
 			return n
 		}(),
 	}
+	if ShadowMode || AutoAuditP > 0 { // pilot switches (pilot.go); absent when off, so the report is unchanged
+		items := map[string]*ReviewItem{}
+		for _, m := range outLog {
+			var oe OutEnvelope
+			json.Unmarshal(m.Data, &oe)
+			if oe.Item != nil && pilotKey(oe.Item.Reason) != "" && items[oe.Item.ItemID] == nil {
+				items[oe.Item.ItemID] = oe.Item
+			}
+		}
+		var sos []*Signoff // published reviewer decisions, in review order
+		for _, p := range preps {
+			if p != nil && p.Kind == "signoff" && p.So != nil && strings.HasPrefix(fhir[p.Seq-1].Hdr["Nats-Msg-Id"], "signoff/") {
+				sos = append(sos, p.So)
+			}
+		}
+		res["pilot"] = pilotReport(items, sos, liveFinal, &tr)
+	}
 	if lm, ok := res["programmes_live"].(map[string]interface{})["lung_nodule"].(map[string]interface{}); ok {
 		lm["two_reader"] = lungTwoReader(preps, &tr) // second loop type: CT-report reader agreement end to end
 	}
-	rb, _ := json.MarshalIndent(res, "", " ")
+	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)
 	fmt.Println(string(rb))
 }

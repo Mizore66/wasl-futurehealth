@@ -198,6 +198,7 @@ type ReviewItem struct {
 	InSeq    uint64    `json:"in_seq"`
 	OverdueAtRaise bool `json:"overdue"`
 	Reason   string    `json:"reason,omitempty"` // v7: second_identifier (outreach guard confirmation)
+	Day      float64   `json:"day,omitempty"`    // pilot items (shadow_confirm, auto_audit): simulated day raised
 }
 
 type Decision struct {
@@ -238,6 +239,7 @@ type Decision struct {
 	Sig            string   `json:"sig"`
 	Outreach       []Outreach `json:"outreach,omitempty"` // v6: patient-facing outreach intents (sent or suppressed)
 	Lung           *LungDecision `json:"lung,omitempty"` // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
+	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.
