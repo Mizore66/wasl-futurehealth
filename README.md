@@ -76,14 +76,14 @@ Outputs go to `out/` (gitignored):
 | Forged events | 0/24 with any effect |
 | Consent hold | 0 messages released without granted contact permission (619 released, 373 held until consent, 32 cancelled) |
 
-**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `8916058`, reader v5; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
-- CRC P 1.000, R 0.879 (95% CI 0.863–0.896).
-- **0/2,534 false closures** (95% upper bound 0.15%).
-- 0/9,386 wrong-patient messages; 0/6,285 messages sent without granted consent.
+**Final frozen evaluation** (`scripts/demo.sh final`, ~50 min; 5 seeds × 2 noise models, code frozen at `54ff4ba`, reader v7.1; [`pipeline/results/final/`](pipeline/results/final/SUMMARY.md)). On the **held-out v2 noise model**:
+- CRC P 1.000, R 0.851 (95% CI 0.830–0.871).
+- **0/2,452 false closures** (95% upper bound 0.15%).
+- 0/9,410 wrong-patient messages; 0/5,315 messages sent without granted consent.
 - KPI error 0.035 vs 0.205 for EID-only tracking.
-- Review load across name origins: max/min ratio 1.18 (95% CI 1.11–1.25), under the 1.25 limit.
+- Review load across name origins: max/min ratio 1.18 (95% CI 1.11–1.24), under the 1.25 limit.
 
-On dev noise, recall is 0.947 with 0/2,700 CRC and 0/1,005 cervical false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
+Recall is 3 points below the reader-v5 run because the ileocaecal valve alone no longer counts as caecal completion (one MTSamples report, reused across ~40 loops; see [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). On dev noise, recall is 0.918 with 0/2,617 CRC and 0/1,004 cervical false closures. A human "adequate" against a report that explicitly says it is inadequate now needs a confirming review. The closure tier is 0.99: an earlier run at 0.98 found one wrong-patient closure, so we raised it (a disclosed post-hoc change; see the "Final code" section of [`pipeline/RESULTS.md`](pipeline/RESULTS.md)). The human double-labelling of the 43 reports is still pending ([`docs/labelling/`](docs/labelling/)).
 
 **Options** (environment variables for `scripts/demo.sh`):
 
@@ -111,6 +111,6 @@ Details: [`pipeline/RESULTS.md`](pipeline/RESULTS.md), [`image/RESULTS.md`](imag
 ## Data and honesty
 - Names come from Wikidata (CC0).
 - Endoscopy photos come from HyperKvasir (Borgli et al., *Sci Data* 2020; CC BY 4.0). Competition use is with the authors' written permission.
-- Report texts: a 300-report synthetic DoH App 14 corpus (main reader test) plus 43 MTSamples texts (real dictation; the site permits educational use with credit). The synthetic corpus found two reader blind spots, now fixed and disclosed (biopsies as tissue taken; Boston scores graded by number): see "Synthetic App 14 report corpus" in [`pipeline/RESULTS.md`](pipeline/RESULTS.md). Three more 300-report corpora by independent authors (each frozen before any reader ran) each served as the fair test of the previous fix: the third found a gap in the local 4B (correction addenda), fixed in reader v5; the fourth, the fair test of v5, gave 0 false closures with both the 26B and the 4B. See "Three independent report corpora" in the same file.
+- Report texts: a 300-report synthetic DoH App 14 corpus (main reader test) plus 43 MTSamples texts (real dictation; the site permits educational use with credit). The synthetic corpus found two reader blind spots, now fixed and disclosed (biopsies as tissue taken; Boston scores graded by number): see "Synthetic App 14 report corpus" in [`pipeline/RESULTS.md`](pipeline/RESULTS.md). Six more 300-report corpora (three by Claude agents, then one each by GPT-6.1 Sol, Gemini 4 Argon and Kimi K3.1 Pro), each frozen before any reader ran, were each the fair test of the previous reader fix. Three found an unsafe phrasing class (correction addenda; an earlier procedure's histology next to a pending result; a caecum seen but not reached). Across the six fair tests, 6 of 1,800 unseen reports auto-closed unsafely with the 26B (0.33%, upper bound 0.72%) and 10 of 1,800 with the local 4B (0.56%). Each class was fixed by a generic rule; the current reader v7.1 has 0 unsafe auto-closures on all seven corpora and MTSamples, and the last fair test (Kimi, corpus 7) passed with both readers. A pilot needs an audit sample of auto-closures. See the last two corpus sections of [`pipeline/RESULTS.md`](pipeline/RESULTS.md).
 - **All patients, cohorts, reviewers and capacity are simulated.** No real patient data is used anywhere.
 - Each claim in the docs is marked *built*, *simulated* or *designed*.

@@ -1,0 +1,3980 @@
+{
+ "6f7bfe931da88da5f1e04ee47e02184b56bef3a4151392b6f5ce7b391cd4ed6f": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "This examination stopped short of the caecum and must be coded as incomplete.",
+  "quotes": {
+   "caecum": "This examination stopped short of the caecum and must be coded as incomplete.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: colonic mucosal biopsies, placed in labelled specimen pots.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "4bbeaac46d4a81e0e92d75c9eb02990877f8d2d6ef7dfa56501816927abbd40c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The examination was complete to the cecum.",
+  "quotes": {
+   "caecum": "The examination was complete to the cecum.",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice",
+   "histology": "Histology is awaited."
+  }
+ },
+ "8b515083a76864823a3a5b877e6aadff6940c9ad581d734eefdd595153671c55": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The caecum was reached and the caecal landmarks were photographed; this supersedes the original extent statement.",
+  "quotes": {
+   "caecum": "The caecum was reached and the caecal landmarks were photographed; this supersedes the original extent statement.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "b8f35c541ab2d11e9c82f47b40eefeca5b50691401dbb0977c6ccf8ddfc6e6e2": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Overall preparation was inadequate, replacing the earlier adequate grade.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "5a73e6450fbaf98fa0f7e207d5f53ba6703d75f1f059b920658d5d45a03f8011": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The caecum was reached and the caecal landmarks were photographed; this supersedes the original extent statement.",
+  "quotes": {
+   "caecum": "The caecum was reached and the caecal landmarks were photographed; this supersedes the original extent statement.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "tubulovillous adenoma with low-grade dysplasia"
+  }
+ },
+ "eb0b86988d5b212f21408be236e7bcb6252b6625b3f445d94fa762edd98c7448": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "The final post-wash assessment was adequate in every segment",
+   "polyps": "a small rectal ulcer was biopsied twice",
+   "histology": "mild chronic non-specific inflammation, with no dysplasia"
+  }
+ },
+ "ac34ae5431d765709535ed8d94012240691148f621c91f6c0c94d8f2a9220e9a": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "This examination stopped short of the caecum and must be coded as incomplete.",
+  "quotes": {
+   "caecum": "This examination stopped short of the caecum and must be coded as incomplete.",
+   "prep": "Preparation is inadequate",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "f9485f4b069c5729578bc40bd2eff8ad60d2f4aaa9fbc57cec26637329a11e64": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "The final post-wash assessment was adequate in every segment.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "22b99bfb0afa0c04ec42e0b14372c3dd290772928f978a2e063ea1c7088717d1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "After washing, all segments were adequately visualised; final preparation was good.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "2b745e80257d52dbe905f484d7fa7224d553647e2ac327801a1e34751cfeb5fb": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was not reached",
+  "quotes": {
+   "caecum": "The cecum was not reached",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "7366bd427680d440930dd716f32156fa01ca9cfe1ac7de22a73f63735e94e1f6": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal landmark photographs show the appendiceal orifice beside the ileocaecal valve.",
+  "quotes": {
+   "caecum": "Proximal landmark photographs show the appendiceal orifice beside the ileocaecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "No histological result is available for this procedure."
+  }
+ },
+ "d6f14aea7df31f270e35c8dabfdca93ed51199f6d29fdfb9eda05c5f5107a2b1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "consequently no pathology result exists."
+  }
+ },
+ "ccfa2fa6ab990f95a54514a82e12277537c00be876a992af7438409756c0fa8e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved.",
+   "histology": "The laboratory reports tubulovillous adenoma with low-grade dysplasia for this procedure's tissue."
+  }
+ },
+ "07ea60e57780bfd7caecf111487ba22fc36208af70e406bfe569bb2b4700b0d3": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Overall preparation was inadequate, replacing the earlier adequate grade.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "4b7e0cabe0226285b65f1621d0c34cf95a80ae2a25dca5c256b0a7a645d893c5": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Prep=Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": ""
+  }
+ },
+ "c6dc517286efab02c37c5cdb2bdcb1288614ad9295b0a14fb9870edbd7940483": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the ileocecal valve and appendiceal orifice were identified and photographed",
+  "quotes": {
+   "caecum": "the ileocecal valve and appendiceal orifice were identified and photographed",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "There were no biopsies and no polyp resections during this procedure.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "676177c853f04fbd1698ffee8f17795f64149bc329c019cdd2a9878cebe93b7c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal landmark photographs show the appendiceal orifice beside the ileocaecal valve.",
+  "quotes": {
+   "caecum": "Proximal landmark photographs show the appendiceal orifice beside the ileocaecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Complete hot snare polypectomy was performed",
+   "histology": "No histological result is available for this procedure."
+  }
+ },
+ "e2a3b63190753b18a34978d7bf53129ec0f04a2900666b73f9830dc6cbf0fae8": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "the cecum was not reached",
+  "quotes": {
+   "caecum": "the cecum was not reached",
+   "prep": "Overall preparation was inadequate, replacing the earlier adequate grade.",
+   "polyps": "removed with a cold snare",
+   "histology": "hyperplastic polyp, no dysplasia"
+  }
+ },
+ "8c7b676e044c62c35e940a5e02cf909be09b03ff3248d458ef2615da17171884": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "At the proximal limit the ileocaecal valve and appendiceal orifice were identified and photographed.",
+  "quotes": {
+   "caecum": "At the proximal limit the ileocaecal valve and appendiceal orifice were identified and photographed.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "There is no current histology report to quote."
+  }
+ },
+ "2f548352ef4315738aa04d4d972468100919433bfa99cb1db83e6aa02479f3fc": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not intubated.",
+  "quotes": {
+   "caecum": "the cecum was not intubated.",
+   "prep": "",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "c05f1ec50bc9ec3f1da18c61f19bf79932066067ecb64f5f9ff4bc9de6219cb7": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "consequently no pathology result exists."
+  }
+ },
+ "59245c1db2c0b6adde65d5c46f9a1ab1f48233539e3a803003237e493c248f8e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "At the proximal limit the ileocecal valve and appendiceal orifice were identified and photographed.",
+  "quotes": {
+   "caecum": "At the proximal limit the ileocecal valve and appendiceal orifice were identified and photographed.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "5c421f03bb1b5031e7ef6d562fa5cd5300c58a8a38179245c33659c98eb04ce6": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not intubated",
+  "quotes": {
+   "caecum": "the caecum was not intubated",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "ef581e4782287f52b5fa4630177ab113d5651af52fd9c77b7444f7c6e1127e87": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "A 6 mm lesion in the rectum was lifted where required and removed with a cold snare",
+   "histology": "consequently no pathology result exists."
+  }
+ },
+ "57dda2df8dd826034c333889892de157065bee8815775faa6d14739c7cbedfcd": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not reached because of a fixed sigmoid loop",
+  "quotes": {
+   "caecum": "the caecum was not reached because of a fixed sigmoid loop",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "ddb463f35eed531101fe4a737a6b3a7513a755dedf7cc73c66ea65fe997a5ce1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+  "quotes": {
+   "caecum": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation;",
+   "histology": "No histological result is available for this procedure."
+  }
+ },
+ "4a40fe440ba81598248a2e382e103ffb38f589e0b99711cd01da4bfc4b84472d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "32a06d1ebcb515c49b1ad9dad70a4d53224be8b86fce8cf86cc5046b703099db": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "the cecum was not reached because of a fixed sigmoid loop.",
+  "quotes": {
+   "caecum": "the cecum was not reached because of a fixed sigmoid loop.",
+   "prep": "",
+   "polyps": "descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "sessile serrated lesion without dysplasia."
+  }
+ },
+ "a5417b543e533bf5bfbd9ef41e202db38dd6457e5f8fd88fc038e0a17dcfcb0b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "The laboratory reports tubulovillous adenoma with low-grade dysplasia for this procedure's tissue."
+  }
+ },
+ "12dafb5ff9305fec7cf11a0c6df984426d382f97def40f394e5351197c822668": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice",
+   "histology": "mild chronic non-specific inflammation, with no dysplasia"
+  }
+ },
+ "18899956e14a3182a41a8845b624042dec6d5b36d2a353ccca670d22a5a1cb01": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "At the proximal limit the ileocaecal valve and appendiceal orifice were identified and photographed.",
+  "quotes": {
+   "caecum": "At the proximal limit the ileocaecal valve and appendiceal orifice were identified and photographed.",
+   "prep": "",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "no report has been received."
+  }
+ },
+ "5a4e3811e9598070206f077e3fe0a1d360ff5af161d4bc339b81edb0b4ca3d39": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+  "quotes": {
+   "caecum": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+   "prep": "",
+   "polyps": "two biopsies were taken.",
+   "histology": "the laboratory result section remains empty."
+  }
+ },
+ "b2f823ad39499b0bfa26fbc3294b4325ff2d6300230f6bd6448f76f16fe701ad": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "not a histological diagnosis"
+  }
+ },
+ "382d49b0dd791b7e03ad20cc3f6eb2e2fe4c1d31dcaff43d7a52cfad148eb724": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not reached because of a fixed sigmoid loop.",
+  "quotes": {
+   "caecum": "the cecum was not reached because of a fixed sigmoid loop.",
+   "prep": "",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "fa6c51fa5ab4376dc918bf85cbe1b2aecbf5c4ddd3b42d35b0ccdfc09f79acab": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "The laboratory reports tubular adenoma with low-grade dysplasia for this procedure's tissue."
+  }
+ },
+ "14c2b72612aca85c822cfa7db2f4752cc0dac7ee23684e0e5ef069def2b6be34": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Specimen submitted for analysis; only the request number is available, not a histological diagnosis."
+  }
+ },
+ "95814181228e10d3a94c962dda51144410e46e6f1c673840523dfece652c9b49": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the ileocaecal valve and appendiceal orifice were identified and photographed",
+  "quotes": {
+   "caecum": "the ileocaecal valve and appendiceal orifice were identified and photographed",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "3429bc3b89f8b5c8e7c9ab92e3bbd2ab1a9c8fbd52905b52e75ae1f2c7f1ea8a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+  "quotes": {
+   "caecum": "Proximal landmark photographs show the appendiceal orifice beside the ileocecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "76532adf36a3f994daa3e3e0d38bf2207ee0c2280bbb339828b4bd4650742ad2": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+  "quotes": {
+   "caecum": "The ileocaecal valve, appendiceal opening and blind-ending pole were all seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "A 6 mm lesion in the rectum was lifted where required and removed with a cold snare; the site was inspected.",
+   "histology": "only the request number is available, not a histological diagnosis."
+  }
+ },
+ "3e2732122ba3e1a85e6ec9540b9eb870a0610bf1ca7a14c03462b47bb9d3932d": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+  "quotes": {
+   "caecum": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "A 13 mm sessile polyp in the sigmoid colon was resected by hot snare and retrieved.",
+   "histology": "The request is not a result; no report has been received."
+  }
+ },
+ "d95eb96a1e6b513c095b886bd22bbaec8c77d9f1156ee631e37604f91ac5343f": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+  "quotes": {
+   "caecum": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "3d5e817e8518cf2e7fc7537941024f5bc065cf1288f1fab8cd1f390dc246b221": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The endoscope passed through the ileocecal valve into terminal ileum, where villi were seen.",
+  "quotes": {
+   "caecum": "The endoscope passed through the ileocecal valve into terminal ileum, where villi were seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation;",
+   "histology": "not a histological diagnosis"
+  }
+ },
+ "77c725c18fc6c1fa9e210d6166a48e347edb0154e09c1ec09c23bcf091e60407": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualised.",
+  "quotes": {
+   "caecum": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualised.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "740eb5f631ebd68411cc7eae017256580284c219ea7056c2d723787a0603bfdd": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "A short terminal ileal examination was performed after entering through the ileocecal valve.",
+  "quotes": {
+   "caecum": "A short terminal ileal examination was performed after entering through the ileocecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "96a1fc3675cd9b2a1ae4de720bd8a757646a560fbb8fa40fa9423cf492e883a1": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The endoscope passed through the ileocaecal valve into terminal ileum, where villi were seen.",
+  "quotes": {
+   "caecum": "The endoscope passed through the ileocaecal valve into terminal ileum, where villi were seen.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "1780e3e1280211da2d0461aa0308cf60424c7e6807f0638ebce938f4cb742768": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+  "quotes": {
+   "caecum": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "The request is not a result; no report has been received."
+  }
+ },
+ "c1349d3364859400bbec138b9c0d7fdf5dcc6a6b5d2a16feb8c9d9618f65222c": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+  "quotes": {
+   "caecum": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "At the time of signing, the laboratory result section remains empty."
+  }
+ },
+ "877fcc7d631bebb70c3e597ab45170216a3d36099869e25257f4099e18093949": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The endoscope passed through the ileocecal valve into terminal ileum",
+  "quotes": {
+   "caecum": "The endoscope passed through the ileocecal valve into terminal ileum",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "There were no biopsies and no polyp resections during this procedure.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "6963e38c5f62b4d84ca1da1305dd64e07dd6e7fac0d9773f1acd992eb9e44036": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "the caecum was not reached because of a fixed sigmoid loop",
+  "quotes": {
+   "caecum": "the caecum was not reached because of a fixed sigmoid loop",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "rectum polyp, hot snare polypectomy, retrieved for pathology",
+   "histology": "tubulovillous adenoma with low-grade dysplasia"
+  }
+ },
+ "dd39e304b4129bb25f5de9c3204117fdb11ecd9dbc0754bbef2e7e906a6105f0": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "A short terminal ileal examination was performed after entering through the ileocecal valve.",
+  "quotes": {
+   "caecum": "A short terminal ileal examination was performed after entering through the ileocecal valve.",
+   "prep": "",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "2eef92b6dc58f6a0d04c5825b018bb7b7860aa6434c2095f7a62d138d085b0d7": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "failure to reach the caecum after prolonged looping.",
+  "quotes": {
+   "caecum": "failure to reach the caecum after prolonged looping.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "509e23b70cd0bcbfd6fc7ac0e5a2cc42f1745a8863b1ca18cebe67c39f459e2b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+  "quotes": {
+   "caecum": "Terminal ileal intubation was achieved for 6 cm; ileal mucosa was visualized.",
+   "prep": "The preparation field is blank; no Boston score or verbal grade was entered.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "sessile serrated lesion without dysplasia"
+  }
+ },
+ "e94ad91526a6a04e713d3672a3f4e30db77d2dc646c6db532f08c3459765dc7e": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+  "quotes": {
+   "caecum": "A short terminal ileal examination was performed after entering through the ileocaecal valve.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "At the time of signing, the laboratory result section remains empty."
+  }
+ },
+ "8459e48d524240df9c7881657d63451e99bb7106f2327b869e9dee50a6310b78": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The timer was started on withdrawal from the cecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the cecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "c9a031ac134173e4a56f334974af06637d45c3255e679704858de7b263a5eeea": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "After photo-documentation of the caecal pole, a careful withdrawal examination was performed.",
+  "quotes": {
+   "caecum": "After photo-documentation of the caecal pole, a careful withdrawal examination was performed.",
+   "prep": "",
+   "polyps": "A 13 mm sessile polyp in the sigmoid colon was resected by hot snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "73bd11e2823ed79bbf4bee2d76f4afe4f2a2f59e268a61ab2e935f3f86fbbf8c": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "There were no biopsies and no polyp resections during this procedure.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "3af8ce985f4a5d397667f284d2895798d783156f2bb716a391d6a78954a5fc5a": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The timer was started on withdrawal from the caecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the caecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "mild chronic non-specific inflammation, with no dysplasia"
+  }
+ },
+ "fa07ff2750d33812bd357ffe62e4a37c20362697fdce2dbed25e07429b4a87a2": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "photo-documentation of the cecal pole",
+  "quotes": {
+   "caecum": "photo-documentation of the cecal pole",
+   "prep": "",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "a67c97a4404cedce952d7df980afcc4d4fdce2627a16854f7c5dfd19c8187e51": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Withdrawal began at the caecal pole after landmark photographs had been taken.",
+  "quotes": {
+   "caecum": "Withdrawal began at the caecal pole after landmark photographs had been taken.",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "7b09e798a051b3f14f802c3d2fc1764a7f8b373c7bf91befa86a1858b2181b74": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The timer was started on withdrawal from the cecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the cecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Histology result for the tissue taken at this procedure: mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "6d60049aeea741d584e9b2b6e6c6bfe08be7d0c25ba723b8fc45dd4403dc0586": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "07c7613a92fbadebf1e7989fd841caa1dce797767037ed53494e05ebab51a6a2": {
+  "caecum": "no",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not intubated.",
+  "quotes": {
+   "caecum": "the cecum was not intubated.",
+   "prep": "",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation;",
+   "histology": "Histology is awaited."
+  }
+ },
+ "e2126f4f0eb7b30e531a3d4ec8f4e4c52e374759128aba4892d149739f82c21b": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The timer was started on withdrawal from the caecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the caecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "213e95b1eba8003185ca939668160ab2e9f2774582e047894251a61b0a8a4602": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "photo-documentation of the cecal pole",
+  "quotes": {
+   "caecum": "photo-documentation of the cecal pole",
+   "prep": "",
+   "polyps": "two biopsies were taken",
+   "histology": ""
+  }
+ },
+ "b974937a7006ef7e4d82c69f32e346696af2dfbc4d264994c5359f1b28f6ad39": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Withdrawal began at the caecal pole",
+  "quotes": {
+   "caecum": "Withdrawal began at the caecal pole",
+   "prep": "No preparation grade, descriptive quality assessment or segmental score is documented.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the laboratory result section remains empty."
+  }
+ },
+ "9e9773af498c98041232e3367fa84dcdbe16e8f308b9b92c2ec567e96c504523": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The timer was started on withdrawal from the cecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the cecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "mild chronic non-specific inflammation, with no dysplasia"
+  }
+ },
+ "5d5b34c558f82bcd4bfd99d355ec508c0a36e8ca32687cb2f0ed453c72a61be4": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "After photo-documentation of the caecal pole, a careful withdrawal examination was performed.",
+  "quotes": {
+   "caecum": "After photo-documentation of the caecal pole, a careful withdrawal examination was performed.",
+   "prep": "",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "c148686e863e9b8bf0d33b6e6e5e9ff0cb2049e2e3c678fe03ddc7298c88db3a": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "d46fc58158813b83f6723440d16a4df58652ba35912f6f7067b5c84d767490df": {
+  "caecum": "yes",
+  "prep": "not_stated",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The timer was started on withdrawal from the caecal pole.",
+  "quotes": {
+   "caecum": "The timer was started on withdrawal from the caecal pole.",
+   "prep": "Bowel-preparation quality: not recorded in the available report.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "88a767085185cc23526d8c2e8d9e5f7e9f55ab886354c4b4c387b3ca8974475d": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "BBPS(total=6; segments 2, 2, 2). Every segment scored at least 2.",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b68f893e148588d0ffcea161898a1e3446ca6a5430bdad8e73fa8dc386e96b3d": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "Prep=BBPS 3/2/2 (right/transverse/left), total 7. Every segment scored at least 2.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "f18f880362766059f05963f4830371b19df7c2c7801c7f39a58d50023114f74e": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "Right 2; transverse 3; left 3. BBPS total 8. Every segment scored at least 2.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Specimen submitted for analysis; only the request number is available, not a histological diagnosis."
+  }
+ },
+ "e60719805be83fc3c02ddd91ee76da09402a5896cfb7a2cad53b19c0c2079ec4": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "PREPARATION: Boston score: total 6 = 3+3+0 (right+transverse+left). At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "0b6146ddc9e19d367faec9a9406c28814a1677cb7e49d3c316f7caad718a2f27": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "Segmental scores [right 3, transverse 3, left 3], Boston 9/9. Every segment scored at least 2.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "At the time of signing, the laboratory result section remains empty."
+  }
+ },
+ "aecbf23a5ff87c7bddca534daefb63a595101b460d97936998e42faefc158f5c": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "BBPS(total=7; segments 2, 2, 3). Every segment scored at least 2.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "18f07d945a3526864c9b0cd1976177d7562b0c8e0129bde5c6ec4ed058427a7b": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "BBPS(total=6; segments 2, 2, 2). Every segment scored at least 2.",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "60e52c9ef031ced522f0a89a65335e9b5b9368f19dfc35d17caf164821a038f8": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "no explicit entry; no completion statement can be verified.",
+   "prep": "BBPS 3/2/2 (right/transverse/left), total 7. Every segment scored at least 2.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "357e8e9f3da1b576a876c448e88b14c361262c8cac0d2c0bae91291ab6b1a72b": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "BBPS total 8. Every segment scored at least 2.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "344d5f60516b94f1874fb6246b408b69316702fa0610c287af30123b58f1536f": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "Preparation is inadequate",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "7b104d03a159cfa1ecb712109a168ab148bc02565e7968f6d1aae2af608211ba": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "Preparation is inadequate",
+   "polyps": "There were no biopsies and no polyp resections during this procedure.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "10e390e06eb60a1426aa671edcf0d3e5e8b11aedf6d1e6b57ff04699a30a4ffa": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "PREPARATION: BBPS 3/3/3 (right/transverse/left), total 9. Every segment scored at least 2.",
+   "polyps": "TISSUE: Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "HISTOLOGY: Histology result for the tissue taken at this procedure: tubulovillous adenoma with low-grade dysplasia."
+  }
+ },
+ "a31f3f53a8fcc5400349fd990595eee54d8eb9f65f228e1554296ca4e8f03d33": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "Boston 7/9. Every segment scored at least 2.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "48c86d74717fad51dbb167c171ba9b0da095c73de4d719a921ba9d1ce6c2b459": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "Boston 6/9. Every segment scored at least 2.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "tubular adenoma with low-grade dysplasia"
+  }
+ },
+ "27073bd8310f612b58c6d14f2ced422c33b1b377edb723a9a287b2a7503138c7": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "Boston score: total 7 = 3+2+2 (right+transverse+left). Every segment scored at least 2.",
+   "polyps": "There were no biopsies and no polyp resections during this procedure.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "de197c789edc9cb596e78c3b919e1220b017d8627a2321740453109ba908ebc4": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "Boston Bowel Preparation Scale - R2 T3 L3; sum 8. Every segment scored at least 2.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b759d4996ef658b0962efccfc8f3734149221bcf570f5977ff8694e78fed2cde": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "Boston 9/9. Every segment scored at least 2.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "856d2bb255c77c58069e2b680b5d5695b44e868234bdee896cdf60095576d8e1": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent=The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "Extent=The report does not state the furthest point reached by the colonoscope.",
+   "prep": "Prep=BBPS(total=7; segments 2, 2, 3).",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "Histology result for the tissue taken at this procedure: mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "e56e806896f7e059a4739d4099dd760f0e248b2802c87770cac31aea3af92025": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "BBPS(total=6; segments 2, 2, 2). Every segment scored at least 2.",
+   "polyps": "two biopsies were taken.",
+   "histology": "normal colonic mucosa with no significant pathological abnormality."
+  }
+ },
+ "58d1b34fc3bc260444af4dccbcf819f4c609cffd9ee2b1110efdb03346c410b6": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Non-specific caecal erythema was sampled with biopsy forceps.",
+  "quotes": {
+   "caecum": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "Tissue obtained at this procedure: colonic mucosal biopsies, placed in labelled specimen pots.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "141b02e3469e0e7e446bfb171bf3c610cfa38c873f7a67bf85d7270604ded5bc": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "Preparation is inadequate",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "6ede3fef878974fc2af0699e8f0a829c2048b41a8f4b8b66ff907ac5ad6976c3": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "Right 3; transverse 2; left 2. BBPS total 7. Every segment scored at least 2.",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "66af140a67958b12df2567c4d0b70badc17110ff588cb4d343a0e5f73c716d1f": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "the cecum was not intubated.",
+  "quotes": {
+   "caecum": "the cecum was not intubated.",
+   "prep": "BBPS(total=8; segments 2, 3, 3). Every segment scored at least 2.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "d0cd675ef498de1fd01c16b60137efee98073d13cd60117230eb1eeed192c5d9": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "BBPS 3/3/3 (right/transverse/left), total 9. Every segment scored at least 2.",
+   "polyps": "A 9 mm lesion in the descending colon was lifted where required and removed with a cold snare; the site was inspected.",
+   "histology": "Histology result for the tissue taken at this procedure: tubulovillous adenoma with low-grade dysplasia."
+  }
+ },
+ "90216f417a7258eb38f0f8ad5eb83dc69db6f57f07c6ef10f6a25318a6da80a8": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "Segmental scores [right 2, transverse 2, left 3], Boston 7/9. Every segment scored at least 2.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "b6eeed0a6ed63eaa77e400218df4cf8857b15dd31480ee5a1ef28e891f5182be": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "Prep=Segmental scores [right 2, transverse 2, left 2], Boston 6/9. Every segment scored at least 2.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "e850482c363f1091028282814b0b73b918c99fac47e565e63333e27a422c0e46": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "78e9b009c69b58532f2ae88514aa8d6542467411408e1c570b5726df9a6f0e7c": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not reached because of a fixed sigmoid loop.",
+  "quotes": {
+   "caecum": "the caecum was not reached because of a fixed sigmoid loop.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "No tissue was removed, and no specimens were submitted.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "cdbb52fbba91548553790ed2e7bead050decda7c2aedc4073840e0fd4a68f517": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "Boston Bowel Preparation Scale - R3 T2 L2; sum 7. Every segment scored at least 2.",
+   "polyps": "Complete hot snare polypectomy was performed",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "4424bbe2cb8b0ea8665fa183c836befa785fc575db8ac202bdbfde6fcec1900a": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "failure to reach the caecum after prolonged looping.",
+  "quotes": {
+   "caecum": "failure to reach the caecum after prolonged looping.",
+   "prep": "Boston 8/9. Every segment scored at least 2.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "33e89ddcfc89b5d9e3a20a3cfa5978a7352a052a7f2c666d524cc9bf6038aefd": {
+  "caecum": "not_stated",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "two biopsies were taken.",
+   "histology": "normal colonic mucosa with no significant pathological abnormality."
+  }
+ },
+ "ddc000c4209152cd213bffdfee88d5c2b39f10fc461dfcfa808d2f7e7e5a081f": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the caecum was not intubated.",
+  "quotes": {
+   "caecum": "the caecum was not intubated.",
+   "prep": "At least one segment scored below 2, so preparation is inadequate.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "6d275bf1fbcd089ca0500437e69549eaded5127ffe2596f559ee54a4fb31a04b": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "Boston Bowel Preparation Scale - R3 T3 L3; sum 9. Every segment scored at least 2.",
+   "polyps": "Neither polypectomy nor biopsy was undertaken.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "e09e490df9e1dee5c583ca62ebb43803826762de69dec881e52b603a150dad2a": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Extent=Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Extent=Proximal extent is not recorded in the available procedure note.",
+   "prep": "BBPS total 7. Every segment scored at least 2.",
+   "polyps": "Specimen count: zero; sampling and polypectomy were both avoided.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "8b8abadb09e1cc728d973236bd441774841297c25ee3f02262589bf8267796a2": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+  "quotes": {
+   "caecum": "Extent of insertion: no explicit entry; no completion statement can be verified.",
+   "prep": "BBPS total 6. Every segment scored at least 2.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "646b195e1b4d51fff42327c41381ed9063f889a522b8e22595c176fa0ba87bce": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The report does not state the furthest point reached by the colonoscope.",
+  "quotes": {
+   "caecum": "The report does not state the furthest point reached by the colonoscope.",
+   "prep": "BBPS(total=7; segments 3, 2, 2). Every segment scored at least 2.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "cfb9bccf005038888fc2c8abb6f6c41b236a2bcfea7cd4ded7a54480f953d327": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Proximal extent is not recorded in the available procedure note.",
+  "quotes": {
+   "caecum": "Proximal extent is not recorded in the available procedure note.",
+   "prep": "BBPS 2/3/3 (right/transverse/left), total 8. Every segment scored at least 2.",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "a7da331e62481753916d0c413008aacebae6bf3b7aa57edb05ae6398938c07f9": {
+  "caecum": "not_stated",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "BBPS total 9. Every segment scored at least 2.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "5b61e551f3c88bc3e3b999469c5d46a751dd431a6f96a0bcad6755f79d04c91e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Boston score: total 7 = 2+2+3 (right+transverse+left). Every segment scored at least 2.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "5792870acf06f99d7440429b8be8e923a469133b4ba26f52e8b343b2b6556b98": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "PLAN: Complete examination with adequate preparation; no current histology is outstanding.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "d07c1c12dfe5e3b6f5d7ba912b5ed09eabe3fee800a07d7485497a73a8f9808c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Boston Bowel Preparation Scale - R3 T2 L2; sum 7. Every segment scored at least 2.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "c3910cd5520f48f497316ed0856662740b2b2d2bf3b3867ff0b05629d2313d79": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Examination stopped at the descending colon because of discomfort and looping; caecal intubation was unsuccessful.",
+  "quotes": {
+   "caecum": "Examination stopped at the descending colon because of discomfort and looping; caecal intubation was unsuccessful.",
+   "prep": "Prep=Segmental scores [right 2, transverse 3, left 3], Boston 8/9. Every segment scored at least 2.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "9873cc1d643567b666dfcb30bf75aacd7b45bc1d735e38ac275ad8c2f1f1a675": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": ""
+  }
+ },
+ "2a95eb77c730b9556dc4917b4157476c86c5847244d53e01f69e49010313d0ee": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "IMPRESSION: Complete examination with adequate preparation; no current histology is outstanding.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "28aa891479cd3b1ca88535f706b774789200867ac93fb1b2ef9d5f3025933df6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Boston score: total 7 = 2+2+3 (right+transverse+left). Every segment scored at least 2.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "4071bca6037a10abf041f6352c493d17bdbfba51fc77e773eda4d4a5a3bbd19b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Boston score: total 6 = 2+2+2 (right+transverse+left). Every segment scored at least 2.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "5554cf1eba0533a81ed41230b041f3bde716f3055f06a3331f0048cb57b59827": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Final quality was adequate in every segment.",
+   "polyps": "Tissue obtained at this procedure: colonic mucosal biopsies, placed in labelled specimen pots.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "0e45d5b1f4aab9d3aa6df69df4530435e58683663636ba95b230fa977f5446ed": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Overall preparation was called fair, but the right colon remained poor with adherent stool;",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "981474567a80bc9b85b6e9e0957fb2858f575d103fca34f55b273aa5245dee69": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "final preparation was good",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved",
+   "histology": ""
+  }
+ },
+ "16a968465c91c23dcd93c688dbf8bffca2d17bddfcaa1961d54688c7bced47da": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Final quality was adequate in every segment.",
+   "polyps": "It was neither excised nor sampled during this examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "4a76a495a383697bef802c9e196634ba99a675d75ba2e7d6dbe093a6deda7e32": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "preparation was fair and all mucosa could be inspected.",
+   "polyps": "A 3 mm lesion in the sigmoid colon was lifted where required and removed with a cold snare; the site was inspected.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "26a4b7581724cee7addb4d392128c8a4c3d2c8122e63a879595f5974d89cb08e": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "edcbf5c1bb9e569c5b46313edb1aed0a7fdb6653e59fb62f1aaebe8f8ed6585f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Final quality was adequate in every segment.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "9b337f1f03d1f67dcb8ea83dafcb7a29350ba46ac9a61d436d8d6ddb3cbb427f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "preparation was fair and all mucosa could be inspected.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "Histology result for the tissue taken at this procedure: mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "318a1734a4345000e0cb8cd0fb578da747bbe779068ee39d726228b1b51ef23b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "final preparation was good.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "5eda1663f3ba85294996800bb8533540ddf6cb3f1003b603eadfd799be1505c1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Final quality was adequate in every segment.",
+   "polyps": "It was neither excised nor sampled during this examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "44ce426c3ae84fb055624692dc37ded2afe09ba6427994383ecd5ff3603f4437": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "preparation was fair",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "8a14145a45ce9afaaa507bef5274b9fcf7959742ff1b5cc988c2f52378a9346b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "final preparation was good.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "25c587fee4ec98f559754d921375bb45e8c5557db1368c981f4d65871724db0f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Final quality was adequate in every segment.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "7ceecffcdcdfb00c8154209c617ef6bea36c7305282dc2b6684ce37e30e5e499": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "preparation was fair and all mucosa could be inspected.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "d848866da84c032d0fd85fbb9844b0198d03357e3adb271f319ad8520d8ef0a3": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "no specimen was obtained",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "d208e1e472a1edf9c413a6d4c4e1bf21ac97e2c03116d567e80f351f44405bbf": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "1e249534bcc1d0a86d48ffbdd2b69134c5e01cefc13babd7d64c6f4e683256e8": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+  "quotes": {
+   "caecum": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "39fb8d06897596acef003b7ddf1ac22be923d4f851959c10cffda4dbfa08e7d3": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "27f8edb27b3fb7cd70404c408132e59c772ed72fe377397094a065fe5d95d078": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "The visualised polyp was not excised or biopsied; no specimen was obtained.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "bd5bf9aba9a357e4b7891e2dae73e9128d0d4ebd4bbb147a8acde34302f436d2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "ce66ae32ec0acf60db2bb908b6bf9c23b9028460139d657e8331abb68bdf4631": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "1ab646ebdd73ebb2ec9cb04d42bf5048e2dbd5fbd9855d1677782115417ac859": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "the right colon was poorly prepared",
+   "polyps": "colonic mucosal biopsies",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "df6bbc38450481eb95d103e6f1bb0d2e842c1bafe91045f209a3762c1c5c867a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "none were taken",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "06aa257674ca99a4d1913b4250fd28d9bd41dd6326b8aaeca10751a5d48df3cc": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not reached",
+  "quotes": {
+   "caecum": "the caecum was not reached",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "no biopsy forceps or snare was used",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "df0030379bf5833776378cd338cf91557c75509e6262a5eda7c687e7f00536d3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: colonic mucosal biopsies, placed in labelled specimen pots.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "12b724716fb056d84315a938c208c21ef3520865abbd2066b3084b95a0e18044": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "The specimen was sent for histopathology; the result is not available in this report."
+  }
+ },
+ "350a0db4d8ce90f3dd2d9195c4a7a5946fe8f78bf76ab49b6020432bfd78ab7b": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "no biopsy forceps or snare was used.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "71387f485b4307c0258b766d1c722f9fc7f9d5e7f7582567a45b8204b3e63150": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "caecal intubation was unsuccessful.",
+  "quotes": {
+   "caecum": "caecal intubation was unsuccessful.",
+   "prep": "the right colon was poorly prepared",
+   "polyps": "random right- and left-colon biopsies were obtained",
+   "histology": "chronic inactive colitis; no granulomas or dysplasia identified"
+  }
+ },
+ "4c7bd888cc43891afbfbd260f112ba13bc7f93c6fc4bb5427cf294a6cc93abcd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "f5ada04c0770939f6c8596a1f61bee15e64d2a5201703e50c76467c427f2941c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "A 13 mm sessile polyp in the sigmoid colon was resected by hot snare and retrieved.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "788054b179ac55a443108a52293cca7fbf0274376660d58a93458a6ab7291cfd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "06448d30397b60db7b321edc4da193a30b8069acc9d0d9002c577f0af344cde2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "e879902dcd077a02edc7d5910ed931d3bcf78cce0b48dc0f6933f42dfbb0be51": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "The considered sampling was not performed: no biopsy forceps or snare was used.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "e8c1b11fdde2a89d12cb76be4e8e6da8a3b058b2eca3604fa7a95c58536d273f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "c20ed131fd554e9ac3a4715f3bdaf329d13d6122aaee0144e7d8ca639ccd66bc": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "164c97812e3717c65aa8ee29b9e9f3bbbd11c6c9ea03bcd06a17cf1214f20050": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "caecal intubation was unsuccessful",
+  "quotes": {
+   "caecum": "caecal intubation was unsuccessful",
+   "prep": "Excellent preparation",
+   "polyps": "no biopsy forceps or snare was used",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "6d54bc44b2958283814999b89deafcc67cd3564a3290154f8cf83c84e1960a23": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation is inadequate",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "f87a3b15860d2d681b72321f8a464a5b496d61470bdee780d1eca7ed24fd630e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": ""
+  }
+ },
+ "eb5c87688471bd0f08859a286f9b8514e4660b52aec2386e7ba632bb35a54e78": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "c5946324e74941d238119b0b6d115c886a31cb6e5b25d0c5229075bfbe88f821": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "No sampling occurred.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b7cd48f13148a1a3aadc8f8b2ce7914559808d333c10218d4234dbe134921d64": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "8ea2151678a64da9d9cbcab32d583138889205da5f88f59109391bb27b88ca64": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "normal colonic mucosa with no significant pathological abnormality"
+  }
+ },
+ "a08c32efe3a5b5e63a22532c6c9b591a48d2d5dbec091de0deeeff6244a212bc": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "9b0a278cdec894c7e218dd6cec83dee63209df6aa45cf16eb20b30921b3a2610": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation",
+   "polyps": "none were taken because the list overran and sampling was deferred.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "04f400c45033c5fdd4297ddebe45e130afd8b4d833ed45e4e514c4f90b747034": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "The considered sampling was not performed: no biopsy forceps or snare was used.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "cf37019e5a7cc0c85e9e1c240dfd8e7acb76bdb229baf0de009caf3c6da91209": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "No sampling occurred.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "c808487e617216bea8bde5e21902e3eb9680b495a7ca650694fbe251ed048eae": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "removed with a hot snare",
+   "histology": "Histology is awaited."
+  }
+ },
+ "26248877e63c23b923fe098ae9e77cce46b1e3531bc58e7a8b0c05601e52a2ac": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not reached.",
+  "quotes": {
+   "caecum": "the caecum was not reached.",
+   "prep": "Preparation was inadequate for that segment.",
+   "polyps": "no biopsy forceps or snare was used.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "4890584ecdd32053c7c9b2837ea6f422d2e9a766650aa8684fe8a27005037259": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "3962852345775d91e67be2e0b3339c3fc591014a65d431d4060361a9e732b95e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "d1735d7a88d20798c4e1595e610c44c2704199e01cc5904e294084e555aff698": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A 10 mm sessile polyp in the ascending colon was resected by hot snare and retrieved.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "61f850cf3ddd3e270493180652b5ce977bca8b92d5493e319a2f35591b3cfa17": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Examination stopped at the descending colon because of discomfort and looping; caecal intubation was unsuccessful.",
+  "quotes": {
+   "caecum": "Examination stopped at the descending colon because of discomfort and looping; caecal intubation was unsuccessful.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "1954146cb9a236f69b45f48b5ba25f5953b2fd3e04828cd6ea2f00e89d54a568": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Poor preparation with adherent stool, particularly in the right colon.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "58fb983cc53a80c411614d23cf3896ede21f74a39c9266ae45e7d759e10ad52d": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "d01f6301bc894571301d14fab5d15faa1922892e27c7e42883a56548ae6d22ea": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "e4833432fab798b77f791ea01c88d47d4625f68274249cb986b38b5f1f6a468c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "1c6091006f09071d14a2b34e8d7c5de1d431e2968b9740b5ec5e5c55ed8e6114": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "b5a3d0e58b5a7b558ed09a8f8d1a5a56db90a2cdb21211cc84bfc3205b414610": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "ce070fb86b589f8289db56b353f4d55a04e6ad20a94bc240234ac661151baf28": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "ecc1a39c61ec704c4c14471627f74cd8527bc861ae9d52eaa02ac52fef86357a": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "Biopsies from the caecal and rectal mucosa were taken for the diarrhoea indication.",
+   "histology": "normal colonic mucosa with no significant pathological abnormality."
+  }
+ },
+ "bb7a03249cc96c185a127c3ab564347cfe83e74b108ebbd99b3038e875c02e50": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+  "quotes": {
+   "caecum": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+   "prep": "Poor preparation with adherent stool, particularly in the right colon.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "a6dc07a3a3da31c4d741a2b4ae2d3139e56bed46ddf6fcf89f41ec909a3644d2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubulovillous adenoma with low-grade dysplasia."
+  }
+ },
+ "80aad4053395189e9a21c2d98f38f183e8d8380fb5d490de3a52d311ede8cfe1": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The instrument could not be passed beyond the hepatic flexure, so the cecum was not examined.",
+  "quotes": {
+   "caecum": "The instrument could not be passed beyond the hepatic flexure, so the cecum was not examined.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "d9c7c51bcd599817ed4a32a11143de16d611e887a3a08c7ed8b8253741de9a1d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Preparation is inadequate; this is not a reliable complete mucosal assessment even if caecal intubation was documented.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b1c3334dea52a8e312f71e1734e9623af653313068690bfeabf5b0936eda9c32": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "242bffa5c84bef69a8a83c9d87236c25c1be34a579f17c0513964b0da050f9d7": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "f49a4c61520f87fff66e54de093a39aeb4723d44492d13c03e7e09a5e9f9088a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b11f31331ca4a29d52f41f83a1d9f9e6d9dfa6c76b9ffc8ca8e75ece1a1370d5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "four random mucosal biopsies were nevertheless taken",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "8be0b6b8c063b7d45da0cd5a56154cac717fc208c7abfc0d9633214e1b01afc2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Biopsies from the caecal and rectal mucosa were taken for the diarrhoea indication.",
+   "histology": "Histology result for the tissue taken at this procedure: normal colonic mucosa with no significant pathological abnormality."
+  }
+ },
+ "72ddad62a4dec05e58d22bc96bad98050965ba897722232b9977c40b8a0ee878": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "ba2ebea6a8a7d1b41c6afac509f82adcda64ba0db361cad0e9147490801d459c": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "four random mucosal biopsies were nevertheless taken",
+   "histology": ""
+  }
+ },
+ "9f1aaad801fca45bf291c296d3bed1579aa70d565c76b0c358c55771b4eee0a3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "1cd47c05f7f2ec3a515501f52a22f7b507d9820f7828b544a0962a71873eb2f5": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "54e5b863e8be9f9719a94cd1d327c2e327e11ccb52961b467b3ae1868226717d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "8872f1540e1c525f4abd1929e3385a2be7664c33c1f56fa9cb16776a831f3194": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "066e486a61e8eb41f3415374f915d679bc95421f13139ab3c88f2db17c1c3af8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "tubular adenoma with low-grade dysplasia"
+  }
+ },
+ "34284de81abd929ae6c7bcd2f44d02785315a86a2eff3a141927e90c193a5cba": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Poor preparation with adherent stool, particularly in the right colon.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "e502c9dc98c4084e0efb1bb9aea6b96f79cdb9ea7199c27ed8bdb298a5689f48": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "a3ac6c8aeec7264cc7faac2b45a93ebeb5afef27af177e71f10e17de471f1658": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Complete hot snare polypectomy was performed",
+   "histology": "Histology is awaited."
+  }
+ },
+ "fdaa9bea7f1435825e62a208778159ce08ef52982568617442e7672c39fc7bc4": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the caecum was not reached.",
+  "quotes": {
+   "caecum": "the caecum was not reached.",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "four random mucosal biopsies were nevertheless taken to assess microscopic inflammation.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "bdef69f974894010ae5ed9ea3ab6e88004d847f2a7cfaaecbaa7c8a23c8bda18": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "a874371d10567b4beb653c6644410a3b9656b9f2ce03edfc59c76b4e126bffd8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "tubulovillous adenoma with low-grade dysplasia"
+  }
+ },
+ "27aea4acb85548d50b9742b0de1a887cd261456875cf441447417352ca57f4e8": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "four random mucosal biopsies were nevertheless taken",
+   "histology": "Histology is awaited"
+  }
+ },
+ "fc23efd9dd649c1f568c91e62cf60fca9701aa043cefc267bffb7831a7fcdfa4": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "8d9ee32c0e3bd40a545809f23796a159161bd2010a0415ce26aec8af946e2c17": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "cfb8c33865a38227f45659142cb12784d54f1030f53ef846cd055b2c6569a691": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "four random mucosal biopsies were nevertheless taken to assess microscopic inflammation.",
+   "histology": ""
+  }
+ },
+ "ac6d2ab66bda7eb44f54ac6f33ae47be37ddd54c4fd9e479558af69c896ee48f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "0c9bb5dbf884f3c32a159fabdad44ca0fa0af4555a3c3535ac7ef5a93afec679": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "For chronic diarrhoea, separate right- and left-colon biopsies were obtained.",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "789b0d85c97532c906565991c1b65bd5172ee5c5f1823a5d98a1681727cfd1fd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "f346dd87fabd8b800b883529fa585af6f7b0c78b2dd28724e4fa02b4af6a6a5e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Biopsies from the caecal and rectal mucosa were taken for the diarrhoea indication.",
+   "histology": "normal colonic mucosa with no significant pathological abnormality"
+  }
+ },
+ "6e6b7b5c203f92158b252d28d9c0ae8e775e690e85e22d1b20703fcbfbf7235b": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined.",
+  "quotes": {
+   "caecum": "the cecum was not examined.",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "0c98b51ee68f9ec8e9030a41f7d37fa4d95390aca09791c3fa2bb169825cd2e9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "47167948ec4f1eaad92247119b2468a5a46685499ed5365653b9660edfe448a2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "d5a3b3ba0d416f87daa41d19c1f3c1376acfca2bcce662ffb8a87c27c245d4aa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubulovillous adenoma with low-grade dysplasia."
+  }
+ },
+ "268e18a734e057406f5e565796122b6c7779f42a7075515aca201936fd041977": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined.",
+  "quotes": {
+   "caecum": "the cecum was not examined.",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "3f11943b0f4b48e26251e07e0b22951d0df8868ad66f619ed1e25224aa7563d1": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Preparation is inadequate; this is not a reliable complete mucosal assessment even if caecal intubation was documented.",
+   "polyps": "Biopsies from the caecal and rectal mucosa were taken for the diarrhoea indication.",
+   "histology": "Histology result for the tissue taken at this procedure: normal colonic mucosa with no significant pathological abnormality."
+  }
+ },
+ "57f2cb07fb9d8f668e76c8e0d4124cd56ff334a86c0a655beed8a9658567857b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "137410783bdd7ab90912e2f2cef9bbf9f9dc62bdc02dcedcacde5debcf8f7f0f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "bcc2807b0517b25b3771c4c649352ca635f7e7df88e4741f0ddc0e836e17b7c6": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "fbf83938dd84aaab082dfaf764d0793cd8b8275f168228f80fea5a106aaa7435": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecal intubation was unsuccessful",
+  "quotes": {
+   "caecum": "caecal intubation was unsuccessful",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "Complete cold snare polypectomy was performed",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "684c172b7cbbd38b21e7b22a9b3c3db9b18453d566f7dd9f4f5c4410246f4a17": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+  "quotes": {
+   "caecum": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b2b7f195a793ceee84906b30eb37ea33c3b272bce8c126d2998ceaf8614daa85": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "afad144f79887afee07c6ad7b3dfc9fe5d3a84f107909799cd7fa41fc69a1a81": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "separate right- and left-colon biopsies were obtained",
+   "histology": "chronic inactive colitis; no granulomas or dysplasia identified"
+  }
+ },
+ "54f4e8360e9fa8c936defccf5bea87f5a845d8a9ffa3a4fd32b01e64e1a08b59": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "af68582d66dfa91bddf0cf7bfa73c1260e5d08396db8955495fc78c9dce1a928": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "b966679f21c91c8f3155fd2f1395e312b31090386dd38c162919eac34e7549d3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "the result is not available in this report"
+  }
+ },
+ "dbc5b118eec9a6734ea2182559de0c7146dec93b6a98c15ab46e1a279b57f67a": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "b4865f13347938031ad24f10d80600a56b8089e916ba6cf613de7eb76153e71a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "38159e4a97b11e64e5cb7dfffd5c7f04c740077675b1c52be054952910abc0ee": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was not reached",
+  "quotes": {
+   "caecum": "The cecum was not reached",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "797799c19fbcab68466ae58e88d7f50082b2d738f477691da51e39c45fff75b7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "four random mucosal biopsies were nevertheless taken to assess microscopic inflammation.",
+   "histology": "Histology result for the tissue taken at this procedure: mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "5cb6f8418c2a289193e9b47d05332d1d3729c1ac16f23b6122934081d344496d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "577bde205d5b65572cae5480bfea0121b306ae65ba4146bc1915a7248da24185": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the caecum was not reached.",
+  "quotes": {
+   "caecum": "the caecum was not reached.",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "134edc17414f3270d27c5d9328a032ec56ab100e8e1f636e2b5f3e637a484fca": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "05b8aff7427912daf5049afdce8092303bd8737913f24f9b76a343d8a15868b7": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "69cd8e427e7e73f55bc6b0807bb86bf11b451072cf9983152875dc246c01ac92": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "cc2d3468c66a8976c288462bcd1baff8998913df916dfee28f50fd0e594a9571": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "0478ee0c2a57504b38944522583d481ac184f8e52eba068079956cefdf233d6d": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Poor preparation with adherent stool, particularly in the right colon.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "bd7f46b9d2d5d46a55ac10af2ea679d8fb5ab0930e03bad0191e8b3b4e9754fa": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": ""
+  }
+ },
+ "f06cc240a595dacffd83ca3825b16a3d69d8efc06c3e36645f113bdbac09d19d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "removed with a cold snare",
+   "histology": "Histology is awaited."
+  }
+ },
+ "6e5b5907d7b9edd9aadb6c3b4d3e5de0910f76faccaf7cee1ea5652e19ae0c36": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the caecum was not reached.",
+  "quotes": {
+   "caecum": "the caecum was not reached.",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "a7a7c6a1c050f5fe4b0738ad687a17990c0b429a95a2866276c195b8556d5e14": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "0c2471e084f6863ddf32b165cfc72afc1c335ac105ce04e4bb8bbb7c0e67caab": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Bowel preparation was good",
+   "polyps": "removed with a hot snare",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "aa891aa22fdce4428e654af7837cfc2d0814ea59c288b801e438d27e1b18f719": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Bowel preparation was poor",
+   "polyps": "A 4 mm sessile polyp in the descending colon was resected by cold snare and retrieved.",
+   "histology": ""
+  }
+ },
+ "39cbb7cbcc8c5cc0fc8b6043310ac9672ce93bc6b41744c4c01140b9516bc4d3": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "caecal intubation was unsuccessful",
+  "quotes": {
+   "caecum": "caecal intubation was unsuccessful",
+   "prep": "The preparation did not permit a satisfactory examination despite washing and suction.",
+   "polyps": "Complete hot snare polypectomy was performed",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "25fbbf6fb647e9b5f1c96bcb896c4483f766cc67397be1097363647336b76826": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "8ba7233c748a1bf3607f59d43fd41b5b0fe810e64ab8ac8420bd0859ba73435b": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "e6188455c2cd3c0bc683d285248ca7c5c0f5853da935bdf8fb4fe222332e7592": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology is awaited."
+  }
+ },
+ "353c2261688f086019e79b2da9ef0060946327ea3839cb88007071950872d6fe": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "f16bd7acd39ee3f7e0562c7acc75046a505aab5878d627479953b475b20d5262": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Poor preparation with adherent stool, particularly in the right colon.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "ee05d5666bda657ef0073416a4ac5afcf5e209851db532fa98a6300a8814ab22": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "ad88039d8fbce71c8499087f378fa00003e00d8c92560b4c5eed09e43f800eb9": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology is awaited."
+  }
+ },
+ "b875293efb7d80da89a6029e92201a96114f21e542fe2c99f5a9efa6cfdb1bd2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "6d57e4cf34055a21770cf2d3993663e10ef8a1a835b07fa996ef6871ec93ca17": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+  "quotes": {
+   "caecum": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "bd482ca221e52ca5ad7c600a34fd3db9569947c5e4432d560db92351f3046060": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubulovillous adenoma with low-grade dysplasia."
+  }
+ },
+ "7a103858e3c30a247dcef63449844dcde80aec2dd9bc096e9b044b4e2942b56f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice",
+   "histology": ""
+  }
+ },
+ "2cd600701b26897787e5f5da57ab3d92cbd8c8eaa99555be0c8d62bb57dc5250": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "f8752a32b29696d829e3f29d605fb2402778585d22800e469c0263bdb893c939": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "ac60cda3739571fde5fe346210ce35f4c5a095088cf6d7b4d2db6a8919d248a4": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "1564d845dba23aed724371ad2a57e1f49c42c0065e768f06338b3b157ea9bf85": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "1e3a9118406a8637e119547c3d3965637547ec8ceeebb752603fae80d395b020": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": ""
+  }
+ },
+ "a26a1a1872d7971a43b0f35fa40b9f283821a693273e942d026b125d1559002f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "4b11bfd97d939052a2f085a115ce5308ffef05c8160901fa08b2f0be637a1e1d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "e965eb89800cfd6f56500b530ad20da6863b567fd1d01dfc8eceeec851557129": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice",
+   "histology": "Histology is awaited."
+  }
+ },
+ "026dda9d1e99697df405e2dad6c967b0501342dc3962051a046e289da5ed04c3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "65b25dc68463b6bc90e254b22eb94863bae01b107defa944a2bddb2967bddd5a": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "8a1cf576395e31505923eeb224e428a634699645e0808095c59d5db9852fa04f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "c7ff53a0f68f9433ba4e282b8b7c9ab441bd5b53176b025d3c1f9c1359f32077": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology is awaited."
+  }
+ },
+ "66d6087ff77493ff93aa966b24963d0c26927786290dda86524e7e296dae18ad": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b81e34f2b25c3238b99d1a03aff3b4aa2b0d3986bb5d5b5abc85724dbf246dc2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "A 6 mm lesion in the rectum was lifted where required and removed with a cold snare;",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "94f6451e087041aab7a7f8febf9dc52d9fe34106211603c2df5d5b3509356f16": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "7a5f14e28c93b03e87c6a39e51dbea31603c2a398d4b225a18eae9db81dcf24f": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "ffb510b4a1923c015b7e2bee10d19387189a90c63752f4a3fb5a36db7e8dd6dc": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: transverse colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "c5313f3ba44b3cc6c9d14fbf46046bae00296d69ac780886a1df053c23347178": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+  "quotes": {
+   "caecum": "The cecum was not reached; a fixed sigmoid loop prevented further advancement.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "9080086d72a388b08aa72ae8102cac4dbd90fc406b596e4b8dc13b40be9795b1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "93b928407b2e9f046ff595aaf35711a46a7800977c031c083c054a4027d82895": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology result for the tissue taken at this procedure: mild chronic non-specific inflammation, with no dysplasia."
+  }
+ },
+ "c0453fbe8d699869dd32a65caa608bd4aaa81170314e1818cc9f0988b61f5589": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "3d0337250f85b9f72d749d76e78fd1be393f9a443ac626df67a1fde282d81eac": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "c1fb1ff8bfeda1633b3ce371dc32206a8d27a4bc300a333eee5e9da2300344c3": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "b284361da7e04b6294de129bd33f542a94028754f64c11c96d276f3b339d4d4f": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "74eee892b5e98641510537648c3058c2b4572ad2a9a3a9c78b9eab18e9b06523": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "random right- and left-colon biopsies were obtained for chronic diarrhoea.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "3e942ed399d8b3981c7ed7b37cac2cb76cd54681a088d0d9f5660437e4539988": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "4ac2319232df844e0a62f7c7fb5bbf3472b1f0d5e872ca33d572b70b687eb165": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "A 7 mm sessile polyp in the transverse colon was resected by cold snare and retrieved.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "1a2b33df1313c71d8cae1f4cadec368f9ddfbdaa552a6373d958bef52ff78593": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "95afc79b94b89c818ababfd2dfe92bf73ecbb9a3d121b02d11fd3de7c7f51cc1": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "42fd9a2a84d154d4b60b8acc6955c6ce7cf45e67cd538e548521b8864e694ec9": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "A 13 mm sessile polyp in the sigmoid colon was resected by hot snare and retrieved.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "88eb88820ff03caf46a8d0e752e0deeaa790bd22a0a1042ce32402db8320d695": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Non-specific caecal erythema was sampled with biopsy forceps.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "05452e3e41b3f4693810d225ba059da0418e275962bfe863106ad9bdab2d2560": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "removed with a hot snare",
+   "histology": ""
+  }
+ },
+ "728da5438c3f049b2c43557c83b887cb0a61ec1b9f15190e4d26669c7a5776bb": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "aba57ef1508c3b55d9b4a17a092876d8d9d26ed013ad4ac5ad3602609f522713": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "two biopsies were taken.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "0a3c04d5f659fac06425c1db64f0b7dc2771a6359ef943604897565c408c0ce4": {
+  "caecum": "no",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The procedure is incomplete short of the caecum.",
+  "quotes": {
+   "caecum": "The procedure is incomplete short of the caecum.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "A 3 mm lesion in the sigmoid colon was lifted where required and removed with a cold snare; the site was inspected.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "89f17b772fd59569d8eaab8abed9fbefc10c6a208e56d30ea2854ced3ea26df3": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "Tissue obtained at this procedure: ascending colon polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: hyperplastic polyp, no dysplasia."
+  }
+ },
+ "5d1ce0b9052d2b017ca04f44b5265b5ca44f2c32172923025118b07cf13c4349": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "Specimens: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "0ccd8577c08378538e7b1414939f1323fe7bf7f3265435bad4effb9f635306ce": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: descending colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "c436055428e87347eee83f9e36d5e78109dd9284e318850d13f11cc1a6147a7e": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "A 16 mm sessile polyp in the rectum was resected by hot snare and retrieved.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "dc9e55eaf30930b64eb7ca7cd8fc412d154a78a9c84700be0d0208d3db4e1893": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Complete insertion to the cecum was achieved",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved",
+   "prep": "Preparation was adequate throughout",
+   "polyps": "A small rectal ulcer was biopsied twice to exclude inflammation",
+   "histology": "Histology result for the tissue taken at this procedure: chronic inactive colitis; no granulomas or dysplasia identified."
+  }
+ },
+ "380cc386a39d72aea85f303d818f93451f350eef3e0a579cee284b7520f68c4b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "6cfc62b6ba5d5d363bb423b35b49844fdbddaf2b54e88e19aa4e9947ebb75a7d": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "d1a320fa06038f87809dfa0d1c9847f9be498f03e027461163e2f865621ff27b": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Bowel preparation was good, with clear effluent after washing.",
+   "polyps": "Complete hot snare polypectomy was performed without immediate bleeding.",
+   "histology": "the result is not available in this report."
+  }
+ },
+ "03f11d598684a2ce594fee7efac77f1647657a259d5be172d68cd44b75fe7cf8": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+  "quotes": {
+   "caecum": "Complete insertion to the cecum was achieved and followed by a slow withdrawal.",
+   "prep": "Preparation was adequate throughout, with no segment requiring repeat examination for cleanliness.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "8763c6f184a19019abb93fea3199b31b58e561b82181d9e55367f0c98d471fbd": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Prep=Excellent preparation; only small bubbles were present.",
+   "polyps": "A 13 mm sessile polyp in the sigmoid colon was resected by hot snare and retrieved.",
+   "histology": "No current histology result has yet been appended."
+  }
+ },
+ "74a566628376344f1985fba8927eca5f4a18665b898f8263c689a515e39c0b67": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Complete cold snare polypectomy was performed without immediate bleeding.",
+   "histology": "Pathology pending at the time of discharge."
+  }
+ },
+ "44e15ed833c0acafdf48ce6335a2a4e764b5e16b1dacad860268df80a3fc1045": {
+  "caecum": "yes",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+  "quotes": {
+   "caecum": "The proximal limit was the caecum, confirmed by two standard landmarks.",
+   "prep": "Preparation was inadequate because of extensive faecal residue.",
+   "polyps": "No specimen was collected during the examination.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "9e2fe8d1ec4275d773e93fb0860e7133bc8220d3119ead36e7e588920dbefbbd": {
+  "caecum": "no",
+  "prep": "inadequate",
+  "polyps": "no",
+  "histology": "no",
+  "quote": "the cecum was not examined",
+  "quotes": {
+   "caecum": "the cecum was not examined",
+   "prep": "Bowel preparation was poor",
+   "polyps": "Tissue acquisition: none.",
+   "histology": "No histology specimen exists for the present procedure."
+  }
+ },
+ "eb8e52c9022c90f6073b981be10c0c875a35cee05d539a3bbf2bd4f08d9ed7c2": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "Caecal intubation was successful, with landmarks confirmed on still images.",
+  "quotes": {
+   "caecum": "Caecal intubation was successful, with landmarks confirmed on still images.",
+   "prep": "Excellent preparation; only small bubbles were present.",
+   "polyps": "Tissue obtained at this procedure: rectum polyp, hot snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: tubular adenoma with low-grade dysplasia."
+  }
+ },
+ "cd4d19ad648d989124eda0e2fc947d9755e79c6b4aab2bd4c3d5329bdc36d677": {
+  "caecum": "yes",
+  "prep": "adequate",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+  "quotes": {
+   "caecum": "The colonoscope was advanced to the cecum; the appendiceal orifice and ileocecal valve were seen.",
+   "prep": "Preparation quality was fair and permitted adequate mucosal inspection.",
+   "polyps": "Tissue obtained at this procedure: sigmoid colon polyp, cold snare polypectomy, retrieved for pathology.",
+   "histology": "Histology result for the tissue taken at this procedure: sessile serrated lesion without dysplasia."
+  }
+ },
+ "fd982a51704e7a1b0189bbafb4a359d69db370414aaf838434ea0b50316792d1": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "Specimen: colon polyps, cold snare (x2).",
+   "histology": "sections show colonic mucosa with tubular adenoma, low-grade dysplasia."
+  }
+ },
+ "bbd5ac84747ca236c5baba151be013771675cab27cfce3fe3802cf71818271fe": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "Specimen: sigmoid polyp, forceps removal.",
+   "histology": "DIAGNOSIS: Hyperplastic polyp."
+  }
+ },
+ "14a21aa16fbdea507b2a9974cf1cf060b330c673d9834353128964bfa120e618": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "ascending colon polyp (snare).",
+   "histology": "DIAGNOSIS: Sessile serrated lesion without dysplasia."
+  }
+ },
+ "b7d3e16caee42c3a656b634f0a9cc978edfe3d2b01839ebbf6bf6ebba7240ccb": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "yes",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "Specimen: rectosigmoid polyp, 1.6 cm, hot snare.",
+   "histology": "Microscopic description: tubulovillous adenoma with focal high-grade dysplasia; stalk free of tumour."
+  }
+ },
+ "7db74a9ff5331223316fea1b904da6e4087d71778a2a42df779fb2a13b2bc953": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "colon polyps (2 containers)",
+   "histology": ""
+  }
+ },
+ "078e1ef9cfecbf217d150e8092b9f3c6f8e445f7507fe66a765f408f7a3e0bf9": {
+  "caecum": "not_stated",
+  "prep": "not_stated",
+  "polyps": "yes",
+  "histology": "no",
+  "quote": "",
+  "quotes": {
+   "caecum": "",
+   "prep": "",
+   "polyps": "specimen 'colon polyp, transverse' accessioned",
+   "histology": "No diagnosis has been issued yet."
+  }
+ }
+}
