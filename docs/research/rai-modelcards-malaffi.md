@@ -137,7 +137,7 @@ One vendor claims there is a Malaffi FHIR implementation guide (https://www.bona
 **Adapter tiers.**
 - **Key:** `source|resourceType|id|version`, sent as `Nats-Msg-Id`.
 - **JetStream dedupe window:** 1 h.
-- **Older replays:** caught by a KV create-if-absent seen-ledger (**assumption**: not yet built).
+- **Older replays:** caught by a KV seen-ledger, checked before each publish and recorded after the ack (**evidence**: built and tested; see "Ingest pacing, replay ledger" in `pipeline/RESULTS.md`).
 
 | Tier | Exactly-once |
 |---|---|
