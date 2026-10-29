@@ -82,7 +82,7 @@ The owner of each model is our **assumption**, using RAI §4 roles: the ADPHC pr
 - **Data:** 300 synthetic DoH App 14 reports (spec = answer key) and 43 US MTSamples reports, team-labelled.
 - **Evaluation:**
   - App 14 corpus, after the v3 fix: 26B 300/300 on every field, 4B 264–289/300; 0 unsafe auto-closures for either; frozen evaluation 0 CRC false closures with either reader;
-  - six held-out corpora by four model families (300 each, frozen before any reader ran), each the fair test of the previous fix: 6/1,800 unsafe auto-closures with the 26B (0.33%), 10/1,800 with the 4B, in three phrasing classes (correction addenda; earlier histology next to a pending result; caecum seen but not reached), each fixed by a generic rule; v7.1 has 0 unsafe on all corpora; the last fair test (Kimi K3.1 Pro) passed with both readers;
+  - seven held-out corpora by four model families (300 each, frozen before any reader ran), each the fair test of the previous fix: 6/2,100 unsafe auto-closures with the 26B (0.29%), 10/2,100 with the 4B, in three phrasing classes (correction addenda; earlier histology next to a pending result; caecum seen but not reached), each fixed by a generic rule; v7.1 has 0 unsafe on all corpora; the last two fair tests (v7 on corpus 7, shipped v7.1 on corpus 8) passed with both readers;
   - before the fix the corpus showed a field-definition gap (biopsies not counted as tissue) giving 50–52 false closures with either reader;
   - 4B hybrid 40/43 against the MTSamples key; 13 auto-closures, 0 wrong (G4);
   - 0/455 agreed labels wrong (V5).
