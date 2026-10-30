@@ -189,7 +189,7 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 			} else {
 				o.Suppress = SupConsent
 			}
-		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !msgConfirmed(f, f.SRRec, d.RecPk):
+		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !d.EIDSecond && !msgConfirmed(f, f.SRRec, d.RecPk):
 			o.Suppress, o.Guard = SupSecondID, "held"
 		default:
 			o.Released = true
@@ -197,6 +197,8 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 				o.Guard = "dob_match"
 				if basis == "human" || d.AllHuman {
 					o.Guard = "human_path"
+				} else if !secondID(f.SRDob, d.RecDob) && d.EIDSecond {
+					o.Guard = "eid_match"
 				} else if !secondID(f.SRDob, d.RecDob) {
 					o.Guard = "human_confirmed"
 				}
