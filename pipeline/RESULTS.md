@@ -920,7 +920,7 @@ Fields and clocks come from NHS e-RS, Ontario eReferral, CPSO and FHIR Task, wit
 | Referrer acted (truth) / acted by act-by | – | 28 / 17 |
 | Loops closed after re-referral (truth / Wasl) | 0 / 0 | 15 / 12, 0 false |
 
-The 6 missed packets have not been analysed yet. Their loops still raise the existing e-consult escalations.
+The missed packets were traced later; see "Hand-off packet trace" below.
 
 ### Lung loop: PET/CT and tissue, patient outreach, HL7 v2 (`b53ce89`)
 
@@ -1022,3 +1022,35 @@ Post-hoc change after the `a3ad83a` freeze, made after the review-load trace abo
 **Result.** Reviewer time falls about 10% and more patients get their message without waiting for a human; every safety count stays at 0. The origin gap barely moves, as expected: the rules help every origin, and the remaining gap is the placeholder-date effect for Arab patients, which neither rule targets. Raw runs are kept outside the repo.
 
 **Side issue found:** `noisyLatin2` (noise v2) panics on one cal-split name at seed 101 (slice bounds in `noise2.go`). The eval cohorts are not affected; it is left unfixed because changing the held-out noise model would change the held-out cohorts. Seed 107 was used instead for the cal-split check.
+
+### Hand-off packet trace and fixes (`87ae618`, `e0b86c9`, `eea6f26`, new headline)
+
+At `03e430d` the frozen run missed 51 packets that truth has (17 dev, 34 held-out) and built 38 that truth lacks (16, 22). Every mismatch was traced. Post-hoc changes, disclosed.
+
+| Class | Loops | Cause | Fix |
+|---|---|---|---|
+| Missed: the re-referral was rejected again | 28 | The packet took the latest rejection, the re-referral's, so the original packet vanished | The packet uses the rejection the e-consult was about; a later rejection by another unit counts as the referrer acting |
+| Missed: the unit's rejection never linked | ~23 | The unit's rejected intake was not tied to the patient, so no rejection was visible | The e-consult question is keyed by the referral; it now carries its trigger and the unit asked, and the packet is built from the thread (reason "other") |
+| Extra: e-consult about a repeat after inadequate prep | 20 | That e-consult was paired with an older rejection that a later acceptance had already superseded | A packet needs an e-consult about a returned referral |
+| Extra: redirect, then rejected, after an unanswered referral | 18 | **Truth was wrong**: the generator wrote packets only after a rejected referral, while `handoff.go` treats both as final | Generator: a redirect the second unit rejects is final in every branch |
+
+The first re-run missed 71 packets per noise model: a multi-turn e-consult's "followup" question overwrote the opening "rejected" trigger. Fixed in `e0b86c9` (a follow-up turn keeps the thread's opening trigger), with a test through the closure core that fails without the fix.
+
+The second re-run left 5 mismatches:
+- **4 missed (linkage limit, not fixed):** a redirect where the second unit's rejection was never linked to the patient. The e-consult thread ends at the redirect, so nothing on the referrer's side shows the rejection.
+- **1 extra (truth corrected, `eea6f26`):** the unit's reply came after the run ended, so at the end the e-consult had gone 5 business days unanswered, a `reject_no_reply` packet by the rule. The generator had decided the late reply, so truth had no packet. Truth now carries the packet when the deadline passes before a reply that falls after the run. No random draws: on seed 41 the FHIR files are byte-identical and truth differs only in that loop.
+
+| | Dev noise v1: `03e430d` → `eea6f26` | Held-out v2: `03e430d` → `eea6f26` |
+|---|---|---|
+| Truth packets | 223 → 230 | 210 → 223 |
+| Packets built and matched | 206 → **229** | 176 → **220** |
+| Missed / extra | 17 / 16 → **1 / 0** | 34 / 22 → **3 / 0** |
+| Referrer's action state correct | 206 → 229 | 174 → 220 |
+| Closed after re-referral (false) | 66 (0) → 67 (0) | 44 (0) → 45 (0) |
+| CRC / cervical / lung false closures | 0 / 0 / 0 | 0 / 0 / 0 |
+| Wrong-patient messages; sent without consent | 0; 0 | 0; 0 |
+| CRC recall | 0.761 → 0.762 | 0.704 → 0.704 |
+| Reviewer hours per 1k loops | 17.3 → 17.3 | 15.7 → 15.7 |
+| Review-load ratio, per seed; pooled | 1.19 (1.11–1.27); 1.14 → 1.19 (1.11–1.26); 1.14 | 1.16 (1.08–1.24); 1.12 → 1.17 (1.10–1.23); 1.13 |
+
+Truth gains 7 and 13 packets from the two generator corrections. Small differences in the other rows are run-to-run variation (the chaos and timing schedule differs between runs).

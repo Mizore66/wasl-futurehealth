@@ -4,9 +4,9 @@ crc       no review   : P 1.000  R 0.344  false closures 0/209
 cervical  with review : P 1.000  R 0.913  false closures 0/189
 cervical  no review   : P 1.000  R 0.594  false closures 0/123
 CRC ≤31-day KPI (all referrals): EID-only 0.147 | truth 0.334 | Wasl 0.304
-exactly-once: duplicates 0 / 27126 outputs; final-state mismatches 0
+exactly-once: duplicates 0 / 27182 outputs; final-state mismatches 0
 provenance chains verified 1756/1756; forged events with effect 0/24
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 1480, without granted consent 0; held-for-consent 261, cancelled 93
-throughput 550 ev/s; reviewer-h/1k loops 16.3
+consent hold: released 1531, without granted consent 0; held-for-consent 260, cancelled 94
+throughput 509 ev/s; reviewer-h/1k loops 16.1
 lung_nodule (Fleischner 2017): P 1.000  R 0.945  false closures 0/307; escalation recall 0.897; overdue acc 0.975; recommendation acc 1.000 (coverage 1.000); appropriate follow-up truth 0.416 vs Wasl 0.378
