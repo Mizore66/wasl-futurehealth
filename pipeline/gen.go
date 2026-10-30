@@ -950,10 +950,12 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			}
 		}
 		// --- v6 clinician-to-clinician e-consult thread (rejected / unanswered referral, inadequate procedure)
+		ecLastQ, ecLastR := -1.0, -1.0 // last e-consult question / reply seen by the end of the run
 		ecQ := func(day float64, kind string) {
 			comm(day, "econsult-question", "", "en", ecQuestions[kind], "completed", "", map[string]string{"urn:wsi:econsult-trigger": kind, "urn:wsi:recipient": hosp.ID})
 			if day+.01 <= TEnd {
 				lt.EcState = "awaiting_reply"
+				ecLastQ = day
 			}
 		}
 		ecR := func(day float64, label string) {
@@ -962,6 +964,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			if day+.01 <= TEnd {
 				lt.EcState = label
 				lt.EcTurns++
+				ecLastR = day
 			}
 		}
 		runEC := func(trig string, t0 float64) (string, float64) {
@@ -995,6 +998,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		rejectedFinal, unanswered := false, false
 		rejDay := inf // day the referral was finally rejected (hand-off packet)
 		redirectRejected := false // the unit a redirect pointed to also rejected (a final rejection in any branch)
+		noReplyAtEnd := inf       // reject_no_reply deadline reached before a reply that comes after the run ends
 		lastResp, lastRespDay := "none", -1.0
 		setResp := func(st string, d float64) {
 			if d <= TEnd {
@@ -1045,6 +1049,11 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			setResp("rejected", respDay+.02)
 			o, t := runEC("rejected", respDay)
 			afterEC(o, t, &rejectedFinal)
+			// the unit answers only after the run ends: at the end the e-consult has been unanswered for 5 business
+			// days, which handoff.go treats as a final rejection (reject_no_reply), so truth carries the packet too
+			if !rejectedFinal && ecLastQ > ecLastR && addBD(ecLastQ, HandoffBDRoutine) <= TEnd {
+				noReplyAtEnd = addBD(ecLastQ, HandoffBDRoutine)
+			}
 		default:
 			respDay = sr + lognorm(2.5, .6)
 			intake(p, hosp, respDay, "active", "", loop, prog)
@@ -1191,6 +1200,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			default:
 				pw = "ack_not_booked"
 			}
+		}
+		if Handoff && noReplyAtEnd < inf && lt.Handoff == nil {
+			// no random draws here (handoffPlan is hashed), so the rest of the cohort is unchanged. The referrer gets no
+			// simulated action: the deadline falls in the last days of the run, after the loop's other events.
+			urgent := handoffUrgent(prog, prio)
+			actBy, _, _ := handoffPlan(seed, loop, noReplyAtEnd, urgent)
+			lt.Handoff = &HandoffTruth{Decided: noReplyAtEnd, ActBy: actBy, ActDay: -1, Urgent: urgent}
 		}
 		// finalize: the loop's truth from its procedures (a deferred hand-off re-runs it with the re-referral's procedures)
 		finalize = func(cs []*colo, pw string) {
