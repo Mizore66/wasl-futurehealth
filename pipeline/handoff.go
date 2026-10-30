@@ -126,27 +126,51 @@ type srFact struct {
 	reason, ev   string
 }
 
+// ecThread: the latest e-consult on the loop (closure.go): state, day, why it was asked, and the unit asked.
+type ecThread struct {
+	state string
+	day   float64
+	trig  string
+	unit  string
+}
+
 // buildHandoff: the packet at `now`, or nil when the referral was not finally rejected. A referral is finally rejected
-// when the e-consult outcome is reject, or the unit a redirect pointed to also rejected it.
-func buildHandoff(f *LoopFacts, prog string, srs []srFact, ecState string, ecDay float64, refDay, now float64, contact string) *HandoffPacket {
+// when an e-consult about a returned referral ends in reject or goes 5 business days unanswered, or the unit a redirect
+// pointed to also rejects it. The rejection is the one the e-consult was about (the latest at or before it, or for a
+// redirect the first one after it); a later rejection of a re-referral is the referrer acting, not a new decision. The
+// e-consult thread is keyed by the referral, so when the unit's rejected intake was never linked to the patient, the
+// thread still names the unit and the packet is built from it.
+func buildHandoff(f *LoopFacts, prog string, srs []srFact, ec ecThread, refDay, now float64, contact string) *HandoffPacket {
 	var rej *srFact
-	for i := range srs {
-		if srs[i].status == "rejected" && (rej == nil || srs[i].day > rej.day) {
-			rej = &srs[i]
+	decided, decision := -1.0, ""
+	switch {
+	case (ec.state == "reject" || ec.state == "awaiting_reply") && ec.trig == "rejected":
+		for i := range srs {
+			if srs[i].status == "rejected" && srs[i].day <= ec.day+1e-9 && (rej == nil || srs[i].day > rej.day) {
+				rej = &srs[i]
+			}
+		}
+		if rej == nil && ec.unit != "" {
+			rej = &srFact{day: ec.day, status: "rejected", prov: ec.unit, ev: f.LoopID}
+		}
+		decided, decision = ec.day, "reject"
+		if ec.state == "awaiting_reply" {
+			if now < addBD(ec.day, HandoffBDRoutine) {
+				return nil
+			}
+			decided, decision = addBD(ec.day, HandoffBDRoutine), "reject_no_reply" // the unit never answered the e-consult
+		}
+	case ec.state == "redirect" && (ec.trig == "rejected" || ec.trig == "unanswered"):
+		for i := range srs {
+			if srs[i].status == "rejected" && srs[i].day > ec.day && (rej == nil || srs[i].day < rej.day) {
+				rej = &srs[i]
+			}
+		}
+		if rej != nil {
+			decided, decision = rej.day, "redirect_rejected"
 		}
 	}
 	if rej == nil {
-		return nil
-	}
-	decided, decision := -1.0, ""
-	switch {
-	case ecState == "reject" && ecDay >= rej.day:
-		decided, decision = ecDay, "reject"
-	case ecState == "redirect" && rej.day > ecDay:
-		decided, decision = rej.day, "redirect_rejected"
-	case ecState == "awaiting_reply" && ecDay >= rej.day && now >= addBD(ecDay, HandoffBDRoutine):
-		decided, decision = addBD(ecDay, HandoffBDRoutine), "reject_no_reply" // the unit never answered the e-consult
-	default:
 		return nil
 	}
 	urgent := handoffUrgent(prog, f.Priority)

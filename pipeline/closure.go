@@ -190,6 +190,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	commFlags := []string{}
 	flagSet := map[string]bool{}
 	ecState, ecTurns, ecDay, ecOpen := "none", 0, -1.0, false
+	ecTrigger, ecUnit := "", "" // of the latest e-consult question
 	tbState, tbDay, callback := "none", -1.0, false
 	flag := func(id, v string) {
 		k := id + ":" + v
@@ -212,6 +213,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			ecOpen = true
 			if cm.Day >= ecDay {
 				ecState, ecDay = "awaiting_reply", cm.Day
+				ecTrigger, ecUnit = cm.Trigger, cm.Unit
 			}
 			continue
 		case "econsult-reply":
@@ -588,7 +590,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		d.ClosedDay = closedDay
 	}
 	if Handoff {
-		d.Handoff = buildHandoff(f, prog, srs, ecState, ecDay, refDay, now, f.Contact)
+		d.Handoff = buildHandoff(f, prog, srs, ecThread{ecState, ecDay, ecTrigger, ecUnit}, refDay, now, f.Contact)
 	}
 	d.AuditReopened = auditNote != nil && state != "closed"
 	d.Overdue = state != "closed" && age > deadline

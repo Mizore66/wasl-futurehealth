@@ -994,6 +994,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		respDay := inf
 		rejectedFinal, unanswered := false, false
 		rejDay := inf // day the referral was finally rejected (hand-off packet)
+		redirectRejected := false // the unit a redirect pointed to also rejected (a final rejection in any branch)
 		lastResp, lastRespDay := "none", -1.0
 		setResp := func(st string, d float64) {
 			if d <= TEnd {
@@ -1023,6 +1024,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 					setResp("rejected", respDay+.02)
 					*failState = true
 					rejDay = respDay
+					redirectRejected = true
 				}
 			default:
 				*failState = true
@@ -1129,7 +1131,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 					}
 				}
 			}
-		} else if Handoff && rejectedFinal && rejDay < TEnd {
+		} else if Handoff && (rejectedFinal || redirectRejected) && rejDay < TEnd {
 			// hand-off packet to the referrer (handoff.go). Simulated after every other loop and on its own random
 			// stream, so the rest of the cohort is byte-identical with or without it.
 			pw = "referral_rejected_handoff_no_action"

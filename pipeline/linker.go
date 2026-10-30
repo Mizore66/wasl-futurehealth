@@ -732,6 +732,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					cf.Grade = e.Reason
 				}
 			}
+			if e.Category == "econsult-question" { // why the e-consult was asked and which unit (handoff.go: no identity link needed)
+				cf.Trigger, cf.Unit = e.Reason, e.Recipient
+			}
 			if e.Category == "handoff-reply" { // referrer's structured answer to a hand-off packet (handoff.go)
 				cf.Action = e.Reason
 			}
