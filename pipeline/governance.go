@@ -433,6 +433,34 @@ func closingAnswer(r read) bool {
 	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev)
 }
 
+// idWorklist: the review worklist asks one second-identifier question per registration pair (ReuseIDConfirm). Two
+// loops of one patient raise their guard items together, so the second is queued before the first answer lands;
+// once the pair is answered "same", the queued twin is dropped (the linker already applies the answer to every loop
+// of that pair). A "different" answer is not reused: the twin is still asked.
+type idWorklist map[[2]string]bool
+
+func pairKey(a, b string) [2]string {
+	if a > b {
+		a, b = b, a
+	}
+	return [2]string{a, b}
+}
+
+func (w idWorklist) skip(it *ReviewItem) bool {
+	return ReuseIDConfirm && it.Reason == "second_identifier" && w[pairKey(it.Pair[0], it.Pair[1])]
+}
+
+func (w idWorklist) record(it *ReviewItem, so *Signoff) {
+	if it.Reason != "second_identifier" {
+		return
+	}
+	if k := pairKey(it.Pair[0], it.Pair[1]); so.Link == "same" {
+		w[k] = true
+	} else if so.Link == "different" {
+		delete(w, k)
+	}
+}
+
 // msgConfirmed (v7): a human confirmed (second-identifier item answered "same") that the downstream registration is this patient.
 func msgConfirmed(f *LoopFacts, a, b string) bool {
 	for _, s := range f.Signoffs {

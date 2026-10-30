@@ -285,3 +285,30 @@ func TestReuseIDConfirmAcrossLoops(t *testing.T) {
 		t.Fatal("flag off: confirmations must stay per loop")
 	}
 }
+
+// The worklist drops a queued second-identifier twin once its registration pair was answered "same" (either order),
+// keeps asking after "different", and asks every item when the flag is off.
+func TestIDWorklistDedupe(t *testing.T) {
+	defer func(r bool) { ReuseIDConfirm = r }(ReuseIDConfirm)
+	ReuseIDConfirm = true
+	w := idWorklist{}
+	a := &ReviewItem{ItemID: "a", Reason: "second_identifier", Pair: [2]string{"P|1", "H|9"}}
+	b := &ReviewItem{ItemID: "b", Reason: "second_identifier", Pair: [2]string{"H|9", "P|1"}}
+	link := &ReviewItem{ItemID: "c", Pair: [2]string{"P|1", "H|9"}} // a link-review item is never dropped
+	if w.skip(a) {
+		t.Fatal("first question dropped")
+	}
+	w.record(a, &Signoff{Link: "same"})
+	if !w.skip(b) || w.skip(link) {
+		t.Fatal("twin not dropped, or link item dropped")
+	}
+	w.record(a, &Signoff{Link: "different"})
+	if w.skip(b) {
+		t.Fatal("asked again after \"different\" must not be dropped")
+	}
+	w.record(a, &Signoff{Link: "same"})
+	ReuseIDConfirm = false
+	if w.skip(b) {
+		t.Fatal("flag off must ask every item")
+	}
+}
