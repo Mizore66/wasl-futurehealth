@@ -679,7 +679,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				continue
 			}
 			if _, ok := ls.raised[id]; !ok {
-				ch := appendBlock(nil, "outreach_guard", map[string]interface{}{"loop": f.LoopID, "pair": o.Pair, "event": o.Event, "basis": o.Basis, "p_cal": o.PCal, "rule": "second identifier (exact non-placeholder DOB) or human confirmation"})
+				ch := appendBlock(nil, "outreach_guard", map[string]interface{}{"loop": f.LoopID, "pair": o.Pair, "event": o.Event, "basis": o.Basis, "p_cal": o.PCal, "rule": "second identifier (exact non-placeholder DOB, or a matching Emirates ID with agreeing name, sex and DOB) or human confirmation"})
 				it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{"link"}, Pair: o.Pair, P: o.PCal, Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, Reason: "second_identifier"}
 				ls.raised[id] = it
 				newItems = append(newItems, it)

@@ -616,6 +616,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 			}
 			for i := range ds {
 				ds[i].PCal, ds[i].AllHuman, ds[i].RecPk, ds[i].RecDob = round4(pc), ah, L.recs[y].Pk, L.recs[y].Dob
+				ds[i].EIDSecond = V7Guard && L.eidSecond(s, y)
 			}
 		}
 		f.Down = append(f.Down, ds...)

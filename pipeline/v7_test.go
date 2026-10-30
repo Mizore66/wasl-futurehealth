@@ -128,3 +128,93 @@ func TestCorroboratedPlaceholderDob(t *testing.T) {
 		}
 	}
 }
+
+// With a real DOB and the same sex: a maternal middle surname, a hyphenated married name, a reordered name or a
+// one-consonant transliteration still corroborates; a shared given name or particle alone does not.
+func TestCorroboratedSurnameVariants(t *testing.T) {
+	feat := make([]float64, 23)
+	feat[13], feat[19] = 1, 1
+	rec := func(name string) *Rec { return &Rec{Dob: "1984-03-14", skel: skeleton(tokensOf(latinForm(name)))} }
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{
+		{"Nesthy Alcayde Petecio", "Petecio Nesthy", true},
+		{"Elizabeth Zimmerman", "Elizabeth Zimmerman-Duterte", true},
+		{"Joanna Bacalso", "جوانا باسالسو", true},
+		{"Maria Santos", "Maria Reyes", false},
+		{"Maria de la Cruz", "Maria de Leon", false},
+		{"Manuel Quezon", "Manuel Luis Quezon Molina", true},
+		{"Jose Rizal", "Jose Rizal Mercado", false}, // a 2-letter given-name skeleton does not count
+	} {
+		if got := corroborated(rec(c.a), rec(c.b), feat); got != c.want {
+			t.Errorf("%q vs %q: corroborated=%v, want %v (skel %v / %v)", c.a, c.b, got, c.want, rec(c.a).skel, rec(c.b).skel)
+		}
+	}
+	CorrShared, CorrFuzzyLast = false, false
+	defer func() { CorrShared, CorrFuzzyLast = true, true }()
+	if corroborated(rec("Nesthy Alcayde Petecio"), rec("Petecio Nesthy"), feat) {
+		t.Error("old rule must need the last surname token")
+	}
+}
+
+// A matching Emirates ID is the outreach second identifier only when name, sex and DOB agree and no other
+// registration carries the number with a different person's details (a relative's card).
+func TestEIDSecondConditions(t *testing.T) {
+	eid := luhnComplete("78419840000012")
+	mk := func(name, dob, sex, e string) *Rec {
+		r := &Rec{Name: name, Dob: dob, Sex: sex, Eid: e, eidOK: luhnOK(e)}
+		r.skel = skeleton(tokensOf(latinForm(name)))
+		return r
+	}
+	run := func(a, b *Rec, others ...*Rec) bool {
+		L := &LinkerCore{eidIdx: map[string][]int{}}
+		for i, r := range append([]*Rec{a, b}, others...) {
+			r.idx = i
+			L.recs = append(L.recs, r)
+			if r.eidOK {
+				L.eidIdx[r.Eid] = append(L.eidIdx[r.Eid], i)
+			}
+		}
+		return L.eidSecond(0, 1)
+	}
+	if !luhnOK(eid) {
+		t.Fatal("test EID must be Luhn-valid")
+	}
+	for _, c := range []struct {
+		name string
+		a, b *Rec
+		more []*Rec
+		want bool
+	}{
+		{"same person, placeholder DOB", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("عائشة المنصوري", "1962-01-01", "F", eid), nil, true},
+		{"same person, one DOB missing", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Aisha Mansoori", "", "F", eid), nil, true},
+		{"relative's card: other given name and sex", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Khalid Al Mansoori", "1990-01-01", "M", eid), nil, false},
+		{"relative's card: same sex, other given name", mk("Aisha Ali Mansoori", "1962-01-01", "F", eid), mk("Fatima Saeed Mansoori", "1962-01-01", "F", eid), nil, true}, // surname agrees: the known residual risk
+		{"placeholder year differs", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Aisha Al Mansoori", "1971-07-01", "F", eid), nil, false},
+		{"real DOBs differ", mk("Aisha Al Mansoori", "1962-03-04", "F", eid), mk("Aisha Al Mansoori", "1962-04-03", "F", eid), nil, false},
+		{"sex unknown", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Aisha Al Mansoori", "1962-01-01", "U", eid), nil, false},
+		{"number used elsewhere by someone else", mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Aisha Mansoori", "1962-01-01", "F", eid),
+			[]*Rec{mk("Omar Haddad", "1958-05-05", "M", eid)}, false},
+		{"default ID", mk("Aisha Al Mansoori", "1962-01-01", "F", "999999999999999"), mk("Aisha Al Mansoori", "1962-01-01", "F", "999999999999999"), nil, false},
+	} {
+		if got := run(c.a, c.b, c.more...); got != c.want {
+			t.Errorf("%s: eidSecond=%v, want %v", c.name, got, c.want)
+		}
+	}
+	EIDSecondID = false
+	defer func() { EIDSecondID = true }()
+	if run(mk("Aisha Al Mansoori", "1962-01-01", "F", eid), mk("Aisha Al Mansoori", "1962-01-01", "F", eid)) {
+		t.Error("flag off must disable the EID second identifier")
+	}
+}
+
+// luhnComplete appends the Luhn check digit to a 14-digit prefix.
+func luhnComplete(p string) string {
+	for d := 0; d <= 9; d++ {
+		if s := p + string(rune('0'+d)); luhnOK(s) {
+			return s
+		}
+	}
+	return ""
+}
