@@ -94,7 +94,23 @@ func corroborated(a, b *Rec, feat []float64) bool {
 	if placeholderDob(a.Dob) || placeholderDob(b.Dob) {
 		return skelSetEq(a.skel, b.skel)
 	}
-	return feat[6] == 1 || (CorrShared && sharedSkel(a.skel, b.skel) >= 2) || (CorrFuzzyLast && fuzzyLast(a.skel, b.skel))
+	return (feat[6] == 1 && surnameEq(a, b)) || (CorrShared && sharedSkel(a.skel, b.skel) >= 2) || (CorrFuzzyLast && fuzzyLast(a.skel, b.skel))
+}
+
+// CorrShortSurname: a last-surname skeleton under 3 letters is too weak alone ("DK" and "Dyke" both give "dk"), so it
+// corroborates only when the first name's skeleton agrees too ("Imran Khan" / "عمران خان" yes, "Lotfi DK" / "W. Van
+// Dyke" no). Found as a wrong-patient message in
+// the frozen run at f1848c8 (an exact shared DOB and sex did the rest).
+var CorrShortSurname = true
+
+func surnameEq(a, b *Rec) bool {
+	if len(a.skel) == 0 || len(b.skel) == 0 || a.skel[len(a.skel)-1] != b.skel[len(b.skel)-1] {
+		return false
+	}
+	if !CorrShortSurname || len(a.skel[len(a.skel)-1]) >= 3 {
+		return true
+	}
+	return a.skel[0] == b.skel[0] // the given name's skeleton agrees too
 }
 
 // CorrFuzzyLast: with a real DOB and the same sex, last skeleton tokens of 4+ letters within one edit also corroborate.
@@ -206,7 +222,7 @@ func namesAgree(a, b *Rec) bool {
 	if len(sa) == 0 || len(sb) == 0 {
 		return false
 	}
-	return sa[len(sa)-1] == sb[len(sb)-1] || sharedSkel(sa, sb) >= 2 || fuzzyLast(sa, sb)
+	return surnameEq(a, b) || sharedSkel(sa, sb) >= 2 || fuzzyLast(sa, sb)
 }
 
 func dobsCompatible(a, b string) bool {

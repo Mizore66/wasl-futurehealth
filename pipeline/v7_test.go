@@ -117,7 +117,7 @@ func TestCorroboratedPlaceholderDob(t *testing.T) {
 		want      bool
 	}{
 		{"Fatima Hassan Ali", "Fatima Hasan Ali", "1979-03-14", true},
-		{"Fatima Hassan Ali", "Mariam Hassan Ali", "1979-03-14", true},
+		{"Fatima Hassan Ali", "Mariam Hassan Ali", "1979-03-14", false}, // short surname "Ali": the first name must agree too (twins)
 		{"Fatima Hassan Ali", "Ali Fatima Hassan", "1979-01-01", true},
 		{"Fatima Hassan Ali", "Mariam Hassan Ali", "1979-01-01", false},
 		{"Fatima Ali", "Fatima Ali Hassan", "1979-07-01", false},
@@ -217,4 +217,27 @@ func luhnComplete(p string) string {
 		}
 	}
 	return ""
+}
+
+// A 2-letter surname skeleton alone is too weak: the frozen run at f1848c8 released one wrong-patient message for
+// "Lotfi DK" vs "W. Van Dyke" (same DOB and sex, both surnames skeletonise to "dk"). A short surname now also needs the
+// first name to agree.
+func TestCorroboratedShortSurnameNeedsFirstName(t *testing.T) {
+	feat := make([]float64, 23)
+	feat[13], feat[19], feat[6] = 1, 1, 1
+	rec := func(name string) *Rec {
+		lat := latinForm(name)
+		return &Rec{Dob: "1974-07-06", tok: tokensOf(lat), skel: skeleton(tokensOf(lat))}
+	}
+	if corroborated(rec("Lotfi DK"), rec("دبليو. فان دايك"), feat) {
+		t.Error("Lotfi DK and W. Van Dyke must not corroborate on a 2-letter surname")
+	}
+	if !corroborated(rec("Imran Khan"), rec("عمران خان"), feat) {
+		t.Error("Imran Khan across scripts must still corroborate")
+	}
+	CorrShortSurname = false
+	defer func() { CorrShortSurname = true }()
+	if !corroborated(rec("Lotfi DK"), rec("دبليو. فان دايك"), feat) {
+		t.Error("with the switch off the old last-surname rule applies")
+	}
 }
