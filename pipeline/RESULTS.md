@@ -993,9 +993,32 @@ The headline evaluation now runs with the ungraded-prep query, the rejected-refe
 - **Where it comes from:** patient-link review items. Pooled link items per 100 loops (Arab / Filipino / South Asian / Western) are 49.1 / 49.3 / 47.9 / 42.8 on dev noise and 43.5 / 39.9 / 40.7 / 38.2 on held-out noise; evidence items differ by at most 1.7. Western names get the fewest link reviews on both noise models.
 - **Traced (two causes, one per group):**
   - *Arab and South Asian: placeholder birth dates.* In the person data, 24.8% of Arab and 16.0% of South Asian persons have a 1 Jan or 1 Jul birth date, against 6.2% Western and 6.5% Filipino. A placeholder date cannot serve as the second identifier for a message, so the outreach guard asks a human: 9.9 (Arab) vs 5.6 (Western) guard items per 100 loops on dev noise, 10.1 vs 4.1 on held-out. A placeholder date also corroborates a link only on a full name match: 2.5–3.1 vs 1.3–1.5 items. Without the placeholder-date items, Arab and South Asian load drops to the Western level.
-  - *Filipino: the surname rule.* Corroboration requires the last surname token to agree. In sampled Filipino pairs with the same DOB and sex, the names differ by a maternal middle surname, a hyphenated married name or a particle ("de", "dela"); 41% differ in token count (34% for the other groups). These links stay at the 0.989 cap and go to review: 7.0 vs 3.4–4.9 items per 100 on dev noise, 7.2 vs 5.0–6.0 on held-out.
+  - *Filipino: surnames that do not match token for token.* Corroboration required the last surname skeleton to agree. Exact-DOB, same-sex links that stayed at the 0.989 cap: 7.0 vs 3.4–4.9 items per 100 on dev noise, 7.2 vs 5.0–6.0 on held-out. Most of them are cross-script pairs whose transliterated surname differs by one consonant class (Bacalso / باسالسو), which hits non-Arabic names more; the rest differ by a maternal middle surname, a hyphenated married name or the token order.
   - *Not a lever for the gap:* about 65% of the placeholder-date guard items are on links where both registrations carry the same Emirates ID. Counting a matching EID as the second identifier would remove about 12 review items per 100 loops for every group (about 20% of all review) but leaves the ratio unchanged (1.16 / 1.13). It is also untestable here: the generator never produces a wrong EID, so the cohort cannot show the rule is safe.
-  - Both causes are deliberate safety rules (a shared birth date or a partial surname cannot identify a person), so the remaining gap is a cost of those rules. Not changed.
+  - Both causes come from deliberate safety rules (a shared birth date or a partial surname cannot identify a person). The next section relaxes the surname rule and adds the Emirates ID where the evidence allows.
 - **It is reviewer time, not accuracy:** 0 wrong-patient messages and 0 false closures in every origin.
 
 The aggregate now reports the pooled ratio and both no-bias references (`scripts/origin_null.py`, `results/final/*/origin_null.json`). The pipeline is unchanged.
+
+### Identity rules: surname variants and the Emirates ID as second identifier (`03e430d`, new headline)
+
+Post-hoc change after the `a3ad83a` freeze, made after the review-load trace above. Disclosed.
+
+- **Surname variants (`-corrshared`, `-corrfuzzy`).** An exact-DOB, same-sex link also corroborates when the names share two distinct skeleton tokens of 3+ letters in any order (maternal middle surname, hyphenated or reordered name), or when the last surname skeletons (4+ letters) are within one edit (transliteration). Checked before the run on the cal split (persons held out from the eval cohorts; cohorts 101-107, both noise models): **0 additional false corroborations** among 1.7M candidate pairs of different persons (3 and 15 with the old rule, unchanged); +356 / +912 true pairs corroborated.
+- **Emirates ID as the message second identifier (`-eidsecond`).** The Joint Commission and JCI accept an assigned ID number as one of two identifiers, and DoH pairs the Emirates ID with the name; no public Emirates ID error rate exists, and the Luhn check cannot catch a valid number that belongs to someone else ([`docs/research/eid-second-identifier.md`](../docs/research/eid-second-identifier.md)). So the number counts only when it is the same 784-prefixed, Luhn-valid, non-default ID on both registrations, sex and names agree, the birth dates do not contradict (equal, or the same year when one is a placeholder), and no other registration carries it with a different sex or name. Unit tests cover a relative's card, a reused number, a default ID and contradicting dates. **Limit:** the generator never gives a person someone else's Emirates ID, so this evaluation cannot measure the rule's safety; a relative with the same sex and surname still passes (the residual risk).
+
+| | Dev noise v1: `a3ad83a` → `03e430d` | Held-out v2: `a3ad83a` → `03e430d` |
+|---|---|---|
+| Review items per 100 loops | 58.7 → **52.6** | 52.0 → **47.1** |
+| Reviewer hours per 1k loops | 19.1 → **17.3** | 17.2 → **15.7** |
+| Messages released (all with granted consent) | 7,278 → 8,085 | 7,138 → 7,656 |
+| CRC false closures | 0 / 2,185 → 0 / 2,185 | 0 / 2,061 → 0 / 2,063 |
+| Wrong-patient messages | 0 / 12,421 → 0 / 12,409 | 0 / 11,685 → 0 / 11,683 |
+| CRC recall | 0.761 → 0.761 | 0.703 → 0.704 |
+| Cervical / lung recall | unchanged | unchanged |
+| Review-load ratio, per seed (95% CI) | 1.19 (1.11–1.28) → 1.19 (1.11–1.27) | 1.18 (1.05–1.31) → **1.16 (1.08–1.24)** |
+| Review-load ratio, pooled over seeds | 1.15 → 1.14 (p = 0.005) | 1.13 → 1.12 (p = 0.03) |
+
+**Result.** Reviewer time falls about 10% and more patients get their message without waiting for a human; every safety count stays at 0. The origin gap barely moves, as expected: the rules help every origin, and the remaining gap is the placeholder-date effect for Arab patients, which neither rule targets. Raw runs are kept outside the repo.
+
+**Side issue found:** `noisyLatin2` (noise v2) panics on one cal-split name at seed 101 (slice bounds in `noise2.go`). The eval cohorts are not affected; it is left unfixed because changing the held-out noise model would change the held-out cohorts. Seed 107 was used instead for the cal-split check.

@@ -1,10 +1,10 @@
 {
  "anchors": {
-  "fhir": "cc6c9ef194ba0b5476abec580f5d05b675d44fdceb1157f4141d0c4305741004",
-  "out.p0": "63a681e18a140c727c2897ce4898c6db1696d615f0abdf65e2fd9ad54cd9bc94",
-  "out.p1": "7728b431a79885391ee90d7d8c891aee2d67533a486361373feaf22d72d3f193",
-  "out.p2": "744f4b5f28714be0976d403de199b035cd9b0e462d4a46295ce0686ecf03f300",
-  "out.p3": "a2b9096a1460c75591e8e0b994f43e986209694adebecc13dbc628be612783a4"
+  "fhir": "70d8fe65547f950357fbc307fdd381799f27804267ca6f09b4ae947e5534c8f4",
+  "out.p0": "60f7147020f02543bbb3016bed8cd129124caf994ffd89213a8d23dffb49bf39",
+  "out.p1": "ccce97ad881237e60bf10e53ee4884204e1433a4b8f47c0b2013593ea392899b",
+  "out.p2": "365c0231906f3fc7e76dc0bf717b41afe04295dae56e6eb3de9c0a2f8b406f0d",
+  "out.p3": "e6fd0b8dac2924dda5bd25a7718db2a8fe2cc88a8402cdef944adc63ecca3fa6"
  },
  "attacks": [
   {
@@ -32,10 +32,10 @@
     "D1_seq_fhir": "",
     "D1_seq_out": "",
     "D2_oseq": "",
-    "D3_provenance": "chain dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D3_provenance": "chain dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D4_replay": "",
     "D5_fhir_anchor": "",
-    "D5_ledger_anchor": "out.p3 ledger break at oseq 7017",
+    "D5_ledger_anchor": "out.p3 ledger break at oseq 6806",
     "D6_ingest": ""
    },
    "fired": [
@@ -52,10 +52,10 @@
     "D1_seq_fhir": "",
     "D1_seq_out": "",
     "D2_oseq": "",
-    "D3_provenance": "chain dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D3_provenance": "chain dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D4_replay": "",
     "D5_fhir_anchor": "",
-    "D5_ledger_anchor": "out.p3 ledger break at oseq 7017",
+    "D5_ledger_anchor": "out.p3 ledger break at oseq 6806",
     "D6_ingest": ""
    },
    "fired": [
@@ -72,10 +72,10 @@
     "D1_seq_fhir": "",
     "D1_seq_out": "",
     "D2_oseq": "",
-    "D3_provenance": "closed without closure_decision dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D3_provenance": "closed without closure_decision dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D4_replay": "",
     "D5_fhir_anchor": "",
-    "D5_ledger_anchor": "out.p3 ledger break at oseq 7017",
+    "D5_ledger_anchor": "out.p3 ledger break at oseq 6806",
     "D6_ingest": ""
    },
    "fired": [
@@ -93,7 +93,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p3 head != anchor",
     "D6_ingest": ""
@@ -113,7 +113,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p3 head != anchor",
     "D6_ingest": ""
@@ -133,7 +133,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p3 head != anchor",
     "D6_ingest": ""
@@ -150,12 +150,12 @@
    "detected": true,
    "detectors": {
     "D1_seq_fhir": "",
-    "D1_seq_out": "seq 27885 at position 27884",
-    "D2_oseq": "out.p3 oseq 7017 count 0",
+    "D1_seq_out": "seq 27739 at position 27738",
+    "D2_oseq": "out.p3 oseq 6806 count 0",
     "D3_provenance": "",
-    "D4_replay": "1 expected outputs missing (first dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483)",
+    "D4_replay": "1 expected outputs missing (first dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651)",
     "D5_fhir_anchor": "",
-    "D5_ledger_anchor": "out.p3 ledger break at oseq 7018",
+    "D5_ledger_anchor": "out.p3 ledger break at oseq 6807",
     "D6_ingest": ""
    },
    "fired": [
@@ -172,12 +172,12 @@
    "detected": true,
    "detectors": {
     "D1_seq_fhir": "",
-    "D1_seq_out": "seq 27884 at position 27122",
+    "D1_seq_out": "seq 27738 at position 19354",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D5_fhir_anchor": "",
-    "D5_ledger_anchor": "out.p3 ledger break at oseq 6805",
+    "D5_ledger_anchor": "out.p3 ledger break at oseq 4686",
     "D6_ingest": ""
    },
    "fired": [
@@ -196,7 +196,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1010@ahs-mushrif/ServiceRequest/AHS-sr-1010@36484",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-40@ahs-mushrif/ServiceRequest/AHS-sr-40@35654",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p3 head != anchor",
     "D6_ingest": ""
@@ -216,7 +216,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "content/order mismatch dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@35651",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p3 head != anchor",
     "D6_ingest": ""
@@ -236,7 +236,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "1420 expected outputs missing (first dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@36362)",
+    "D4_replay": "1409 expected outputs missing (first dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@36214)",
     "D5_fhir_anchor": "",
     "D5_ledger_anchor": "out.p0 head != anchor",
     "D6_ingest": ""
@@ -252,11 +252,11 @@
    "attacker": "naive",
    "detected": true,
    "detectors": {
-    "D1_seq_fhir": "seq 36484 at position 36483",
+    "D1_seq_fhir": "seq 35652 at position 35651",
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-1248@ahs-mushrif/ServiceRequest/AHS-sr-1248@36487",
+    "D4_replay": "unexpected output dec-medlab/ServiceRequest/MED-sr-117@medlab/ServiceRequest/MED-sr-117@35653",
     "D5_fhir_anchor": "fhir log != anchor",
     "D5_ledger_anchor": "",
     "D6_ingest": ""
@@ -273,11 +273,11 @@
    "attacker": "naive",
    "detected": true,
    "detectors": {
-    "D1_seq_fhir": "seq 36483 at position 36482",
+    "D1_seq_fhir": "seq 35651 at position 35650",
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-633@ahs-mushrif/ServiceRequest/AHS-sr-633@35650",
     "D5_fhir_anchor": "fhir log != anchor",
     "D5_ledger_anchor": "",
     "D6_ingest": ""
@@ -298,7 +298,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-1248@ahs-mushrif/ServiceRequest/AHS-sr-1248@36487",
+    "D4_replay": "unexpected output dec-medlab/ServiceRequest/MED-sr-117@medlab/ServiceRequest/MED-sr-117@35653",
     "D5_fhir_anchor": "fhir log != anchor",
     "D5_ledger_anchor": "",
     "D6_ingest": ""
@@ -318,7 +318,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-1003@ahs-mushrif/ServiceRequest/AHS-sr-1003@36483",
+    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-633@ahs-mushrif/ServiceRequest/AHS-sr-633@35650",
     "D5_fhir_anchor": "fhir log != anchor",
     "D5_ledger_anchor": "",
     "D6_ingest": ""
@@ -338,7 +338,7 @@
     "D1_seq_out": "",
     "D2_oseq": "",
     "D3_provenance": "",
-    "D4_replay": "unexpected output dec-medlab/ServiceRequest/MED-sr-369@medlab/ServiceRequest/MED-sr-369@35860",
+    "D4_replay": "unexpected output dec-ahs-mushrif/ServiceRequest/AHS-sr-1051@ahs-mushrif/ServiceRequest/AHS-sr-1051@35696",
     "D5_fhir_anchor": "fhir log != anchor",
     "D5_ledger_anchor": "",
     "D6_ingest": ""
@@ -356,11 +356,11 @@
    "detectors": {
     "D1_seq_fhir": "",
     "D1_seq_out": "",
-    "D2_oseq": "out.p0 oseq 81 count 2",
+    "D2_oseq": "out.p0 oseq 71 count 2",
     "D3_provenance": "",
     "D4_replay": "",
     "D5_fhir_anchor": "fhir log != anchor",
-    "D5_ledger_anchor": "out.p0 ledger break at oseq 81",
+    "D5_ledger_anchor": "out.p0 ledger break at oseq 71",
     "D6_ingest": ""
    },
    "fired": [
@@ -371,8 +371,8 @@
    "target": "both streams"
   }
  ],
- "fhir_msgs": 36590,
- "out_msgs": 28391,
+ "fhir_msgs": 36422,
+ "out_msgs": 28176,
  "run": "./out/final/v1-s37/run/main",
  "target_loop": "ahs-mushrif/ServiceRequest/AHS-sr-1003",
  "target_signoff": "rv-24c1cc6eb47a9f10",
