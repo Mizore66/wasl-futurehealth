@@ -190,7 +190,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	commFlags := []string{}
 	flagSet := map[string]bool{}
 	ecState, ecTurns, ecDay, ecOpen := "none", 0, -1.0, false
-	ecTrigger, ecUnit := "", "" // of the latest e-consult question
+	ecTrigger, ecUnit := "", "" // of the latest e-consult thread (its opening question)
 	tbState, tbDay, callback := "none", -1.0, false
 	flag := func(id, v string) {
 		k := id + ":" + v
@@ -213,7 +213,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			ecOpen = true
 			if cm.Day >= ecDay {
 				ecState, ecDay = "awaiting_reply", cm.Day
-				ecTrigger, ecUnit = cm.Trigger, cm.Unit
+				if cm.Trigger != "followup" { // a follow-up turn continues the thread its opening question started
+					ecTrigger, ecUnit = cm.Trigger, cm.Unit
+				}
 			}
 			continue
 		case "econsult-reply":

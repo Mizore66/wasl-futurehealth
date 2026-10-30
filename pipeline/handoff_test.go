@@ -139,3 +139,21 @@ func TestBuildHandoffTraceCases(t *testing.T) {
 		t.Fatalf("unanswered referral made a packet: %+v", p)
 	}
 }
+
+// Through the closure core: a multi-turn e-consult keeps the trigger of its opening question, so a "followup" turn
+// ending in reject still produces the packet, built from the thread when the rejected intake was never linked.
+func TestHandoffFollowupTurnKeepsTrigger(t *testing.T) {
+	defer func(h bool) { Handoff = h }(Handoff)
+	Handoff = true
+	comms := []CommFact{{ID: "q1", Day: 3, Category: "econsult-question", Trigger: "rejected", Unit: Providers[2].ID},
+		{ID: "a1", Day: 4, Category: "econsult-reply", Parse: "needs_info"},
+		{ID: "q2", Day: 6, Category: "econsult-question", Trigger: "followup", Unit: Providers[2].ID},
+		{ID: "a2", Day: 8, Category: "econsult-reply", Parse: "reject"}}
+	C := NewClosureCore(0, nil)
+	outs := C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", Provider: "PCP-A", SRDay: 0, Prog: "crc", Comms: comms}, InSeq: 1})
+	outs = append(outs, C.Apply(&FactsMsg{ID: "t", IsTick: true, TickDay: 12, InSeq: 2})...)
+	d := lastDec(outs)
+	if d == nil || d.Handoff == nil || d.Handoff.DecidedBy != Providers[2].ID || d.Handoff.DecidedAt != 8 {
+		t.Fatalf("follow-up turn lost the packet: %+v", d)
+	}
+}
