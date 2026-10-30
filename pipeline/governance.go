@@ -165,7 +165,7 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 			o.Pair = [2]string{f.SRRec, d.RecPk}
 		}
 		switch {
-		case basis == "below_tau" && V7Guard && V7Cal != nil && !d.NearMiss && pc >= TauClose && !msgConfirmed(f, f.SRRec, d.RecPk):
+		case basis == "below_tau" && V7Guard && V7Cal != nil && !d.NearMiss && pc >= TauClose && !msgConfirmed(f, f.SRRec, d.RecPk) && !d.IDConfirmed:
 			o.Suppress, o.Guard = SupSecondID, "held_needs_human"
 		case basis == "below_tau" && V7Guard && V7Cal != nil && !d.NearMiss && pc >= TauClose:
 			o.Released, o.Guard = !f.MsgOptOut, "human_confirmed"
@@ -189,7 +189,7 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 			} else {
 				o.Suppress = SupConsent
 			}
-		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !d.EIDSecond && !msgConfirmed(f, f.SRRec, d.RecPk):
+		case V7Guard && basis != "human" && !d.AllHuman && !secondID(f.SRDob, d.RecDob) && !d.EIDSecond && !msgConfirmed(f, f.SRRec, d.RecPk) && !d.IDConfirmed:
 			o.Suppress, o.Guard = SupSecondID, "held"
 		default:
 			o.Released = true

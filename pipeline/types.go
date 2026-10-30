@@ -146,6 +146,7 @@ type DownFact struct {
 	RecPk    string  `json:"rec_pk,omitempty"`    // downstream registration (endpoint of the path)
 	RecDob   string  `json:"rec_dob,omitempty"`
 	EIDSecond bool   `json:"eid_second,omitempty"` // the Emirates ID on both registrations confirms the pair (eidSecond)
+	IDConfirmed bool `json:"id_confirmed,omitempty"` // a human confirmed this registration pair on another loop (ReuseIDConfirm)
 }
 
 // LoopFacts: everything the linker knows about one FIT+ loop, recomputed whenever its patient cluster changes.

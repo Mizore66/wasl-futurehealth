@@ -41,6 +41,7 @@ type LinkerCore struct {
 	members      map[int][]int
 	adj          map[int]map[int]float64
 	basis        map[[2]int]string
+	idConfirmed  map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
 	cannot       map[int]map[int]bool
 	pscore       map[[2]int]float64
 	near         map[int]map[int]float64 // lo <= p < thr
@@ -79,7 +80,7 @@ func (L *LinkerCore) attachANN() {
 
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: 0.2, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
-		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{},
+		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
@@ -617,6 +618,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 			for i := range ds {
 				ds[i].PCal, ds[i].AllHuman, ds[i].RecPk, ds[i].RecDob = round4(pc), ah, L.recs[y].Pk, L.recs[y].Dob
 				ds[i].EIDSecond = V7Guard && L.eidSecond(s, y)
+				ds[i].IDConfirmed = V7Guard && ReuseIDConfirm && L.idConfirmed[pk2(s, y)]
 			}
 		}
 		f.Down = append(f.Down, ds...)
@@ -679,6 +681,21 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			// message held and is escalated to identity review; neither changes the clusters
 			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
 			affLoops[so.LoopID] = true
+			a, okA := L.byPk[so.Pair[0]]
+			b, okB := L.byPk[so.Pair[1]]
+			if ReuseIDConfirm && okA && okB {
+				// the answer is about the two registrations, not the loop: it holds for the patient's other loops too
+				if so.Link == "same" {
+					L.idConfirmed[pk2(a, b)] = true
+				} else if so.Link == "different" {
+					delete(L.idConfirmed, pk2(a, b))
+				}
+				for _, i := range []int{a, b} {
+					for _, lp := range L.recs[i].srs {
+						affLoops[lp] = true
+					}
+				}
+			}
 			break
 		}
 		if so.Link != "" {

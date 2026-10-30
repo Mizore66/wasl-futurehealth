@@ -241,3 +241,47 @@ func TestCorroboratedShortSurnameNeedsFirstName(t *testing.T) {
 		t.Error("with the switch off the old last-surname rule applies")
 	}
 }
+
+// A second-identifier "same" on one loop confirms the registration pair for the patient's other loops; "different"
+// withdraws it. The guard then releases a message on a below-tier or uncorroborated link only with that confirmation.
+func TestReuseIDConfirmAcrossLoops(t *testing.T) {
+	defer func(g, r bool) { V7Guard, ReuseIDConfirm = g, r }(V7Guard, ReuseIDConfirm)
+	V7Guard, ReuseIDConfirm = true, true
+	L, loop1 := newLoopLinker(t)
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
+	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Persn", Day: 5}})
+	loop2 := "ahs-mushrif/ServiceRequest/SR2"
+	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
+	so := func(seq uint64, link string) *Prep {
+		return &Prep{Seq: seq, Kind: "signoff", So: &Signoff{ItemID: "g" + link, LoopID: loop1, Kinds: []string{"link"}, Pair: pair, Link: link,
+			Role: RoleReviewer, Reads: []string{"r1", "r2"}, Purpose: "second_identifier"}}
+	}
+	k := pk2(L.byPk[pair[0]], L.byPk[pair[1]])
+	L.Link(k[0], k[1], 0.995, false, "wasl") // a model link, not a human one
+	f2 := lastFacts(L.Apply(so(10, "same")), loop2)
+	if f2 == nil || len(f2.Down) == 0 || !f2.Down[0].IDConfirmed {
+		t.Fatalf("the patient's other loop did not get the confirmation: %+v", f2)
+	}
+	if !L.idConfirmed[k] {
+		t.Fatal("confirmation not recorded for the pair")
+	}
+	d := DownFact{EventID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", Day: 10, Strength: 0.995,
+		Weak: Edge{Basis: "wasl"}, RecPk: pair[1], RecDob: "1980-01-01"}
+	f := &LoopFacts{LoopID: loop2, SRRec: pair[0], SRDay: 2, SRDob: "1980-01-01", Contact: "granted", Down: []DownFact{d}}
+	if o := BuildOutreach(f, func(p float64) float64 { return p }); len(o) != 1 || o[0].Released {
+		t.Fatalf("placeholder DOB without confirmation must hold: %+v", o)
+	}
+	f.Down[0].IDConfirmed = true
+	if o := BuildOutreach(f, func(p float64) float64 { return p }); len(o) != 1 || !o[0].Released || o[0].Guard != "human_confirmed" {
+		t.Fatalf("confirmed pair must release: %+v", o)
+	}
+	L.Apply(so(11, "different"))
+	if L.idConfirmed[k] {
+		t.Fatal("a later \"different\" must withdraw the confirmation")
+	}
+	ReuseIDConfirm = false
+	L.Apply(so(12, "same"))
+	if L.idConfirmed[k] {
+		t.Fatal("flag off: confirmations must stay per loop")
+	}
+}
