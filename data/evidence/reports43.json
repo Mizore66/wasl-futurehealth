@@ -51,7 +51,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "not_stated",
@@ -76,7 +77,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
   },
   {
    "uid": "u2",
@@ -245,7 +247,8 @@
     "caecum": "no",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "no",
@@ -270,7 +273,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
   },
   {
    "uid": "u7",
@@ -359,7 +363,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -384,7 +389,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
   },
   {
    "uid": "u10",
@@ -1389,7 +1395,8 @@
     "caecum": "yes",
     "prep": "inadequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -1414,7 +1421,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
   },
   {
    "uid": "u41",
