@@ -1054,3 +1054,25 @@ The second re-run left 5 mismatches:
 | Review-load ratio, per seed; pooled | 1.19 (1.11–1.27); 1.14 → 1.19 (1.11–1.26); 1.14 | 1.16 (1.08–1.24); 1.12 → 1.17 (1.10–1.23); 1.13 |
 
 Truth gains 7 and 13 packets from the two generator corrections. Small differences in the other rows are run-to-run variation (the chaos and timing schedule differs between runs).
+
+### Noise fix, MTSamples key correction, short surnames (`6245613`, `bb3728e`, `f1848c8`, `e4c7553`, new headline)
+
+Four post-hoc changes, disclosed.
+
+1. **Held-out noise model fix (`6245613`).** `noisyLatin2` searched a lower-cased copy of the name and used the index on the original. Lower-casing "İ" changes its byte length, so the index was off and the generator could panic; initials were cut at one byte, which garbled non-ASCII first letters. It now matches case-insensitively in place and cuts initials by rune. Dev noise (v1) is unchanged.
+2. **MTSamples key correction (`bb3728e`, `f1848c8`).** Three reports (u2, u10, u11) describe colon biopsies with no polyps. The key said they close without histology; they must wait for histology, which is what Wasl did. Each of these waits was counted as a miss, and a reviewer simulated from the key could copy the wrong answer into a closure. The key now marks them `awaiting_histology`. Four reports (u1, u6, u9, u40) gained `tissue_taken: yes` with no change of outcome. u4 is `tissue_taken: no`: the tissue was gastric, and the readers misread it as colonic (a known reader weakness). Every changed entry carries a `key_note`. These are our corrections; the human double-labelling of the 43 reports is still pending.
+3. **Short surnames (`e4c7553`).** The first run on the corrected key released 1 wrong-patient message: two different people with exact-DOB agreement and the same 2-letter surname skeleton, which the surname rule counted as corroboration. A surname of 1–2 letters (after skeleton reduction) now corroborates only when the given name's skeleton also agrees. On the calibration split, false corroborations fell 3 → 0 (v1) and 17 → 11 (v2); true corroborations fell 5.0% and 3.4%. A stricter rule (all name tokens equal) was rejected: it cost about 15% of true corroborations.
+4. **Review-load ratio.** The key correction changes the cohort's random draws, so the persons in each seed are reshuffled. After the reshuffle the held-out per-seed ratio is 1.28 (1.11–1.45), above the 1.25 limit; pooled over seeds it is 1.19. The small Filipino group moved most: 44.4 → 51.7 items per 100 loops on held-out noise, but 54.3 → 52.1 on dev noise. Under investigation.
+
+| | Dev noise v1: `eea6f26` → `e4c7553` | Held-out v2: `eea6f26` → `e4c7553` |
+|---|---|---|
+| CRC recall | 0.762 → **0.809** | 0.704 → **0.737** (0.724–0.750) |
+| CRC / cervical / lung false closures | 0/2,187, 0/1,023, 0/1,506 → **0/2,287, 0/1,020, 0/1,506** | 0/2,063, 0/987, 0/1,463 → **0/2,090, 0/991, 0/1,463** |
+| Wrong-patient messages; sent without consent | 0; 0 | 0/11,682; 0/7,539 → **0/11,846; 0/7,544** |
+| KPI error, Wasl vs EID-only | – | 0.029 vs 0.191 → 0.034 vs 0.197 |
+| Reviewer hours per 1k loops | 17.3 → 17.4 | 15.7 → 15.9 |
+| Hand-off packets matched / truth (extra) | 229/230 (0) → 229/230 (0) | 220/223 (0) → 233/236 (0) |
+| Closed after re-referral (false) | 67 (0) → 76 (0) | 45 (0) → 71 (0) |
+| Review-load ratio, per seed; pooled | 1.19 (1.11–1.27); 1.14 → **1.24 (1.15–1.32); 1.18** | 1.17 (1.10–1.23); 1.13 → **1.28 (1.11–1.45); 1.19** |
+
+The recall gain comes from the key correction. Where recall still goes on held-out noise (869 of 2,932 truly closed loops missed at `eea6f26`): about 230 were the key error (now fixed), about 140 the simulated day-15 clinician error, 252 linkage misses and about 240 other legitimate waits.
