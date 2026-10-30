@@ -5,14 +5,16 @@
 #   3. Five seeds x {v1, v2}: full integrated NATS run (chaos on) + audit + tamper + report.
 #   4. Aggregates with 95% intervals (t over seeds) and Clopper-Pearson upper bounds for zero-event safety metrics.
 # Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir),
-#   WASL_LUNG=N incidental lung-nodule loops per run (default 800; 0 = screening cohort only).
+#   WASL_LUNG=N incidental lung-nodule loops per run (default 1088; 0 = screening cohort only). Cohort size: every held-out
+#   person (8,871; WASL_PERSONS caps it), WASL_CRC=2040 CRC and WASL_CERV=816 cervical loops: 1.36x the earlier 6,500
+#   persons / 1,500 / 600 / 800, so the smallest name-origin group (Filipino) has about 360 loops per run, not 250.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 if [ $# -gt 0 ]; then SEEDS=("$@"); else SEEDS=(11 23 37 41 59); fi
 FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK:-$ROOT/out/final}"
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
-LUNG="${WASL_LUNG:-800}"; export LUNG
+LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
@@ -33,7 +35,8 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
      "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
-     "lung_loops_per_run": int(os.environ.get("LUNG", "0")),
+     "lung_loops_per_run": int(os.environ.get("LUNG", "0")), "crc_loops_per_run": int(os.environ["CRC"]), "cervical_loops_per_run": int(os.environ["CERV"]),
+     "persons_cap": int(os.environ["PERSONS"]) or "all held-out (8,871)",
      "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
      "hashes": {p: h(p) for p in ["models/encoder_weights.json", "models/lgb_stream.json", "models/iso.json", "models/iso_v7.json", "models/gemma_cache.json",
                                   "models/parse_cache.json", "data/persons3.json", "data/evidence/reports43.json", "data/evidence/pathology_templates.json",
@@ -61,7 +64,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     B="$ROOT/bin"
     "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-      -out "$O/base" -seed "$seed" -persons 6500 -cerv 600 -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" > /dev/null
+      -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
