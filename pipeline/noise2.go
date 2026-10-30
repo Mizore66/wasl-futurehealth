@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"unicode/utf8"
 )
 
 var NoiseModel = "v1" // v1 = training-time noise (gen.go); v2 = independent held-out noise (this file)
@@ -37,13 +38,14 @@ func noisyLatin2(name string, r *rand.Rand) string {
 	}
 	if len(toks) >= 3 && r.Float64() < .12 { // middle name as initial
 		k := 1 + r.Intn(len(toks)-2)
-		toks[k] = toks[k][:1] + "."
+		_, n := utf8.DecodeRuneInString(toks[k]) // first letter, not first byte: a non-ASCII initial stays valid text
+		toks[k] = toks[k][:n] + "."
 	}
 	s := strings.Join(toks, " ")
 	for n := 0; n < 2; n++ {
 		if r.Float64() < .35 {
 			p := phon2[r.Intn(len(phon2))]
-			if i := strings.Index(strings.ToLower(s), p[0]); i >= 0 {
+			if i := foldIndex(s, p[0]); i >= 0 {
 				s = s[:i] + p[1] + s[i+len(p[0]):]
 			}
 		}
@@ -74,6 +76,18 @@ func noisyLatin2(name string, r *rand.Rand) string {
 		s = strings.ReplaceAll(s, " ", "  ")
 	}
 	return s
+}
+
+// foldIndex: byte offset in s of the first case-insensitive match of the lower-case ASCII pattern p, or -1. The offset
+// is taken in s itself: an index into strings.ToLower(s) is wrong when a rune's lower-case form has a different UTF-8
+// length (Go lower-cases "İ" to "i̇", one byte longer), which sliced s out of range.
+func foldIndex(s, p string) int {
+	for i := range s {
+		if i+len(p) <= len(s) && strings.EqualFold(s[i:i+len(p)], p) {
+			return i
+		}
+	}
+	return -1
 }
 
 func noisyArabic2(name string, r *rand.Rand) string {
