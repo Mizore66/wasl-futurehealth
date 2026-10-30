@@ -26,7 +26,7 @@ func handoffFacts(comms ...CommFact) *LoopFacts {
 func TestBuildHandoffReject(t *testing.T) {
 	srs := []srFact{{day: 12, status: "rejected", prov: Providers[2].ID, reason: "capacity", ev: "sr-1"}}
 	f := handoffFacts(CommFact{ID: "c1", Day: 15, Category: "econsult-reply", Parse: "reject"})
-	p := buildHandoff(f, "crc", srs, "reject", 15, 12, 16, "granted")
+	p := buildHandoff(f, "crc", srs, ecThread{"reject", 15, "rejected", Providers[2].ID}, 12, 16, "granted")
 	if p == nil {
 		t.Fatal("no packet for a rejected referral")
 	}
@@ -38,7 +38,7 @@ func TestBuildHandoffReject(t *testing.T) {
 	}
 	// later, past the medical-director step, still no action: escalations and the urgent 14-day flag
 	late := f.SRDay + HandoffUrgentDays + 1 // after the medical-director step (day 20) and the 14-day mark
-	p = buildHandoff(f, "crc", srs, "reject", 15, 12, late, "granted")
+	p = buildHandoff(f, "crc", srs, ecThread{"reject", 15, "rejected", Providers[2].ID}, 12, late, "granted")
 	if p.Status != "medical_director" {
 		t.Fatalf("status %s", p.Status)
 	}
@@ -47,7 +47,7 @@ func TestBuildHandoffReject(t *testing.T) {
 	}
 	// the referrer answers the packet: acted, no escalation
 	f.Comms = append(f.Comms, CommFact{ID: "c2", Day: 17, Category: "handoff-reply", Action: "re_referred"})
-	p = buildHandoff(f, "crc", srs, "reject", 15, 12, 30, "granted")
+	p = buildHandoff(f, "crc", srs, ecThread{"reject", 15, "rejected", Providers[2].ID}, 12, 30, "granted")
 	if p.Status != "referrer_acted" || p.ActedAt != 17 || p.escalations(f.SRDay, 30) != nil {
 		t.Fatalf("acted %+v", p)
 	}
@@ -56,15 +56,15 @@ func TestBuildHandoffReject(t *testing.T) {
 func TestBuildHandoffNeedsFinalRejection(t *testing.T) {
 	srs := []srFact{{day: 12, status: "rejected", prov: Providers[2].ID, reason: "incomplete-referral", ev: "sr-1"}}
 	f := handoffFacts()
-	if p := buildHandoff(f, "crc", srs, "awaiting_reply", 13, 12, 14, ""); p != nil {
+	if p := buildHandoff(f, "crc", srs, ecThread{"awaiting_reply", 13, "rejected", Providers[2].ID}, 12, 14, ""); p != nil {
 		t.Fatal("packet while the e-consult is still open")
 	}
-	if p := buildHandoff(f, "crc", srs, "accept", 13, 12, 14, ""); p != nil {
+	if p := buildHandoff(f, "crc", srs, ecThread{"accept", 13, "rejected", Providers[2].ID}, 12, 14, ""); p != nil {
 		t.Fatal("packet after the unit accepted")
 	}
 	// redirect, then the second unit also rejects
 	srs = append(srs, srFact{day: 18, status: "rejected", prov: Providers[3].ID, reason: "incomplete-referral", ev: "sr-2"})
-	p := buildHandoff(f, "cervical", srs, "redirect", 14, 12, 19, "")
+	p := buildHandoff(f, "cervical", srs, ecThread{"redirect", 14, "rejected", Providers[2].ID}, 12, 19, "")
 	if p == nil || p.Decision != "redirect_rejected" || p.ReferralID != "sr-2" || p.Priority != "routine" || len(p.InfoRequested) != 3 {
 		t.Fatalf("redirect packet %+v", p)
 	}
@@ -98,11 +98,44 @@ func TestBuildHandoffNoReply(t *testing.T) {
 	srs := []srFact{{day: 12, status: "rejected", prov: Providers[2].ID, reason: "capacity", ev: "sr-1"}}
 	f := handoffFacts()
 	due := addBD(14, HandoffBDRoutine)
-	if p := buildHandoff(f, "crc", srs, "awaiting_reply", 14, 12, due-0.5, ""); p != nil {
+	if p := buildHandoff(f, "crc", srs, ecThread{"awaiting_reply", 14, "rejected", Providers[2].ID}, 12, due-0.5, ""); p != nil {
 		t.Fatal("packet before the e-consult went 5 business days unanswered")
 	}
-	p := buildHandoff(f, "crc", srs, "awaiting_reply", 14, 12, due, "")
+	p := buildHandoff(f, "crc", srs, ecThread{"awaiting_reply", 14, "rejected", Providers[2].ID}, 12, due, "")
 	if p == nil || p.Decision != "reject_no_reply" || p.DecidedAt != due {
 		t.Fatalf("no-reply packet %+v", p)
+	}
+}
+
+// The three causes of missed or extra packets in the a3ad83a frozen run (RESULTS.md, hand-off trace).
+func TestBuildHandoffTraceCases(t *testing.T) {
+	ec := ecThread{"reject", 15, "rejected", Providers[2].ID}
+	// re-referral rejected again: the packet stays on the first rejection, and the second unit's answer is the action
+	srs := []srFact{{day: 12, status: "rejected", prov: Providers[2].ID, reason: "capacity", ev: "sr-1"},
+		{day: 25, status: "rejected", prov: Providers[3].ID, reason: "capacity", ev: "sr-2"}}
+	p := buildHandoff(handoffFacts(), "crc", srs, ec, 12, 30, "")
+	if p == nil || p.ReferralID != "sr-1" || p.DecidedAt != 15 || p.ActedAt != 25 || p.Status != "referrer_acted" {
+		t.Fatalf("re-referral rejected: %+v", p)
+	}
+	// the unit's rejected intake was never linked: the e-consult thread names the unit
+	p = buildHandoff(handoffFacts(), "crc", nil, ec, -1, 16, "")
+	if p == nil || p.DecidedBy != Providers[2].ID || p.ReasonCode != "other" || p.ReferralID != "L1" || p.Alternative != Providers[3].ID {
+		t.Fatalf("unlinked rejection: %+v", p)
+	}
+	// an e-consult about a repeat after inadequate prep is not a returned referral, even with an old rejection on file
+	srs = []srFact{{day: 5, status: "rejected", prov: Providers[3].ID, reason: "duplicate-referral", ev: "sr-0"},
+		{day: 8, status: "accepted", prov: Providers[3].ID, ev: "sr-0b"}}
+	if p := buildHandoff(handoffFacts(), "crc", srs, ecThread{"reject", 40, "inadequate", Providers[3].ID}, 5, 45, ""); p != nil {
+		t.Fatalf("repeat e-consult made a packet: %+v", p)
+	}
+	// redirect after an unanswered referral, then the redirected unit rejects: a final rejection
+	srs = []srFact{{day: 20, status: "rejected", prov: Providers[3].ID, reason: "out-of-network", ev: "sr-3"}}
+	p = buildHandoff(handoffFacts(), "crc", srs, ecThread{"redirect", 17, "unanswered", Providers[2].ID}, 20, 22, "")
+	if p == nil || p.Decision != "redirect_rejected" || p.DecidedBy != Providers[3].ID {
+		t.Fatalf("redirect after unanswered: %+v", p)
+	}
+	// an unanswered e-consult about an unanswered referral is not a rejection
+	if p := buildHandoff(handoffFacts(), "crc", nil, ecThread{"awaiting_reply", 14, "unanswered", Providers[2].ID}, -1, 40, ""); p != nil {
+		t.Fatalf("unanswered referral made a packet: %+v", p)
 	}
 }

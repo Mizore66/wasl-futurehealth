@@ -44,6 +44,7 @@ type Event struct {
 	CommLang   string  `json:"clang,omitempty"` // Communication.language
 	Channel    string  `json:"chan,omitempty"`
 	Reason     string  `json:"reason,omitempty"` // Task.statusReason (referral response)
+	Recipient  string  `json:"rcpt,omitempty"`   // Communication recipient unit (e-consult question: the unit asked)
 	TextSha    string  `json:"tsha,omitempty"`
 	Ev         *TwoVerdict `json:"evv,omitempty"` // two-reader evidence verdict, computed in the stateless prep stage
 	// v6
@@ -73,6 +74,8 @@ type CommFact struct {
 	Report   string  `json:"rep,omitempty"`   // prep-query thread: the colonoscopy report the query is about
 	Grade    string  `json:"grade,omitempty"` // prep-reply: adequate|inadequate|cannot_determine (structured, not free text)
 	Action   string  `json:"action,omitempty"` // handoff-reply: what the referrer did (re_referred)
+	Trigger  string  `json:"trig,omitempty"`   // econsult-question: why it was asked (rejected | unanswered | inadequate)
+	Unit     string  `json:"unit,omitempty"`   // econsult-question: the receiving unit asked
 }
 
 // Signoff is a human reviewer decision on a unified review item (published as a FHIR Provenance).

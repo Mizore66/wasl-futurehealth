@@ -100,6 +100,8 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Reason = gs(xm, "valueString")
 				case "urn:wsi:report":
 					e.ReportID = gs(xm, "valueString")
+				case "urn:wsi:recipient":
+					e.Recipient = gs(xm, "valueString")
 				}
 			}
 		}
