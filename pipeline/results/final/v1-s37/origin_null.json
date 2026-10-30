@@ -1,26 +1,26 @@
 {
- "observed": 1.3422,
- "null_median": 1.1089,
- "null_p95": 1.241,
- "p_value": 0.003,
+ "observed": 1.156,
+ "null_median": 1.1032,
+ "null_p95": 1.2188,
+ "p_value": 0.199,
  "permutations": 1000,
  "loops": {
-  "arab": 1478,
-  "filipino": 277,
-  "south_asian": 718,
-  "western": 427
+  "south_asian": 955,
+  "arab": 2085,
+  "western": 553,
+  "filipino": 351
  },
  "items": {
-  "arab": 892,
-  "filipino": 146,
-  "south_asian": 407,
-  "western": 192
+  "arab": 1120,
+  "filipino": 172,
+  "south_asian": 541,
+  "western": 291
  },
  "items_per_loop_hist": {
-  "0": 1597,
-  "1": 1001,
-  "2": 272,
-  "3": 28,
-  "4": 2
+  "0": 2281,
+  "1": 1247,
+  "2": 372,
+  "3": 43,
+  "4": 1
  }
 }

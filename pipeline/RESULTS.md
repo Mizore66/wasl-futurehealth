@@ -1062,7 +1062,7 @@ Four post-hoc changes, disclosed.
 1. **Held-out noise model fix (`6245613`).** `noisyLatin2` searched a lower-cased copy of the name and used the index on the original. Lower-casing "İ" changes its byte length, so the index was off and the generator could panic; initials were cut at one byte, which garbled non-ASCII first letters. It now matches case-insensitively in place and cuts initials by rune. Dev noise (v1) is unchanged.
 2. **MTSamples key correction (`bb3728e`, `f1848c8`).** Three reports (u2, u10, u11) describe colon biopsies with no polyps. The key said they close without histology; they must wait for histology, which is what Wasl did. Each of these waits was counted as a miss, and a reviewer simulated from the key could copy the wrong answer into a closure. The key now marks them `awaiting_histology`. Four reports (u1, u6, u9, u40) gained `tissue_taken: yes` with no change of outcome. u4 is `tissue_taken: no`: the tissue was gastric, and the readers misread it as colonic (a known reader weakness). Every changed entry carries a `key_note`. These are our corrections; the human double-labelling of the 43 reports is still pending.
 3. **Short surnames (`e4c7553`).** The first run on the corrected key released 1 wrong-patient message: two different people with exact-DOB agreement and the same 2-letter surname skeleton, which the surname rule counted as corroboration. A surname of 1–2 letters (after skeleton reduction) now corroborates only when the given name's skeleton also agrees. On the calibration split, false corroborations fell 3 → 0 (v1) and 17 → 11 (v2); true corroborations fell 5.0% and 3.4%. A stricter rule (all name tokens equal) was rejected: it cost about 15% of true corroborations.
-4. **Review-load ratio.** The key correction changes the cohort's random draws, so the persons in each seed are reshuffled. After the reshuffle the held-out per-seed ratio is 1.28 (1.11–1.45), above the 1.25 limit; pooled over seeds it is 1.19. The small Filipino group moved most: 44.4 → 51.7 items per 100 loops on held-out noise, but 54.3 → 52.1 on dev noise. Under investigation.
+4. **Review-load ratio.** The key correction changes the cohort's random draws, so the persons in each seed are reshuffled. After the reshuffle the held-out per-seed ratio is 1.28 (1.11–1.45), above the 1.25 limit; pooled over seeds it is 1.19. The small Filipino group moved most: 44.4 → 51.7 items per 100 loops on held-out noise, but 54.3 → 52.1 on dev noise. Traced in the next section.
 
 | | Dev noise v1: `eea6f26` → `e4c7553` | Held-out v2: `eea6f26` → `e4c7553` |
 |---|---|---|
@@ -1076,3 +1076,34 @@ Four post-hoc changes, disclosed.
 | Review-load ratio, per seed; pooled | 1.19 (1.11–1.27); 1.14 → **1.24 (1.15–1.32); 1.18** | 1.17 (1.10–1.23); 1.13 → **1.28 (1.11–1.45); 1.19** |
 
 The recall gain comes from the key correction. Where recall still goes on held-out noise (869 of 2,932 truly closed loops missed at `eea6f26`): about 230 were the key error (now fixed), about 140 the simulated day-15 clinician error, 252 linkage misses and about 240 other legitimate waits.
+
+### Review-load trace and fixes (`6907f6e`, `3caa8a1`, new headline)
+
+At `e4c7553` the held-out per-seed ratio was 1.28 (1.11–1.45). Traced on the frozen runs; two post-hoc changes, disclosed.
+
+**What raised it: chance pathway mix in the smallest group.**
+- The short-surname rule is not the cause. Re-running the five held-out cohorts with it off lowered every origin by about 1 item per 100 loops; Filipino stayed high.
+- The key correction changes the generator's random draws. Each origin keeps its loop count, but loops get new pathways. Filipino CRC loops in "awaiting histology" (the heaviest pathway, about 85 items per 100 loops) went from 16% to 26%; other origins moved 2–4 points. The generator draws the pathway independently of the name.
+- Diagnostic (not a criterion): divide each origin's items by the items its programme-and-pathway mix predicts. This adjusted ratio was 1.18 at `eea6f26` and 1.21 at `e4c7553`. Arab is above prediction in every seed (1.01–1.08): the placeholder-date effect. Filipino swings both ways (0.86–1.12): small-group noise.
+
+**What Wasl could fix.**
+1. *Repeated second-identifier questions (`6907f6e`, `3caa8a1`).* A human's "same" on the outreach guard is double-read and is about two registrations, but it counted only on the loop where it was asked. Other loops of the same patient asked again: 1.4 (dev) and 2.1 (held-out) items per 100 loops, in every origin. The linker now applies the answer to every loop of the pair, and a later "different" withdraws it (`-reuseconfirm`). The guard items of a patient's loops are raised together, so the review worklist also drops a queued twin once its pair is answered "same" (about 75 per run). Tests: `TestReuseIDConfirmAcrossLoops`, `TestIDWorklistDedupe`.
+2. *Bigger smallest group (`6907f6e`).* The evaluation now uses every held-out person (8,871, was 6,500) with 1.36× the loops: 2,040 CRC, 816 cervical and 1,088 lung loops per run. Filipino has about 360 loops per run instead of about 250. More is not possible without moving dev or calibration persons into the held-out set, which we did not do.
+
+**What it could not fix.** The remaining gap is the outreach guard on placeholder birth dates (+2.2 to +3.3 items per 100 loops for Arab vs Western). A placeholder date and a common full name can be two people, so the guard stays.
+
+| | Dev noise v1: `e4c7553` → `3caa8a1` | Held-out v2: `e4c7553` → `6907f6e` → `3caa8a1` |
+|---|---|---|
+| Loops per run | 2,900 → 3,944 | 2,900 → 3,944 → 3,944 |
+| Review-load ratio, per seed | 1.24 (1.15–1.32) → **1.13 (1.06–1.20)** | 1.28 (1.11–1.45) → 1.21 (1.07–1.35) → **1.21 (1.09–1.34)** |
+| Review-load ratio, pooled (p vs shuffled labels) | 1.18 (< 0.001) → **1.08 (0.12)** | 1.19 (< 0.001) → 1.10 (0.05) → **1.08 (0.11)** |
+| Seeds above 1.25 | – → 0 of 5 | – → 2 of 5 → 2 of 5 |
+| Adjusted ratio (diagnostic), per seed | – | 1.21 → 1.14 → – |
+| Review items per 100 loops | 53.2 → 52.9 | 48.8 → 49.7 → **47.3** |
+| Reviewer hours per 1k loops | 17.4 → 17.2 | 15.9 → 16.2 → **15.5** |
+| CRC recall | 0.809 → 0.810 | 0.737 → 0.747 → 0.747 |
+| CRC / cervical / lung false closures | 0/3,034, 0/1,403, 0/2,026 | 0/2,886, 0/1,300, 0/1,899 |
+| Wrong-patient messages; sent without consent | 0/17,809; 0/11,197 | 0/16,743; 0/10,620 |
+| Hand-off packets matched / truth (extra) | 330/333 (0) | 296/300 (0) |
+
+Counts in the last four rows are at `3caa8a1`. The `6907f6e` run applied the reuse in the linker only, before the worklist dedupe; its review items rose because the cohorts are larger and the twins were still asked. The `e4c7553` → `3caa8a1` change mixes the code fix with the larger cohorts; per-loop rates are comparable, totals are not.

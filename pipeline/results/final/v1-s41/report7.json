@@ -5,29 +5,28 @@
    "down_s": 1.8730283610466327,
    "status_before_kill": {
     "fhirsub": {
-     "ack_hwm": 1931,
+     "ack_hwm": 734,
      "already_ingested_dropped": 0,
-     "buffered": 9819,
+     "buffered": 32740,
      "done": false,
      "eof_sent": false,
-     "feed_off": true,
-     "max_seen": 34969,
+     "feed_off": false,
+     "max_seen": 46790,
      "nats_dup_suppressed": 0,
-     "next": 24701,
-     "published": 1960,
+     "next": 12751,
+     "published": 737,
      "stats": {
-      "accepted_events": 600,
-      "accepted_push": 33919,
-      "buffered_ahead_push": 32769,
-      "dup_dropped_push": 1600,
-      "gap_events": 600,
-      "gap_fills": 12,
-      "recv_event-notification": 711,
-      "recv_handshake": 1,
-      "recv_heartbeat": 1
+      "accepted_events": 250,
+      "accepted_push": 45240,
+      "buffered_ahead_push": 44090,
+      "dup_dropped_push": 2100,
+      "gap_events": 250,
+      "gap_fills": 5,
+      "recv_event-notification": 947,
+      "recv_handshake": 1
      },
-     "sub": "wsi-crc-114613000",
-     "uptime": 2.604478958
+     "sub": "wsi-crc-697360000",
+     "uptime": 2.615904167
     }
    },
    "t_kill": 2.7,
@@ -40,34 +39,33 @@
    "down_s": 1.7295825731536296,
    "status_before_kill": {
     "linker": {
-     "first_new_output_s": 3.429133708,
-     "inflight": 12,
+     "first_new_output_s": 4.031447792,
+     "inflight": 0,
      "present_at_start": 0,
-     "processed": 1999,
+     "processed": 780,
      "pseq": [
-      357,
-      301,
-      308,
-      330
+      144,
+      114,
+      122,
+      134
      ],
      "pub_retries": 0,
-     "published": 1296,
-     "records": 834,
+     "published": 514,
+     "records": 279,
      "stats": {
-      "consent_records": 541,
-      "contact_denied": 23,
-      "contact_granted": 518,
-      "eid_conflicts": 3622,
-      "eid_links": 64,
-      "merges": 133,
-      "signoffs": 14,
-      "splits": 1
+      "consent_records": 234,
+      "contact_denied": 7,
+      "contact_granted": 227,
+      "eid_conflicts": 1214,
+      "eid_links": 6,
+      "merges": 12,
+      "signoffs": 1
      },
      "suppressed": 0,
-     "uptime": 6.068819666
+     "uptime": 6.019154042
     }
    },
-   "t_kill": 3.292379792,
+   "t_kill": 3.292457917,
    "victims": [
     "linker"
    ]
@@ -78,26 +76,26 @@
    "status_before_kill": {
     "closure-0": {
      "dup_suppressed": 0,
-     "first_new_output_s": 3.539851959,
+     "first_new_output_s": 4.196157583,
      "inflight": 0,
-     "last_fseq": 1318,
-     "ledger_head": "298be7cc1d22dc3c08ae8fd9ef94283cab6f8323db0210f14d8942a85d5338b1",
-     "ledger_oseq": 369,
-     "loops": 165,
-     "next_pseq": 361,
+     "last_fseq": 745,
+     "ledger_head": "fe122e3fc25c2e2fe64320eb65bd5cc14a6366a90f34e863c749f329f915f03d",
+     "ledger_oseq": 194,
+     "loops": 100,
+     "next_pseq": 196,
      "present_at_start": 0,
-     "processed": 360,
+     "processed": 195,
      "pub_retries": 0,
-     "published": 369,
+     "published": 194,
      "suppressed": 0,
-     "uptime": 10.842055417
+     "uptime": 10.836510792
     },
     "prep-0": {
-     "done": 1232,
+     "done": 540,
      "dup_suppressed": 0
     }
    },
-   "t_kill": 7.866676333,
+   "t_kill": 7.867303209,
    "victims": [
     "closure-0",
     "prep-0"
@@ -105,7 +103,7 @@
   },
   {
    "cycle": "nats",
-   "t_kill": 11.489883917,
+   "t_kill": 11.527307792,
    "victims": [
     "nats-2"
    ]
@@ -114,107 +112,107 @@
  "closure": {
   "cervical": {
    "baseline_any_proc_120d": {
-    "closed_pred": 161,
+    "closed_pred": 210,
     "false_closure_rate_upper95": 0.443,
-    "false_closures": 59,
-    "missed": 111,
-    "precision": 0.634,
-    "recall": 0.479,
-    "tp": 102
+    "false_closures": 79,
+    "missed": 180,
+    "precision": 0.624,
+    "recall": 0.421,
+    "tp": 131
    },
    "baseline_eid_only": {
-    "closed_pred": 96,
-    "false_closure_rate_upper95": 0.265,
-    "false_closures": 17,
-    "missed": 134,
-    "precision": 0.823,
-    "recall": 0.371,
-    "tp": 79
+    "closed_pred": 124,
+    "false_closure_rate_upper95": 0.227,
+    "false_closures": 19,
+    "missed": 206,
+    "precision": 0.847,
+    "recall": 0.338,
+    "tp": 105
    },
-   "loops": 600,
+   "loops": 816,
    "wasl_live_with_review": {
-    "closed_pred": 206,
-    "false_closure_rate_upper95": 0.018,
+    "closed_pred": 296,
+    "false_closure_rate_upper95": 0.013,
     "false_closures": 0,
-    "missed": 7,
+    "missed": 15,
     "precision": 1,
-    "recall": 0.967,
-    "tp": 206
+    "recall": 0.952,
+    "tp": 296
    },
    "wasl_no_review": {
-    "closed_pred": 119,
-    "false_closure_rate_upper95": 0.031,
+    "closed_pred": 162,
+    "false_closure_rate_upper95": 0.023,
     "false_closures": 0,
-    "missed": 94,
+    "missed": 149,
     "precision": 1,
-    "recall": 0.559,
-    "tp": 119
+    "recall": 0.521,
+    "tp": 162
    }
   },
   "crc": {
    "baseline_any_proc_120d": {
-    "closed_pred": 440,
-    "false_closure_rate_upper95": 0.368,
-    "false_closures": 142,
-    "missed": 273,
-    "precision": 0.677,
-    "recall": 0.522,
-    "tp": 298
+    "closed_pred": 551,
+    "false_closure_rate_upper95": 0.421,
+    "false_closures": 209,
+    "missed": 380,
+    "precision": 0.621,
+    "recall": 0.474,
+    "tp": 342
    },
    "baseline_eid_only": {
-    "closed_pred": 302,
-    "false_closure_rate_upper95": 0.226,
-    "false_closures": 54,
-    "missed": 323,
-    "precision": 0.821,
-    "recall": 0.434,
-    "tp": 248
+    "closed_pred": 362,
+    "false_closure_rate_upper95": 0.225,
+    "false_closures": 66,
+    "missed": 426,
+    "precision": 0.818,
+    "recall": 0.41,
+    "tp": 296
    },
-   "loops": 1500,
+   "loops": 2040,
    "wasl_live_with_review": {
-    "closed_pred": 451,
-    "false_closure_rate_upper95": 0.008,
+    "closed_pred": 590,
+    "false_closure_rate_upper95": 0.006,
     "false_closures": 0,
-    "missed": 120,
+    "missed": 132,
     "precision": 1,
-    "recall": 0.79,
-    "tp": 451
+    "recall": 0.817,
+    "tp": 590
    },
    "wasl_no_review": {
-    "closed_pred": 209,
-    "false_closure_rate_upper95": 0.018,
+    "closed_pred": 228,
+    "false_closure_rate_upper95": 0.017,
     "false_closures": 0,
-    "missed": 362,
+    "missed": 494,
     "precision": 1,
-    "recall": 0.366,
-    "tp": 209
+    "recall": 0.316,
+    "tp": 228
    }
   }
  },
  "consent_timing": {
-  "intents_cancelled_by_consent": 103,
-  "intents_ever_held_for_consent": 236,
-  "opted_out_loops": 114,
+  "intents_cancelled_by_consent": 173,
+  "intents_ever_held_for_consent": 354,
+  "opted_out_loops": 165,
   "released_after_opt_out_on_file": 0,
   "released_before_opt_out_recorded": 0,
-  "released_total": 1574,
+  "released_total": 2160,
   "released_without_granted_consent": 0
  },
  "crash_recovery": {
   "duplicate_outputs": 0,
-  "expected_outputs": 27870,
-  "facts_msgs_replay": 26588,
-  "fhir_msgs": 36377,
+  "expected_outputs": 38317,
+  "facts_msgs_replay": 36763,
+  "fhir_msgs": 48745,
   "final_state_mismatch_loops": 0,
-  "generated_resources": 34871,
+  "generated_resources": 46667,
   "ingest_duplicates": 0,
   "ingest_lost": 0,
-  "live_outputs": 27870,
-  "logical_duplicate_decisions": 8,
+  "live_outputs": 38317,
+  "logical_duplicate_decisions": 4,
   "lost_outputs": 0,
   "prep_content_mismatch": 0,
   "prep_duplicates": 0,
-  "prep_live_msgs": 36377,
+  "prep_live_msgs": 48745,
   "prep_lost": 0,
   "unexpected_outputs": 0,
   "writer_processes_seen": 5
@@ -222,189 +220,190 @@
  "crc_kpi_31d": {
   "definition": "DoH CRC spec App. 2: referral after FIT+ -\u003e colonoscopy conducted within 31 days; acceptable \u003e90%, desirable \u003e95%. Denominator: all FIT+ referrals with \u003e=31 days of follow-up by day 120.",
   "eid_only": {
-   "accepted_eligible": 1312,
-   "eligible_referrals": 1340,
-   "kpi_accepted_referrals_only": 0.142,
-   "kpi_all_referrals": 0.139,
-   "kpi_among_procedures_seen": 0.633,
-   "per_loop_agreement_with_truth": 0.807,
-   "procedures_seen": 294,
-   "within_31d": 186
+   "accepted_eligible": 1794,
+   "eligible_referrals": 1833,
+   "kpi_accepted_referrals_only": 0.122,
+   "kpi_all_referrals": 0.119,
+   "kpi_among_procedures_seen": 0.62,
+   "per_loop_agreement_with_truth": 0.814,
+   "procedures_seen": 353,
+   "within_31d": 219
   },
   "truth": {
-   "accepted_eligible": 1312,
-   "eligible_referrals": 1340,
-   "kpi_accepted_referrals_only": 0.339,
-   "kpi_all_referrals": 0.332,
-   "kpi_among_procedures_seen": 0.652,
+   "accepted_eligible": 1794,
+   "eligible_referrals": 1833,
+   "kpi_accepted_referrals_only": 0.312,
+   "kpi_all_referrals": 0.306,
+   "kpi_among_procedures_seen": 0.619,
    "per_loop_agreement_with_truth": 1,
-   "procedures_seen": 682,
-   "within_31d": 445
+   "procedures_seen": 905,
+   "within_31d": 560
   },
   "wasl_live": {
-   "accepted_eligible": 1312,
-   "eligible_referrals": 1340,
-   "kpi_accepted_referrals_only": 0.328,
-   "kpi_all_referrals": 0.321,
-   "kpi_among_procedures_seen": 0.653,
+   "accepted_eligible": 1794,
+   "eligible_referrals": 1833,
+   "kpi_accepted_referrals_only": 0.3,
+   "kpi_all_referrals": 0.294,
+   "kpi_among_procedures_seen": 0.618,
    "per_loop_agreement_with_truth": 0.989,
-   "procedures_seen": 659,
-   "within_31d": 430
+   "procedures_seen": 872,
+   "within_31d": 539
   },
   "wasl_no_review": {
-   "accepted_eligible": 1312,
-   "eligible_referrals": 1340,
-   "kpi_accepted_referrals_only": 0.223,
-   "kpi_all_referrals": 0.218,
-   "kpi_among_procedures_seen": 0.645,
-   "per_loop_agreement_with_truth": 0.886,
-   "procedures_seen": 453,
-   "within_31d": 292
+   "accepted_eligible": 1794,
+   "eligible_referrals": 1833,
+   "kpi_accepted_referrals_only": 0.2,
+   "kpi_all_referrals": 0.196,
+   "kpi_among_procedures_seen": 0.641,
+   "per_loop_agreement_with_truth": 0.89,
+   "procedures_seen": 560,
+   "within_31d": 359
   }
  },
  "dropoff": {
   "cervical": {
-   "loop_accuracy": 0.975,
+   "loop_accuracy": 0.971,
    "pipeline": {
-    "(closed)": 206,
-    "awaiting_histology": 21,
-    "in_progress": 57,
-    "inadequate": 30,
-    "never_notified": 47,
-    "no_acknowledgement": 117,
-    "no_show": 26,
-    "not_booked": 73,
-    "referral_rejected": 4,
-    "referral_unanswered": 19
+    "(closed)": 296,
+    "awaiting_histology": 36,
+    "in_progress": 71,
+    "inadequate": 29,
+    "never_notified": 72,
+    "no_acknowledgement": 162,
+    "no_show": 37,
+    "not_booked": 81,
+    "referral_rejected": 12,
+    "referral_unanswered": 19,
+    "unlinked": 1
    },
    "truth": {
-    "(closed)": 213,
-    "awaiting_histology": 20,
-    "in_progress": 59,
-    "inadequate": 30,
-    "never_notified": 47,
-    "no_acknowledgement": 117,
-    "no_show": 27,
-    "not_booked": 78,
-    "referral_rejected": 3,
-    "referral_unanswered": 6
+    "(closed)": 311,
+    "awaiting_histology": 34,
+    "in_progress": 73,
+    "inadequate": 31,
+    "never_notified": 72,
+    "no_acknowledgement": 157,
+    "no_show": 37,
+    "not_booked": 84,
+    "referral_rejected": 12,
+    "referral_unanswered": 5
    }
   },
   "crc": {
-   "loop_accuracy": 0.896,
+   "loop_accuracy": 0.907,
    "pipeline": {
-    "(closed)": 451,
-    "awaiting_histology": 77,
-    "in_progress": 127,
-    "inadequate": 121,
-    "never_notified": 156,
-    "no_acknowledgement": 254,
-    "no_show": 74,
-    "not_booked": 189,
-    "referral_rejected": 16,
-    "referral_unanswered": 35
+    "(closed)": 590,
+    "awaiting_histology": 96,
+    "in_progress": 177,
+    "inadequate": 169,
+    "never_notified": 187,
+    "no_acknowledgement": 370,
+    "no_show": 106,
+    "not_booked": 258,
+    "referral_rejected": 19,
+    "referral_unanswered": 68
    },
    "truth": {
-    "(closed)": 571,
-    "awaiting_histology": 62,
-    "in_progress": 100,
-    "inadequate": 71,
-    "never_notified": 154,
-    "no_acknowledgement": 245,
-    "no_show": 78,
-    "not_booked": 194,
-    "referral_rejected": 16,
-    "referral_unanswered": 9
+    "(closed)": 722,
+    "awaiting_histology": 95,
+    "in_progress": 152,
+    "inadequate": 107,
+    "never_notified": 187,
+    "no_acknowledgement": 358,
+    "no_show": 109,
+    "not_booked": 271,
+    "referral_rejected": 17,
+    "referral_unanswered": 22
    }
   }
  },
- "fhir_msgs": 36377,
+ "fhir_msgs": 48745,
  "fhirsub": {
-  "ack_hwm": 34969,
-  "already_ingested_dropped": 73,
+  "ack_hwm": 46790,
+  "already_ingested_dropped": 74,
   "buffered": 0,
   "done": true,
   "eof_sent": true,
   "feed_off": true,
-  "max_seen": 34969,
-  "nats_dup_suppressed": 63,
-  "next": 34970,
-  "published": 33014,
+  "max_seen": 46790,
+  "nats_dup_suppressed": 71,
+  "next": 46791,
+  "published": 46032,
   "stats": {
-   "accepted_events": 33014,
-   "gap_events": 33014,
-   "gap_fills": 34,
-   "recv_heartbeat": 66,
-   "resumed_from": 1955,
+   "accepted_events": 46032,
+   "gap_events": 46032,
+   "gap_fills": 47,
+   "recv_heartbeat": 73,
+   "resumed_from": 758,
    "status_polls": 1
   },
-  "sub": "wsi-crc-114613000",
-  "uptime": 67.711434292
+  "sub": "wsi-crc-697360000",
+  "uptime": 73.0876815
  },
  "forged": {
-  "consent_records_accepted": 2670,
+  "consent_records_accepted": 3524,
   "forged_consent_target_genuinely_opted_out": 0,
-  "forged_events": 22,
+  "forged_events": 24,
   "forged_target_pair_falsely_merged_by_linker": 0,
   "forged_with_any_effect": 0,
   "rbac_denied_consent": 12,
-  "rbac_denied_signoff": 10
+  "rbac_denied_signoff": 12
  },
  "image_reader": {
   "mode": "off"
  },
  "latency_ms": {
-  "max": 36166.145,
-  "n": 15050,
-  "p50": 30467.255,
-  "p90": 34155.608,
-  "p99": 36027.27
+  "max": 37153.726,
+  "n": 20724,
+  "p50": 29739.283,
+  "p90": 33279.981,
+  "p99": 35209.633
  },
  "linkage": {
-  "false_merge_pairs": 73,
-  "impure_clusters": 24,
-  "pair_f1": 0.98,
-  "pair_precision": 0.986,
-  "pair_recall": 0.974,
-  "registrations": 10446,
+  "false_merge_pairs": 121,
+  "impure_clusters": 54,
+  "pair_f1": 0.976,
+  "pair_precision": 0.983,
+  "pair_recall": 0.969,
+  "registrations": 14149,
   "stats": {
-   "cannot_rejects": 17,
-   "consent_records": 2670,
-   "contact_denied": 108,
-   "contact_granted": 2526,
-   "contact_opted_out": 36,
-   "eid_conflicts": 86087,
-   "eid_links": 2058,
-   "guard_rejects": 4,
-   "merges": 3908,
+   "cannot_rejects": 23,
+   "consent_records": 3524,
+   "contact_denied": 143,
+   "contact_granted": 3331,
+   "contact_opted_out": 50,
+   "eid_conflicts": 132761,
+   "eid_links": 2768,
+   "guard_rejects": 6,
+   "merges": 5254,
    "rbac_denied_consent": 12,
-   "rbac_denied_signoff": 10,
-   "signoffs": 1499,
-   "splits": 37
+   "rbac_denied_signoff": 12,
+   "signoffs": 2071,
+   "splits": 65
   },
-  "true_pairs": 5137
+  "true_pairs": 7143
  },
  "live_vs_replay_final_mismatch": 0,
- "loops": 2900,
+ "loops": 3944,
  "loops_by_programme": {
-  "cervical": 600,
-  "crc": 1500,
-  "lung_nodule": 800
+  "cervical": 816,
+  "crc": 2040,
+  "lung_nodule": 1088
  },
  "malaffi": {
-  "events": 34969,
-  "released": 34969,
+  "events": 46790,
+  "released": 46790,
   "stats": {
-   "events_queries": 47,
-   "events_replayed": 33664,
-   "fault_dropped": 21,
-   "fault_duplicated": 32,
-   "fault_reordered": 31,
-   "notifications": 700,
-   "post_failed_heartbeat": 4,
-   "posted_event": 711,
+   "events_queries": 52,
+   "events_replayed": 46282,
+   "fault_dropped": 31,
+   "fault_duplicated": 42,
+   "fault_reordered": 39,
+   "notifications": 936,
+   "post_failed_heartbeat": 2,
+   "posted_event": 947,
    "posted_handshake": 1,
-   "posted_heartbeat": 67,
+   "posted_heartbeat": 72,
    "status_queries": 1
   },
   "status": "off"
@@ -412,100 +411,101 @@
  "outreach_live": {
   "by_origin": {
    "arab": {
-    "intents": 1254,
-    "wrong_pre_gate": 0,
+    "intents": 1888,
+    "wrong_pre_gate": 1,
     "wrong_released": 0
    },
    "filipino": {
-    "intents": 201,
+    "intents": 306,
     "wrong_pre_gate": 0,
     "wrong_released": 0
    },
    "south_asian": {
-    "intents": 613,
+    "intents": 822,
     "wrong_pre_gate": 4,
     "wrong_released": 0
    },
    "western": {
-    "intents": 345,
-    "wrong_pre_gate": 0,
+    "intents": 530,
+    "wrong_pre_gate": 3,
     "wrong_released": 0
    }
   },
   "dob_guard": {
-   "held": 19,
+   "held": 33,
    "held_wrong": 0,
    "released_wrong": 0
   },
-  "held_below_tau_never_confirmed": 489,
-  "held_below_tau_never_confirmed_wrong": 4,
-  "messages_per_loop_pre_gate": 0.832,
-  "opted_out_loops_truth": 114,
-  "outreach_intents": 2413,
-  "released": 1574,
+  "held_below_tau_never_confirmed": 825,
+  "held_below_tau_never_confirmed_wrong": 8,
+  "messages_per_loop_pre_gate": 0.899,
+  "opted_out_loops_truth": 165,
+  "outreach_intents": 3546,
+  "released": 2160,
   "released_by_basis": {
-   "below_tau": {
-    "released": 2,
-    "wrong_patient": 0
-   },
    "eid": {
-    "released": 622,
+    "released": 816,
     "wrong_patient": 0
    },
    "human": {
-    "released": 170,
+    "released": 251,
     "wrong_patient": 0
    },
    "p_cal": {
-    "released": 433,
+    "released": 587,
     "wrong_patient": 0
    },
    "self": {
-    "released": 347,
+    "released": 506,
     "wrong_patient": 0
    }
   },
   "released_to_opted_out": 0,
-  "suppressed_consent": 91,
+  "suppressed_consent": 164,
   "v7_released_by_guard": {
-   "dob_match": 724,
-   "eid_match": 210,
-   "human_confirmed": 109,
-   "human_path": 170
+   "dob_match": 938,
+   "eid_match": 298,
+   "held": 1,
+   "human_confirmed": 157,
+   "human_path": 251
   },
-  "v7_second_id_held": 259,
+  "v7_second_id_held": 397,
   "v7_second_id_held_wrong": 0,
   "wrong_list": [
-   "ahs-mushrif/ServiceRequest/AHS-sr-281 noor-endo/Appointment/NOO-appt-264 appointment_reminder basis=below_tau p_cal=0.9485 released=false",
-   "ahs-mushrif/ServiceRequest/AHS-sr-963 noor-endo/Appointment/NOO-appt-501 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
-   "medlab/ServiceRequest/MED-sr-475 noor-endo/Appointment/NOO-appt-284 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
-   "ahs-mushrif/ServiceRequest/AHS-sr-309 corniche-wh/Appointment/COR-appt-19 appointment_reminder basis=below_tau p_cal=0.9890 released=false"
+   "ahs-mushrif/ServiceRequest/AHS-sr-892 corniche-wh/Appointment/COR-appt-1 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "medlab/ServiceRequest/MED-sr-503 noor-endo/Appointment/NOO-appt-221 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1334 corniche-wh/Appointment/COR-appt-175 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1170 noor-endo/ServiceRequest/NOO-intake-948 referral_rejected_next_steps basis=below_tau p_cal=0.9734 released=false",
+   "medlab/ServiceRequest/MED-sr-405 noor-endo/Appointment/NOO-appt-430 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1385 skmc-endo/Appointment/SKM-appt-433 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1170 noor-endo/Appointment/NOO-appt-81 appointment_reminder basis=below_tau p_cal=0.9734 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1174 skmc-endo/Appointment/SKM-appt-831 appointment_reminder basis=below_tau p_cal=0.7514 released=false"
   ],
-  "wrong_patient_if_no_gate": 4,
-  "wrong_patient_if_no_gate_per_10k_loops": 13.8,
+  "wrong_patient_if_no_gate": 8,
+  "wrong_patient_if_no_gate_per_10k_loops": 20.3,
   "wrong_patient_released": 0,
   "wrong_patient_released_per_10k_loops": 0
  },
  "outreach_no_review": {
   "by_origin": {
    "arab": {
-    "intents": 1268,
-    "wrong_pre_gate": 0,
+    "intents": 1887,
+    "wrong_pre_gate": 1,
     "wrong_released": 0
    },
    "filipino": {
-    "intents": 201,
+    "intents": 306,
     "wrong_pre_gate": 0,
     "wrong_released": 0
    },
    "south_asian": {
-    "intents": 614,
+    "intents": 821,
     "wrong_pre_gate": 4,
     "wrong_released": 0
    },
    "western": {
-    "intents": 345,
-    "wrong_pre_gate": 0,
+    "intents": 530,
+    "wrong_pre_gate": 3,
     "wrong_released": 0
    }
   },
@@ -514,342 +514,342 @@
    "held_wrong": 0,
    "released_wrong": 0
   },
-  "held_below_tau_never_confirmed": 675,
-  "held_below_tau_never_confirmed_wrong": 4,
-  "messages_per_loop_pre_gate": 0.837,
-  "opted_out_loops_truth": 114,
-  "outreach_intents": 2428,
-  "released": 1306,
+  "held_below_tau_never_confirmed": 1118,
+  "held_below_tau_never_confirmed_wrong": 8,
+  "messages_per_loop_pre_gate": 0.899,
+  "opted_out_loops_truth": 165,
+  "outreach_intents": 3544,
+  "released": 1749,
   "released_by_basis": {
-   "below_tau": {
-    "released": 1,
-    "wrong_patient": 0
-   },
    "eid": {
-    "released": 550,
+    "released": 713,
     "wrong_patient": 0
    },
    "p_cal": {
-    "released": 396,
+    "released": 528,
     "wrong_patient": 0
    },
    "self": {
-    "released": 359,
+    "released": 508,
     "wrong_patient": 0
    }
   },
   "released_to_opted_out": 0,
-  "suppressed_consent": 88,
+  "suppressed_consent": 147,
   "v7_released_by_guard": {
-   "dob_match": 724,
-   "eid_match": 210
+   "dob_match": 933,
+   "eid_match": 298,
+   "held": 1
   },
-  "v7_second_id_held": 359,
+  "v7_second_id_held": 530,
   "v7_second_id_held_wrong": 0,
   "wrong_list": [
-   "ahs-mushrif/ServiceRequest/AHS-sr-963 noor-endo/Appointment/NOO-appt-501 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
-   "ahs-mushrif/ServiceRequest/AHS-sr-309 corniche-wh/Appointment/COR-appt-19 appointment_reminder basis=below_tau p_cal=0.9890 released=false",
-   "medlab/ServiceRequest/MED-sr-475 noor-endo/Appointment/NOO-appt-284 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
-   "ahs-mushrif/ServiceRequest/AHS-sr-281 noor-endo/Appointment/NOO-appt-264 appointment_reminder basis=below_tau p_cal=0.9485 released=false"
+   "ahs-mushrif/ServiceRequest/AHS-sr-1170 noor-endo/Appointment/NOO-appt-81 appointment_reminder basis=below_tau p_cal=0.9734 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1174 skmc-endo/Appointment/SKM-appt-831 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1385 skmc-endo/Appointment/SKM-appt-433 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "medlab/ServiceRequest/MED-sr-405 noor-endo/Appointment/NOO-appt-430 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1170 noor-endo/ServiceRequest/NOO-intake-948 referral_rejected_next_steps basis=below_tau p_cal=0.9734 released=false",
+   "medlab/ServiceRequest/MED-sr-503 noor-endo/Appointment/NOO-appt-221 appointment_reminder basis=below_tau p_cal=0.7599 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-1334 corniche-wh/Appointment/COR-appt-175 appointment_reminder basis=below_tau p_cal=0.7514 released=false",
+   "ahs-mushrif/ServiceRequest/AHS-sr-892 corniche-wh/Appointment/COR-appt-1 appointment_reminder basis=below_tau p_cal=0.7599 released=false"
   ],
-  "wrong_patient_if_no_gate": 4,
-  "wrong_patient_if_no_gate_per_10k_loops": 13.8,
+  "wrong_patient_if_no_gate": 8,
+  "wrong_patient_if_no_gate_per_10k_loops": 20.3,
   "wrong_patient_released": 0,
   "wrong_patient_released_per_10k_loops": 0
  },
  "parser_cache": {
-  "parsed_inbound_comms": 1674,
+  "parsed_inbound_comms": 2219,
   "unparsed_cache_miss": 0
  },
  "patient_side": {
   "days_after_deadline_flagged_median": 0.5,
   "days_after_deadline_flagged_p90": 1,
   "days_before_deadline_first_escalation_median": 23.4,
-  "days_before_deadline_first_escalation_p10": -0.6,
+  "days_before_deadline_first_escalation_p10": -0.7,
   "note": "15 working days = 21 calendar days (NotifSLA). Lag granularity follows the run's decision ticks.",
   "results_communicated_within_21d_agreement": 1,
-  "results_communicated_within_21d_truth": 0.628,
-  "results_communicated_within_21d_wasl": 0.628,
-  "stalled_flagged_overdue": 1205,
-  "stalled_loops_truth": 1205
+  "results_communicated_within_21d_truth": 0.633,
+  "results_communicated_within_21d_wasl": 0.633,
+  "stalled_flagged_overdue": 1700,
+  "stalled_loops_truth": 1700
  },
  "programmes_live": {
   "cervical": {
    "cervical_kpi_colposcopy_within_3_months_hsil_asch": {
     "doh_acceptable": 0.8,
-    "eligible": 46,
-    "pipeline": 0.522,
-    "truth": 0.522
+    "eligible": 49,
+    "pipeline": 0.531,
+    "truth": 0.592
    },
    "days_to_procedure_median": {
-    "n_pipeline": 261,
-    "n_truth": 267,
-    "pipeline": 29.935,
-    "truth": 29.935
+    "n_pipeline": 367,
+    "n_truth": 382,
+    "pipeline": 30.061,
+    "truth": 30.061
    },
    "econsult": {
     "by_trigger": {
-     "inadequate": 38,
-     "rejected": 43,
-     "unanswered": 27
+     "inadequate": 42,
+     "rejected": 70,
+     "unanswered": 45
     },
-    "loops_with_thread": 108,
+    "loops_with_thread": 157,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "accept": 56,
-     "awaiting_reply": 13,
-     "conditional": 3,
-     "needs_info": 1,
-     "redirect": 19,
-     "reject": 16
+     "accept": 88,
+     "awaiting_reply": 22,
+     "redirect": 25,
+     "reject": 22
     }
    },
    "false_closures": 0,
    "handoff": {
     "counts": {
-     "acted_state_correct": 9,
-     "closed": 1,
-     "packets_all_required_fields": 9,
-     "packets_matched": 9,
-     "truth_acted_by_act_by": 5,
-     "truth_closed_after_handoff": 1,
-     "truth_packets": 9,
-     "truth_referrer_acted": 7
+     "acted_state_correct": 25,
+     "closed": 7,
+     "packets_all_required_fields": 25,
+     "packets_matched": 25,
+     "truth_acted_by_act_by": 10,
+     "truth_closed_after_handoff": 7,
+     "truth_packets": 25,
+     "truth_referrer_acted": 18,
+     "truth_urgent": 1
     },
     "final_status": {
-     "coordinator": 1,
-     "medical_director": 1,
-     "referrer_acted": 7
+     "medical_director": 7,
+     "referrer_acted": 18
     }
    },
    "kpi_procedure_within_deadline": {
-    "eligible": 84,
-    "pipeline": 0.274,
+    "eligible": 117,
+    "pipeline": 0.265,
     "truth": 0.274
    },
-   "loops": 600,
+   "loops": 816,
    "notified_within_21d": {
-    "eligible": 600,
-    "pipeline": 0.835,
-    "truth": 0.835
+    "eligible": 816,
+    "pipeline": 0.827,
+    "truth": 0.827
    },
-   "overdue_flag_accuracy": 0.988,
+   "overdue_flag_accuracy": 0.983,
    "precision": 1,
-   "pred_closed": 206,
+   "pred_closed": 296,
    "prep_query": {
     "closed": 0,
     "false_closures": 0,
     "final_state": null
    },
-   "procedure_day_exact": 0.99,
-   "recall": 0.967,
-   "state_accuracy": 0.983,
+   "procedure_day_exact": 0.982,
+   "recall": 0.952,
+   "state_accuracy": 0.974,
    "teachback": {
-    "loops_prompted": 346,
+    "loops_prompted": 440,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "misunderstood": 42,
-     "needs_human": 42,
-     "partial": 8,
-     "prompted": 77,
-     "understood": 177
+     "misunderstood": 52,
+     "needs_human": 62,
+     "partial": 10,
+     "prompted": 94,
+     "understood": 222
     }
    },
-   "truth_closed": 213
+   "truth_closed": 311
   },
   "crc": {
    "days_to_procedure_median": {
-    "n_pipeline": 696,
-    "n_truth": 722,
-    "pipeline": 26.263,
-    "truth": 26.236
+    "n_pipeline": 917,
+    "n_truth": 952,
+    "pipeline": 27.213,
+    "truth": 27.228
    },
    "econsult": {
     "by_trigger": {
-     "inadequate": 107,
-     "rejected": 131,
-     "unanswered": 83
+     "inadequate": 144,
+     "rejected": 165,
+     "unanswered": 107
     },
-    "loops_with_thread": 321,
+    "loops_with_thread": 416,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "accept": 175,
-     "awaiting_reply": 37,
-     "needs_info": 1,
-     "redirect": 60,
-     "reject": 48
+     "accept": 227,
+     "awaiting_reply": 52,
+     "needs_info": 2,
+     "redirect": 66,
+     "reject": 69
     }
    },
    "false_closures": 0,
    "handoff": {
     "counts": {
-     "acted_state_correct": 46,
-     "closed": 14,
-     "packets_all_required_fields": 46,
-     "packets_matched": 46,
-     "truth_acted_by_act_by": 19,
-     "truth_closed_after_handoff": 17,
-     "truth_packets": 46,
-     "truth_referrer_acted": 36,
-     "truth_urgent": 46
+     "acted_state_correct": 50,
+     "closed": 12,
+     "packets_all_required_fields": 50,
+     "packets_matched": 50,
+     "truth_acted_by_act_by": 27,
+     "truth_closed_after_handoff": 14,
+     "truth_packets": 50,
+     "truth_referrer_acted": 40,
+     "truth_urgent": 50
     },
     "final_status": {
      "medical_director": 10,
-     "referrer_acted": 36
+     "referrer_acted": 40
     }
    },
    "kpi_procedure_within_deadline": {
-    "eligible": 1340,
-    "pipeline": 0.321,
-    "truth": 0.332
+    "eligible": 1833,
+    "pipeline": 0.294,
+    "truth": 0.306
    },
-   "loops": 1500,
+   "loops": 2040,
    "notified_within_21d": {
-    "eligible": 1488,
-    "pipeline": 0.855,
-    "truth": 0.855
+    "eligible": 2026,
+    "pipeline": 0.873,
+    "truth": 0.873
    },
-   "overdue_flag_accuracy": 0.927,
+   "overdue_flag_accuracy": 0.94,
    "precision": 1,
-   "pred_closed": 451,
+   "pred_closed": 590,
    "prep_query": {
-    "closed": 113,
+    "closed": 130,
     "false_closures": 0,
     "final_state": {
-     "awaiting_unit": 24,
-     "escalated": 13,
-     "unit_graded": 125
+     "awaiting_unit": 25,
+     "escalated": 18,
+     "unit_graded": 153
     }
    },
    "procedure_day_exact": 0.983,
-   "recall": 0.79,
-   "state_accuracy": 0.899,
+   "recall": 0.817,
+   "state_accuracy": 0.913,
    "teachback": {
-    "loops_prompted": 809,
-    "state_reconstruction_accuracy": 1,
+    "loops_prompted": 1133,
+    "state_reconstruction_accuracy": 0.999,
     "truth_last_state": {
-     "misunderstood": 114,
-     "needs_human": 130,
-     "partial": 18,
-     "prompted": 160,
-     "understood": 387
+     "misunderstood": 145,
+     "needs_human": 155,
+     "partial": 28,
+     "prompted": 253,
+     "understood": 552
     }
    },
-   "truth_closed": 571
+   "truth_closed": 722
   },
   "lung_nodule": {
    "appropriate_followup_within_window": {
-    "eligible": 327,
-    "per_loop_agreement": 0.997,
+    "eligible": 469,
+    "per_loop_agreement": 0.996,
     "published_reference": 0.38,
-    "truth": 0.382,
-    "wasl_measured": 0.379
+    "truth": 0.358,
+    "wasl_measured": 0.354
    },
    "closure": {
     "attribution": {
-     "missed_pred_open": 2
+     "missed_pred_open": 5
     },
     "definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed",
-    "false_closure_rate_upper95": 0.012,
+    "false_closure_rate_upper95": 0.009,
     "false_closures": 0,
-    "missed": 2,
+    "missed": 5,
     "precision": 1,
-    "pred_closed": 322,
-    "recall": 0.994,
-    "tp": 322,
-    "truth_closed": 324
+    "pred_closed": 411,
+    "recall": 0.988,
+    "tp": 411,
+    "truth_closed": 416
    },
    "confusion_truth_pred": {
     "closed": {
-     "closed": 183,
-     "open": 2
+     "closed": 239,
+     "open": 5
     },
     "escalated": {
-     "escalated": 27
+     "escalated": 40,
+     "open": 1
     },
     "no_followup_needed": {
-     "no_followup_needed": 139
+     "no_followup_needed": 172
     },
     "not_assessable": {
-     "not_assessable": 1
+     "not_assessable": 4
     },
     "open": {
-     "open": 367
+     "open": 520
     },
     "out_of_scope": {
-     "out_of_scope": 81
+     "out_of_scope": 107
     }
    },
    "escalation": {
-    "both": 27,
+    "both": 40,
     "precision": 1,
-    "pred_escalated": 27,
-    "recall": 1,
-    "truth_escalated": 27
+    "pred_escalated": 40,
+    "recall": 0.976,
+    "truth_escalated": 41
    },
-   "loops": 800,
-   "overdue_flag_accuracy": 0.999,
+   "loops": 1088,
+   "overdue_flag_accuracy": 0.996,
    "patient_outreach_final": {
-    "lung_followup_due:consent_unknown_hold": 1,
+    "lung_followup_due:consent_unknown_hold": 2,
     "lung_followup_due:consent_withheld": 1,
-    "lung_followup_due:released": 8,
-    "lung_overdue_recall:consent_unknown_hold": 12,
-    "lung_overdue_recall:consent_withheld": 4,
-    "lung_overdue_recall:released": 133
+    "lung_followup_due:released": 10,
+    "lung_overdue_recall:consent_unknown_hold": 27,
+    "lung_overdue_recall:consent_withheld": 10,
+    "lung_overdue_recall:released": 193
    },
    "recommendation": {
     "accuracy": 1,
-    "correct": 719,
+    "correct": 981,
     "coverage": 1,
-    "in_scope_loops": 719,
-    "with_pipeline_rec": 719
+    "in_scope_loops": 981,
+    "with_pipeline_rec": 981
    },
    "rule": "fleischner2017",
-   "state_accuracy": 0.998,
+   "state_accuracy": 0.994,
    "two_reader": {
     "lung-ct": {
-     "agree": 324,
+     "agree": 437,
      "agree_but_wrong_vs_truth": 0,
-     "agreement_rate": 0.988,
-     "reader_b_cache_hits": 328,
-     "report_instances": 328,
-     "to_review": 4,
+     "agreement_rate": 0.984,
+     "reader_b_cache_hits": 444,
+     "report_instances": 444,
+     "to_review": 7,
      "unique_texts": 48
     },
     "lung-finding": {
-     "agree": 800,
+     "agree": 1088,
      "agree_but_wrong_vs_truth": 0,
      "agreement_rate": 1,
-     "reader_b_cache_hits": 800,
-     "report_instances": 800,
+     "reader_b_cache_hits": 1088,
+     "report_instances": 1088,
      "to_review": 0,
      "unique_texts": 38
     },
     "lung-path": {
-     "agree": 12,
+     "agree": 8,
      "agree_but_wrong_vs_truth": 0,
      "agreement_rate": 1,
-     "reader_b_cache_hits": 12,
-     "report_instances": 12,
+     "reader_b_cache_hits": 8,
+     "report_instances": 8,
      "to_review": 0,
-     "unique_texts": 12
+     "unique_texts": 8
     },
     "lung-pet": {
-     "agree": 64,
+     "agree": 81,
      "agree_but_wrong_vs_truth": 0,
-     "agreement_rate": 0.955,
-     "reader_b_cache_hits": 67,
-     "report_instances": 67,
-     "to_review": 3,
-     "unique_texts": 67
+     "agreement_rate": 0.953,
+     "reader_b_cache_hits": 85,
+     "report_instances": 85,
+     "to_review": 4,
+     "unique_texts": 85
     }
    },
    "workup_gt8mm": {
-    "pred_closed_by_ct": 11,
-    "pred_closed_by_pet": 11,
+    "pred_closed_by_ct": 14,
+    "pred_closed_by_pet": 15,
     "pred_closed_by_tissue": 6,
-    "truth_path_ct": 23,
-    "truth_path_pet": 19,
+    "truth_path_ct": 20,
+    "truth_path_pet": 21,
     "truth_path_tissue": 6
    }
   }
@@ -858,397 +858,395 @@
   "cervical": {
    "cervical_kpi_colposcopy_within_3_months_hsil_asch": {
     "doh_acceptable": 0.8,
-    "eligible": 46,
-    "pipeline": 0.326,
-    "truth": 0.522
+    "eligible": 49,
+    "pipeline": 0.429,
+    "truth": 0.592
    },
    "days_to_procedure_median": {
-    "n_pipeline": 174,
-    "n_truth": 267,
-    "pipeline": 30.191,
-    "truth": 29.935
+    "n_pipeline": 245,
+    "n_truth": 382,
+    "pipeline": 30.06,
+    "truth": 30.061
    },
    "econsult": {
     "by_trigger": {
-     "inadequate": 38,
-     "rejected": 43,
-     "unanswered": 27
+     "inadequate": 42,
+     "rejected": 70,
+     "unanswered": 45
     },
-    "loops_with_thread": 108,
+    "loops_with_thread": 157,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "accept": 56,
-     "awaiting_reply": 13,
-     "conditional": 3,
-     "needs_info": 1,
-     "redirect": 19,
-     "reject": 16
+     "accept": 88,
+     "awaiting_reply": 22,
+     "redirect": 25,
+     "reject": 22
     }
    },
    "false_closures": 0,
    "handoff": {
     "counts": {
-     "acted_state_correct": 9,
-     "closed": 1,
-     "packets_all_required_fields": 9,
-     "packets_matched": 9,
-     "truth_acted_by_act_by": 5,
-     "truth_closed_after_handoff": 1,
-     "truth_packets": 9,
-     "truth_referrer_acted": 7
+     "acted_state_correct": 23,
+     "closed": 3,
+     "packets_all_required_fields": 23,
+     "packets_matched": 23,
+     "packets_missed": 2,
+     "truth_acted_by_act_by": 10,
+     "truth_closed_after_handoff": 7,
+     "truth_packets": 25,
+     "truth_referrer_acted": 18,
+     "truth_urgent": 1
     },
     "final_status": {
-     "coordinator": 1,
-     "medical_director": 1,
-     "referrer_acted": 7
+     "medical_director": 7,
+     "referrer_acted": 16
     }
    },
    "kpi_procedure_within_deadline": {
-    "eligible": 84,
-    "pipeline": 0.19,
+    "eligible": 117,
+    "pipeline": 0.162,
     "truth": 0.274
    },
-   "loops": 600,
+   "loops": 816,
    "notified_within_21d": {
-    "eligible": 600,
-    "pipeline": 0.835,
-    "truth": 0.835
+    "eligible": 816,
+    "pipeline": 0.827,
+    "truth": 0.827
    },
-   "overdue_flag_accuracy": 0.847,
+   "overdue_flag_accuracy": 0.836,
    "precision": 1,
-   "pred_closed": 119,
+   "pred_closed": 162,
    "prep_query": {
     "closed": 0,
     "false_closures": 0,
     "final_state": null
    },
-   "procedure_day_exact": 0.843,
-   "recall": 0.559,
-   "state_accuracy": 0.745,
+   "procedure_day_exact": 0.83,
+   "recall": 0.521,
+   "state_accuracy": 0.716,
    "teachback": {
-    "loops_prompted": 346,
+    "loops_prompted": 440,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "misunderstood": 42,
-     "needs_human": 42,
-     "partial": 8,
-     "prompted": 77,
-     "understood": 177
+     "misunderstood": 52,
+     "needs_human": 62,
+     "partial": 10,
+     "prompted": 94,
+     "understood": 222
     }
    },
-   "truth_closed": 213
+   "truth_closed": 311
   },
   "crc": {
    "days_to_procedure_median": {
-    "n_pipeline": 475,
-    "n_truth": 722,
-    "pipeline": 26.664,
-    "truth": 26.236
+    "n_pipeline": 594,
+    "n_truth": 952,
+    "pipeline": 26.681,
+    "truth": 27.228
    },
    "econsult": {
     "by_trigger": {
-     "inadequate": 107,
-     "rejected": 131,
-     "unanswered": 83
+     "inadequate": 144,
+     "rejected": 165,
+     "unanswered": 107
     },
-    "loops_with_thread": 321,
+    "loops_with_thread": 416,
     "state_reconstruction_accuracy": 1,
     "truth_last_state": {
-     "accept": 175,
-     "awaiting_reply": 37,
-     "needs_info": 1,
-     "redirect": 60,
-     "reject": 48
+     "accept": 227,
+     "awaiting_reply": 52,
+     "needs_info": 2,
+     "redirect": 66,
+     "reject": 69
     }
    },
    "false_closures": 0,
    "handoff": {
     "counts": {
-     "acted_state_correct": 43,
-     "closed": 5,
-     "packets_all_required_fields": 43,
-     "packets_matched": 43,
-     "packets_missed": 3,
-     "truth_acted_by_act_by": 19,
-     "truth_closed_after_handoff": 17,
-     "truth_packets": 46,
-     "truth_referrer_acted": 36,
-     "truth_urgent": 46
+     "acted_state_correct": 50,
+     "closed": 7,
+     "packets_all_required_fields": 50,
+     "packets_matched": 50,
+     "truth_acted_by_act_by": 27,
+     "truth_closed_after_handoff": 14,
+     "truth_packets": 50,
+     "truth_referrer_acted": 40,
+     "truth_urgent": 50
     },
     "final_status": {
      "medical_director": 10,
-     "referrer_acted": 33
+     "referrer_acted": 40
     }
    },
    "kpi_procedure_within_deadline": {
-    "eligible": 1340,
-    "pipeline": 0.218,
-    "truth": 0.332
+    "eligible": 1833,
+    "pipeline": 0.196,
+    "truth": 0.306
    },
-   "loops": 1500,
+   "loops": 2040,
    "notified_within_21d": {
-    "eligible": 1488,
-    "pipeline": 0.855,
-    "truth": 0.855
+    "eligible": 2026,
+    "pipeline": 0.873,
+    "truth": 0.873
    },
-   "overdue_flag_accuracy": 0.767,
+   "overdue_flag_accuracy": 0.764,
    "precision": 1,
-   "pred_closed": 209,
+   "pred_closed": 228,
    "prep_query": {
-    "closed": 79,
+    "closed": 84,
     "false_closures": 0,
     "final_state": {
-     "awaiting_unit": 17,
-     "clinician_day15": 138,
-     "escalated": 5,
-     "unit_graded": 89
+     "awaiting_unit": 18,
+     "clinician_day15": 164,
+     "escalated": 12,
+     "unit_graded": 99
     }
    },
-   "procedure_day_exact": 0.835,
-   "recall": 0.366,
-   "state_accuracy": 0.661,
+   "procedure_day_exact": 0.824,
+   "recall": 0.316,
+   "state_accuracy": 0.65,
    "teachback": {
-    "loops_prompted": 809,
-    "state_reconstruction_accuracy": 1,
+    "loops_prompted": 1133,
+    "state_reconstruction_accuracy": 0.999,
     "truth_last_state": {
-     "misunderstood": 114,
-     "needs_human": 130,
-     "partial": 18,
-     "prompted": 160,
-     "understood": 387
+     "misunderstood": 145,
+     "needs_human": 155,
+     "partial": 28,
+     "prompted": 253,
+     "understood": 552
     }
    },
-   "truth_closed": 571
+   "truth_closed": 722
   },
   "lung_nodule": {
    "appropriate_followup_within_window": {
-    "eligible": 327,
+    "eligible": 469,
     "per_loop_agreement": 0.887,
     "published_reference": 0.38,
-    "truth": 0.382,
-    "wasl_measured": 0.269
+    "truth": 0.358,
+    "wasl_measured": 0.245
    },
    "closure": {
     "attribution": {
-     "missed_pred_open": 63
+     "missed_pred_open": 77
     },
     "definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed",
-    "false_closure_rate_upper95": 0.015,
+    "false_closure_rate_upper95": 0.011,
     "false_closures": 0,
-    "missed": 63,
+    "missed": 77,
     "precision": 1,
-    "pred_closed": 261,
-    "recall": 0.806,
-    "tp": 261,
-    "truth_closed": 324
+    "pred_closed": 339,
+    "recall": 0.815,
+    "tp": 339,
+    "truth_closed": 416
    },
    "confusion_truth_pred": {
     "closed": {
-     "closed": 122,
-     "open": 63
+     "closed": 167,
+     "open": 77
     },
     "escalated": {
-     "escalated": 23,
-     "open": 4
+     "escalated": 24,
+     "open": 17
     },
     "no_followup_needed": {
-     "no_followup_needed": 139
+     "no_followup_needed": 172
     },
     "not_assessable": {
-     "open": 1
+     "not_assessable": 4
     },
     "open": {
-     "open": 367
+     "open": 520
     },
     "out_of_scope": {
-     "out_of_scope": 81
+     "out_of_scope": 107
     }
    },
    "escalation": {
-    "both": 23,
+    "both": 24,
     "precision": 1,
-    "pred_escalated": 23,
-    "recall": 0.852,
-    "truth_escalated": 27
+    "pred_escalated": 24,
+    "recall": 0.585,
+    "truth_escalated": 41
    },
-   "loops": 800,
-   "overdue_flag_accuracy": 0.926,
+   "loops": 1088,
+   "overdue_flag_accuracy": 0.929,
    "patient_outreach_final": {
     "lung_followup_due:consent_unknown_hold": 2,
     "lung_followup_due:consent_withheld": 1,
-    "lung_followup_due:released": 8,
-    "lung_overdue_recall:consent_unknown_hold": 19,
-    "lung_overdue_recall:consent_withheld": 7,
-    "lung_overdue_recall:released": 181
+    "lung_followup_due:released": 10,
+    "lung_overdue_recall:consent_unknown_hold": 36,
+    "lung_overdue_recall:consent_withheld": 13,
+    "lung_overdue_recall:released": 254
    },
    "recommendation": {
     "accuracy": 1,
-    "correct": 719,
+    "correct": 981,
     "coverage": 1,
-    "in_scope_loops": 719,
-    "with_pipeline_rec": 719
+    "in_scope_loops": 981,
+    "with_pipeline_rec": 981
    },
    "rule": "fleischner2017",
-   "state_accuracy": 0.915,
+   "state_accuracy": 0.914,
    "workup_gt8mm": {
-    "pred_closed_by_ct": 7,
-    "pred_closed_by_pet": 6,
-    "pred_closed_by_tissue": 6,
-    "truth_path_ct": 23,
-    "truth_path_pet": 19,
+    "pred_closed_by_ct": 10,
+    "pred_closed_by_pet": 10,
+    "pred_closed_by_tissue": 5,
+    "truth_path_ct": 20,
+    "truth_path_pet": 21,
     "truth_path_tissue": 6
    }
   }
  },
  "provenance": {
-  "closed_chains": 1804,
-  "hash_verified": 1804,
+  "closed_chains": 2427,
+  "hash_verified": 2427,
   "tamper_detected": true,
-  "with_human_signoff": 157
+  "with_human_signoff": 232
  },
  "review_queue_per_origin": {
   "arab": {
-   "evidence_items": 166,
-   "evidence_per_100_loops": 11.081,
-   "link_items": 658,
-   "link_per_100_loops": 43.925,
-   "loops": 1498,
-   "total_per_100_loops": 55.007
+   "evidence_items": 214,
+   "evidence_per_100_loops": 10.459,
+   "link_items": 917,
+   "link_per_100_loops": 44.819,
+   "loops": 2046,
+   "total_per_100_loops": 55.279
   },
   "filipino": {
-   "evidence_items": 25,
-   "evidence_per_100_loops": 10.204,
-   "link_items": 90,
-   "link_per_100_loops": 36.735,
-   "loops": 245,
-   "total_per_100_loops": 46.939
+   "evidence_items": 32,
+   "evidence_per_100_loops": 8.719,
+   "link_items": 157,
+   "link_per_100_loops": 42.779,
+   "loops": 367,
+   "total_per_100_loops": 51.499
   },
   "south_asian": {
-   "evidence_items": 77,
-   "evidence_per_100_loops": 10.519,
-   "link_items": 291,
-   "link_per_100_loops": 39.754,
-   "loops": 732,
-   "total_per_100_loops": 50.273
+   "evidence_items": 85,
+   "evidence_per_100_loops": 9.081,
+   "link_items": 418,
+   "link_per_100_loops": 44.658,
+   "loops": 936,
+   "total_per_100_loops": 53.739
   },
   "western": {
-   "evidence_items": 43,
-   "evidence_per_100_loops": 10.118,
-   "link_items": 149,
-   "link_per_100_loops": 35.059,
-   "loops": 425,
-   "total_per_100_loops": 45.176
+   "evidence_items": 78,
+   "evidence_per_100_loops": 13.109,
+   "link_items": 243,
+   "link_per_100_loops": 40.84,
+   "loops": 595,
+   "total_per_100_loops": 53.95
   }
  },
  "reviewer": {
   "by_kind": {
    "all": {
-    "items": 1499,
-    "items_per_100_loops": 51.69,
-    "loops": 2900,
-    "reads": 2844,
-    "reviewer_hours_per_1k_loops": 16.928,
-    "sim_hours": 49.09,
-    "wrong_final_signoffs": 100
+    "items": 2071,
+    "items_per_100_loops": 52.51,
+    "loops": 3944,
+    "reads": 3889,
+    "reviewer_hours_per_1k_loops": 16.669,
+    "sim_hours": 65.742,
+    "wrong_final_signoffs": 122
    },
    "evidence": {
-    "items": 311,
-    "items_per_100_loops": 10.724,
-    "loops": 2900,
-    "reads": 466,
-    "reviewer_hours_per_1k_loops": 4.76,
-    "sim_hours": 13.803,
-    "wrong_final_signoffs": 56
+    "items": 409,
+    "items_per_100_loops": 10.37,
+    "loops": 3944,
+    "reads": 599,
+    "reviewer_hours_per_1k_loops": 4.516,
+    "sim_hours": 17.812,
+    "wrong_final_signoffs": 50
    },
    "link": {
-    "items": 1188,
-    "items_per_100_loops": 40.966,
-    "loops": 2900,
-    "reads": 2378,
-    "reviewer_hours_per_1k_loops": 12.168,
-    "sim_hours": 35.287,
-    "wrong_final_signoffs": 44
+    "items": 1662,
+    "items_per_100_loops": 42.14,
+    "loops": 3944,
+    "reads": 3290,
+    "reviewer_hours_per_1k_loops": 12.153,
+    "sim_hours": 47.93,
+    "wrong_final_signoffs": 72
    }
   },
   "by_origin": {
    "arab": {
-    "items": 824,
-    "items_per_100_loops": 55.007,
-    "loops": 1498,
-    "reads": 1554,
-    "reviewer_hours_per_1k_loops": 17.679,
-    "sim_hours": 26.483,
-    "wrong_final_signoffs": 56
+    "items": 1089,
+    "items_per_100_loops": 53.226,
+    "loops": 2046,
+    "reads": 2050,
+    "reviewer_hours_per_1k_loops": 17.153,
+    "sim_hours": 35.096,
+    "wrong_final_signoffs": 59
    },
    "filipino": {
-    "items": 115,
-    "items_per_100_loops": 46.939,
-    "loops": 245,
-    "reads": 229,
-    "reviewer_hours_per_1k_loops": 17.404,
-    "sim_hours": 4.264,
-    "wrong_final_signoffs": 6
+    "items": 183,
+    "items_per_100_loops": 49.864,
+    "loops": 367,
+    "reads": 349,
+    "reviewer_hours_per_1k_loops": 14.917,
+    "sim_hours": 5.474,
+    "wrong_final_signoffs": 15
    },
    "south_asian": {
-    "items": 368,
-    "items_per_100_loops": 50.273,
-    "loops": 732,
-    "reads": 705,
-    "reviewer_hours_per_1k_loops": 16.533,
-    "sim_hours": 12.102,
-    "wrong_final_signoffs": 25
+    "items": 486,
+    "items_per_100_loops": 51.923,
+    "loops": 936,
+    "reads": 910,
+    "reviewer_hours_per_1k_loops": 16.17,
+    "sim_hours": 15.135,
+    "wrong_final_signoffs": 33
    },
    "western": {
-    "items": 192,
-    "items_per_100_loops": 45.176,
-    "loops": 425,
-    "reads": 356,
-    "reviewer_hours_per_1k_loops": 14.686,
-    "sim_hours": 6.242,
-    "wrong_final_signoffs": 13
+    "items": 313,
+    "items_per_100_loops": 52.605,
+    "loops": 595,
+    "reads": 580,
+    "reviewer_hours_per_1k_loops": 16.868,
+    "sim_hours": 10.036,
+    "wrong_final_signoffs": 15
    }
   },
   "by_programme": {
    "cervical": {
-    "items": 385,
-    "items_per_100_loops": 64.167,
-    "loops": 600,
-    "reads": 756,
-    "reviewer_hours_per_1k_loops": 19.826,
-    "sim_hours": 11.895,
-    "wrong_final_signoffs": 14
+    "items": 555,
+    "items_per_100_loops": 68.015,
+    "loops": 816,
+    "reads": 1083,
+    "reviewer_hours_per_1k_loops": 20.89,
+    "sim_hours": 17.046,
+    "wrong_final_signoffs": 24
    },
    "crc": {
-    "items": 1033,
-    "items_per_100_loops": 68.867,
-    "loops": 1500,
-    "reads": 1927,
-    "reviewer_hours_per_1k_loops": 23.131,
-    "sim_hours": 34.697,
-    "wrong_final_signoffs": 84
+    "items": 1392,
+    "items_per_100_loops": 68.235,
+    "loops": 2040,
+    "reads": 2564,
+    "reviewer_hours_per_1k_loops": 22.002,
+    "sim_hours": 44.885,
+    "wrong_final_signoffs": 95
    },
    "lung_nodule": {
-    "items": 81,
-    "items_per_100_loops": 10.125,
-    "loops": 800,
-    "reads": 161,
-    "reviewer_hours_per_1k_loops": 3.123,
-    "sim_hours": 2.498,
-    "wrong_final_signoffs": 2
+    "items": 124,
+    "items_per_100_loops": 11.397,
+    "loops": 1088,
+    "reads": 242,
+    "reviewer_hours_per_1k_loops": 3.502,
+    "sim_hours": 3.811,
+    "wrong_final_signoffs": 3
    }
   },
   "wrong_signoffs": {
-   "evidence_adequate_answered_awaiting_histology": 16,
-   "evidence_adequate_answered_inadequate": 14,
-   "evidence_awaiting_histology_answered_adequate": 2,
-   "evidence_awaiting_histology_answered_inadequate": 22,
-   "evidence_histology_answered_no_histology": 1,
-   "evidence_inadequate_answered_awaiting_histology": 1,
-   "link_truth_true_answered_different": 44
+   "evidence_adequate_answered_awaiting_histology": 12,
+   "evidence_adequate_answered_inadequate": 9,
+   "evidence_awaiting_histology_answered_adequate": 4,
+   "evidence_awaiting_histology_answered_inadequate": 20,
+   "evidence_histology_answered_no_histology": 3,
+   "evidence_inadequate_answered_awaiting_histology": 2,
+   "link_truth_true_answered_different": 72
   }
  },
  "reviewer_cfg": {
-  "answered": 1499,
+  "answered": 2071,
   "cfg": {
    "Blind": false,
    "BlindFactor": 0.5,
@@ -1264,8 +1262,9 @@
    "SeniorErrRel": 0.5,
    "Sigma": 0.6
   },
-  "last_out_seq": 27870,
-  "wrong": 100
+  "deduped_second_id": 73,
+  "last_out_seq": 38317,
+  "wrong": 122
  },
  "run": "./out/final/v1-s41/run/main",
  "source": {
@@ -1280,42 +1279,42 @@
   "Source": "fhir",
   "SubKill": 1
  },
- "throughput_ev_s": 526.7053757061971,
+ "throughput_ev_s": 655.1267237782522,
  "two_reader": {
   "colonoscopy": {
-   "agree": 638,
+   "agree": 729,
    "agree_auto_adequate_wrong": 0,
-   "agree_auto_label_wrong_vs_key": 29,
+   "agree_auto_label_wrong_vs_key": 49,
    "agree_but_needs_human": 0,
-   "agreement_rate": 0.463,
-   "gemma_cache_hits": 1379,
-   "report_instances": 1379,
-   "to_review": 741,
+   "agreement_rate": 0.46,
+   "gemma_cache_hits": 1584,
+   "report_instances": 1584,
+   "to_review": 855,
    "unique_texts": 43
   },
   "colonoscopy_unique_texts_disagree": 22,
   "colposcopy": {
-   "agree": 257,
+   "agree": 373,
    "agree_auto_adequate_wrong": 0,
    "agree_auto_label_wrong_vs_key": 0,
    "agree_but_needs_human": 0,
-   "agreement_rate": 0.928,
-   "gemma_cache_hits": 277,
-   "report_instances": 277,
-   "to_review": 20,
+   "agreement_rate": 0.937,
+   "gemma_cache_hits": 398,
+   "report_instances": 398,
+   "to_review": 25,
    "unique_texts": 8
   },
   "pathology": {
-   "agree": 626,
+   "agree": 811,
    "agree_auto_adequate_wrong": 0,
    "agree_auto_label_wrong_vs_key": 0,
    "agree_but_needs_human": 0,
-   "agreement_rate": 0.951,
-   "gemma_cache_hits": 658,
-   "report_instances": 658,
-   "to_review": 32,
+   "agreement_rate": 0.933,
+   "gemma_cache_hits": 869,
+   "report_instances": 869,
+   "to_review": 58,
    "unique_texts": 10
   }
  },
- "wall_s": 69.065177
+ "wall_s": 74.405452
 }
