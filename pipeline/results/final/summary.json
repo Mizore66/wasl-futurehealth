@@ -1,7 +1,7 @@
 {
  "manifest": {
-  "frozen_at": "2026-10-30T07:12:52.887451Z",
-  "code_revision": "e4c7553beeadd9d3fb6e9d208671e52b69ac5247",
+  "frozen_at": "2026-10-30T09:26:46.044275Z",
+  "code_revision": "3caa8a194f720042691f6cbf2744678dbd53c4c4",
   "policy": "v7strict",
   "thresholds": {
    "tau_high_messaging": 0.99,
@@ -21,7 +21,10 @@
    "v1": "training-time corruptions (gen.go)",
    "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
   },
-  "lung_loops_per_run": 800,
+  "lung_loops_per_run": 1088,
+  "crc_loops_per_run": 2040,
+  "cervical_loops_per_run": 816,
+  "persons_cap": "all held-out (8,871)",
   "seeds": [
    11,
    23,
@@ -63,14 +66,14 @@
      1.0
     ],
     "crc_recall": [
-     0.8088,
-     0.7888,
-     0.8288
+     0.8098,
+     0.7881,
+     0.8315
     ],
     "crc_recall_no_review": [
-     0.3424,
-     0.3182,
-     0.3666
+     0.325,
+     0.2991,
+     0.3509
     ],
     "cervical_precision": [
      1,
@@ -78,104 +81,104 @@
      1.0
     ],
     "cervical_recall": [
-     0.9674,
-     0.9485,
-     0.9863
+     0.9666,
+     0.9488,
+     0.9844
     ],
     "cervical_recall_no_review": [
-     0.5594,
-     0.512,
-     0.6068
+     0.5606,
+     0.5315,
+     0.5897
     ],
     "kpi_wasl": [
-     0.321,
-     0.3073,
-     0.3347
+     0.313,
+     0.2992,
+     0.3268
     ],
     "kpi_truth": [
-     0.3306,
-     0.3169,
-     0.3443
+     0.3232,
+     0.3099,
+     0.3365
     ],
     "kpi_eid_only": [
-     0.1294,
-     0.1174,
-     0.1414
+     0.1284,
+     0.1197,
+     0.1371
     ],
     "kpi_abs_error_wasl": [
-     0.0096,
-     0.007,
-     0.0122
+     0.0102,
+     0.0074,
+     0.013
     ],
     "kpi_abs_error_eid_only": [
-     0.2012,
-     0.1911,
-     0.2113
+     0.1948,
+     0.1849,
+     0.2047
     ],
     "linkage_pair_f1": [
-     0.9784,
-     0.9765,
-     0.9803
+     0.9754,
+     0.972,
+     0.9788
     ],
     "reviewer_h_per_1k": [
-     17.4006,
-     16.504,
-     18.2972
+     17.2152,
+     16.7448,
+     17.6856
     ],
     "review_items_per_100_loops": [
-     53.2138,
-     50.726,
-     55.7016
+     52.9208,
+     52.1727,
+     53.6689
     ],
     "review_items_per_100_arab": [
-     55.4426,
-     51.7011,
-     59.1841
+     53.8318,
+     52.8473,
+     54.8163
     ],
     "reviewer_h_per_1k_arab": [
-     18.0552,
-     16.6234,
-     19.487
+     17.4456,
+     17.2014,
+     17.6898
     ],
     "review_items_per_100_filipino": [
-     52.1252,
-     47.4478,
-     56.8026
+     50.0352,
+     45.7003,
+     54.3701
     ],
     "reviewer_h_per_1k_filipino": [
-     17.4208,
-     16.6283,
-     18.2133
+     16.3732,
+     14.372,
+     18.3744
     ],
     "review_items_per_100_south_asian": [
-     52.7826,
-     47.4416,
-     58.1236
+     52.9164,
+     48.9117,
+     56.9211
     ],
     "reviewer_h_per_1k_south_asian": [
-     17.4034,
-     15.9244,
-     18.8824
+     17.286,
+     15.9543,
+     18.6177
     ],
     "review_items_per_100_western": [
-     46.93,
-     43.1088,
-     50.7512
+     51.5508,
+     49.1683,
+     53.9333
     ],
     "reviewer_h_per_1k_western": [
-     15.1316,
-     13.8876,
-     16.3756
+     16.8348,
+     15.3962,
+     18.2734
     ],
     "review_load_ratio_max_min_origin": [
-     1.2353,
-     1.1457,
-     1.3249
+     1.1284,
+     1.0618,
+     1.1951
     ],
     "throughput_ev_s": [
-     542.7829,
-     503.3645,
-     582.2013
+     571.2355,
+     477.48,
+     664.9911
     ],
     "lung_precision": [
      1,
@@ -183,19 +186,19 @@
      1.0
     ],
     "lung_recall": [
-     0.9842,
-     0.9733,
-     0.9951
+     0.9862,
+     0.9803,
+     0.9921
     ],
     "lung_state_accuracy": [
-     0.9934,
-     0.989,
-     0.9978
+     0.9942,
+     0.992,
+     0.9964
     ],
     "lung_escalation_recall": [
-     0.977,
-     0.9132,
-     1.0408
+     0.9914,
+     0.9766,
+     1.0062
     ],
     "stalled_days_after_deadline_flagged_median": [
      0.5,
@@ -203,9 +206,9 @@
      0.5
     ],
     "stalled_days_before_deadline_first_escalation_median": [
-     23.36,
-     23.249,
-     23.471
+     23.44,
+     23.372,
+     23.508
     ],
     "stalled_share_flagged": [
      1.0,
@@ -221,32 +224,32 @@
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     2287,
-     0.00161
+     3034,
+     0.00122
     ],
     "cervical_false_closures": [
      0,
-     1020,
-     0.00361
+     1403,
+     0.00263
     ],
     "wrong_patient_released": [
      0,
-     12267,
-     0.0003
+     17809,
+     0.00021
     ],
     "released_without_granted_consent": [
      0,
-     7887,
-     0.00047
+     11197,
+     0.00033
     ],
     "duplicate_or_lost_outputs": [
      0,
-     139464,
-     3e-05
+     192137,
+     2e-05
     ],
     "ingest_lost_or_duplicated": [
      0,
-     173713,
+     233838,
      null
     ],
     "final_state_mismatch_loops": [
@@ -256,7 +259,7 @@
     ],
     "forged_with_effect": [
      0,
-     111,
+     117,
      null
     ],
     "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
@@ -265,7 +268,7 @@
      null
     ],
     "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
-     3,
+     2,
      null,
      null
     ],
@@ -281,55 +284,55 @@
     ],
     "lung_false_closures": [
      0,
-     1506,
-     0.00245
+     2026,
+     0.00182
     ],
     "handoff_false_closures": [
      0,
-     76,
-     0.04738
+     85,
+     0.04247
     ]
    },
    "pooled_counts": {
-    "lung_workup_pred_awaiting_tissue": 4,
-    "lung_workup_pred_closed_by_ct": 59,
-    "lung_workup_pred_closed_by_pet": 71,
-    "lung_workup_pred_closed_by_tissue": 36,
-    "lung_workup_truth_awaiting_tissue": 4,
-    "lung_workup_truth_path_ct": 91,
-    "lung_workup_truth_path_pet": 122,
-    "lung_workup_truth_path_tissue": 30,
-    "handoff_acted_state_correct": 229,
-    "handoff_closed": 76,
-    "handoff_packets_all_required_fields": 229,
-    "handoff_packets_matched": 229,
-    "handoff_truth_acted_by_act_by": 115,
-    "handoff_truth_closed_after_handoff": 90,
-    "handoff_truth_packets": 230,
-    "handoff_truth_referrer_acted": 181,
-    "handoff_truth_urgent": 187,
-    "handoff_packets_missed": 1
+    "lung_workup_pred_awaiting_tissue": 10,
+    "lung_workup_pred_closed_by_ct": 94,
+    "lung_workup_pred_closed_by_pet": 96,
+    "lung_workup_pred_closed_by_tissue": 48,
+    "lung_workup_truth_awaiting_tissue": 10,
+    "lung_workup_truth_path_ct": 127,
+    "lung_workup_truth_path_pet": 158,
+    "lung_workup_truth_path_tissue": 48,
+    "handoff_acted_state_correct": 330,
+    "handoff_closed": 85,
+    "handoff_packets_all_required_fields": 330,
+    "handoff_packets_matched": 330,
+    "handoff_truth_acted_by_act_by": 152,
+    "handoff_truth_closed_after_handoff": 96,
+    "handoff_truth_packets": 333,
+    "handoff_truth_referrer_acted": 257,
+    "handoff_truth_urgent": 248,
+    "handoff_packets_missed": 3
    },
    "review_load_by_origin": {
     "per_seed_mean_ci": [
-     1.2353,
-     1.1457,
-     1.3249
+     1.1284,
+     1.0618,
+     1.1951
     ],
     "pooled_items_per_100": {
-     "arab": 55.4,
-     "filipino": 52.1,
-     "south_asian": 52.8,
-     "western": 46.9
+     "arab": 53.8,
+     "filipino": 50.0,
+     "south_asian": 52.9,
+     "western": 51.5
     },
-    "pooled_ratio": 1.1812,
-    "no_bias_median_mean": 1.1215,
-    "no_bias_p95_mean": 1.2602,
-    "seeds_above_no_bias_p05": 2,
+    "pooled_ratio": 1.0773,
+    "no_bias_median_mean": 1.1052,
+    "no_bias_p95_mean": 1.2157,
+    "seeds_above_no_bias_p05": 0,
     "seeds_with_reference": 5,
-    "pooled_no_bias_median": 1.0527,
-    "pooled_no_bias_p95": 1.1073,
-    "pooled_p_value": 0.0
+    "pooled_no_bias_median": 1.0469,
+    "pooled_no_bias_p95": 1.0899,
+    "pooled_p_value": 0.122
    }
   },
   "v2": {
@@ -341,14 +344,14 @@
      1.0
     ],
     "crc_recall": [
-     0.7368,
-     0.7239,
-     0.7497
+     0.7466,
+     0.738,
+     0.7552
     ],
     "crc_recall_no_review": [
-     0.3164,
-     0.2913,
-     0.3415
+     0.3196,
+     0.2957,
+     0.3435
     ],
     "cervical_precision": [
      1,
@@ -356,104 +359,104 @@
      1.0
     ],
     "cervical_recall": [
-     0.9168,
-     0.9026,
-     0.931
+     0.9034,
+     0.8808,
+     0.926
     ],
     "cervical_recall_no_review": [
-     0.571,
-     0.5377,
-     0.6043
+     0.557,
+     0.5275,
+     0.5865
     ],
     "kpi_wasl": [
-     0.2936,
+     0.2972,
      0.2718,
-     0.3154
+     0.3226
     ],
     "kpi_truth": [
-     0.3272,
-     0.3009,
-     0.3535
+     0.3294,
+     0.3074,
+     0.3514
     ],
     "kpi_eid_only": [
-     0.1304,
-     0.1194,
-     0.1414
+     0.1224,
+     0.1141,
+     0.1307
     ],
     "kpi_abs_error_wasl": [
-     0.0336,
-     0.0253,
-     0.0419
+     0.0322,
+     0.025,
+     0.0394
     ],
     "kpi_abs_error_eid_only": [
-     0.1968,
-     0.1767,
-     0.2169
+     0.207,
+     0.1896,
+     0.2244
     ],
     "linkage_pair_f1": [
-     0.9406,
-     0.938,
-     0.9432
+     0.9396,
+     0.9362,
+     0.943
     ],
     "reviewer_h_per_1k": [
-     15.8518,
-     15.5694,
-     16.1342
+     15.4692,
+     14.6231,
+     16.3153
     ],
     "review_items_per_100_loops": [
-     48.8346,
-     47.6586,
-     50.0106
+     47.2974,
+     45.2368,
+     49.358
     ],
     "review_items_per_100_arab": [
-     49.9794,
-     49.4027,
-     50.5561
+     47.5554,
+     45.8271,
+     49.2837
     ],
     "reviewer_h_per_1k_arab": [
-     16.1502,
-     15.7127,
-     16.5877
+     15.5062,
+     14.9635,
+     16.0489
     ],
     "review_items_per_100_filipino": [
-     51.8198,
-     44.4291,
-     59.2105
+     47.6638,
+     38.4977,
+     56.8299
     ],
     "reviewer_h_per_1k_filipino": [
-     16.7638,
-     14.5571,
-     18.9705
+     15.7946,
+     12.7725,
+     18.8167
     ],
     "review_items_per_100_south_asian": [
-     48.6712,
-     45.6334,
-     51.709
+     48.2598,
+     41.6084,
+     54.9112
     ],
     "reviewer_h_per_1k_south_asian": [
-     16.0136,
-     14.4831,
-     17.5441
+     15.7502,
+     13.4818,
+     18.0186
     ],
     "review_items_per_100_western": [
-     43.368,
-     36.6558,
-     50.0802
+     44.5384,
+     42.9292,
+     46.1476
     ],
     "reviewer_h_per_1k_western": [
-     14.0134,
-     12.2061,
-     15.8207
+     14.6706,
+     13.5472,
+     15.794
     ],
     "review_load_ratio_max_min_origin": [
-     1.2806,
-     1.1101,
-     1.4512
+     1.2136,
+     1.0864,
+     1.3408
     ],
     "throughput_ev_s": [
-     551.2863,
-     433.1874,
-     669.3851
+     623.4576,
+     493.0911,
+     753.824
     ],
     "lung_precision": [
      1,
@@ -461,19 +464,19 @@
      1.0
     ],
     "lung_recall": [
-     0.9486,
-     0.9317,
-     0.9655
+     0.9498,
+     0.9398,
+     0.9598
     ],
     "lung_state_accuracy": [
-     0.974,
-     0.9704,
-     0.9776
+     0.9774,
+     0.9732,
+     0.9816
     ],
     "lung_escalation_recall": [
-     0.8886,
-     0.8353,
-     0.9419
+     0.9198,
+     0.8915,
+     0.9481
     ],
     "stalled_days_after_deadline_flagged_median": [
      0.5,
@@ -481,9 +484,9 @@
      0.5
     ],
     "stalled_days_before_deadline_first_escalation_median": [
-     23.36,
-     23.249,
-     23.471
+     23.34,
+     23.272,
+     23.408
     ],
     "stalled_share_flagged": [
      1.0,
@@ -499,32 +502,32 @@
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     2090,
-     0.00176
+     2886,
+     0.00128
     ],
     "cervical_false_closures": [
      0,
-     991,
-     0.00372
+     1300,
+     0.00283
     ],
     "wrong_patient_released": [
      0,
-     11846,
-     0.00031
+     16743,
+     0.00022
     ],
     "released_without_granted_consent": [
      0,
-     7544,
-     0.00049
+     10620,
+     0.00035
     ],
     "duplicate_or_lost_outputs": [
      0,
-     136669,
-     3e-05
+     187349,
+     2e-05
     ],
     "ingest_lost_or_duplicated": [
      0,
-     174842,
+     234762,
      null
     ],
     "final_state_mismatch_loops": [
@@ -534,7 +537,7 @@
     ],
     "forged_with_effect": [
      0,
-     112,
+     120,
      null
     ],
     "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
@@ -559,55 +562,55 @@
     ],
     "lung_false_closures": [
      0,
-     1463,
-     0.00252
+     1899,
+     0.00194
     ],
     "handoff_false_closures": [
      0,
-     71,
-     0.05063
+     77,
+     0.04678
     ]
    },
    "pooled_counts": {
-    "lung_workup_pred_closed_by_ct": 59,
-    "lung_workup_pred_closed_by_pet": 51,
-    "lung_workup_pred_closed_by_tissue": 38,
-    "lung_workup_truth_path_ct": 88,
-    "lung_workup_truth_path_pet": 103,
-    "lung_workup_truth_path_tissue": 45,
-    "handoff_acted_state_correct": 233,
-    "handoff_closed": 71,
-    "handoff_packets_all_required_fields": 233,
-    "handoff_packets_matched": 233,
-    "handoff_packets_missed": 3,
-    "handoff_truth_acted_by_act_by": 119,
-    "handoff_truth_closed_after_handoff": 90,
-    "handoff_truth_packets": 236,
-    "handoff_truth_referrer_acted": 187,
-    "handoff_truth_urgent": 170,
-    "lung_workup_pred_awaiting_tissue": 10,
-    "lung_workup_truth_awaiting_tissue": 12
+    "lung_workup_pred_awaiting_tissue": 6,
+    "lung_workup_pred_closed_by_ct": 90,
+    "lung_workup_pred_closed_by_pet": 81,
+    "lung_workup_pred_closed_by_tissue": 51,
+    "lung_workup_truth_awaiting_tissue": 6,
+    "lung_workup_truth_path_ct": 142,
+    "lung_workup_truth_path_pet": 151,
+    "lung_workup_truth_path_tissue": 48,
+    "handoff_acted_state_correct": 296,
+    "handoff_closed": 77,
+    "handoff_packets_all_required_fields": 296,
+    "handoff_packets_matched": 296,
+    "handoff_packets_missed": 4,
+    "handoff_truth_acted_by_act_by": 142,
+    "handoff_truth_closed_after_handoff": 102,
+    "handoff_truth_packets": 300,
+    "handoff_truth_referrer_acted": 228,
+    "handoff_truth_urgent": 232
    },
    "review_load_by_origin": {
     "per_seed_mean_ci": [
-     1.2806,
-     1.1101,
-     1.4512
+     1.2136,
+     1.0864,
+     1.3408
     ],
     "pooled_items_per_100": {
-     "arab": 50.0,
-     "filipino": 51.7,
-     "south_asian": 48.7,
-     "western": 43.4
+     "arab": 47.5,
+     "filipino": 47.8,
+     "south_asian": 48.3,
+     "western": 44.5
     },
-    "pooled_ratio": 1.1932,
-    "no_bias_median_mean": 1.133,
-    "no_bias_p95_mean": 1.2827,
+    "pooled_ratio": 1.0843,
+    "no_bias_median_mean": 1.1136,
+    "no_bias_p95_mean": 1.2377,
     "seeds_above_no_bias_p05": 2,
     "seeds_with_reference": 5,
-    "pooled_no_bias_median": 1.0569,
-    "pooled_no_bias_p95": 1.1115,
-    "pooled_p_value": 0.0
+    "pooled_no_bias_median": 1.0511,
+    "pooled_no_bias_p95": 1.1018,
+    "pooled_p_value": 0.105
    }
   }
  }

@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-30T07:12:52.887451Z",
- "code_revision": "e4c7553beeadd9d3fb6e9d208671e52b69ac5247",
+ "frozen_at": "2026-10-30T09:26:46.044275Z",
+ "code_revision": "3caa8a194f720042691f6cbf2744678dbd53c4c4",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -20,7 +20,10 @@
   "v1": "training-time corruptions (gen.go)",
   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
  },
- "lung_loops_per_run": 800,
+ "lung_loops_per_run": 1088,
+ "crc_loops_per_run": 2040,
+ "cervical_loops_per_run": 816,
+ "persons_cap": "all held-out (8,871)",
  "seeds": [
   11,
   23,
