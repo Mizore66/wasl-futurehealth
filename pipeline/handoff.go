@@ -81,12 +81,20 @@ func handoffUrgent(prog, prio string) bool {
 
 func dayDate(d float64) time.Time { return baseTime.Add(time.Duration(d * 24 * float64(time.Hour))) }
 
-// addBD: n UAE business days after day d (working week Monday-Friday since 2022; public holidays not modelled).
+// uaeHolidays2026: private-sector public holidays in the simulated year (unified with the public sector since 2019):
+// Arafat Day and Eid al-Adha 26-29 May, Hijri New Year 15 June, the Prophet's Birthday 28 August, Commemoration Day
+// 1 December, National Day 2-3 December. The Hijri dates are as announced by MOHRE/FAHR (reported by secondary sites,
+// e.g. ohmydesk.com and dailysuae.com); earlier astronomical estimates (16 June, 25 August) were superseded.
+var uaeHolidays2026 = map[string]bool{"2026-01-01": true, "2026-05-26": true, "2026-05-27": true, "2026-05-28": true, "2026-05-29": true,
+	"2026-06-15": true, "2026-08-28": true, "2026-12-01": true, "2026-12-02": true, "2026-12-03": true}
+
+// addBD: n UAE business days after day d (working week Monday-Friday since 2022, public holidays skipped).
 func addBD(d float64, n int) float64 {
 	t := d
 	for n > 0 {
 		t++
-		if wd := dayDate(t).Weekday(); wd != time.Saturday && wd != time.Sunday {
+		dt := dayDate(t)
+		if wd := dt.Weekday(); wd != time.Saturday && wd != time.Sunday && !uaeHolidays2026[dt.Format("2006-01-02")] {
 			n--
 		}
 	}

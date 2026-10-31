@@ -16,6 +16,9 @@ func TestAddBDSkipsWeekend(t *testing.T) {
 	}
 	if got := addBD(0.5, 5); got != 7.5 {
 		t.Fatalf("addBD(0.5,5) = %v, want 7.5", got)
+	}	// Monday 25 May (day 24): Arafat and Eid al-Adha 26-29 May, then the weekend, so 2 business days end Tuesday 2 June
+	if got := addBD(24, 2); got != 32 {
+		t.Fatalf("addBD over Eid al-Adha = %v, want 32", got)
 	}
 }
 
