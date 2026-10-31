@@ -96,6 +96,22 @@ for noise in ["v1", "v2"]:
             for kind, tw in (dr.get('two_reader') or {}).items():
                 pool[f"dr_reader_{kind}_instances"] += tw['report_instances']; pool[f"dr_reader_{kind}_agree"] += tw['agree']
                 pool[f"dr_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"dr_reader_{kind}_coded"] += tw.get('coded_grade', 0)
+        br = r.get('programmes_live', {}).get('breast')
+        if br:  # breast recall loops (fourth loop type), when the run has them
+            bc, rc, kp = br['closure'], br['recall_closure'], br['doh_kpi']
+            m["breast_precision"].append(bc['precision']); m["breast_recall"].append(bc['recall'])
+            m["breast_recall_loop_recall"].append(rc['recall']); m["breast_state_accuracy"].append(br['state_accuracy'])
+            m["breast_triage_accuracy"].append(br['triage']['accuracy']); m["breast_overdue_accuracy"].append(br['overdue_flag_accuracy'])
+            m["breast_recall_outcome_accuracy"].append(br['recall_outcome_accuracy'])
+            ak = kp['assessment_outcome_within_deadline']
+            m["breast_assessment_within_deadline_truth"].append(ak['truth']); m["breast_assessment_within_deadline_wasl"].append(ak['wasl_measured'])
+            m["breast_abnormal_recall_rate_truth"].append(kp['abnormal_recall_rate']['truth']); m["breast_abnormal_recall_rate_wasl"].append(kp['abnormal_recall_rate']['wasl_measured'])
+            m["breast_early_recall_rate_truth"].append(kp['early_recall_rate']['truth']); m["breast_early_recall_rate_wasl"].append(kp['early_recall_rate']['wasl_measured'])
+            pool["breast_false_closures"] += bc['false_closures']; pool["breast_closed"] += bc['pred_closed']
+            pool["breast_recall_false_closures"] += rc['false_closures']; pool["breast_recall_closed"] += rc['pred_closed']
+            for kind, tw in (br.get('two_reader') or {}).items():
+                pool[f"breast_reader_{kind}_instances"] += tw['report_instances']; pool[f"breast_reader_{kind}_agree"] += tw['agree']
+                pool[f"breast_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"breast_reader_{kind}_coded"] += tw.get('coded_birads', 0)
         for prog in ("crc", "cervical"):  # rejected-referral hand-off packet (handoff.go)
             ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
             for k2, v2 in ho.items():
@@ -126,9 +142,12 @@ for noise in ["v1", "v2"]:
     if pool["dr_closed"]:
         safety["dr_false_closures"] = [pool["dr_false_closures"], pool["dr_closed"], cp_ub(pool["dr_false_closures"], pool["dr_closed"])]
         safety["dr_referral_false_closures"] = [pool["dr_referral_false_closures"], pool["dr_referral_closed"], cp_ub(pool["dr_referral_false_closures"], pool["dr_referral_closed"])]
+    if pool["breast_closed"]:
+        safety["breast_false_closures"] = [pool["breast_false_closures"], pool["breast_closed"], cp_ub(pool["breast_false_closures"], pool["breast_closed"])]
+        safety["breast_recall_false_closures"] = [pool["breast_recall_false_closures"], pool["breast_recall_closed"], cp_ub(pool["breast_recall_false_closures"], pool["breast_recall_closed"])]
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
-    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_")}
+    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("breast_reader_")}
     # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
     # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)
     pooled_rates = {k[len("origin_items_"):]: 100 * v / pool["origin_loops_" + k[len("origin_items_"):]] for k, v in pool.items() if k.startswith("origin_items_")}
@@ -225,7 +244,10 @@ for noise in ["v1", "v2"]:
     for k in ["crc_precision", "crc_recall", "crc_recall_no_review", "cervical_precision", "cervical_recall", "kpi_truth", "kpi_wasl", "kpi_eid_only",
               "kpi_abs_error_wasl", "kpi_abs_error_eid_only", "lung_precision", "lung_recall", "lung_state_accuracy", "lung_escalation_recall",
               "dr_precision", "dr_recall", "dr_referral_recall", "dr_state_accuracy", "dr_triage_accuracy", "dr_overdue_accuracy",
-              "dr_exam_within_deadline_truth", "dr_exam_within_deadline_wasl", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
+              "dr_exam_within_deadline_truth", "dr_exam_within_deadline_wasl",
+              "breast_precision", "breast_recall", "breast_recall_loop_recall", "breast_state_accuracy", "breast_triage_accuracy", "breast_overdue_accuracy",
+              "breast_recall_outcome_accuracy", "breast_assessment_within_deadline_truth", "breast_assessment_within_deadline_wasl",
+              "breast_abnormal_recall_rate_truth", "breast_abnormal_recall_rate_wasl", "breast_early_recall_rate_truth", "breast_early_recall_rate_wasl", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
              sorted(x for x in agg if (x.startswith("review_items_per_100_") and x != "review_items_per_100_loops") or (x.startswith("reviewer_h_per_1k_"))) + ["review_load_ratio_max_min_origin"]:
         if k in agg:
             a = agg[k]
@@ -251,7 +273,7 @@ for noise in ["v1", "v2"]:
         md.append(f"CRC loops by {name.replace('_', ' ')}: {sg['pooled_items_per_100']} review items per 100 loops, max/min **{sg['pooled_ratio']}** "
                   f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
     if extra:
-        md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR readers) | Count |\n|---|---|")
+        md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR and breast readers) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
 md.append("\n## Limitations\n" + "\n".join(f"- {x}" for x in man["limitations"]))
 json.dump(out, open(os.path.join(F, 'summary.json'), 'w'), indent=1)
