@@ -1,0 +1,434 @@
+{
+ "source": "synthetic templated corpus (scripts/breast_corpus.py, seed 29); dev set, used to write the readers",
+ "reports": [
+  {
+   "id": "bs01",
+   "text": "Mammography screening report. Breast composition: ACR C. Right breast: no mammographic abnormality. BI-RADS 1. Left breast: normal fibroglandular tissue, no focal lesion. BI-RADS category 1. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "prose",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs02",
+   "text": "Mammography screening report. Breast composition: ACR D. Previous screen (2023): BI-RADS 2, for comparison only. Right breast: no mammographic abnormality. BI-RADS category 1. Left breast: normal fibroglandular tissue, no focal lesion. category 1. Overall: BIRADS 1. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "prose",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs03",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 1. LT: BI-RADS 1. Final assessment: BI-RADS 1 (negative).",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "synoptic",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs04",
+   "text": "Bilateral screening mammography (2D). Two independent readers. Previous screen (2022): BI-RADS 3, for comparison only. RT: no mammographic abnormality. Assessment: negative. LT: normal fibroglandular tissue, no focal lesion. Assessment: negative. No architectural distortion. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "words",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs05",
+   "text": "Bilateral screening mammography (2D). Two independent readers. Right: no suspicious mass, calcification or architectural distortion. BI-RADS category 1. Left: no suspicious mass, calcification or architectural distortion. BI-RADS category 1. No architectural distortion. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "prose",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs06",
+   "text": "Bilateral screening mammography (2D). Two independent readers. الثدي الأيمن (right): no mammographic abnormality. category 1. الثدي الأيسر (left): no mammographic abnormality. BIRADS 1. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "prose",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs07",
+   "text": "Synoptic screening mammography report. Right breast: BI-RADS 1. Left breast: BI-RADS 1. Final assessment: BI-RADS 1 (negative).",
+   "key": {
+    "b_right": "1",
+    "b_left": "1",
+    "label": "B1",
+    "style": "synoptic",
+    "coded": "3341F"
+   }
+  },
+  {
+   "id": "bs08",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Previous screen (2022): BI-RADS 2, for comparison only. RT: benign vascular calcifications. Assessment: benign. LT: normal fibroglandular tissue, no focal lesion. Assessment: negative. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "2",
+    "b_left": "1",
+    "label": "B2",
+    "style": "words",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs09",
+   "text": "Mammography screening report. Breast composition: ACR A. Right breast: no suspicious mass, calcification or architectural distortion. BIRADS 1. Left breast: an oil cyst with rim calcification. BI-RADS category 2. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "2",
+    "label": "B2",
+    "style": "prose",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs10",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Previous screen (2022): BI-RADS 0, for comparison only. Right: a stable circumscribed mass, unchanged, in keeping with a fibroadenoma. BI-RADS 2. Left: an oil cyst with rim calcification. BIRADS 2. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "2",
+    "b_left": "2",
+    "label": "B2",
+    "style": "prose",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs11",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 2. LT: BI-RADS 1. Final assessment: BI-RADS 2 (benign).",
+   "key": {
+    "b_right": "2",
+    "b_left": "1",
+    "label": "B2",
+    "style": "synoptic",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs12",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Right: no suspicious mass, calcification or architectural distortion. Assessment: negative. Left: an intramammary lymph node in the upper outer quadrant. Assessment: benign. No suspicious mass or malignant-type calcification. Routine recall in 2 years.",
+   "key": {
+    "b_right": "1",
+    "b_left": "2",
+    "label": "B2",
+    "style": "words",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs13",
+   "text": "Mammography screening report. Breast composition: ACR D. Previous screen (2022): BI-RADS 3, for comparison only. Right: an oil cyst with rim calcification. category 2. Left: benign vascular calcifications. BI-RADS category 2. No suspicious mass or malignant-type calcification. Overall: category 2. Routine recall in 2 years.",
+   "key": {
+    "b_right": "2",
+    "b_left": "2",
+    "label": "B2",
+    "style": "prose",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs14",
+   "text": "Bilateral screening mammography (2D). Two independent readers. Previous screen (2023): BI-RADS 2, for comparison only. الثدي الأيمن (right): an oil cyst with rim calcification. BIRADS 2. الثدي الأيسر (left): normal fibroglandular tissue, no focal lesion. BIRADS 1. Overall: BI-RADS category 2. Routine recall in 2 years.",
+   "key": {
+    "b_right": "2",
+    "b_left": "1",
+    "label": "B2",
+    "style": "prose",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs15",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 1. LT: BI-RADS 2. Final assessment: BI-RADS 2 (benign).",
+   "key": {
+    "b_right": "1",
+    "b_left": "2",
+    "label": "B2",
+    "style": "synoptic",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs16",
+   "text": "Mammography screening report. Breast composition: ACR A. الثدي الأيمن (right): an oil cyst with rim calcification. Assessment: benign. الثدي الأيسر (left): an intramammary lymph node in the upper outer quadrant. Assessment: benign. No architectural distortion. Routine recall in 2 years.",
+   "key": {
+    "b_right": "2",
+    "b_left": "2",
+    "label": "B2",
+    "style": "words",
+    "coded": "3342F"
+   }
+  },
+  {
+   "id": "bs17",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Previous screen (2024): BI-RADS 0, for comparison only. RT: a circumscribed oval mass, probably benign. BIRADS 3. LT: no suspicious mass, calcification or architectural distortion. BI-RADS category 1. Overall: BI-RADS category 3. Recall for further assessment.",
+   "key": {
+    "b_right": "3",
+    "b_left": "1",
+    "label": "B3",
+    "style": "prose",
+    "coded": "3343F"
+   }
+  },
+  {
+   "id": "bs18",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. RT: a stable circumscribed mass, unchanged, in keeping with a fibroadenoma. category 2. LT: a circumscribed oval mass, probably benign. BI-RADS category 3. Overall: BI-RADS category 3. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "2",
+    "b_left": "3",
+    "label": "B3",
+    "style": "prose",
+    "coded": "3343F"
+   }
+  },
+  {
+   "id": "bs19",
+   "text": "Synoptic screening mammography report. الثدي الأيمن (right): BI-RADS 0. الثدي الأيسر (left): BI-RADS 1. Final assessment: BI-RADS 0 (incomplete, needs additional imaging evaluation). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "0",
+    "b_left": "1",
+    "label": "B0",
+    "style": "synoptic",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs20",
+   "text": "Mammography screening report. Breast composition: ACR A. Previous screen (2022): BI-RADS 2, for comparison only. RT: no suspicious mass, calcification or architectural distortion. Assessment: negative. LT: a focal asymmetry in the upper outer quadrant seen on the CC view only. Assessment: incomplete, needs additional imaging evaluation. Recall for further assessment.",
+   "key": {
+    "b_right": "1",
+    "b_left": "0",
+    "label": "B0",
+    "style": "words",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs21",
+   "text": "Mammography screening report. Breast composition: ACR C. Right: a focal asymmetry in the upper outer quadrant seen on the CC view only. BI-RADS category 0. Left: benign vascular calcifications. BI-RADS category 2. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "0",
+    "b_left": "2",
+    "label": "B0",
+    "style": "prose",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs22",
+   "text": "Mammography screening report. Breast composition: ACR A. Right: a small group of round punctate calcifications, probably benign. BI-RADS 3. Left: a developing asymmetry compared with the previous screen. BI-RADS category 0. Overall: BIRADS 0. Recall for further assessment.",
+   "key": {
+    "b_right": "3",
+    "b_left": "0",
+    "label": "B0",
+    "style": "prose",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs23",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 0. LT: BI-RADS 1. Final assessment: BI-RADS 0 (incomplete, needs additional imaging evaluation). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "0",
+    "b_left": "1",
+    "label": "B0",
+    "style": "synoptic",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs24",
+   "text": "Bilateral screening mammography (2D). Two independent readers. Right: no suspicious mass, calcification or architectural distortion. Assessment: negative. Left: a focal asymmetry in the upper outer quadrant seen on the CC view only. Assessment: incomplete, needs additional imaging evaluation. Recall for further assessment.",
+   "key": {
+    "b_right": "1",
+    "b_left": "0",
+    "label": "B0",
+    "style": "words",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs25",
+   "text": "Mammography screening report. Breast composition: ACR B. Previous screen (2024): BI-RADS 3, for comparison only. RT: a focal asymmetry in the upper outer quadrant seen on the CC view only. BI-RADS 0. LT: an oil cyst with rim calcification. BIRADS 2. Overall: BI-RADS category 0. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "0",
+    "b_left": "2",
+    "label": "B0",
+    "style": "prose",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs26",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Previous screen (2022): BI-RADS 2, for comparison only. Right: a small group of round punctate calcifications, probably benign. BIRADS 3. Left: a focal asymmetry in the upper outer quadrant seen on the CC view only. category 0. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "3",
+    "b_left": "0",
+    "label": "B0",
+    "style": "prose",
+    "coded": "3340F"
+   }
+  },
+  {
+   "id": "bs27",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 4. LT: BI-RADS 1. Final assessment: BI-RADS 4 (suspicious abnormality). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "4",
+    "b_left": "1",
+    "label": "B4",
+    "style": "synoptic",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs28",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Right breast: benign vascular calcifications. Assessment: benign. Left breast: architectural distortion without a central mass, suspicious. Assessment: suspicious abnormality. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "2",
+    "b_left": "4",
+    "label": "B4",
+    "style": "words",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs29",
+   "text": "Mammography screening report. Breast composition: ACR B. الثدي الأيمن (right): architectural distortion without a central mass, suspicious. BI-RADS category 4C. الثدي الأيسر (left): a possible mass on the MLO view needing further views. BI-RADS category 0. Recall for further assessment.",
+   "key": {
+    "b_right": "4",
+    "b_left": "0",
+    "label": "B4",
+    "style": "prose",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs30",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Right: architectural distortion without a central mass, suspicious. BI-RADS 4. Left: normal fibroglandular tissue, no focal lesion. BIRADS 1. Overall: BIRADS 4. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "4",
+    "b_left": "1",
+    "label": "B4",
+    "style": "prose",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs31",
+   "text": "Synoptic screening mammography report. RT: BI-RADS 2. LT: BI-RADS 4. Final assessment: BI-RADS 4 (suspicious abnormality). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "2",
+    "b_left": "4",
+    "label": "B4",
+    "style": "synoptic",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs32",
+   "text": "Bilateral screening mammography (2D). Two independent readers. RT: an irregular mass with indistinct margins, 11 mm. Assessment: suspicious abnormality. LT: a possible mass on the MLO view needing further views. Assessment: incomplete, needs additional imaging evaluation. Recall for further assessment.",
+   "key": {
+    "b_right": "4",
+    "b_left": "0",
+    "label": "B4",
+    "style": "words",
+    "coded": "3344F"
+   }
+  },
+  {
+   "id": "bs33",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. Right: an irregular spiculated mass 18 mm with skin tethering, highly suggestive of malignancy. BIRADS 5. Left: no suspicious mass, calcification or architectural distortion. BI-RADS category 1. Recall for further assessment.",
+   "key": {
+    "b_right": "5",
+    "b_left": "1",
+    "label": "B5",
+    "style": "prose",
+    "coded": "3345F"
+   }
+  },
+  {
+   "id": "bs34",
+   "text": "Mammography screening report. Breast composition: ACR B. Right breast: no mammographic abnormality. BI-RADS 1. Left breast: an irregular spiculated mass 18 mm with skin tethering, highly suggestive of malignancy. category 5. Overall: BI-RADS 5. Refer to the diagnostic breast assessment unit.",
+   "key": {
+    "b_right": "1",
+    "b_left": "5",
+    "label": "B5",
+    "style": "prose",
+    "coded": "3345F"
+   }
+  },
+  {
+   "id": "bs35",
+   "text": "Synoptic screening mammography report. Right breast: BI-RADS 5. Left breast: BI-RADS 4. Final assessment: BI-RADS 5 (highly suggestive of malignancy). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "5",
+    "b_left": "4",
+    "label": "B5",
+    "style": "synoptic",
+    "coded": "3345F"
+   }
+  },
+  {
+   "id": "bs36",
+   "text": "Screening mammogram, bilateral CC and MLO views. Double read. RT: technically inadequate: the pectoral muscle is not shown on the MLO view. LT: technically inadequate: the pectoral muscle is not shown on the MLO view. Technical repeat required before a final assessment can be given.",
+   "key": {
+    "b_right": "TR",
+    "b_left": "TR",
+    "label": "TR",
+    "style": "words",
+    "coded": null
+   }
+  },
+  {
+   "id": "bs37",
+   "text": "Mammography screening report. Breast composition: ACR B. Right breast: technically inadequate: the pectoral muscle is not shown on the MLO view. Left breast: no suspicious mass, calcification or architectural distortion. BI-RADS 1. Technical repeat required before a final assessment can be given.",
+   "key": {
+    "b_right": "TR",
+    "b_left": "1",
+    "label": "TR",
+    "style": "prose",
+    "coded": null
+   }
+  },
+  {
+   "id": "bs38",
+   "text": "Bilateral screening mammography (2D). Two independent readers. Previous screen (2024): BI-RADS 2, for comparison only. Right breast: an intramammary lymph node in the upper outer quadrant. BI-RADS category 2. Left breast: technically inadequate: the pectoral muscle is not shown on the MLO view. Technical repeat required before a final assessment can be given.",
+   "key": {
+    "b_right": "2",
+    "b_left": "TR",
+    "label": "TR",
+    "style": "prose",
+    "coded": null
+   }
+  },
+  {
+   "id": "bs39",
+   "text": "Synoptic screening mammography report. Right: BI-RADS TR. Left: BI-RADS 4. Final assessment: BI-RADS 4 (suspicious abnormality). Recall to the breast assessment unit.",
+   "key": {
+    "b_right": "TR",
+    "b_left": "4",
+    "label": "B4",
+    "style": "synoptic",
+    "coded": "3344F"
+   }
+  }
+ ]
+}
