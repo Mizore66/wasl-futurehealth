@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-30T09:26:46.044275Z",
- "code_revision": "3caa8a194f720042691f6cbf2744678dbd53c4c4",
+ "frozen_at": "2026-10-31T04:17:50.417453Z",
+ "code_revision": "dc7fee2bb40a458b36599bcad6de597d3f8bde00",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,

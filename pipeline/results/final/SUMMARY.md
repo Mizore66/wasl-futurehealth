@@ -1,6 +1,6 @@
 # Final frozen evaluation
 
-Code revision `3caa8a194f72` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-10-30T09:26:46.044275Z
+Code revision `dc7fee2bb40a` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-10-31T04:17:50.417453Z
 
 Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, with a Clopper–Pearson 95% upper bound.
 
@@ -10,40 +10,40 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.8098 | 0.7881 – 0.8315 |
+| crc_recall | 0.8416 | 0.825 – 0.8582 |
 | crc_recall_no_review | 0.325 | 0.2991 – 0.3509 |
 | cervical_precision | 1 | 1.0 – 1.0 |
 | cervical_recall | 0.9666 | 0.9488 – 0.9844 |
 | kpi_truth | 0.3232 | 0.3099 – 0.3365 |
-| kpi_wasl | 0.313 | 0.2992 – 0.3268 |
+| kpi_wasl | 0.3128 | 0.2992 – 0.3264 |
 | kpi_eid_only | 0.1284 | 0.1197 – 0.1371 |
-| kpi_abs_error_wasl | 0.0102 | 0.0074 – 0.013 |
+| kpi_abs_error_wasl | 0.0104 | 0.0072 – 0.0136 |
 | kpi_abs_error_eid_only | 0.1948 | 0.1849 – 0.2047 |
 | lung_precision | 1 | 1.0 – 1.0 |
 | lung_recall | 0.9862 | 0.9803 – 0.9921 |
 | lung_state_accuracy | 0.9942 | 0.992 – 0.9964 |
 | lung_escalation_recall | 0.9914 | 0.9766 – 1.0062 |
-| linkage_pair_f1 | 0.9754 | 0.972 – 0.9788 |
-| reviewer_h_per_1k | 17.2152 | 16.7448 – 17.6856 |
-| review_items_per_100_loops | 52.9208 | 52.1727 – 53.6689 |
-| throughput_ev_s | 571.2355 | 477.48 – 664.9911 |
-| review_items_per_100_arab | 53.8318 | 52.8473 – 54.8163 |
-| review_items_per_100_filipino | 50.0352 | 45.7003 – 54.3701 |
-| review_items_per_100_south_asian | 52.9164 | 48.9117 – 56.9211 |
-| review_items_per_100_western | 51.5508 | 49.1683 – 53.9333 |
-| reviewer_h_per_1k_arab | 17.4456 | 17.2014 – 17.6898 |
-| reviewer_h_per_1k_filipino | 16.3732 | 14.372 – 18.3744 |
-| reviewer_h_per_1k_south_asian | 17.286 | 15.9543 – 18.6177 |
-| reviewer_h_per_1k_western | 16.8348 | 15.3962 – 18.2734 |
-| review_load_ratio_max_min_origin | 1.1284 | 1.0618 – 1.1951 |
+| linkage_pair_f1 | 0.975 | 0.9717 – 0.9783 |
+| reviewer_h_per_1k | 17.3592 | 16.7358 – 17.9826 |
+| review_items_per_100_loops | 53.1946 | 52.291 – 54.0982 |
+| throughput_ev_s | 613.9654 | 579.5267 – 648.4041 |
+| review_items_per_100_arab | 54.0066 | 52.9487 – 55.0645 |
+| review_items_per_100_filipino | 50.0392 | 45.6146 – 54.4638 |
+| review_items_per_100_south_asian | 53.4856 | 49.3934 – 57.5778 |
+| review_items_per_100_western | 51.855 | 49.5255 – 54.1845 |
+| reviewer_h_per_1k_arab | 17.565 | 17.1971 – 17.9329 |
+| reviewer_h_per_1k_filipino | 16.354 | 14.2345 – 18.4735 |
+| reviewer_h_per_1k_south_asian | 17.572 | 16.0264 – 19.1176 |
+| reviewer_h_per_1k_western | 16.9324 | 15.6573 – 18.2075 |
+| review_load_ratio_max_min_origin | 1.1323 | 1.0623 – 1.2024 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 3034 | 0.1220% |
+| crc_false_closures | 0 | 3153 | 0.1170% |
 | cervical_false_closures | 0 | 1403 | 0.2630% |
-| wrong_patient_released | 0 | 17809 | 0.0210% |
-| released_without_granted_consent | 0 | 11197 | 0.0330% |
-| duplicate_or_lost_outputs | 0 | 192137 | 0.0020% |
+| wrong_patient_released | 0 | 17802 | 0.0210% |
+| released_without_granted_consent | 0 | 11093 | 0.0330% |
+| duplicate_or_lost_outputs | 0 | 191901 | 0.0020% |
 | ingest_lost_or_duplicated | 0 | 233838 | – |
 | final_state_mismatch_loops | 0 | – | – |
 | forged_with_effect | 0 | 117 | – |
@@ -52,16 +52,16 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
 | lung_false_closures | 0 | 2026 | 0.1820% |
-| handoff_false_closures | 0 | 85 | 4.2470% |
+| handoff_false_closures | 0 | 88 | 4.1050% |
 
-Review load by name origin: pooled over seeds {'arab': 53.8, 'filipino': 50.0, 'south_asian': 52.9, 'western': 51.5} items per 100 loops, max/min **1.0773**.
-With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1052 and 95th percentile 1.2157 (mean over seeds); 0 of 5 seeds are above it at p < 0.05.
-Pooled over seeds, the no-bias max/min has median 1.0469 and 95th percentile 1.0899; the observed pooled 1.0773 has p = 0.122.
+Review load by name origin: pooled over seeds {'arab': 54.0, 'filipino': 50.0, 'south_asian': 53.5, 'western': 51.8} items per 100 loops, max/min **1.0808**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1053 and 95th percentile 1.2155 (mean over seeds); 0 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0469 and 95th percentile 1.0909; the observed pooled 1.0808 has p = 0.098.
 
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |
 |---|---|
 | handoff_acted_state_correct | 330 |
-| handoff_closed | 85 |
+| handoff_closed | 88 |
 | handoff_packets_all_required_fields | 330 |
 | handoff_packets_matched | 330 |
 | handoff_packets_missed | 3 |
@@ -84,7 +84,7 @@ Pooled over seeds, the no-bias max/min has median 1.0469 and 95th percentile 1.0
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.7466 | 0.738 – 0.7552 |
+| crc_recall | 0.7754 | 0.7623 – 0.7885 |
 | crc_recall_no_review | 0.3196 | 0.2957 – 0.3435 |
 | cervical_precision | 1 | 1.0 – 1.0 |
 | cervical_recall | 0.9034 | 0.8808 – 0.926 |
@@ -97,27 +97,27 @@ Pooled over seeds, the no-bias max/min has median 1.0469 and 95th percentile 1.0
 | lung_recall | 0.9498 | 0.9398 – 0.9598 |
 | lung_state_accuracy | 0.9774 | 0.9732 – 0.9816 |
 | lung_escalation_recall | 0.9198 | 0.8915 – 0.9481 |
-| linkage_pair_f1 | 0.9396 | 0.9362 – 0.943 |
-| reviewer_h_per_1k | 15.4692 | 14.6231 – 16.3153 |
-| review_items_per_100_loops | 47.2974 | 45.2368 – 49.358 |
-| throughput_ev_s | 623.4576 | 493.0911 – 753.824 |
-| review_items_per_100_arab | 47.5554 | 45.8271 – 49.2837 |
-| review_items_per_100_filipino | 47.6638 | 38.4977 – 56.8299 |
-| review_items_per_100_south_asian | 48.2598 | 41.6084 – 54.9112 |
-| review_items_per_100_western | 44.5384 | 42.9292 – 46.1476 |
-| reviewer_h_per_1k_arab | 15.5062 | 14.9635 – 16.0489 |
-| reviewer_h_per_1k_filipino | 15.7946 | 12.7725 – 18.8167 |
-| reviewer_h_per_1k_south_asian | 15.7502 | 13.4818 – 18.0186 |
-| reviewer_h_per_1k_western | 14.6706 | 13.5472 – 15.794 |
-| review_load_ratio_max_min_origin | 1.2136 | 1.0864 – 1.3408 |
+| linkage_pair_f1 | 0.9398 | 0.9364 – 0.9432 |
+| reviewer_h_per_1k | 15.62 | 14.7393 – 16.5007 |
+| review_items_per_100_loops | 47.4948 | 45.472 – 49.5176 |
+| throughput_ev_s | 706.4821 | 585.844 – 827.1201 |
+| review_items_per_100_arab | 47.8068 | 45.9459 – 49.6677 |
+| review_items_per_100_filipino | 47.664 | 38.3232 – 57.0048 |
+| review_items_per_100_south_asian | 48.4702 | 42.0695 – 54.8709 |
+| review_items_per_100_western | 44.6432 | 43.0475 – 46.2389 |
+| reviewer_h_per_1k_arab | 15.7064 | 15.0699 – 16.3429 |
+| reviewer_h_per_1k_filipino | 15.748 | 12.5591 – 18.9369 |
+| reviewer_h_per_1k_south_asian | 15.8802 | 13.685 – 18.0754 |
+| reviewer_h_per_1k_western | 14.7948 | 13.7557 – 15.8339 |
+| review_load_ratio_max_min_origin | 1.2222 | 1.0961 – 1.3483 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 2886 | 0.1280% |
+| crc_false_closures | 0 | 2997 | 0.1230% |
 | cervical_false_closures | 0 | 1300 | 0.2830% |
-| wrong_patient_released | 0 | 16743 | 0.0220% |
-| released_without_granted_consent | 0 | 10620 | 0.0350% |
-| duplicate_or_lost_outputs | 0 | 187349 | 0.0020% |
+| wrong_patient_released | 0 | 16767 | 0.0220% |
+| released_without_granted_consent | 0 | 10611 | 0.0350% |
+| duplicate_or_lost_outputs | 0 | 187203 | 0.0020% |
 | ingest_lost_or_duplicated | 0 | 234762 | – |
 | final_state_mismatch_loops | 0 | – | – |
 | forged_with_effect | 0 | 120 | – |
@@ -126,16 +126,16 @@ Pooled over seeds, the no-bias max/min has median 1.0469 and 95th percentile 1.0
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
 | lung_false_closures | 0 | 1899 | 0.1940% |
-| handoff_false_closures | 0 | 77 | 4.6780% |
+| handoff_false_closures | 0 | 78 | 4.6190% |
 
-Review load by name origin: pooled over seeds {'arab': 47.5, 'filipino': 47.8, 'south_asian': 48.3, 'western': 44.5} items per 100 loops, max/min **1.0843**.
-With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1136 and 95th percentile 1.2377 (mean over seeds); 2 of 5 seeds are above it at p < 0.05.
-Pooled over seeds, the no-bias max/min has median 1.0511 and 95th percentile 1.1018; the observed pooled 1.0843 has p = 0.105.
+Review load by name origin: pooled over seeds {'arab': 47.8, 'filipino': 47.8, 'south_asian': 48.5, 'western': 44.6} items per 100 loops, max/min **1.0865**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1129 and 95th percentile 1.2372 (mean over seeds); 3 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0514 and 95th percentile 1.1017; the observed pooled 1.0865 has p = 0.098.
 
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |
 |---|---|
 | handoff_acted_state_correct | 296 |
-| handoff_closed | 77 |
+| handoff_closed | 78 |
 | handoff_packets_all_required_fields | 296 |
 | handoff_packets_matched | 296 |
 | handoff_packets_missed | 4 |

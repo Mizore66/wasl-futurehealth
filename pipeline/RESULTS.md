@@ -1107,3 +1107,25 @@ At `e4c7553` the held-out per-seed ratio was 1.28 (1.11–1.45). Traced on the f
 | Hand-off packets matched / truth (extra) | 330/333 (0) | 296/300 (0) |
 
 Counts in the last four rows are at `3caa8a1`. The `6907f6e` run applied the reuse in the linker only, before the worklist dedupe; its review items rose because the cohorts are larger and the twins were still asked. The `e4c7553` → `3caa8a1` change mixes the code fix with the larger cohorts; per-loop rates are comparable, totals are not.
+
+### Reader v7.2: upper-GI tissue in combined reports (`dc7fee2`, new headline)
+
+Post-hoc reader change, disclosed. Every MTSamples u4 loop (an EGD and a colonoscopy in one report) waited for histology and never closed: 128 per noise model at `3caa8a1`.
+
+- **Cause.** The regex reader's tissue check matched "Several biopsies were taken" (antral mass), "polyps, which were removed with biopsy forceps" (fundus) and "Biopsy was also taken for CLO". All three are gastric; the colon was normal. Gemma read no colon tissue, the readers disagreed, and a disagreement on tissue holds the loop for histology.
+- **Fix 1.** Only in a report that names an upper-GI procedure (EGD, OGD, gastroscopy, upper endoscopy), each sentence gets a site: upper-GI when it names only stomach, duodenum or oesophagus sites, colon when it names a colon site, otherwise the site of the sentence before it. A tissue match in an upper-GI sentence no longer counts. A sentence naming both sites, or one before any site is named, still counts, so a mistake costs a wait, not a false closure.
+- **Fix 2.** Fix 1 exposed two colon phrasings that v7.1 only caught because a gastric biopsy in the same report also matched: "sigmoid colon … biopsied (x4)" (corpus 4 q275) and "cold-snare excision of a … colon polyp; specimen recovered" (corpus 8 v054). The tissue check now also matches "biopsied" (unless negated earlier in its sentence: "no tissue was resected or biopsied"), "excision" or "snare" before "polyp", and "polyp … recovered".
+- **Checked before the run** on all eight corpora and MTSamples, both cached second readers (`results/v7.2-reader-scores/`): 72 regex tissue answers change (66 no → yes, 6 yes → no), all 72 toward the key, 0 against. Unsafe auto-closures stay 0 in all 17 corpus × reader runs; correct auto-decisions rise on corpora 2, 3, 4 and 8 (for example corpus 8 with the 26B: 96 → 100). The fair-test counts reported for earlier readers are unchanged; corpora 4 and 8 have now been seen by this change, so they are no longer fair tests of v7.2. Tests: `TestTissueIgnoresUpperGI`.
+
+| | Dev noise v1: `3caa8a1` → `dc7fee2` | Held-out v2: `3caa8a1` → `dc7fee2` |
+|---|---|---|
+| u4 loops closed / truly closed | 0 / 132 → **121 / 132** | 0 / 124 → **111 / 124** |
+| CRC recall | 0.810 → **0.842** (0.825–0.858) | 0.747 → **0.775** (0.762–0.789) |
+| CRC false closures | 0 / 3,034 → 0 / 3,153 | 0 / 2,886 → 0 / 2,997 |
+| Cervical / lung false closures | 0 / 1,403; 0 / 2,026 | 0 / 1,300; 0 / 1,899 |
+| Wrong-patient messages; sent without consent | 0 / 17,802; 0 / 11,093 | 0 / 16,767; 0 / 10,611 |
+| Reviewer hours per 1k loops | 17.2 → 17.4 | 15.5 → 15.6 |
+| Review-load ratio, per seed; pooled (p) | 1.13 (1.06–1.20); 1.08 (0.12) → 1.13 (1.06–1.20); 1.08 (0.10) | 1.21 (1.09–1.34); 1.08 (0.11) → 1.22 (1.10–1.35); 1.09 (0.10) |
+| Hand-off packets matched / truth (extra) | 330 / 333 (0) | 296 / 300 (0) |
+
+The remaining u4 loops that do not close are the simulated reviewer's and clinician's assumed error rates, not the reader.

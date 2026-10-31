@@ -1,8 +1,8 @@
 {
- "observed": 1.156,
- "null_median": 1.1032,
- "null_p95": 1.2188,
- "p_value": 0.199,
+ "observed": 1.1596,
+ "null_median": 1.1046,
+ "null_p95": 1.2148,
+ "p_value": 0.191,
  "permutations": 1000,
  "loops": {
   "south_asian": 955,
@@ -11,16 +11,16 @@
   "filipino": 351
  },
  "items": {
-  "arab": 1120,
-  "filipino": 172,
-  "south_asian": 541,
-  "western": 291
+  "arab": 1127,
+  "filipino": 174,
+  "south_asian": 549,
+  "western": 293
  },
  "items_per_loop_hist": {
-  "0": 2281,
-  "1": 1247,
-  "2": 372,
-  "3": 43,
-  "4": 1
+  "0": 2279,
+  "1": 1238,
+  "2": 378,
+  "3": 47,
+  "4": 2
  }
 }
