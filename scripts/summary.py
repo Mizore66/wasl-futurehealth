@@ -30,6 +30,14 @@ if dr and 'closure' in dr:  # third loop type (WASL_DR=N)
     print(f"diabetic_retinopathy (doh2024dr): P {dc['precision']:.3f}  R {dc['recall']:.3f}  false closures {dc['false_closures']}/{dc['pred_closed']}; "
           f"referral closures P {rc['precision']:.3f} R {rc['recall']:.3f}; triage acc {dr['triage']['accuracy']:.3f} (coverage {dr['triage']['coverage']:.3f}); "
           f"overdue acc {dr['overdue_flag_accuracy']:.3f}; exam within deadline truth {ex['truth']:.3f} vs Wasl {ex['wasl_measured']:.3f}")
+br = r.get('programmes_live', {}).get('breast')
+if br and 'closure' in br:  # fourth loop type (WASL_BREAST=N)
+    bc, rc, kp = br['closure'], br['recall_closure'], br['doh_kpi']
+    ak = kp['assessment_outcome_within_deadline']
+    print(f"breast (doh2025breast): P {bc['precision']:.3f}  R {bc['recall']:.3f}  false closures {bc['false_closures']}/{bc['pred_closed']}; "
+          f"recall-loop closures P {rc['precision']:.3f} R {rc['recall']:.3f}; triage acc {br['triage']['accuracy']:.3f} (coverage {br['triage']['coverage']:.3f}); "
+          f"overdue acc {br['overdue_flag_accuracy']:.3f}; assessment within clock truth {ak['truth']:.3f} vs Wasl {ak['wasl_measured']:.3f}; "
+          f"abnormal recall rate truth {kp['abnormal_recall_rate']['truth']:.3f} vs Wasl {kp['abnormal_recall_rate']['wasl_measured']:.3f}")
 pl = r.get('pilot')  # pilot switches (WASL_SHADOW / WASL_AUTOAUDIT); absent when off
 if pl and 'shadow' in pl:
     s = pl['shadow']
