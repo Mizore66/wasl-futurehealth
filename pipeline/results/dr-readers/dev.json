@@ -1,0 +1,39 @@
+{
+ "dr": {
+  "dr-clinic": {
+   "agree": 44,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "drc38 B:dna want not_assessable",
+    "drc41 B:dna want not_assessable",
+    "drc42 B:dna want not_assessable",
+    "drc43 B:dna want not_assessable"
+   ],
+   "reader_a_regex_correct": 50,
+   "reader_b_gemma_correct": 44,
+   "reader_b_unavailable": 2,
+   "reports": 50,
+   "to_review": 6
+  },
+  "dr-screen": {
+   "agree": 23,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 34,
+   "coded_path_agree_but_wrong": 0,
+   "errors": [
+    "drs10 B:R0M0 want R1M0",
+    "drs15 B:R2M0/urgent want R2M0",
+    "drs18 B:R2M0/urgent want R2M0",
+    "drs19 B:R1M0 want R2M0",
+    "drs21 B:R1M1/urgent want R0M1",
+    "drs22 B:R1M1/urgent want R1M1",
+    "drs31 B:R1M0 want U"
+   ],
+   "reader_a_regex_correct": 34,
+   "reader_b_gemma_correct": 23,
+   "reader_b_unavailable": 4,
+   "reports": 34,
+   "to_review": 11
+  }
+ }
+}

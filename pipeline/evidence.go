@@ -27,6 +27,7 @@ type ReaderVerdict struct {
 	Histology string `json:"histology,omitempty"`
 	Quote     string `json:"quote,omitempty"`
 	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
+	DR        *DRFields   `json:"dr,omitempty"`   // diabetic retinopathy loop: fields this reader extracted (drread.go)
 }
 
 type TwoVerdict struct {
@@ -394,6 +395,7 @@ func LoadJudge2(path string) *Judge2 {
 		panic(err)
 	}
 	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
+	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
 	return j
 }
 
