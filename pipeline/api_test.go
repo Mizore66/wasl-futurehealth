@@ -88,14 +88,21 @@ func TestAPIFixturesAndContracts(t *testing.T) {
 	if len(c["signoffs"].([]interface{})) == 0 || len(c["review_items"].([]interface{})) == 0 {
 		t.Fatalf("review_hold: no review/signoff")
 	}
-	held := false
+	held := false // held for consent (consent log), or a message suppressed by the consent hold or the second-identifier guard
 	for _, dd := range c["decisions"].([]interface{}) {
-		for _, x := range dd.(map[string]interface{})["consent_log"].([]interface{}) {
+		dm := dd.(map[string]interface{})
+		for _, x := range dm["consent_log"].([]interface{}) {
 			held = held || x.(map[string]interface{})["to"] == "held"
+		}
+		if out, ok := dm["outreach"].([]interface{}); ok {
+			for _, o := range out {
+				sup := o.(map[string]interface{})["suppress"]
+				held = held || sup == SupConsentHold || sup == SupSecondID
+			}
 		}
 	}
 	if !held {
-		t.Fatal("review_hold: outreach never held for consent")
+		t.Fatal("review_hold: outreach never held for consent or the second-identifier guard")
 	}
 	// list filters
 	_, l := getJ(t, srv.URL+"/api/cases?programme=crc&state=closed&limit=5")

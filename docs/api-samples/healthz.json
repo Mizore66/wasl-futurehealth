@@ -1,5 +1,5 @@
 {
- "cases": 2100,
+ "cases": 4355,
  "dependencies": {
   "ingest_adapter": "fhir",
   "materialised_run": "loaded",
@@ -9,11 +9,11 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:31:43Z",
+  "loaded_at": "2026-10-31T23:47:27Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
-  "policy": "v7strict+cal=true+guard=true+tau=0.98",
-  "reader_model": "gemma-4-26b/cached",
-  "run": "v7strict-cached-fhir"
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
  },
  "status": "ok"
 }
