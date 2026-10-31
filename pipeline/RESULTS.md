@@ -1129,3 +1129,36 @@ Post-hoc reader change, disclosed. Every MTSamples u4 loop (an EGD and a colonos
 | Hand-off packets matched / truth (extra) | 330 / 333 (0) | 296 / 300 (0) |
 
 The reader now agrees on u4 (both say no colon tissue). The 24 u4 loops that still do not close end open (13), inadequate (8) or awaiting histology (3); they come from the same other causes as elsewhere (linkage misses, the simulated reviewer and day-15 clinician error rates) and were not traced one by one.
+
+### Backlog gaps: own-programme outreach, subgroup check, ingest tiers (`194f355`…`c2a74e2`, new headline)
+
+Post-hoc changes, disclosed. These close items earlier left out of scope. The frozen evaluation was re-run at `c2a74e2` (same cohort: every held-out person, 3,944 loops per run).
+
+- **AI-use disclosure (`194f355`).** DoH AI Policy 3.1.6.1. Every patient message template now has a v2 that says the reminder comes from an automated follow-up service and that a care team member reads the replies (English and Arabic, teach-back variants too). v1 stays in the approved set so already-sent messages still verify. Tests: `TestTemplatesDiscloseAutomation`.
+- **Outreach only for the loop's own programme (`f17f7a1`), a bug found by the new subgroup check.** A woman in both a CRC and a cervical loop got each appointment, no-show and rejected-referral message twice: once from each loop. In the final loop states, outreach entries fell by 1,055 on dev noise (CRC loops 576, cervical loops 479) and 946 held-out (524, 422); lung loops are unchanged. Messages checked for wrong patient fell 17,802 → 14,247 (dev) and 16,767 → 13,479 (held-out). Tests: `TestOutreachOnlyForOwnProgramme`.
+- **Review load and recall by age band and sex, CRC loops (`f17f7a1`).** `scripts/subgroups.py`, pooled over seeds with the same within-seed shuffled-label test as the origin ratio. Age bands <40, 40–59, 60–79, 80+.
+
+| CRC loops | Dev v1: `dc7fee2` → `c2a74e2` | Held-out v2: `dc7fee2` → `c2a74e2` |
+|---|---|---|
+| Age band, max/min review load (p) | 1.057 (0.23) → 1.058 (0.23) | 1.062 (0.24) → 1.056 (0.33) |
+| Sex, max/min review load (p) | 1.034 (0.15) → 1.009 (0.67) | **1.094 (< 0.001)** → 1.050 (0.042) |
+| Sex, items per 100 loops F / M | 71.2 / 68.9 → 68.3 / 69.0 | 65.5 / 59.9 → 62.9 / 59.9 |
+| Recall by group | 0.82–0.86, unchanged | 0.76–0.79, unchanged |
+| False closures | 0 in every group | 0 in every group |
+
+The fix removed most of the held-out sex gap. The rest (about 3 items per 100 loops, p = 0.04) was traced: women who also have a cervical loop get about 4 more link reviews (skmc-endo ServiceRequest) per 100 CRC loops; women without a cervical loop match men. More registrations give more identity questions. It costs reviewer time, not recall, and was not changed.
+- **Same report under two ids (`a1cafce`).** A result can arrive once over ORU and once over FHIR with different ids. The linker keys DiagnosticReports on content (category, focus, day, coded result, text hash) and keeps the first. Counter `duplicate_report_other_id`: 0 in every evaluation run (no false merges on the cohort). Tests: `TestCrossTransportDuplicateReport`.
+- **Local Gemma 3 4B on the patient-reply sets (`adfb3a7`).** Teach-back: 62/100 correct (95% CI 0.52–0.71), **19/50 missed escalations**; e-consult: 75/100, 0/80 unsafe accepts. The 26B scores 98/100 with 0/50 missed. The 4B must not parse teach-back replies; the pipeline reads only the 26B cache and sends a miss to a human, so no code change was needed.
+- **UAE public holidays (`5fe2d5d`).** Hand-off business days skip the 2026 federal holidays. Tests: Eid case in `handoff_test.go`.
+- **FHIR polling with nightly Bulk Data catch-up (`c2a74e2`, `-source fhirpoll`).** For a sending system with no subscriptions: `_history?_since` polling with a watermark, plus a nightly `$export` from the watermark minus 7 days. The mock HIE makes 662 versions visible late. Crash test with the poller killed: 0 lost, 0 duplicated, 130 versions recovered by `$export`. Negative control (`WASL_EXPORT_OFF=1`): 133 lost. Results: `results/fhirpoll/`.
+- **Sustainability estimate (`3f7f87f`).** About 0.73 kWh and 0.34 kg CO₂ per 1,000 loops, mostly reader GPU time. `docs/research/sustainability.md`.
+
+| | Dev noise v1: `dc7fee2` → `c2a74e2` | Held-out v2: `dc7fee2` → `c2a74e2` |
+|---|---|---|
+| CRC recall | 0.842 → 0.842 (0.825–0.858) | 0.775 → 0.775 (0.762–0.789) |
+| CRC false closures | 0 / 3,153 | 0 / 2,997 |
+| Cervical / lung false closures | 0 / 1,402; 0 / 2,026 | 0 / 1,300; 0 / 1,899 |
+| Wrong-patient messages; sent without consent | 0 / 14,247; 0 / 9,001 | 0 / 13,479; 0 / 8,678 |
+| Reviewer hours per 1k loops | 17.4 → 17.0 | 15.6 → 15.2 |
+| Review-load ratio, per seed; pooled (p) | 1.13 (1.05–1.22); 1.08 (0.11) | 1.21 (1.10–1.33); 1.08 (0.13) |
+| Hand-off packets matched / truth (extra) | 330 / 333 (0) | 296 / 300 (0) |

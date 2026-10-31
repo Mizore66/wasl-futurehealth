@@ -17,7 +17,7 @@ Only 3.3.1.2.2.2 is specific to High risk; 3.1.8 also covers "high-impact" syste
 | Clause | Wasl | Status |
 |---|---|---|
 | 3.3.1.2.2.2 High risk: "conformity assessments both prior to and following deployment", with DDGO | Pilot step | **Gap** |
-| 3.1.8 "Sustainability impact assessments… high-impact AI" | 0.74 H100-h/1k loops (S); no energy report | **Gap** |
+| 3.1.8 "Sustainability impact assessments… high-impact AI" | ≈0.73 kWh and 0.34 kg CO₂ per 1k loops, upper bound ([`sustainability.md`](sustainability.md)) | **Evidence** (estimate) |
 | 3.3.1.1.1–3, 3.3.1.4.1 Risk register, owners, communicate to DoH | Hazard log H1–H12 with controls and owner roles (WRITEUP §RAI) | **Evidence** |
 | 3.1.1.2.1–2 Human-in-the-loop, escalation | CRC recall 0.242 without review, 0.960 with; 0/570 false closures (M) | **Evidence** |
 | 3.1.1.1.1 Co-design with clinicians and patients | None | **Gap** |
@@ -32,8 +32,8 @@ Only 3.3.1.2.2.2 is specific to High risk; 3.1.8 also covers "high-impact" syste
 | 3.1.4.4.3 Anonymisation, DP, federated learning | Linkage needs identifiers | **Gap** |
 | 3.1.4.5.1 Compute in the UAE | Local 4B reader (G4); the 26B used a proxy | **Designed** |
 | 3.1.4.5.2–3, 3.1.4.6 Network, IDS, physical | Assumed from ADHDS hosting | **Gap** |
-| 3.1.5.1.1–3 Representativeness, bias | By origin (V3, M), sex (B); no age or socioeconomic data | **Evidence / Gap** |
-| 3.1.6.1.1–2 Disclose AI use | Notices don't disclose it | **Gap** |
+| 3.1.5.1.1–3 Representativeness, bias | Review load and recall by name origin, age band and sex in every frozen run (`scripts/origin_null.py`, `scripts/subgroups.py`); no socioeconomic data | **Evidence / Gap** |
+| 3.1.6.1.1–2 Disclose AI use | Every patient message (v2 templates, EN/AR) says an automated follow-up service sent it; teach-back prompts say an automated assistant reads the reply first (`TestTemplatesDiscloseAutomation`) | **Evidence** |
 | 3.1.6.3 Role-specific explanations | Reviewer sees p, quote, chain (V5) | **Designed** |
 | 3.1.7.1.1–2, 3.1.7.2.2 Owners; clinician authority | Role matrix; clinician signs evidence (GOV) | **Designed** |
 | 3.2.1.5 Open-data licence review | Wikidata CC0; MTSamples not reviewed | **Gap** |
@@ -100,7 +100,7 @@ The owner of each model is our **assumption**, using RAI §4 roles: the ADPHC pr
 - **Out of scope:** clinical advice.
 - **Data:** 100 items in EN, MSA, Gulf, Arabizi and code-switched text; one non-clinician labeller.
 - **Evaluation:** 98/100 and 0/50 missed escalations, vs a tuned keyword baseline at 85/100 and 3/50 (IMP).
-- **Gap:** the local 4B reader is untested on this task.
+- **Local 4B (Gemma 3 4B, same prompts):** 62/100 and **19/50 missed escalations**, so the 4B must never parse teach-back replies; they stay with the 26B or a nurse (`patient-parsers/teachback_scores_4b.json`). On e-consult replies the 4B scores 75/100 with 0/80 unsafe accepts.
 - **Oversight:** nurse callback.
 - **Trigger:** any missed escalation.
 
@@ -142,8 +142,8 @@ One vendor claims there is a Malaffi FHIR implementation guide (https://www.bona
 | Tier | Exactly-once |
 |---|---|
 | (a) R4 Subscription rest-hook | Event numbers plus `$events` backfill. Mock run: 20,906 versions exactly once despite 392 drops, 568 duplicates and 682 reorders (S) |
-| (b) Poll `_lastUpdated` from the watermark minus an overlap | Watermark moves only after the publish ack; re-reads are deduped. Version = `meta.versionId`, else a content hash (assumption). Designed |
-| (c) HL7 v2 ORU/ADT via MLLP | ACK only after the publish ack. Key = MSH-4 + OBR-3 + result status, so corrections become new versions. Designed |
-| (d) Nightly `$export` | Same key; only missed versions pass through. Designed; Bulk Data support unknown |
+| (b) Poll system `_history?_since=` from the watermark minus an overlap | Built (`-source fhirpoll`). Watermark in KV after the publish ack; re-reads deduped by version. Mock run with 662 late-committing versions and a poller kill: ingest lost 0, duplicated 0 (`pipeline/results/fhirpoll/`) |
+| (c) HL7 v2 ORU/ADT via MLLP | Built (`-source hl7`). ACK only after the publish ack |
+| (d) Nightly `$export` | Built with (b): catches versions committed after the poll passed them (130 in the mock run; with it off the same check reports 133 lost). Bulk Data support at Malaffi unknown |
 
-**Limit:** the same result arriving as both an ORU and a FHIR resource gets two keys. The state machine should treat it as a duplicate fact, but this is untested.
+**Same result by two routes:** an ORU and a FHIR resource for one result carry two ids. The linker keeps one report when registration, kind, parent, effective day and text match (`TestCrossTransportDuplicateReport`).

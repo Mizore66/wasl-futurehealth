@@ -478,6 +478,33 @@ var Templates = map[string]Template{
 	"tb-clarify-v1/ar": {"tb-clarify-v1/ar", "ar", "teachback", "شكرًا لك. خطوتك التالية هي موعد في الوحدة التخصصية التي أحالك إليها {{provider}}. ستتصل بك الوحدة لحجز الموعد خلال الأسابيع القليلة القادمة. بكلماتك الخاصة، ماذا ستفعل الآن؟"},
 }
 
+// v2 templates (DoH AI Policy 3.1.6.1, disclose AI use): the v1 text plus one sentence saying an automated follow-up
+// service sent the message and the care team reviews replies; the teach-back prompts also say an automated assistant
+// reads the reply first. v1 stays approved so messages already sent still verify. The generator sends TemplateVersion.
+var TemplateVersion = "v2"
+
+const (
+	discloseEN   = " This message was sent by an automated follow-up service on behalf of {{provider}}. Your care team reviews every reply."
+	discloseAR   = " أُرسلت هذه الرسالة عبر خدمة متابعة آلية نيابةً عن {{provider}}. يراجع فريق الرعاية كل رد."
+	discloseTBEN = " Your reply is read first by an automated assistant and then checked by your care team."
+	discloseTBAR = " يقرأ ردك مساعد آلي أولًا ثم يراجعه فريق الرعاية."
+)
+
+func init() {
+	v2 := map[string]Template{}
+	for id, t := range Templates {
+		add := map[[2]string]string{{"en", "teachback"}: discloseTBEN, {"ar", "teachback"}: discloseTBAR}[[2]string{t.Lang, t.Kind}]
+		if add == "" {
+			add = map[string]string{"en": discloseEN, "ar": discloseAR}[t.Lang]
+		}
+		id2 := strings.Replace(id, "-v1/", "-v2/", 1)
+		v2[id2] = Template{id2, t.Lang, t.Kind, t.Body + add}
+	}
+	for id, t := range v2 {
+		Templates[id] = t
+	}
+}
+
 var ProvDisplay = map[string][2]string{ // en, ar
 	"ahs-mushrif": {"Al Mushrif Healthcare Centre", "مركز المشرف الصحي"},
 	"medlab":      {"MedLab screening laboratory", "مختبر ميدلاب للفحوصات"},
