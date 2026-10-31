@@ -58,6 +58,7 @@ type Event struct {
 	Images   []ImgRef `json:"imgs,omitempty"`    // DiagnosticReport.media photo references (sha256 + capture station)
 	Lung     *LungSR  `json:"lung,omitempty"`    // lung-nodule tracking ServiceRequest: age, exclusion, risk, index report (lung.go)
 	DR       *DRSR    `json:"dr,omitempty"`      // diabetic retinopathy tracking ServiceRequest: first screening report (dr.go)
+	XRef     string   `json:"xref,omitempty"`    // referral intake: the referral it answers (basedOn "external referral <loop>"; handoffref.go)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).

@@ -19,6 +19,8 @@ DR="${WASL_DR:-1200}"; export DR   # diabetic retinopathy screening loops per ru
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
+# hand-off, default off: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
+[ "${WASL_XREFLINK:-0}" = 0 ] || PARGS+=(-xreflink)
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -51,6 +53,8 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
                      "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"]}
 if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_AUTOAUDIT", "0") not in ("", "0"):
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
+if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
+    m["handoff_xreflink"] = True
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
