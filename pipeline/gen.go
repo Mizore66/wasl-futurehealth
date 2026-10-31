@@ -102,6 +102,8 @@ type HandoffTruth struct {
 	ActBy   float64 `json:"act_by"`
 	ActDay  float64 `json:"act_day"` // -1 = never (or after TEnd)
 	Urgent  bool    `json:"urgent"`
+	Intake  string  `json:"intake,omitempty"` // lung work-up / DR (handoffext.go): the rejected intake ServiceRequest
+	Unit    string  `json:"unit,omitempty"`   // lung work-up / DR: the rejecting unit
 }
 
 type Truth struct {

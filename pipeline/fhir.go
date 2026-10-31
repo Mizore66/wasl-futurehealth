@@ -67,6 +67,9 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 				}
 			}
 		}
+		if XRefLinkQ && e.Category == "referral-intake" { // the referral this intake answers (handoffref.go)
+			e.XRef = xrefOf(res)
+		}
 		if e.Category == "dr-screening" { // diabetic retinopathy screen (dr.go)
 			e.DR = &DRSR{}
 			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {

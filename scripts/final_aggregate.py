@@ -110,6 +110,10 @@ for noise in ["v1", "v2"]:
             ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
             for k2, v2 in ho.items():
                 pool[f"handoff_{k2}"] += v2
+        for prog, tag in (("lung_nodule", "lung"), ("diabetic_retinopathy", "dr")):  # rejected work-up / eye-clinic referrals (handoffext.go)
+            ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
+            for k2, v2 in ho.items():
+                pool[f"handoff_{tag}_{k2}"] += v2
         ps = r.get('patient_side')
         if ps:
             m["stalled_days_after_deadline_flagged_median"].append(ps['days_after_deadline_flagged_median'])
@@ -141,6 +145,9 @@ for noise in ["v1", "v2"]:
         safety["dr_referral_false_closures"] = [pool["dr_referral_false_closures"], pool["dr_referral_closed"], cp_ub(pool["dr_referral_false_closures"], pool["dr_referral_closed"])]
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
+    for tag in ("lung", "dr"):  # closed after a rejected lung work-up / DR referral (re-referral), and how many falsely
+        if pool[f"handoff_{tag}_closed"]:
+            safety[f"handoff_{tag}_false_closures"] = [pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"], cp_ub(pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"])]
     extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("lung_surv_")}
     # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
     # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)

@@ -142,6 +142,7 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 				"precision": frac(rcTP, rcP), "recall": frac(rcTP, rcT)},
 			"follow_up_seen": map[string]interface{}{"truth": svT, "pred": svP, "per_loop_agreement": frac(svAgree, nxT)}}
 	}
+	handoffBlock(res, ids, final, tr, "diabetic_retinopathy") // rejected eye-clinic referrals (handoffext.go)
 	return res
 }
 

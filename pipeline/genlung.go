@@ -263,6 +263,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		}
 		panic("lung: not enough background persons")
 	}
+	var rejected []extRejection // work-up referrals the unit rejects (handoffext.go), simulated after every other lung event
 	for k := 0; k < nLung; k++ {
 		p := pick(r.Float64() < .04)
 		F := -420 + 510*r.Float64() // index CT day
@@ -393,14 +394,10 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 				survCands = append(survCands, petSurvCand{lt: lt, p: p, typ: typ, mean: mean, petDay: closed})
 			}
 		}
-		lt.State = state
-		if state == "closed" || state == "no_followup_needed" {
-			lt.ClosedDay = closed
+		lungFinish(lt, state, closed)
+		if Handoff && RefRejectExt && LungWorkup && inScope && rec.Action == FlCTPET && lt.Lung.Adherence == "never" && u01(seed, loop, "refrej", "pick") < ExtRejectP {
+			rejected = append(rejected, extRejection{p: p, lt: lt, srID: srID, src: src, unit: hosp, t0: F, urgent: true, mean: mean})
 		}
-		lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-F > float64(rec.WinHi) ||
-			state == "awaiting_tissue" && TEnd-lt.Lung.PETDay > TissueDueDays
-		lt.Dropoff = lungDropoff(state, false)
-		lt.Pathway = "lung_" + lt.Lung.Adherence + "_" + state
 	}
 	// distractors: other people's chest CTs at the follow-up hospital (a CT for the wrong patient must never close a loop)
 	for k := 0; k < nLung/8; k++ {
@@ -420,9 +417,24 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			tr.Distract[g.workupReport(hosp.ID, y, t, t+g.lognorm(1, .7), LungPETCode, text, lab)] = true
 		}
 	}
+	for _, j := range rejected { // rejected work-up referrals (handoffext.go), after every other lung event
+		g.rejectLung(j)
+	}
 	if LungPETSurv { // after every other lung event, on its own RNG stream
 		g.genPETSurv(survCands, hosp)
 	}
+}
+
+// lungFinish: the loop's truth from its final state.
+func lungFinish(lt *LoopTruth, state string, closed float64) {
+	lt.State = state
+	if state == "closed" || state == "no_followup_needed" {
+		lt.ClosedDay = closed
+	}
+	lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-lt.SRDay > float64(lt.Lung.Rec.WinHi) ||
+		state == "awaiting_tissue" && TEnd-lt.Lung.PETDay > TissueDueDays
+	lt.Dropoff = lungDropoff(state, false)
+	lt.Pathway = "lung_" + lt.Lung.Adherence + "_" + state
 }
 
 // lungDropoff: where an unresolved lung loop is stuck (same function for truth and pipeline).

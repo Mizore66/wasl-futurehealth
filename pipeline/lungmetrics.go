@@ -133,6 +133,7 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		"appropriate_followup_within_window": map[string]interface{}{"eligible": afN, "truth": frac(afT, afN), "wasl_measured": frac(afP, afN),
 			"per_loop_agreement": frac(afAgree, afN), "published_reference": 0.38},
 	}
+	handoffBlock(out, ids, final, tr, "lung_nodule") // rejected work-up referrals (handoffext.go)
 	if sm := petSurvMetrics(final, tr, ids); sm != nil { // -lungsurv only: absent otherwise, so the report is unchanged
 		out["pet_surveillance"] = sm
 	}

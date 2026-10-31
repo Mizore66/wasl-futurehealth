@@ -62,6 +62,7 @@ type LinkerCore struct {
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
 	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
 	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
+	xref         map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
 	ann          ANNIndex
 }
 
@@ -86,7 +87,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -645,6 +646,9 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		}
 		f.Down = append(f.Down, ds...)
 	}
+	if XRefLinkQ {
+		f.Down = append(f.Down, L.xrefFacts(loop, s, inC)...)
+	}
 	// near-miss hospital records (scored lo<=p<thr against any cluster member): candidates for a missed link
 	nm := map[int][2]float64{}
 	for _, x := range ms {
@@ -865,6 +869,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			rec.evOrder = append(rec.evOrder, key)
 		}
 		rec.evs[key] = e
+		if XRefLinkQ && L.noteXRef(e, i) { // a rejected intake citing a referral: that loop may need a link question
+			affLoops[e.XRef] = true
+		}
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			loop := e.Provider + "/ServiceRequest/" + e.ID
 			if _, ok := L.loops[loop]; !ok {
