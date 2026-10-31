@@ -312,3 +312,35 @@ func TestIDWorklistDedupe(t *testing.T) {
 		t.Fatal("flag off must ask every item")
 	}
 }
+
+// A link question's answer is about two registrations: once a pair has a human link answer, a queued link question
+// from another loop on the same pair (either order) is dropped. Second-identifier and evidence items are never
+// dropped by it, and with the flag off every item is asked.
+func TestLinkWorklistDedupe(t *testing.T) {
+	defer func(r bool) { ReuseLinkAnswer = r }(ReuseLinkAnswer)
+	ReuseLinkAnswer = true
+	w := linkWorklist{}
+	a := &ReviewItem{ItemID: "a", LoopID: "crc", Kinds: []string{"link"}, Pair: [2]string{"P|1", "H|9"}}
+	b := &ReviewItem{ItemID: "b", LoopID: "cervical", Kinds: []string{"link"}, Pair: [2]string{"H|9", "P|1"}}
+	sid := &ReviewItem{ItemID: "c", Kinds: []string{"link"}, Pair: [2]string{"P|1", "H|9"}, Reason: "second_identifier"}
+	ev := &ReviewItem{ItemID: "d", Kinds: []string{"evidence"}, Pair: [2]string{"P|1", "H|9"}}
+	if w.skip(a) {
+		t.Fatal("first question dropped")
+	}
+	w.record(a, &Signoff{Link: "different"})
+	if !w.skip(b) {
+		t.Fatal("twin asked after \"different\"")
+	}
+	w.record(a, &Signoff{Link: "same"})
+	if !w.skip(b) || w.skip(sid) || w.skip(ev) {
+		t.Fatal("twin not dropped after \"same\", or a non-link item dropped")
+	}
+	w.record(sid, &Signoff{Link: "same"}) // a second-identifier answer is not a link answer
+	if w2 := (linkWorklist{}); func() bool { w2.record(sid, &Signoff{Link: "same"}); return w2.skip(b) }() {
+		t.Fatal("second-identifier answer reused as a link answer")
+	}
+	ReuseLinkAnswer = false
+	if w.skip(b) {
+		t.Fatal("flag off must ask every item")
+	}
+}
