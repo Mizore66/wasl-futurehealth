@@ -215,5 +215,8 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if lm := lungMetrics(final, tr); lm != nil { // second loop type: Fleischner-specific metrics replace the screening ones
 		out["lung_nodule"] = lm
 	}
+	if dm := drMetrics(final, tr); dm != nil { // third loop type: doh2024dr-specific metrics replace the screening ones
+		out["diabetic_retinopathy"] = dm
+	}
 	return out
 }
