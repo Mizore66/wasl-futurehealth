@@ -308,6 +308,17 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
+	referable := recOK && rec.Action == DRRefer
+	var refSRs []srFact // the eye clinic's answers to the referral (handoffext.go); untrusted ones are asked about
+	if referable {
+		var ask []row
+		refSRs, ask = c.extReferrals(f, "diabetic_retinopathy")
+		for _, r := range ask {
+			if state != "closed" {
+				raise(r, "link")
+			}
+		}
+	}
 	d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: state, Owner: owner, Prog: "diabetic_retinopathy",
 		Deadline: float64(rec.Deadline), ProcDay: procDay, ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: -1, AckDay: -1,
 		RefStatus: "none", RefDay: -1, DR: dd}
@@ -340,6 +351,9 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	d.Escalations = esc
+	if referable { // rejected referral: hand-off packet to the screening clinic (handoffext.go)
+		extHandoff(d, f, "diabetic_retinopathy", refSRs, rec.Urgency == "urgent", state == "closed", now)
+	}
 	if OutreachOn {
 		d.Outreach = drOutreach(f, dd, state, d.Overdue, now)
 		if ls.contact == nil {

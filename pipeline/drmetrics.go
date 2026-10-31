@@ -102,7 +102,7 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			}
 		}
 	}
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"loops": n, "rule": "doh2024dr", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"definition": "closed (eye-clinic note records a retinal exam) + no_referral_needed (R0/R1, no maculopathy)",
 			"truth_closed": tp + fn, "pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp),
@@ -114,6 +114,8 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		"referral_exam_within_deadline": map[string]interface{}{"eligible": exN, "truth": frac(exT, exN), "wasl_measured": frac(exP, exN),
 			"per_loop_agreement": frac(exAgree, exN)},
 	}
+	handoffBlock(out, ids, final, tr, "diabetic_retinopathy") // rejected eye-clinic referrals (handoffext.go)
+	return out
 }
 
 // drTwoReader: end-to-end two-reader statistics over every DR report version in the run's FHIR log.

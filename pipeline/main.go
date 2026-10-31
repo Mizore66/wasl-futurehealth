@@ -64,6 +64,7 @@ func main() {
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
 	lungWk := fs.Bool("lungworkup", true, "lung nodule > 8 mm: PET/CT or tissue result can close the loop (lungworkup.go)")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
+	refReject := fs.Bool("refreject", false, "gen: lung work-up and DR eye-clinic referrals can be rejected by the unit (hand-off packet truth; handoffext.go)")
 	xrefLink := fs.Bool("xreflink", false, "hand-off: a rejected referral intake that cites the loop's referral but never linked by identity raises a link question (handoffref.go)")
 	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
 	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
@@ -159,6 +160,7 @@ func main() {
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup = *handoff, *lungWk
 	XRefLinkQ = *xrefLink
+	RefRejectExt = *refReject
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm = *reuseLink, *linkConfirm
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)

@@ -119,7 +119,7 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			}
 		}
 	}
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"loops": n, "rule": "fleischner2017", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed", "truth_closed": tp + fn,
 			"pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn),
@@ -133,6 +133,8 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		"appropriate_followup_within_window": map[string]interface{}{"eligible": afN, "truth": frac(afT, afN), "wasl_measured": frac(afP, afN),
 			"per_loop_agreement": frac(afAgree, afN), "published_reference": 0.38},
 	}
+	handoffBlock(out, ids, final, tr, "lung_nodule") // rejected work-up referrals (handoffext.go)
+	return out
 }
 
 // lungTwoReader: end-to-end two-reader statistics over every lung CT report version in the run's FHIR log.

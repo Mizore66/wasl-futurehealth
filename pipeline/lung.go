@@ -383,6 +383,17 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			}
 		}
 	}
+	workup := ld.Rec != nil && rec.Action == FlCTPET && ld.Scope == "in_scope"
+	var refSRs []srFact // the work-up unit's answers to a PET/CT or tissue referral (handoffext.go); untrusted ones are asked about
+	if workup {
+		var ask []row
+		refSRs, ask = c.extReferrals(f, "lung_nodule")
+		for _, r := range ask {
+			if state != "closed" {
+				raise(r, "link")
+			}
+		}
+	}
 	age := now - f.SRDay
 	d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: state, Owner: owner, Prog: "lung_nodule",
 		Deadline: float64(rec.WinHi), ProcDay: procDay, ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: -1, AckDay: -1,
@@ -419,6 +430,9 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		esc = append(esc, "risk_not_recorded_treated_high")
 	}
 	d.Escalations = esc
+	if workup { // rejected work-up referral: hand-off packet to the imaging centre (handoffext.go)
+		extHandoff(d, f, "lung_nodule", refSRs, true, terminal, now)
+	}
 	if OutreachOn {
 		d.Outreach = lungOutreach(f, ld, state, d.Overdue, now)
 		if ls.contact == nil {
