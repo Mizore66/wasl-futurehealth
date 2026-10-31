@@ -1128,4 +1128,4 @@ Post-hoc reader change, disclosed. Every MTSamples u4 loop (an EGD and a colonos
 | Review-load ratio, per seed; pooled (p) | 1.13 (1.06–1.20); 1.08 (0.12) → 1.13 (1.06–1.20); 1.08 (0.10) | 1.21 (1.09–1.34); 1.08 (0.11) → 1.22 (1.10–1.35); 1.09 (0.10) |
 | Hand-off packets matched / truth (extra) | 330 / 333 (0) | 296 / 300 (0) |
 
-The remaining u4 loops that do not close are the simulated reviewer's and clinician's assumed error rates, not the reader.
+The reader now agrees on u4 (both say no colon tissue). The 24 u4 loops that still do not close end open (13), inadequate (8) or awaiting histology (3); they come from the same other causes as elsewhere (linkage misses, the simulated reviewer and day-15 clinician error rates) and were not traced one by one.
