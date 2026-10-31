@@ -141,7 +141,6 @@ func main() {
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
-	_ = breastN // TEMP
 	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
@@ -171,6 +170,11 @@ func main() {
 	if (cmd == "gen" && *drN > 0) || os.Getenv("WSI_DR_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_eye-hosp.ndjson")) {
 		EnableDR()
 		os.Setenv("WSI_DR_PROVIDERS", "1")
+	}
+	// breast recall programme: same, after the DR providers
+	if (cmd == "gen" && *breastN > 0) || os.Getenv("WSI_BREAST_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_bau-hosp.ndjson")) {
+		EnableBreast()
+		os.Setenv("WSI_BREAST_PROVIDERS", "1")
 	}
 	ModelSet = *modelSet
 	DualMerge = *dual
@@ -334,7 +338,7 @@ func main() {
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
-		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData)
+		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
 	case "producer":
