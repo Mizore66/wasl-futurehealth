@@ -467,6 +467,26 @@ func (w idWorklist) record(it *ReviewItem, so *Signoff) {
 	}
 }
 
+// linkWorklist: one link question per registration pair (ReuseLinkAnswer). The linker applies a human link answer to
+// the pair itself (merge or cannot-link), so it already holds for every loop of the patient; a twin queued by another
+// loop before the answer landed only asks again, and a contradicting answer (the simulated reviewer's error) would
+// override the first. Once a pair has an answer, queued link twins are dropped; a later answer replaces it.
+type linkWorklist map[[2]string]string
+
+func isLinkQuestion(it *ReviewItem) bool {
+	return it.Reason == "" && len(it.Kinds) == 1 && it.Kinds[0] == "link"
+}
+
+func (w linkWorklist) skip(it *ReviewItem) bool {
+	return ReuseLinkAnswer && isLinkQuestion(it) && w[pairKey(it.Pair[0], it.Pair[1])] != ""
+}
+
+func (w linkWorklist) record(it *ReviewItem, so *Signoff) {
+	if isLinkQuestion(it) && (so.Link == "same" || so.Link == "different") {
+		w[pairKey(it.Pair[0], it.Pair[1])] = so.Link
+	}
+}
+
 // msgConfirmed (v7): a human confirmed (second-identifier item answered "same") that the downstream registration is this patient.
 func msgConfirmed(f *LoopFacts, a, b string) bool {
 	for _, s := range f.Signoffs {
