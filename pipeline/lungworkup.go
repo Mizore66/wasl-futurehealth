@@ -278,7 +278,7 @@ func lungOutreach(f *LoopFacts, ld *LungDecision, state string, overdue bool, no
 	}
 	var out []Outreach
 	for _, k := range kinds {
-		o := Outreach{Kind: k, Event: f.LoopID, Basis: "self", PCal: 1, Channel: "phone_then_letter", Sender: f.Provider}
+		o := Outreach{Kind: k, Event: f.LoopID, Basis: "self", PCal: 1, Channel: "phone_then_letter", Sender: f.Provider, Template: outreachTpl("lung_nodule", k, f)}
 		switch {
 		case f.MsgOptOut:
 			o.Suppress = SupConsent
