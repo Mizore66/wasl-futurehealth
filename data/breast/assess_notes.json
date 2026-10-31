@@ -1,0 +1,555 @@
+{
+ "source": "synthetic templated corpus (scripts/breast_corpus.py, seed 29); dev set, used to write the readers",
+ "reports": [
+  {
+   "id": "ba01",
+   "text": "Breast assessment clinic, regional hospital. Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba02",
+   "text": "Breast MDT outcome record. US-guided core biopsy left breast: fibroadenoma (B2), concordant with imaging. MDT outcome: benign, return to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba03",
+   "text": "Breast MDT outcome record. Stereotactic vacuum biopsy of the calcifications: benign fibrocystic change, no atypia, no evidence of malignancy. MDT: concordant benign; back to the screening programme.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba04",
+   "text": "Diagnostic breast assessment unit. US-guided core biopsy left breast: fibroadenoma (B2), concordant with imaging. MDT outcome: benign, return to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba05",
+   "text": "Diagnostic breast assessment unit. Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba06",
+   "text": "One-stop breast clinic note. Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba07",
+   "text": "Breast MDT outcome record. Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba08",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 5). Stereotactic vacuum biopsy of the calcifications: benign fibrocystic change, no atypia, no evidence of malignancy. MDT: concordant benign; back to the screening programme.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba09",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 4). Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba10",
+   "text": "Breast assessment clinic, regional hospital. Further views and spot compression: the asymmetry disperses, no true lesion. Ultrasound normal. Return to routine 2-yearly screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba11",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 5). US-guided core biopsy left breast: fibroadenoma (B2), concordant with imaging. MDT outcome: benign, return to routine screening. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba12",
+   "text": "One-stop breast clinic note. US-guided core biopsy left breast: fibroadenoma (B2), concordant with imaging. MDT outcome: benign, return to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba13",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 4). Triple assessment: clinical examination normal; ultrasound shows a simple cyst at 2 o'clock. No biopsy required. Discharged to routine screening.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "routine",
+    "label": "return_routine"
+   }
+  },
+  {
+   "id": "ba14",
+   "text": "One-stop breast clinic note. Core biopsy: benign breast tissue (B2), but imaging-pathology concordance uncertain. MDT: short-interval follow-up mammogram in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba15",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 5). Ultrasound: circumscribed oval mass 7 mm, probably benign. MDT outcome: early recall for repeat imaging in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba16",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 4). Ultrasound: circumscribed oval mass 7 mm, probably benign. MDT outcome: early recall for repeat imaging in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba17",
+   "text": "Breast assessment clinic, regional hospital. Additional views: probably benign punctate calcifications. Six-month early recall mammogram arranged. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba18",
+   "text": "Breast MDT outcome record. Ultrasound: circumscribed oval mass 7 mm, probably benign. MDT outcome: early recall for repeat imaging in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba19",
+   "text": "Diagnostic breast assessment unit. Core biopsy: benign breast tissue (B2), but imaging-pathology concordance uncertain. MDT: short-interval follow-up mammogram in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "benign",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba20",
+   "text": "Diagnostic breast assessment unit. Ultrasound: circumscribed oval mass 7 mm, probably benign. MDT outcome: early recall for repeat imaging in 6 months.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "early_recall",
+    "label": "early_recall"
+   }
+  },
+  {
+   "id": "ba21",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 0). Stereotactic biopsy: high-grade DCIS (B5a). MDT recommends surgery; referral to the breast surgeon sent today.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba22",
+   "text": "One-stop breast clinic note. Stereotactic biopsy: high-grade DCIS (B5a). MDT recommends surgery; referral to the breast surgeon sent today.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba23",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 5). Histology from the core biopsy: invasive lobular carcinoma. Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba24",
+   "text": "Breast assessment clinic, regional hospital. Histology from the core biopsy: invasive lobular carcinoma. Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba25",
+   "text": "Breast MDT outcome record. Histology from the core biopsy: invasive lobular carcinoma. Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba26",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 5). Histology from the core biopsy: invasive lobular carcinoma. Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba27",
+   "text": "Diagnostic breast assessment unit. Stereotactic biopsy: high-grade DCIS (B5a). MDT recommends surgery; referral to the breast surgeon sent today.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba28",
+   "text": "Breast assessment clinic, regional hospital. US-guided core biopsy right breast: invasive ductal carcinoma, grade 2 (B5b). MDT: referred to breast surgery for wide local excision and sentinel node biopsy.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba29",
+   "text": "One-stop breast clinic note. Stereotactic biopsy: high-grade DCIS (B5a). MDT recommends surgery; referral to the breast surgeon sent today. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba30",
+   "text": "One-stop breast clinic note. US-guided core biopsy right breast: invasive ductal carcinoma, grade 2 (B5b). MDT: referred to breast surgery for wide local excision and sentinel node biopsy.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "malignant",
+    "outcome": "treatment",
+    "label": "to_treatment"
+   }
+  },
+  {
+   "id": "ba31",
+   "text": "Diagnostic breast assessment unit. Attended the assessment clinic but declined biopsy today; counselled, to return next week.",
+   "key": {
+    "attended": true,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba32",
+   "text": "Breast MDT outcome record. Discussed at MDT: further imaging with breast MRI requested before a decision.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba33",
+   "text": "One-stop breast clinic note. Seen in the assessment clinic. Ultrasound-guided core biopsy of the left breast mass taken. Results awaited; for discussion at the next MDT.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba34",
+   "text": "Breast MDT outcome record. Imaging highly suspicious (U5). Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "treatment",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba35",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 4). Seen in the assessment clinic. Ultrasound-guided core biopsy of the left breast mass taken. Results awaited; for discussion at the next MDT.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba36",
+   "text": "Diagnostic breast assessment unit. Attended the assessment clinic but declined biopsy today; counselled, to return next week. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba37",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 0). Imaging highly suspicious (U5). Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "treatment",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba38",
+   "text": "One-stop breast clinic note. Attended the assessment clinic but declined biopsy today; counselled, to return next week.",
+   "key": {
+    "attended": true,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba39",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 5). Seen in the assessment clinic. Ultrasound-guided core biopsy of the left breast mass taken. Results awaited; for discussion at the next MDT. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba40",
+   "text": "Breast assessment clinic, regional hospital. Discussed at MDT: further imaging with breast MRI requested before a decision.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba41",
+   "text": "Diagnostic breast assessment unit. Imaging highly suspicious (U5). Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "treatment",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba42",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 4). Seen in the assessment clinic. Ultrasound-guided core biopsy of the left breast mass taken. Results awaited; for discussion at the next MDT.",
+   "key": {
+    "attended": true,
+    "assessment": "done",
+    "biopsy": "pending",
+    "outcome": "pending",
+    "label": "incomplete"
+   }
+  },
+  {
+   "id": "ba43",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 0). Patient did not attend her breast assessment appointment. Second appointment sent.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba44",
+   "text": "Diagnostic breast assessment unit. Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba45",
+   "text": "Diagnostic breast assessment unit. DNA. Recall letter re-sent and GP informed.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba46",
+   "text": "Diagnostic breast assessment unit. Recalled from screening (BI-RADS 5). Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba47",
+   "text": "Breast MDT outcome record. DNA. Recall letter re-sent and GP informed.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba48",
+   "text": "One-stop breast clinic note. Patient did not attend her breast assessment appointment. Second appointment sent.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba49",
+   "text": "Breast assessment clinic, regional hospital. Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "ba50",
+   "text": "Breast assessment clinic, regional hospital. Recalled from screening (BI-RADS 0). Patient did not attend her breast assessment appointment. Second appointment sent.",
+   "key": {
+    "attended": false,
+    "assessment": "not_done",
+    "biopsy": "none",
+    "outcome": "pending",
+    "label": "dna"
+   }
+  }
+ ]
+}

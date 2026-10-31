@@ -131,7 +131,7 @@ func TestHL7DRRoundTripEquivalence(t *testing.T) {
 	stdout := os.Stdout
 	os.Stdout = devnull
 	runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 11, 60, 20, 1200, 20,
-		loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 0, "", 120, "")
+		loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 0, "", 120, "", 0, "")
 	os.Stdout = stdout
 	n, mapped, coded := 0, map[string]int{}, 0
 	for _, prov := range []string{"phc-retina", "eye-hosp"} {

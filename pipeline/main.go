@@ -144,6 +144,8 @@ func main() {
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
+	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
@@ -179,6 +181,11 @@ func main() {
 	if (cmd == "gen" && *drN > 0) || os.Getenv("WSI_DR_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_eye-hosp.ndjson")) {
 		EnableDR()
 		os.Setenv("WSI_DR_PROVIDERS", "1")
+	}
+	// breast recall programme: same, after the DR providers
+	if (cmd == "gen" && *breastN > 0) || os.Getenv("WSI_BREAST_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_bau-hosp.ndjson")) {
+		EnableBreast()
+		os.Setenv("WSI_BREAST_PROVIDERS", "1")
 	}
 	ModelSet = *modelSet
 	DualMerge = *dual
@@ -348,7 +355,7 @@ func main() {
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
-		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData)
+		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
 	case "producer":
@@ -378,6 +385,8 @@ func main() {
 		runLungCache(*lungData, *readerURL, *out)
 	case "drcache": // ask local Gemma 3 4B once per unique DR corpus text; write the replayable cache + reader scores
 		runDRCache(*drData, *readerURL, *out)
+	case "breastcache": // ask local Gemma 3 4B once per unique breast corpus text; write the replayable cache + reader scores
+		runBreastCache(*breastData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")

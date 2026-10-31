@@ -1,0 +1,180 @@
+{
+ "run": "scripts/demo.sh all, seed 2026, WASL_BREAST=350, lung and DR off (screening cohort defaults): the most breast loops the demo person pool allows",
+ "breast": {
+  "closure": {
+   "attribution": {
+    "missed_pred_open": 1
+   },
+   "definition": "closed (assessment outcome documented: return to routine, early recall or referred to treatment) + no_recall_needed (BI-RADS 1/2)",
+   "false_closure_rate_upper95": 0.011,
+   "false_closures": 0,
+   "missed": 1,
+   "precision": 1,
+   "pred_closed": 333,
+   "recall": 0.997,
+   "tp": 333,
+   "truth_closed": 334
+  },
+  "confusion_truth_pred": {
+   "closed": {
+    "closed": 27,
+    "open": 1
+   },
+   "no_recall_needed": {
+    "no_recall_needed": 306
+   },
+   "open": {
+    "open": 16
+   }
+  },
+  "doh_kpi": {
+   "abnormal_recall_rate": {
+    "doh_acceptable_subsequent": 0.1,
+    "screened": 350,
+    "truth": 0.117,
+    "wasl_measured": 0.117
+   },
+   "assessment_outcome_within_deadline": {
+    "eligible": 41,
+    "per_loop_agreement": 0.976,
+    "truth": 0.537,
+    "wasl_measured": 0.512
+   },
+   "early_recall_rate": {
+    "doh_acceptable": 0.01,
+    "screened": 350,
+    "truth": 0.011,
+    "wasl_measured": 0.011
+   }
+  },
+  "loops": 350,
+  "overdue_flag_accuracy": 0.997,
+  "patient_outreach_final": {
+   "breast_overdue_recall:released": 14,
+   "breast_repeat_mammogram:released": 3
+  },
+  "recall_closure": {
+   "false_closures": 0,
+   "precision": 1,
+   "pred_closed": 27,
+   "recall": 0.964,
+   "tp": 27,
+   "truth_closed": 28
+  },
+  "recall_outcome_accuracy": 1,
+  "rule": "doh2025breast",
+  "state_accuracy": 0.997,
+  "triage": {
+   "accuracy": 1,
+   "correct": 350,
+   "coverage": 1,
+   "loops": 350,
+   "with_pipeline_rec": 350
+  },
+  "two_reader": {
+   "breast-assess": {
+    "agree": 75,
+    "agree_but_wrong_vs_truth": 0,
+    "agreement_rate": 1,
+    "coded_birads": 0,
+    "report_instances": 75,
+    "second_reader_available": 75,
+    "to_review": 0,
+    "unique_texts": 36
+   },
+   "breast-screen": {
+    "agree": 347,
+    "agree_but_wrong_vs_truth": 0,
+    "agreement_rate": 0.967,
+    "coded_birads": 253,
+    "report_instances": 359,
+    "second_reader_available": 359,
+    "to_review": 12,
+    "unique_texts": 89
+   }
+  }
+ },
+ "breast_no_review": {
+  "closure": {
+   "attribution": {
+    "missed_pred_open": 18
+   },
+   "definition": "closed (assessment outcome documented: return to routine, early recall or referred to treatment) + no_recall_needed (BI-RADS 1/2)",
+   "false_closure_rate_upper95": 0.012,
+   "false_closures": 0,
+   "missed": 18,
+   "precision": 1,
+   "pred_closed": 316,
+   "recall": 0.946,
+   "tp": 316,
+   "truth_closed": 334
+  },
+  "confusion_truth_pred": {
+   "closed": {
+    "closed": 17,
+    "open": 11
+   },
+   "no_recall_needed": {
+    "no_recall_needed": 299,
+    "open": 7
+   },
+   "open": {
+    "open": 16
+   }
+  },
+  "doh_kpi": {
+   "abnormal_recall_rate": {
+    "doh_acceptable_subsequent": 0.1,
+    "screened": 350,
+    "truth": 0.117,
+    "wasl_measured": 0.111
+   },
+   "assessment_outcome_within_deadline": {
+    "eligible": 41,
+    "per_loop_agreement": 0.732,
+    "truth": 0.537,
+    "wasl_measured": 0.268
+   },
+   "early_recall_rate": {
+    "doh_acceptable": 0.01,
+    "screened": 350,
+    "truth": 0.011,
+    "wasl_measured": 0.009
+   }
+  },
+  "loops": 350,
+  "overdue_flag_accuracy": 0.966,
+  "patient_outreach_final": {
+   "breast_overdue_recall:consent_withheld": 1,
+   "breast_overdue_recall:released": 21
+  },
+  "recall_closure": {
+   "false_closures": 0,
+   "precision": 1,
+   "pred_closed": 17,
+   "recall": 0.607,
+   "tp": 17,
+   "truth_closed": 28
+  },
+  "recall_outcome_accuracy": 1,
+  "rule": "doh2025breast",
+  "state_accuracy": 0.949,
+  "triage": {
+   "accuracy": 1,
+   "correct": 338,
+   "coverage": 0.966,
+   "loops": 350,
+   "with_pipeline_rec": 338
+  }
+ },
+ "breast_reviewer": {
+  "items": 24,
+  "items_per_100_loops": 6.857,
+  "loops": 350,
+  "reads": 38,
+  "reviewer_hours_per_1k_loops": 2.246,
+  "sim_hours": 0.786,
+  "wrong_final_signoffs": 0
+ },
+ "missed_closure": "bsu-screen/ServiceRequest/BSU-sr-116 (B0, truth closed on return_routine): no assessment document was linked to the loop, so it stayed open awaiting assessment (linkage recall, safe direction)"
+}

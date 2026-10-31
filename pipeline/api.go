@@ -30,7 +30,7 @@ const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -123,7 +123,7 @@ func loadAPI(run, data string) *apiServer {
 	for _, c := range s.cases {
 		d := c.last
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
-		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed", d.ClosedDay
+		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
 		c.Consent = consentFromDecision(d)
 	}
 	// reviewer sign-offs (signed resolutions)
@@ -478,6 +478,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.DR != nil { // diabetic_retinopathy: grade, rule, deadline, eye-clinic outcome
 		m["dr"] = c.last.DR
 	}
+	if c.last != nil && c.last.Breast != nil { // breast: BI-RADS category, rule, deadline, assessment outcome
+		m["breast"] = c.last.Breast
+	}
 	return m
 }
 
@@ -626,6 +629,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		act = ActSignEvidence
 	}
 	if act == "" && c.Programme == "diabetic_retinopathy" && drEvAlt(req.Decision) != nil { // DR evidence labels (R2M0, examined_followup, ...)
+		act = ActSignEvidence
+	}
+	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
 		act = ActSignEvidence
 	}
 	if act == "" {
