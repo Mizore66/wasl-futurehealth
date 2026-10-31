@@ -138,6 +138,7 @@ func main() {
 	imgCache := fs.String("imgcache", "", "gen/image: image verdict cache (default <wasl>/image_verdicts.json)")
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
+	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
@@ -349,6 +350,8 @@ func main() {
 		runServe(absRun, *data, *apiAddr)
 	case "lungcache": // ask local Gemma 3 4B once per unique lung corpus text; write the replayable cache + reader scores
 		runLungCache(*lungData, *readerURL, *out)
+	case "drcache": // ask local Gemma 3 4B once per unique DR corpus text; write the replayable cache + reader scores
+		runDRCache(*drData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")

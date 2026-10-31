@@ -58,7 +58,7 @@ def screen_label(rr, rl, mr, ml, urgent):
         eyes = ok
     w = max((g for g, _ in eyes), key=lambda g: RANK[g])
     m = '1' if any(m == '1' for _, m in eyes) else '0'
-    return 'R' + w + 'M' + m + ('/urgent' if urgent else '')
+    return 'R' + w + 'M' + m + ('/urgent' if urgent and w != '3A' else '')  # R3A is urgent anyway
 
 
 def eye_text(g, m):
