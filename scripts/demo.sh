@@ -127,8 +127,12 @@ snapshot() {  # write static API responses for frontend development (no backend 
   curl -sf "http://$A/healthz" > "$D/healthz.json"
   curl -sf "http://$A/api/dashboard" > "$D/dashboard.json"
   curl -sf "http://$A/api/fixtures" > "$D/fixtures.json"
-  curl -sf "http://$A/api/cases?programme=crc&limit=25" > "$D/cases_crc_page1.json"
-  for tag in evidence_closure false_closure_trap review_hold; do
+  for prog in crc cervical lung_nodule diabetic_retinopathy breast; do   # first page per programme present in the run
+    curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$D/cases_${prog}_page1.json.tmp" &&
+      python3 -c "import json,sys;sys.exit(0 if json.load(open('$D/cases_${prog}_page1.json.tmp')).get('cases') else 1)" &&
+      mv "$D/cases_${prog}_page1.json.tmp" "$D/cases_${prog}_page1.json" || rm -f "$D/cases_${prog}_page1.json.tmp"
+  done
+  for tag in $(python3 -c "import json;print(' '.join(sorted(json.load(open('$D/fixtures.json'))['fixtures'])))"); do
     id=$(python3 -c "import json;print(json.load(open('$D/fixtures.json'))['fixtures']['$tag']['id'])")
     curl -sf "http://$A/api/cases/$id" > "$D/case_$tag.json"
     curl -sf "http://$A/api/cases/$id/audit" > "$D/case_${tag}_audit.json"

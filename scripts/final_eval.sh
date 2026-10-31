@@ -17,7 +17,7 @@ FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
 DR="${WASL_DR:-1200}"; export DR   # diabetic retinopathy screening loops per run (third loop type; 0 = off)
-BREAST="${WASL_BREAST:-70}"; export BREAST   # breast screening recall loops per run (fourth loop type; 0 = off; 70 + distractors fit the fewest held-out women allow next to CRC, cervical and DR)
+BREAST="${WASL_BREAST:-70}"; export BREAST   # breast screening recall loops per run (fourth loop type; 0 = off; 70 plus distractors fit the fewest held-out women next to CRC, cervical and DR)
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
