@@ -7,6 +7,7 @@ package main
 //  - emits per-loop LoopFacts (with widest-path link strength) whenever a loop's cluster or evidence changes
 // The same code runs in the live linker process and in the offline audit replay.
 import (
+	"strconv"
 	"sort"
 	"strings"
 )
@@ -25,6 +26,7 @@ type Rec struct {
 	evOrder        []string
 	evs            map[string]*Event
 	srs            []string // loop ids owned by this record
+	reportByBody   map[string]string // report content key -> event key (cross-transport duplicates)
 }
 
 type LinkerCore struct {
@@ -370,6 +372,21 @@ func dot(a, b []float32) float64 {
 		s += a[i] * b[i]
 	}
 	return float64(s)
+}
+
+// reportContentKey: identity of a report's content for cross-transport de-duplication ("" for other events).
+func reportContentKey(e *Event) string {
+	if e.RType != "DiagnosticReport" {
+		return ""
+	}
+	body := e.TextSha
+	if body == "" {
+		if e.Text == "" {
+			return ""
+		}
+		body = sha([]byte(e.Text))
+	}
+	return e.Category + "|" + e.Focus + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
 }
 
 func (L *LinkerCore) clusterOf(i int) []int { return L.members[L.Find(i)] }
@@ -807,6 +824,18 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
+		if ck := reportContentKey(e); ck != "" {
+			// the same result sent twice under two ids (a FHIR DiagnosticReport and an HL7 ORU with its own filler
+			// number): same registration, kind, effective day and text. Keep the first; a correction keeps its id.
+			if rec.reportByBody == nil {
+				rec.reportByBody = map[string]string{}
+			}
+			if prev, ok := rec.reportByBody[ck]; ok && prev != key {
+				L.Stats["duplicate_report_other_id"]++
+				break
+			}
+			rec.reportByBody[ck] = key
+		}
 		if _, seen := rec.evs[key]; !seen {
 			rec.evOrder = append(rec.evOrder, key)
 		}

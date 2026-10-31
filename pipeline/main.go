@@ -110,7 +110,10 @@ func main() {
 	fReo := fs.Float64("freorder", 0.05, "mock fault: P(reordered notification)")
 	fDrop := fs.Float64("fdrop", 0.03, "mock fault: P(dropped notification)")
 	subKill := fs.Int("subkill", 1, "kill/restart cycles of the FHIR subscription consumer (source=fhir)")
-	hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
+	pollSpeed := fs.Float64("pollspeed", 0, "malaffi: also serve _history and $export, HIE clock at this many simulated days per wall second (source=fhirpoll)")
+	lagFrac := fs.Float64("lagfrac", 0.02, "malaffi poll mode: fraction of versions visible only 0.1-2 days after their lastUpdated (late commits)")
+	pollOverlap := fs.Float64("overlap", 0.5, "fhirpoll: simulated days re-read before the watermark on each poll")
+		hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
 	apiAddr := fs.String("addr", "127.0.0.1:8088", "serve: API listen address")
 	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
@@ -332,7 +335,10 @@ func main() {
 	case "reviewer":
 		runReviewer(*data, absRun, rcfg, *revLat, *hold, *seed)
 	case "malaffi":
-		runMalaffi(*data, *hieAddr, *speed, *seed, *fDup, *fReo, *fDrop, absRun)
+		runMalaffi(*data, *hieAddr, *speed, *seed, *fDup, *fReo, *fDrop, absRun, *pollSpeed, *lagFrac)
+	case "fhirpoll":
+		PollOverlap, ExportOff = *pollOverlap, os.Getenv("WASL_EXPORT_OFF") == "1"
+		runFhirPoll("http://"+*hieAddr+"/fhir", absRun)
 	case "hl7mllp":
 		runHL7Listener(*hl7Addr, absRun)
 	case "hl7send":
@@ -360,7 +366,7 @@ func main() {
 		asked, ok := WarmReader(*data, 4)
 		fmt.Printf("reader warm: %d unique report bodies, %d read OK, %d unavailable (will route to review)\n", asked, ok, asked-ok)
 	case "orchestrate":
-		SrcCfg = srcCfg{*source, *content, *hieAddr, *hookAddr, *fDup, *fReo, *fDrop, *subKill, *hl7Addr, *hl7Drops}
+		SrcCfg = srcCfg{Source: *source, Content: *content, Hie: *hieAddr, Hook: *hookAddr, Dup: *fDup, Reorder: *fReo, Drop: *fDrop, SubKill: *subKill, HL7Addr: *hl7Addr, HL7Drops: *hl7Drops, PollSpeed: *pollSpeed, LagFrac: *lagFrac, Overlap: *pollOverlap}
 		RevArgs = []string{"-revlat", fmt.Sprint(*revLat), "-seed", fmt.Sprint(*seed)}
 		if *hold != "" {
 			RevArgs = append(RevArgs, "-hold", *hold)
@@ -428,6 +434,7 @@ var RevArgs []string
 
 type srcCfg struct {
 	Source, Content, Hie, Hook string
+	PollSpeed, LagFrac, Overlap float64
 	Dup, Reorder, Drop         float64
 	SubKill                    int
 	HL7Addr                    string
@@ -620,6 +627,16 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		time.Sleep(700 * time.Millisecond) // mock loads + sorts the cohort
 		t0 = time.Now()
 		o.start("fhirsub", "", c("fhirsub", "-hie", SrcCfg.Hie, "-hook", SrcCfg.Hook, "-content", SrcCfg.Content)...)
+	} else if SrcCfg.Source == "fhirpoll" {
+		ps := SrcCfg.PollSpeed
+		if ps <= 0 {
+			ps = 3 // simulated days per wall second: the 160-day feed in about a minute, like the subscription run
+		}
+		o.start("malaffi", "", c("malaffi", "-speed", fmt.Sprint(speed), "-seed", fmt.Sprint(seed), "-hie", SrcCfg.Hie,
+			"-pollspeed", fmt.Sprint(ps), "-lagfrac", fmt.Sprint(SrcCfg.LagFrac))...)
+		time.Sleep(700 * time.Millisecond)
+		t0 = time.Now()
+		o.start("fhirpoll", "", c("fhirpoll", "-hie", SrcCfg.Hie, "-overlap", fmt.Sprint(SrcCfg.Overlap))...)
 	} else if SrcCfg.Source == "hl7" {
 		o.start("hl7mllp", "", c("hl7mllp", "-hl7", SrcCfg.HL7Addr)...)
 		time.Sleep(400 * time.Millisecond)
@@ -664,6 +681,26 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 				events = append(events, map[string]interface{}{"cycle": fmt.Sprintf("hl7mllp-%d", k+1), "victims": []string{"hl7mllp"}, "t_kill": at, "down_s": down})
 				evMu.Unlock()
 				fmt.Printf("chaos: killed HL7 MLLP listener at %.1fs, restarted after %.1fs\n", at, down)
+			}
+		}()
+	}
+	if SrcCfg.Source == "fhirpoll" && SrcCfg.SubKill > 0 { // kill/restart the poller mid-feed (resumes from its KV watermark)
+		subDone.Add(1)
+		go func() {
+			defer subDone.Done()
+			for k := 0; k < SrcCfg.SubKill; k++ {
+				at := 40.0 * (float64(k) + 0.45) / float64(SrcCfg.SubKill)
+				if d := time.Until(t0.Add(time.Duration(at * float64(time.Second)))); d > 0 {
+					time.Sleep(d)
+				}
+				o.kill("fhirpoll")
+				down := 1.5 + subRng.Float64()
+				time.Sleep(time.Duration(down * float64(time.Second)))
+				o.start("fhirpoll", "")
+				evMu.Lock()
+				events = append(events, map[string]interface{}{"cycle": fmt.Sprintf("fhirpoll-%d", k+1), "victims": []string{"fhirpoll"}, "t_kill": at, "down_s": down})
+				evMu.Unlock()
+				fmt.Printf("chaos: killed FHIR poller at %.1fs, restarted after %.1fs\n", at, down)
 			}
 		}()
 	}
@@ -744,6 +781,10 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		ok := chaosDone
 		if SrcCfg.Source == "fhir" {
 			if st := readStatus(run, "fhirsub"); st == nil || st["done"] != true {
+				ok = false
+			}
+		} else if SrcCfg.Source == "fhirpoll" {
+			if st := readStatus(run, "fhirpoll"); st == nil || st["done"] != true {
 				ok = false
 			}
 		} else if SrcCfg.Source == "hl7" {

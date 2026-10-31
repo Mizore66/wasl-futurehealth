@@ -1,0 +1,34 @@
+{
+ "run": "negative control: WASL_EXPORT_OFF=1",
+ "crash_recovery": {
+  "duplicate_outputs": 0,
+  "expected_outputs": 27128,
+  "facts_msgs_replay": 26399,
+  "fhir_msgs": 36060,
+  "final_state_mismatch_loops": 0,
+  "generated_resources": 34764,
+  "ingest_duplicates": 0,
+  "ingest_lost": 133,
+  "live_outputs": 27128,
+  "logical_duplicate_decisions": 5,
+  "lost_outputs": 0,
+  "prep_content_mismatch": 0,
+  "prep_duplicates": 0,
+  "prep_live_msgs": 36060,
+  "prep_lost": 0,
+  "unexpected_outputs": 0,
+  "writer_processes_seen": 5
+ },
+ "poller_after_restart": {
+  "already_ingested_dropped": 200,
+  "dup_dropped_poll": 4873,
+  "polls": 113,
+  "published_poll": 24336,
+  "resumed": 1
+ },
+ "mock_hie": {
+  "history_entries": 46680,
+  "history_queries": 174,
+  "poll_lagged_versions": 662
+ }
+}

@@ -50,8 +50,9 @@ type BReq struct {
 	URL    string `json:"url"`
 }
 type BResp struct {
-	Status string `json:"status"`
-	Etag   string `json:"etag,omitempty"`
+	Status       string `json:"status"`
+	Etag         string `json:"etag,omitempty"`
+	LastModified string `json:"lastModified,omitempty"`
 }
 type BEntry struct {
 	FullURL  string          `json:"fullUrl,omitempty"`
