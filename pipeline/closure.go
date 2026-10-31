@@ -357,6 +357,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			key += k
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
+		if s, ok := signed[id]; ok && kind == "link" && purpose == "" && heldLink(s) { // held "same": ask the confirming review
+			purpose, key = LinkConfirm, key+"#linkconfirm"
+			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
+		}
 		if _, ok := signed[id]; ok || pendSet[id] {
 			return
 		}
@@ -377,6 +381,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 			if purpose != "" {
 				it.Reason = purpose
+			}
+			if purpose == LinkConfirm {
+				it.Verdict = signed["rv-"+sha([]byte(f.LoopID+"|link|"+pair[0]+"|"+pair[1]))[:16]].Hold
 			}
 			if pilotKey(purpose) != "" {
 				it.Day = round4(now)
