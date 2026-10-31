@@ -7,6 +7,7 @@
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 #      WASL_LUNG=N adds N incidental lung-nodule loops (Fleischner 2017, second loop type; default 0 = screening cohort only).
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
+#      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -28,9 +29,12 @@ MARGS=(); [ -z "$MODELSET" ] || MARGS=(-modelset "$MODELSET")
 SHADOW="${WASL_SHADOW:-0}"; AUTOAUDIT="${WASL_AUTOAUDIT:-0}"   # pilot switches (pipeline/pilot.go); 0 = off
 PARGS=(); [ "$SHADOW" = 0 ] || { PARGS+=(-shadow); RUN="$RUN-shadow"; }   # cohort generation never sees them
 [ "$AUTOAUDIT" = 0 ] || { PARGS+=(-autoaudit "$AUTOAUDIT"); RUN="$RUN-autoaudit$AUTOAUDIT"; }
+LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go); 0 = off
+[ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
 RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
+[ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()

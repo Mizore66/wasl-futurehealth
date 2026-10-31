@@ -6,7 +6,8 @@
 #   4. Aggregates with 95% intervals (t over seeds) and Clopper-Pearson upper bounds for zero-event safety metrics.
 # Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir),
 #   WASL_LUNG=N incidental lung-nodule loops per run (default 1088; 0 = screening cohort only), WASL_DR=N diabetic
-#   retinopathy screening loops per run (default 1200; 0 = off). Cohort size: every held-out
+#   retinopathy screening loops per run (default 1200; 0 = off), WASL_LUNGSURV=1 surveillance CT after a PET/CT
+#   low-uptake lung closure (default 0 = off). Cohort size: every held-out
 #   person (8,871; WASL_PERSONS caps it), WASL_CRC=2040 CRC and WASL_CERV=816 cervical loops: 1.36x the earlier 6,500
 #   persons / 1,500 / 600 / 800, so the smallest name-origin group (Filipino) has about 360 loops per run, not 250.
 set -euo pipefail
@@ -19,6 +20,8 @@ DR="${WASL_DR:-1200}"; export DR   # diabetic retinopathy screening loops per ru
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
+# WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default off
+GSURV=(); [ "${WASL_LUNGSURV:-0}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -51,6 +54,8 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
                      "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"]}
 if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_AUTOAUDIT", "0") not in ("", "0"):
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
+if os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
+    m["lung_pet_surveillance"] = "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure"
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
@@ -67,7 +72,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     B="$ROOT/bin"
     "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-      -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" > /dev/null
+      -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" ${GSURV[@]+"${GSURV[@]}"} > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
