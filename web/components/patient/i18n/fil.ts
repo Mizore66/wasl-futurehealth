@@ -1,0 +1,87 @@
+/*
+ * Needs medical translation review.
+ * This Filipino copy was drafted for the design and has not been reviewed by a
+ * qualified medical translator. Do not show it to patients until it has been.
+ */
+import type { PatientDict } from "./types";
+
+export const fil: PatientDict = {
+  dir: "ltr",
+  langName: "Filipino",
+  langTitle: "Wika",
+  clinic: "Al Mushrif Healthcare Centre",
+  call: "Tawagan ang nurse",
+  close: "Isara",
+  notice: {
+    greet: "Kumusta, Fatima",
+    title: "Kailangan pa ng isang pagsusuri ang resulta mo",
+    body: "Hindi ito diagnosis, at hindi ibig sabihing may sakit ka. May nakitang bakas ng dugo ang test na hindi nakikita ng mata. Ipapakita ng susunod na pagsusuri kung bakit.",
+    nextHead: "Susunod na hakbang",
+    next: "Tatawagan ka ni Nurse Hessa sa loob ng 2 araw ng trabaho para i-book ang colonoscopy at ipaliwanag ang paghahanda.",
+    nurse: "Nurse Hessa Al Ali",
+    alsoCall: "Puwede mo rin siyang tawagan:",
+    rights: "Ang iyong mga karapatan",
+    rightsItems: [
+      "Protektado ang iyong privacy. Ikaw at ang iyong care team lang ang nakakakita ng resulta mo.",
+      "Puwede kang humingi ng mas malinaw na paliwanag, sa telepono o sa sarili mong wika.",
+      "Puwede kang tumanggi sa follow-up o kuwestiyunin ang anumang desisyon. Hindi magbabago ang pangangalaga sa iyo.",
+    ],
+    rightsNote: "Isang tao mula sa care team ang tumitingin sa bawat hiling mo, hindi awtomatikong sistema.",
+  },
+  check: {
+    steps: ["Tanong", "Mensahe", "Tapos"],
+    stepFmt: "Hakbang {n} sa 3: {name}",
+    intro: "Isang tanong, para matiyak na malinaw ang paliwanag namin",
+    question: "Ano ang susunod na hakbang pagkatapos ng resulta mo?",
+    groupLabel: "Pumili ng sagot",
+    letters: ["A", "B"],
+    wrong: "Isa pang blood test pagkalipas ng isang buwan",
+    right: "Pagsusuri gamit ang maliit na camera, para malaman ng doktor ang dahilan",
+    notTest: "Hindi ito pagsusulit.",
+    explainTitle: "Ipaliwanag natin sa ibang paraan",
+    explain: [
+      "Kami ang nagkulang sa paliwanag, hindi ikaw.",
+      "Ang test mo ay parang alarma: tumutunog kapag may nakitang bakas ng dugo, pero hindi nito sinasabi kung bakit. Hindi ibig sabihing may sakit ka.",
+      "Para malaman ang dahilan, tinitingnan ng doktor ang loob ng bituka gamit ang maliit na camera. Ito ang colonoscopy. Tatawagan ka ni Nurse Hessa para ipaliwanag ito at i-book ang appointment mo.",
+    ],
+    retry: "Itanong ulit",
+    correct: "Magaling, tama iyan",
+    consentTitle: "Puwede ka ba naming padalhan ng paalala sa SMS?",
+    consentBody:
+      "Maiikling mensahe tungkol sa appointment mo lang. Wala kaming ipapadala nang walang pahintulot mo, at hindi maaantala ang appointment mo kung tatanggi ka.",
+    allow: "Payagan ang mga mensahe",
+    decline: "Hindi muna",
+    thanks: "Salamat, Fatima",
+    willCall: "Tatawagan ka ni Nurse Hessa Al Ali sa loob ng 2 araw ng trabaho para i-book ang appointment mo.",
+    alsoCall: "Puwede mo rin siyang tawagan:",
+    smsYes: "Padadalhan ka rin namin ng paalala sa SMS bago ang appointment.",
+    smsNo: "Hindi ka namin padadalhan ng mensahe. Puwede kang magbago ng isip anumang oras sa pagtawag sa nurse.",
+  },
+  book: {
+    title: "Ang iyong colonoscopy",
+    proposed: "Iminumungkahing iskedyul",
+    confirmed: "Kumpirmado na ang iskedyul mo",
+    weekdays: ["Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado"],
+    october: "Oktubre",
+    sep: ",",
+    at: "Alas",
+    am: "ng umaga",
+    pm: "ng hapon",
+    mapLabel: "Lokasyon ng ospital sa mapa",
+    place: "Sheikh Khalifa Medical City",
+    address: "Endoscopy unit, Al Karamah Street, Abu Dhabi",
+    confirm: "Kumpirmahin ang iskedyul",
+    another: "Ibang oras",
+    pick: "Pumili ng oras na babagay sa iyo",
+    othersLabel: "Ibang oras",
+    smsYes: "Padadalhan ka namin ng paalala sa SMS 2 araw bago nito.",
+    smsNo: "Tatawagan ka ni Hessa bago ang appointment para ipaalala ito.",
+    change: "Palitan ang iskedyul",
+    prepHead: "Bago ang appointment",
+    warn: "Kung umiinom ka ng gamot sa diabetes o pampalabnaw ng dugo, tawagan si Hessa bago ang appointment mo.",
+    prep: [
+      "Isang araw bago: malinaw na likido lang, saka ang inuming panlinis ng bituka.",
+      "May kasama kang kapamilya na mag-uuwi sa iyo.",
+    ],
+  },
+};
