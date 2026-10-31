@@ -689,12 +689,21 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				continue
 			}
 			id := "rv-" + sha([]byte(f.LoopID + "|link|" + o.Pair[0] + "|" + o.Pair[1]))[:16]
+			reason, hold := "second_identifier", ""
+			if s, ok := signed[id]; ok && heldIDConfirm(s) { // held "same" on contradicting records: ask the confirming review (v7.go)
+				reason, hold = IDConfirm, s.Hold
+				id = "rv-" + sha([]byte(f.LoopID+"|link|"+o.Pair[0]+"|"+o.Pair[1]+"#idconfirm"))[:16]
+			}
 			if _, ok := signed[id]; ok {
 				continue
 			}
 			if _, ok := ls.raised[id]; !ok {
-				ch := appendBlock(nil, "outreach_guard", map[string]interface{}{"loop": f.LoopID, "pair": o.Pair, "event": o.Event, "basis": o.Basis, "p_cal": o.PCal, "rule": "second identifier (exact non-placeholder DOB, or a matching Emirates ID with agreeing name, sex and DOB) or human confirmation"})
-				it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{"link"}, Pair: o.Pair, P: o.PCal, Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, Reason: "second_identifier"}
+				blk := map[string]interface{}{"loop": f.LoopID, "pair": o.Pair, "event": o.Event, "basis": o.Basis, "p_cal": o.PCal, "rule": "second identifier (exact non-placeholder DOB, or a matching Emirates ID with agreeing name, sex and DOB) or human confirmation"}
+				if hold != "" {
+					blk["contradiction"] = hold // shown to the confirming reviewer
+				}
+				ch := appendBlock(nil, "outreach_guard", blk)
+				it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{"link"}, Pair: o.Pair, P: o.PCal, Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, Reason: reason, Verdict: hold}
 				ls.raised[id] = it
 				newItems = append(newItems, it)
 			}

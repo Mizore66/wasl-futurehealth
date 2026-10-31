@@ -374,9 +374,9 @@ func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
 	case "merge+close":
 		return r.link == "same" || r.ev == "adequate" || r.ev == "histology"
 	case "merge+close+g1": // v7: as merge+close, but messaging-only guard confirmations get a single read
-		return (r.link == "same" && it.Reason != "second_identifier") || r.ev == "adequate" || r.ev == "histology"
+		return (r.link == "same" && !secondIDPurpose(it.Reason)) || r.ev == "adequate" || r.ev == "histology"
 	case "close+guard": // v7: double-read closures and messaging confirmations; identity merges single-read
-		return (r.link == "same" && it.Reason == "second_identifier") || r.ev == "adequate" || r.ev == "histology"
+		return (r.link == "same" && secondIDPurpose(it.Reason)) || r.ev == "adequate" || r.ev == "histology"
 	}
 	return false
 }
@@ -457,7 +457,7 @@ func (w idWorklist) skip(it *ReviewItem) bool {
 }
 
 func (w idWorklist) record(it *ReviewItem, so *Signoff) {
-	if it.Reason != "second_identifier" {
+	if !secondIDPurpose(it.Reason) { // a confirming review's answer (IDConfirm) is recorded too; it is never dropped
 		return
 	}
 	if k := pairKey(it.Pair[0], it.Pair[1]); so.Link == "same" {
@@ -488,9 +488,10 @@ func (w linkWorklist) record(it *ReviewItem, so *Signoff) {
 }
 
 // msgConfirmed (v7): a human confirmed (second-identifier item answered "same") that the downstream registration is this patient.
+// A "same" held on contradicting records (Hold, -linkconfirm) counts only once its confirming review (IDConfirm) says "same".
 func msgConfirmed(f *LoopFacts, a, b string) bool {
 	for _, s := range f.Signoffs {
-		if s.Purpose == "second_identifier" && s.Link == "same" && s.Pair[0] == a && s.Pair[1] == b {
+		if secondIDPurpose(s.Purpose) && s.Link == "same" && s.Hold == "" && s.Pair[0] == a && s.Pair[1] == b {
 			return true
 		}
 	}

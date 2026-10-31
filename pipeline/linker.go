@@ -698,16 +698,26 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		L.Stats["signoffs"]++
-		if so.Purpose == "second_identifier" {
+		if secondIDPurpose(so.Purpose) {
 			// messaging confirmation: "same" is recorded on the sign-off (outreach released), "different" keeps the
 			// message held and is escalated to identity review; neither changes the clusters
-			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
-			affLoops[so.LoopID] = true
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose == "second_identifier" {
+				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
+					// the records contradict: the confirmation counts only after a confirming review (closure raises IDConfirm)
+					sc := *so
+					sc.Hold = c
+					so = &sc
+					L.Stats["second_id_same_held_contradiction"]++
+				}
+			}
+			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
+			affLoops[so.LoopID] = true
 			if ReuseIDConfirm && okA && okB {
 				// the answer is about the two registrations, not the loop: it holds for the patient's other loops too
-				if so.Link == "same" {
+				// (a held "same" neither confirms nor withdraws an earlier confirmation of the pair)
+				if so.Link == "same" && so.Hold == "" {
 					L.idConfirmed[pk2(a, b)] = true
 				} else if so.Link == "different" {
 					delete(L.idConfirmed, pk2(a, b))
