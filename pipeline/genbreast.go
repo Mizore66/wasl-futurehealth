@@ -16,7 +16,7 @@ package main
 // by category follow DoH Appendix 6 cancer likelihoods (0: routine 87%, early recall 5%, treatment 8%; 3: 78/20/2;
 // 4: 55/8/37; 5: 12/3/85). Technical repeat: a new mammogram within 21 days 75% of the time.
 //
-// Persons: women aged 40-75 (DoH Appendix 2: average risk from 40; the upper bound is a Wasl choice) from the background
+// Persons: women aged 40-90 (DoH Appendix 2: average risk from 40, no upper age; capped at 90 as for DR) from the background
 // pool with no other loop. Time: screens fall on days -120..90 of the [0, 120] observation window.
 // Determinism: a separate RNG stream (seed + breastSeedOffset); emitted after every other programme, so `-breast 0`
 // leaves every other feed byte-identical (genbreast_test.go).
@@ -179,12 +179,18 @@ func genBreast(brDir string, seed int64, nBreast int, bg []*Person, tr *Truth, e
 	pick := func() *Person {
 		for ; next < len(order); next++ {
 			p := pool[order[next]]
-			if a := personAge(p, 0); a >= 40 && a <= 75 {
+			if a := personAge(p, 0); a >= 40 && a <= 90 {
 				next++
 				return p
 			}
 		}
-		panic("breast: not enough background women aged 40-75")
+		elig := 0
+		for _, p := range pool {
+			if a := personAge(p, 0); a >= 40 && a <= 90 {
+				elig++
+			}
+		}
+		panic(fmt.Sprintf("breast: not enough background women aged 40-90 with no other loop (%d, need %d loops + %d distractors)", elig, nBreast, nBreast/8))
 	}
 	note := func(p *Person, t float64, label string) (string, bool) {
 		y := g.getReg(p, hosp)
