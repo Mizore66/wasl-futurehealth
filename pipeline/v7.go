@@ -219,7 +219,8 @@ var ReuseLinkAnswer = true
 // real birth dates more than a year apart) does not merge; the loop raises a confirming link review that shows the
 // contradiction (LinkConfirm), and only that answer merges. Added after the Learn-then-Test re-run at 4b58c9b found one
 // false closure and one wrong-patient message from a simulated double reviewer error that merged a woman born 1972 with
-// a man born 1973; a disclosed post-hoc rule, like the override block (OverrideConfirm). Flag -linkconfirm.
+// a man born 1973; a disclosed post-hoc rule, like the override block (OverrideConfirm). Extended (post hoc) to the
+// outreach guard's second-identifier answer (IDConfirm below). Flag -linkconfirm.
 var LinkContradictionConfirm = true
 
 // LinkConfirm is the purpose of the confirming link review raised for a held "same".
@@ -249,8 +250,22 @@ func linkContradiction(a, b *Rec) string {
 	return ""
 }
 
-// heldLink: a signed link answer the linker held for a confirming review.
-func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Purpose != LinkConfirm }
+// heldLink: a signed link answer the linker held for a confirming review (a plain link question has no purpose).
+func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Purpose == "" }
+
+// IDConfirm is the purpose of the confirming review raised for a held second-identifier "same". The same rule as
+// LinkConfirm, on the messaging path (post-hoc extension, same flag -linkconfirm): a messaging confirmation on a pair
+// whose records contradict counts (msgConfirmed, ReuseIDConfirm) only after this review answers "same". Like the
+// second-identifier answer it confirms, it never merges or cuts a cluster.
+const IDConfirm = "second_identifier_confirm"
+
+// secondIDPurpose: a messaging-confirmation item (the outreach guard's question or its confirming review).
+func secondIDPurpose(p string) bool { return p == "second_identifier" || p == IDConfirm }
+
+// heldIDConfirm: a second-identifier "same" the linker held for a confirming review.
+func heldIDConfirm(s Signoff) bool {
+	return s.Hold != "" && s.Link == "same" && s.Purpose == "second_identifier"
+}
 
 var defaultEIDs = map[string]bool{"000000000000000": true, "111111111111111": true, "222222222222222": true, "999999999999999": true}
 
