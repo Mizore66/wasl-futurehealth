@@ -31,3 +31,19 @@ func TestTemplatesDiscloseAutomation(t *testing.T) {
 		t.Fatalf("%d v2 templates, want 12", n)
 	}
 }
+
+// A loop messages the patient only about its own programme's events: a woman with both a CRC and a cervical loop
+// gets the colposcopy reminder from the cervical loop, not a second one from the CRC loop.
+func TestOutreachOnlyForOwnProgramme(t *testing.T) {
+	colpo := DownFact{EventID: "COR-appt-1", Provider: "corniche-wh", RType: "Appointment", Status: "booked", Day: 10, Strength: 0.995,
+		Weak: Edge{Basis: "wasl"}, Prog: "cervical"}
+	endo := colpo
+	endo.EventID, endo.Provider, endo.Prog = "SKM-appt-1", "skmc-endo", "crc"
+	for prog, want := range map[string]string{"crc": "skmc-endo/Appointment/SKM-appt-1", "cervical": "corniche-wh/Appointment/COR-appt-1"} {
+		f := &LoopFacts{LoopID: "L-" + prog, Prog: prog, SRDay: 2, Contact: "granted", Down: []DownFact{colpo, endo}}
+		o := BuildOutreach(f, func(p float64) float64 { return p })
+		if len(o) != 1 || o[0].Event != want {
+			t.Fatalf("%s loop outreach %+v, want only %s", prog, o, want)
+		}
+	}
+}

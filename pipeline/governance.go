@@ -128,6 +128,9 @@ func BuildOutreach(f *LoopFacts, pcal func(float64) float64) []Outreach {
 		if d.NearMiss || d.Day < f.SRDay-1 {
 			continue
 		}
+		if d.Prog != "" && f.Prog != "" && d.Prog != f.Prog {
+			continue // another programme's event (a CRC loop must not remind about the same woman's colposcopy)
+		}
 		k := outreachKind(d)
 		if k == "" {
 			continue
