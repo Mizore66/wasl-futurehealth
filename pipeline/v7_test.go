@@ -344,3 +344,68 @@ func TestLinkWorklistDedupe(t *testing.T) {
 		t.Fatal("flag off must ask every item")
 	}
 }
+
+// A human "same" on a pair whose records contradict (recorded sex differs, or two real birth dates more than a year
+// apart) does not merge; the loop raises a confirming link review that shows the contradiction, and only that
+// confirmation merges. Placeholder birth dates and unknown sex never count as a contradiction.
+func TestLinkContradiction(t *testing.T) {
+	r := func(sex, dob string) *Rec { return &Rec{Sex: sex, Dob: dob} }
+	cases := []struct {
+		a, b *Rec
+		want string
+	}{
+		{r("F", "1972-01-01"), r("M", "1973-01-01"), "sex"},
+		{r("F", "1972-03-14"), r("F", "1975-06-02"), "dob"},
+		{r("F", "1972-03-14"), r("F", "1972-09-30"), ""},  // within a year: entry error, not a contradiction
+		{r("F", "1972-01-01"), r("F", "1980-07-01"), ""},  // placeholders on both sides
+		{r("F", "1972-01-01"), r("F", "1980-03-05"), ""},  // one placeholder
+		{r("U", "1972-03-14"), r("M", "1972-03-14"), ""},  // unknown sex
+		{r("F", ""), r("F", "1972-03-14"), ""},
+	}
+	for i, c := range cases {
+		if got := linkContradiction(c.a, c.b); got != c.want {
+			t.Errorf("case %d: got %q want %q", i, got, c.want)
+		}
+	}
+}
+
+func TestContradictingLinkNeedsConfirmation(t *testing.T) {
+	defer func(v bool) { LinkContradictionConfirm = v }(LinkContradictionConfirm)
+	LinkContradictionConfirm = true
+	L, loop := newLoopLinker(t)
+	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	a, b := L.byPk["ahs-mushrif|M1"], L.byPk["skmc-endo|H1"]
+	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
+	so := func(seq uint64, id, purpose string) *Prep {
+		return &Prep{Seq: seq, Kind: "signoff", So: &Signoff{ItemID: id, LoopID: loop, Kinds: []string{"link"}, Pair: pair, Link: "same",
+			Role: RoleReviewer, Reads: []string{"r1", "r2"}, Purpose: purpose}}
+	}
+	f := lastFacts(L.Apply(so(3, "i1", "")), loop)
+	if L.Find(a) == L.Find(b) {
+		t.Fatal("a human 'same' on a different-sex pair merged without confirmation")
+	}
+	if f == nil || len(f.Signoffs) == 0 || f.Signoffs[len(f.Signoffs)-1].Hold != "sex" {
+		t.Fatalf("held sign-off not passed to the loop with its reason: %+v", f)
+	}
+	L.Apply(so(4, "i2", LinkConfirm))
+	if L.Find(a) != L.Find(b) {
+		t.Fatal("the confirming review did not merge")
+	}
+	// closure: a held 'same' raises one confirming link item that names the contradiction
+	held := Signoff{ItemID: "", LoopID: "L", Kinds: []string{"link"}, Pair: [2]string{"P|1", "H|9"}, Link: "same", Hold: "sex"}
+	row := df("Appointment", "booked", 0.5, "wasl", false)
+	row.Weak = Edge{A: "P|1", B: "H|9", Basis: "wasl"}
+	held.ItemID = "rv-" + sha([]byte("L|link|P|1|H|9"))[:16]
+	C := NewClosureCore(0, nil)
+	outs := C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", SRDay: 0, Prog: "crc", Down: []DownFact{row}, Signoffs: []Signoff{held}}, InSeq: 1})
+	var items []*ReviewItem
+	for _, o := range outs {
+		if o.Item != nil {
+			items = append(items, o.Item)
+		}
+	}
+	if len(items) != 1 || items[0].Reason != LinkConfirm || items[0].Verdict != "sex" {
+		t.Fatalf("want one confirming link item naming the contradiction, got %+v", items)
+	}
+}
