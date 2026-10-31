@@ -130,6 +130,11 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			key, report = r.d.ReportID, r.d.ReportID
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
+		reason, hold := "", ""
+		if s, ok := signed[id]; ok && kind == "link" && heldLink(s) { // held "same": ask the confirming review (v7.go)
+			reason, hold, key = LinkConfirm, s.Hold, key+"#linkconfirm"
+			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
+		}
 		if _, ok := signed[id]; ok || pendSet[id] {
 			return
 		}
@@ -144,6 +149,9 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq}
 			if r.d.Ev != nil {
 				it.Verdict, it.Quote = r.d.Ev.Label, r.d.Ev.Gemma.Quote
+			}
+			if reason != "" {
+				it.Reason, it.Verdict = reason, hold
 			}
 			ls.raised[id] = it
 			newItems = append(newItems, it)

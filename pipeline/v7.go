@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 var V7Guard = false
@@ -213,6 +214,43 @@ var ReuseIDConfirm = true
 // pair for every loop; the review worklist then drops link questions other loops queued on that pair (governance.go).
 // Before, two loops could each ask and get contradicting answers, the later one winning. Flag -reuselink.
 var ReuseLinkAnswer = true
+
+// LinkContradictionConfirm: a human "same" on a pair whose records contradict each other (recorded sex differs, or two
+// real birth dates more than a year apart) does not merge; the loop raises a confirming link review that shows the
+// contradiction (LinkConfirm), and only that answer merges. Added after the Learn-then-Test re-run at 4b58c9b found one
+// false closure and one wrong-patient message from a simulated double reviewer error that merged a woman born 1972 with
+// a man born 1973; a disclosed post-hoc rule, like the override block (OverrideConfirm). Flag -linkconfirm.
+var LinkContradictionConfirm = true
+
+// LinkConfirm is the purpose of the confirming link review raised for a held "same".
+const LinkConfirm = "link_contradiction_confirm"
+
+// linkContradiction: "sex" when both records carry a known, different sex; "dob" when both carry a real (non-
+// placeholder) birth date and they are more than 365 days apart; "" otherwise. A placeholder DOB or unknown sex is
+// missing data, not a contradiction.
+func linkContradiction(a, b *Rec) string {
+	known := func(s string) bool { return s == "M" || s == "F" }
+	if known(a.Sex) && known(b.Sex) && a.Sex != b.Sex {
+		return "sex"
+	}
+	if len(a.Dob) == 10 && len(b.Dob) == 10 && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
+		ta, ea := time.Parse("2006-01-02", a.Dob)
+		tb, eb := time.Parse("2006-01-02", b.Dob)
+		if ea == nil && eb == nil {
+			d := ta.Sub(tb)
+			if d < 0 {
+				d = -d
+			}
+			if d > 365*24*time.Hour {
+				return "dob"
+			}
+		}
+	}
+	return ""
+}
+
+// heldLink: a signed link answer the linker held for a confirming review.
+func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Purpose != LinkConfirm }
 
 var defaultEIDs = map[string]bool{"000000000000000": true, "111111111111111": true, "222222222222222": true, "999999999999999": true}
 
