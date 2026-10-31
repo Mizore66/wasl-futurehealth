@@ -61,7 +61,8 @@ type DRTruth struct {
 	Outcome    string   `json:"outcome,omitempty"` // label of the note that decided the state
 	Notes      []string `json:"notes,omitempty"`   // eye-clinic note ids in time order
 	Within     bool     `json:"within_deadline,omitempty"`
-	JawdaExam  bool     `json:"jawda_exam"` // a retinal exam by an eye-care professional happened in the window (DoH JAWDA 5.1.4)
+	JawdaExam  bool     `json:"jawda_exam"`         // a retinal exam by an eye-care professional happened in the window (DoH JAWDA 5.1.4)
+	Next       *DRNext  `json:"next_due,omitempty"` // -drnext: next due contact and recall truth (drnext.go)
 }
 
 type drGen struct {
@@ -183,13 +184,20 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 		}
 		panic("dr: not enough background persons")
 	}
+	noteText := map[string]string{}
 	note := func(p *Person, t float64, label string) (string, bool) {
 		y := g.getReg(p, hosp)
 		d := g.pick(g.notes, label)
 		arr := t + g.lognorm(1, .7)
 		id := g.report(hosp.ID, y, t, arr, "dr-clinic", d.Text, d.ID, label, "")
+		noteText[id] = d.Text
 		return id, arr <= TEnd
 	}
+	type drFollow struct {
+		p  *Person
+		dt *DRTruth
+	}
+	var follows []drFollow
 	for k := 0; k < nDR; k++ {
 		p := pick()
 		S := -120 + 210*r.Float64()
@@ -296,6 +304,17 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 		}
 		lt.Dropoff = drDropoff(state, rec.Action, false)
 		lt.Pathway = "dr_" + dt.Adherence + "_" + state
+		if DRNextOn && (state == "closed" || state == "no_referral_needed") { // drnext.go (no draw from the DR stream)
+			rd := 0
+			if state == "closed" {
+				rd = drReviewDays(noteText[dt.Notes[len(dt.Notes)-1]])
+			}
+			dt.Next = drNextRule(state, map[bool]string{true: dt.Outcome}[state == "closed"], closed, rd)
+			dt.Next.Overdue = dt.Next.DueDay < TEnd
+			if dt.Next.Kind == "clinic_review" {
+				follows = append(follows, drFollow{p, dt})
+			}
+		}
 	}
 	// distractors: other diabetics' eye-clinic notes at the hospital (a note for the wrong patient must never close a loop)
 	for k := 0; k < nDR/8; k++ {
@@ -304,6 +323,50 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 		lab := fmt.Sprint(g.notes[r.Intn(len(g.notes))].Key["label"])
 		id, _ := note(p, t, lab)
 		tr.Distract[id] = true
+	}
+	// -drnext: follow-up eye-clinic visits after a clinic closure, on their own RNG stream and after every other DR event,
+	// so the -drnext=false events are unchanged. Simulated (not from data): 55% seen around the due day (+-14 d), 20% seen
+	// 21-81 days late, 25% never; a visit is a DNA 12% of the time, then rebooked 14-42 days later 70% of the time.
+	if DRNextOn {
+		rn := rand.New(rand.NewSource(seed + drNextSeedOffset))
+		g.r = rn // note() draws its text and arrival lag from this stream from here on
+		for _, f := range follows {
+			n := f.dt.Next
+			var t float64
+			switch a := rn.Float64(); {
+			case a < .55:
+				t = n.DueDay - 14 + 28*rn.Float64()
+			case a < .75:
+				t = n.DueDay + 21 + 60*rn.Float64()
+			default:
+				continue
+			}
+			for v := 0; v < 2; v++ {
+				lab := "examined_followup"
+				switch y := rn.Float64(); {
+				case y < .12:
+					lab = "dna"
+				case y < .30:
+					lab = "examined_treated"
+				case y < .45:
+					lab = "examined_discharged"
+				}
+				id, seen := note(f.p, t, lab)
+				if !seen {
+					break
+				}
+				f.dt.Notes = append(f.dt.Notes, id)
+				if lab != "dna" {
+					n.Seen, n.SeenDay, n.SeenReport = true, t, id
+					break
+				}
+				if rn.Float64() >= .7 {
+					break
+				}
+				t += 14 + 28*rn.Float64()
+			}
+			n.Overdue = !n.Seen && n.DueDay < TEnd
+		}
 	}
 }
 
