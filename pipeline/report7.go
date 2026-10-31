@@ -570,6 +570,9 @@ func report7(data, wasl, run string, P int) {
 	if dm, ok := res["programmes_live"].(map[string]interface{})["diabetic_retinopathy"].(map[string]interface{}); ok {
 		dm["two_reader"] = drTwoReader(preps, &tr) // third loop type: screening and clinic-note reader agreement end to end
 	}
+	if bm, ok := res["programmes_live"].(map[string]interface{})["breast"].(map[string]interface{}); ok {
+		bm["two_reader"] = breastTwoReader(preps, &tr) // fourth loop type: screening and assessment reader agreement end to end
+	}
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)
 	fmt.Println(string(rb))
