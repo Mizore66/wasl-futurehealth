@@ -437,10 +437,10 @@ func report7(data, wasl, run string, P int) {
 		var oe OutEnvelope
 		json.Unmarshal(m.Data, &oe)
 		d := oe.Dec
-		if d == nil || !o.optT[d.LoopID] {
+		if d == nil || !o.optT[baseLoop(d.LoopID)] { // child loops (<loop>#surv) carry the parent's consent
 			continue
 		}
-		cs, ok := consentSeq[srPK[d.LoopID]]
+		cs, ok := consentSeq[srPK[baseLoop(d.LoopID)]]
 		for _, x := range d.Outreach {
 			if !x.Released {
 				continue
@@ -497,7 +497,7 @@ func report7(data, wasl, run string, P int) {
 			switch {
 			case x.Released:
 				relTotal[k] = true
-				if !grantedAt(srPK[d.LoopID], d.InSeq) {
+				if !grantedAt(srPK[baseLoop(d.LoopID)], d.InSeq) {
 					relNoGrant[k] = true
 				}
 			case x.Suppress == SupConsentHold:

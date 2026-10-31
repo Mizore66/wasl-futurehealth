@@ -64,6 +64,7 @@ type LungTruth struct {
 	FollowUps []string `json:"followups,omitempty"`
 	Path      string   `json:"workup_path,omitempty"` // > 8 mm solid (lungworkup.go): ct | pet | tissue
 	PETDay    float64  `json:"pet_day,omitempty"`     // FDG-avid PET/CT day (tissue expected within 28 days)
+	Surv      *LungSurvTruth `json:"pet_surveillance,omitempty"` // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
 }
 
 type lungGen struct {
@@ -186,14 +187,18 @@ func keyNum(k map[string]interface{}, f string) float64 { x, _ := k[f].(float64)
 
 // pickFollowup: a follow-up text of this nodule type and outcome whose prior size is closest to the index nodule.
 func (g *lungGen) pickFollowup(typ, outcome string, mean int) lungDoc {
+	return pickFollowupR(g.fus, g.r, typ, outcome, mean)
+}
+
+func pickFollowupR(fus []lungDoc, r *rand.Rand, typ, outcome string, mean int) lungDoc {
 	var c []lungDoc
-	for _, d := range g.fus {
+	for _, d := range fus {
 		if d.Key["type"] == typ && d.Key["outcome"] == outcome {
 			c = append(c, d)
 		}
 	}
 	if len(c) == 0 {
-		for _, d := range g.fus {
+		for _, d := range fus {
 			if d.Key["outcome"] == outcome {
 				c = append(c, d)
 			}
@@ -207,7 +212,7 @@ func (g *lungGen) pickFollowup(typ, outcome string, mean int) lungDoc {
 	if len(c) > 2 {
 		c = c[:2]
 	}
-	return c[g.r.Intn(len(c))]
+	return c[r.Intn(len(c))]
 }
 
 func (g *lungGen) drawOutcome(typ string, allowNA bool) string {
@@ -247,6 +252,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	src, hosp := lungProviders[0], lungProviders[1]
 	order := r.Perm(len(bg))
 	next := 0
+	var survCands []petSurvCand // -lungsurv: PET/CT low-uptake closures (lungsurv.go)
 	pick := func(young bool) *Person {
 		for ; next < len(order); next++ {
 			p := bg[order[next]]
@@ -383,6 +389,9 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		}
 		if wkPath != "" {
 			state, closed = g.workup(p, hosp, lt, wkPath, wkT0, mean)
+			if LungPETSurv && wkPath == "pet" && state == "closed" && lt.Lung.Outcome == "pet_low" {
+				survCands = append(survCands, petSurvCand{lt: lt, p: p, typ: typ, mean: mean, petDay: closed})
+			}
 		}
 		lt.State = state
 		if state == "closed" || state == "no_followup_needed" {
@@ -410,6 +419,9 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			text, lab := petText(r, 9+r.Intn(15), r.Float64() < lwAvid)
 			tr.Distract[g.workupReport(hosp.ID, y, t, t+g.lognorm(1, .7), LungPETCode, text, lab)] = true
 		}
+	}
+	if LungPETSurv { // after every other lung event, on its own RNG stream
+		g.genPETSurv(survCands, hosp)
 	}
 }
 

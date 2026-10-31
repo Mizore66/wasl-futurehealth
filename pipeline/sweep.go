@@ -245,7 +245,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 	sidHeld, sidHeldWrong := 0, 0
 	guardRel := map[string]int{}
 	for k, x := range intents {
-		lt := o.tr.Loops[k.loop]
+		lt := o.tr.Loops[baseLoop(k.loop)] // child loops (<loop>#surv) message the parent's patient
 		if lt == nil {
 			continue
 		}
@@ -263,7 +263,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		preGate.n++
 		preGate.wrong += w
 		if released[k] && x.Basis == "p_cal" { // counterfactual extra guard: p_cal-only links also need an exact DOB match
-			if o.dob[o.evPK[k.loop]] != o.dob[o.evPK[x.Event]] {
+			if o.dob[o.evPK[baseLoop(k.loop)]] != o.dob[o.evPK[x.Event]] {
 				dobHeld++
 				dobHeldWrong += w
 			} else {
@@ -304,7 +304,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		}
 	}
 	for k := range released {
-		if o.optT[k.loop] {
+		if o.optT[baseLoop(k.loop)] {
 			toOptOut.n++
 		}
 	}
