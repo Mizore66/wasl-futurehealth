@@ -1,0 +1,73 @@
+{
+ "gemma3_4b_local": {
+  "n": 100,
+  "correct": 62,
+  "accuracy": 0.62,
+  "acc_ci95": [
+   0.522,
+   0.709
+  ],
+  "macro_f1": 0.625,
+  "confusion": [
+   [
+    "needs_human->partial",
+    8
+   ],
+   [
+    "needs_human->misunderstood",
+    7
+   ],
+   [
+    "misunderstood->partial",
+    6
+   ],
+   [
+    "partial->unparsed",
+    5
+   ],
+   [
+    "misunderstood->understood",
+    4
+   ],
+   [
+    "partial->understood",
+    2
+   ],
+   [
+    "partial->needs_human",
+    2
+   ],
+   [
+    "understood->partial",
+    1
+   ],
+   [
+    "partial->misunderstood",
+    1
+   ],
+   [
+    "misunderstood->misunderstood|needs_human",
+    1
+   ],
+   [
+    "needs_human->understood",
+    1
+   ]
+  ],
+  "by_style": {
+   "arabizi": "7/13",
+   "en": "16/27",
+   "gulf": "11/16",
+   "mix": "11/16",
+   "msa": "6/12",
+   "simple_en": "11/16"
+  },
+  "missed_escalation": "19/50",
+  "missed_escalation_ci95": [
+   0.259,
+   0.518
+  ],
+  "false_reassurance_accepted": 4
+ },
+ "model": "gemma-3-4b-it-Q4_K_M/local"
+}
