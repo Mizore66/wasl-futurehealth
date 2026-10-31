@@ -209,7 +209,7 @@ Rules:
 - Enforce RBAC on mutating endpoints.
 - Make review actions append audit events rather than overwrite history.
 
-**Done when:** the frontend can render the three demo cases exclusively from pipeline/API data, without invented client-side records.
+**Done when:** the frontend can render the demo cases (`docs/api-samples/fixtures.json`) exclusively from pipeline/API data, without invented client-side records.
 
 ### 6. Integrate booking as simulated decision support
 

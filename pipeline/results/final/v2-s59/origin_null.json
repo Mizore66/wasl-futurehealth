@@ -1,120 +1,146 @@
 {
- "observed": 1.1301,
- "null_median": 1.1177,
- "null_p95": 1.2497,
- "p_value": 0.426,
+ "observed": 1.138,
+ "null_median": 1.1199,
+ "null_p95": 1.2541,
+ "p_value": 0.38,
  "permutations": 1000,
  "loops": {
-  "south_asian": 1167,
-  "arab": 2811,
-  "filipino": 426,
-  "western": 740
+  "south_asian": 1184,
+  "arab": 2845,
+  "filipino": 435,
+  "western": 750
  },
  "items": {
-  "arab": 1016,
+  "arab": 1000,
   "filipino": 174,
-  "south_asian": 448,
-  "western": 268
+  "south_asian": 444,
+  "western": 272
  },
  "items_per_loop_hist": {
-  "0": 3600,
-  "1": 1216,
-  "2": 297,
-  "3": 28,
-  "4": 3
+  "0": 3647,
+  "1": 1267,
+  "2": 279,
+  "3": 19,
+  "4": 2
  },
  "standardised": {
-  "observed": 1.0376,
-  "null_p95": 1.2265,
-  "p_value": 0.962
+  "observed": 1.0544,
+  "null_p95": 1.2214,
+  "p_value": 0.877
  },
  "by_programme": {
+  "breast": {
+   "observed": Infinity,
+   "p_value": 0.949,
+   "items_per_100": {
+    "arab": 0.0,
+    "filipino": 11.1,
+    "south_asian": 5.9,
+    "western": 20.0
+   },
+   "hist_by_origin": {
+    "arab": {
+     "0": 34
+    },
+    "filipino": {
+     "0": 8,
+     "1": 1
+    },
+    "south_asian": {
+     "0": 16,
+     "1": 1
+    },
+    "western": {
+     "0": 8,
+     "1": 2
+    }
+   }
+  },
   "cervical": {
    "observed": 1.1807,
-   "p_value": 0.664,
+   "p_value": 0.649,
    "items_per_100": {
-    "arab": 54.7,
+    "arab": 53.1,
     "filipino": 48.7,
-    "south_asian": 50.2,
+    "south_asian": 49.3,
     "western": 57.5
    },
    "hist_by_origin": {
     "arab": {
-     "0": 235,
-     "1": 153,
-     "2": 30,
-     "3": 5,
+     "0": 233,
+     "1": 162,
+     "2": 25,
+     "3": 3,
      "4": 1
     },
     "filipino": {
-     "0": 46,
-     "1": 27,
-     "2": 4,
-     "3": 1
+     "0": 45,
+     "1": 28,
+     "2": 5
     },
     "south_asian": {
-     "0": 117,
-     "1": 67,
-     "2": 17
+     "0": 116,
+     "1": 71,
+     "2": 14
     },
     "western": {
-     "0": 62,
-     "1": 38,
-     "2": 12,
+     "0": 61,
+     "1": 40,
+     "2": 11,
      "3": 1
     }
    }
   },
   "crc": {
-   "observed": 1.053,
-   "p_value": 0.945,
+   "observed": 1.0769,
+   "p_value": 0.837,
    "items_per_100": {
-    "arab": 59.6,
-    "filipino": 61.5,
-    "south_asian": 58.4,
-    "western": 61.2
+    "arab": 58.7,
+    "filipino": 62.0,
+    "south_asian": 57.6,
+    "western": 61.6
    },
    "hist_by_origin": {
     "arab": {
-     "0": 570,
-     "1": 377,
-     "2": 115,
-     "3": 8,
-     "4": 2
+     "0": 564,
+     "1": 395,
+     "2": 106,
+     "3": 6,
+     "4": 1
     },
     "filipino": {
-     "0": 91,
-     "1": 78,
+     "0": 90,
+     "1": 79,
      "2": 17,
      "3": 1
     },
     "south_asian": {
-     "0": 274,
-     "1": 167,
-     "2": 52,
-     "3": 7
+     "0": 273,
+     "1": 170,
+     "2": 53,
+     "3": 4
     },
     "western": {
-     "0": 150,
-     "1": 93,
+     "0": 147,
+     "1": 97,
      "2": 35,
-     "3": 3
+     "3": 2
     }
    }
   },
   "diabetic_retinopathy": {
    "observed": 1.4631,
-   "p_value": 0.566,
+   "p_value": 0.564,
    "items_per_100": {
-    "arab": 13.5,
+    "arab": 13.7,
     "filipino": 9.6,
     "south_asian": 14.1,
     "western": 11.3
    },
    "hist_by_origin": {
     "arab": {
-     "0": 633,
-     "1": 85,
+     "0": 632,
+     "1": 86,
      "2": 5,
      "3": 1
     },
@@ -133,13 +159,13 @@
    }
   },
   "lung_nodule": {
-   "observed": 2.3974,
-   "p_value": 0.21,
+   "observed": 1.8837,
+   "p_value": 0.396,
    "items_per_100": {
     "arab": 8.0,
-    "filipino": 16.7,
-    "south_asian": 9.5,
-    "western": 7.0
+    "filipino": 14.1,
+    "south_asian": 9.9,
+    "western": 7.5
    },
    "hist_by_origin": {
     "arab": {
@@ -150,17 +176,17 @@
     },
     "filipino": {
      "0": 68,
-     "1": 7,
-     "2": 3
+     "1": 9,
+     "2": 1
     },
     "south_asian": {
-     "0": 212,
-     "1": 18,
+     "0": 211,
+     "1": 19,
      "2": 2
     },
     "western": {
-     "0": 175,
-     "1": 11,
+     "0": 174,
+     "1": 12,
      "2": 1
     }
    }

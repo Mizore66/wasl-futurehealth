@@ -1278,3 +1278,156 @@ The operating tier is still 0.995. Recall with review is lower than at `a5248c5`
 
 - **Cost:** about 3% more review items; recall changes are inside run-to-run noise. Every safety count is 0, as before.
 - **Subgroup signals** (weak evidence after about 16 tests; see the previous section): the dev CRC origin gap is now 1.10 (p = 0.058), the dev sex ratio 1.046 (p = 0.046), and held-out lung loops by origin 1.60 (p = 0.039; Western 7.5 vs Filipino 11.3 items per 100 loops at `d3a1e64`, small groups). None passes a Bonferroni cut; all cost reviewer time, not recall or safety.
+
+## Fourth loop type, follow-up tracking and hand-off extensions (`77e82aa`…`cfcf50f`, new headline)
+
+**What changed.** One merge of seven work branches. Each new behaviour has a flag; the "default" column says how the frozen evaluation below ran it. Post-hoc changes are marked.
+
+| Item | Flag (default) | Post-hoc? |
+|---|---|---|
+| Breast screening recall loop (fourth loop type) | `-breast N` (gen; 70 per run in the frozen eval) | no |
+| DR feeds over HL7 v2 | none (always on for `WASL_SOURCE=hl7`) | no |
+| DR next due date and overdue recall | `-drnext` (off; on in the frozen eval) | no |
+| Lung surveillance CT after a PET/CT low-uptake closure | `-lungsurv` (off; on in the frozen eval) | no |
+| Lung and DR hand-off packets for rejected referrals | `-refreject` (gen, off; on in the frozen eval) | no |
+| Rejected intake that cites the referral raises a link question | `-xreflink` (off; on in the frozen eval) | **yes** |
+| Second-identifier "same" on contradicting records needs a confirming review | `-linkconfirm` (on) | **yes** |
+| Contradiction check uses sex only; birth-date arm behind a flag | `-linkconfirmdob` (off) | **yes** |
+| Offline review loop answers in the live reviewer's order | `-replayworklist` (on) | no |
+| Lung and DR message templates | `-progtpl` (on) | no |
+| API: DR fixture, closed flag for `no_referral_needed`, review_hold fallback, per-decision outreach | none | fixture fallback **yes** |
+
+With every flag off, each generator feed is byte-identical to the previous generator (tests: `TestGenBreastLeavesOtherProgrammesUnchanged`, `genlungsurv_test.go`, `TestGenDRNextAddsOnlyFollowUpNotes`, `handoffext_test.go`).
+
+### Breast screening recall to assessment outcome (`dafd5bc`…`9734c63`)
+
+**Claim tested** (as for lung and DR): one engine closes every follow-up loop; a new loop type is a rule table, two readers and a generator. Design: [`docs/research/breast-loop-design.md`](../docs/research/breast-loop-design.md).
+
+**Rule (`breastrule.go`, `doh2025breast`).** From the DoH *Standard for Breast Cancer Screening & Diagnosis* (DoH/ST/BCSD/ADPHC/V2/2025):
+- BI-RADS 1/2 return to routine screening (3.8.2; every 2 years, Appendix 2).
+- 0/3/4/5 are recalled to the diagnostic breast assessment unit (3.8.3).
+- Clocks from Appendix 3 KPI 11 (working days × 7/5): outcome within 14 days for 0/3, 21 days for 4/5.
+- When the breasts differ, the more worrying one decides, in the ACR BI-RADS 5th edition order 1 < 2 < 3 < 0 < 4 < 5.
+- Coded values are the CPT II codes 3340F–3345F (Appendix 6).
+- Our own choices, no source: BI-RADS 3 on a screen is a recall; a technically inadequate screen gets a 21-day repeat clock; 5 is urgent and 4 suspicious. BI-RADS 6 or an unknown label holds for a human.
+
+**States (`breast.go`).** Same gates as the other programmes. A recall closes only on a trusted-link assessment document that both readers (or a clinician) read as an outcome: return to routine, early recall (flagged for audit, 3.9.10), or referred to treatment. Referral to treatment needs a malignant needle biopsy in the same document (3.9.11); the 10-working-day treatment-referral due day is recorded, not tracked. Did not attend → `no_show`; biopsy awaited or MDT pending → stays open. Radiology–pathology concordance (3.9.8) is not checked; it stays with the MDT.
+
+**Readers.** Reader A is regex; reader B is the local Gemma 3 4B (cached, quote-grounded). A coded final assessment is a second reader that must equal reader A's reading of the summary text; it is never used alone.
+
+| Corpus (synthetic) | Author | Role | Screens auto-decided / agreed-but-wrong | Assessment documents auto-decided / agreed-but-wrong |
+|---|---|---|---|---|
+| Dev, 39 + 50 (`scripts/breast_corpus.py`) | this work | written against | prompt v1 35/39 → v2 36/39 / 0 | v1 46/50 → v2 50/50 / 0 |
+| Held-out, 40 + 50 (`scripts/breast_heldout/`) | GPT-6.1 Sol, committed before any reader ran | **fair test of v2** | **34/40 / 0** (coded path 20/20) | **38/50 / 0** |
+
+- Reader A on held-out text: 38/40 screens, 38/50 assessment documents. It read all 10 cancer referrals worded "refer to the breast cancer surgical service" as incomplete (the safe direction).
+- Gemma: 35/40 screens (2 quotes not found in the text), 50/50 assessment documents. It reads a technically inadequate image as BI-RADS 0, so those screens go to review. Prompts v3 and v4 scored worse on dev and were dropped.
+- The readers were not tuned on the held-out set. The generator reuses dev text, so agreement in the integrated runs is optimistic; the held-out row is the honest estimate. Results: [`results/breast-readers/`](results/breast-readers/).
+
+**Generator (`genbreast.go`, simulated).** Women 40–90 (Appendix 2 sets no upper age); 70% coded final assessment; recall 10%; outcome documented within the clock 60%, late 25%, never 15%; first-visit DNA 8%. All percentages are assumptions. **Capacity:** the held-out person pool (22% women, drawn after CRC, cervical and DR) allows about 85 breast loops per frozen-evaluation cohort, so the evaluation uses 70 (80 failed on seed 37, v2).
+
+**Integrated runs** (seed 2026, chaos on; [`results/breast/`](results/breast/)):
+- 160 breast + 800 lung + 1,200 DR: P 1.000, R 0.994, **0/154 false closures**; recall loops R 0.909 (10/11).
+- Same run with breast off: every CRC, cervical, lung and DR metric identical; 0 of 4,189 other loops changed final state.
+- 350 breast, lung and DR off: P 1.000, R 0.997, **0/333 false closures**; recall loops R 0.964 (27/28).
+- Both misses were BI-RADS 0 recalls whose assessment document never linked; they stayed open (the safe direction).
+
+### Diabetic retinopathy: HL7 v2 feeds and next due date (`8f694f4`, `433d72b`)
+
+**HL7.** DR screening reports and eye-clinic notes travel as ORU^R01 results with local codes `dr-screen` / `dr-clinic`; the tracking order travels as ORM^O01. The listener rebuilds every DR resource from the segments, not from the backup FHIR copy inside the message. All 261 DR resources of a generated cohort give the same canonical events over HL7 as over FHIR, also with the backup copy's clinical fields deleted (`TestHL7DRRoundTripEquivalence`). An integrated run (600 DR loops, seed 2026, chaos on) gave a byte-identical DR block in `report7.json` over HL7 and FHIR: P 1.000, R 0.998, 0/558 false closures. No LOINC code is used: no verified code covers the R/M grade (LOINC LL2117-1 has no R/M or U answers), so the codes are local.
+
+**Next due date (`-drnext`).** A resolved DR loop records when the patient is next due:
+- R0/R1: rescreen at the grade day + 365 (doh2024dr).
+- Discharged from the eye clinic: annual screening from the clinic day.
+- Follow-up or treated: the interval the clinic note states, else 91 or 28 days. Both defaults are our assumptions, with no outside source.
+
+Past the due day with no later read screen or linked, attended clinic visit, the decision is flagged `recall_overdue` (escalation `dr_recall_overdue`); the loop stays resolved. No patient message is sent for an overdue recall yet. In the 600-loop run the next due date matched truth for 558 of 559 resolved loops, and 4 of 4 overdue recalls were flagged with no false flags. The interval is read from the note by the rule reader only, and the generator uses the same function, so extraction accuracy is not independently tested. The follow-up attendance rates in the generator are assumptions.
+
+### Lung surveillance CT after a PET/CT low-uptake closure (`c67fc45`)
+
+With `-lungsurv`, a PET/CT low-uptake closure of a > 8 mm nodule opens a surveillance-CT child loop (`<loop>#surv`). BTS 2015 (Callister et al., *Thorax* 2015;70 Suppl 2) puts a Herder < 10% nodule under CT surveillance; the 60–120 day window after the PET is our policy.
+- The parent stays `closed` (closer `pet`, `closed_into: surveillance_ct_due`) and carries the obligation as `lung.surveillance`.
+- A later chest CT on a trusted link, read the same by both readers (or signed by a clinician), closes the child if stable or resolved, or escalates it to the lung MDT if growing. An untrusted link or reader disagreement raises a review item.
+- Past the due day it is overdue (`overdue_lung_surveillance_ct`), with a reminder and a recall sent only with granted consent.
+- Generator rates are assumptions: adherence within 45%, late 25%, never 30%; stable 82%, resolved 6%, growing 12%.
+
+In the frozen evaluation (below), 0/41 dev and 0/30 held-out surveillance closures were false, and the overdue flag was correct for 98/99 and 85/87 obligations. **Open issue:** the pipeline opened 3 (dev) and 4 (held-out) surveillance loops with no matching obligation in truth. These sent no wrong-patient message (0 overall), but the cause is not yet traced.
+
+### Hand-off: missed packets and lung/DR rejections (`d38ee30`, `b5375b8`)
+
+**Missed packets (post-hoc, disclosed; `-xreflink`).** The frozen run at `0f6a532` missed 7 packets (3 dev, 4 held-out), all redirects that the second unit rejected:
+- 4 were a linkage limit: the second unit registered the patient with a corrupted identity (a one-digit Emirates ID typo, a birth year off by 10), so its rejected intake never reached the loop.
+- 3 were simulated reviewer errors: a wrong "different" on the second unit's record, or on the record it was linked through.
+
+Every intake already names the referral it answers. With `-xreflink`, such a rejected intake raises an ordinary link question on the cited loop. Only a human "same" attaches it (with the confirming review when the records contradict); a "different" removes it for good; no question is asked when identity already points to another referral's patient. Re-running the five frozen cohorts with misses recovered all 4 linkage misses; the 3 reviewer-error misses remain, on purpose (a human "different" is not overridden). Cost: 28–39 extra link questions per held-out run (3–5 dev), up to 1.8% more reviewer time. CRC recall rose by 0.007–0.010 on held-out noise, because a confirmed record brings in the patient's later events at that unit. The generator never writes a wrong referral number, so these runs cannot test a wrong reference.
+
+**Lung and DR hand-off (`-refreject`).** Lung > 8 mm work-up referrals and DR eye-clinic referrals can now be rejected. These programmes have no e-consult, so a rejection on a trusted link is final; the packet, act-by clock, escalation and referrer action reuse the CRC code. There is one receiving unit per programme, so no alternative is suggested. Assumptions: half of the never-examined referable loops had the referral rejected; every > 8 mm work-up is urgent; DR is urgent for R3A or an urgent request. "Patient informed" is always false for these programmes: their outreach has no referral-rejected message.
+
+### Safety and review-loop changes (`d703fb4`, `5861b8a`, `0ab46d1`)
+
+**Second-identifier confirm (post-hoc extension of `0f6a532`; `-linkconfirm`).** A second-identifier answer "same" on contradicting records used to release the held message and confirm the pair for the patient's other loops. It now follows the link rule: the answer is held and a confirming review (`second_identifier_confirm`) names the contradiction; only its "same" counts. No observed failure on this path prompted it; it was written by analogy with the link rule. On calibration cohort 103 at τ 0.995: 48 confirming reviews, all true matches (none prevented a wrong message); 3 wrong "different" answers kept true-patient messages held (the safe direction).
+
+**What the birth-date arm of the contradiction check bought (trace, post-hoc).** Rebuilt from the feeds of the `0f6a532` frozen evaluation (the rebuild matches the linker counts exactly in all 10 runs):
+
+| | Dev v1 | Held-out v2 |
+|---|---|---|
+| "Same" answers held for a contradiction (birth date / sex) | 402 (402 / 0) | 273 (273 / 0) |
+| Held pairs that were truly different people | **0** | **0** |
+| Confirming reviews answered | 354 | 237 |
+| Confirmer said "different" on a truly same pair (simulated error) | 16 | 10 |
+
+Every hold was a true match whose real birth dates differ by more than a year from data-entry noise. No reviewer answered "same" on a truly different pair in any run, so the guard had nothing to catch; 15 truly closed loops stayed open because of the 26 wrong confirmations. Of the 100 truly different pairs that reached link review, the rule would have flagged 10 (7 on sex, 3 on birth date). **Change (`0ab46d1`, post-hoc, disclosed):** the contradiction check now uses recorded sex only; the birth-date arm is kept behind `-linkconfirmdob` (default off). The guard still targets the rare double reviewer error found at `4b58c9b` (a woman and a man merged), which was a sex contradiction. Effect at the new code: review items per 100 loops 42.8 → 41.4 (dev) and 38.2 → 37.3 (held-out), with every safety count still 0 (table below).
+
+**Offline review order (`-replayworklist`).** The offline review loop used by Learn-then-Test and the sweeps answered items in id order. It now answers in emission order and drops twin questions the way the live reviewer does. It is deterministic; cohort 103 at τ 0.995: 1,473 → 1,405 answered items (10 dropped), recall unchanged.
+
+**Message templates (`-progtpl`).** Lung and DR outreach intents had no approved template. New families `lnfu` (remind, recall) and `drsfu` (repeat, remind, recall, rebook) in English and Arabic, v1 plus the v2 AI-use disclosure. They name no test or finding. The content guard also blocks lung and retina finding words. The 24 earlier template ids and their text are unchanged and pinned by a test. The retinopathy sender's display name was "Diabetes clinic, primary care", which reveals a diagnosis in every message; it is now "Primary care eye screening".
+
+### API (`b30a8da`, `cfcf50f`)
+
+- `programme=diabetic_retinopathy` and `programme=breast` are documented in [`docs/API.md`](../docs/API.md), with the `dr` object (including `next_due`), `lung.surveillance` and the `breast` object.
+- **Fix:** DR loops in `no_referral_needed` (and breast loops in `no_recall_needed`) are served as `closed: true`, matching the metrics. Before, the API reported 1,061 of 1,200 DR loops in the older demo run as not closed.
+- New demo fixture `dr_exam_closure`: the first DR loop by id where a referable screen was closed by an eye-clinic exam within the deadline, over a trusted cross-provider link, with both readers agreeing and no review anywhere in its history.
+- **review_hold fallback (post-hoc):** in the new runs, 1 of about 2,100 CRC/cervical loops had consent held then granted, so the fixture often had no candidate. When none exists, it falls back to the first closed loop with signed link and evidence reviews whose outreach was stopped by the consent hold or the second-identifier guard. Each decision in the history now carries its own `outreach`, so this is visible in the response.
+- [`docs/api-samples/`](../docs/api-samples/) is regenerated from a five-programme demo run: four fixtures and one case page per programme.
+
+### Subgroup traces (read-only; scripts not committed)
+
+**Origin and placeholder birth dates (dev, CRC, `0f6a532`).** Arab patients had 52.1 identity review items per 100 CRC loops vs 47.6 for Filipino patients. Placeholder birth dates (1 Jan / 1 Jul) are about twice as common among Arab patients: 28.9% of referral registrations vs 13.7% (25.0% vs 8.0% in the source person data). Loops with a placeholder referral birth date get about 20 more identity items per 100 in every origin. Within placeholder strata the gap falls to about 1–1.5 items per 100, and a permutation test with origin shuffled within seed and stratum no longer separates it from chance (one-sided p 0.24–0.36, vs 0.017 unstratified). Placeholder composition accounts for most of the gap. Caveats: only 126 Filipino loops in the placeholder stratum; one low Filipino seed; Arab vs Filipino is the post-hoc extreme pair.
+
+**Held-out lung by origin (1.60, p 0.04 at `0f6a532`).** Review items arise only on loops that reach a follow-up event, and the generated cohort put fewer Western loops in those states (23.0% vs 27–32%; adherence is drawn independently of origin). Among those loops the load is 34–39 items per 100 (max/min 1.14, p 0.77). Attributed to cohort mix and small counts.
+
+**Dev CRC by sex (1.046, p 0.046 at `0f6a532`).** Men carry about 3 more items per 100, higher in 4 of 5 seeds and not removed by adjusting for origin, placeholder birth date, pathway or registration count. The mechanism is not identified. With about 16 subgroup tests per evaluation (Bonferroni cut about 0.003), this is flagged for re-check, not claimed as an effect. At the new code it is 1.043 (p 0.076) dev and 1.017 (p 0.52) held-out.
+
+### Learn-then-Test at `5496563` ([`results/ltt/`](results/ltt/LTT.md))
+
+| With review, τ 0.995 | `0f6a532` | **`5496563`** |
+|---|---|---|
+| False closures / wrong-patient message loops (of 12,600) | 0 / 0 | **0 / 0** |
+| Recall | 0.813 | 0.816 |
+| Review items per 100 loops | 63.5 | 58.8 |
+| Loosest certified tier | 0.8 | 0.8 |
+
+The operating tier stays 0.995. The calibration cohorts contain CRC and cervical loops only; the new programmes are covered by the frozen evaluation, not by this guarantee.
+
+### Frozen evaluation at `5496563` ([`results/final/`](results/final/SUMMARY.md))
+
+Same seeds and person split as before. New in the cohorts: 70 breast loops per run, rejected lung/DR referrals, lung surveillance CTs and DR next-due follow-ups; `-xreflink` and `-drnext` on.
+
+| | Dev noise v1: `0f6a532` → `5496563` | Held-out v2: `0f6a532` → `5496563` |
+|---|---|---|
+| CRC recall | 0.840 → 0.843 (0.827–0.859) | 0.775 → **0.782** (0.769–0.795) |
+| Cervical; lung; DR recall | 0.967; 0.986; 0.998 | 0.913; 0.950; 0.994 |
+| DR referral recall | 0.978 | 0.887 (0.798–0.975) |
+| Breast recall; recall-loop recall | 0.997; 0.982 | 0.994; 0.931 |
+| CRC / cervical / lung / DR / breast false closures | 0/3,156; 0/1,404; 0/2,032; 0/5,636; 0/345 | 0/3,025; 0/1,313; 0/1,903; 0/5,625; 0/338 |
+| Lung surveillance; DR referral; breast recall false closures | 0/41; 0/269; 0/31 | 0/30; 0/231; 0/23 |
+| Hand-off packets matched (all; lung; DR) | 331/333; 19/20; 32/33 | 299/300; 21/21; 35/35 |
+| Hand-off false closures (all; lung; DR) | 0/88; 0/6; 0/15 | 0/86; 0/4; 0/17 |
+| Wrong-patient messages; sent without consent | 0/15,247; 0/9,945 | 0/14,451; 0/9,602 |
+| Review items per 100 loops; reviewer hours per 1k loops | 42.8 → 41.4; 14.7 → 14.3 | 38.2 → 37.3; 13.2 → 12.9 |
+| KPI absolute error (Wasl; Emirates-ID-only) | 0.010; 0.195 | 0.031; 0.207 |
+| Origin pooled (p); standardised by programme (p) | 1.056 (0.36); 1.099 (0.015) | 1.098 (0.057); 1.031 (0.77) |
+
+- Every safety count is 0. Tamper: 85/85 detected on both, 0 false alarms.
+- Small denominators give wide bounds: breast recall 0/31 (95% upper bound 11.2%), lung hand-off 0/6 (45.9%), lung surveillance 0/41 (8.6%).
+- **Subgroups** (weak evidence after about 16 tests): dev CRC by origin 1.119 (p 0.015) and dev standardised 1.099 (p 0.015) are the lowest p-values; neither passes a Bonferroni cut, and the placeholder trace above explains most of the CRC origin gap. Held-out lung by origin is 1.56 (p 0.053), the cohort-mix pattern traced above. Breast by origin (inf dev, 4.27 held-out) rests on a few items per group and is not interpretable.
