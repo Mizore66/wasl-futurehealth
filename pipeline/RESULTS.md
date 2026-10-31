@@ -1207,3 +1207,34 @@ The fix removed most of the held-out sex gap. The rest (about 3 items per 100 lo
 - **Readers in the runs.** Screens: 5,513/6,210 (dev) and 5,523/6,207 (held-out) auto-decided, 60% with a coded grade; clinic notes 1,087/1,102 and 1,068/1,090; 0 agreed-but-wrong. The generator reuses dev-corpus text, so these overstate agreement (see the readers table).
 - **Held-out referral recall 0.88, wide interval.** Fewer than 50 referral loops per run; the misses are loops left open for review, not closed wrongly.
 - **Pooled origin ratio now significant on held-out noise (1.11, p = 0.023).** Traced (`reviewer_decisions` against truth, 5 held-out seeds). It is a mix effect, not a new per-programme gap. Without DR loops the ratio is 1.085, as before. Arab patients carry more of the DR loops (25.5% of their loops vs 20–23% for other origins), and DR loops need few reviews, so their pooled review rate drops below the others. Within DR loops the ratio is 1.26 (Filipino 16.3 items per 100 loops, n = 454; Arab 12.9, n = 3,531), on small groups. The per-seed mean (1.19) stays under the 1.25 limit, but its upper interval (1.34) crosses it. A per-programme comparison is the fairer measure once loop mixes differ by origin; not changed.
+
+### Origin ratio by programme; one link question per registration pair (`d3a1e64`, new headline)
+
+Post-hoc changes after the `4cafa26` evaluation, disclosed. The frozen evaluation was re-run at `d3a1e64` (same seeds and cohorts; files in `results/final/`).
+
+**Programme-aware origin check (`scripts/origin_null.py`, `scripts/final_aggregate.py`).** Programmes carry very different review loads (CRC about 60 items per 100 loops, DR about 13), and the loop mix differs by origin, so the overall ratio partly measures the mix. Two checks were added, pooled over seeds with origin labels shuffled within each seed and programme: an indirectly standardised ratio (per origin, observed items over the items expected from each of its loops' programme mean) and the ratio inside each programme.
+
+| Pooled over 5 seeds, at `d3a1e64` | Dev noise v1 | Held-out v2 |
+|---|---|---|
+| Overall max/min (p) | 1.058 (0.29) | 1.103 (0.041) |
+| **Standardised by programme** (p) | **1.100 (0.014)** | **1.037 (0.64)** |
+| CRC (p) | **1.123 (0.017)** | 1.063 (0.38) |
+| Cervical; lung; DR (p) | 1.09 (0.53); 1.18 (0.66); 1.25 (0.29) | 1.11 (0.37); 1.55 (0.06); 1.27 (0.25) |
+
+- **Held-out noise:** no origin gap once the mix is accounted for (1.04, p = 0.64). The significant overall ratio is the DR mix effect traced in the previous section.
+- **Dev noise: a gap the overall ratio hid.** On CRC loops Arab patients get more review items than Filipino patients (pooled per 100 loops: identity questions 50.6 vs 44.9, evidence 18.0 vs 16.2). The CRC pathway mix is the same across origins (for example 23.6% vs 22.7% awaiting histology), so the extra items are within pathways, mostly identity questions. This matches the earlier trace (placeholder birth dates, which cannot corroborate a link, are commonest in Arab registrations), but this run does not prove that cause. It costs reviewer time, not accuracy: CRC recall and false closures (0 in every group) do not differ. The overall dev ratio (1.06) hid it because Arab patients carry more of the low-review DR loops. Not changed.
+
+**One link question per registration pair (`-reuselink`, default on).** The linker applies a human link answer to the registration pair itself (merge, or cannot-link), so it already holds for every loop of the patient. But two loops of one patient could each queue a link question on the same pair before the first answer landed; both were asked, and when the simulated reviewer's assumed 4% error made the answers disagree, the later one won (the no-change check in the DR section found one such case). The review worklist now drops a queued link question once its pair has a human answer, either "same" or "different"; a later answer still replaces it. Second-identifier and evidence questions are unaffected. Test: `TestLinkWorklistDedupe`. In the 10 runs it dropped 47–77 link questions per run (about 3% of answered items).
+
+| | Dev noise v1: `4cafa26` → `d3a1e64` | Held-out v2: `4cafa26` → `d3a1e64` |
+|---|---|---|
+| CRC recall | 0.842 → 0.842 (0.827–0.858) | 0.775 → 0.776 (0.762–0.790) |
+| Cervical recall | 0.966 → 0.968 | 0.903 → 0.907 |
+| CRC / cervical / lung / DR false closures | 0 / 3,155; 0 / 1,405; 0 / 2,026; 0 / 5,621 | 0 / 2,999; 0 / 1,305; 0 / 1,899; 0 / 5,608 |
+| Wrong-patient messages; sent without consent | 0 / 15,158; 0 / 9,939 | 0 / 14,334; 0 / 9,482 |
+| Review items per 100 loops; reviewer hours per 1k loops | 42.9 → 41.6; 14.7 → 14.3 | 38.6 → 37.3; 13.3 → 12.9 |
+| Origin ratio per seed; pooled (p); standardised (p) | 1.12 (1.06–1.18); 1.06 (0.29); 1.10 (0.014) | 1.18 (1.02–1.34); 1.10 (0.041); 1.04 (0.64) |
+| CRC review load by sex, max/min (p) | 1.011 (0.63) → 1.041 (0.09) | **1.054 (0.028) → 1.016 (0.55)** |
+| CRC review load by age band, max/min (p) | 1.055 (0.26) → 1.058 (0.23) | 1.055 (0.34) → 1.063 (0.23) |
+
+The held-out sex gap is gone. That fits the backlog-gaps trace (women who also have a cervical loop got about 4 more identity questions per 100 CRC loops): their two loops could each ask about the same registration pair. DR results are unchanged.

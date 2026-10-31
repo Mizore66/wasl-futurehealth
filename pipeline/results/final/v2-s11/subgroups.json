@@ -1,30 +1,30 @@
 {
  "age_band": {
-  "observed_ratio": 1.1972,
-  "null_median": 1.1089,
-  "null_p95": 1.2088,
-  "p_value": 0.063,
+  "observed_ratio": 1.187,
+  "null_median": 1.1082,
+  "null_p95": 1.2102,
+  "p_value": 0.093,
   "groups": {
    "40-59": {
     "loops": 555,
-    "items": 369,
+    "items": 362,
     "items_per_loop_hist": {
-     "0": 269,
-     "1": 208,
-     "2": 73,
+     "0": 272,
+     "1": 209,
+     "2": 69,
      "3": 5
     },
     "crc_truly_closed": 206,
-    "crc_closed_by_wasl": 170,
+    "crc_closed_by_wasl": 172,
     "crc_false_closures": 0
    },
    "60-79": {
     "loops": 515,
-    "items": 286,
+    "items": 283,
     "items_per_loop_hist": {
-     "0": 283,
-     "1": 182,
-     "2": 46,
+     "0": 285,
+     "1": 181,
+     "2": 45,
      "3": 4
     },
     "crc_truly_closed": 185,
@@ -33,11 +33,11 @@
    },
    "80+": {
     "loops": 429,
-    "items": 271,
+    "items": 266,
     "items_per_loop_hist": {
-     "0": 213,
-     "1": 164,
-     "2": 50,
+     "0": 216,
+     "1": 163,
+     "2": 48,
      "3": 1,
      "4": 1
     },
@@ -47,11 +47,11 @@
    },
    "<40": {
     "loops": 541,
-    "items": 337,
+    "items": 330,
     "items_per_loop_hist": {
-     "0": 278,
-     "1": 193,
-     "2": 66,
+     "0": 280,
+     "1": 196,
+     "2": 61,
      "3": 4
     },
     "crc_truly_closed": 224,
@@ -61,23 +61,23 @@
   }
  },
  "sex": {
-  "observed_ratio": 1.1021,
-  "null_median": 1.0367,
-  "null_p95": 1.1154,
-  "p_value": 0.085,
+  "observed_ratio": 1.0753,
+  "null_median": 1.0381,
+  "null_p95": 1.1189,
+  "p_value": 0.217,
   "groups": {
    "F": {
     "loops": 1420,
-    "items": 903,
+    "items": 881,
     "items_per_loop_hist": {
-     "0": 716,
-     "1": 516,
-     "2": 178,
+     "0": 726,
+     "1": 518,
+     "2": 166,
      "3": 9,
      "4": 1
     },
     "crc_truly_closed": 544,
-    "crc_closed_by_wasl": 425,
+    "crc_closed_by_wasl": 427,
     "crc_false_closures": 0
    },
    "M": {
