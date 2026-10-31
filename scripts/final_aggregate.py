@@ -138,7 +138,36 @@ for noise in ["v1", "v2"]:
             null.sort()
             origin_ratio.update({"pooled_no_bias_median": round(null[500], 4), "pooled_no_bias_p95": round(null[950], 4),
                                  "pooled_p_value": round(sum(x >= origin_ratio["pooled_ratio"] for x in null) / 1000, 4)})
-    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra, "review_load_by_origin": origin_ratio}
+    # age band and sex (CRC loops only; scripts/subgroups.py): pooled review load, recall and a within-seed shuffled-label test
+    subs = [json.load(open(x)) for x in sorted(glob.glob(os.path.join(F, f"{noise}-s*", "subgroups.json")))]
+    subgroups = {}
+    for name in (subs[0] if subs else {}):
+        G = sorted(subs[0][name]["groups"])
+        tot = {g: collections.Counter() for g in G}
+        for x in subs:
+            for g in G:
+                for k in ("loops", "items", "crc_truly_closed", "crc_closed_by_wasl", "crc_false_closures"):
+                    tot[g][k] += x[name]["groups"][g][k]
+        rate = {g: 100 * tot[g]["items"] / tot[g]["loops"] for g in G}
+        obs = max(rate.values()) / min(rate.values())
+        rng, null = random.Random(20261031), []
+        seeds = [([g for g in G for _ in range(x[name]["groups"][g]["loops"])],
+                  [int(c) for g in G for c, n in x[name]["groups"][g]["items_per_loop_hist"].items() for _ in range(n)]) for x in subs]
+        for _ in range(1000):
+            L, I = collections.Counter(), collections.Counter()
+            for labels, counts in seeds:
+                rng.shuffle(labels)
+                for g, c in zip(labels, counts):
+                    L[g] += 1; I[g] += c
+            r = [I[g] / L[g] for g in G]
+            null.append(max(r) / min(r))
+        null.sort()
+        subgroups[name] = {"pooled_items_per_100": {g: round(rate[g], 1) for g in G}, "pooled_ratio": round(obs, 4),
+                           "pooled_no_bias_p95": round(null[950], 4), "pooled_p_value": round(sum(v >= obs for v in null) / 1000, 4),
+                           "crc_recall": {g: round(tot[g]["crc_closed_by_wasl"] / max(1, tot[g]["crc_truly_closed"]), 3) for g in G},
+                           "crc_false_closures": {g: tot[g]["crc_false_closures"] for g in G}}
+    out["by_noise"][noise] = {"seeds": len(R), "metrics": agg, "safety_pooled": safety, "pooled_counts": extra, "review_load_by_origin": origin_ratio,
+                              "crc_by_age_band_and_sex": subgroups}
     md.append(f"\n## Noise {noise}: {man['noise_models'][noise]} ({len(R)} seeds)\n")
     md.append("| Metric | Mean | 95% interval |\n|---|---|---|")
     for k in ["crc_precision", "crc_recall", "crc_recall_no_review", "cervical_precision", "cervical_recall", "kpi_truth", "kpi_wasl", "kpi_eid_only",
@@ -158,6 +187,9 @@ for noise in ["v1", "v2"]:
     if "pooled_p_value" in o:
         md.append(f"Pooled over seeds, the no-bias max/min has median {o['pooled_no_bias_median']} and 95th percentile {o['pooled_no_bias_p95']}; "
                   f"the observed pooled {o['pooled_ratio']} has p = {o['pooled_p_value']}.")
+    for name, sg in subgroups.items():
+        md.append(f"CRC loops by {name.replace('_', ' ')}: {sg['pooled_items_per_100']} review items per 100 loops, max/min **{sg['pooled_ratio']}** "
+                  f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
     if extra:
         md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
