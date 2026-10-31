@@ -17,15 +17,19 @@ FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
 DR="${WASL_DR:-1200}"; export DR   # diabetic retinopathy screening loops per run (third loop type; 0 = off)
-BREAST="${WASL_BREAST:-0}"; export BREAST   # breast screening recall loops per run (fourth loop type; 0 = off)
+BREAST="${WASL_BREAST:-80}"; export BREAST   # breast screening recall loops per run (fourth loop type; 0 = off; ~85 is the most the held-out women allow next to CRC, cervical and DR)
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
-# WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default off
-GSURV=(); [ "${WASL_LUNGSURV:-0}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
-# hand-off, default off: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
-[ "${WASL_XREFLINK:-0}" = 0 ] || PARGS+=(-xreflink)
-# WASL_REFREJECT=true (gen, default false): lung work-up and DR eye-clinic referrals can be rejected (pipeline/handoffext.go)
+# WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default on
+GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
+# hand-off, default on: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
+[ "${WASL_XREFLINK:=1}" = 0 ] || PARGS+=(-xreflink)
+# WASL_REFREJECT=true (gen, default true): lung work-up and DR eye-clinic referrals can be rejected (pipeline/handoffext.go)
+: "${WASL_REFREJECT:=true}"
+# WASL_DRNEXT=1 (default on): next due DR rescreen / clinic review and recall_overdue (pipeline/drnext.go), generator and engine
+[ "${WASL_DRNEXT:=1}" = 0 ] || { PARGS+=(-drnext); GSURV+=(-drnext); }
+export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -61,6 +65,8 @@ if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_A
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
 if os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
     m["lung_pet_surveillance"] = "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure"
+if os.environ.get("WASL_DRNEXT", "0") not in ("", "0"):
+    m["dr_next_due"] = "on (-drnext): next due rescreen / clinic review and recall_overdue"
 if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
     m["handoff_xreflink"] = True
 if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung work-up / DR eye-clinic referrals (handoffext.go)
