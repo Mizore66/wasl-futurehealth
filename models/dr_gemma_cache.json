@@ -12,6 +12,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 12848
  },
+ "0073f5a322f9b76df516718b75919dbd389132542e054b1604a9f9d063c973da": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal haemorrhage. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "3A",
+  "left_r_grade": "1",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Stable proliferative status does not exclude right maculopathy.",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11583
+ },
  "0120f1332e46b314c0d874285d10f03449e5a492d9059c54acb4654a48f6a369": {
   "kind": "dr-screen",
   "right_eye_text": "OD is unremarkable.",
@@ -37,6 +50,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 11079
  },
+ "017dd0cb00b8ce95ba88ab5273d5e861b2e6632363cc20d437ba850ed2b1a610": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Dense bilateral cataracts obstruct all fundus views despite dilation and attempted imaging. Retinae not assessable.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4797
+ },
  "0196bdb4b2182b76724dc99e353123e6cdd3cdc027f8fa814d374ebfb3f12d39": {
   "kind": "dr-screen",
   "right_eye_text": "OD: normal optic nerve, flat macula, no diabetic retinopathy or edema.",
@@ -48,6 +70,33 @@
   "quote": "no m1croaneurysms or hemorrhages seen",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 9135
+ },
+ "0286adf0eb23515255d2aa60c8d97da8538de5eb2aebd699fc69747f4d971827": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi assessed after dilation, without referable diabetic findings.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4028
+ },
+ "02986f7f6178b2a04d8cd30d8ba77e85a2b4bb7561ef520a638d6a77eba6d8ca": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Bilateral retinal examination finds stable background disease. PRP not required and no injection planned; review in nine months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4999
+ },
+ "03626f6a36972ad1ccae561a69ec0950d06687c004ef67b3f4ef3de26bfa0933": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Patient absent from the booked screening-referral clinic. Telephone message left; no examination or treatment took place.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5007
  },
  "050dd63919fc024e38c95a268d5df524cfdcc91db4763ba905cd6e84810cd09a": {
   "kind": "dr-clinic",
@@ -66,6 +115,27 @@
   "quote": "تم فحص الشبكية بالعدسة المكبرة والنتيجة مطمئنة.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 3526
+ },
+ "05dd1789f20e3e5c8709886015d187e0b7753e4a0a6fb431282927086d140697": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula.",
+  "right_r_grade": "0",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "A few microaneurysms and dot hemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8477
+ },
+ "073abadc98128a743e67b365f28194377fcf71a80b309978505ba7b725e2d798": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Dilation declined because the patient must drive. Fundus not examined, rather than obscured.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4889
  },
  "084fda0eb5ab68a8bad9e2e9d31b1ba8c18168b48a6d7405daf3b9121de5a072": {
   "kind": "dr-clinic",
@@ -102,6 +172,15 @@
   "quote": "DFE: severe NPDR both eyes, no new vessels. Treatment not indicated today; review in 3 months.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4517
+ },
+ "0a0d96e22deb7d2a88fe063537f5e33a6b611b7561c80b08722f350d52756d61": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Dilated fundus examination confirms right diabetic macular oedema. Aflibercept injection booked; patient has not yet received the dose.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5645
  },
  "0b8f49d42b815ad7518f57d2cc77412667823b729a52f5e370d436fd4601557d": {
   "kind": "dr-screen",
@@ -146,6 +225,36 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 11158
  },
+ "0dd803a9a99e653cda0f44607c7f400e8e1062ef01027beef22d596f2bac0333": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12295
+ },
+ "0f7a282dceaaad16dc7081bfdd2a45d6fcc43f11e7165d4cb17b9cda7431cf0f": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Patient was seen but dilation was not done; neither retina assessed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4453
+ },
+ "104064dea66d0aaa273e5950deedaf39c19a02c8943707add64fa232e8f53601": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Both fundi reviewed after dilation.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4161
+ },
  "105501f2042fa961efddadc6a4dfe23a07711b8469ee8f7fbdbe4131015cb738": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -155,6 +264,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4667
  },
+ "108d1168f601703a1388b6fc2407bc04d6510b82c7678bb73395a1f0ebe52a4f": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Retinal examination completed bilaterally. Left new vessels elsewhere treated with scatter retinal laser today.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4689
+ },
  "10c3073f71f9d55464189a68abaff34894bf064879ccff4addff741d28bdae17": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -163,6 +281,15 @@
   "quote": "First anti-VEGF injection given today; loading doses booked.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4306
+ },
+ "12ee5884ff7306bbd2c953ca647a604c1fca31c4a797af99eafe90808ddea9f0": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi examined: moderate background retinopathy without edema. Laser not needed; review in six months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4970
  },
  "136642631a230d9db61a9ce0f6184fbce15efaaecfd2a80d34c13d460621efb9": {
   "kind": "dr-screen",
@@ -176,6 +303,19 @@
   "quote": "rapid progression since the last screen",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10711
+ },
+ "14537eea1f563bdb07cd4e6ffbb24b39e2a30e4d20d96b692ebcb831fd7fa305": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=1; M=0. A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "1",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "No urgent referral required at this time. The findings are consistent with mild non-proliferative diabetic retinopathy and no further action is required at this time. A routine referral is recommended for follow-up in 6 months or sooner if there is any change in the patient's condition. The patient'",
+  "quote": "No microaneurysms, haemorrhages, venous abnormalities or new vessels.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 17856
  },
  "1514fa7899efea922e4896d4e11688ec76ba1b4a349bac990edf268e17fcb86a": {
   "kind": "dr-clinic",
@@ -198,6 +338,24 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 8535
  },
+ "17ccfe1e16d3b896f81a84bd51525485791afa3cfbe5e4a3a1bb1553df3e9488": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Did not attend. The referral requests laser assessment, but no patient review, treatment decision or treatment booking occurred.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5045
+ },
+ "18b76c69fa965450c1ceec23733ce85b62fca5eb78929190f053056268b47427": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "follow_up",
+  "quote": "Vision RE 6/9, LE 6/9 and pressures recorded only. No dilation and no retinal examination; rebook full assessment.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5434
+ },
  "1a0ef39e58a851fcb4e9f2a4171df9cd11761218d42bf425358f556d2697253b": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -216,6 +374,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5791
  },
+ "1aaeceed5eeb240a16348222305b0e58db1eaa95181ba5967a644b46ba2d0ad2": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Severe bilateral corneal opacity prevents a view of either retina; fundus cannot be assessed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4667
+ },
  "1c193ccd5445083b766ded3bfc648d0e6642dbc187a6a99d8e99c1dc33d7acf3": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -224,6 +391,18 @@
   "quote": "visual acuity and intraocular pressure checked only. No fundus examination today; rebooked.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5530
+ },
+ "1d558e981f52b37c42d6289b2d575ecbadd3b518bfa20b35094d0615f18a6a31": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "left_eye_text": "Left eye: Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "right_r_grade": "U",
+  "left_r_grade": "U",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "this eye could not be graded",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8700
  },
  "1e1ead221a2cfaede52ce91e3cbc7bf3b809f152293cdb8f4cf7dd0a520a5dd7": {
   "kind": "dr-screen",
@@ -236,6 +415,19 @@
   "quote": "no diabetic changes detected",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 8973
+ },
+ "206a7996ff214e467e702e9b0460044a7ddc8d72c2fdbd42f52a974522b1c28a": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: R=3A; M=0. Active new vessels elsewhere with a small peripheral pre-retinal haemorrhage.",
+  "left_eye_text": "LE: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "3A",
+  "left_r_grade": "0",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Active new vessels elsewhere with a small peripheral pre-retinal haemorrhage.",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11374
  },
  "207448928796ef33232be6207be2f9a8cfdd88e72fa0f4851ee4d33fba24aaff": {
   "kind": "dr-screen",
@@ -261,6 +453,30 @@
   "quote": "Bilateral diabetic maculopathy",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10846
+ },
+ "267fdf05640dece3c3c39d5e6f90ab8c3a2108b47a6987a31f6cc0647a1f9f1c": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11767
+ },
+ "2ad7e9fb880db96ae0c85a9245aaddef1acfef26768fb943edbde10f440df63f": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "R=U; M=\"\"\nImages inadequate: this eye could not be graded; macular grade unavailable.",
+  "right_r_grade": "0",
+  "left_r_grade": "U",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9130
  },
  "2c55ed9acc2e9b023a1562aee0e93f3ec98ba695e0f29eee14f1da1b923cbcbd": {
   "kind": "dr-screen",
@@ -300,6 +516,33 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 6947
  },
+ "2e7871db8cb1c86fbe504c050f19b8d85af803dab023a9e764b83e1d805545b8": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Dilated fundus examination confirms right active proliferative disease. Right PRP performed today; left fundus has background changes.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3838
+ },
+ "2f8809ad2733c33f86d89ece823bdad5a8cced020b33c695d194f7fa49f7a3ea": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Fundus examined in each eye. Focal retinal laser to left leaking microaneurysms completed today.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4087
+ },
+ "304f7579df6b331e1f022d73092966a5c8732b7a04858f30202074d72bd43b1f": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Dense bilateral cataracts prevent any retinal view; neither fundus assessable.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4511
+ },
  "30f25f8ffd5296bee66e481ababd4c54999f5c50448c38e551b2ef80eef09061": {
   "kind": "dr-screen",
   "right_eye_text": "Right eye: Normal retinal architecture. Foveal avascular zones appear intact without lipid or hemorrhage.",
@@ -337,6 +580,28 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 6723
  },
+ "33f59f220ea4e59e7377b8687c3a39ef5f390a8bc81079d91de18ca9a835c362": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both retinae are examined today: mild diabetic changes only. No retinal treatment; hospital review with OCT in six months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4999
+ },
+ "3506f07b5bfb7a856af5dfe3ba9084bd19e49ed6b98d42f8df915f766b9470ee": {
+  "kind": "dr-screen",
+  "right_eye_text": "OD: R=2; M=0. Definite IRMA and multiple deep blot hemorrhages outside the macula, without venous beading or new vessels. No maculopathy.",
+  "left_eye_text": "OS: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "2",
+  "left_r_grade": "0",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Definite IRMA and multiple deep blot hemorrhages outside the macula, without venous beading or new vessels.",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12463
+ },
  "357ab3d35fc2aa9c547ef2c88b9a946a84c0585f51b055f89cb6f49f607b76eb": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -345,6 +610,18 @@
   "quote": "First anti-VEGF injection given today; loading doses booked.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 3326
+ },
+ "359e2a56ea51a77d38113f960d7a83128f5b6ecccf4da3cf0456c296a7acfa39": {
+  "kind": "dr-screen",
+  "right_eye_text": "OD: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "OS: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 13249
  },
  "35f446c1c89e88815e84588563e912b114f9664479fa7a248b4aec6f8a79d41d": {
   "kind": "dr-clinic",
@@ -427,6 +704,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10771
  },
+ "3e0b7ad8cf6a422fad75343c6e27da583c7c2f681554d56fb2415cd2a0d46b12": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Both fundi examined: sparse peripheral microaneurysms, no maculopathy. Discharge to annual screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4766
+ },
  "40651d9795850c0e6bb350da69c8a030cb74a9cc7631dca80efe5cf9437b9fc6": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -457,6 +743,41 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 8962
  },
+ "42a2aeb989c20242e281c5d7355be91f1a462e53d06f359175c7fd722ff107ef": {
+  "kind": "dr-screen",
+  "right_eye_text": "Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "right_r_grade": "2",
+  "left_r_grade": "U",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "The right eye independently warrants referral",
+  "quote": "Images inadequate: this eye could not be graded",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7893
+ },
+ "42be8604acf0409305a2c06828b321635b51dde614f7afb02e435a03eb575383": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi examined. Discharged from the injection chair today, not from medical retina: no injection given or booked.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5029
+ },
+ "42f0c4e82affd918bf358e58c2529a741328ef64729f9f893e2ca7c249ea2c5f": {
+  "kind": "dr-screen",
+  "right_eye_text": "العين اليمنى: R=1; M=0. One microaneurysm within one disc diameter of the foveal center; acuity 6/9. No exudates or retinal thickening and no other lesions.",
+  "left_eye_text": "العين اليسرى: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "1",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "The isolated near-foveal microaneurysm does not meet the acuity-dependent maculopathy criterion.",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 14282
+ },
  "43dbbd2859a965549c8b2126c430d7f9dd30f0364cac53a298397db26689f679": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -477,6 +798,31 @@
   "quote": "multiple blot haemorrhages and IRMA (pre-proliferative)",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10763
+ },
+ "44e8d57d11b253e45d6eee58bec3c73b77e96b51607f4906a9e3ef6834fccc8b": {
+  "kind": "dr-screen",
+  "right_eye_text": "OD: Active new vessels elsewhere with a small peripheral pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "OS: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "3A",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "Active new vessels elsewhere with a small peripheral pre-retinal hemorrhage, therefore an urgent referral is recommended.",
+  "quote": "A few microaneurysms and dot hemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11574
+ },
+ "47257363aa2aced5a026c9a2a498a9d84341ef18c66d8a76ca670ad27242748f": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 15084
  },
  "475d7331c69cd2da903788d1b703da60cb662d086ead60b23645a335ed2c8431": {
   "kind": "dr-clinic",
@@ -600,6 +946,27 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 3827
  },
+ "4e54114f84ecc6fe089c30d5860c54bdfe9215a997a657ca6816834e9ba50263": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Vision OD 20/30, OS 20/25. Left before dilation; neither retina examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6384
+ },
+ "4e94cb623f8472fa3dd36fd2160c7c1513ff382a05b3f717c2c43e368938c961": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal haemorrhage. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "A few microaneurysms and dot haemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11794
+ },
  "528321c72566e7ca5104e112b670f23e45204d8e33540e975a4087b8a54c2ec5": {
   "kind": "dr-screen",
   "right_eye_text": "OD exhibits venous loops, multiple deep blot hemorrhages, and circinate macular exudates within 0.5 DD of the foveal center.",
@@ -612,6 +979,15 @@
   "quote": "Refer to retina specialist.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 9236
+ },
+ "52b92870664b08442a8e40fa54a7bb6b1e0bab5c68e05e7bf5dbd318ffda363c": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Retinal examination completed bilaterally. No referable diabetic disease; returned to routine primary-care diabetic eye screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4777
  },
  "53457747a8a7e094b6bc623c752a0ba0c05d3ea918759da55604f5ddc64f5ece": {
   "kind": "dr-clinic",
@@ -644,6 +1020,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5329
  },
+ "569e36802dac4f2b32edbde32607fd4c9909f6d32b9b80a8f84fa488a5bcb284": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Did not attend the screening-referral appointment. Template carried forward: 'dilate, fundus examination, OCT'; none was performed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5759
+ },
  "583724e32b7b39f90376599bb720887a628d1d79835b3b9b34137cac260220ea": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -675,6 +1060,28 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 8963
  },
+ "5901625dafa47d5c420944529b20019d57ed0ffaa60c88593005837c46ac58b8": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Both retinae examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3680
+ },
+ "5a3aafd253fe1cd56d23d7085ea72ac940464fd4c70e6e193aac645f0aa5f724": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: A few microaneurysms and dot haemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre. Marked recent right visual deterioration accompanies the macular finding.",
+  "left_eye_text": "LE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "3A",
+  "left_r_grade": "1",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Grader explicitly requests an urgent hospital eye referral.",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 14201
+ },
  "5ab186c25f0ac8eb8742a44030a8bc496cca1d6809c15aba47d9cdc5cfe21358": {
   "kind": "dr-screen",
   "right_eye_text": "Right eye: no retinopathy detected; macular oedema suspected (M1).",
@@ -687,6 +1094,19 @@
   "quote": "no diabetic retinopathy",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 8926
+ },
+ "5abe800d094c4e6f339157515ec459df48f3a496343ae65e061c155966409ba0": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "1",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "No urgent referral required at this time. Routine referral advised.  The findings are consistent with background diabetic retinopathy and do not require urgent referral at this time.  The findings are consistent with background diabetic retinopathy and do not require urgent referral at this time.  A",
+  "quote": "A few microaneurysms and dot hemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 15553
  },
  "5af725edda6e1016e84e2f26931b41ccc864dbade91ada15350f75ef87be8859": {
   "kind": "dr-screen",
@@ -712,6 +1132,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 9768
  },
+ "5c94207972eb649fa4d74647024d90265ecf35afd177489ca18ae9db2af69364": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: R=2; M=0. Venous beading, IRMA and multiple deep blot hemorrhages. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "Left: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "2",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "Grader explicitly requests an urgent hospital eye referral.",
+  "quote": "A few microaneurysms and dot hemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12326
+ },
  "5d01be30f20fb0eb237532fa7efefe54bf42f71f20a801d1bcb07190af885ba9": {
   "kind": "dr-screen",
   "right_eye_text": "RE fundus shows no hard exudates and no obvious stereo thickening, but there are three microaneurysms and a small blot haemorrhage situated 0.6 disc diameters from the centre of the fovea; combined with reduced visual acuity of 6/12, this meets NHS M1 maculopathy criteria.",
@@ -725,6 +1158,18 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10890
  },
+ "5d48a0ff9256cb844920ce405e7c29d4d610017f1deae4a193f8193ed01008cf": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "Left: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12350
+ },
  "5dd6702bbaf16d2b5058247d48c85c732cb19333a0a9f5d2bd17550e1e30a63b": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -733,6 +1178,18 @@
   "quote": "Because of symptomatic hypertensive urgency, patient was transferred directly from ophthalmic nursing triage to the Emergency Department before pupil dilation or fundus examination was performed.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5417
+ },
+ "5edf323fe1beb2e11fd6b56a4332843e9435adaba0842b8b5e9f4fb883f11187": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "1",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10089
  },
  "5f5db73423d8186ce1c6f8854ea93c3b20961d9df963fe47858e9ad976b730a5": {
   "kind": "dr-clinic",
@@ -760,6 +1217,15 @@
   "quote": "Undilated view through 2 mm pupils was not attempted for grading; dilated fundus exam deferred.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5301
+ },
+ "6470b2003de64934b8922b034a8e78b1cf4a1e45d4906ce1ce273fce3c24e8b3": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Bilateral dilated examination shows background retinopathy only. Return to annual diabetic eye screening; no hospital review arranged.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4944
  },
  "64e0653e9d3aa66d4e859ae2b79b3e26251bd9880df757c6a605a1b27d29564d": {
   "kind": "dr-screen",
@@ -821,6 +1287,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 3430
  },
+ "6b541209884a1c88c9f39fa27a185b5e38fbc56f69dd10dcd5852915e72c61b1": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "1",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "No urgent referral required at this time. The findings are stable and do not warrant immediate intervention. However, regular monitoring is advised to detect any progression of the disease. If there is any change, an urgent referral should be considered.  Please note that the patient has a history, ",
+  "quote": "No microaneurysms, haemorrhages, venous abnormalities or new vessels.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 17709
+ },
  "6e47d6c8ebc3d56ca180ebca0b6021d9450b2bc09e67a89ac50f51281f6a7c77": {
   "kind": "dr-screen",
   "right_eye_text": "RE: stable treated proliferative retinopathy: laser scars, regressed new vessels; macula clear.",
@@ -872,6 +1351,36 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10821
  },
+ "75cb207302c85b273e5564abeece344737d298ef85691d2837f2ca699b86bd7f": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "Left: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 17355
+ },
+ "760c1985c0e80a94fe2c61077c0a3b4021ed079f04dd8925a1101b05f1aebed6": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both retinae examined. Stable pre-proliferative changes without maculopathy; repeat dilated review in three months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5079
+ },
+ "770cbd58ca1105562f9f9aa8e84446e9ef3af5664b259848238f9478bc22e5c0": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "No-show for the hospital retinal appointment after screening referral. An appointment letter is not an attended examination; re-invite.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5111
+ },
  "78ff60ac3f78917bd511e60cbbd347834e7cda6cfbf6cb01fb9037656f27dc7d": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
@@ -918,6 +1427,45 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 7928
  },
+ "7d9de1650f439586924f8141b97bcf534433ba883781d3fd3c4b9acec0528aa7": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Both fundi examined: no diabetic retinopathy.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4435
+ },
+ "7e0967ba18b338bcc84af783dae9d32f247239bc863c910fb3a3d671d2ed658b": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3706
+ },
+ "7f8f93de45c4f5df4574bfce5e3c033d5e9b5ecef1ab1b9c3c987b799c6d0958": {
+  "kind": "dr-screen",
+  "right_eye_text": "العين اليمنى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "العين اليسرى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 15142
+ },
+ "8070bdd4c5dff439733bc1c55a0b4a41353401786f7098b51e97c237369d1aae": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Bilateral dense media opacity prevents retinal assessment after dilation; arrange anterior-segment review.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4668
+ },
  "82c22bf45da400291e46a03a66e714f605a94bb971cf16bc4ed9351dfb987b2d": {
   "kind": "dr-screen",
   "right_eye_text": "treated proliferative disease, stable since laser; no maculopathy.",
@@ -951,6 +1499,18 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4782
  },
+ "859fd2b05e0509b9054523ffc54bcdb81671562058c3b597de6b31d225fc5522": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "Left: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "A few microaneurysms and dot hemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9767
+ },
  "85ec1b1ad45ece51b8652af0d48ebd2cf15651c4abcdb3be9907350ffb08c880": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -959,6 +1519,15 @@
   "quote": "After pharmacological mydriasis with tropicamide 1% and phenylephrine 2.5%, clear view of both fundi achieved on slit-lamp biomicroscopy.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5674
+ },
+ "86e26da5a2ffb4cf713be5eda6be90f30ab56996e90ffa607b93d0a9e9271a58": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Dilated examination of both retinae shows bilateral macular oedema. Anti-VEGF loading course started by booking the first injection.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4959
  },
  "886eb07609db24d85d171ac835f22d0654a5ab770f0c47bb6952459c6e8fb5b7": {
   "kind": "dr-clinic",
@@ -980,6 +1549,15 @@
   "quote": "LE is ungradable (U) due to severe asteroid hyalosis and media opacity hiding more than 50% of the macular and disc fields.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 13770
+ },
+ "8a5fb096a97c9813fb69318d8e05a97400dc894495a83288161408260660e3c3": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Patient did not attend the rescheduled retinal clinic. Electronic check-in was entered in error and corrected; no clinical encounter.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3939
  },
  "8b998487a6d40aa20bacd1aaf600bb88e4935c2d55980e1179489c638b2aed01": {
   "kind": "dr-clinic",
@@ -1027,6 +1605,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5600
  },
+ "8e83214c3f01ff0d232fef0644fa884d7b2f16a7a1796d993eb26e34a9338d97": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: R=2; M=0. Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: R=1; M=0. A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "2",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "No urgent referral required at this time, but a routine referral is recommended for further investigation and management of the retinal vascular changes observed today.  The patient should be reviewed by an ophthalmologist within 6 months to assess for progression of the disease and to consider any,",
+  "quote": "A few microaneurysms and dot haemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 17766
+ },
  "8eb69f00864d2fc472dc4a536326fad1d99ced88896731da6f07a1cf0133df51": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1036,6 +1627,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4894
  },
+ "8ecf6dd27f195edaa32e37f494f6da46ee8e669997cff14d26b80464877e6e13": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: R=2; M=1. Venous beading, IRMA and multiple deep blot haemorrhages. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: R=2; M=0. Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "2",
+  "left_r_grade": "2",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Bilateral pre-proliferative disease with right maculopathy.",
+  "quote": "Bilateral pre-proliferative disease with right maculopathy.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12037
+ },
  "90101a556359ee3cc799af0fb5f882a5dc66ee78fb2b2e9a3a8df3d88b8bb264": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
@@ -1044,6 +1648,37 @@
   "quote": "Did not attend today. Rebook as per DNA policy.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4320
+ },
+ "9497d3ca2dae105524f694057c7f244f940dc2afaaf33295a2cf9c870528fe51": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "no_view",
+  "outcome": "none",
+  "quote": "Dense vitreous hemorrhage in both eyes prevents visualization of either retina despite dilation.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4530
+ },
+ "95ce3bc0dcaf6b952ccbfe1e7903685869db7b1f9eb57bc96a05355673ea7d2a": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: R=0; M=1. No visible microaneurysms, hemorrhages, exudates or new vessels. OCT shows focal retinal thickening at the fovea consistent with diabetic macular edema.",
+  "left_eye_text": "Left: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "1",
+  "left_r_grade": "0",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "No urgent referral required at this time. The patient will be reviewed in six months.",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11861
+ },
+ "95d704dcc15e18dd9c3e80f762dc27c305c34896df6ad1af93db6fe3f647dd4c": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Absent from screening-referral appointment. Administrative call answered by a relative only; patient not seen or examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3080
  },
  "967f37034c342abbbcf630183352b320a835c688ce1d20e2b23bc54e765ea705": {
   "kind": "dr-screen",
@@ -1077,6 +1712,28 @@
   "quote": "no diabetic retinopathy in either eye.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 9227
+ },
+ "98ddf0f5235f3d2d3d2f4d56598dab44910855b168fda55597f277b738a71a86": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "discharged",
+  "quote": "Bilateral retinal examination shows mild background changes only. No specialist surveillance needed; discharge to screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6130
+ },
+ "98e765c2ee5542438270388ef2df3581fb33e385a5cf7cfedc69acb7ce6a17e6": {
+  "kind": "dr-screen",
+  "right_eye_text": "Venous beading, IRMA and multiple deep blot hemorrhages. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.",
+  "right_r_grade": "2",
+  "left_r_grade": "2",
+  "right_macula": "clear",
+  "left_macula": "maculopathy",
+  "urgent_sentence": "The right eye shows significant changes and requires an urgent referral.",
+  "quote": "The pre-proliferative changes are on the right, while qualifying macular exudates are on the left.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10787
  },
  "9b04ed7f7a58a22d3dafa56ed3ee9919a83662697b44aacb3a3f9e2edde9cdc8": {
   "kind": "dr-screen",
@@ -1120,6 +1777,19 @@
   "quote": "Dilated exam with 78D lens shows IRMA and deep blot hemorrhages in both OD and OS, but no NVD/NVE and no clinically significant macular edema on OCT.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 6118
+ },
+ "a109e10744bdb8f2a8099a2a4742675e0a48e216775db4b8591f452024593426": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "possible new vessels",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 13508
  },
  "a15aa3ec4cb286523024f7b77a6ed497e627a4b108b61c3c504d7595dbeefb11": {
   "kind": "dr-screen",
@@ -1181,6 +1851,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 12918
  },
+ "a769468cc4e7b421e86d865508119d0fa5e76a5b55702e6ca0ff09fe4c9d1dc2": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Bilateral fundus examination completed. Persistent left diabetic macular oedema treated with intravitreal steroid implant today.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5021
+ },
  "a7caf08d93d1e36490dd8af6ea24c271ed13ed8e3286fd56556f74561cea4a66": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1190,6 +1869,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 7561
  },
+ "a8619cceaab3c7cd96e54fbca227f2b9fc038420bd22aca64966e52ed5229c76": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Dilated examination of both retinae and OCT show mild non-centre oedema. Anti-VEGF is not indicated; repeat OCT in four months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5859
+ },
  "a9390ee309a20955eadc9bb4eaefd4a7d2d8a474adb0b241b85bcb26808ee98f": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
@@ -1198,6 +1886,19 @@
   "quote": "NO SHOW / DNA NOTE. Reason for appointment: Screening referral for OD R2M1, OS R2M0 (pre-proliferative diabetic retinopathy and macular thickening). Patient did not attend today's Medical Retina clinic session.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5353
+ },
+ "aa19d650db125ad2e1a98a90ea17569e6a6f25597321e738c883d77bbbdbfcd9": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: One dot haemorrhage within one disc diameter of the foveal centre; acuity 6/12. No exudates, retinal thickening, venous beading or new vessels.",
+  "left_eye_text": "Left eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "2",
+  "left_r_grade": "1",
+  "right_macula": "maculopathy",
+  "left_macula": "clear",
+  "urgent_sentence": "Right acuity is 6/12 with a haemorrhage within one disc diameter of the fovea: this meets the acuity-dependent maculopathy criterion.",
+  "quote": "Right acuity is 6/12 with a haemorrhage within one disc diameter of the fovea: this meets the acuity-dependent maculopathy criterion.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12986
  },
  "aa383283133350588c2046c1ebd45e4d6c02939bfbc27e39e0879eb15dcfd3f0": {
   "kind": "dr-clinic",
@@ -1251,6 +1952,27 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10393
  },
+ "afda867e72cd39bc0c7601289bfae559b464cfab9fa9c83e1b3113b08a41a7df": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "Left eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12096
+ },
+ "b03b14118a6a4d1ef133748d0b4fdf1e58484f07559eadd0355d4ea633a4592a": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Patient seen, vision 6/18 right and 6/12 left. Drops not administered because the visit ended early; no fundus examination attempted.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5239
+ },
  "b1574330d034bfb6da85f8dc21a2b01cb58a416e0b155ba9f9f477157d008a54": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1299,6 +2021,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5123
  },
+ "b5013a4cdabbcccd73a6ee7ded98486844a6be65cce557c00e60c9519228bda2": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Dilated fundus examination is normal in each eye.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4330
+ },
  "b65960ce6b72667a8b9af6a75d75b5fbecce7293d8a48b9c4462cc5c76ddce64": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1317,6 +2048,28 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5160
  },
+ "b8f0604c0a58cc8c2b08ecd48c30bddeef82efcb496b747d9d5d12391865e8bd": {
+  "kind": "dr-screen",
+  "right_eye_text": "Right: Active new vessels elsewhere with a small peripheral pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "Left: A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.",
+  "right_r_grade": "3A",
+  "left_r_grade": "3A",
+  "right_macula": "clear",
+  "left_macula": "maculopathy",
+  "urgent_sentence": "Active proliferative disease is right-sided",
+  "quote": "Active proliferative disease is right-sided; maculopathy is left-sided.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10770
+ },
+ "b92da20e96cb05b51341e7b9aa3e0eea75bc75fe1cb1457440a76b115b82d948": {
+  "kind": "dr-clinic",
+  "attendance": "did_not_attend",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Screening referral accepted; patient failed to attend the first hospital visit.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4096
+ },
  "bb740d11edede8f00d9bcad64cfbf3de7efe13f7720dd348a07071f863e4d86a": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1334,6 +2087,18 @@
   "quote": "Attempted dilated retinal exam and OCT today. Both OD and OS have severe corneal edema from decompensated Fuchs endothelial dystrophy plus dense 4+ nuclear sclerosis; neither optic nerve nor macula can be visualized in either eye.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5920
+ },
+ "bc92a12f2b7e2f3a7253ea366e1aeacb6673687a6b1149834a4b6d6d34a85986": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12083
  },
  "bd136deb810c52f57cb035a522e866626cd61db8b0cd741f63e8895505265d31": {
   "kind": "dr-screen",
@@ -1378,6 +2143,19 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5816
  },
+ "c8d4d7c968678a6e73f0347c23dfe2d26706553b6680729ca6122379a99965a7": {
+  "kind": "dr-screen",
+  "right_eye_text": "R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "R=1; M=1. A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.",
+  "right_r_grade": "1",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "maculopathy",
+  "urgent_sentence": "No urgent referral required.",
+  "quote": "A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10675
+ },
  "c92b697859213d76dc9f24127559613b9cd41b6656a2ddd4ee3e19d2681db512": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
@@ -1396,6 +2174,48 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4279
  },
+ "d1ab4b8ec266296313e0b821a29915a8d1e7262df3d7dd8f9de0c6217bb19f55": {
+  "kind": "dr-screen",
+  "right_eye_text": "العين اليمنى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "left_eye_text": "العين اليسرى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12470
+ },
+ "d43a313e235b302b050b30a7def648b02258553d9b6cf9f043f012be1da6a648": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Both fundi examined now: no active disease or maculopathy. Discharge back to the screening programme.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4283
+ },
+ "d46a82d7f7fde739fae83dc0893f8bee20637518247215b61928b57ec662bfcd": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both retinae examined today; edema has resolved without current treatment. Review in six months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5468
+ },
+ "d513fb42ff4c5b0dcde65b83a4a37ffdd3e06ef8783471a7192138052e100108": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "0",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12460
+ },
  "d6a17832b9c570b5b2b1e5332ae4ca2d294aaa8a321cd6e74945f17a02a7e384": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1404,6 +2224,15 @@
   "quote": "Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 5046
+ },
+ "d8fac44902f92d1c8c7ba48b422ba742daa666736061062dfabf73139b666cd0": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Old PRP was performed three years ago. Both fundi examined today: stable scars, no active new vessels. Observe with review in six months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5230
  },
  "d9c6e49e91848b4909b5efb6b48eaa3f590a65ec0083422887627bcae5836a9b": {
   "kind": "dr-clinic",
@@ -1422,6 +2251,36 @@
   "quote": "Dilated examination confirms clinically significant macular oedema. Intravitreal anti-VEGF commenced.",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 4556
+ },
+ "db088d819bca78e5c40a264a919d776a93117259468d9f217976718c9943a707": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "discharged",
+  "quote": "Both retinae examined; the photographic referral concern is not confirmed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4943
+ },
+ "db2f9d3e30d6c723513fd58e2e2da40a077d00767252fcba41a4ddeb9cb54046": {
+  "kind": "dr-screen",
+  "right_eye_text": "Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "left_eye_text": "No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "U",
+  "left_r_grade": "0",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9671
+ },
+ "dd762efc3fad183fa4bdda018afcd83189846de2e3c817df38f7d62b69a8f764": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "Retinae not examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4194
  },
  "de54a6345f3751316ce1fa9309d235d1fec19f335cc4573924d58fd3fbae6b35": {
   "kind": "dr-clinic",
@@ -1483,6 +2342,15 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 7252
  },
+ "e52cbaa1d463086fd0d96990184c2a1a23a47dea158038e280e377fddd9d1093": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Both retinae examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3136
+ },
  "e5662edacbf81418618bb304aafae9262934dfddeae1fe542d39446f7a94ee94": {
   "kind": "dr-screen",
   "right_eye_text": "Right eye: R0 M0",
@@ -1525,6 +2393,27 @@
   "quote": "OS is clearly visualized and shows a completely normal retina with no diabetic retinopathy",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 9640
+ },
+ "ec92feb0d234077a317c9716032bc7204cd072bb7681969bef8bf128a0be11f4": {
+  "kind": "dr-screen",
+  "right_eye_text": "OD: Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "left_eye_text": "OS: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "U",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "The left eye has background disease only without maculopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9829
+ },
+ "ed3e0be5b893a2141ca16e4c3ff7bd9b73f6873d3c170c13f8a2e88510c25ae0": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi examined after dilation.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3828
  },
  "ed9c74c38cc583fa882d34835df678dd34a61b921666596a9df2aa67d013220e": {
   "kind": "dr-screen",
@@ -1570,6 +2459,19 @@
   "quote": "Left eye: R0M0",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 7632
+ },
+ "efc105fb8e976a060344dcf69506fca6e8b9aae279b0eebeb3d13416bcc7f584": {
+  "kind": "dr-screen",
+  "right_eye_text": "Images inadequate: this eye could not be graded; macular grade unavailable.",
+  "left_eye_text": "Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.",
+  "right_r_grade": "U",
+  "left_r_grade": "3S",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "urgent_sentence": "The left eye warrants referral",
+  "quote": "The left eye has stable treated proliferative disease",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8538
  },
  "f06d9002adbe4218d2b25038c76fd4ba5d53613f82509a458af02817b9916e27": {
   "kind": "dr-screen",
@@ -1662,6 +2564,24 @@
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 10403
  },
+ "f7ae36529ac689d74e3a64227c4abdf02ddd904170ee2455c9a003cc309ef62f": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "retinal examination deliberately postponed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3163
+ },
+ "f923d1200a5fb1d5b70a8390020183c8817d988dab79ce958fff98b2a179aa8d": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "none",
+  "quote": "No clinician retinal examination and no fundus imaging today.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3813
+ },
  "f954ec4fd7750177b06dd578c731922b8d919b0670d0972d72ab40c29a9a592b": {
   "kind": "dr-clinic",
   "attendance": "attended",
@@ -1694,6 +2614,36 @@
   "quote": "retina normal, no diabetic changes",
   "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
   "latency_ms": 7930
+ },
+ "fd1a73b4569a572854f9be109d2a60eb8bd02b631d59366aa0526fe233347735": {
+  "kind": "dr-screen",
+  "right_eye_text": "RE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "left_eye_text": "LE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.",
+  "right_r_grade": "1",
+  "left_r_grade": "1",
+  "right_macula": "clear",
+  "left_macula": "clear",
+  "quote": "A few microaneurysms and dot haemorrhages away from the macula.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10988
+ },
+ "fda0f4995f64da0edf211679282d9ca1e9da4c9d6d803e7c398b13fa8f78e9ef": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "follow_up",
+  "quote": "Both fundi examined; right disc new vessels confirmed.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4589
+ },
+ "fdc8cebcec8b5fb2a5e35d1951bb489af14ce83abf9841d31f6abeeba29828c5": {
+  "kind": "dr-clinic",
+  "attendance": "attended",
+  "fundus": "examined",
+  "outcome": "treated",
+  "quote": "Both retinae examined and OCT reviewed. Bevacizumab injected into the left eye for diabetic macular edema.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4707
  },
  "ff92a20f38c243e36715f705f4533b975921bf5b322fd7dc47ae53140d64f0ae": {
   "kind": "dr-clinic",
