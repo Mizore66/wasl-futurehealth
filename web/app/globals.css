@@ -1,0 +1,147 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Achromatic ledger (design-brief-v2 + canonical facts). Light mode only. */
+@theme {
+  --color-ground: #f2f4f7;
+  --color-surface: #ffffff;
+  --color-raised: #eceef1;
+  --color-active: #e6e8ec;
+  --color-line: #e3e6ea;
+  --color-rule: #eef0f3;
+  --color-control: #d0d4da;
+  --color-ink: #0a0a0a;
+  --color-ink-soft: #3d3d3d;
+  --color-muted: #5f6368;
+  --color-cta: #141414;
+  --color-hue: #1d5fbf;
+  --color-positive: #2e7d32;
+  --color-negative: #c4242a;
+  --color-warning: #92400e;
+  --color-pill-positive-bg: #dcfae5;
+  --color-pill-positive-ink: #04250e;
+  --color-pill-negative-bg: #ffedea;
+  --color-pill-negative-ink: #831c1e;
+  --color-pill-warning-bg: #fffbeb;
+  --color-pill-warning-ink: #92400e;
+  --color-pill-neutral-bg: #eceef1;
+  --color-pill-neutral-ink: #3d3d3d;
+  --color-phone-ground: #f4f3f1;
+
+  --radius-card: 8px;
+  --radius-control: 6px;
+  --radius-chip: 4px;
+
+  --spacing-gap: 12px;
+  --spacing-pad: 24px;
+  --spacing-control: 36px;
+  --spacing-row: 44px;
+  --spacing-sidebar: 240px;
+
+  --text-title: 24px;
+  --text-title--line-height: 32px;
+  --text-section: 16px;
+  --text-section--line-height: 24px;
+  --text-lead: 36px;
+  --text-lead--line-height: 44px;
+  --text-body: 14px;
+  --text-body--line-height: 20px;
+  --text-small: 12px;
+  --text-small--line-height: 16px;
+
+  /* Geist first by name: its next/font fallback is Arial, whose Arabic glyphs would otherwise beat Plex Arabic. */
+  --font-sans: "Geist", var(--font-plex-arabic), var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+  --font-arabic: var(--font-plex-arabic), "IBM Plex Sans Arabic", sans-serif;
+}
+
+/* shadcn/ui variables mapped onto the ledger tokens. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
+}
+
+:root {
+  color-scheme: light;
+  --radius: 0.5rem;
+  --background: #f2f4f7;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #141414;
+  --primary-foreground: #ffffff;
+  --secondary: #e6e8ec;
+  --secondary-foreground: #0a0a0a;
+  --muted-foreground: #5f6368;
+  --accent: #e6e8ec;
+  --accent-foreground: #0a0a0a;
+  --destructive: #c4242a;
+  --border: #e3e6ea;
+  --input: #d0d4da;
+  --ring: #1d5fbf;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    font-variant-numeric: tabular-nums;
+  }
+  body {
+    @apply bg-ground text-ink font-sans text-body;
+  }
+  a {
+    color: var(--color-hue);
+  }
+  a:hover {
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-hue);
+    outline-offset: 2px;
+  }
+  [lang="ar"] {
+    font-family: var(--font-arabic);
+  }
+}
+
+@keyframes wasl-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .wasl-pulse {
+    animation: wasl-pulse 1.2s ease-in-out infinite;
+  }
+}
