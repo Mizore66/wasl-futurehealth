@@ -13,6 +13,7 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	triN, triOK, cov := 0, 0, 0
 	exN, exT, exP, exAgree := 0, 0, 0, 0
 	conf, attr, outreach := map[string]map[string]int{}, map[string]int{}, map[string]int{}
+	nxT, nxP, nxAgree, rcT, rcP, rcTP, svT, svP, svAgree := 0, 0, 0, 0, 0, 0, 0, 0, 0 // -drnext (drnext.go)
 	ids := make([]string, 0, len(tr.Loops))
 	for id, lt := range tr.Loops {
 		if lt.Prog == "diabetic_retinopathy" && lt.DR != nil {
@@ -86,6 +87,26 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 				outreach[o.Kind+":"+st]++
 			}
 		}
+		if tn := lt.DR.Next; tn != nil { // next due date and recall flag vs truth (resolved loops)
+			nxT++
+			var pn *DRNext
+			if d != nil && d.DR != nil {
+				pn = d.DR.Next
+			}
+			if pn != nil {
+				nxP++
+				if pn.Kind == tn.Kind && pn.IntervalDays == tn.IntervalDays && pn.DueDay-tn.DueDay < 1e-3 && tn.DueDay-pn.DueDay < 1e-3 {
+					nxAgree++
+				}
+			}
+			po, ps := pn != nil && pn.Overdue, pn != nil && pn.Seen
+			rcT += map[bool]int{true: 1}[tn.Overdue]
+			rcP += map[bool]int{true: 1}[po]
+			rcTP += map[bool]int{true: 1}[tn.Overdue && po]
+			svT += map[bool]int{true: 1}[tn.Seen]
+			svP += map[bool]int{true: 1}[ps]
+			svAgree += map[bool]int{true: 1}[tn.Seen == ps]
+		}
 		// referral exam rate: referable, deadline elapsed by the end of observation; exam by the deadline (JAWDA 5.1.4 numerator for referred patients)
 		if lt.DR.Rec.Action == DRRefer && lt.DR.GradeDay+float64(lt.DR.Rec.Deadline) <= TEnd {
 			exN++
@@ -102,7 +123,7 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			}
 		}
 	}
-	return map[string]interface{}{
+	res := map[string]interface{}{
 		"loops": n, "rule": "doh2024dr", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"definition": "closed (eye-clinic note records a retinal exam) + no_referral_needed (R0/R1, no maculopathy)",
 			"truth_closed": tp + fn, "pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp),
@@ -114,6 +135,14 @@ func drMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 		"referral_exam_within_deadline": map[string]interface{}{"eligible": exN, "truth": frac(exT, exN), "wasl_measured": frac(exP, exN),
 			"per_loop_agreement": frac(exAgree, exN)},
 	}
+	if nxT > 0 {
+		res["next_due"] = map[string]interface{}{"definition": "-drnext: next due rescreen / clinic review of truth-resolved loops; recall_overdue = no new screen or trusted, read, attended eye-clinic visit by the due day",
+			"truth_resolved": nxT, "pipeline_has_next": nxP, "kind_interval_due_agree": nxAgree, "agreement": frac(nxAgree, nxT),
+			"recall_overdue": map[string]interface{}{"truth": rcT, "pred": rcP, "tp": rcTP, "fp": rcP - rcTP, "fn": rcT - rcTP,
+				"precision": frac(rcTP, rcP), "recall": frac(rcTP, rcT)},
+			"follow_up_seen": map[string]interface{}{"truth": svT, "pred": svP, "per_loop_agreement": frac(svAgree, nxT)}}
+	}
+	return res
 }
 
 // drTwoReader: end-to-end two-reader statistics over every DR report version in the run's FHIR log.

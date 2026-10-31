@@ -28,16 +28,17 @@ const DRReaderModel = "gemma-3-4b-it-Q4_K_M/dr-v5(cached)" // v1 -> v3 on the de
 
 // DRFields: what one reader extracted from one DR text (persisted in the verdict for provenance).
 type DRFields struct {
-	RRight   string `json:"r_right,omitempty"` // 0 | 1 | 2 | 3A | 3S | U
-	RLeft    string `json:"r_left,omitempty"`
-	MRight   string `json:"m_right,omitempty"` // 0 | 1
-	MLeft    string `json:"m_left,omitempty"`
-	Urgent   bool   `json:"urgent,omitempty"`
-	Attended string `json:"attended,omitempty"` // clinic: yes | no
-	Fundus   string `json:"fundus,omitempty"`   // clinic: examined | not_examined | no_view
-	Outcome  string `json:"outcome,omitempty"`  // clinic: treated | followup | discharged | none
-	Label    string `json:"label"`
-	Quote    string `json:"quote,omitempty"`
+	RRight     string `json:"r_right,omitempty"` // 0 | 1 | 2 | 3A | 3S | U
+	RLeft      string `json:"r_left,omitempty"`
+	MRight     string `json:"m_right,omitempty"` // 0 | 1
+	MLeft      string `json:"m_left,omitempty"`
+	Urgent     bool   `json:"urgent,omitempty"`
+	Attended   string `json:"attended,omitempty"`    // clinic: yes | no
+	Fundus     string `json:"fundus,omitempty"`      // clinic: examined | not_examined | no_view
+	Outcome    string `json:"outcome,omitempty"`     // clinic: treated | followup | discharged | none
+	ReviewDays int    `json:"review_days,omitempty"` // clinic, reader A, -drnext only: the review interval the note states (drnext.go)
+	Label      string `json:"label"`
+	Quote      string `json:"quote,omitempty"`
 }
 
 // ---------------- shared rules ----------------
@@ -361,6 +362,9 @@ func regexClinic(t string) *DRFields {
 		default:
 			f.Outcome = "followup"
 		}
+	}
+	if DRNextOn && f.Fundus == "examined" { // -drnext: the stated review interval (scheduling only, not a closure field)
+		f.ReviewDays = drReviewDays(t)
 	}
 	f.Label = drClinicLabel(f)
 	return f
