@@ -594,14 +594,14 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 		return err
 	})
 	seen := map[string]bool{}
-	wl := idWorklist{}
-	answered, wrong, deduped := 0, 0, 0
+	wl, lw := idWorklist{}, linkWorklist{}
+	answered, wrong, deduped, dedupedLink := 0, 0, 0, 0
 	held := false
 	var lastOut uint64
 	logf, _ := os.OpenFile(filepath.Join(runDir, "reviewer_decisions.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	go func() {
 		for {
-			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": answered, "wrong": wrong, "deduped_second_id": deduped, "last_out_seq": atomic.LoadUint64(&lastOut), "cfg": cfg})
+			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": answered, "wrong": wrong, "deduped_second_id": deduped, "deduped_link": dedupedLink, "last_out_seq": atomic.LoadUint64(&lastOut), "cfg": cfg})
 			time.Sleep(300 * time.Millisecond)
 		}
 	}()
@@ -625,8 +625,12 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 		}
 		it2 := oe.Item
 		seen[it2.ItemID] = true
-		if wl.skip(it2) {
-			deduped++
+		if wl.skip(it2) || lw.skip(it2) {
+			if lw.skip(it2) {
+				dedupedLink++
+			} else {
+				deduped++
+			}
 			if md, err := msg.Metadata(); err == nil {
 				atomic.StoreUint64(&lastOut, md.Sequence.Stream)
 			}
@@ -635,6 +639,7 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 		t0 := time.Now()
 		so := cfg.Review(it2, &tr) // v6-gov: noisy, timed reviewer (error rate, lognormal seconds, optional double read)
 		wl.record(it2, so)
+		lw.record(it2, so)
 		truthWrong := func() bool {
 			for _, k := range it2.Kinds {
 				if k == "link" {

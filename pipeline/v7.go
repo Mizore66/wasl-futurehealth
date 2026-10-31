@@ -209,6 +209,11 @@ var EIDSecondID = true
 // e4c7553 frozen run). A later "different" on the pair withdraws it. Flag -reuseconfirm.
 var ReuseIDConfirm = true
 
+// ReuseLinkAnswer: a human link answer (same / different) is about two registrations, and the linker applies it to the
+// pair for every loop; the review worklist then drops link questions other loops queued on that pair (governance.go).
+// Before, two loops could each ask and get contradicting answers, the later one winning. Flag -reuselink.
+var ReuseLinkAnswer = true
+
 var defaultEIDs = map[string]bool{"000000000000000": true, "111111111111111": true, "222222222222222": true, "999999999999999": true}
 
 func dummyEID(e string) bool {

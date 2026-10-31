@@ -146,6 +146,7 @@ func main() {
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
 	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
+	reuseLink := fs.Bool("reuselink", true, "review worklist: one link question per registration pair; other loops' queued twins are dropped once it is answered (v7.go)")
 	reuseConfirm := fs.Bool("reuseconfirm", true, "outreach guard: a second-identifier confirmation counts for the same registration pair on other loops (v7.go)")
 	eidSecond := fs.Bool("eidsecond", true, "outreach guard: a matching Emirates ID with agreeing name, sex and DOB counts as the second identifier (v7.go)")
 	corrFuzzy := fs.Bool("corrfuzzy", true, "linker: an exact-DOB pair also corroborates when the last surname skeletons (4+ letters) are within one edit (v7.go)")
@@ -156,6 +157,7 @@ func main() {
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup = *handoff, *lungWk
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
+	ReuseLinkAnswer = *reuseLink
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -256,7 +258,7 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
-	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), "-errungraded", fmt.Sprint(ErrUngraded))
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
 	}
