@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const DRReaderModel = "gemma-3-4b-it-Q4_K_M/dr-v3(cached)" // prompt revised twice on the dev corpus (v1 -> v3, see RESULTS); frozen at v3
+const DRReaderModel = "gemma-3-4b-it-Q4_K_M/dr-v5(cached)" // v1 -> v3 on the dev corpus, v4 -> v5 on held-out corpus 1 (now tuning data, see RESULTS)
 
 // DRFields: what one reader extracted from one DR text (persisted in the verdict for provenance).
 type DRFields struct {
@@ -101,37 +101,46 @@ func drClinicLabel(f *DRFields) string {
 // drClosingClinic: clinic labels that close a referred loop (a retina was examined and an outcome recorded).
 func drClosingClinic(l string) bool { return strings.HasPrefix(l, "examined_") }
 
-// ---------------- reader A: regex ----------------
+// ---------------- reader A: regex (v2: tuned on the dev corpus and held-out corpus 1, see RESULTS) ----------------
 var (
-	drHistory = regexp.MustCompile(`(?i)last screening|previous screening|previously graded|for comparison`)
-	drEyeMark = regexp.MustCompile(`(?i)\b(right eye|left eye|OD|OS|RE|LE)\s*:`)
-	drCode    = regexp.MustCompile(`\bR(0|1|2|3A|3S)\s*M([01])\b`)
-	drCodeU   = regexp.MustCompile(`^\s*U\b`)
-	drUngrad  = regexp.MustCompile(`(?i)ungradable|unable to grade|cannot be graded|image quality inadequate`)
+	drHistory   = regexp.MustCompile(`(?i)last screening|previous screening|prior screening|previously graded|for comparison|comparison (?:made )?with|previous grade|prior grade|grade \d+ (?:year|month)s? ago|referred (?:from|with|for)|reason for appointment`)
+	drOverall   = regexp.MustCompile(`(?i)(?:summary|final|overall|outcome|result)[^:=\n]{0,25}[:=]\s*(R\s*(?:0|1|2|3A|3S)\s*M\s*[01]|U)\b`)
+	drEyeCode   = regexp.MustCompile(`(?i)\b(right eye|left eye|OD|OS|RE|LE)\b(?:\s*\([^)]{0,40}\))?\s*[:=]?\s*(?:R\s*(0|1|2|3A|3S)\s*M\s*([01])|(U)(?:[\s.,;)]|$))`)
+	drParenCode = regexp.MustCompile(`\(R\s*(0|1|2|3A|3S)\s*M\s*([01])\)`)
+	drEyeWord   = regexp.MustCompile(`(?i)\b(right eye|left eye|right|left|OD|OS|RE|LE)\b|العين اليمنى|العين اليسرى`)
+	drBothWord  = regexp.MustCompile(`(?i)both eyes|either eye|each eye|bilateral(?:ly)?|\bOU\b|both (?:the )?right (?:eye )?and (?:the )?left`)
+	drUngrad    = regexp.MustCompile(`(?i)ungradable|cannot be graded|could not be graded|unable to grade|image quality inadequate|\bgrade U\b|no view of the (?:disc|macula|fundus)`)
 	// "proliferative" not preceded by "non-" / "pre-": RE2 has no look-behind, so the character before must not be a hyphen or letter
-	drR3S      = regexp.MustCompile(`(?i)(?:stable|treated|regressed|laser scars|panretinal photocoagulation|\bPRP\b)[^.]*?(?:(?:^|[^-a-z])proliferative|new vessels)|(?:(?:^|[^-a-z])proliferative|new vessels)[^.]*?(?:stable|treated|regressed)|\bR3S\b`)
-	drR3A      = regexp.MustCompile(`(?i)active proliferative|(?:^|[^-a-z])proliferative (?:diabetic )?retinopathy|new vessels (?:at the disc|elsewhere)|\bNV[DE]\b|pre-?retinal haemorrhage|vitreous haemorrhage`)
-	drR2       = regexp.MustCompile(`(?i)pre-?proliferative|moderate non-?proliferative|severe non-?proliferative|venous beading|\bIRMA\b|multiple blot haemorrhages`)
-	drR1       = regexp.MustCompile(`(?i)background (?:diabetic )?retinopathy|mild non-?proliferative|microaneurysm|dot haemorrhage`)
-	drR0       = regexp.MustCompile(`(?i)no (?:diabetic )?retinopathy|retina normal|no diabetic changes`)
-	drM1       = regexp.MustCompile(`(?i)maculopathy|macular oedema|macular edema|exudates? within (?:the macula|one disc diameter)|\bM1\b|within the macula`)
-	drUrgent   = regexp.MustCompile(`(?i)urgent referral`)
-	drNegNear  = regexp.MustCompile(`(?i)(?:\bno\b|\bnot\b|without|absent)[^;,]{0,20}$`)
-	drDNA      = regexp.MustCompile(`(?i)did not attend|\bDNA\b`)
-	drNoView   = regexp.MustCompile(`(?i)precludes[^.]*view|no view of|not assessable|cannot be assessed|media opacity`)
-	drNotExam  = regexp.MustCompile(`(?i)fundus not examined|no fundus examination|retina not examined|dilation (?:deferred|not performed)|declined dilating`)
-	drExamined = regexp.MustCompile(`(?i)dilated fundus|\bDFE\b|fundoscopy|fundus exam|dilated examination|fundus examined`)
-	drTreated  = regexp.MustCompile(`(?i)(?:panretinal photocoagulation|\bPRP\b|laser|anti-?VEGF|injection|intravitreal)[^.;]{0,40}\b(?:given|commenced|booked|started|performed|administered)\b`)
-	drDischarg = regexp.MustCompile(`(?i)discharged|return to (?:annual )?(?:retinal |diabetic eye )?screening`)
+	drR3S        = regexp.MustCompile(`(?i)(?:stable|treated|regressed|quiescent|inactive|fibrosed|laser scars|photocoagulation|\bPRP\b)[^.]*?(?:(?:^|[^-a-z])proliferative|new vessels|neovasculari[sz]ation|vessels)|(?:(?:^|[^-a-z])proliferative|new vessels)[^.]*?(?:stable|treated|regressed|quiescent)|\bR3S\b`)
+	drR3A        = regexp.MustCompile(`(?i)active proliferative|(?:^|[^-a-z])proliferative (?:diabetic )?(?:retinopathy|disease)|new vessels|\bNV[DE]\b|neovasculari[sz]ation|pre-?retinal|subhyaloid|vitreous ha?emorrhage|tractional`)
+	drR2         = regexp.MustCompile(`(?i)pre-?proliferative|(?:moderate|severe)(?:[- ]to[- ]severe)? (?:non-?proliferative|NPDR)|venous (?:beading|loops?|reduplication)|\bIRMA\b|multiple (?:deep |dark )?blot|deep blot`)
+	drR1         = regexp.MustCompile(`(?i)background|mild (?:non-?proliferative|NPDR)|micro-?aneurysms?|dot ha?emorrhages?|blot ha?emorrhages?|scattered ha?emorrhages`)
+	drR0         = regexp.MustCompile(`(?i)no (?:diabetic )?retinopathy|retina normal|normal (?:fundus|retina)|free of (?:diabetic )?retinopathy|unremarkable|no diabetic (?:changes|micro-?aneurysms)|completely (?:normal|clear)|without lesions|no lesions|normal retinal`)
+	drM1         = regexp.MustCompile(`(?i)maculopathy|macular o?edema|macular exudates?|macular thickening|retinal thickening|circinate|exudates?[^.;]{0,40}(?:within|<)\s*(?:\d(?:\.\d)?\s*DD|one disc diameter|1 disc diameter)|exudates?[^.;]{0,25}\d(?:\.\d)?\s*DD (?:from|of) the fov|within the macula`)
+	drUrgent     = regexp.MustCompile(`(?i)urgent referral|referral[^.]{0,20}urgent`)
+	drUrgentWord = regexp.MustCompile(`(?i)urgent|عاجل`)
+	drNotUrgent  = regexp.MustCompile(`(?i)non-?urgent|not urgent`)
+	drNegNear    = regexp.MustCompile(`(?i)(?:\bno\b|\bnot\b|without|free of|zero|absent|\bnor\b|resolution of|previous|no referable)[^;,.]{0,30}$`)
+	// clinic notes
+	drDNA      = regexp.MustCompile(`(?i)did not attend|\bDNA\b|no[- ]show|failed to attend`)
+	drNoView   = regexp.MustCompile(`(?i)precludes[^.]*view|block[^.]{0,20}view|no view of|not visuali[sz]able|cannot be visuali[sz]ed|neither[^.]{0,60}can be visuali[sz]ed|media opacity|not assessable|cannot be assessed|no fundal view|(?:could not|cannot|can't|not) be seen`)
+	drNotExam  = regexp.MustCompile(`(?i)fundus not examined|no fundus examination|(?:retina|fundus)[^.]{0,10} (?:was )?not examined|(?:fundus|retinal) exam(?:ination)?[^.]{0,30}(?:deferred|not performed|did not take place)|dilat\w*[^.]{0,40}(?:deferred|withheld|not done|not performed)|before (?:pupil )?dilation|before any (?:fundus|retinal|OCT)|ولم يتم فحص قاع العين|(?:declined|refused) (?:the )?dilating|dilation was withheld`)
+	drExamined = regexp.MustCompile(`(?i)dilated (?:fundus|exam|examination|biomicroscopy|slit-?lamp|retinal)|\bDFE\b|fund[ou]scopy|examined[^.]{0,30}retina|retinas? (?:were |was )?examined|after dilation|fundus exam|fundus examined|biomicroscopy|ophthalmoscopy|dilated examination|dilated retinal`)
+	drTxNoun   = regexp.MustCompile(`(?i)panretinal|photocoagulation|\bPRP\b|laser|anti-?VEGF|injection|intravitreal|implant|Ozurdex|faricimab|aflibercept|ranibizumab|bevacizumab|dexamethasone`)
+	drTxVerb   = regexp.MustCompile(`(?i)\b(?:given|commenced|started|booked|initiated|implanted|injected|performed|administered|scheduled|received|completed)\b`)
+	drTxNeg    = regexp.MustCompile(`(?i)not needed|not indicated|not required|declined|refused|nothing given|discussed|deferred|withheld|iridotomy|\bYAG\b|capsulotomy|prior anti|\bago\b|history of|previous`)
+	drDischarg = regexp.MustCompile(`(?i)discharged|discharge (?:back )?to|return(?:ed)? to (?:the )?(?:community |primary[- ]care |annual )?(?:diabetic eye |retinal )?screening|back to (?:the )?(?:community )?(?:diabetic eye )?screening`)
 )
 
-// drSentences splits on full stops followed by a space or the end, keeping "6/9"-style tokens intact.
+// drSentences splits on full stops followed by a space or the end, and on newlines, keeping "6/9"-style tokens intact.
 func drSentences(t string) []string {
 	var out []string
 	start := 0
 	for i := 0; i < len(t); i++ {
-		if t[i] == '.' && (i+1 == len(t) || t[i+1] == ' ' || t[i+1] == '\n') {
-			out = append(out, strings.TrimSpace(t[start:i]))
+		if t[i] == '\n' || t[i] == '.' && (i+1 == len(t) || t[i+1] == ' ' || t[i+1] == '\n') {
+			if s := strings.TrimSpace(t[start:i]); s != "" {
+				out = append(out, s)
+			}
 			start = i + 1
 		}
 	}
@@ -141,22 +150,26 @@ func drSentences(t string) []string {
 	return out
 }
 
-// drAffirmed: re matches somewhere in s with no negation word just before it in the same clause.
+// drAffirmed: re matches somewhere in s with no negation word just before it in the same clause ("but" ends a clause).
 func drAffirmed(re *regexp.Regexp, s string) bool {
 	for _, m := range re.FindAllStringIndex(s, -1) {
-		if !drNegNear.MatchString(s[:m[0]]) {
+		pre := s[:m[0]]
+		if i := strings.LastIndex(strings.ToLower(pre), " but "); i >= 0 {
+			pre = pre[i+5:]
+		}
+		if !drNegNear.MatchString(pre) {
 			return true
 		}
 	}
 	return false
 }
 
-// drGradeEye reads one eye's segment: (R grade, M grade).
-func drGradeEye(seg string) (string, string) {
-	if m := drCode.FindStringSubmatch(seg); m != nil {
+// drGradeText: the R and M grade a free-text segment supports ("" = no grade evidence).
+func drGradeText(seg string) (string, string) {
+	if m := drParenCode.FindStringSubmatch(seg); m != nil {
 		return m[1], m[2]
 	}
-	if drCodeU.MatchString(seg) || drUngrad.MatchString(seg) {
+	if drUngrad.MatchString(seg) {
 		return "U", ""
 	}
 	r := ""
@@ -172,11 +185,19 @@ func drGradeEye(seg string) (string, string) {
 	case drR0.MatchString(seg):
 		r = "0"
 	}
-	m := "0"
+	m := ""
 	if drAffirmed(drM1, seg) {
 		m = "1"
 	}
 	return r, m
+}
+
+func drSide(w string) string {
+	switch strings.ToLower(w) {
+	case "right eye", "right", "od", "re", "العين اليمنى":
+		return "R"
+	}
+	return "L"
 }
 
 func regexScreen(t string) *DRFields {
@@ -188,26 +209,119 @@ func regexScreen(t string) *DRFields {
 		}
 	}
 	for _, s := range keep {
-		for _, loc := range drEyeMark.FindAllStringSubmatchIndex(s, -1) {
-			seg := s[loc[1]:]
-			if nx := drEyeMark.FindStringIndex(seg); nx != nil {
-				seg = seg[:nx[0]]
-			}
-			r, m := drGradeEye(seg)
-			if strings.HasPrefix(strings.ToLower(s[loc[2]:loc[3]]), "r") || strings.EqualFold(s[loc[2]:loc[3]], "OD") {
-				if f.RRight == "" {
-					f.RRight, f.MRight = r, m
-				}
-			} else if f.RLeft == "" {
-				f.RLeft, f.MLeft = r, m
-			}
-			if f.Quote == "" || drWorst(r, "") == r && drEyeReferable(r, m) {
-				f.Quote = s
-			}
-		}
 		if drAffirmed(drUrgent, s) {
 			f.Urgent = true
 		}
+	}
+	// 1. an overall coded outcome decides the screen
+	for _, s := range keep {
+		if m := drOverall.FindStringSubmatch(s); m != nil {
+			code := strings.ReplaceAll(m[1], " ", "")
+			r, mm, _, u, _ := parseDRLabel(code)
+			if u {
+				f.RRight, f.RLeft = "U", "U"
+			} else {
+				f.RRight, f.RLeft, f.MRight, f.MLeft = r, "0", mm, "0"
+			}
+			f.Quote = s
+			f.Label = drScreenLabel(f)
+			return f
+		}
+	}
+	// 2. per-eye codes and per-eye text
+	type acc struct {
+		r, m  string
+		coded bool
+	}
+	eye := map[string]*acc{"R": {}, "L": {}}
+	var genR, genM string
+	add := func(a *acc, r, m string) {
+		if r == "U" {
+			if a.r == "" {
+				a.r = "U"
+			}
+			return
+		}
+		if r != "" && (a.r == "" || a.r == "U" || drWorst(a.r, r) == r) {
+			a.r = r
+		}
+		if m == "1" {
+			a.m = "1"
+		}
+	}
+	for _, s := range keep {
+		if cs := drEyeCode.FindAllStringSubmatch(s, -1); len(cs) > 0 {
+			for _, c := range cs {
+				a := eye[drSide(c[1])]
+				if c[4] != "" {
+					a.r, a.coded = "U", true
+				} else {
+					a.r, a.m, a.coded = c[2], c[3], true
+				}
+			}
+			if f.Quote == "" {
+				f.Quote = s
+			}
+			continue
+		}
+		locs := drEyeWord.FindAllStringSubmatchIndex(s, -1)
+		if len(locs) == 0 || drBothWord.MatchString(s) {
+			r, m := drGradeText(s)
+			if drBothWord.MatchString(s) && r == "U" {
+				add(eye["R"], "U", "")
+				add(eye["L"], "U", "")
+				continue
+			}
+			if r != "" && r != "U" && drWorst(genR, r) == r {
+				genR = r
+			}
+			if m == "1" {
+				genM = "1"
+			}
+			continue
+		}
+		for i, loc := range locs {
+			end := len(s)
+			if i+1 < len(locs) {
+				end = locs[i+1][0]
+			}
+			seg := s[loc[0]:end]
+			w := s[loc[0]:loc[1]]
+			if loc[2] >= 0 {
+				w = s[loc[2]:loc[3]]
+			}
+			a := eye[drSide(w)]
+			if a.coded {
+				continue
+			}
+			r, m := drGradeText(seg)
+			if r == "" && i > 0 && strings.TrimSpace(s[locs[i-1][1]:loc[0]]) == "and" { // "RE and LE show ..."
+				continue
+			}
+			add(a, r, m)
+			if r != "" && (f.Quote == "" || drEyeReferable(r, m)) {
+				f.Quote = s
+			}
+		}
+		// "RE and LE show X": the shared predicate applies to both eyes
+		if len(locs) == 2 && strings.EqualFold(strings.TrimSpace(s[locs[0][1]:locs[1][0]]), "and") {
+			r, m := drGradeText(s[locs[1][1]:])
+			add(eye["R"], r, m)
+			add(eye["L"], r, m)
+		}
+	}
+	for _, k := range []string{"R", "L"} {
+		a := eye[k]
+		if a.r != "U" && !a.coded {
+			add(a, genR, genM)
+		}
+		if a.r != "" && a.r != "U" && a.m == "" {
+			a.m = "0"
+		}
+	}
+	f.RRight, f.MRight, f.RLeft, f.MLeft = eye["R"].r, eye["R"].m, eye["L"].r, eye["L"].m
+	if f.Quote == "" && len(keep) > 0 {
+		f.Quote = keep[len(keep)-1]
 	}
 	f.Label = drScreenLabel(f)
 	return f
@@ -233,8 +347,14 @@ func regexClinic(t string) *DRFields {
 	case drExamined.MatchString(t):
 		f.Fundus = "examined"
 		quote(drExamined)
+		treated := false
+		for _, s := range drSentences(t) {
+			if drTxNoun.MatchString(s) && drTxVerb.MatchString(s) && !drTxNeg.MatchString(s) {
+				treated = true
+			}
+		}
 		switch {
-		case drTreated.MatchString(t):
+		case treated:
 			f.Outcome = "treated"
 		case drDischarg.MatchString(t):
 			f.Outcome = "discharged"
@@ -256,7 +376,7 @@ type drGemma struct {
 	RLeft     string `json:"left_r_grade,omitempty"`
 	MRight    string `json:"right_macula,omitempty"`
 	MLeft     string `json:"left_macula,omitempty"`
-	Urgent    string `json:"urgent_referral,omitempty"`
+	Urgent    string `json:"urgent_sentence,omitempty"`
 	Attended  string `json:"attendance,omitempty"`
 	Fundus    string `json:"fundus,omitempty"`
 	Outcome   string `json:"outcome,omitempty"`
@@ -292,7 +412,9 @@ func (g drGemma) fields(kind, text string) (*DRFields, bool) {
 	f := &DRFields{Quote: g.Quote}
 	if kind == "dr-screen" {
 		mac := map[string]string{"maculopathy": "1", "clear": "0"}
-		f.RRight, f.RLeft, f.MRight, f.MLeft, f.Urgent = g.RRight, g.RLeft, mac[g.MRight], mac[g.MLeft], g.Urgent == "requested"
+		f.RRight, f.RLeft, f.MRight, f.MLeft = g.RRight, g.RLeft, mac[g.MRight], mac[g.MLeft]
+		// urgency only from a quoted sentence that is really in the text and really says "urgent" (the 4B over-calls a yes/no field)
+		f.Urgent = g.Urgent != "" && lungGrounded(g.Urgent, text) && drUrgentWord.MatchString(g.Urgent) && !drNotUrgent.MatchString(g.Urgent)
 		f.Label = drScreenLabel(f)
 		return f, true
 	}
@@ -369,14 +491,14 @@ First copy, exactly, the text that describes the right eye (right_eye_text) and 
 - "U": that eye could not be graded (cataract, small pupil, poor image).
 A stated code such as "R2M0" gives the grade directly.
 - right_macula / left_macula: "maculopathy" ONLY if the report states maculopathy or macular oedema for that eye, or exudate within the macula / within one disc diameter of the fovea, or the code M1; "clear" if it says no maculopathy, macula clear, no exudates near the fovea, or the code M0.
-- urgent_referral: "requested" ONLY if the words "urgent referral" appear as a request; "not_requested" otherwise (a severe grade alone is not a request).
+- urgent_sentence: if the report asks for an URGENT referral, copy exactly the sentence that contains the word "urgent" (or "عاجل"); otherwise "". A routine referral or a severe grade alone is not an urgent request.
 - quote: one sentence that states the worse eye's grade, copied exactly.
 Report:
 <<<%s>>>
 Return ONLY JSON.`
 
 const drClinicPrompt = `You read an eye-clinic note for a patient referred from diabetic eye screening. Use ONLY what the text states.
-- attendance: "did_not_attend" ONLY if the note says the patient did not attend (DNA); "attended" if the patient was seen (any examination, measurement or treatment is recorded).
+- attendance: "did_not_attend" ONLY if the note says the patient did not attend, DNA or no-show; "attended" if the patient arrived in any way (triage, vision or pressure measured), even if they left before the doctor examined them.
 - fundus: "examined" if the retina / fundus was examined (e.g. dilated fundus examination, DFE, fundoscopy); "not_examined" if only vision or pressure was checked or dilation was not done; "no_view" if the fundus could not be seen (dense cataract, vitreous haemorrhage, media opacity).
 - outcome (only when fundus = examined): "treated" if laser, PRP or an anti-VEGF injection was given, started or booked; "discharged" if the patient was discharged back to screening; "follow_up" if the plan is review or observation (including "laser not required", "treatment not indicated"); otherwise "none".
 - quote: the sentence that shows the examination (or the DNA / no-view statement), copied exactly.
@@ -393,8 +515,8 @@ func drSchema(kind string) map[string]interface{} {
 		p["right_r_grade"], p["left_r_grade"] = g, g
 		txt := map[string]interface{}{"type": "string", "maxLength": 300}
 		p["right_eye_text"], p["left_eye_text"] = txt, txt
-		p["right_macula"], p["left_macula"], p["urgent_referral"] = str("clear", "maculopathy"), str("clear", "maculopathy"), str("not_requested", "requested")
-		req = append(req, "right_eye_text", "left_eye_text", "right_r_grade", "left_r_grade", "right_macula", "left_macula", "urgent_referral")
+		p["right_macula"], p["left_macula"], p["urgent_sentence"] = str("clear", "maculopathy"), str("clear", "maculopathy"), txt
+		req = append(req, "right_eye_text", "left_eye_text", "right_r_grade", "left_r_grade", "right_macula", "left_macula", "urgent_sentence")
 	} else {
 		p["attendance"], p["fundus"] = str("attended", "did_not_attend"), str("examined", "not_examined", "no_view")
 		p["outcome"] = str("treated", "follow_up", "discharged", "none")

@@ -7,10 +7,10 @@
   "left_r_grade": "1",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "LE shows mild background microaneurysms only (R1M0).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10951
+  "urgent_sentence": "grader requests an URGENT referral to medical retina due to severe ischaemic R2 features and imminent threat to central vision.",
+  "quote": "grader requests an URGENT referral to medical retina due to severe ischaemic R2 features and imminent threat to central vision.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12848
  },
  "0120f1332e46b314c0d874285d10f03449e5a492d9059c54acb4654a48f6a369": {
   "kind": "dr-screen",
@@ -20,10 +20,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "OS demonstrates mild background diabetic retinopathy with scattered microaneurysms superior to the vascular arcade.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10063
+  "quote": "OS demonstrates mild background diabetic retinopathy with scattered microaneurysms superior to the vascular arcade",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9392
  },
  "0129f7e265f1c87e696a7c34c4b3037e830bba5ac0e50bb4c2f2742ff65187b0": {
   "kind": "dr-screen",
@@ -33,10 +32,10 @@
   "left_r_grade": "2",
   "right_macula": "maculopathy",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Routine HES referral.",
   "quote": "Bilateral pre-proliferative ret1nopathy with bilateral maculopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10844
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11079
  },
  "0196bdb4b2182b76724dc99e353123e6cdd3cdc027f8fa814d374ebfb3f12d39": {
   "kind": "dr-screen",
@@ -46,10 +45,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "no m1croaneurysms or hemorrhages seen.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10352
+  "quote": "no m1croaneurysms or hemorrhages seen",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9135
  },
  "050dd63919fc024e38c95a268d5df524cfdcc91db4763ba905cd6e84810cd09a": {
   "kind": "dr-clinic",
@@ -57,8 +55,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated biomicroscopy and OCT show a tiny Gunn's dot / internal limiting membrane sheen reflection in LE with normal retinal thickness (240 um) and zero exudates or microaneurysms in either eye. Discharged back to community diabetic eye screening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6468
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6942
  },
  "0573b81a26f763727118cd16c798f06abd6bec3d52e38a4c695f7cfcc03335a6": {
   "kind": "dr-clinic",
@@ -66,8 +64,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "تم فحص الشبكية بالعدسة المكبرة والنتيجة مطمئنة.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3331
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3526
  },
  "084fda0eb5ab68a8bad9e2e9d31b1ba8c18168b48a6d7405daf3b9121de5a072": {
   "kind": "dr-clinic",
@@ -75,8 +73,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5020
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4709
  },
  "093b7cb609d8c9e1dee11ff4c801575a03e6fc4b7553d3682a221246246c0347": {
   "kind": "dr-clinic",
@@ -84,8 +82,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "On dilated examination today, RE shows mild NPDR (M0) and LE shows chronic cystoid macular thickening (OCT 480 um) refractory to prior anti-VEGF. We implanted an intravitreal Dexamethasone 700 mcg (Ozurdex) slow-release steroid implant into the LE today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7420
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8395
  },
  "095de78677ce424ff40a62ee47bc7a57bf83eea6dc4617c9c933e222d8f4b5f6": {
   "kind": "dr-clinic",
@@ -93,8 +91,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Slit-lamp dilated fundus examination after tropicamide/phenylephrine: Right eye confirms active neovascularisation at the disc (NVD) and centre-involving diabetic macular oedema (OCT CST 435 um).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4711
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5204
  },
  "098f78c67d06caecb343ebdefa56f1a804fffcbc3f679cd9e81b6d93e7565f4c": {
   "kind": "dr-clinic",
@@ -102,8 +100,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "DFE: severe NPDR both eyes, no new vessels. Treatment not indicated today; review in 3 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4928
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4517
  },
  "0b8f49d42b815ad7518f57d2cc77412667823b729a52f5e370d436fd4601557d": {
   "kind": "dr-screen",
@@ -113,10 +111,9 @@
   "left_r_grade": "3S",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Old confluent peripheral PRP laser scars from prior treatment of proliferative disease; vessels are quiescent with no active neovascularisation and no macular oedema",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10730
+  "quote": "R3SM0",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9349
  },
  "0c6d4e3d7f5fa7b8b34297ca1f283c0e1c18213649fa7d3aeb0299e93ce1ab29": {
   "kind": "dr-clinic",
@@ -124,17 +121,17 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5142
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4808
  },
  "0d6047f52d4e3b87cd4f2a0744c9821f849ad1ae2c409171982aa7a1ca766270": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "follow_up",
-  "quote": "On dilated examination today, right eye has mild background ret1nopathy and left eye has moderate NPDR with a single parafoveal microaneurysm and trace extrafoveal thickening (VA 6/6).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6319
+  "quote": "On dilated examination today, right eye has mild background ret1nopathy and left eye has moderate NPDR with a single parafoveal microaneurysm and trace extrafoveal thickening",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6069
  },
  "0da61a89a539fc01f1cd2c9a229831d4a74440b5b9b6c5f9da7255c9c2098ba9": {
   "kind": "dr-screen",
@@ -144,10 +141,10 @@
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
-  "quote": "R2M1",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6082
+  "urgent_sentence": "Right eye: R2M0. Left eye: R2M1. No urgent referral required at this time. Routine referral recommended. Consider referral if symptoms worsen or if there is any change in vision. Further review in 6 months is recommended. Consider referral if there is any change in vision. Consider referral if there",
+  "quote": "Left eye: R2M1",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11158
  },
  "105501f2042fa961efddadc6a4dfe23a07711b8469ee8f7fbdbe4131015cb738": {
   "kind": "dr-clinic",
@@ -155,8 +152,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5894
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4667
  },
  "10c3073f71f9d55464189a68abaff34894bf064879ccff4addff741d28bdae17": {
   "kind": "dr-clinic",
@@ -164,8 +161,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "First anti-VEGF injection given today; loading doses booked.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4194
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4306
  },
  "136642631a230d9db61a9ce0f6184fbce15efaaecfd2a80d34c13d460621efb9": {
   "kind": "dr-screen",
@@ -175,10 +172,10 @@
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "pre-proliferative retinopathy with venous beading",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11591
+  "urgent_sentence": "Grader requests urgent referral: rapid progression since the last screen.",
+  "quote": "rapid progression since the last screen",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10711
  },
  "1514fa7899efea922e4896d4e11688ec76ba1b4a349bac990edf268e17fcb86a": {
   "kind": "dr-clinic",
@@ -186,8 +183,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5141
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4610
  },
  "173f704d63cb5d454040b24f2cc014c892e927db1dd82c02037f818622d867fd": {
   "kind": "dr-screen",
@@ -197,10 +194,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "No diabetic retinopathy or maculopathy identified.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11110
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8535
  },
  "1a0ef39e58a851fcb4e9f2a4171df9cd11761218d42bf425358f556d2697253b": {
   "kind": "dr-clinic",
@@ -208,8 +204,8 @@
   "fundus": "no_view",
   "outcome": "follow_up",
   "quote": "تعذر رؤية الشبكية بسبب عتامة شديدة في العدسة والجسم الزجاجي.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3775
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3845
  },
  "1a6f82183ed6aea37ce96e4ba8ebb2c70dc8b4800f31ff8e0d4d5f46dbdf4d3a": {
   "kind": "dr-clinic",
@@ -217,8 +213,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundus exam confirms moderate NPDR in both OD and OS with cotton wool spots and blot hemorrhages; maculae are dry on OCT.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5782
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5791
  },
  "1c193ccd5445083b766ded3bfc648d0e6642dbc187a6a99d8e99c1dc33d7acf3": {
   "kind": "dr-clinic",
@@ -226,8 +222,8 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "visual acuity and intraocular pressure checked only. No fundus examination today; rebooked.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5507
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5530
  },
  "1e1ead221a2cfaede52ce91e3cbc7bf3b809f152293cdb8f4cf7dd0a520a5dd7": {
   "kind": "dr-screen",
@@ -237,10 +233,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic changes detected",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8258
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8973
  },
  "207448928796ef33232be6207be2f9a8cfdd88e72fa0f4851ee4d33fba24aaff": {
   "kind": "dr-screen",
@@ -250,23 +245,22 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no maculopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8242
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8212
  },
  "2450f89088f37f943728cc87bd12cdd7326b00ead85427bfcf055172a644bc88": {
   "kind": "dr-screen",
   "right_eye_text": "OD 20/30. Bilateral mild background retinopathy with microaneurysms and dot hemorrhages. In addition, both OD and OS show rings of hard exudates within 1 disc diameter of the center of the fovea.",
   "left_eye_text": "OS 20/40. Bilateral diabetic maculopathy; routine referral placed.",
   "right_r_grade": "2",
-  "left_r_grade": "2",
+  "left_r_grade": "1",
   "right_macula": "maculopathy",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
-  "quote": "Bilateral diabetic maculopathy; routine referral placed.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10088
+  "urgent_sentence": "Bilateral diabetic maculopathy; routine referral placed.",
+  "quote": "Bilateral diabetic maculopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10846
  },
  "2c55ed9acc2e9b023a1562aee0e93f3ec98ba695e0f29eee14f1da1b923cbcbd": {
   "kind": "dr-screen",
@@ -276,23 +270,23 @@
   "left_r_grade": "3S",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Refer back to medical retina.",
   "quote": "OS now shows a new group of lipid exudates within 1 DD of the fovea.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7375
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7879
  },
  "2cf29238a86040f0d1bbf2f27875fe51afa710efa5dbf362c4f9894b4571830e": {
   "kind": "dr-screen",
-  "right_eye_text": "R1M0",
+  "right_eye_text": "OD shows mild background microaneurysms without macular involvement (R1M0).",
   "left_eye_text": "OS shows mild background retinopathy plus a cluster of hard lipid exudates and focal retinal thickening within 1 DD of the fovea (R1M1).",
-  "right_r_grade": "0",
+  "right_r_grade": "1",
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Routine ophthalmology referral.",
   "quote": "OS shows mild background retinopathy plus a cluster of hard lipid exudates and focal retinal thickening within 1 DD of the fovea (R1M1).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9755
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10637
  },
  "2e46da8b89d82723613c4f56e030911cd330728c3574ce6f1017d8c5a2947861": {
   "kind": "dr-screen",
@@ -302,10 +296,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
   "quote": "R1M1",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7079
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6947
  },
  "30f25f8ffd5296bee66e481ababd4c54999f5c50448c38e551b2ef80eef09061": {
   "kind": "dr-screen",
@@ -315,10 +308,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Left eye: Normal retinal architecture.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8590
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8147
  },
  "31ec031f0387b8b08d4b9a7677d953fac0d43b0c50e45387cad02b66c29a5715": {
   "kind": "dr-screen",
@@ -328,10 +320,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "retina normal, no diabetic changes",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9524
+  "quote": "Left eye: retina normal, no diabetic changes",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9737
  },
  "331e955589db5489820c9baf2d19e8d005e87ac0458f4b634bb37bf21939e6a3": {
   "kind": "dr-screen",
@@ -341,10 +332,10 @@
   "left_r_grade": "U",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Left eye could not be graded.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5815
+  "urgent_sentence": "Refer to slit-lamp biomicroscopy / cataract clinic.",
+  "quote": "Refer to slit-lamp biomicroscopy / cataract clinic.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6723
  },
  "357ab3d35fc2aa9c547ef2c88b9a946a84c0585f51b055f89cb6f49f607b76eb": {
   "kind": "dr-clinic",
@@ -352,8 +343,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "First anti-VEGF injection given today; loading doses booked.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3670
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3326
  },
  "35f446c1c89e88815e84588563e912b114f9664479fa7a248b4aec6f8a79d41d": {
   "kind": "dr-clinic",
@@ -361,8 +352,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated retinal exam and OCT confirm center-involving diabetic macular edema OD (CST 510 um) with moderate NPDR; OS has mild NPDR without edema.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5984
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5856
  },
  "374861f1133a111c22aba7e5f143737f28d5e64d68f4e5215661caf35d2d1d19": {
   "kind": "dr-clinic",
@@ -370,8 +361,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus exam: Right eye has quiescent old laser scars (stable). Left eye demonstrates active new vessels elsewhere (NVE) along the superotemporal arcade with a small preretinal blot haemorrhage; macula is flat.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6169
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6153
  },
  "37b47f0769d0807b0bbb2904f7dee96d2a4799776c825158626c5436fe440a2f": {
   "kind": "dr-clinic",
@@ -379,8 +370,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Fundoscopy with dilation: exudates outside the macula, no oedema on OCT. Discharged to the screening programme.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5651
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4617
  },
  "3860f19642d432531c1bd0be90bca513ac9a0788f1253abbbda6512f88fc3ae5": {
   "kind": "dr-screen",
@@ -390,23 +381,21 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "mild non-proliferative diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9638
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8266
  },
  "3a6809fc052117e5aa6e94d1f15660cc40a50a31967280301c01035eef259954": {
   "kind": "dr-screen",
-  "right_eye_text": "Right eye: retina normal, no diabetic changes; no maculopathy.",
-  "left_eye_text": "Left eye: no diabetic retinopathy; macula clear.",
+  "right_eye_text": "OD: retina normal, no diabetic changes; no maculopathy.",
+  "left_eye_text": "OS: no diabetic retinopathy; macula clear.",
   "right_r_grade": "0",
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9177
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7195
  },
  "3b467cf831a0d3f6589686f502a6df77641901f86b34024562bc1b0604f456b8": {
   "kind": "dr-clinic",
@@ -414,8 +403,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6366
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5701
  },
  "3c5302da4ea7698e5a304de0ecd44114fc3bf8383316a5a520da2cb918dcc1c3": {
   "kind": "dr-clinic",
@@ -423,30 +412,29 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "No view of the posterior pole through vitreous haemorrhage.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4341
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4252
  },
  "3c8509206e95e0d24364820a06dac24f123134e8e1dd213ddd58defe43d54c7a": {
   "kind": "dr-screen",
-  "right_eye_text": "Right eye shows two microaneurysms and a tiny dot haemorrhage located 0.5 disc diameters temporal to the foveal centre, with no exudates and no retinal thickening.",
+  "right_eye_text": "Right eye shows two microaneurysms and a tiny dot haemorrhage located 0.5 disc diameters temporal to the foveal centre, with no exudates and no retinal thickening; because visual acuity is 6/6 (better than 6/12), M1 criteria are not met.",
   "left_eye_text": "Left eye is completely normal.",
   "right_r_grade": "1",
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Right eye shows two microaneurysms and a tiny dot haemorrhage located 0.5 disc diameters temporal to the foveal centre, with no exudates and no retinal thickening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11028
+  "quote": "فحص الشبكية السكري - درجة بسيطة في العين اليمنى.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10771
  },
  "40651d9795850c0e6bb350da69c8a030cb74a9cc7631dca80efe5cf9437b9fc6": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "discharged",
-  "quote": "Dilated fundus exam and macular cube OCT reveal a solitary microaneurysm 900 microns from the fovea OD with normal foveal contour, no exudates, and 20/20 vision",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5653
+  "quote": "Dilated fundus exam and macular cube OCT reveal a solitary microaneurysm 900 microns from the fovea OD with normal foveal contour, no exudates, and 20/20 vision; OS is free of retinopathy.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6928
  },
  "40a351956fcb80425f61a91c739dbb6718e34a323c4168b9d80ca18ffccb13a9": {
   "kind": "dr-screen",
@@ -456,10 +444,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Left eye R0 M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9041
+  "quote": "No microaneurysms, no haemorrhages, and no exudates seen.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8828
  },
  "42359e8bfef60f8d47834c8d7e2ebf3f1acb76b3fde3a6c5b6c260196491e776": {
   "kind": "dr-clinic",
@@ -467,8 +454,8 @@
   "fundus": "not_examined",
   "outcome": "none",
   "quote": "Visual acuity measured (Right 6/18, Left 6/12) and intraocular pressure checked (15/16 mmHg). Patient is severely needle- and drop-phobic and declined mydriatic drops and slit-lamp bright light examination today; only external eye inspection performed, fundus not examined.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7676
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8962
  },
  "43dbbd2859a965549c8b2126c430d7f9dd30f0364cac53a298397db26689f679": {
   "kind": "dr-clinic",
@@ -476,8 +463,8 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "No view of the posterior pole through vitreous haemorrhage.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4460
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4193
  },
  "4494ab4bec4e749c376520bc8ee072d242101ca7f0469540823b40b57bf31b08": {
   "kind": "dr-screen",
@@ -487,10 +474,9 @@
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "multiple blot haemorrhages and IRMA (pre-proliferative)",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11937
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10763
  },
  "475d7331c69cd2da903788d1b703da60cb662d086ead60b23645a335ed2c8431": {
   "kind": "dr-clinic",
@@ -498,8 +484,8 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Patient did not attend the eye clinic appointment.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 2466
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5418
  },
  "477a2e0d52ea8ac9c750c58357907a7659427489105ed8582a35216b4def5e18": {
   "kind": "dr-screen",
@@ -509,10 +495,10 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
+  "urgent_sentence": "No urgent referral required at this time. However, a routine referral is recommended.",
   "quote": "mild non-proliferative diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10222
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10204
  },
  "49308742af741903a20fb47e4b208a340ec8f72e42ab64e0b403db1deb7a4df3": {
   "kind": "dr-clinic",
@@ -520,21 +506,20 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Referral text on file from DESP screening stated: 'Right eye R3AM1 with active NVD and macular exudates, Left eye R2M0; urgent hospital assessment for panretinal laser photocoagulation and anti-VEGF injection.'",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5929
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6144
  },
  "4b775cb840c07a0e5c5eed7e6917b9ffb6d214e2efa61d47abdba818b3592b45": {
   "kind": "dr-screen",
-  "right_eye_text": "Fundus photos show intermediate hard and soft macular drusen within 1 DD of the fovea in both eyes with mild RPE mottling consistent with dry age-related macular degeneration (AMD). However, there are zero microaneurysms, no retinal hemorrhages, no hard lipid exudates, and no diabetic macular edema.",
-  "left_eye_text": "Fundus photos show intermediate hard and soft macular drusen within 1 DD of the fovea in both eyes with mild RPE mottling consistent with dry age-related macular degeneration (AMD). However, there are zero microaneurysms, no retinal hemorrhages, no hard lipid exudates, and no diabetic macular edema.",
+  "right_eye_text": "VA OD 20/25. Fundus photos show intermediate hard and soft macular drusen within 1 DD of the fovea in both eyes with mild RPE mottling consistent with dry age-related macular degeneration (AMD). However, there are zero microaneurysms, no retinal hemorrhages, no hard lipid exudates, and no diabetic",
+  "left_eye_text": "VA OS 20/20. Fundus photos show intermediate hard and soft macular drusen within 1 DD of the fovea in both eyes with mild RPE mottling consistent with dry age-related macular degeneration (AMD). However, there are zero microaneurysms, no retinal hemorrhages, no hard lipid exudates, and no diabetic",
   "right_r_grade": "0",
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "No diabetic retinopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 16031
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 15437
  },
  "4bab015877166b0f489fc52f65734a11f634b37b0dad6689fe45a09c9c264a79": {
   "kind": "dr-clinic",
@@ -542,8 +527,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundu5 exam: OD has non-center-involving focal macular edema from a leaking microaneurysm cluster 600 microns superotemporal to fovea",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3978
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5826
  },
  "4ced16761416a1524082b17281d841fb3852b812da32ff9a248adad837079e6c": {
   "kind": "dr-screen",
@@ -553,19 +538,18 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "background diabetic retinopathy (scattered microaneurysms); no maculopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 13718
+  "quote": "background diabetic retinopathy (scattered microaneurysms)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10316
  },
  "4d09534faf4ae4ba5a7c92bf6f854570e9dec215c0f88ebb5b645eb93ce4970f": {
   "kind": "dr-clinic",
-  "attendance": "did_not_attend",
+  "attendance": "attended",
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Dense cataract precludes any fundal view in either eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4607
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4145
  },
  "4d51b5dc8185729c4546366346de5f15c5c558fca7ea9811c9d4bc2833310db6": {
   "kind": "dr-clinic",
@@ -573,8 +557,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Today's dilated fundus examination shows quiescent, well-pigmented PRP scars in RE with regressed vessels and a completely dry macula on OCT (CST 248 um);",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5744
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6169
  },
  "4d5e7f2c77c53f3ab792e700944e622f8a7db2714b250c22d64cf8029fbde4ec": {
   "kind": "dr-clinic",
@@ -582,8 +566,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Treatment not indicated today; review in 3 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4601
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4289
  },
  "4da6cafa3ccf8c356a41a1312d04c63e6ebb8e12a4ff2c844a54e4f9f34fd856": {
   "kind": "dr-screen",
@@ -593,10 +577,10 @@
   "left_r_grade": "3A",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "active proliferative diabetic retinopathy with new vessels at the disc",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10468
+  "urgent_sentence": "RE: new vessels elsewhere with pre-retinal haemorrhage (active proliferative disease)",
+  "quote": "new vessels elsewhere with pre-retinal haemorrhage (active proliferative disease)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9884
  },
  "4daee19f8af7685a7f960adcd5c487afd96d90550ac21108824e788ca067e471": {
   "kind": "dr-clinic",
@@ -604,8 +588,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5011
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4496
  },
  "4ddf1464148bcd58e29afda061e2d8cfcf09c899bf184f00d239f7135ce3bf04": {
   "kind": "dr-clinic",
@@ -613,8 +597,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4923
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3827
  },
  "528321c72566e7ca5104e112b670f23e45204d8e33540e975a4087b8a54c2ec5": {
   "kind": "dr-screen",
@@ -624,10 +608,10 @@
   "left_r_grade": "1",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "OS shows mild background microaneurysms with a dry macula.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9564
+  "urgent_sentence": "Refer to retina specialist.",
+  "quote": "Refer to retina specialist.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9236
  },
  "53457747a8a7e094b6bc623c752a0ba0c05d3ea918759da55604f5ddc64f5ece": {
   "kind": "dr-clinic",
@@ -635,21 +619,21 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4835
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3984
  },
  "550e36303263f4b7d110a94aef3934d64a4b1005a79ef95d9aa678bee1ea1534": {
   "kind": "dr-screen",
   "right_eye_text": "RE cannot be graded today (Grade U) owing to dense posterior subcapsular cataract and poor pupil dilation preventing any view of the disc or macula.",
-  "left_eye_text": "LE has clear media and shows background microaneurysms together with hard exudates 0.4 DD from the fovea",
+  "left_eye_text": "LE has clear media and shows background microaneurysms together with hard exudates 0.4 DD from the fovea (R1M1)",
   "right_r_grade": "U",
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
-  "quote": "LE has hard exudates 0.4 DD from the fovea",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9659
+  "urgent_sentence": "RE cannot be graded today (Grade U) owing to dense posterior subcapsular cataract and poor pupil dilation preventing any view of the disc or macula.",
+  "quote": "LE has clear media and shows background microaneurysms together with hard exudates 0.4 DD from the fovea (R1M1)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 14144
  },
  "5611c1e55fdd66a1b9bb7842bfce8871cf98ef4a0861698cfb2b2b75934760bf": {
   "kind": "dr-clinic",
@@ -657,8 +641,8 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "After full pharmacological dilation, attempted 90D and 20D indirect ophthalmoscopy and OCT: dense bilateral nuclear and posterior subcapsular cataracts completely block any view of the posterior pole in both OD and OS",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5534
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5329
  },
  "583724e32b7b39f90376599bb720887a628d1d79835b3b9b34137cac260220ea": {
   "kind": "dr-clinic",
@@ -666,17 +650,17 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundus exam: stable treated PDR. Follow-up in eye clinic in 6 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5162
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4812
  },
  "585ab948ea9dbd00258aba10cc88dd6d4130351577c2c1251fa8aa32a47b4bbb": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
-  "fundus": "no_view",
+  "fundus": "not_examined",
   "outcome": "none",
   "quote": "Patient was referred for assessment of right and left eye diabetic retinopathy, but telephoned on the morning of clinic to state they had no transport and could not attend.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 2477
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 2618
  },
  "586036ff5bb41d010666b52fcadebb4f57389e5fc775618787c8ced72029e4d1": {
   "kind": "dr-screen",
@@ -686,10 +670,10 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Refer to hospital eye clinic.",
   "quote": "Left eye has mild background microaneurysms only.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9345
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8963
  },
  "5ab186c25f0ac8eb8742a44030a8bc496cca1d6809c15aba47d9cdc5cfe21358": {
   "kind": "dr-screen",
@@ -699,10 +683,10 @@
   "left_r_grade": "0",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "no diabetic retinopathy; no maculopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10102
+  "urgent_sentence": "no urgent referral required",
+  "quote": "no diabetic retinopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8926
  },
  "5af725edda6e1016e84e2f26931b41ccc864dbade91ada15350f75ef87be8859": {
   "kind": "dr-screen",
@@ -712,10 +696,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "LE shows two peripheral microaneurysms superiorly, no maculopathy, no new vessels.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11976
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11864
  },
  "5b211cbc65cc8fd48b78c8c5b1ac25135a70662418302fb56b84fc47fa02e488": {
   "kind": "dr-screen",
@@ -725,10 +708,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "mild non-proliferative diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11177
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9768
  },
  "5d01be30f20fb0eb237532fa7efefe54bf42f71f20a801d1bcb07190af885ba9": {
   "kind": "dr-screen",
@@ -738,19 +720,19 @@
   "left_r_grade": "1",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "LE is completely normal.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10519
+  "urgent_sentence": "Refer to medical retina clinic.",
+  "quote": "LE is completely normal",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10890
  },
  "5dd6702bbaf16d2b5058247d48c85c732cb19333a0a9f5d2bd17550e1e30a63b": {
   "kind": "dr-clinic",
-  "attendance": "did_not_attend",
-  "fundus": "no_view",
+  "attendance": "attended",
+  "fundus": "not_examined",
   "outcome": "none",
   "quote": "Because of symptomatic hypertensive urgency, patient was transferred directly from ophthalmic nursing triage to the Emergency Department before pupil dilation or fundus examination was performed.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4715
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5417
  },
  "5f5db73423d8186ce1c6f8854ea93c3b20961d9df963fe47858e9ad976b730a5": {
   "kind": "dr-clinic",
@@ -758,17 +740,17 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4221
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4333
  },
  "5fbbe2190d61bdf8982710ff63745dc2b663c61dc00b23f76e2412806f689aed": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "treated",
-  "quote": "Fundoscopy after dilation shows new vessels at the disc. PRP laser booked for next week.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3610
+  "quote": "Fundoscopy after dilation shows new vessels at the disc.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 2646
  },
  "6283a6c15e174a7db9337b476226d994e6d5745c63049dd906d3a32868384ca1": {
   "kind": "dr-clinic",
@@ -776,8 +758,8 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "Undilated view through 2 mm pupils was not attempted for grading; dilated fundus exam deferred.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4882
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5301
  },
  "64e0653e9d3aa66d4e859ae2b79b3e26251bd9880df757c6a605a1b27d29564d": {
   "kind": "dr-screen",
@@ -787,10 +769,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "LE remains free of diabetic retinopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9297
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8355
  },
  "64fc6f345b9cf7ae8dfc179cd727fa2bad5a20e08cefe43a2fac74320a729e7d": {
   "kind": "dr-clinic",
@@ -798,8 +779,8 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "To prevent cross-infection and corneal toxicity, contact/dilated fundus examination and OCT imaging were deferred today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4213
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4161
  },
  "657f6beda014c86986f1a19092ea3870e14531783642fa56a1bbc1830cafdb5e": {
   "kind": "dr-clinic",
@@ -807,17 +788,17 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated fundus exam today (6 weeks post-screening) shows complete resolution of the tiny nerve fiber layer hemorrhage OD; no microaneurysms, no macular edema, and normal OCT in both OD and OS. Discharged to routine annual screening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6344
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6877
  },
  "66b3a961f2f8856bbb0f5708ec533b09abe3a7699d69af62ff38cda3bb2ff869": {
   "kind": "dr-clinic",
-  "attendance": "did_not_attend",
+  "attendance": "attended",
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Dense cataract precludes any fundal view in either eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4479
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4045
  },
  "67ec83a129cd1c789e152be19627d52a416ae57e3ff00a8fbcf2e7c289ec9368": {
   "kind": "dr-screen",
@@ -827,10 +808,9 @@
   "left_r_grade": "U",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Left eye could not be graded",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6792
+  "quote": "",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6194
  },
  "6a619581ece0d7c5f4076d09eabdc113f8a0f2869a1e3b71444b31dd45869ad7": {
   "kind": "dr-clinic",
@@ -838,8 +818,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated examination confirms clinically significant macular oedema. Intravitreal anti-VEGF commenced.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3655
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3430
  },
  "6e47d6c8ebc3d56ca180ebca0b6021d9450b2bc09e67a89ac50f51281f6a7c77": {
   "kind": "dr-screen",
@@ -849,10 +829,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "a few dot haemorrhages and microaneurysms (background retinopathy)",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 12120
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8518
  },
  "710c7c155967265acdebff684dbe654b7569db3c5657befc57ff8836470496a1": {
   "kind": "dr-clinic",
@@ -860,8 +839,8 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "Dilation deferred, retina not examined.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4272
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4156
  },
  "71dad2d629323e13efbafe1579bb0a9954f3ffe7c645561f165786e7577eb456": {
   "kind": "dr-clinic",
@@ -869,8 +848,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "تم فحص قاع العين وإعطاء حقنة داخل الجسم الزجاجي للعين اليمنى.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4107
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4644
  },
  "73f63e0e8f39a29d3dd168cccea30e2179863003c04974ea97def8d9ad760125": {
   "kind": "dr-clinic",
@@ -878,8 +857,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Careful dilated slit-lamp biomicroscopy and OCT angiography confirm a congenital retinal vascular tortuosity loop OS without true IRMA, venous beading, or neovascularization.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4649
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4929
  },
  "747bee134effc56f802abd838fb728100bd4f9f1bb569d1bc7dc36b9949fe30e": {
   "kind": "dr-screen",
@@ -889,19 +868,18 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "No active microaneurysms, no haemorrhages, and no exudates in either eye today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10978
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10821
  },
  "78ff60ac3f78917bd511e60cbbd347834e7cda6cfbf6cb01fb9037656f27dc7d": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
   "fundus": "no_view",
   "outcome": "none",
-  "quote": "DNA (Did Not Attend). Patient booked for post-screening biomicroscopy of RE and LE.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3458
+  "quote": "DNA (Did Not Attend). Patient booked for post-screening biomicroscopy of RE and LE. Called twice in waiting area with no response. Referrer notified and one further appointment allocated.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4244
  },
  "793ec949a799be708dd2fb671d4d9f2738081a5f718521af66716aed0c73a4c0": {
   "kind": "dr-screen",
@@ -911,10 +889,10 @@
   "left_r_grade": "U",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Left eye: Photographs ungradable due to poor patient fixation, severe photophobia, and blink artefact across the macula in all frames.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11135
+  "urgent_sentence": "Refer to slit-lamp biomicroscopy clinic.",
+  "quote": "Refer to slit-lamp biomicroscopy clinic.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10397
  },
  "7b9de2c0edb45aa948938486fd9aa115333545ea343d61a5572972b9acbca651": {
   "kind": "dr-screen",
@@ -924,10 +902,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8939
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8543
  },
  "7cdd2330cf6d055e22bc813d9c1ee79e9f20b589412d82699522ea8bb6f3c0af": {
   "kind": "dr-screen",
@@ -937,10 +914,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
   "quote": "Left eye has developed a cluster of hard exudates and focal thickening temporal to and within 1 DD of the fovea.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8433
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7928
  },
  "82c22bf45da400291e46a03a66e714f605a94bb971cf16bc4ed9351dfb987b2d": {
   "kind": "dr-screen",
@@ -950,10 +926,9 @@
   "left_r_grade": "3S",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "no exudates near the fovea",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11823
+  "quote": "stable (R3S)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9505
  },
  "83be5c249bd0a9a2c1ab304bf57f65ff98abd28346335fedf87b09bdbe3d9ada": {
   "kind": "dr-screen",
@@ -963,10 +938,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "LE shows normal retinal background; specifically no microaneurysms, no venous beading, no IRMA, and no maculopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11208
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10710
  },
  "8508c1a73a33ac9240cd0a8cf46911795fce610c14deae37887dce26afe61f47": {
   "kind": "dr-clinic",
@@ -974,8 +948,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5123
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4782
  },
  "85ec1b1ad45ece51b8652af0d48ebd2cf15651c4abcdb3be9907350ffb08c880": {
   "kind": "dr-clinic",
@@ -983,8 +957,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "After pharmacological mydriasis with tropicamide 1% and phenylephrine 2.5%, clear view of both fundi achieved on slit-lamp biomicroscopy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5219
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5674
  },
  "886eb07609db24d85d171ac835f22d0654a5ab770f0c47bb6952459c6e8fb5b7": {
   "kind": "dr-clinic",
@@ -992,8 +966,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated 90D and contact lens fundus examination right and left eyes: the suspected neovascular lesion in the right eye is a benign epiretinal membrane with mild retinal vessel straightening, not neovascularisation.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6860
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6020
  },
  "8a25c94c8eaa6bb244b6c4085f75fb422fd2a56fcc2e613d4560c737c5928893": {
   "kind": "dr-screen",
@@ -1003,10 +977,9 @@
   "left_r_grade": "U",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "LE is ungradable (U) due to severe asteroid hyalosis and media opacity hiding more than 50% of the macular and disc fields.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11443
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 13770
  },
  "8b998487a6d40aa20bacd1aaf600bb88e4935c2d55980e1179489c638b2aed01": {
   "kind": "dr-clinic",
@@ -1014,8 +987,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated slit-lamp examination shows florid NVD and NVE in the right eye and severe pre-proliferative changes in the left eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3659
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4101
  },
  "8bcdfeab84866bfc75868a78503c14c3f9da510509308d89e53bdc275133552c": {
   "kind": "dr-screen",
@@ -1025,10 +998,10 @@
   "left_r_grade": "1",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Routine referral to hospital eye services for right maculopathy.",
   "quote": "Left eye shows a few nasal microaneurysms only.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9813
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10143
  },
  "8c89fa9450a9a91a5125f294f5b38d45c79ebd42ba306dcf838e2cf65b4af538": {
   "kind": "dr-screen",
@@ -1038,10 +1011,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Background diabetic retinopathy bilaterally.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10138
+  "quote": "Background diabetic ret1nopathy bilaterally.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11037
  },
  "8ddf35c42f8218023478c37eb7695ee2e88142663b58820608c73a2886ec1df7": {
   "kind": "dr-screen",
@@ -1051,10 +1023,9 @@
   "left_r_grade": "0",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Left eye: R0M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5984
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5600
  },
  "8eb69f00864d2fc472dc4a536326fad1d99ced88896731da6f07a1cf0133df51": {
   "kind": "dr-clinic",
@@ -1062,17 +1033,17 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus exam reveals right eye high-risk proliferative diabetic retinopathy with preretinal haemorrhage inferiorly and centre-involving macular oedema.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4438
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4894
  },
  "90101a556359ee3cc799af0fb5f882a5dc66ee78fb2b2e9a3a8df3d88b8bb264": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
-  "fundus": "no_view",
+  "fundus": "not_examined",
   "outcome": "none",
   "quote": "Did not attend today. Rebook as per DNA policy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3478
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4320
  },
  "967f37034c342abbbcf630183352b320a835c688ce1d20e2b23bc54e765ea705": {
   "kind": "dr-screen",
@@ -1082,10 +1053,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "R0M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6345
+  "quote": "Left eye: R0M0",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7015
  },
  "971eeeb992e501063521b2695a65ac935efecc9f68ce545eb0077f9938f51c81": {
   "kind": "dr-clinic",
@@ -1093,8 +1063,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated biomicroscopy shows bilateral moderate NPDR and mild parafoveal thickening in the right eye (OCT CST 335 um).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5101
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5569
  },
  "976e404347564f52f217555312716d4488e47478dc8cd1c3f157a1c916651685": {
   "kind": "dr-screen",
@@ -1104,10 +1074,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic retinopathy in either eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9534
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9227
  },
  "9b04ed7f7a58a22d3dafa56ed3ee9919a83662697b44aacb3a3f9e2edde9cdc8": {
   "kind": "dr-screen",
@@ -1117,10 +1086,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
-  "quote": "no retinopathy detected; group of exudates within the macula",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11675
+  "quote": "group of exudates within the macula",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9296
  },
  "9e570a308ca6f2d7409d123a9351d9c9be413ac8caff8b480d48fd1dcf6e3e58": {
   "kind": "dr-screen",
@@ -1128,12 +1096,12 @@
   "left_eye_text": "Left eye: R3AM0",
   "right_r_grade": "2",
   "left_r_grade": "3A",
-  "right_macula": "maculopathy",
+  "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
-  "quote": "Left eye: R3AM0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7288
+  "urgent_sentence": "urgent referral is recommended",
+  "quote": "Right eye: R2M1",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8297
  },
  "9f687c99d14a187053ac734f1f965f132a5c98adc51228b43346db093c1d5162": {
   "kind": "dr-clinic",
@@ -1141,8 +1109,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated biomicroscopy and OCT macula performed: OD shows moderate NPDR with central cystoid macular edema (CST 390 um); OS shows severe NPDR with subfoveal fluid and lipid exudates (CST 460 um).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4674
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5362
  },
  "a005dfd294be0196db901c433dc38a213d497da2e37ba2784a08ea3b43540d90": {
   "kind": "dr-clinic",
@@ -1150,8 +1118,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated exam with 78D lens shows IRMA and deep blot hemorrhages in both OD and OS, but no NVD/NVE and no clinically significant macular edema on OCT.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5546
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6118
  },
  "a15aa3ec4cb286523024f7b77a6ed497e627a4b108b61c3c504d7595dbeefb11": {
   "kind": "dr-screen",
@@ -1161,10 +1129,10 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
+  "urgent_sentence": "No urgent referral required at this time. The patient's visual acuity is good and there are no signs of significant disease progression. A routine referral is recommended for follow-up at 6 months or sooner if there are any changes in vision or symptoms. The patient should be advised to attend their",
   "quote": "Bilateral mild background retinopathy with occasional dot haemorrhages and microaneurysms outside the macular grid.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9065
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12699
  },
  "a1e4fff8a9957d8f8b17fc5854d69b4ea3a2c97e8d8da4c9daa8488a55a9d51a": {
   "kind": "dr-clinic",
@@ -1172,8 +1140,8 @@
   "fundus": "not_examined",
   "outcome": "none",
   "quote": "Fundus not examined.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4064
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3995
  },
  "a3a0973725c00a4e275758e935d8eb189e0630b388641fc0bc19eb94d0b5bdf8": {
   "kind": "dr-screen",
@@ -1183,10 +1151,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Mild background retinopathy OS.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8979
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10686
  },
  "a49170672b29f8c1fc080de6b33a33e9f91a75bb4954bfd887c290c5410445ac": {
   "kind": "dr-screen",
@@ -1196,10 +1163,10 @@
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
-  "quote": "multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1)",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 12977
+  "urgent_sentence": "Grader requests urgent referral: rapid progression since the last screen.",
+  "quote": "macular oedema suspected (M1)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 11141
  },
  "a4ed6ac956e000a65a67feb96dc102842aaf9b483780b2ac4e33fe2658d2c461": {
   "kind": "dr-screen",
@@ -1209,10 +1176,10 @@
   "left_r_grade": "3S",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "Left eye shows venous beading and IRMA without maculopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11604
+  "urgent_sentence": "URGENT referral requested to hospital eye service within 2 weeks.",
+  "quote": "URGENT referral requested to hospital eye service within 2 weeks.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 12918
  },
  "a7caf08d93d1e36490dd8af6ea24c271ed13ed8e3286fd56556f74561cea4a66": {
   "kind": "dr-clinic",
@@ -1220,8 +1187,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated 90D fundus examination and macular OCT today show a small benign hard drusen temporal to the right fovea (mistaken for lipid exudate on 2D screening photo) and only two peripheral microaneurysms (R1M0); left eye is normal (R0M0).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7610
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7561
  },
  "a9390ee309a20955eadc9bb4eaefd4a7d2d8a474adb0b241b85bcb26808ee98f": {
   "kind": "dr-clinic",
@@ -1229,8 +1196,8 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "NO SHOW / DNA NOTE. Reason for appointment: Screening referral for OD R2M1, OS R2M0 (pre-proliferative diabetic retinopathy and macular thickening). Patient did not attend today's Medical Retina clinic session.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5584
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5353
  },
  "aa383283133350588c2046c1ebd45e4d6c02939bfbc27e39e0879eb15dcfd3f0": {
   "kind": "dr-clinic",
@@ -1238,17 +1205,17 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Patient was booked in the 11:00 slot for evaluation of OD and OS diabetic retinopathy referral, but was a No-Show / Did Not Attend.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4435
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4111
  },
  "acba31f30c55e99aeed24c3d53e2b9ae33ef5c7ad4f48b48d49cc67e781e183e": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
-  "fundus": "no_view",
+  "fundus": "not_examined",
   "outcome": "none",
   "quote": "لم يحضر المريض للموعد المحدد في عيادة الشبكية",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4588
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4125
  },
  "ae421acc49f1792ebb129dc92f4d1596e876d7c87cba63ccf348172b49171611": {
   "kind": "dr-clinic",
@@ -1256,21 +1223,20 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Despite maximal mydriatic drops, the retina could not be seen in either eye on slit-lamp or indirect ophthalmoscopy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4928
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5357
  },
  "af33c94cfd270ed2aa4ce2f1b6a244f66e0d164c2f0669054e0fe7af5069e1fa": {
   "kind": "dr-screen",
-  "right_eye_text": "OD: severe non-proliferative diabetic retinopathy; macula clear",
-  "left_eye_text": "OS: multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1)",
+  "right_eye_text": "OD: severe non-proliferative diabetic retinopathy; macula clear.",
+  "left_eye_text": "OS: multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1).",
   "right_r_grade": "2",
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
-  "quote": "multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1)",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 14525
+  "quote": "multiple blot haemorrhages and IRMA (pre-proliferative)",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10006
  },
  "af94614d7be15604b2e59800f9b338d9fa8c40b414fe512c7ec4ab9a29a6342d": {
   "kind": "dr-screen",
@@ -1280,10 +1246,10 @@
   "left_r_grade": "U",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Because the right eye has referable retinopathy on its own, overall grade is R2M0.",
   "quote": "Left eye is completely ungradable due to a dense mature white cataract obscuring the fundus.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9238
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10393
  },
  "b1574330d034bfb6da85f8dc21a2b01cb58a416e0b155ba9f9f477157d008a54": {
   "kind": "dr-clinic",
@@ -1291,30 +1257,29 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "VA RE 6/12, LE 6/9; IOP RE 14, LE 14. Tropicamide drops were instilled at 10:15, but the patient developed vasovagal dizziness and nausea in the waiting room before seeing the ophthalmologist and asked to go home before any fundus or OCT examination could be performed. Rescheduled clinic appointment",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8741
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9671
  },
  "b1d10de06910d2915042a53e8940ad8c47f7ba26b0de867e2d09149ada5a5106": {
   "kind": "dr-clinic",
-  "attendance": "did_not_attend",
+  "attendance": "attended",
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Media opacity: fundus cannot be assessed. Refer for cataract assessment.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5093
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4312
  },
  "b1f1b318f1907ed5a49f7da36f4a1b906959f8c36ce433a144e0c6ae36b71bff": {
   "kind": "dr-screen",
-  "right_eye_text": "Prominent copper wiring and arteriovenous nipping noted along the superotemporal arcade in the right eye",
+  "right_eye_text": "Prominent copper wiring and arteriovenous nipping noted along the superotemporal arcade in the right eye (Grade 2 hypertensive retinopathy)",
   "left_eye_text": "plus a benign choroidal naevus inferonasally in the left eye.",
   "right_r_grade": "2",
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Grade 2 hypertensive retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8507
+  "quote": "No diabetic microaneurysms, no blot haemorrhages, and no exudates near the fovea in either eye.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9225
  },
  "b3af6ad417c5b3dc7800d9f1ca57f685d7e9ff9a115a3a7812f1f2edafe634e8": {
   "kind": "dr-clinic",
@@ -1322,8 +1287,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated slit-lamp biomicroscopy confirms moderate-to-severe non-proliferative DR in the right eye (venous beading and blot haemorrhages) and mild NPDR in the left eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6016
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6309
  },
  "b3ecd0ed1a075c813bf0f7e018cfb2195326714ec85891eb14031f23e398c6c1": {
   "kind": "dr-clinic",
@@ -1331,17 +1296,17 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Fundoscopy with dilation: exudates outside the macula, no oedema on OCT. Discharged to the screening programme.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5076
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5123
  },
  "b65960ce6b72667a8b9af6a75d75b5fbecce7293d8a48b9c4462cc5c76ddce64": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "not_examined",
   "outcome": "none",
-  "quote": "so the retina/fundus was not examined.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3155
+  "quote": "Pharmacological pupil dilation was withheld today due to acute angle-closure risk, so the retina/fundus was not examined.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5486
  },
  "b7cab79a67601a39d4a926d807396f0a36a264ee28fa4df7f79c48c9e77b7656": {
   "kind": "dr-clinic",
@@ -1349,8 +1314,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5638
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5160
  },
  "bb740d11edede8f00d9bcad64cfbf3de7efe13f7720dd348a07071f863e4d86a": {
   "kind": "dr-clinic",
@@ -1358,8 +1323,8 @@
   "fundus": "no_view",
   "outcome": "none",
   "quote": "Dilated fundus exam attempted: zero view of the right fundus due to dense fresh vitreous haemorrhage, and no view of the left fundus due to dense mature cataract and fibrotic posterior capsule.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5997
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5846
  },
  "bba879367e8d19dcb43a646972279a9114c3b7beb3be79f27cc76e27ff827b4a": {
   "kind": "dr-clinic",
@@ -1367,8 +1332,8 @@
   "fundus": "no_view",
   "outcome": "follow_up",
   "quote": "Attempted dilated retinal exam and OCT today. Both OD and OS have severe corneal edema from decompensated Fuchs endothelial dystrophy plus dense 4+ nuclear sclerosis; neither optic nerve nor macula can be visualized in either eye.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5641
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5920
  },
  "bd136deb810c52f57cb035a522e866626cd61db8b0cd741f63e8895505265d31": {
   "kind": "dr-screen",
@@ -1378,19 +1343,19 @@
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "requested",
+  "urgent_sentence": "Routine referral for left pre-proliferative DR.",
   "quote": "Routine referral for left pre-proliferative DR.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9542
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10055
  },
  "bf548c60f80d2538e72b00cf8dc204d68220581412439060979b977417e94063": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "follow_up",
-  "quote": "Dilated fundus exam and spectral-domain OCT",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4857
+  "quote": "Dilated fundus exam and spectral-domain OCT: OD mild NPDR. OS shows a small cluster of hard exudates 450 microns temporal to the fovea with a normal central subfield thickness (255 um) and no intraretinal cysts.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6840
  },
  "c327acc4da9c0447eed76ea6ec462dcb34eabc127a140673c9d102253c133ce8": {
   "kind": "dr-screen",
@@ -1400,10 +1365,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "no retinopathy detected; macula clear.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9968
+  "quote": "no retinopathy detected",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8577
  },
  "c44675904cdb676c3b72154d91818b89400c6a6c8a56ad4cacec60f6dd9171ab": {
   "kind": "dr-clinic",
@@ -1411,8 +1375,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Today's dilated fundus examination shows completely quiet, stable pigmented PRP scars in RE with no active new vessels for over 7 years, and no retinopathy in LE; OCT maculae are dry.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4743
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5816
  },
  "c92b697859213d76dc9f24127559613b9cd41b6656a2ddd4ee3e19d2681db512": {
   "kind": "dr-clinic",
@@ -1420,17 +1384,17 @@
   "fundus": "not_examined",
   "outcome": "none",
   "quote": "The patient did not attend (DNA) their outpatient ophthalmology appointment today following referral from the diabetic eye screening programme (right eye and left eye background/macular changes).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5080
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4771
  },
  "cfac273d4a58382cbd7b5d6a416db0e7c59e2631e2a3028653a780a56ce86a65": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "not_examined",
   "outcome": "follow_up",
-  "quote": "optometrist checked visual acuity and pressures, but there was insufficient time for pharmacological mydriasis and dilated fundus examination.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4227
+  "quote": "Retina not examined; rebooked for next Monday morning.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4279
  },
  "d6a17832b9c570b5b2b1e5332ae4ca2d294aaa8a321cd6e74945f17a02a7e384": {
   "kind": "dr-clinic",
@@ -1438,17 +1402,17 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5433
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5046
  },
  "d9c6e49e91848b4909b5efb6b48eaa3f590a65ec0083422887627bcae5836a9b": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "follow_up",
-  "quote": "Dilated fundus exam: stable treated PDR. Follow-up in eye clinic in 6 months.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4936
+  "quote": "Dilated fundus exam: stable treated PDR. Anti-VEGF not indicated. Follow-up in eye clinic in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4668
  },
  "da06eae8c85b2327e9baf330834e53fd3370ad5a18404e4320312c1a6c090586": {
   "kind": "dr-clinic",
@@ -1456,17 +1420,17 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated examination confirms clinically significant macular oedema. Intravitreal anti-VEGF commenced.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5240
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4556
  },
  "de54a6345f3751316ce1fa9309d235d1fec19f335cc4573924d58fd3fbae6b35": {
   "kind": "dr-clinic",
-  "attendance": "did_not_attend",
-  "fundus": "no_view",
-  "outcome": "none",
-  "quote": "Fundus not examined today",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3671
+  "attendance": "attended",
+  "fundus": "not_examined",
+  "outcome": "follow_up",
+  "quote": "Due to an emergency theatre call-out and a 2-hour clinic delay, the patient had to leave for dialysis before dilation or retinal examination took place.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5885
  },
  "e0c16af7a6a254ef90b3574a1174508362d4d8df0ffb55301118500fd4f2c8dd": {
   "kind": "dr-clinic",
@@ -1474,8 +1438,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated funduscopy: RE shows mild background retinopathy (no treatment required). LE shows new vessels at the disc (NVD) with clear media. Completed first session of panretinal photocoagulation (PRP) laser to LE today (850 burns).",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 6856
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7426
  },
  "e0ff5a0c55b8f0d2b1b305db4ead89817bf65127045f4914e0be37def152025a": {
   "kind": "dr-clinic",
@@ -1483,8 +1447,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Dilated fundus examination performed.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3018
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4773
  },
  "e19cd04c5dc98d5dd60cc71fadcd9baca476dd6c1773d45942a3e9b90512667b": {
   "kind": "dr-screen",
@@ -1494,10 +1458,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11240
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10105
  },
  "e1ddae7634f5627e978df3abacb6111d0a973d8a0d0e721122bc2ae93978e540": {
   "kind": "dr-screen",
@@ -1507,19 +1470,18 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "severe non-proliferative diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10433
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8919
  },
  "e22725fa111f63e7f5a95b31c65ddaf9d459775a04f99177122bdbf4c49fa2d2": {
   "kind": "dr-clinic",
   "attendance": "attended",
   "fundus": "examined",
   "outcome": "follow_up",
-  "quote": "Dilated fundus exam and OCT show right eye diabetic macular oedema (CST 375 um) and left eye mild NPDR.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5163
+  "quote": "Dilated fundus exam and OCT show right eye diabetic macular oedema (CST 375 um) and left eye mild NPDR. We discussed intravitreal anti-VEGF injection for the right eye, but the patient declined any injection or laser treatment today (nothing given or booked) and requested conservative observation",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7252
  },
  "e5662edacbf81418618bb304aafae9262934dfddeae1fe542d39446f7a94ee94": {
   "kind": "dr-screen",
@@ -1529,10 +1491,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Left eye: R0 M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9102
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7537
  },
  "e61c3834b161af7166e1c1e20b4d4918e55f0481c04893981a47c52beed66efd": {
   "kind": "dr-clinic",
@@ -1540,8 +1501,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "We examined this patient's retinas after dilation today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4498
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4077
  },
  "e68494dac898ee6a20fee2477d6c76183f54ddc1b96d6a93abcda0467bfb2373": {
   "kind": "dr-clinic",
@@ -1549,8 +1510,8 @@
   "fundus": "examined",
   "outcome": "follow_up",
   "quote": "Today's dilated slit-lamp exam shows old pigmented macular laser scars in LE, flat retinas bilaterally, and moderate NPDR in RE.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5063
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 5791
  },
  "e6d40de378f39a7a3290982a677b997c20fe898327fefe287f371823517d4167": {
   "kind": "dr-screen",
@@ -1560,10 +1521,10 @@
   "left_r_grade": "0",
   "right_macula": "maculopathy",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "OS is clearly visualized and shows a completely normal retina with no diabetic retinopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8720
+  "urgent_sentence": "overall screening outcome is U for technical/slit-lamp repeat.",
+  "quote": "OS is clearly visualized and shows a completely normal retina with no diabetic retinopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 9640
  },
  "ed9c74c38cc583fa882d34835df678dd34a61b921666596a9df2aa67d013220e": {
   "kind": "dr-screen",
@@ -1573,10 +1534,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "no retinopathy detected; macula clear.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9909
+  "quote": "Left eye: no retinopathy detected; macula clear.",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10339
  },
  "ef15bf330155f0e64e8e82a12c5aff769eeaaf83ed0f09f21b23488dbb9e84a1": {
   "kind": "dr-clinic",
@@ -1584,21 +1544,20 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4558
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4137
  },
  "ef45e60d0bae7ab3d8e9553779d9d209f860ffa6799d38e66a7321bc7dc3dbb3": {
   "kind": "dr-screen",
-  "right_eye_text": "Right eye: RE R3S M0",
-  "left_eye_text": "Left eye: RE R1 M0",
+  "right_eye_text": "RE R3S M0",
+  "left_eye_text": "LE R1 M0",
   "right_r_grade": "3S",
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "LE shows a few background microaneurysms only.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7529
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8094
  },
  "ef76b568b05f8f1d508e80c9b36b758c7f5a0085424495ad96192181887ad79d": {
   "kind": "dr-screen",
@@ -1608,10 +1567,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Left eye: R0M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 8023
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7632
  },
  "f06d9002adbe4218d2b25038c76fd4ba5d53613f82509a458af02817b9916e27": {
   "kind": "dr-screen",
@@ -1621,10 +1579,9 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "Left eye has no retinopathy.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9266
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8858
  },
  "f14d67575b22d98c067bbb4c943d02a0921efec14b740fd55bddb97958d2eae4": {
   "kind": "dr-screen",
@@ -1634,10 +1591,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
   "quote": "no diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 9152
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 8052
  },
  "f2d15f0fe3ec35894df06612412a613279fe3b5a7b6050787ed0aa7d60ee5c1d": {
   "kind": "dr-clinic",
@@ -1645,21 +1601,20 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 4840
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4449
  },
  "f32758057e2c4d60a5be7817fc640089521d764991f9ecc0dd6380885d120742": {
   "kind": "dr-screen",
   "right_eye_text": "Right eye: R1M0",
   "left_eye_text": "Left eye: R2M0",
-  "right_r_grade": "1",
+  "right_r_grade": "0",
   "left_r_grade": "2",
   "right_macula": "clear",
   "left_macula": "maculopathy",
-  "urgent_referral": "not_requested",
   "quote": "Left eye: R2M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 7051
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 6171
  },
  "f331ca8a44272982153ab8cda4352cf07204f3df81d157de5553145e61b94f67": {
   "kind": "dr-clinic",
@@ -1667,8 +1622,8 @@
   "fundus": "examined",
   "outcome": "treated",
   "quote": "Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5073
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4687
  },
  "f362b96c8de5047078874e2480b557c4e558acb12391532eec4b25caffd17035": {
   "kind": "dr-screen",
@@ -1678,23 +1633,22 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
-  "quote": "mild non-proliferative diabetic retinopathy; no maculopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10384
+  "quote": "mild non-proliferative diabetic retinopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7954
  },
  "f36f927f75488f95e707063064548ed2e6d67223fee0fcca51a590b09b065a6e": {
   "kind": "dr-screen",
   "right_eye_text": "Right eye: proliferative retinopathy: NVE superotemporally, actively bleeding; no exudates near the fovea.",
   "left_eye_text": "Left eye: mild non-proliferative diabetic retinopathy; no exudates near the fovea.",
   "right_r_grade": "3A",
-  "left_r_grade": "3A",
+  "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "requested",
+  "urgent_sentence": "urgent referral is recommended for the right eye due to proliferative retinopathy with active bleeding and NVE.",
   "quote": "mild non-proliferative diabetic retinopathy",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11972
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10503
  },
  "f6a1d9bede47c3c46fd049e0f12ab5b2a0e94ce79057aa98c1af0c1f570bcc95": {
   "kind": "dr-screen",
@@ -1704,10 +1658,9 @@
   "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "R0 M0",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 12654
+  "quote": "طبيعي في العينين (Normal bilateral exam).",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 10403
  },
  "f954ec4fd7750177b06dd578c731922b8d919b0670d0972d72ab40c29a9a592b": {
   "kind": "dr-clinic",
@@ -1715,8 +1668,8 @@
   "fundus": "examined",
   "outcome": "discharged",
   "quote": "Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 5121
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 4502
  },
  "fc5d19434cde5adf61261b7375975fd5c84895df1adbb9ac69536200d100dc94": {
   "kind": "dr-screen",
@@ -1726,32 +1679,30 @@
   "left_r_grade": "1",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "LE: ungradable: dense cataract obscures the view.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 11138
+  "quote": "no maculopathy",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7361
  },
  "fd0726d0c8b417b3b6fb84c5e554566480671e0cda26242b665ab731a1506663": {
   "kind": "dr-screen",
-  "right_eye_text": "Right eye: unable to grade: media opacity.",
-  "left_eye_text": "Left eye: retina normal, no diabetic changes; macula clear.",
+  "right_eye_text": "RE: unable to grade: media opacity.",
+  "left_eye_text": "LE: retina normal, no diabetic changes; macula clear.",
   "right_r_grade": "U",
-  "left_r_grade": "U",
+  "left_r_grade": "0",
   "right_macula": "clear",
   "left_macula": "clear",
-  "urgent_referral": "not_requested",
-  "quote": "Left eye: retina normal, no diabetic changes; macula clear.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 10036
+  "quote": "retina normal, no diabetic changes",
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 7930
  },
  "ff92a20f38c243e36715f705f4533b975921bf5b322fd7dc47ae53140d64f0ae": {
   "kind": "dr-clinic",
   "attendance": "did_not_attend",
-  "fundus": "no_view",
+  "fundus": "not_examined",
   "outcome": "none",
   "quote": "Patient did not attend the eye clinic appointment.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3817
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3726
  },
  "ffd4ad0cbc49062c87b4efdab330d23dd0ff6912609329b37c7a7ef187abbc2c": {
   "kind": "dr-clinic",
@@ -1759,7 +1710,7 @@
   "fundus": "not_examined",
   "outcome": "follow_up",
   "quote": "Fundus not examined.",
-  "model": "gemma-3-4b-it-Q4_K_M/dr-v3(cached)",
-  "latency_ms": 3838
+  "model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+  "latency_ms": 3962
  }
 }
