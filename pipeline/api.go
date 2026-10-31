@@ -278,6 +278,7 @@ func (s *apiServer) pickFixtures() {
 		}
 		return false
 	}
+	holdAlt := ""
 	for _, id := range ids {
 		c := s.cases[id]
 		if c.Programme == "diabetic_retinopathy" && s.fixtures["dr_exam_closure"] == "" && drExamClosure(c) {
@@ -300,6 +301,14 @@ func (s *apiServer) pickFixtures() {
 		if s.fixtures["review_hold"] == "" && c.Closed && linkSigned(s.signoffs[id]) && evidenceSigned(s.signoffs[id]) && consentHeldThenGranted(c) {
 			s.fixtures["review_hold"] = id
 		}
+		// fallback when no loop had consent held then granted (rare once consent is recorded up front): the same signed link
+		// and evidence, with outreach held by the consent hold or the second-identifier guard at some point
+		if holdAlt == "" && c.Closed && linkSigned(s.signoffs[id]) && evidenceSigned(s.signoffs[id]) && heldEver(c) {
+			holdAlt = id
+		}
+	}
+	if s.fixtures["review_hold"] == "" && holdAlt != "" {
+		s.fixtures["review_hold"] = holdAlt
 	}
 	for tag, id := range s.fixtures {
 		s.cases[id].Fixture = tag
@@ -575,7 +584,7 @@ func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
 	hist := []map[string]interface{}{}
 	for _, d := range c.decisions {
 		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
-			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "policy": d.Policy, "sig": d.Sig})
+			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
