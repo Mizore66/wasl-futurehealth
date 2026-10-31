@@ -1,11 +1,12 @@
 """DR held-out author loop: an external model writes the generator from the brief alone; we only run it and return
-errors/validation output to the same model. We never edit its code. Usage: python3 author.py <model> <seed>
+errors/validation output to the same model. We never edit its code. Usage: python3 author.py <model> <seed> [out_name]
 Needs WASL_LLM_URL and WASL_LLM_KEY in the environment (an OpenAI-compatible gateway)."""
 import json, os, re, subprocess, sys, time, urllib.request, collections
 MODEL, SEED = sys.argv[1], sys.argv[2]
+OUTNAME = sys.argv[3] if len(sys.argv) > 3 else "heldout"  # data/dr/<OUTNAME>
 URL, KEY = os.environ["WASL_LLM_URL"].rstrip("/"), os.environ["WASL_LLM_KEY"]
 D = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(D, "..", "..", "data", "dr", "heldout")
+OUT = os.path.join(D, "..", "..", "data", "dr", OUTNAME)
 AUTHOR = {"gemini-4-argon": "Gemini 4 Argon, Google", "kimi-k3.1-pro": "Kimi K3.1 Pro, Moonshot AI"}.get(MODEL, MODEL)
 BRIEF = open(os.path.join(D, "brief.md")).read().replace("{SEED}", SEED).replace("{AUTHOR}", AUTHOR)
 log = open(os.path.join(D, "author.log"), "a")

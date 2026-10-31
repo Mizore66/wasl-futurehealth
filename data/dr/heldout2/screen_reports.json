@@ -1,0 +1,769 @@
+{
+  "source": "Independent author (gpt-6.1-sol) - deterministic stdlib generator gen_dr_heldout.py, random seed 9137, synthetic diabetic retinopathy texts, 2026-10-31",
+  "reports": [
+    {
+      "id": "hs01",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRight eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nPrevious screening: R1M0. Today's photographs show none of those lesions.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:history_vs_today",
+        "format:free_text",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs02",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nAbu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nGrader's report on today's screening images.\nالعين اليمنى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nالعين اليسرى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nSmall peripheral choroidal nevus on the left is incidental, not diabetic disease.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:mimic_or_comorbidity",
+        "lang:arabic",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs03",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nGrader's report on today's screening images.\nRE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nReferral query said 'possible new vessels'; grading finds no new vessels in either eye.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:negation",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs04",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R0M0.\nRight: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRoutine annual photography; image quality adequate bilaterally.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs05",
+      "text": "SERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Current screening grading summary; combined code: R0M0.\nRight eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nBoth macular fields and disc fields are satisfactory.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs06",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nGrader's report on today's screening images.\nOD: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nOS: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRepeat images after a blink are clear in both eyes.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "noise:ocr",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs07",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nGrading completed on the current bilateral screening image set.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs08",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nAbu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nGrader's report on today's screening images.\nالعين اليمنى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nالعين اليسرى: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRoutine diabetic screening encounter; no referral requested.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "lang:arabic",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs09",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nCurrent screening grading summary; combined code: R0M0.\nRight eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nVisual acuity is 6/6 in each eye; photographs are adequate.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs10",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R0M0.\nOD: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nOS: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nNo diabetic maculopathy on either current screening image.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs11",
+      "text": "SERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Grader's report on today's screening images.\nRE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nAnnual recall to the primary-care diabetic eye screening service.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs12",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nGrader's report on today's screening images.\nRight: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nDisc and macular photographs independently checked and accepted.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs13",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRight eye: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nPrevious screening: R0M0. A few right-eye microaneurysms are new today.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:history_vs_today",
+        "format:free_text",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs14",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nAbu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nCurrent screening grading summary; combined code: R1M0.\nالعين اليمنى: R=1; M=0. One microaneurysm within one disc diameter of the foveal center; acuity 6/9. No exudates or retinal thickening and no other lesions.\nالعين اليسرى: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nThe right-eye acuity is 6/9: the isolated near-foveal microaneurysm does not meet the acuity-dependent maculopathy criterion.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:location_and_acuity",
+        "lang:arabic",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs15",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nGrader's report on today's screening images.\nRE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nSparse hard exudates lie outside the macula and more than one disc diameter from either fovea; no macular group of exudates.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:location_and_acuity",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs16",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R1M0.\nRight: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nThe right eye is normal; background changes belong to the left eye only.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:laterality",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs17",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nSERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Current screening grading summary; combined code: R1M0.\nRight eye: R=1; M=0. A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nA dark streak crossing the left photograph is a camera artefact, not a vitreous haemorrhage; the repeat image is clear.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:mimic_or_comorbidity",
+        "noise:ocr",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs18",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nCurrent screening grading summary; combined code: R1M0.\nOD: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nOS: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nBackground lesions only; no pre-proliferative features.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs19",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nNo venous beading, IRMA or new vessels in either eye.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs20",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nGrader's report on today's screening images.\nRight: No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft peripheral microaneurysms only; both maculae are spared.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs21",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nCurrent screening grading summary; combined code: R2M0.\nRight eye: R=2; M=0. Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: R=1; M=0. A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nPrevious screening: R1M0. Right-eye venous beading is present today.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": "R2M0"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:history_vs_today",
+        "format:coded",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs22",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R2M0.\nOD: R=2; M=0. Definite IRMA and multiple deep blot hemorrhages outside the macula, without venous beading or new vessels. No maculopathy.\nOS: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRight IRMA is definite despite absence of venous beading; there are no new vessels.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": "R2M0"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:negation",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs23",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nSERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Grader's report on today's screening images.\nالعين اليمنى: Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nالعين اليسرى: Images inadequate: this eye could not be graded; macular grade unavailable.\nThe right eye independently warrants referral; left image failure does not erase the right-eye grade.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "U",
+        "m_right": "0",
+        "m_left": "",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:ungradable_override",
+        "lang:arabic",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs24",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nGrader's report on today's screening images.\nRight: Venous beading, IRMA and multiple deep blot hemorrhages. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.\nThe pre-proliferative changes are on the right, while qualifying macular exudates are on the left.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R2M1",
+        "coded": null
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:laterality",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs25",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nCurrent screening grading summary; combined code: R2M1.\nRight eye: R=2; M=1. Venous beading, IRMA and multiple deep blot haemorrhages. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre.\nLeft eye: R=2; M=0. Venous beading, IRMA and multiple deep blot haemorrhages. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nBilateral pre-proliferative disease with right maculopathy.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "2",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M1",
+        "coded": "R2M1"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs26",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nGrader's report on today's screening images.\nOD: Active new vessels elsewhere with a small peripheral pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nOS: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nPrevious screening: R1M0. Active right proliferative disease is now visible.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "3A",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3AM0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:history_vs_today",
+        "format:free_text",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs27",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nCurrent screening grading summary; combined code: R3AM0.\nRE: R=3A; M=0. Active new vessels elsewhere with a small peripheral pre-retinal haemorrhage. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLE: R=0; M=0. No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nNo disc new vessels, but active new vessels elsewhere are visible on the right.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "3A",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3AM0",
+        "coded": "R3AM0"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:negation",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs28",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nGrader's report on today's screening images.\nRight: Active new vessels elsewhere with a small peripheral pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.\nActive proliferative disease is right-sided; maculopathy is left-sided.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "3A",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R3AM1",
+        "coded": null
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:laterality",
+        "noise:ocr",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs29",
+      "text": "SERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Grader's report on today's screening images.\nRight eye: Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal haemorrhage. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nLeft eye: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nPrevious screening: R3AM0 before laser. Today the right vessels are fibrosed with no active new vessels.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "3S",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3SM0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:history_vs_today",
+        "hard:activity_vs_scars",
+        "format:free_text",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs30",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nGrader's report on today's screening images.\nOD: Images inadequate: this eye could not be graded; macular grade unavailable.\nOS: Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal hemorrhage. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nThe left eye has stable treated proliferative disease and independently warrants referral; the right eye cannot be graded.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "U",
+        "r_left": "3S",
+        "m_right": "",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3SM0",
+        "coded": null
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:ungradable_override",
+        "hard:activity_vs_scars",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs31",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRE: Panretinal laser scars and fibrosed vessels; no active new vessels or fresh pre-retinal haemorrhage. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre.\nLE: A few microaneurysms and dot haemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nStable proliferative status does not exclude coexisting right maculopathy.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "3S",
+        "r_left": "1",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3SM1",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:activity_vs_scars",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs32",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nCurrent screening grading summary; combined code: R0M1.\nRight: R=0; M=1. No visible microaneurysms, hemorrhages, exudates or new vessels. OCT shows focal retinal thickening at the fovea consistent with diabetic macular edema.\nLeft: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRight OCT confirms focal retinal thickening consistent with diabetic macular edema, despite no visible retinopathy lesions on photographs.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M1",
+        "coded": "R0M1"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:mimic_or_comorbidity",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs33",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nGrader's report on today's screening images.\nRight eye: One dot haemorrhage within one disc diameter of the foveal centre; acuity 6/12. No exudates, retinal thickening, venous beading or new vessels.\nLeft eye: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nRight acuity is 6/12 with a haemorrhage within one disc diameter of the fovea: this meets the acuity-dependent maculopathy criterion.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": null
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:location_and_acuity",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs34",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R1M1.\nOD: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nOS: R=1; M=1. A few microaneurysms and dot hemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal center.\nPrevious screening: R0M0. Today there is background disease and a qualifying left macular group of exudates.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": "R1M1"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:history_vs_today",
+        "format:coded",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs35",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nSERVICE: Abu Dhabi primary-care diabetic eye screening centre\nCURRENT ENCOUNTER > Grader's report on today's screening images.\nالعين اليمنى: Images inadequate: this eye could not be graded; macular grade unavailable.\nالعين اليسرى: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nRight photographs remain obscured by cataract. The normal left eye is not independently referable.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "U",
+        "r_left": "0",
+        "m_right": "",
+        "m_left": "0",
+        "urgent": false,
+        "label": "U",
+        "coded": null
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:ungradable_override",
+        "lang:arabic",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs36",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n[Clinical entry]\nCurrent screening grading summary; combined code: U.\nRight: R=0; M=0. No microaneurysms, hemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: R=U; M=\"\". Images inadequate: this eye could not be graded; macular grade unavailable.\nLeft images could not be obtained adequately. The right eye is normal.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "0",
+        "r_left": "U",
+        "m_right": "0",
+        "m_left": "",
+        "urgent": false,
+        "label": "U",
+        "coded": "U"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:ungradable_override",
+        "format:coded"
+      ]
+    },
+    {
+      "id": "hs37",
+      "text": "Abu Dhabi primary-care diabetic eye screening centre\nReport\nGrader's report on today's screening images.\nRight eye: Images inadequate: this eye could not be graded; macular grade unavailable.\nLeft eye: Images inadequate: this eye could not be graded; macular grade unavailable.\nPrevious screening: R0M0. Neither eye can be graded from today's blurred images; this is not evidence of a normal current screen.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "U",
+        "r_left": "U",
+        "m_right": "",
+        "m_left": "",
+        "urgent": false,
+        "label": "U",
+        "coded": null
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:ungradable_override",
+        "hard:history_vs_today",
+        "format:free_text",
+        "context:prior_screen"
+      ]
+    },
+    {
+      "id": "hs38",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi primary-care diabetic eye screening center\nASSESSMENT:\nGrader's report on today's screening images.\nOD: Images inadequate: this eye could not be graded; macular grade unavailable.\nOS: A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nThe left eye has background disease only without maculopathy; the ungradable right eye determines the combined ungradable result.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "U",
+        "r_left": "1",
+        "m_right": "",
+        "m_left": "0",
+        "urgent": false,
+        "label": "U",
+        "coded": null
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:ungradable_override",
+        "noise:ocr",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs39",
+      "text": "Clinical correspondence | Abu Dhabi primary-care diabetic eye screening centre\nDear colleague,\nGrader's report on today's screening images.\nRE: A few microaneurysms and dot haemorrhages away from the macula. A group of hard exudates within the macula, including exudate within one disc diameter of the foveal centre.\nLE: No microaneurysms, haemorrhages, venous abnormalities or new vessels. No macular exudates or retinal thickening; no microaneurysm or haemorrhage within one disc diameter of the foveal centre.\nMarked recent right visual deterioration accompanies the macular finding.\nGrader explicitly requests an urgent hospital eye referral.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": true,
+        "label": "R1M1/urgent",
+        "coded": null
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "format:free_text"
+      ]
+    },
+    {
+      "id": "hs40",
+      "text": "Abu Dhabi primary-care diabetic eye screening center\n--- encounter extract ---\nCurrent screening grading summary; combined code: R2M0/urgent.\nRight: R=2; M=0. Venous beading, IRMA and multiple deep blot hemorrhages. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nLeft: R=1; M=0. A few microaneurysms and dot hemorrhages away from the macula. No macular exudates or retinal thickening; no microaneurysm or hemorrhage within one disc diameter of the foveal center.\nRapid progression of right pre-proliferative changes prompts escalation.\nGrader explicitly requests an urgent hospital eye referral.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": true,
+        "label": "R2M0/urgent",
+        "coded": "R2M0/urgent"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "format:coded"
+      ]
+    }
+  ]
+}
