@@ -1,0 +1,799 @@
+{
+  "source": "Independent author (Gemini 4 Argon, Google) - deterministic stdlib generator gen_dr_heldout.py, random seed 9091, synthetic diabetic retinopathy texts, 2026-10-31",
+  "reports": [
+    {
+      "id": "hc01",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-01-01 | MRN: AD-CLN-8200\n--------------------------------------------------------\nReferred from DESP with R3AM1 right eye. VA: Right eye 6/18, Left eye 6/9. Slit-lamp dilated fundus examination after tropicamide/phenylephrine: Right eye confirms active neovascularisation at the disc (NVD) and centre-involving diabetic macular oedema (OCT CST 435 um). Left eye shows moderate NPDR with dry macula. Plan: Intravitreal Aflibercept (Eylea) 2 mg/0.05 mL injection administered to the right eye today under aseptic protocol, and Session 1 panretinal photocoagulation (PRP) laser booked for next week.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc02",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-02-02 | Patient MRN: AD-CLN-8201 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nPost-screening referral for bilateral macular edema. VA OD 20/40, OS 20/50. Dilated biomicroscopy and OCT macula performed: OD shows moderate NPDR with central cystoid macular edema (CST 390 um); OS shows severe NPDR with subfoveal fluid and lipid exudates (CST 460 um). Treatment: Bilateral intravitreal Faricimab (Vabysmo) loading course initiated today (OS injected today, OD scheduled in 7 days).",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc03",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-03-03 - File: AD-CLN-8202]\nتم فحص قاع العين وإعطاء حقنة داخل الجسم الزجاجي للعين اليمنى.\nVA RE (العين اليمنى) 6/24, LE (العين اليسرى) 6/6. Dilated 90D fundus exam: RE shows clinically significant macular oedema with circinate exudates threatening the fovea; LE shows mild background DR only. Intravitreal Ranibizumab (Lucentis) 0.5 mg given to RE today without complication.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:re_le",
+        "eye:arabic",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc04",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-04-04 // Pt: AD-CLN-8203\n========================================\nReferred with active proliferative DR left eye. VA Right 6/9, Left 6/12. Dilated fundus exam: Right eye has quiescent old laser scars (stable). Left eye demonstrates active new vessels elsewhere (NVE) along the superotemporal arcade with a small preretinal blot haemorrhage; macula is flat. Action: Urgent fill-in panretinal photocoagulation (PRP) laser performed to the left eye today (1,100 burns, Pascal pattern).",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc05",
+      "text": "Outpatient Letter (2026-05-05) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8204)\nDear Referrer,\nThank you for referring this pseudophakic patient with persistent left diabetic macular oedema. On dilated examination today, RE shows mild NPDR (M0) and LE shows chronic cystoid macular thickening (OCT 480 um) refractory to prior anti-VEGF. We implanted an intravitreal Dexamethasone 700 mcg (Ozurdex) slow-release steroid implant into the LE today.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc06",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-06-06 | AD-CLN-8205\nS: Referred from screening for R2M1 OD. O: VA OD 20/30, OS 20/20. Dilated fundu5 exam: OD has non-center-involving focal macular edema from a leaking microaneurysm cluster 600 microns superotemporal to fovea; OS has mild NPDR. A/P: Focal/grid Navilas macular laser photocoagulation performed to OD today.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "ocr_noise",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc07",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-07-07 | MRN: AD-CLN-8206\n--------------------------------------------------------\nPatient attended following screening referral. Dilated slit-lamp examination shows florid NVD and NVE in the right eye and severe pre-proliferative changes in the left eye. Consent obtained and bilateral PRP laser treatment booked (right eye urgent slot tomorrow morning, left eye next week).",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc08",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-08-08 | Patient MRN: AD-CLN-8207 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nVA OD 20/60, OS 20/25. Dilated retinal exam and OCT confirm center-involving diabetic macular edema OD (CST 510 um) with moderate NPDR; OS has mild NPDR without edema. Patient consented and booked for course of 3 monthly intravitreal Bevacizumab injections OD starting in Thursday's injection list.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc09",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-09-09 - File: AD-CLN-8208]\nخطة العلاج: جلسة ليزر للشبكية اليسرى اليوم.\nDilated funduscopy: RE shows mild background retinopathy (no treatment required). LE shows new vessels at the disc (NVD) with clear media. Completed first session of panretinal photocoagulation (PRP) laser to LE today (850 burns).",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:re_le",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc10",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-01-10 // Pt: AD-CLN-8209\n========================================\nAttended medical retina clinic. Dilated fundus exam reveals right eye high-risk proliferative diabetic retinopathy with preretinal haemorrhage inferiorly and centre-involving macular oedema. Administered intravitreal Aflibercept to the right eye today and booked PRP laser in 2 weeks.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc11",
+      "text": "Outpatient Letter (2026-02-11) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8210)\nDear Referrer,\nReferred from screening with R2M0 right eye. VA Right 6/6, Left 6/6. Dilated slit-lamp biomicroscopy confirms moderate-to-severe non-proliferative DR in the right eye (venous beading and blot haemorrhages) and mild NPDR in the left eye. OCT maculae are completely flat and dry bilaterally. No neovascularisation seen; PRP laser not needed and anti-VEGF injection not indicated at this stage. Plan: Close observation in Medical Retina clinic in 4 months with widefield OCT-A.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "negated_treatment",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc12",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-03-12 | AD-CLN-8211\nS: Screening referral for M1 OS. O: VA OD 20/20, OS 20/20. Dilated fundus exam and spectral-domain OCT: OD mild NPDR. OS shows a small cluster of hard exudates 450 microns temporal to the fovea with a normal central subfield thickness (255 um) and no intraretinal cysts. A/P: Good vision and non-center-involving lipid without thickening; intravitreal injection not required today and laser deferred. Follow up in 4 months with repeat OCT.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "negated_treatment",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc13",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-04-13 | MRN: AD-CLN-8212\n--------------------------------------------------------\nVA RE 6/9, LE 6/9. Past ocular history: RE underwent 3x intravitreal Ranibizumab injections in 2022 and full PRP laser in 2021. Today's dilated fundus examination shows quiescent, well-pigmented PRP scars in RE with regressed vessels and a completely dry macula on OCT (CST 248 um); LE shows moderate NPDR with no macular oedema. No active disease; no laser or injection needed today. Review in clinic in 6 months.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "negated_treatment",
+        "hard:historical_tx_only",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc14",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-05-14 | Patient MRN: AD-CLN-8213 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nConsult for bilateral pre-proliferative DR. VA 20/25 OU. Dilated exam with 78D lens shows IRMA and deep blot hemorrhages in both OD and OS, but no NVD/NVE and no clinically significant macular edema on OCT. Panretinal laser photocoagulation is not indicated right now. Will order ultra-widefield fluorescein angiography and review in 3 months.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "negated_treatment",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc15",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-06-15 - File: AD-CLN-8214]\nالمريض رفض أخذ الحقنة اليوم وفضل المتابعة فقط.\nVA Right 6/15, Left 6/9. Dilated fundus exam and OCT show right eye diabetic macular oedema (CST 375 um) and left eye mild NPDR. We discussed intravitreal anti-VEGF injection for the right eye, but the patient declined any injection or laser treatment today (nothing given or booked) and requested conservative observation while optimising blood pressure and HbA1c. Follow-up in 8 weeks for repeat OCT.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "hard:patient_declined_tx",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc16",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-07-16 // Pt: AD-CLN-8215\n========================================\nPatient attended for post-screening review. History of focal macular laser to LE three years ago (2023) and intravitreal Eylea course completed 18 months ago. Today's dilated slit-lamp exam shows old pigmented macular laser scars in LE, flat retinas bilaterally, and moderate NPDR in RE. OCT shows no fluid. No further injections or laser required now; routine clinic follow-up in 6 months.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:historical_tx_only",
+        "negated_treatment",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc17",
+      "text": "Outpatient Letter (2026-08-17) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8216)\nDear Referrer,\nReferred as R2M1 left eye. On dilated examination today, right eye has mild background ret1nopathy and left eye has moderate NPDR with a single parafoveal microaneurysm and trace extrafoveal thickening (VA 6/6). No treatment needed today. Will review in hospital eye clinic in 4 months.\nRegards, Medical Retina Team\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "ocr_noise",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc18",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-09-18 | AD-CLN-8217\nS: 1st trimester pregnant patient referred with R2M0 OU. O: VA 20/20 OU. Dilated fundus exam confirms moderate NPDR in both OD and OS with cotton wool spots and blot hemorrhages; maculae are dry on OCT. A/P: No treatment needed now, but given pregnancy risk of progression, keep under close hospital surveillance with follow-up in 8 weeks.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc19",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-01-19 | MRN: AD-CLN-8218\n--------------------------------------------------------\nDilated fundus examination performed. RE shows severe NPDR (4-2-1 rule met by haemorrhages) without NVD/NVE; LE shows moderate NPDR. OCT macula normal in both eyes. We offered early prophylactic panretinal laser photocoagulation to RE, but the patient declined laser treatment today in favour of watchful waiting; arranged 3-month clinic review with widefield imaging.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:patient_declined_tx",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc20",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-02-20 | Patient MRN: AD-CLN-8219 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nVA Right 20/30, Left 20/25. Dilated biomicroscopy shows bilateral moderate NPDR and mild parafoveal thickening in the right eye (OCT CST 335 um). Intravitreal anti-VEGF injection was discussed as an option, but the patient declined any injection today and elected close observation while starting fenofibrate; return to retina clinic in 3 months.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:right_left",
+        "hard:patient_declined_tx",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc21",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-03-21 - File: AD-CLN-8220]\nلا يحتاج لتدخل علاجي - يعاد لبرنامج الفحص السنوي.\nReferred from screening as query R1M1 right eye (suspected macular exudate). VA Right 6/6, Left 6/6. Dilated 90D fundus examination and macular OCT today show a small benign hard drusen temporal to the right fovea (mistaken for lipid exudate on 2D screening photo) and only two peripheral microaneurysms (R1M0); left eye is normal (R0M0). No laser or injection required. Discharged back to the annual diabetic eye screening programme.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "negated_treatment",
+        "hard:false_positive_referral",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc22",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-04-22 // Pt: AD-CLN-8221\n========================================\nReferred for suspected IRMA OS (R2M0). VA 20/20 OU. Careful dilated slit-lamp biomicroscopy and OCT angiography confirm a congenital retinal vascular tortuosity loop OS without true IRMA, venous beading, or neovascularization. Mild background microaneurysms only OU. Patient discharged back to primary-care diabetic eye screening recall.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "hard:false_positive_referral",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc23",
+      "text": "Outpatient Letter (2026-05-23) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8222)\nDear Referrer,\nReferred with R3SM0 in RE. Patient had panretinal photocoagulation laser to RE in 2018. Today's dilated fundus examination shows completely quiet, stable pigmented PRP scars in RE with no active new vessels for over 7 years, and no retinopathy in LE; OCT maculae are dry. Discharged from hospital eye service back to annual DESP digital surveillance.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:historical_tx_only",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc24",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-06-24 | AD-CLN-8223\nS: Screen1ng grade U due to small pupils. O: After pharmacological mydriasis with tropicamide 1% and phenylephrine 2.5%, clear view of both fundi achieved on slit-lamp biomicroscopy. R1ght eye and left eye show completely healthy discs, vessels, and maculae (R0M0 bilaterally). A/P: Discharged back to annual diabetic eye screenlng programme.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "ocr_noise",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc25",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-07-25 | MRN: AD-CLN-8224\n--------------------------------------------------------\nReferred for single flame hemorrhage near the disc OD. VA 20/20 OU. Dilated fundus exam today (6 weeks post-screening) shows complete resolution of the tiny nerve fiber layer hemorrhage OD; no microaneurysms, no macular edema, and normal OCT in both OD and OS. Discharged to routine annual screening.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc26",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-08-26 | Patient MRN: AD-CLN-8225 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nVA RE 6/5, LE 6/6. Referred with possible macular exudate LE (R1M1). Dilated biomicroscopy and OCT show a tiny Gunn's dot / internal limiting membrane sheen reflection in LE with normal retinal thickness (240 um) and zero exudates or microaneurysms in either eye. Discharged back to community diabetic eye screening.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:false_positive_referral",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc27",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-09-27 - File: AD-CLN-8226]\nتم فحص الشبكية بالعدسة المكبرة والنتيجة مطمئنة.\nReferred following ungradable screening photos due to blink artefact. Today on dilated slit-lamp exam, both right eye and left eye are clearly visualised and show mild background retinopathy only (a few peripheral microaneurysms, dry maculae). Returned/discharged to the annual DESP recall list.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc28",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-01-01 // Pt: AD-CLN-8227\n========================================\nConsultation for query maculopathy OD. VA OD 20/20, OS 20/20. Dilated fundus exam and macular cube OCT reveal a solitary microaneurysm 900 microns from the fovea OD with normal foveal contour, no exudates, and 20/20 vision; OS is free of retinopathy. Does not require hospital follow-up; discharged back to screening program.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc29",
+      "text": "Outpatient Letter (2026-02-02) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8228)\nDear Referrer,\nWe examined this patient's retinas after dilation today. Both RE and LE show only very mild background diabetic changes (R1M0) with normal OCT profiles and no pre-proliferative or macular disease. We have discharged the patient back to the primary care screening programme for annual photography.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc30",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-03-03 | AD-CLN-8229\nS: Referred for query NVE right eye (R3AM0 on screening referral). O: Dilated 90D and contact lens fundus examination right and left eyes: the suspected neovascular lesion in the right eye is a benign epiretinal membrane with mild retinal vessel straightening, not neovascularisation. No diabetic maculopathy. A/P: Discharged to annual diabetic eye screening.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "hard:false_positive_referral",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc31",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-04-04 | MRN: AD-CLN-8230\n--------------------------------------------------------\nPatient attended clinic. Nursing triage recorded VA: Right eye 6/9, Left eye 6/9; IOP: Right 16 mmHg, Left 15 mmHg. Slit-lamp examination of the anterior segment showed clear corneas and quiet anterior chambers, but patient had driven himself to the hospital and refused dilating drops today as he had to drive back to Al Ain immediately. Undilated view through 2 mm pupils was not attempted for grading; dilated fundus exam deferred. Rebooked for dilated retinal examination in 2 weeks.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "va_no_retinal_exam",
+        "hard:anterior_seg_only",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc32",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-05-05 | Patient MRN: AD-CLN-8231 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nVA OD 20/25, OS 20/30; IOP 24 mmHg OD, 25 mmHg OS. Anterior segment slit-lamp exam and gonioscopy revealed occludable narrow drainage angles (Shaffer Grade 1) in both eyes. Pharmacological pupil dilation was withheld today due to acute angle-closure risk, so the retina/fundus was not examined. Booked bilateral YAG laser peripheral iridotomy first, followed by dilated fundus exam.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "va_no_retinal_exam",
+        "hard:anterior_seg_only",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc33",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-06-06 - File: AD-CLN-8232]\nتم قياس النظر وضغط العين فقط ولم يتم فحص قاع العين اليوم.\nVA RE 6/12, LE 6/9; IOP RE 14, LE 14. Tropicamide drops were instilled at 10:15, but the patient developed vasovagal dizziness and nausea in the waiting room before seeing the ophthalmologist and asked to go home before any fundus or OCT examination could be performed. Rescheduled clinic appointment in 3 weeks.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:re_le",
+        "va_no_retinal_exam",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc34",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-07-07 // Pt: AD-CLN-8233\n========================================\nTriage completed: Visual acuity Right eye 6/6, Left eye 6/12; Goldmann IOP 17/18 mmHg; autorefraction recorded. Due to an emergency theatre call-out and a 2-hour clinic delay, the patient had to leave for dialysis before dilation or retinal examination took place. Fundus not examined today; priority re-booking arranged.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "va_no_retinal_exam",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc35",
+      "text": "Outpatient Letter (2026-08-08) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8234)\nDear Referrer,\nPatient presented for screening referral, but complained of acute red sticky right eye for 2 days. VA OD 20/30, OS 20/20. Anterior segment exam showed florid acute adenoviral follicular conjunctivitis OD with contagious discharge. To prevent cross-infection and corneal toxicity, contact/dilated fundus examination and OCT imaging were deferred today. Prescribed lubricants and rebooked for retinal exam in 3 weeks.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "va_no_retinal_exam",
+        "hard:anterior_seg_only",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc36",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-09-09 | AD-CLN-8235\nS: Attended for DR referral. O: VA RE 6/9, LE 6/9; IOP 13 mmHg OU. Patient arrived 90 minutes late at 16:45 just as clinic was closing; optometrist checked visual acuity and pressures, but there was insufficient time for pharmacological mydriasis and dilated fundus examination. A/P: Retina not examined; rebooked for next Monday morning.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "va_no_retinal_exam",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc37",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-01-10 | MRN: AD-CLN-8236\n--------------------------------------------------------\nVisual acuity measured (Right 6/18, Left 6/12) and intraocular pressure checked (15/16 mmHg). Patient is severely needle- and drop-phobic and declined mydriatic drops and slit-lamp bright light examination today; only external eye inspection performed, fundus not examined. Will rebook in dedicated widefield non-mydriatic camera slot.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "va_no_retinal_exam",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc38",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-02-11 | Patient MRN: AD-CLN-8237 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nChecked in at Eye Institute: VA OD 20/20, OS 20/25; blood glucose 19.4 mmol/L; BP 195/112 mmHg. Because of symptomatic hypertensive urgency, patient was transferred directly from ophthalmic nursing triage to the Emergency Department before pupil dilation or fundus examination was performed.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "followup",
+        "label": "not_examined"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "va_no_retinal_exam",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc39",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA 0phthalmology)\n[Tawam Hospital Ophthalmology Cl1nic - 2026-03-12 - File: AD-CLN-8238]\nتعذر رؤية الشبكية بسبب عتامة شديدة في العدسة والجسم الزجاجي.\nVA Right eye (العين اليمنى) Hand Movements, Lelt eye (العين اليسرى) Counting Fingers. Pupils dilated fully to 8 mm, but on slit-lamp biomicroscopy and indirect ophthalmoscopy there is NO VIEW of the fundu5 in either eye: Right eye has a dense diffuse vitreous haemorrhage obscuring the disc and retina; Left eye has a mature brunescent white cataract preventing any red reflex. B-scan ultrasound shows flat retinas bilaterally. Booked B-scan review and cataract/vitreoretinal assessment.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "followup",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "eye:arabic",
+        "ocr_noise",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc40",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-04-13 // Pt: AD-CLN-8239\n========================================\nReferred for ungradable screening photos. VA OD 20/200, OS 20/100. After full pharmacological dilation, attempted 90D and 20D indirect ophthalmoscopy and OCT: dense bilateral nuclear and posterior subcapsular cataracts completely block any view of the posterior pole in both OD and OS (fundus not visualizable). Referred to anterior segment list for bilateral phacoemulsification + IOL so the retina can be assessed post-operatively.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "followup",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc41",
+      "text": "Outpatient Letter (2026-05-14) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8240)\nDear Referrer,\nPatient attended following screening Grade U. On examination today, RE has dense central corneal leukoma and band keratopathy, and LE has dense old vitreous haemorrhage with 360-degree posterior synechiae. Despite maximal mydriatic drops, the retina could not be seen in either eye on slit-lamp or indirect ophthalmoscopy. B-scan ultrasonography performed (no tractional detachment detected).\nRegards, Medical Retina Team",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "followup",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc42",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-06-15 | AD-CLN-8241\nS: Sudden drop in vision right eye, longstanding poor vision left eye. O: VA Right CF, Left HM. Dilated fundus exam attempted: zero view of the right fundus due to dense fresh vitreous haemorrhage, and no view of the left fundus due to dense mature cataract and fibrotic posterior capsule. A/P: Retina not assessable clinically; B-scan flat, urgent VR referral.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "followup",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc43",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-07-16 | MRN: AD-CLN-8242\n--------------------------------------------------------\nAttempted dilated retinal exam and OCT today. Both OD and OS have severe corneal edema from decompensated Fuchs endothelial dystrophy plus dense 4+ nuclear sclerosis; neither optic nerve nor macula can be visualized in either eye. B-scan ultrasound shows attached retina OU. Follow up in cornea/cataract clinic.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "followup",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc44",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-08-17 | Patient MRN: AD-CLN-8243 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nADMINISTRATIVE ENTRY - DID NOT ATTEND (DNA).\nReferral text on file from DESP screening stated: 'Right eye R3AM1 with active NVD and macular exudates, Left eye R2M0; urgent hospital assessment for panretinal laser photocoagulation and anti-VEGF injection.'\nOutcome today: Patient failed to attend their scheduled 09:30 appointment and did not answer three telephone calls. Because the referral indicates high-risk R3A disease, a further urgent appointment slot has been sent by SMS and registered post.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "hard:dna_with_referral_text",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hc45",
+      "text": "عيادة العيون التخصصية - صحة أبوظبي (SEHA Ophthalmology)\n[Tawam Hospital Ophthalmology Clinic - 2026-09-18 - File: AD-CLN-8244]\nلم يحضر المريض للموعد المحدد في عيادة الشبكية (Did Not Attend).\nNote: Referred from primary care screening with RE R1M1 (macular oedema) and LE R1M0 for OCT and possible intravitreal injection. Patient did not check in at reception today. Second appointment offered in 3 weeks.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:re_le",
+        "hard:dna_with_referral_text",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hc46",
+      "text": "MEDICAL RETINA CONSULTATION NOTE\nFacility: Sheikh Khalifa Medical City (SKMC) Eye Clinic // Date: 2026-01-19 // Pt: AD-CLN-8245\n========================================\nNO SHOW / DNA NOTE.\nReason for appointment: Screening referral for OD R2M1, OS R2M0 (pre-proliferative diabetic retinopathy and macular thickening). Patient did not attend today's Medical Retina clinic session. Nurse coordinator contacted next of kin; patient is currently traveling outside the UAE. Will re-schedule upon return.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "hard:dna_with_referral_text",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hc47",
+      "text": "Outpatient Letter (2026-02-20) - Al Rahba Hospital Eye Outpatient Dept (MRN AD-CLN-8246)\nDear Referrer,\nThe patient did not attend (DNA) their outpatient ophthalmology appointment today following referral from the diabetic eye screening programme (right eye and left eye background/macular changes). No clinical examination took place. A re-booking letter has been generated.\nRegards, Medical Retina Team",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hc48",
+      "text": "EHR SOAP NOTE | Corniche / SEHA Specialized Eye Center | 2026-03-21 | AD-CLN-8247\nS/O: Patient was booked in the 11:00 slot for evaluation of OD and OS diabetic retinopathy referral, but was a No-Show / Did Not Attend. A/P: Chart closed as DNA; automated recall SMS triggered.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hc49",
+      "text": "SHEIKH SHAKHBOUT MEDICAL CITY (SSMC) - OPHTHALMOLOGY DEPT\nClinic: SSMC Medical Retina Unit | Date: 2026-04-22 | MRN: AD-CLN-8248\n--------------------------------------------------------\nDNA (Did Not Attend). Patient booked for post-screening biomicroscopy of RE and LE. Called twice in waiting area with no response. Referrer notified and one further appointment allocated.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hc50",
+      "text": "CLEVELAND CLINIC ABU DHABI - EYE INSTITUTE\nEncounter Date: 2026-05-23 | Patient MRN: AD-CLN-8249 | Location: Cleveland Clinic Abu Dhabi Eye Institute\nAppointment status: Did Not Attend (DNA). Patient was referred for assessment of right and left eye diabetic retinopathy, but telephoned on the morning of clinic to state they had no transport and could not attend. Rescheduled.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:1"
+      ]
+    }
+  ]
+}

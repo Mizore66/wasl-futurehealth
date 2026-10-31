@@ -1162,3 +1162,48 @@ The fix removed most of the held-out sex gap. The rest (about 3 items per 100 lo
 | Reviewer hours per 1k loops | 17.4 → 17.0 | 15.6 → 15.2 |
 | Review-load ratio, per seed; pooled (p) | 1.13 (1.05–1.22); 1.08 (0.11) | 1.21 (1.10–1.33); 1.08 (0.13) |
 | Hand-off packets matched / truth (extra) | 330 / 333 (0) | 296 / 300 (0) |
+
+
+## Third loop type: diabetic retinopathy screening to eye-clinic exam (`ee99e76`…`4cafa26`, new headline)
+
+**Claim tested** (as for lung): one engine closes every follow-up loop; a new loop type is a rule table, two readers and a generator. Design: `docs/research/dr-loop-design.md`.
+
+**Rule (built, `drrule.go`).** `doh2024dr`: who is referable comes from the DoH Abu Dhabi *Standard for Diagnosis and Management of Diabetes Mellitus Type 1 and 2* (DOH/ST/SDMDMT/V1/2024, cl. 3.13.85: any macular oedema, moderate or worse non-proliferative, any proliferative disease; 3.13.81: R-grade wording, annual repeat). DoH sets no deadline in weeks, so the deadlines are borrowed from the NHS Diabetic Eye Screening Programme Pathway Standards (2018): R3A (or an urgent request) seen within 42 days, R2/M1/R3S within 91. Our own choices, no source: ungradable images get a repeat photo within 28 days; treated stable proliferative disease (R3S) is routine; R0/R1 without maculopathy rescreen in 12 months (the DoH 1–2 year option needs HbA1c, which the data lack). `drrule_test.go` covers every cell.
+
+**States (built, `dr.go`)**, same gates as the other programmes: R0/R1 → `no_referral_needed`; U → open with a 28-day repeat-photo clock, a later graded screen decides; referable → closes only on a trusted-link eye-clinic note that both readers (or a clinician) read as a retinal exam with an outcome; did not attend → `no_show` (rebook outreach); vision checked only → stays open; no fundal view → `not_assessable` (clinician). Overdue clock = grading day + deadline. Tests: `dr_test.go` (one per state, wrong-patient links, unread notes blocking later ones, an exam before the deciding grade not counting).
+
+**Readers.** Reader A regex, reader B local Gemma 3 4B (cached, quote-grounded). A coded grade from grading software is a second reader that must equal reader A's reading of the summary text, never a single source. One shared rule turns fields into a label; disagreement or an ungrounded quote → review.
+
+| Corpus (synthetic) | Author | Role | Screening: auto-decided / agreed-but-wrong | Clinic notes: auto-decided / agreed-but-wrong |
+|---|---|---|---|---|
+| Dev, 34 + 50 (`scripts/dr_corpus.py`) | this work | written against | v1: 23/34 / 0 | v1: 44/50 / 0 |
+| Held-out 1, 40 + 50 (`scripts/dr_heldout/`) | Gemini 4 Argon | fair test of v1, then tuning | v1: **0/40** / 0 | v1: 22/50 / 0 |
+| Held-out 2, 40 + 50 (`scripts/dr_heldout2/`) | GPT-6.1 Sol | **fair test of v2** | v2: **20/40 / 1** | v2: **20/50 / 1** |
+
+- v1 failed held-out 1 safely: reader A was overfitted to the dev layouts (0/40 screens readable), so every free-text screen would have gone to a human. Held-out 1 became tuning data for v2 (regex rewrite; Gemma prompt v3 → v5: attendance wording, urgency only from a quoted sentence that really says "urgent", because the 4B over-called a yes/no urgency field). The Gemma prompt was revised twice on dev (v1 → v3) and twice on held-out 1 (v3 → v5).
+- The fair test of v2 (held-out 2, a third model family, committed before scoring) has 2 agreed-but-wrong labels, and neither changes a decision: hs39 both readers R3AM1, key R1M1/urgent (same action: urgent referral, 42 days); hc29 both "examined, follow-up", key "examined, discharged" (both close the loop: the retina was examined). Reader A's main remaining error is negated lists ("No microaneurysms, haemorrhages … or new vessels" read as new vessels → R3A): over-grading, the safe direction, to review.
+- What this means in practice: on unseen text about half the free-text screens and 40% of clinic notes would auto-decide; the rest go to a reviewer. The generator draws its free text from the dev corpus, so the integrated runs below overstate agreement; the held-out-2 row is the honest estimate. Results: `results/dr-readers/`.
+
+**Generator (built, `gendr.go`; cohort simulated).** 60% coded-grade sites; grade mix ungradable 5%, gradable R0 81% / R1 10% / routine referable 6.5% / R3A 2.5% (any retinopathy ≈ 19%, Al-Ain survey: Al-Maskari & El-Sadig, *BMC Ophthalmology* 2007, 7:11); referable patients examined within the deadline 50%, late 25%, never 25%; DNA, vision-only and no-view visits; distractor notes for other diabetics. Own RNG stream, background persons with no other loop, emitted last: `-dr 0` leaves every other feed byte-identical (`TestGenDRLeavesOtherProgrammesUnchanged`). Consent: the screening clinic records it for every DR patient (4% deny), own RNG.
+
+**Integrated run** (seed 2026, 1,200 DR + 800 lung + the screening cohort, chaos on): DR P 1.000, R 0.997, **0/1,121 false closures**; referral closures P 1.000, R 0.968; triage (rule action and deadline) 0.999; overdue flags 0.998; exam within the deadline truth 0.419 vs Wasl 0.398. No-change check against the same run with DR off: no-review metrics identical for CRC, cervical and lung; lung identical with review too; 2 loops differ, both one woman's CRC and cervical loops. With DR on the simulated reviewer answers later, so both loops raised a link question on the same registration pair; one answer was "same", the other "different" (the assumed 4% error), and the later "different" split the pair. Both ended open, not closed: safe direction. This is an existing gap, not a DR bug: link questions from two loops on one pair are not deduplicated (second-identifier questions are, since `3caa8a1`). Not fixed. `results/dr/`.
+
+**Frozen evaluation at `4cafa26`** (same seeds and held-out persons as `c2a74e2`; 1,200 DR screens per run, so 5,144 loops per run instead of 3,944; files in `results/final/`):
+
+| | Dev noise v1: `c2a74e2` → `4cafa26` | Held-out v2: `c2a74e2` → `4cafa26` |
+|---|---|---|
+| CRC recall | 0.842 → 0.842 (0.825–0.858) | 0.775 → 0.775 (0.761–0.789) |
+| CRC / cervical / lung false closures | 0 / 3,153; 0 / 1,402; 0 / 2,026 | 0 / 2,995; 0 / 1,300; 0 / 1,899 |
+| **DR false closures** (referral loops) | **0 / 5,621** (0 / 254) | **0 / 5,608** (0 / 214) |
+| DR recall; referral recall | 0.998; 0.977 (0.956–0.998) | 0.994; **0.880 (0.792–0.968)** |
+| DR triage (action and deadline); overdue flags | 0.999; 0.998 | 0.999; 0.995 |
+| DR exam within deadline, truth vs Wasl | 0.351 vs 0.343 | 0.418 vs 0.368 |
+| Wrong-patient messages; sent without consent | 0 / 15,179; 0 / 9,954 | 0 / 14,343; 0 / 9,438 |
+| Reviewer hours per 1k loops | 17.0 → 14.7 | 15.2 → 13.3 |
+| Review-load ratio, per seed; pooled (p) | 1.13 → 1.12 (1.07–1.18); 1.08 → 1.06 (0.28) | 1.21 → 1.19 (1.04–1.34); **1.08 → 1.11 (0.023)** |
+| CRC review load by sex, max/min (p) | 1.009 → 1.011 (0.63) | 1.050 → 1.054 (0.028) |
+
+- **Other programmes.** CRC, cervical and lung recall are unchanged. Held-out CRC closures moved 2,997 → 2,995 because the shared simulated reviewer answers in a different order (the gap described under the integrated run). Reviewer hours per 1,000 loops fall only because DR loops need few reviews (13 items per 100 loops vs 44–47 for the others).
+- **Readers in the runs.** Screens: 5,513/6,210 (dev) and 5,523/6,207 (held-out) auto-decided, 60% with a coded grade; clinic notes 1,087/1,102 and 1,068/1,090; 0 agreed-but-wrong. The generator reuses dev-corpus text, so these overstate agreement (see the readers table).
+- **Held-out referral recall 0.88, wide interval.** Fewer than 50 referral loops per run; the misses are loops left open for review, not closed wrongly.
+- **Pooled origin ratio now significant on held-out noise (1.11, p = 0.023).** Traced (`reviewer_decisions` against truth, 5 held-out seeds). It is a mix effect, not a new per-programme gap. Without DR loops the ratio is 1.085, as before. Arab patients carry more of the DR loops (25.5% of their loops vs 20–23% for other origins), and DR loops need few reviews, so their pooled review rate drops below the others. Within DR loops the ratio is 1.26 (Filipino 16.3 items per 100 loops, n = 454; Arab 12.9, n = 3,531), on small groups. The per-seed mean (1.19) stays under the 1.25 limit, but its upper interval (1.34) crosses it. A per-programme comparison is the fairer measure once loop mixes differ by origin; not changed.

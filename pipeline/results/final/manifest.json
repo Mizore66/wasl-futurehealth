@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-31T05:55:24.650862Z",
- "code_revision": "c2a74e20c86f7564d600421858e55072b2a19656",
+ "frozen_at": "2026-10-31T13:27:56.078422Z",
+ "code_revision": "4cafa26e4d647482c4900aebd8a6874826ded44c",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -21,6 +21,7 @@
   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
  },
  "lung_loops_per_run": 1088,
+ "dr_loops_per_run": 1200,
  "crc_loops_per_run": 2040,
  "cervical_loops_per_run": 816,
  "persons_cap": "all held-out (8,871)",
@@ -44,7 +45,10 @@
   "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7",
   "models/lung_gemma_cache.json": "6a6b829caf3b2a056c85b97c33cae6bce8ec3ed0462838ccc15e2f76985fc2d4",
   "data/lung/finding_reports.json": "eef1263f68d4e02d1d63e7af7985612be3f210fe7defe2a8d804f95058886280",
-  "data/lung/followup_reports.json": "f4e29164cc84b7b1f48c8f7939ba10d0a7c994e362263d3596fb037f6a64f4cf"
+  "data/lung/followup_reports.json": "f4e29164cc84b7b1f48c8f7939ba10d0a7c994e362263d3596fb037f6a64f4cf",
+  "models/dr_gemma_cache.json": "6791669bce82247b8334e67e4dc09a9c45fc0f7fb37e44495b0155a50f9f50ca",
+  "data/dr/screen_reports.json": "db550575155c1db2f8c492837b41196ff54846d657c71ab8a294076954c01d39",
+  "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436"
  },
  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
  "limitations": [

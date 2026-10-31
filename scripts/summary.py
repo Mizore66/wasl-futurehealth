@@ -24,6 +24,12 @@ if lung and 'closure' in lung:  # second loop type (WASL_LUNG=N)
     print(f"lung_nodule (Fleischner 2017): P {lc['precision']:.3f}  R {lc['recall']:.3f}  false closures {lc['false_closures']}/{lc['pred_closed']}; "
           f"escalation recall {lung['escalation']['recall']:.3f}; overdue acc {lung['overdue_flag_accuracy']:.3f}; "
           f"recommendation acc {rec['accuracy']:.3f} (coverage {rec['coverage']:.3f}); appropriate follow-up truth {af['truth']:.3f} vs Wasl {af['wasl_measured']:.3f}")
+dr = r.get('programmes_live', {}).get('diabetic_retinopathy')
+if dr and 'closure' in dr:  # third loop type (WASL_DR=N)
+    dc, rc, ex = dr['closure'], dr['referral_closure'], dr['referral_exam_within_deadline']
+    print(f"diabetic_retinopathy (doh2024dr): P {dc['precision']:.3f}  R {dc['recall']:.3f}  false closures {dc['false_closures']}/{dc['pred_closed']}; "
+          f"referral closures P {rc['precision']:.3f} R {rc['recall']:.3f}; triage acc {dr['triage']['accuracy']:.3f} (coverage {dr['triage']['coverage']:.3f}); "
+          f"overdue acc {dr['overdue_flag_accuracy']:.3f}; exam within deadline truth {ex['truth']:.3f} vs Wasl {ex['wasl_measured']:.3f}")
 pl = r.get('pilot')  # pilot switches (WASL_SHADOW / WASL_AUTOAUDIT); absent when off
 if pl and 'shadow' in pl:
     s = pl['shadow']

@@ -83,6 +83,19 @@ for noise in ["v1", "v2"]:
             pool["lung_false_closures"] += lc['false_closures']; pool["lung_closed"] += lc['pred_closed']
             for k2, v2 in (lu.get('workup_gt8mm') or {}).items():
                 pool["lung_workup_" + k2] += v2
+        dr = r.get('programmes_live', {}).get('diabetic_retinopathy')
+        if dr:  # diabetic retinopathy loops (third loop type), when the run has them
+            dc, rc = dr['closure'], dr['referral_closure']
+            m["dr_precision"].append(dc['precision']); m["dr_recall"].append(dc['recall'])
+            m["dr_referral_recall"].append(rc['recall']); m["dr_state_accuracy"].append(dr['state_accuracy'])
+            m["dr_triage_accuracy"].append(dr['triage']['accuracy']); m["dr_overdue_accuracy"].append(dr['overdue_flag_accuracy'])
+            ex = dr['referral_exam_within_deadline']
+            m["dr_exam_within_deadline_truth"].append(ex['truth']); m["dr_exam_within_deadline_wasl"].append(ex['wasl_measured'])
+            pool["dr_false_closures"] += dc['false_closures']; pool["dr_closed"] += dc['pred_closed']
+            pool["dr_referral_false_closures"] += rc['false_closures']; pool["dr_referral_closed"] += rc['pred_closed']
+            for kind, tw in (dr.get('two_reader') or {}).items():
+                pool[f"dr_reader_{kind}_instances"] += tw['report_instances']; pool[f"dr_reader_{kind}_agree"] += tw['agree']
+                pool[f"dr_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"dr_reader_{kind}_coded"] += tw.get('coded_grade', 0)
         for prog in ("crc", "cervical"):  # rejected-referral hand-off packet (handoff.go)
             ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
             for k2, v2 in ho.items():
@@ -110,9 +123,12 @@ for noise in ["v1", "v2"]:
     }
     if pool["lung_closed"]:
         safety["lung_false_closures"] = [pool["lung_false_closures"], pool["lung_closed"], cp_ub(pool["lung_false_closures"], pool["lung_closed"])]
+    if pool["dr_closed"]:
+        safety["dr_false_closures"] = [pool["dr_false_closures"], pool["dr_closed"], cp_ub(pool["dr_false_closures"], pool["dr_closed"])]
+        safety["dr_referral_false_closures"] = [pool["dr_referral_false_closures"], pool["dr_referral_closed"], cp_ub(pool["dr_referral_false_closures"], pool["dr_referral_closed"])]
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
-    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_")}
+    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_")}
     # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
     # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)
     pooled_rates = {k[len("origin_items_"):]: 100 * v / pool["origin_loops_" + k[len("origin_items_"):]] for k, v in pool.items() if k.startswith("origin_items_")}
@@ -171,7 +187,9 @@ for noise in ["v1", "v2"]:
     md.append(f"\n## Noise {noise}: {man['noise_models'][noise]} ({len(R)} seeds)\n")
     md.append("| Metric | Mean | 95% interval |\n|---|---|---|")
     for k in ["crc_precision", "crc_recall", "crc_recall_no_review", "cervical_precision", "cervical_recall", "kpi_truth", "kpi_wasl", "kpi_eid_only",
-              "kpi_abs_error_wasl", "kpi_abs_error_eid_only", "lung_precision", "lung_recall", "lung_state_accuracy", "lung_escalation_recall", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
+              "kpi_abs_error_wasl", "kpi_abs_error_eid_only", "lung_precision", "lung_recall", "lung_state_accuracy", "lung_escalation_recall",
+              "dr_precision", "dr_recall", "dr_referral_recall", "dr_state_accuracy", "dr_triage_accuracy", "dr_overdue_accuracy",
+              "dr_exam_within_deadline_truth", "dr_exam_within_deadline_wasl", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
              sorted(x for x in agg if (x.startswith("review_items_per_100_") and x != "review_items_per_100_loops") or (x.startswith("reviewer_h_per_1k_"))) + ["review_load_ratio_max_min_origin"]:
         if k in agg:
             a = agg[k]
@@ -191,7 +209,7 @@ for noise in ["v1", "v2"]:
         md.append(f"CRC loops by {name.replace('_', ' ')}: {sg['pooled_items_per_100']} review items per 100 loops, max/min **{sg['pooled_ratio']}** "
                   f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
     if extra:
-        md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off) | Count |\n|---|---|")
+        md.append("\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR readers) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
 md.append("\n## Limitations\n" + "\n".join(f"- {x}" for x in man["limitations"]))
 json.dump(out, open(os.path.join(F, 'summary.json'), 'w'), indent=1)

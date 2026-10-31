@@ -1,9 +1,9 @@
 {
  "age_band": {
-  "observed_ratio": 1.1161,
+  "observed_ratio": 1.1132,
   "null_median": 1.0952,
-  "null_p95": 1.19,
-  "p_value": 0.335,
+  "null_p95": 1.1899,
+  "p_value": 0.35,
   "groups": {
    "40-59": {
     "loops": 581,
@@ -20,11 +20,11 @@
    },
    "60-79": {
     "loops": 526,
-    "items": 387,
+    "items": 386,
     "items_per_loop_hist": {
      "0": 221,
-     "1": 232,
-     "2": 65,
+     "1": 233,
+     "2": 64,
      "3": 7,
      "4": 1
     },
@@ -61,10 +61,10 @@
   }
  },
  "sex": {
-  "observed_ratio": 1.0697,
-  "null_median": 1.0372,
-  "null_p95": 1.1078,
-  "p_value": 0.209,
+  "observed_ratio": 1.0673,
+  "null_median": 1.0361,
+  "null_p95": 1.1067,
+  "p_value": 0.22,
   "groups": {
    "F": {
     "loops": 1420,
@@ -82,11 +82,11 @@
    },
    "M": {
     "loops": 618,
-    "items": 446,
+    "items": 445,
     "items_per_loop_hist": {
      "0": 268,
-     "1": 261,
-     "2": 82,
+     "1": 262,
+     "2": 81,
      "3": 7
     },
     "crc_truly_closed": 230,
