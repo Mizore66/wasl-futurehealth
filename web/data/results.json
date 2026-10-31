@@ -1,0 +1,1465 @@
+{
+ "frozen_revision": "e4c7553beead",
+ "sources": [
+  "pipeline/results/final/SUMMARY.md",
+  "docs/BRIEF.md",
+  "docs/PITCH.md",
+  "docs/api-samples/dashboard.json",
+  "pipeline/results/showcase/summary.txt"
+ ],
+ "entries": {
+  "v1.crc_precision": {
+   "id": "v1.crc_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.crc_recall": {
+   "id": "v1.crc_recall",
+   "value": 0.8088,
+   "display": "0.8088",
+   "ci95": [
+    0.7888,
+    0.8288
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.crc_recall_no_review": {
+   "id": "v1.crc_recall_no_review",
+   "value": 0.3424,
+   "display": "0.3424",
+   "ci95": [
+    0.3182,
+    0.3666
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.cervical_precision": {
+   "id": "v1.cervical_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.cervical_recall": {
+   "id": "v1.cervical_recall",
+   "value": 0.9674,
+   "display": "0.9674",
+   "ci95": [
+    0.9485,
+    0.9863
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.kpi_truth": {
+   "id": "v1.kpi_truth",
+   "value": 0.3306,
+   "display": "0.3306",
+   "ci95": [
+    0.3169,
+    0.3443
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.kpi_wasl": {
+   "id": "v1.kpi_wasl",
+   "value": 0.321,
+   "display": "0.321",
+   "ci95": [
+    0.3073,
+    0.3347
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.kpi_eid_only": {
+   "id": "v1.kpi_eid_only",
+   "value": 0.1294,
+   "display": "0.1294",
+   "ci95": [
+    0.1174,
+    0.1414
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.kpi_abs_error_wasl": {
+   "id": "v1.kpi_abs_error_wasl",
+   "value": 0.0096,
+   "display": "0.0096",
+   "ci95": [
+    0.007,
+    0.0122
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.kpi_abs_error_eid_only": {
+   "id": "v1.kpi_abs_error_eid_only",
+   "value": 0.2012,
+   "display": "0.2012",
+   "ci95": [
+    0.1911,
+    0.2113
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.lung_precision": {
+   "id": "v1.lung_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.lung_recall": {
+   "id": "v1.lung_recall",
+   "value": 0.9842,
+   "display": "0.9842",
+   "ci95": [
+    0.9733,
+    0.9951
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.lung_state_accuracy": {
+   "id": "v1.lung_state_accuracy",
+   "value": 0.9934,
+   "display": "0.9934",
+   "ci95": [
+    0.989,
+    0.9978
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.lung_escalation_recall": {
+   "id": "v1.lung_escalation_recall",
+   "value": 0.977,
+   "display": "0.977",
+   "ci95": [
+    0.9132,
+    1.0408
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.linkage_pair_f1": {
+   "id": "v1.linkage_pair_f1",
+   "value": 0.9784,
+   "display": "0.9784",
+   "ci95": [
+    0.9765,
+    0.9803
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.reviewer_h_per_1k": {
+   "id": "v1.reviewer_h_per_1k",
+   "value": 17.4006,
+   "display": "17.4006",
+   "ci95": [
+    16.504,
+    18.2972
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_items_per_100_loops": {
+   "id": "v1.review_items_per_100_loops",
+   "value": 53.2138,
+   "display": "53.2138",
+   "ci95": [
+    50.726,
+    55.7016
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.throughput_ev_s": {
+   "id": "v1.throughput_ev_s",
+   "value": 542.7829,
+   "display": "542.7829",
+   "ci95": [
+    503.3645,
+    582.2013
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_items_per_100_arab": {
+   "id": "v1.review_items_per_100_arab",
+   "value": 55.4426,
+   "display": "55.4426",
+   "ci95": [
+    51.7011,
+    59.1841
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_items_per_100_filipino": {
+   "id": "v1.review_items_per_100_filipino",
+   "value": 52.1252,
+   "display": "52.1252",
+   "ci95": [
+    47.4478,
+    56.8026
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_items_per_100_south_asian": {
+   "id": "v1.review_items_per_100_south_asian",
+   "value": 52.7826,
+   "display": "52.7826",
+   "ci95": [
+    47.4416,
+    58.1236
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_items_per_100_western": {
+   "id": "v1.review_items_per_100_western",
+   "value": 46.93,
+   "display": "46.93",
+   "ci95": [
+    43.1088,
+    50.7512
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.reviewer_h_per_1k_arab": {
+   "id": "v1.reviewer_h_per_1k_arab",
+   "value": 18.0552,
+   "display": "18.0552",
+   "ci95": [
+    16.6234,
+    19.487
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.reviewer_h_per_1k_filipino": {
+   "id": "v1.reviewer_h_per_1k_filipino",
+   "value": 17.4208,
+   "display": "17.4208",
+   "ci95": [
+    16.6283,
+    18.2133
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.reviewer_h_per_1k_south_asian": {
+   "id": "v1.reviewer_h_per_1k_south_asian",
+   "value": 17.4034,
+   "display": "17.4034",
+   "ci95": [
+    15.9244,
+    18.8824
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.reviewer_h_per_1k_western": {
+   "id": "v1.reviewer_h_per_1k_western",
+   "value": 15.1316,
+   "display": "15.1316",
+   "ci95": [
+    13.8876,
+    16.3756
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.review_load_ratio_max_min_origin": {
+   "id": "v1.review_load_ratio_max_min_origin",
+   "value": 1.2353,
+   "display": "1.2353",
+   "ci95": [
+    1.1457,
+    1.3249
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.safety.crc_false_closures": {
+   "id": "v1.safety.crc_false_closures",
+   "value": 0,
+   "denominator": 2287,
+   "upper95": "0.1610%",
+   "display": "0 / 2,287",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.cervical_false_closures": {
+   "id": "v1.safety.cervical_false_closures",
+   "value": 0,
+   "denominator": 1020,
+   "upper95": "0.3610%",
+   "display": "0 / 1,020",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.wrong_patient_released": {
+   "id": "v1.safety.wrong_patient_released",
+   "value": 0,
+   "denominator": 12267,
+   "upper95": "0.0300%",
+   "display": "0 / 12,267",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.released_without_granted_consent": {
+   "id": "v1.safety.released_without_granted_consent",
+   "value": 0,
+   "denominator": 7887,
+   "upper95": "0.0470%",
+   "display": "0 / 7,887",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.duplicate_or_lost_outputs": {
+   "id": "v1.safety.duplicate_or_lost_outputs",
+   "value": 0,
+   "denominator": 139464,
+   "upper95": "0.0030%",
+   "display": "0 / 139,464",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.ingest_lost_or_duplicated": {
+   "id": "v1.safety.ingest_lost_or_duplicated",
+   "value": 0,
+   "denominator": 173713,
+   "display": "0 / 173,713",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.final_state_mismatch_loops": {
+   "id": "v1.safety.final_state_mismatch_loops",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.forged_with_effect": {
+   "id": "v1.safety.forged_with_effect",
+   "value": 0,
+   "denominator": 111,
+   "display": "0 / 111",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.forged_target_pair_falsely_merged_by_linker": {
+   "id": "v1.safety.forged_target_pair_falsely_merged_by_linker",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.forged_consent_target_genuinely_opted_out": {
+   "id": "v1.safety.forged_consent_target_genuinely_opted_out",
+   "value": 3,
+   "display": "3",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.tamper_detected": {
+   "id": "v1.safety.tamper_detected",
+   "value": 85,
+   "denominator": 85,
+   "display": "85 / 85",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.tamper_false_alarms": {
+   "id": "v1.safety.tamper_false_alarms",
+   "value": 0,
+   "denominator": 5,
+   "display": "0 / 5",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.lung_false_closures": {
+   "id": "v1.safety.lung_false_closures",
+   "value": 0,
+   "denominator": 1506,
+   "upper95": "0.2450%",
+   "display": "0 / 1,506",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.handoff_false_closures": {
+   "id": "v1.safety.handoff_false_closures",
+   "value": 0,
+   "denominator": 76,
+   "upper95": "4.7380%",
+   "display": "0 / 76",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.counts.handoff_acted_state_correct": {
+   "id": "v1.counts.handoff_acted_state_correct",
+   "value": 229,
+   "display": "229",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_closed": {
+   "id": "v1.counts.handoff_closed",
+   "value": 76,
+   "display": "76",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_packets_all_required_fields": {
+   "id": "v1.counts.handoff_packets_all_required_fields",
+   "value": 229,
+   "display": "229",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_packets_matched": {
+   "id": "v1.counts.handoff_packets_matched",
+   "value": 229,
+   "display": "229",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_packets_missed": {
+   "id": "v1.counts.handoff_packets_missed",
+   "value": 1,
+   "display": "1",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_truth_acted_by_act_by": {
+   "id": "v1.counts.handoff_truth_acted_by_act_by",
+   "value": 115,
+   "display": "115",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_truth_closed_after_handoff": {
+   "id": "v1.counts.handoff_truth_closed_after_handoff",
+   "value": 90,
+   "display": "90",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_truth_packets": {
+   "id": "v1.counts.handoff_truth_packets",
+   "value": 230,
+   "display": "230",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_truth_referrer_acted": {
+   "id": "v1.counts.handoff_truth_referrer_acted",
+   "value": 181,
+   "display": "181",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.handoff_truth_urgent": {
+   "id": "v1.counts.handoff_truth_urgent",
+   "value": 187,
+   "display": "187",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_pred_awaiting_tissue": {
+   "id": "v1.counts.lung_workup_pred_awaiting_tissue",
+   "value": 4,
+   "display": "4",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_pred_closed_by_ct": {
+   "id": "v1.counts.lung_workup_pred_closed_by_ct",
+   "value": 59,
+   "display": "59",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_pred_closed_by_pet": {
+   "id": "v1.counts.lung_workup_pred_closed_by_pet",
+   "value": 71,
+   "display": "71",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_pred_closed_by_tissue": {
+   "id": "v1.counts.lung_workup_pred_closed_by_tissue",
+   "value": 36,
+   "display": "36",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_truth_awaiting_tissue": {
+   "id": "v1.counts.lung_workup_truth_awaiting_tissue",
+   "value": 4,
+   "display": "4",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_truth_path_ct": {
+   "id": "v1.counts.lung_workup_truth_path_ct",
+   "value": 91,
+   "display": "91",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_truth_path_pet": {
+   "id": "v1.counts.lung_workup_truth_path_pet",
+   "value": 122,
+   "display": "122",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.lung_workup_truth_path_tissue": {
+   "id": "v1.counts.lung_workup_truth_path_tissue",
+   "value": 30,
+   "display": "30",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v2.crc_precision": {
+   "id": "v2.crc_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.crc_recall": {
+   "id": "v2.crc_recall",
+   "value": 0.7368,
+   "display": "0.7368",
+   "ci95": [
+    0.7239,
+    0.7497
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.crc_recall_no_review": {
+   "id": "v2.crc_recall_no_review",
+   "value": 0.3164,
+   "display": "0.3164",
+   "ci95": [
+    0.2913,
+    0.3415
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.cervical_precision": {
+   "id": "v2.cervical_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.cervical_recall": {
+   "id": "v2.cervical_recall",
+   "value": 0.9168,
+   "display": "0.9168",
+   "ci95": [
+    0.9026,
+    0.931
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.kpi_truth": {
+   "id": "v2.kpi_truth",
+   "value": 0.3272,
+   "display": "0.3272",
+   "ci95": [
+    0.3009,
+    0.3535
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.kpi_wasl": {
+   "id": "v2.kpi_wasl",
+   "value": 0.2936,
+   "display": "0.2936",
+   "ci95": [
+    0.2718,
+    0.3154
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.kpi_eid_only": {
+   "id": "v2.kpi_eid_only",
+   "value": 0.1304,
+   "display": "0.1304",
+   "ci95": [
+    0.1194,
+    0.1414
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.kpi_abs_error_wasl": {
+   "id": "v2.kpi_abs_error_wasl",
+   "value": 0.0336,
+   "display": "0.0336",
+   "ci95": [
+    0.0253,
+    0.0419
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.kpi_abs_error_eid_only": {
+   "id": "v2.kpi_abs_error_eid_only",
+   "value": 0.1968,
+   "display": "0.1968",
+   "ci95": [
+    0.1767,
+    0.2169
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.lung_precision": {
+   "id": "v2.lung_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.lung_recall": {
+   "id": "v2.lung_recall",
+   "value": 0.9486,
+   "display": "0.9486",
+   "ci95": [
+    0.9317,
+    0.9655
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.lung_state_accuracy": {
+   "id": "v2.lung_state_accuracy",
+   "value": 0.974,
+   "display": "0.974",
+   "ci95": [
+    0.9704,
+    0.9776
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.lung_escalation_recall": {
+   "id": "v2.lung_escalation_recall",
+   "value": 0.8886,
+   "display": "0.8886",
+   "ci95": [
+    0.8353,
+    0.9419
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.linkage_pair_f1": {
+   "id": "v2.linkage_pair_f1",
+   "value": 0.9406,
+   "display": "0.9406",
+   "ci95": [
+    0.938,
+    0.9432
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.reviewer_h_per_1k": {
+   "id": "v2.reviewer_h_per_1k",
+   "value": 15.8518,
+   "display": "15.8518",
+   "ci95": [
+    15.5694,
+    16.1342
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_items_per_100_loops": {
+   "id": "v2.review_items_per_100_loops",
+   "value": 48.8346,
+   "display": "48.8346",
+   "ci95": [
+    47.6586,
+    50.0106
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.throughput_ev_s": {
+   "id": "v2.throughput_ev_s",
+   "value": 551.2863,
+   "display": "551.2863",
+   "ci95": [
+    433.1874,
+    669.3851
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_items_per_100_arab": {
+   "id": "v2.review_items_per_100_arab",
+   "value": 49.9794,
+   "display": "49.9794",
+   "ci95": [
+    49.4027,
+    50.5561
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_items_per_100_filipino": {
+   "id": "v2.review_items_per_100_filipino",
+   "value": 51.8198,
+   "display": "51.8198",
+   "ci95": [
+    44.4291,
+    59.2105
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_items_per_100_south_asian": {
+   "id": "v2.review_items_per_100_south_asian",
+   "value": 48.6712,
+   "display": "48.6712",
+   "ci95": [
+    45.6334,
+    51.709
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_items_per_100_western": {
+   "id": "v2.review_items_per_100_western",
+   "value": 43.368,
+   "display": "43.368",
+   "ci95": [
+    36.6558,
+    50.0802
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.reviewer_h_per_1k_arab": {
+   "id": "v2.reviewer_h_per_1k_arab",
+   "value": 16.1502,
+   "display": "16.1502",
+   "ci95": [
+    15.7127,
+    16.5877
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.reviewer_h_per_1k_filipino": {
+   "id": "v2.reviewer_h_per_1k_filipino",
+   "value": 16.7638,
+   "display": "16.7638",
+   "ci95": [
+    14.5571,
+    18.9705
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.reviewer_h_per_1k_south_asian": {
+   "id": "v2.reviewer_h_per_1k_south_asian",
+   "value": 16.0136,
+   "display": "16.0136",
+   "ci95": [
+    14.4831,
+    17.5441
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.reviewer_h_per_1k_western": {
+   "id": "v2.reviewer_h_per_1k_western",
+   "value": 14.0134,
+   "display": "14.0134",
+   "ci95": [
+    12.2061,
+    15.8207
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.review_load_ratio_max_min_origin": {
+   "id": "v2.review_load_ratio_max_min_origin",
+   "value": 1.2806,
+   "display": "1.2806",
+   "ci95": [
+    1.1101,
+    1.4512
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.safety.crc_false_closures": {
+   "id": "v2.safety.crc_false_closures",
+   "value": 0,
+   "denominator": 2090,
+   "upper95": "0.1760%",
+   "display": "0 / 2,090",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.cervical_false_closures": {
+   "id": "v2.safety.cervical_false_closures",
+   "value": 0,
+   "denominator": 991,
+   "upper95": "0.3720%",
+   "display": "0 / 991",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.wrong_patient_released": {
+   "id": "v2.safety.wrong_patient_released",
+   "value": 0,
+   "denominator": 11846,
+   "upper95": "0.0310%",
+   "display": "0 / 11,846",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.released_without_granted_consent": {
+   "id": "v2.safety.released_without_granted_consent",
+   "value": 0,
+   "denominator": 7544,
+   "upper95": "0.0490%",
+   "display": "0 / 7,544",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.duplicate_or_lost_outputs": {
+   "id": "v2.safety.duplicate_or_lost_outputs",
+   "value": 0,
+   "denominator": 136669,
+   "upper95": "0.0030%",
+   "display": "0 / 136,669",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.ingest_lost_or_duplicated": {
+   "id": "v2.safety.ingest_lost_or_duplicated",
+   "value": 0,
+   "denominator": 174842,
+   "display": "0 / 174,842",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.final_state_mismatch_loops": {
+   "id": "v2.safety.final_state_mismatch_loops",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.forged_with_effect": {
+   "id": "v2.safety.forged_with_effect",
+   "value": 0,
+   "denominator": 112,
+   "display": "0 / 112",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.forged_target_pair_falsely_merged_by_linker": {
+   "id": "v2.safety.forged_target_pair_falsely_merged_by_linker",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.forged_consent_target_genuinely_opted_out": {
+   "id": "v2.safety.forged_consent_target_genuinely_opted_out",
+   "value": 3,
+   "display": "3",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.tamper_detected": {
+   "id": "v2.safety.tamper_detected",
+   "value": 85,
+   "denominator": 85,
+   "display": "85 / 85",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.tamper_false_alarms": {
+   "id": "v2.safety.tamper_false_alarms",
+   "value": 0,
+   "denominator": 5,
+   "display": "0 / 5",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.lung_false_closures": {
+   "id": "v2.safety.lung_false_closures",
+   "value": 0,
+   "denominator": 1463,
+   "upper95": "0.2520%",
+   "display": "0 / 1,463",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.handoff_false_closures": {
+   "id": "v2.safety.handoff_false_closures",
+   "value": 0,
+   "denominator": 71,
+   "upper95": "5.0630%",
+   "display": "0 / 71",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.counts.handoff_acted_state_correct": {
+   "id": "v2.counts.handoff_acted_state_correct",
+   "value": 233,
+   "display": "233",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_closed": {
+   "id": "v2.counts.handoff_closed",
+   "value": 71,
+   "display": "71",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_packets_all_required_fields": {
+   "id": "v2.counts.handoff_packets_all_required_fields",
+   "value": 233,
+   "display": "233",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_packets_matched": {
+   "id": "v2.counts.handoff_packets_matched",
+   "value": 233,
+   "display": "233",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_packets_missed": {
+   "id": "v2.counts.handoff_packets_missed",
+   "value": 3,
+   "display": "3",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_truth_acted_by_act_by": {
+   "id": "v2.counts.handoff_truth_acted_by_act_by",
+   "value": 119,
+   "display": "119",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_truth_closed_after_handoff": {
+   "id": "v2.counts.handoff_truth_closed_after_handoff",
+   "value": 90,
+   "display": "90",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_truth_packets": {
+   "id": "v2.counts.handoff_truth_packets",
+   "value": 236,
+   "display": "236",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_truth_referrer_acted": {
+   "id": "v2.counts.handoff_truth_referrer_acted",
+   "value": 187,
+   "display": "187",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.handoff_truth_urgent": {
+   "id": "v2.counts.handoff_truth_urgent",
+   "value": 170,
+   "display": "170",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_pred_awaiting_tissue": {
+   "id": "v2.counts.lung_workup_pred_awaiting_tissue",
+   "value": 10,
+   "display": "10",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_pred_closed_by_ct": {
+   "id": "v2.counts.lung_workup_pred_closed_by_ct",
+   "value": 59,
+   "display": "59",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_pred_closed_by_pet": {
+   "id": "v2.counts.lung_workup_pred_closed_by_pet",
+   "value": 51,
+   "display": "51",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_pred_closed_by_tissue": {
+   "id": "v2.counts.lung_workup_pred_closed_by_tissue",
+   "value": 38,
+   "display": "38",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_truth_awaiting_tissue": {
+   "id": "v2.counts.lung_workup_truth_awaiting_tissue",
+   "value": 12,
+   "display": "12",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_truth_path_ct": {
+   "id": "v2.counts.lung_workup_truth_path_ct",
+   "value": 88,
+   "display": "88",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_truth_path_pet": {
+   "id": "v2.counts.lung_workup_truth_path_pet",
+   "value": 103,
+   "display": "103",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.lung_workup_truth_path_tissue": {
+   "id": "v2.counts.lung_workup_truth_path_tissue",
+   "value": 45,
+   "display": "45",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "double_review.false_closures_denominator": {
+   "id": "double_review.false_closures_denominator",
+   "value": 8422,
+   "display": "8,422",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "v7 gate offline sweep, double review, 5 seeds × 3 reviewer error rates"
+  },
+  "single_review.false_closures": {
+   "id": "single_review.false_closures",
+   "value": 21,
+   "display": "21",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "v7 gate offline sweep, single review"
+  },
+  "ltt.calibration_loops": {
+   "id": "ltt.calibration_loops",
+   "value": 12600,
+   "display": "12,600",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "Learn-then-Test certification of τ_close 0.99"
+  },
+  "hl7.resources_exactly_once": {
+   "id": "hl7.resources_exactly_once",
+   "value": 30668,
+   "display": "30,668",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "HL7 v2 over MLLP with drops and re-sends"
+  },
+  "encoder.recall_at_10": {
+   "id": "encoder.recall_at_10",
+   "value": 0.932,
+   "display": "0.932",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "Wasl encoder, name-pair recall at 10"
+  },
+  "encoder.recall_at_10_best_single": {
+   "id": "encoder.recall_at_10_best_single",
+   "value": 0.604,
+   "display": "0.604",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "best single off-the-shelf encoder"
+  },
+  "reader.corpora": {
+   "id": "reader.corpora",
+   "value": 7,
+   "display": "7",
+   "label": "simulated",
+   "source": "docs/BRIEF.md",
+   "context": "adversarial report corpora, 4 model families"
+  },
+  "kpi31.demo.eid_only": {
+   "id": "kpi31.demo.eid_only",
+   "value": 0.124,
+   "display": "12.4%",
+   "label": "simulated",
+   "source": "docs/api-samples/dashboard.json",
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir (v7strict+cal=true+guard=true+tau=0.98)"
+  },
+  "kpi31.demo.wasl": {
+   "id": "kpi31.demo.wasl",
+   "value": 0.32,
+   "display": "32.0%",
+   "label": "simulated",
+   "source": "docs/api-samples/dashboard.json",
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir (v7strict+cal=true+guard=true+tau=0.98)"
+  },
+  "kpi31.demo.truth": {
+   "id": "kpi31.demo.truth",
+   "value": 0.33,
+   "display": "33.0%",
+   "label": "simulated",
+   "source": "docs/api-samples/dashboard.json",
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir (v7strict+cal=true+guard=true+tau=0.98)"
+  },
+  "kpi31.heldout.eid_only": {
+   "id": "kpi31.heldout.eid_only",
+   "value": 0.1304,
+   "ci95": [
+    0.1194,
+    0.1414
+   ],
+   "display": "13.0%",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "CRC 31-day completion, frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "kpi31.heldout.wasl": {
+   "id": "kpi31.heldout.wasl",
+   "value": 0.2936,
+   "ci95": [
+    0.2718,
+    0.3154
+   ],
+   "display": "29.4%",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "CRC 31-day completion, frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "kpi31.heldout.truth": {
+   "id": "kpi31.heldout.truth",
+   "value": 0.3272,
+   "ci95": [
+    0.3009,
+    0.3535
+   ],
+   "display": "32.7%",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "CRC 31-day completion, frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "showcase.decisions": {
+   "id": "showcase.decisions",
+   "value": 25620,
+   "display": "25,620",
+   "label": "simulated",
+   "source": "pipeline/results/showcase/summary.txt",
+   "context": "integrated showcase run, decision outputs, 0 duplicated"
+  },
+  "showcase.chains_verified": {
+   "id": "showcase.chains_verified",
+   "value": 1741,
+   "denominator": 1741,
+   "display": "1,741 / 1,741",
+   "label": "simulated",
+   "source": "pipeline/results/showcase/summary.txt",
+   "context": "integrated showcase run, provenance chains hash-verified"
+  },
+  "exactly_once.pitch_outputs": {
+   "id": "exactly_once.pitch_outputs",
+   "value": 201285,
+   "display": "201,285",
+   "label": "simulated",
+   "source": "docs/PITCH.md",
+   "context": "claimed: 10 frozen-evaluation runs with process and broker kills"
+  }
+ },
+ "evidence": [
+  {
+   "what": "Integrated baseline run: 1,500 CRC + 600 cervical loops, noisy reviewer, process + NATS kills",
+   "result": "CRC precision 1.000, recall 0.948, **0/563 false closures**. 0 duplicates or losses. Tamper 17/17 detected. Forged events 0/24 with effect. 0 wrong-patient sends.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "**Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning; with the ungraded-prep query, the referral hand-off and 800 lung loops per run",
+   "result": "Held-out v2 noise (code `e4c7553`): CRC P 1.000, R 0.737 (0.724–0.750), **0/2,090 false closures** (95% UB 0.18%), lung 0/1,463, 0/11,846 wrong-patient messages, 0/7,544 sent without consent, KPI error 0.034 vs EID-only 0.197, reviewer time 15.9 h per 1k loops, hand-off packets 233 of 236 (0 extra), review-load ratio across origins 1.19 pooled (per-seed 1.28, 1.11–1.45; under investigation). Dev noise: R 0.809, CRC 0/2,287, cervical 0/1,020, lung 0/1,506. Recall fell from 0.851 because reports that never grade prep now wait for the unit's grade (simulated). Disclosed post-hoc changes: τ 0.98 → 0.99 after one wrong-patient closure; the day-15 prep decision no longer skips pending histology (4 false closures in the first run at `b53ce89`); surname-variant and Emirates ID identity rules (about 10% less reviewer time, safety unchanged); hand-off packet fixes and two generator truth corrections after a trace of the misses; held-out noise model fix; MTSamples biopsy key correction; short surnames no longer corroborate alone (after 1 wrong-patient message in a run).",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "**Report readers on unseen text**: 7 more 300-report corpora by 4 model families (Claude, GPT-6.1 Sol, Gemini 4 Argon, Kimi K3.1 Pro), each frozen before any reader ran and each the fair test of the previous fix",
+   "result": "3 of 7 fair tests found an unsafe phrasing class: 6 of 211 automatic closures by the 26B were wrong (2.8%, UB 6.1%; 6/2,100 reports), 10 of 137 with the 4B. Each class fixed by a generic rule; reader v7.1 has 0 unsafe on all corpora; the last two fair tests (v7 on corpus 7, shipped v7.1 on corpus 8) passed with both readers. Pilot: shadow mode (clinician confirms every auto-closure) until 300 in a row are correct, then a 10% random audit; any error returns that class to shadow mode.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Learn-then-Test gate, 12,600 calibration loops (cal split, v2 noise)",
+   "result": "τ_close 0.99 certified with 0 false closures and 0 wrong-patient messages: P(both rates ≤ 0.1%) ≥ 95% for loops like the calibration set.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Consent hold",
+   "result": "0 messages released without granted permission (stage 3: 0/619 released; 373 held until the grant).",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "HL7 v2 over MLLP, with connection drops and duplicate re-sends",
+   "result": "30,668/30,668 resources delivered exactly once; 888 duplicate re-sends absorbed; CRC 0/574 false closures.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Local Gemma 3 4B reader, live in the integrated run",
+   "result": "CRC P 1.000, R 0.955, 0/567 false closures; histology question 43/43.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "v7 gate offline sweep (5 seeds × 3 reviewer error rates)",
+   "result": "Double review: **0/8,422 false closures**. Single review gives 21, so double review is mandatory.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Image reader (HyperKvasir, grouped held-out split)",
+   "result": "Caecum AUC 0.998; prep AUC 0.991 (specificity 0.83, so \"adequate\" only routes to a human). Integrated: 0/571 false closures, 0 upgrades.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Lung-nodule loop, 800 loops",
+   "result": "P 1.000, R 0.993, 0/297 false closures, recommendation accuracy 1.000.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Encoder vs off-the-shelf",
+   "result": "R@10 0.932 vs 0.604 (best single) and 0.928 (four combined). The gain over the combination is deployability (2.3 MB vs 236 MB), not accuracy.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Booking simulator",
+   "result": "94.5% KPI at 1.5 slots per FIT+. The optimiser ties greedy even when capacity is scarce, so we make no optimisation claim. Below 1 slot per FIT+, the queue collapses under any policy.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Queue levers (simulated)",
+   "result": "At 1.2 slots per FIT+: direct-to-procedure plus prep targeting +13 pp ≤31-day completion (93% of draws better). Prep targeting frees about 88 repeat colonoscopies per 1,000. No lever helps below 1.0 slot.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Network pooling, capacity misallocated across regions",
+   "result": "≤31 days for all FIT+ rises from 22.2% (no cross-site booking) to **42.1%** (pooled). No gain when capacity is short overall.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "Projection from published trial effects",
+   "result": "Day-120 completion 22.5% → 40.7% with automated levers only (+18 pp); the base case uses +13 pp.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  }
+ ],
+ "conflicts": [
+  {
+   "id": "exactly_once_outputs",
+   "question": "How many outputs did the frozen evaluation check for duplicates or losses?",
+   "values": [
+    {
+     "result": "exactly_once.pitch_outputs",
+     "value": 201285,
+     "source": "docs/PITCH.md"
+    },
+    {
+     "result": "v2.safety.duplicate_or_lost_outputs",
+     "value": 136669,
+     "source": "pipeline/results/final/SUMMARY.md"
+    },
+    {
+     "result": "v1.safety.duplicate_or_lost_outputs",
+     "value": 139464,
+     "source": "pipeline/results/final/SUMMARY.md"
+    }
+   ],
+   "note": "PITCH says 10 runs; SUMMARY's v1 + v2 denominators sum to 276,133, matching neither. Unresolved: screens must not show an exactly-once denominator until the backend owner picks one."
+  }
+ ]
+}

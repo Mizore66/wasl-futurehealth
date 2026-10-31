@@ -1,0 +1,385 @@
+import { z } from "zod";
+
+/*
+ * The backend contract (docs/API.md), parsed once at the boundary.
+ * Objects are loose: unknown extra fields pass through so a newer backend does not break the UI.
+ * Enums are closed: a new state or decision value fails the contract tests first.
+ */
+
+export const Programme = z.enum(["crc", "cervical", "lung_nodule"]);
+
+export const CaseState = z.enum([
+  "open",
+  "booked",
+  "procedure_done",
+  "awaiting_histology",
+  "inadequate",
+  "no_show",
+  "referral_rejected",
+  "closed",
+  "no_followup_needed",
+  "escalated",
+  "not_assessable",
+  "out_of_scope",
+]);
+
+export const Dropoff = z.enum([
+  "",
+  "never_notified",
+  "no_acknowledgement",
+  "not_booked",
+  "referral_rejected",
+  "referral_unanswered",
+  "no_show",
+  "inadequate",
+  "awaiting_histology",
+  "in_progress",
+  "no_followup_ct",
+  "unlinked",
+  "escalated",
+  "not_assessable",
+  "out_of_scope",
+]);
+
+export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
+export const ReviewStatus = z.enum(["none", "open", "signed"]);
+export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold"]);
+export const Role = z.enum(["coordinator", "clinician", "reviewer", "auditor"]);
+
+/** Small-cell suppression: counts 1 to 4 arrive as the string "<5". */
+export const Count = z.union([z.number(), z.string().regex(/^<\d+$/)]);
+
+export const Meta = z.looseObject({
+  api: z.string(),
+  data_mode: z.string(),
+  run: z.string(),
+  policy: z.string(),
+  reader_model: z.string(),
+  loaded_at: z.string(),
+  note: z.string(),
+});
+
+const withMeta = <T extends z.ZodRawShape>(shape: T) => z.looseObject({ meta: Meta, ...shape });
+
+export const LungFinding = z.looseObject({
+  finding_report: z.string().optional(),
+  finding_label: z.string().optional(),
+  risk: z.string().optional(),
+  scope: z.string().optional(),
+  window_start_day: z.number().optional(),
+  window_end_day: z.number().optional(),
+  outcome: z.enum(["stable", "resolved", "growing", "suspicious_solid", "not_assessable"]).optional(),
+  rec: z
+    .looseObject({
+      action: z.enum(["none", "ct", "ct_or_pet_or_tissue"]),
+      win_lo_days: z.number().optional(),
+      win_hi_days: z.number().optional(),
+      next_step: z.string().optional(),
+      cell: z.string().optional(),
+      optional: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+export const CaseSummary = z.looseObject({
+  id: z.string(),
+  programme: Programme,
+  state: CaseState,
+  dropoff: Dropoff,
+  owner: z.string().default(""),
+  provider: z.string(),
+  referral_day: z.number(),
+  deadline_day: z.number().default(0),
+  overdue: z.boolean(),
+  priority: z.string().default(""),
+  consent: Consent,
+  review: ReviewStatus,
+  closed: z.boolean(),
+  closed_day: z.number().default(0),
+  fixture: z.union([FixtureName, z.literal("")]).default(""),
+  decisions: z.number().optional(),
+  lung: LungFinding.optional(),
+});
+
+export const ChainEntry = z.looseObject({
+  type: z.string(),
+  body: z.record(z.string(), z.unknown()),
+  prev: z.string(),
+  hash: z.string(),
+});
+
+export const WeakestEdge = z.looseObject({ a: z.string(), b: z.string(), basis: z.string(), p: z.number() });
+
+export const Link = z.looseObject({
+  loop: z.string(),
+  downstream_event: z.string(),
+  referral_patient: z.string(),
+  hops: z.number(),
+  linker: z.string(),
+  near_miss: z.boolean(),
+  path_p_cal: z.number(),
+  path_strength: z.number(),
+  tau: z.number(),
+  weakest_edge: WeakestEdge,
+});
+
+export const Evidence = z.looseObject({
+  report: z.string(),
+  agree: z.boolean(),
+  label: z.string(),
+  quote: z.string(),
+  human_override: z.string().default(""),
+  reader_model: z.string().optional(),
+  rule: z.string().optional(),
+  regex: z.string().optional(),
+  gemma: z.string().optional(),
+  fields: z.record(z.string(), z.unknown()).optional(),
+});
+
+export const Identity = z.looseObject({ provider: z.string(), registration: z.string(), role: z.string() });
+
+export const TimelineEvent = z.looseObject({
+  id: z.string(),
+  type: z.string(),
+  provider: z.string(),
+  day: z.number(),
+  arrival_day: z.number().optional(),
+  seq: z.number().optional(),
+  source: z.string().optional(),
+  status: z.string().optional(),
+  category: z.string().optional(),
+  raw_sha: z.string().optional(),
+});
+
+export const Hold = z.looseObject({
+  loop: z.string(),
+  report: z.string(),
+  rule: z.string(),
+  policy: z.string().optional(),
+  programme: z.string().optional(),
+  state: z.string(),
+});
+
+export const ConsentLogEntry = z.looseObject({
+  ev: z.string().optional(),
+  kind: z.string().optional(),
+  to: z.string(),
+  contact: z.string().optional(),
+});
+
+export const Decision = z.looseObject({
+  decision_id: z.string(),
+  state: CaseState,
+  dropoff: Dropoff,
+  in_seq: z.number(),
+  overdue: z.boolean(),
+  owner: z.string().default(""),
+  policy: z.string(),
+  sig: z.string(),
+  escalations: z.array(z.string()),
+  consent_log: z.array(ConsentLogEntry),
+});
+
+export const ReviewItem = z.looseObject({
+  item: z.string(),
+  loop: z.string(),
+  kinds: z.array(z.string()),
+  pair: z.array(z.string()),
+  p: z.number(),
+  report: z.string(),
+  verdict: z.string(),
+  conf: z.number().optional(),
+  quote: z.string(),
+  reason: z.string().optional(),
+  chain: z.array(ChainEntry),
+  head: z.string().optional(),
+  in_seq: z.number().optional(),
+  overdue: z.boolean().optional(),
+});
+
+export const Signoff = z.looseObject({
+  item: z.string(),
+  loop: z.string(),
+  kinds: z.array(z.string()),
+  role: z.string(),
+  reviewer: z.string(),
+  reads: z.array(z.string()),
+  link: z.string(),
+  evidence: z.string(),
+  verdict: z.string(),
+  wrong: z.boolean().optional(),
+  t: z.number().optional(),
+  ms: z.number().optional(),
+  sim_s: z.number().optional(),
+});
+
+/** One appended demo review action (POST /review response and api_reviews / audit history). */
+export const ApiReview = z.looseObject({
+  case: z.string(),
+  item: z.string(),
+  decision: z.string(),
+  note: z.string(),
+  role: z.string(),
+  actor: z.string(),
+  action: z.string(),
+  at: z.string(),
+  mode: z.string(),
+  prev: z.string(),
+  hash: z.string(),
+});
+
+export const Booking = z.looseObject({
+  status: z.enum(["suggested", "no_slot_within_horizon", "not_applicable", "not_generated"]),
+  data_mode: z.string().optional(),
+  reason: z.string().optional(),
+});
+
+export const CurrentDecision = z.looseObject({
+  id: z.string(),
+  loop: z.string(),
+  state: CaseState,
+  chain: z.array(ChainEntry).default([]),
+  sig: z.string().optional(),
+  lung: LungFinding.optional(),
+});
+
+export const CaseDetail = withMeta({
+  case: CaseSummary,
+  identities: z.array(Identity),
+  timeline: z.array(TimelineEvent),
+  links: z.array(Link),
+  evidence: z.array(Evidence),
+  holds: z.array(Hold),
+  outreach: z.array(z.looseObject({})),
+  decisions: z.array(Decision),
+  review_items: z.array(ReviewItem),
+  signoffs: z.array(Signoff),
+  api_reviews: z.array(ApiReview),
+  current: CurrentDecision,
+  booking: Booking,
+});
+
+export const Audit = withMeta({
+  case: z.string(),
+  chain: z.array(ChainEntry),
+  chain_length: z.number(),
+  chain_verified: z.boolean(),
+  decision_signatures: z.array(
+    z.looseObject({ decision_id: z.string(), policy: z.string(), sig: z.string(), recomputed: z.string() }),
+  ),
+  anchors: z.record(z.string(), z.string()),
+  anchor_note: z.string().optional(),
+  history: z.array(ApiReview),
+});
+
+export const CaseList = withMeta({
+  cases: z.array(CaseSummary),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+});
+
+export const Fixtures = withMeta({
+  fixtures: z.object({
+    evidence_closure: CaseSummary,
+    false_closure_trap: CaseSummary,
+    review_hold: CaseSummary,
+  }),
+});
+
+const ClosureMetrics = z.looseObject({
+  closed_pred: z.number(),
+  tp: z.number(),
+  false_closures: z.number(),
+  missed: z.number(),
+  precision: z.number(),
+  recall: z.number(),
+  false_closure_rate_upper95: z.number(),
+});
+
+const KpiArm = z.looseObject({ kpi_all_referrals: z.number(), eligible_referrals: z.number(), within_31d: z.number() });
+
+export const Dashboard = withMeta({
+  cases: z.number(),
+  closed: z.number(),
+  overdue: z.number(),
+  states: z.record(z.string(), Count),
+  dropoff: z.record(z.string(), Count),
+  review: z.record(z.string(), Count),
+  by_programme: z.record(z.string(), z.looseObject({ cases: z.number(), closed: z.number(), overdue: z.number() })),
+  sla: z.record(z.string(), z.number()),
+  small_cell_rule: z.string().optional(),
+  fixtures: z.object({ evidence_closure: z.string(), false_closure_trap: z.string(), review_hold: z.string() }),
+  providers: z.array(z.looseObject({ provider: z.string(), loops: Count })),
+  origins: z.array(z.looseObject({ origin: z.string(), loops: Count })),
+  metrics: z.looseObject({
+    closure: z.record(
+      z.string(),
+      z.looseObject({
+        loops: z.number(),
+        wasl_live_with_review: ClosureMetrics,
+        wasl_no_review: ClosureMetrics,
+        baseline_eid_only: ClosureMetrics,
+        baseline_any_proc_120d: ClosureMetrics,
+      }),
+    ),
+    crc_kpi_31d: z.looseObject({
+      definition: z.string(),
+      truth: KpiArm,
+      eid_only: KpiArm,
+      wasl_live: KpiArm,
+      wasl_no_review: KpiArm,
+    }),
+    exactly_once: z.record(z.string(), z.number()),
+    forged: z.record(z.string(), z.number()),
+    provenance: z.looseObject({
+      closed_chains: z.number(),
+      hash_verified: z.number(),
+      tamper_detected: z.boolean(),
+      with_human_signoff: z.number(),
+    }),
+    consent_timing: z.record(z.string(), z.number()),
+  }),
+  capacity: z.looseObject({ status: z.string(), data_mode: z.string() }),
+});
+
+export const Healthz = z.looseObject({
+  status: z.string(),
+  cases: z.number(),
+  dependencies: z.record(z.string(), z.string()),
+  meta: Meta,
+});
+
+const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "confirm_contact"] as const;
+const LUNG_OUTCOMES = ["stable", "resolved", "growing", "suspicious_solid", "not_assessable"] as const;
+/** Index-CT labels such as `solid/6-8/single` or `ground_glass/<6/multiple`. */
+const LUNG_INDEX_LABEL = /^[a-z_]+\/[^/\s]+\/[a-z]+$/;
+
+export const ReviewDecision = z.union([z.enum(CRC_DECISIONS), z.enum(LUNG_OUTCOMES), z.string().regex(LUNG_INDEX_LABEL)]);
+
+export const ReviewRequest = z.object({
+  item: z.string(),
+  decision: ReviewDecision,
+  note: z.string().default(""),
+});
+
+export const ReviewResponse = withMeta({ review: ApiReview, note: z.string().optional() });
+export const ApiError = withMeta({ error: z.string() });
+
+export type Programme = z.infer<typeof Programme>;
+export type CaseState = z.infer<typeof CaseState>;
+export type Dropoff = z.infer<typeof Dropoff>;
+export type FixtureName = z.infer<typeof FixtureName>;
+export type Role = z.infer<typeof Role>;
+export type Meta = z.infer<typeof Meta>;
+export type CaseSummary = z.infer<typeof CaseSummary>;
+export type ChainEntry = z.infer<typeof ChainEntry>;
+export type CaseDetail = z.infer<typeof CaseDetail>;
+export type Audit = z.infer<typeof Audit>;
+export type CaseList = z.infer<typeof CaseList>;
+export type Fixtures = z.infer<typeof Fixtures>;
+export type Dashboard = z.infer<typeof Dashboard>;
+export type Healthz = z.infer<typeof Healthz>;
+export type ReviewRequest = z.input<typeof ReviewRequest>;
+export type ReviewResponse = z.infer<typeof ReviewResponse>;
+export type ApiReview = z.infer<typeof ApiReview>;

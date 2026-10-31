@@ -1,0 +1,78 @@
+{
+ "label": "simulated",
+ "note": "The API returns registrations, not names, and data/persons3.json has no registration mapping. Names are the design's synthetic cast.",
+ "people": {
+  "ahs-mushrif|AHS-MRN001050": {
+   "registration": "ahs-mushrif|AHS-MRN001050",
+   "provider": "ahs-mushrif",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+   "fixture": "evidence_closure",
+   "display_name": "Fatima Al Zaabi",
+   "display_name_ar": "فاطمة الزعابي",
+   "age": 54,
+   "recorded_name": "فاطمة الزعابي",
+   "recorded_script": "arabic",
+   "source": "canonical-cast"
+  },
+  "skmc-endo|SKM-MRN000404": {
+   "registration": "skmc-endo|SKM-MRN000404",
+   "provider": "skmc-endo",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+   "fixture": "evidence_closure",
+   "display_name": "Fatima Al Zaabi",
+   "display_name_ar": "فاطمة الزعابي",
+   "age": 54,
+   "recorded_name": "Fatima Alzaabi",
+   "recorded_script": "latin",
+   "source": "canonical-cast"
+  },
+  "ahs-mushrif|AHS-MRN001064": {
+   "registration": "ahs-mushrif|AHS-MRN001064",
+   "provider": "ahs-mushrif",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+   "fixture": "false_closure_trap",
+   "display_name": "Aisha Al Mansoori",
+   "display_name_ar": "عائشة المنصوري",
+   "age": 58,
+   "recorded_name": "عائشة المنصوري",
+   "recorded_script": "arabic",
+   "source": "canonical-cast"
+  },
+  "skmc-endo|SKM-MRN000412": {
+   "registration": "skmc-endo|SKM-MRN000412",
+   "provider": "skmc-endo",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+   "fixture": "false_closure_trap",
+   "display_name": "Aisha Al Mansoori",
+   "display_name_ar": "عائشة المنصوري",
+   "age": 58,
+   "recorded_name": "Aisha Al Mansoori",
+   "recorded_script": "latin",
+   "source": "canonical-cast"
+  },
+  "ahs-mushrif|AHS-MRN001569": {
+   "registration": "ahs-mushrif|AHS-MRN001569",
+   "provider": "ahs-mushrif",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
+   "fixture": "review_hold",
+   "display_name": "Mariam Al Shamsi",
+   "display_name_ar": "مريم الشامسي",
+   "age": 61,
+   "recorded_name": "مريم الشامسي",
+   "recorded_script": "arabic",
+   "source": "canonical-cast"
+  },
+  "noor-endo|NOO-MRN000678": {
+   "registration": "noor-endo|NOO-MRN000678",
+   "provider": "noor-endo",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
+   "fixture": "review_hold",
+   "display_name": "Mariam Al Shamsi",
+   "display_name_ar": "مريم الشامسي",
+   "age": 61,
+   "recorded_name": "Mariam Al Shamsi",
+   "recorded_script": "latin",
+   "source": "canonical-cast"
+  }
+ }
+}
