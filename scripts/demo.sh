@@ -8,6 +8,7 @@
 #      WASL_LUNG=N adds N incidental lung-nodule loops (Fleischner 2017, second loop type; default 0 = screening cohort only).
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
 #      WASL_DRNEXT=1 (with WASL_DR) tracks the next DR due date and a recall_overdue flag (pipeline/drnext.go; default off).
+#      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -31,10 +32,13 @@ PARGS=(); [ "$SHADOW" = 0 ] || { PARGS+=(-shadow); RUN="$RUN-shadow"; }   # coho
 [ "$AUTOAUDIT" = 0 ] || { PARGS+=(-autoaudit "$AUTOAUDIT"); RUN="$RUN-autoaudit$AUTOAUDIT"; }
 DRNEXT="${WASL_DRNEXT:-0}"         # DR next loop (pipeline/drnext.go): next due date + recall_overdue; gen adds follow-up visits; 0 = off
 [ "$DRNEXT" = 0 ] || { PARGS+=(-drnext); RUN="$RUN-drnext"; }
+LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go); 0 = off
+[ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
 RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
 [ "$DRNEXT" = 0 ] || GARGS+=(-drnext)
+[ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()

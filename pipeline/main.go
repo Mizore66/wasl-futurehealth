@@ -63,6 +63,7 @@ func main() {
 	hold := fs.String("hold", "", "demo: loop id whose two-reader disagreement is held for the presenter")
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
 	lungWk := fs.Bool("lungworkup", true, "lung nodule > 8 mm: PET/CT or tissue result can close the loop (lungworkup.go)")
+	lungSurv := fs.Bool("lungsurv", false, "lung nodule: a PET/CT low-uptake closure makes a surveillance CT due (child loop <loop>#surv); gen adds the surveillance CTs (lungsurv.go)")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
 	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
 	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
@@ -159,7 +160,7 @@ func main() {
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	PrepQuery, ErrUngraded = *prepQ, *errUng
-	Handoff, LungWorkup = *handoff, *lungWk
+	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
@@ -269,6 +270,9 @@ func main() {
 	}
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
+	}
+	if LungPETSurv { // reaches every child only when on, so the child argument lists are unchanged when off
+		v7Args = append(v7Args, "-lungsurv")
 	}
 	if ShadowMode { // pilot switches reach every child (closure engines, reviewer, linker) only when on
 		v7Args = append(v7Args, "-shadow")
