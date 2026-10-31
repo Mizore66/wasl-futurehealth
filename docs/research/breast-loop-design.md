@@ -83,7 +83,9 @@ Sources:
 - `bsu-screen`: breast screening unit (mammography). Sends the screening report and the tracking ServiceRequest.
 - `bau-hosp`: diagnostic breast assessment unit at a regional hospital. Sends assessment and MDT outcome documents. The woman is registered under a name variant with the CRC linkage noise model. Other women's assessment documents are distractors.
 
-**Cohort:** women aged 40–75 (Appendix 2: average risk from 40; the upper bound is our choice) from the background pool with no other loop. Own RNG stream (seed + `breastSeedOffset`), emitted after every other programme, so `-breast 0` leaves every other feed byte-identical. A test pins this.
+**Cohort:** women aged 40–90 (Appendix 2: average risk from 40 with no upper age; capped at 90 as for DR) from the background pool with no other loop. Own RNG stream (seed + `breastSeedOffset`), emitted after every other programme, so `-breast 0` leaves every other feed byte-identical. A test pins this.
+
+**Capacity (checked against the free person pool):** the held-out person split is 22% women, and CRC (69.6% women), cervical and DR draw first. On seed 2026 the demo cohort (6,500 persons, 1,500 CRC, 600 cervical) leaves about 400 eligible women, or 186 with 800 lung and 1,200 DR loops; the frozen-evaluation cohort (all 8,871 held-out persons, 2,040 CRC, 816 cervical, 1,088 lung, 1,200 DR) leaves 97. Each run needs N loops + N/8 distractor women, so N is about 350, 165 and 85 at most. Breast cannot run at the DR scale on this person pool without a larger pool or sharing women with other programmes.
 
 **Category mix (simulated):**
 - Technically inadequate 2% (under the KPI 3 ceiling of 3%).

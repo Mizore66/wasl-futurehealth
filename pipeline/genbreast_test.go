@@ -9,7 +9,7 @@ import (
 )
 
 // The breast programme must not perturb any other programme: same seed, -breast 0 vs -breast N -> every screening,
-// lung and DR feed is byte-identical, -breast 0 writes no breast feed, and breast loops are women aged 40-75 who have
+// lung and DR feed is byte-identical, -breast 0 writes no breast feed, and breast loops are women aged 40-90 who have
 // no other loop.
 func TestGenBreastLeavesOtherProgrammesUnchanged(t *testing.T) {
 	if _, err := os.Stat("../data/persons3.json"); err != nil {
@@ -78,8 +78,8 @@ func TestGenBreastLeavesOtherProgrammesUnchanged(t *testing.T) {
 			t.Errorf("breast loop %s closed with outcome %q", lt.Loop, lt.Breast.Outcome)
 		}
 		p := persons[lt.Qid]
-		if a := personAge(&p, 0); p.Sex != "F" || a < 40 || a > 75 {
-			t.Errorf("breast loop %s: person sex %s age %d, want a woman aged 40-75", lt.Loop, p.Sex, a)
+		if a := personAge(&p, 0); p.Sex != "F" || a < 40 || a > 90 {
+			t.Errorf("breast loop %s: person sex %s age %d, want a woman aged 40-90", lt.Loop, p.Sex, a)
 		}
 	}
 	for q, pr := range progs {
