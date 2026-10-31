@@ -111,9 +111,17 @@ func EncodeHL7(prov string, res map[string]interface{}, ctl string) []byte {
 	}
 	switch rt {
 	case "ServiceRequest", "Task":
+		if dc := hl7DRCode(res); dc != "" { // diabetic retinopathy tracking order: local-coded ORM (hl7dr.go)
+			segs = append(segs, hl7DRSegs(res, dc)...)
+			break
+		}
 		segs = append(segs, fmt.Sprintf("ORC|NW|%s||||%s", hl7Esc(gs(res, "id")), hl7Esc(gs(res, "status"))))
 		segs = append(segs, fmt.Sprintf("OBR|1|%s||^%s|%s|%s", hl7Esc(gs(res, "id")), hl7Esc(gs(res, "code", "text")), hl7Esc(gs(res, "priority")), hl7TS(gs(res, "authoredOn"))))
 	case "DiagnosticReport":
+		if dc := hl7DRCode(res); dc != "" { // diabetic retinopathy screen / eye-clinic note: local-coded ORU (hl7dr.go)
+			segs = append(segs, hl7DRSegs(res, dc)...)
+			break
+		}
 		if lc := hl7LungCode(res); lc != "" { // lung-nodule reports: LOINC-coded ORU (hl7lung.go)
 			segs = append(segs, hl7LungORU(res, lc)...)
 			break
@@ -228,6 +236,9 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		if pt["gender"] == "" {
 			pt["gender"] = "unknown"
 		}
+	}
+	if rt := gs(res, "resourceType"); (rt == "DiagnosticReport" || rt == "ServiceRequest") && m.hl7DRRebuild(res) { // hl7dr.go: OBR-4 decides
+		return prov, msgID, res, nil
 	}
 	if gs(res, "resourceType") == "DiagnosticReport" && m.hl7LungRebuild(res) {
 		return prov, msgID, res, nil
