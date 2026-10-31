@@ -27,8 +27,8 @@ func TestTemplatesDiscloseAutomation(t *testing.T) {
 			}
 		}
 	}
-	if n != 12 {
-		t.Fatalf("%d v2 templates, want 12", n)
+	if n != 24 { // 12 screening and teach-back, 12 lung and DR (lnfu, drsfu)
+		t.Fatalf("%d v2 templates, want 24", n)
 	}
 }
 

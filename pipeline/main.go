@@ -147,6 +147,7 @@ func main() {
 	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
 	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
 	replayWL := fs.Bool("replayworklist", true, "ltt/sweep: the offline review loop answers items in emission order with the live reviewer's worklists (sweep.go)")
 	reuseLink := fs.Bool("reuselink", true, "review worklist: one link question per registration pair; other loops' queued twins are dropped once it is answered (v7.go)")
 	reuseConfirm := fs.Bool("reuseconfirm", true, "outreach guard: a second-identifier confirmation counts for the same registration pair on other loops (v7.go)")
@@ -159,7 +160,7 @@ func main() {
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup = *handoff, *lungWk
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
-	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist = *reuseLink, *linkConfirm, *replayWL
+	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -260,7 +261,7 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
-	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), "-errungraded", fmt.Sprint(ErrUngraded))
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
 	}
