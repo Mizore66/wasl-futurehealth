@@ -1,7 +1,7 @@
 {
  "manifest": {
-  "frozen_at": "2026-10-31T16:51:32.761837Z",
-  "code_revision": "d3a1e64236adc9f6a79d15aa2d290ab47d13f442",
+  "frozen_at": "2026-10-31T18:41:02.615414Z",
+  "code_revision": "0f6a5325831e8f3c822541193d9ab0fe4279c2c3",
   "policy": "v7strict",
   "thresholds": {
    "tau_high_messaging": 0.99,
@@ -70,9 +70,9 @@
      1.0
     ],
     "crc_recall": [
-     0.8422,
-     0.8265,
-     0.8579
+     0.84,
+     0.8238,
+     0.8562
     ],
     "crc_recall_no_review": [
      0.325,
@@ -85,9 +85,9 @@
      1.0
     ],
     "cervical_recall": [
-     0.9682,
-     0.948,
-     0.9884
+     0.9668,
+     0.9485,
+     0.9851
     ],
     "cervical_recall_no_review": [
      0.5606,
@@ -95,9 +95,9 @@
      0.5897
     ],
     "kpi_wasl": [
-     0.3126,
-     0.2988,
-     0.3264
+     0.3122,
+     0.2986,
+     0.3258
     ],
     "kpi_truth": [
      0.323,
@@ -110,8 +110,8 @@
      0.1371
     ],
     "kpi_abs_error_wasl": [
-     0.0104,
-     0.0078,
+     0.0108,
+     0.0086,
      0.013
     ],
     "kpi_abs_error_eid_only": [
@@ -120,69 +120,69 @@
      0.2043
     ],
     "linkage_pair_f1": [
-     0.9748,
-     0.9734,
-     0.9762
+     0.9746,
+     0.9732,
+     0.976
     ],
     "reviewer_h_per_1k": [
-     14.3444,
-     14.003,
-     14.6858
+     14.711,
+     14.3019,
+     15.1201
     ],
     "review_items_per_100_loops": [
-     41.5824,
-     41.1731,
-     41.9917
+     42.8228,
+     42.3694,
+     43.2762
     ],
     "review_items_per_100_arab": [
-     41.4666,
-     40.2373,
-     42.6959
+     42.4756,
+     41.0407,
+     43.9105
     ],
     "reviewer_h_per_1k_arab": [
-     14.2572,
-     13.8599,
-     14.6545
+     14.564,
+     14.0778,
+     15.0502
     ],
     "review_items_per_100_filipino": [
-     40.305,
-     37.7098,
-     42.9002
+     41.9226,
+     39.3856,
+     44.4596
     ],
     "reviewer_h_per_1k_filipino": [
-     14.0788,
-     12.8047,
-     15.3529
+     14.4172,
+     13.4568,
+     15.3776
     ],
     "review_items_per_100_south_asian": [
-     42.6208,
-     39.2255,
-     46.0161
+     44.1138,
+     40.9484,
+     47.2792
     ],
     "reviewer_h_per_1k_south_asian": [
-     14.63,
-     13.1405,
-     16.1195
+     15.0704,
+     13.6277,
+     16.5131
     ],
     "review_items_per_100_western": [
-     41.096,
-     39.2421,
-     42.9499
+     42.5324,
+     40.3148,
+     44.75
     ],
     "reviewer_h_per_1k_western": [
-     14.3522,
-     13.2552,
-     15.4492
+     14.8272,
+     13.5984,
+     16.056
     ],
     "review_load_ratio_max_min_origin": [
-     1.1176,
-     1.0554,
-     1.1798
+     1.1128,
+     1.0606,
+     1.165
     ],
     "throughput_ev_s": [
-     513.6797,
-     432.0152,
-     595.3442
+     498.2881,
+     464.9795,
+     531.5967
     ],
     "lung_precision": [
      1,
@@ -190,14 +190,14 @@
      1.0
     ],
     "lung_recall": [
-     0.9862,
-     0.9803,
-     0.9921
+     0.9858,
+     0.9806,
+     0.991
     ],
     "lung_state_accuracy": [
-     0.9942,
-     0.992,
-     0.9964
+     0.994,
+     0.9922,
+     0.9958
     ],
     "lung_escalation_recall": [
      0.9914,
@@ -268,27 +268,27 @@
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     3155,
+     3147,
      0.00117
     ],
     "cervical_false_closures": [
      0,
-     1405,
-     0.00262
+     1403,
+     0.00263
     ],
     "wrong_patient_released": [
      0,
-     15158,
+     15094,
      0.00024
     ],
     "released_without_granted_consent": [
      0,
-     9939,
-     0.00037
+     10491,
+     0.00035
     ],
     "duplicate_or_lost_outputs": [
      0,
-     202977,
+     204655,
      2e-05
     ],
     "ingest_lost_or_duplicated": [
@@ -328,7 +328,7 @@
     ],
     "lung_false_closures": [
      0,
-     2026,
+     2025,
      0.00182
     ],
     "dr_false_closures": [
@@ -343,13 +343,13 @@
     ],
     "handoff_false_closures": [
      0,
-     88,
-     0.04105
+     87,
+     0.04151
     ]
    },
    "pooled_counts": {
     "lung_workup_pred_awaiting_tissue": 10,
-    "lung_workup_pred_closed_by_ct": 94,
+    "lung_workup_pred_closed_by_ct": 93,
     "lung_workup_pred_closed_by_pet": 96,
     "lung_workup_pred_closed_by_tissue": 48,
     "lung_workup_truth_awaiting_tissue": 10,
@@ -365,7 +365,7 @@
     "dr_reader_dr-screen_agree_but_wrong": 0,
     "dr_reader_dr-screen_coded": 3724,
     "handoff_acted_state_correct": 330,
-    "handoff_closed": 88,
+    "handoff_closed": 87,
     "handoff_packets_all_required_fields": 330,
     "handoff_packets_matched": 330,
     "handoff_truth_acted_by_act_by": 152,
@@ -377,98 +377,98 @@
    },
    "review_load_by_origin": {
     "per_seed_mean_ci": [
-     1.1176,
-     1.0554,
-     1.1798
+     1.1128,
+     1.0606,
+     1.165
     ],
     "pooled_items_per_100": {
-     "arab": 41.5,
-     "filipino": 40.3,
-     "south_asian": 42.6,
-     "western": 41.1
+     "arab": 42.5,
+     "filipino": 41.9,
+     "south_asian": 44.1,
+     "western": 42.5
     },
-    "pooled_ratio": 1.0583,
-    "no_bias_median_mean": 1.1069,
-    "no_bias_p95_mean": 1.2175,
+    "pooled_ratio": 1.0528,
+    "no_bias_median_mean": 1.1088,
+    "no_bias_p95_mean": 1.2195,
     "seeds_above_no_bias_p05": 0,
     "seeds_with_reference": 5,
-    "pooled_no_bias_median": 1.0458,
-    "pooled_no_bias_p95": 1.0926,
-    "pooled_p_value": 0.292,
+    "pooled_no_bias_median": 1.0454,
+    "pooled_no_bias_p95": 1.0964,
+    "pooled_p_value": 0.377,
     "standardised": {
      "observed_over_expected": {
-      "arab": 1.025,
-      "filipino": 0.932,
-      "south_asian": 0.97,
-      "western": 1.002
+      "arab": 1.02,
+      "filipino": 0.942,
+      "south_asian": 0.975,
+      "western": 1.007
      },
-     "ratio": 1.0997,
-     "no_bias_p95": 1.0853,
-     "p_value": 0.014
+     "ratio": 1.083,
+     "no_bias_p95": 1.0849,
+     "p_value": 0.057
     },
     "by_programme": {
      "cervical": {
       "items_per_100": {
-       "arab": 61.3,
-       "filipino": 56.5,
-       "south_asian": 56.3,
-       "western": 58.8
+       "arab": 62.9,
+       "filipino": 59.4,
+       "south_asian": 58.6,
+       "western": 60.4
       },
-      "ratio": 1.0884,
-      "no_bias_p95": 1.1803,
-      "p_value": 0.532
+      "ratio": 1.0733,
+      "no_bias_p95": 1.1836,
+      "p_value": 0.676
      },
      "crc": {
       "items_per_100": {
-       "arab": 68.6,
-       "filipino": 61.1,
-       "south_asian": 65.0,
-       "western": 66.5
+       "arab": 70.1,
+       "filipino": 63.7,
+       "south_asian": 67.1,
+       "western": 69.2
       },
-      "ratio": 1.123,
-      "no_bias_p95": 1.099,
-      "p_value": 0.017
+      "ratio": 1.1004,
+      "no_bias_p95": 1.1028,
+      "p_value": 0.058
      },
      "diabetic_retinopathy": {
       "items_per_100": {
-       "arab": 14.0,
+       "arab": 14.2,
        "filipino": 14.2,
-       "south_asian": 12.6,
-       "western": 15.7
+       "south_asian": 12.8,
+       "western": 15.8
       },
-      "ratio": 1.2488,
-      "no_bias_p95": 1.4041,
-      "p_value": 0.291
+      "ratio": 1.2334,
+      "no_bias_p95": 1.4027,
+      "p_value": 0.345
      },
      "lung_nodule": {
       "items_per_100": {
-       "arab": 11.6,
-       "filipino": 10.9,
-       "south_asian": 12.8,
-       "western": 10.9
+       "arab": 12.4,
+       "filipino": 11.2,
+       "south_asian": 13.6,
+       "western": 11.5
       },
-      "ratio": 1.1752,
-      "no_bias_p95": 1.4858,
-      "p_value": 0.661
+      "ratio": 1.2157,
+      "no_bias_p95": 1.4973,
+      "p_value": 0.535
      }
     }
    },
    "crc_by_age_band_and_sex": {
     "age_band": {
      "pooled_items_per_100": {
-      "40-59": 64.5,
-      "60-79": 67.9,
-      "80+": 68.2,
-      "<40": 66.8
+      "40-59": 66.5,
+      "60-79": 69.9,
+      "80+": 69.9,
+      "<40": 68.8
      },
-     "pooled_ratio": 1.0581,
-     "pooled_no_bias_p95": 1.0831,
-     "pooled_p_value": 0.225,
+     "pooled_ratio": 1.0521,
+     "pooled_no_bias_p95": 1.0843,
+     "pooled_p_value": 0.324,
      "crc_recall": {
-      "40-59": 0.818,
+      "40-59": 0.813,
       "60-79": 0.851,
-      "80+": 0.843,
-      "<40": 0.859
+      "80+": 0.84,
+      "<40": 0.858
      },
      "crc_false_closures": {
       "40-59": 0,
@@ -479,15 +479,15 @@
     },
     "sex": {
      "pooled_items_per_100": {
-      "F": 65.9,
-      "M": 68.6
+      "F": 67.7,
+      "M": 70.8
      },
-     "pooled_ratio": 1.0411,
-     "pooled_no_bias_p95": 1.0457,
-     "pooled_p_value": 0.089,
+     "pooled_ratio": 1.0463,
+     "pooled_no_bias_p95": 1.0449,
+     "pooled_p_value": 0.046,
      "crc_recall": {
-      "F": 0.843,
-      "M": 0.84
+      "F": 0.84,
+      "M": 0.839
      },
      "crc_false_closures": {
       "F": 0,
@@ -505,9 +505,9 @@
      1.0
     ],
     "crc_recall": [
-     0.7756,
-     0.7615,
-     0.7897
+     0.7746,
+     0.761,
+     0.7882
     ],
     "crc_recall_no_review": [
      0.3196,
@@ -520,9 +520,9 @@
      1.0
     ],
     "cervical_recall": [
-     0.9072,
-     0.8823,
-     0.9321
+     0.9058,
+     0.8798,
+     0.9318
     ],
     "cervical_recall_no_review": [
      0.557,
@@ -530,9 +530,9 @@
      0.5865
     ],
     "kpi_wasl": [
-     0.297,
-     0.2713,
-     0.3227
+     0.2968,
+     0.271,
+     0.3226
     ],
     "kpi_truth": [
      0.329,
@@ -545,9 +545,9 @@
      0.1307
     ],
     "kpi_abs_error_wasl": [
-     0.032,
-     0.0251,
-     0.0389
+     0.0322,
+     0.0254,
+     0.039
     ],
     "kpi_abs_error_eid_only": [
      0.2066,
@@ -560,64 +560,64 @@
      0.9402
     ],
     "reviewer_h_per_1k": [
-     12.9274,
-     12.1034,
-     13.7514
+     13.1874,
+     12.331,
+     14.0438
     ],
     "review_items_per_100_loops": [
-     37.259,
-     35.6283,
-     38.8897
+     38.173,
+     36.4735,
+     39.8725
     ],
     "review_items_per_100_arab": [
-     36.5758,
-     35.4297,
-     37.7219
+     37.428,
+     36.2827,
+     38.5733
     ],
     "reviewer_h_per_1k_arab": [
-     12.7098,
-     12.1299,
-     13.2897
+     12.9752,
+     12.3862,
+     13.5642
     ],
     "review_items_per_100_filipino": [
-     39.135,
-     33.4184,
-     44.8516
+     40.2316,
+     34.6273,
+     45.8359
     ],
     "reviewer_h_per_1k_filipino": [
-     13.5674,
-     11.1716,
-     15.9632
+     13.9062,
+     11.5072,
+     16.3052
     ],
     "review_items_per_100_south_asian": [
-     39.1714,
-     33.7608,
-     44.582
+     40.1906,
+     34.2089,
+     46.1723
     ],
     "reviewer_h_per_1k_south_asian": [
-     13.4778,
-     11.559,
-     15.3966
+     13.7366,
+     11.6483,
+     15.8249
     ],
     "review_items_per_100_western": [
-     35.5658,
-     34.6965,
-     36.4351
+     36.4124,
+     35.4777,
+     37.3471
     ],
     "reviewer_h_per_1k_western": [
-     12.4608,
-     11.9283,
-     12.9933
+     12.652,
+     12.1451,
+     13.1589
     ],
     "review_load_ratio_max_min_origin": [
-     1.1816,
-     1.0249,
-     1.3383
+     1.1814,
+     1.0171,
+     1.3457
     ],
     "throughput_ev_s": [
-     590.7927,
-     363.6775,
-     817.9079
+     666.2281,
+     439.332,
+     893.1242
     ],
     "lung_precision": [
      1,
@@ -625,14 +625,14 @@
      1.0
     ],
     "lung_recall": [
-     0.9498,
-     0.9398,
-     0.9598
+     0.9494,
+     0.9404,
+     0.9584
     ],
     "lung_state_accuracy": [
-     0.9774,
-     0.9732,
-     0.9816
+     0.9772,
+     0.9735,
+     0.9809
     ],
     "lung_escalation_recall": [
      0.9198,
@@ -685,9 +685,9 @@
      0.5
     ],
     "stalled_days_before_deadline_first_escalation_median": [
-     23.26,
-     23.192,
-     23.328
+     23.24,
+     23.172,
+     23.308
     ],
     "stalled_share_flagged": [
      1.0,
@@ -703,27 +703,27 @@
    "safety_pooled": {
     "crc_false_closures": [
      0,
-     2999,
+     2995,
      0.00123
     ],
     "cervical_false_closures": [
      0,
-     1305,
-     0.00282
+     1303,
+     0.00283
     ],
     "wrong_patient_released": [
      0,
-     14334,
+     14343,
      0.00026
     ],
     "released_without_granted_consent": [
      0,
-     9482,
+     9473,
      0.00039
     ],
     "duplicate_or_lost_outputs": [
      0,
-     198294,
+     198734,
      2e-05
     ],
     "ingest_lost_or_duplicated": [
@@ -763,7 +763,7 @@
     ],
     "lung_false_closures": [
      0,
-     1899,
+     1898,
      0.00194
     ],
     "dr_false_closures": [
@@ -812,98 +812,98 @@
    },
    "review_load_by_origin": {
     "per_seed_mean_ci": [
-     1.1816,
-     1.0249,
-     1.3383
+     1.1814,
+     1.0171,
+     1.3457
     ],
     "pooled_items_per_100": {
-     "arab": 36.6,
-     "filipino": 39.2,
-     "south_asian": 39.2,
-     "western": 35.6
+     "arab": 37.4,
+     "filipino": 40.3,
+     "south_asian": 40.3,
+     "western": 36.4
     },
-    "pooled_ratio": 1.1031,
-    "no_bias_median_mean": 1.1156,
-    "no_bias_p95_mean": 1.2404,
+    "pooled_ratio": 1.1064,
+    "no_bias_median_mean": 1.1172,
+    "no_bias_p95_mean": 1.242,
     "seeds_above_no_bias_p05": 2,
     "seeds_with_reference": 5,
-    "pooled_no_bias_median": 1.0492,
-    "pooled_no_bias_p95": 1.0977,
-    "pooled_p_value": 0.041,
+    "pooled_no_bias_median": 1.0501,
+    "pooled_no_bias_p95": 1.101,
+    "pooled_p_value": 0.032,
     "standardised": {
      "observed_over_expected": {
-      "arab": 1.011,
-      "filipino": 1.002,
-      "south_asian": 0.991,
+      "arab": 1.01,
+      "filipino": 1.006,
+      "south_asian": 0.993,
       "western": 0.974
      },
-     "ratio": 1.0371,
-     "no_bias_p95": 1.088,
-     "p_value": 0.635
+     "ratio": 1.0368,
+     "no_bias_p95": 1.0914,
+     "p_value": 0.654
     },
     "by_programme": {
      "cervical": {
       "items_per_100": {
-       "arab": 51.9,
-       "filipino": 53.0,
-       "south_asian": 51.0,
-       "western": 47.8
+       "arab": 53.3,
+       "filipino": 53.8,
+       "south_asian": 52.2,
+       "western": 49.5
       },
-      "ratio": 1.1106,
-      "no_bias_p95": 1.2027,
-      "p_value": 0.372
+      "ratio": 1.0878,
+      "no_bias_p95": 1.2058,
+      "p_value": 0.573
      },
      "crc": {
       "items_per_100": {
-       "arab": 61.2,
-       "filipino": 57.6,
-       "south_asian": 60.0,
-       "western": 60.5
+       "arab": 62.7,
+       "filipino": 59.2,
+       "south_asian": 61.6,
+       "western": 61.6
       },
-      "ratio": 1.063,
-      "no_bias_p95": 1.1149,
-      "p_value": 0.375
+      "ratio": 1.0586,
+      "no_bias_p95": 1.1143,
+      "p_value": 0.444
      },
      "diabetic_retinopathy": {
       "items_per_100": {
        "arab": 12.9,
-       "filipino": 16.3,
-       "south_asian": 12.9,
-       "western": 13.7
+       "filipino": 16.7,
+       "south_asian": 13.3,
+       "western": 14.1
       },
-      "ratio": 1.2677,
-      "no_bias_p95": 1.4053,
-      "p_value": 0.248
+      "ratio": 1.2991,
+      "no_bias_p95": 1.412,
+      "p_value": 0.175
      },
      "lung_nodule": {
       "items_per_100": {
-       "arab": 10.1,
-       "filipino": 11.6,
-       "south_asian": 9.7,
-       "western": 7.5
+       "arab": 10.6,
+       "filipino": 12.5,
+       "south_asian": 9.9,
+       "western": 7.8
       },
-      "ratio": 1.5502,
-      "no_bias_p95": 1.5671,
-      "p_value": 0.06
+      "ratio": 1.6014,
+      "no_bias_p95": 1.5704,
+      "p_value": 0.039
      }
     }
    },
    "crc_by_age_band_and_sex": {
     "age_band": {
      "pooled_items_per_100": {
-      "40-59": 58.4,
-      "60-79": 62.1,
-      "80+": 61.2,
-      "<40": 60.6
+      "40-59": 60.2,
+      "60-79": 63.5,
+      "80+": 62.3,
+      "<40": 62.0
      },
-     "pooled_ratio": 1.0631,
-     "pooled_no_bias_p95": 1.0879,
-     "pooled_p_value": 0.234,
+     "pooled_ratio": 1.0536,
+     "pooled_no_bias_p95": 1.0885,
+     "pooled_p_value": 0.372,
      "crc_recall": {
-      "40-59": 0.771,
+      "40-59": 0.77,
       "60-79": 0.782,
-      "80+": 0.792,
-      "<40": 0.763
+      "80+": 0.791,
+      "<40": 0.762
      },
      "crc_false_closures": {
       "40-59": 0,
@@ -914,15 +914,15 @@
     },
     "sex": {
      "pooled_items_per_100": {
-      "F": 60.8,
-      "M": 59.8
+      "F": 62.1,
+      "M": 61.5
      },
-     "pooled_ratio": 1.0161,
-     "pooled_no_bias_p95": 1.049,
-     "pooled_p_value": 0.546,
+     "pooled_ratio": 1.0105,
+     "pooled_no_bias_p95": 1.0488,
+     "pooled_p_value": 0.704,
      "crc_recall": {
-      "F": 0.773,
-      "M": 0.783
+      "F": 0.772,
+      "M": 0.78
      },
      "crc_false_closures": {
       "F": 0,

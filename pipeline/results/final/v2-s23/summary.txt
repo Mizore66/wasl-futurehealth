@@ -1,13 +1,13 @@
 ── Wasl baseline (simulated cohort; one seed) ──
-crc       with review : P 1.000  R 0.779  false closures 0/620
+crc       with review : P 1.000  R 0.778  false closures 0/619
 crc       no review   : P 1.000  R 0.325  false closures 0/259
 cervical  with review : P 1.000  R 0.940  false closures 0/264
 cervical  no review   : P 1.000  R 0.598  false closures 0/168
 CRC ≤31-day KPI (all referrals): EID-only 0.121 | truth 0.342 | Wasl 0.305
-exactly-once: duplicates 0 / 40046 outputs; final-state mismatches 0
-provenance chains verified 3590/3590; forged events with effect 0/24
+exactly-once: duplicates 0 / 40141 outputs; final-state mismatches 0
+provenance chains verified 3588/3588; forged events with effect 0/24
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 1923, without granted consent 0; held-for-consent 422, cancelled 103
-throughput 515 ev/s; reviewer-h/1k loops 13.4
+consent hold: released 1927, without granted consent 0; held-for-consent 423, cancelled 104
+throughput 654 ev/s; reviewer-h/1k loops 13.7
 lung_nodule (Fleischner 2017): P 1.000  R 0.949  false closures 0/357; escalation recall 0.917; overdue acc 0.983; recommendation acc 1.000 (coverage 1.000); appropriate follow-up truth 0.406 vs Wasl 0.374
 diabetic_retinopathy (doh2024dr): P 1.000  R 0.997  false closures 0/1111; referral closures P 1.000 R 0.929; triage acc 1.000 (coverage 1.000); overdue acc 0.998; exam within deadline truth 0.347 vs Wasl 0.306

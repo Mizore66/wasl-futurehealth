@@ -1241,3 +1241,40 @@ Post-hoc changes after the `4cafa26` evaluation, disclosed. The frozen evaluatio
 - **What changed and what is noise.** The solid effect is about 3% fewer review items, matching the 47–77 dropped questions per run. The recall changes (CRC +0.001, cervical +0.002 to +0.004) are inside their intervals: changing the order of the reviewer's answers alone moves results by that much. DR results are identical.
 - **The held-out sex gap is gone, and traced.** Held-out CRC identity questions per 100 loops, `4cafa26` → `d3a1e64`: women who also have a cervical loop 49.5 → 43.9; other women 43.6 → 43.5; men 42.4 → 42.3. Only the women with two loops changed, so their two loops had been asking about the same registration pair.
 - **Dev sex ratio rose** 1.011 (p = 0.63) → 1.041 (p = 0.09), not significant; most likely run-to-run noise. Not traced.
+
+### Learn-then-Test re-run, and a confirming review for contradicting links (`0f6a532`, new headline)
+
+**Why re-run.** Learn-then-Test had last run at `a5248c5` (28 Oct). Since then the identity rules changed (surname variants, Emirates ID as second identifier, short surnames, answer reuse). The calibration cohorts were regenerated with the current generator (same seeds 101–106, cal split, v2 noise).
+
+**First re-run (`4b58c9b`) found one failure.** At the operating tier 0.995 with review: 1 false closure and 1 loop with a wrong-patient message in 12,600 (the tier still certified: α = 0.001). Both were one loop (cohort 103, `ahs-mushrif/ServiceRequest/AHS-sr-880`):
+- A link question asked whether a woman registered as "ابتسام عبد الله", born 1 Jan 1972, was the same person as a man registered as "عبد الله", born 1 Jan 1973.
+- Both simulated reads answered "same" (the assumed 4% error twice; about 0.16% per item). The records merged, the man's colonoscopy report joined her loop, a day-15 prep answer "adequate" closed it, and a message went to the wrong person.
+- The gap: a human "same" was accepted even when the two records contradict each other. The simulated reviewer errs at a fixed rate whatever the evidence, so this is a stress test, not a measured clinician error; nothing enforced a second look.
+
+**Fix (`0f6a532`, post-hoc, disclosed; flag `-linkconfirm`, default on).** A human "same" on a pair whose recorded sex differs, or whose real (non-placeholder) birth dates are more than 365 days apart, no longer merges. The loop raises a confirming link review (`link_contradiction_confirm`) that names the contradiction, and only that answer merges. Placeholder birth dates and unknown sex are missing data, not contradictions. It mirrors the override block (`OverrideConfirm`) and covers all four programmes. Tests: `TestLinkContradiction`, `TestContradictingLinkNeedsConfirmation`.
+
+**Learn-then-Test at `0f6a532`** (files in [`results/ltt/`](results/ltt/LTT.md)):
+
+| With review, τ 0.995 | `a5248c5` (old cohorts) | `4b58c9b` (no guard) | **`0f6a532`** |
+|---|---|---|---|
+| False closures / wrong-patient message loops (of 12,600) | 0 / 0 | 1 / 1 | **0 / 0** |
+| Recall | 0.883 | 0.814 | 0.813 |
+| Review items per 100 loops | 82.4 | 61.9 | 63.5 |
+| Loosest certified tier | 0.5 | 0.8 | 0.8 |
+
+The operating tier is still 0.995. Recall with review is lower than at `a5248c5` because ungraded-prep reports now wait for the unit's grade (as in the frozen evaluation); without review it rose from 0.29 to 0.40 (the identity rules). The guarantee still covers loops like the synthetic calibration set only.
+
+**Frozen evaluation at `0f6a532`** (same seeds and cohorts; files in `results/final/`). The guard held 48–97 "same" answers per run for a confirming review. Most are probably true matches whose records disagree from data-entry noise, so they cost reviewer time; this evaluation did not count how many were wrong merges prevented.
+
+| | Dev noise v1: `d3a1e64` → `0f6a532` | Held-out v2: `d3a1e64` → `0f6a532` |
+|---|---|---|
+| CRC recall | 0.842 → 0.840 (0.824–0.856) | 0.776 → 0.775 (0.761–0.788) |
+| Cervical; lung; DR recall | 0.967; 0.986; 0.998 | 0.906; 0.949; 0.994 |
+| CRC / cervical / lung / DR false closures | 0 / 3,147; 0 / 1,403; 0 / 2,025; 0 / 5,621 | 0 / 2,995; 0 / 1,303; 0 / 1,898; 0 / 5,608 |
+| Wrong-patient messages; sent without consent | 0 / 15,094; 0 / 10,491 | 0 / 14,343; 0 / 9,473 |
+| Review items per 100 loops; reviewer hours per 1k loops | 41.6 → 42.8; 14.3 → 14.7 | 37.3 → 38.2; 12.9 → 13.2 |
+| Origin ratio per seed; pooled (p); standardised (p) | 1.11 (1.06–1.17); 1.05 (0.38); 1.08 (0.057) | 1.18 (1.02–1.35); 1.11 (0.032); 1.04 (0.65) |
+| CRC by sex; by age band, max/min (p) | 1.046 (0.046); 1.052 (0.32) | 1.011 (0.70); 1.054 (0.37) |
+
+- **Cost:** about 3% more review items; recall changes are inside run-to-run noise. Every safety count is 0, as before.
+- **Subgroup signals** (weak evidence after about 16 tests; see the previous section): the dev CRC origin gap is now 1.10 (p = 0.058), the dev sex ratio 1.046 (p = 0.046), and held-out lung loops by origin 1.60 (p = 0.039; Western 7.5 vs Filipino 11.3 items per 100 loops at `d3a1e64`, small groups). None passes a Bonferroni cut; all cost reviewer time, not recall or safety.
