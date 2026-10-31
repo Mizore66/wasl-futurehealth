@@ -62,11 +62,11 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 				}
 				wrongLoops := map[string]bool{}
 				for _, x := range rp.outs {
-					if x.Dec == nil || o.tr.Loops[x.Dec.LoopID] == nil {
+					if x.Dec == nil || o.tr.Loops[baseLoop(x.Dec.LoopID)] == nil {
 						continue
 					}
 					for _, m := range x.Dec.Outreach {
-						if m.Released && o.tr.PKQid[o.evPK[m.Event]] != o.tr.Loops[x.Dec.LoopID].Qid {
+						if m.Released && o.tr.PKQid[o.evPK[m.Event]] != o.tr.Loops[baseLoop(x.Dec.LoopID)].Qid {
 							wrongLoops[x.Dec.LoopID] = true
 						}
 					}
