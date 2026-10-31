@@ -269,6 +269,7 @@ type Outreach struct {
 	Pair     [2]string `json:"pair,omitempty"`   // v7: referral registration, downstream registration
 	Channel  string  `json:"channel,omitempty"` // lung outreach: phone_then_letter
 	Sender   string  `json:"sender,omitempty"`  // lung outreach: the facility the message is sent in the name of
+	Template string  `json:"tpl,omitempty"`     // lung / DR outreach: the approved template id to send (rules.go, -progtpl)
 }
 
 func sha(b []byte) string {
