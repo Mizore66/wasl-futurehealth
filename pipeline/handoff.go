@@ -67,12 +67,34 @@ var adviceFor = map[string]string{
 	"other":                 "Referral declined. See the rejecting clinician's reply and refer onward.",
 }
 
-// handoffUnits: the units that offer each programme's procedure (generator providers 2-4).
+// adviceNoAlternative: the same advice where the network has no other unit for the procedure (handoffext.go).
+var adviceNoAlternative = map[string]string{
+	"needs_more_info":       "Referral returned incomplete. Resend with the information requested.",
+	"wrong_provider":        "This unit does not take the patient's network. Refer to a unit in the patient's network.",
+	"service_not_available": "No capacity for this procedure. Re-refer when the unit has capacity, or refer outside the network.",
+	"other":                 "Referral declined. Review the reason with the unit and refer again.",
+}
+
+// handoffUnits: the units that offer each programme's procedure (generator providers 2-4). The lung work-up and the
+// DR eye exam have one unit each in the simulated network (mafraq-rad, eye-hosp), so there is no other unit to suggest.
 func handoffUnits(prog string) []string {
-	if prog == "cervical" {
+	switch prog {
+	case "cervical":
 		return []string{Providers[4].ID, Providers[3].ID}
+	case "lung_nodule", "diabetic_retinopathy":
+		return nil
 	}
 	return []string{Providers[2].ID, Providers[3].ID}
+}
+
+var handoffRecommendation = map[string]string{"crc": "colonoscopy after positive FIT", "cervical": "colposcopy after abnormal screen",
+	"lung_nodule":          "PET/CT or tissue sampling for a solid nodule > 8 mm (Fleischner 2017)",
+	"diabetic_retinopathy": "dilated eye examination at an eye clinic (doh2024dr)"}
+
+// handoffComplete: every required field is filled (the suggested alternative only where another unit exists).
+func handoffComplete(q *HandoffPacket, prog string) bool {
+	return q.ReferralID != "" && q.ReasonCode != "" && q.Advice != "" && (q.Alternative != "" || len(handoffUnits(prog)) < 2) &&
+		q.Responsible != "" && q.DecidedBy != "" && q.Consent != ""
 }
 
 func handoffUrgent(prog, prio string) bool {
@@ -181,7 +203,13 @@ func buildHandoff(f *LoopFacts, prog string, srs []srFact, ec ecThread, refDay, 
 	if rej == nil {
 		return nil
 	}
-	urgent := handoffUrgent(prog, f.Priority)
+	return fillHandoff(f, prog, rej, decided, decision, srs, refDay, now, contact, handoffUrgent(prog, f.Priority), false)
+}
+
+// fillHandoff: the packet for a final rejection `rej` decided at `decided` (every programme). The referrer acted when
+// they answer the packet or a new referral is answered after the decision: by another unit, or by any unit where the
+// programme has a single unit (sameUnitActs).
+func fillHandoff(f *LoopFacts, prog string, rej *srFact, decided float64, decision string, srs []srFact, refDay, now float64, contact string, urgent, sameUnitActs bool) *HandoffPacket {
 	code := reasonCodes[rej.reason]
 	if code == "" {
 		code = "other"
@@ -195,10 +223,13 @@ func buildHandoff(f *LoopFacts, prog string, srs []srFact, ec ecThread, refDay, 
 			break
 		}
 	}
+	if a, ok := adviceNoAlternative[code]; ok && p.Alternative == "" { // no other unit to suggest (lung work-up, DR)
+		p.Advice = a
+	}
 	if code == "needs_more_info" {
 		p.InfoRequested = []string{"reason_for_referral", "relevant_clinical_information", "expected_outcome"} // DoH PHC 4.9.4
 	}
-	p.Recommendation = map[string]string{"crc": "colonoscopy after positive FIT", "cervical": "colposcopy after abnormal screen"}[prog]
+	p.Recommendation = handoffRecommendation[prog]
 	for _, cm := range f.Comms {
 		if cm.Category == "econsult-reply" && cm.Day <= now+1e-9 && cm.Day <= decided+1e-9 {
 			p.AdviceRef = cm.ID
@@ -208,7 +239,7 @@ func buildHandoff(f *LoopFacts, prog string, srs []srFact, ec ecThread, refDay, 
 		}
 	}
 	for _, s := range srs { // a new referral answered by another unit also shows the referrer acted
-		if s.day > decided && s.prov != rej.prov && (p.ActedAt < 0 || s.day < p.ActedAt) {
+		if s.day > decided && (s.prov != rej.prov || sameUnitActs) && (p.ActedAt < 0 || s.day < p.ActedAt) {
 			p.ActedAt = s.day
 		}
 	}

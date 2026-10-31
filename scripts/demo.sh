@@ -7,6 +7,7 @@
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 #      WASL_LUNG=N adds N incidental lung-nodule loops (Fleischner 2017, second loop type; default 0 = screening cohort only).
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
+#      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -77,7 +78,7 @@ build()  { (cd "$ROOT/pipeline" && go vet . && go build -o "$BIN/wsi7" .); echo 
 test_()  { (cd "$ROOT/pipeline" && go test -count=1 .); }
 cohort() {
   rm -rf "$BASE" "$COHORT" "$OUT/run/base"; mkdir -p "$BASE" "$COHORT"
-  "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
+  "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
     -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
     -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
   "$BIN/wsi7" sim -data "$BASE" -wasl "$ROOT/models" -run "$OUT/run/base" ${MARGS[@]+"${MARGS[@]}"} > "$OUT/run/base.json" 2> "$OUT/run/base.err"

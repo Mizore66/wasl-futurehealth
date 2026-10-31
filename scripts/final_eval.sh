@@ -21,6 +21,7 @@ LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
 # hand-off, default off: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
 [ "${WASL_XREFLINK:-0}" = 0 ] || PARGS+=(-xreflink)
+# WASL_REFREJECT=true (gen, default false): lung work-up and DR eye-clinic referrals can be rejected (pipeline/handoffext.go)
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -55,6 +56,8 @@ if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_A
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
 if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
     m["handoff_xreflink"] = True
+if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung work-up / DR eye-clinic referrals (handoffext.go)
+    m["handoff_refreject"] = True
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
@@ -69,7 +72,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     if [ -s "$FINAL/$tag/report7.json" ]; then echo "skip $tag (done)"; return; fi
     rm -rf "$O"; mkdir -p "$O/run"
     B="$ROOT/bin"
-    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
+    "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
       -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
