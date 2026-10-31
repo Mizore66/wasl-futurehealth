@@ -348,7 +348,7 @@ func sweep(data, wasl string, P int, out string) {
 			secs += so.DurationS
 			reads += len(so.Reads)
 			kinds[so.Kinds[0]]++
-			if it, ok := rp.items[so.ItemID]; ok && it.Reason == "second_identifier" {
+			if it, ok := rp.items[so.ItemID]; ok && secondIDPurpose(it.Reason) {
 				guardS += so.DurationS
 				guardN++
 			}
