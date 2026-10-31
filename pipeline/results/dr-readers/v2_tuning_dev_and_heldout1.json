@@ -1,0 +1,67 @@
+{
+ "dr": {
+  "dr-clinic": {
+   "agree": 49,
+   "agree_but_wrong_vs_key": 0,
+   "errors": null,
+   "reader_a_regex_correct": 50,
+   "reader_b_gemma_correct": 49,
+   "reader_b_unavailable": 1,
+   "reports": 50,
+   "to_review": 1
+  },
+  "dr-screen": {
+   "agree": 25,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 34,
+   "coded_path_agree_but_wrong": 0,
+   "errors": [
+    "drs10 B:R0M0 want R1M0",
+    "drs19 B:R1M0 want R2M0",
+    "drs21 B:R1M1 want R0M1",
+    "drs31 B:R1M0 want U"
+   ],
+   "reader_a_regex_correct": 34,
+   "reader_b_gemma_correct": 25,
+   "reader_b_unavailable": 5,
+   "reports": 34,
+   "to_review": 9
+  }
+ },
+ "heldout": {
+  "dr-clinic": {
+   "agree": 45,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "hc06 A:indeterminate want examined_treated"
+   ],
+   "reader_a_regex_correct": 49,
+   "reader_b_gemma_correct": 46,
+   "reader_b_unavailable": 4,
+   "reports": 50,
+   "to_review": 5
+  },
+  "dr-screen": {
+   "agree": 29,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 17,
+   "coded_path_agree_but_wrong": 0,
+   "errors": [
+    "hs07 B:R2M0 want R0M0",
+    "hs08 A:indeterminate want R0M0",
+    "hs09 A:indeterminate want R0M0",
+    "hs11 A:indeterminate want R0M0",
+    "hs21 B:R2M1 want R1M1",
+    "hs25 B:R2M1 want R2M0",
+    "hs31 B:R2M1 want R2M0",
+    "hs34 B:R2M1 want R1M1",
+    "hs36 B:R3AM1 want R2M1/urgent"
+   ],
+   "reader_a_regex_correct": 37,
+   "reader_b_gemma_correct": 32,
+   "reader_b_unavailable": 2,
+   "reports": 40,
+   "to_review": 11
+  }
+ }
+}
