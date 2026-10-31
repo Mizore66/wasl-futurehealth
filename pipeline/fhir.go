@@ -67,6 +67,12 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 				}
 			}
 		}
+		if e.Category == "dr-screening" { // diabetic retinopathy screen (dr.go)
+			e.DR = &DRSR{}
+			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
+				e.DR.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
+			}
+		}
 		if e.Lung != nil {
 			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
 				e.Lung.Finding = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
@@ -125,7 +131,7 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
-				case "lung-finding", "lung-ct", LungPETCode, LungPathCode: // incidental-nodule index CT | follow-up CT | PET/CT | tissue (lung.go)
+				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go)
 					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}

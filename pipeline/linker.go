@@ -583,7 +583,8 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
-			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule"}[e.Category]
+			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
+				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -614,6 +615,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	if base.Lung != nil {
 		f.Lung = base.Lung
 		f.Down = append(f.Down, lungFindingFacts(L.recs[s])...) // index CT on the referral's own registration
+	}
+	if base.DR != nil {
+		f.DR = base.DR
+		f.Down = append(f.Down, drScreenFacts(L.recs[s])...) // screening reports on the screen's own registration
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
@@ -848,7 +853,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}

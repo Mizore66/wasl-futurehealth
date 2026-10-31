@@ -1,0 +1,784 @@
+{
+  "source": "Independent author (Gemini 4 Argon, Google) - deterministic stdlib generator gen_dr_heldout.py, random seed 9091, synthetic diabetic retinopathy texts, 2026-10-31",
+  "reports": [
+    {
+      "id": "hs01",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: Al Bateen Healthcare Center | Date: 2026-01-01 | MRN: AD-SCR-9100\nStructured Grade Summary: Right eye R0 M0, Left eye R0 M0. Dual-field digital colour photographs show normal optic discs and normal macular reflexes bilaterally. No microaneurysms, no haemorrhages, and no exudates seen. Routine annual recall.\n[SYSTEM CODED GRADE: R0M0]",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "negated_finding",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs02",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (Madinat Khalifa Healthcare Center)\nRetinal Photography Report (2026-02-02) - File #AD-SCR-9101\n--------------------------------------------------\nCoded Grading Output: OD = R0 M0 | OS = R0 M0. Color fundus photography demonstrates clear media and healthy retinal vasculature in both eyes. No diabetic retinopathy or maculopathy identified. Repeat screening in 12 months.\nSummary Code: R0M0",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:us",
+        "eye:od_os",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs03",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: Baniyas Primary Care Clinic | Date: 2026-03-03 | ID: AD-SCR-9102\nنتيجة الفحص: طبيعي في العينين (Normal bilateral exam).\nStructured Per-Eye Grade: RE (العين اليمنى): R0 M0; LE (العين اليسرى): R0 M0. Maculae flat and dry. Return to annual call/recall.\nFinal DESP Code: R0M0",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "coded",
+        "arabic",
+        "eye:re_le",
+        "eye:arabic",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs04",
+      "text": "REPORTING PORTAL EXPORT // AL ZAFARANAH DIAGNOSTIC & SCREENING CENTER // 2026-04-04\nPATIENT ID: AD-SCR-9103\nCODED OUTCOME: R0M0\nFINDINGS:\nPer-eye coded assessment: Right eye R0 M0, Left eye R0 M0. Note: Previous screening 12 months ago was graded R1M0 (single tiny dot haemorrhage right temporal arcade), which has completely resolved today with improved HbA1c. Annual recall.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": "R0M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "prev_grade_diff",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs05",
+      "text": "<2026-05-05> [ICLDC Abu Dhabi Main Branch] Pt:AD-SCR-9104 | AutoGrade=NONE\nVA RE 6/6, LE 6/6. Mydriatic two-field images captured. RE: normal disc, normal vessels, no microaneurysms, no maculopathy. LE: normal fundus appearance, no haemorrhages or exudates, no new vessels. Impression: no diabetic retinopathy in either eye.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "negated_finding",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs06",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9105 screened at ICLDC Al Ain Branch on 2026-06-06.\nVA OD 20/25, OS 20/20. Fundus photos show intermediate hard and soft macular drusen within 1 DD of the fovea in both eyes with mild RPE mottling consistent with dry age-related macular degeneration (AMD). However, there are zero microaneurysms, no retinal hemorrhages, no hard lipid exudates, and no diabetic macular edema in OD or OS. No diabetic retinopathy.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "hard:non_dr_pathology",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs07",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: Al Yahar Ambulatory Center | Date: 2026-07-07 | MRN: AD-SCR-9106\nRight eye and Left eye retinal photographs reviewed. Prominent copper wiring and arteriovenous nipping noted along the superotemporal arcade in the right eye (Grade 2 hypertensive retinopathy), plus a benign choroidal naevus inferonasally in the left eye. No diabetic microaneurysms, no blot haemorrhages, and no exudates near the fovea in either eye. Routine diabetic recall.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "hard:non_dr_pathology",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs08",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (Al Muwaiji Primary Screening Unit)\nRetinal Photography Report (2026-08-08) - File #AD-SCR-9107\n--------------------------------------------------\nComparison made with prior screening from last year (which showed mild background changes R1M0 in the left eye). Today's photographs of RE and LE show complete turnover and resolution of the previous microaneurysms. No active microaneurysms, no haemorrhages, and no exudates in either eye today.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "prev_grade_diff",
+        "negated_finding",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs09",
+      "text": "<2026-09-09> [Al Bateen Healthcare Center] Pt:AD-SCR-9108 | AutoGrade=NONE\nDigital Retinal Screening examination. OD: normal optic nerve, flat macula, no diabetic retinopathy or edema. OS: clear media, normal caliber vessels, no m1croaneurysms or hemorrhages seen. Recall 1 year.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "ocr_noise",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs10",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: Madinat Khalifa Healthcare Center | Date: 2026-01-10 | ID: AD-SCR-9109\nتقرير فحص الشبكية: لا يوجد اعتلال شبكي سكري.\nRight eye (العين اليمنى): normal fundus, clear foveal reflex. Left eye (العين اليسرى): healthy disc and vessels, no diabetic changes detected.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "eye:arabic",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs11",
+      "text": "REPORTING PORTAL EXPORT // BANIYAS PRIMARY CARE CLINIC // 2026-02-11\nPATIENT ID: AD-SCR-9110\nFINDINGS:\nGood quality 45-degree photographs obtained after tropicamide 1%. RE shows healthy neuroretinal rim and spotless posterior pole. LE shows normal retinal background; specifically no microaneurysms, no venous beading, no IRMA, and no maculopathy. Routine 12-month screening.",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "negated_finding",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs12",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9111 screened at Al Zafaranah Diagnostic & Screening Center on 2026-03-12.\nBoth the right eye and the left eye demonstrate normal retinal architecture on today's non-mydriatic camera capture. Foveal avascular zones appear intact without lipid or hemorrhage. Will invite back in one year.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "0",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R0M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:us",
+        "eye:right_left",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs13",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: ICLDC Abu Dhabi Main Branch | Date: 2026-04-13 | MRN: AD-SCR-9112\nStructured Grade: Right eye = R1 M0, Left eye = R0 M0. Right eye shows three isolated microaneurysms and one small dot haemorrhage nasal to the disc, well away from the macula. Left eye has no retinopathy. Annual screening recall.\n[SYSTEM CODED GRADE: R1M0]",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs14",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (ICLDC Al Ain Branch)\nRetinal Photography Report (2026-05-14) - File #AD-SCR-9113\n--------------------------------------------------\nCoded Per-Eye Summary: OD R0 M0; OS R1 M0. OS demonstrates mild background diabetic retinopathy with scattered microaneurysms superior to the vascular arcade; macula is free of exudates or edema. OD is unremarkable.\nSummary Code: R1M0",
+      "key": {
+        "r_right": "0",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:us",
+        "eye:od_os",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs15",
+      "text": "<2026-06-15> [Al Yahar Ambulatory Center] Pt:AD-SCR-9114 | AutoGrade=R1M0\nPer-eye grades: RE R1 M0, LE R1 M0 (Progressed from R0M0 at 2025 screening). Bilateral mild background retinopathy with occasional dot haemorrhages and microaneurysms outside the macular grid. No maculopathy in either eye.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": "R1M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:re_le",
+        "prev_grade_diff",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs16",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: Al Muwaiji Primary Screening Unit | Date: 2026-07-16 | ID: AD-SCR-9115\nفحص الشبكية السكري - درجة بسيطة في العين اليمنى.\nVA: Right eye 6/6 (corrected), Left eye 6/6. Right eye shows two microaneurysms and a tiny dot haemorrhage located 0.5 disc diameters temporal to the foveal centre, with no exudates and no retinal thickening; because visual acuity is 6/6 (better than 6/12), M1 criteria are not met. Left eye is completely normal. Annual recall.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "hard:foveal_ma_good_va",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs17",
+      "text": "REPORTING PORTAL EXPORT // AL BATEEN HEALTHCARE CENTER // 2026-08-17\nPATIENT ID: AD-SCR-9116\nFINDINGS:\nVisual acuity: RE 6/5, LE 6/9. Fundus grading: RE has a single microaneurysm within 1 DD of the fovea and three dot haemorrhages nasally, but no hard exudates, no retinal thickening, and vision is 6/5 so no referable maculopathy. LE shows two peripheral microaneurysms superiorly, no maculopathy, no new vessels. Background retinopathy only.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:foveal_ma_good_va",
+        "negated_finding",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs18",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9117 screened at Madinat Khalifa Healthcare Center on 2026-09-18.\nVA OD 20/20, OS 20/25. OD fundus is completely clear without lesions. OS shows a few microaneurysms and two small, isolated hard exudates located 2.5 disc diameters superior to the fovea (well outside the 1 DD macular zone and not forming a macular group). No macular thickening. Mild background retinopathy OS.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "0",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "hard:distant_exudate",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs19",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: Baniyas Primary Care Cl1nic | Date: 2026-01-19 | MRN: AD-SCR-9118\nR1ght eye: occasional m1croaneurysms and a single flame haemorrhage in the nasal periphery; macula is clear with no exudates. Lelt eye: four microaneurysms temporal to the macula (>2 DD from fovea), no venous beading, no IRMA, and no macul0pathy. Background diabetic ret1nopathy bilaterally.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "ocr_noise",
+        "negated_finding",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs20",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (Al Zafaranah Diagnostic & Screening Center)\nRetinal Photography Report (2026-02-20) - File #AD-SCR-9119\n--------------------------------------------------\nPrevious grade 1 year ago was R0M0. Today RE shows early background changes with 4 microaneurysms along the inferotemporal arcade and a tiny blot haemorrhage; macula remains dry and clear. LE remains free of diabetic retinopathy. Continue annual screening.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "prev_grade_diff",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs21",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: ICLDC Abu Dhabi Main Branch | Date: 2026-03-21 | MRN: AD-SCR-9120\nStructured Grade: Right eye R1 M1, Left eye R1 M0. Right eye demonstrates background microaneurysms plus a distinct ring of hard exudates encroaching to within 0.5 disc diameters of the fovea. Left eye shows a few nasal microaneurysms only. Routine referral to hospital eye services for right maculopathy.\n[SYSTEM CODED GRADE: R1M1]",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": "R1M1"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs22",
+      "text": "<2026-04-22> [ICLDC Al Ain Branch] Pt:AD-SCR-9121 | AutoGrade=NONE\nVA: RE 6/18 (pinhole 6/12), LE 6/6. RE fundus shows no hard exudates and no obvious stereo thickening, but there are three microaneurysms and a small blot haemorrhage situated 0.6 disc diameters from the centre of the fovea; combined with reduced visual acuity of 6/12, this meets NHS M1 maculopathy criteria. LE is completely normal (R0M0). Refer to medical retina clinic.",
+      "key": {
+        "r_right": "1",
+        "r_left": "0",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:va_driven_m1",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs23",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: Al Yahar Ambulatory Center | Date: 2026-05-23 | ID: AD-SCR-9122\nتحويل لعيادة الشبكية بسبب اعتلال اللطخة الصفراء في العين اليسرى.\nPrior screening was R1M0 OU. Today OD shows mild background microaneurysms without macular involvement (R1M0). OS shows mild background retinopathy plus a cluster of hard lipid exudates and focal retinal thickening within 1 DD of the fovea (R1M1). Routine ophthalmology referral.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": null
+      },
+      "tags": [
+        "arabic",
+        "spelling:us",
+        "eye:od_os",
+        "prev_grade_diff",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs24",
+      "text": "REPORTING PORTAL EXPORT // AL MUWAIJI PRIMARY SCREENING UNIT // 2026-06-24\nPATIENT ID: AD-SCR-9123\nCODED OUTCOME: R2M0\nFINDINGS:\nCoded Grade: Right eye R2 M0, Left eye R1 M0. Right eye shows pre-proliferative diabetic retinopathy with multiple deep dark blot haemorrhages in all four quadrants and venous beading superotemporally; no new vessels and no maculopathy. Left eye has mild background microaneurysms only. Refer to hospital eye clinic.",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": "R2M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "negated_finding",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs25",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9124 screened at Al Bateen Healthcare Center on 2026-07-25.\nUpgraded from R1M0 last year. RE shows stable background microaneurysms and intact macula. LE now demonstrates clear intraretinal microvascular abnormalities (IRMA) nasal to the disc and venous reduplication/beading along the inferior arcade, without new vessels and without macular exudates. Routine referral for left pre-proliferative DR.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "1",
+        "r_left": "2",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "prev_grade_diff",
+        "negated_finding",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs26",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (Madinat Khalifa Healthcare Center)\nRetinal Photography Report (2026-08-26) - File #AD-SCR-9125\n--------------------------------------------------\nSystem Coded Grade: OD = R2 M1, OS = R1 M0. OD exhibits venous loops, multiple deep blot hemorrhages, and circinate macular exudates within 0.5 DD of the foveal center. OS shows mild background microaneurysms with a dry macula. Refer to retina specialist.\nSummary Code: R2M1",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R2M1",
+        "coded": "R2M1"
+      },
+      "tags": [
+        "coded",
+        "spelling:us",
+        "eye:od_os",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs27",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: Baniyas Primary Care Cl1nic | Date: 2026-09-27 | MRN: AD-SCR-9126\nR1ght eye: multiple deep blot haem0rrhages, prominent IRMA, and group of macular exudates with retinal thickening at the fovea. Lelt eye: venous beading in two quadrants, deep haemorrhages, and exudates within 1 DD of the fovea. Bilateral pre-proliferative ret1nopathy with bilateral maculopathy. Routine HES referral.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "r_right": "2",
+        "r_left": "2",
+        "m_right": "1",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R2M1",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "ocr_noise",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs28",
+      "text": "<2026-01-01> [Al Zafaranah Diagnostic & Screening Center] Pt:AD-SCR-9127 | AutoGrade=R3SM0\nCoded Assessment: RE R3S M0, LE R1 M0. RE shows extensive, well-pigmented panretinal photocoagulation (PRP) laser scars in 360 degrees with a fibrosed, completely regressed vascular frond at the disc; no active new vessels or haemorrhage, macula dry. LE shows a few background microaneurysms only.",
+      "key": {
+        "r_right": "3S",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3SM0",
+        "coded": "R3SM0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:re_le",
+        "hard:stable_prp_3s",
+        "negated_finding",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs29",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: ICLDC Abu Dhabi Main Branch | Date: 2026-02-02 | ID: AD-SCR-9128\nآثار ليزر قديمة ومستقرة في الشبكية اليسرى.\nRight eye has two small background microaneurysms outside the arcade and a normal macula (R1M0). Left eye demonstrates old confluent peripheral PRP laser scars from prior treatment of proliferative disease; vessels are quiescent with no active neovascularisation and no macular oedema (R3SM0).",
+      "key": {
+        "r_right": "1",
+        "r_left": "3S",
+        "m_right": "0",
+        "m_left": "0",
+        "urgent": false,
+        "label": "R3SM0",
+        "coded": null
+      },
+      "tags": [
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "hard:stable_prp_3s",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs30",
+      "text": "REPORTING PORTAL EXPORT // ICLDC AL AIN BRANCH // 2026-03-03\nPATIENT ID: AD-SCR-9129\nCODED OUTCOME: R3SM1\nFINDINGS:\nStructured Grade: OD R3S M0, OS R3S M1. Both eyes show quiescent, regressed proliferative retinopathy with full panretinal laser scars and no active neovascularization. However, OS now shows a new group of lipid exudates within 1 DD of the fovea. Refer back to medical retina.",
+      "key": {
+        "r_right": "3S",
+        "r_left": "3S",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R3SM1",
+        "coded": "R3SM1"
+      },
+      "tags": [
+        "coded",
+        "spelling:us",
+        "eye:od_os",
+        "hard:stable_prp_3s",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs31",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9130 screened at Al Yahar Ambulatory Center on 2026-04-04 (Grade: R2M0).\nPer-Eye Coded Grade: Right eye = R2 M0, Left eye = U. Right eye has clear media showing venous beading and multiple deep blot haemorrhages (pre-proliferative, macula clear). Left eye is completely ungradable due to a dense mature white cataract obscuring the fundus. Because the right eye has referable retinopathy on its own, overall grade is R2M0.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "2",
+        "r_left": "U",
+        "m_right": "0",
+        "m_left": "",
+        "urgent": false,
+        "label": "R2M0",
+        "coded": "R2M0"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "hard:ungradable_asymmetry",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs32",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: Al Muwaiji Primary Screening Unit | Date: 2026-05-05 | MRN: AD-SCR-9131\nRE cannot be graded today (Grade U) owing to dense posterior subcapsular cataract and poor pupil dilation preventing any view of the disc or macula. LE has clear media and shows background microaneurysms together with hard exudates 0.4 DD from the fovea (R1M1). As LE is referable for maculopathy, overall report is graded from LE as R1M1.",
+      "key": {
+        "r_right": "U",
+        "r_left": "1",
+        "m_right": "",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:ungradable_asymmetry",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs33",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (Al Bateen Healthcare Center)\nRetinal Photography Report (2026-06-06) - File #AD-SCR-9132\n--------------------------------------------------\nStructured Grade: Right eye R0 M0, Left eye R1 M1 (Progressed from R1M0 at previous screening). Right eye remains normal. Left eye has developed a cluster of hard exudates and focal thickening temporal to and within 1 DD of the fovea.\nSummary Code: R1M1",
+      "key": {
+        "r_right": "0",
+        "r_left": "1",
+        "m_right": "0",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": "R1M1"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "prev_grade_diff",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs34",
+      "text": "<2026-07-07> [Madinat Khalifa Healthcare Center] Pt:AD-SCR-9133 | AutoGrade=NONE\nVA OD 20/30, OS 20/40. Bilateral mild background retinopathy with microaneurysms and dot hemorrhages. In addition, both OD and OS show rings of hard exudates within 1 disc diameter of the center of the fovea. Bilateral diabetic maculopathy; routine referral placed.",
+      "key": {
+        "r_right": "1",
+        "r_left": "1",
+        "m_right": "1",
+        "m_left": "1",
+        "urgent": false,
+        "label": "R1M1",
+        "coded": null
+      },
+      "tags": [
+        "spelling:us",
+        "eye:od_os",
+        "layout:2"
+      ]
+    },
+    {
+      "id": "hs35",
+      "text": "ببرنامج فحص اعتلال الشبكية السكري - أبوظبي (Abu Dhabi DESP)\nClinic: Baniyas Primary Care Clinic | Date: 2026-08-08 | ID: AD-SCR-9134\nتحويل عاجل جداً - نزيف وأوعية دموية جديدة نشطة في العين اليمنى.\nCoded Grade: Right eye (العين اليمنى) = R3A M1, Left eye (العين اليسرى) = R2 M0. Right eye shows active fine new vessels at the disc (NVD), a boat-shaped pre-retinal subhyaloid haemorrhage, and macular exudates within 1 DD of the fovea. Left eye shows venous beading and IRMA without maculopathy. URGENT referral requested to hospital eye service within 2 weeks.\nFinal DESP Code: R3AM1",
+      "key": {
+        "r_right": "3A",
+        "r_left": "2",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": true,
+        "label": "R3AM1",
+        "coded": "R3AM1"
+      },
+      "tags": [
+        "coded",
+        "arabic",
+        "spelling:uk",
+        "eye:right_left",
+        "eye:arabic",
+        "layout:3"
+      ]
+    },
+    {
+      "id": "hs36",
+      "text": "REPORTING PORTAL EXPORT // AL ZAFARANAH DIAGNOSTIC & SCREENING CENTER // 2026-09-09\nPATIENT ID: AD-SCR-9135\nFINDINGS:\nRE shows severe pre-proliferative changes (R2) with extensive deep dark blot haem0rrhages in all quadrants, marked venous loops, and heavy circinate exudates threatening the foveal centre (M1) with drop in vision to 6/18. LE shows mild background m1croaneurysms only (R1M0). Although no frank new vessels are seen yet, grader requests an URGENT referral to medical retina due to severe ischaemic R2 features and imminent threat to central vision.\n[Scanned document - OCR confidence 84% ~ |l1]",
+      "key": {
+        "r_right": "2",
+        "r_left": "1",
+        "m_right": "1",
+        "m_left": "0",
+        "urgent": true,
+        "label": "R2M1/urgent",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "ocr_noise",
+        "layout:4"
+      ]
+    },
+    {
+      "id": "hs37",
+      "text": "=== SEHA AHS PRIMARY CARE DIABETIC EYE SCREENING ===\nCentre: ICLDC Abu Dhabi Main Branch | Date: 2026-01-10 | MRN: AD-SCR-9136\nStructured Grade: Right eye = U, Left eye = U. Bilateral dense nuclear sclerotic and cortical cataracts completely obscure the posterior pole in both eyes. Neither optic disc nor macula can be graded. Refer to slit-lamp biomicroscopy / cataract clinic.\n[SYSTEM CODED GRADE: U]",
+      "key": {
+        "r_right": "U",
+        "r_left": "U",
+        "m_right": "",
+        "m_left": "",
+        "urgent": false,
+        "label": "U",
+        "coded": "U"
+      },
+      "tags": [
+        "coded",
+        "spelling:uk",
+        "eye:right_left",
+        "layout:0"
+      ]
+    },
+    {
+      "id": "hs38",
+      "text": "MUBADALA HEALTH / IMPERIAL COLLEGE LONDON DIABETES CENTRE (ICLDC Al Ain Branch)\nRetinal Photography Report (2026-02-11) - File #AD-SCR-9137\n--------------------------------------------------\nCoded Output: OD = U, OS = R0 M0. OD image is ungradable due to central corneal scarring and small pupil (<2 mm). OS is clearly visualized and shows a completely normal retina with no diabetic retinopathy (R0M0). Because the fellow gradable eye is non-referable, overall screening outcome is U for technical/slit-lamp repeat.\nSummary Code: U",
+      "key": {
+        "r_right": "U",
+        "r_left": "0",
+        "m_right": "",
+        "m_left": "0",
+        "urgent": false,
+        "label": "U",
+        "coded": "U"
+      },
+      "tags": [
+        "coded",
+        "spelling:us",
+        "eye:od_os",
+        "hard:ungradable_asymmetry",
+        "layout:1"
+      ]
+    },
+    {
+      "id": "hs39",
+      "text": "Dear GP,\nRe: Patient AD-SCR-9138 screened at Al Yahar Ambulatory Center on 2026-03-12.\nRE is well visualised and shows only mild background retinopathy (three peripheral microaneurysms, no maculopathy, no pre-proliferative features: R1M0). LE is ungradable (U) due to severe asteroid hyalosis and media opacity hiding more than 50% of the macular and disc fields. Because the gradable RE is not referable on its own, overall report grade is U.\nYours sincerely,\nAccredited Retinal Grader",
+      "key": {
+        "r_right": "1",
+        "r_left": "U",
+        "m_right": "0",
+        "m_left": "",
+        "urgent": false,
+        "label": "U",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:re_le",
+        "hard:ungradable_asymmetry",
+        "negated_finding",
+        "layout:5"
+      ]
+    },
+    {
+      "id": "hs40",
+      "text": "<2026-04-13> [Al Muwaiji Primary Screening Unit] Pt:AD-SCR-9139 | AutoGrade=NONE\nAttempted non-mydriatic and mydriatic photography. Both right eye and left eye photographs are ungradable due to poor patient fixation, severe photophobia, and blink artefact across the macula in all frames. Refer to slit-lamp biomicroscopy clinic.",
+      "key": {
+        "r_right": "U",
+        "r_left": "U",
+        "m_right": "",
+        "m_left": "",
+        "urgent": false,
+        "label": "U",
+        "coded": null
+      },
+      "tags": [
+        "spelling:uk",
+        "eye:right_left",
+        "layout:2"
+      ]
+    }
+  ]
+}
