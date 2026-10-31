@@ -58,6 +58,11 @@ type Malaffi struct {
 	runDir  string
 	client  *http.Client
 	started time.Time
+	// polling and bulk tiers (malaffi_poll.go); nil visAt = subscription mode only
+	visAt     []float64
+	pollSpeed float64
+	pollStart time.Time
+	exports   map[string]exportJob
 }
 
 func loadHIE(dataDir string) []*hieEvent {
@@ -87,12 +92,15 @@ func loadHIE(dataDir string) []*hieEvent {
 	return out
 }
 
-func runMalaffi(dataDir, addr string, speed float64, seed int64, dup, reorder, drop float64, runDir string) {
+func runMalaffi(dataDir, addr string, speed float64, seed int64, dup, reorder, drop float64, runDir string, pollSpeed, lagFrac float64) {
 	m := &Malaffi{events: loadHIE(dataDir), byKey: map[string]*hieEvent{}, latest: map[string]*hieEvent{}, speed: speed,
 		rng: rand.New(rand.NewSource(seed)), stats: map[string]int{}, runDir: runDir, client: &http.Client{Timeout: 5 * time.Second}}
 	m.faults.dup, m.faults.reorder, m.faults.drop = dup, reorder, drop
 	for _, e := range m.events {
 		m.byKey[e.Type+"/"+e.ID+"/"+e.Vid] = e
+	}
+	if pollSpeed > 0 {
+		m.initPoll(pollSpeed, lagFrac, seed)
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/fhir/", m.handle)
@@ -138,6 +146,9 @@ func (m *Malaffi) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := strings.Split(strings.Trim(strings.TrimPrefix(r.URL.Path, "/fhir/"), "/"), "/")
+	if m.pollHandle(w, r, p) {
+		return
+	}
 	switch {
 	case r.Method == "POST" && len(p) == 1 && p[0] == "Subscription":
 		m.createSub(w, r)
@@ -159,7 +170,7 @@ func (m *Malaffi) handle(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()
 		var e *hieEvent
 		if len(p) == 4 {
-			if x := m.byKey[p[0]+"/"+p[1]+"/"+p[3]]; x != nil && x.Num <= m.releasedLocked() {
+			if x := m.byKey[p[0]+"/"+p[1]+"/"+p[3]]; x != nil && (x.Num <= m.releasedLocked() || m.visAt != nil && m.visAt[x.Num-1] <= m.simNowLocked()) {
 				e = x
 			}
 		} else {

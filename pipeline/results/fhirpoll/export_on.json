@@ -1,0 +1,41 @@
+{
+ "run": "export on (default)",
+ "crash_recovery": {
+  "duplicate_outputs": 0,
+  "expected_outputs": 27203,
+  "facts_msgs_replay": 26508,
+  "fhir_msgs": 36208,
+  "final_state_mismatch_loops": 0,
+  "generated_resources": 34764,
+  "ingest_duplicates": 0,
+  "ingest_lost": 0,
+  "live_outputs": 27203,
+  "logical_duplicate_decisions": 5,
+  "lost_outputs": 0,
+  "prep_content_mismatch": 0,
+  "prep_duplicates": 0,
+  "prep_live_msgs": 36208,
+  "prep_lost": 0,
+  "unexpected_outputs": 0,
+  "writer_processes_seen": 5
+ },
+ "poller_after_restart": {
+  "already_ingested_dropped": 8612,
+  "dup_dropped_export": 27516,
+  "dup_dropped_poll": 1318,
+  "export_recovered": 130,
+  "exports": 6,
+  "polls": 68,
+  "published_export": 130,
+  "published_poll": 23655,
+  "resumed": 1
+ },
+ "mock_hie": {
+  "export_jobs": 32,
+  "export_resources": 82649,
+  "history_entries": 43612,
+  "history_queries": 131,
+  "poll_lagged_versions": 662,
+  "reads": 296
+ }
+}
