@@ -57,10 +57,14 @@ var (
 	reScope    = regexp.MustCompile(`(?i)colonoscop|scope`)
 	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory)`)
 	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|fair|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|fair|satisfactory)|well[- ]prep`)
-	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved)|(?:removed|resected|excised|snared)[^.]{0,60}polyp`)
+	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved|recovered)|(?:removed|resected|excised|excision|snared|snare)[^.]{0,60}polyp`)
+	// v7.2 adds "biopsied" (unless negated earlier in its sentence), "excision/snare … polyp" and "polyp … recovered": colon tissue that v7.1 only caught by
+	// accident when a gastric biopsy in the same report matched (corpus 4 q275, corpus 8 v054).
 	// v3 (after the App 14 corpus, disclosed): "tissue taken" = a polyp removed OR any biopsy (DoH: if tissue was taken,
 	// histology must be back), and a Boston score is graded by its numbers (adequate = total >= 6 with every segment >= 2).
 	reBiopsy   = regexp.MustCompile(`(?i)biops(?:y|ies)[^.]{0,60}(?:taken|obtained|performed|sent|done)|(?:took|taken|obtained|performed)[^.]{0,40}biops`)
+	reBiopsied = regexp.MustCompile(`(?i)\bbiopsied\b`)
+	reNegBefore = regexp.MustCompile(`(?i)\b(?:no|not|never|nothing|none|neither|nor|without)\b[^.;]*$`)
 	reNoBiopsy = regexp.MustCompile(`(?i)\bno biops`)
 	reBBPS       = regexp.MustCompile(`(?i)boston bowel prep[a-z]* scale|\bbbps\b`)
 	reBBPSNamed  = regexp.MustCompile(`(?i)\b(right|transverse|left|r|t|l)\s*(?:colon\s*)?[:=]?\s*([0-3])\b`)
@@ -142,13 +146,79 @@ func regexFields(t string) (c, p, po, h string) {
 		p = "not_stated"
 	}
 	po, h = "no", "no"
-	if rePolyps.MatchString(t) || reBiopsy.MatchString(t) && !reNoBiopsy.MatchString(t) {
-		po = "yes" // tissue taken (v3)
+	if colonTissue(t, rePolyps) || colonTissue(t, reBiopsy) && !reNoBiopsy.MatchString(t) || colonTissue(t, reBiopsied) {
+		po = "yes" // tissue taken (v3); v7.2: not tissue from the upper-GI part of a combined report
 	}
 	if currentHistology(t, reHisto) {
 		h = "yes"
 	}
 	return
+}
+
+// v7.2: a combined EGD + colonoscopy report also describes gastric and duodenal biopsies and polypectomies, which are
+// not colon tissue and do not make the colonoscopy wait for histology (MTSamples u4: biopsies of an antral mass and
+// fundal polyps after a normal colon). Only when the report names an upper-GI procedure, each sentence gets a site:
+// upper when it names only upper-GI sites, colon when it names a colon site, and otherwise the site of the sentence
+// before it. A tissue match is ignored only in an upper sentence; a sentence naming both sites, or anything before any
+// site is named, still counts (the safe direction: a missed gastric exclusion costs a wait, not a false closure).
+var (
+	reUpperProc = regexp.MustCompile(`(?i)\bEGD\b|\bOGD\b|(?:o)?esophagogastroduodenoscop|gastroscop|upper (?:GI |gastrointestinal )?endoscop`)
+	reUpperSite = regexp.MustCompile(`(?i)\bEGD\b|\bOGD\b|(?:o)?esophag|gastroscop|upper (?:GI |gastrointestinal )?endoscop|\bstomach\b|\bgastric\b|\bantr(?:um|al)\b|\bfund(?:us|al)\b|\bpylor|\bduoden|\bhiatal\b|\bcardia\b|\bGE junction\b|gastro-?(?:o)?esophageal|\bCLO\b`)
+	reColonSite = regexp.MustCompile(`(?i)colon|\brect(?:um|al)\b|sigmoid|c(?:a)?ec(?:um|al)|\bile(?:um|al)\b|ileo-?c|appendi|\banal\b|\banus\b|flexure|haustra|diverticul`)
+)
+
+// colonTissue: re matches outside the upper-GI part of the report.
+func colonTissue(t string, re *regexp.Regexp) bool {
+	ms := re.FindAllStringIndex(t, -1)
+	if re == reBiopsied {
+		ms = affirmedMatches(t, re)
+	}
+	if len(ms) == 0 || !reUpperProc.MatchString(t) {
+		return len(ms) > 0
+	}
+	for _, m := range ms {
+		if !upperAt(t, m[0]) {
+			return true
+		}
+	}
+	return false
+}
+
+// affirmedMatches: matches of re not negated earlier in their own sentence ("no tissue was resected or biopsied").
+func affirmedMatches(t string, re *regexp.Regexp) [][]int {
+	var out [][]int
+	for _, m := range re.FindAllStringIndex(t, -1) {
+		if !reNegBefore.MatchString(t[strings.LastIndexAny(t[:m[0]], ".\n")+1 : m[0]]) {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// upperAt: the sentence holding pos is in the upper-GI part (see colonTissue).
+func upperAt(t string, pos int) bool {
+	upper, start := false, 0
+	for start <= pos {
+		end := strings.IndexAny(t[start:], ".\n")
+		if end < 0 {
+			end = len(t)
+		} else {
+			end += start + 1
+		}
+		sent := t[start:end]
+		up, lo := reUpperSite.MatchString(sent), reColonSite.MatchString(sent)
+		switch {
+		case lo:
+			upper = false
+		case up:
+			upper = true
+		}
+		if pos < end {
+			return upper && !lo
+		}
+		start = end
+	}
+	return upper
 }
 
 // bbpsGrade (v4): grade a written Boston score only when it is unambiguous. found = a Boston score is mentioned. grade =

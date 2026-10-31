@@ -1,0 +1,86 @@
+{
+ "auto_correct_vs_truth": 184,
+ "auto_decided": 200,
+ "auto_unsafe_adequate_when_truth_not": 0,
+ "auto_wrong_safe_direction": 16,
+ "by_tag": {
+  "all": {
+   "auto": 200,
+   "n": 300
+  },
+  "bilingual": {
+   "auto": 21,
+   "n": 42
+  },
+  "extent_not_stated": {
+   "auto": 27,
+   "n": 27
+  },
+  "mass_biopsy": {
+   "auto": 6,
+   "n": 8
+  },
+  "narrative": {
+   "auto": 80,
+   "n": 128
+  },
+  "ocr": {
+   "auto": 17,
+   "n": 32
+  },
+  "prep_arabic_only": {
+   "auto": 4,
+   "n": 14
+  },
+  "prep_ungraded": {
+   "auto": 6,
+   "n": 52
+  },
+  "random_biopsy": {
+   "auto": 16,
+   "n": 20
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "300/300",
+   "histology": "300/300",
+   "polyps": "300/300",
+   "prep": "300/300",
+   "state": "300/300"
+  },
+  "regex": {
+   "caecum": "300/300",
+   "histology": "300/300",
+   "polyps": "300/300",
+   "prep": "234/300",
+   "state": "246/300"
+  }
+ },
+ "field_misses": {
+  "regex/prep": [
+   "a4:not_stated!=adequate",
+   "a5:not_stated!=adequate",
+   "a13:not_stated!=adequate",
+   "a15:not_stated!=inadequate",
+   "a19:not_stated!=adequate",
+   "a25:not_stated!=adequate",
+   "a26:not_stated!=adequate",
+   "a27:not_stated!=adequate"
+  ]
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 69,
+  "awaiting_histology/awaiting_histology": 44,
+  "inadequate/adequate": 10,
+  "inadequate/awaiting_histology": 6,
+  "inadequate/inadequate": 71,
+  "review/adequate": 54,
+  "review/awaiting_histology": 34,
+  "review/inadequate": 12
+ },
+ "reader2_cache_hits": 300,
+ "reader2_model": "gemma-4-26b-a4b-it-self/cached",
+ "reports": 300,
+ "unsafe": []
+}

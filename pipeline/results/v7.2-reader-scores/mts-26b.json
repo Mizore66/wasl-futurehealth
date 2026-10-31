@@ -1,0 +1,64 @@
+{
+ "auto_correct_vs_truth": 20,
+ "auto_decided": 21,
+ "auto_unsafe_adequate_when_truth_not": 0,
+ "auto_wrong_safe_direction": 1,
+ "by_tag": {
+  "all": {
+   "auto": 21,
+   "n": 43
+  }
+ },
+ "field_accuracy_vs_key": {
+  "reader2": {
+   "caecum": "42/43",
+   "histology": "43/43",
+   "polyps": "42/43",
+   "prep": "42/43",
+   "state": "42/43"
+  },
+  "regex": {
+   "caecum": "41/43",
+   "histology": "43/43",
+   "polyps": "41/43",
+   "prep": "41/43",
+   "state": "41/43"
+  }
+ },
+ "field_misses": {
+  "reader2/caecum": [
+   "u18:not_stated!=yes"
+  ],
+  "reader2/polyps": [
+   "u4:yes!=no"
+  ],
+  "reader2/prep": [
+   "u12:not_stated!=adequate"
+  ],
+  "regex/caecum": [
+   "u9:yes!=not_stated",
+   "u18:not_stated!=yes"
+  ],
+  "regex/polyps": [
+   "u1:no!=yes",
+   "u35:no!=yes"
+  ],
+  "regex/prep": [
+   "u2:not_stated!=adequate",
+   "u12:not_stated!=adequate"
+  ]
+ },
+ "label_vs_truth": {
+  "adequate/adequate": 6,
+  "awaiting_histology/awaiting_histology": 4,
+  "inadequate/awaiting_histology": 1,
+  "inadequate/inadequate": 10,
+  "review/adequate": 8,
+  "review/awaiting_histology": 13,
+  "review/inadequate": 1
+ },
+ "reader2_cache_hits": 43,
+ "reader2_model": "gemma-4-26b-a4b-it-self/cached",
+ "reports": 43,
+ "unsafe": []
+}
