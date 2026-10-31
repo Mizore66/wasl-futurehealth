@@ -44,7 +44,7 @@ func EnableDR() {
 	DROn = true
 	Providers = append(Providers, drProviders...)
 	provDefaultLang["phc-retina"], provDefaultLang["eye-hosp"] = "en", "en"
-	ProvDisplay["phc-retina"] = [2]string{"Diabetes clinic, primary care", "عيادة السكري، الرعاية الأولية"}
+	ProvDisplay["phc-retina"] = [2]string{"Primary care eye screening", "فحص العين، الرعاية الأولية"}
 	ProvDisplay["eye-hosp"] = [2]string{"Eye clinic, regional hospital", "عيادة العيون، المستشفى الإقليمي"}
 }
 

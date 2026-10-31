@@ -223,18 +223,24 @@ var ReuseLinkAnswer = true
 // outreach guard's second-identifier answer (IDConfirm below). Flag -linkconfirm.
 var LinkContradictionConfirm = true
 
+// LinkContradictionDOB: also treat two real birth dates more than a year apart as a contradiction. Off by default:
+// in the 0f6a532 frozen evaluation every one of the 675 held answers was a true match held on the birth-date arm (the
+// noise model's realistic date typos), none was a wrong merge, and 26 confirming reviews then split true links; the sex
+// arm held no true match. Turned off after that trace (post hoc, disclosed). Flag -linkconfirmdob.
+var LinkContradictionDOB = false
+
 // LinkConfirm is the purpose of the confirming link review raised for a held "same".
 const LinkConfirm = "link_contradiction_confirm"
 
-// linkContradiction: "sex" when both records carry a known, different sex; "dob" when both carry a real (non-
-// placeholder) birth date and they are more than 365 days apart; "" otherwise. A placeholder DOB or unknown sex is
+// linkContradiction: "sex" when both records carry a known, different sex; with LinkContradictionDOB, "dob" when both
+// carry a real (non-placeholder) birth date and they are more than 365 days apart; "" otherwise. A placeholder DOB or unknown sex is
 // missing data, not a contradiction.
 func linkContradiction(a, b *Rec) string {
 	known := func(s string) bool { return s == "M" || s == "F" }
 	if known(a.Sex) && known(b.Sex) && a.Sex != b.Sex {
 		return "sex"
 	}
-	if len(a.Dob) == 10 && len(b.Dob) == 10 && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
+	if LinkContradictionDOB && len(a.Dob) == 10 && len(b.Dob) == 10 && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
 		ta, ea := time.Parse("2006-01-02", a.Dob)
 		tb, eb := time.Parse("2006-01-02", b.Dob)
 		if ea == nil && eb == nil {

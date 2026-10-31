@@ -362,10 +362,25 @@ func TestLinkContradiction(t *testing.T) {
 		{r("U", "1972-03-14"), r("M", "1972-03-14"), ""},  // unknown sex
 		{r("F", ""), r("F", "1972-03-14"), ""},
 	}
+	defer func(v bool) { LinkContradictionDOB = v }(LinkContradictionDOB)
+	LinkContradictionDOB = true
 	for i, c := range cases {
 		if got := linkContradiction(c.a, c.b); got != c.want {
 			t.Errorf("case %d: got %q want %q", i, got, c.want)
 		}
+	}
+}
+
+// The birth-date arm is off by default (the 0f6a532 trace): only a sex contradiction holds a "same".
+func TestLinkContradictionDefaultSexOnly(t *testing.T) {
+	if LinkContradictionDOB {
+		t.Fatal("birth-date arm must be off by default")
+	}
+	if got := linkContradiction(&Rec{Sex: "F", Dob: "1972-03-14"}, &Rec{Sex: "F", Dob: "1975-06-02"}); got != "" {
+		t.Fatalf("real birth dates apart held by default: %q", got)
+	}
+	if got := linkContradiction(&Rec{Sex: "F", Dob: "1972-03-14"}, &Rec{Sex: "M", Dob: "1972-03-14"}); got != "sex" {
+		t.Fatalf("sex contradiction not held: %q", got)
 	}
 }
 
