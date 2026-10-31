@@ -154,6 +154,42 @@ for noise in ["v1", "v2"]:
             null.sort()
             origin_ratio.update({"pooled_no_bias_median": round(null[500], 4), "pooled_no_bias_p95": round(null[950], 4),
                                  "pooled_p_value": round(sum(x >= origin_ratio["pooled_ratio"] for x in null) / 1000, 4)})
+        if all("by_programme" in x for x in nulls):
+            # programme-aware (the loop mix differs by origin): per programme, and indirectly standardised by programme;
+            # no-bias reference shuffles origin labels within each seed and programme
+            P, groups = sorted(nulls[0]["by_programme"]), sorted(nulls[0]["loops"])
+            cells = [(i, pg) for i, x in enumerate(nulls) for pg in P if pg in x["by_programme"]]
+            lab = {c: [o for o, h in nulls[c[0]]["by_programme"][c[1]]["hist_by_origin"].items() for k, n in h.items() for _ in range(n)] for c in cells}
+            cnt = {c: [int(k) for o, h in nulls[c[0]]["by_programme"][c[1]]["hist_by_origin"].items() for k, n in h.items() for _ in range(n)] for c in cells}
+            pmean = {pg: sum(sum(cnt[c]) for c in cells if c[1] == pg) / sum(len(cnt[c]) for c in cells if c[1] == pg) for pg in P}
+
+            def stats(labels):
+                O, E, PI, PL = collections.Counter(), collections.Counter(), collections.Counter(), collections.Counter()
+                for c in cells:
+                    for o, k in zip(labels[c], cnt[c]):
+                        O[o] += k; E[o] += pmean[c[1]]; PI[(c[1], o)] += k; PL[(c[1], o)] += 1
+                std = [O[o] / E[o] for o in groups]
+                per = {}
+                for pg in P:
+                    r = [PI[(pg, o)] / PL[(pg, o)] for o in groups if PL[(pg, o)]]
+                    per[pg] = max(r) / min(r) if min(r) > 0 else float("inf")
+                return max(std) / min(std), per, {o: round(O[o] / E[o], 3) for o in groups}, {pg: {o: round(100 * PI[(pg, o)] / PL[(pg, o)], 1) for o in groups if PL[(pg, o)]} for pg in P}
+
+            s_obs, p_obs, oe, rates = stats(lab)
+            rng, sn, pn = random.Random(20261101), [], {pg: [] for pg in P}
+            work = {c: v[:] for c, v in lab.items()}
+            for _ in range(1000):
+                for c in cells:
+                    rng.shuffle(work[c])
+                a, b, _, _ = stats(work)
+                sn.append(a)
+                for pg in P:
+                    pn[pg].append(b[pg])
+            sn.sort()
+            origin_ratio["standardised"] = {"observed_over_expected": oe, "ratio": round(s_obs, 4), "no_bias_p95": round(sn[950], 4),
+                                            "p_value": round(sum(v >= s_obs for v in sn) / 1000, 4)}
+            origin_ratio["by_programme"] = {pg: {"items_per_100": rates[pg], "ratio": round(p_obs[pg], 4), "no_bias_p95": round(sorted(pn[pg])[950], 4),
+                                                 "p_value": round(sum(v >= p_obs[pg] for v in pn[pg]) / 1000, 4)} for pg in P}
     # age band and sex (CRC loops only; scripts/subgroups.py): pooled review load, recall and a within-seed shuffled-label test
     subs = [json.load(open(x)) for x in sorted(glob.glob(os.path.join(F, f"{noise}-s*", "subgroups.json")))]
     subgroups = {}
@@ -205,6 +241,12 @@ for noise in ["v1", "v2"]:
     if "pooled_p_value" in o:
         md.append(f"Pooled over seeds, the no-bias max/min has median {o['pooled_no_bias_median']} and 95th percentile {o['pooled_no_bias_p95']}; "
                   f"the observed pooled {o['pooled_ratio']} has p = {o['pooled_p_value']}.")
+    if "standardised" in o:
+        st = o["standardised"]
+        md.append(f"Standardised by programme (observed / expected items from each loop's programme mean): {st['observed_over_expected']}, "
+                  f"max/min **{st['ratio']}** (no-bias 95th percentile {st['no_bias_p95']}, p = {st['p_value']}; labels shuffled within seed and programme).")
+        for pg, v in o["by_programme"].items():
+            md.append(f"- {pg}: {v['items_per_100']} items per 100 loops, max/min **{v['ratio']}** (no-bias 95th percentile {v['no_bias_p95']}, p = {v['p_value']}).")
     for name, sg in subgroups.items():
         md.append(f"CRC loops by {name.replace('_', ' ')}: {sg['pooled_items_per_100']} review items per 100 loops, max/min **{sg['pooled_ratio']}** "
                   f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
