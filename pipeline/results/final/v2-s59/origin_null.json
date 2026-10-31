@@ -1,8 +1,8 @@
 {
- "observed": 1.1484,
- "null_median": 1.1156,
- "null_p95": 1.2467,
- "p_value": 0.319,
+ "observed": 1.1301,
+ "null_median": 1.1177,
+ "null_p95": 1.2497,
+ "p_value": 0.426,
  "permutations": 1000,
  "loops": {
   "south_asian": 1167,
@@ -11,73 +11,76 @@
   "western": 740
  },
  "items": {
-  "arab": 994,
-  "filipino": 173,
-  "south_asian": 441,
-  "western": 265
+  "arab": 1016,
+  "filipino": 174,
+  "south_asian": 448,
+  "western": 268
  },
  "items_per_loop_hist": {
-  "0": 3597,
-  "1": 1242,
-  "2": 285,
-  "3": 19,
-  "4": 1
+  "0": 3600,
+  "1": 1216,
+  "2": 297,
+  "3": 28,
+  "4": 3
  },
  "standardised": {
-  "observed": 1.0482,
-  "null_p95": 1.2271,
-  "p_value": 0.94
+  "observed": 1.0376,
+  "null_p95": 1.2265,
+  "p_value": 0.962
  },
  "by_programme": {
   "cervical": {
-   "observed": 1.1444,
-   "p_value": 0.777,
+   "observed": 1.1807,
+   "p_value": 0.664,
    "items_per_100": {
-    "arab": 53.1,
+    "arab": 54.7,
     "filipino": 48.7,
-    "south_asian": 49.3,
-    "western": 55.8
+    "south_asian": 50.2,
+    "western": 57.5
    },
    "hist_by_origin": {
     "arab": {
      "0": 235,
-     "1": 158,
-     "2": 27,
-     "3": 3,
+     "1": 153,
+     "2": 30,
+     "3": 5,
      "4": 1
     },
     "filipino": {
-     "0": 45,
-     "1": 28,
-     "2": 5
+     "0": 46,
+     "1": 27,
+     "2": 4,
+     "3": 1
     },
     "south_asian": {
-     "0": 116,
-     "1": 71,
-     "2": 14
+     "0": 117,
+     "1": 67,
+     "2": 17
     },
     "western": {
      "0": 62,
-     "1": 39,
-     "2": 12
+     "1": 38,
+     "2": 12,
+     "3": 1
     }
    }
   },
   "crc": {
-   "observed": 1.0751,
-   "p_value": 0.839,
+   "observed": 1.053,
+   "p_value": 0.945,
    "items_per_100": {
-    "arab": 58.1,
+    "arab": 59.6,
     "filipino": 61.5,
-    "south_asian": 57.2,
-    "western": 60.9
+    "south_asian": 58.4,
+    "western": 61.2
    },
    "hist_by_origin": {
     "arab": {
-     "0": 569,
-     "1": 390,
-     "2": 106,
-     "3": 7
+     "0": 570,
+     "1": 377,
+     "2": 115,
+     "3": 8,
+     "4": 2
     },
     "filipino": {
      "0": 91,
@@ -86,16 +89,16 @@
      "3": 1
     },
     "south_asian": {
-     "0": 275,
-     "1": 168,
-     "2": 53,
-     "3": 4
+     "0": 274,
+     "1": 167,
+     "2": 52,
+     "3": 7
     },
     "western": {
-     "0": 149,
-     "1": 95,
+     "0": 150,
+     "1": 93,
      "2": 35,
-     "3": 2
+     "3": 3
     }
    }
   },
@@ -130,30 +133,30 @@
    }
   },
   "lung_nodule": {
-   "observed": 2.213,
-   "p_value": 0.242,
+   "observed": 2.3974,
+   "p_value": 0.21,
    "items_per_100": {
-    "arab": 8.1,
-    "filipino": 15.4,
-    "south_asian": 9.9,
+    "arab": 8.0,
+    "filipino": 16.7,
+    "south_asian": 9.5,
     "western": 7.0
    },
    "hist_by_origin": {
     "arab": {
      "0": 550,
-     "1": 35,
-     "2": 5,
+     "1": 36,
+     "2": 4,
      "3": 1
     },
     "filipino": {
      "0": 68,
-     "1": 8,
-     "2": 2
+     "1": 7,
+     "2": 3
     },
     "south_asian": {
      "0": 212,
-     "1": 17,
-     "2": 3
+     "1": 18,
+     "2": 2
     },
     "western": {
      "0": 175,
