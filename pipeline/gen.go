@@ -92,6 +92,7 @@ type LoopTruth struct {
 	TBState    string   `json:"tb_state"`             // last teach-back state by TEnd
 	TBLatent   string   `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
 	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
+	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
 	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
 }
 
@@ -277,7 +278,7 @@ func crcFemale(ps []Person, crc []int) float64 {
 // GenSplit selects the person split a cohort is drawn from: eval (default) | cal (Learn-then-Test calibration cohorts).
 var GenSplit = "eval"
 
-func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools, nLung int, lungDir string) {
+func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools, nLung int, lungDir string, nDR int, drDir string) {
 	b, err := os.ReadFile(filepath.Join(dataDir, "persons3.json"))
 	if err != nil {
 		panic(err)
@@ -1379,6 +1380,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			bg = append(bg, &ps[rest[k]])
 		}
 		genLung(lungDirFor(lungDir, reportsPath), seed, nLung, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if nDR > 0 { // diabetic retinopathy loops (gendr.go): own RNG stream, background persons with no other loop
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genDR(drDirFor(drDir, reportsPath), seed, nDR, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()

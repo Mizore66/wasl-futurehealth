@@ -137,6 +137,7 @@ func main() {
 	imgPhotos := fs.Bool("imgphotos", false, "gen: attach synthetic caecal / mucosal photo references (HyperKvasir held-out test images) to colonoscopy reports")
 	imgCache := fs.String("imgcache", "", "gen/image: image verdict cache (default <wasl>/image_verdicts.json)")
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
+	drN := fs.Int("dr", 0, "gen: diabetic retinopathy screening loops (doh2024dr); 0 = no DR loops (other feeds byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
@@ -159,6 +160,11 @@ func main() {
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
 		os.Setenv("WSI_LUNG_PROVIDERS", "1")
+	}
+	// diabetic retinopathy programme: same, after the lung providers
+	if (cmd == "gen" && *drN > 0) || os.Getenv("WSI_DR_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_eye-hosp.ndjson")) {
+		EnableDR()
+		os.Setenv("WSI_DR_PROVIDERS", "1")
 	}
 	ModelSet = *modelSet
 	DualMerge = *dual
@@ -322,7 +328,7 @@ func main() {
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
-		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData)
+		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData)
 	case "setup":
 		setupStreams(*replicas, *P)
 	case "producer":
