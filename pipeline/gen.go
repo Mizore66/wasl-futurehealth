@@ -832,7 +832,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		notif := inf
 		sendTpl := func(day float64, kind, lang string) (string, bool) {
-			tid := rule.Tpl + "-" + kind + "-v1/" + lang
+			tid := rule.Tpl + "-" + kind + "-" + TemplateVersion + "/" + lang
 			txt, why := Render(tid, src.ID)
 			if why != "" {
 				panic(why)
@@ -912,8 +912,8 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		if ackDay < inf && ackID != "" && r.Float64() < .92 {
 			t := ackDay + .05 + .2*r.Float64()
-			ptxt, _ := Render("tb-prompt-v1/"+exp, src.ID)
-			pid := comm(t, "teachback-prompt", "tb-prompt-v1/"+exp, exp, ptxt, "completed", "", nil)
+			ptxt, _ := Render("tb-prompt-"+TemplateVersion+"/"+exp, src.ID)
+			pid := comm(t, "teachback-prompt", "tb-prompt-"+TemplateVersion+"/"+exp, exp, ptxt, "completed", "", nil)
 			setTB("prompted", t+.01)
 			if r.Float64() < .82 {
 				lab := drawLabel(r, TBL, []float64{.50, .20, .15, .15})
@@ -928,8 +928,8 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 				switch lab {
 				case "partial": // re-explain with the approved clarification template, then re-ask
 					t3 := t2 + lognorm(1, .5)
-					ctxt, _ := Render("tb-clarify-v1/"+exp, src.ID)
-					cid := comm(t3, "teachback-prompt", "tb-clarify-v1/"+exp, exp, ctxt, "completed", "", nil)
+					ctxt, _ := Render("tb-clarify-"+TemplateVersion+"/"+exp, src.ID)
+					cid := comm(t3, "teachback-prompt", "tb-clarify-"+TemplateVersion+"/"+exp, exp, ctxt, "completed", "", nil)
 					setTB("prompted", t3+.01)
 					if r.Float64() < .75 {
 						lab2 := drawLabel(r, TBL, []float64{.65, .20, 0, .15})
