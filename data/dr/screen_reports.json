@@ -1,0 +1,481 @@
+{
+ "source": "synthetic templated corpus (scripts/dr_corpus.py, seed 19); dev set, used to write the readers",
+ "reports": [
+  {
+   "id": "drs01",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R1M0 (for comparison only). RE: retina normal, no diabetic changes; no maculopathy. LE: no retinopathy detected; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs02",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R1M0 (for comparison only). RE: retina normal, no diabetic changes; macula clear. LE: no diabetic retinopathy; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs03",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. OD: no retinopathy detected; no maculopathy. OS: no retinopathy detected; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs04",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). Right eye: R0M0. Left eye: R0M0.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "coded_summary",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs05",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: no diabetic retinopathy; no maculopathy. LE: no diabetic retinopathy; no exudates near the fovea.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs06",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. OD: retina normal, no diabetic changes; no maculopathy. OS: no diabetic retinopathy; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs07",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). Right eye: no retinopathy detected; macula clear. Left eye: retina normal, no diabetic changes; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "prose",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs08",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). RE: R0M0. LE: R0M0.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M0",
+    "style": "coded_summary",
+    "coded": "R0M0"
+   }
+  },
+  {
+   "id": "drs09",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: a few dot haemorrhages and microaneurysms (background retinopathy); macula clear. LE: no diabetic retinopathy; no exudates near the fovea.",
+   "key": {
+    "r_right": "1",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "prose",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs10",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R1M0 (for comparison only). RE: no retinopathy detected; no maculopathy. LE: background diabetic retinopathy (scattered microaneurysms); no maculopathy.",
+   "key": {
+    "r_right": "0",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "prose",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs11",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: a few dot haemorrhages and microaneurysms (background retinopathy); no exudates near the fovea. LE: mild non-proliferative diabetic retinopathy; no maculopathy. No pre-retinal haemorrhage.",
+   "key": {
+    "r_right": "1",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "prose",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs12",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). OD: R1M0. OS: R0M0.",
+   "key": {
+    "r_right": "1",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "coded_summary",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs13",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). RE: retina normal, no diabetic changes; macula clear. LE: mild non-proliferative diabetic retinopathy; macula clear.",
+   "key": {
+    "r_right": "0",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "prose",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs14",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: background diabetic retinopathy (scattered microaneurysms); no maculopathy. LE: background diabetic retinopathy (scattered microaneurysms); no maculopathy. No pre-retinal haemorrhage.",
+   "key": {
+    "r_right": "1",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R1M0",
+    "style": "prose",
+    "coded": "R1M0"
+   }
+  },
+  {
+   "id": "drs15",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. OD: multiple blot haemorrhages and IRMA (pre-proliferative); no maculopathy. OS: mild non-proliferative diabetic retinopathy; macula clear. No pre-retinal haemorrhage.",
+   "key": {
+    "r_right": "2",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R2M0",
+    "style": "prose",
+    "coded": "R2M0"
+   }
+  },
+  {
+   "id": "drs16",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). OD: R1M0. OS: R2M0.",
+   "key": {
+    "r_right": "1",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R2M0",
+    "style": "coded_summary",
+    "coded": "R2M0"
+   }
+  },
+  {
+   "id": "drs17",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. OD: severe non-proliferative diabetic retinopathy; macula clear. OS: multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1).",
+   "key": {
+    "r_right": "2",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "1",
+    "urgent": false,
+    "label": "R2M1",
+    "style": "prose",
+    "coded": "R2M1"
+   }
+  },
+  {
+   "id": "drs18",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). Right eye: severe non-proliferative diabetic retinopathy; no maculopathy. Left eye: mild non-proliferative diabetic retinopathy; no maculopathy. No pre-retinal haemorrhage.",
+   "key": {
+    "r_right": "2",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R2M0",
+    "style": "prose",
+    "coded": "R2M0"
+   }
+  },
+  {
+   "id": "drs19",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: background diabetic retinopathy (scattered microaneurysms); no maculopathy. LE: severe non-proliferative diabetic retinopathy; no exudates near the fovea. No pre-retinal haemorrhage.",
+   "key": {
+    "r_right": "1",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R2M0",
+    "style": "prose",
+    "coded": "R2M0"
+   }
+  },
+  {
+   "id": "drs20",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). Right eye: R2M0. Left eye: R2M1.",
+   "key": {
+    "r_right": "2",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "1",
+    "urgent": false,
+    "label": "R2M1",
+    "style": "coded_summary",
+    "coded": "R2M1"
+   }
+  },
+  {
+   "id": "drs21",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). Right eye: no retinopathy detected; macular oedema suspected (M1). Left eye: no diabetic retinopathy; no maculopathy.",
+   "key": {
+    "r_right": "0",
+    "r_left": "0",
+    "m_right": "1",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R0M1",
+    "style": "prose",
+    "coded": "R0M1"
+   }
+  },
+  {
+   "id": "drs22",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: a few dot haemorrhages and microaneurysms (background retinopathy); no maculopathy. LE: no retinopathy detected; group of exudates within the macula.",
+   "key": {
+    "r_right": "1",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "1",
+    "urgent": false,
+    "label": "R1M1",
+    "style": "prose",
+    "coded": "R1M1"
+   }
+  },
+  {
+   "id": "drs23",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). Right eye: proliferative retinopathy: NVE superotemporally, actively bleeding; no exudates near the fovea. Left eye: mild non-proliferative diabetic retinopathy; no exudates near the fovea.",
+   "key": {
+    "r_right": "3A",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R3AM0",
+    "style": "prose",
+    "coded": "R3AM0"
+   }
+  },
+  {
+   "id": "drs24",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). Right eye: R2M1. Left eye: R3AM0.",
+   "key": {
+    "r_right": "2",
+    "r_left": "3A",
+    "m_right": "1",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R3AM1",
+    "style": "coded_summary",
+    "coded": "R3AM1"
+   }
+  },
+  {
+   "id": "drs25",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: new vessels elsewhere with pre-retinal haemorrhage (active proliferative disease); macula clear. LE: active proliferative diabetic retinopathy with new vessels at the disc; macula clear.",
+   "key": {
+    "r_right": "3A",
+    "r_left": "3A",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R3AM0",
+    "style": "prose",
+    "coded": "R3AM0"
+   }
+  },
+  {
+   "id": "drs26",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: stable treated proliferative retinopathy: laser scars, regressed new vessels; macula clear. LE: a few dot haemorrhages and microaneurysms (background retinopathy); no maculopathy.",
+   "key": {
+    "r_right": "3S",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R3SM0",
+    "style": "prose",
+    "coded": "R3SM0"
+   }
+  },
+  {
+   "id": "drs27",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Last screening: R2M0 (for comparison only). Right eye: treated proliferative disease, stable since laser; no maculopathy. Left eye: previous panretinal photocoagulation, no active new vessels, stable (R3S); no exudates near the fovea.",
+   "key": {
+    "r_right": "3S",
+    "r_left": "3S",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R3SM0",
+    "style": "prose",
+    "coded": "R3SM0"
+   }
+  },
+  {
+   "id": "drs28",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). OD: U. OS: U.",
+   "key": {
+    "r_right": "U",
+    "r_left": "U",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "U",
+    "style": "coded_summary",
+    "coded": "U"
+   }
+  },
+  {
+   "id": "drs29",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: unable to grade: media opacity. LE: retina normal, no diabetic changes; macula clear.",
+   "key": {
+    "r_right": "U",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "U",
+    "style": "prose",
+    "coded": "U"
+   }
+  },
+  {
+   "id": "drs30",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: unable to grade: media opacity. LE: multiple blot haemorrhages and IRMA (pre-proliferative); no exudates near the fovea.",
+   "key": {
+    "r_right": "U",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "R2M0",
+    "style": "prose",
+    "coded": "R2M0"
+   }
+  },
+  {
+   "id": "drs31",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: mild non-proliferative diabetic retinopathy; no maculopathy. LE: ungradable: dense cataract obscures the view.",
+   "key": {
+    "r_right": "1",
+    "r_left": "U",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": false,
+    "label": "U",
+    "style": "prose",
+    "coded": "U"
+   }
+  },
+  {
+   "id": "drs32",
+   "text": "Automated grading result (approved grading system, secondary grader confirmed). Right eye: U. Left eye: R1M1.",
+   "key": {
+    "r_right": "U",
+    "r_left": "1",
+    "m_right": "0",
+    "m_left": "1",
+    "urgent": false,
+    "label": "R1M1",
+    "style": "coded_summary",
+    "coded": "R1M1"
+   }
+  },
+  {
+   "id": "drs33",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. Right eye: pre-proliferative retinopathy with venous beading; no exudates near the fovea. Left eye: retina normal, no diabetic changes; no maculopathy. No pre-retinal haemorrhage. Grader requests urgent referral: rapid progression since the last screen.",
+   "key": {
+    "r_right": "2",
+    "r_left": "0",
+    "m_right": "0",
+    "m_left": "0",
+    "urgent": true,
+    "label": "R2M0/urgent",
+    "style": "prose",
+    "coded": "R2M0/urgent"
+   }
+  },
+  {
+   "id": "drs34",
+   "text": "Diabetic eye screening. Two-field mydriatic photography, graded by primary and secondary graders. RE: mild non-proliferative diabetic retinopathy; no exudates near the fovea. LE: multiple blot haemorrhages and IRMA (pre-proliferative); macular oedema suspected (M1). No pre-retinal haemorrhage. Grader requests urgent referral: rapid progression since the last screen.",
+   "key": {
+    "r_right": "1",
+    "r_left": "2",
+    "m_right": "0",
+    "m_left": "1",
+    "urgent": true,
+    "label": "R2M1/urgent",
+    "style": "prose",
+    "coded": "R2M1/urgent"
+   }
+  }
+ ]
+}

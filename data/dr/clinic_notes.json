@@ -1,0 +1,455 @@
+{
+ "source": "synthetic templated corpus (scripts/dr_corpus.py, seed 19); dev set, used to write the readers",
+ "reports": [
+  {
+   "id": "drc01",
+   "text": "Medical retina clinic note. DFE: centre-involving diabetic macular oedema left eye. First anti-VEGF injection given today; loading doses booked.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc02",
+   "text": "Eye clinic, regional hospital. Fundoscopy after dilation shows new vessels at the disc. PRP laser booked for next week. Visual acuity 6/18 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc03",
+   "text": "Eye clinic, regional hospital. Dilated examination confirms clinically significant macular oedema. Intravitreal anti-VEGF commenced. Visual acuity 6/12 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc04",
+   "text": "Medical retina clinic note. Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc05",
+   "text": "Eye clinic, regional hospital. Dilated examination confirms clinically significant macular oedema. Intravitreal anti-VEGF commenced.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc06",
+   "text": "Medical retina clinic note. Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today. Visual acuity 6/6 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc07",
+   "text": "Medical retina clinic note. DFE: centre-involving diabetic macular oedema left eye. First anti-VEGF injection given today; loading doses booked. Visual acuity 6/9 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc08",
+   "text": "Medical retina clinic note. DFE: centre-involving diabetic macular oedema left eye. First anti-VEGF injection given today; loading doses booked.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc09",
+   "text": "Eye clinic, regional hospital. Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc10",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Dilated fundus examination: active proliferative diabetic retinopathy right eye. Panretinal photocoagulation given today.",
+   "key": {
+    "examined": true,
+    "outcome": "treated",
+    "label": "examined_treated"
+   }
+  },
+  {
+   "id": "drc11",
+   "text": "Eye clinic, regional hospital. Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc12",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc13",
+   "text": "Medical retina clinic note. Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months. Visual acuity 6/9 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc14",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc15",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Dilated fundus exam: stable treated PDR. Anti-VEGF not indicated. Follow-up in eye clinic in 6 months. Visual acuity 6/18 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc16",
+   "text": "Eye clinic, regional hospital. Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc17",
+   "text": "Medical retina clinic note. DFE: severe NPDR both eyes, no new vessels. Treatment not indicated today; review in 3 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc18",
+   "text": "Eye clinic, regional hospital. Dilated fundoscopy: moderate non-proliferative retinopathy, no macular oedema. No laser required at this stage. Review in eye clinic in 4 months. Visual acuity 6/9 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc19",
+   "text": "Medical retina clinic note. Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc20",
+   "text": "Eye clinic, regional hospital. DFE: severe NPDR both eyes, no new vessels. Treatment not indicated today; review in 3 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc21",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc22",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Dilated fundus exam: stable treated PDR. Anti-VEGF not indicated. Follow-up in eye clinic in 6 months.",
+   "key": {
+    "examined": true,
+    "outcome": "followup",
+    "label": "examined_followup"
+   }
+  },
+  {
+   "id": "drc23",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Fundoscopy with dilation: exudates outside the macula, no oedema on OCT. Discharged to the screening programme.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc24",
+   "text": "Eye clinic, regional hospital. DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic. Visual acuity 6/12 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc25",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc26",
+   "text": "Eye clinic, regional hospital. Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening. Visual acuity 6/12 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc27",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Fundoscopy with dilation: exudates outside the macula, no oedema on OCT. Discharged to the screening programme. Visual acuity 6/18 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc28",
+   "text": "Eye clinic, regional hospital. DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic. Visual acuity 6/9 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc29",
+   "text": "Medical retina clinic note. Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening. Visual acuity 6/18 both eyes.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc30",
+   "text": "Medical retina clinic note. Dilated fundus examination: mild background changes only, no maculopathy. Discharged back to diabetic eye screening.",
+   "key": {
+    "examined": true,
+    "outcome": "discharged",
+    "label": "examined_discharged"
+   }
+  },
+  {
+   "id": "drc31",
+   "text": "Eye clinic, regional hospital. Seen in eye clinic: visual acuity and intraocular pressure checked only. No fundus examination today; rebooked.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc32",
+   "text": "Eye clinic, regional hospital. Visual acuity 6/9 right, 6/12 left. Patient declined dilating drops (driving). Fundus not examined. Rebook for dilated exam.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc33",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Refraction performed. Dilation deferred, retina not examined. New appointment to follow.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc34",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Refraction performed. Dilation deferred, retina not examined. New appointment to follow.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc35",
+   "text": "Medical retina clinic note. Visual acuity 6/9 right, 6/12 left. Patient declined dilating drops (driving). Fundus not examined. Rebook for dilated exam.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc36",
+   "text": "Medical retina clinic note. Visual acuity 6/9 right, 6/12 left. Patient declined dilating drops (driving). Fundus not examined. Rebook for dilated exam.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc37",
+   "text": "Eye clinic, regional hospital. Visual acuity 6/9 right, 6/12 left. Patient declined dilating drops (driving). Fundus not examined. Rebook for dilated exam.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_examined"
+   }
+  },
+  {
+   "id": "drc38",
+   "text": "Medical retina clinic note. Media opacity: fundus cannot be assessed. Refer for cataract assessment.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc39",
+   "text": "Medical retina clinic note. No view of the posterior pole through vitreous haemorrhage. Fundus not assessable; B-scan arranged.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc40",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). No view of the posterior pole through vitreous haemorrhage. Fundus not assessable; B-scan arranged.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc41",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Dense cataract precludes any fundal view in either eye. Listed for cataract surgery; retina to be assessed after.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc42",
+   "text": "Medical retina clinic note. Dense cataract precludes any fundal view in either eye. Listed for cataract surgery; retina to be assessed after.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc43",
+   "text": "Medical retina clinic note. Dense cataract precludes any fundal view in either eye. Listed for cataract surgery; retina to be assessed after.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "not_assessable"
+   }
+  },
+  {
+   "id": "drc44",
+   "text": "Medical retina clinic note. Did not attend today. Rebook as per DNA policy.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc45",
+   "text": "Medical retina clinic note. Did not attend today. Rebook as per DNA policy.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc46",
+   "text": "Medical retina clinic note. Patient did not attend the eye clinic appointment. DNA letter sent to patient and GP.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc47",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Patient did not attend the eye clinic appointment. DNA letter sent to patient and GP.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc48",
+   "text": "Medical retina clinic note. Did not attend today. Rebook as per DNA policy.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc49",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Patient did not attend the eye clinic appointment. DNA letter sent to patient and GP.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  },
+  {
+   "id": "drc50",
+   "text": "Ophthalmology clinic (diabetic retinopathy referral). Patient did not attend the eye clinic appointment. DNA letter sent to patient and GP.",
+   "key": {
+    "examined": false,
+    "outcome": "none",
+    "label": "dna"
+   }
+  }
+ ]
+}
