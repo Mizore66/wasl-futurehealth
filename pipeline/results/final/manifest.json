@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-31T18:41:02.615414Z",
- "code_revision": "0f6a5325831e8f3c822541193d9ab0fe4279c2c3",
+ "frozen_at": "2026-10-31T22:49:08.796461Z",
+ "code_revision": "549656327365434be941e216aa9003960e1b9e06",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -22,6 +22,7 @@
  },
  "lung_loops_per_run": 1088,
  "dr_loops_per_run": 1200,
+ "breast_loops_per_run": 70,
  "crc_loops_per_run": 2040,
  "cervical_loops_per_run": 816,
  "persons_cap": "all held-out (8,871)",
@@ -48,7 +49,10 @@
   "data/lung/followup_reports.json": "f4e29164cc84b7b1f48c8f7939ba10d0a7c994e362263d3596fb037f6a64f4cf",
   "models/dr_gemma_cache.json": "6791669bce82247b8334e67e4dc09a9c45fc0f7fb37e44495b0155a50f9f50ca",
   "data/dr/screen_reports.json": "db550575155c1db2f8c492837b41196ff54846d657c71ab8a294076954c01d39",
-  "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436"
+  "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436",
+  "models/breast_gemma_cache.json": "8f8fc25a73ed1158631adca809f51975bb652c5e137c57c8acbcbe49ce95fecc",
+  "data/breast/screen_reports.json": "8330c936c87f77a27a73a4ece7d687cd1c70db2a860d0eb5848ab38c2f3a1102",
+  "data/breast/assess_notes.json": "b95a6f7139823cd95712fabbf6d7e4fc35e9016eaed3b5339b230c06e1a93f8a"
  },
  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
  "limitations": [
@@ -57,5 +61,9 @@
   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
- ]
+ ],
+ "lung_pet_surveillance": "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure",
+ "dr_next_due": "on (-drnext): next due rescreen / clinic review and recall_overdue",
+ "handoff_xreflink": true,
+ "handoff_refreject": true
 }
