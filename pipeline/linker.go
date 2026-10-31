@@ -723,6 +723,16 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if so.Link != "" {
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose != LinkConfirm {
+				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
+					// the records contradict: hold the merge until a confirming review (closure raises LinkConfirm)
+					sc := *so
+					sc.Hold = c
+					so = &sc
+					L.Stats["link_same_held_contradiction"]++
+					okA = false
+				}
+			}
 			if okA && okB {
 				if so.Link == "same" {
 					L.Link(a, b, 1.0, true, "human")
