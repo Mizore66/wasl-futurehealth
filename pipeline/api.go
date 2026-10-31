@@ -439,6 +439,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Lung != nil { // lung_nodule: Fleischner recommendation, window, outcome
 		m["lung"] = c.last.Lung
 	}
+	if c.last != nil && c.last.DR != nil { // diabetic_retinopathy: grade, rule, deadline, eye-clinic outcome
+		m["dr"] = c.last.DR
+	}
 	return m
 }
 
@@ -584,6 +587,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
 		"confirm_contact": ActRecordConsent}[req.Decision]
 	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(req.Decision) != nil { // lung evidence labels (stable, solid/6-8/single, ...)
+		act = ActSignEvidence
+	}
+	if act == "" && c.Programme == "diabetic_retinopathy" && drEvAlt(req.Decision) != nil { // DR evidence labels (R2M0, examined_followup, ...)
 		act = ActSignEvidence
 	}
 	if act == "" {

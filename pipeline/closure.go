@@ -175,6 +175,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if prog == "lung_nodule" { // second loop type, same engine: identity gate + two-reader gate + review, Fleischner rule (lung.go)
 		return c.evalLung(ls, inSeq, mid)
 	}
+	if prog == "diabetic_retinopathy" { // third loop type: identity gate + two-reader gate + review, rule doh2024dr (dr.go)
+		return c.evalDR(ls, inSeq, mid)
+	}
 	rule := Rules[prog]
 	deadline := DeadlineDays(prog, f.Priority)
 	notifStart := f.SRDay
