@@ -41,7 +41,7 @@ Sources:
 | Note linked, readers agree: retina examined + outcome (treated, follow-up booked, discharged to screening) | `closed`, `within_deadline` recorded | … → closure_decision |
 | Readers agree: retina not examined (vision check only) | stays open; this note cannot close the loop | `hold_decision` |
 | Readers agree: not assessable (e.g. dense cataract) | `not_assessable`, clinician decides | `hold_decision` |
-| Hospital appointment status no-show | open, `no_show`; rebook outreach | `hold_decision` |
+| Readers agree: did not attend | `no_show`; rebook outreach; a later examined note closes it | `hold_decision` |
 
 Clinician sign-off on an evidence item stands in for reader agreement, as for CRC and lung.
 
@@ -50,8 +50,8 @@ Measure: JAWDA 5.1.4 (DoH standard §5), the share of patients with diabetes who
 ## 3. Readers and corpora
 
 **Input forms:**
-- Some screening sites send the grade as a code (grading software or an approved AI device, DoH 3.13.82). It is used directly.
-- Other sites send a grader's free-text report.
+- Some screening sites send the grade as a code (grading software or an approved AI device, DoH 3.13.82) with a short text summary. The code is the second reader: it must agree with the regex reading of the summary (the lung PET/tissue pattern). It is never used alone, because a wrong "no referral needed" would be a false closure.
+- Other sites send a grader's free-text report, read by regex and Gemma.
 - The eye-clinic note is always free text.
 
 **Readers:**
@@ -94,7 +94,7 @@ Measure: JAWDA 5.1.4 (DoH standard §5), the share of patients with diabetes who
 
 **Timing:** screens fall on days −120…90 in the [0, 120] observation window.
 
-**Outreach:** v2 templates (EN/AR) with the automation disclosure: `dr_clinic_due` and the existing `rebook_after_noshow`. Same consent hold and second-identifier guard. A DR loop messages only about its own programme's events.
+**Outreach:** loop-level intents, as for lung (phone then letter, sent in the screening clinic's name): `dr_clinic_due` (referable, no exam yet, deadline within 14 days), `dr_overdue_recall` (deadline passed), `dr_rebook` (did not attend), `dr_repeat_photo` (ungradable). Same consent hold. A DR loop messages only about its own loop.
 
 ## 5. Metrics and evaluation
 
