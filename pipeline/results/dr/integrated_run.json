@@ -1,0 +1,100 @@
+{
+ "run": "scripts/demo.sh all, seed 2026, WASL_LUNG=800 WASL_DR=1200 (screening cohort defaults)",
+ "diabetic_retinopathy": {
+  "closure": {
+   "attribution": {
+    "missed_pred_open": 3
+   },
+   "definition": "closed (eye-clinic note records a retinal exam) + no_referral_needed (R0/R1, no maculopathy)",
+   "false_closure_rate_upper95": 0.003,
+   "false_closures": 0,
+   "missed": 3,
+   "precision": 1,
+   "pred_closed": 1121,
+   "recall": 0.997,
+   "tp": 1121,
+   "truth_closed": 1124
+  },
+  "confusion_truth_pred": {
+   "closed": {
+    "closed": 60,
+    "open": 2
+   },
+   "no_referral_needed": {
+    "no_referral_needed": 1061,
+    "open": 1
+   },
+   "no_show": {
+    "no_show": 1
+   },
+   "not_assessable": {
+    "not_assessable": 3
+   },
+   "open": {
+    "open": 72
+   }
+  },
+  "loops": 1200,
+  "overdue_flag_accuracy": 0.998,
+  "patient_outreach_final": {
+   "dr_clinic_due:consent_withheld": 1,
+   "dr_clinic_due:released": 4,
+   "dr_overdue_recall:consent_withheld": 3,
+   "dr_overdue_recall:released": 32,
+   "dr_rebook:released": 1,
+   "dr_repeat_photo:consent_withheld": 1,
+   "dr_repeat_photo:released": 19
+  },
+  "referral_closure": {
+   "false_closures": 0,
+   "precision": 1,
+   "pred_closed": 60,
+   "recall": 0.968,
+   "tp": 60,
+   "truth_closed": 62
+  },
+  "referral_exam_within_deadline": {
+   "eligible": 93,
+   "per_loop_agreement": 0.978,
+   "truth": 0.419,
+   "wasl_measured": 0.398
+  },
+  "rule": "doh2024dr",
+  "state_accuracy": 0.998,
+  "triage": {
+   "accuracy": 0.999,
+   "correct": 1199,
+   "coverage": 1,
+   "loops": 1200,
+   "with_pipeline_rec": 1200
+  },
+  "two_reader": {
+   "dr-clinic": {
+    "agree": 227,
+    "agree_but_wrong_vs_truth": 0,
+    "agreement_rate": 0.996,
+    "coded_grade": 0,
+    "report_instances": 228,
+    "second_reader_available": 227,
+    "to_review": 1,
+    "unique_texts": 39
+   },
+   "dr-screen": {
+    "agree": 1112,
+    "agree_but_wrong_vs_truth": 0,
+    "agreement_rate": 0.885,
+    "coded_grade": 735,
+    "report_instances": 1256,
+    "second_reader_available": 1138,
+    "to_review": 144,
+    "unique_texts": 90
+   }
+  }
+ },
+ "no_change_check_vs_WASL_DR_0": {
+  "loops_with_different_final_state": 2,
+  "detail": "one woman with a CRC and a cervical loop: with DR on the reviewer answers later, both loops raised a link question on the same registration pair; one answer was 'same', the other 'different' (the simulated 4% reviewer error), the later 'different' split the pair and both loops ended open instead of closed. Safe direction; existing gap: link questions from two loops on one pair are not deduplicated (second-identifier questions are).",
+  "no_review_metrics": "identical for CRC, cervical and lung",
+  "lung": "identical"
+ }
+}
