@@ -1,0 +1,747 @@
+{
+  "source": "Independent author (gpt-6.1-sol) - deterministic stdlib generator gen_dr_heldout.py, random seed 9137, synthetic diabetic retinopathy texts, 2026-10-31",
+  "reports": [
+    {
+      "id": "hc01",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDilated fundus examination confirms right active proliferative disease. Right PRP performed today; left fundus has background changes.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc02",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth retinae examined. Centre-involving right diabetic macular edema confirmed; intravitreal aflibercept given today.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc03",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nClinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBilateral fundus examination completed. Persistent left diabetic macular oedema treated with intravitreal steroid implant today.\nالعين اليمنى / العين اليسرى: see current encounter above.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "lang:arabic"
+      ]
+    },
+    {
+      "id": "hc04",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined; right disc new vessels confirmed. PRP booked for next week, not performed during this visit.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:planned_is_treated"
+      ]
+    },
+    {
+      "id": "hc05",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDilated examination of both retinae shows bilateral macular oedema. Anti-VEGF loading course started by booking the first injection.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:planned_is_treated"
+      ]
+    },
+    {
+      "id": "hc06",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nFundus examined in each eye. Focal retinal laser to left leaking microaneurysms completed today.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc07",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi reviewed after dilation. Right proliferative disease remains active; additional PRP delivered.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc08",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth retinae examined and OCT reviewed. Bevacizumab injected into the left eye for diabetic macular edema.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "noise:ocr"
+      ]
+    },
+    {
+      "id": "hc09",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDilated fundus examination confirms right diabetic macular oedema. Aflibercept injection booked; patient has not yet received the dose.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:planned_is_treated"
+      ]
+    },
+    {
+      "id": "hc10",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nRetinal examination completed bilaterally. Left new vessels elsewhere treated with scatter retinal laser today.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "treated",
+        "label": "examined_treated"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc11",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nOld PRP was performed three years ago. Both fundi examined today: stable scars, no active new vessels. Observe with review in six months.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:history_vs_today"
+      ]
+    },
+    {
+      "id": "hc12",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nAbu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined: moderate background retinopathy without edema. Laser not needed; review in six months.\nالعين اليمنى / العين اليسرى: see current encounter above.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:negation",
+        "lang:arabic"
+      ]
+    },
+    {
+      "id": "hc13",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDilated examination of both retinae and OCT show mild non-centre oedema. Anti-VEGF is not indicated; repeat OCT in four months.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:negation"
+      ]
+    },
+    {
+      "id": "hc14",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined. Injection discussed but explicitly deferred, not started or booked. Observe borderline right macular thickening.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:negation"
+      ]
+    },
+    {
+      "id": "hc15",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nCataract surgery was performed last month. Both retinae are examined today: mild diabetic changes only. No retinal treatment; hospital review with OCT in six months.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:mimic_or_comorbidity"
+      ]
+    },
+    {
+      "id": "hc16",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined. Discharged from the injection chair today, not from medical retina: no injection given or booked. Retain hospital follow-up for OCT in eight weeks.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:disposition_semantics"
+      ]
+    },
+    {
+      "id": "hc17",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBilateral retinal examination finds stable background disease. PRP not required and no injection planned; review in nine months.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:negation"
+      ]
+    },
+    {
+      "id": "hc18",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nReferral cites last year's macular edema. Both retinae examined today; edema has resolved without current treatment. Review in six months.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:history_vs_today"
+      ]
+    },
+    {
+      "id": "hc19",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined after dilation. No laser today or planned; non-centre macular exudates will be observed with repeat imaging.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:negation",
+        "noise:ocr"
+      ]
+    },
+    {
+      "id": "hc20",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth retinae examined. Stable pre-proliferative changes without maculopathy; repeat dilated review in three months.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "followup",
+        "label": "examined_followup"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc21",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined: no diabetic retinopathy. Discharged from the hospital eye clinic back to the primary-care screening programme.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:disposition_semantics"
+      ]
+    },
+    {
+      "id": "hc22",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nAbu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBilateral dilated examination shows background retinopathy only. Return to annual diabetic eye screening; no hospital review arranged.\nالعين اليمنى / العين اليسرى: see current encounter above.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:disposition_semantics",
+        "lang:arabic"
+      ]
+    },
+    {
+      "id": "hc23",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nAn injection was given elsewhere two years ago, not today. Both fundi examined now: no active disease or maculopathy. Discharge back to the screening programme.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:history_vs_today"
+      ]
+    },
+    {
+      "id": "hc24",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nRetinal examination completed bilaterally. No referable diabetic disease; returned to routine primary-care diabetic eye screening.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc25",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi examined: sparse peripheral microaneurysms, no maculopathy. Discharge to annual screening.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc26",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDilated fundus examination is normal in each eye. Hospital episode closed and screening program asked to resume recall.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc27",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth retinae examined; the photographic referral concern is not confirmed. Return to the diabetic eye screening service.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc28",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBilateral retinal examination shows mild background changes only. No specialist surveillance needed; discharge to screening.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc29",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth fundi assessed after dilation, without referable diabetic findings. Annual primary-care retinal screening to continue.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc30",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nBoth retinae examined. Discharged specifically to the diabetic screening program, not to another hospital clinic; no hospital follow-up.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "examined",
+        "outcome": "discharged",
+        "label": "examined_discharged"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:disposition_semantics"
+      ]
+    },
+    {
+      "id": "hc31",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient attended. Vision RE 6/9, LE 6/9 and pressures recorded only. No dilation and no retinal examination; rebook full assessment.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:workflow_vs_examination",
+        "noise:ocr"
+      ]
+    },
+    {
+      "id": "hc32",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient attended for triage. Vision OD 20/30, OS 20/25. Left before dilation; neither retina examined.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc33",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nClinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nSeen in clinic; vision right 6/12, left 6/9. Dilation declined because the patient must drive. Fundus not examined, rather than obscured.\nالعين اليمنى / العين اليسرى: see current encounter above.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:workflow_vs_examination",
+        "lang:arabic"
+      ]
+    },
+    {
+      "id": "hc34",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nAttendance confirmed. Vision RE 6/6, LE 6/6. Pressure-only pathway completed; retinal examination deliberately postponed.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc35",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient seen, vision 6/18 right and 6/12 left. Drops not administered because the visit ended early; no fundus examination attempted.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc36",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nVision OD 20/40, OS 20/30 recorded at an attended nursing visit. No clinician retinal examination and no fundus imaging today.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc37",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient attended; vision RE 6/9, LE 6/12. Only counselling and medication reconciliation completed. Retinae not examined.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc38",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nVision right 6/24, left 6/18 measured. Patient was seen but dilation was not done; neither retina assessed. Full visit rebooked.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "not_examined",
+        "outcome": "none",
+        "label": "not_examined"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc39",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient attended and dilation was attempted. Dense bilateral cataracts prevent any retinal view; neither fundus assessable. Cataract-service referral made, with no retinal treatment booked.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "none",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:mimic_or_comorbidity"
+      ]
+    },
+    {
+      "id": "hc40",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient attended. Dense vitreous hemorrhage in both eyes prevents visualization of either retina despite dilation. B-scan shows attached retinae but does not provide a fundus view; specialist review arranged.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "none",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:mimic_or_comorbidity"
+      ]
+    },
+    {
+      "id": "hc41",
+      "text": "SERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nAttended and dilated. Severe bilateral corneal opacity prevents a view of either retina; fundus cannot be assessed.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "none",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc42",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient seen. Dense bilateral cataracts obstruct all fundus views despite dilation and attempted imaging. Retinae not assessable.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "none",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us"
+      ]
+    },
+    {
+      "id": "hc43",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nAttended referral visit. Bilateral dense media opacity prevents retinal assessment after dilation; arrange anterior-segment review.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": true,
+        "fundus": "no_view",
+        "outcome": "none",
+        "label": "not_assessable"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk"
+      ]
+    },
+    {
+      "id": "hc44",
+      "text": "Scann3d c0py | pag e 1 / 1 | clinic sta mp: [illegible]\nAbu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDid not attend the screening-referral appointment. Template carried forward: 'dilate, fundus examination, OCT'; none was performed.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:workflow_vs_examination",
+        "noise:ocr"
+      ]
+    },
+    {
+      "id": "hc45",
+      "text": "Clinical correspondence | Abu Dhabi hospital eye centre / screening-referral clinic\nDear colleague,\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nNo-show for the hospital retinal appointment after screening referral. An appointment letter is not an attended examination; re-invite.\nRegards, eye service. Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L3",
+        "spelling:uk",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc46",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n--- encounter extract ---\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient absent from the booked screening-referral clinic. Telephone message left; no examination or treatment took place.\n--- end ---\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L4",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc47",
+      "text": "فحص العين لمرضى السكري | أبوظبي\nSERVICE: Abu Dhabi hospital eye centre / screening-referral clinic\nCURRENT ENCOUNTER > Hospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nDid not attend. The referral requests laser assessment, but no patient review, treatment decision or treatment booking occurred.\nالعين اليمنى / العين اليسرى: see current encounter above.\nRECORD > Documentation centre: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L5",
+        "spelling:uk",
+        "hard:workflow_vs_examination",
+        "lang:arabic"
+      ]
+    },
+    {
+      "id": "hc48",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\n[Clinical entry]\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nScreening referral accepted; patient failed to attend the first hospital visit. Old visual acuities in the referral are not today's measurements.\n[Administration]\nDocumentation center: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L6",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc49",
+      "text": "Abu Dhabi hospital eye centre / screening-referral clinic\nReport\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nPatient did not attend the rescheduled retinal clinic. Electronic check-in was entered in error and corrected; no clinical encounter.\nDocumentation centre: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L1",
+        "spelling:uk",
+        "hard:workflow_vs_examination"
+      ]
+    },
+    {
+      "id": "hc50",
+      "text": "Abu Dhabi hospital eye center / screening-referral clinic\nASSESSMENT:\nHospital appointment following referral from Abu Dhabi primary-care diabetic eye screening.\nAbsent from screening-referral appointment. Administrative call answered by a relative only; patient not seen or examined.\nADMIN: Documentation center: Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "fundus": null,
+        "outcome": "none",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:L2",
+        "spelling:us",
+        "hard:workflow_vs_examination"
+      ]
+    }
+  ]
+}
