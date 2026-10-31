@@ -26,7 +26,7 @@ func TestGenLungSurvFlag(t *testing.T) {
 		os.Stdout = devnull
 		defer func() { os.Stdout = stdout }()
 		runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 7, 150, 40, 1400, 60,
-			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 600, "", 0, "")
+			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 600, "", 0, "", 0, "")
 		return out
 	}
 	a, b := gen(false), gen(true)

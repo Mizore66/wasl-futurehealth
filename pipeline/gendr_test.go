@@ -27,7 +27,7 @@ func TestGenDRLeavesOtherProgrammesUnchanged(t *testing.T) {
 			EnableDR()
 		}
 		runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 7, 150, 40, 1400, 60,
-			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 40, "", nDR, "")
+			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 40, "", nDR, "", 0, "")
 		return out
 	}
 	a := gen(0)

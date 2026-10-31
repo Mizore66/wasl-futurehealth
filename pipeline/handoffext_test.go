@@ -172,7 +172,7 @@ func TestGenRefRejectOnlyRejectedLoopsDiffer(t *testing.T) {
 		defer func() { os.Stdout = stdout }()
 		RefRejectExt = on
 		runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 7, 150, 40, 5000, 60,
-			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 600, "", 1200, "")
+			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 600, "", 1200, "", 0, "")
 		return out
 	}
 	a, b := gen(false), gen(true)

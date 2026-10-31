@@ -161,7 +161,7 @@ func TestGenDRNextAddsOnlyFollowUpNotes(t *testing.T) {
 		os.Stdout = devnull
 		defer func() { os.Stdout = stdout }()
 		runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 7, 100, 30, 1400, 30,
-			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 0, "", 300, "")
+			loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 0, "", 300, "", 0, "")
 		return out
 	}
 	a, b := gen(false), gen(true)

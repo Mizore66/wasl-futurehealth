@@ -1,0 +1,31 @@
+{
+ "breast": {
+  "breast-assess": {
+   "agree": 50,
+   "agree_but_wrong_vs_key": 0,
+   "errors": null,
+   "reader_a_regex_correct": 50,
+   "reader_b_gemma_correct": 50,
+   "reader_b_unavailable": 0,
+   "reports": 50,
+   "to_review": 0
+  },
+  "breast-screen": {
+   "agree": 36,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 36,
+   "coded_path_agree_but_wrong": 0,
+   "coded_path_texts": 36,
+   "errors": [
+    "bs36 B:B0 want TR",
+    "bs37 B:B0 want TR",
+    "bs38 B:B0 want TR"
+   ],
+   "reader_a_regex_correct": 39,
+   "reader_b_gemma_correct": 36,
+   "reader_b_unavailable": 0,
+   "reports": 39,
+   "to_review": 3
+  }
+ }
+}
