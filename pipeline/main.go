@@ -140,6 +140,9 @@ func main() {
 	drN := fs.Int("dr", 0, "gen: diabetic retinopathy screening loops (doh2024dr); 0 = no DR loops (other feeds byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
+	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	_ = breastN // TEMP
+	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
@@ -361,6 +364,8 @@ func main() {
 		runLungCache(*lungData, *readerURL, *out)
 	case "drcache": // ask local Gemma 3 4B once per unique DR corpus text; write the replayable cache + reader scores
 		runDRCache(*drData, *readerURL, *out)
+	case "breastcache": // ask local Gemma 3 4B once per unique breast corpus text; write the replayable cache + reader scores
+		runBreastCache(*breastData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")
