@@ -120,6 +120,7 @@ func loadConsentTruth(data string) map[string]bool {
 func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int) {
 	anchors := map[string]int{}
 	sos := map[string]*Signoff{}
+	q := newReviewQueue()
 	for iter := 1; iter <= 12; iter++ {
 		byAnchor := map[int][]string{}
 		for id, a := range anchors {
@@ -139,6 +140,16 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 			}
 		}
 		rp := replay(nil, list, o.gbm, o.iso, P, false)
+		if ReplayWorklist { // the live reviewer's order and worklists (services.go runReviewer)
+			ids := q.answer(rp, cfg, o.tr, sos)
+			if len(ids) == 0 {
+				return rp, sos, iter
+			}
+			for _, id := range ids {
+				anchors[id] = posToBase[rp.items[id].InSeq-1]
+			}
+			continue
+		}
 		ids := []string{}
 		for id := range rp.items {
 			if _, ok := sos[id]; !ok {
@@ -156,6 +167,55 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 		}
 	}
 	panic("review loop did not converge")
+}
+
+// ReplayWorklist: the offline review loop answers items the way the live reviewer does (services.go runReviewer): in
+// the order the closure emitted them, each item once, dropping second-identifier twins after "same" (idWorklist,
+// ReuseIDConfirm) and link twins once their pair has an answer (linkWorklist, ReuseLinkAnswer). Off: every raised
+// item is answered, in item-id order (the Learn-then-Test runs up to 0f6a532). Flag -replayworklist.
+var ReplayWorklist = true
+
+// reviewQueue is the offline model of the live reviewer's queue; it persists across the fixed-point iterations, as
+// the live reviewer's worklists persist for the whole run.
+type reviewQueue struct {
+	seen                 map[string]bool
+	wl                   idWorklist
+	lw                   linkWorklist
+	dropped, droppedLink int
+}
+
+func newReviewQueue() *reviewQueue {
+	return &reviewQueue{seen: map[string]bool{}, wl: idWorklist{}, lw: linkWorklist{}}
+}
+
+// answer walks this replay's review items in emission order, skips items already seen (answered or dropped), drops
+// twins exactly as the live worklists do, answers the rest with cfg into sos, and returns the answered ids in order.
+func (q *reviewQueue) answer(rp *replayOut, cfg ReviewerCfg, tr *Truth, sos map[string]*Signoff) []string {
+	ids := []string{}
+	for _, out := range rp.outs {
+		it := out.Item
+		if out.Kind != "review" || it == nil || q.seen[it.ItemID] {
+			continue
+		}
+		q.seen[it.ItemID] = true
+		if _, ok := sos[it.ItemID]; ok {
+			continue
+		}
+		if q.wl.skip(it) || q.lw.skip(it) {
+			if q.lw.skip(it) {
+				q.droppedLink++
+			} else {
+				q.dropped++
+			}
+			continue
+		}
+		so := cfg.Review(it, tr)
+		q.wl.record(it, so)
+		q.lw.record(it, so)
+		sos[it.ItemID] = so
+		ids = append(ids, it.ItemID)
+	}
+	return ids
 }
 
 // govMetrics: patient-contact safety (wrong-patient outreach before/after the gate), consent suppression, RBAC denials.
