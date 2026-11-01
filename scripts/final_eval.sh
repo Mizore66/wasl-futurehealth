@@ -7,7 +7,9 @@
 # Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir),
 #   WASL_LUNG=N incidental lung-nodule loops per run (default 1088; 0 = screening cohort only), WASL_DR=N diabetic
 #   retinopathy screening loops per run (default 1200; 0 = off), WASL_LUNGSURV=1 surveillance CT after a PET/CT
-#   low-uptake lung closure (default 0 = off). Cohort size: every held-out
+#   low-uptake lung closure (default 0 = off), WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (relatives' Emirates
+#   IDs / wrong referral numbers; pipeline/genadv.go; default 0 = off), WASL_LUNGSURV2=1 its later CTs at about 1 and 2 years and
+#   WASL_LUNGSURVSTABLE=1 review items, truth and metrics for the stable-CT surveillance child (both default 0 = off), WASL_LDCT=N lung cancer screening LDCT loops (default 0 = off). Cohort size: every held-out
 #   person (8,871; WASL_PERSONS caps it), WASL_CRC=2040 CRC and WASL_CERV=816 cervical loops: 1.36x the earlier 6,500
 #   persons / 1,500 / 600 / 800, so the smallest name-origin group (Filipino) has about 360 loops per run, not 250.
 set -euo pipefail
@@ -17,20 +19,37 @@ FINAL="${WASL_FINAL_DIR:-$ROOT/pipeline/results/final}"; WORK="${WASL_FINAL_WORK
 # WASL_REPORTS: colonoscopy report corpus; WASL_MODELS: models dir (its gemma_cache.json is the cached second reader)
 REPORTS="${WASL_REPORTS:-$ROOT/data/evidence/reports43.json}"; MODELS="${WASL_MODELS:-$ROOT/models}"; export REPORTS MODELS
 DR="${WASL_DR:-1200}"; export DR   # diabetic retinopathy screening loops per run (third loop type; 0 = off)
+LDCT="${WASL_LDCT:-0}"; export LDCT   # lung cancer screening LDCT loops per run (fifth loop type; default 0 = off)
 IFHAS="${WASL_IFHAS:-0}"; export IFHAS   # IFHAS abnormal-result follow-up loops per run (pipeline/ifhas.go; 0 = off)
 BREAST="${WASL_BREAST:-70}"; export BREAST   # breast screening recall loops per run (fourth loop type; 0 = off; 70 plus distractors fit the fewest held-out women next to CRC, cervical and DR)
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
+# WASL_EIDGUARD=1: separate post-hoc wrong-EID closure-guard lane (default off); WASL_NOISES="v2": select noise lanes (default "v1 v2")
+[ "${WASL_EIDGUARD:=0}" = 0 ] || PARGS+=(-eidguard)
 # WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default on
 GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
+# WASL_LUNGSURV2=1 (needs WASL_LUNGSURV=1): later surveillance CTs at about 1 and 2 years (BTS 2015); WASL_LUNGSURVSTABLE=1:
+# stable-CT surveillance child with review items, truth and metrics (pipeline/lungsurv.go); generator and engine; default off
+[ "${WASL_LUNGSURV2:=0}" = 0 ] || [ "$WASL_LUNGSURV" = 0 ] || { PARGS+=(-lungsurv2); GSURV+=(-lungsurv2); }
+[ "${WASL_LUNGSURVSTABLE:=0}" = 0 ] || { PARGS+=(-lungsurvstable); GSURV+=(-lungsurvstable); }
 # hand-off, default on: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
 [ "${WASL_XREFLINK:=1}" = 0 ] || PARGS+=(-xreflink)
 # WASL_REFREJECT=true (gen, default true): lung work-up and DR eye-clinic referrals can be rejected (pipeline/handoffext.go)
 : "${WASL_REFREJECT:=true}"
 # WASL_DRNEXT=1 (default on): next due DR rescreen / clinic review and recall_overdue (pipeline/drnext.go), generator and engine
 [ "${WASL_DRNEXT:=1}" = 0 ] || { PARGS+=(-drnext); GSURV+=(-drnext); }
-export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT
+# WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
+[ "${WASL_SECONDIDCONFIRM:=1}" != 0 ] || PARGS+=(-secondidconfirm=false)
+# adversarial generator cases (gen only, default off; pipeline/genadv.go): WASL_WRONGEID=p relatives' Emirates IDs on a
+# share p of registrations (B8); WASL_WRONGREF=p wrong referral numbers on a share p of referral intakes (B9)
+: "${WASL_WRONGEID:=0}" "${WASL_WRONGREF:=0}"
+[ "$WASL_WRONGEID" = 0 ] || GSURV+=(-wrongeid "$WASL_WRONGEID")
+[ "$WASL_WRONGREF" = 0 ] || GSURV+=(-wrongref "$WASL_WRONGREF")
+# WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women who hold another
+# programme's loop (pipeline/genbreast.go); needed above about 85 breast loops per cohort
+[ "${WASL_BREASTSHARE:=0}" = 0 ] || GSURV+=(-breastshare)
+export WASL_LUNGSURV WASL_LUNGSURV2 WASL_LUNGSURVSTABLE WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF WASL_BREASTSHARE WASL_EIDGUARD
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -49,7 +68,9 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
      "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
-     "lung_loops_per_run": int(os.environ.get("LUNG", "0")), "dr_loops_per_run": int(os.environ.get("DR", "0")), "breast_loops_per_run": int(os.environ.get("BREAST", "0")), "ifhas_loops_per_run": int(os.environ.get("IFHAS", "0")), "crc_loops_per_run": int(os.environ["CRC"]), "cervical_loops_per_run": int(os.environ["CERV"]),
+     "selected_noise_models": os.environ.get("WASL_NOISES", "v1 v2").split(),
+     "eid_guard": os.environ.get("WASL_EIDGUARD", "0") not in ("", "0"),
+     "lung_loops_per_run": int(os.environ.get("LUNG", "0")), "dr_loops_per_run": int(os.environ.get("DR", "0")), "breast_loops_per_run": int(os.environ.get("BREAST", "0")), "ldct_loops_per_run": int(os.environ.get("LDCT", "0")), "ifhas_loops_per_run": int(os.environ.get("IFHAS", "0")), "crc_loops_per_run": int(os.environ["CRC"]), "cervical_loops_per_run": int(os.environ["CERV"]),
      "persons_cap": int(os.environ["PERSONS"]) or "all held-out (8,871)",
      "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
      "hashes": {p: h(p) for p in ["models/encoder_weights.json", "models/lgb_stream.json", "models/iso.json", "models/iso_v7.json", "models/gemma_cache.json",
@@ -57,6 +78,7 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
                                   "models/lung_gemma_cache.json", "data/lung/finding_reports.json", "data/lung/followup_reports.json",
                                   "models/dr_gemma_cache.json", "data/dr/screen_reports.json", "data/dr/clinic_notes.json",
                                   "models/breast_gemma_cache.json", "data/breast/screen_reports.json", "data/breast/assess_notes.json",
+                                  "models/ldct_gemma_cache.json", "data/ldct/screen_reports.json", "data/ldct/workup_notes.json",
                                   "models/ifhas_gemma_cache.json", "data/ifhas/followup_notes.json"]},
      "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
      "limitations": ["the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test","synthetic cohorts, reviewers, capacity; no clinician labels",
@@ -67,12 +89,22 @@ if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_A
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
 if os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
     m["lung_pet_surveillance"] = "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure"
+if os.environ.get("WASL_LUNGSURV2", "0") not in ("", "0") and os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
+    m["lung_pet_surveillance_later"] = "on (-lungsurv2): later surveillance CTs at about 1 and 2 years after the PET/CT"
+if os.environ.get("WASL_LUNGSURVSTABLE", "0") not in ("", "0"):
+    m["lung_stable_surveillance"] = "on (-lungsurvstable): stable-CT surveillance child with review items, truth and metrics"
 if os.environ.get("WASL_DRNEXT", "0") not in ("", "0"):
     m["dr_next_due"] = "on (-drnext): next due rescreen / clinic review and recall_overdue"
 if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
     m["handoff_xreflink"] = True
 if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung work-up / DR eye-clinic referrals (handoffext.go)
     m["handoff_refreject"] = True
+if os.environ.get("WASL_SECONDIDCONFIRM", "1") == "0":  # -secondidconfirm=false (default on: manifest unchanged)
+    m["second_identifier_confirm"] = False
+if os.environ.get("WASL_WRONGEID", "0") not in ("", "0") or os.environ.get("WASL_WRONGREF", "0") not in ("", "0"):
+    m["adversarial"] = {"wrong_eid_share": float(os.environ.get("WASL_WRONGEID", "0") or 0), "wrong_ref_share": float(os.environ.get("WASL_WRONGREF", "0") or 0)}
+if os.environ.get("WASL_BREASTSHARE", "0") not in ("", "0"):  # gen: breast loops may use women with another loop (genbreast.go)
+    m["breast_share"] = True
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
@@ -89,7 +121,7 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     B="$ROOT/bin"
     "$B/wsi7" gen -wasl "$ROOT/data" -reports "$REPORTS" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
       -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-      -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" -ifhas "$IFHAS" -ifhasdata "$ROOT/data/ifhas" ${GSURV[@]+"${GSURV[@]}"} > /dev/null
+      -out "$O/base" -seed "$seed" -loops "$CRC" -persons "$PERSONS" -cerv "$CERV" -noise "$noise" -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" -ldct "$LDCT" -ldctdata "$ROOT/data/ldct" -ifhas "$IFHAS" -ifhasdata "$ROOT/data/ifhas" ${GSURV[@]+"${GSURV[@]}"} > /dev/null
     "$B/wsi7" sim -data "$O/base" -wasl "$MODELS" -run "$O/run/base" > /dev/null 2>&1
     python3 "$ROOT/pipeline/augment_cohort.py" "$O/base" "$O/run/base" "$O/cohort" > /dev/null
     R="$O/run/main"
@@ -108,7 +140,10 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     rm -rf "$O/run/main/nats-"* "$O/run/base"   # keep logs, drop NATS stores
 }
 JOBS="${WASL_JOBS:-3}"   # runs in parallel, each on its own ports; throughput_ev_s is then per-run under contention
-TAGS=(); for noise in v1 v2; do for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done; done
+TAGS=(); for noise in ${WASL_NOISES:-v1 v2}; do
+  [ "$noise" = v1 ] || [ "$noise" = v2 ] || { echo "invalid WASL_NOISES entry: $noise" >&2; exit 2; }
+  for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done
+done
 for ((lane = 0; lane < JOBS; lane++)); do
   ( export WASL_PORT_OFFSET=$((${WASL_PORT_BASE:-0} + lane * 100))
     for ((k = lane; k < ${#TAGS[@]}; k += JOBS)); do run_one "${TAGS[$k]%%:*}" "${TAGS[$k]##*:}"; done ) &
