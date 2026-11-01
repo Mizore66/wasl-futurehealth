@@ -495,7 +495,7 @@ func ldctOutreach(f *LoopFacts, ld *LDCTDecision, state string, overdue bool, no
 		switch {
 		case f.MsgOptOut:
 			o.Suppress = SupConsent
-		case ConsentHold && f.Contact != "granted":
+		case f.Contact != "granted": // always requires a grant, even if the legacy ConsentHold switch is disabled
 			if f.Contact == "unknown" || f.Contact == "" {
 				o.Suppress, o.Guard = SupConsentHold, "held_until_consent"
 			} else {
