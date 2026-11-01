@@ -8,7 +8,8 @@
 #   WASL_LUNG=N incidental lung-nodule loops per run (default 1088; 0 = screening cohort only), WASL_DR=N diabetic
 #   retinopathy screening loops per run (default 1200; 0 = off), WASL_LUNGSURV=1 surveillance CT after a PET/CT
 #   low-uptake lung closure (default 0 = off), WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (relatives' Emirates
-#   IDs / wrong referral numbers; pipeline/genadv.go; default 0 = off). Cohort size: every held-out
+#   IDs / wrong referral numbers; pipeline/genadv.go; default 0 = off), WASL_LUNGSURV2=1 later CTs at about 1 and 2 years and
+#   WASL_LUNGSURVSTABLE=1 review items, truth and metrics for the stable-CT surveillance child (both default 0 = off). Cohort size: every held-out
 #   person (8,871; WASL_PERSONS caps it), WASL_CRC=2040 CRC and WASL_CERV=816 cervical loops: 1.36x the earlier 6,500
 #   persons / 1,500 / 600 / 800, so the smallest name-origin group (Filipino) has about 360 loops per run, not 250.
 set -euo pipefail
@@ -24,6 +25,10 @@ LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
 # WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default on
 GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
+# WASL_LUNGSURV2=1 (needs WASL_LUNGSURV=1): later surveillance CTs at about 1 and 2 years (BTS 2015); WASL_LUNGSURVSTABLE=1:
+# stable-CT surveillance child with review items, truth and metrics (pipeline/lungsurv.go); generator and engine; default off
+[ "${WASL_LUNGSURV2:=0}" = 0 ] || [ "$WASL_LUNGSURV" = 0 ] || { PARGS+=(-lungsurv2); GSURV+=(-lungsurv2); }
+[ "${WASL_LUNGSURVSTABLE:=0}" = 0 ] || { PARGS+=(-lungsurvstable); GSURV+=(-lungsurvstable); }
 # hand-off, default on: WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question (pipeline/handoffref.go)
 [ "${WASL_XREFLINK:=1}" = 0 ] || PARGS+=(-xreflink)
 # WASL_REFREJECT=true (gen, default true): lung work-up and DR eye-clinic referrals can be rejected (pipeline/handoffext.go)
@@ -40,7 +45,7 @@ GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsur
 # WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women who hold another
 # programme's loop (pipeline/genbreast.go); needed above about 85 breast loops per cohort
 [ "${WASL_BREASTSHARE:=0}" = 0 ] || GSURV+=(-breastshare)
-export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF WASL_BREASTSHARE
+export WASL_LUNGSURV WASL_LUNGSURV2 WASL_LUNGSURVSTABLE WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF WASL_BREASTSHARE
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -76,6 +81,10 @@ if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_A
     m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
 if os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
     m["lung_pet_surveillance"] = "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure"
+if os.environ.get("WASL_LUNGSURV2", "0") not in ("", "0") and os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
+    m["lung_pet_surveillance_later"] = "on (-lungsurv2): later surveillance CTs at about 1 and 2 years after the PET/CT"
+if os.environ.get("WASL_LUNGSURVSTABLE", "0") not in ("", "0"):
+    m["lung_stable_surveillance"] = "on (-lungsurvstable): stable-CT surveillance child with review items, truth and metrics"
 if os.environ.get("WASL_DRNEXT", "0") not in ("", "0"):
     m["dr_next_due"] = "on (-drnext): next due rescreen / clinic review and recall_overdue"
 if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):

@@ -68,6 +68,8 @@ func main() {
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
 	lungWk := fs.Bool("lungworkup", true, "lung nodule > 8 mm: PET/CT or tissue result can close the loop (lungworkup.go)")
 	lungSurv := fs.Bool("lungsurv", false, "lung nodule: a PET/CT low-uptake closure makes a surveillance CT due (child loop <loop>#surv); gen adds the surveillance CTs (lungsurv.go)")
+	lungSurv2 := fs.Bool("lungsurv2", false, "lung nodule (needs -lungsurv): later surveillance CTs at about 1 and 2 years after a PET/CT low-uptake closure (child loops <loop>#surv2, #surv3; BTS 2015); gen adds those CTs (lungsurv.go)")
+	lungSurvStable := fs.Bool("lungsurvstable", false, "lung nodule: the stable-CT surveillance child gets review items, truth and metrics (lungsurv.go stableSurvLoop); gen adds its CTs")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
 	refReject := fs.Bool("refreject", false, "gen: lung work-up and DR eye-clinic referrals can be rejected by the unit (hand-off packet truth; handoffext.go)")
 	wrongEID := fs.Float64("wrongeid", 0, "gen (adversarial B8): share of registrations carrying a relative's Emirates ID (genadv.go; 0 = off)")
@@ -176,6 +178,7 @@ func main() {
 	fs.Parse(os.Args[2:])
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
+	LungPETSurv2, LungStableSurv = *lungSurv && *lungSurv2, *lungSurvStable
 	XRefLinkQ = *xrefLink
 	HistClock = *histClock
 	RefRejectExt = *refReject
@@ -304,6 +307,12 @@ func main() {
 	}
 	if LungPETSurv { // reaches every child only when on, so the child argument lists are unchanged when off
 		v7Args = append(v7Args, "-lungsurv")
+	}
+	if LungPETSurv2 {
+		v7Args = append(v7Args, "-lungsurv2")
+	}
+	if LungStableSurv {
+		v7Args = append(v7Args, "-lungsurvstable")
 	}
 	if ShadowMode { // pilot switches reach every child (closure engines, reviewer, linker) only when on
 		v7Args = append(v7Args, "-shadow")
