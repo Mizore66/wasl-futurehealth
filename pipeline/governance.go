@@ -398,17 +398,26 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 	if it.Kinds[0] == "evidence" {
 		so.Role = RoleClinician
 	}
-	r1 := c.oneRead(it, tr, "r1")
+	// Reused link questions are one question about a registration pair, not independent questions about each loop.
+	// Key every simulated draw to that pair so the queued twin's arrival order cannot choose a different answer.
+	draw := it
+	if ReuseLinkAnswer && isLinkQuestion(it) {
+		x := *it
+		k := pairKey(it.Pair[0], it.Pair[1])
+		x.ItemID = fmt.Sprintf("link-pair|%s|%s", k[0], k[1])
+		draw = &x
+	}
+	r1 := c.oneRead(draw, tr, "r1")
 	final, reads, secs := r1, []string{"r1"}, r1.secs
 	if c.highRisk(it, r1) {
-		r2 := c.oneRead(it, tr, "r2")
+		r2 := c.oneRead(draw, tr, "r2")
 		reads, secs = append(reads, "r2"), secs+r2.secs
 		if r2.link != r1.link || r2.ev != r1.ev {
-			r3 := c.oneRead(it, tr, "r3")
+			r3 := c.oneRead(draw, tr, "r3")
 			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
 		}
 	}
-	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, it.ItemID, "audit") < c.SeniorAudit {
+	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, draw.ItemID, "audit") < c.SeniorAudit {
 		// Senior audit of a signed closing answer. Overriding the answer (rather than re-opening the item) keeps the
 		// one-sign-off-per-item model: in the offline replay the sign-off sits where the item was raised, so the loop
 		// ends in the state a re-opened and re-decided loop would reach. A real weekly audit corrects it days later.
