@@ -332,6 +332,13 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if seen != nil {
 			n.Seen, n.SeenDay, n.SeenReport = true, seen.d.Day, seen.d.ReportID
 		}
+		if DRSeenLinkAsk && seen == nil { // -drseenlink (outreachgaps.go): a later note on an untrusted link is asked about
+			for _, r := range notes {
+				if lab, _ := labelOf(r); !r.trusted && r.d.Day > closedDay && r.d.ReportID != closing && lab != "dna" {
+					raise(r, "link")
+				}
+			}
+		}
 		n.Overdue = !n.Seen && now > n.DueDay
 		dd.Next = n
 	}
@@ -386,6 +393,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	if OutreachOn {
 		d.Outreach = drOutreach(f, dd, state, d.Overdue, now)
+		rejectedOutreach(d, f, "diabetic_retinopathy", "dr_referral_rejected") // -rejmsg (outreachgaps.go)
 		if ls.contact == nil {
 			ls.contact = map[string]string{}
 		}
@@ -423,6 +431,9 @@ const DRReminderDays = 14.0
 
 // drOutreach: loop-level patient contact intents (phone then letter, in the screening clinic's name), as for lung.
 func drOutreach(f *LoopFacts, dd *DRDecision, state string, overdue bool, now float64) []Outreach {
+	if DRRecallMsg && dd != nil && dd.Rec != nil && (state == "closed" || state == "no_referral_needed") && dd.Next != nil && dd.Next.Overdue {
+		return []Outreach{selfOutreach(f, "diabetic_retinopathy", "dr_next_recall")} // -drrecallmsg (outreachgaps.go)
+	}
 	if dd == nil || dd.Rec == nil || (state != "open" && state != "no_show") {
 		return nil
 	}
