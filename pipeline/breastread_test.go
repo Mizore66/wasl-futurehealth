@@ -110,3 +110,48 @@ func TestBreastGemmaGrounding(t *testing.T) {
 		t.Fatal("an ungrounded quote must make reader B unavailable")
 	}
 }
+
+// v3 reader A (tuned on held-out 1): "R:"/"L:" side markers, a referral worded "refer to the breast cancer surgical
+// service", and a negated plan ("does not authorize routine screening") that is no plan.
+func TestBreastRegexV3Wording(t *testing.T) {
+	scr := "Comparison: none.\nR: No suspicious mass; no focal abnormality; BI-RADS 1.\nL: Coarse vascular calcification has a benign appearance; BI-RADS 2.\nSUMMARY: no overall category is stated."
+	if f := regexBreastScreen(scr); f.BRight != "1" || f.BLeft != "2" || f.Label != "B2" {
+		t.Errorf("R:/L: markers: %+v", f)
+	}
+	tr := "R: Coarse benign calcification; BI-RADS 2.\nL: Technically inadequate: pectoral muscle not shown; repeat acquisition required. No BI-RADS category assigned to this breast."
+	if f := regexBreastScreen(tr); f.Label != "TR" {
+		t.Errorf("R: 2 + L: inadequate should be TR: %+v", f)
+	}
+	ref := "She attended the recalled-screen assessment appointment.\nDiagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nMDT decision: refer to the breast cancer surgical service for definitive treatment planning."
+	if f := regexBreastAssess(ref); f.Label != "to_treatment" {
+		t.Errorf("breast cancer surgical service referral: %+v", f)
+	}
+	neg := "She attended the recalled-screen assessment appointment.\nDiagnostic imaging and core sampling were completed. This episode's core biopsy is benign, but the result is radiologically discordant.\nRepeat sampling is requested. Management remains undecided; the benign result does not authorize routine screening."
+	if f := regexBreastAssess(neg); f.Label != "incomplete" {
+		t.Errorf("negated routine screening must not close: %+v", f)
+	}
+	if f := regexBreastAssess("She attended. Ultrasound shows a simple cyst, no biopsy required. Return to routine screening."); f.Label != "return_routine" {
+		t.Errorf("affirmed routine screening: %+v", f)
+	}
+}
+
+// v5 reader B: the inadequate-images field makes a breast TR unless the 4B gave it a 3/4/5; old v2 entries still read.
+func TestBreastGemmaInadequateField(t *testing.T) {
+	txt := "RT: Technically inadequate: motion blur; repeat acquisition required. LT: no suspicious mass; BI-RADS 1."
+	for _, c := range []struct {
+		g    breastGemma
+		want string
+	}{
+		{breastGemma{BRight: "0", BLeft: "1", Inadequate: "right", Overall: "none"}, "TR"},
+		{breastGemma{BRight: "none", BLeft: "1", Inadequate: "right", Overall: "none"}, "TR"},
+		{breastGemma{BRight: "4", BLeft: "1", Inadequate: "both", Overall: "none"}, "B4"},
+		{breastGemma{BRight: "0", BLeft: "1", Inadequate: "none", Overall: "none"}, "B0"},
+		{breastGemma{BRight: "none", BLeft: "1", Inadequate: "none", Overall: "none"}, "indeterminate"},
+		{breastGemma{BRight: "inadequate", BLeft: "1", Overall: "none"}, "TR"}, // v2 cache entry
+	} {
+		c.g.Quote = "LT: no suspicious mass; BI-RADS 1"
+		if f, ok := c.g.fields("breast-screen", txt); !ok || f.Label != c.want {
+			t.Errorf("%+v: %+v want %s", c.g, f, c.want)
+		}
+	}
+}
