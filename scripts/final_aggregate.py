@@ -83,16 +83,20 @@ for noise in ["v1", "v2"]:
             pool["lung_false_closures"] += lc['false_closures']; pool["lung_closed"] += lc['pred_closed']
             for k2, v2 in (lu.get('workup_gt8mm') or {}).items():
                 pool["lung_workup_" + k2] += v2
-            ps = lu.get('pet_surveillance')
-            if ps:  # -lungsurv: surveillance CT after a PET/CT low-uptake closure (pipeline/lungsurv.go)
+            # -lungsurv: surveillance CT after a PET/CT low-uptake closure; -lungsurv2: its 1- and 2-year CTs;
+            # -lungsurvstable: the CT after a stable follow-up CT (pipeline/lungsurv.go); each family pooled apart
+            for key, pre in (('pet_surveillance', 'lung_surv_'), ('pet_surveillance_later', 'lung_surv_later_'), ('stable_surveillance', 'lung_surv_stable_')):
+                ps = lu.get(key)
+                if not ps:
+                    continue
                 psc = ps['closure']
-                pool["lung_surv_obligations"] += ps['obligations']; pool["lung_surv_opened"] += ps['opened']; pool["lung_surv_extra_opened"] += ps['extra_opened']
-                pool["lung_surv_truth_closed"] += psc['truth_closed']; pool["lung_surv_pred_closed"] += psc['pred_closed']; pool["lung_surv_tp"] += psc['tp']
-                pool["lung_surv_false_closures"] += psc['false_closures']; pool["lung_surv_missed"] += psc['missed']
-                pool["lung_surv_truth_overdue"] += ps['overdue']['truth_overdue']; pool["lung_surv_pred_overdue"] += ps['overdue']['pred_overdue']
-                pool["lung_surv_overdue_flag_correct"] += ps['overdue_flag_correct']
+                pool[pre + "obligations"] += ps['obligations']; pool[pre + "opened"] += ps['opened']; pool[pre + "extra_opened"] += ps['extra_opened']
+                pool[pre + "truth_closed"] += psc['truth_closed']; pool[pre + "pred_closed"] += psc['pred_closed']; pool[pre + "tp"] += psc['tp']
+                pool[pre + "false_closures"] += psc['false_closures']; pool[pre + "missed"] += psc['missed']
+                pool[pre + "truth_overdue"] += ps['overdue']['truth_overdue']; pool[pre + "pred_overdue"] += ps['overdue']['pred_overdue']
+                pool[pre + "overdue_flag_correct"] += ps['overdue_flag_correct']
                 for k2, v2 in (ps.get('patient_outreach_final') or {}).items():
-                    pool["lung_surv_outreach_" + k2] += v2
+                    pool[pre + "outreach_" + k2] += v2
         dr = r.get('programmes_live', {}).get('diabetic_retinopathy')
         if dr:  # diabetic retinopathy loops (third loop type), when the run has them
             dc, rc = dr['closure'], dr['referral_closure']
@@ -156,6 +160,11 @@ for noise in ["v1", "v2"]:
     if pool["lung_surv_obligations"]:
         safety["lung_surveillance_ct_false_closures"] = [pool["lung_surv_false_closures"], pool["lung_surv_pred_closed"], cp_ub(pool["lung_surv_false_closures"], pool["lung_surv_pred_closed"])]
         safety["lung_surveillance_ct_overdue_flag_correct"] = [pool["lung_surv_overdue_flag_correct"], pool["lung_surv_obligations"], None]
+    for pre, name in (("lung_surv_later_", "lung_surveillance_later_ct"), ("lung_surv_stable_", "lung_surveillance_stable_ct")):  # -lungsurv2 / -lungsurvstable
+        if pool[pre + "obligations"] or pool[pre + "extra_opened"]:
+            safety[name + "_false_closures"] = [pool[pre + "false_closures"], pool[pre + "pred_closed"], cp_ub(pool[pre + "false_closures"], pool[pre + "pred_closed"])]
+            safety[name + "_overdue_flag_correct"] = [pool[pre + "overdue_flag_correct"], pool[pre + "obligations"], None]
+            safety[name + "_extra_opened"] = [pool[pre + "extra_opened"], pool[pre + "opened"] + pool[pre + "extra_opened"], None]
     if pool["dr_closed"]:
         safety["dr_false_closures"] = [pool["dr_false_closures"], pool["dr_closed"], cp_ub(pool["dr_false_closures"], pool["dr_closed"])]
         safety["dr_referral_false_closures"] = [pool["dr_referral_false_closures"], pool["dr_referral_closed"], cp_ub(pool["dr_referral_false_closures"], pool["dr_referral_closed"])]
@@ -294,6 +303,8 @@ for noise in ["v1", "v2"]:
                   f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
     if extra:
         surv = ", PET-low surveillance CT" if any(k.startswith("lung_surv_") for k in extra) else ""
+        if any(k.startswith(("lung_surv_later_", "lung_surv_stable_")) for k in extra):
+            surv = ", lung surveillance CTs (PET-low first and later rounds, stable-CT child)"
         md.append(f"\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR and breast readers{surv}) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
 md.append("\n## Limitations\n" + "\n".join(f"- {x}" for x in man["limitations"]))
