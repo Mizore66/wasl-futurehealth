@@ -53,13 +53,65 @@ func TestHistClockJudgesHistoryAtArrival(t *testing.T) {
 	}
 }
 
-// From day 0 on the stream time is never earlier than the clock, so decisions are the same with and without the flag.
+// Live-day arrivals always use the current clock, so decisions are the same with and without the flag.
 func TestHistClockNoChangeOnceLive(t *testing.T) {
 	arr := 5.0
 	_, on := histLung(t, true, &arr)
 	_, off := histLung(t, false, nil)
 	if on.Sig != off.Sig || on.Now != off.Now {
 		t.Fatalf("arrival at or after the clock changed the decision: %+v vs %+v", on, off)
+	}
+}
+
+func TestHistClockLateLiveEventDoesNotRewind(t *testing.T) {
+	withHistClock(t, true)
+	savedCal := V7Cal
+	V7Cal = nil
+	t.Cleanup(func() { V7Cal = savedCal })
+	decide := func(on bool) (*ClosureCore, *Decision) {
+		HistClock = on
+		arr := 5.0
+		f := lungFacts(60, "none", "low", "solid/6-8/single")
+		f.SRDay, f.Down[0].Day = -360, -360 // overdue at day 10, but not if incorrectly rejudged at day 5
+		c := NewClosureCore(0, nil)
+		c.Apply(&FactsMsg{ID: "tick-d0", InSeq: 1, IsTick: true, TickDay: 0})
+		c.Apply(&FactsMsg{ID: "live", InSeq: 2, Facts: f, Arr: &arr})
+		c.Apply(&FactsMsg{ID: "tick-d10", InSeq: 3, IsTick: true, TickDay: 10})
+		c.Apply(&FactsMsg{ID: "late-live", InSeq: 4, Facts: f, Arr: &arr}) // older than clock 10, but not look-back history
+		return c, c.Final()[f.LoopID]
+	}
+	cOn, on := decide(true)
+	_, off := decide(false)
+	if cOn.now != 10 || on.Now != 10 || on.Sig != off.Sig {
+		t.Fatalf("late live event changed the decision: clock %v, on now/sig %v %v, off now/sig %v %v", cOn.now, on.Now, on.Sig, off.Now, off.Sig)
+	}
+}
+
+func TestHistClockLateSignoffDoesNotRewind(t *testing.T) {
+	withHistClock(t, true)
+	L, loop := newLoopLinker(t)
+	L.streamT, L.streamSeen = 5, true // latest event arrival; the sign-off itself has no arrival timestamp
+	out := L.Apply(&Prep{Seq: 30, Kind: "signoff", So: &Signoff{ItemID: "late-signoff", LoopID: loop, Kinds: []string{"evidence"}, ReportID: "R1", Evidence: "inadequate", Role: RoleClinician}})
+	var msg *FactsMsg
+	for i := range out {
+		if out[i].Facts != nil && out[i].Facts.LoopID == loop {
+			msg = &out[i]
+		}
+	}
+	if msg == nil || msg.Arr == nil || *msg.Arr != 5 {
+		t.Fatalf("sign-off was not stamped at stream day 5: %+v", msg)
+	}
+	decide := func(on bool) (*ClosureCore, *Decision) {
+		HistClock = on
+		c := NewClosureCore(0, nil)
+		c.Apply(&FactsMsg{ID: "tick-d10", InSeq: 31, IsTick: true, TickDay: 10})
+		c.Apply(msg)
+		return c, c.Final()[loop]
+	}
+	cOn, on := decide(true)
+	_, off := decide(false)
+	if cOn.now != 10 || on.Now != 10 || on.Sig != off.Sig {
+		t.Fatalf("late sign-off changed the live decision: clock %v, on now/sig %v %v, off now/sig %v %v", cOn.now, on.Now, on.Sig, off.Now, off.Sig)
 	}
 }
 

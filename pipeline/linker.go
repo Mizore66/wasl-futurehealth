@@ -78,9 +78,9 @@ var annMode = new(string)
 // is raised early, held for consent, released once the consent arrives, and often made moot by follow-up history
 // that arrives later (results/showcase at cfcf50f: 233 of its 317 consent holds; final states are unchanged).
 // On: every facts message carries the arrival day of the input that produced it (a sign-off: the latest arrival
-// seen), and the closure judges the loop at that day when it is earlier than its clock. From day 0 on an arrival is
-// never earlier than the clock (the clock trails every provider's latest arrival), so nothing changes there. Ticks
-// are unchanged: a loop still due at go-live is raised at the next tick.
+// seen), and the closure judges the loop at that day only for pre-day-0 arrivals earlier than its clock. Live-day
+// arrivals always use the current clock, so a late event or a sign-off stamped at an earlier stream day cannot rewind
+// a decision. Ticks are unchanged: a loop still due at go-live is raised at the next tick.
 var HistClock = false
 var annCB = new(string)
 
