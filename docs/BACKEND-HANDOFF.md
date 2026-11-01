@@ -298,9 +298,9 @@ These were listed as out of scope until the gates above passed. After stages 0�
 | Prep-risk model | same (Dik 2015 score) | Simulated decision support; suggestions need a clinician order |
 | Encoder retraining on external Arabic↔Latin data | `encoder/`, `-modelset v3` | Built and merged: Wikidata + NETransliteration (CC0), real-variant R@1 0.548 → 0.660; JRC-Names and ANETAC rejected on licence |
 
-## Six loop types: built, with simulated evaluation
+## Seven loop types: built, with simulated evaluation
 
-The canonical pipeline now has six loop types: CRC and cervical (default cohort), lung nodule (`-lung N` / `WASL_LUNG=N`), diabetic retinopathy (`-dr N` / `WASL_DR=N`), breast (`-breast N` / `WASL_BREAST=N`) and IFHAS abnormal cardiometabolic-result follow-up (`-ifhas N` / `WASL_IFHAS=N`). IFHAS is **built**, off by default, and evaluated only on synthetic patients, results, attendance, notes and reviewers; no real-world clinical effectiveness or reader-generalisation claim is established.
+The canonical pipeline now has seven loop types: CRC and cervical (default cohort), lung nodule (`-lung N` / `WASL_LUNG=N`), diabetic retinopathy (`-dr N` / `WASL_DR=N`), breast (`-breast N` / `WASL_BREAST=N`), lung cancer screening LDCT (`-ldct N` / `WASL_LDCT=N`) and IFHAS abnormal cardiometabolic-result follow-up (`-ifhas N` / `WASL_IFHAS=N`). LDCT and IFHAS are **built**, off by default, and evaluated only on synthetic patients, reports/results, attendance, notes and reviewers; no real-world clinical effectiveness or reader-generalisation claim is established. LDCT is distinct from the incidental-nodule programme and has no held-out reader corpus.
 
 IFHAS reader B is cached local Gemma 3 4B. Its prompt was tuned on the same 227-note synthetic development corpus that the integrated generator reuses. Reader B was unavailable on 19/227 notes; in the initial matched multi-programme run 96/437 follow-up report instances and 35/800 screens went to review. Integrated agreement, follow-up recall and false-closure results therefore are not independent reader evidence. A separate labelled corpus is still required. The 59-day routine clock contains a 28-day receiving-clinic Wasl assumption; the 10-day severe-result management clock is also a modelling choice.
 
