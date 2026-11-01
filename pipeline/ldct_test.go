@@ -30,6 +30,16 @@ func lcFacts(down ...DownFact) *LoopFacts {
 		Prog: "lung_ldct", LDCT: &LDCTSR{Scan: "LCS-ct-1"}, Down: down}
 }
 
+func lcHoldReason(d *Decision) string {
+	for i := len(d.Chain) - 1; i >= 0; i-- {
+		if d.Chain[i].Type == "hold_decision" {
+			reason, _ := d.Chain[i].Body["reason"].(string)
+			return reason
+		}
+	}
+	return ""
+}
+
 func TestLDCTAnnualCloses(t *testing.T) {
 	for _, lab := range []string{"LR1", "LR2"} {
 		d, _ := runLung(t, lcFacts(lcScan("LCS-ct-1", 10, lab)), 120)
@@ -52,6 +62,35 @@ func TestLDCTScanDisagreementHolds(t *testing.T) {
 		if d.State != "open" || lastBlock(d) != "hold_decision" {
 			t.Fatalf("unknown label %s: want open hold, got %s %s", bad, d.State, lastBlock(d))
 		}
+	}
+}
+
+func TestLDCTClinicianSignoffAndWrongKindLabels(t *testing.T) {
+	f := lcFacts(lcScan("LCS-ct-1", 10, ""))
+	d, out := runLung(t, f, 120)
+	var it *ReviewItem
+	for _, o := range out {
+		if o.Item != nil && o.Item.ReportID == "LCS-ct-1" {
+			it = o.Item
+		}
+	}
+	if d.State != "open" || it == nil {
+		t.Fatalf("disagreeing scan must raise evidence for sign-off: %s %+v", d.State, out)
+	}
+	f.EvOver = map[string]string{it.ReportID: "LR2"}
+	f.Signoffs = []Signoff{{ItemID: it.ItemID, LoopID: f.LoopID, ReportID: it.ReportID, Evidence: "LR2", Reviewer: "clinician-1", SignedHead: it.Head}}
+	d, _ = runLung(t, f, 120)
+	if d.State != "no_recall_needed" || !d.HumanAssisted || !verifyChain(d.Chain) {
+		t.Fatalf("valid signed LR2 override: got %s human=%v chain=%v", d.State, d.HumanAssisted, d.Chain)
+	}
+
+	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "wk_benign")), 120)
+	if d.State != "open" || lcHoldReason(d) != "scan_label_wrong_kind" {
+		t.Fatalf("work-up label on scan: got %s %q", d.State, lcHoldReason(d))
+	}
+	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR4B"), lcNote("THX-ct-1", 25, "LR2", "eid", 1, false)), 120)
+	if d.State != "open" || lcHoldReason(d) != "workup_label_wrong_kind" {
+		t.Fatalf("Lung-RADS label on work-up: got %s %q", d.State, lcHoldReason(d))
 	}
 }
 
@@ -98,7 +137,9 @@ func TestLDCTIncompleteScan(t *testing.T) {
 	if d.State != "open" || !d.Overdue || d.Dropoff != "incomplete_scan_not_completed" { // 10 + 91 < 120
 		t.Fatalf("LR0 without completion: want open overdue, got %s %v %q", d.State, d.Overdue, d.Dropoff)
 	}
-	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), lcScan("LCS-ct-2", 14, "LR2")), 120)
+	add := lcScan("LCS-ct-2", 14, "LR2")
+	add.Parent = "LCS-ct-1"
+	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), add), 120)
 	if d.State != "no_recall_needed" || d.ClosingReport != "LCS-ct-2" || d.LDCT.ScanDay != 14 {
 		t.Fatalf("LR0 then an addendum LR2: want no_recall_needed on the addendum, got %s %s", d.State, d.ClosingReport)
 	}
@@ -109,6 +150,40 @@ func TestLDCTIncompleteScan(t *testing.T) {
 	d, _ = runLung(t, lcFacts(lcScan("LCS-ct-1", 10, "LR0"), lcScan("LCS-ct-2", 60, "")), 120)
 	if d.State != "open" || d.LDCT.ScanLabel != "LR0" {
 		t.Fatalf("LR0 with an unread completion: want open under LR0, got %s %+v", d.State, d.LDCT)
+	}
+}
+
+func TestLDCTFollowupRejectsAddendumAndEarlyReread(t *testing.T) {
+	for _, indexLabel := range []string{"LR3", "LR4A"} {
+		index := lcScan("LCS-ct-1", 10, indexLabel)
+		addendum := lcScan("LCS-ct-add", 30, "LR2")
+		addendum.Parent = index.ReportID
+		d, _ := runLung(t, lcFacts(index, addendum), 120)
+		if d.State != "open" || lcHoldReason(d) != "followup_addendum_not_interval_ldct" {
+			t.Errorf("%s addendum: want open without follow-up closure, got %s %q", indexLabel, d.State, lcHoldReason(d))
+		}
+		early := lcScan("LCS-ct-early", 10.5, "LR2")
+		d, _ = runLung(t, lcFacts(index, early), 120)
+		if d.State != "open" || lcHoldReason(d) != "followup_too_early" {
+			t.Errorf("%s same-day reread: want open, got %s %q", indexLabel, d.State, lcHoldReason(d))
+		}
+		// An ineligible addendum does not consume or block the later real interval LDCT.
+		actual := lcScan("LCS-ct-follow", 100, "LR2")
+		d, _ = runLung(t, lcFacts(index, addendum, actual), 120)
+		if d.State != "closed" || d.ClosingReport != actual.ReportID {
+			t.Errorf("%s addendum then interval LDCT: got %s closing %q", indexLabel, d.State, d.ClosingReport)
+		}
+	}
+}
+
+func TestLDCTScanFactsCarryAddendumIdentity(t *testing.T) {
+	rec := &Rec{Pk: lcSRRec, evOrder: []string{"a", "b"}, evs: map[string]*Event{
+		"a": {ID: "a", RType: "DiagnosticReport", Category: "ldct-screen", ReportID: "LCS-ct-1"},
+		"b": {ID: "b", RType: "DiagnosticReport", Category: "ldct-screen", ReportID: "LCS-ct-add", Focus: "LCS-ct-1"},
+	}}
+	facts := ldctScanFacts(rec)
+	if len(facts) != 2 || facts[0].Parent != "" || facts[1].Parent != "LCS-ct-1" {
+		t.Fatalf("addendum parent identity lost: %+v", facts)
 	}
 }
 
@@ -199,9 +274,9 @@ func TestLDCTEvAltAndClosingAnswers(t *testing.T) {
 }
 
 func TestLDCTOutreach(t *testing.T) {
-	saved := OutreachOn
-	OutreachOn = true
-	defer func() { OutreachOn = saved }()
+	saved, savedConsent := OutreachOn, ConsentHold
+	OutreachOn, ConsentHold = true, true
+	defer func() { OutreachOn, ConsentHold = saved, savedConsent }()
 	kinds := func(d *Decision) map[string]bool {
 		m := map[string]bool{}
 		for _, o := range d.Outreach {
@@ -234,10 +309,29 @@ func TestLDCTOutreach(t *testing.T) {
 	if d, _ := runLung(t, f, 60); !kinds(d)["ldct_workup_overdue"] {
 		t.Errorf("overdue work-up: want ldct_workup_overdue, got %v", d.Outreach)
 	}
+	for _, contact := range []string{"denied", "opted_out"} {
+		f = lcFacts(lcScan("LCS-ct-1", 10, "LR4B"))
+		f.Contact = contact
+		d, _ = runLung(t, f, 60)
+		if len(d.Outreach) != 1 || d.Outreach[0].Released || d.Outreach[0].Suppress != SupConsent {
+			t.Errorf("%s: overdue work-up outreach must be cancelled, got %+v", contact, d.Outreach)
+		}
+	}
+	f = lcFacts(lcScan("LCS-ct-1", 10, "LR4B"))
+	f.Contact, f.MsgOptOut = "granted", true // send-time opt-out wins even over a stale grant
+	d, _ = runLung(t, f, 60)
+	if len(d.Outreach) != 1 || d.Outreach[0].Released || d.Outreach[0].Suppress != SupConsent {
+		t.Errorf("MsgOptOut: outreach must be cancelled, got %+v", d.Outreach)
+	}
+	f = lcFacts(lcScan("LCS-ct-1", 10, "LR4A"), lcScan("LCS-ct-2", 100, "LR2"))
+	f.Contact = "granted"
+	if d, _ := runLung(t, f, 120); d.State != "closed" || len(d.Outreach) != 0 {
+		t.Errorf("a closed action loop sends nothing: state %s outreach %v", d.State, d.Outreach)
+	}
 	f = lcFacts(lcScan("LCS-ct-1", 10, "LR2"))
 	f.Contact = "granted"
 	if d, _ := runLung(t, f, 40); len(d.Outreach) != 0 {
-		t.Errorf("a closed loop sends nothing: %v", d.Outreach)
+		t.Errorf("a resolved annual loop sends nothing: %v", d.Outreach)
 	}
 }
 

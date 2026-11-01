@@ -6,7 +6,9 @@ import (
 	"testing"
 )
 
-// Reader A (regex) must read every dev-corpus text correctly; it was written against this corpus (not a fair test).
+// Reader A (regex) is checked against the dev corpus it was written against (not a fair test). Review round 1
+// deliberately makes lw10/lw16 indeterminate: diagnostic-CT resolution plus a bare annual phrase lacks the required
+// MDT/tissue evidence in this model. Their original wk_benign keys remain unchanged and the score files disclose both.
 func TestLDCTRegexDevCorpus(t *testing.T) {
 	saved := LDCTCache
 	LDCTCache = nil
@@ -16,7 +18,11 @@ func TestLDCTRegexDevCorpus(t *testing.T) {
 		for _, d := range loadLungDocs("../data/ldct", kf[1]) {
 			n++
 			v := LDCTJudge(d.Text, kf[0])
-			if want := fmt.Sprint(d.Key["label"]); v.Regex.State != want {
+			want := fmt.Sprint(d.Key["label"])
+			if d.ID == "lw10" || d.ID == "lw16" {
+				want = "indeterminate" // post-hoc review round 1 safety expectation; original key stays wk_benign
+			}
+			if v.Regex.State != want {
 				t.Errorf("%s: regex %s want %s | %s", d.ID, v.Regex.State, want, d.Text)
 			}
 			if v.Agree || v.GemmaHit {
@@ -84,7 +90,9 @@ func TestLDCTWorkupLabel(t *testing.T) {
 		{done("not_discussed", "malignant", "treatment"), "indeterminate"}, // DoH 7.6.1: MDT before referral
 		{done("discussed", "none", "treatment"), "indeterminate"},
 		{done("discussed", "benign", "annual"), "wk_benign"},
-		{done("not_discussed", "none", "annual"), "wk_benign"},
+		{done("not_discussed", "benign", "annual"), "wk_benign"}, // tissue alone is adequate benign evidence
+		{done("discussed", "none", "annual"), "wk_benign"},       // MDT reclassification, including PET-supported decisions
+		{done("not_discussed", "none", "annual"), "indeterminate"},
 		{done("discussed", "malignant", "annual"), "indeterminate"},
 		{done("discussed", "none", "surveillance"), "wk_surveillance"},
 		{done("discussed", "malignant", "surveillance"), "indeterminate"},
@@ -103,6 +111,27 @@ func TestLDCTWorkupLabel(t *testing.T) {
 		if ldctClosingWorkup(l) {
 			t.Errorf("%s must not close a work-up loop", l)
 		}
+	}
+}
+
+func TestLDCTWorkupOutcomeEvidenceAndNegation(t *testing.T) {
+	for _, c := range []struct {
+		name, text, want, wantOutcome string
+	}{
+		{"bare annual", "Thoracic clinic review. Return to annual screening.", "indeterminate", "annual"},
+		{"benign tissue supports annual", "CT-guided biopsy: organising pneumonia, no malignancy. Return to annual screening.", "wk_benign", "annual"},
+		{"PET and MDT support annual", "PET/CT: no FDG uptake. Lung MDT decision: return to annual screening.", "wk_benign", "annual"},
+		{"negated annual", "Thoracic clinic review. No return to annual screening is planned.", "wk_incomplete", "pending"},
+		{"negated annual with surveillance", "Lung MDT decision: no return to annual screening; surveillance CT in 3 months.", "wk_surveillance", "surveillance"},
+		{"negated surveillance", "Lung MDT decision: no surveillance CT is planned; return to annual screening.", "wk_benign", "annual"},
+		{"negated treatment", "Lung MDT decision: not referred to oncology; return to annual screening.", "wk_benign", "annual"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := regexLDCTWorkup(c.text)
+			if f.Label != c.want || f.Outcome != c.wantOutcome {
+				t.Fatalf("got label %s outcome %s, want %s/%s; fields %+v", f.Label, f.Outcome, c.want, c.wantOutcome, f)
+			}
+		})
 	}
 }
 
