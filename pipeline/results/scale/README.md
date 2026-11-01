@@ -1,8 +1,10 @@
 # Scale runs: normal versus approximately 10×
 
 **The x10 run is a failed safety result, not a release candidate.** With chaos on it produced one CRC false closure,
-one cervical false closure and four released wrong-patient messages. No threshold or safety rule was changed after
-seeing these results. The normal-size comparison had zero for all three measures.
+one cervical false closure and four released wrong-patient messages. It also had **80 unexpected linker process
+restarts**, separate from its one scheduled linker chaos kill; the normal run had zero unexpected linker exits. No
+threshold or safety rule was changed after seeing these results. The normal-size comparison had zero for all three
+primary safety measures.
 
 Both runs used seed 2026, `v7strict`, cached evidence/image readers, mock FHIR Subscription ingest, three prep workers,
 four closure partitions, three NATS nodes and the standard kill/restart chaos cycles. Full sanitized reports are in
@@ -18,6 +20,7 @@ four closure partitions, three NATS nodes and the standard kill/restart chaos cy
 | FHIR messages | 40,786 | 406,143 (9.96×) |
 | Output messages | 31,012 | 311,018 (10.03×) |
 | Chaos schedule | default 15 s span | 600 s span (`-chaosspan`) |
+| Linker scheduled chaos kills / unexpected restarts | 1 / 0 | 1 / **80** |
 | Quiescence timeout | default 5 min | 60 min |
 | Tamper check | run (17/17 attacks detected) | **not run** (17 full replays were impractical) |
 
@@ -96,6 +99,17 @@ The concurrent total is the maximum sum of live matched processes, not the sum o
 | Messages released without granted consent | 0 | 0 |
 | Messages after opt-out / before late opt-out recorded | 0 / 0 | 0 / 0 |
 | Consent released / held / cancelled | 1,532 / 324 / 85 | 15,209 / 3,169 / 910 |
+
+## Unexpected linker restarts
+
+The x10 supervisor recorded 80 unexpected linker exits and restarted the process each time, in addition to the one
+scheduled chaos kill. The normal run recorded zero. All 80 x10 crashes are `fatal error: concurrent map` failures in
+linker status JSON serialization: 42 concurrent map iteration/write and 38 concurrent map read/write. Their stacks pass
+through `main.writeStatus` and `main.runLinker.func2`; this is a concurrent map-access defect, not a chaos event. The
+full sanitized log is preserved in [`x10/linker-restarts.log`](x10/linker-restarts.log), with the supervisor counts in
+[`x10/orchestrate.json`](x10/orchestrate.json); the original log remains in the scale scratch directory for the separate
+safety investigation. No race fix was made in this review. These crashes remain a stop-ship finding alongside the false
+closures and wrong-patient releases; zero duplicate/lost outputs and zero replay mismatches do not excuse either result.
 
 ## Abu Dhabi volume context
 

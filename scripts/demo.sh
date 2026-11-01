@@ -95,11 +95,19 @@ OARGS=()
 [ -z "${WASL_CHAOSSPAN:-}" ] || OARGS+=(-chaosspan "$WASL_CHAOSSPAN")
 [ -z "${WASL_QUIETTIMEOUT:-}" ] || OARGS+=(-quiettimeout "$WASL_QUIETTIMEOUT")
 need() { echo "MISSING: $1"; echo "  → $2"; exit 1; }
+validate_nats_config() {
+  if [ -n "${WASL_NATS_URL:-}" ] && [ "${WASL_NATS_EXTERNAL:-}" != 1 ]; then
+    echo "configuration error: WASL_NATS_URL requires WASL_NATS_EXTERNAL=1" >&2; exit 2
+  fi
+  if [ -z "${WASL_NATS_URL:-}" ] && [ "${WASL_NATS_EXTERNAL:-}" = 1 ]; then
+    echo "configuration error: WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL" >&2; exit 2
+  fi
+}
 
 check() {
   { [ -n "${WASL_BIN:-}" ] && [ -x "$BIN/wsi7" ]; } || command -v go >/dev/null || need "Go ≥1.22" "install from https://go.dev/dl/ (or: brew install go)"
   command -v python3 >/dev/null || need "python3" "install Python 3.10+"
-  if [ -z "${WASL_NATS_URL:-}" ]; then   # an external cluster (WASL_NATS_URL) needs no local nats-server
+  if [ "${WASL_NATS_EXTERNAL:-}" != 1 ]; then   # a valid external pair needs no local nats-server
   [ -x "$BIN/nats-server" ] || command -v nats-server >/dev/null || need "nats-server v2.10+" \
     "brew install nats-server   (or download from https://github.com/nats-io/nats-server/releases) — then: ln -s \$(command -v nats-server) bin/nats-server"
   [ -x "$BIN/nats-server" ] || { mkdir -p "$BIN"; ln -sf "$(command -v nats-server)" "$BIN/nats-server"; }
@@ -126,7 +134,7 @@ check() {
   if [ -n "$MODELSET" ]; then for f in encoder_$MODELSET lgb_stream_$MODELSET iso_$MODELSET iso_v7_$MODELSET; do
     [ -s "$ROOT/models/$f.json" ] || need "models/$f.json" "WASL_MODELSET=$MODELSET needs the full chain (encoder/README.md)"; done; fi
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
-  NPORTS="14822 14823 14824"; [ -z "${WASL_NATS_URL:-}" ] || NPORTS=""
+  NPORTS="14822 14823 14824"; [ "${WASL_NATS_EXTERNAL:-}" != 1 ] || NPORTS=""
   for p in $NPORTS 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
@@ -182,6 +190,7 @@ snapshot() {  # write static API responses for frontend development (no backend 
   done
   echo "API samples → $D"
 }
+validate_nats_config
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;
