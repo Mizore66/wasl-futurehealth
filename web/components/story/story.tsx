@@ -173,7 +173,7 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
               <div
                 key={c.id}
                 data-cue={c.id}
-                className={cn("story-cue absolute [transform:translateY(var(--rise,0px))] [text-shadow:0_0_18px_var(--paper),0_0_4px_var(--paper)]", cueClass(c, mobile), "anchor" in c.place && !mobile && !a && "invisible")}
+                className={cn("absolute [transform:translateY(var(--rise,0px))] [text-shadow:0_0_18px_var(--paper),0_0_4px_var(--paper)] before:absolute before:-inset-x-10 before:-inset-y-6 before:-z-10 before:rounded-[3rem] before:bg-(--paper)/70 before:blur-2xl before:content-['']", cueClass(c, mobile), "anchor" in c.place && !mobile && !a && "invisible")}
                 style={
                   a
                     ? {
@@ -194,7 +194,7 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
         <a
           href="#notes"
           className={cn(
-            "absolute bottom-3 z-10 text-[12px] leading-none text-(--muted) no-underline hover:text-(--ink)",
+            "absolute bottom-3 z-10 text-[12px] leading-none text-(--muted) no-underline [text-shadow:0_0_6px_var(--paper),0_0_2px_var(--paper)] hover:text-(--ink)",
             mobile ? "left-1/2 -translate-x-1/2" : "right-[clamp(1rem,2vw,2rem)]",
           )}
         >

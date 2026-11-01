@@ -89,13 +89,13 @@ export const CUES: readonly TextCue[] = [
   { id: "wasl", from: 0.552, to: 0.592, place: { zone: "tl" }, band: "top" },
   { id: "follows", from: 0.597, to: 0.634, place: { anchor: "tip" }, band: "bottom" },
   { id: "spellings", from: 0.64, to: 0.664, place: { zone: "tc" }, band: "top" },
-  { id: "join", from: 0.668, to: 0.746, place: { zone: "bc" }, band: "bottom" },
+  { id: "join", from: 0.668, to: 0.746, place: { zone: "tc" }, band: "bottom" },
   { id: "quote", from: 0.752, to: 0.786, place: { anchor: "report" }, band: "bottom" },
   { id: "none-wrong", from: 0.791, to: 0.826, place: { zone: "br" }, band: "bottom" },
   { id: "receipt-word", from: 0.832, to: 0.866, place: { anchor: "receipt" }, band: "bottom" },
   { id: "receipt", from: 0.872, to: 0.908, place: { zone: "r" }, band: "bottom" },
-  { id: "who", from: 0.916, to: 0.952, place: { zone: "bl" }, band: "bottom" },
-  { id: "close", from: 0.958, to: 1, place: { zone: "c" }, band: "bottom", exit: false },
+  { id: "who", from: 0.916, to: 0.952, place: { zone: "tl" }, band: "bottom" },
+  { id: "close", from: 0.958, to: 1, place: { zone: "tc" }, band: "bottom", exit: false },
 ];
 
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
