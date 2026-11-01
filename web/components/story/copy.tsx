@@ -128,7 +128,7 @@ function Receipt() {
           </div>
         ))}
       </dl>
-      <div className="mt-4 bg-(--teal) px-4 py-2.5 text-[17px] font-bold text-(--paper)">Done, with proof</div>
+      <div className="mt-4 bg-(--teal) px-4 py-2.5 text-[17px] font-bold text-(--paper) [text-shadow:none]">Done, with proof</div>
     </div>
   );
 }

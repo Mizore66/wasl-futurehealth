@@ -160,6 +160,84 @@ for (const vp of WIDTHS) {
   });
 }
 
+/** Every line box of text inside the cue on screen, with the colour it is drawn in. */
+async function textRuns(page: Page) {
+  return page.evaluate(() => {
+    const cue = document.querySelector<HTMLElement>("[data-cue][data-on]")!;
+    const runs: { text: string; color: string; x: number; y: number; w: number; h: number }[] = [];
+    const walker = document.createTreeWalker(cue, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const text = n.textContent!.trim();
+      if (!text) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      const color = getComputedStyle(n.parentElement!).color;
+      for (const r of range.getClientRects()) {
+        if (r.width < 2 || r.bottom < 0 || r.top > innerHeight) continue;
+        runs.push({ text, color, x: r.left, y: r.top, w: r.width, h: r.height });
+      }
+    }
+    return runs;
+  });
+}
+
+/**
+ * For each line of the cue on screen: the 2nd-percentile contrast between the text colour and the
+ * rendered pixels behind that line, with the glyphs made transparent but their paper halo kept.
+ */
+async function lineContrasts(page: Page) {
+  const runs = await textRuns(page);
+  const hide = await page.addStyleTag({ content: "[data-cue] * { color: transparent !important; -webkit-text-fill-color: transparent !important; text-decoration-color: transparent !important; }" });
+  await page.waitForTimeout(100);
+  const shot = (await page.screenshot({ scale: "css" })).toString("base64");
+  await hide.evaluate((tag) => (tag as Element).remove());
+  return page.evaluate(
+    async ({ shot, runs }) => {
+      const img = await createImageBitmap(await (await fetch(`data:image/png;base64,${shot}`)).blob());
+      const c = new OffscreenCanvas(img.width, img.height).getContext("2d")!;
+      c.drawImage(img, 0, 0);
+      const lin = (v: number) => ((v /= 255) <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+      const lum = (r: number, g: number, b: number) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+      return runs.map((run) => {
+        const [r, g, b] = run.color.match(/\d+(\.\d+)?/g)!.map(Number);
+        const fg = lum(r, g, b);
+        const x = Math.max(0, Math.floor(run.x));
+        const y = Math.max(0, Math.floor(run.y));
+        const w = Math.min(img.width - x, Math.ceil(run.w));
+        const h = Math.min(img.height - y, Math.ceil(run.h));
+        const px = c.getImageData(x, y, w, h).data;
+        const ratios: number[] = [];
+        for (let i = 0; i < px.length; i += 4) {
+          const bg = lum(px[i], px[i + 1], px[i + 2]);
+          ratios.push((Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05));
+        }
+        ratios.sort((a, b) => a - b);
+        return { text: run.text, ratio: ratios[Math.floor(ratios.length * 0.02)] };
+      });
+    },
+    { shot, runs },
+  );
+}
+
+for (const vp of WIDTHS) {
+  test(`landing at ${vp.w}px: every line of every cue reads at 4.5:1 against what is drawn behind it`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.setViewportSize({ width: vp.w, height: vp.h });
+    await openStory(page);
+    const low: string[] = [];
+    for (const c of CUES) {
+      await scrollStory(page, c.from + (c.to - c.from) * 0.55);
+      await expect(onCues(page)).toHaveAttribute("data-cue", c.id);
+      for (const l of await lineContrasts(page)) if (l.ratio < 4.5) low.push(`${c.id} "${l.text}" ${l.ratio.toFixed(2)}:1`);
+    }
+    expect(
+      low,
+      "Each line box is screenshotted with its glyphs transparent (their paper halo and backdrop stay), and the text colour must reach 4.5:1 against the 2nd-percentile pixel behind it. " +
+        "A median, or even the 10th percentile, passes a 2px thread arc drawn straight through a headline; the 2nd percentile fails it, and with the glyphs hidden there are no anti-aliased glyph edges to trip it.",
+    ).toEqual([]);
+  });
+}
+
 test("landing: the Day counter runs to the published wait, with its tick at the standard", async ({ page }) => {
   await openStory(page);
   const counter = page.locator("[data-counter]");
