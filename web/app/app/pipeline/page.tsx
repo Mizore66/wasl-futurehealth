@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+import readerJson from "@/data/reader.json";
+import type { ReaderData } from "@/components/pipeline/reader-types";
+import type { RulesBySha } from "@/components/pipeline/profile";
 import { PipelineHeading } from "@/components/pipeline/heading";
 import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-replay";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
@@ -68,6 +71,9 @@ function tamperDemo(loop: string, chain: ChainEntry[]): TamperDemo {
   };
 }
 
+/** The rules reader's answers, for the replay reports whose text data/reader.json also holds. */
+const rules: RulesBySha = Object.fromEntries((readerJson as ReaderData).cases.map((c) => [c.sha, c.rules]));
+
 export default async function Page() {
   const loop = (await getFixtures()).fixtures.evidence_closure.id;
   const audit = await getAudit(loop);
@@ -77,6 +83,7 @@ export default async function Page() {
     <PipelineReplay
       heading={<PipelineHeading title="Pipeline" current="/app/pipeline" />}
       tamper={tamperDemo(loop, audit.chain)}
+      rules={rules}
     />
   );
 }

@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { ROUTES as APP_ROUTES } from "./routes";
 
 const ROUTES = [
   { path: "/", name: "home" },
   { path: "/how-it-works", name: "how-it-works" },
-  { path: "/pilot", name: "pilot" },
   { path: "/experts", name: "experts" },
 ] as const;
 
@@ -93,17 +93,32 @@ for (const route of ROUTES) {
   });
 }
 
-test("the request action stays on the page and shows the placeholder address", async ({ page }) => {
+test("the header's primary action opens the dashboard from every site page", async ({ page }) => {
   for (const route of ROUTES) {
     await page.goto(route.path);
-    const pilot = page.locator("#pilot");
-    await expect(pilot).toHaveCount(1);
-    await expect(pilot.getByText("[team email]")).toBeVisible();
     const nav = page.getByRole("navigation", { name: "Primary" });
-    await nav.getByRole("link", { name: /Request a/ }).click();
-    await expect(page).toHaveURL(new RegExp(`${route.path === "/" ? "/" : route.path}#pilot$`));
-    await expect(pilot).toBeInViewport();
+    await nav.getByRole("link", { name: "Open the dashboard" }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await expect(page.locator("h1")).toHaveCount(1);
   }
+});
+
+test("the pilot page is gone and no page links to it", async ({ page }) => {
+  test.setTimeout(120_000);
+  const res = await page.goto("/pilot");
+  expect(res?.status()).toBe(404);
+  for (const route of APP_ROUTES) {
+    await page.goto(route);
+    await expect(page.locator('a[href="/pilot"], a[href^="/pilot#"], a[href^="/pilot?"]'), route).toHaveCount(0);
+  }
+});
+
+test("landing: the closing beat opens the dashboard and the pipeline", async ({ page }) => {
+  await page.goto("/?story=stills");
+  const start = page.locator('[data-beat="start"]');
+  await expect(start.getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
+  await start.getByRole("link", { name: "Open the dashboard" }).click();
+  await expect(page).toHaveURL(/\/app$/);
 });
 
 const results = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8"));
@@ -195,17 +210,8 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
   await expect(page.locator("#path-title + ol > li")).toHaveCount(6);
   await expect(page.locator('[data-side="tracker"]')).toContainText("Ticked done");
   await expect(page.locator('[data-side="wasl"]')).toContainText("Kept open");
-  await nav.getByRole("link", { name: "Pilot", exact: true }).click();
-  await expect(page).toHaveURL(/\/pilot$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Start with\s+one clinic/);
-});
-
-test("pilot: four stages, and the 300-in-a-row rule is labelled a rule", async ({ page }) => {
-  await page.goto("/pilot");
-  await expect(page.locator("#steps-title ~ ol > li")).toHaveCount(4);
-  await expect(page.locator('[data-figure="streak"]')).toContainText("right 300 times in a row");
-  await expect(page.locator('[data-figure="streak"]')).toContainText("a rule of the trial, not a result");
-  await expect(page.locator('[data-honesty="designed"]')).toBeVisible();
+  await expect(nav.getByRole("link", { name: /pilot/i })).toHaveCount(0);
+  await expect(nav.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
 });
 
 test("experts: KPI bars, outcome table, exactly-once figure and the τ picker read the results", async ({ page }) => {

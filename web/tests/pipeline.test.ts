@@ -5,7 +5,8 @@ import { FEED_ROWS, ROWS, SLOTS, flowView, replayTrack } from "@/components/pipe
 import { playback, type Playback, type PlaybackAction } from "@/components/pipeline/playback";
 import { readerFrames, readerStart, readerTrack, readerView } from "@/components/pipeline/reader-timeline";
 import { NOT_ASKED, type ReaderData } from "@/components/pipeline/reader-types";
-import type { ReplayState } from "@/lib/replay/reducer";
+import { profileOf } from "@/components/pipeline/profile";
+import { initialState, next, type ReplayState } from "@/lib/replay/reducer";
 import type { Replay } from "@/lib/replay/types";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
@@ -148,5 +149,45 @@ describe("reader playback", () => {
     const v = readerView(reader, readerStart(reader, 1));
     expect(v.compared).not.toContain("tissue");
     expect(v.disagree).toEqual([]);
+  });
+});
+
+describe("pipeline person profile", () => {
+  const rules = Object.fromEntries(reader.cases.map((c) => [c.sha, c.rules]));
+  const fatima = replay.cases.find((c) => c.person.name === "Fatima Al Zaabi")!;
+  const generated = replay.cases.find((c) => c.person.source === "generated")!;
+
+  it("links a demo cast member to her patient record, with both readers on record", () => {
+    const p = profileOf(replay, track.rest, fatima.id, rules)!;
+    expect(p.record).toBe(`/app/patients/${encodeURIComponent(personForLoop("ahs-mushrif/ServiceRequest/AHS-sr-1037")!.loop)}`);
+    expect(p.rulesOnRecord).toBe(true);
+    expect(p.fields.find((f) => f.key === "caecum_reached")).toMatchObject({ value: "yes", rules: "yes" });
+    expect(p.decision).toEqual({ word: "Closed with evidence", label: "closed · criteria_met", gatePassed: true });
+  });
+
+  it("gives a generated person no record and only the AI reader's answer", () => {
+    const p = profileOf(replay, track.rest, generated.id, rules)!;
+    expect(p.record).toBeNull();
+    expect(p.rulesOnRecord).toBe(false);
+    expect(p.fields.every((f) => f.rules === undefined)).toBe(true);
+  });
+
+  it("lists every step of the person's report, marking which the current frame has played", () => {
+    const own = replay.events.flatMap((e, i) => ("caseId" in e && e.caseId === fatima.id ? [i + 1] : []));
+    expect(profileOf(replay, initialState, fatima.id, rules)!.history.map((h) => h.step)).toEqual(own);
+    expect(profileOf(replay, initialState, fatima.id, rules)!.history.every((h) => !h.played)).toBe(true);
+    expect(profileOf(replay, initialState, fatima.id, rules)!.now).toBe(`Not in this loop yet. The report arrives at step ${own[0]}.`);
+
+    let s = initialState;
+    while (s.cursor < own.at(-1)!) s = next(replay, s);
+    const done = profileOf(replay, s, fatima.id, rules)!;
+    expect(done.history.every((h) => h.played)).toBe(true);
+    expect(done.now).toBe("Closed with evidence");
+    expect(done.matched).toBe(true);
+  });
+
+  it("drops quote fragments that hold no words", () => {
+    const p = profileOf(replay, track.rest, "showcase-01", rules)!;
+    expect(p.fields.find((f) => f.key === "prep")!.quote).toBe("");
   });
 });

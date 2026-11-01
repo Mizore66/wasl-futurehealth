@@ -115,13 +115,16 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               <tr key={c.id} className="border-t border-rule">
                 <td className="px-4 py-2.5">
                   <span className="flex items-center gap-2.5">
-                    <Avatar person={it.seed} size={24} label="" />
                     {it.hasRecord ? (
-                      <Link href={caseHref("/app/patients", c.id)} className="font-medium no-underline">
+                      <Link href={caseHref("/app/patients", c.id)} className="flex items-center gap-2.5 font-medium no-underline">
+                        <Avatar person={it.seed} size={24} label="" />
                         {it.name}
                       </Link>
                     ) : (
-                      <span className="font-medium">{it.name}</span>
+                      <>
+                        <Avatar person={it.seed} size={24} label="" />
+                        <span className="font-medium">{it.name}</span>
+                      </>
                     )}
                     {it.nameAr && (
                       <span lang="ar" dir="rtl" className="text-muted">

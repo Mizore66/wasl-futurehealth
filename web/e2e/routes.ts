@@ -6,7 +6,6 @@ const id = (name: keyof typeof fixtures.fixtures) => encodeURIComponent(fixtures
 export const ROUTES = [
   "/",
   "/how-it-works",
-  "/pilot",
   "/experts",
   "/app",
   "/app/today",

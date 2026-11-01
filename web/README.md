@@ -1,6 +1,6 @@
 # Wasl web
 
-The Wasl frontend: the product shell (`/app`), the site (`/`, `/how-it-works`, `/pilot`, `/experts`) and the patient phones (`/patient/[step]`). Next.js 16 App Router, TypeScript strict, Tailwind v4, shadcn/ui. All data is synthetic.
+The Wasl frontend: the product shell (`/app`), the site (`/`, `/how-it-works`, `/experts`) and the patient phones (`/patient/[step]`). Next.js 16 App Router, TypeScript strict, Tailwind v4, shadcn/ui. All data is synthetic.
 
 The plan, routes and gaps are in [`../docs/FRONTEND-PLAN.md`](../docs/FRONTEND-PLAN.md). The backend contract is [`../docs/API.md`](../docs/API.md).
 
