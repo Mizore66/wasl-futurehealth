@@ -1401,7 +1401,11 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		for k := nDistract; k < len(rest); k++ {
 			bg = append(bg, &ps[rest[k]])
 		}
-		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, tr, &evs, regs, mrnN, ctr, textUse)
+		all := make([]*Person, len(ps)) // -breastshare: women with another loop may follow (genbreast.go)
+		for i := range ps {
+			all[i] = &ps[i]
+		}
+		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, all, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()
