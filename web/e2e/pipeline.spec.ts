@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import replay from "../data/replay.json";
 
-const LINE = "Replaying the recorded showcase run · synthetic patients · real report texts";
+const LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
 const SHOTS = "test-results/screens/pipeline";
 
 test.describe.configure({ timeout: 120_000 });
@@ -43,6 +43,8 @@ test("pipeline: pause, step, play, switch off a server and tamper, totals within
   await expect(page.locator("[data-stage]")).toHaveCount(8);
 
   await page.clock.runFor(500);
+  await expect(page.locator('[data-stage="received"] [data-state="unknown"]').first()).toBeAttached();
+  await expect(page.locator('[data-stage="closed"] [data-state="known"]').first()).toBeAttached();
   await page.screenshot({ path: `${SHOTS}-rest.png`, fullPage: true });
   await page.getByRole("button", { name: "Pause" }).click();
   await expect(page.getByTestId("replay-position")).toContainText("paused");
@@ -51,15 +53,33 @@ test("pipeline: pause, step, play, switch off a server and tamper, totals within
   await page.clock.runFor(3000);
   expect(await position(page), "paused: no ticks").toBe(before);
 
+  const flow = page.getByRole("list", { name: /^Case flow/ });
+  await expect(flow.getByTestId("chip-name").first()).toBeVisible();
+  await expect(flow).not.toContainText(/Case \d/);
+  await expect(page.getByRole("list", { name: "Decisions, newest first" })).not.toContainText(/Case \d/);
+
+  const arriving = page.locator('[data-stage="received"] [data-case]').first();
+  const id = (await arriving.getAttribute("data-case"))!;
+  const person = replay.cases.find((c) => c.id === id)!.person;
+  const chip = page.locator(`[data-case="${id}"]`);
+  await expect(chip.getByTestId("chip-name"), "unmatched: the report's own spelling").toHaveText(person.reportName);
+  await expect(chip.locator("[data-state]")).toHaveAttribute("data-state", "unknown");
+  for (let i = 0; i < 12 && (await chip.locator("[data-state]").getAttribute("data-state")) === "unknown"; i++) {
+    await page.getByRole("button", { name: "Step", exact: true }).click();
+  }
+  await expect(chip.locator("[data-state]"), "matched: the \"?\" resolves").not.toHaveAttribute("data-state", "unknown");
+  await expect(chip.getByTestId("chip-name")).toHaveText(person.name);
+  const resolved = await position(page);
+
   for (let i = 0; i < 12; i++) await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect.poll(() => position(page)).toBe(before + 12);
+  await expect.poll(() => position(page)).toBe(resolved + 12);
   const stepped = await totals(page);
   expect(stepped.decisions).toBeLessThanOrEqual(replay.totals.outputs);
   expect(stepped.chains).toBeLessThanOrEqual(replay.totals.chainsVerified);
 
   await page.getByRole("button", { name: "Play" }).click();
   await page.clock.runFor(2500);
-  await expect.poll(() => position(page)).toBe(before + 14);
+  await expect.poll(() => position(page)).toBe(resolved + 14);
 
   await page.getByRole("button", { name: "Switch off a server" }).click();
   await expect(page.getByRole("img", { name: /server 2 off/ })).toBeVisible();
@@ -108,10 +128,13 @@ test("matching: the score lands against the 0.99 line, runner-ups labelled illus
 
   await page.getByRole("button", { name: /^Aisha/ }).click();
   await expect(page.getByTestId("match-p")).toHaveText("—");
+  const reportFace = page.getByRole("img", { name: /Not yet confirmed as the referral's patient|Same patient as the referral/ });
+  await expect(reportFace).toHaveAttribute("data-state", "unknown");
   for (let i = 0; i < 9; i++) await page.getByRole("button", { name: "Step", exact: true }).click();
   await expect(page.getByTestId("match-p")).toHaveText("1.000");
   await page.getByRole("button", { name: "Step", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Matched on the Emirates ID" })).toBeVisible();
+  await expect(reportFace, "held for a second identifier: the face stays \"?\"").toHaveAttribute("data-state", "unknown");
 
   await page.getByRole("button", { name: "How it decides" }).click();
   await expect(page.getByText(/R@10 0\.932/)).toBeVisible();

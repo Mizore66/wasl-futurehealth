@@ -2,14 +2,16 @@
 
 import { useMemo, useState } from "react";
 import NumberFlow from "@number-flow/react";
-import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import replayJson from "@/data/replay.json";
+import { Avatar } from "@/components/avatar/avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { Replay } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls } from "./controls";
-import { FEED_ROWS, flowView, replayTrack, type FlowRow } from "./flow";
+import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
 import { usePlayback } from "./playback";
+import "./pipeline.css";
 
 const replay = replayJson as Replay;
 const track = replayTrack(replay);
@@ -25,13 +27,28 @@ export type TamperDemo = {
   changed: string;
 };
 
+type LaneMark = "closed" | "review" | "open";
+
+/** The outcome lanes: the theme's status colour, a shape and a word, so no lane depends on colour alone. */
+const LANE: Partial<Record<RowId, { mark: LaneMark; bg: string; ink: string; edge: string }>> = {
+  closed: { mark: "closed", bg: "bg-pill-positive-bg", ink: "text-positive", edge: "border-positive" },
+  review: { mark: "review", bg: "bg-pill-warning-bg", ink: "text-warning", edge: "border-warning" },
+  open: { mark: "open", bg: "bg-pill-negative-bg", ink: "text-negative", edge: "border-negative" },
+};
+
+const CHIP_MOVE = { duration: 0.5, ease: [0.2, 0.7, 0.2, 1] } as const;
+const FEED_PITCH = 52;
+
 export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; tamper: TamperDemo }) {
   const play = usePlayback(track, TICK_MS);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = !!useReducedMotion();
   const view = useMemo(() => flowView(replay, play.frame), [play.frame]);
   const [serverOff, setServerOff] = useState(false);
   const [tampered, setTampered] = useState(false);
   const { facts, totals } = replay;
+  const stages = view.rows.filter((r) => !LANE[r.id] && r.id !== "ledger");
+  const lanes = view.rows.filter((r) => LANE[r.id]);
+  const ledger = view.rows.find((r) => r.id === "ledger")!;
 
   return (
     <>
@@ -46,107 +63,110 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
         />
       </header>
 
-      <div className="mt-6 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <section aria-labelledby="flow-h" className="rounded-card border border-line bg-surface px-6 pb-3 pt-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h2 id="flow-h" className="m-0 text-section font-medium">
-                Case flow
-              </h2>
-              <p className="m-0 text-small text-muted">One chip per case. The blue chip is the case that just moved.</p>
-            </div>
-            <ul aria-label="Chip marks" className="m-0 mt-1 flex list-none gap-3 whitespace-nowrap p-0 text-small text-muted">
-              {(["queued", "working", "done", "held"] as const).map((m) => (
-                <li key={m} className="flex items-center gap-1.5">
-                  <MarkShape mark={m} />
-                  {m === "queued" ? "waiting" : m}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <LayoutGroup>
+      <section aria-labelledby="flow-h" className="mt-8">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <h2 id="flow-h" className="m-0 text-section font-medium">
+            Case flow
+          </h2>
+          <p className="m-0 text-small text-muted">
+            A report shows the name as it is written on it, and &ldquo;?&rdquo;, until it is matched to a referral. The ringed one just moved.
+          </p>
+        </div>
+        <LayoutGroup>
+          <div className="mt-3 rounded-card border border-line bg-surface">
             <ol
               aria-label={`Case flow, 8 stages. ${view.rows.map((r) => `${r.label} ${r.count}`).join(", ")}`}
-              className="m-0 mt-3 list-none p-0"
+              className="m-0 grid list-none grid-cols-1 p-0 lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.5fr)]"
             >
-              {view.rows.map((r) => (
-                <StageRow key={r.id} row={r} latest={r.id === "ledger" ? view.latestRecorded : null} />
+              {stages.map((r) => (
+                <StageColumn key={r.id} row={r} reduceMotion={reduceMotion} />
               ))}
+              <li className="flex min-w-0 flex-col gap-1 px-4 pb-4 pt-4">
+                <span className="px-1 text-small text-muted">Outcome</span>
+                {lanes.map((r) => (
+                  <OutcomeLane key={r.id} row={r} reduceMotion={reduceMotion} />
+                ))}
+              </li>
             </ol>
-          </LayoutGroup>
-        </section>
+            <div data-stage="ledger" className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-rule px-5 py-3">
+              <span className="text-body font-medium">{ledger.label}</span>
+              <span className="text-small text-muted">{ledger.tech}</span>
+              <span className="min-w-0 flex-1 truncate text-small text-muted">
+                {view.latestRecorded
+                  ? `Latest: ${view.latestRecorded.who.name} · ${view.latestRecorded.closed ? "chain verified" : "decision sealed"}`
+                  : "Nothing recorded yet in this loop"}
+              </span>
+              <span className="text-body tabular-nums">{ledger.count}</span>
+            </div>
+          </div>
+        </LayoutGroup>
+      </section>
 
-        <section aria-labelledby="feed-h" className="rounded-card border border-line bg-surface px-6 pb-3 pt-5">
-          <h2 id="feed-h" className="m-0 text-section font-medium">
+      <div className="mt-10 grid grid-cols-1 gap-x-10 gap-y-8 xl:grid-cols-[minmax(0,4fr)_minmax(0,5fr)_minmax(0,5fr)]">
+        <section aria-labelledby="feed-h" className="min-w-0 border-t border-line pt-5">
+          <h2 id="feed-h" className="m-0 text-body font-medium">
             Decisions
           </h2>
           <p className="m-0 text-small text-muted">Newest first. Plain words, then the system&apos;s own label.</p>
-          <ol aria-label="Decisions, newest first" className="m-0 mt-3 list-none overflow-hidden p-0" style={{ height: FEED_ROWS * 56 }}>
-            <AnimatePresence initial={false} mode="popLayout">
-              {view.feed.map((f) => (
-                <motion.li
+          <ol aria-label="Decisions, newest first" className="relative m-0 mt-3 list-none overflow-hidden p-0" style={{ height: FEED_ROWS * FEED_PITCH }}>
+            {view.feed.map((f, i) => {
+              const latest = f.key === view.step - 1;
+              return (
+                <li
                   key={f.key}
-                  layout
-                  initial={reduceMotion ? false : { opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, transition: { duration: 0 } }}
-                  transition={{ duration: 0.32, ease: "easeOut" }}
-                  className="grid h-14 grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-x-3 border-t border-rule py-2"
+                  className={cn("pipe-feed-row grid grid-cols-[8px_minmax(0,1fr)_auto] items-start gap-x-3 pt-1", latest && "pipe-feed-new")}
+                  style={{ top: i * FEED_PITCH, height: FEED_PITCH }}
                 >
-                  <MarkShape mark={f.mark} hue={f.key === view.step - 1} className="mt-1.5" />
+                  <MarkShape mark={f.mark} hue={latest} className="mt-1.5" />
                   <div className="min-w-0">
                     <div className="truncate text-body">{f.text}</div>
-                    <div className="truncate text-small text-muted">
-                      <span className={cn(f.key === view.step - 1 && "font-medium text-hue")}>{f.caseLabel}</span> · {f.tech}
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-small text-muted">
+                      <Avatar person={f.who.seed} state={f.who.face === "unknown" ? "unknown" : "known"} size={20} label="" />
+                      <span className="min-w-0 truncate">
+                        <span className={cn(latest ? "font-medium text-hue" : "text-ink-soft")}>{f.who.name}</span> · {f.tech}
+                      </span>
                     </div>
                   </div>
                   <span className="text-small text-muted">step {f.step}</span>
-                </motion.li>
-              ))}
-            </AnimatePresence>
+                </li>
+              );
+            })}
           </ol>
         </section>
-      </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <section
-          aria-label="Run totals and a server switched off"
-          className="grid grid-cols-3 gap-x-6 gap-y-5 rounded-card border border-line bg-surface p-6"
-        >
-          <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
-            <span data-testid="total-decisions" data-value={view.decisions}>
-              <NumberFlow value={view.decisions} locales="en-US" />
-            </span>
-          </Total>
-          <Total label="Lost · duplicated" note="every decision exactly once">
-            {facts.lost} · {facts.duplicates}
-          </Total>
-          <Total label="Records verified" note={`of ${fmt(totals.chainsVerified)} sealed chains`}>
-            <span data-testid="total-chains" data-value={view.chains}>
-              <NumberFlow value={view.chains} locales="en-US" />
-            </span>
-          </Total>
+        <section aria-label="Run totals and a server switched off" className="min-w-0 border-t border-line pt-5">
+          <div className="grid grid-cols-3 gap-4">
+            <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
+              <span data-testid="total-decisions" data-value={view.decisions}>
+                <NumberFlow value={view.decisions} locales="en-US" />
+              </span>
+            </Total>
+            <Total label="Lost · duplicated" note="each decision exactly once">
+              {facts.lost} · {facts.duplicates}
+            </Total>
+            <Total label="Records verified" note={`of ${fmt(totals.chainsVerified)} sealed chains`}>
+              <span data-testid="total-chains" data-value={view.chains}>
+                <NumberFlow value={view.chains} locales="en-US" />
+              </span>
+            </Total>
+          </div>
 
-          <div className="col-span-3 flex flex-col gap-2 border-t border-rule pt-4">
+          <div className="mt-6 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-3">
               <div
                 role="img"
                 aria-label={serverOff ? "Three servers: server 2 off, servers 1 and 3 carry every event." : "Three servers, all on."}
                 className="flex items-center gap-1.5"
               >
-                {[0, 1, 2].map((i) =>
-                  serverOff && i === 1 ? (
-                    <MarkShape key={i} mark="failed" className="size-2.5" />
-                  ) : (
-                    <MarkShape key={i} mark="done" className="size-2.5" />
-                  ),
-                )}
+                {[0, 1, 2].map((i) => (
+                  <MarkShape key={i} mark={serverOff && i === 1 ? "failed" : "done"} className="size-2.5" />
+                ))}
                 <span className="ml-1 text-small text-muted">{serverOff ? "Server 2 of 3 off" : "3 servers on"}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setServerOff((v) => !v)}
-                className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink"
+                className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink hover:bg-control"
               >
                 {serverOff ? "Switch it back on" : "Switch off a server"}
               </button>
@@ -159,10 +179,10 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
           </div>
         </section>
 
-        <section aria-labelledby="tamper-h" className="rounded-card border border-line bg-surface p-6">
+        <section aria-labelledby="tamper-h" className="min-w-0 border-t border-line pt-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 id="tamper-h" className="m-0 text-section font-medium">
+              <h2 id="tamper-h" className="m-0 text-body font-medium">
                 {tamper.title}
               </h2>
               <span
@@ -181,7 +201,7 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
             <button
               type="button"
               onClick={() => setTampered((v) => !v)}
-              className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink"
+              className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink hover:bg-control"
             >
               {tampered ? "Undo the change" : "Tamper with a step"}
             </button>
@@ -208,46 +228,116 @@ function Total({ label, note, children }: { label: string; note: string; childre
   );
 }
 
-function StageRow({ row, latest }: { row: FlowRow; latest: ReturnType<typeof flowView>["latestRecorded"] }) {
+function OutcomeMark({ mark }: { mark: LaneMark }) {
   return (
-    <li data-stage={row.id} className="grid h-12 grid-cols-[204px_minmax(0,1fr)_32px] items-center gap-x-3 border-t border-rule">
-      <div className={cn("flex min-w-0 items-center", row.branch && "pl-1")}>
-        {row.branch && (
-          <svg aria-hidden width="10" height="12" viewBox="0 0 10 12" fill="none" stroke="var(--color-control)" strokeWidth="1.5" className="mr-1.5 flex-none">
-            <path d="M1.5 0v6.5h7" />
-          </svg>
-        )}
-        <span className="flex min-w-0 flex-col">
-          <span className="truncate text-body">{row.label}</span>
-          <span className="truncate text-small text-muted">{row.tech}</span>
-        </span>
+    <svg aria-hidden width="14" height="14" viewBox="0 0 14 14" className="flex-none">
+      {mark === "closed" && (
+        <>
+          <circle cx="7" cy="7" r="6.5" fill="currentColor" />
+          <path d="M4 7.2l2 2 4-4.4" fill="none" stroke="var(--color-surface)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </>
+      )}
+      {mark === "review" && <rect x="1.5" y="1.5" width="11" height="11" rx="1.5" fill="currentColor" />}
+      {mark === "open" && <circle cx="7" cy="7" r="5.5" fill="none" stroke="currentColor" strokeWidth="2" />}
+    </svg>
+  );
+}
+
+/** Two reader marks: both at work while the report is read, then each ticks as its answer lands. */
+function ReaderMarks({ state, reduceMotion }: { state: "reading" | "read"; reduceMotion: boolean }) {
+  return (
+    <span role="img" aria-label={state === "read" ? "Both readers answered" : "Two readers reading"} className="flex flex-none gap-1">
+      {[0, 1].map((i) => (
+        <svg
+          key={i}
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          className={cn("flex-none", state === "reading" && "wasl-pulse")}
+          style={{ animationDelay: `${i * 0.3}s` }}
+        >
+          <circle cx="7" cy="7" r="6" fill={state === "read" ? "var(--color-hue)" : "var(--color-surface)"} stroke="var(--color-hue)" strokeWidth="1.5" />
+          {state === "read" && (
+            <motion.path
+              d="M4.2 7.3l1.9 1.9 3.8-4.2"
+              fill="none"
+              stroke="var(--color-surface)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              initial={reduceMotion ? false : { pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.3, delay: i * 0.25 }}
+            />
+          )}
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+function CaseChip({ chip, row, reduceMotion, tint = "bg-ground" }: { chip: Chip; row: RowId; reduceMotion: boolean; tint?: string }) {
+  return (
+    <motion.span
+      layoutId={chip.id}
+      transition={reduceMotion ? { duration: 0 } : CHIP_MOVE}
+      data-case={chip.id}
+      className={cn(
+        "inline-flex max-w-full items-center gap-2 rounded-[26px] py-1 pl-1 pr-3 text-small leading-[15px]",
+        tint,
+        chip.active ? "font-medium text-ink ring-2 ring-hue" : "text-ink-soft",
+      )}
+    >
+      <Avatar person={chip.who.seed} state={chip.who.face} size={chip.active ? 44 : 32} label="" />
+      <span className="line-clamp-2 min-w-0 break-words" data-testid="chip-name">
+        {chip.who.name}
+      </span>
+      {row === "matching" && chip.mark === "working" && <MarkShape mark="working" hue />}
+      {chip.readers && <ReaderMarks state={chip.readers} reduceMotion={reduceMotion} />}
+      {row === "gate" && <MarkShape mark={chip.mark} hue={chip.mark === "done"} />}
+    </motion.span>
+  );
+}
+
+function StageColumn({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolean }) {
+  return (
+    <li data-stage={row.id} className="relative flex min-w-0 flex-col border-b border-rule px-5 pb-5 pt-4 lg:border-b-0 lg:border-r">
+      <svg aria-hidden width="10" height="16" viewBox="0 0 10 16" className="absolute -right-[5px] top-[20px] z-10 hidden bg-surface text-control lg:block">
+        <path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="truncate text-body font-medium">{row.label}</span>
+        <span className={cn("text-title tabular-nums", row.count ? "text-ink" : "text-muted")}>{row.count}</span>
       </div>
-      <div className="flex min-w-0 items-center gap-1.5">
-        {row.id === "ledger" ? (
-          <span className="truncate text-small text-muted">
-            {latest ? `Latest: ${latest.caseLabel} · ${latest.closed ? "chain verified" : "decision sealed"}` : "Nothing recorded yet in this loop"}
-          </span>
-        ) : (
-          <>
-            {row.chips.map((c) => (
-              <motion.span
-                key={c.id}
-                layoutId={c.id}
-                transition={{ duration: 0.45, ease: [0.2, 0.7, 0.2, 1] }}
-                className={cn(
-                  "inline-flex h-6 w-[84px] flex-none items-center gap-1.5 whitespace-nowrap rounded-chip border bg-surface px-2 text-small",
-                  c.active ? "border-hue font-medium text-ink" : "border-line text-muted",
-                )}
-              >
-                <MarkShape mark={c.mark} hue={c.active} />
-                {c.label}
-              </motion.span>
-            ))}
-            {row.more > 0 && <span className="w-[84px] flex-none text-small text-muted">+{row.more} more</span>}
-          </>
-        )}
+      <span className="truncate text-small text-muted">{row.tech}</span>
+      <div className="mt-4 flex min-h-[196px] flex-col items-start gap-2">
+        {row.chips.map((c) => (
+          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} />
+        ))}
+        {row.more > 0 && <span className="pl-2 text-small text-muted">+{row.more} more</span>}
       </div>
-      <span className={cn("text-right text-body tabular-nums", row.count ? "text-ink" : "text-muted")}>{row.count}</span>
     </li>
+  );
+}
+
+function OutcomeLane({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolean }) {
+  const lane = LANE[row.id]!;
+  return (
+    <div data-stage={row.id} className={cn("border-l-[3px] py-2 pl-3 pr-1", lane.edge)}>
+      <div className="flex items-center gap-2">
+        <span className={lane.ink}>
+          <OutcomeMark mark={lane.mark} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-body font-medium">{row.label}</span>
+        <span className="text-body tabular-nums">{row.count}</span>
+      </div>
+      <span className="block truncate pl-[22px] text-small text-muted">{row.tech}</span>
+      <div className="mt-2 grid min-h-10 grid-cols-2 items-center justify-items-start gap-1.5 pl-[22px]">
+        {row.chips.map((c) => (
+          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} tint={lane.bg} />
+        ))}
+        {row.more > 0 && <span className="self-center text-small text-muted">+{row.more} more</span>}
+      </div>
+    </div>
   );
 }

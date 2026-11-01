@@ -7,6 +7,8 @@ import { readerFrames, readerStart, readerTrack, readerView } from "@/components
 import { NOT_ASKED, type ReaderData } from "@/components/pipeline/reader-types";
 import type { ReplayState } from "@/lib/replay/reducer";
 import type { Replay } from "@/lib/replay/types";
+import { personForLoop } from "@/lib/people";
+import { referralSeed } from "@/lib/people/identity";
 
 const replay = replayJson as Replay;
 const reader = readerJson as ReaderData;
@@ -56,6 +58,58 @@ describe("pipeline playback", () => {
     const active = v.rows.flatMap((r) => r.chips).filter((c) => c.active);
     expect(active.length).toBeLessThanOrEqual(1);
     expect(v.activeCase).not.toBeNull();
+  });
+});
+
+describe("replay people", () => {
+  const byId = new Map(replay.cases.map((c) => [c.id, c]));
+  const views = run(Array.from({ length: replay.events.length }, () => ({ type: "tick" as const }))).map((s) => flowView(replay, s.frame));
+
+  it("names every chip, feed line and ledger line after a person, never a case number", () => {
+    for (const v of views) {
+      const names = [...v.rows.flatMap((r) => r.chips.map((c) => c.who.name)), ...v.feed.map((f) => f.who.name), ...(v.latestRecorded ? [v.latestRecorded.who.name] : [])];
+      for (const n of names) expect(n).toMatch(/^[A-Z][a-z]+ [A-Z][A-Za-z ]+$/);
+    }
+  });
+
+  it("shows the report's own Latin spelling and \"?\" until the report is matched, then the person's name and face", () => {
+    let unknown = 0;
+    for (const v of views)
+      for (const r of v.rows)
+        for (const chip of r.chips) {
+          const person = byId.get(chip.id)!.person;
+          const matched = r.id !== "received" && !(r.id === "matching" && chip.mark === "working");
+          expect(chip.who.face === "unknown").toBe(!matched);
+          expect(chip.who.name).toBe(matched ? person.name : person.reportName);
+          expect(chip.who.seed).toEqual({ key: person.key, sex: person.sex });
+          if (!matched) unknown++;
+        }
+    expect(unknown).toBeGreaterThan(0);
+    expect(replay.cases.some((c) => c.person.reportName !== c.person.name)).toBe(true);
+  });
+
+  it("gives each generated person a distinct name in Latin and Arabic, and keys them on the report, not the case slot", () => {
+    const generated = replay.cases.filter((c) => c.person.source === "generated");
+    expect(generated.length).toBeGreaterThan(15);
+    expect(new Set(generated.map((c) => c.person.name)).size).toBe(generated.length);
+    for (const c of generated) {
+      expect(c.person.nameAr).toMatch(/^[؀-ۿ]+ ال[؀-ۿ]+$/);
+      expect(c.person.key).toBe(`replay|${c.read.reportSha.slice(0, 16)}`);
+    }
+  });
+
+  it("keeps the cast member, name and face, where the Report reading page tells a replayed report as theirs", () => {
+    const told = reader.cases.filter((r) => r.standsFor && replay.cases.some((c) => c.read.reportSha === r.sha));
+    expect(told.length).toBeGreaterThanOrEqual(2);
+    for (const r of told) {
+      const c = replay.cases.find((x) => x.read.reportSha === r.sha)!;
+      const cast = personForLoop(r.standsFor!.loop)!;
+      expect(c.person).toMatchObject({ source: "canonical-cast", name: cast.display_name, nameAr: cast.display_name_ar, key: referralSeed(r.standsFor!.loop).key });
+    }
+  });
+
+  it("lists the feed newest first", () => {
+    for (const v of views) for (let i = 1; i < v.feed.length; i++) expect(v.feed[i].key).toBeLessThan(v.feed[i - 1].key);
   });
 });
 
