@@ -130,7 +130,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 
 ## Honest limits (say them out loud)
 - Patients, reviewers, noise and capacity are simulated. No clinician labels.
-- The 43 report texts carry an LLM-produced answer key until the human double-labelling is done. The lung CT reports are synthetic. LDCT and IFHAS have no independent held-out reader corpora; their generators reuse development texts.
+- The 43 report texts carry an LLM-produced answer key until the human double-labelling is done. The lung CT reports are synthetic. Fresh LDCT/IFHAS held-out text checks are non-blind, single-author synthetic evidence without clinician labels; their integrated generators still reuse development texts. The fresh check found 0/124 agreed-but-wrong answers, but unsafe single-reader errors remain and 56% of IFHAS notes routed to review.
 - The Learn-then-Test guarantee covers loops like the synthetic calibration set (whose CRC loops are 51.9% women vs 69.6% in the eval cohorts, because the calibration split has only 779 women), not real Abu Dhabi data; a pilot must recalibrate on locally adjudicated loops (≈3.7k).
 - The image reader was trained on Norwegian video frames; UAE stills need local recalibration. Its weights inherit ImageNet's non-commercial terms.
 - Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.
