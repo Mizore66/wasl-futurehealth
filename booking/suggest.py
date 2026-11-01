@@ -129,14 +129,16 @@ def cervical(last, sr, a, rng):
     if getattr(a, "forecast", "") == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
-    for day in range(0, 200):
-        for ev in by_day.get(day, []):
-            eng.submit(ev)
-        for b in eng.step(day):
-            out[b.loop_id] = b
-        if day > max(by_day, default=0) and not eng.pending:
-            break
-    getattr(eng, "close", lambda: None)()
+    try:
+        for day in range(0, 200):
+            for ev in by_day.get(day, []):
+                eng.submit(ev)
+            for b in eng.step(day):
+                out[b.loop_id] = b
+            if day > max(by_day, default=0) and not eng.pending:
+                break
+    finally:
+        getattr(eng, "close", lambda: None)()
     cases = {}
     for k, (d, prefs, day, repeat, lo, hi) in meta.items():
         base = {"procedure": "colposcopy", "repeat_after_unsatisfactory": repeat, "requested_day": day, "window_days": [lo, hi],
@@ -203,17 +205,19 @@ def main(argv=None, preloaded=None, write=True, quiet=False):
     if a.forecast == "oracle" and isinstance(eng, LookaheadEngine):
         eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
-    for day in sorted(by_day):
-        for ev in by_day[day]:
-            eng.submit(ev)
-        for b in eng.step(day):
-            out[b.loop_id] = b
-    for day in range(max(by_day) + 1 if by_day else 1, (max(by_day) if by_day else 0) + 90):  # drain the queue
-        if not eng.pending:
-            break
-        for b in eng.step(day):
-            out[b.loop_id] = b
-    getattr(eng, "close", lambda: None)()
+    try:
+        for day in sorted(by_day):
+            for ev in by_day[day]:
+                eng.submit(ev)
+            for b in eng.step(day):
+                out[b.loop_id] = b
+        for day in range(max(by_day) + 1 if by_day else 1, (max(by_day) if by_day else 0) + 90):  # drain the queue
+            if not eng.pending:
+                break
+            for b in eng.step(day):
+                out[b.loop_id] = b
+    finally:
+        getattr(eng, "close", lambda: None)()
     cases, unbooked = {}, 0
     reg_demand, reg_booked_out = collections.Counter(), collections.Counter()
     for k, (d, prefs, day) in meta.items():

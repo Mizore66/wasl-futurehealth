@@ -1,11 +1,12 @@
 """Paired comparison of the booking optimisers on materialised pipeline runs (SIMULATED capacity).
 
-usage: python booking/sim/lookahead_eval.py <out_dir> <run_dir> [<run_dir> ...] [--seeds 2026,99] [--jobs 4] [--grid main|ablation]
+usage: python booking/sim/lookahead_eval.py <out_dir> <run_dir> [<run_dir> ...] [--seeds 2026,99] [--jobs 4]
+           [--grid main|ablation] [--base myopic|greedy|lookahead|oracle]
 
 For every run dir (a pipeline run: out_log.ndjson + fhir_log.ndjson), calendar seed, capacity condition and stress
 test, it runs booking/suggest.py's stage in-process once per optimiser on the SAME open cases, synthetic calendar and
 request days, and records the existing booking metrics. Writes <out_dir>/raw.json (one record per run) and
-<out_dir>/summary.json + summary.md (means over replicates and paired differences vs the default myopic engine).
+<out_dir>/summary.json + summary.md (means over replicates and paired differences vs --base, default myopic).
 Capacity is synthetic (booking/suggest.py calendar); every number here is simulated decision support.
 Needs a built bin/wsi7 (scripts/demo.sh build) for the lookahead's Go min-cost-flow solver.
 """
@@ -31,6 +32,9 @@ ABLATION = {"lookahead_g0.5": ["--optimiser", "lookahead", "--gamma", "0.5"],
             "lookahead_L56": ["--optimiser", "lookahead", "--lookahead-days", "56"],
             "lookahead_noprotect": ["--optimiser", "lookahead", "--female-protect", "0"],
             "myopic_noprotect": ["--female-protect", "0"]}
+# Include the comparison rows used in the report; no manual augmentation from another result file is needed.
+ABLATION_OPTIMISERS = {k: OPTIMISERS[k] for k in ("myopic", "greedy", "lookahead")}
+ABLATION_OPTIMISERS.update(ABLATION)
 
 
 def _q(xs, q):
@@ -153,9 +157,11 @@ def main():
     ap.add_argument("--seeds", default="2026")
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--grid", choices=["main", "ablation"], default="main")
+    ap.add_argument("--base", choices=sorted(OPTIMISERS), default="myopic",
+                    help="optimiser used for paired deltas in summary.json/md (default: shipped myopic engine)")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
-    opts = OPTIMISERS if a.grid == "main" else {"myopic": [], **ABLATION}
+    opts = OPTIMISERS if a.grid == "main" else ABLATION_OPTIMISERS
     stresses = STRESS if a.grid == "main" else {"base": [], "scarce_female": STRESS["scarce_female"]}
     jobs = [(run, int(seed), cond, st, opt, CONDITIONS[cond] + stresses[st] + opts[opt])
             for run in a.runs for seed in a.seeds.split(",") for cond in CONDITIONS for st in stresses for opt in opts]
@@ -163,12 +169,12 @@ def main():
     with ProcessPoolExecutor(a.jobs) as ex:   # chunks of one run dir per worker keep its parsed logs cached
         recs = list(ex.map(job, jobs, chunksize=max(1, -(-per_run // a.jobs))))
     json.dump(recs, open(os.path.join(a.out, "raw.json"), "w"), indent=0)
-    summ = summarise(recs)
+    summ = summarise(recs, base=a.base)
     json.dump(summ, open(os.path.join(a.out, "summary.json"), "w"), indent=1)
     md = table(summ)
     open(os.path.join(a.out, "summary.md"), "w").write(
         "# Booking optimisers, paired on the same cases and calendars (SIMULATED capacity)\n\n"
-        f"{len(a.runs)} runs x seeds {a.seeds}; Δ = mean paired difference vs myopic (runs where it was higher+/lower-).\n\n" + md + "\n")
+        f"{len(a.runs)} runs x seeds {a.seeds}; Δ = mean paired difference vs {a.base} (runs where it was higher+/lower-).\n\n" + md + "\n")
     print(md)
 
 

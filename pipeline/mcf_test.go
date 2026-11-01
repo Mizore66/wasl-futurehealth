@@ -149,3 +149,37 @@ func TestMCFServeLines(t *testing.T) {
 		t.Fatalf("malformed line not reported: %q", lines[1])
 	}
 }
+
+func TestMCFProtocolValidation(t *testing.T) {
+	in := strings.NewReader(
+		`{"n":3,"s":0,"t":2,"arcs":[[0,1,2]]}` + "\n" +
+			`{"n":3,"s":0,"t":2,"arcs":[[0,1,2,0,99]]}` + "\n" +
+			`{"n":100001,"s":0,"t":1,"arcs":[]}` + "\n")
+	var out bytes.Buffer
+	runMCF(in, &out)
+	lines := strings.Split(strings.TrimSpace(out.String()), "\n")
+	if len(lines) != 3 {
+		t.Fatalf("want 3 error responses, got %q", out.String())
+	}
+	for i, line := range lines {
+		var r mcfResponse
+		if err := json.Unmarshal([]byte(line), &r); err != nil || r.Error == "" {
+			t.Fatalf("response %d did not report malformed input: %q (%v)", i, line, err)
+		}
+	}
+	if _, _, _, err := MinCostFlow(mcfMaxNodes+1, 0, 1, nil, -1); err == nil {
+		t.Fatal("oversized node count accepted")
+	}
+}
+
+func TestMCFOverlongLineReportsError(t *testing.T) {
+	var out bytes.Buffer
+	runMCFLimit(strings.NewReader(strings.Repeat("x", 100)+"\n"), &out, 64)
+	var r mcfResponse
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &r); err != nil {
+		t.Fatalf("scanner error produced no JSON response: %q (%v)", out.String(), err)
+	}
+	if !strings.Contains(r.Error, "reading input") {
+		t.Fatalf("scanner error not reported: %+v", r)
+	}
+}
