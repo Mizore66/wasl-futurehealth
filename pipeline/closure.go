@@ -301,10 +301,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			continue // another programme's procedure for the same person never closes this loop
 		}
 		pc := c.pcal(d.Strength)
-		trusted := !d.NearMiss && (pc >= TauHigh || d.Weak.Basis == "eid" || d.Weak.Basis == "human")
+		trusted := !d.NearMiss && d.EIDContra == "" && (pc >= TauHigh || d.Weak.Basis == "eid" || d.Weak.Basis == "human")
 		if V7Cal != nil {
 			pc = d.PCal
-			trusted = !d.NearMiss && (pc >= TauClose || d.AllHuman)
+			trusted = !d.NearMiss && d.EIDContra == "" && (pc >= TauClose || d.AllHuman)
 		}
 		if d.Strength < LinkReview {
 			continue

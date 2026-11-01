@@ -450,14 +450,22 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 	for _, c := range cs {
 		o := L.recs[c.j]
 		if r.eidOK && o.eidOK {
-			if r.Eid == o.Eid {
+			if r.Eid != o.Eid {
+				L.cannot2(r.idx, c.j)
+				L.Stats["eid_conflicts"]++
+				continue
+			}
+			why := ""
+			if EIDContraGuard {
+				why = eidContradiction(r, o)
+			}
+			if why == "" {
 				L.Link(r.idx, c.j, 1.0, true, "eid")
 				L.Stats["eid_links"]++
 				continue
 			}
-			L.cannot2(r.idx, c.j)
-			L.Stats["eid_conflicts"]++
-			continue
+			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides
+			L.Stats["eid_contradicted_"+why]++
 		}
 		if c.p >= L.Thr {
 			if V7Cal != nil {
@@ -662,6 +670,14 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 			continue
 		}
 		ds := L.downOf(L.recs[y], st, L.edgeOf(weak[y]), hops[y], false)
+		if EIDContraGuard {
+			if why, x := L.eidPathContradiction(s, y, pred); why != "" {
+				we := Edge{A: L.recs[s].Pk, B: L.recs[x].Pk, P: round4(L.adj[s][x]), Basis: "eid-contradiction"}
+				for i := range ds {
+					ds[i].EIDContra, ds[i].Weak = why, we
+				}
+			}
+		}
 		if V7Cal != nil || V7Guard {
 			pc, ah := L.pathCal(pred, y)
 			ah = ah || L.basis[pk2(s, y)] == "human"
