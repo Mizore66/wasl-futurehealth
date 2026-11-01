@@ -573,6 +573,9 @@ func report7(data, wasl, run string, P int) {
 	if bm, ok := res["programmes_live"].(map[string]interface{})["breast"].(map[string]interface{}); ok {
 		bm["two_reader"] = breastTwoReader(preps, &tr) // fourth loop type: screening and assessment reader agreement end to end
 	}
+	if im, ok := res["programmes_live"].(map[string]interface{})["ifhas"].(map[string]interface{}); ok {
+		im["two_reader"] = ifhasTwoReader(preps, &tr) // IFHAS: results (panel vs coded) and follow-up note agreement end to end
+	}
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)
 	fmt.Println(string(rb))

@@ -95,6 +95,7 @@ type LoopTruth struct {
 	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
 	Breast     *BreastTruth `json:"breast,omitempty"` // breast recall loop (genbreast.go)
 	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
+	Ifhas      *IfhasTruth   `json:"ifhas,omitempty"`   // IFHAS abnormal-result follow-up loop (genifhas.go)
 }
 
 // HandoffTruth: the simulated hand-off of a finally rejected referral.
@@ -1397,6 +1398,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			bg = append(bg, &ps[rest[k]])
 		}
 		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if GenIfhasN > 0 { // IFHAS follow-up loops (genifhas.go): own RNG stream, background adults with no other loop, after breast
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genIfhas(ifhasDirFor(GenIfhasDir, reportsPath), seed, GenIfhasN, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()

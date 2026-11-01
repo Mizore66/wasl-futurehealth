@@ -175,6 +175,9 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if bm := breastMetrics(final, tr); bm != nil { // fourth loop type: doh2025breast-specific metrics replace the screening ones
 		out["breast"] = bm
 	}
+	if im := ifhasMetrics(final, tr); im != nil { // IFHAS abnormal results: doh2025ifhas-specific metrics (ifhasmetrics.go)
+		out["ifhas"] = im
+	}
 	return out
 }
 

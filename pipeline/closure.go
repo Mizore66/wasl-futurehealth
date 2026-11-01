@@ -181,6 +181,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if prog == "breast" { // fourth loop type: identity gate + two-reader gate + review, rule doh2025breast (breast.go)
 		return c.evalBreast(ls, inSeq, mid)
 	}
+	if prog == "ifhas" { // IFHAS abnormal results: identity gate + two-reader gate + review, rule doh2025ifhas (ifhas.go)
+		return c.evalIfhas(ls, inSeq, mid)
+	}
 	rule := Rules[prog]
 	deadline := DeadlineDays(prog, f.Priority)
 	notifStart := f.SRDay

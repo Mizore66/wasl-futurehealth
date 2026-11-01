@@ -257,6 +257,7 @@ type Decision struct {
 	Breast         *BreastDecision `json:"breast,omitempty"` // breast recall loop: BI-RADS category, rule, deadline, assessment outcome (breast.go)
 	Handoff        *HandoffPacket `json:"handoff,omitempty"` // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
+	Ifhas          *IfhasDecision `json:"ifhas,omitempty"` // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.

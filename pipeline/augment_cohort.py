@@ -38,6 +38,10 @@ for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh'] +
                 pt = res['contained'][0]
                 mrn = [i['value'] for i in pt['identifier'] if i['system'].endswith(':mrn')][0]
                 srpk[loop] = (prov, mrn, pt, g['arrival'])
+# IFHAS follow-up feeds (wsi7 gen -ifhas N): copied unchanged, then the IFHAS consent block below
+IFHAS = [p for p in ['ifh-screen', 'ifu-clinic'] if os.path.exists(f'{BASE_COHORT}/fhir_{p}.ndjson')]
+for prov in IFHAS:
+    feeds[prov] = [json.loads(l) for l in open(f'{BASE_COHORT}/fhir_{prov}.ndjson')]
 by_pk = collections.defaultdict(list)
 for loop, (prov, mrn, pt, arr) in srpk.items():
     by_pk[(prov, mrn)].append(loop)
@@ -95,6 +99,7 @@ for i, (prov, mrn) in enumerate(forged_targets):
 ev_inad = [q for q in queue if q['kinds'] == ['evidence'] and truth['reports'].get(q['report']) == 'inadequate'
            and truth['loops'][q['loop']]['state'] != 'closed']
 queue = [q for q in queue if truth['loops'][q['loop']].get('prog') not in ('lung_nodule', 'diabetic_retinopathy', 'breast')]  # forgeries target screening loops only
+queue = [q for q in queue if truth['loops'][q['loop']].get('prog') != 'ifhas']  # IFHAS loops too
 link_diff = [q for q in queue if q['kinds'] == ['link'] and truth['pk_qid'].get(q['pair'][0]) != truth['pk_qid'].get(q['pair'][1])]
 r.shuffle(ev_inad)
 picks = [(q, 'evidence', 'reviewer') for q in ev_inad[:6]] + [(q, 'link', 'coordinator') for q in link_diff[:6]]
@@ -179,6 +184,28 @@ if 'bsu-screen' in feeds:
         cid = f'breast-consent-{res["id"]}'
         add['bsu-screen'].append({"arrival": day, "prov": 'bsu-screen', "msgid": f"bsu-screen/Consent/{cid}/v1",
                                   "res": consent('bsu-screen', mrn, pt, day, 'coordinator', kind, cid)})
+        if kind == 'deny':
+            consent_truth[loop] = True
+        consent_detail[loop] = {"first": kind, "final": kind, "first_day": round(day, 4)}
+# IFHAS participants (only when the IFHAS feeds exist): the screening facility records the contact permission, as the
+# screening referrers do (every participant has a record, 4% deny). Own RNG (seed 1010), drawn after every other
+# addition, so every other feed is unchanged.
+if 'ifh-screen' in feeds:
+    r5 = random.Random(1010)
+    for g in feeds['ifh-screen']:
+        res = g['res']
+        if res['resourceType'] != 'ServiceRequest':
+            continue
+        loop = f"ifh-screen/ServiceRequest/{res['id']}"
+        if loop not in truth['loops']:
+            continue
+        pt = res['contained'][0]
+        mrn = [i['value'] for i in pt['identifier'] if i['system'].endswith(':mrn')][0]
+        kind = 'deny' if r5.random() < 0.04 else 'permit'
+        day = g['arrival'] + r5.uniform(0.01, 0.5)
+        cid = f'ifhas-consent-{res["id"]}'
+        add['ifh-screen'].append({"arrival": day, "prov": 'ifh-screen', "msgid": f"ifh-screen/Consent/{cid}/v1",
+                                  "res": consent('ifh-screen', mrn, pt, day, 'coordinator', kind, cid)})
         if kind == 'deny':
             consent_truth[loop] = True
         consent_detail[loop] = {"first": kind, "final": kind, "first_day": round(day, 4)}

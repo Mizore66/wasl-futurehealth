@@ -589,6 +589,9 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
+			if e.Category == "ifhas-screen" || e.Category == "ifhas-followup" { // IFHAS results | follow-up note (ifhas.go)
+				prog = "ifhas"
+			}
 		}
 		if prog == "" {
 			prog = "crc"
@@ -624,6 +627,9 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	if base.Breast != nil {
 		f.Breast = base.Breast
 		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
+	}
+	if base.Prog == "ifhas" {
+		f.Down = append(f.Down, ifhasScreenFacts(L.recs[s])...) // IFHAS results on the visit's own registration (ifhas.go)
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
