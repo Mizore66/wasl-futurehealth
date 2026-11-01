@@ -10,13 +10,30 @@ export interface StageOptions {
   canvas: HTMLCanvasElement;
   figures: StoryFigures;
   mobile: boolean;
+  /** Stops the passers-by's clock at this many seconds, for tests and screenshots that compare pixels. */
+  stillAt: number | null;
   /** Called once if the first 60 frames run slower than 33 ms at the median. */
   onSlow: () => void;
   /** Where each anchored line of copy should sit, as fractions of the viewport. Called on every resize. */
   onAnchors: (anchors: Partial<Record<AnchorId, { x: number; y: number }>>) => void;
 }
 
+/**
+ * What the render loop is doing, the only thing that decides when the next frame comes.
+ * - `active`: scroll, damping, a chip replay or the warm-up is in motion. Every display frame.
+ * - `ambient`: settled, with a passer-by the camera can show. AMBIENT_MS between frames.
+ * - `asleep`: settled with nobody to show, or past the end of the track, or the tab is hidden. No frames.
+ */
+export type Clock = "active" | "ambient" | "asleep";
+
 export interface StageStats {
+  clock: Clock;
+  /** Whether the passers-by's clock is running. */
+  roaming: boolean;
+  /** Where each passer-by was last drawn. */
+  walkers: [number, number, number][];
+  /** Fatima's feet: x, z. */
+  fatima: [number, number];
   renderer: string;
   calls: number;
   triangles: number;
@@ -34,6 +51,16 @@ export interface Stage {
   dispose(): void;
   stats(): StageStats;
 }
+
+const AMBIENT_MS = 1000 / 30;
+/** The soonest the next ambient frame may follow a late one: enough to average out display-frame rounding, too little to burst. */
+const AMBIENT_MIN_MS = 25;
+/** A timer can't aim at a display frame, so it stops this far short and requestAnimationFrame does the rest. */
+const TIMER_SHORT_MS = 11;
+/** How often a settled stage with nobody in frame looks again. Draws nothing. */
+const WATCH_MS = 250;
+/** Ambient frames further apart than this at the median mean the machine can't hold the cap. */
+const AMBIENT_SLOW_MS = 50;
 
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
 
@@ -80,8 +107,10 @@ export function createStage(o: StageOptions): Stage {
   const her = fatima(cast);
   const line = thread(cast, her.at);
   const card = receipt(cast);
-  const actors: Actor[] = [her, line, card, slabAndReaders(cast), nurse(cast), others(cast), passersby(cast)];
+  const actors: Actor[] = [her, line, card, slabAndReaders(cast), nurse(cast), others(cast)];
   for (const a of actors) scene.add(a.group);
+  const walkers = passersby(cast);
+  scene.add(walkers.group);
   for (const mesh of kit.mergeStatics()) scene.add(mesh);
 
   const subjects: Subjects = { fatima: new THREE.Vector3(), tip: new THREE.Vector3(), receipt: new THREE.Vector3() };
@@ -108,18 +137,55 @@ export function createStage(o: StageOptions): Stage {
     return view;
   }
 
+  let clock: Clock = "asleep";
   let raf = 0;
+  let timer = 0;
   let last = 0;
+  let lastClock: Clock = "asleep";
+  let ambientDue = 0;
   let warm = 60;
   let frames = 0;
+  let dirty = true;
+  let replaying = false;
+  let onScreen = true;
+  let roaming = o.stillAt === null;
   const warmGaps: number[] = [];
+  const ambientGaps: number[] = [];
   const renderMs: number[] = [];
   const gaps: number[] = [];
   let lastDprChange = 0;
   let fastSince = 0;
+  const frustum = new THREE.Frustum();
+  const viewProjection = new THREE.Matrix4();
+
+  function clockNow(now: number): Clock {
+    if (!onScreen || document.hidden) return "asleep";
+    if (dirty || warm > 0 || replaying || shown !== target) return "active";
+    return roaming && walkers.inFrame(now / 1000, frustum, camera.position, fog.far) ? "ambient" : "asleep";
+  }
+
+  /** Reads the clock and books what it asks for, replacing whatever was booked. */
+  function schedule() {
+    cancelAnimationFrame(raf);
+    clearTimeout(timer);
+    raf = timer = 0;
+    const now = performance.now();
+    clock = clockNow(now);
+    if (clock === "active") {
+      raf = requestAnimationFrame(frame);
+    } else if (clock === "ambient") {
+      const wait = ambientDue - now - TIMER_SHORT_MS;
+      if (wait > 0) timer = window.setTimeout(() => (raf = requestAnimationFrame(frame)), wait);
+      else raf = requestAnimationFrame(frame);
+    } else {
+      last = 0;
+      if (roaming && onScreen && !document.hidden) timer = window.setTimeout(schedule, WATCH_MS);
+    }
+  }
 
   function invalidate() {
-    if (!raf) raf = requestAnimationFrame(frame);
+    dirty = true;
+    if (clock !== "active" || !raf) schedule();
   }
 
   function adapt(gap: number, now: number) {
@@ -143,20 +209,17 @@ export function createStage(o: StageOptions): Stage {
     gaps.length = 0;
   }
 
-  function frame(now: number) {
-    raf = 0;
-    frames++;
-    const gap = last ? now - last : 0;
-    const dt = gap ? Math.min(0.1, gap / 1000) : 1 / 60;
-    const continuous = gap > 0 && gap < 40;
-    last = now;
-
+  /** Everything the scroll position decides. Nothing here changes until `p` or the chip does. */
+  function advanceStory(now: number, dt: number) {
+    dirty = false;
     // Frame-rate independent damping (half-life about 90 ms), so trackpad noise never shows.
     shown = shown < 0 ? target : shown + (target - shown) * (1 - Math.exp(-dt * 7.7));
     if (Math.abs(target - shown) < 2e-5) shown = target;
     const view = pose(shown);
     fog.near = view.fogNear * pull;
     fog.far = view.fogFar * pull;
+    camera.updateMatrixWorld();
+    frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
 
     // Chunks past the fog are hidden; far ones draw plain boxes.
     const wide = fog.far > 100;
@@ -170,23 +233,56 @@ export function createStage(o: StageOptions): Stage {
       c.shadow.visible = on;
     }
 
-    let busy = shown !== target;
-    for (const a of actors) if (a.update(shown, now, camera)) busy = true;
+    replaying = false;
+    for (const a of actors) if (a.update(shown, now, camera)) replaying = true;
+  }
 
+  /** A slow machine loses the passers-by first. They land where they are and stay, so nothing teleports. */
+  function checkAmbient(gap: number, now: number) {
+    ambientGaps.push(gap);
+    if (ambientGaps.length < 30) return;
+    if (median(ambientGaps) > AMBIENT_SLOW_MS) {
+      roaming = false;
+      walkers.walkTo(now / 1000, true);
+      dirty = true;
+    }
+    ambientGaps.length = 0;
+  }
+
+  function frame(now: number) {
+    raf = 0;
+    if (clock === "ambient" && now < ambientDue - 2) {
+      raf = requestAnimationFrame(frame);
+      return;
+    }
+    const gap = last ? now - last : 0;
+    const dt = gap ? Math.min(0.1, gap / 1000) : 1 / 60;
+    last = now;
+    if (clock === "active") advanceStory(now, dt);
+    if (roaming) walkers.walkTo(now / 1000);
+
+    frames++;
     const t0 = performance.now();
     renderer.render(scene, camera);
     renderMs.push(performance.now() - t0);
     if (renderMs.length > 600) renderMs.shift();
 
-    if (warm > 0) {
-      if (gap) warmGaps.push(gap);
-      if (--warm === 0 && median(warmGaps) > 33) o.onSlow();
-      busy = true;
-    } else if (continuous) {
-      adapt(gap, now);
+    // Gaps only mean anything between two frames that wanted the same pace.
+    const steady = gap > 0 && clock === lastClock;
+    if (clock === "active") {
+      if (warm > 0) {
+        if (gap) warmGaps.push(gap);
+        if (--warm === 0 && median(warmGaps) > 33) o.onSlow();
+      } else if (steady && gap < 40) {
+        adapt(gap, now);
+      }
+    } else if (steady) {
+      checkAmbient(gap, now);
     }
-    if (busy) invalidate();
-    else last = 0;
+    if (clock === "ambient") ambientDue = Math.max(ambientDue + AMBIENT_MS, now + AMBIENT_MIN_MS);
+    else ambientDue = now + AMBIENT_MS;
+    lastClock = clock;
+    schedule();
   }
 
   const ANCHOR: Record<AnchorId, (s: Subjects) => THREE.Vector3> = {
@@ -229,15 +325,27 @@ export function createStage(o: StageOptions): Stage {
     invalidate();
   }
 
+  // The page ends before the stage can scroll fully away, so "off screen" starts where the track ends and the stage unpins.
+  const visibility = new IntersectionObserver(
+    ([e]) => {
+      onScreen = e.isIntersecting && e.boundingClientRect.top > -1;
+      schedule();
+    },
+    { threshold: [0, 0.99] },
+  );
+  visibility.observe(o.canvas);
+  document.addEventListener("visibilitychange", schedule);
+
   resize();
   pose(0);
+  walkers.walkTo(o.stillAt ?? 0, true);
   renderer.compile(scene, camera);
   invalidate();
 
   return {
     setProgress(p) {
       target = p;
-      invalidate();
+      if (clock !== "active" && p !== shown) schedule();
     },
     setPerson(person) {
       cast.pick = { person, at: performance.now() };
@@ -245,6 +353,10 @@ export function createStage(o: StageOptions): Stage {
     },
     resize,
     stats: () => ({
+      clock,
+      roaming,
+      walkers: walkers.drawn(),
+      fatima: [her.at.x, her.at.z],
       renderer: rendererName,
       calls: renderer.info.render.calls,
       triangles: renderer.info.render.triangles,
@@ -253,7 +365,10 @@ export function createStage(o: StageOptions): Stage {
       frames,
     }),
     dispose() {
+      visibility.disconnect();
+      document.removeEventListener("visibilitychange", schedule);
       cancelAnimationFrame(raf);
+      clearTimeout(timer);
       const seen = new Set<unknown>();
       scene.traverse((obj) => {
         if (!(obj instanceof THREE.Mesh)) return;

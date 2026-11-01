@@ -1,9 +1,12 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { QUOTED, exactlyOnce, missedByIdOnly, missedOfFive, published, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE, LTT_TIERS, OPERATING_TAU } from "@/components/site/ltt";
+import type { Kit } from "@/components/story/kit";
 import { CAMERA_KEYS } from "@/components/story/rig";
+import { buildCity, buildClinic, buildHospital, laneAt, lanesFor, makeRoad, type Lane } from "@/components/story/world";
 import { JOIN_SAYS } from "@/components/story/copy";
 import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt, pageAt, storyAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
@@ -167,4 +170,101 @@ describe("the identity effect's record cards", () => {
     expect(JOIN_SAYS.name).toContain("Similar name");
     expect(bars[2]).toBe("missing");
   });
+});
+
+describe("the passers-by", () => {
+  const LAYOUTS = [
+    ["desktop", false],
+    ["phone", true],
+  ] as const;
+  const poseAt = (l: Lane, t: number) => laneAt(l, t, { x: 0, z: 0, yaw: 0, along: 0 });
+
+  it.each(LAYOUTS)("%s: everyone walks at their own speed along the lane, with no jump anywhere on it", (_, mobile) => {
+    for (const l of lanesFor(mobile)) {
+      let was = poseAt(l, 1000);
+      const seen = { min: Infinity, max: -Infinity };
+      for (let t = 1000.02; t < 1000 + (4 * l.length) / l.speed; t += 0.02) {
+        const now = poseAt(l, t);
+        expect(Math.hypot(now.x - was.x, now.z - was.z)).toBeLessThanOrEqual(l.speed * 0.02 + 1e-6);
+        const u = ((now.x - l.x0) * (l.x1 - l.x0) + (now.z - l.z0) * (l.z1 - l.z0)) / l.length ** 2;
+        seen.min = Math.min(seen.min, u);
+        seen.max = Math.max(seen.max, u);
+        was = now;
+      }
+      expect(seen.min).toBeCloseTo(0, 1);
+      expect(seen.max).toBeCloseTo(1, 1);
+    }
+  });
+
+  it("faces the way they are walking on both legs", () => {
+    for (const l of lanesFor(false)) {
+      for (let t = 500; t < 560; t += 0.37) {
+        const a = poseAt(l, t);
+        const b = poseAt(l, t + 0.05);
+        const moved = Math.hypot(b.x - a.x, b.z - a.z);
+        if (moved < l.speed * 0.049) continue;
+        expect(Math.sin(a.yaw) * ((b.x - a.x) / moved) + Math.cos(a.yaw) * ((b.z - a.z) / moved)).toBeCloseTo(1, 5);
+      }
+    }
+  });
+
+  it("keeps off the road, so nobody walks through Fatima or the thread, and off each other's lanes", () => {
+    const road = makeRoad().getSpacedPoints(400);
+    const onLane = (l: Lane, k: number) => new THREE.Vector3(l.x0 + ((l.x1 - l.x0) * k) / 80, 0, l.z0 + ((l.z1 - l.z0) * k) / 80);
+    const lanes = lanesFor(false);
+    lanes.forEach((l, i) => {
+      const points = Array.from({ length: 81 }, (_, k) => onLane(l, k));
+      const closest = (others: THREE.Vector3[]) => Math.min(...points.flatMap((q) => others.map((p) => p.distanceTo(q))));
+      expect(closest(road), `lane ${i} and the road`).toBeGreaterThan(1.3);
+      for (let j = i + 1; j < lanes.length; j++) {
+        const other = Array.from({ length: 81 }, (_, k) => onLane(lanes[j], k));
+        expect(closest(other), `lanes ${i} and ${j}`).toBeGreaterThan(0.7);
+      }
+    });
+  });
+
+  it.each(LAYOUTS)("%s: nobody walks through a block, a tree, the clinic or the hospital", (_, mobile) => {
+    const statics: THREE.Mesh[] = [];
+    const solid = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+    const kit = {
+      geo: { shadow: new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2) },
+      mat: { shadow: solid, city: solid, clinic: solid, hospital: solid },
+      addStatic(_m: THREE.Material, g: THREE.BufferGeometry, at: THREE.Matrix4) {
+        const mesh = new THREE.Mesh(g.clone().applyMatrix4(at), solid);
+        statics.push(mesh);
+      },
+      shadowAt() {},
+    } as unknown as Kit;
+    const road = makeRoad();
+    const { chunks } = buildCity(kit, road, mobile);
+    buildClinic(kit);
+    buildHospital(kit);
+    const solids = [...chunks.map((c) => c.near), ...statics];
+    for (const m of solids) m.updateMatrixWorld();
+    expect(solids.length).toBeGreaterThan(5);
+
+    const ray = new THREE.Raycaster();
+    const REACH = 0.3;
+    const hits = (x: number, y: number, z: number) => {
+      ray.far = REACH;
+      for (let a = 0; a < 8; a++) {
+        ray.set(new THREE.Vector3(x, y, z), new THREE.Vector3(Math.sin((a * Math.PI) / 4), 0, Math.cos((a * Math.PI) / 4)));
+        if (ray.intersectObjects(solids, false).length) return true;
+      }
+      // From deep inside a block no wall is near, but it has a roof.
+      ray.far = 30;
+      ray.set(new THREE.Vector3(x, y, z), new THREE.Vector3(0, 1, 0));
+      return ray.intersectObjects(solids, false).length > 0;
+    };
+    expect(hits(5, 1, -2), "the check sees inside a building").toBe(true);
+    expect(hits(10.9, 1, -3), "the check sees a wall beside it").toBe(true);
+    expect(hits(40, 1, 12), "the check sees open ground").toBe(false);
+    for (const [i, l] of lanesFor(mobile).entries()) {
+      for (let s = 0; s <= l.length; s += 0.5) {
+        const x = l.x0 + ((l.x1 - l.x0) * s) / l.length;
+        const z = l.z0 + ((l.z1 - l.z0) * s) / l.length;
+        expect(hits(x, 0.3, z) || hits(x, 1, z), `lane ${i} at ${x.toFixed(1)}, ${z.toFixed(1)}`).toBe(false);
+      }
+    }
+  }, 120_000);
 });

@@ -6,9 +6,9 @@ import { lookOf, type FigureLook } from "./look";
 import { COLOR } from "./palette";
 import { resolveEffect } from "./resolve";
 import { CAST, FACE_SEEDS, JOIN, RESOLVE, RIDE, RUN, clamp01, ease, span, walkAt, type CastKey, type FaceKey, type StoryFigures } from "./script";
-import { PLACES, rand, uNear, vec } from "./world";
+import { PLACES, laneAt, lanesFor, uNear, vec, type LanePose } from "./world";
 
-/** What moves in the world. Every pose is a function of `p`; only the chip replay reads the clock. */
+/** What moves with the story. Every pose is a function of `p`; only the chip replay reads the clock. */
 export interface Actor {
   group: THREE.Object3D;
   /** Returns true while it still needs frames with no scroll change (the chip replay). */
@@ -114,17 +114,21 @@ const GAIT = {
 } as const;
 type Gait = (typeof GAIT)[keyof typeof GAIT];
 
-/** A pose for a road distance. Pure arithmetic, so scrolling back plays it in reverse. */
-function gait(distance: number, g: Gait) {
+const AT_REST = { lift: 0, arc: 0, squash: 0 };
+type Pose = typeof AT_REST;
+const hopping: Pose = { ...AT_REST };
+
+/** A pose for a road distance, good until the next call. Pure arithmetic, so scrolling back plays it in reverse. */
+function gait(distance: number, g: Gait): Pose {
   const phase = distance / g.stride;
   const f = phase - Math.floor(phase);
   const arc = Math.sin(Math.PI * f);
   const landing = f < 0.15 ? Math.sin((f / 0.15) * Math.PI) : 0;
-  return { lift: g.hop * arc, arc, squash: g.squash * landing };
+  hopping.lift = g.hop * arc;
+  hopping.arc = arc;
+  hopping.squash = g.squash * landing;
+  return hopping;
 }
-
-const AT_REST = { lift: 0, arc: 0, squash: 0 };
-type Pose = typeof AT_REST;
 
 /** Stands an object on the ground for a pose, upright, facing `yaw`, `size` tall in its own scale. */
 function stand(o: THREE.Object3D, x: number, z: number, yaw: number, pose: Pose, size = 1) {
@@ -475,12 +479,12 @@ function crowd(kit: Kit, n: number) {
     paint(i: number, cloth: string, skin: string) {
       bodies.setColorAt(i, color.set(cloth));
       heads.setColorAt(i, color.set(skin));
+      bodies.instanceColor!.needsUpdate = true;
+      heads.instanceColor!.needsUpdate = true;
     },
     flush() {
       bodies.instanceMatrix.needsUpdate = true;
       heads.instanceMatrix.needsUpdate = true;
-      if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
-      if (heads.instanceColor) heads.instanceColor.needsUpdate = true;
     },
   };
 }
@@ -548,22 +552,23 @@ export function others(c: Cast): Actor {
   };
 }
 
-/** Other people crossing the streets, moving only as the visitor scrolls. */
-export function passersby(c: Cast): Actor {
+export interface Walkers {
+  group: THREE.Object3D;
+  /** Moves everyone to where the clock puts them; `resting` lands them, for a clock that has stopped. */
+  walkTo(seconds: number, resting?: boolean): void;
+  /** Whether anyone is, at this time, somewhere the camera can show. Allocates nothing. */
+  inFrame(seconds: number, frustum: THREE.Frustum, camera: THREE.Vector3, far: number): boolean;
+  /** Where each person was last drawn: x, y, z. */
+  drawn(): [number, number, number][];
+}
+
+/** A person's reach from their lane position, with room for the frame's edge between checks. */
+const IN_FRAME_RADIUS = 1.6;
+
+/** Other people on the side streets. They keep to the clock and take no notice of the scroll. */
+export function passersby(c: Cast): Walkers {
   const { kit } = c;
-  const r = rand(5);
-  const lanes = [
-    [12.2, -6, 12.2, 16],
-    [19.5, 15, 19.5, -4],
-    [27, -8, 27.6, 14],
-    [33.6, 16, 33, -3],
-    [24, 11.5, 36, 11.8],
-    [60.5, -4, 60.5, 15],
-    [64.5, 16, 65, 9],
-    [14, 2.6, 30, 3],
-    [86, 12, 86, -6],
-    [-6, 12, -6, -2],
-  ].slice(0, c.mobile ? 6 : 10);
+  const lanes = lanesFor(c.mobile);
   const n = lanes.length;
   const people = crowd(kit, n);
   lanes.forEach((_, i) => {
@@ -573,26 +578,20 @@ export function passersby(c: Cast): Actor {
   const shadows = new THREE.InstancedMesh(kit.geo.shadow, kit.mat.shadow, n);
   shadows.renderOrder = 1;
   shadows.frustumCulled = false;
-  const speed = lanes.map(() => 3 + r() * 3);
-  const offset = lanes.map(() => r());
+  // A whole number of hops on each leg, so everyone lands exactly at the end of the lane.
+  const hops = lanes.map((l) => Math.max(1, Math.round(l.length / GAIT.passing.stride)));
   const d = new THREE.Object3D();
-  const a = new THREE.Vector3();
-  const b = new THREE.Vector3();
+  const at: LanePose = { x: 0, z: 0, yaw: 0, along: 0 };
+  const sphere = new THREE.Sphere();
   return {
     group: new THREE.Group().add(people.bodies, people.heads, shadows),
-    update(p) {
+    walkTo(seconds, resting = false) {
       for (let i = 0; i < n; i++) {
-        const [x0, z0, x1, z1] = lanes[i];
-        a.set(x0, 0, z0);
-        b.set(x1, 0, z1);
-        const len = a.distanceTo(b);
-        const raw = (p * speed[i] + offset[i]) % 2;
-        const t = raw < 1 ? raw : 2 - raw;
-        tmp.copy(a).lerp(b, t);
-        const pose = gait(raw * len, GAIT.passing);
-        stand(d, tmp.x, tmp.z, Math.atan2(b.x - a.x, b.z - a.z) + (raw < 1 ? 0 : Math.PI), pose, FIGURE_SCALE);
+        laneAt(lanes[i], seconds, at);
+        const pose = resting ? AT_REST : gait(at.along * hops[i] * GAIT.passing.stride, GAIT.passing);
+        stand(d, at.x, at.z, at.yaw, pose, FIGURE_SCALE);
         people.place(i, d);
-        d.position.set(tmp.x, 0.02, tmp.z);
+        d.position.set(at.x, 0.02, at.z);
         d.rotation.set(0, 0, 0);
         d.scale.setScalar(shadowScale(pose));
         d.updateMatrix();
@@ -600,7 +599,20 @@ export function passersby(c: Cast): Actor {
       }
       people.flush();
       shadows.instanceMatrix.needsUpdate = true;
+    },
+    inFrame(seconds, frustum, camera, far) {
+      for (let i = 0; i < n; i++) {
+        laneAt(lanes[i], seconds, at);
+        sphere.center.set(at.x, 0.6, at.z);
+        sphere.radius = IN_FRAME_RADIUS;
+        // Past the fog a person is the colour of the ground.
+        if (sphere.center.distanceTo(camera) < far + IN_FRAME_RADIUS && frustum.intersectsSphere(sphere)) return true;
+      }
       return false;
+    },
+    drawn() {
+      const m = people.bodies.instanceMatrix.array;
+      return Array.from({ length: n }, (_, i) => [m[i * 16 + 12], m[i * 16 + 13], m[i * 16 + 14]]);
     },
   };
 }

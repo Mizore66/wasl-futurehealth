@@ -156,8 +156,9 @@ async function scrollStory(page: Page, p: number) {
 
 const onCues = (page: Page) => page.locator("[data-cue][data-on]");
 
-async function openStory(page: Page) {
-  await page.goto("/?story=3d");
+/** `stillAt` stops the passers-by at that many seconds, for anything that compares pixels. */
+async function openStory(page: Page, stillAt?: number) {
+  await page.goto(stillAt === undefined ? "/?story=3d" : `/?story=3d&still=${stillAt}`);
   await expect(page.locator('[data-story="3d"] canvas')).toHaveCount(1);
   await page.waitForFunction(() => typeof window.__wasl3d === "function");
 }
@@ -260,7 +261,7 @@ for (const vp of WIDTHS) {
   test(`landing at ${vp.w}px: every line of every cue and the honesty mark read at 4.5:1 against what is drawn behind them`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: vp.w, height: vp.h });
-    await openStory(page);
+    await openStory(page, 0);
     const low: string[] = [];
     const faint: string[] = [];
     for (const c of CUES) {
@@ -277,7 +278,7 @@ for (const vp of WIDTHS) {
   test(`landing at ${vp.w}px: the Day counter reads at 4.5:1 all through the walk`, async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: vp.w, height: vp.h });
-    await openStory(page);
+    await openStory(page, 0);
     const counter = page.locator(COUNTER);
     const low: string[] = [];
     for (const p of [WALK.from, 0.165, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.315, 0.325, WALK.to, WALK.to + 0.005]) {
@@ -315,6 +316,136 @@ test("landing at 1440x900: wheel notches never skip a line, and every cue stays 
   expect(end, "the wheel reaches the end of the story").toBe(true);
   const short = CUES.filter((c) => (readable.get(c.id) ?? 0) < 4).map((c) => `${c.id}: ${readable.get(c.id) ?? 0}`);
   expect(short, "fully readable notches for each cue").toEqual([]);
+});
+
+/** Waits for scroll and damping to end, then counts the frames drawn over `ms`. */
+async function idleFrames(page: Page, ms: number) {
+  await expect.poll(() => page.evaluate(() => window.__wasl3d!().clock), { timeout: 15_000 }).not.toBe("active");
+  const a = await page.evaluate(() => window.__wasl3d!().frames);
+  await page.waitForTimeout(ms);
+  return (await page.evaluate(() => window.__wasl3d!().frames)) - a;
+}
+
+const STAGE_SMALL = { width: 640, height: 400 };
+const WIDE_SHOT = 0.5;
+const CLOSE_UP = 0.7707;
+/** The fastest lane, in world units a second. */
+const TOP_SPEED = 1.2;
+
+test("landing: passers-by walk with no scrolling on a wide shot, and Fatima stands still", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize(STAGE_SMALL);
+  await openStory(page);
+  await scrollStory(page, WIDE_SHOT);
+  await idleFrames(page, 0);
+  const read = () => page.evaluate(() => ({ ...window.__wasl3d!(), at: performance.now() }));
+  const before = await read();
+  await page.waitForTimeout(1000);
+  const after = await read();
+  const seconds = (after.at - before.at) / 1000;
+  expect(after.clock).toBe("ambient");
+  expect(after.frames, "frames were drawn").toBeGreaterThan(before.frames);
+  before.walkers.forEach(([x, , z], i) => {
+    const moved = Math.hypot(after.walkers[i][0] - x, after.walkers[i][2] - z);
+    // A turn at a lane's end can eat some of the second, never all of it.
+    expect(moved, `walker ${i} moved`).toBeGreaterThan(0.2);
+    expect(moved, `walker ${i} walked, not ran`).toBeLessThan(TOP_SPEED * (seconds + 1));
+  });
+  expect(after.fatima, "Fatima waits for the scroll").toEqual(before.fatima);
+  for (const [, y] of after.walkers) expect(y, "a small hop, feet near the ground").toBeLessThan(0.12);
+});
+
+test("landing: a scroll carries passers-by on at walking pace, never to a new place", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize(STAGE_SMALL);
+  await openStory(page);
+  await scrollStory(page, 0.45);
+  await page.mouse.move(320, 200);
+  await page.evaluate(() => {
+    const w = window as unknown as { __walk: { t: number; at: number[][] }[]; __walking: boolean };
+    w.__walk = [];
+    w.__walking = true;
+    const tick = (t: number) => {
+      w.__walk.push({ t, at: window.__wasl3d!().walkers });
+      if (w.__walking) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+  const start = await page.evaluate(() => scrollY);
+  const distance = await page.evaluate(() => {
+    const el = document.querySelector<HTMLElement>('[data-story="3d"]')!;
+    return el.offsetHeight - innerHeight;
+  });
+  for (let i = 0; i < 40; i++) {
+    await page.mouse.wheel(0, (distance * (pageAt(0.53) - pageAt(0.45))) / 40);
+    await page.waitForTimeout(30);
+  }
+  expect(await page.evaluate(() => scrollY), "the wheel scrolled").toBeGreaterThan(start + 100);
+  const walk = await page.evaluate(() => {
+    const w = window as unknown as { __walk: { t: number; at: number[][] }[]; __walking: boolean };
+    w.__walking = false;
+    return w.__walk;
+  });
+  expect(walk.length).toBeGreaterThan(10);
+  for (let k = 1; k < walk.length; k++) {
+    const dt = (walk[k].t - walk[k - 1].t) / 1000;
+    walk[k].at.forEach(([x, , z], i) => {
+      const step = Math.hypot(x - walk[k - 1].at[i][0], z - walk[k - 1].at[i][2]);
+      // The sampler can read a frame late, so allow it one tenth of a second.
+      expect(step, `walker ${i} at sample ${k}`).toBeLessThan(TOP_SPEED * (dt + 0.1) + 0.05);
+    });
+  }
+});
+
+test("landing: the stage draws at the ambient rate only when someone is in frame and on screen", async ({ page }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize(STAGE_SMALL);
+  await openStory(page);
+  await scrollStory(page, WIDE_SHOT);
+  await idleFrames(page, 0);
+  const clockAndFrames = () => page.evaluate(() => ({ at: performance.now(), frames: window.__wasl3d!().frames }));
+  const start = await clockAndFrames();
+  await page.waitForTimeout(2000);
+  const end = await clockAndFrames();
+  const rate = ((end.frames - start.frames) * 1000) / (end.at - start.at);
+  expect(rate, "a wide shot keeps drawing").toBeGreaterThan(5);
+  expect(rate, "no faster than the cap").toBeLessThan(33);
+
+  await scrollStory(page, CLOSE_UP);
+  await expect.poll(() => page.evaluate(() => window.__wasl3d!().clock), { message: "the camera settles on the close-up", timeout: 15_000 }).toBe("asleep");
+  expect(await idleFrames(page, 2000), "a close-up with nobody in it").toBe(0);
+
+  await scrollStory(page, WIDE_SHOT);
+  await idleFrames(page, 0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { value: true, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  expect(await idleFrames(page, 2000), "a hidden tab").toBe(0);
+  await page.evaluate(() => {
+    Object.defineProperty(document, "hidden", { value: false, configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  await expect.poll(() => page.evaluate(() => window.__wasl3d!().clock), "back in view").toBe("ambient");
+
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  await page.waitForTimeout(300);
+  expect(await idleFrames(page, 2000), "past the end of the track").toBe(0);
+});
+
+test("landing: a stopped clock stands passers-by on the ground and draws nothing when settled", async ({ page }) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize(STAGE_SMALL);
+  await openStory(page, 7);
+  await scrollStory(page, WIDE_SHOT);
+  expect(await idleFrames(page, 1500), "no frames at rest").toBe(0);
+  const first = await page.evaluate(() => window.__wasl3d!().walkers);
+  for (const [, y] of first) expect(y).toBe(0);
+  await scrollStory(page, 0.46);
+  expect(await page.evaluate(() => window.__wasl3d!().walkers), "scrolling moves nobody").toEqual(first);
+  await page.goto("/?story=3d&still=7");
+  await page.waitForFunction(() => typeof window.__wasl3d === "function");
+  expect(await page.evaluate(() => window.__wasl3d!().walkers), "the same time is the same picture").toEqual(first);
 });
 
 test("landing: crossing the phone breakpoint rebuilds the layout and keeps the story where it is", async ({ page }) => {
