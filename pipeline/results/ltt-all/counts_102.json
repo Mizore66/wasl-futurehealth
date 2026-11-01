@@ -1,0 +1,1294 @@
+{
+ "grid": [
+  0.999,
+  0.995,
+  0.99,
+  0.98,
+  0.95,
+  0.9,
+  0.8,
+  0.7,
+  0.5
+ ],
+ "policy": "v7strict+cal=true+guard=true+tau=0.99",
+ "reviewer": {
+  "Err": 0.04,
+  "Rho": 0,
+  "Double": "merge+close",
+  "Seed": 102,
+  "LinkMedS": 45,
+  "EvMedS": 90,
+  "Sigma": 0.6,
+  "Blind": false,
+  "BlindFactor": 0.5,
+  "Rotate": false,
+  "RotateFactor": 0.1,
+  "SeniorAudit": 0,
+  "SeniorErrRel": 0.5
+ },
+ "rows": [
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.999,
+   "loops": 2471,
+   "closed": 1220,
+   "tp": 1220,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.933,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1168,
+   "wrong_patient_released": 0,
+   "review_items": 1249,
+   "review_items_dropped": 3,
+   "reviewer_hours_per_1k_loops": 16.975,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 2
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 110,
+     "tp": 110,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 248
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 248,
+     "tp": 248,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 673
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 606,
+     "tp": 606,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 89
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 241,
+     "tp": 241,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 125
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.995,
+   "loops": 2471,
+   "closed": 1230,
+   "tp": 1230,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.94,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1176,
+   "wrong_patient_released": 0,
+   "review_items": 877,
+   "review_items_dropped": 1,
+   "reviewer_hours_per_1k_loops": 12.362,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 187
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 253,
+     "tp": 253,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 493
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 606,
+     "tp": 606,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 79
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 245,
+     "tp": 245,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 69
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.99,
+   "loops": 2471,
+   "closed": 1230,
+   "tp": 1230,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.94,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1176,
+   "wrong_patient_released": 0,
+   "review_items": 877,
+   "review_items_dropped": 1,
+   "reviewer_hours_per_1k_loops": 12.362,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 187
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 253,
+     "tp": 253,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 493
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 606,
+     "tp": 606,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 79
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 245,
+     "tp": 245,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 69
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.98,
+   "loops": 2471,
+   "closed": 1232,
+   "tp": 1232,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.942,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1177,
+   "wrong_patient_released": 0,
+   "review_items": 750,
+   "reviewer_hours_per_1k_loops": 10.815,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 172
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 254,
+     "tp": 254,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 448
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 606,
+     "tp": 606,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 74
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 246,
+     "tp": 246,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 35
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.95,
+   "loops": 2471,
+   "closed": 1234,
+   "tp": 1234,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.943,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1175,
+   "wrong_patient_released": 0,
+   "review_items": 727,
+   "reviewer_hours_per_1k_loops": 10.543,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 167
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 255,
+     "tp": 255,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 442
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 607,
+     "tp": 607,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 72
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 246,
+     "tp": 246,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 31
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.9,
+   "loops": 2471,
+   "closed": 1236,
+   "tp": 1236,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.945,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1175,
+   "wrong_patient_released": 0,
+   "review_items": 687,
+   "reviewer_hours_per_1k_loops": 10.069,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 158
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 256,
+     "tp": 256,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 431
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 607,
+     "tp": 607,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 69
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 247,
+     "tp": 247,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 21
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.8,
+   "loops": 2471,
+   "closed": 1236,
+   "tp": 1236,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.945,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1175,
+   "wrong_patient_released": 0,
+   "review_items": 679,
+   "reviewer_hours_per_1k_loops": 9.972,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 158
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 256,
+     "tp": 256,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 428
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 607,
+     "tp": 607,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 68
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 247,
+     "tp": 247,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 18
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.7,
+   "loops": 2471,
+   "closed": 1236,
+   "tp": 1236,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.945,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1175,
+   "wrong_patient_released": 0,
+   "review_items": 659,
+   "reviewer_hours_per_1k_loops": 9.767,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 157
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 256,
+     "tp": 256,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 423
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 607,
+     "tp": 607,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 68
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 247,
+     "tp": 247,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 9
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": true,
+   "tau_close": 0.5,
+   "loops": 2471,
+   "closed": 1236,
+   "tp": 1236,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.945,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 1175,
+   "wrong_patient_released": 0,
+   "review_items": 659,
+   "reviewer_hours_per_1k_loops": 9.767,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 1
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 111,
+     "tp": 111,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 157
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 256,
+     "tp": 256,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 423
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 607,
+     "tp": 607,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 68
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 247,
+     "tp": 247,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 9
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.999,
+   "loops": 2471,
+   "closed": 800,
+   "tp": 800,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.612,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 801,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 14,
+     "tp": 14,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 51,
+     "tp": 51,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 60,
+     "tp": 60,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 526,
+     "tp": 526,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 149,
+     "tp": 149,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.995,
+   "loops": 2471,
+   "closed": 914,
+   "tp": 914,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.699,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 754,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 71,
+     "tp": 71,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 96,
+     "tp": 96,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 534,
+     "tp": 534,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 198,
+     "tp": 198,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.99,
+   "loops": 2471,
+   "closed": 914,
+   "tp": 914,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.699,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 754,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 71,
+     "tp": 71,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 96,
+     "tp": 96,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 534,
+     "tp": 534,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 198,
+     "tp": 198,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.98,
+   "loops": 2471,
+   "closed": 987,
+   "tp": 987,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.755,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 736,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 82,
+     "tp": 82,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 125,
+     "tp": 125,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 538,
+     "tp": 538,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 227,
+     "tp": 227,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.95,
+   "loops": 2471,
+   "closed": 1001,
+   "tp": 1001,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.765,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 732,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 85,
+     "tp": 85,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 131,
+     "tp": 131,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 540,
+     "tp": 540,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 230,
+     "tp": 230,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.9,
+   "loops": 2471,
+   "closed": 1020,
+   "tp": 1020,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.78,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 727,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 92,
+     "tp": 92,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 136,
+     "tp": 136,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 543,
+     "tp": 543,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 234,
+     "tp": 234,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.8,
+   "loops": 2471,
+   "closed": 1025,
+   "tp": 1025,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.784,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 724,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 92,
+     "tp": 92,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 137,
+     "tp": 137,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 544,
+     "tp": 544,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 237,
+     "tp": 237,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.7,
+   "loops": 2471,
+   "closed": 1036,
+   "tp": 1036,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.792,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 720,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 94,
+     "tp": 94,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 139,
+     "tp": 139,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 545,
+     "tp": 545,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 243,
+     "tp": 243,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  },
+  {
+   "cohort": "cal-s102",
+   "with_review": false,
+   "tau_close": 0.5,
+   "loops": 2471,
+   "closed": 1036,
+   "tp": 1036,
+   "false_closures": 0,
+   "truth_closed": 1308,
+   "recall": 0.792,
+   "loops_with_wrong_patient_message": 0,
+   "messages_released": 720,
+   "wrong_patient_released": 0,
+   "review_items": 0,
+   "reviewer_hours_per_1k_loops": 0,
+   "by_programme": {
+    "breast": {
+     "loops": 16,
+     "closed": 15,
+     "tp": 15,
+     "false_closures": 0,
+     "truth_closed": 15,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "cervical": {
+     "loops": 330,
+     "closed": 94,
+     "tp": 94,
+     "false_closures": 0,
+     "truth_closed": 117,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "crc": {
+     "loops": 825,
+     "closed": 139,
+     "tp": 139,
+     "false_closures": 0,
+     "truth_closed": 311,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "diabetic_retinopathy": {
+     "loops": 650,
+     "closed": 545,
+     "tp": 545,
+     "false_closures": 0,
+     "truth_closed": 609,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    },
+    "lung_nodule": {
+     "loops": 650,
+     "closed": 243,
+     "tp": 243,
+     "false_closures": 0,
+     "truth_closed": 256,
+     "loops_with_wrong_patient_message": 0,
+     "review_items": 0
+    }
+   },
+   "second_identifier_confirm": {
+    "raised": 0,
+    "answered": 0,
+    "true_match": 0,
+    "answered_same": 0,
+    "answered_same_on_non_match": 0
+   }
+  }
+ ]
+}
