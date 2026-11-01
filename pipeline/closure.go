@@ -691,7 +691,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		d.Outreach = BuildOutreach(f, c.pcal)
 		if d.Handoff != nil {
 			for _, o := range d.Outreach {
-				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (o.Kind == "referral_rejected" && o.Released)
+				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (crcRejectedKind(o.Kind) && o.Released)
 			}
 		}
 		// v7 guard: a held message raises one human confirmation item for its registration pair

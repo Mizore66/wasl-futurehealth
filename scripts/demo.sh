@@ -54,6 +54,11 @@ LUNGSURVSTABLE="${WASL_LUNGSURVSTABLE:-0}"   # stable-CT surveillance child: rev
 [ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
 # WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
 [ "${WASL_SECONDIDCONFIRM:-1}" != 0 ] || { PARGS+=(-secondidconfirm=false); RUN="$RUN-nosecondidconfirm"; }
+# DR / lung outreach gaps (pipeline/outreachgaps.go, default off): WASL_DRRECALLMSG=1 overdue next-due recall message (with
+# WASL_DRNEXT), WASL_REJMSG=1 rejected-referral message for lung / DR, WASL_DRSEENLINK=1 untrusted later eye-clinic note asks
+[ "${WASL_DRRECALLMSG:-0}" = 0 ] || { PARGS+=(-drrecallmsg); RUN="$RUN-drrecallmsg"; }
+[ "${WASL_REJMSG:-0}" = 0 ] || { PARGS+=(-rejmsg); RUN="$RUN-rejmsg"; }
+[ "${WASL_DRSEENLINK:-0}" = 0 ] || { PARGS+=(-drseenlink); RUN="$RUN-drseenlink"; }
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
 RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
