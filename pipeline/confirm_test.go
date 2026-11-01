@@ -144,3 +144,39 @@ func TestIDWorklistKeepsConfirmingItem(t *testing.T) {
 		t.Fatal("after a confirming 'different' a twin must be asked")
 	}
 }
+
+// -secondidconfirm=false (with -linkconfirm on): a contradicted second-identifier "same" counts at once, as before
+// d703fb4, while a contradicted link "same" is still held for its confirming review.
+func TestSecondIDConfirmFlagOff(t *testing.T) {
+	defer func(g, r, c, s bool) {
+		V7Guard, ReuseIDConfirm, LinkContradictionConfirm, SecondIDContradictionConfirm = g, r, c, s
+	}(V7Guard, ReuseIDConfirm, LinkContradictionConfirm, SecondIDContradictionConfirm)
+	V7Guard, ReuseIDConfirm, LinkContradictionConfirm, SecondIDContradictionConfirm = true, true, true, false
+	L, loop := newLoopLinker(t)
+	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
+	k := pk2(L.byPk[pair[0]], L.byPk[pair[1]])
+	L.Link(k[0], k[1], 0.995, false, "wasl")
+	so := func(seq uint64, id, purpose string) *Prep {
+		return &Prep{Seq: seq, Kind: "signoff", So: &Signoff{ItemID: id, LoopID: loop, Kinds: []string{"link"}, Pair: pair, Link: "same",
+			Role: RoleReviewer, Reads: []string{"r1", "r2"}, Purpose: purpose}}
+	}
+	f := lastFacts(L.Apply(so(10, "g1", "second_identifier")), loop)
+	if !L.idConfirmed[k] || f == nil || !msgConfirmed(f, pair[0], pair[1]) {
+		t.Fatal("-secondidconfirm=false: the second-identifier 'same' must count at once")
+	}
+	if L.Stats["second_id_same_held_contradiction"] != 0 {
+		t.Fatal("-secondidconfirm=false: nothing may be held on the messaging path")
+	}
+	// the link path keeps its own confirm: a plain link 'same' on the contradicting pair is still held
+	L2, loop2 := newLoopLinker(t)
+	L2.recs[L2.byPk[pair[0]]].Sex = "F"
+	L2.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	p := so(3, "i1", "")
+	p.So.LoopID = loop2
+	L2.Apply(p)
+	if L2.Find(L2.byPk[pair[0]]) == L2.Find(L2.byPk[pair[1]]) || L2.Stats["link_same_held_contradiction"] != 1 {
+		t.Fatal("-secondidconfirm=false must not switch off the link contradiction confirm")
+	}
+}
