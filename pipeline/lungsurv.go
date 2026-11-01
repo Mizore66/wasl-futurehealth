@@ -32,9 +32,10 @@ package main
 // give 2D diameters, so a stable first surveillance CT opens <loop>#surv2 (CT at about 1 year) and a stable #surv2 opens
 // <loop>#surv3 (CT at about 2 years); a stable #surv3 ends surveillance. Both intervals are counted from the PET/CT (the
 // guideline counts from baseline). Windows 300-420 and 670-790 days are Wasl policy (ASSUMPTION), as is discharging a
-// resolved nodule without further CT. Generator: own RNG stream (lungSurv2SeedOffset), same ASSUMED adherence and outcome
-// mix as the first CT. With a 120-day observation window the 2-year CT is never due inside it: #surv3 shows the next due
-// date only.
+// resolved nodule without further CT. A later-round CT more than 30 days before its window cannot close that round; the
+// 30-day tolerance is Wasl policy, and within_window still requires both window bounds. Generator: own RNG stream
+// (lungSurv2SeedOffset), same ASSUMED adherence and outcome mix as the first CT. With a 120-day observation window the
+// 2-year CT is never due inside it: #surv3 shows the next due date only.
 //
 // Stable-CT surveillance child (flag -lungsurvstable, default off): the older convention in lung.go, a stable follow-up
 // whose Fleischner cell recommends a further CT opens <loop>#surv. With the flag it uses the same review discipline as the
@@ -73,7 +74,9 @@ var petSurvRounds = [][2]float64{{300, 420}, {670, 790}}
 
 var petSurvNext = []string{"surveillance chest CT at about 1 year", "surveillance chest CT at about 2 years (2D diameter follow-up)"}
 
-const petSurv2Basis = "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT are Wasl policy"
+const petSurv2EarlyTolerance = 30.0 // Wasl policy: a later-round CT this far before its window may decide it, but is not within-window
+
+const petSurv2Basis = "BTS 2015 (Callister et al., Thorax 2015;70 Suppl 2), Imaging follow-up: repeat CT at 3 months and 1 year (Grade C); with 2D diameter measurements, CT follow-up for a total of 2 years (Grade D); windows 300-420 and 670-790 days from the PET/CT and the 30-day early-CT tolerance are Wasl policy"
 
 var (
 	lsWithin, lsLate = 0.45, 0.25 // remainder never (ASSUMPTION)
@@ -139,12 +142,14 @@ type survSpec struct {
 	id, rule, overdueEsc string
 	after                float64 // only CTs after this day count (the report that opened the child)
 	lo, hi               float64
+	earlyTol             float64 // later PET rounds: reject CTs before lo-earlyTol; zero keeps round 1/stable legacy timing
 	srDay, deadline      float64
 }
 
-// survChild: the decision of a surveillance-CT child loop. The first trusted chest CT after `after` decides: both readers
-// agree (or a clinician signs) on stable / resolved -> closed, growing / solid component >= 6 mm -> escalated; an
-// untrusted link raises a link item, an unread CT an evidence item (and blocks later CTs), a non-assessable CT holds.
+// survChild: the decision of a surveillance-CT child loop. The first eligible trusted chest CT after `after` decides:
+// both readers agree (or a clinician signs) on stable / resolved -> closed, growing / solid component >= 6 mm -> escalated;
+// an untrusted link raises a link item, an unread CT an evidence item (and blocks later CTs), a non-assessable CT holds.
+// For later PET rounds, eligible also means no more than earlyTol days before the window.
 // chain starts with the child's surveillance_opened block; cl and sv are the child's lung part and obligation.
 func (c *ClosureCore) survChild(f *LoopFacts, sp survSpec, chain []Block, cl *LungDecision, sv *LungSurv, fus []row, h survHooks) *Decision {
 	id, hi := sp.id, sp.hi
@@ -154,6 +159,9 @@ func (c *ClosureCore) survChild(f *LoopFacts, sp survSpec, chain []Block, cl *Lu
 	for _, r := range fus {
 		if r.d.Day <= sp.after || (r.d.Ev != nil && lungWorkupKind(r.d.Ev.Kind)) {
 			continue
+		}
+		if sp.earlyTol > 0 && r.d.Day < sp.lo-sp.earlyTol {
+			continue // a later-round CT too far before its window is not that round's surveillance evidence
 		}
 		if !r.trusted {
 			unlinked = true
@@ -180,7 +188,11 @@ func (c *ClosureCore) survChild(f *LoopFacts, sp survSpec, chain []Block, cl *Lu
 		ch := appendBlock(chain, "link_decision", linkBlock(f, r.d, r.pc))
 		ch = appendBlock(ch, "evidence", lungEvBlock(r.d, hl))
 		ch, hs := h.withSignoff(ch, r.d.ReportID)
-		cl.Outcome, cl.FollowUp, cl.Closer, cl.WithinWindow = lab, r.d.ReportID, "ct", r.d.Day <= hi
+		within := r.d.Day <= hi // round 1/stable: preserve the existing upper-bound-only meaning
+		if sp.earlyTol > 0 {
+			within = r.d.Day >= sp.lo && within
+		}
+		cl.Outcome, cl.FollowUp, cl.Closer, cl.WithinWindow = lab, r.d.ReportID, "ct", within
 		switch lab {
 		case "stable", "resolved":
 			state, closedDay, closing = "closed", r.d.Day, r.d.ReportID
@@ -280,7 +292,7 @@ func (c *ClosureCore) petSurvLater(f *LoopFacts, ld *LungDecision, prev *Decisio
 		var d *Decision
 		items := record(func() {
 			d = c.survChild(f, survSpec{id: id, rule: "bts2015_pet_low_surveillance", overdueEsc: "overdue_lung_surveillance_ct", after: pv.CTDay,
-				lo: lo, hi: hi, srDay: petDay, deadline: w[1]}, chain, cl, sv, fus, h)
+				lo: lo, hi: hi, earlyTol: petSurv2EarlyTolerance, srDay: petDay, deadline: w[1]}, chain, cl, sv, fus, h)
 		})
 		pv.Next = sv
 		out, pend = append(out, d), append(pend, items)

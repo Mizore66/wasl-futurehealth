@@ -81,6 +81,38 @@ func TestPETSurv2RoundsChain(t *testing.T) {
 	}
 }
 
+// A later-round CT more than 30 days before its window is not that round's evidence. The 30-day tolerance permits a
+// near-early CT to decide the round, but within_window requires both bounds; round 1 keeps its legacy timing semantics.
+func TestPETSurv2EarlyCTWindow(t *testing.T) {
+	ct1 := lungFU("MAF-ct-7", petDay+80, "stable", "eid", 1, false)
+	lo := petDay + petSurvRounds[0][0]
+	f := lungFacts(60, "none", "high", big, petLow(), ct1, lungFU("MAF-ct-early", lo-petSurv2EarlyTolerance-1, "stable", "eid", 1, false))
+	fin, _ := runSurvFlags(t, true, true, false, f, lo+40)
+	s2 := fin[f.LoopID+"#surv2"]
+	if s2 == nil || s2.State != "open" || s2.ClosingReport != "" || s2.Lung.WithinWindow || s2.Lung.FollowUpCT || s2.Lung.Surveillance.CTReport != "" || fin[f.LoopID+"#surv3"] != nil {
+		t.Fatalf("CT before the 30-day tolerance closed or counted in round 2: %+v", s2)
+	}
+	for name, tc := range map[string]struct {
+		day    float64
+		within bool
+	}{
+		"early but tolerated": {lo - petSurv2EarlyTolerance, false},
+		"lower window bound":  {lo, true},
+	} {
+		g := lungFacts(60, "none", "high", big, petLow(), ct1, lungFU("MAF-ct-9", tc.day, "stable", "eid", 1, false))
+		fin, _ := runSurvFlags(t, true, true, false, g, lo+40)
+		s2 := fin[g.LoopID+"#surv2"]
+		if s2 == nil || s2.State != "closed" || s2.ClosingReport != "MAF-ct-9" || s2.Lung.WithinWindow != tc.within {
+			t.Fatalf("%s: wrong closure/within-window: %+v", name, s2)
+		}
+	}
+	g := lungFacts(60, "none", "high", big, petLow(), lungFU("MAF-ct-round1-early", petDay+10, "stable", "eid", 1, false))
+	fin, _ = runSurvFlags(t, true, true, false, g, petDay+40)
+	if s1 := fin[g.LoopID+"#surv"]; s1 == nil || s1.State != "closed" || !s1.Lung.WithinWindow {
+		t.Fatalf("round-1 early-CT behaviour changed: %+v", s1)
+	}
+}
+
 // The later rounds keep the gates: an untrusted link or a reader disagreement never closes them and raises a review item
 // on the parent loop that the child lists as pending.
 func TestPETSurv2NeedsTrustedLinkAndAgreement(t *testing.T) {
