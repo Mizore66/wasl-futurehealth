@@ -145,3 +145,55 @@ func TestEIDContradictionContainsWrongHumanSame(t *testing.T) {
 		t.Fatal("a (wrong) human 'same' merged registrations with contradicting Emirates IDs")
 	}
 }
+
+// X10 rerun 2, MED-sr-4106 -> SKM-appt-5901 (wrong-patient reminder). A model link between clusters holding clashing
+// Emirates IDs was refused, but only for that moment: nothing was recorded. A wrong simulated reviewer "different" then
+// cut the only EID-bearing registration away from its EID-less partner; the clash was no longer visible, so the relative's
+// cluster absorbed that partner. The refusal must outlive the split.
+func TestRefusedEIDClashSurvivesLaterSplit(t *testing.T) {
+	e1, e2 := luhnComplete("78419802077524"), luhnComplete("78419807358085")
+	L := NewLinkerCore(constGBM(), 1)
+	applySeq(L,
+		eidEvent("m1", "medlab", "M1", "Lamig Eddinari", "1999-07-19", e1),      // person A, valid id e1
+		eidEvent("s1", "skmc-endo", "S1", "Lamia Eddinari", "1999-07-19", ""),  // person A, no id (the bridge)
+		eidEvent("a1", "ahs-mushrif", "A1", "Qamar Zubaydi", "1999-07-19", e2), // person B, valid id e2
+	)
+	m1, s1, a1 := L.byPk["medlab|M1"], L.byPk["skmc-endo|S1"], L.byPk["ahs-mushrif|A1"]
+	if !sameCluster(L, "medlab|M1", "skmc-endo|S1") {
+		t.Fatal("setup: person A's registrations should link")
+	}
+	if L.Link(a1, s1, 0.9, false, "wasl") {
+		t.Fatal("setup: the EID clash must refuse the model link")
+	}
+	L.CannotLink(m1, s1) // wrong reviewer "different": the EID-bearing registration leaves the cluster
+	if L.Link(a1, s1, 0.99, false, "wasl") || sameCluster(L, "ahs-mushrif|A1", "skmc-endo|S1") {
+		t.Fatal("a refused EID-clash pair was merged after the split removed the clashing EID from the cluster")
+	}
+	// the same pair arriving through a later EID-less bridge registration of person B
+	pb := eidEvent("b2", "medlab", "M2", "Qamar Zubaydi", "1999-07-19", "")
+	pb.Seq = 10
+	L.Apply(pb)
+	b2 := L.byPk["medlab|M2"]
+	L.Link(b2, a1, 0.99, false, "wasl")
+	L.Link(b2, s1, 0.99, true, "wasl")
+	if sameCluster(L, "ahs-mushrif|A1", "skmc-endo|S1") {
+		t.Fatal("person B's cluster absorbed person A's EID-less registration through a bridge")
+	}
+}
+
+// Fail closed, consistent with a direct EID contradiction (cannot-link): a refused clash pair also resists a later
+// human "same". The comment on Link allows a human to override an EID clash, but only while no constraint was recorded.
+func TestRefusedEIDClashBlocksLaterHumanSame(t *testing.T) {
+	e1, e2 := luhnComplete("78419802077524"), luhnComplete("78419807358085")
+	L := NewLinkerCore(constGBM(), 1)
+	applySeq(L,
+		eidEvent("m1", "medlab", "M1", "Lamig Eddinari", "1999-07-19", e1),
+		eidEvent("s1", "skmc-endo", "S1", "Lamia Eddinari", "1999-07-19", ""),
+		eidEvent("a1", "ahs-mushrif", "A1", "Qamar Zubaydi", "1999-07-19", e2),
+	)
+	s1, a1 := L.byPk["skmc-endo|S1"], L.byPk["ahs-mushrif|A1"]
+	L.Link(a1, s1, 0.9, false, "wasl") // refused on the EID clash
+	if L.Link(a1, s1, 1.0, true, "human") || sameCluster(L, "ahs-mushrif|A1", "skmc-endo|S1") {
+		t.Fatal("a human 'same' merged a pair refused on an Emirates ID clash")
+	}
+}
