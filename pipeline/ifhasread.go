@@ -148,6 +148,7 @@ var (
 	ifhDomWeak = map[string]*regexp.Regexp{"weight": regexp.MustCompile(`(?i)dietitian|bariatric`)}
 	ifhNotConf = regexp.MustCompile(`(?i)not confirmed|ruled out|\bno (?:diabetes|hypertension)\b|not (?:hypertensive|obese|diabetic)|white[- ]coat|within normal|(?:is|are|test|readings?) normal|[,:] normal\b|below the (?:diagnostic )?threshold|does not meet|measurement error|entered wrongly|no (?:statin|treatment|weight programme) (?:is )?needed`)
 	ifhPend    = regexp.MustCompile(`(?i)awaited|(?:repeat|fasting|test|HbA1c|glucose|lipids?|sample)[^.;]{0,30}requested|\bordered\b|to follow|not yet (?:available|reported)|will return|before (?:any diagnosis|deciding)|to be repeated|repeat (?:fasting|lipids)|declined|not ready|reconsider|will think|will be (?:agreed|decided)|decide (?:later|about)|try diet first|when the result is back|blood taken today`)
+	ifhPendCue = regexp.MustCompile(`(?i)suspected|\brequested\b|to be confirmed|monitoring (?:is )?(?:pending|awaited|required|planned)`)
 	ifhPlan    = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|given|arranged|agreed|management plan|treatment started|diagnosed)\b`)
 )
 
@@ -207,7 +208,7 @@ func regexIfhasNote(t string) *IfhasFields {
 		}
 		j := strings.Join(ss, ". ")
 		switch {
-		case ifhNotConf.MatchString(j):
+		case ifhNotConf.MatchString(j) && !ifhPend.MatchString(j) && !ifhPendCue.MatchString(j):
 			f.Status[d] = IfhasNotConfirmed
 		case ifhPend.MatchString(j):
 			f.Status[d] = IfhasPending

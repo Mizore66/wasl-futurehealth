@@ -11,7 +11,7 @@
 #      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
 #      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
 #      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
-#      WASL_IFHAS=N adds N IFHAS abnormal-result follow-up loops (doh2025ifhas; default 0).
+#      WASL_IFHAS=N adds N IFHAS abnormal-result follow-up loops (doh2025ifhas, sixth loop type; default 0).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.

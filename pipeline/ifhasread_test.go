@@ -27,6 +27,10 @@ func TestIfhasRegexNoteTraps(t *testing.T) {
 	cases := map[string]string{
 		"Family physician review. Repeat HbA1c 6.1% (screening 6.7%); diabetes not confirmed. Prediabetes: lifestyle advice given, HbA1c in 12 months.": "glyc=not_confirmed",
 		"Referred for raised HbA1c and raised blood pressure. Home BP diary averages 126/78 mmHg. White-coat effect; hypertension not confirmed.":       "bp=not_confirmed",
+		"Blood pressure elevated at screening; white-coat hypertension suspected, ambulatory monitoring requested.":                                  "bp=pending",
+		"Repeat HbA1c requested; diabetes not confirmed.":                                                                                          "glyc=pending",
+		"LDL cholesterol not confirmed; repeat fasting lipids requested.":                                                                          "lipid=pending",
+		"Hypertension not confirmed at this visit; BP to be confirmed by ambulatory monitoring.":                                                    "bp=pending",
 		"Repeat HbA1c 7.4% confirms type 2 diabetes. Treatment options discussed; the plan will be agreed at the next visit.":                           "glyc=pending",
 		"Last year's HbA1c was 5.8%. Repeat HbA1c now 7.2%, so diabetes is confirmed; metformin started.":                                               "glyc=managed",
 		"Second HbA1c 55 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months.":                         "glyc=managed",
