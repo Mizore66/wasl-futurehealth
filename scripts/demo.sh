@@ -2,6 +2,7 @@
 # Wasl one-command baseline: check assets → build → cohort → integrated NATS run → audit → tamper → report.
 # Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|booking|report|test|serve|snapshot|final]   (default: all)
 #   ltt [seeds...]: Learn-then-Test calibration of the closure tier on cal-split cohorts -> pipeline/results/ltt/ (~40 min); WASL_POLICY=v7ltt uses it
+#     WASL_LTT_ALL=1 also calibrates on lung, DR and breast loops -> pipeline/results/ltt-all/ (per-programme counts; scripts/ltt_cohorts.sh)
 #   final [seeds...]: stage 7 frozen evaluation, 5 seeds x {v1, v2 noise} -> pipeline/results/final/ (~45 min)
 # Outputs: out/cohort/ (synthetic data), out/run/<policy>/ (logs, report7.json, dashboard.json, review_queue.json).
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
@@ -40,6 +41,8 @@ LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake l
 [ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
 # hand-off (default off): WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question
 [ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
+# WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
+[ "${WASL_SECONDIDCONFIRM:-1}" != 0 ] || { PARGS+=(-secondidconfirm=false); RUN="$RUN-nosecondidconfirm"; }
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
 RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
@@ -145,7 +148,8 @@ case "${1:-all}" in
   serve) serve;; snapshot) snapshot;;
   all) check; build; test_; cohort; run_; audit; tamper; booking; report;;
   booking) booking;;
-  ltt) shift; "$ROOT/scripts/ltt_cohorts.sh" "$@" && python3 "$ROOT/scripts/ltt_select.py" "$ROOT/pipeline/results/ltt";;
+  ltt) shift; LD="$ROOT/pipeline/results/ltt"; [ "${WASL_LTT_ALL:-0}" = 0 ] || LD="$ROOT/pipeline/results/ltt-all"
+       "$ROOT/scripts/ltt_cohorts.sh" "$@" && python3 "$ROOT/scripts/ltt_select.py" "${WASL_LTT_DIR:-$LD}";;
   final) shift; exec "$ROOT/scripts/final_eval.sh" "$@";;
   *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|snapshot|final]"; exit 2;;
 esac
