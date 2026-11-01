@@ -5,14 +5,14 @@
 (3) forecast rows only reshape real bookings: phantoms are never committed and every real patient is still booked when
     capacity allows; the oracle forecast sees only class counts.
 Run: python tests/test_lookahead.py"""
-import sys, os
+import sys, os, tempfile
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
 from booking.engine import BookingEngine, BIG
-from booking.lookahead import LookaheadEngine, SCALE
+from booking.lookahead import LookaheadEngine, GoMCF, SCALE
 from tests.test_engine import rand_cal, rand_prefs
 
 
@@ -46,10 +46,11 @@ def test_matches_assignment(trials=30):
             r, c = linear_sum_assignment(C)
             opt = C[r, c].sum()
             n, s, tt, arcs, rows, meta = b.network(0)
-            from booking.lookahead import GoMCF
             g = GoMCF()
-            flows, flow, cost = g.solve(n, s, tt, arcs)
-            g.close()
+            try:
+                flows, flow, cost = g.solve(n, s, tt, arcs)
+            finally:
+                g.close()
             assert flow == len(rows), (t, flow, len(rows))
             gap = abs(cost / SCALE - opt)
             # integer rounding of each arc cost: at most 0.5/SCALE per patient
@@ -99,6 +100,58 @@ def test_constraints_and_phantoms(trials=20):
     return f"hard constraints held on {nb}/{nb} lookahead bookings ({trials} calendars, trailing and oracle forecast)"
 
 
+def test_solver_failures():
+    def fake(d, name, body):
+        path = os.path.join(d, name)
+        with open(path, "w") as f:
+            f.write("#!/usr/bin/env python3\n" + body)
+        os.chmod(path, 0o755)
+        return path
+
+    with tempfile.TemporaryDirectory() as d:
+        g = GoMCF(fake(d, "dead.py", "import sys\nsys.stdin.readline()\nsys.exit(7)\n"), timeout=2.0)
+        try:
+            try:
+                g.solve(2, 0, 1, [])
+                raise AssertionError("solver EOF was not reported")
+            except RuntimeError as e:
+                assert "closed output" in str(e) and "exit code 7" in str(e), e
+        finally:
+            g.close()
+        assert g.p.poll() == 7
+
+        g = GoMCF(fake(d, "hang.py", "import time\ntime.sleep(60)\n"), timeout=0.05)
+        try:
+            try:
+                g.solve(2, 0, 1, [])
+                raise AssertionError("solver timeout was not reported")
+            except RuntimeError as e:
+                assert "timed out" in str(e) and "killed" in str(e), e
+        finally:
+            g.close()
+        assert g.p.poll() is not None
+
+        # A partial JSON response must not bypass the read deadline.
+        g = GoMCF(fake(d, "partial.py",
+                       "import sys,time\nsys.stdin.readline()\nsys.stdout.write('{')\nsys.stdout.flush()\ntime.sleep(60)\n"),
+                  timeout=0.1)
+        try:
+            try:
+                g.solve(2, 0, 1, [])
+                raise AssertionError("partial-response timeout was not reported")
+            except RuntimeError as e:
+                assert "timed out" in str(e), e
+        finally:
+            g.close()
+        assert g.p.poll() is not None
+
+        # stdin EOF is not enough: close must kill a solver which keeps running.
+        g = GoMCF(fake(d, "ignore_eof.py", "import sys,time\nsys.stdin.readline()\ntime.sleep(60)\n"), timeout=0.05)
+        g.close()
+        assert g.p.poll() is not None
+    return "solver EOF includes exit code; full/partial read and close timeouts kill and reap processes"
+
+
 if __name__ == "__main__":
-    for f in (test_matches_assignment, test_constraints_and_phantoms):
+    for f in (test_matches_assignment, test_constraints_and_phantoms, test_solver_failures):
         print(f.__name__, "->", f())

@@ -30,6 +30,8 @@ import json
 import math
 import os
 import subprocess
+import select
+import time
 import collections
 import numpy as np
 
@@ -46,25 +48,80 @@ def _repo_root():
 class GoMCF:
     """One long-lived `wsi7 mcf` process: JSON line in, JSON line out."""
 
-    def __init__(self, binary: str | None = None):
+    def __init__(self, binary: str | None = None, timeout: float = 30.0):
         b = binary or os.environ.get("WASL_MCF_BIN") or os.path.join(_repo_root(), "bin", "wsi7")
         if not os.path.exists(b):
             raise FileNotFoundError(f"lookahead needs the Go solver {b}: run scripts/demo.sh build "
                                     "(or set WASL_MCF_BIN to a built wsi7)")
+        self.timeout = timeout
+        self._read_buf = b""
         self.p = subprocess.Popen([b, "mcf"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, bufsize=1)
 
+    def _stop(self):
+        """Kill a solver which cannot finish cleanly and return its exit code."""
+        if self.p.poll() is None:
+            self.p.kill()
+        return self.p.wait()
+
+    def _readline(self):
+        """Read one response with a deadline covering partial lines, not just the first byte."""
+        deadline = time.monotonic() + self.timeout
+        while True:
+            if b"\n" in self._read_buf:
+                line, self._read_buf = self._read_buf.split(b"\n", 1)
+                return line + b"\n"
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
+            ready, _, _ = select.select([self.p.stdout], [], [], remaining)
+            if not ready:
+                return None
+            chunk = os.read(self.p.stdout.fileno(), 65536)
+            if not chunk:
+                return b""
+            self._read_buf += chunk
+
     def solve(self, n: int, s: int, t: int, arcs: list[tuple[int, int, int, int]]):
-        self.p.stdin.write(json.dumps({"n": n, "s": s, "t": t, "arcs": arcs}, separators=(",", ":")) + "\n")
-        self.p.stdin.flush()
-        r = json.loads(self.p.stdout.readline())
+        if self.p.poll() is not None:
+            raise RuntimeError(f"mcf: solver is not running (exit code {self.p.returncode})")
+        try:
+            self.p.stdin.write(json.dumps({"n": n, "s": s, "t": t, "arcs": arcs}, separators=(",", ":")) + "\n")
+            self.p.stdin.flush()
+        except (BrokenPipeError, OSError) as e:
+            rc = self._stop()
+            raise RuntimeError(f"mcf: solver write failed (exit code {rc}): {e}") from e
+        line = self._readline()
+        if line is None:
+            rc = self._stop()
+            raise RuntimeError(f"mcf: solver timed out after {self.timeout:g}s; killed process (exit code {rc})")
+        if not line:
+            rc = self._stop()
+            raise RuntimeError(f"mcf: solver closed output before responding (exit code {rc})")
+        r = json.loads(line)
         if r.get("error"):
             raise RuntimeError("mcf: " + r["error"])
         return r["flows"], r["flow"], r["cost"]
 
     def close(self):
-        if self.p.poll() is None:
-            self.p.stdin.close()
-            self.p.wait(timeout=10)
+        """Idempotent cleanup; a solver which ignores stdin EOF is killed, never leaked."""
+        try:
+            if self.p.poll() is None:
+                try:
+                    self.p.stdin.close()
+                except (BrokenPipeError, OSError):
+                    pass
+                try:
+                    self.p.wait(timeout=min(10.0, self.timeout))
+                except subprocess.TimeoutExpired:
+                    self.p.kill()
+                    self.p.wait()
+        finally:
+            for stream in (self.p.stdin, self.p.stdout):
+                if stream is not None and not stream.closed:
+                    try:
+                        stream.close()
+                    except OSError:
+                        pass
 
 
 class _Row:
