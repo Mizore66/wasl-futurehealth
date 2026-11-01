@@ -59,7 +59,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 - Network pooling across a group's sites: when slots are in the wrong places, ≤31-day completion goes from 22% to 42%. No gain when capacity is short overall.
 
 **Roadmap (designed, not built):**
-- **Phase 3, more loop types:** incidental imaging, IFHAS and breast (diabetic retinopathy is built). That is ≈50–110k loops a year at ≈AED 5–28 per loop.
+- **Phase 3, more loop types:** incidental imaging and IFHAS (diabetic retinopathy and breast are built). That is ≈50–110k loops a year at ≈AED 5–28 per loop.
 - **Second route to market:** an on-premise deployment for a provider network tracking its own patients.
 - **Tested and dropped:** we tested whether booking optimisation beats greedy when capacity is scarce. It doesn't, so we make no claim.
 

@@ -60,7 +60,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 - Cervical programme.
 
 ### Designed (roadmap)
-- **Phase 3, more loop types:** breast, lung LDCT, IFHAS (diabetic retinopathy is built).
+- **Phase 3, more loop types:** lung LDCT, IFHAS (diabetic retinopathy and breast are built).
 - **Second route:** on-premise deployment for a provider network.
 - Multi-period booking lookahead (the current optimiser ties greedy).
 
