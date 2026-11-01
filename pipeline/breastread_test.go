@@ -135,6 +135,55 @@ func TestBreastRegexV3Wording(t *testing.T) {
 	}
 }
 
+// Frozen outcome-negation behaviour: recognized nearby negations suppress a plan, while a distant negation
+// or a contrastive "but" does not suppress a separately affirmed plan. No post-held-out-2 reader tuning.
+func TestBreastRegexNegatedOutcomeBoundaries(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		text    string
+		outcome string
+		label   string
+	}{
+		{
+			name:    "negated treatment remains incomplete",
+			text:    "She attended. Core biopsy confirms invasive carcinoma. The MDT did not make a referral to the breast surgeon.",
+			outcome: "pending",
+			label:   "incomplete",
+		},
+		{
+			name:    "negated early recall remains incomplete",
+			text:    "She attended. Core biopsy is benign. The plan is not early recall.",
+			outcome: "pending",
+			label:   "incomplete",
+		},
+		{
+			name:    "distant negation does not suppress treatment",
+			text:    "She attended. Core biopsy confirms invasive carcinoma. No historical recommendation determines the current MDT referral to the breast surgeon.",
+			outcome: "treatment",
+			label:   "to_treatment",
+		},
+		{
+			name:    "distant negation does not suppress early recall",
+			text:    "She attended. Core biopsy is benign. No historical imaging schedule determines the current plan for early recall.",
+			outcome: "early_recall",
+			label:   "early_recall",
+		},
+		{
+			name:    "affirmed treatment after contrast",
+			text:    "She attended. Core biopsy confirms invasive carcinoma. The MDT did not make a referral to the breast surgeon, but the treating team now recommends surgery.",
+			outcome: "treatment",
+			label:   "to_treatment",
+		},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			f := regexBreastAssess(c.text)
+			if f.Outcome != c.outcome || f.Label != c.label {
+				t.Errorf("outcome %s want %s; label %s want %s | %+v", f.Outcome, c.outcome, f.Label, c.label, f)
+			}
+		})
+	}
+}
+
 // v5 reader B: the inadequate-images field makes a breast TR unless the 4B gave it a 3/4/5; old v2 entries still read.
 func TestBreastGemmaInadequateField(t *testing.T) {
 	txt := "RT: Technically inadequate: motion blur; repeat acquisition required. LT: no suspicious mass; BI-RADS 1."
