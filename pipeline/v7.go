@@ -93,7 +93,7 @@ func corroborated(a, b *Rec, feat []float64) bool {
 		return false
 	}
 	if placeholderDob(a.Dob) || placeholderDob(b.Dob) {
-		return skelSetEq(a.skel, b.skel)
+		return skelSetEq(a.skel, b.skel) && skelInfo(a.skel) >= PlaceholderMinSkelLetters
 	}
 	return (feat[6] == 1 && surnameEq(a, b)) || (CorrShared && sharedSkel(a.skel, b.skel) >= 2) || (CorrFuzzyLast && fuzzyLast(a.skel, b.skel))
 }
@@ -165,6 +165,26 @@ func sharedSkel(a, b []string) int {
 		if len(x) >= 3 && sb[x] && !seen[x] {
 			seen[x] = true
 			n++
+		}
+	}
+	return n
+}
+
+// PlaceholderMinSkelLetters: a placeholder DOB is shared by many people, so a name match corroborates it only when the
+// matching skeleton carries enough letters to be distinctive. X10 (all 64k persons, 10x the evaluation cohort): "Leila
+// Houari" and "Leila Rhiwi" both reduce to the two one-letter tokens "l r", and the pair closed a CRC loop on another
+// woman's colonoscopy. Post-hoc rule (found in the X10 failure, not chosen on held-out numbers): below this many
+// distinct skeleton letters the pair is not corroborated, so it stays under the uncorroborated cap and goes to link
+// review. Cost, measured on persons3: about a quarter of placeholder-DOB persons fall under it (cal 156/667, eval 412/1677).
+const PlaceholderMinSkelLetters = 5
+
+// skelInfo: distinct skeleton letters in a name.
+func skelInfo(s []string) int {
+	seen, n := map[string]bool{}, 0
+	for _, x := range s {
+		if !seen[x] {
+			seen[x] = true
+			n += len(x)
 		}
 	}
 	return n
