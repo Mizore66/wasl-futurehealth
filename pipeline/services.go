@@ -351,6 +351,10 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 				ev.Ev = LDCTCodedJudge(ev.Text, ev.Coded) // ldctread.go: coded Lung-RADS = second reader, must equal regex
 			} else if kind == "ldct-screen" || kind == "ldct-workup" {
 				ev.Ev = LDCTJudge(ev.Text, kind) // ldctread.go: regex + cached Gemma 3 4B
+			} else if kind == "ifhas-screen" {
+				ev.Ev = IfhasScreenJudge(ev.Text, ev.Coded) // ifhasread.go: printed panel = coded results
+			} else if kind == "ifhas-followup" {
+				ev.Ev = IfhasNoteJudge(ev.Text) // ifhasread.go: regex + cached Gemma 3 4B
 			} else if kind == "breast-screen" && ev.Coded != "" {
 				ev.Ev = BreastCodedJudge(ev.Text, ev.Coded) // breastread.go: coded BI-RADS = second reader, must equal regex
 			} else if kind == "breast-screen" || kind == "breast-assess" {

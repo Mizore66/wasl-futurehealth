@@ -287,7 +287,7 @@ The frontend owner is responsible for presentation. The backend owner is respons
 
 ## Formerly out of scope: now built (Oct 2026)
 
-These were listed as out of scope until the gates above passed. After stages 0–7, all six were built. Each is optional and off by default, so the baseline is unchanged.
+These were listed as out of scope until the gates above passed. After stages 0–7, all six extensions were built. Each is optional and off by default, so the baseline is unchanged.
 
 | Item | Where | Status |
 |---|---|---|
@@ -297,6 +297,14 @@ These were listed as out of scope until the gates above passed. After stages 0�
 | Direct-to-procedure workflow | `booking/booking/levers.py`, `booking/sim/levers_sim.py` | Simulated decision support |
 | Prep-risk model | same (Dik 2015 score) | Simulated decision support; suggestions need a clinician order |
 | Encoder retraining on external Arabic↔Latin data | `encoder/`, `-modelset v3` | Built and merged: Wikidata + NETransliteration (CC0), real-variant R@1 0.548 → 0.660; JRC-Names and ANETAC rejected on licence |
+
+## Six loop types: built, with simulated evaluation
+
+The canonical pipeline now has six loop types: CRC and cervical (default cohort), lung nodule (`-lung N` / `WASL_LUNG=N`), diabetic retinopathy (`-dr N` / `WASL_DR=N`), breast (`-breast N` / `WASL_BREAST=N`) and IFHAS abnormal cardiometabolic-result follow-up (`-ifhas N` / `WASL_IFHAS=N`). IFHAS is **built**, off by default, and evaluated only on synthetic patients, results, attendance, notes and reviewers; no real-world clinical effectiveness or reader-generalisation claim is established.
+
+IFHAS reader B is cached local Gemma 3 4B. Its prompt was tuned on the same 227-note synthetic development corpus that the integrated generator reuses. Reader B was unavailable on 19/227 notes; in the initial matched multi-programme run 96/437 follow-up report instances and 35/800 screens went to review. Integrated agreement, follow-up recall and false-closure results therefore are not independent reader evidence. A separate labelled corpus is still required. The 59-day routine clock contains a 28-day receiving-clinic Wasl assumption; the 10-day severe-result management clock is also a modelling choice.
+
+**Post-hoc shared-baseline change (`9bfe0d2`).** With `ReuseLinkAnswer=true` (the default), simulated reused-link review draws are keyed by registration pair rather than twin item ID. This removes arrival-order dependence, but changes reviewer draws and can change results for every existing programme relative to `5e9140f`, including frozen-eval configurations. IFHAS-off parity at the new head is not parity with the old baseline. `ReuseLinkAnswer=false` retains the legacy item-keyed path and has a regression pinning the original answers. On the same seed-2026 cohort and settings, measured with-review recall changed from `5e9140f` to the new head as follows: CRC 0.851 → 0.860, cervical 0.962 → 0.957, lung 0.983 → 0.993, DR 0.997 → 0.996; breast was unchanged. All no-review programme blocks were identical and all normal safety counters stayed zero. This is a measured non-parity disclosure, not an improvement claim; details are in `pipeline/RESULTS.md` and local run paths are in the coordinator report.
 
 ## Working conventions
 

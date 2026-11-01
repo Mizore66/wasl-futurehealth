@@ -400,6 +400,7 @@ func LoadJudge2(path string) *Judge2 {
 	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
 	loadBreastCache(filepath.Dir(path)) // breast recall reader B answers, if present (breastread.go)
 	loadLDCTCache(filepath.Dir(path))   // lung cancer screening (LDCT) reader B answers, if present (ldctread.go)
+	loadIfhasCache(filepath.Dir(path)) // IFHAS follow-up reader B answers, if present (ifhasread.go)
 	return j
 }
 

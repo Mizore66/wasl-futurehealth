@@ -144,6 +144,21 @@ for noise in ["v1", "v2"]:
                     continue
                 pool[f"ldct_reader_{kind}_instances"] += tw['report_instances']; pool[f"ldct_reader_{kind}_agree"] += tw['agree']
                 pool[f"ldct_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"ldct_reader_{kind}_coded"] += tw.get('coded_lungrads', 0)
+        ih = r.get('programmes_live', {}).get('ifhas')
+        if ih:  # IFHAS abnormal-result follow-up loops (pipeline/ifhas.go), when the run has them
+            ic, fc, ik = ih['closure'], ih['followup_closure'], ih['ifhas_kpi']
+            m["ifhas_precision"].append(ic['precision']); m["ifhas_recall"].append(ic['recall'])
+            m["ifhas_followup_loop_recall"].append(fc['recall']); m["ifhas_state_accuracy"].append(ih['state_accuracy'])
+            m["ifhas_triage_accuracy"].append(ih['triage']['accuracy']); m["ifhas_overdue_accuracy"].append(ih['overdue_flag_accuracy'])
+            m["ifhas_domain_outcome_accuracy"].append(ih['domain_outcome_accuracy'])
+            wk = ik['followup_documented_within_clock']
+            m["ifhas_followup_within_clock_truth"].append(wk['truth']); m["ifhas_followup_within_clock_wasl"].append(wk['wasl_measured'])
+            m["ifhas_abnormal_findings_rate_truth"].append(ik['abnormal_findings_rate']['truth']); m["ifhas_abnormal_findings_rate_wasl"].append(ik['abnormal_findings_rate']['wasl_measured'])
+            pool["ifhas_false_closures"] += ic['false_closures']; pool["ifhas_closed"] += ic['pred_closed']
+            pool["ifhas_followup_false_closures"] += fc['false_closures']; pool["ifhas_followup_closed"] += fc['pred_closed']
+            for kind, tw in (ih.get('two_reader') or {}).items():
+                pool[f"ifhas_reader_{kind}_instances"] += tw['report_instances']; pool[f"ifhas_reader_{kind}_agree"] += tw['agree']
+                pool[f"ifhas_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']
         for prog in ("crc", "cervical"):  # rejected-referral hand-off packet (handoff.go)
             ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
             for k2, v2 in ho.items():
@@ -192,12 +207,15 @@ for noise in ["v1", "v2"]:
     if pool["ldct_closed"]:
         safety["ldct_false_closures"] = [pool["ldct_false_closures"], pool["ldct_closed"], cp_ub(pool["ldct_false_closures"], pool["ldct_closed"])]
         safety["ldct_action_false_closures"] = [pool["ldct_action_false_closures"], pool["ldct_action_closed"], cp_ub(pool["ldct_action_false_closures"], pool["ldct_action_closed"])]
+    if pool["ifhas_closed"]:
+        safety["ifhas_false_closures"] = [pool["ifhas_false_closures"], pool["ifhas_closed"], cp_ub(pool["ifhas_false_closures"], pool["ifhas_closed"])]
+        safety["ifhas_followup_false_closures"] = [pool["ifhas_followup_false_closures"], pool["ifhas_followup_closed"], cp_ub(pool["ifhas_followup_false_closures"], pool["ifhas_followup_closed"])]
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
     for tag in ("lung", "dr"):  # closed after a rejected lung work-up / DR referral (re-referral), and how many falsely
         if pool[f"handoff_{tag}_closed"]:
             safety[f"handoff_{tag}_false_closures"] = [pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"], cp_ub(pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"])]
-    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("lung_surv_") or k.startswith("breast_reader_") or k.startswith("ldct_reader_")}
+    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("lung_surv_") or k.startswith("breast_reader_") or k.startswith("ldct_reader_") or k.startswith("ifhas_reader_")}
     # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
     # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)
     pooled_rates = {k[len("origin_items_"):]: 100 * v / pool["origin_loops_" + k[len("origin_items_"):]] for k, v in pool.items() if k.startswith("origin_items_")}
@@ -305,6 +323,9 @@ for noise in ["v1", "v2"]:
         if k in agg:
             a = agg[k]
             md.append(f"| {k} | {a[0]} | {'–' if a[1] is None else f'{a[1]} – {a[2]}'} |")
+    for k in sorted(x for x in agg if x.startswith("ifhas_")):  # IFHAS rows (pipeline/ifhas.go), same table
+        a = agg[k]
+        md.append(f"| {k} | {a[0]} | {'–' if a[1] is None else f'{a[1]} – {a[2]}'} |")
     md.append("\n| Safety (pooled over seeds) | Events | Denominator | 95% upper bound |\n|---|---|---|---|")
     for k, (e, n, ub) in safety.items():
         md.append(f"| {k} | {e} | {'–' if n is None else n} | {'–' if ub is None else f'{ub:.4%}'} |")

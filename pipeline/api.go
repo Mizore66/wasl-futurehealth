@@ -30,7 +30,7 @@ const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -493,6 +493,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
 		m["ldct"] = c.last.LDCT
 	}
+	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
+		m["ifhas"] = c.last.Ifhas
+	}
 	return m
 }
 
@@ -649,8 +652,11 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
 		act = ActSignEvidence
 	}
+	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(req.Decision) != nil { // IFHAS labels (bp=H;glyc=N;lipid=N;weight=O, glyc=managed, dna)
+		act = ActSignEvidence
+	}
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {

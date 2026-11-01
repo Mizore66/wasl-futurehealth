@@ -52,6 +52,9 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 		if cs, ok := res["category"].([]interface{}); ok && len(cs) > 0 {
 			e.Category = gs(cs[0].(map[string]interface{}), "text")
 		}
+		if e.Category == "ifhas-screening" && IfhasOn {
+			e.Prog = "ifhas"
+		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
 				xm := x.(map[string]interface{})
@@ -153,6 +156,14 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 		}
 		if cc, ok := res["conclusionCode"].([]interface{}); ok && len(cc) > 0 {
 			e.Coded = gs(cc[0].(map[string]interface{}), "text")
+		}
+		if c := ifhasDocCategory(res); c != "" { // IFHAS results panel | follow-up note (ifhas.go); results carry contained Observations
+			e.Category = c
+			if c == "ifhas-screen" {
+				if ct, ok := res["contained"].([]interface{}); ok && len(ct) > 1 {
+					e.Coded = ifhasCodedString(ct[1:])
+				}
+			}
 		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {

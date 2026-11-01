@@ -1450,3 +1450,25 @@ Same seeds and person split as before. New in the cohorts: 70 breast loops per r
 - Every safety count is 0. Tamper: 85/85 detected on both, 0 false alarms.
 - Small denominators give wide bounds: breast recall 0/31 (95% upper bound 11.2%), lung hand-off 0/6 (45.9%), lung surveillance 0/41 (8.6%).
 - **Subgroups** (weak evidence after about 16 tests): dev CRC by origin 1.119 (p 0.015) and dev standardised 1.099 (p 0.015) are the lowest p-values; neither passes a Bonferroni cut, and the placeholder trace above explains most of the CRC origin gap. Held-out lung by origin is 1.56 (p 0.053), the cohort-mix pattern traced above. Breast by origin (inf dev, 4.27 held-out) rests on a few items per group and is not interpretable.
+
+## Sixth loop type: IFHAS abnormal cardiometabolic-result follow-up
+
+**Status: built; every result below is simulated.** Rule `doh2025ifhas` adds follow-up of abnormal IFHAS blood pressure, HbA1c/glucose, lipids and BMI, behind generator `-ifhas N` and run wiring `WASL_IFHAS=N` (both default 0). It uses printed-panel plus coded-FHIR screening readers, regex plus cached local Gemma 3 4B follow-up-note readers, trusted cross-provider links and independent per-domain closure clocks. The 59-day routine clock includes a 28-day receiving-clinic Wasl assumption; the severe-result 10-day management clock is also a modelling choice. No paid model calls were made.
+
+**Reader evidence is development-only, including the integrated follow-up results.** The 227-note synthetic corpus was written by the same author as reader A, Gemma's v2 prompt was tuned on it, and the integrated generator reuses those same notes. Reader B scored 143/227 and was unavailable on 19/227 dev notes. In the matched multi-programme run, reader B was unavailable on 38/437 follow-up report instances; 96/437 follow-up instances and 35/800 screens went to review. Therefore integrated agreement, follow-up recall and zero false closures are **not independent reader evidence or a fair reader test**. Screening panel/coded agreement also checks internal consistency of values from the same generator, not independent clinical verification. A separate labelled corpus is required.
+
+**Integrated synthetic runs, seed 2026 with chaos.** The IFHAS-alone run had 1,000 loops: closure P/R 1.000/0.997, 0/872 false closures, follow-up-only P/R 1.000/0.990, domain outcome accuracy 1.000 and state accuracy 0.997. The review-fix matched multi-programme run had 800 IFHAS loops: closure P/R 1.000/0.987, 0/685 false closures, follow-up-only P/R 1.000/0.961, domain outcome accuracy 1.000 and state accuracy 0.989. Every CRC, cervical, lung, DR and breast evaluator block was identical in `programmes_live` and `programmes_no_review` with IFHAS on versus off; `closure` and `crc_kpi_31d` were identical, and all normal safety counters stayed zero. Across 4,350 non-IFHAS loops, final clinical state, overdue flag, reported closure and procedure day matched. One live-run administrative CRC drop-off label differed (`MED-sr-1`: `not_booked` versus `referral_unanswered`); this is disclosed rather than tuned around and does not change a safety counter or programme evaluator block.
+
+**Review fixes.** Reader A now gives suspected/requested/to-be-confirmed and still-pending monitoring cues precedence over white-coat/not-confirmed phrases, without turning completed monitoring or documented management into pending; the reviewer's exact ambulatory-monitoring trap and the whole dev corpus are regression-tested. IFHAS ServiceRequests route only from structured `category=ifhas-screening` with IFHAS enabled, so CRC/cervical text merely mentioning IFHAS cannot be misrouted. The API 400 message now names lung, DR, breast and IFHAS evidence labels. `ReuseLinkAnswer=false` has a regression pinning the legacy item-keyed reviewer answers.
+
+**Post-hoc shared-baseline impact (`9bfe0d2`).** Pair-deterministic reused-link review was added after an initial cervical on/off mismatch. It is correct for a single registration-pair question, but with default `ReuseLinkAnswer=true` it changes shared simulated reviewer draws for existing programmes relative to `5e9140f`. New-head IFHAS-off results must not be called equal to the old baseline. An exported `5e9140f` binary and the new head were run on the identical seed-2026 IFHAS-off cohort and settings:
+
+| With-review recall | `5e9140f` | New head |
+|---|---:|---:|
+| CRC | 0.851 | 0.860 |
+| Cervical | 0.962 | 0.957 |
+| Lung | 0.983 | 0.993 |
+| DR | 0.997 | 0.996 |
+| Breast | 0.994 | 0.994 |
+
+Every no-review programme block was identical; with-review false closures, wrong-patient releases and consent violations remained zero in both. These differences are a measured non-parity disclosure, not an improvement claim or a rerun of the frozen evaluation.

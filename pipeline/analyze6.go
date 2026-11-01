@@ -178,6 +178,9 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if cm := ldctMetrics(final, tr); cm != nil { // fifth loop type: acr2022lungrads-specific metrics replace the screening ones
 		out["lung_ldct"] = cm
 	}
+	if im := ifhasMetrics(final, tr); im != nil { // IFHAS abnormal results: doh2025ifhas-specific metrics (ifhasmetrics.go)
+		out["ifhas"] = im
+	}
 	return out
 }
 

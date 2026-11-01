@@ -164,6 +164,8 @@ func main() {
 	ldctN := fs.Int("ldct", 0, "gen: lung cancer screening LDCT loops (acr2022lungrads); 0 = no LDCT loops (other feeds byte-identical)")
 	ldctData := fs.String("ldctdata", "", "gen/ldctcache: LDCT corpus dir(s), comma-separated for ldctcache (default <reports dir>/../ldct)")
 	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
+	ifhasN := fs.Int("ifhas", 0, "gen: IFHAS abnormal-result follow-up loops (doh2025ifhas, sixth loop type); 0 = none (other feeds byte-identical)")
+	ifhasData := fs.String("ifhasdata", "", "gen/ifhascache: IFHAS follow-up note corpus dir(s), comma-separated for ifhascache (default <reports dir>/../ifhas)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
@@ -223,6 +225,12 @@ func main() {
 		os.Setenv("WSI_LDCT_PROVIDERS", "1")
 	}
 	LDCTGenN, LDCTGenDir = *ldctN, *ldctData
+	// IFHAS follow-up programme (ifhas.go): same, after the LDCT providers
+	if (cmd == "gen" && *ifhasN > 0) || os.Getenv("WSI_IFHAS_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_ifu-clinic.ndjson")) {
+		EnableIfhas()
+		os.Setenv("WSI_IFHAS_PROVIDERS", "1")
+	}
+	GenIfhasN, GenIfhasDir = *ifhasN, *ifhasData
 	ModelSet = *modelSet
 	DualMerge = *dual
 	switch *policy {
@@ -440,6 +448,8 @@ func main() {
 		runBreastCache(*breastData, *readerURL, *out)
 	case "ldctcache": // ask local Gemma 3 4B once per unique LDCT corpus text; write the replayable cache + reader scores
 		runLDCTCache(*ldctData, *readerURL, *out)
+	case "ifhascache": // ask local Gemma 3 4B once per unique IFHAS follow-up note; write the replayable cache + reader scores
+		runIfhasCache(*ifhasData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")

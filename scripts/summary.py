@@ -46,6 +46,14 @@ if lc and 'closure' in lc:  # fifth loop type (WASL_LDCT=N)
           f"action-loop closures P {f3(ac['precision'])} R {f3(ac['recall'])}; triage acc {lc['triage']['accuracy']:.3f} (coverage {lc['triage']['coverage']:.3f}); "
           f"overdue acc {lc['overdue_flag_accuracy']:.3f}; next step within clock truth {f3(wk['truth'])} vs Wasl {f3(wk['wasl_measured'])}; "
           f"abnormal recall rate truth {kp['abnormal_recall_rate']['truth']:.3f} vs Wasl {kp['abnormal_recall_rate']['wasl_measured']:.3f}")
+ih = r.get('programmes_live', {}).get('ifhas')
+if ih and 'closure' in ih:  # IFHAS abnormal-result follow-up (WASL_IFHAS=N)
+    ic, fc, ik = ih['closure'], ih['followup_closure'], ih['ifhas_kpi']
+    wk = ik['followup_documented_within_clock']
+    print(f"ifhas (doh2025ifhas): P {ic['precision']:.3f}  R {ic['recall']:.3f}  false closures {ic['false_closures']}/{ic['pred_closed']}; "
+          f"follow-up-loop closures P {f3(fc['precision'])} R {f3(fc['recall'])}; triage acc {ih['triage']['accuracy']:.3f} (coverage {ih['triage']['coverage']:.3f}); "
+          f"overdue acc {ih['overdue_flag_accuracy']:.3f}; follow-up within clock truth {f3(wk['truth'])} vs Wasl {f3(wk['wasl_measured'])}; "
+          f"abnormal findings rate truth {ik['abnormal_findings_rate']['truth']:.3f} vs Wasl {ik['abnormal_findings_rate']['wasl_measured']:.3f}")
 pl = r.get('pilot')  # pilot switches (WASL_SHADOW / WASL_AUTOAUDIT); absent when off
 if pl and 'shadow' in pl:
     s = pl['shadow']

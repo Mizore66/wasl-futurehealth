@@ -192,6 +192,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if prog == "lung_ldct" { // fifth loop type: identity gate + two-reader gate + review, rule acr2022lungrads (ldct.go)
 		return c.evalLDCT(ls, inSeq, mid)
 	}
+	if prog == "ifhas" { // IFHAS abnormal results: identity gate + two-reader gate + review, rule doh2025ifhas (ifhas.go)
+		return c.evalIfhas(ls, inSeq, mid)
+	}
 	rule := Rules[prog]
 	deadline := DeadlineDays(prog, f.Priority)
 	notifStart := f.SRDay
