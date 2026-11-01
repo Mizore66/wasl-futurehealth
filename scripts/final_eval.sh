@@ -7,7 +7,8 @@
 # Usage: scripts/final_eval.sh [seeds...]   (default 11 23 37 41 59). Env: WASL_SOURCE=fhir|hl7 (default fhir),
 #   WASL_LUNG=N incidental lung-nodule loops per run (default 1088; 0 = screening cohort only), WASL_DR=N diabetic
 #   retinopathy screening loops per run (default 1200; 0 = off), WASL_LUNGSURV=1 surveillance CT after a PET/CT
-#   low-uptake lung closure (default 0 = off). Cohort size: every held-out
+#   low-uptake lung closure (default 0 = off), WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (relatives' Emirates
+#   IDs / wrong referral numbers; pipeline/genadv.go; default 0 = off). Cohort size: every held-out
 #   person (8,871; WASL_PERSONS caps it), WASL_CRC=2040 CRC and WASL_CERV=816 cervical loops: 1.36x the earlier 6,500
 #   persons / 1,500 / 600 / 800, so the smallest name-origin group (Filipino) has about 360 loops per run, not 250.
 set -euo pipefail
@@ -31,7 +32,12 @@ GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsur
 [ "${WASL_DRNEXT:=1}" = 0 ] || { PARGS+=(-drnext); GSURV+=(-drnext); }
 # WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
 [ "${WASL_SECONDIDCONFIRM:=1}" != 0 ] || PARGS+=(-secondidconfirm=false)
-export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM
+# adversarial generator cases (gen only, default off; pipeline/genadv.go): WASL_WRONGEID=p relatives' Emirates IDs on a
+# share p of registrations (B8); WASL_WRONGREF=p wrong referral numbers on a share p of referral intakes (B9)
+: "${WASL_WRONGEID:=0}" "${WASL_WRONGREF:=0}"
+[ "$WASL_WRONGEID" = 0 ] || GSURV+=(-wrongeid "$WASL_WRONGEID")
+[ "$WASL_WRONGREF" = 0 ] || GSURV+=(-wrongref "$WASL_WRONGREF")
+export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -75,6 +81,8 @@ if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung wo
     m["handoff_refreject"] = True
 if os.environ.get("WASL_SECONDIDCONFIRM", "1") == "0":  # -secondidconfirm=false (default on: manifest unchanged)
     m["second_identifier_confirm"] = False
+if os.environ.get("WASL_WRONGEID", "0") not in ("", "0") or os.environ.get("WASL_WRONGREF", "0") not in ("", "0"):
+    m["adversarial"] = {"wrong_eid_share": float(os.environ.get("WASL_WRONGEID", "0") or 0), "wrong_ref_share": float(os.environ.get("WASL_WRONGREF", "0") or 0)}
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P

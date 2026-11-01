@@ -115,6 +115,8 @@ type Truth struct {
 	ReportUID map[string]string   `json:"report_uid"` // report id -> MTSamples uid or pathology template id
 	Distract map[string]bool      `json:"distract_reports"`
 	Photos   map[string][]PhotoTruth `json:"report_photos,omitempty"` // -imgphotos: photo refs attached to each report, with true class
+	WrongEID map[string]*WrongEIDTruth `json:"wrong_eid,omitempty"` // -wrongeid: registrations carrying a relative's Emirates ID (genadv.go)
+	WrongRef map[string]*WrongRefTruth `json:"wrong_ref,omitempty"` // -wrongref: intakes citing the wrong referral (genadv.go)
 }
 
 // ---------- noise (port of wasl/src/common.py) ----------
@@ -341,6 +343,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	tr := &Truth{Photos: map[string][]PhotoTruth{}, Loops: map[string]*LoopTruth{}, PKQid: map[string]string{}, PKCc: map[string]string{}, Reports: map[string]string{},
 		ReportUID: map[string]string{}, Distract: map[string]bool{}}
+	adv = newAdvGen(seed, tr) // -wrongeid / -wrongref (genadv.go); nil when both are off
 	evs := []GenEvent{}
 	regs := map[string]*reg{}
 	mrnN := map[string]int{}
@@ -412,6 +415,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		if r.Float64() < .82 { // preferred language recorded at this provider
 			g.lang = langOf(p)
 		}
+		adv.register(g, p) // -wrongeid: maybe a relative's Emirates ID, own hashed stream
 		regs[k] = g
 		tr.PKQid[g.pk] = p.Qid
 		tr.PKCc[g.pk] = p.Cc
@@ -468,6 +472,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			"category": []interface{}{map[string]string{"text": "referral-intake"}}, "code": map[string]string{"text": Rules[prog].Proc + " (external referral)"},
 			"authoredOn": dayToTS(day)}
 		if ref != "" {
+			ref = adv.citeRef(hosp.ID+"/ServiceRequest/"+m["id"].(string), ref, status, p) // -wrongref (genadv.go)
 			m["basedOn"] = []interface{}{map[string]string{"display": "external referral " + ref}}
 		}
 		if reason != "" {
@@ -1421,6 +1426,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		bb, _ := json.MarshalIndent(v, "", " ")
 		os.WriteFile(filepath.Join(outDir, name), bb, 0644)
 	}
+	adv.finish()
 	wj("truth.json", tr)
 	states, paths2, drops, origins, langs := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	for _, l := range tr.Loops {
@@ -1440,6 +1446,9 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		"pathways": paths2, "dropoff_truth": drops, "loop_origins": origins, "lang_true_vs_expected": langs, "registrations": len(regs),
 		"reports_in_window": len(tr.Reports), "text_use": textUse, "unique_mtsamples_texts_used": uniq, "persons_used": len(ps),
 		"crc_female_share": crcFemale(ps, crc), "crc_women_with_cervical_loop": crcBoth}
+	if adv != nil {
+		summary["adversarial"] = adv.summary()
+	}
 	wj("cohort_summary.json", summary)
 	bb, _ := json.Marshal(summary)
 	fmt.Println(string(bb))

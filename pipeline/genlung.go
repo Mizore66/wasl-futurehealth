@@ -137,6 +137,7 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 		bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
 		x.eid = string(bs)
 	}
+	adv.register(x, p) // -wrongeid (genadv.go), own hashed stream
 	g.regs[k] = x
 	g.tr.PKQid[x.pk] = p.Qid
 	g.tr.PKCc[x.pk] = p.Cc

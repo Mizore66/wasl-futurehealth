@@ -132,7 +132,7 @@ func (g *lungGen) extIntake(j extRejection, day float64, status, reason, proc st
 	id := g.nextID(j.unit.ID, "intake")
 	m := map[string]interface{}{"resourceType": "ServiceRequest", "id": id, "status": status, "intent": "order",
 		"category": []interface{}{map[string]string{"text": "referral-intake"}}, "code": map[string]string{"text": proc + " (external referral)"},
-		"authoredOn": dayToTS(day), "basedOn": []interface{}{map[string]string{"display": xrefPrefix + j.lt.Loop}}}
+		"authoredOn": dayToTS(day), "basedOn": []interface{}{map[string]string{"display": xrefPrefix + adv.citeRef(j.unit.ID+"/ServiceRequest/"+id, j.lt.Loop, status, j.p)}}}
 	if reason != "" {
 		m["extension"] = []interface{}{map[string]string{"url": "urn:wsi:referral-response-reason", "valueString": reason}}
 	}
