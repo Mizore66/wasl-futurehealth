@@ -34,21 +34,21 @@ export function TauPicker() {
             onClick={() => setTau(r.tau)}
             className={cn(
               "min-h-11 cursor-pointer rounded border-0 px-3.5 py-2.5 text-[16px] tabular-nums",
-              r.tau === tau ? "bg-(--ink) font-semibold text-(--paper)" : "bg-white font-medium text-[#0a0a0a] hover:bg-(--paper)",
+              r.tau === tau ? "bg-(--teal) font-semibold text-(--paper)" : "bg-(--card) font-medium text-(--ink) hover:bg-(--mint)",
             )}
           >
             τ {r.tau}
           </button>
         ))}
       </div>
-      <div aria-live="polite" className="mt-5 rounded bg-white px-[clamp(1.25rem,2.5vw,2rem)] py-7" data-testid="tau-panel">
+      <div aria-live="polite" className="mt-5 rounded bg-(--card) px-[clamp(1.25rem,2.5vw,2rem)] py-7" data-testid="tau-panel">
         <div className="text-[20px] font-semibold tracking-[-0.01em]">
           τ {t.tau}. {t.role}
         </div>
         <dl className="m-0 mt-5 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-3">
           {cells.map((c) => (
             <div key={c.label}>
-              <dt className="text-[14px] text-[#5f6368]">{c.label}</dt>
+              <dt className="text-[14px] text-(--muted)">{c.label}</dt>
               <dd className={valueClass} data-cell={c.label}>
                 {typeof c.value === "string" ? (
                   c.value

@@ -48,8 +48,8 @@ function Ctas() {
       <Link href="/app" className={cn(cta, "max-md:justify-center")}>
         Open the dashboard
       </Link>
-      <Link href="/app/pipeline" className={cn(ctaLink, "max-md:justify-center")}>
-        See the pipeline
+      <Link href="/how-it-works" className={cn(ctaLink, "max-md:justify-center")}>
+        How it works
       </Link>
     </div>
   );

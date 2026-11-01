@@ -1,12 +1,18 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar/avatar";
 import { SiteFooter } from "@/components/site/footer";
 import { Reveal } from "@/components/site/reveal";
 import { body, cta, display, h2, h3, lead, section, small, wrap } from "@/components/site/styles";
+import { CAST } from "@/components/story/script";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "How it works" };
 
+/** Who the step's dot shows: Fatima, or the hospital's record before Wasl has joined it to her. */
+type Face = "fatima" | "record";
+
 type Step = {
+  face: Face;
   title: string;
   text: string;
   cardLabel: string;
@@ -18,6 +24,7 @@ type Step = {
 
 const STEPS: Step[] = [
   {
+    face: "fatima",
     title: "Her test asks for a closer look",
     text: "At her clinic in Al Mushrif, Fatima’s screening test comes back asking for a follow-up check. Wasl opens her case the same day and gives it to a named nurse, so it always has an owner.",
     cardLabel: "Her case",
@@ -29,6 +36,7 @@ const STEPS: Step[] = [
     ],
   },
   {
+    face: "fatima",
     title: "She is told, and asked to say it back",
     text: "She gets a message in Arabic. The nurse asks her to explain it in her own words. The first time, she had it wrong, so the nurse explained again. Reminders wait until she agrees to receive them.",
     cardLabel: "The message she receives",
@@ -41,6 +49,7 @@ const STEPS: Step[] = [
     ],
   },
   {
+    face: "record",
     title: "Her check happens across the city",
     text: "She has the check at a hospital in another part of Abu Dhabi. Their record spells her name differently and leaves out her ID number. On its own, her clinic would never see it.",
     cardLabel: "The hospital’s record",
@@ -52,6 +61,7 @@ const STEPS: Step[] = [
     ],
   },
   {
+    face: "fatima",
     title: "Wasl recognises her",
     text: "Wasl knows an Arabic name can be written many ways in English letters. It suggests the match, then joins the records only when a second detail, her birth date, agrees too. If it is not sure, a person decides.",
     cardLabel: "Two records, one person",
@@ -64,6 +74,7 @@ const STEPS: Step[] = [
     ],
   },
   {
+    face: "fatima",
     title: "Two readers check the report",
     text: "Two separate readers, one following fixed medical rules and one AI, read the hospital’s report. Both must find proof that the check was complete before anything moves on.",
     cardLabel: "From the hospital’s report",
@@ -75,6 +86,7 @@ const STEPS: Step[] = [
     ],
   },
   {
+    face: "fatima",
     title: "Done, with the proof attached",
     text: "Only now is her case marked done. The proof, the match and both readings are written into a record where any later change shows.",
     cardLabel: "Her case",
@@ -95,9 +107,22 @@ const MAIN_CLASS: Record<Step["mainKind"], string> = {
   plain: "mt-1.5 text-[18px] leading-normal",
 };
 
+const FATIMA = CAST.fatima.seed;
+const OTHER = CAST.aisha.seed;
+
+/** A face on the thread: teal ring once Wasl knows who it is, grey ring around the "?" record. */
+function Face({ face, size }: { face: Face; size: number }) {
+  const known = face === "fatima";
+  return (
+    <span className={cn("relative inline-flex flex-none rounded-full p-[3px] ring-[3px] ring-inset", known ? "ring-(--teal)" : "ring-(--stub)")}>
+      <Avatar person={known ? FATIMA : undefined} size={size} label="" />
+    </span>
+  );
+}
+
 function Artefact({ s }: { s: Step }) {
   return (
-    <div className="bg-(--card) px-7 py-6">
+    <div className="border-t border-(--line) pt-5">
       <div className={small}>{s.cardLabel}</div>
       {s.arabic && (
         <div lang="ar" dir="rtl" className="font-arabic mt-2.5 text-left text-[24px] font-semibold leading-normal">
@@ -115,7 +140,7 @@ function Artefact({ s }: { s: Step }) {
   );
 }
 
-const tickBig = "inline-flex size-16 flex-none items-center justify-center";
+const badge = "inline-flex size-16 flex-none items-center justify-center rounded-full";
 
 export default function Page() {
   return (
@@ -134,14 +159,18 @@ export default function Page() {
             aria-label="Drawing of Fatima’s route: she goes from her clinic in Al Mushrif to a hospital across the city for her check, and Wasl brings the proof back to her clinic."
             className="grid grid-cols-[auto_1fr_auto] items-center gap-y-6"
           >
-            <span className="row-span-2 size-[clamp(3.5rem,6vw,5.5rem)] rounded-full bg-(--ink)" />
+            <span className="row-span-2">
+              <Face face="fatima" size={72} />
+            </span>
             <div className="px-4">
               <div className="text-[18px] leading-[1.45]">She goes for her check</div>
-              <div className="mt-2.5 h-3 bg-(--stub)" />
+              <div className="mt-2.5 border-t-[3px] border-dashed border-(--stub)" />
             </div>
-            <span className="col-start-3 row-span-2 row-start-1 size-[clamp(3.5rem,6vw,5.5rem)] rounded-full bg-(--ink)" />
+            <span className="col-start-3 row-span-2 row-start-1">
+              <Face face="record" size={72} />
+            </span>
             <div className="col-start-2 px-4">
-              <div className="h-3 bg-(--teal)" />
+              <div className="h-2 rounded-full bg-(--teal)" />
               <div className="mt-2.5 text-[18px] font-bold leading-[1.45] text-(--teal)">Wasl brings the proof back</div>
             </div>
             <div className="col-span-3 flex justify-between gap-6 text-[clamp(1.125rem,1rem_+_0.6vw,1.5rem)] font-bold leading-[1.3]">
@@ -161,13 +190,20 @@ export default function Page() {
             {STEPS.map((s, i) => (
               <li
                 key={s.title}
-                className="grid grid-cols-[40px_minmax(0,1fr)] gap-x-[clamp(1.25rem,3vw,3rem)] md:grid-cols-[40px_minmax(0,5fr)_minmax(0,6fr)]"
+                data-face={s.face}
+                className="grid grid-cols-[56px_minmax(0,1fr)] gap-x-[clamp(1rem,3vw,3rem)] md:grid-cols-[56px_minmax(0,5fr)_minmax(0,6fr)]"
               >
                 <div aria-hidden className="relative row-span-2 flex justify-center md:row-span-1">
                   <span
-                    className={cn("absolute left-4 w-2 bg-(--teal)", i === 0 ? "top-4" : "top-0", i === STEPS.length - 1 ? "h-4" : "bottom-0")}
+                    className={cn(
+                      "absolute left-1/2 w-[3px] -translate-x-1/2 bg-(--teal)",
+                      i === 0 ? "top-7" : "top-0",
+                      i === STEPS.length - 1 ? "h-7" : "bottom-0",
+                    )}
                   />
-                  <span className="relative mt-0.5 size-7 rounded-full bg-(--teal)" />
+                  <span className="relative self-start rounded-full bg-(--sand)">
+                    <Face face={s.face} size={44} />
+                  </span>
                 </div>
                 <Reveal className="pb-6 md:pb-[72px]">
                   <h3 className={h3}>{s.title}</h3>
@@ -187,12 +223,15 @@ export default function Page() {
           <h2 id="trap-title" className={h2}>
             When it looks done but isn’t
           </h2>
-          <p className={cn(lead, "mt-7 max-w-[46ch]")}>Another patient’s report says her check began. It never says the check was finished.</p>
+          <div className="mt-7 flex items-center gap-5">
+            <Avatar person={OTHER} size={64} label="" />
+            <p className={cn(lead, "max-w-[46ch]")}>Another patient’s report says her check began. It never says the check was finished.</p>
+          </div>
           <div className="mt-14 grid grid-cols-[repeat(auto-fit,minmax(min(100%,420px),1fr))] gap-2">
             <div className="bg-(--sand-deep) p-[clamp(1.5rem,4vw,3.5rem)]" data-side="tracker">
               <h3 className={h3}>A simple tracker</h3>
               <div className="mt-7 flex items-center gap-5">
-                <span aria-hidden className={cn(tickBig, "rounded-full bg-(--ink) text-(--paper)")}>
+                <span aria-hidden className={cn(badge, "bg-(--ink) text-(--paper)")}>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M5 12l5 5 9-10" />
                   </svg>
@@ -201,10 +240,10 @@ export default function Page() {
               </div>
               <p className={cn(body, "mt-7 max-w-[44ch]")}>It sees a report from the hospital and closes the case. Nobody calls her again.</p>
             </div>
-            <div className="bg-(--ink) p-[clamp(1.5rem,4vw,3.5rem)] text-(--paper)" data-side="wasl">
+            <div className="bg-(--held-bg) p-[clamp(1.5rem,4vw,3.5rem)]" data-side="wasl">
               <h3 className={h3}>Wasl</h3>
               <div className="mt-7 flex items-center gap-5">
-                <span aria-hidden className={cn(tickBig, "bg-(--paper) text-(--ink)")}>
+                <span aria-hidden className={cn(badge, "bg-(--held) text-(--held-bg)")}>
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M9 6v12M15 6v12" />
                   </svg>
