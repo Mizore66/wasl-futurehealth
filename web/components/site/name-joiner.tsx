@@ -13,7 +13,8 @@ type Pair = {
   latin: string;
   clinicDetail: string;
   hospitalDetail: string;
-  joined: boolean;
+  /** Joined automatically, kept apart as two people, or held for a person to decide. */
+  outcome: "joined" | "apart" | "review";
   reason: string;
 };
 
@@ -24,7 +25,7 @@ export const PEOPLE = {
     latin: "F. Alzabi",
     clinicDetail: "Born 14 March 1972. ID number on file.",
     hospitalDetail: "Born 14 March 1972. No ID number.",
-    joined: true,
+    outcome: "joined",
     reason: "The spellings match, and so does her birth date. Her records are joined.",
   },
   khalid: {
@@ -32,22 +33,24 @@ export const PEOPLE = {
     arabic: "خالد الكتبي",
     latin: "Khaled Alkitbi",
     clinicDetail: "Born 3 October 1959. ID number on file.",
-    hospitalDetail: "Born 3 October 1959. No ID number.",
-    joined: true,
-    reason: "A different spelling, the same birth date. His records are joined.",
+    hospitalDetail: "Born 3 October 1983. No ID number.",
+    outcome: "apart",
+    reason: "A similar name, but born decades apart. Two different people, so nothing is joined.",
   },
   aisha: {
     first: "Aisha",
     arabic: "عائشة المزروعي",
     latin: "Aysha Al Mazroui",
     clinicDetail: "Born 2 June 1971. ID number on file.",
-    hospitalDetail: "Born 9 November 1983. No ID number.",
-    joined: false,
-    reason: "The names are close, but the birth dates differ. A person decides.",
+    hospitalDetail: "Born 6 February 1971. No ID number.",
+    outcome: "review",
+    reason: "The names are close and the birth dates almost match, day and month swapped. A person decides.",
   },
 } satisfies Record<string, Pair>;
 
 export type Key = keyof typeof PEOPLE;
+
+const VERDICT = { joined: "Same person", apart: "Two different people", review: "A person decides" } as const;
 const ORDER: Key[] = ["fatima", "khalid", "aisha"];
 
 /** The thread between the two records: one solid teal line when joined, two grey stubs with a gap when not. */
@@ -122,12 +125,12 @@ export function NameJoiner() {
       </div>
 
       <div className="flex min-h-[120px] items-stretch gap-6 px-7">
-        <Thread joined={p.joined} />
+        <Thread joined={p.outcome === "joined"} />
         <div aria-live="polite" className="flex items-start gap-3.5 py-5">
-          <Mark joined={p.joined} />
+          <Mark joined={p.outcome === "joined"} />
           <div>
             <div className="text-[24px] font-bold leading-[1.3] tracking-[-0.01em]" data-testid="verdict">
-              {p.joined ? "Same person" : "Not joined yet"}
+              {VERDICT[p.outcome]}
             </div>
             <div className="mt-1 text-[18px] leading-normal">{p.reason}</div>
           </div>

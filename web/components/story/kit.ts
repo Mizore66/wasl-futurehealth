@@ -114,7 +114,13 @@ export function createKit(mobile: boolean) {
     teal: Object.assign(tint(COLOR.teal), { side: THREE.DoubleSide }),
     held: Object.assign(tint(COLOR.held), { side: THREE.DoubleSide }),
     shadow: new THREE.MeshBasicMaterial({ map: shadowMap, transparent: true, depthWrite: false, fog: true }),
-    floor: new THREE.MeshBasicMaterial({ color: COLOR.raised }),
+    floor: new THREE.MeshBasicMaterial({ color: COLOR.floor }),
+    paving: new THREE.MeshBasicMaterial({ color: COLOR.paving }),
+    city: new THREE.MeshMatcapMaterial({ matcap, vertexColors: true }),
+    building: tint(COLOR.building),
+    buildingShade: tint(COLOR.buildingShade),
+    recess: tint(COLOR.recess),
+    grey: tint(COLOR.grey),
   };
 
   /** Static geometry gathered per material and merged once: one draw call per material for all the props. */
@@ -125,8 +131,8 @@ export function createKit(mobile: boolean) {
     g.applyMatrix4(at);
     (statics.get(material) ?? statics.set(material, []).get(material)!).push(g);
   }
-  function shadowAt(x: number, z: number, size: number) {
-    const m = new THREE.Matrix4().makeScale(size, 1, size).setPosition(x, 0.005, z);
+  function shadowAt(x: number, z: number, w: number, d = w) {
+    const m = new THREE.Matrix4().makeScale(w, 1, d).setPosition(x, 0.005, z);
     addStatic(mat.shadow, geo.shadow, m);
   }
   function mergeStatics(): THREE.Mesh[] {
