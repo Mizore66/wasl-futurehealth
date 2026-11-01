@@ -77,7 +77,9 @@ func ldctWorkupLabel(f *LDCTFields) string {
 			return "wk_treatment"
 		}
 	case "annual":
-		if f.Tissue != "malignant" {
+		// A bare scheduling phrase is not proof that a 4B/4X lesion is benign. Require an MDT decision or
+		// benign tissue in the same document; PET-only evidence still needs the MDT field in this model.
+		if f.Tissue != "malignant" && (f.MDT == "discussed" || f.Tissue == "benign") {
 			return "wk_benign"
 		}
 	case "surveillance":
@@ -91,6 +93,10 @@ func ldctWorkupLabel(f *LDCTFields) string {
 // ldctClosingWorkup: work-up labels that close a 4B/4X loop.
 func ldctClosingWorkup(l string) bool {
 	return l == "wk_treatment" || l == "wk_benign" || l == "wk_surveillance"
+}
+
+func ldctWorkupDocumentLabel(l string) bool {
+	return ldctClosingWorkup(l) || l == "wk_incomplete" || l == "wk_dna"
 }
 
 // ---------------- reader A: regex ----------------
@@ -245,13 +251,13 @@ func regexLDCTWorkup(t string) *LDCTFields {
 	switch {
 	case lwPendOut.MatchString(cs):
 		quote(lwPendOut, cs)
-	case lwTreat.MatchString(cs):
+	case ldctAffirmed(lwTreat, cs):
 		f.Outcome = "treatment"
 		quote(lwTreat, cs)
-	case lwSurv.MatchString(cs):
+	case ldctAffirmed(lwSurv, cs):
 		f.Outcome = "surveillance"
 		quote(lwSurv, cs)
-	case lwAnnual.MatchString(cs):
+	case ldctAffirmed(lwAnnual, cs):
 		f.Outcome = "annual"
 		quote(lwAnnual, cs)
 	}

@@ -11,12 +11,13 @@ package main
 //                 1/2 -> closes as no_recall_needed (annual screening recorded, next LDCT due in 12 months).
 //                 0   -> open with a 91-day completion clock; a later categorised report on the same registration
 //                        (addendum after comparison, or a 1-3 month LDCT) decides the loop from its own day.
-//   follow-up : 3/4A -> the next LDCT report on the scan's own registration that both readers read with a category
-//               other than 0 closes the loop (outcome followup_done; the follow-up category and its next step are
-//               recorded; a follow-up that needs action raises followup_needs_tracking).
+//   follow-up : 3/4A -> the next independent LDCT report on the scan's own registration (not an addendum or same-day
+//               reread) that both readers read with a category other than 0 closes the loop (outcome followup_done; the
+//               follow-up category and its next step are recorded; action categories raise followup_needs_tracking).
 //   work-up   : 4B/4X -> a thoracic work-up / MDT document on a TRUSTED identity link (calibrated p >= tau | EID | human)
 //               whose label both readers agree on (or a clinician signs): wk_treatment | wk_benign | wk_surveillance ->
-//               closed; wk_dna -> no_show (rebook); wk_incomplete (tissue / PET awaited, MDT pending) -> stays open.
+//               closed; benign annual closure needs benign tissue or MDT; wk_dna -> no_show (rebook); wk_incomplete
+//               (tissue / PET awaited, MDT pending) -> stays open.
 //   overdue   : the clock is the deciding scan's day + the rule deadline (0: 91; 3: 213; 4A: 121; 4B/4X: 30).
 // Anything uncertain (untrusted link, reader disagreement, reader unavailable, a label the rule does not know) raises a
 // review item and holds.
@@ -47,6 +48,10 @@ type LDCTDecision struct {
 	WithinDeadline bool     `json:"within_deadline,omitempty"`
 }
 
+// LDCTMinFollowupDays: a same-day reread is not the recommended interval LDCT. This is a Wasl safety assumption (A8),
+// not an ACR interval; addenda are excluded separately by their parent-report identity.
+const LDCTMinFollowupDays = 1.0
+
 // ldctScanFacts: LDCT reports on the tracking ServiceRequest's own registration (no identity link needed).
 func ldctScanFacts(rec *Rec) []DownFact {
 	var out []DownFact
@@ -55,7 +60,7 @@ func ldctScanFacts(rec *Rec) []DownFact {
 		if e.RType != "DiagnosticReport" || e.Category != "ldct-screen" {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LDCTScan", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Parent: e.Focus,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_ldct", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
@@ -208,10 +213,23 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 	var dec, follow, unread *row
 	var decLab, decHuman, folLab, folHuman string
 	incompleteFollow := false
+	excludedFollow := ""
 	for i := range scans {
 		if dec != nil {
 			if dr, ok := ldctRule(decLab); !ok || dr.Action == LDCTAnnual || dr.Action == LDCTWorkup {
 				break // later scans do not concern this loop (the next screen opens its own tracking request)
+			}
+		}
+		if dec != nil && (decLab == "LR3" || decLab == "LR4A") {
+			// An addendum reclassifies the index report; it is not a new interval LDCT. Likewise, a same-day reread
+			// cannot satisfy the 3/6-month recommendation. Neither gets an evidence review merely for being ineligible.
+			if scans[i].d.Parent != "" {
+				excludedFollow = "followup_addendum_not_interval_ldct"
+				continue
+			}
+			if scans[i].d.Day < dec.d.Day+LDCTMinFollowupDays {
+				excludedFollow = "followup_too_early"
+				continue
 			}
 		}
 		lab, h := labelOf(scans[i])
@@ -243,7 +261,11 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 		chain = appendBlock(nil, "evidence", ldctEvBlock(unread.d, ""))
 		chain = hold(chain, "review_hold", map[string]interface{}{"reason": "scan_readers_disagree", "report": unread.d.ReportID})
 	case !recOK: // a label the rule does not know (a mistyped human label): hold, never close
-		chain = hold(nil, "review_hold", map[string]interface{}{"reason": "scan_label_unknown", "label": decLab})
+		reason := "scan_label_unknown"
+		if ldctWorkupDocumentLabel(decLab) {
+			reason = "scan_label_wrong_kind"
+		}
+		chain = hold(nil, "review_hold", map[string]interface{}{"reason": reason, "label": decLab})
 	default:
 		ld.Scan, ld.ScanLabel, ld.Rec, ld.ScanDay = dec.d.ReportID, decLab, &rec, dec.d.Day
 		ld.Coded = dec.d.Ev != nil && dec.d.Ev.Model == "coded_lungrads" && decHuman == ""
@@ -298,6 +320,8 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 				reason = "awaiting_completion"
 			case incompleteFollow:
 				reason = "followup_incomplete"
+			case excludedFollow != "":
+				reason = excludedFollow
 			}
 			if unread != nil {
 				chain = appendBlock(chain, "evidence", ldctEvBlock(unread.d, ""))
@@ -305,6 +329,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 			chain = hold(chain, "review_hold", map[string]interface{}{"reason": reason, "due_day": round4(ld.DueDay), "deadline_day": round4(ld.DeadlineDay)})
 		default: // work-up: an MDT / work-up outcome closes it
 			var holdRow *row
+			workupWrongKind := false
 			for i := range notes {
 				r := notes[i]
 				if r.d.Day < ld.ScanDay {
@@ -346,6 +371,7 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 						"policy": "trusted link (p_cal>=tau|eid|human) AND two-reader agreement on a documented work-up outcome (or clinician sign-off)"})
 				default:
 					state, holdRow = "open", &notes[i]
+					_, workupWrongKind = ldctRule(lab)
 				}
 				break
 			}
@@ -359,6 +385,8 @@ func (c *ClosureCore) evalLDCT(ls *loopState, inSeq uint64, mid string) []OutMsg
 				switch {
 				case state == "no_show":
 					reason = "did_not_attend_rebook"
+				case workupWrongKind:
+					reason = "workup_label_wrong_kind"
 				case holdRow != nil:
 					reason = "workup_readers_disagree"
 				case unlinked:
