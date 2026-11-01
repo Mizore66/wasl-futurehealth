@@ -358,7 +358,7 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 				alts = breastEvAlt(t) // breast recall labels (breast.go)
 			}
 			if alts == nil {
-				alts = ldctEvAlt(t) // lung cancer screening (LDCT) labels (ldct.go)
+				alts = ifhasEvAlt(t) // IFHAS screening and follow-up labels (ifhas.go)
 			}
 			if len(alts) > 0 {
 				t = alts[int(u01(c.Seed, it.ItemID, draw, "alt")*float64(len(alts)))]
@@ -371,7 +371,10 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 }
 
 func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
-	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev)) { // lung-nodule, DR, breast and LDCT closing answers get the same double read
+	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && ifhasClosingAnswer(r.ev) { // IFHAS closing answers: same double read (ifhas.go)
+		return true
+	}
+	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev)) { // lung-nodule, DR and breast closing answers get the same double read
 		return true
 	}
 	switch c.Double {
@@ -442,7 +445,10 @@ type auditRec struct {
 
 // closingAnswer: a signed evidence answer that lets a loop close (the audit sample frame).
 func closingAnswer(r read) bool {
-	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev)
+	if ifhasClosingAnswer(r.ev) { // IFHAS (ifhas.go)
+		return true
+	}
+	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev)
 }
 
 // idWorklist: the review worklist asks one second-identifier question per registration pair (ReuseIDConfirm). Two

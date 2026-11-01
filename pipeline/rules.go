@@ -39,8 +39,6 @@ var ProgTemplates = true
 var outreachTplKind = map[string]string{
 	"lung_followup_due": "remind", "lung_overdue_recall": "recall",
 	"dr_repeat_photo": "repeat", "dr_clinic_due": "remind", "dr_overdue_recall": "recall", "dr_rebook": "rebook",
-	// outreachgaps.go: -drrecallmsg (overdue next-due recall reuses drsfu-recall), -rejmsg (rejected referral)
-	"dr_next_recall": "recall", "lung_referral_rejected": "rejected", "dr_referral_rejected": "rejected",
 }
 
 // outreachTpl: the approved template id for an outreach intent of this programme ("" when none applies). Language:
@@ -95,8 +93,8 @@ func InKPICohort(prog, cat string) bool {
 
 func progOfText(s string) string {
 	s = strings.ToLower(s)
-	if strings.Contains(s, "lung cancer screening") { // LDCT screening (ldct.go); not the incidental-nodule loop
-		return "lung_ldct"
+	if strings.Contains(s, "ifhas") { // IFHAS periodic adult screening follow-up (ifhas.go)
+		return "ifhas"
 	}
 	if strings.Contains(s, "breast screening") || strings.Contains(s, "mammogra") {
 		return "breast"

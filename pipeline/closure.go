@@ -25,7 +25,6 @@ type loopState struct {
 	facts   *LoopFacts
 	last    *Decision
 	lastFU  *Decision // lung: the surveillance loop opened by a stable follow-up (lung.go)
-	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
 	raised  map[string]*ReviewItem
 	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 }
@@ -103,13 +102,6 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 		return out
 	}
 	ls.facts = f
-	if HistClock && m.Arr != nil && *m.Arr < 0 && *m.Arr < c.now { // pre-day-0 look-back history only: never rewind a live-day decision
-		saved := c.now
-		c.now = *m.Arr
-		out = c.eval(ls, m.InSeq, m.ID)
-		c.now = saved
-		return out
-	}
 	return c.eval(ls, m.InSeq, m.ID)
 }
 
@@ -189,8 +181,8 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if prog == "breast" { // fourth loop type: identity gate + two-reader gate + review, rule doh2025breast (breast.go)
 		return c.evalBreast(ls, inSeq, mid)
 	}
-	if prog == "lung_ldct" { // fifth loop type: identity gate + two-reader gate + review, rule acr2022lungrads (ldct.go)
-		return c.evalLDCT(ls, inSeq, mid)
+	if prog == "ifhas" { // IFHAS abnormal results: identity gate + two-reader gate + review, rule doh2025ifhas (ifhas.go)
+		return c.evalIfhas(ls, inSeq, mid)
 	}
 	rule := Rules[prog]
 	deadline := DeadlineDays(prog, f.Priority)
@@ -694,7 +686,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		d.Outreach = BuildOutreach(f, c.pcal)
 		if d.Handoff != nil {
 			for _, o := range d.Outreach {
-				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (crcRejectedKind(o.Kind) && o.Released)
+				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (o.Kind == "referral_rejected" && o.Released)
 			}
 		}
 		// v7 guard: a held message raises one human confirmation item for its registration pair
@@ -765,9 +757,6 @@ func (c *ClosureCore) Final() map[string]*Decision {
 		m[k] = v.last
 		if v.lastFU != nil {
 			m[v.lastFU.LoopID] = v.lastFU
-		}
-		for id, d := range v.lastFU2 {
-			m[id] = d
 		}
 	}
 	return m
