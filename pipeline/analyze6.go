@@ -175,6 +175,9 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if bm := breastMetrics(final, tr); bm != nil { // fourth loop type: doh2025breast-specific metrics replace the screening ones
 		out["breast"] = bm
 	}
+	if cm := ldctMetrics(final, tr); cm != nil { // fifth loop type: acr2022lungrads-specific metrics replace the screening ones
+		out["lung_ldct"] = cm
+	}
 	return out
 }
 

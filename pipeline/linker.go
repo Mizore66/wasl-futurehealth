@@ -600,7 +600,8 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
 			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
-				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast"}[e.Category]
+				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast",
+				"ldct-screen": "lung_ldct", "ldct-workup": "lung_ldct"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -639,6 +640,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	if base.Breast != nil {
 		f.Breast = base.Breast
 		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
+	}
+	if base.LDCT != nil {
+		f.LDCT = base.LDCT
+		f.Down = append(f.Down, ldctScanFacts(L.recs[s])...) // LDCT reports (index, completion, follow-up) on the scan's own registration
 	}
 	inC := map[int]bool{}
 	for _, y := range ms {
@@ -902,7 +907,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}

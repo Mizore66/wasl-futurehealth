@@ -32,7 +32,7 @@ Lists are always `[]`, never `null`.
 | GET | `/healthz` | `status`, case count, `dependencies` (materialised_run, nats, reader, ingest_adapter) |
 | GET | `/api/dashboard` | KPI and SLA, `states`, `dropoff`, `review` counts, `by_programme`, per-provider and per-origin tables (small-cell suppressed), headline `metrics` (31-day KPI, closure P/R, consent invariant, forged, provenance, exactly-once), `fixtures`, `capacity` (simulated booking: condition adequate, misallocated or short_overall, slots per case by region, pooling_relevant, summary, `levers`: pathway and prep-risk counts; `inputs.optimiser` appears only when the booking stage ran with a non-default optimiser or stress test, e.g. {optimiser: lookahead, lookahead_days, gamma, forecast, method}; absent = the default myopic engine) |
 | GET | `/api/fixtures` | The demo cases (summaries): three CRC cases, plus `dr_exam_closure` when the run has DR loops. `review_hold` falls back to a closed, signed loop whose outreach was stopped by the consent hold or the second-identifier guard when no loop had consent held then granted |
-| GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
+| GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast\|lung_ldct), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
 | GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registrations), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
 | GET | `/api/cases/{id}/audit` | `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
@@ -159,6 +159,32 @@ Lists are always `[]`, never `null`.
 - **Outreach kinds:** `breast_assessment_due`, `breast_overdue_recall`, `breast_rebook`, `breast_repeat_mammogram`, under the same consent hold.
 - **Review labels** (clinician role): `B0`–`B5`, `TR`, `return_routine`, `early_recall`, `to_treatment`, `incomplete`, `dna`.
 
+### Programme `lung_ldct` (fifth loop type: lung cancer screening LDCT to the Lung-RADS next step, rule `acr2022lungrads`)
+
+**Status:** built; served only from runs generated with `WASL_LDCT=N` (synthetic cohort, simulated attendance; readers measured on their own dev corpus only). Design: [`docs/research/ldct-loop-design.md`](research/ldct-loop-design.md). Not the incidental-nodule programme `lung_nodule` (Fleischner): different providers, report kinds and labels. The loop is one screening LDCT at a lung cancer screening centre (ids such as `lcs-centre/ServiceRequest/LCS-sr-12`). Completion and follow-up LDCTs sit on the same record; 4B/4X work-up documents sit at a thoracic diagnostic unit under another record and need a trusted identity link.
+
+- **Category** (Lung-RADS v2022; a stated final category wins, else the most concerning finding, 1 < 2 < 3 < 4A < 4B < 4X): `LR0`, `LR1`, `LR2`, `LR3`, `LR4A`, `LR4B`, `LR4X`. `acr2022lungrads` turns it into an action: `LR1`/`LR2` → `annual` (next LDCT due at +365, no clock); `LR0` → `complete_ldct` (91 days; a later categorised report on the same record replaces it); `LR3` → `followup_ldct` (due 183, overdue after 213); `LR4A` → `followup_ldct` (due 91, overdue after 121, `suspicious`); `LR4B`/`LR4X` → `workup` (30 days, `urgent`). The clocks are Wasl assumptions (design doc A1–A3).
+- **States:** `no_recall_needed` (Lung-RADS 1/2, resolved), `open` (waiting for the completion, follow-up LDCT or work-up outcome, or held for review), `closed` (3/4A: an independent follow-up LDCT read with a category, excluding addenda and same-day rereads; 4B/4X: a work-up document on a trusted link read as an outcome), `no_show` (work-up not attended).
+- **Drop-off:** `incomplete_scan_not_completed`, `followup_ldct_not_done`, `unlinked`, `no_workup_outcome`, `no_show`, or `""` when resolved.
+- `closed` is `true` for `closed` and `no_recall_needed`. `deadline_day` on the summary is the rule deadline in days (0 for annual); the absolute days are `ldct.due_day` and `ldct.deadline_day`. `referral_day` can be negative (look-back cohort).
+- The summary carries an `ldct` object (also in `current.ldct`):
+
+```json
+"ldct": {"scan_report": "LCS-ct-41", "scan_label": "LR4A", "coded_lungrads": true,
+  "rec": {"action": "followup_ldct", "due_days": 91, "deadline_days": 121, "urgency": "suspicious", "cell": "LR4A",
+          "next_step": "LDCT in 3 months; PET/CT may be used if a solid component >= 8 mm"},
+  "scan_day": -150.2, "due_day": -59.2, "deadline_day": -29.2,
+  "followup_report": "LCS-ct-77", "followup_label": "LR3", "followup_next_step": "LDCT in 6 months",
+  "outcome": "followup_done", "within_deadline": true}
+```
+
+  `outcome` is `followup_done` (3/4A) or a work-up label: `wk_treatment` (needs malignant tissue and a documented MDT discussion in the same document, DoH 7.6.1), `wk_benign` (annual screening plus benign tissue or an MDT decision; a bare annual phrase is indeterminate), `wk_surveillance` (MDT surveillance CT plan), `wk_incomplete` or `wk_dna`; work-up loops add `workup_document`. `coded_lungrads: true` means a coded Lung-RADS value (placeholder system `urn:wsi:lung-rads`) matched reader A's reading of the text; this is not independent full-report validation and does not prove the category is correct.
+- **Evidence** `reader_a_fields` / `reader_b_fields`: LDCT report `lungrads_overall`, `lungrads_worst`; work-up `attended`, `workup` (`done|not_done`), `mdt` (`discussed|not_discussed`), `tissue` (`malignant|benign|pending|none`), `outcome` (`treatment|annual|surveillance|pending`); both `label` and a verbatim `quote`. `reader_model` is `coded_lungrads` on the coded path.
+- **Hold reasons:** `scan_report_not_received`, `scan_readers_disagree`, `scan_label_unknown`, `scan_label_wrong_kind`, `awaiting_completion`, `completion_readers_disagree`, `awaiting_followup_ldct`, `followup_readers_disagree`, `followup_incomplete`, `followup_addendum_not_interval_ldct`, `followup_too_early`, `followup_label_unknown`, `awaiting_workup`, `workup_readers_disagree`, `workup_label_wrong_kind`, `workup_identity_link_unconfirmed`, `workup_incomplete_or_mdt_pending`, `did_not_attend_rebook`.
+- **Escalations:** `overdue_ldct_followup`, `overdue_ldct_workup`, `rebook_after_dna`, `urgent_ldct_workup_open`, `followup_needs_tracking` (the follow-up scan itself needs action; the centre opens a new tracking request for it), `surveillance_after_workup`.
+- **Outreach kinds:** `ldct_followup_due` (14 days before the deadline), `ldct_followup_overdue`, `ldct_workup_rebook`, `ldct_workup_overdue`, under the same consent hold.
+- **Review labels** (clinician role): `LR0`, `LR1`, `LR2`, `LR3`, `LR4A`, `LR4B`, `LR4X`, `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`.
+
 ### POST review (demo mode)
 
 **Headers:** `X-Wasl-Role` (`coordinator` | `clinician` | `reviewer` | `auditor`) and `X-Wasl-Actor` (who is signing).
@@ -172,6 +198,7 @@ Lists are always `[]`, never `null`.
   - a screening grade: `R0M0`, `R1M0`, `R2M1`, `R3SM0`, `R3AM1`, `R1M0/urgent`, `U`;
   - a clinic outcome: `examined_treated`, `examined_followup`, `examined_discharged`, `not_examined`, `dna`, `not_assessable`.
   Anything else (for example `R9M0`, `R2M2`, or a lung label) is rejected with 400.
+- On `lung_ldct` cases the evidence decision can be an LDCT label (same clinician role): `LR0`–`LR4X` or a work-up label `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`. A label of another programme (for example `B4`) is rejected with 400.
 - `confirm_contact` needs one allowed to record consent (coordinator, clinician).
 
 **Response codes:**

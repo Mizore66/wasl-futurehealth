@@ -1,0 +1,545 @@
+{
+ "source": "synthetic templated corpus (scripts/ldct_corpus.py, seed 31); dev set, used to write the readers; no held-out set",
+ "reports": [
+  {
+   "id": "lw01",
+   "text": "Lung MDT outcome record. Histology: non-small cell lung cancer. Discussed at the multidisciplinary team meeting; referral to the thoracic surgical team sent.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw02",
+   "text": "Thoracic diagnostic unit, regional hospital. CT-guided biopsy of the right upper lobe nodule: adenocarcinoma. Discussed at the lung MDT: stage IA, referred to thoracic surgery for lobectomy.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw03",
+   "text": "Lung MDT outcome record. EBUS-TBNA: squamous cell carcinoma. Lung MDT decision: referred to clinical oncology for stereotactic radiotherapy. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw04",
+   "text": "Respiratory clinic note (screen-detected nodule). Histology: non-small cell lung cancer. Discussed at the multidisciplinary team meeting; referral to the thoracic surgical team sent. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw05",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4X). CT-guided biopsy of the right upper lobe nodule: adenocarcinoma. Discussed at the lung MDT: stage IA, referred to thoracic surgery for lobectomy.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw06",
+   "text": "Respiratory clinic note (screen-detected nodule). CT-guided biopsy of the right upper lobe nodule: adenocarcinoma. Discussed at the lung MDT: stage IA, referred to thoracic surgery for lobectomy. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw07",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4B). CT-guided biopsy of the right upper lobe nodule: adenocarcinoma. Discussed at the lung MDT: stage IA, referred to thoracic surgery for lobectomy.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw08",
+   "text": "Thoracic diagnostic unit, regional hospital. EBUS-TBNA: squamous cell carcinoma. Lung MDT decision: referred to clinical oncology for stereotactic radiotherapy.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw09",
+   "text": "Thoracic oncology rapid-access clinic. Histology: non-small cell lung cancer. Discussed at the multidisciplinary team meeting; referral to the thoracic surgical team sent.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "wk_treatment"
+   }
+  },
+  {
+   "id": "lw10",
+   "text": "Thoracic oncology rapid-access clinic. Diagnostic chest CT: the nodule has resolved, in keeping with infection. Return to annual LDCT screening.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw11",
+   "text": "Respiratory clinic note (screen-detected nodule). PET/CT: no FDG uptake. CT-guided biopsy: organising pneumonia, no malignancy. MDT: benign, return to annual screening.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw12",
+   "text": "Lung MDT outcome record. PET/CT: no FDG uptake. CT-guided biopsy: organising pneumonia, no malignancy. MDT: benign, return to annual screening. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw13",
+   "text": "Thoracic diagnostic unit, regional hospital. Bronchoscopic biopsy: granuloma, no malignant cells. Discussed at MDT: benign; back to the annual screening programme.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw14",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4B). PET/CT: no FDG uptake. CT-guided biopsy: organising pneumonia, no malignancy. MDT: benign, return to annual screening.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw15",
+   "text": "Respiratory clinic note (screen-detected nodule). Bronchoscopic biopsy: granuloma, no malignant cells. Discussed at MDT: benign; back to the annual screening programme.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw16",
+   "text": "Respiratory clinic note (screen-detected nodule). Diagnostic chest CT: the nodule has resolved, in keeping with infection. Return to annual LDCT screening.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw17",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4B). Bronchoscopic biopsy: granuloma, no malignant cells. Discussed at MDT: benign; back to the annual screening programme. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "benign",
+    "outcome": "annual",
+    "label": "wk_benign"
+   }
+  },
+  {
+   "id": "lw18",
+   "text": "Respiratory clinic note (screen-detected nodule). CT-guided biopsy: non-diagnostic benign lung tissue. Plan: repeat CT in 3 months to confirm stability.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "benign",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw19",
+   "text": "Respiratory clinic note (screen-detected nodule). Referred from lung cancer screening (Lung-RADS 4X). Diagnostic CT with contrast: the lesion is smaller. MDT plan: interval CT in 3 months.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "none",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw20",
+   "text": "Respiratory clinic note (screen-detected nodule). Referred from lung cancer screening (Lung-RADS 4B). CT-guided biopsy: non-diagnostic benign lung tissue. Plan: repeat CT in 3 months to confirm stability.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "benign",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw21",
+   "text": "Thoracic oncology rapid-access clinic. Diagnostic CT with contrast: the lesion is smaller. MDT plan: interval CT in 3 months.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "none",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw22",
+   "text": "Thoracic oncology rapid-access clinic. PET/CT shows low uptake (SUVmax 1.4). MDT: not suitable for biopsy; surveillance CT in 3 months.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "none",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw23",
+   "text": "Thoracic oncology rapid-access clinic. CT-guided biopsy: non-diagnostic benign lung tissue. Plan: repeat CT in 3 months to confirm stability. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "benign",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw24",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4X). Diagnostic CT with contrast: the lesion is smaller. MDT plan: interval CT in 3 months. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "yes",
+    "tissue": "none",
+    "outcome": "surveillance",
+    "label": "wk_surveillance"
+   }
+  },
+  {
+   "id": "lw25",
+   "text": "Thoracic diagnostic unit, regional hospital. CT-guided biopsy: adenocarcinoma. For discussion at the lung MDT next week before referral.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw26",
+   "text": "Thoracic oncology rapid-access clinic. Biopsy suspicious for malignancy; immunohistochemistry pending. MDT pending.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw27",
+   "text": "Thoracic diagnostic unit, regional hospital. Thoracic clinic review. PET/CT booked; biopsy to follow. For MDT discussion.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw28",
+   "text": "Respiratory clinic note (screen-detected nodule). CT-guided biopsy: adenocarcinoma. For discussion at the lung MDT next week before referral.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw29",
+   "text": "Lung MDT outcome record. Seen in the thoracic clinic. CT-guided biopsy performed today; histology awaited, for discussion at the next lung MDT. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw30",
+   "text": "Respiratory clinic note (screen-detected nodule). Referred from lung cancer screening (Lung-RADS 4X). Thoracic clinic review. PET/CT booked; biopsy to follow. For MDT discussion.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw31",
+   "text": "Thoracic diagnostic unit, regional hospital. Seen in the thoracic clinic. CT-guided biopsy performed today; histology awaited, for discussion at the next lung MDT.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw32",
+   "text": "Thoracic diagnostic unit, regional hospital. Referred from lung cancer screening (Lung-RADS 4B). Seen in the thoracic clinic. CT-guided biopsy performed today; histology awaited, for discussion at the next lung MDT.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw33",
+   "text": "Thoracic diagnostic unit, regional hospital. Referred from lung cancer screening (Lung-RADS 4B). Biopsy suspicious for malignancy; immunohistochemistry pending. MDT pending.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw34",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4B). Attended the thoracic clinic but declined biopsy today; to return after counselling.",
+   "key": {
+    "attended": true,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw35",
+   "text": "Lung MDT outcome record. Referred from lung cancer screening (Lung-RADS 4B). Biopsy suspicious for malignancy; immunohistochemistry pending. MDT pending.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "pending",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw36",
+   "text": "Lung MDT outcome record. CT-guided biopsy: adenocarcinoma. For discussion at the lung MDT next week before referral. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "pending",
+    "label": "wk_incomplete"
+   }
+  },
+  {
+   "id": "lw37",
+   "text": "Lung MDT outcome record. DNA for CT-guided biopsy. Patient contacted, rebooking.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw38",
+   "text": "Thoracic oncology rapid-access clinic. Did not attend the thoracic clinic appointment. Second appointment sent.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw39",
+   "text": "Thoracic oncology rapid-access clinic. DNA for CT-guided biopsy. Patient contacted, rebooking.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw40",
+   "text": "Thoracic oncology rapid-access clinic. Failed to attend the diagnostic CT appointment today. Screening centre informed.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw41",
+   "text": "Thoracic diagnostic unit, regional hospital. Referred from lung cancer screening (Lung-RADS 4B). Failed to attend the diagnostic CT appointment today. Screening centre informed.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw42",
+   "text": "Thoracic diagnostic unit, regional hospital. Did not attend the thoracic clinic appointment. Second appointment sent.",
+   "key": {
+    "attended": false,
+    "workup": "not_done",
+    "mdt": "no",
+    "tissue": "none",
+    "outcome": "pending",
+    "label": "wk_dna"
+   }
+  },
+  {
+   "id": "lw43",
+   "text": "Thoracic oncology rapid-access clinic. CT-guided biopsy: adenocarcinoma. Referred to thoracic surgery.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "indeterminate"
+   }
+  },
+  {
+   "id": "lw44",
+   "text": "Thoracic oncology rapid-access clinic. CT-guided biopsy: adenocarcinoma. Referred to thoracic surgery. Previous benign biopsy in 2019.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "indeterminate"
+   }
+  },
+  {
+   "id": "lw45",
+   "text": "Thoracic oncology rapid-access clinic. Histology confirms small cell lung cancer; referral to medical oncology sent.",
+   "key": {
+    "attended": true,
+    "workup": "done",
+    "mdt": "no",
+    "tissue": "malignant",
+    "outcome": "treatment",
+    "label": "indeterminate"
+   }
+  }
+ ]
+}

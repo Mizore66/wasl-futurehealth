@@ -29,6 +29,7 @@ type ReaderVerdict struct {
 	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
 	DR        *DRFields   `json:"dr,omitempty"`   // diabetic retinopathy loop: fields this reader extracted (drread.go)
 	Breast    *BreastFields `json:"breast,omitempty"` // breast recall loop: fields this reader extracted (breastread.go)
+	LDCT      *LDCTFields   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop: fields this reader extracted (ldctread.go)
 }
 
 type TwoVerdict struct {
@@ -398,6 +399,7 @@ func LoadJudge2(path string) *Judge2 {
 	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
 	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
 	loadBreastCache(filepath.Dir(path)) // breast recall reader B answers, if present (breastread.go)
+	loadLDCTCache(filepath.Dir(path))   // lung cancer screening (LDCT) reader B answers, if present (ldctread.go)
 	return j
 }
 

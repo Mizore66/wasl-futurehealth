@@ -60,6 +60,7 @@ type Event struct {
 	DR       *DRSR    `json:"dr,omitempty"`      // diabetic retinopathy tracking ServiceRequest: first screening report (dr.go)
 	XRef     string   `json:"xref,omitempty"`    // referral intake: the referral it answers (basedOn "external referral <loop>"; handoffref.go)
 	Breast   *BreastSR `json:"breast,omitempty"` // breast recall tracking ServiceRequest: first screening mammogram report (breast.go)
+	LDCT     *LDCTSR   `json:"ldct,omitempty"`   // lung cancer screening tracking ServiceRequest: the LDCT report (ldct.go)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
@@ -176,6 +177,7 @@ type LoopFacts struct {
 	Lung      *LungSR            `json:"lung,omitempty"`        // lung-nodule loop: scope and risk from the tracking ServiceRequest
 	DR        *DRSR              `json:"dr,omitempty"`          // diabetic retinopathy loop (dr.go)
 	Breast    *BreastSR          `json:"breast,omitempty"`      // breast recall loop (breast.go)
+	LDCT      *LDCTSR            `json:"ldct,omitempty"`        // lung cancer screening (LDCT) loop (ldct.go)
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.
@@ -256,6 +258,7 @@ type Decision struct {
 	Lung           *LungDecision `json:"lung,omitempty"` // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
 	DR             *DRDecision   `json:"dr,omitempty"`   // diabetic retinopathy loop: grade, rule, deadline, eye-clinic outcome (dr.go)
 	Breast         *BreastDecision `json:"breast,omitempty"` // breast recall loop: BI-RADS category, rule, deadline, assessment outcome (breast.go)
+	LDCT           *LDCTDecision   `json:"ldct,omitempty"`   // lung cancer screening loop: Lung-RADS category, rule, clocks, follow-up / work-up outcome (ldct.go)
 	Handoff        *HandoffPacket `json:"handoff,omitempty"` // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
 }
