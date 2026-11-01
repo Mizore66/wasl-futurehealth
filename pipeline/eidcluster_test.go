@@ -121,3 +121,27 @@ func TestPlaceholderDobNeedsInformativeSkeleton(t *testing.T) {
 		t.Error("an informative full-name match must still corroborate")
 	}
 }
+
+// X10 rerun, loop AHS-sr-13014: Zayed bin Khalifa's Noor registration carried an Emirates ID with a mistyped digit
+// (not Luhn-valid) and a namesake relative's registration carried a valid, clearly different number (9 of 15 digits
+// differ). Only one side was Luhn-valid, so no conflict was recorded; the pair scored 0.465, went to link review, and a
+// wrong simulated "same" (the 4% reviewer stress model, three reads) merged two people and closed the CRC loop on the
+// relative's colonoscopy. The reviewer error still happens; the contradicting numbers must contain it.
+func TestEIDContradictionContainsWrongHumanSame(t *testing.T) {
+	typo, valid := "784494793354880", "784194861036245"
+	if luhnOK(typo) || !luhnOK(valid) {
+		t.Fatal("test needs one failing and one Luhn-valid number")
+	}
+	L := NewLinkerCore(constGBM(), 1)
+	applySeq(L,
+		eidEvent("a", "noor-endo", "N1", "Zayed bii Khalifa Al Nahyan", "1947-04-13", typo),
+		eidEvent("b", "noor-endo", "N2", "خليفة بن زايد آل نهيان", "1948-09-07", valid),
+	)
+	a, b := L.byPk["noor-endo|N1"], L.byPk["noor-endo|N2"]
+	if L.Find(a) == L.Find(b) {
+		t.Fatal("model link joined registrations with clearly different numbers")
+	}
+	if L.Link(a, b, 1.0, true, "human") || L.Find(a) == L.Find(b) {
+		t.Fatal("a (wrong) human 'same' merged registrations with contradicting Emirates IDs")
+	}
+}

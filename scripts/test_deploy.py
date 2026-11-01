@@ -84,6 +84,31 @@ exit 2
                 self.assertEqual(result.returncode, 2, result.stdout)
                 self.assertIn(message, result.stdout)
 
+    def test_demo_refuses_binary_older_than_sources(self):
+        # ROOT is derived from the script location, so run a copy inside a minimal tree
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "scripts").mkdir()
+            (root / "pipeline").mkdir()
+            (root / "bin").mkdir()
+            script = root / "scripts/demo.sh"
+            script.write_text((ROOT / "scripts/demo.sh").read_text())
+            script.chmod(0o755)
+            (root / "pipeline/main.go").write_text("package main\n")
+            exe = root / "bin/wsi7"
+            exe.write_text("#!/bin/sh\nexit 0\n")
+            exe.chmod(0o755)
+            old = (root / "pipeline/main.go").stat().st_mtime - 1000
+            os.utime(exe, (old, old))
+            env = {k: v for k, v in os.environ.items() if k not in ("WASL_BIN", "WASL_NATS_URL", "WASL_NATS_EXTERNAL")}
+            r = subprocess.run([str(script), "report"], cwd=root, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(r.returncode, 2, r.stdout)
+            self.assertIn("stale binary", r.stdout)
+            # a prebuilt WASL_BIN is trusted as given: the guard must not fire (the command then fails later, for other reasons)
+            env["WASL_BIN"] = str(root / "bin")
+            r = subprocess.run([str(script), "report"], cwd=root, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertNotIn("stale binary", r.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
