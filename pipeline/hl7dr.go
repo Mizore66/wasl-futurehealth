@@ -172,7 +172,11 @@ func (m *HL7Msg) hl7DRRebuild(res map[string]interface{}) bool {
 			text.WriteString(fld(obx, 5))
 			tx = true
 		case "CWE":
-			res["conclusionCode"] = []interface{}{map[string]interface{}{"text": hl7Unesc(strings.Split(obx[5], "^")[0])}}
+			v := ""
+			if len(obx) > 5 {
+				v = strings.Split(obx[5], "^")[0]
+			}
+			res["conclusionCode"] = []interface{}{map[string]interface{}{"text": hl7Unesc(v)}}
 		}
 	}
 	if tx {
