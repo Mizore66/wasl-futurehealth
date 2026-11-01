@@ -2,19 +2,13 @@ import { join } from "./join";
 import { sad } from "./sad";
 import { seal } from "./seal";
 import { w } from "./w";
+import { BRAND } from "../mark";
 import { GRID, type Concept } from "./types";
 
 export type { Concept };
 export const CONCEPTS: Concept[] = [join, seal, sad, w];
 
-export const BRAND = {
-  paper: "#f6f3ee",
-  surface: "#fffdf8",
-  ink: "#0b2427",
-  teal: "#0f4f4c",
-  mint: "#dbe8e6",
-  sand: "#efe8dc",
-} as const;
+export { BRAND };
 
 const TILE_INSET = 4.5;
 const TILE_SCALE = (GRID - TILE_INSET * 2) / GRID;
