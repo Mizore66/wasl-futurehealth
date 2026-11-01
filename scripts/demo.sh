@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Wasl one-command baseline: check assets → build → cohort → integrated NATS run → audit → tamper → report.
-# Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|booking|report|test|serve|snapshot|final]   (default: all)
+# Usage: scripts/demo.sh [all|check|build|cohort|run|audit|tamper|booking|report|test|serve|snapshot|final|container]   (default: all)
+#   container: check, cohort, run, audit, tamper, booking, report with a prebuilt binary (Dockerfile / docker-compose.yml; docs/DEPLOY.md)
 #   ltt [seeds...]: Learn-then-Test calibration of the closure tier on cal-split cohorts -> pipeline/results/ltt/ (~40 min); WASL_POLICY=v7ltt uses it
 #     WASL_LTT_ALL=1 also calibrates on lung, DR and breast loops -> pipeline/results/ltt-all/ (per-programme counts; scripts/ltt_cohorts.sh)
 #   final [seeds...]: stage 7 frozen evaluation, 5 seeds x {v1, v2 noise} -> pipeline/results/final/ (~45 min)
@@ -19,10 +20,13 @@
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
+#      Deployment (docs/DEPLOY.md): WASL_BIN=<dir with wsi7>; WASL_NATS_URL=<external cluster> with WASL_NATS_EXTERNAL=1.
+#      Scale runs (pipeline/results/scale/): WASL_PERSONS, WASL_LOOPS, WASL_DISTRACT, WASL_CERV, WASL_SPLIT=all (training
+#      persons included: not a held-out accuracy estimate), WASL_CHAOSSPAN=<s>, WASL_QUIETTIMEOUT=<duration>. Unset = defaults.
 # Live reader: llama-server -m gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BIN="$ROOT/bin"; OUT="${WASL_OUT:-$ROOT/out}"; SEED="${WASL_SEED:-2026}"
+BIN="${WASL_BIN:-$ROOT/bin}"; OUT="${WASL_OUT:-$ROOT/out}"; SEED="${WASL_SEED:-2026}"
 POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v7ltt (closure tier from Learn-then-Test) | v6 (legacy comparison)
 SOURCE="${WASL_SOURCE:-fhir}"      # fhir (mock Malaffi FHIR Subscription) | hl7 (HL7 v2 over MLLP, production-shaped)
 READER="${WASL_READER:-cached}"    # cached (Gemma 26B answers, no model needed) | live (local llama-server) 
@@ -83,14 +87,31 @@ HARGS=()
 # audit/tamper/report never call the model: they replay the run's reader ledger
 AARGS=(-reader cached); [ "$READER" = cached ] || AARGS=(-reader replay)
 IMG_A=cached; [ "$IMAGE" = live ] && IMG_A=replay; [ "$IMAGE" = off ] && IMG_A=off; AARGS+=(-image "$IMG_A" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
+SARGS=()   # scale-run cohort overrides; unset keeps the default command line
+[ -z "${WASL_LOOPS:-}" ] || SARGS+=(-loops "$WASL_LOOPS")
+[ -z "${WASL_DISTRACT:-}" ] || SARGS+=(-distract "$WASL_DISTRACT")
+[ -z "${WASL_SPLIT:-}" ] || SARGS+=(-split "$WASL_SPLIT")
+OARGS=()
+[ -z "${WASL_CHAOSSPAN:-}" ] || OARGS+=(-chaosspan "$WASL_CHAOSSPAN")
+[ -z "${WASL_QUIETTIMEOUT:-}" ] || OARGS+=(-quiettimeout "$WASL_QUIETTIMEOUT")
 need() { echo "MISSING: $1"; echo "  → $2"; exit 1; }
+validate_nats_config() {
+  if [ -n "${WASL_NATS_URL:-}" ] && [ "${WASL_NATS_EXTERNAL:-}" != 1 ]; then
+    echo "configuration error: WASL_NATS_URL requires WASL_NATS_EXTERNAL=1" >&2; exit 2
+  fi
+  if [ -z "${WASL_NATS_URL:-}" ] && [ "${WASL_NATS_EXTERNAL:-}" = 1 ]; then
+    echo "configuration error: WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL" >&2; exit 2
+  fi
+}
 
 check() {
-  command -v go >/dev/null      || need "Go ≥1.22" "install from https://go.dev/dl/ (or: brew install go)"
+  { [ -n "${WASL_BIN:-}" ] && [ -x "$BIN/wsi7" ]; } || command -v go >/dev/null || need "Go ≥1.22" "install from https://go.dev/dl/ (or: brew install go)"
   command -v python3 >/dev/null || need "python3" "install Python 3.10+"
+  if [ "${WASL_NATS_EXTERNAL:-}" != 1 ]; then   # a valid external pair needs no local nats-server
   [ -x "$BIN/nats-server" ] || command -v nats-server >/dev/null || need "nats-server v2.10+" \
     "brew install nats-server   (or download from https://github.com/nats-io/nats-server/releases) — then: ln -s \$(command -v nats-server) bin/nats-server"
   [ -x "$BIN/nats-server" ] || { mkdir -p "$BIN"; ln -sf "$(command -v nats-server)" "$BIN/nats-server"; }
+  fi
   for f in data/persons3.json models/encoder_weights.json models/lgb_stream.json models/iso.json models/gemma_cache.json models/parse_cache.json models/iso_v7.json \
            data/evidence/reports43.json data/evidence/pathology_templates.json patient-parsers/econsult_testset.json patient-parsers/teachback_testset.json; do
     [ -s "$ROOT/$f" ] || need "$f" "it is committed in the repo — re-clone or git lfs/pull"
@@ -113,7 +134,8 @@ check() {
   if [ -n "$MODELSET" ]; then for f in encoder_$MODELSET lgb_stream_$MODELSET iso_$MODELSET iso_v7_$MODELSET; do
     [ -s "$ROOT/models/$f.json" ] || need "models/$f.json" "WASL_MODELSET=$MODELSET needs the full chain (encoder/README.md)"; done; fi
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
-  for p in 14822 14823 14824 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
+  NPORTS="14822 14823 14824"; [ "${WASL_NATS_EXTERNAL:-}" != 1 ] || NPORTS=""
+  for p in $NPORTS 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
     if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
   echo "assets OK"
@@ -124,7 +146,7 @@ cohort() {
   rm -rf "$BASE" "$COHORT" "$OUT/run/base"; mkdir -p "$BASE" "$COHORT"
   "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
     -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-    -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
+    -out "$BASE" -seed "$SEED" -persons "${WASL_PERSONS:-6500}" -cerv "${WASL_CERV:-600}" ${SARGS[@]+"${SARGS[@]}"} -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
   "$BIN/wsi7" sim -data "$BASE" -wasl "$ROOT/models" -run "$OUT/run/base" ${MARGS[@]+"${MARGS[@]}"} > "$OUT/run/base.json" 2> "$OUT/run/base.err"
   python3 "$ROOT/pipeline/augment_cohort.py" "$BASE" "$OUT/run/base" "$COHORT"
   echo "cohort → $COHORT"
@@ -134,7 +156,7 @@ run_() {
     (cd "$BIN" && ./wsi7 readerwarm -data "$COHORT" -run "$RUN" "${RARGS[@]}") || exit 1
   fi
   (cd "$BIN" && ./wsi7 orchestrate -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -preps 3 -threads 8 \
-     -source "$SOURCE" -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" -policy "$POLICY" "${RARGS[@]}" ${HARGS[@]+"${HARGS[@]}"} | tee "$RUN.stdout")
+     -source "$SOURCE" -subkill 1 -chaos 2 -natskill -ann hnsw -rerr 0.04 -rdouble merge+close -dual -rseed 1 -seed "$SEED" -policy "$POLICY" "${RARGS[@]}" ${HARGS[@]+"${HARGS[@]}"} ${OARGS[@]+"${OARGS[@]}"} | tee "$RUN.stdout")
 }
 audit()  { (cd "$BIN" && ./wsi7 audit -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > "$RUN/audit.stdout" 2>&1); echo "audit → $RUN/audit.stdout"; }
 tamper() { (cd "$BIN" && ./wsi7 tamper -role auditor -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > "$RUN/tamper.json" 2> "$RUN/tamper.log"); tail -3 "$RUN/tamper.log"; }
@@ -168,14 +190,16 @@ snapshot() {  # write static API responses for frontend development (no backend 
   done
   echo "API samples → $D"
 }
+validate_nats_config
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;
   serve) serve;; snapshot) snapshot;;
   all) check; build; test_; cohort; run_; audit; tamper; booking; report;;
+  container) check; cohort; run_; audit; tamper; booking; report;;   # prebuilt binary (WASL_BIN), no Go toolchain or tests
   booking) booking;;
   ltt) shift; LD="$ROOT/pipeline/results/ltt"; [ "${WASL_LTT_ALL:-0}" = 0 ] || LD="$ROOT/pipeline/results/ltt-all"
        "$ROOT/scripts/ltt_cohorts.sh" "$@" && python3 "$ROOT/scripts/ltt_select.py" "${WASL_LTT_DIR:-$LD}";;
   final) shift; exec "$ROOT/scripts/final_eval.sh" "$@";;
-  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|snapshot|final]"; exit 2;;
+  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|snapshot|final|container]"; exit 2;;
 esac

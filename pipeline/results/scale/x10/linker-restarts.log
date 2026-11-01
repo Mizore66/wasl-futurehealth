@@ -1,0 +1,2568 @@
+# Sanitized x10 linker log: 80 unexpected supervisor restarts; original retained in scratch.
+=== started pid 59359 at 2026-11-01T15:48:06.546333+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 22 [running]:
+internal/runtime/maps.fatal({0x10260d64c?, 0x2c11c2701da8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x2c11c3c91620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x102b1da18?, 0x2c11c5bdaf28?, 0x2c11c3c91620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x2c11c3c91608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x2c11c53428c0, {{0x102a01b48?, 0x2c11c4cc9e00?, 0x102a01b48?}, 0x50?}, 0x2c11c5342988)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x2c11c53428c0, {0x102a01b48, 0x2c11c5461c50}, 0x2c11c5342988)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2c11c53428c0, {{0x102a41940?, 0x2c11c5e221d0?, 0x102a41940?}, 0x60?}, 0x2c11c5342988)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2c11c53428c0, {{0x102a01c58?, 0x2c11c4cc9df0?, 0x102a01c58?}, 0x70?}, 0x2c11c5342988)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2c11c53428c0, {0x102a01c58?, 0x2c11c5e52e70?}, 0x2c11c5342988)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102a01c58, 0x2c11c5e52e70}, {0x2c11c3c91ed8?, 0x2c11c2701808?, 0x50aa35131e0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16dc7a729, 0x80}, {0x1025f4d35, 0x6}, {0x102a01c58?, 0x2c11c5e52e70?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 59618 at 2026-11-01T15:48:24.536279+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 53 [running]:
+internal/runtime/maps.fatal({0x1051f564c?, 0x105620b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x4a4f64b14ed8?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x4a4f65f3f608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x4a4f6e778280, {{0x1055e9b48?, 0x4a4f6c2243f0?, 0x1055e9b48?}, 0x50?}, 0x4a4f6e778348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x4a4f6e778280, {0x1055e9b48, 0x4a4f67813c50}, 0x4a4f6e778348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x4a4f6e778280, {{0x105629940?, 0x4a4f6d880410?, 0x105629940?}, 0xd0?}, 0x4a4f6e778348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x4a4f6e778280, {{0x1055e9c58?, 0x4a4f6c2243d8?, 0x1055e9c58?}, 0x40?}, 0x4a4f6e778348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x4a4f6e778280, {0x1055e9c58?, 0x4a4f6d8f5a40?}, 0x4a4f6e778348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1055e9c58, 0x4a4f6d8f5a40}, {0x4a4f65f3fed8?, 0x4a4f66301008?, 0x50ac95b8bc4?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b092729, 0x80}, {0x1051dcd35, 0x6}, {0x1055e9c58?, 0x4a4f6d8f5a40?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 59837 at 2026-11-01T15:48:51.125337+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 71 [running]:
+internal/runtime/maps.fatal({0x10277964c?, 0x102ba4b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x6f6b72596780?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x6f6b712eb608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x6f6b756fc780, {{0x102b6db48?, 0x6f6b76624220?, 0x102b6db48?}, 0x50?}, 0x6f6b756fc848)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x6f6b756fc780, {0x102b6db48, 0x6f6b7221dc50}, 0x6f6b756fc848)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x6f6b756fc780, {{0x102bad940?, 0x6f6b79ba1c80?, 0x102bad940?}, 0x30?}, 0x6f6b756fc848)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x6f6b756fc780, {{0x102b6dc58?, 0x6f6b76624210?, 0x102b6dc58?}, 0x10?}, 0x6f6b756fc848)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x6f6b756fc780, {0x102b6dc58?, 0x6f6b7569ce10?}, 0x6f6b756fc848)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102b6dc58, 0x6f6b7569ce10}, {0x6f6b712ebed8?, 0x6f6b6f205008?, 0x50aefa22b75?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16db0e729, 0x80}, {0x102760d35, 0x6}, {0x102b6dc58?, 0x6f6b7569ce10?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 60413 at 2026-11-01T15:49:17.89376+08:00
+fatal error: concurrent map read and map write
+
+goroutine 78 [running]:
+internal/runtime/maps.fatal({0x102ae1f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x29f32f04f328?, 0x1027826e8?, {0x102ad271d?, 0x102ad9449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x102ed9b48?, 0x29f3321a25b8?, 0x102ad271d?}, {0x102f10b78, 0x29f333c1d490, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x29f3324143c0, {{0x102ed9b48?, 0x29f3321a25b8?, 0x102ed9b48?}, 0x50?}, 0x29f332414488)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x29f3324143c0, {0x102ed9b48, 0x29f3300afc50}, 0x29f332414488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x29f3324143c0, {{0x102f19940?, 0x29f333c1d3d0?, 0x102f19940?}, 0x80?}, 0x29f332414488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x29f3324143c0, {{0x102ed9c58?, 0x29f3321a25a8?, 0x102ed9c58?}, 0x10?}, 0x29f332414488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x29f3324143c0, {0x102ed9c58?, 0x29f333446e10?}, 0x29f332414488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102ed9c58, 0x29f333446e10}, {0x29f331501ed8?, 0x29f32d401808?, 0x50b071743b5?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d7a2729, 0x80}, {0x102accd35, 0x6}, {0x102ed9c58?, 0x29f333446e10?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 61264 at 2026-11-01T15:49:34.280356+08:00
+=== SIGKILL at 2026-11-01T15:50:33.228938+08:00
+=== started pid 61922 at 2026-11-01T15:50:34.427004+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 78 [running]:
+internal/runtime/maps.fatal({0x104aa564c?, 0x104ed0b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x727ef719c130?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x727ef5dbb608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x727ef8fe8000, {{0x104e99b48?, 0x727ef40821a8?, 0x104e99b48?}, 0x50?}, 0x727ef8fe80c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x727ef8fe8000, {0x104e99b48, 0x727ef6df1c50}, 0x727ef8fe80c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x727ef8fe8000, {{0x104ed9940?, 0x727eff0cce90?, 0x104ed9940?}, 0x10?}, 0x727ef8fe80c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x727ef8fe8000, {{0x104e99c58?, 0x727ef4082188?, 0x104e99c58?}, 0xc0?}, 0x727ef8fe80c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x727ef8fe8000, {0x104e99c58?, 0x727eff2a06c0?}, 0x727ef8fe80c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104e99c58, 0x727eff2a06c0}, {0x727ef5dbbed8?, 0x727ef4080808?, 0x50b7ac2c0ba?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b7e2731, 0x80}, {0x104a8cd35, 0x6}, {0x104e99c58?, 0x727eff2a06c0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 62231 at 2026-11-01T15:50:55.145319+08:00
+fatal error: concurrent map read and map write
+
+goroutine 178 [running]:
+internal/runtime/maps.fatal({0x105045f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x73e4530f3328?, 0x104ce66e8?, {0x10503671d?, 0x10503d449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x10543db48?, 0x73e479fc5550?, 0x10503671d?}, {0x105474b78, 0x73e46560f4d0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x73e47f004280, {{0x10543db48?, 0x73e479fc5550?, 0x10543db48?}, 0x50?}, 0x73e47f004348)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x73e47f004280, {0x10543db48, 0x73e455361c50}, 0x73e47f004348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x73e47f004280, {{0x10547d940?, 0x73e46560f360?, 0x10547d940?}, 0xc0?}, 0x73e47f004348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x73e47f004280, {{0x10543dc58?, 0x73e479fc5540?, 0x10543dc58?}, 0x90?}, 0x73e47f004348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x73e47f004280, {0x10543dc58?, 0x73e475c80990?}, 0x73e47f004348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10543dc58, 0x73e475c80990}, {0x73e4530f3ed8?, 0x73e452600808?, 0x50bf45847b6?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b23e729, 0x80}, {0x105030d35, 0x6}, {0x10543dc58?, 0x73e475c80990?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 63545 at 2026-11-01T15:52:20.14527+08:00
+fatal error: concurrent map read and map write
+
+goroutine 213 [running]:
+internal/runtime/maps.fatal({0x1047e5f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x789016a85328?, 0x1044866e8?, {0x1047d7261?, 0x104c14db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104bddb48?, 0x789020d12988?, 0x1047d7261?}, {0x104c14b78, 0x78901f1577a0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x789024fd5040, {{0x104bddb48?, 0x789020d12988?, 0x104bddb48?}, 0x50?}, 0x789024fd5108)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x789024fd5040, {0x104bddb48, 0x7890177f9c50}, 0x789024fd5108)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x789024fd5040, {{0x104c1d940?, 0x78901f1574b0?, 0x104c1d940?}, 0x90?}, 0x789024fd5108)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x789024fd5040, {{0x104bddc58?, 0x789020d12970?, 0x104bddc58?}, 0x40?}, 0x789024fd5108)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x789024fd5040, {0x104bddc58?, 0x7890236fdd40?}, 0x789024fd5108)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104bddc58, 0x7890236fdd40}, {0x789016a85ed8?, 0x789014a97008?, 0x50c127b9305?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16ba9e729, 0x80}, {0x1047d0d35, 0x6}, {0x104bddc58?, 0x7890236fdd40?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 63948 at 2026-11-01T15:52:41.205133+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 186 [running]:
+internal/runtime/maps.fatal({0x104cbd64c?, 0x1050e8b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x2fa18d19ba08?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x2fa18d861608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x2fa1998c57c0, {{0x1050b1b48?, 0x2fa197784fb0?, 0x1050b1b48?}, 0x50?}, 0x2fa1998c5888)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x2fa1998c57c0, {0x1050b1b48, 0x2fa18ff03c50}, 0x2fa1998c5888)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2fa1998c57c0, {{0x1050f1940?, 0x2fa196d45230?, 0x1050f1940?}, 0x40?}, 0x2fa1998c5888)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2fa1998c57c0, {{0x1050b1c58?, 0x2fa197784f88?, 0x1050b1c58?}, 0x80?}, 0x2fa1998c5888)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2fa1998c57c0, {0x1050b1c58?, 0x2fa19783e480?}, 0x2fa1998c5888)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1050b1c58, 0x2fa19783e480}, {0x2fa18d861ed8?, 0x2fa18d503808?, 0x50c29333aa4?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b5ca731, 0x80}, {0x104ca4d35, 0x6}, {0x1050b1c58?, 0x2fa19783e480?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 64176 at 2026-11-01T15:52:57.087171+08:00
+fatal error: concurrent map read and map write
+
+goroutine 212 [running]:
+internal/runtime/maps.fatal({0x104c4df01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x3ce09b8f1328?, 0x1048ee6e8?, {0x3ce0a04228e0?, 0x10507cdb8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x105045b48?, 0x3ce0c322b458?, 0x3ce0a04228e0?}, {0x10507cb78, 0x3ce0b6babd10, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x3ce0c5780000, {{0x105045b48?, 0x3ce0c322b458?, 0x105045b48?}, 0x50?}, 0x3ce0c57800c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x3ce0c5780000, {0x105045b48, 0x3ce09c83bc50}, 0x3ce0c57800c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x3ce0c5780000, {{0x105085940?, 0x3ce0b6babbb0?, 0x105085940?}, 0x0?}, 0x3ce0c57800c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x3ce0c5780000, {{0x105045c58?, 0x3ce0c322b448?, 0x105045c58?}, 0xd0?}, 0x3ce0c57800c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x3ce0c5780000, {0x105045c58?, 0x3ce0a0a3fdd0?}, 0x3ce0c57800c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105045c58, 0x3ce0a0a3fdd0}, {0x3ce09b8f1ed8?, 0x3ce099a20008?, 0x50c840d9edf?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b636729, 0x80}, {0x104c38d35, 0x6}, {0x105045c58?, 0x3ce0a0a3fdd0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 65042 at 2026-11-01T15:54:00.611729+08:00
+fatal error: concurrent map read and map write
+
+goroutine 137 [running]:
+internal/runtime/maps.fatal({0x102a75f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x534568495328?, 0x1027166e8?, {0x102a67261?, 0x102ea4db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x102e6db48?, 0x5345ac9a7158?, 0x102a67261?}, {0x102ea4b78, 0x534583237ac0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x5345b1b22140, {{0x102e6db48?, 0x5345ac9a7158?, 0x102e6db48?}, 0x50?}, 0x5345b1b22208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x5345b1b22140, {0x102e6db48, 0x534569e11c50}, 0x5345b1b22208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x5345b1b22140, {{0x102ead940?, 0x5345832379d0?, 0x102ead940?}, 0xb0?}, 0x5345b1b22208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x5345b1b22140, {{0x102e6dc58?, 0x5345ac9a7148?, 0x102e6dc58?}, 0x90?}, 0x5345b1b22208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x5345b1b22140, {0x102e6dc58?, 0x53458a881890?}, 0x5345b1b22208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102e6dc58, 0x53458a881890}, {0x534568495ed8?, 0x534567418808?, 0x50d2fe51828?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d80e731, 0x80}, {0x102a60d35, 0x6}, {0x102e6dc58?, 0x53458a881890?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 68332 at 2026-11-01T15:56:00.747914+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 242 [running]:
+internal/runtime/maps.fatal({0x102fdd64c?, 0xd08923bda8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0xd08c781620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x1034eda18?, 0xd093c718b0?, 0xd08c781620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0xd08c781608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0xd091346b40, {{0x1033d1b48?, 0xd0920a3d50?, 0x1033d1b48?}, 0x50?}, 0xd091346c08)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0xd091346b40, {0x1033d1b48, 0xd08c0adc50}, 0xd091346c08)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0xd091346b40, {{0x103411940?, 0xd090be5c30?, 0x103411940?}, 0xa0?}, 0xd091346c08)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0xd091346b40, {{0x1033d1c58?, 0xd0920a3d40?, 0x1033d1c58?}, 0x10?}, 0xd091346c08)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0xd091346b40, {0x1033d1c58?, 0xd093c95a10?}, 0xd091346c08)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1033d1c58, 0xd093c95a10}, {0xd08c781ed8?, 0xd08923b808?, 0x50d408512fc?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d2aa729, 0x80}, {0x102fc4d35, 0x6}, {0x1033d1c58?, 0xd093c95a10?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 68487 at 2026-11-01T15:56:12.346134+08:00
+fatal error: concurrent map read and map write
+
+goroutine 186 [running]:
+internal/runtime/maps.fatal({0x103005f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x5e36d2523328?, 0x102ca66e8?, {0x5e36d9bf4be0?, 0x103434db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1033fdb48?, 0x5e36d1a02490?, 0x5e36d9bf4be0?}, {0x103434b78, 0x5e36dac88100, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x5e36d99f63c0, {{0x1033fdb48?, 0x5e36d1a02490?, 0x1033fdb48?}, 0x50?}, 0x5e36d99f6488)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x5e36d99f63c0, {0x1033fdb48, 0x5e36d2e05c50}, 0x5e36d99f6488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x5e36d99f63c0, {{0x10343d940?, 0x5e36d819dce0?, 0x10343d940?}, 0xf0?}, 0x5e36d99f6488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x5e36d99f63c0, {{0x1033fdc58?, 0x5e36d1a02478?, 0x1033fdc58?}, 0x10?}, 0x5e36d99f6488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x5e36d99f63c0, {0x1033fdc58?, 0x5e36db8ece10?}, 0x5e36d99f6488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1033fdc58, 0x5e36db8ece10}, {0x5e36d2523ed8?, 0x103529880?, 0x50d5b0c6503?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d27e729, 0x80}, {0x102ff0d35, 0x6}, {0x1033fdc58?, 0x5e36db8ece10?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 68722 at 2026-11-01T15:56:30.892388+08:00
+fatal error: concurrent map read and map write
+
+goroutine 273 [running]:
+internal/runtime/maps.fatal({0x105021f01?, 0x8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x6d0b0a0b5328?, 0x104cc26e8?, {0x10500dd4e?, 0x105450db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x105419b48?, 0x6d0b098106e0?, 0x10500dd4e?}, {0x105450b78, 0x6d0b2b720040, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x6d0b3b5943c0, {{0x105419b48?, 0x6d0b098106e0?, 0x105419b48?}, 0x50?}, 0x6d0b3b594488)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x6d0b3b5943c0, {0x105419b48, 0x6d0b0a593c50}, 0x6d0b3b594488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x6d0b3b5943c0, {{0x105459940?, 0x6d0b248d3df0?, 0x105459940?}, 0x10?}, 0x6d0b3b594488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x6d0b3b5943c0, {{0x105419c58?, 0x6d0b098106c0?, 0x105419c58?}, 0x30?}, 0x6d0b3b594488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x6d0b3b5943c0, {0x105419c58?, 0x6d0b30092030?}, 0x6d0b3b594488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105419c58, 0x6d0b30092030}, {0x6d0b0a0b5ed8?, 0x105545880?, 0x50ddfac322e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b262731, 0x80}, {0x10500cd35, 0x6}, {0x105419c58?, 0x6d0b30092030?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 86576 at 2026-11-01T15:58:03.614083+08:00
+fatal error: concurrent map read and map write
+
+goroutine 224 [running]:
+internal/runtime/maps.fatal({0x100489f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x1b1e5981b328?, 0x10012a6e8?, {0x1b1e5b6db9e0?, 0x1008b8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x100881b48?, 0x1b1e5df92b50?, 0x1b1e5b6db9e0?}, {0x1008b8b78, 0x1b1e5c4a9c30, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x1b1e5b89e500, {{0x100881b48?, 0x1b1e5df92b50?, 0x100881b48?}, 0x50?}, 0x1b1e5b89e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x1b1e5b89e500, {0x100881b48, 0x1b1e58763c50}, 0x1b1e5b89e5c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1b1e5b89e500, {{0x1008c1940?, 0x1b1e5c4a98b0?, 0x1008c1940?}, 0x60?}, 0x1b1e5b89e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1b1e5b89e500, {{0x100881c58?, 0x1b1e5df92b40?, 0x100881c58?}, 0x40?}, 0x1b1e5b89e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1b1e5b89e500, {0x100881c58?, 0x1b1e5dc01140?}, 0x1b1e5b89e5c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100881c58, 0x1b1e5dc01140}, {0x1b1e5981bed8?, 0x1b1e55a40808?, 0x50df25f1185?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16fdfa731, 0x80}, {0x100474d35, 0x6}, {0x100881c58?, 0x1b1e5dc01140?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 89506 at 2026-11-01T15:58:16.673565+08:00
+fatal error: concurrent map read and map write
+
+goroutine 218 [running]:
+internal/runtime/maps.fatal({0x102b01f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x5ec78a7fd328?, 0x1027a26e8?, {0x102af3261?, 0x102f30db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x102ef9b48?, 0x5ec78c5b2810?, 0x102af3261?}, {0x102f30b78, 0x5ec78ed98b30, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x5ec78ed9e8c0, {{0x102ef9b48?, 0x5ec78c5b2810?, 0x102ef9b48?}, 0x50?}, 0x5ec78ed9e988)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x5ec78ed9e8c0, {0x102ef9b48, 0x5ec78d069c50}, 0x5ec78ed9e988)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x5ec78ed9e8c0, {{0x102f39940?, 0x5ec78ed98a90?, 0x102f39940?}, 0x20?}, 0x5ec78ed9e988)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x5ec78ed9e8c0, {{0x102ef9c58?, 0x5ec78c5b27f8?, 0x102ef9c58?}, 0xc0?}, 0x5ec78ed9e988)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x5ec78ed9e8c0, {0x102ef9c58?, 0x5ec78ecbd2c0?}, 0x5ec78ed9e988)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102ef9c58, 0x5ec78ecbd2c0}, {0x5ec78a307ed8?, 0x5ec78a309008?, 0x50df8e03be9?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d782729, 0x80}, {0x102aecd35, 0x6}, {0x102ef9c58?, 0x5ec78ecbd2c0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 90492 at 2026-11-01T15:58:21.220151+08:00
+fatal error: concurrent map read and map write
+
+goroutine 118 [running]:
+internal/runtime/maps.fatal({0x100de9f01?, 0x8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x755c61367328?, 0x100a8a6e8?, {0x100dd5d4e?, 0x101218db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1011e1b48?, 0x755c710546f0?, 0x100dd5d4e?}, {0x101218b78, 0x755c683d7590, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x755c7245a3c0, {{0x1011e1b48?, 0x755c710546f0?, 0x1011e1b48?}, 0x50?}, 0x755c7245a488)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x755c7245a3c0, {0x1011e1b48, 0x755c60ba5c50}, 0x755c7245a488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x755c7245a3c0, {{0x101221940?, 0x755c683d72d0?, 0x101221940?}, 0x30?}, 0x755c7245a488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x755c7245a3c0, {{0x1011e1c58?, 0x755c710546e0?, 0x1011e1c58?}, 0x10?}, 0x755c7245a488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x755c7245a3c0, {0x1011e1c58?, 0x755c69940e10?}, 0x755c7245a488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1011e1c58, 0x755c69940e10}, {0x755c61367ed8?, 0x755c5ec10808?, 0x50e21b3bf3e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f49a729, 0x80}, {0x100dd4d35, 0x6}, {0x1011e1c58?, 0x755c69940e10?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 96871 at 2026-11-01T15:58:49.761204+08:00
+fatal error: concurrent map read and map write
+
+goroutine 235 [running]:
+internal/runtime/maps.fatal({0x1045f1f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x4925e7651328?, 0x1042926e8?, {0x4925eddef9c0?, 0x104a20db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1049e9b48?, 0x4925f1f9a580?, 0x4925eddef9c0?}, {0x104a20b78, 0x4925edb10f80, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x4925edf68640, {{0x1049e9b48?, 0x4925f1f9a580?, 0x1049e9b48?}, 0x50?}, 0x4925edf68708)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x4925edf68640, {0x1049e9b48, 0x4925e9135c50}, 0x4925edf68708)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x4925edf68640, {{0x104a29940?, 0x4925edb10e30?, 0x104a29940?}, 0x70?}, 0x4925edf68708)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x4925edf68640, {{0x1049e9c58?, 0x4925f1f9a570?, 0x1049e9c58?}, 0x90?}, 0x4925edf68708)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x4925edf68640, {0x1049e9c58?, 0x4925f13a6990?}, 0x4925edf68708)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1049e9c58, 0x4925f13a6990}, {0x4925e7651ed8?, 0x104b15880?, 0x50e3ae4fe1e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bc92729, 0x80}, {0x1045dcd35, 0x6}, {0x1049e9c58?, 0x4925f13a6990?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 1026 at 2026-11-01T15:59:07.372397+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 251 [running]:
+internal/runtime/maps.fatal({0x10460564c?, 0x104a30b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x7d00bdbc3c08?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x7d00c1c73608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x7d00c14dc280, {{0x1049f9b48?, 0x7d00b9b0bd08?, 0x1049f9b48?}, 0x50?}, 0x7d00c14dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x7d00c14dc280, {0x1049f9b48, 0x7d00bc83fc50}, 0x7d00c14dc348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x7d00c14dc280, {{0x104a39940?, 0x7d00c1e529c0?, 0x104a39940?}, 0x50?}, 0x7d00c14dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x7d00c14dc280, {{0x1049f9c58?, 0x7d00b9b0bcf8?, 0x1049f9c58?}, 0x60?}, 0x7d00c14dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x7d00c14dc280, {0x1049f9c58?, 0x7d00c1f9a660?}, 0x7d00c14dc348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1049f9c58, 0x7d00c1f9a660}, {0x7d00c1c73ed8?, 0x7d00b9a81008?, 0x50e47f45433?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bc82729, 0x80}, {0x1045ecd35, 0x6}, {0x1049f9c58?, 0x7d00c1f9a660?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 3181 at 2026-11-01T15:59:16.504412+08:00
+fatal error: concurrent map read and map write
+
+goroutine 94 [running]:
+internal/runtime/maps.fatal({0x1045b5f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x666335a71328?, 0x1042566e8?, {0x1045a671d?, 0x1045ad449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1049adb48?, 0x666333c03880?, 0x1045a671d?}, {0x1049e4b78, 0x666338082c60, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x66633c37e280, {{0x1049adb48?, 0x666333c03880?, 0x1049adb48?}, 0x50?}, 0x66633c37e348)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x66633c37e280, {0x1049adb48, 0x6663350c3c50}, 0x66633c37e348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x66633c37e280, {{0x1049ed940?, 0x666338082b50?, 0x1049ed940?}, 0x50?}, 0x66633c37e348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x66633c37e280, {{0x1049adc58?, 0x666333c03870?, 0x1049adc58?}, 0x40?}, 0x66633c37e348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x66633c37e280, {0x1049adc58?, 0x66633a439a40?}, 0x66633c37e348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1049adc58, 0x66633a439a40}, {0x666335a71ed8?, 0x666339f80008?, 0x50e58e864a7?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bcce729, 0x80}, {0x1045a0d35, 0x6}, {0x1049adc58?, 0x66633a439a40?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 5825 at 2026-11-01T15:59:28.352915+08:00
+fatal error: concurrent map read and map write
+
+goroutine 231 [running]:
+internal/runtime/maps.fatal({0x100f99f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x57a864591328?, 0x100c3a6e8?, {0x100f8b261?, 0x1013c8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x101391b48?, 0x57a860302ef0?, 0x100f8b261?}, {0x1013c8b78, 0x57a864a15340, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x57a8664a6000, {{0x101391b48?, 0x57a860302ef0?, 0x101391b48?}, 0x50?}, 0x57a8664a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x57a8664a6000, {0x101391b48, 0x57a86305bc50}, 0x57a8664a60c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x57a8664a6000, {{0x1013d1940?, 0x57a864a151b0?, 0x1013d1940?}, 0xe0?}, 0x57a8664a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x57a8664a6000, {{0x101391c58?, 0x57a860302ed8?, 0x101391c58?}, 0xd0?}, 0x57a8664a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x57a8664a6000, {0x101391c58?, 0x57a8648311d0?}, 0x57a8664a60c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x101391c58, 0x57a8648311d0}, {0x57a8602d0ed8?, 0x57a86039b008?, 0x50e643d5bf9?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f2ea731, 0x80}, {0x100f84d35, 0x6}, {0x101391c58?, 0x57a8648311d0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 7587 at 2026-11-01T15:59:36.270752+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 169 [running]:
+internal/runtime/maps.fatal({0x1009d964c?, 0x100e04b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x81c02845b0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x81bfae5608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x81ceffe3c0, {{0x100dcdb48?, 0x81bc3031b8?, 0x100dcdb48?}, 0x50?}, 0x81ceffe488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x81ceffe3c0, {0x100dcdb48, 0x81befddc50}, 0x81ceffe488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x81ceffe3c0, {{0x100e0d940?, 0x81d02d4140?, 0x100e0d940?}, 0xd0?}, 0x81ceffe488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x81ceffe3c0, {{0x100dcdc58?, 0x81bc303190?, 0x100dcdc58?}, 0x60?}, 0x81ceffe488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x81ceffe3c0, {0x100dcdc58?, 0x81cfa61b60?}, 0x81ceffe488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100dcdc58, 0x81cfa61b60}, {0x81bfae5ed8?, 0x81bd121008?, 0x50e8ca412c6?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f8ae731, 0x80}, {0x1009c0d35, 0x6}, {0x100dcdc58?, 0x81cfa61b60?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 9591 at 2026-11-01T16:00:04.521271+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 234 [running]:
+internal/runtime/maps.fatal({0x104d5164c?, 0x4780e40735a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x4780e5377620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x105261a18?, 0x4781161d3578?, 0x4780e5377620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x4780e5377608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x47813acac3c0, {{0x105145b48?, 0x478131efbe60?, 0x105145b48?}, 0x50?}, 0x47813acac488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x47813acac3c0, {0x105145b48, 0x4780e6977c50}, 0x47813acac488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x47813acac3c0, {{0x105185940?, 0x478100bc7d50?, 0x105185940?}, 0x20?}, 0x47813acac488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x47813acac3c0, {{0x105145c58?, 0x478131efbe40?, 0x105145c58?}, 0xe0?}, 0x47813acac488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x47813acac3c0, {0x105145c58?, 0x478128aa6de0?}, 0x47813acac488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105145c58, 0x478128aa6de0}, {0x4780e5377ed8?, 0x4780e4073008?, 0x50f8b1898a8?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b536729, 0x80}, {0x104d38d35, 0x6}, {0x105145c58?, 0x478128aa6de0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 21231 at 2026-11-01T16:03:02.426123+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 308 [running]:
+internal/runtime/maps.fatal({0x104d3564c?, 0x105160b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x29829cb0d3a0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x298298e45608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x2982a5e9a280, {{0x105129b48?, 0x2982a99246e0?, 0x105129b48?}, 0x50?}, 0x2982a5e9a348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x2982a5e9a280, {0x105129b48, 0x29829b597c50}, 0x2982a5e9a348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2982a5e9a280, {{0x105169940?, 0x2982a9233630?, 0x105169940?}, 0xc0?}, 0x2982a5e9a348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2982a5e9a280, {{0x105129c58?, 0x2982a99246d0?, 0x105129c58?}, 0xd0?}, 0x2982a5e9a348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2982a5e9a280, {0x105129c58?, 0x2982aad645d0?}, 0x2982a5e9a348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105129c58, 0x2982aad645d0}, {0x298298e45ed8?, 0x29829875b808?, 0x50faf047e10?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b552729, 0x80}, {0x104d1cd35, 0x6}, {0x105129c58?, 0x2982aad645d0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 26845 at 2026-11-01T16:03:27.50862+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 46 [running]:
+internal/runtime/maps.fatal({0x10056564c?, 0x100990b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x687e33e94130?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x687e34fad608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x687e3f3143c0, {{0x100959b48?, 0x687e34b013e0?, 0x100959b48?}, 0x50?}, 0x687e3f314488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x687e3f3143c0, {0x100959b48, 0x687e36137c50}, 0x687e3f314488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x687e3f3143c0, {{0x100999940?, 0x687e3bf82210?, 0x100999940?}, 0x40?}, 0x687e3f314488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x687e3f3143c0, {{0x100959c58?, 0x687e34b013c0?, 0x100959c58?}, 0x80?}, 0x687e3f314488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x687e3f3143c0, {0x100959c58?, 0x687e3e1fa480?}, 0x687e3f314488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100959c58, 0x687e3e1fa480}, {0x687e34faded8?, 0x687e333a0808?, 0x50fc6fd79f2?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16fd22731, 0x80}, {0x10054cd35, 0x6}, {0x100959c58?, 0x687e3e1fa480?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 30584 at 2026-11-01T16:03:44.264518+08:00
+fatal error: concurrent map read and map write
+
+goroutine 283 [running]:
+internal/runtime/maps.fatal({0x101119f01?, 0x6?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x78b46ab5d328?, 0x100dba6e8?, {0x101104e55?, 0x101548db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x101511b48?, 0x78b472c137c0?, 0x101104e55?}, {0x101548b78, 0x78b46f4d1920, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x78b4759a6000, {{0x101511b48?, 0x78b472c137c0?, 0x101511b48?}, 0x50?}, 0x78b4759a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x78b4759a6000, {0x101511b48, 0x78b46ac55c50}, 0x78b4759a60c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x78b4759a6000, {{0x101551940?, 0x78b46f4d16e0?, 0x101551940?}, 0xb0?}, 0x78b4759a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x78b4759a6000, {{0x101511c58?, 0x78b472c137b0?, 0x101511c58?}, 0x90?}, 0x78b4759a60c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x78b4759a6000, {0x101511c58?, 0x78b473812090?}, 0x78b4759a60c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x101511c58, 0x78b473812090}, {0x78b46ab5ded8?, 0x78b467e80008?, 0x50fe492d587?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f16a729, 0x80}, {0x101104d35, 0x6}, {0x101511c58?, 0x78b473812090?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 35193 at 2026-11-01T16:04:04.946741+08:00
+fatal error: concurrent map read and map write
+
+goroutine 238 [running]:
+internal/runtime/maps.fatal({0x10516df01?, 0x9?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x4e05828f328?, 0x104e0e6e8?, {0x10515a9ad?, 0x10559cdb8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x105565b48?, 0x4e056c94980?, 0x10515a9ad?}, {0x10559cb78, 0x4e06d4507f0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x4e0590132c0, {{0x105565b48?, 0x4e056c94980?, 0x105565b48?}, 0x50?}, 0x4e059013388)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x4e0590132c0, {0x105565b48, 0x4e0578c3c50}, 0x4e059013388)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x4e0590132c0, {{0x1055a5940?, 0x4e06d450750?, 0x1055a5940?}, 0xe0?}, 0x4e059013388)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x4e0590132c0, {{0x105565c58?, 0x4e056c94970?, 0x105565c58?}, 0x30?}, 0x4e059013388)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x4e0590132c0, {0x105565c58?, 0x4e060112930?}, 0x4e059013388)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105565c58, 0x4e060112930}, {0x4e05828fed8?, 0x4e055988008?, 0x5102041d4de?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b116729, 0x80}, {0x105158d35, 0x6}, {0x105565c58?, 0x4e060112930?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 41217 at 2026-11-01T16:04:46.675313+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 157 [running]:
+internal/runtime/maps.fatal({0x10523964c?, 0x105664b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x6aa488479388?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x6aa4874fd608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x6aa497618140, {{0x10562db48?, 0x6aa498c522e0?, 0x10562db48?}, 0x90?}, 0x6aa497618208)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x6aa497618140, {0x10562db48, 0x6aa4870c9e90}, 0x6aa497618208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x6aa497618140, {{0x10566d940?, 0x6aa49209fc30?, 0x10566d940?}, 0x0?}, 0x6aa497618208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x6aa497618140, {{0x10562dc58?, 0x6aa498c522c8?, 0x10562dc58?}, 0xe0?}, 0x6aa497618208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x6aa497618140, {0x10562dc58?, 0x6aa48e6a39e0?}, 0x6aa497618208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10562dc58, 0x6aa48e6a39e0}, {0x6aa4874fded8?, 0x6aa48470b008?, 0x510486e91e0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b04e729, 0x80}, {0x105220d35, 0x6}, {0x10562dc58?, 0x6aa48e6a39e0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 41936 at 2026-11-01T16:05:14.760896+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 297 [running]:
+internal/runtime/maps.fatal({0x100ccd64c?, 0x1010f8b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x7b425482da20?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x7b4258fab608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x7b425a71e640, {{0x1010c1b48?, 0x7b4254811008?, 0x1010c1b48?}, 0x50?}, 0x7b425a71e708)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x7b425a71e640, {0x1010c1b48, 0x7b42574efc50}, 0x7b425a71e708)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x7b425a71e640, {{0x101101940?, 0x7b4257b6d7a0?, 0x101101940?}, 0x30?}, 0x7b425a71e708)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x7b425a71e640, {{0x1010c1c58?, 0x7b4254810ff8?, 0x1010c1c58?}, 0xc0?}, 0x7b425a71e708)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x7b425a71e640, {0x1010c1c58?, 0x7b42592de0c0?}, 0x7b425a71e708)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1010c1c58, 0x7b42592de0c0}, {0x7b425479ced8?, 0x7b4254821008?, 0x51050d89981?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f5ba729, 0x80}, {0x100cb4d35, 0x6}, {0x1010c1c58?, 0x7b42592de0c0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 42000 at 2026-11-01T16:05:20.634591+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 295 [running]:
+internal/runtime/maps.fatal({0x1049e964c?, 0x104e14b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x65684f319a38?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x656850abf608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x6568570132c0, {{0x104dddb48?, 0x656857130608?, 0x104dddb48?}, 0x50?}, 0x656857013388)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x6568570132c0, {0x104dddb48, 0x656850b23c50}, 0x656857013388)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x6568570132c0, {{0x104e1d940?, 0x656856589b70?, 0x104e1d940?}, 0x20?}, 0x656857013388)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x6568570132c0, {{0x104dddc58?, 0x6568571305f8?, 0x104dddc58?}, 0x20?}, 0x656857013388)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x6568570132c0, {0x104dddc58?, 0x65684ff8fc20?}, 0x656857013388)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104dddc58, 0x65684ff8fc20}, {0x65684ec26ed8?, 0x65684de80008?, 0x5105e4de0e3?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b89e729, 0x80}, {0x1049d0d35, 0x6}, {0x104dddc58?, 0x65684ff8fc20?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 42135 at 2026-11-01T16:05:30.041814+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 298 [running]:
+internal/runtime/maps.fatal({0x104a5564c?, 0x74e46b005a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x74e9daef620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x104f65a18?, 0x74e96806258?, 0x74e9daef620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x74e9daef608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x74e9d3ac000, {{0x104e49b48?, 0x74e9917d920?, 0x104e49b48?}, 0x50?}, 0x74e9d3ac0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x74e9d3ac000, {0x104e49b48, 0x74e47f35c50}, 0x74e9d3ac0c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x74e9d3ac000, {{0x104e89940?, 0x74e96b9f770?, 0x104e89940?}, 0x30?}, 0x74e9d3ac0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x74e9d3ac000, {{0x104e49c58?, 0x74e9917d910?, 0x104e49c58?}, 0xa0?}, 0x74e9d3ac0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x74e9d3ac000, {0x104e49c58?, 0x74e98cc28a0?}, 0x74e9d3ac0c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104e49c58, 0x74e98cc28a0}, {0x74e9daefed8?, 0x74e46b00008?, 0x5113e7c9146?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b832731, 0x80}, {0x104a3cd35, 0x6}, {0x104e49c58?, 0x74e98cc28a0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 46365 at 2026-11-01T16:08:06.778474+08:00
+fatal error: concurrent map read and map write
+
+goroutine 205 [running]:
+internal/runtime/maps.fatal({0x104d99f01?, 0x6?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x56c46c949328?, 0x104a3a6e8?, {0x104d84e4f?, 0x1051c8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x105191b48?, 0x56c469385d30?, 0x104d84e4f?}, {0x1051c8b78, 0x56c4711cd120, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x56c47376d2c0, {{0x105191b48?, 0x56c469385d30?, 0x105191b48?}, 0x50?}, 0x56c47376d388)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x56c47376d2c0, {0x105191b48, 0x56c46bd43c50}, 0x56c47376d388)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x56c47376d2c0, {{0x1051d1940?, 0x56c4711ccf50?, 0x1051d1940?}, 0xe0?}, 0x56c47376d388)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x56c47376d2c0, {{0x105191c58?, 0x56c469385d20?, 0x105191c58?}, 0x40?}, 0x56c47376d388)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x56c47376d2c0, {0x105191c58?, 0x56c4743d2540?}, 0x56c47376d388)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105191c58, 0x56c4743d2540}, {0x56c46c949ed8?, 0x56c469dfc808?, 0x511570309d0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b4ea731, 0x80}, {0x104d84d35, 0x6}, {0x105191c58?, 0x56c4743d2540?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 50194 at 2026-11-01T16:08:23.902277+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 296 [running]:
+internal/runtime/maps.fatal({0x10140164c?, 0x3077ff1f0da8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x307803867620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x101911a18?, 0x30780a2138e8?, 0x307803867620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x307803867608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x307809abdcc0, {{0x1017f5b48?, 0x30780949ec78?, 0x1017f5b48?}, 0x50?}, 0x307809abdd88)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x307809abdcc0, {0x1017f5b48, 0x307801f05c50}, 0x307809abdd88)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x307809abdcc0, {{0x101835940?, 0x30780b0f9790?, 0x101835940?}, 0x50?}, 0x307809abdd88)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x307809abdcc0, {{0x1017f5c58?, 0x30780949ec68?, 0x1017f5c58?}, 0x40?}, 0x307809abdd88)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x307809abdcc0, {0x1017f5c58?, 0x30780b7f0b40?}, 0x307809abdd88)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1017f5c58, 0x30780b7f0b40}, {0x307803867ed8?, 0x3077ff1f0808?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16ee86731, 0x80}, {0x1013e8d35, 0x6}, {0x1017f5c58?, 0x30780b7f0b40?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 50905 at 2026-11-01T16:08:40.080725+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 224 [running]:
+internal/runtime/maps.fatal({0x100c1964c?, 0x797cb1f80da8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x797cb46ab620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x101129a18?, 0x797cb817b5c8?, 0x797cb46ab620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x797cb46ab608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x797cb94d2000, {{0x10100db48?, 0x797cb3ff5098?, 0x10100db48?}, 0x50?}, 0x797cb94d20c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x797cb94d2000, {0x10100db48, 0x797cb4cbbc50}, 0x797cb94d20c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x797cb94d2000, {{0x10104d940?, 0x797cb939d290?, 0x10104d940?}, 0x90?}, 0x797cb94d20c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x797cb94d2000, {{0x10100dc58?, 0x797cb3ff5080?, 0x10100dc58?}, 0xf0?}, 0x797cb94d20c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x797cb94d2000, {0x10100dc58?, 0x797cb845b8f0?}, 0x797cb94d20c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10100dc58, 0x797cb845b8f0}, {0x797cb46abed8?, 0x797cb1f80808?, 0x5117c06ea11?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f66e729, 0x80}, {0x100c00d35, 0x6}, {0x10100dc58?, 0x797cb845b8f0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 51037 at 2026-11-01T16:08:49.779919+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 323 [running]:
+internal/runtime/maps.fatal({0x1050f564c?, 0x3c7f45e805a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x3c7f3c309620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x105605a18?, 0x3c7f5487c8d8?, 0x3c7f3c309620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x3c7f3c309608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x3c7f914fb680, {{0x1054e9b48?, 0x3c7f643bcad0?, 0x1054e9b48?}, 0x50?}, 0x3c7f914fb748)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x3c7f914fb680, {0x1054e9b48, 0x3c7f3cc17c50}, 0x3c7f914fb748)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x3c7f914fb680, {{0x105529940?, 0x3c7f4c18b5d0?, 0x105529940?}, 0x10?}, 0x3c7f914fb748)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x3c7f914fb680, {{0x1054e9c58?, 0x3c7f643bcac0?, 0x1054e9c58?}, 0x20?}, 0x3c7f914fb748)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x3c7f914fb680, {0x1054e9c58?, 0x3c7f65bfb020?}, 0x3c7f914fb748)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1054e9c58, 0x3c7f65bfb020}, {0x3c7f3c309ed8?, 0x3c7f45e80008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b192729, 0x80}, {0x1050dcd35, 0x6}, {0x1054e9c58?, 0x3c7f65bfb020?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 53448 at 2026-11-01T16:11:13.88563+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 279 [running]:
+internal/runtime/maps.fatal({0x104ee564c?, 0x71ac483885a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x71ac45e0b620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x1053f5a18?, 0x71ac949a04f8?, 0x71ac45e0b620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x71ac45e0b608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x71ac92314280, {{0x1052d9b48?, 0x71ac945be7c0?, 0x1052d9b48?}, 0x50?}, 0x71ac92314348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x71ac92314280, {0x1052d9b48, 0x71ac45e1dc50}, 0x71ac92314348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x71ac92314280, {{0x105319940?, 0x71ac94744770?, 0x105319940?}, 0x0?}, 0x71ac92314348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x71ac92314280, {{0x1052d9c58?, 0x71ac945be7b0?, 0x1052d9c58?}, 0xe0?}, 0x71ac92314348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x71ac92314280, {0x1052d9c58?, 0x71ac949559e0?}, 0x71ac92314348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1052d9c58, 0x71ac949559e0}, {0x71ac45e0bed8?, 0x71ac48388008?, 0x513020d037f?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b3a2729, 0x80}, {0x104eccd35, 0x6}, {0x1052d9c58?, 0x71ac949559e0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 55145 at 2026-11-01T16:13:22.458343+08:00
+fatal error: concurrent map read and map write
+
+goroutine 249 [running]:
+internal/runtime/maps.fatal({0x102ab9f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x1808ffcdd328?, 0x10275a6e8?, {0x102aaa71d?, 0x102ab1449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x102eb1b48?, 0x180926a727e0?, 0x102aaa71d?}, {0x102ee8b78, 0x18092fa4e9a0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x180930098280, {{0x102eb1b48?, 0x180926a727e0?, 0x102eb1b48?}, 0x50?}, 0x180930098348)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x180930098280, {0x102eb1b48, 0x1809020e5c50}, 0x180930098348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x180930098280, {{0x102ef1940?, 0x18092fa4e900?, 0x102ef1940?}, 0x90?}, 0x180930098348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x180930098280, {{0x102eb1c58?, 0x180926a727b8?, 0x102eb1c58?}, 0x60?}, 0x180930098348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x180930098280, {0x102eb1c58?, 0x18092ff50960?}, 0x180930098348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102eb1c58, 0x18092ff50960}, {0x1808ffcdded8?, 0x1808ff2b9808?, 0x5136ea0196c?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d7ca729, 0x80}, {0x102aa4d35, 0x6}, {0x102eb1c58?, 0x18092ff50960?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 56229 at 2026-11-01T16:14:38.337322+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 277 [running]:
+internal/runtime/maps.fatal({0x104e0964c?, 0x105234b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x439d68324610?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x439d65ab3608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x439d6dd11a40, {{0x1051fdb48?, 0x439d66181ed8?, 0x1051fdb48?}, 0x50?}, 0x439d6dd11b08)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x439d6dd11a40, {0x1051fdb48, 0x439d66547c50}, 0x439d6dd11b08)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x439d6dd11a40, {{0x10523d940?, 0x439d74412540?, 0x10523d940?}, 0x70?}, 0x439d6dd11b08)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x439d6dd11a40, {{0x1051fdc58?, 0x439d66181e90?, 0x1051fdc58?}, 0x90?}, 0x439d6dd11b08)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x439d6dd11a40, {0x1051fdc58?, 0x439d76923b90?}, 0x439d6dd11b08)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1051fdc58, 0x439d76923b90}, {0x439d65ab3ed8?, 0x439d636ef808?, 0x513a7015ebb?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b47e731, 0x80}, {0x104df0d35, 0x6}, {0x1051fdc58?, 0x439d76923b90?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 56732 at 2026-11-01T16:15:17.741076+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 293 [running]:
+internal/runtime/maps.fatal({0x10100964c?, 0x101434b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x5fe8ec8a64e8?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x5fe8e910f608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x5fe8f2d043c0, {{0x1013fdb48?, 0x5fe8e9303f28?, 0x1013fdb48?}, 0x50?}, 0x5fe8f2d04488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x5fe8f2d043c0, {0x1013fdb48, 0x5fe8ea679c50}, 0x5fe8f2d04488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x5fe8f2d043c0, {{0x10143d940?, 0x5fe8f4619c80?, 0x10143d940?}, 0x30?}, 0x5fe8f2d04488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x5fe8f2d043c0, {{0x1013fdc58?, 0x5fe8e9303f10?, 0x1013fdc58?}, 0x40?}, 0x5fe8f2d04488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x5fe8f2d043c0, {0x1013fdc58?, 0x5fe8ee4d8840?}, 0x5fe8f2d04488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1013fdc58, 0x5fe8ee4d8840}, {0x5fe8e910fed8?, 0x101529880?, 0x513bd427ebd?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f27e731, 0x80}, {0x100ff0d35, 0x6}, {0x1013fdc58?, 0x5fe8ee4d8840?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 56921 at 2026-11-01T16:15:33.297929+08:00
+fatal error: concurrent map read and map write
+
+goroutine 255 [running]:
+internal/runtime/maps.fatal({0x104569f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x4a3c1773b328?, 0x10420a6e8?, {0x4a3c2e4f2110?, 0x104998db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104961b48?, 0x4a3c20d2dab8?, 0x4a3c2e4f2110?}, {0x104998b78, 0x4a3c30cfdd50, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x4a3c4b1c4280, {{0x104961b48?, 0x4a3c20d2dab8?, 0x104961b48?}, 0x50?}, 0x4a3c4b1c4348)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x4a3c4b1c4280, {0x104961b48, 0x4a3c191efc50}, 0x4a3c4b1c4348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x4a3c4b1c4280, {{0x1049a1940?, 0x4a3c30cfd860?, 0x1049a1940?}, 0x30?}, 0x4a3c4b1c4348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x4a3c4b1c4280, {{0x104961c58?, 0x4a3c20d2da88?, 0x104961c58?}, 0x30?}, 0x4a3c4b1c4348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x4a3c4b1c4280, {0x104961c58?, 0x4a3c3b950f30?}, 0x4a3c4b1c4348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104961c58, 0x4a3c3b950f30}, {0x4a3c1773bed8?, 0x4a3c167ea008?, 0x5144e71648e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bd1a729, 0x80}, {0x104554d35, 0x6}, {0x104961c58?, 0x4a3c3b950f30?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 59231 at 2026-11-01T16:17:14.799189+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 300 [running]:
+internal/runtime/maps.fatal({0x10264164c?, 0x102a6cb78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0xcc6fd66d08?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0xcc6d2e5608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0xcc937a6780, {{0x102a35b48?, 0xcc938904c8?, 0x102a35b48?}, 0x0?}, 0xcc937a6848)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0xcc937a6780, {0x102a35b48, 0xcc6f5b9500}, 0xcc937a6848)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0xcc937a6780, {{0x102a75940?, 0xcc75e427a0?, 0x102a75940?}, 0x0?}, 0xcc937a6848)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0xcc937a6780, {{0x102a35c58?, 0xcc938904b8?, 0x102a35c58?}, 0x20?}, 0xcc937a6848)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0xcc937a6780, {0x102a35c58?, 0xcc856b2120?}, 0xcc937a6848)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102a35c58, 0xcc856b2120}, {0xcc6d2e5ed8?, 0xcc6c904008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16dc46729, 0x80}, {0x102628d35, 0x6}, {0x102a35c58?, 0xcc856b2120?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 60051 at 2026-11-01T16:18:14.043558+08:00
+fatal error: concurrent map read and map write
+
+goroutine 237 [running]:
+internal/runtime/maps.fatal({0x10279df01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x2ede7d56b328?, 0x10243e6e8?, {0x10278e71d?, 0x102795449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x102b95b48?, 0x2ede94568018?, 0x10278e71d?}, {0x102bccb78, 0x2ede99da87e0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x2ede8dcdaa00, {{0x102b95b48?, 0x2ede94568018?, 0x102b95b48?}, 0x50?}, 0x2ede8dcdaac8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x2ede8dcdaa00, {0x102b95b48, 0x2ede7d613c50}, 0x2ede8dcdaac8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2ede8dcdaa00, {{0x102bd5940?, 0x2ede99da8740?, 0x102bd5940?}, 0xd0?}, 0x2ede8dcdaac8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2ede8dcdaa00, {{0x102b95c58?, 0x2ede94568008?, 0x102b95c58?}, 0xf0?}, 0x2ede8dcdaac8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2ede8dcdaa00, {0x102b95c58?, 0x2ede9f0840f0?}, 0x2ede8dcdaac8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102b95c58, 0x2ede9f0840f0}, {0x2ede7d56bed8?, 0x2ede7b67d008?, 0x514f86c5347?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16dae6729, 0x80}, {0x102788d35, 0x6}, {0x102b95c58?, 0x2ede9f0840f0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 70607 at 2026-11-01T16:19:13.628348+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 124 [running]:
+internal/runtime/maps.fatal({0x10093964c?, 0x100d64b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x18363931e798?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x18363a0a3608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x18366d00a280, {{0x100d2db48?, 0x18366ae9b850?, 0x100d2db48?}, 0x50?}, 0x18366d00a348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x18366d00a280, {0x100d2db48, 0x18363a0c7c50}, 0x18366d00a348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x18366d00a280, {{0x100d6d940?, 0x183666baa940?, 0x100d6d940?}, 0xd0?}, 0x18366d00a348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x18366d00a280, {{0x100d2dc58?, 0x18366ae9b840?, 0x100d2dc58?}, 0x10?}, 0x18366d00a348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x18366d00a280, {0x100d2dc58?, 0x18364f23f110?}, 0x18366d00a348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100d2dc58, 0x18364f23f110}, {0x18363a0a3ed8?, 0x18363811c808?, 0x5158972662e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f94e729, 0x80}, {0x100920d35, 0x6}, {0x100d2dc58?, 0x18364f23f110?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 84367 at 2026-11-01T16:20:55.007536+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 282 [running]:
+internal/runtime/maps.fatal({0x10051164c?, 0x10093cb78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0xc49f932dad0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0xc49f5317608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0xc4a0fb4c3c0, {{0x100905b48?, 0xc4a190f6540?, 0x100905b48?}, 0x50?}, 0xc4a0fb4c488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0xc4a0fb4c3c0, {0x100905b48, 0xc49f7559c50}, 0xc4a0fb4c488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0xc4a0fb4c3c0, {{0x100945940?, 0xc4a18b655b0?, 0x100945940?}, 0x40?}, 0xc4a0fb4c488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0xc4a0fb4c3c0, {{0x100905c58?, 0xc4a190f6530?, 0x100905c58?}, 0x90?}, 0xc4a0fb4c488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0xc4a0fb4c3c0, {0x100905c58?, 0xc4a19229590?}, 0xc4a0fb4c488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100905c58, 0xc4a19229590}, {0xc49f5317ed8?, 0xc49f4800808?, 0x515d8218895?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16fd76729, 0x80}, {0x1004f8d35, 0x6}, {0x100905c58?, 0xc4a19229590?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 85795 at 2026-11-01T16:21:50.004884+08:00
+fatal error: concurrent map read and map write
+
+goroutine 288 [running]:
+internal/runtime/maps.fatal({0x1010a9f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x4f466b687328?, 0x100d4a6e8?, {0x4f466e9a7230?, 0x1014d8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1014a1b48?, 0x4f4672886b58?, 0x4f466e9a7230?}, {0x1014d8b78, 0x4f466facec90, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x4f466f1a6f00, {{0x1014a1b48?, 0x4f4672886b58?, 0x1014a1b48?}, 0x50?}, 0x4f466f1a6fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x4f466f1a6f00, {0x1014a1b48, 0x4f466d75fc50}, 0x4f466f1a6fc8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x4f466f1a6f00, {{0x1014e1940?, 0x4f466faceb80?, 0x1014e1940?}, 0x80?}, 0x4f466f1a6fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x4f466f1a6f00, {{0x1014a1c58?, 0x4f4672886b48?, 0x1014a1c58?}, 0x50?}, 0x4f466f1a6fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x4f466f1a6f00, {0x1014a1c58?, 0x4f4671224a50?}, 0x4f466f1a6fc8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1014a1c58, 0x4f4671224a50}, {0x4f466ad87ed8?, 0x4f466ad8a008?, 0x515e32de4f9?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f1da729, 0x80}, {0x101094d35, 0x6}, {0x1014a1c58?, 0x4f4671224a50?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 85913 at 2026-11-01T16:21:57.725203+08:00
+fatal error: concurrent map read and map write
+
+goroutine 238 [running]:
+internal/runtime/maps.fatal({0x104a31f01?, 0x6?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x223e0d761328?, 0x1046d26e8?, {0x104a1ce4f?, 0x104e60db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104e29b48?, 0x223e0c8843c8?, 0x104a1ce4f?}, {0x104e60b78, 0x223e16b7c830, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x223e191523c0, {{0x104e29b48?, 0x223e0c8843c8?, 0x104e29b48?}, 0x50?}, 0x223e19152488)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x223e191523c0, {0x104e29b48, 0x223e0f1ffc50}, 0x223e19152488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x223e191523c0, {{0x104e69940?, 0x223e16b7c700?, 0x104e69940?}, 0x10?}, 0x223e19152488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x223e191523c0, {{0x104e29c58?, 0x223e0c884388?, 0x104e29c58?}, 0xf0?}, 0x223e19152488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x223e191523c0, {0x104e29c58?, 0x223e138feff0?}, 0x223e19152488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104e29c58, 0x223e138feff0}, {0x223e0d761ed8?, 0x223e0d27c808?, 0x515fd47266f?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b852729, 0x80}, {0x104a1cd35, 0x6}, {0x104e29c58?, 0x223e138feff0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 86140 at 2026-11-01T16:22:15.966414+08:00
+fatal error: concurrent map read and map write
+
+goroutine 304 [running]:
+internal/runtime/maps.fatal({0x104b05f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x1418b3185328?, 0x1047a66e8?, {0x1418c2f0a680?, 0x104f34db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104efdb48?, 0x1418beafce50?, 0x1418c2f0a680?}, {0x104f34b78, 0x1418c3e75980, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x1418ce19c500, {{0x104efdb48?, 0x1418beafce50?, 0x104efdb48?}, 0x50?}, 0x1418ce19c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x1418ce19c500, {0x104efdb48, 0x1418b4bafc50}, 0x1418ce19c5c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1418ce19c500, {{0x104f3d940?, 0x1418c3e758d0?, 0x104f3d940?}, 0x70?}, 0x1418ce19c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1418ce19c500, {{0x104efdc58?, 0x1418beafce40?, 0x104efdc58?}, 0x0?}, 0x1418ce19c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1418ce19c500, {0x104efdc58?, 0x1418c1d49b00?}, 0x1418ce19c5c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104efdc58, 0x1418c1d49b00}, {0x1418b1e2ded8?, 0x1418b1e80008?, 0x516344a6811?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b77e729, 0x80}, {0x104af0d35, 0x6}, {0x104efdc58?, 0x1418c1d49b00?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 86685 at 2026-11-01T16:22:54.429225+08:00
+fatal error: concurrent map read and map write
+
+goroutine 249 [running]:
+internal/runtime/maps.fatal({0x100a71f01?, 0x8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x64f2f8f79328?, 0x1007126e8?, {0x100a5dd4e?, 0x100ea0db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x100e69b48?, 0x64f30663d050?, 0x100a5dd4e?}, {0x100ea0b78, 0x64f3057224b0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x64f30ea85540, {{0x100e69b48?, 0x64f30663d050?, 0x100e69b48?}, 0x50?}, 0x64f30ea85608)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x64f30ea85540, {0x100e69b48, 0x64f2f8427c50}, 0x64f30ea85608)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x64f30ea85540, {{0x100ea9940?, 0x64f305722310?, 0x100ea9940?}, 0x50?}, 0x64f30ea85608)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x64f30ea85540, {{0x100e69c58?, 0x64f30663d018?, 0x100e69c58?}, 0xf0?}, 0x64f30ea85608)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x64f30ea85540, {0x100e69c58?, 0x64f30dbab2f0?}, 0x64f30ea85608)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100e69c58, 0x64f30dbab2f0}, {0x64f2f8f79ed8?, 0x64f2f647c808?, 0x516708a3e0d?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f812731, 0x80}, {0x100a5cd35, 0x6}, {0x100e69c58?, 0x64f30dbab2f0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 87204 at 2026-11-01T16:23:36.548872+08:00
+fatal error: concurrent map read and map write
+
+goroutine 307 [running]:
+internal/runtime/maps.fatal({0x104eedf01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x7de70fc67328?, 0x104b8e6e8?, {0x104ede71d?, 0x104ee5449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1052e5b48?, 0x7de7281d49c8?, 0x104ede71d?}, {0x10531cb78, 0x7de72177baa0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x7de71fda4280, {{0x1052e5b48?, 0x7de7281d49c8?, 0x1052e5b48?}, 0x50?}, 0x7de71fda4348)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x7de71fda4280, {0x1052e5b48, 0x7de711dd5c50}, 0x7de71fda4348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x7de71fda4280, {{0x105325940?, 0x7de72177ba00?, 0x105325940?}, 0x90?}, 0x7de71fda4348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x7de71fda4280, {{0x1052e5c58?, 0x7de7281d49b8?, 0x1052e5c58?}, 0xb0?}, 0x7de71fda4348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x7de71fda4280, {0x1052e5c58?, 0x7de726b37cb0?}, 0x7de71fda4348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1052e5c58, 0x7de726b37cb0}, {0x7de70fc67ed8?, 0x7de716888008?, 0x516ab0ee85d?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b396729, 0x80}, {0x104ed8d35, 0x6}, {0x1052e5c58?, 0x7de726b37cb0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 87942 at 2026-11-01T16:24:17.458344+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 280 [running]:
+internal/runtime/maps.fatal({0x10316964c?, 0x206f357105a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x206f36945620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x103679a18?, 0x206f3a3d8c18?, 0x206f36945620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x206f36945608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x206f3a9363c0, {{0x10355db48?, 0x206f33f02590?, 0x10355db48?}, 0x90?}, 0x206f3a936488)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x206f3a9363c0, {0x10355db48, 0x206f36cc7b90}, 0x206f3a936488)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x206f3a9363c0, {{0x10359d940?, 0x206f34210a80?, 0x10359d940?}, 0xb0?}, 0x206f3a936488)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x206f3a9363c0, {{0x10355dc58?, 0x206f33f02578?, 0x10355dc58?}, 0x10?}, 0x206f3a936488)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x206f3a9363c0, {0x10355dc58?, 0x206f3a7df710?}, 0x206f3a936488)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10355dc58, 0x206f3a7df710}, {0x206f36945ed8?, 0x206f35710008?, 0x516b4e4e51e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d11e729, 0x80}, {0x103150d35, 0x6}, {0x10355dc58?, 0x206f3a7df710?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 88046 at 2026-11-01T16:24:24.326222+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 282 [running]:
+internal/runtime/maps.fatal({0x10123d64c?, 0x101668b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x13d99aeaeec0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x13d99f2f1608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x13d9a57d0640, {{0x101631b48?, 0x13d99d17bda8?, 0x101631b48?}, 0x50?}, 0x13d9a57d0708)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x13d9a57d0640, {0x101631b48, 0x13d99dbabc50}, 0x13d9a57d0708)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x13d9a57d0640, {{0x101671940?, 0x13d9a6024b70?, 0x101671940?}, 0x50?}, 0x13d9a57d0708)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x13d9a57d0640, {{0x101631c58?, 0x13d99d17bd68?, 0x101631c58?}, 0x50?}, 0x13d9a57d0708)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x13d9a57d0640, {0x101631c58?, 0x13d9a08fad50?}, 0x13d9a57d0708)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x101631c58, 0x13d9a08fad50}, {0x13d99ada9ed8?, 0x13d99adba008?, 0x516cc4aef69?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f04a729, 0x80}, {0x101224d35, 0x6}, {0x101631c58?, 0x13d9a08fad50?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 88261 at 2026-11-01T16:24:40.682851+08:00
+fatal error: concurrent map read and map write
+
+goroutine 309 [running]:
+internal/runtime/maps.fatal({0x102cf9f01?, 0xd?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x62fd09891328?, 0x10299a6e8?, {0x102ce99d8?, 0x103128db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1030f1b48?, 0x62fd22688338?, 0x102ce99d8?}, {0x103128b78, 0x62fd185f1160, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x62fd388a17c0, {{0x1030f1b48?, 0x62fd22688338?, 0x1030f1b48?}, 0x50?}, 0x62fd388a1888)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x62fd388a17c0, {0x1030f1b48, 0x62fd0925dc50}, 0x62fd388a1888)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x62fd388a17c0, {{0x103131940?, 0x62fd185f0eb0?, 0x103131940?}, 0x50?}, 0x62fd388a1888)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x62fd388a17c0, {{0x1030f1c58?, 0x62fd22688328?, 0x1030f1c58?}, 0xf0?}, 0x62fd388a1888)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x62fd388a17c0, {0x1030f1c58?, 0x62fd214778f0?}, 0x62fd388a1888)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1030f1c58, 0x62fd214778f0}, {0x62fd09891ed8?, 0x62fd06580008?, 0x5173caa77fe?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d58a729, 0x80}, {0x102ce4d35, 0x6}, {0x1030f1c58?, 0x62fd214778f0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 90957 at 2026-11-01T16:25:59.255195+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 312 [running]:
+internal/runtime/maps.fatal({0x102e1964c?, 0x103244b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x7b6408bb868?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x7b63bebb608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x7b640150000, {{0x10320db48?, 0x7b63d383648?, 0x10320db48?}, 0x50?}, 0x7b6401500c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x7b640150000, {0x10320db48, 0x7b63e6fbc50}, 0x7b6401500c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x7b640150000, {{0x10324d940?, 0x7b6423b7350?, 0x10324d940?}, 0xe0?}, 0x7b6401500c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x7b640150000, {{0x10320dc58?, 0x7b63d383610?, 0x10320dc58?}, 0xc0?}, 0x7b6401500c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x7b640150000, {0x10320dc58?, 0x7b6406a32c0?}, 0x7b6401500c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10320dc58, 0x7b6406a32c0}, {0x7b63bebbed8?, 0x7b63b998008?, 0x517482992ac?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d46e729, 0x80}, {0x102e00d35, 0x6}, {0x10320dc58?, 0x7b6406a32c0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 91044 at 2026-11-01T16:26:07.267961+08:00
+fatal error: concurrent map read and map write
+
+goroutine 307 [running]:
+internal/runtime/maps.fatal({0x10057df01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x1eb705065328?, 0x10021e6e8?, {0x1eb7034b16b0?, 0x1009acdb8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x100975b48?, 0x1eb70aa96910?, 0x1eb7034b16b0?}, {0x1009acb78, 0x1eb70872b900, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x1eb708d1ef00, {{0x100975b48?, 0x1eb70aa96910?, 0x100975b48?}, 0x50?}, 0x1eb708d1efc8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x1eb708d1ef00, {0x100975b48, 0x1eb7040b3c50}, 0x1eb708d1efc8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1eb708d1ef00, {{0x1009b5940?, 0x1eb70872b840?, 0x1009b5940?}, 0xf0?}, 0x1eb708d1efc8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1eb708d1ef00, {{0x100975c58?, 0x1eb70aa96900?, 0x100975c58?}, 0x50?}, 0x1eb708d1efc8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1eb708d1ef00, {0x100975c58?, 0x1eb705363950?}, 0x1eb708d1efc8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100975c58, 0x1eb705363950}, {0x1eb701331ed8?, 0x1eb70141b008?, 0x51756000d74?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16fd06729, 0x80}, {0x100568d35, 0x6}, {0x100975c58?, 0x1eb705363950?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 91178 at 2026-11-01T16:26:16.948901+08:00
+fatal error: concurrent map read and map write
+
+goroutine 254 [running]:
+internal/runtime/maps.fatal({0x100f3df01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x54c1232e7328?, 0x100bde6e8?, {0x100f2e71d?, 0x100f35449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x101335b48?, 0x54c122f03650?, 0x100f2e71d?}, {0x10136cb78, 0x54c128aab4a0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x54c1263ac8c0, {{0x101335b48?, 0x54c122f03650?, 0x101335b48?}, 0x50?}, 0x54c1263ac988)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x54c1263ac8c0, {0x101335b48, 0x54c124337c50}, 0x54c1263ac988)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x54c1263ac8c0, {{0x101375940?, 0x54c128aab400?, 0x101375940?}, 0x90?}, 0x54c1263ac988)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x54c1263ac8c0, {{0x101335c58?, 0x54c122f03640?, 0x101335c58?}, 0x60?}, 0x54c1263ac988)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x54c1263ac8c0, {0x101335c58?, 0x54c1234ee360?}, 0x54c1263ac988)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x101335c58, 0x54c1234ee360}, {0x54c1215eeed8?, 0x54c121998008?, 0x51761d05b2b?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f346729, 0x80}, {0x100f28d35, 0x6}, {0x101335c58?, 0x54c1234ee360?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 91298 at 2026-11-01T16:26:25.207295+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 337 [running]:
+internal/runtime/maps.fatal({0x104ecd64c?, 0x37192f4e25a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x371933067620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x1053dda18?, 0x371946c5a658?, 0x371933067620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x371933067608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x3719363a8500, {{0x1052c1b48?, 0x3719467fac68?, 0x1052c1b48?}, 0x50?}, 0x3719363a85c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x3719363a8500, {0x1052c1b48, 0x371931e81c50}, 0x3719363a85c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x3719363a8500, {{0x105301940?, 0x371946880430?, 0x105301940?}, 0xc0?}, 0x3719363a85c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x3719363a8500, {{0x1052c1c58?, 0x3719467fac58?, 0x1052c1c58?}, 0xe0?}, 0x3719363a85c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x3719363a8500, {0x1052c1c58?, 0x371946c504e0?}, 0x3719363a85c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1052c1c58, 0x371946c504e0}, {0x371933067ed8?, 0x37192f4e2008?, 0x5178ba2b83e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b3ba729, 0x80}, {0x104eb4d35, 0x6}, {0x1052c1c58?, 0x371946c504e0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 91727 at 2026-11-01T16:26:54.447202+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 325 [running]:
+internal/runtime/maps.fatal({0x104c7d64c?, 0x1050a8b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x625c56431a50?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x625c53ef9608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x625c64db5540, {{0x105071b48?, 0x625c5c113e70?, 0x105071b48?}, 0x50?}, 0x625c64db5608)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x625c64db5540, {0x105071b48, 0x625c545dbc50}, 0x625c64db5608)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x625c64db5540, {{0x1050b1940?, 0x625c63b43250?, 0x1050b1940?}, 0xe0?}, 0x625c64db5608)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x625c64db5540, {{0x105071c58?, 0x625c5c113e50?, 0x105071c58?}, 0x90?}, 0x625c64db5608)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x625c64db5540, {0x105071c58?, 0x625c52ce7890?}, 0x625c64db5608)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x105071c58, 0x625c52ce7890}, {0x625c53ef9ed8?, 0x625c5257c808?, 0x517b276f33e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b60a729, 0x80}, {0x104c64d35, 0x6}, {0x105071c58?, 0x625c52ce7890?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 92352 at 2026-11-01T16:27:21.591969+08:00
+fatal error: concurrent map read and map write
+
+goroutine 252 [running]:
+internal/runtime/maps.fatal({0x10332df01?, 0x6?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x9e403a21328?, 0x102fce6e8?, {0x103318e55?, 0x10375cdb8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x103725b48?, 0x9e412b208d0?, 0x103318e55?}, {0x10375cb78, 0x9e41dc14b80, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x9e41f950140, {{0x103725b48?, 0x9e412b208d0?, 0x103725b48?}, 0x50?}, 0x9e41f950208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x9e41f950140, {0x103725b48, 0x9e402d59c50}, 0x9e41f950208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x9e41f950140, {{0x103765940?, 0x9e41dc14ae0?, 0x103765940?}, 0x70?}, 0x9e41f950208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x9e41f950140, {{0x103725c58?, 0x9e412b208b8?, 0x103725c58?}, 0x40?}, 0x9e41f950208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x9e41f950140, {0x103725c58?, 0x9e41dda0b40?}, 0x9e41f950208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103725c58, 0x9e41dda0b40}, {0x9e403a21ed8?, 0x9e3fff7b008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16cf56729, 0x80}, {0x103318d35, 0x6}, {0x103725c58?, 0x9e41dda0b40?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 93045 at 2026-11-01T16:28:08.332043+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 255 [running]:
+internal/runtime/maps.fatal({0x1025ed64c?, 0x1a6d58896da8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x1a6d5c089620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x102afda18?, 0x1a6d650f9be0?, 0x1a6d5c089620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x1a6d5c089608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x1a6d65d2c500, {{0x1029e1b48?, 0x1a6d6245ca78?, 0x1029e1b48?}, 0x50?}, 0x1a6d65d2c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x1a6d65d2c500, {0x1029e1b48, 0x1a6d5b1e5c50}, 0x1a6d65d2c5c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1a6d65d2c500, {{0x102a21940?, 0x1a6d693a8270?, 0x102a21940?}, 0x40?}, 0x1a6d65d2c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1a6d65d2c500, {{0x1029e1c58?, 0x1a6d6245ca68?, 0x1029e1c58?}, 0xb0?}, 0x1a6d65d2c5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1a6d65d2c500, {0x1029e1c58?, 0x1a6d65f387b0?}, 0x1a6d65d2c5c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1029e1c58, 0x1a6d65f387b0}, {0x1a6d5c089ed8?, 0x1a6d58896808?, 0x5181d831253?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16dc9a729, 0x80}, {0x1025d4d35, 0x6}, {0x1029e1c58?, 0x1a6d65f387b0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 98359 at 2026-11-01T16:28:36.420998+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 310 [running]:
+internal/runtime/maps.fatal({0x10341964c?, 0x103844b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x76b7ea7ae458?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x76b7e89a9608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x76b7f198c280, {{0x10380db48?, 0x76b7e657fea8?, 0x10380db48?}, 0xe0?}, 0x76b7f198c348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x76b7f198c280, {0x10380db48, 0x76b7e854ede0}, 0x76b7f198c348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x76b7f198c280, {{0x10384d940?, 0x76b7f1fc27d0?, 0x10384d940?}, 0x60?}, 0x76b7f198c348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x76b7f198c280, {{0x10380dc58?, 0x76b7e657fe98?, 0x10380dc58?}, 0x60?}, 0x76b7f198c348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x76b7f198c280, {0x10380dc58?, 0x76b7f21c0c60?}, 0x76b7f198c348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10380dc58, 0x76b7f21c0c60}, {0x76b7e89a9ed8?, 0x76b7e657c808?, 0x5183129af8a?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16ce6e731, 0x80}, {0x103400d35, 0x6}, {0x10380dc58?, 0x76b7f21c0c60?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 1791 at 2026-11-01T16:28:50.149559+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 155 [running]:
+internal/runtime/maps.fatal({0x102c3564c?, 0x103060b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x484fb4813d48?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x484fb4407608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x484fc22dc280, {{0x103029b48?, 0x484fc121f6f8?, 0x103029b48?}, 0x50?}, 0x484fc22dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x484fc22dc280, {0x103029b48, 0x484fb325dc50}, 0x484fc22dc348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x484fc22dc280, {{0x103069940?, 0x484fc38c1070?, 0x103069940?}, 0x0?}, 0x484fc22dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x484fc22dc280, {{0x103029c58?, 0x484fc121f6e8?, 0x103029c58?}, 0x20?}, 0x484fc22dc348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x484fc22dc280, {0x103029c58?, 0x484fc3d71620?}, 0x484fc22dc348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103029c58, 0x484fc3d71620}, {0x484fb4407ed8?, 0x484fb1d00008?, 0x5185d35eabc?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d652731, 0x80}, {0x102c1cd35, 0x6}, {0x103029c58?, 0x484fc3d71620?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 8662 at 2026-11-01T16:29:20.945843+08:00
+fatal error: concurrent map read and map write
+
+goroutine 199 [running]:
+internal/runtime/maps.fatal({0x1045adf01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x2c5e97625328?, 0x10424e6e8?, {0x2c5e9b927750?, 0x1049dcdb8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1049a5b48?, 0x2c5e98603440?, 0x2c5e9b927750?}, {0x1049dcb78, 0x2c5e9c09d610, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x2c5e9cb54000, {{0x1049a5b48?, 0x2c5e98603440?, 0x1049a5b48?}, 0x50?}, 0x2c5e9cb540c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x2c5e9cb54000, {0x1049a5b48, 0x2c5e99a3dc50}, 0x2c5e9cb540c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2c5e9cb54000, {{0x1049e5940?, 0x2c5e9c09d4a0?, 0x1049e5940?}, 0x0?}, 0x2c5e9cb540c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2c5e9cb54000, {{0x1049a5c58?, 0x2c5e98603430?, 0x1049a5c58?}, 0xf0?}, 0x2c5e9cb540c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2c5e9cb54000, {0x1049a5c58?, 0x2c5e9c95f2f0?}, 0x2c5e9cb540c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1049a5c58, 0x2c5e9c95f2f0}, {0x2c5e97625ed8?, 0x2c5e96d9b808?, 0x518675deead?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bcd6729, 0x80}, {0x104598d35, 0x6}, {0x1049a5c58?, 0x2c5e9c95f2f0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 10235 at 2026-11-01T16:29:28.039987+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 95 [running]:
+internal/runtime/maps.fatal({0x100b6164c?, 0x100f8cb78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0xd62cd46fa0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0xd629ca5608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0xd658ce8140, {{0x100f55b48?, 0xd658052770?, 0x100f55b48?}, 0x50?}, 0xd658ce8208)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0xd658ce8140, {0x100f55b48, 0xd62af13c50}, 0xd658ce8208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0xd658ce8140, {{0x100f95940?, 0xd645524e20?, 0x100f95940?}, 0x70?}, 0xd658ce8208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0xd658ce8140, {{0x100f55c58?, 0xd658052760?, 0x100f55c58?}, 0x50?}, 0xd658ce8208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0xd658ce8140, {0x100f55c58?, 0xd64e387950?}, 0xd658ce8208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100f55c58, 0xd64e387950}, {0xd629ca5ed8?, 0x101081880?, 0x518eda42644?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f726729, 0x80}, {0x100b48d35, 0x6}, {0x100f55c58?, 0xd64e387950?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 16632 at 2026-11-01T16:31:01.919604+08:00
+fatal error: concurrent map read and map write
+
+goroutine 271 [running]:
+internal/runtime/maps.fatal({0x1049e9f01?, 0x8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x1da2cd995328?, 0x10468a6e8?, {0x1049d5d4e?, 0x104e18db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104de1b48?, 0x1da2ccc02078?, 0x1049d5d4e?}, {0x104e18b78, 0x1da2df110c40, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x1da2d8339400, {{0x104de1b48?, 0x1da2ccc02078?, 0x104de1b48?}, 0x50?}, 0x1da2d83394c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x1da2d8339400, {0x104de1b48, 0x1da2cdee5c50}, 0x1da2d83394c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1da2d8339400, {{0x104e21940?, 0x1da2df1109e0?, 0x104e21940?}, 0x30?}, 0x1da2d83394c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1da2d8339400, {{0x104de1c58?, 0x1da2ccc02050?, 0x104de1c58?}, 0x20?}, 0x1da2d83394c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1da2d8339400, {0x104de1c58?, 0x1da2d6aa4d20?}, 0x1da2d83394c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104de1c58, 0x1da2d6aa4d20}, {0x1da2cd995ed8?, 0x104f0d880?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b89a731, 0x80}, {0x1049d4d35, 0x6}, {0x104de1c58?, 0x1da2d6aa4d20?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 16951 at 2026-11-01T16:31:26.317955+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 306 [running]:
+internal/runtime/maps.fatal({0x1024a564c?, 0x1028d0b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x3fdcd32ded38?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x3fdcd39d1608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x3fdcd6fc0280, {{0x102899b48?, 0x3fdcda9d4a80?, 0x102899b48?}, 0x50?}, 0x3fdcd6fc0348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x3fdcd6fc0280, {0x102899b48, 0x3fdcd2abdc50}, 0x3fdcd6fc0348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x3fdcd6fc0280, {{0x1028d9940?, 0x3fdce0f338e0?, 0x1028d9940?}, 0xb0?}, 0x3fdcd6fc0348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x3fdcd6fc0280, {{0x102899c58?, 0x3fdcda9d4a60?, 0x102899c58?}, 0x10?}, 0x3fdcd6fc0348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x3fdcd6fc0280, {0x102899c58?, 0x3fdce2f3b710?}, 0x3fdcd6fc0348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x102899c58, 0x3fdce2f3b710}, {0x3fdcd39d1ed8?, 0x3fdccfc69008?, 0x51934c92254?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16dde2729, 0x80}, {0x10248cd35, 0x6}, {0x102899c58?, 0x3fdce2f3b710?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 17283 at 2026-11-01T16:31:51.642078+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 128 [running]:
+internal/runtime/maps.fatal({0x1032f564c?, 0x103720b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x66ddd594e440?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x66ddd3151608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x66de19864000, {{0x1036e9b48?, 0x66de19b468b0?, 0x1036e9b48?}, 0x50?}, 0x66de198640c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x66de19864000, {0x1036e9b48, 0x66ddd3b9fc50}, 0x66de198640c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x66de19864000, {{0x103729940?, 0x66de1c6cb580?, 0x103729940?}, 0x10?}, 0x66de198640c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x66de19864000, {{0x1036e9c58?, 0x66de19b46898?, 0x1036e9c58?}, 0xf0?}, 0x66de198640c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x66de19864000, {0x1036e9c58?, 0x66de1e222ff0?}, 0x66de198640c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1036e9c58, 0x66de1e222ff0}, {0x66ddd3151ed8?, 0x66ddd0e01808?, 0x519e26b52b9?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16cf92729, 0x80}, {0x1032dcd35, 0x6}, {0x1036e9c58?, 0x66de1e222ff0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 19277 at 2026-11-01T16:33:53.044742+08:00
+fatal error: concurrent map read and map write
+
+goroutine 268 [running]:
+internal/runtime/maps.fatal({0x103219f01?, 0x6?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x19d0bd6a5328?, 0x102eba6e8?, {0x103204e55?, 0x103648db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x103611b48?, 0x19d0d45bbcd0?, 0x103204e55?}, {0x103648b78, 0x19d0d69dcb30, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x19d0cf3da140, {{0x103611b48?, 0x19d0d45bbcd0?, 0x103611b48?}, 0x50?}, 0x19d0cf3da208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x19d0cf3da140, {0x103611b48, 0x19d0bf627c50}, 0x19d0cf3da208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x19d0cf3da140, {{0x103651940?, 0x19d0d69dca90?, 0x103651940?}, 0x20?}, 0x19d0cf3da208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x19d0cf3da140, {{0x103611c58?, 0x19d0d45bbcc0?, 0x103611c58?}, 0xc0?}, 0x19d0cf3da208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x19d0cf3da140, {0x103611c58?, 0x19d0d7be06c0?}, 0x19d0cf3da208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103611c58, 0x19d0d7be06c0}, {0x19d0bd6a5ed8?, 0x19d0bc7f9008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d06a729, 0x80}, {0x103204d35, 0x6}, {0x103611c58?, 0x19d0d7be06c0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 19802 at 2026-11-01T16:34:35.256801+08:00
+fatal error: concurrent map read and map write
+
+goroutine 127 [running]:
+internal/runtime/maps.fatal({0x100ab9f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x50e6da71328?, 0x10075a6e8?, {0x100aab261?, 0x100ee8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x100eb1b48?, 0x50e874134f8?, 0x100aab261?}, {0x100ee8b78, 0x50e74e98430, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x50e7c860500, {{0x100eb1b48?, 0x50e874134f8?, 0x100eb1b48?}, 0x50?}, 0x50e7c8605c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x50e7c860500, {0x100eb1b48, 0x50e6cf17c50}, 0x50e7c8605c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x50e7c860500, {{0x100ef1940?, 0x50e77717ee0?, 0x100ef1940?}, 0xf0?}, 0x50e7c8605c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x50e7c860500, {{0x100eb1c58?, 0x50e874134e0?, 0x100eb1c58?}, 0x20?}, 0x50e7c8605c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x50e7c860500, {0x100eb1c58?, 0x50e825e7020?}, 0x50e7c8605c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x100eb1c58, 0x50e825e7020}, {0x50e6da71ed8?, 0x50e6a180008?, 0x51a67c2a22e?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f7ca729, 0x80}, {0x100aa4d35, 0x6}, {0x100eb1c58?, 0x50e825e7020?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 20498 at 2026-11-01T16:35:26.242094+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 176 [running]:
+internal/runtime/maps.fatal({0x102eb964c?, 0x1032e4b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x1ba3b7d7b18?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x1ba3b0b5608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x1ba5faf0500, {{0x1032adb48?, 0x1ba5dcc13e0?, 0x1032adb48?}, 0x50?}, 0x1ba5faf05c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x1ba5faf0500, {0x1032adb48, 0x1ba3bdffc50}, 0x1ba5faf05c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1ba5faf0500, {{0x1032ed940?, 0x1ba5381ded0?, 0x1032ed940?}, 0x70?}, 0x1ba5faf05c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1ba5faf0500, {{0x1032adc58?, 0x1ba5dcc13d0?, 0x1032adc58?}, 0x70?}, 0x1ba5faf05c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1ba5faf0500, {0x1032adc58?, 0x1ba45a9f470?}, 0x1ba5faf05c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1032adc58, 0x1ba45a9f470}, {0x1ba3b0b5ed8?, 0x1ba39080008?, 0x51ab3ba6d79?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d3ce731, 0x80}, {0x102ea0d35, 0x6}, {0x1032adc58?, 0x1ba45a9f470?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 21278 at 2026-11-01T16:36:19.357492+08:00
+fatal error: concurrent map read and map write
+
+goroutine 268 [running]:
+internal/runtime/maps.fatal({0x100f49f01?, 0xd?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x499e19409328?, 0x100bea6e8?, {0x100f399cb?, 0x101378db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x101341b48?, 0x499e247af258?, 0x100f399cb?}, {0x101378b78, 0x499e27f37150, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x499e26e14140, {{0x101341b48?, 0x499e247af258?, 0x101341b48?}, 0x50?}, 0x499e26e14208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x499e26e14140, {0x101341b48, 0x499e1b91dc50}, 0x499e26e14208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x499e26e14140, {{0x101381940?, 0x499e27f37000?, 0x101381940?}, 0x40?}, 0x499e26e14208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x499e26e14140, {{0x101341c58?, 0x499e247af248?, 0x101341c58?}, 0x70?}, 0x499e26e14208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x499e26e14140, {0x101341c58?, 0x499e2527d470?}, 0x499e26e14208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x101341c58, 0x499e2527d470}, {0x499e18c19ed8?, 0x499e18b5f808?, 0x51acbcf47c5?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16f33a729, 0x80}, {0x100f34d35, 0x6}, {0x101341c58?, 0x499e2527d470?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 21477 at 2026-11-01T16:36:36.177671+08:00
+fatal error: concurrent map read and map write
+
+goroutine 299 [running]:
+internal/runtime/maps.fatal({0x103125f01?, 0x8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x3f3646837328?, 0x102dc66e8?, {0x103111d4e?, 0x103554db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x10351db48?, 0x3f363a402b20?, 0x103111d4e?}, {0x103554b78, 0x3f36442d2010, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x3f364675c640, {{0x10351db48?, 0x3f363a402b20?, 0x10351db48?}, 0x50?}, 0x3f364675c708)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x3f364675c640, {0x10351db48, 0x3f363b78dc50}, 0x3f364675c708)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x3f364675c640, {{0x10355d940?, 0x3f363e805ba0?, 0x10355d940?}, 0x20?}, 0x3f364675c708)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x3f364675c640, {{0x10351dc58?, 0x3f363a402b10?, 0x10351dc58?}, 0x50?}, 0x3f364675c708)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x3f364675c640, {0x10351dc58?, 0x3f36436e8750?}, 0x3f364675c708)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10351dc58, 0x3f36436e8750}, {0x3f3646837ed8?, 0x3f3638e16808?, 0x51ae2848d06?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d15e729, 0x80}, {0x103110d35, 0x6}, {0x10351dc58?, 0x3f36436e8750?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 21729 at 2026-11-01T16:36:52.052018+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 270 [running]:
+internal/runtime/maps.fatal({0x10344564c?, 0x61b754b155a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x61b75738b620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x103955a18?, 0x61b75f03a008?, 0x61b75738b620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x61b75738b608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x61b75ade8780, {{0x103839b48?, 0x61b756502850?, 0x103839b48?}, 0x50?}, 0x61b75ade8848)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x61b75ade8780, {0x103839b48, 0x61b7578e5c50}, 0x61b75ade8848)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x61b75ade8780, {{0x103879940?, 0x61b75ec695f0?, 0x103879940?}, 0x80?}, 0x61b75ade8848)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x61b75ade8780, {{0x103839c58?, 0x61b756502840?, 0x103839c58?}, 0xa0?}, 0x61b75ade8848)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x61b75ade8780, {0x103839c58?, 0x61b75f1891a0?}, 0x61b75ade8848)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103839c58, 0x61b75f1891a0}, {0x61b75738bed8?, 0x61b754b15008?, 0x51af340d8cb?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16ce42731, 0x80}, {0x10342cd35, 0x6}, {0x103839c58?, 0x61b75f1891a0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 21949 at 2026-11-01T16:37:03.751188+08:00
+fatal error: concurrent map read and map write
+
+goroutine 275 [running]:
+internal/runtime/maps.fatal({0x104705f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x133863abb328?, 0x1043a66e8?, {0x13386486b520?, 0x104b34db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x104afdb48?, 0x133862e02048?, 0x13386486b520?}, {0x104b34b78, 0x1338633dbc30, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x1338624cc140, {{0x104afdb48?, 0x133862e02048?, 0x104afdb48?}, 0x50?}, 0x1338624cc208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x1338624cc140, {0x104afdb48, 0x1338641fbc50}, 0x1338624cc208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x1338624cc140, {{0x104b3d940?, 0x1338633dbb90?, 0x104b3d940?}, 0x20?}, 0x1338624cc208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x1338624cc140, {{0x104afdc58?, 0x133862e02038?, 0x104afdc58?}, 0x80?}, 0x1338624cc208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x1338624cc140, {0x104afdc58?, 0x133863a69080?}, 0x1338624cc208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x104afdc58, 0x133863a69080}, {0x133863d0eed8?, 0x1338621fc008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16bb7e729, 0x80}, {0x1046f0d35, 0x6}, {0x104afdc58?, 0x133863a69080?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 22021 at 2026-11-01T16:37:07.830309+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 309 [running]:
+internal/runtime/maps.fatal({0x102c9564c?, 0x6476511815a8?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x647655617620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x1031a5a18?, 0x647658ac1058?, 0x647655617620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x647655617608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x64765ac80c80, {{0x103089b48?, 0x647652b83948?, 0x103089b48?}, 0x50?}, 0x64765ac80d48)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x64765ac80c80, {0x103089b48, 0x647653ebfc50}, 0x64765ac80d48)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x64765ac80c80, {{0x1030c9940?, 0x64765349da90?, 0x1030c9940?}, 0x0?}, 0x64765ac80d48)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x64765ac80c80, {{0x103089c58?, 0x647652b83938?, 0x103089c58?}, 0xa0?}, 0x64765ac80d48)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x64765ac80c80, {0x103089c58?, 0x64765996f4a0?}, 0x64765ac80d48)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103089c58, 0x64765996f4a0}, {0x647655617ed8?, 0x647651181008?, 0x51b08be0ffd?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d5f2729, 0x80}, {0x102c7cd35, 0x6}, {0x103089c58?, 0x64765996f4a0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 22140 at 2026-11-01T16:37:18.771516+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 304 [running]:
+internal/runtime/maps.fatal({0x102e2564c?, 0x103250b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x2f37ac5a008?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x2f37a8ad608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x2f37b402000, {{0x103219b48?, 0x2f378d80430?, 0x103219b48?}, 0x50?}, 0x2f37b4020c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x2f37b402000, {0x103219b48, 0x2f37a345c50}, 0x2f37b4020c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x2f37b402000, {{0x103259940?, 0x2f3882182d0?, 0x103259940?}, 0x90?}, 0x2f37b4020c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x2f37b402000, {{0x103219c58?, 0x2f378d80418?, 0x103219c58?}, 0x60?}, 0x2f37b4020c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x2f37b402000, {0x103219c58?, 0x2f38a5e2360?}, 0x2f37b4020c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103219c58, 0x2f38a5e2360}, {0x2f37a8aded8?, 0x2f37769b008?, 0x51b2c6ef47d?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d462729, 0x80}, {0x102e0cd35, 0x6}, {0x103219c58?, 0x2f38a5e2360?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 22459 at 2026-11-01T16:37:43.723849+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 264 [running]:
+internal/runtime/maps.fatal({0x1033a964c?, 0x1037d4b78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0x13df9d5ad498?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0x13df9a855608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0x13df9e06e280, {{0x10379db48?, 0x13df9ab81068?, 0x10379db48?}, 0x50?}, 0x13df9e06e348)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x13df9e06e280, {0x10379db48, 0x13df9c1b5c50}, 0x13df9e06e348)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x13df9e06e280, {{0x1037dd940?, 0x13df9e00fec0?, 0x1037dd940?}, 0x60?}, 0x13df9e06e348)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x13df9e06e280, {{0x10379dc58?, 0x13df9ab81050?, 0x10379dc58?}, 0x90?}, 0x13df9e06e348)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x13df9e06e280, {0x10379dc58?, 0x13df9bace990?}, 0x13df9e06e348)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x10379dc58, 0x13df9bace990}, {0x13df9bb9aed8?, 0x13df9ad00808?, 0x51b338d9aa3?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16cede729, 0x80}, {0x103390d35, 0x6}, {0x10379dc58?, 0x13df9bace990?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 22515 at 2026-11-01T16:37:48.716133+08:00
+fatal error: concurrent map read and map write
+
+goroutine 235 [running]:
+internal/runtime/maps.fatal({0x104fc9f01?, 0xe?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x76cc4749328?, 0x104c6a6e8?, {0x104fba71d?, 0x104fc1449?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1053c1b48?, 0x76cce611580?, 0x104fba71d?}, {0x1053f8b78, 0x76ccbf8b440, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x76cccd02500, {{0x1053c1b48?, 0x76cce611580?, 0x1053c1b48?}, 0x50?}, 0x76cccd025c8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x76cccd02500, {0x1053c1b48, 0x76cc3b7fc50}, 0x76cccd025c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x76cccd02500, {{0x105401940?, 0x76ccbf8b330?, 0x105401940?}, 0x30?}, 0x76cccd025c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x76cccd02500, {{0x1053c1c58?, 0x76cce611570?, 0x1053c1c58?}, 0x30?}, 0x76cccd025c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x76cccd02500, {0x1053c1c58?, 0x76ccd770630?}, 0x76cccd025c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1053c1c58, 0x76ccd770630}, {0x76cc4749ed8?, 0x76cc2700008?, 0x51b4e7bfb4d?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16b2ba729, 0x80}, {0x104fb4d35, 0x6}, {0x1053c1c58?, 0x76ccd770630?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 22790 at 2026-11-01T16:38:07.524421+08:00
+fatal error: concurrent map read and map write
+
+goroutine 307 [running]:
+internal/runtime/maps.fatal({0x1032c1f01?, 0xf?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x5b321b215328?, 0x102f626e8?, {0x5b32309da020?, 0x1036f0db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x1036b9b48?, 0x5b321a080bd0?, 0x5b32309da020?}, {0x1036f0b78, 0x5b322fea4780, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x5b322e3c6140, {{0x1036b9b48?, 0x5b321a080bd0?, 0x1036b9b48?}, 0x50?}, 0x5b322e3c6208)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x5b322e3c6140, {0x1036b9b48, 0x5b321a527c50}, 0x5b322e3c6208)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x5b322e3c6140, {{0x1036f9940?, 0x5b322fea46e0?, 0x1036f9940?}, 0x70?}, 0x5b322e3c6208)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x5b322e3c6140, {{0x1036b9c58?, 0x5b321a080ba0?, 0x1036b9c58?}, 0xa0?}, 0x5b322e3c6208)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x5b322e3c6140, {0x1036b9c58?, 0x5b322f9674a0?}, 0x5b322e3c6208)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1036b9c58, 0x5b322f9674a0}, {0x5b321b215ed8?, 0x5b3218529008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16cfc2729, 0x80}, {0x1032acd35, 0x6}, {0x1036b9c58?, 0x5b322f9674a0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 23540 at 2026-11-01T16:38:38.925945+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 290 [running]:
+internal/runtime/maps.fatal({0x102c1164c?, 0x10303cb78?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x16?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterNext(0xb377c9ffad0?)
+	<go>/src/reflect/map.go:239 +0x1c
+reflect.(*MapIter).Next(0xb377b0b9608)
+	<go>/src/reflect/map.go:390 +0x40
+encoding/json/v2.makeMapArshaler.func2(0xb377f78a000, {{0x103005b48?, 0xb377e91f028?, 0x103005b48?}, 0x50?}, 0xb377f78a0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0xb377f78a000, {0x103005b48, 0xb377b3f9c50}, 0xb377f78a0c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0xb377f78a000, {{0x103045940?, 0xb37787bf690?, 0x103045940?}, 0x70?}, 0xb377f78a0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0xb377f78a000, {{0x103005c58?, 0xb377e91f008?, 0x103005c58?}, 0x50?}, 0xb377f78a0c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0xb377f78a000, {0x103005c58?, 0xb3783964a50?}, 0xb377f78a0c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103005c58, 0xb3783964a50}, {0xb377b0b9ed8?, 0xb377a000008?, 0x0?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d676731, 0x80}, {0x102bf8d35, 0x6}, {0x103005c58?, 0xb3783964a50?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 23707 at 2026-11-01T16:38:51.758893+08:00
+fatal error: concurrent map iteration and map write
+
+goroutine 249 [running]:
+internal/runtime/maps.fatal({0x1031ad64c?, 0x1036cde20?})
+	<go>/src/runtime/panic.go:1195 +0x20
+internal/runtime/maps.(*Iter).Next(0x6d4c90e45620?)
+	<go>/src/internal/runtime/maps/table.go:882 +0x94
+reflect.mapIterStart(0x1036bda18?, 0x6d4ca1c3e2f8?, 0x6d4c90e45620)
+	<go>/src/reflect/map.go:227 +0x3c
+reflect.(*MapIter).Next(0x6d4c90e45608)
+	<go>/src/reflect/map.go:385 +0x68
+encoding/json/v2.makeMapArshaler.func2(0x6d4ca9e7e500, {{0x1035a1b48?, 0x6d4cadd5e7e8?, 0x1035a1b48?}, 0x50?}, 0x6d4ca9e7e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:889 +0x1190
+encoding/json/v2.marshalValueAny(0x6d4ca9e7e500, {0x1035a1b48, 0x6d4c9292dc50}, 0x6d4ca9e7e5c8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x6d4ca9e7e500, {{0x1035e1940?, 0x6d4c9ed14940?, 0x1035e1940?}, 0x30?}, 0x6d4ca9e7e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x6d4ca9e7e500, {{0x1035a1c58?, 0x6d4cadd5e7c0?, 0x1035a1c58?}, 0xb0?}, 0x6d4ca9e7e5c8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x6d4ca9e7e500, {0x1035a1c58?, 0x6d4ca90b10b0?}, 0x6d4ca9e7e5c8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x1035a1c58, 0x6d4ca90b10b0}, {0x6d4c90e45ed8?, 0x1036cd880?, 0x51be8f45acb?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d0da729, 0x80}, {0x103194d35, 0x6}, {0x1035a1c58?, 0x6d4ca90b10b0?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 25141 at 2026-11-01T16:39:55.515203+08:00
+fatal error: concurrent map read and map write
+
+goroutine 284 [running]:
+internal/runtime/maps.fatal({0x103179f01?, 0xd?})
+	<go>/src/runtime/panic.go:1195 +0x20
+reflect.mapaccess_faststr(0x25602d01d328?, 0x102e1a6e8?, {0x1031699d8?, 0x1035a8db8?})
+	<go>/src/runtime/map.go:236 +0x20
+reflect.Value.MapIndex({0x103571b48?, 0x25602b40a3b0?, 0x1031699d8?}, {0x1035a8b78, 0x256031cf07a0, 0x198})
+	<go>/src/reflect/map.go:197 +0xa0
+encoding/json/v2.makeMapArshaler.func2(0x25602f542f00, {{0x103571b48?, 0x25602b40a3b0?, 0x103571b48?}, 0x50?}, 0x25602f542fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:900 +0x1314
+encoding/json/v2.marshalValueAny(0x25602f542f00, {0x103571b48, 0x25602c963c50}, 0x25602f542fc8)
+	<go>/src/encoding/json/v2/arshal_any.go:57 +0x338
+encoding/json/v2.makeInterfaceArshaler.func1(0x25602f542f00, {{0x1035b1940?, 0x256031cf0680?, 0x1035b1940?}, 0x90?}, 0x25602f542fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:1856 +0x5ec
+encoding/json/v2.makeMapArshaler.func2(0x25602f542f00, {{0x103571c58?, 0x25602b40a398?, 0x103571c58?}, 0x30?}, 0x25602f542fc8)
+	<go>/src/encoding/json/v2/arshal_default.go:901 +0x1358
+encoding/json/v2.marshalEncode(0x25602f542f00, {0x103571c58?, 0x25602cd19e30?}, 0x25602f542fc8)
+	<go>/src/encoding/json/v2/arshal.go:248 +0x1a8
+encoding/json/v2.Marshal({0x103571c58, 0x25602cd19e30}, {0x256029b9ced8?, 0x256029b31808?, 0x51bf84c3f0d?})
+	<go>/src/encoding/json/v2/arshal.go:168 +0xa0
+encoding/json.Marshal(...)
+	<go>/src/encoding/json/v2_encode.go:186
+main.writeStatus({0x16d10a731, 0x80}, {0x103164d35, 0x6}, {0x103571c58?, 0x25602cd19e30?})
+	<worktree>/pipeline/services.go:175 +0x64
+main.runLinker.func2()
+	<worktree>/pipeline/services.go:456 +0x94
+created by main.runLinker in goroutine 1
+	<worktree>/pipeline/services.go:449 +0x2ec
+=== supervisor: unexpected exit, restarting
+=== started pid 25260 at 2026-11-01T16:40:06.230443+08:00

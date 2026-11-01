@@ -1,0 +1,29 @@
+{
+ "interval_s": 1.0,
+ "samples": 1635,
+ "duration_s": 2075.6,
+ "peak_rss_mb": {
+  "audit": 777.6,
+  "closure-0": 49.0,
+  "closure-1": 47.2,
+  "closure-2": 48.7,
+  "closure-3": 46.2,
+  "fhirsub": 125.6,
+  "linker": 196.5,
+  "malaffi": 400.9,
+  "nats-0": 175.0,
+  "nats-1": 183.0,
+  "nats-2": 136.7,
+  "orchestrate": 26.3,
+  "prep-0": 57.5,
+  "prep-1": 55.5,
+  "prep-2": 51.4,
+  "report7": 751.1,
+  "reviewer": 39.3,
+  "setup": 15.8,
+  "tamper": 2025.9
+ },
+ "peak_rss_total_mb": 2025.9,
+ "nats_store_peak_mb": 660.5,
+ "nats_store_last_mb": 609.0
+}
