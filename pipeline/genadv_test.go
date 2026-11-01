@@ -3,25 +3,44 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
 )
 
 // genAdv runs a small cohort with the given adversarial rates and returns its directory.
 func genAdv(t *testing.T, wrongEID, wrongRef float64) string {
+	return genAdvN(t, wrongEID, wrongRef, 0, 0, 0)
+}
+
+func genAdvN(t *testing.T, wrongEID, wrongRef float64, nLung, nDR, nBreast int) string {
 	t.Helper()
 	savedP, savedE, savedR, savedRej := append([]ProvCfg{}, Providers...), WrongEIDRate, WrongRefRate, RefRejectExt
-	defer func() { Providers, WrongEIDRate, WrongRefRate, RefRejectExt = savedP, savedE, savedR, savedRej }()
+	savedL, savedD, savedB := LungOn, DROn, BreastOn
+	defer func() {
+		Providers, WrongEIDRate, WrongRefRate, RefRejectExt = savedP, savedE, savedR, savedRej
+		LungOn, DROn, BreastOn = savedL, savedD, savedB
+	}()
 	WrongEIDRate, WrongRefRate, RefRejectExt = wrongEID, wrongRef, true
+	if nLung > 0 {
+		EnableLung()
+	}
+	if nDR > 0 {
+		EnableDR()
+	}
+	if nBreast > 0 {
+		EnableBreast()
+	}
 	out := t.TempDir()
 	devnull, _ := os.Open(os.DevNull)
 	stdout := os.Stdout
 	os.Stdout = devnull
 	defer func() { os.Stdout = stdout }()
 	runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", 7, 300, 60, 3000, 80,
-		loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 0, "", 0, "", 0, "")
+		loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), nLung, "", nDR, "", nBreast, "")
 	return out
 }
 
@@ -126,6 +145,55 @@ func TestGenAdversarialFlags(t *testing.T) {
 	if !bytes.Equal(a, b) {
 		t.Fatal("-wrongref changed the truth beyond the wrong_ref block")
 	}
+}
+
+// Multi-programme intake IDs share runGen's counter map. Every wrong citation must therefore have a unique truth key,
+// including rejected lung/DR intakes emitted by handoffext.go, and only basedOn display text may differ from the off cohort.
+func TestGenAdversarialWrongRefMultiProgramme(t *testing.T) {
+	if _, err := os.Stat("../data/persons3.json"); err != nil {
+		t.Skip("persons3.json not available")
+	}
+	off := genAdvN(t, 0, 0, 64, 80, 12)
+	ref := genAdvN(t, 0, 1, 64, 80, 12)
+	n := sameFeedsMasked(t, off, ref, regexp.MustCompile(`"display":"external referral [^"]*"`))
+	tr, _ := readTruth(t, ref)
+	if len(tr.WrongRef) != n {
+		t.Fatalf("wrong refs %d, changed lines %d (possible intake-key collision)", len(tr.WrongRef), n)
+	}
+
+	seen := map[string]string{}
+	byProvider := map[string]int{}
+	files, _ := filepath.Glob(filepath.Join(ref, "fhir_*.ndjson"))
+	for _, f := range files {
+		b, _ := os.ReadFile(f)
+		for _, line := range bytes.Split(b, []byte("\n")) {
+			if len(line) == 0 {
+				continue
+			}
+			var ev GenEvent
+			if err := json.Unmarshal(line, &ev); err != nil {
+				t.Fatal(err)
+			}
+			if ev.Res["resourceType"] != "ServiceRequest" || !strings.Contains(fmt.Sprint(ev.Res["category"]), "referral-intake") {
+				continue
+			}
+			key := ev.Prov + "/ServiceRequest/" + fmt.Sprint(ev.Res["id"])
+			if prev, ok := seen[key]; ok {
+				t.Fatalf("duplicate intake key %s in %s and %s", key, prev, f)
+			}
+			seen[key] = f
+			if tr.WrongRef[key] != nil {
+				byProvider[ev.Prov]++
+			}
+		}
+	}
+	if byProvider["mafraq-rad"]+byProvider["eye-hosp"] == 0 {
+		t.Fatalf("external rejection intake hook not exercised: %v", byProvider)
+	}
+	if len(byProvider) < 3 {
+		t.Fatalf("multi-programme wrong-ref coverage too narrow: %v", byProvider)
+	}
+	t.Logf("wrong refs by intake provider: %v", byProvider)
 }
 
 func loadPersonsEval(t *testing.T) []Person {
