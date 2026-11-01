@@ -25,6 +25,8 @@ BREAST="${WASL_BREAST:-70}"; export BREAST   # breast screening recall loops per
 LUNG="${WASL_LUNG:-1088}"; PERSONS="${WASL_PERSONS:-0}"; CRC="${WASL_CRC:-2040}"; CERV="${WASL_CERV:-816}"; export LUNG PERSONS CRC CERV
 # pilot switches (pipeline/pilot.go), default off: WASL_SHADOW=1 shadow mode; WASL_AUTOAUDIT=p post-closure audit fraction
 PARGS=(); [ "${WASL_SHADOW:-0}" = 0 ] || PARGS+=(-shadow); [ "${WASL_AUTOAUDIT:-0}" = 0 ] || PARGS+=(-autoaudit "$WASL_AUTOAUDIT")
+# WASL_EIDGUARD=1: separate post-hoc wrong-EID closure-guard lane (default off); WASL_NOISES="v2": select noise lanes (default "v1 v2")
+[ "${WASL_EIDGUARD:=0}" = 0 ] || PARGS+=(-eidguard)
 # WASL_LUNGSURV=1: surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go), generator and engine; default on
 GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsurv); }
 # WASL_LUNGSURV2=1 (needs WASL_LUNGSURV=1): later surveillance CTs at about 1 and 2 years (BTS 2015); WASL_LUNGSURVSTABLE=1:
@@ -47,7 +49,7 @@ GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsur
 # WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women who hold another
 # programme's loop (pipeline/genbreast.go); needed above about 85 breast loops per cohort
 [ "${WASL_BREASTSHARE:=0}" = 0 ] || GSURV+=(-breastshare)
-export WASL_LUNGSURV WASL_LUNGSURV2 WASL_LUNGSURVSTABLE WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF WASL_BREASTSHARE
+export WASL_LUNGSURV WASL_LUNGSURV2 WASL_LUNGSURVSTABLE WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_SECONDIDCONFIRM WASL_WRONGEID WASL_WRONGREF WASL_BREASTSHARE WASL_EIDGUARD
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -66,6 +68,8 @@ m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision":
      "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
      "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
      "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
+     "selected_noise_models": os.environ.get("WASL_NOISES", "v1 v2").split(),
+     "eid_guard": os.environ.get("WASL_EIDGUARD", "0") not in ("", "0"),
      "lung_loops_per_run": int(os.environ.get("LUNG", "0")), "dr_loops_per_run": int(os.environ.get("DR", "0")), "breast_loops_per_run": int(os.environ.get("BREAST", "0")), "ldct_loops_per_run": int(os.environ.get("LDCT", "0")), "ifhas_loops_per_run": int(os.environ.get("IFHAS", "0")), "crc_loops_per_run": int(os.environ["CRC"]), "cervical_loops_per_run": int(os.environ["CERV"]),
      "persons_cap": int(os.environ["PERSONS"]) or "all held-out (8,871)",
      "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
@@ -136,7 +140,10 @@ run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     rm -rf "$O/run/main/nats-"* "$O/run/base"   # keep logs, drop NATS stores
 }
 JOBS="${WASL_JOBS:-3}"   # runs in parallel, each on its own ports; throughput_ev_s is then per-run under contention
-TAGS=(); for noise in v1 v2; do for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done; done
+TAGS=(); for noise in ${WASL_NOISES:-v1 v2}; do
+  [ "$noise" = v1 ] || [ "$noise" = v2 ] || { echo "invalid WASL_NOISES entry: $noise" >&2; exit 2; }
+  for seed in "${SEEDS[@]}"; do TAGS+=("$noise:$seed"); done
+done
 for ((lane = 0; lane < JOBS; lane++)); do
   ( export WASL_PORT_OFFSET=$((${WASL_PORT_BASE:-0} + lane * 100))
     for ((k = lane; k < ${#TAGS[@]}; k += JOBS)); do run_one "${TAGS[$k]%%:*}" "${TAGS[$k]##*:}"; done ) &
