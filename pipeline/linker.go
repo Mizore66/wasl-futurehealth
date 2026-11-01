@@ -711,7 +711,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			// message held and is escalated to identity review; neither changes the clusters
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
-			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose == "second_identifier" {
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && SecondIDContradictionConfirm && so.Purpose == "second_identifier" {
 				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
 					// the records contradict: the confirmation counts only after a confirming review (closure raises IDConfirm)
 					sc := *so
