@@ -60,6 +60,11 @@ if has_prog:
               ", ".join(f"{pg} {mix[pg]}" for pg in PROGS if pg in mix) +
               ". Lung, DR and breast run with the frozen evaluation's switches (-lungsurv, -drnext, -refreject, -xreflink). "
               "The pooled certificate below covers a loop drawn from this programme mix; the per-programme tables say how much each programme carries on its own.\n")
+    md.append("**Cal-split capacity and cohort design.** The cal split has 3,588 persons: 2,797 men, 779 women (21.7%) and 12 unknown sex. "
+              "Each seed contributes CRC 825, cervical 330, lung 650, DR 650 and breast 16 loops, plus 283 distractors. "
+              "Breast is the binding constraint: after allocating the other loops, capacity probes found only 18 eligible women aged 40-90 with no other loop in the tightest seed; "
+              "16 breast loops plus the required 2 distractors therefore fit every seed. Larger CRC/cervical cohorts left too few eligible women. "
+              "These sizes were fixed before the all-programme LTT sweep; breast supports the pooled certificate but is far too small for a programme-specific zero-event certificate.\n")
 for review in (True, False):
     rs = [r for r in rows if r["with_review"] == review]
     taus = sorted({r["tau_close"] for r in rs}, reverse=True)
