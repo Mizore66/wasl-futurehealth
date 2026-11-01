@@ -105,7 +105,7 @@ The tracking ServiceRequest is opened by the screening facility for every IFHAS 
 
 **Outreach:** loop-level intents as for DR and breast (phone then letter, in the screening facility's name): `ifhas_followup_due` (deadline within 7 days), `ifhas_overdue_followup`, `ifhas_rebook` (did not attend). Same consent hold; consent recorded by the screening facility (4% deny, own RNG in `augment_cohort.py`).
 
-**Capacity:** measured in the results (section 8 of the results paragraph): how many IFHAS loops fit next to CRC, cervical, lung, DR and breast on the demo person pool.
+**Capacity (measured):** each loop consumes one person plus one distractor person per eight loops. On the demo cohort (seed 2026, 6,500 persons, 600 cervical), 2,816 people are eligible with lung/DR/breast off, allowing about 2,500 IFHAS loops; with lung 800, DR 1,200 and breast 160, 1,114 are eligible, allowing about 990. On the frozen-evaluation cohort configuration (all held-out people; CRC 2,040, cervical 816, lung 1,088, DR 1,200, breast 70, v2 noise), 2,196 (seed 11) and 2,206 (seed 37) people are eligible, allowing about 1,950. The generator stops with an explicit capacity error rather than reusing a person.
 
 ## 6. Metrics (`ifhasmetrics.go`, `report7.json` → `programmes_live.ifhas`)
 
