@@ -12,6 +12,7 @@
 #      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
 #      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
 #      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
+#      WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (pipeline/genadv.go; default 0 = off): relatives' Emirates IDs / wrong referral numbers.
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -48,6 +49,11 @@ RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$R
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
 [ "$DRNEXT" = 0 ] || GARGS+=(-drnext)
 [ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv)
+# adversarial generator cases (default off; pipeline/genadv.go): WASL_WRONGEID=p a share p of registrations carries a
+# relative's Emirates ID (B8); WASL_WRONGREF=p a share p of referral intakes cites the wrong referral (B9). Assumed rates.
+WRONGEID="${WASL_WRONGEID:-0}"; WRONGREF="${WASL_WRONGREF:-0}"
+[ "$WRONGEID" = 0 ] || { GARGS+=(-wrongeid "$WRONGEID"); RUN="$RUN-wrongeid$WRONGEID"; }
+[ "$WRONGREF" = 0 ] || { GARGS+=(-wrongref "$WRONGREF"); RUN="$RUN-wrongref$WRONGREF"; }
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()
