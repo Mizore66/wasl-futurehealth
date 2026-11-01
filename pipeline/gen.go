@@ -292,7 +292,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	json.Unmarshal(b, &all)
 	ps := []Person{}
 	for _, p := range all {
-		if p.Spl == GenSplit { // default "eval": held out from encoder, scorer and calibrator training; "cal" for Learn-then-Test calibration
+		if inGenSplit(p.Spl) { // "all": scale runs only (training persons included); default "eval": held out from encoder, scorer and calibrator training; "cal" for Learn-then-Test calibration
 			ps = append(ps, p)
 		}
 	}
