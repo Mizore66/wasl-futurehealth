@@ -82,6 +82,12 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 				e.Breast.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
 			}
 		}
+		if e.Category == "ldct-screening" { // lung cancer screening LDCT (ldct.go)
+			e.LDCT = &LDCTSR{}
+			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
+				e.LDCT.Scan = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
+			}
+		}
 		if e.Lung != nil {
 			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
 				e.Lung.Finding = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
@@ -140,7 +146,7 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
-				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic", "breast-screen", "breast-assess": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go); breast screen | assessment (breast.go)
+				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic", "breast-screen", "breast-assess", "ldct-screen", "ldct-workup": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go); breast screen | assessment (breast.go); LDCT report | work-up (ldct.go)
 					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}
