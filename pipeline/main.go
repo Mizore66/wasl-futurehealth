@@ -66,6 +66,7 @@ func main() {
 	lungSurv := fs.Bool("lungsurv", false, "lung nodule: a PET/CT low-uptake closure makes a surveillance CT due (child loop <loop>#surv); gen adds the surveillance CTs (lungsurv.go)")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
 	refReject := fs.Bool("refreject", false, "gen: lung work-up and DR eye-clinic referrals can be rejected by the unit (hand-off packet truth; handoffext.go)")
+	histClock := fs.Bool("histclock", false, "closure: judge look-back history (inputs arriving before day 0) at its arrival time, not at the day-0 clock (linker.go HistClock)")
 	xrefLink := fs.Bool("xreflink", false, "hand-off: a rejected referral intake that cites the loop's referral but never linked by identity raises a link question (handoffref.go)")
 	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
 	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
@@ -167,6 +168,7 @@ func main() {
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
 	XRefLinkQ = *xrefLink
+	HistClock = *histClock
 	RefRejectExt = *refReject
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
@@ -283,6 +285,9 @@ func main() {
 	}
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
+	}
+	if HistClock { // linker and closure children, only when on
+		v7Args = append(v7Args, "-histclock")
 	}
 	if LungPETSurv { // reaches every child only when on, so the child argument lists are unchanged when off
 		v7Args = append(v7Args, "-lungsurv")

@@ -58,6 +58,8 @@ type LinkerCore struct {
 	provLast     map[string]float64
 	provDone     map[string]bool
 	lastTick     int
+	streamT      float64 // HistClock: latest input arrival day seen
+	streamSeen   bool
 	PSeq         []uint64
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
 	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
@@ -67,6 +69,19 @@ type LinkerCore struct {
 }
 
 var annMode = new(string)
+
+// HistClock (flag -histclock, default off): judge look-back history at its own arrival time. The event-time clock
+// below only ticks from day 0 (lastTick starts at -1 and a provider's latest arrival starts at 0), so the closure clock
+// stands at day 0 from the first message on. Lung, DR and breast cohorts carry history from before day 0 (index CTs
+// from day -420), and with the clock at day 0 a loop is judged due or overdue as soon as its index report arrives,
+// months before it was due and before the coordinator's consent record that follows it: the time-based outreach
+// is raised early, held for consent, released once the consent arrives, and often made moot by follow-up history
+// that arrives later (results/showcase at cfcf50f: 233 of its 317 consent holds; final states are unchanged).
+// On: every facts message carries the arrival day of the input that produced it (a sign-off: the latest arrival
+// seen), and the closure judges the loop at that day when it is earlier than its clock. From day 0 on an arrival is
+// never earlier than the clock (the clock trails every provider's latest arrival), so nothing changes there. Ticks
+// are unchanged: a loop still due at go-live is raised at the next tick.
+var HistClock = false
 var annCB = new(string)
 
 // attachANN: v6 replay-safe ANN blocking (exact remains the default so v5 runs are unchanged).
@@ -782,6 +797,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		if p.Tick > L.provLast[e.Provider] {
 			L.provLast[e.Provider] = p.Tick
 		}
+		if !L.streamSeen || p.Tick > L.streamT {
+			L.streamT, L.streamSeen = p.Tick, true
+		}
 		if e.RType == "Task" {
 			loop := e.Provider + "/" + strings.Replace(e.Focus, "ServiceRequest/", "ServiceRequest/", 1)
 			L.tasks[loop] = append(L.tasks[loop], TaskFact{Day: e.Day, Status: e.Status, Owner: e.Owner})
@@ -918,6 +936,13 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		L.lastHash[lp] = h
 		f.InSeq = p.Seq
 		out = append(out, FactsMsg{ID: lp + "@" + utoa(p.Seq), InSeq: p.Seq, Facts: f, OriginTs: p.OriginTs, Part: partOf(lp, L.P)})
+		if HistClock && L.streamSeen {
+			t := L.streamT // a sign-off has no arrival of its own: the stream time
+			if p.Kind == "event" {
+				t = p.Tick
+			}
+			out[len(out)-1].Arr = &t
+		}
 	}
 	// event-time clock: watermark = min latest arrival over providers still streaming; one tick per whole day crossed
 	wm, all := TEnd, true

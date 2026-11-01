@@ -102,6 +102,13 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 		return out
 	}
 	ls.facts = f
+	if HistClock && m.Arr != nil && *m.Arr < c.now { // look-back history: judge it at its own time, not at the day-0 clock
+		saved := c.now
+		c.now = *m.Arr
+		out = c.eval(ls, m.InSeq, m.ID)
+		c.now = saved
+		return out
+	}
 	return c.eval(ls, m.InSeq, m.ID)
 }
 
