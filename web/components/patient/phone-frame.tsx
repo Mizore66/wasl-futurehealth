@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Mark } from "@/components/brand/mark";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 import { DICTS, LANGS } from "./i18n";
@@ -42,12 +43,7 @@ export function PhoneFrame({ step, query, children }: { step: Step; query: Phone
         </nav>
         <div lang={query.lang} dir={t.dir} style={{ fontFamily: PHONE_FONT[query.lang] }} className="flex flex-1 flex-col text-ink">
           <header className="flex min-h-11 items-center gap-2.5 px-5 pt-4 pb-2">
-            <span
-              aria-hidden="true"
-              className="flex size-6 flex-none items-center justify-center rounded-control bg-cta font-arabic text-[15px] leading-none font-semibold text-white"
-            >
-              و
-            </span>
+            <Mark size={24} />
             <span className="text-[15px] font-medium">{t.clinic}</span>
             <LanguageSheet current={query.lang} title={t.langTitle} closeLabel={t.close} currentLabel={t.langName} options={options} />
           </header>

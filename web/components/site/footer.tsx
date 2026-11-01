@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/mark";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { HonestyKind } from "@/lib/honesty";
 import { cn } from "@/lib/utils";
@@ -36,12 +37,8 @@ export function SiteFooter({
   if (big) {
     return (
       <footer className={cn(wrap, "pb-12 pt-20")}>
-        <div aria-hidden className="flex items-center gap-[clamp(1rem,2vw,2rem)] text-[clamp(2.5rem,1rem_+_6vw,7rem)] font-bold leading-none tracking-[-0.04em]">
-          <span>Wasl</span>
-          <span className="h-[0.8em] w-[clamp(4px,0.6vw,8px)] bg-(--teal)" />
-          <span lang="ar" dir="rtl" className="font-arabic font-semibold tracking-normal text-(--teal)">
-            وصل
-          </span>
+        <div aria-hidden>
+          <Logo className="text-[clamp(2.75rem,1rem_+_7vw,8rem)]" />
         </div>
         <div className="mt-8">{print}</div>
       </footer>

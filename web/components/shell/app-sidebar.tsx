@@ -3,6 +3,7 @@
 import { Suspense, use } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Mark } from "@/components/brand/mark";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 
@@ -92,11 +93,7 @@ function isActive(pathname: string, href: string) {
 function Brand() {
   return (
     <Link href="/" title="Back to the Wasl site" className="flex items-center gap-2.5 rounded-control px-2.5 text-ink no-underline hover:text-ink">
-      <span aria-hidden className="flex size-6 flex-none items-center justify-center rounded-control bg-ink text-[15px] font-semibold leading-none text-white">
-        <span lang="ar" dir="rtl">
-          و
-        </span>
-      </span>
+      <Mark size={24} />
       <span className="flex flex-col">
         <span className="text-section font-semibold leading-5">Wasl</span>
         <span className="text-small text-muted">ADPHC · CRC programme</span>
