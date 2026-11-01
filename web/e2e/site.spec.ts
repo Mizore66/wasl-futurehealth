@@ -94,6 +94,31 @@ for (const route of ROUTES) {
   });
 }
 
+/** The palette before sand and thread: blue #1d5fbf, near-black #0a0a0a, cool grey #f2f4f7, and pure black grounds. */
+const OLD_PALETTE = ["rgb(29, 95, 191)", "rgb(10, 10, 10)", "rgb(242, 244, 247)"];
+
+for (const route of ROUTES) {
+  test(`${route.path}: nothing is painted in the old palette`, async ({ page }) => {
+    await page.goto(route.path);
+    await visitAll(page);
+    const hits = await page.evaluate((old) => {
+      const props = ["color", "background-color", "border-top-color", "border-bottom-color", "border-left-color", "border-right-color", "fill", "stroke", "outline-color"];
+      const out: string[] = [];
+      for (const el of document.querySelectorAll("body *")) {
+        const cs = getComputedStyle(el);
+        const name = `${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ""}.${String(el.getAttribute("class") ?? "").split(" ")[0]}`;
+        for (const prop of props) {
+          const v = cs.getPropertyValue(prop);
+          if (old.includes(v)) out.push(`${name} ${prop} ${v}`);
+        }
+        if (cs.backgroundColor === "rgb(0, 0, 0)") out.push(`${name} background-color pure black`);
+      }
+      return out;
+    }, OLD_PALETTE);
+    expect(hits).toEqual([]);
+  });
+}
+
 test("the header's primary action opens the dashboard from every site page", async ({ page }) => {
   for (const route of ROUTES) {
     await page.goto(route.path);
@@ -308,7 +333,7 @@ test("landing: the hero and the close open the dashboard and the pipeline", asyn
     await scrollStory(page, p);
     const cue = page.locator(`[data-cue="${id}"]`);
     await expect(cue.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
-    await expect(cue.getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
+    await expect(cue.getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
   }
   const close = page.locator('[data-cue="close"]');
   await expect(close).toHaveAttribute("data-on", "");
@@ -324,7 +349,7 @@ test("landing with reduced motion: stills with every line and the 2D name picker
   await expect(page.locator("canvas")).toHaveCount(0);
   for (const b of BEATS) await expect(page.locator(`[data-beat="${b.id}"] svg[role="img"]`)).toHaveCount(1);
   for (const c of CUES) await expect(page.locator(`[data-cue="${c.id}"]`)).toBeVisible();
-  await expect(page.locator('[data-cue="hero"]').getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
+  await expect(page.locator('[data-cue="hero"]').getByRole("link", { name: "How it works" })).toHaveAttribute("href", "/how-it-works");
   const group = page.getByRole("group", { name: "Choose a person" });
   await group.getByRole("button", { name: "Aisha" }).click();
   await expect(page.getByTestId("verdict")).toHaveText("A person decides");
@@ -340,6 +365,11 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
   await expect(page.locator("#path-title + ol > li")).toHaveCount(6);
   await expect(page.locator('[data-side="tracker"]')).toContainText("Ticked done");
   await expect(page.locator('[data-side="wasl"]')).toContainText("Kept open");
+  const faces = page.locator("#path-title + ol > li");
+  expect(await faces.evaluateAll((lis) => lis.map((li) => li.getAttribute("data-face")))).toEqual(["fatima", "fatima", "record", "fatima", "fatima", "fatima"]);
+  await expect(faces.nth(2).locator(".wav-root")).toHaveAttribute("data-state", "unknown");
+  await expect(faces.nth(3).locator(".wav-root")).toHaveAttribute("data-state", "known");
+  await expect(page.locator('#trap-title ~ div .wav-root[data-state="known"]')).toHaveCount(1);
   await expect(nav.getByRole("link", { name: /pilot/i })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
 });

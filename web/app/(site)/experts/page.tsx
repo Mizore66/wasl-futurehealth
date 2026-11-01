@@ -14,7 +14,7 @@ export const metadata = { title: "For experts" };
 
 const h2x = "m-0 text-[clamp(2rem,1.5rem_+_1.5vw,2.5rem)] font-bold leading-[1.1] tracking-[-0.025em] text-balance";
 const h3x = "m-0 text-[20px] font-semibold leading-[1.3] tracking-[-0.01em]";
-const muted = "text-[#5f6368]";
+const muted = "text-(--muted)";
 const sectionX = "py-20 md:py-[120px]";
 const big = "text-[clamp(2.75rem,2rem_+_2.5vw,4rem)] font-semibold leading-[1.05] tracking-[-0.035em] tabular-nums";
 const ctaX =
@@ -24,11 +24,11 @@ const ctaX =
 const tbl = {
   table: "mt-10 w-full border-collapse text-left text-[16px] leading-[1.45] max-md:block",
   thead: "max-md:sr-only",
-  headRow: "border-b-2 border-[#0a0a0a]",
+  headRow: "border-b-2 border-(--ink)",
   th: "px-4 pb-3 align-bottom text-[14px] font-semibold first:pl-0 last:pr-0",
   tbody: "max-md:block",
-  row: (i: number) => cn("align-top max-md:mb-2 max-md:block max-md:p-4", i % 2 === 0 && "bg-white"),
-  cell: "p-4 max-md:block max-md:px-0 max-md:py-1.5 max-md:before:block max-md:before:text-[14px] max-md:before:font-semibold max-md:before:text-[#5f6368] max-md:before:content-[attr(data-label)]",
+  row: (i: number) => cn("align-top max-md:mb-2 max-md:block max-md:p-4", i % 2 === 0 && "bg-(--card)"),
+  cell: "p-4 max-md:block max-md:px-0 max-md:py-1.5 max-md:before:block max-md:before:text-[14px] max-md:before:font-semibold max-md:before:text-(--muted) max-md:before:content-[attr(data-label)]",
 };
 
 type Mark = "built" | "simulated" | "designed";
@@ -38,14 +38,14 @@ function StatusLine({ mark, children }: { mark: Mark; children: React.ReactNode 
   return (
     <span className="flex items-center gap-2 [&+&]:mt-1.5" data-status={mark}>
       <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" className="flex-none">
-        {mark === "built" && <rect x="1" y="1" width="10" height="10" fill="#0f4f4c" />}
+        {mark === "built" && <rect x="1" y="1" width="10" height="10" fill="var(--teal)" />}
         {mark === "simulated" && (
           <>
-            <rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="#0f4f4c" strokeWidth="1.5" />
-            <rect x="1.5" y="1.5" width="4.5" height="9" fill="#0f4f4c" />
+            <rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="var(--teal)" strokeWidth="1.5" />
+            <rect x="1.5" y="1.5" width="4.5" height="9" fill="var(--teal)" />
           </>
         )}
-        {mark === "designed" && <rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="#5f6368" strokeWidth="1.5" strokeDasharray="2 2" />}
+        {mark === "designed" && <rect x="1.5" y="1.5" width="9" height="9" fill="none" stroke="var(--muted)" strokeWidth="1.5" strokeDasharray="2 2" />}
       </svg>
       {children}
     </span>
@@ -243,7 +243,7 @@ export default async function Page() {
     },
     {
       when: "Months 9–12",
-      tone: "bg-[#4f716d] text-white",
+      tone: "bg-(--ink) text-(--paper)",
       title: "Contract",
       text: "Primary route an ADHDS vendor agreement; fallback a DoH limited tender. Second door: on-premise for one provider network (designed).",
       gate: "contract signed.",
@@ -251,7 +251,7 @@ export default async function Page() {
     },
     {
       when: "Month 12 on",
-      tone: "bg-[#d6cbb6] text-[#0a0a0a]",
+      tone: "bg-(--sand-deep) text-(--ink)",
       title: "Cervical, then breast",
       text: "Same engine, same gate. Each new loop type repeats shadow mode before it closes anything.",
       gate: "fixed cost of AED 0.54–1.39M in year 1 falls toward AED 5–28 per loop.",
@@ -280,13 +280,13 @@ export default async function Page() {
               </a>
             </div>
             <p className={cn("m-0 mt-10 max-w-[36em] text-[14px] leading-[1.55]", muted)}>
-              <HonestyLabel kind="simulated" className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] text-[#5f6368]">
+              <HonestyLabel kind="simulated" className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] text-(--muted)">
                 Status words used on this page.
               </HonestyLabel>{" "}
-              <strong className="font-semibold text-[#0a0a0a]">Built</strong>: ran in the integrated pipeline, on synthetic cohorts.{" "}
-              <strong className="font-semibold text-[#0a0a0a]">Simulated</strong>: a modelled mechanism on assumed inputs.{" "}
-              <strong className="font-semibold text-[#0a0a0a]">Projected</strong>: modelled from published effect sizes.{" "}
-              <strong className="font-semibold text-[#0a0a0a]">Designed</strong>: specified, not built. Figures come from the frozen evaluation
+              <strong className="font-semibold text-(--ink)">Built</strong>: ran in the integrated pipeline, on synthetic cohorts.{" "}
+              <strong className="font-semibold text-(--ink)">Simulated</strong>: a modelled mechanism on assumed inputs.{" "}
+              <strong className="font-semibold text-(--ink)">Projected</strong>: modelled from published effect sizes.{" "}
+              <strong className="font-semibold text-(--ink)">Designed</strong>: specified, not built. Figures come from the frozen evaluation
               at commit {results.frozen_revision.slice(0, 7)} (5 seeds, held-out noise)
               unless named otherwise.
             </p>
@@ -294,7 +294,7 @@ export default async function Page() {
           <figure
             role="img"
             aria-label={`Colonoscopy within 31 days of referral, simulated cohort of ${n}: Emirates ID only tracking ${eid.display}, Wasl ${wasl.display}, truth ${truth.display}`}
-            className="m-0 rounded bg-white px-[clamp(1.25rem,2.5vw,2.25rem)] py-8"
+            className="m-0 rounded bg-(--card) px-[clamp(1.25rem,2.5vw,2.25rem)] py-8"
           >
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <span className="text-[20px] font-semibold tracking-[-0.01em]">Colonoscopy within 31 days of referral</span>
@@ -302,7 +302,7 @@ export default async function Page() {
                 Simulated, n = {n}
               </span>
             </div>
-            <Bar label="Tracked by Emirates ID only" value={eid.display} width={pct(eid.value)} tone="bg-[#8a8478]" />
+            <Bar label="Tracked by Emirates ID only" value={eid.display} width={pct(eid.value)} tone="bg-(--stub)" />
             <Bar label="Measured by Wasl" value={wasl.display} width={pct(wasl.value)} tone="bg-(--teal)" strong />
             <Bar label="Truth, from the simulator" value={truth.display} width={pct(truth.value)} tone="bg-(--ink)" />
             <figcaption className={cn("mt-6 text-[14px] leading-[1.55]", muted)}>
@@ -363,7 +363,7 @@ export default async function Page() {
                 Closure is the one action a programme cannot take back. Wasl takes it automatically only when every condition below holds,
                 and sends every other loop to two people.
               </p>
-              <ul className="m-0 mt-9 grid list-none gap-6 p-0 text-[16px] leading-[1.55] text-[#3d4a49]">
+              <ul className="m-0 mt-9 grid list-none gap-6 p-0 text-[16px] leading-[1.55] text-(--ink-soft)">
                 <li>
                   <strong className="font-semibold text-(--ink)">A trusted link.</strong> Calibrated link probability at τ 0.99 or above, set
                   over the 0.989 cap on name-only links, so a name match alone never closes a loop.
@@ -387,37 +387,37 @@ export default async function Page() {
               </ul>
             </div>
             <div>
-              <div className="text-[16px] text-[#3d4a49]">False closures, held-out noise, 5 seeds</div>
+              <div className="text-[16px] text-(--ink-soft)">False closures, held-out noise, 5 seeds</div>
               <div className={cn(big, "mt-2")} data-figure="false-closures">
                 {fc.display}
               </div>
-              <p className="m-0 mt-3 max-w-[30em] text-[16px] leading-[1.55] text-[#3d4a49]">
+              <p className="m-0 mt-3 max-w-[30em] text-[16px] leading-[1.55] text-(--ink-soft)">
                 95% upper bound {upperBound("v2.safety.crc_false_closures")}. Precision {fixed("v2.crc_precision", 3)}, recall{" "}
                 {fixed("v2.crc_recall", 3)}. With no human review recall is {fixed("v2.crc_recall_no_review", 3)}: people sign the rest.
               </p>
-              <div className="mt-12 text-[16px] text-[#3d4a49]">False closures in the offline gate sweep, 5 seeds × 3 reviewer error rates</div>
+              <div className="mt-12 text-[16px] text-(--ink-soft)">False closures in the offline gate sweep, 5 seeds × 3 reviewer error rates</div>
               <div className="mt-3 grid grid-cols-2 gap-6">
-                <div className="rounded bg-white px-6 py-5">
+                <div className="rounded bg-(--card) px-6 py-5">
                   <div className={big}>0</div>
                   <div className="mt-1.5 text-[16px]">Double review, of {result("double_review.false_closures_denominator").display}</div>
                 </div>
-                <div className="rounded bg-white px-6 py-5">
-                  <div className={cn(big, "text-[#92400e]")}>{result("single_review.false_closures").display}</div>
+                <div className="rounded bg-(--card) px-6 py-5">
+                  <div className={cn(big, "text-(--negative)")}>{result("single_review.false_closures").display}</div>
                   <div className="mt-1.5 text-[16px]">Single review</div>
                 </div>
               </div>
-              <p className="m-0 mt-3 text-[16px] leading-[1.55] text-[#3d4a49]">So double review is mandatory, not a setting.</p>
+              <p className="m-0 mt-3 text-[16px] leading-[1.55] text-(--ink-soft)">So double review is mandatory, not a setting.</p>
               <ul className="m-0 mt-10 grid list-none gap-2.5 p-0 text-[16px] tabular-nums">
                 <li>
-                  <B>{result("v2.safety.wrong_patient_released").display}</B> <span className="text-[#3d4a49]">wrong-patient messages</span>
+                  <B>{result("v2.safety.wrong_patient_released").display}</B> <span className="text-(--ink-soft)">wrong-patient messages</span>
                 </li>
                 <li>
                   <B>{result("v2.safety.lung_false_closures").display}</B>{" "}
-                  <span className="text-[#3d4a49]">lung-nodule false closures, same engine</span>
+                  <span className="text-(--ink-soft)">lung-nodule false closures, same engine</span>
                 </li>
                 <li>
                   <B>{result("v2.safety.cervical_false_closures").display}</B>{" "}
-                  <span className="text-[#3d4a49]">cervical false closures, simulated programme</span>
+                  <span className="text-(--ink-soft)">cervical false closures, simulated programme</span>
                 </li>
               </ul>
             </div>
@@ -484,10 +484,10 @@ export default async function Page() {
             ].map((s, i, all) => (
               <li key={s.t} className={cn("relative rounded px-5 py-5", s.hl ? "bg-(--mint)" : "bg-(--sand)")}>
                 <div className="text-[16px] font-semibold">{s.t}</div>
-                <div className={cn("mt-1.5 text-[14px] leading-[1.45]", s.hl ? "text-[#3d4a49]" : muted)}>{s.d}</div>
+                <div className={cn("mt-1.5 text-[14px] leading-[1.45]", s.hl ? "text-(--ink-soft)" : muted)}>{s.d}</div>
                 {i < all.length - 1 && (
                   <svg aria-hidden viewBox="0 0 36 12" className="absolute left-full top-1/2 h-3 w-9 -translate-y-1/2 max-md:hidden">
-                    <path d="M2 6h28M25 1l6 5-6 5" fill="none" stroke="#0f4f4c" strokeWidth="2" />
+                    <path d="M2 6h28M25 1l6 5-6 5" fill="none" stroke="var(--teal)" strokeWidth="2" />
                   </svg>
                 )}
               </li>
@@ -501,7 +501,7 @@ export default async function Page() {
               </p>
               <pre
                 aria-label="Synthetic HL7 version 2 message and its acknowledgement"
-                className="m-0 mt-6 whitespace-pre-wrap break-all rounded bg-white px-6 py-6 font-mono text-[14px] leading-[1.6] text-(--ink)"
+                className="m-0 mt-6 whitespace-pre-wrap break-all rounded bg-(--card) px-6 py-6 font-mono text-[14px] leading-[1.6] text-(--ink)"
               >
                 {`MSH|^~\\&|skmc-endo|skmc-endo|WASL|ADHIE|20261010093000||ORU^R01|SKM-dr-237|P|2.5.1
 PID|1||SKM-48213^^^skmc-endo^MR||Fatima Al Zaabi||19720314|F|||||||ar
@@ -608,7 +608,7 @@ MSA|AA|SKM-dr-237|`}
         </Reveal>
       </section>
 
-      <section id="pilot" aria-labelledby="h-pilot" className="scroll-mt-4 bg-[#e8dfcd]">
+      <section id="pilot" aria-labelledby="h-pilot" className="scroll-mt-4 bg-(--sand-deep)">
         <Reveal className={cn(wrapExpert, "grid items-start gap-16 py-20 md:py-28 lg:grid-cols-[1.2fr_1fr] lg:gap-20")}>
           <div>
             <h2 id="h-pilot" className={h2x}>

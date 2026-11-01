@@ -147,7 +147,7 @@ export type Outcome = "joined" | "apart" | "review";
 export const CAST = {
   fatima: { first: "Fatima", seed: { key: "p-fatima-zaabi", sex: "female" }, outcome: "joined" },
   khalid: { first: "Khalid", seed: { key: "p-khalid-kitbi", sex: "male" }, outcome: "apart" },
-  aisha: { first: "Aisha", seed: { key: "p-aisha-mazroui", sex: "female" }, outcome: "review" },
+  aisha: { first: "Aisha", seed: { key: "p-aisha-mansoori", sex: "female" }, outcome: "review" },
 } as const satisfies Record<string, { first: string; seed: PersonSeed; outcome: Outcome }>;
 
 export type CastKey = keyof typeof CAST;
