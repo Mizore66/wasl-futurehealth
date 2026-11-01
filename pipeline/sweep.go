@@ -255,7 +255,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 			progOfProv[id][prog] = true
 		}
 	}
-	for prog, pcs := range map[string][]ProvCfg{"lung_nodule": lungProviders, "diabetic_retinopathy": drProviders, "breast": breastProviders} {
+	for prog, pcs := range map[string][]ProvCfg{"lung_nodule": lungProviders, "diabetic_retinopathy": drProviders, "breast": breastProviders, "lung_ldct": ldctProviders, "ifhas": ifhasProviders} {
 		for _, pc := range pcs {
 			if progOfProv[pc.ID] == nil {
 				progOfProv[pc.ID] = map[string]bool{}

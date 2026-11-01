@@ -473,7 +473,7 @@ func ifhasOutreach(f *LoopFacts, ib *IfhasDecision, state string, overdue bool, 
 		switch {
 		case f.MsgOptOut:
 			o.Suppress = SupConsent
-		case ConsentHold && f.Contact != "granted":
+		case f.Contact != "granted": // always requires a grant, even if the legacy ConsentHold switch is disabled
 			if f.Contact == "unknown" || f.Contact == "" {
 				o.Suppress, o.Guard = SupConsentHold, "held_until_consent"
 			} else {
