@@ -226,7 +226,11 @@ func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) bool {
 		L.addEdge(a, b, p, basis)
 		return false
 	}
-	if basis != "human" && L.eidClash(ra, rb) { // a reviewer's "same" may still override (an Emirates ID can be reissued)
+	if basis != "human" && L.eidClash(ra, rb) {
+		// Record the refusal as a cannot-link, like a direct EID contradiction: a later split (a reviewer's "different")
+		// can take the clashing Emirates ID out of the cluster, and the refused pair must not become mergeable then.
+		// A later human "same" on this pair is refused too (mergeAllowed checks cannot-links first): fail closed.
+		L.cannot2(a, b)
 		L.Stats["eid_cluster_clash"]++
 		return false
 	}
