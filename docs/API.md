@@ -153,6 +153,31 @@ Lists are always `[]`, never `null`.
 - **Outreach kinds:** `breast_assessment_due`, `breast_overdue_recall`, `breast_rebook`, `breast_repeat_mammogram`, under the same consent hold.
 - **Review labels** (clinician role): `B0`–`B5`, `TR`, `return_routine`, `early_recall`, `to_treatment`, `incomplete`, `dna`.
 
+### Programme `ifhas` (IFHAS abnormal cardiometabolic results to documented follow-up, rule `doh2025ifhas`)
+
+**Status:** built; served only from runs generated with `WASL_IFHAS=N` (synthetic cohort, simulated attendance and results). `GET /api/cases?programme=ifhas` filters to it. Design: [`docs/research/ifhas-loop-design.md`](research/ifhas-loop-design.md). The loop is one IFHAS screening visit at the screening facility; follow-up notes usually sit at the receiving family / internal medicine clinic under another record and need a trusted identity link.
+
+- **Screening label:** `bp=<N|H|S>;glyc=<N|P|D|S>;lipid=<N|H>;weight=<N|O>` (keys sorted). `doh2025ifhas` turns it into an action: no abnormal domain (`N`, or glycaemia `P` prediabetes) → `routine` (rescreen in 3 years, 1095 days); otherwise `follow_up` with one clock per abnormal domain: 10 days for a severe cell (`S`, `urgency: urgent`), 59 days otherwise (`urgency: routine`). `deadline_days` is the earliest clock.
+- **Follow-up document label:** `dna`, or `<domain>=<managed|not_confirmed|pending>;…` over the domains the note addresses.
+- **States:** `no_followup_needed` (resolved), `open` (waiting, some domains pending, or held for review), `closed` (every abnormal domain `managed` or `not_confirmed` by documents on a trusted link that both readers or a clinician read), `no_show`.
+- **Drop-off:** `unlinked`, `no_followup_documented`, `no_show`, or `""` when resolved. `closed` is `true` for `closed` and `no_followup_needed`; `priority` is `urgent` when a cell is severe.
+- The summary carries an `ifhas` object (also in `current.ifhas`):
+
+```json
+"ifhas": {"screen_report": "IFH-dr-12", "screen_label": "bp=H;glyc=D;lipid=N;weight=N", "coded_results_agree": true,
+  "rec": {"action": "follow_up", "deadline_days": 59, "urgency": "routine", "cell": "bp=H;glyc=D;lipid=N;weight=N",
+          "abnormal_domains": ["bp", "glyc"], "domain_deadline_days": {"bp": 59, "glyc": 59}},
+  "screen_day": -40.2, "deadline_day": 18.8, "domain_status": {"bp": "managed", "glyc": "not_confirmed"},
+  "resolved_day": {"bp": 2.1, "glyc": 2.1}, "followup_documents": ["IFU-dr-31"], "outcome": "bp=managed;glyc=not_confirmed",
+  "within_deadline": true, "next_step": "…"}
+```
+
+  `domain_status` has one entry per abnormal domain (`""` until a document addresses it). `coded_results_agree: true` means the printed results panel and the coded LOINC results gave the same label. `rec.prediabetes: true` marks glycaemia `P` (lifestyle advice and a yearly HbA1c, recorded only).
+- **Hold reasons:** `screening_results_not_received`, `screening_readers_disagree`, `screening_label_unknown`, `awaiting_followup`, `followup_readers_disagree`, `followup_label_unknown`, `followup_identity_link_unconfirmed`, `followup_incomplete_domains_pending`, `did_not_attend_rebook`.
+- **Escalations:** `overdue_ifhas_followup`, `urgent_ifhas_result_open`, `rebook_after_dna`.
+- **Outreach kinds:** `ifhas_followup_due`, `ifhas_overdue_followup`, `ifhas_rebook`, under the same consent hold.
+- **Review labels** (clinician role): a screening label as above, a follow-up label as above (domain order free), or `dna`.
+
 ### POST review (demo mode)
 
 **Headers:** `X-Wasl-Role` (`coordinator` | `clinician` | `reviewer` | `auditor`) and `X-Wasl-Actor` (who is signing).
