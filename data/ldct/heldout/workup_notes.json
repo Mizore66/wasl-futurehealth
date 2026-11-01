@@ -1,0 +1,329 @@
+{
+ "source": "Held-out LDCT work-up notes; hand-authored, frozen in git before any reader was run; synthetic",
+ "reports": [
+  {
+   "id": "hw01",
+   "text": "Lung health check clinic - diagnostic work-up after LDCT (Lung-RADS 4B). The patient did not attend her CT-guided biopsy appointment on the 12th and could not be reached by telephone. Letter sent. Rebooking pending.",
+   "key": {
+    "label": "wk_dna"
+   },
+   "tags": [
+    "dna"
+   ]
+  },
+  {
+   "id": "hw02",
+   "text": "Thoracic assessment clinic. Patient failed to attend today's consultation. Note: she attended the pre-assessment spirometry last week (normal), but no work-up of the nodule has taken place and no MDT discussion yet.",
+   "key": {
+    "label": "wk_dna"
+   },
+   "tags": [
+    "distractor",
+    "dna"
+   ]
+  },
+  {
+   "id": "hw03",
+   "text": "Outcome of invitation for PET/CT following abnormal screening LDCT: DNA x2. Referrer informed.",
+   "key": {
+    "label": "wk_dna"
+   },
+   "tags": [
+    "dna"
+   ]
+  },
+  {
+   "id": "hw04",
+   "text": "WORK-UP RESULT | attended: no (DNA) | biopsy: none | outcome: none.",
+   "key": {
+    "label": "wk_dna"
+   },
+   "tags": [
+    "dna",
+    "format"
+   ]
+  },
+  {
+   "id": "hw05",
+   "text": "Bronchoscopy with EBUS-TBNA performed today for a 16 mm right upper lobe nodule (Lung-RADS 4B). Samples sent to cytology. Result awaited. Case to be discussed at lung MDT once the result is available.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "pending"
+   ]
+  },
+  {
+   "id": "hw06",
+   "text": "Respiratory clinic review after LDCT category 4A. PET/CT arranged but the patient declined the scan and any biopsy for now, wishes to think. No investigation was done. To return in 4 weeks.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "declined"
+   ]
+  },
+  {
+   "id": "hw07",
+   "text": "PET/CT today: FDG-avid nodule SUVmax 7.4. A CT-guided core biopsy was taken; histology not yet reported. The previous screening round in 2025 was Lung-RADS 2, no relevance. Awaiting pathology before any decision.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "distractor",
+    "pending"
+   ]
+  },
+  {
+   "id": "hw08",
+   "text": "Appointment for diagnostic CT thorax cancelled because the scanner was out of service; postponed to next week. No investigation performed. She attended for the booking.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "not_done"
+   ]
+  },
+  {
+   "id": "hw09",
+   "text": "MDT outcome not yet available: case not discussed at the lung MDT; biopsy not yet performed. No decision has been made about treatment or return to screening.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "negated",
+    "pending"
+   ]
+  },
+  {
+   "id": "hw10",
+   "text": "Lung MDT meeting list: patient listed for discussion next Thursday following biopsy on the 4th. Histology: malignant cells identified, pending immunohistochemistry typing; final report awaited. Plan: for discussion.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "pending"
+   ]
+  },
+  {
+   "id": "hw11",
+   "text": "She attended. CT-guided biopsy done and the cytology preliminary report suggests possible carcinoma but the final report is not yet available. Lung MDT has not met. Outcome pending.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "boundary",
+    "pending"
+   ]
+  },
+  {
+   "id": "hw12",
+   "text": "WORK-UP RESULT | attended yes | investigation: not done (patient unwell) | biopsy: none | outcome: pending.",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "tags": [
+    "format"
+   ]
+  },
+  {
+   "id": "hw13",
+   "text": "Lung MDT outcome. Histology from CT-guided biopsy: adenocarcinoma. PET/CT: localised, no nodal disease. Discussed at the thoracic multidisciplinary meeting - recommendation: lobectomy. Referred to thoracic surgery.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw14",
+   "text": "Lung cancer MDT (discussed on the 9th). EBUS-TBNA cytology positive for non-small cell lung carcinoma. Stage IIIA. Plan: concurrent chemoradiotherapy. Referral to clinical oncology made today.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw15",
+   "text": "Attended thoracic clinic. Seen last year (2025) for a benign granuloma, which is unrelated. Current nodule: biopsy shows squamous cell carcinoma. MDT decision documented: stereotactic body radiotherapy (SABR) for an early-stage tumour. Referred to oncology.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "distractor",
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw16",
+   "text": "Thoracic MDT: 4X lesion left upper lobe, core biopsy malignant (small cell carcinoma, limited stage). MDT recommends chemoradiotherapy; referral to medical oncology sent.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw17",
+   "text": "MDT OUTCOME | attended: yes | biopsy: adenocarcinoma (malignant) | discussed at lung MDT: yes | plan: surgery, referral to thoracic surgery done.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "format",
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw18",
+   "text": "MDT note: previously (2024) a benign lesion was resected on the other side. This episode: biopsy of the right nodule is malignant, small cell. MDT decision: referral to oncology for systemic therapy.",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "tags": [
+    "boundary",
+    "treatment"
+   ]
+  },
+  {
+   "id": "hw19",
+   "text": "Diagnostic work-up complete. PET/CT: low uptake. CT-guided biopsy: granulomatous inflammation, no malignancy. Discussed at lung MDT: benign. Patient to return to the annual lung screening programme.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign"
+   ]
+  },
+  {
+   "id": "hw20",
+   "text": "Bronchoscopy and biopsy of right lower lobe lesion. Histology shows organising pneumonia; there was no evidence of malignancy or carcinoma. MDT: no further action; return to annual LDCT screening.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign",
+    "negated"
+   ]
+  },
+  {
+   "id": "hw21",
+   "text": "Lung MDT outcome (nodule 4A). The family history of cancer was noted but is not relevant to this decision. Tissue: benign hamartoma on biopsy, no malignant cells. Decision: back to the annual screening round.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign",
+    "distractor"
+   ]
+  },
+  {
+   "id": "hw22",
+   "text": "Respiratory MDT discussion: after interval LDCT and PET showing no uptake, the lesion has resolved on imaging. No biopsy was required. MDT decision: benign inflammatory change; return to annual screening.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign",
+    "mdt-only"
+   ]
+  },
+  {
+   "id": "hw23",
+   "text": "WORK-UP RESULT | attended yes | biopsy: benign | MDT: discussed - benign | outcome: return to annual LDCT.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign",
+    "format"
+   ]
+  },
+  {
+   "id": "hw24",
+   "text": "Attended. Biopsy: non-diagnostic sample; repeat biopsy not needed after MDT review of PET (no uptake). MDT decision: benign; return to annual screening.",
+   "key": {
+    "label": "wk_benign"
+   },
+   "tags": [
+    "benign",
+    "boundary"
+   ]
+  },
+  {
+   "id": "hw25",
+   "text": "Respiratory clinic. PET/CT shows mild uptake (SUV 2.1) in the 9 mm nodule; biopsy not feasible given position, benign by MDT consensus. Plan: surveillance CT in 3 months.",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "tags": [
+    "surveillance"
+   ]
+  },
+  {
+   "id": "hw26",
+   "text": "Percutaneous biopsy: benign lung tissue, no malignancy. Lung MDT agreed to keep under surveillance. Interval CT in six months before any return to the screening programme.",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "tags": [
+    "negated",
+    "surveillance"
+   ]
+  },
+  {
+   "id": "hw27",
+   "text": "Thoracic clinic review. Nodule assessed with diagnostic CT; the MDT recommended repeat CT in 3 months to confirm stability.",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "tags": [
+    "surveillance"
+   ]
+  },
+  {
+   "id": "hw28",
+   "text": "WORK-UP RESULT | attended yes | investigation: diagnostic CT done | tissue: none | outcome: repeat CT 3 months.",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "tags": [
+    "format"
+   ]
+  },
+  {
+   "id": "hw29",
+   "text": "MDT summary: biopsy shows adenocarcinoma. Decision: return to annual screening with LDCT in 12 months.",
+   "key": {
+    "label": "indeterminate"
+   },
+   "tags": [
+    "contradiction"
+   ]
+  },
+  {
+   "id": "hw30",
+   "text": "Clinic note: referred to thoracic surgery for lobectomy. Biopsy: benign. No MDT mentioned.",
+   "key": {
+    "label": "indeterminate"
+   },
+   "tags": [
+    "contradiction"
+   ]
+  },
+  {
+   "id": "hw31",
+   "text": "Short letter: the patient attended the thoracic clinic today. Examination unremarkable. Thank you for your referral.",
+   "key": {
+    "label": "indeterminate"
+   },
+   "tags": [
+    "no-outcome"
+   ]
+  }
+ ]
+}
