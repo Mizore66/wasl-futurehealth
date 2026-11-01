@@ -1,0 +1,706 @@
+{
+  "source": "Independent author (Gemini 4 Argon, Google) - deterministic stdlib generator gen_breast_heldout.py, random seed 9377, synthetic breast screening texts, 2026-11-01",
+  "reports": [
+    {
+      "id": "hb01",
+      "text": "COMPOSITION: ACR b (scattered areas of fibroglandular density).\nCOMPARISON: Screening mammogram dated 14/05/2024 (then graded BI-RADS 2 for a right simple cyst, now resolved).\nRIGHT BREAST: Normal parenchymal architecture. No suspicious mass, no architectural distortion, and no malignant-type microcalcifications.\nLEFT BREAST: Normal fibroglandular tissue. No discrete mass or suspicious calcification.\n AXILLAE: Unremarkable bilaterally.\nLATERALITY SCORES: Right = BI-RADS 1 | Left = BI-RADS 1.\nOVERALL FINAL ASSESSMENT: BI-RADS 1 (Negative).\nCPT-II CODE: 3341F | ROUTINE RECALL: 24 months.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:UK",
+        "negation",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb02",
+      "text": "برنامج الفحص المبكر لسرطان الثدي - دائرة الصحة أبوظبي\nDOH ABU DHABI BREAST CANCER SCREENING REGISTRY - SYNOPTIC EXTRACT\nBreast Density: ACR A (almost entirely fatty).\nRight Breast (الثدي الأيمن): Negative. No masses, calcifications, or skin thickening. Category: 1.\nLeft Breast (الثدي الأيسر): Negative. Symmetric fatty stroma. Category: 1.\nFinal Combined Category: BI-RADS 1 (Negative / سليم).\nBilling / Quality Code: 3341F.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_doh_bilingual",
+        "arabic",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "hb03",
+      "text": "CLEVELAND CLINIC ABU DHABI - IMAGING INSTITUTE SYNOPTIC SCREEN\nClinical History: Asymptomatic 48yo female. Strong family history: mother had invasive ductal carcinoma (BI-RADS 5 at diagnosis in 2019) and sister had DCIS.\nParenchymal Density: ACR C (heterogeneously dense).\nRT Breast: No mass, distortion, or suspicious calcifications. [BI-RADS 1]\nLT Breast: No mass, distortion, or suspicious calcifications. [BI-RADS 1]\nOverall Assessment: BI-RADS 1 (Negative) | CPT-II: 3341F.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US",
+        "hard:family_hx_distractor",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb04",
+      "text": "MEDICLINIC AIRPORT ROAD HOSPITAL - BREAST SCREENING SUMMARY\nViews: Bilateral CC and MLO digital mammography with DBT.\nDensity: ACR B.\nR Breast: Unremarkable involuting parenchyma. BI-RADS 1.\nL Breast: Unremarkable involuting parenchyma. BI-RADS 1.\nOverall Summary Assessment: Category 1 (Negative).\nRegistry Performance Code: 3341F.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_mediclinic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "hb05",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nSEHA MOBILE MAMMOGRAPHY VAN #03 (AL DHAFRA REGION)\nDensity: ACR B (Scattered fibr0glandular tissue).\nRight (RT): Negative mamm0gram. No suspicious mass or microca1cifications. Score: 1.\nLeft (LT): Negative mammogram. Normal Cooper ligaments and skin line. Score: 1.\nOverall BI-RADS Assessrnent: 1 | Quality Code: 3341F.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:UK",
+        "ocr_noise",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb06",
+      "text": "CCAD BREAST IMAGING - STRUCTURED SCREENING REPORT\nComparison: Prior screen 2023 was scored BI-RADS 0 (recalled for right retroareolar asymmetry, proven benign intramammary lymph node on spot views).\nRT Breast: Stable 6 mm circumscribed reniform mass with fatty hilum in UOQ, typical intramammary lymph node. Coarse popcorn-like calcifying fibroadenoma centrally. Category: 2.\nLT Breast: No focal abnormality. Category: 1.\nOverall Assessment: BI-RADS 2 (Benign) | CPT-II: 3342F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb07",
+      "text": "تقرير فحص الثدي الشعاعي - مدينة الشيخ شخبوط الطبية (SSMC)\nParenchymal Pattern: ACR B.\nRight Breast (الثدي الأيمن): Normal appearances, no suspicious features. BI-RADS 1.\nLeft Breast (الثدي الأيسر): Benign vascular calcifications and secretory rod-like calcifications bilaterally but prominent on the left. BI-RADS 2.\nOverall Assessment (التقييم النهائي): BI-RADS 2 (Benign / تغيرات حميدة).\nCPT-II Code: 3342F.",
+      "key": {
+        "b_right": "1",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_doh_bilingual",
+        "arabic",
+        "spelling:UK",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb08",
+      "text": "MEDICLINIC AL NOOR HOSPITAL - STRUCTURED MAMMOGRAPHY\nHistory: Bilateral reduction mammoplasty in 2020.\nR Breast: Architectural distortion and fat-fluid oil cysts in the inferior pole consistent with surgical reduction scars; stable since 2022. No suspicious mass. BI-RADS 2.\nL Breast: Symmetric post-reduction parenchymal distortion and coarse dystrophic suture calcifications. BI-RADS 2.\nOverall Final Assessment: BI-RADS 2 (Benign) | CPT-II: 3342F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_mediclinic",
+        "spelling:UK",
+        "hard:postop_scar_mimic",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb09",
+      "text": "TAWAM HOSPITAL BREAST CARE CENTER - AL AIN (SEHA)\nBreast Composition: ACR A.\nRight: Single 11 mm radiolucent encapsulated mass with thin rim calcification (oil cyst / lipoma) at 9 o'clock. BI-RADS 2.\nLeft: No mass, architectural distortion, or microcalcifications. BI-RADS 1.\nOverall Category: BI-RADS 2 | CPT-II: 3342F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:US",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb10",
+      "text": "CORNICHE / SSMC SCREENING PROGRAMME - SYNOPTIC REPORT\nComparison: Prior screening mammogram 2024 was BI-RADS 1 bilaterally.\nRight Breast: New 9 mm focal asymmetry in the upper outer quadrant seen on both CC and MLO projections; requires spot compression and targeted ultrasound. BI-RADS 0.\nLeft Breast: Unremarkable parenchyma, no suspicious abnormality. BI-RADS 1.\nOverall Final Assessment: BI-RADS 0 (Incomplete - Recall to Assessment Unit).\nCPT-II Code: 3340F.",
+      "key": {
+        "b_right": "0",
+        "b_left": "1",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:UK",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb11",
+      "text": "CCAD SCREENING MAMMOGRAPHY - CODED SUMMARY\nBreast Density: ACR C.\nRT Breast: Stable calcified fibroadenoma in lower inner quadrant. Category: 2.\nLT Breast: Indeterminate group of amorphous calcifications in the retroareolar region; magnification views required. Category: 0.\nOverall Assessment: BI-RADS 0 (Incomplete) | CPT-II: 3340F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "0",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "hb12",
+      "text": "MEDICLINIC AIRPORT ROAD - DUAL-READ SYNOPTIC SCREEN\nR Breast: Developing density in the upper inner quadrant not clearly characterised on standard projections; needs further imaging evaluation and prior films from Dubai. BI-RADS 0.\nL Breast: Circumscribed 7 mm non-calcified oval mass in the lower outer quadrant, unchanged from 6-month follow-up film brought by patient, remains probably benign. BI-RADS 3.\nOverall Assessment: BI-RADS 0 (Incomplete - Category 0 takes precedence over contralateral Category 3 per ACR hierarchy).\nCPT-II Code: 3340F.",
+      "key": {
+        "b_right": "0",
+        "b_left": "3",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_mediclinic",
+        "spelling:UK",
+        "hard:zero_outranks_three"
+      ]
+    },
+    {
+      "id": "hb13",
+      "text": "مركز الفحص الشامل - أبوظبي (SEHA AHS)\nBreast Density: ACR D (extremely dense / كثافة عالية جداً).\nRight Breast (الثدي الأيمن): Partially obscured oval mass in central breast; ultrasound needed. BI-RADS 0.\nLeft Breast (الثدي الأيسر): Questionable architectural distortion in UOQ on MLO view only; spot compression needed. BI-RADS 0.\nOverall Assessment: BI-RADS 0 (Incomplete - غـير مكتمل) | CPT-II: 3340F.",
+      "key": {
+        "b_right": "0",
+        "b_left": "0",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_doh_bilingual",
+        "arabic",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "hb14",
+      "text": "CCAD BREAST IMAGING - SYNOPTIC REPORT (DIAGNOSTIC-ASSISTED SCREEN)\nDensity: ACR B.\nRT Breast: Solitary circumscribed 8 mm oval mass at 12 o'clock demonstrated on screening DBT with immediate supplementary ultrasound showing a complicated cyst / fibroadenoma (<2% malignancy risk). BI-RADS 3.\nLT Breast: Negative. No mass or calcifications. BI-RADS 1.\nOverall Assessment: BI-RADS 3 (Probably Benign - 6-month short-interval follow-up) | CPT-II: 3343F.",
+      "key": {
+        "b_right": "3",
+        "b_left": "1",
+        "overall": "3",
+        "label": "B3",
+        "coded": "3343F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb15",
+      "text": "SSMC BREAST SCREENING UNIT - CODED REPORT\nComposition: ACR B.\nRight Breast: 12 mm irregular mass with microlobulated margins at 10 o'clock posterior depth. Graded BI-RADS 4B (moderate suspicion for malignancy).\nLeft Breast: Normal breast parenchyma. No suspicious features. Graded BI-RADS 1.\nOverall Final Assessment: BI-RADS 4 (Suspicious - Urgent referral to One-Stop Assessment Clinic).\nCPT-II Code: 3344F.",
+      "key": {
+        "b_right": "4",
+        "b_left": "1",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:UK",
+        "subcat_4",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb16",
+      "text": "MEDICLINIC AL JOWHARA HOSPITAL (AL AIN) - SYNOPTIC SCREEN\nComparison: Prior mammogram 2023 was BI-RADS 2 bilaterally.\nR Breast: Unchanged benign coarse calcification. BI-RADS 2.\nL Breast: New 7 mm cluster of fine pleomorphic microcalcifications in the upper outer quadrant. Subcategorised as BI-RADS 4A/4B -> recorded as BI-RADS 4.\nOverall Assessment: BI-RADS 4 (Suspicious Abnormality) | CPT-II: 3344F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "4",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_mediclinic",
+        "spelling:UK",
+        "subcat_4",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb17",
+      "text": "CLEVELAND CLINIC ABU DHABI - SYNOPTIC BREAST SCREEN\nRT Breast: Architectural distortion with associated fine linear branching calcifications spanning 14 mm at 2 o'clock. BI-RADS 4C (high suspicion).\nLT Breast: Stable circumscribed oval mass at 6 o'clock under short-interval surveillance. BI-RADS 3.\nOverall Assessment: BI-RADS 4 | CPT-II: 3344F.",
+      "key": {
+        "b_right": "4",
+        "b_left": "3",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US",
+        "subcat_4"
+      ]
+    },
+    {
+      "id": "hb18",
+      "text": "TAWAM MOBILE SCREENING UNIT - SYNOPTIC REPORT\nRight Breast: Technically inadequate examination (TR) - severe motion blur and frozen shoulder prevented inclusion of posterior retromammary space and pectoral muscle; no BI-RADS category assigned to right side.\nLeft Breast: Clearly visualised 16 mm irregular mass with indistinct margins and tether in the upper outer quadrant. BI-RADS 4.\nOverall Final Assessment: BI-RADS 4 (Actionable contralateral category supersedes unilateral technical repeat).\nCPT-II Code: 3344F.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "4",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_seha",
+        "spelling:UK",
+        "hard:tr_with_actionable_contra"
+      ]
+    },
+    {
+      "id": "hb19",
+      "text": "مدينة الشيخ شخبوط الطبية - قسم تصوير الثدي (SSMC)\nRight Breast (الثدي الأيمن): 28 mm dense spiculated mass in the upper outer quadrant with overlying skin retraction, nipple inversion, and pleomorphic intraductal calcifications. BI-RADS 5.\nLeft Breast (الثدي الأيسر): Normal fibroglandular tissue, no mass or calcification. BI-RADS 1.\nOverall Final Assessment (التقييم النهائي): BI-RADS 5 (Highly Suggestive of Malignancy / اشتباه عالٍ بالورم الخبيث).\nCPT-II Code: 3345F.",
+      "key": {
+        "b_right": "5",
+        "b_left": "1",
+        "overall": "5",
+        "label": "B5",
+        "coded": "3345F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_doh_bilingual",
+        "arabic",
+        "spelling:UK",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb20",
+      "text": "CCAD IMAGING INSTITUTE - SYNOPTIC SCREENING MAMMOGRAM\nComparison: Screening mammogram 3 years ago in Al Ain was BI-RADS 1.\nRT Breast: Scattered benign punctate calcifications. BI-RADS 2.\nLT Breast: 32 mm classic spiculated mass at 1 o'clock with segmental fine linear casting calcifications and enlarged pathological left axillary nodes. BI-RADS 5.\nOverall Assessment: BI-RADS 5 (Highly Suggestive of Malignancy) | CPT-II: 3345F.",
+      "key": {
+        "b_right": "2",
+        "b_left": "5",
+        "overall": "5",
+        "label": "B5",
+        "coded": "3345F"
+      },
+      "tags": [
+        "coded_synoptic",
+        "layout:synoptic_ccad",
+        "spelling:US",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb21",
+      "text": "NMC SPECIALTY HOSPITAL ABU DHABI - DEPARTMENT OF RADIOLOGY\nEXAMINATION: Bilateral Screening Digital Mammography.\nCLINICAL INDICATION: Routine biennial screening in a 52-year-old asymptomatic woman.\nFINDINGS:\nBoth breasts show heterogeneously dense fibroglandular parenchyma (ACR composition C), which may obscure small masses. In the right breast, there is no evidence of a dominant mass, architectural distortion, or suspicious cluster of microcalcifications. In the left breast, the parenchymal pattern is symmetrical with no suspicious mass, no malignant calcification, and no skin or nipple retraction. Both axillae demonstrate normal fatty-hilum lymph nodes.\nIMPRESSION: Normal bilateral screening mammogram. BI-RADS 1 for both right and left breasts (Overall BI-RADS 1).",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_nmc",
+        "spelling:UK",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb22",
+      "text": "BURJEEL MEDICAL CITY (MOHAMMED BIN ZAYED CITY, ABU DHABI)\nConsultant Breast Radiologist Narrative Report\n\nDear Referring Colleague,\nThank you for referring this 55-year-old lady for her routine screening mammogram. Standard craniocaudal and mediolateral oblique projections were obtained.\nThe breast parenchyma is almost entirely fatty bilaterally. On careful review of the right breast, I see no mass lesion, no parenchymal deformity, and no suspicious calcifications. Similarly, the left breast is entirely unremarkable with normal skin thickness, normal retroareolar ducts, and clear axillary tails.\nConclusion: Entirely negative bilateral screening examination. She has been discharged back to routine two-yearly screening.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": null,
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:letter_burjeel",
+        "spelling:UK",
+        "hard:no_numeric_birads",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb23",
+      "text": "SEHA - AL CORNICHE DIAGNOSTIC & SCREENING CENTRE\nBilateral Screening Mammography with Tomosynthesis\n\nComparison is made with the 2023 screening and assessment episode where the right breast was initially categorised as BI-RADS 4A for a cluster of calcifications, which underwent vacuum-assisted excision confirming benign columnar cell change with no residual calcifications.\nToday's examination shows scattered fibroglandular densities bilaterally. At the right 10 o'clock biopsy site, a tiny titanium marker clip is noted without any residual calcifications, mass, or architectural distortion; given complete resolution of the lesion and absence of any visible tissue abnormality, the right breast is graded BI-RADS 1 today. The left breast shows normal fibroglandular stroma with no suspicious mass or calcification (BI-RADS 1).\nOverall Impression: Negative bilateral screening mammogram, BI-RADS 1.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "prior_diff_cat",
+        "hard:resolved_prior_suspicion",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb24",
+      "text": "[FAX RCVD +971-2-819-4002 P.01/01 QUALITY: DEGRADED ~~~~]\nPACS_EXPORT // FACILITY: MUBADALA HEALTH DUBAI-ABUDHABI NETWORK - CAPITAL HEALTH SCREENING\nMODALITY: MG // STUDY: BILAT MAMMO SCREENING\nTEXT:\nBilateral CC and MLO views performed. Scattered fibr0glandular densities are present in both breasts.\nRT breast: B1-RADS 1. No focal mass, no architectura1 distortion, no malignant-appearing ca1cifications.\nLT breast: BI-RADS 1. Unremarkable parenchyma and skin envelope. Axillae clear.\nRecommendation: Routine biennial mammography.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": null,
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:pacs_dump",
+        "spelling:US",
+        "ocr_noise",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb25",
+      "text": "مستشفى إن إم سي رويال - مدينة خليفة (NMC ROYAL HOSPITAL KHALIFA CITY)\nScreening Mammography Narrative Report\nThe breasts show scattered areas of fibroglandular density (ACR B). In the right breast (الثدي الأيمن), there is no evidence of a mass, parenchymal distortion, or suspicious microcalcifications (BI-RADS 1). In the left breast (الثدي الأيسر), appearances are likewise normal with no suspicious lesion identified (BI-RADS 1).\nFinal Overall Impression: BI-RADS 1 (Negative / فحص طبيعي).",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_nmc",
+        "spelling:UK",
+        "arabic",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb26",
+      "text": "MADINAT ZAYED HOSPITAL (AL DHAFRA) - RADIOLOGY DEPARTMENT\nBilateral Screening Mammography\n\nThe breast tissue is heterogeneously dense. In the right breast upper outer quadrant, there is a well-circumscribed 14 mm oval mass containing coarse popcorn calcifications, typical of an involuting hyalinised fibroadenoma (Right BI-RADS 2). No suspicious mass or malignant calcification is seen on the right. The left breast demonstrates normal fibroglandular architecture without any benign or suspicious focal lesion (Left BI-RADS 1).\nOverall Impression: Benign mammographic findings, overall BI-RADS 2. Routine recall in 2 years.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": "2",
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb27",
+      "text": "BURJEEL HOSPITAL - AL NAJDA STREET, ABU DHABI\nBreast Screening Narrative Report\n\nBilateral two-view digital mammography was performed and compared with films from 2022 and 2024.\nThe right breast is completely normal with fatty involution and no focal findings whatsoever.\nIn the left breast, there are multiple bilateral-type but strictly left-sided large rod-like secretory calcifications radiating towards the nipple, as well as two simple radiolucent oil cysts measuring 5 mm and 7 mm in the lower inner quadrant. These are classic benign entities unchanged over 4 years.\nSummary: Normal right breast and benign left breast findings. Return to routine biennial screening.",
+      "key": {
+        "b_right": "1",
+        "b_left": "2",
+        "overall": null,
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:letter_burjeel",
+        "spelling:UK",
+        "hard:no_numeric_birads"
+      ]
+    },
+    {
+      "id": "hb28",
+      "text": "*** SCANNED DOCUMENT - OCR CONFIDENCE 84.2% - DO NOT DISCARD ***\nPACS_EXPORT // DANAT AL EMARAT HOSPITAL FOR WOMEN & CHILDREN - ABU DHABI\nSTUDY: BILATERAL SCREENING MAMMOGRAM\nHistory: Bilateral subpectoral silicone breast implants placed in 2018. Eklund push-back views obtained.\nFindings: Both silicone implants appear intact with no extracapsular silicone granulomas. Right breast native tissue shows benign vascular ca1cifications (BI-RADS 2). Left breast native tissue shows a stable 9 mm calcified hamartoma (fibroadenolipoma) with classic 'breast-within-a-breast' appearance (BI-RADS 2). No suspicious mass or malignant micr0calcifications on either side.\nOverall Assessrnent: BI-RADS 2 (Benign).",
+      "key": {
+        "b_right": "2",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:pacs_dump",
+        "spelling:US",
+        "ocr_noise",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb29",
+      "text": "SHEIKH KHALIFA MEDICAL CITY (SKMC) - ABU DHABI\nScreening Mammogram Report\n\nBilateral digital mammography shows scattered fibroglandular tissue.\nRight breast (RT): There is a 10 mm focal asymmetry in the retroareolar region seen best on the CC projection, without clearly benign features. Additional spot compression views and targeted ultrasound are required to exclude an underlying mass (Right BI-RADS 0).\nLeft breast (LT): Normal breast parenchyma with no focal mass, distortion, or suspicious calcifications (Left BI-RADS 1).\nOverall Assessment: BI-RADS 0 (Incomplete - Recall to SKMC Breast Assessment Unit).",
+      "key": {
+        "b_right": "0",
+        "b_left": "1",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb30",
+      "text": "BURJEEL DAY SURGERY CENTER - AL REEM ISLAND, ABU DHABI\nScreening Mammography Report\n\nThe right breast parenchyma is unremarkable with no mass, architectural tether, or calcification.\nIn the left breast upper outer quadrant, there is a small cluster of indistinct microcalcifications whose morphology cannot be reliably characterised on standard screening projections alone. Magnification views and comparison with outside prior films from Amman are needed before a definitive assessment can be rendered.\nAction: Incomplete examination; patient recalled to the diagnostic breast unit for further imaging evaluation.",
+      "key": {
+        "b_right": "1",
+        "b_left": "0",
+        "overall": null,
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:letter_burjeel",
+        "spelling:UK",
+        "hard:no_numeric_birads",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb31",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nNMC PROVITAE CENTER - ABU DHABI\nBilateral Screening Mamm0graphy\nRight breast: Benign scattered punctate and dermal ca1cifications, unchanged. Rated B1-RADS 2.\nLeft breast: New 11 mm rounded density at 3 o'clock mid-depth, partially obscured by adjacent fibroglandular tissue. Needs targeted ultrasound to differentiate cyst from solid mass. Rated BI-RADS 0.\nOverall Final Impression: BI-RADS 0 (Incomplete - Needs additional imaging evaluation).",
+      "key": {
+        "b_right": "2",
+        "b_left": "0",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_nmc",
+        "spelling:US",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "hb32",
+      "text": "PACS_EXPORT // SEHA AL WATHBA SCREENING CLINIC\nComparison: 2023 screening mammogram was graded BI-RADS 1 bilaterally.\nR breast: Subtle architectural distortion in the lower outer quadrant on MLO tomosynthesis slice 24/55; requires diagnostic workup with spot views and ultrasound (R = BI-RADS 0).\nL breast: Benign intramammary lymph node in axillary tail (L = BI-RADS 2).\nOverall Assessment: BI-RADS 0.",
+      "key": {
+        "b_right": "0",
+        "b_left": "2",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:pacs_dump",
+        "spelling:UK",
+        "prior_diff_cat",
+        "hard:prior_category_contrast"
+      ]
+    },
+    {
+      "id": "hb33",
+      "text": "HARLEY STREET MEDICAL CENTRE - MARINA VILLAGE, ABU DHABI\nBilateral Screening Mammogram (with immediate same-visit ultrasound check of known lesion)\n\nRight breast (R): Negative mammogram. No mass or calcifications (BI-RADS 1).\nLeft breast (L): Solitary group of round and punctate calcifications in the central breast, together with a 6 mm circumscribed oval non-calcified mass at 4 o'clock showing <2% likelihood of malignancy. Graded BI-RADS 3.\nOverall Impression: BI-RADS 3 (Probably Benign - 6-month unilateral left follow-up recommended).",
+      "key": {
+        "b_right": "1",
+        "b_left": "3",
+        "overall": "3",
+        "label": "B3",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_nmc",
+        "spelling:US",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb34",
+      "text": "SSMC / MAFRAQ BREAST IMAGING CENTRE - ABU DHABI\nBilateral Screening Digital Mammography\n\nRight breast: In the upper inner quadrant at 1 o'clock, there is a 9 mm irregular mass with indistinct margins and associated amorphous microcalcifications. This is suspicious for malignancy and subcategorised as BI-RADS 4A.\nLeft breast: Benign coarse vascular calcifications and a simple oil cyst. BI-RADS 2.\nOverall Final Assessment: BI-RADS 4 (Suspicious abnormality - referred to One-Stop Breast Clinic for ultrasound-guided core biopsy).",
+      "key": {
+        "b_right": "4",
+        "b_left": "2",
+        "overall": "4",
+        "label": "B4",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "subcat_4"
+      ]
+    },
+    {
+      "id": "hb35",
+      "text": "BURJEEL MEDICAL CITY - ONCOLOGY & BREAST IMAGING CENTRE\nScreening Mammography Narrative Report\n\nThe right breast shows normal fibroglandular tissue (BI-RADS 1) with no mass or suspicious calcifications.\nIn the left breast at the 2 o'clock position, 5 cm from the nipple, there is a 15 mm lobulated hyperdense mass with microlobulated and focal angulated margins, accompanied by a 10 mm cluster of fine pleomorphic calcifications (Left BI-RADS 4C).\nAction: Urgent recall to the multidisciplinary breast assessment clinic for tissue diagnosis.",
+      "key": {
+        "b_right": "1",
+        "b_left": "4",
+        "overall": null,
+        "label": "B4",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:letter_burjeel",
+        "spelling:UK",
+        "subcat_4",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb36",
+      "text": "مستشفى توام - العين (TAWAM HOSPITAL BREAST IMAGING)\nBilateral Screening Mammography Report\n\nRight Breast (الثدي الأيمن): There is a 24 mm high-density spiculated mass in the upper outer quadrant with marked architectural tethering, overlying skin thickening, and linear branching ductal calcifications extending towards the nipple. Enlarged cortical-thickened right axillary lymph nodes are also present. Right breast = BI-RADS 5.\nLeft Breast (الثدي الأيسر): Stable calcified fibroadenoma in the lower inner quadrant. Left breast = BI-RADS 2.\nOverall Assessment: BI-RADS 5 (Highly suggestive of malignancy - تحويل عاجل لعيادة تشخيص الأورام).",
+      "key": {
+        "b_right": "5",
+        "b_left": "2",
+        "overall": "5",
+        "label": "B5",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "arabic"
+      ]
+    },
+    {
+      "id": "hb37",
+      "text": "PACS_EXPORT // SEHA AL GHARBIA (LIWA) MOBILE SCREENING UNIT\nSTUDY: BILATERAL SCREENING MAMMOGRAM\nRight breast (R): Technically inadequate examination (TR). The pectoral muscle is not visualised on the MLO view, the inframammary fold is cut off, and there is prominent skin-fold and motion artefact obscuring the posterior third of the gland. No BI-RADS category can be issued for the right breast.\nLeft breast (L): Well-positioned views showing normal fatty-involuted breast tissue with no mass or calcification (BI-RADS 1).\nDisposition: Technical repeat (TR) required for the right breast.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "1",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:pacs_dump",
+        "spelling:UK",
+        "hard:tr_overrides_benign",
+        "negation"
+      ]
+    },
+    {
+      "id": "hb38",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nNMC ROYAL WOMEN'S HOSPITAL - ABU DHABI\nScreen1ng Mamm0graphy Report\nRight breast (RT): Good positioning. Scattered fibroglandular tissue with a stable 8 mm benign calcified oil cyst in the central zone. Graded BI-RADS 2.\nLeft breast (LT): Technical Repeat (TR) required. Severe patient motion blur during exposure and inadequate compression resulted in non-diagnostic images of the left breast; posterior tissue and retromammary space are excluded. No BI-RADS score assigned to left breast.\nConclusion: Recall for technical repeat of the left mamm0gram (TR).",
+      "key": {
+        "b_right": "2",
+        "b_left": "TR",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_nmc",
+        "spelling:US",
+        "hard:tr_overrides_benign",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "hb39",
+      "text": "BURJEEL OASIS MEDICAL CENTRE - BANIYAS, ABU DHABI\nScreening Mammogram Technical Review\n\nBilateral CC and MLO views were attempted on the mobile unit. Unfortunately, due to a calibration fault on the compression paddle combined with marked patient tremor, both the right breast (TR) and the left breast (TR) images are technically inadequate with severe motion unsharpness, droop of the nipple-areolar complex, and exclusion of the pectoral muscles bilaterally. No diagnostic BI-RADS category can be assigned to either breast.\nAction: Technical repeat (TR) of bilateral mammography arranged at the main hospital unit.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "TR",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:letter_burjeel",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "hb40",
+      "text": "TAWAM HOSPITAL SCREENING PROGRAMME - AL AIN\nBilateral Screening Mammography\n\nRight breast (RT): Despite mild under-compression, a 13 mm focal asymmetry with possible architectural distortion is seen in the upper outer quadrant requiring diagnostic spot views and ultrasound (Right = BI-RADS 0).\nLeft breast (LT): Technically inadequate images (TR) due to severe motion blur and failure to include the posterior pectoral margin; no category assigned to the left breast.\nOverall Assessment: BI-RADS 0 (Patient recalled to the diagnostic assessment clinic where both the right breast workup and repeat left mammographic projections will be performed).",
+      "key": {
+        "b_right": "0",
+        "b_left": "TR",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "free_text",
+        "layout:narrative_seha",
+        "spelling:UK",
+        "hard:tr_with_actionable_contra"
+      ]
+    }
+  ]
+}
