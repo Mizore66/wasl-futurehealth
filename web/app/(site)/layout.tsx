@@ -3,17 +3,17 @@ import { SiteHeader } from "@/components/site/header";
 
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-/** The site's own palette (the C boards): warm paper, sand fields, one teal for the thread and the lead figures. */
+/** The site's names for the shared sand-and-thread tokens in globals.css. */
 const PALETTE = {
-  "--paper": "#f6f3ee",
-  "--sand": "#efe8dc",
-  "--sand-deep": "#e6dccb",
-  "--mint": "#dbe8e6",
-  "--card": "#fffdf8",
-  "--ink": "#0B2427",
-  "--teal": "#0f4f4c",
-  "--muted": "#4a5859",
-  "--stub": "#6b7a79",
+  "--paper": "var(--color-ground)",
+  "--sand": "var(--color-raised)",
+  "--sand-deep": "var(--color-active)",
+  "--mint": "var(--color-mint)",
+  "--card": "var(--color-surface)",
+  "--ink": "var(--color-ink)",
+  "--teal": "var(--color-hue)",
+  "--muted": "var(--color-muted)",
+  "--stub": "var(--color-unknown)",
   fontFamily: "var(--font-hanken), system-ui, sans-serif",
 } as React.CSSProperties;
 

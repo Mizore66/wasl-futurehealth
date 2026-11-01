@@ -2722,6 +2722,22 @@
    "source": "docs/BRIEF.md",
    "context": "adversarial report corpora, 4 model families"
   },
+  "published.crc_followup_median_wait_days": {
+   "id": "published.crc_followup_median_wait_days",
+   "value": 72,
+   "display": "72",
+   "label": "published",
+   "source": "docs/BRIEF.md",
+   "context": "median days from a positive FIT to colonoscopy in Abu Dhabi; SEHA, BMC Cancer 2021, as cited in docs/BRIEF.md"
+  },
+  "published.crc_followup_standard_days": {
+   "id": "published.crc_followup_standard_days",
+   "value": 31,
+   "display": "31",
+   "label": "published",
+   "source": "docs/BRIEF.md",
+   "context": "the follow-up standard that wait is measured against; SEHA, BMC Cancer 2021, as cited in docs/BRIEF.md"
+  },
   "kpi31.demo.eid_only": {
    "id": "kpi31.demo.eid_only",
    "value": 0.126,

@@ -5,11 +5,16 @@ import { result, results } from "@/lib/results";
  * beside each. `tests/site.test.ts` checks every quote still appears in its file.
  */
 export const QUOTED = {
-  medianWaitDays: { value: "72", file: "docs/BRIEF.md", quote: "median **72 days**" },
-  standardDays: { value: "31", file: "docs/BRIEF.md", quote: "against a 31-day standard" },
   baselineRate: { value: "30.5%", file: "docs/BRIEF.md", quote: "only **30.5%** of FIT+ patients" },
   pilotStreak: { value: "300", file: "docs/BRIEF.md", quote: "until 300 in a row are correct" },
 } as const;
+
+/** A figure from a published study, recorded in results.json under `published.<name>`. */
+export function published(name: string): number {
+  const e = result(`published.${name}`);
+  if ((e.label as string) !== "published") throw new Error(`results.json entry published.${name} is not labelled published`);
+  return e.value;
+}
 
 /** Share of real completions that ID-only tracking misses, from the demo-run 31-day KPI. */
 export function missedByIdOnly(): number {
@@ -18,9 +23,9 @@ export function missedByIdOnly(): number {
   return 1 - eid / truth;
 }
 
-/** The landing's plain-words version of `missedByIdOnly`, rounded to the nearest fifth. */
-export function missedInFive(): string {
-  return `${Math.round(missedByIdOnly() * 5)} in 5`;
+/** The landing's plain-words version of `missedByIdOnly`: how many in five, rounded. */
+export function missedOfFive(): number {
+  return Math.round(missedByIdOnly() * 5);
 }
 
 /**
