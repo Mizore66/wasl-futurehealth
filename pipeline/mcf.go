@@ -21,6 +21,11 @@ import (
 	"math"
 )
 
+const (
+	mcfMaxNodes = 100000
+	mcfMaxLine  = 64 << 20 // bound request memory; normal booking networks are far below this
+)
+
 // MCFArc is one directed arc with integer capacity and non-negative integer cost.
 type MCFArc struct {
 	From, To  int
@@ -58,6 +63,9 @@ func (h *mcfHeap) Pop() interface{} {
 // MinCostFlow returns the flow on each input arc, the total flow from s to t and its total cost.
 // It sends as much flow as possible (up to maxFlow; maxFlow < 0 means unlimited) at minimum cost.
 func MinCostFlow(n, s, t int, arcs []MCFArc, maxFlow int64) (flows []int64, flow, cost int64, err error) {
+	if n < 0 || n > mcfMaxNodes {
+		return nil, 0, 0, fmt.Errorf("mcf: node count %d outside [0,%d]", n, mcfMaxNodes)
+	}
 	if s < 0 || s >= n || t < 0 || t >= n || s == t {
 		return nil, 0, 0, fmt.Errorf("mcf: bad source/sink %d/%d for %d nodes", s, t, n)
 	}
@@ -137,11 +145,11 @@ func MinCostFlow(n, s, t int, arcs []MCFArc, maxFlow int64) (flows []int64, flow
 }
 
 type mcfRequest struct {
-	N       int        `json:"n"`
-	S       int        `json:"s"`
-	T       int        `json:"t"`
-	Arcs    [][4]int64 `json:"arcs"` // [from, to, cap, cost]
-	MaxFlow *int64     `json:"max_flow,omitempty"`
+	N       int       `json:"n"`
+	S       int       `json:"s"`
+	T       int       `json:"t"`
+	Arcs    [][]int64 `json:"arcs"` // each must be exactly [from, to, cap, cost]
+	MaxFlow *int64    `json:"max_flow,omitempty"`
 }
 
 type mcfResponse struct {
@@ -153,8 +161,12 @@ type mcfResponse struct {
 
 // runMCF serves `wsi7 mcf`: one JSON request per input line, one JSON response per output line.
 func runMCF(in io.Reader, out io.Writer) {
+	runMCFLimit(in, out, mcfMaxLine)
+}
+
+func runMCFLimit(in io.Reader, out io.Writer, maxLine int) {
 	sc := bufio.NewScanner(in)
-	sc.Buffer(make([]byte, 1<<20), 1<<30)
+	sc.Buffer(make([]byte, min(64*1024, maxLine)), maxLine)
 	w := bufio.NewWriter(out)
 	enc := json.NewEncoder(w)
 	for sc.Scan() {
@@ -163,22 +175,39 @@ func runMCF(in io.Reader, out io.Writer) {
 		if err := json.Unmarshal(sc.Bytes(), &req); err != nil {
 			resp.Error = err.Error()
 		} else {
-			arcs := make([]MCFArc, len(req.Arcs))
 			for i, a := range req.Arcs {
-				arcs[i] = MCFArc{int(a[0]), int(a[1]), a[2], a[3]}
+				if len(a) != 4 {
+					resp.Error = fmt.Sprintf("mcf: arc %d has %d fields, want 4 [from,to,cap,cost]", i, len(a))
+					break
+				}
 			}
-			mf := int64(-1)
-			if req.MaxFlow != nil {
-				mf = *req.MaxFlow
-			}
-			fl, f, c, err := MinCostFlow(req.N, req.S, req.T, arcs, mf)
-			if err != nil {
-				resp.Error = err.Error()
-			} else {
-				resp.Flows, resp.Flow, resp.Cost = fl, f, c
+			if resp.Error == "" {
+				arcs := make([]MCFArc, len(req.Arcs))
+				for i, a := range req.Arcs {
+					arcs[i] = MCFArc{int(a[0]), int(a[1]), a[2], a[3]}
+				}
+				mf := int64(-1)
+				if req.MaxFlow != nil {
+					mf = *req.MaxFlow
+				}
+				fl, f, c, err := MinCostFlow(req.N, req.S, req.T, arcs, mf)
+				if err != nil {
+					resp.Error = err.Error()
+				} else {
+					resp.Flows, resp.Flow, resp.Cost = fl, f, c
+				}
 			}
 		}
-		enc.Encode(resp)
-		w.Flush()
+		if err := enc.Encode(resp); err != nil {
+			return
+		}
+		if err := w.Flush(); err != nil {
+			return
+		}
+	}
+	if err := sc.Err(); err != nil {
+		// Scanner errors (including an over-long line) are protocol errors, not clean EOF.
+		_ = enc.Encode(mcfResponse{Error: "mcf: reading input: " + err.Error()})
+		_ = w.Flush()
 	}
 }
