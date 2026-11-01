@@ -65,6 +65,7 @@ type LungTruth struct {
 	Path      string   `json:"workup_path,omitempty"` // > 8 mm solid (lungworkup.go): ct | pet | tissue
 	PETDay    float64  `json:"pet_day,omitempty"`     // FDG-avid PET/CT day (tissue expected within 28 days)
 	Surv      *LungSurvTruth `json:"pet_surveillance,omitempty"` // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
+	StableSurv *LungSurvTruth `json:"stable_surveillance,omitempty"` // -lungsurvstable: the further CT after a stable follow-up CT (lungsurv.go)
 }
 
 type lungGen struct {
@@ -253,6 +254,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	order := r.Perm(len(bg))
 	next := 0
 	var survCands []petSurvCand // -lungsurv: PET/CT low-uptake closures (lungsurv.go)
+	var stableCands []stableSurvCand // -lungsurvstable: stable follow-up closures whose cell recommends a further CT (lungsurv.go)
 	pick := func(young bool) *Person {
 		for ; next < len(order); next++ {
 			p := bg[order[next]]
@@ -348,7 +350,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 				}
 			}
 		}
-		state, closed := "open", 0.0
+		state, closed, closeOC := "open", 0.0, ""
 		switch {
 		case !inScope:
 			state = "out_of_scope"
@@ -377,7 +379,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			if state == "open" || state == "not_assessable" {
 				switch oc {
 				case "stable", "resolved":
-					state, closed = "closed", t
+					state, closed, closeOC = "closed", t, oc
 				case "growing", "suspicious_solid":
 					state = "escalated"
 				case "not_assessable":
@@ -395,6 +397,13 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			}
 		}
 		lungFinish(lt, state, closed)
+		if LungStableSurv && inScope && wkPath == "" && state == "closed" && closeOC == "stable" && rec.NextHi > 0 {
+			from := F
+			if rec.NextFrom == "followup" {
+				from = closed
+			}
+			stableCands = append(stableCands, stableSurvCand{lt: lt, p: p, ctDay: closed, from: from, lo: from + float64(rec.NextLo), hi: from + float64(rec.NextHi)})
+		}
 		if Handoff && RefRejectExt && LungWorkup && inScope && rec.Action == FlCTPET && lt.Lung.Adherence == "never" && u01(seed, loop, "refrej", "pick") < ExtRejectP {
 			rejected = append(rejected, extRejection{p: p, lt: lt, srID: srID, src: src, unit: hosp, t0: F, urgent: true, mean: mean})
 		}
@@ -427,6 +436,9 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	}
 	if LungPETSurv { // after every other lung event, on its own RNG stream
 		g.genPETSurv(survCands, hosp)
+	}
+	if LungStableSurv { // after that, on its own RNG stream (-lungsurv cohorts unchanged)
+		g.genStableSurv(stableCands, hosp)
 	}
 }
 

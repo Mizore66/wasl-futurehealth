@@ -9,6 +9,8 @@
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
 #      WASL_DRNEXT=1 (with WASL_DR) tracks the next DR due date and a recall_overdue flag (pipeline/drnext.go; default off).
 #      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
+#      WASL_LUNGSURV2=1 (with WASL_LUNGSURV=1) adds the later surveillance CTs at about 1 and 2 years (BTS 2015; default 0 = off).
+#      WASL_LUNGSURVSTABLE=1 gives the stable-CT surveillance child review items, truth and metrics (default 0 = off).
 #      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
 #      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
@@ -38,6 +40,10 @@ DRNEXT="${WASL_DRNEXT:-0}"         # DR next loop (pipeline/drnext.go): next due
 [ "$DRNEXT" = 0 ] || { PARGS+=(-drnext); RUN="$RUN-drnext"; }
 LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go); 0 = off
 [ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
+LUNGSURV2="${WASL_LUNGSURV2:-0}"   # later surveillance CTs (1 and 2 years) after a PET/CT low-uptake closure; needs WASL_LUNGSURV=1; 0 = off
+[ "$LUNGSURV2" = 0 ] || [ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv2); RUN="$RUN-lungsurv2"; }
+LUNGSURVSTABLE="${WASL_LUNGSURVSTABLE:-0}"   # stable-CT surveillance child: review items, truth and metrics (lungsurv.go); 0 = off
+[ "$LUNGSURVSTABLE" = 0 ] || { PARGS+=(-lungsurvstable); RUN="$RUN-lungsurvstable"; }
 # hand-off (default off): WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question
 [ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
@@ -45,6 +51,8 @@ RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$R
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
 [ "$DRNEXT" = 0 ] || GARGS+=(-drnext)
 [ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv)
+[ "$LUNGSURV2" = 0 ] || [ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv2)
+[ "$LUNGSURVSTABLE" = 0 ] || GARGS+=(-lungsurvstable)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()
