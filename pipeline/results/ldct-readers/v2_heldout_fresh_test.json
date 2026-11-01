@@ -1,0 +1,42 @@
+{
+ "heldout": {
+  "ldct-screen": {
+   "agree": 31,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "hs05 A:indeterminate want LR1",
+    "hs06 A:LR3 want LR1",
+    "hs07 A:LR3 want LR1",
+    "hs13 A:indeterminate want LR2",
+    "hs19 A:indeterminate want LR0",
+    "hs21 A:LR1 want LR0",
+    "hs22 A:LR1 want LR0",
+    "hs32 A:indeterminate want LR4A",
+    "hs36 A:indeterminate want LR4B",
+    "hs40 A:LR4A want LR4X"
+   ],
+   "reader_a_regex_correct": 31,
+   "reader_b_gemma_correct": 41,
+   "reader_b_unavailable": 0,
+   "reports": 41,
+   "to_review": 10
+  },
+  "ldct-workup": {
+   "agree": 24,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "hw14 A:indeterminate want wk_treatment",
+    "hw19 A:wk_incomplete want wk_benign",
+    "hw21 A:indeterminate want wk_benign",
+    "hw28 A:wk_incomplete want wk_surveillance",
+    "hw31 A:wk_incomplete want indeterminate"
+   ],
+   "reader_a_regex_correct": 26,
+   "reader_b_gemma_correct": 30,
+   "reader_b_unavailable": 1,
+   "reports": 31,
+   "to_review": 7
+  }
+ },
+ "note": "dev corpus only: the readers were written against these texts (not a fair test)"
+}
