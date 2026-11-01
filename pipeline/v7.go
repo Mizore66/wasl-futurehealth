@@ -205,6 +205,9 @@ func secondID(srDob, recDob string) bool {
 //   - no other registration carries that number with a different sex or a disagreeing name.
 var EIDSecondID = true
 
+// EIDContraGuard (B8 hardening, flag -eidguard, default off). See eidguard.go.
+var EIDContraGuard = false
+
 // ReuseIDConfirm: a human's second-identifier "same" (double-read) is about two registrations, so it also confirms
 // that pair on the patient's other loops; before, each loop asked again (1.4-2.1 review items per 100 loops in the
 // e4c7553 frozen run). A later "different" on the pair withdraws it. Flag -reuseconfirm.
