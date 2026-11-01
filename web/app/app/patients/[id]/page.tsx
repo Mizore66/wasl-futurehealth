@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { STANDARD_DAYS } from "@/components/worklist/days";
-import { closedInDays, closureChecks, ownerLabel, providerLabel, recordNodes, statusWords } from "@/components/worklist/model";
+import { closedInDays, closureChecks, linkScore, ownerLabel, providerLabel, readerLabels, recordNodes, statusWords } from "@/components/worklist/model";
 import { getAudit, getCase } from "@/lib/api/source";
 import { caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
@@ -46,8 +46,13 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
   const ev = detail.evidence.at(-1);
+  /** CRC and cervical evidence carries the four checklist fields; the other programmes carry one label per reader. */
+  const read = ev && (ev.fields ? { checks: closureChecks(ev), quote: ev.quote } : readerLabels(ev));
   const link = detail.links[0];
   const closedIn = c.closed ? closedInDays(c) : null;
+  /** CRC runs to the DoH 31-day standard; the other programmes' rules carry their own deadline in days. */
+  const due = c.programme === "crc" ? STANDARD_DAYS : c.deadline_day || STANDARD_DAYS;
+  const dueWords = c.programme === "crc" ? `${due}-day standard` : `${due}-day deadline`;
 
   return (
     <>
@@ -67,7 +72,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           </div>
           <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
             {closedIn !== null ? (
-              <Pill tone={closedIn <= STANDARD_DAYS ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+              <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
             ) : (
               <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
             )}
@@ -87,9 +92,9 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             </h2>
             <span className="text-small text-muted" data-testid="closed-in">
               {closedIn !== null
-                ? closedIn <= STANDARD_DAYS
-                  ? `Closed in ${closedIn} days, ${STANDARD_DAYS - closedIn} inside the ${STANDARD_DAYS}-day standard`
-                  : `Closed in ${closedIn} days, ${closedIn - STANDARD_DAYS} past the ${STANDARD_DAYS}-day standard`
+                ? closedIn <= due
+                  ? `Closed in ${closedIn} days, ${due - closedIn} inside the ${dueWords}`
+                  : `Closed in ${closedIn} days, ${closedIn - due} past the ${dueWords}`
                 : statusWords(c).next}
             </span>
           </div>
@@ -139,19 +144,19 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               <p className="m-0 mt-2 text-small text-muted">
                 {link.weakest_edge.basis === "eid"
                   ? "Joined by Emirates ID."
-                  : `Joined by name and details, no Emirates ID. Match probability ${link.path_p_cal.toFixed(3)}, auto-close line ${link.tau}.`}
+                  : `Joined by name and details, no Emirates ID. Match probability ${linkScore(detail, link).toFixed(3)}, auto-close line ${link.tau}${link.weakest_edge.basis === "human" ? ", confirmed in review" : ""}.`}
               </p>
             )}
           </section>
 
-          {ev && (
+          {ev && read && (
             <section aria-labelledby="doh-h" className="rounded-card border border-line bg-surface p-pad">
               <h2 id="doh-h" className="m-0 text-section font-medium">
-                DoH closure checklist
+                {ev.fields ? "DoH closure checklist" : "Readers' result"}
               </h2>
               <p className="m-0 mt-0.5 text-small text-muted">Two readers read report {shortId(ev.report)}: {ev.agree ? "they agree" : "they disagree"}.</p>
               <ul className="m-0 mt-3 list-none p-0">
-                {closureChecks(ev).map((k) => (
+                {read.checks.map((k) => (
                   <li key={k.name} className="flex items-center justify-between gap-3 border-t border-rule py-2.5">
                     <span>{k.name}</span>
                     <span className="text-right text-muted">
@@ -163,7 +168,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               </ul>
               {ev.human_override && <p className="m-0 mt-2 text-small text-muted">A clinician signed the evidence {ev.human_override}.</p>}
               <blockquote className="m-0 mt-2 rounded-control bg-raised px-4 py-3">
-                <p className="m-0">{ev.quote ? `“${ev.quote}”` : "The report states none of these in words."}</p>
+                <p className="m-0">{read.quote ? `“${read.quote}”` : "The report states none of these in words."}</p>
                 <p className="m-0 mt-1 text-small text-muted">
                   {providerLabel(detail.identities.find((i) => i.role === "downstream")?.provider ?? "")} report <span className="font-mono">{shortId(ev.report)}</span>
                 </p>

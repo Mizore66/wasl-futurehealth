@@ -15,8 +15,8 @@ const MOCK_PORT = 3293;
 
 const holdId = fixtures.fixtures.review_hold.id;
 const desk = `/app/review/${encodeURIComponent(holdId)}`;
-const LINK_ITEM = "rv-f0715223bce81123";
-const EVIDENCE_ITEM = "rv-25ead56223c7bef0";
+const LINK_ITEM = "rv-2853a89572f0bc86";
+const EVIDENCE_ITEM = "rv-02bd10f694ad3d6e";
 
 async function noSeriousAxe(page: Page) {
   const axe = await new AxeBuilder({ page }).analyze();
@@ -38,11 +38,11 @@ test.describe("review, fixtures mode", () => {
     await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
     const row = page.getByRole("link", { name: /Mariam Al Shamsi/ });
     await expect(row).toContainText("Identity · Bowel prep");
-    await expect(row).toContainText("NOO-dr-391");
+    await expect(row).toContainText("SKM-dr-293");
     await page.screenshot({ path: "test-results/screens/review-queue.png", fullPage: true });
     await noSeriousAxe(page);
     await row.click();
-    await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1474$/);
+    await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1175$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
   });
 
@@ -51,8 +51,8 @@ test.describe("review, fixtures mode", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
     await expect(page.getByText("Case 1 of 1 waiting")).toBeVisible();
     await expect(page.getByText("Held: the report has no date of birth, and neither reader found a bowel prep grade.")).toBeVisible();
-    await expect(page.getByText("not on report")).toBeVisible();
-    await expect(page.locator("mark")).toHaveText("advanced, under direct vision, to the cecum");
+    await expect(page.getByText("not on report")).toHaveCount(2);
+    await expect(page.locator("mark")).toHaveText("advanced to the cecum");
     await expect(prepRow(page)).toContainText("not stated");
     await expect(prepRow(page)).toContainText("reviewers decide");
     await expect(page.locator('[data-check="Caecum reached"]')).toContainText("agreed");
@@ -60,8 +60,8 @@ test.describe("review, fixtures mode", () => {
     const why = page.getByRole("button", { name: "Why it was held" });
     await why.click();
     await expect(page.getByRole("button", { name: "Hide why" })).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("img", { name: /Link score 1\.000/ })).toBeVisible();
-    await expect(page.getByText(/second identifier \(exact non-placeholder DOB\) or human confirmation/)).toBeVisible();
+    await expect(page.getByRole("img", { name: /Link score 0\.999/ })).toBeVisible();
+    await expect(page.getByText(/second identifier \(exact non-placeholder DOB, or a matching Emirates ID with agreeing name, sex and DOB\) or human confirmation/)).toBeVisible();
     await page.screenshot({ path: "test-results/screens/review-desk.png", fullPage: true });
     await noSeriousAxe(page);
   });
@@ -117,7 +117,7 @@ test.describe("review, fixtures mode", () => {
     await r.getByRole("button", { name: "Sign and ask the unit to grade the prep" }).click();
     await expect(r.getByRole("status")).toContainText("Asked the unit");
     await expect(r.getByRole("status").getByTestId("signature-squares").locator("span")).toHaveCount(1);
-    await expect(r.locator('li[data-kind="current"]')).toContainText("Noor endoscopy");
+    await expect(r.locator('li[data-kind="current"]')).toContainText("SKMC endoscopy");
     await r.getByRole("button", { name: "Undo" }).click();
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();

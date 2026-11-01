@@ -15,7 +15,7 @@ export const metadata = { title: "Patients" };
 
 const QUICK: { label: string; f: CaseFilters }[] = [
   { label: "All", f: {} },
-  { label: "Past 31 days", f: { overdue: true } },
+  { label: "Overdue", f: { overdue: true } },
   { label: "Never notified", f: { dropoff: "never_notified" } },
   { label: "Not booked", f: { dropoff: "not_booked" } },
   { label: "No-show", f: { dropoff: "no_show" } },
@@ -26,14 +26,17 @@ function describe(f: CaseFilters): string {
   const parts = [
     f.state && f.state.replaceAll("_", " "),
     f.dropoff && DROPOFF_WORDS[f.dropoff].status.toLowerCase(),
-    f.overdue === true && "past 31 days",
-    f.overdue === false && "within 31 days",
+    f.overdue === true && "overdue",
+    f.overdue === false && "not overdue",
     f.q && `matching “${f.q}”`,
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : "all cases";
 }
 
 const same = (a: CaseFilters, b: CaseFilters) => filtersHref("", a) === filtersHref("", b);
+
+/** Days from referral to the programme's deadline: 31 for CRC, the rule's own deadline for the other programmes. */
+const dueIn = (c: CaseSummary) => c.deadline_day || STANDARD_DAYS;
 
 function mark(c: CaseSummary): Status {
   if (c.closed) return "done";
@@ -102,7 +105,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               <th scope="col" className="px-4 py-2 font-normal">Patient</th>
               <th scope="col" className="px-4 py-2 font-normal">Status</th>
               <th scope="col" className="px-4 py-2 font-normal">Referred</th>
-              <th scope="col" className="px-4 py-2 font-normal">Day {STANDARD_DAYS}</th>
+              <th scope="col" className="px-4 py-2 font-normal">Due</th>
               <th scope="col" className="px-4 py-2 font-normal">Owner</th>
             </tr>
           </thead>
@@ -131,8 +134,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                 </td>
                 <td className="px-4 py-2.5 text-muted">{formatDay(c.referral_day)}</td>
                 <td className={cn("px-4 py-2.5", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
-                  {formatDay(c.referral_day + STANDARD_DAYS)}
-                  {!c.closed && c.overdue && ` · ${it.days - STANDARD_DAYS} over`}
+                  {formatDay(c.referral_day + dueIn(c))}
+                  {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}
                 </td>
                 <td className="px-4 py-2.5 text-muted">{it.owner}</td>
               </tr>

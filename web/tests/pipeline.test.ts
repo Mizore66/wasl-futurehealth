@@ -3,8 +3,8 @@ import replayJson from "@/data/replay.json";
 import readerJson from "@/data/reader.json";
 import { FEED_ROWS, ROWS, SLOTS, flowView, replayTrack } from "@/components/pipeline/flow";
 import { playback, type Playback, type PlaybackAction } from "@/components/pipeline/playback";
-import { readerFrames, readerTrack, readerView } from "@/components/pipeline/reader-timeline";
-import type { ReaderData } from "@/components/pipeline/reader-types";
+import { readerFrames, readerStart, readerTrack, readerView } from "@/components/pipeline/reader-timeline";
+import { NOT_ASKED, type ReaderData } from "@/components/pipeline/reader-types";
 import type { ReplayState } from "@/lib/replay/reducer";
 import type { Replay } from "@/lib/replay/types";
 
@@ -38,8 +38,8 @@ describe("pipeline playback", () => {
     let reached = false;
     for (const s of states) {
       const v = flowView(replay, s.frame);
-      expect(v.decisions).toBeLessThanOrEqual(25_620);
-      expect(v.chains).toBeLessThanOrEqual(1_741);
+      expect(v.decisions).toBeLessThanOrEqual(31_677);
+      expect(v.chains).toBeLessThanOrEqual(3_163);
       if (v.decisions === replay.totals.outputs && v.chains === replay.totals.chainsVerified) reached = true;
       expect(v.rows).toHaveLength(ROWS.length);
       expect(v.feed.length).toBeLessThanOrEqual(FEED_ROWS);
@@ -77,12 +77,22 @@ describe("reader playback", () => {
     expect(v.gated).toBe(true);
   });
 
-  it("carries the recorded answers: u43's readers disagree on prep and only u31 closes", () => {
-    const [u31, u6, u43] = reader.cases;
-    expect([u31.uid, u6.uid, u43.uid]).toEqual(["u31", "u6", "u43"]);
-    expect(u31.ai).toMatchObject({ state: "closed", reason: "criteria_met", latencyMs: 16233 });
-    expect(u6.ai).toMatchObject({ state: "not_closed", reason: "incomplete_exam", latencyMs: 22199 });
-    expect(u43.ai).toMatchObject({ state: "needs_human", prep: "not_stated", downgraded: ["prep"], latencyMs: 19892 });
-    expect(u43.rules.prep).toBe("adequate");
+  it("carries the recorded answers: u38's readers disagree on the caecum and only u31 closes", () => {
+    const [u31, u6, u38] = reader.cases;
+    expect([u31.uid, u6.uid, u38.uid]).toEqual(["u31", "u6", "u38"]);
+    expect(u31.ai).toMatchObject({ state: "closed", reason: "criteria_met", latencyMs: 8849 });
+    expect(u6.ai).toMatchObject({ state: "not_closed", reason: "incomplete_exam", latencyMs: 11421 });
+    expect(u38.ai).toMatchObject({ state: "needs_human", caecum: "not_stated", downgraded: ["caecum"], latencyMs: 10130 });
+    expect(u38.rules.caecum).toBe("yes");
+    expect(readerView(reader, readerStart(reader, 2)).disagree).toEqual(["caecum"]);
+  });
+
+  it("compares tissue only where the older rules reader answered it", () => {
+    const u6 = reader.cases[1];
+    expect(u6.ai.tissue).toBe("yes");
+    expect(u6.rules.tissue).toBe(NOT_ASKED);
+    const v = readerView(reader, readerStart(reader, 1));
+    expect(v.compared).not.toContain("tissue");
+    expect(v.disagree).toEqual([]);
   });
 });

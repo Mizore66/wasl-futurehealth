@@ -1,3 +1,4 @@
+import { programmeView } from "@/components/programme/model";
 import { exactlyOnce, fixed, missedByIdOnly, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
 import { Reveal } from "@/components/site/reveal";
@@ -77,6 +78,7 @@ export default async function Page() {
   const pct = (v: number) => (v / 0.4) * 100;
   const fc = result("v2.safety.crc_false_closures");
   const once = exactlyOnce();
+  const chaseOneIn = programmeView(dash).chaseOneIn;
 
   const OUTCOMES: { outcome: string; does: string; status: React.ReactNode; evidence: React.ReactNode; stops: string }[] = [
     {
@@ -214,7 +216,7 @@ export default async function Page() {
     { limit: "Readers broke on 3 of 7 unseen corpora before the fixes.", resolves: "300 confirmed closures in a row, then a 10% audit; an error returns that class to shadow mode.", when: "Months 0–9" },
     { limit: "The image reader was trained on Norwegian video frames; its weights inherit ImageNet’s non-commercial terms.", resolves: "It stays hold-only. Local recalibration on UAE stills; the licence question stays open until then.", when: "Before production" },
     { limit: "Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.", resolves: "Stepped-wedge primary endpoint. Gate: lower bound of the uplift above 0.", when: "Months 4–9" },
-    { limit: "Review load across name origins: 1.19 pooled but 1.28 per seed (1.11–1.45), against a 1.25 limit.", resolves: "Under investigation and reported in every run. Placeholder birth dates (25% of Arab vs 6% of Western persons) cost reviewer time, not accuracy.", when: "Every run" },
+    { limit: "Review load across name origins: 1.08 pooled and 1.21 per seed (1.09–1.34), against a 1.25 limit; two of five single seeds are above it.", resolves: "Reported in every run. Placeholder birth dates (25% of Arab vs 6% of Western persons) still send more cases to a person on purpose: reviewer time, not accuracy.", when: "Every run" },
     { limit: "Female-list access gap 12.6 pp, against a 5 pp limit (simulated).", resolves: "About 30–40% of lists must be female lists. Wasl reports the staffing shortfall; it cannot fix it.", when: "Reported to DoH" },
     { limit: "Below about 1 colonoscopy slot per FIT+, no software raises completion.", resolves: "Wasl quantifies the shortfall by region. Pooling helps only when capacity is misallocated.", when: "Reported to DoH" },
     { limit: "Non-English notices are machine-drafted.", resolves: "Professional translation and back-translation.", when: "Before live outreach" },
@@ -303,8 +305,8 @@ export default async function Page() {
             <Bar label="Measured by Wasl" value={wasl.display} width={pct(wasl.value)} tone="bg-(--teal)" strong />
             <Bar label="Truth, from the simulator" value={truth.display} width={pct(truth.value)} tone="bg-(--ink)" />
             <figcaption className={cn("mt-6 text-[14px] leading-[1.55]", muted)}>
-              Bars run from 0 to 40%. Under ID-only tracking {Math.round(missedByIdOnly() * 100)}% of real completions look lost, and about 1 in
-              4 on the chase list is already done. Published Abu Dhabi baseline: {QUOTED.baselineRate.value} of FIT+ patients had a
+              Bars run from 0 to 40%. Under ID-only tracking {Math.round(missedByIdOnly() * 100)}% of real completions look lost
+              {chaseOneIn !== null && <>, and about 1 in {chaseOneIn} on the chase list is already done</>}. Published Abu Dhabi baseline: {QUOTED.baselineRate.value} of FIT+ patients had a
               colonoscopy, median {QUOTED.medianWaitDays.value} days, against a {QUOTED.standardDays.value}-day standard and a target above 90%
               (SEHA, BMC Cancer 2021).
             </figcaption>
@@ -444,7 +446,7 @@ export default async function Page() {
               <p className="m-0 mt-3 text-[16px] leading-[1.55]">
                 {result("reader.corpora").display} more 300-report corpora, written by four model families and each frozen before any reader
                 ran. Three of the seven found an unsafe phrasing class: 6 of 211 automatic closures by the 26B reader were wrong (2.8%, upper
-                bound 6.1%), and 10 of 137 with the 4B. Each class was fixed by a generic rule. Reader v7.1 shows 0 unsafe closures on every
+                bound 6.1%), and 10 of 137 with the 4B. Each class was fixed by a generic rule. Reader v7.2 shows 0 unsafe closures on every
                 corpus, and the last two fair tests passed with both readers.
               </p>
               <h3 className={cn(h3x, "mt-10")}>Changes made after a failure, disclosed</h3>

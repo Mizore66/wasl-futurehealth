@@ -2,26 +2,45 @@
 // and the live Gemma 3 4B reader's answer, quotes and latency (showcase reader_ledger.jsonl).
 import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import type { ReaderCase, ReaderData, ReaderField, ReaderSegment } from "../components/pipeline/reader-types";
+import { CaseDetail } from "../lib/api/schema";
+import { NOT_ASKED, type ReaderCase, type ReaderData, type ReaderField, type ReaderSegment } from "../components/pipeline/reader-types";
 
 const web = path.join(import.meta.dirname, "..");
 const root = path.join(web, "..");
 const REPORTS = "data/evidence/reports43.json";
 const LEDGER = "pipeline/results/showcase/reader_ledger.jsonl";
 
-/** The showcase's three stories: a complete exam, a scope that stopped early, a prep grade the AI would not vouch for. */
-const PICKS = ["u31", "u6", "u43"] as const;
+/** The showcase's three stories: a complete exam, a scope that stopped early, a caecum the AI would not vouch for. */
+const PICKS = ["u31", "u6", "u38"] as const;
+
+/** The ledger names a downgrade by the check that failed (`caecum_quote`, `prep_grade`, `polyps`); the UI names it by field. */
+const DOWNGRADE_FIELD: Record<string, ReaderField> = {
+  caecum: "caecum",
+  caecum_quote: "caecum",
+  prep: "prep",
+  prep_grade: "prep",
+  polyps: "tissue",
+  tissue: "tissue",
+  histology: "histology",
+};
 
 type Fields = Record<ReaderField, string>;
-type Report = { uid: string; name: string; sha: string; text: string; regex: Fields & { state: string; reason: string } };
+/** reports43.json predates the tissue field: its rules reader answered "polyp removed", which implies tissue only when yes. */
+type Report = {
+  uid: string;
+  name: string;
+  sha: string;
+  text: string;
+  regex: Omit<Fields, "tissue"> & { polyps: string; state: string; reason: string };
+};
 type LedgerRow = {
   report_sha: string;
   caecum_reached: string;
   caecum_quote: string;
   prep: string;
   prep_quote: string;
-  polyps_removed: string;
-  polyps_quote: string;
+  tissue_taken: string;
+  tissue_quote: string;
   histology_present: string;
   histology_quote: string;
   state: string;
@@ -41,9 +60,9 @@ const apiDir = path.join(web, "data", "api");
 const fixtureEvidence = readdirSync(apiDir)
   .filter((f) => f.startsWith("case_") && !f.endsWith("_audit.json"))
   .flatMap((f) => {
-    const c = JSON.parse(readFileSync(path.join(apiDir, f), "utf8"));
-    return (c.evidence as { quote: string; report: string }[]).map((e) => ({
-      loop: c.case.id as string,
+    const c = CaseDetail.parse(JSON.parse(readFileSync(path.join(apiDir, f), "utf8")));
+    return c.evidence.map((e) => ({
+      loop: c.case.id,
       report: e.report.split("/").at(-1)!,
       quote: e.quote,
     }));
@@ -86,7 +105,7 @@ function sentenceEnd(text: string, at: number): number {
 const FIELD_KEYS: Record<ReaderField, { value: keyof LedgerRow; quote: keyof LedgerRow }> = {
   caecum: { value: "caecum_reached", quote: "caecum_quote" },
   prep: { value: "prep", quote: "prep_quote" },
-  polyps: { value: "polyps_removed", quote: "polyps_quote" },
+  tissue: { value: "tissue_taken", quote: "tissue_quote" },
   histology: { value: "histology_present", quote: "histology_quote" },
 };
 
@@ -117,7 +136,7 @@ function build(uid: string): ReaderCase {
   if (from > 0) segments.unshift({ text: "… " });
   if (to < text.length) segments.push({ text: " …" });
 
-  const pick = (f: Fields) => ({ caecum: f.caecum, prep: f.prep, polyps: f.polyps, histology: f.histology });
+  const r = report.regex;
   const standsFor = fixtureEvidence.find((e) => e.quote.length >= 20 && text.toLowerCase().includes(e.quote.toLowerCase()));
   return {
     uid,
@@ -125,15 +144,19 @@ function build(uid: string): ReaderCase {
     sha: report.sha,
     ...(standsFor ? { standsFor: { loop: standsFor.loop, report: standsFor.report } } : {}),
     segments,
-    rules: { ...pick(report.regex), state: report.regex.state, reason: report.regex.reason },
+    rules: { caecum: r.caecum, prep: r.prep, tissue: r.polyps === "yes" ? "yes" : NOT_ASKED, histology: r.histology, state: r.state, reason: r.reason },
     ai: {
       caecum: row.caecum_reached,
       prep: row.prep,
-      polyps: row.polyps_removed,
+      tissue: row.tissue_taken,
       histology: row.histology_present,
       state: row.state,
       reason: row.reason,
-      downgraded: (row.downgraded ?? []) as ReaderField[],
+      downgraded: (row.downgraded ?? []).map((d) => {
+        const field = DOWNGRADE_FIELD[d];
+        if (!field) throw new Error(`${LEDGER}: unknown downgrade "${d}" on ${uid}`);
+        return field;
+      }),
       modelVersion: row.model_version,
       latencyMs: row.latency_ms,
     },

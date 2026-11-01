@@ -43,10 +43,10 @@ describe("review decision", () => {
 
 describe("review view of the review_hold fixture", () => {
   it("takes the two review items and the report from the API", () => {
-    expect(view.items).toEqual({ link: "rv-f0715223bce81123", evidence: "rv-25ead56223c7bef0" });
-    expect(view.report.id).toBe("NOO-dr-391");
-    expect(view.quote).toBe("advanced, under direct vision, to the cecum");
-    expect(view.link).toMatchObject({ score: 1, line: 0.99, basis: "Emirates ID" });
+    expect(view.items).toEqual({ link: "rv-2853a89572f0bc86", evidence: "rv-02bd10f694ad3d6e" });
+    expect(view.report.id).toBe("SKM-dr-293");
+    expect(view.quote).toBe("advanced to the cecum");
+    expect(view.link).toMatchObject({ score: 0.9985, line: 0.99, basis: "name and details" });
   });
 
   it("shows the missing date of birth as not on report", () => {
@@ -60,6 +60,6 @@ describe("review view of the review_hold fixture", () => {
 
   it("draws the trail from timeline days, with no signature yet", () => {
     expect(view.trail.every((n) => n.kind === "system")).toBe(true);
-    expect(view.trail[0]).toMatchObject({ who: "Al Mushrif", when: "17 May" });
+    expect(view.trail[0]).toMatchObject({ who: "Al Mushrif", when: "21 May" });
   });
 });

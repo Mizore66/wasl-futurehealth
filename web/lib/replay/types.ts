@@ -16,8 +16,8 @@ export type ReaderRead = {
   caecumQuote: string;
   prep: ReaderField;
   prepQuote: string;
-  polypsRemoved: ReaderField;
-  polypsQuote: string;
+  tissueTaken: ReaderField;
+  tissueQuote: string;
   histologyPresent: ReaderField;
   histologyQuote: string;
   state: string;

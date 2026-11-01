@@ -24,7 +24,12 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
   referral_unanswered: { status: "Unit hasn't answered", next: "Chase the endoscopy unit", view: "call" },
   no_show: { status: "No-show, rebook", next: "Rebook", view: "call" },
   no_followup_ct: { status: "No follow-up CT booked", next: "Book the CT", view: "call" },
-  not_assessable: { status: "Repeat CT needed", next: "Book the repeat CT", view: "call" },
+  not_assessable: { status: "Not assessable", next: "Clinician to decide on a repeat", view: "waiting" },
+  no_eye_exam: { status: "No eye-clinic exam yet", next: "Book the eye-clinic exam", view: "call" },
+  ungradable_no_repeat: { status: "Retinal photo ungradable", next: "Book the repeat photo", view: "call" },
+  technical_repeat_not_done: { status: "Mammogram to repeat", next: "Book the repeat mammogram", view: "call" },
+  no_assessment_outcome: { status: "Waiting on the assessment outcome", next: "Wait for the assessment result", view: "waiting" },
+  awaiting_tissue: { status: "Waiting on tissue sampling", next: "Specialist team to arrange it", view: "waiting" },
   inadequate: { status: "Report incomplete · with the doctors", next: "Doctors to decide on a repeat", view: "waiting" },
   awaiting_histology: { status: "Waiting on pathology", next: "Wait for the pathology result", view: "waiting" },
   in_progress: { status: "Booked", next: "Prep call before the appointment", view: "waiting" },
@@ -70,6 +75,8 @@ export const PROCEDURE: Record<Programme, string> = {
   crc: "colonoscopy",
   cervical: "colposcopy",
   lung_nodule: "follow-up CT",
+  diabetic_retinopathy: "eye-clinic exam",
+  breast: "breast assessment",
 };
 
 /** A case as the worklist shows it: name if the simulated cast has one (gap G1), else the short id. */
@@ -120,6 +127,15 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkI
 
 /* ---------- Patient record ---------- */
 
+/**
+ * The linker's probability for a link. Once reviewers confirm a below-line link its edge becomes `human` and
+ * `path_p_cal` reads 1, so the linker's own score is the one its link review item carries.
+ */
+export function linkScore(c: CaseDetail, l: CaseDetail["links"][number]): number {
+  if (l.weakest_edge.basis !== "human") return l.path_p_cal;
+  return c.review_items.find((r) => r.kinds.includes("link") && r.loop === l.loop)?.p ?? l.path_p_cal;
+}
+
 const SIGNOFF_ROLE: Record<string, string> = { reviewer: "Reviewer", clinician: "Clinician", coordinator: "Coordinator" };
 
 type Timed = ChainNode & { t: number; order: number };
@@ -162,7 +178,13 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
   const nodes: Timed[] = c.timeline.map((e) => eventNode(e, c, first)).filter((n): n is Timed => n !== null);
 
   c.links.forEach((l, i) => {
-    const by = l.weakest_edge.basis === "eid" ? "by Emirates ID" : `by name and details, p ${l.path_p_cal.toFixed(3)}`;
+    const p = linkScore(c, l).toFixed(3);
+    const by =
+      l.weakest_edge.basis === "eid"
+        ? "by Emirates ID"
+        : l.weakest_edge.basis === "human"
+          ? `by name and details, p ${p} before review, confirmed in review`
+          : `by name and details, p ${p}`;
     nodes.push({ id: `link-${i}`, kind: "system", who: "Wasl", what: `matched report ${shortId(l.downstream_event)} to ${first} ${by}`, when: "", t: reportDay(l.downstream_event), order: 1, hash: sealed("link_decision", i) });
   });
   c.evidence.forEach((ev, i) => {
@@ -170,7 +192,9 @@ export function recordNodes(c: CaseDetail, chain: { type: string; hash: string }
     nodes.push({ id: `evidence-${i}`, kind: "system", who: "Two readers", what, when: "", t: reportDay(ev.report), order: 2, hash: sealed("evidence", i) });
   });
   c.holds.forEach((h, i) => {
-    nodes.push({ id: `hold-${i}`, kind: "system", who: "Safety gate", what: "held: the report does not show what closure needs", when: "", t: reportDay(h.report), order: 3, hash: sealed("hold_decision", i) });
+    const what = h.report ? "held: the report does not show what closure needs" : `held: ${(h.reason ?? h.state).replaceAll("_", " ")}`;
+    const t = h.report ? reportDay(h.report) : c.case.referral_day;
+    nodes.push({ id: `hold-${i}`, kind: "system", who: "Safety gate", what, when: "", t, order: 3, hash: sealed("hold_decision", i) });
   });
   const lastT = Math.max(...nodes.map((n) => n.t));
   c.signoffs.forEach((s, i) => {
@@ -208,6 +232,20 @@ const FIELD = {
   inadequate: "Not adequate",
 } as Record<string, string>;
 const word = (v: string | undefined) => (v ? (FIELD[v] ?? v) : "Not read");
+
+/** Lung, DR and breast evidence: each reader's label, and the first reader's quote. */
+export function readerLabels(ev: CaseDetail["evidence"][number]): { checks: Check[]; quote: string } {
+  const a = ev.reader_a_regex ?? ev.label;
+  const b = ev.reader_b ?? ev.label;
+  const words = (v: string) => v.replaceAll("_", " ");
+  return {
+    checks: [
+      { name: "Reader A", result: words(a), differ: a !== b },
+      { name: "Reader B", result: words(b), differ: a !== b },
+    ],
+    quote: ev.quote || (ev.reader_a_fields?.quote ?? ""),
+  };
+}
 
 /** The DoH closure checklist from the two readers' fields: caecum / prep / tissue taken / histology present. */
 export function closureChecks(ev: CaseDetail["evidence"][number]): Check[] {

@@ -96,12 +96,14 @@ function matches(c: CaseSummary, q: CaseQuery): boolean {
   );
 }
 
-/** Fixtures mode filters the 25-case sample page plus the three fixtures; the live API filters all cases. */
+/** Fixtures mode filters each programme's 25-case sample page plus the fixtures; the live API filters all cases. */
 export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
   if (apiMode() === "live") return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
-  const [page, fx] = await Promise.all([fixture(CaseList, "cases_crc_page1.json"), getFixtures()]);
+  const pageFiles = (await readdir(FIXTURE_DIR)).filter((f) => /^cases_[a-z_]+_page1\.json$/.test(f)).sort();
+  const [pages, fx] = await Promise.all([Promise.all(pageFiles.map((f) => fixture(CaseList, f))), getFixtures()]);
+  const page = pages.find((p) => p.cases[0]?.programme === "crc") ?? pages[0];
   const byId = new Map<string, CaseSummary>();
-  for (const c of [...Object.values(fx.fixtures), ...page.cases]) if (!byId.has(c.id)) byId.set(c.id, c);
+  for (const c of [...Object.values(fx.fixtures), ...pages.flatMap((p) => p.cases)]) if (c && !byId.has(c.id)) byId.set(c.id, c);
   const all = [...byId.values()].filter((c) => matches(c, query));
   const limit = Math.min(query.limit ?? 100, 500);
   const offset = query.offset ?? 0;

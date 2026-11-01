@@ -19,11 +19,11 @@ describe("site figures", () => {
   });
 
   it("shows the held-out exactly-once count while the sources conflict", () => {
-    expect(exactlyOnce()).toEqual({ display: "0 / 136,669", contested: true });
+    expect(exactlyOnce()).toEqual({ display: "0 / 198,810", contested: true });
   });
 
   it("prints the false-closure upper bound as the brief does", () => {
-    expect(upperBound("v2.safety.crc_false_closures")).toBe("0.18%");
+    expect(upperBound("v2.safety.crc_false_closures")).toBe("0.12%");
   });
 });
 

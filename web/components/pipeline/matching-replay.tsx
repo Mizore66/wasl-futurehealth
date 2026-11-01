@@ -225,7 +225,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                   <MarkShape mark={decided ? (C.outcome.held ? "held" : "done") : "queued"} hue={decided && !C.outcome.held} className="size-2.5" />
                 </div>
                 <div className="absolute inset-x-0 top-[42px] text-center text-small text-muted">
-                  {decided ? (C.outcome.held ? "held for a second identifier" : `linked · ${C.basis}`) : scored ? "proposed link" : "no candidate yet"}
+                  {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `linked · ${C.basis}`) : scored ? "proposed link" : "no candidate yet"}
                 </div>
               </div>
               {C.fields.map((fd) => {

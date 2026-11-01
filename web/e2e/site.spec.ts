@@ -139,7 +139,7 @@ test("landing: the three figures carry their honesty words", async ({ page }) =>
   await expect(page.getByText("from testing on simulated patients", { exact: false }).first()).toBeVisible();
   await expect(page.locator('[data-figure="wait"]')).toHaveText("72 days");
   await expect(page.getByText("From a published study, 2021.", { exact: false })).toBeVisible();
-  await expect(page.locator('[data-figure="closures"]')).toHaveText("of 2,090 cases Wasl marked done. In testing on simulated patients.");
+  await expect(page.locator('[data-figure="closures"]')).toHaveText("of 3,025 cases Wasl marked done. In testing on simulated patients.");
 });
 
 test("how it works: six moments, and the tracker's tick against Wasl's open case", async ({ page }) => {
@@ -165,28 +165,28 @@ test("pilot: four stages, and the 300-in-a-row rule is labelled a rule", async (
 test("experts: KPI bars, outcome table, exactly-once figure and the τ picker read the results", async ({ page }) => {
   await page.goto("/experts");
   const kpi = page.locator("figure");
-  await expect(kpi).toContainText("Simulated, n = 1,318");
-  for (const v of ["12.4%", "32.0%", "33.0%"]) await expect(kpi).toContainText(v);
+  await expect(kpi).toContainText("Simulated, n = 1,337");
+  for (const v of ["12.6%", "31.9%", "32.9%"]) await expect(kpi).toContainText(v);
   await expect(page.getByTestId("outcomes").locator("tbody tr")).toHaveCount(6);
-  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 2,090");
-  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 136,669");
+  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,025");
+  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 198,810");
 
   const tiers = page.getByRole("group", { name: "Closure tier" });
   const panel = page.getByTestId("tau-panel");
   const cell = (label: string) => panel.locator(`[data-cell="${label}"] [data-value]`);
   await expect(tiers.getByRole("button", { name: "τ 0.99", exact: true })).toHaveAttribute("aria-pressed", "true");
   await expect(panel).toContainText("τ 0.99. The operating tier");
-  await expect(cell("Recall, with review")).toHaveText("0.883");
-  await expect(cell("Review items per 100 loops")).toHaveText("82.4");
+  await expect(cell("Recall, with review")).toHaveText("0.816");
+  await expect(cell("Review items per 100 loops")).toHaveText("58.8");
 
   await tiers.getByRole("button", { name: "τ 0.7", exact: true }).click();
-  await expect(panel).toContainText("τ 0.7. Three false closures");
-  await expect(cell("False closures, with review")).toHaveText("3");
-  await expect(cell("Recall, with review")).toHaveText("0.899");
-  await expect(cell("Recall, no review")).toHaveText("0.412");
+  await expect(panel).toContainText("τ 0.7. Not certified");
+  await expect(cell("False closures, with review")).toHaveText("8");
+  await expect(cell("Recall, with review")).toHaveText("0.829");
+  await expect(cell("Recall, no review")).toHaveText("0.565");
 
   await tiers.getByRole("button", { name: "τ 0.999", exact: true }).click();
-  await expect(cell("Review items per 100 loops")).toHaveText("108.6");
+  await expect(cell("Review items per 100 loops")).toHaveText("83.8");
   await expect(cell("False closures, with review")).toHaveText("0");
   await expect(tiers.locator('[aria-pressed="true"]')).toHaveCount(1);
 });

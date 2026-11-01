@@ -42,7 +42,7 @@ describe("replay loop", () => {
   });
 
   it("carries the real totals of the showcase run", () => {
-    expect(replay.totals).toEqual({ fhirMessages: 34308, readerReports: 135, outputs: 25620, chainsVerified: 1741 });
-    expect(replay.facts).toMatchObject({ duplicates: 0, lost: 0, throughputEvS: 626, tamperAttacks: 17, tamperDetected: 17 });
+    expect(replay.totals).toEqual({ fhirMessages: 40983, readerReports: 245, outputs: 31677, chainsVerified: 3163 });
+    expect(replay.facts).toMatchObject({ duplicates: 0, lost: 0, throughputEvS: 895, tamperAttacks: 17, tamperDetected: 17 });
   });
 });

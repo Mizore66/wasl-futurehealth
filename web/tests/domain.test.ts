@@ -18,7 +18,7 @@ describe("dayToDate", () => {
 
   it("formats the evidence-closure fixture's closing day", () => {
     const c = load("evidence_closure");
-    expect(formatDay(c.case.closed_day)).toBe("27 Jun");
+    expect(formatDay(c.case.closed_day)).toBe("22 Jun");
   });
 });
 
@@ -32,9 +32,12 @@ describe("case ids in routes", () => {
 });
 
 describe("caseStage", () => {
-  it("evidence closure is recorded, closed automatically", () => {
-    const s = caseStage(load("evidence_closure"));
-    expect(s).toMatchObject({ key: "recorded", step: 8, technical: "closed · auto" });
+  it("the DR exam closure is recorded, closed automatically", () => {
+    expect(caseStage(load("dr_exam_closure"))).toMatchObject({ key: "recorded", step: 8, technical: "closed · auto" });
+  });
+
+  it("evidence closure is recorded after two reviewers confirmed the link", () => {
+    expect(caseStage(load("evidence_closure"))).toMatchObject({ key: "recorded", step: 8, technical: "closed · human_signoff" });
   });
 
   it("the false-closure trap is held at the gate with its rule", () => {
@@ -68,8 +71,8 @@ describe("caseStage", () => {
 
   it("outreach held while consent is unknown", () => {
     const c = load("review_hold");
-    const first = c.decisions[0];
-    const pending = { ...c, case: { ...c.case, closed: false }, review_items: [], decisions: [first] };
+    const held = { ...c.decisions[0], consent_log: [{ kind: "appointment_reminder", to: "held", contact: "unknown" }] };
+    const pending = { ...c, case: { ...c.case, closed: false }, review_items: [], decisions: [held] };
     expect(caseStage(pending)).toMatchObject({ key: "message_held_for_consent", step: 7 });
   });
 
