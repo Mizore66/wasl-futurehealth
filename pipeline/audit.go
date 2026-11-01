@@ -323,9 +323,18 @@ func linkMetrics(L *LinkerCore, tr *Truth) map[string]interface{} {
 			impure++
 		}
 	}
+	// final link edges joining two different persons, by what made them (eid | wasl | human); adversarial B8 (genadv.go)
+	cross := map[string]int{}
+	for a, nb := range L.adj {
+		for b := range nb {
+			if a < b && tr.PKQid[L.recs[a].Pk] != tr.PKQid[L.recs[b].Pk] {
+				cross[L.basis[pk2(a, b)]]++
+			}
+		}
+	}
 	P, R := tp/math.Max(pp, 1), tp/math.Max(tt, 1)
 	return map[string]interface{}{"registrations": len(cl), "pair_precision": r3(P), "pair_recall": r3(R), "pair_f1": r3(2 * P * R / math.Max(P+R, 1e-9)),
-		"false_merge_pairs": int(pp - tp), "true_pairs": int(tt), "impure_clusters": impure, "stats": L.Stats}
+		"false_merge_pairs": int(pp - tp), "true_pairs": int(tt), "impure_clusters": impure, "cross_person_edges_by_basis": cross, "stats": L.Stats}
 }
 
 // ---------------- dashboard ----------------
