@@ -82,7 +82,7 @@ Lists are always `[]`, never `null`.
 
   `state` is `due|overdue|done|escalated`; `ct_report` and `ct_day` appear once a surveillance CT is read. The parent's `closure_decision` block adds `closed_into: "surveillance_ct_due"`. Escalation `overdue_lung_surveillance_ct`; outreach kinds `lung_surveillance_due`, `lung_surveillance_recall`.
 
-- **Rejected work-up referral message** (flag `-rejmsg`, `WASL_REJMSG=1`, default off): when the PET/CT or tissue-sampling unit finally rejects the referral (hand-off packet), the decision's `outreach` adds kind `lung_referral_rejected` (template `lnfu-rejected-v2/en|ar`), sent to the imaging centre's own registration under the same consent hold. The packet's `patient_informed` is `true` once it is released.
+- **Rejected work-up referral message** (flag `-rejmsg`, `WASL_REJMSG=1`, default off): when the PET/CT or tissue-sampling unit finally rejects the referral (hand-off packet), the decision's `outreach` contains only kind `lung_referral_rejected` (template `lnfu-rejected-v2/en|ar`), replacing contradictory due/overdue outreach for that referral. It is sent to the imaging centre's own registration only with granted consent (unknown is held; denied/opted-out is cancelled, regardless of the legacy consent-hold switch). The packet's `patient_informed` is `true` once it is released.
 
 ### Programme `diabetic_retinopathy` (third loop type: retinal screening to eye-clinic exam, rule `doh2024dr`)
 
@@ -123,7 +123,7 @@ Lists are always `[]`, never `null`.
   - `awaiting_eye_clinic_exam`, `retina_not_examined`, `clinic_note_readers_disagree`, `clinic_note_identity_link_unconfirmed`;
   - `did_not_attend_rebook`, `no_fundal_view_clinician_decides`.
 - **Escalations** (`decisions[].escalations`): `overdue_dr_referral`, `repeat_photo_overdue`, `urgent_dr_referral_open`, `rebook_after_dna`, `clinician_decision_no_fundal_view`.
-- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`; with `-drrecallmsg` also `dr_next_recall` (below); with `-rejmsg` also `dr_referral_rejected` (template `drsfu-rejected-v2/en|ar`) when the eye clinic finally rejects the referral, and the hand-off packet's `patient_informed` is `true` once it is released. Sent by phone, then letter, in the screening clinic's name, under the same consent hold as the other programmes.
+- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`; with `-drrecallmsg` also `dr_next_recall` (below); with `-rejmsg` also `dr_referral_rejected` (template `drsfu-rejected-v2/en|ar`) when the eye clinic finally rejects the referral. The rejection message replaces contradictory due/overdue/rebooking outreach for that referral, and the hand-off packet's `patient_informed` is `true` once it is released. Sent by phone, then letter, in the screening clinic's name. The new `-drrecallmsg` and `-rejmsg` messages always require granted consent (unknown is held; denied/opted-out is cancelled), even if the legacy consent-hold switch is disabled.
 
 - **Next due** (runs with `WASL_DRNEXT=1`, flag `-drnext`): a resolved loop's `dr` object adds `next_due` (omitted otherwise):
 

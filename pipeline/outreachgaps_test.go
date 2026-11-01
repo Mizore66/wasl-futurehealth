@@ -118,14 +118,14 @@ func TestRejectedReferralMessage(t *testing.T) {
 	withGaps(t, false, true, false)
 	d, _ := runLung(t, dr("granted"), 31)
 	o, ok := outreachKinds(d)["dr_referral_rejected"]
-	if !ok || !o.Released || o.Basis != "self" || o.Template != "drsfu-rejected-"+TemplateVersion+"/en" || !d.Handoff.PatientInformed || d.State != "open" {
+	if !ok || len(d.Outreach) != 1 || !o.Released || o.Basis != "self" || o.Template != "drsfu-rejected-"+TemplateVersion+"/en" || !d.Handoff.PatientInformed || d.State != "open" {
 		t.Fatalf("DR rejection: %+v packet %+v", d.Outreach, d.Handoff)
 	}
 	d, _ = runLung(t, dr("unknown"), 31)
-	if o := outreachKinds(d)["dr_referral_rejected"]; o.Released || o.Suppress != SupConsentHold || d.Handoff.PatientInformed {
+	if o := outreachKinds(d)["dr_referral_rejected"]; len(d.Outreach) != 1 || o.Released || o.Suppress != SupConsentHold || d.Handoff.PatientInformed {
 		t.Fatalf("consent unknown: held, patient not informed; got %+v %+v", o, d.Handoff)
 	}
-	if d, _ = runLung(t, dr("denied"), 31); d.Handoff.PatientInformed || outreachKinds(d)["dr_referral_rejected"].Suppress != SupConsent {
+	if d, _ = runLung(t, dr("denied"), 31); len(d.Outreach) != 1 || d.Handoff.PatientInformed || outreachKinds(d)["dr_referral_rejected"].Suppress != SupConsent {
 		t.Fatalf("consent denied: cancelled; got %+v", d.Outreach)
 	}
 	// no rejection: no message
@@ -144,7 +144,7 @@ func TestRejectedReferralMessage(t *testing.T) {
 	lf := lungFacts(60, "none", "high", big, extIntake("mafraq-rad", "MAF-intake-1", 10, "revoked", "out-of-network", "eid", 1, "lung_nodule"))
 	lf.Contact = "granted"
 	d, _ = runLung(t, lf, 11)
-	if o, ok := outreachKinds(d)["lung_referral_rejected"]; !ok || !o.Released || o.Template != "lnfu-rejected-"+TemplateVersion+"/en" || !d.Handoff.PatientInformed {
+	if o, ok := outreachKinds(d)["lung_referral_rejected"]; !ok || len(d.Outreach) != 1 || !o.Released || o.Template != "lnfu-rejected-"+TemplateVersion+"/en" || !d.Handoff.PatientInformed {
 		t.Fatalf("lung rejection: %+v %+v", d.Outreach, d.Handoff)
 	}
 	// CRC: the packet now counts its own intent (referral_rejected_next_steps)
@@ -154,6 +154,67 @@ func TestRejectedReferralMessage(t *testing.T) {
 	RejectedMsg = false
 	if crcRejectedKind("referral_rejected_next_steps") {
 		t.Fatal("crcRejectedKind off: unchanged (only the old kind)")
+	}
+}
+
+// A final rejection replaces, rather than accompanies, due/overdue/rebooking outreach for the same referral.
+func TestRejectedReferralReplacesOtherOutreach(t *testing.T) {
+	defer func(h bool) { Handoff = h }(Handoff)
+	Handoff = true
+	dr := func() *LoopFacts {
+		f := drFacts(drScreen("PHC-dr-1", 10, "R3AM0"), extIntake("eye-hosp", "EYE-intake-1", 30, "revoked", "capacity", "eid", 1, "diabetic_retinopathy"))
+		f.Contact = "granted"
+		return f
+	}
+	withGaps(t, false, false, false)
+	d, _ := runLung(t, dr(), 120)
+	if len(d.Outreach) != 1 || d.Outreach[0].Kind != "dr_overdue_recall" {
+		t.Fatalf("DR setup: expected contradictory overdue outreach, got %+v", d.Outreach)
+	}
+	withGaps(t, false, true, false)
+	d, _ = runLung(t, dr(), 120)
+	if len(d.Outreach) != 1 || d.Outreach[0].Kind != "dr_referral_rejected" {
+		t.Fatalf("DR rejection must replace overdue outreach: %+v", d.Outreach)
+	}
+	lung := func() *LoopFacts {
+		f := lungFacts(60, "none", "high", big, extIntake("mafraq-rad", "MAF-intake-1", 10, "revoked", "out-of-network", "eid", 1, "lung_nodule"))
+		f.Contact = "granted"
+		return f
+	}
+	withGaps(t, false, false, false)
+	d, _ = runLung(t, lung(), 120)
+	if len(d.Outreach) != 1 || d.Outreach[0].Kind != "lung_overdue_recall" {
+		t.Fatalf("lung setup: expected contradictory overdue outreach, got %+v", d.Outreach)
+	}
+	withGaps(t, false, true, false)
+	d, _ = runLung(t, lung(), 120)
+	if len(d.Outreach) != 1 || d.Outreach[0].Kind != "lung_referral_rejected" {
+		t.Fatalf("lung rejection must replace overdue outreach: %+v", d.Outreach)
+	}
+}
+
+// The new C11-C13 messages keep the granted-consent invariant even when the legacy hold switch is disabled.
+func TestSelfOutreachAlwaysRequiresGrantedConsent(t *testing.T) {
+	saved := ConsentHold
+	ConsentHold = false
+	t.Cleanup(func() { ConsentHold = saved })
+	EnableDR()
+	for _, contact := range []string{"", "unknown", "denied"} {
+		f := drFacts(drScreen("PHC-dr-1", 10, "R1M0"))
+		f.Contact = contact
+		o := selfOutreach(f, "diabetic_retinopathy", "dr_next_recall")
+		want := SupConsent
+		if contact == "" || contact == "unknown" {
+			want = SupConsentHold
+		}
+		if o.Released || o.Suppress != want {
+			t.Errorf("contact %q with ConsentHold=false: got %+v, want suppression %q", contact, o, want)
+		}
+	}
+	f := drFacts(drScreen("PHC-dr-1", 10, "R1M0"))
+	f.Contact = "granted"
+	if o := selfOutreach(f, "diabetic_retinopathy", "dr_next_recall"); !o.Released || o.Suppress != "" {
+		t.Fatalf("granted consent should release: %+v", o)
 	}
 }
 
