@@ -10,7 +10,9 @@ import type { Replay } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls } from "./controls";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
+import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
+import { profileOf, type RulesBySha } from "./profile";
 import "./pipeline.css";
 
 const replay = replayJson as Replay;
@@ -39,8 +41,12 @@ const LANE: Partial<Record<RowId, { mark: LaneMark; bg: string; ink: string; edg
 const CHIP_MOVE = { duration: 0.5, ease: [0.2, 0.7, 0.2, 1] } as const;
 const FEED_PITCH = 52;
 
-export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; tamper: TamperDemo }) {
-  const play = usePlayback(track, TICK_MS);
+type Open = (caseId: string) => void;
+
+export function PipelineReplay({ heading, tamper, rules }: { heading: React.ReactNode; tamper: TamperDemo; rules: RulesBySha }) {
+  const profile = useProfileParam();
+  const play = usePlayback(track, TICK_MS, profile.id !== null);
+  const shown = useMemo(() => (profile.id ? profileOf(replay, play.frame, profile.id, rules) : null), [profile.id, play.frame, rules]);
   const reduceMotion = !!useReducedMotion();
   const view = useMemo(() => flowView(replay, play.frame), [play.frame]);
   const [serverOff, setServerOff] = useState(false);
@@ -69,7 +75,8 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
             Case flow
           </h2>
           <p className="m-0 text-small text-muted">
-            A report shows the name as it is written on it, and &ldquo;?&rdquo;, until it is matched to a referral. The ringed one just moved.
+            A report shows the name as it is written on it, and &ldquo;?&rdquo;, until it is matched to a referral. The ringed one just moved. Open
+            anyone to see their steps.
           </p>
         </div>
         <LayoutGroup>
@@ -79,12 +86,12 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
               className="m-0 grid list-none grid-cols-1 p-0 lg:grid-cols-[repeat(4,minmax(0,1fr))_minmax(0,1.5fr)]"
             >
               {stages.map((r) => (
-                <StageColumn key={r.id} row={r} reduceMotion={reduceMotion} />
+                <StageColumn key={r.id} row={r} reduceMotion={reduceMotion} onOpen={profile.open} />
               ))}
               <li className="flex min-w-0 flex-col gap-1 px-4 pb-4 pt-4">
                 <span className="px-1 text-small text-muted">Outcome</span>
                 {lanes.map((r) => (
-                  <OutcomeLane key={r.id} row={r} reduceMotion={reduceMotion} />
+                  <OutcomeLane key={r.id} row={r} reduceMotion={reduceMotion} onOpen={profile.open} />
                 ))}
               </li>
             </ol>
@@ -121,10 +128,14 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
                   <div className="min-w-0">
                     <div className="truncate text-body">{f.text}</div>
                     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-small text-muted">
-                      <Avatar person={f.who.seed} state={f.who.face === "unknown" ? "unknown" : "known"} size={20} label="" />
-                      <span className="min-w-0 truncate">
-                        <span className={cn(latest ? "font-medium text-hue" : "text-ink-soft")}>{f.who.name}</span> · {f.tech}
-                      </span>
+                      <a
+                        {...profileLink(f.caseId, profile.open)}
+                        className="flex min-w-0 flex-none items-center gap-1.5 rounded-chip no-underline hover:underline"
+                      >
+                        <Avatar person={f.who.seed} state={f.who.face === "unknown" ? "unknown" : "known"} size={20} label="" />
+                        <span className={cn("truncate", latest ? "font-medium text-hue" : "text-ink-soft")}>{f.who.name}</span>
+                      </a>
+                      <span className="min-w-0 truncate">· {f.tech}</span>
                     </div>
                   </div>
                   <span className="text-small text-muted">step {f.step}</span>
@@ -214,6 +225,7 @@ export function PipelineReplay({ heading, tamper }: { heading: React.ReactNode; 
           </p>
         </section>
       </div>
+      <PersonSheet profile={shown} onClose={profile.close} />
     </>
   );
 }
@@ -276,14 +288,15 @@ function ReaderMarks({ state, reduceMotion }: { state: "reading" | "read"; reduc
   );
 }
 
-function CaseChip({ chip, row, reduceMotion, tint = "bg-ground" }: { chip: Chip; row: RowId; reduceMotion: boolean; tint?: string }) {
+function CaseChip({ chip, row, reduceMotion, onOpen, tint = "bg-ground" }: { chip: Chip; row: RowId; reduceMotion: boolean; onOpen: Open; tint?: string }) {
   return (
-    <motion.span
+    <motion.a
       layoutId={chip.id}
       transition={reduceMotion ? { duration: 0 } : CHIP_MOVE}
       data-case={chip.id}
+      {...profileLink(chip.id, onOpen)}
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-[26px] py-1 pl-1 pr-3 text-small leading-[15px]",
+        "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-[26px] py-1 pl-1 pr-3 text-small leading-[15px] no-underline hover:text-ink hover:shadow-[inset_0_0_0_1px_var(--color-control)]",
         tint,
         chip.active ? "font-medium text-ink ring-2 ring-hue" : "text-ink-soft",
       )}
@@ -295,11 +308,11 @@ function CaseChip({ chip, row, reduceMotion, tint = "bg-ground" }: { chip: Chip;
       {row === "matching" && chip.mark === "working" && <MarkShape mark="working" hue />}
       {chip.readers && <ReaderMarks state={chip.readers} reduceMotion={reduceMotion} />}
       {row === "gate" && <MarkShape mark={chip.mark} hue={chip.mark === "done"} />}
-    </motion.span>
+    </motion.a>
   );
 }
 
-function StageColumn({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolean }) {
+function StageColumn({ row, reduceMotion, onOpen }: { row: FlowRow; reduceMotion: boolean; onOpen: Open }) {
   return (
     <li data-stage={row.id} className="relative flex min-w-0 flex-col border-b border-rule px-5 pb-5 pt-4 lg:border-b-0 lg:border-r">
       <svg aria-hidden width="10" height="16" viewBox="0 0 10 16" className="absolute -right-[5px] top-[20px] z-10 hidden bg-surface text-control lg:block">
@@ -312,7 +325,7 @@ function StageColumn({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolea
       <span className="truncate text-small text-muted">{row.tech}</span>
       <div className="mt-4 flex min-h-[196px] flex-col items-start gap-2">
         {row.chips.map((c) => (
-          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} />
+          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} onOpen={onOpen} />
         ))}
         {row.more > 0 && <span className="pl-2 text-small text-muted">+{row.more} more</span>}
       </div>
@@ -320,7 +333,7 @@ function StageColumn({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolea
   );
 }
 
-function OutcomeLane({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolean }) {
+function OutcomeLane({ row, reduceMotion, onOpen }: { row: FlowRow; reduceMotion: boolean; onOpen: Open }) {
   const lane = LANE[row.id]!;
   return (
     <div data-stage={row.id} className={cn("border-l-[3px] py-2 pl-3 pr-1", lane.edge)}>
@@ -334,7 +347,7 @@ function OutcomeLane({ row, reduceMotion }: { row: FlowRow; reduceMotion: boolea
       <span className="block truncate pl-[22px] text-small text-muted">{row.tech}</span>
       <div className="mt-2 grid min-h-10 grid-cols-2 items-center justify-items-start gap-1.5 pl-[22px]">
         {row.chips.map((c) => (
-          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} tint={lane.bg} />
+          <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} onOpen={onOpen} tint={lane.bg} />
         ))}
         {row.more > 0 && <span className="self-center text-small text-muted">+{row.more} more</span>}
       </div>

@@ -3,6 +3,7 @@ import { Avatar } from "@/components/avatar/avatar";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
+import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
 
 export const metadata = { title: "Review" };
@@ -32,17 +33,12 @@ export default async function Page() {
 
       <ol className="m-0 mt-6 flex list-none flex-col gap-2 p-0">
         {rows.map(({ detail, view }) => (
-          <li key={view.caseId}>
+          <li key={view.caseId} className="relative">
             <Link
               href={caseHref("/app/review", view.caseId)}
               className="grid grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-4 rounded-card border border-line bg-surface px-6 py-4 text-ink no-underline hover:bg-active hover:text-ink"
             >
-              <span className="flex items-center">
-                <Avatar {...view.faces.referral} size={32} label="" />
-                <span className="-ml-2 flex rounded-full ring-2 ring-surface">
-                  <Avatar {...view.faces.report} size={32} label={view.faces.report.state === "unknown" ? "Report not yet confirmed as this patient" : ""} />
-                </span>
-              </span>
+              <span aria-hidden className="block h-8 w-14" />
               <span className="min-w-0">
                 <span className="block font-medium">{view.name}</span>
                 <span className="block text-small text-muted">
@@ -55,6 +51,14 @@ export default async function Page() {
                 {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : "Bowel prep")).join(" · ")}
               </span>
             </Link>
+            <span className="pointer-events-none absolute left-[25px] top-1/2 flex -translate-y-1/2 items-center">
+              <RecordAvatar id={view.caseId} name={view.name} linked className="pointer-events-auto">
+                <Avatar {...view.faces.referral} size={32} label="" />
+              </RecordAvatar>
+              <span className="-ml-2 flex rounded-full ring-2 ring-surface">
+                <Avatar {...view.faces.report} size={32} label={view.faces.report.state === "unknown" ? "Report not yet confirmed as this patient" : ""} />
+              </span>
+            </span>
           </li>
         ))}
       </ol>

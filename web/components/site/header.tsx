@@ -9,7 +9,6 @@ import { Wordmark } from "./wordmark";
 /** The buyer pages link to each other; the expert page links to its own sections. */
 const BUYER_LINKS = [
   { href: "/how-it-works", label: "How it works" },
-  { href: "/pilot", label: "Pilot" },
 ];
 
 const EXPERT_LINKS = [
@@ -50,23 +49,16 @@ export function SiteHeader() {
           );
         })}
       </div>
-      <a
-        href="#pilot"
+      <Link
+        href="/app"
         className={cn(
           "bg-(--ink) font-semibold text-(--paper) no-underline hover:bg-(--teal) hover:text-(--paper)",
           expert ? "rounded px-[18px] py-[11px] text-[16px]" : "px-[22px] py-[13px] text-[18px]",
           "max-md:px-4 max-md:py-2.5 max-md:text-[16px]",
         )}
       >
-        {expert ? (
-          <>
-            <span className="max-md:hidden">Request a shadow pilot</span>
-            <span className="md:hidden">Request a pilot</span>
-          </>
-        ) : (
-          "Request a pilot"
-        )}
-      </a>
+        Open the dashboard
+      </Link>
       </div>
     </nav>
   );

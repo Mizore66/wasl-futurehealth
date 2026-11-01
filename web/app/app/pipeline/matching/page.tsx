@@ -5,6 +5,7 @@ import { getCase, getDashboard, getFixtures } from "@/lib/api/source";
 import { CRC_FIXTURES } from "@/lib/api/schema";
 import { linkScore } from "@/components/worklist/model";
 import { personFor } from "@/lib/people";
+import { caseHref } from "@/lib/domain/ids";
 import { beforeReview, linkTrust, referralSeed, TRUSTED } from "@/lib/people/identity";
 
 export const metadata = { title: "Identity matching" };
@@ -65,6 +66,7 @@ async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase |
   return {
     tab: `${short} · ${sr}`,
     referralSeed: referralSeed(loop),
+    record: caseHref("/app/patients", loop),
     trustedByLinker: TRUSTED[linkTrust(beforeReview(detail), link)],
     report: reportId,
     referralName: referral.recorded_name,

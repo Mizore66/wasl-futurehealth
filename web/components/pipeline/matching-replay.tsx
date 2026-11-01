@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
+import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { PersonSeed } from "@/lib/people/types";
@@ -15,6 +16,8 @@ export type FieldCheck = { name: string; referral: string; report: string; verdi
 export type MatchCase = {
   tab: string;
   referralSeed: PersonSeed;
+  /** The patient record this referral and report belong to. */
+  record: string;
   /** Whether the linker's decision alone makes the link trusted, before any person reviews it. */
   trustedByLinker: boolean;
   report: string;
@@ -214,13 +217,25 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_172px_minmax(0,1fr)] gap-3">
             <div className={cn("rounded-control px-4", scored ? "border border-line" : "border border-dashed border-control")}>
               <div className="flex h-16 items-center gap-3">
-                <Avatar person={scored ? C.referralSeed : undefined} size={40} label={scored ? "The referral" : "Referral not chosen yet"} />
-                <div className="flex min-w-0 flex-col justify-center">
-                  <div lang="ar" dir="rtl" className="truncate text-left text-[20px] font-medium leading-7">
-                    {scored ? C.referralName : "Searching…"}
-                  </div>
-                  <div className="truncate text-small text-muted">{scored ? C.referralMeta : "Referral not chosen yet"}</div>
-                </div>
+                {scored ? (
+                  <Link href={C.record} className="flex min-w-0 items-center gap-3 rounded-control text-ink no-underline hover:text-ink [&:hover_[data-name]]:underline">
+                    <Avatar person={C.referralSeed} size={40} label="The referral" />
+                    <div className="flex min-w-0 flex-col justify-center">
+                      <div data-name lang="ar" dir="rtl" className="truncate text-left text-[20px] font-medium leading-7">
+                        {C.referralName}
+                      </div>
+                      <div className="truncate text-small text-muted">{C.referralMeta}</div>
+                    </div>
+                  </Link>
+                ) : (
+                  <>
+                    <Avatar size={40} label="Referral not chosen yet" />
+                    <div className="flex min-w-0 flex-col justify-center">
+                      <div className="truncate text-left text-[20px] font-medium leading-7">Searching…</div>
+                      <div className="truncate text-small text-muted">Referral not chosen yet</div>
+                    </div>
+                  </>
+                )}
               </div>
               {C.fields.map((fd) => (
                 <div key={fd.name} className={cn("flex h-9 items-center truncate border-t border-rule text-body", !scored && "text-muted")}>

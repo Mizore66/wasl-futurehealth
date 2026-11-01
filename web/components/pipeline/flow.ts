@@ -74,7 +74,7 @@ export type Who = { name: string; seed: PersonSeed; face: ChipFace };
 
 export type LedgerLine = { who: Who; closed: boolean } | null;
 
-export type FeedLine = { key: number; who: Who; text: string; tech: string; mark: Mark; step: number };
+export type FeedLine = { key: number; caseId: string; who: Who; text: string; tech: string; mark: Mark; step: number };
 
 export type FlowView = {
   rows: FlowRow[];
@@ -104,14 +104,14 @@ export function readWords(r: ReaderRead): string {
   return `${CAECUM_WORD[r.caecumReached] ?? `caecum ${r.caecumReached}`}, ${PREP_WORD[r.prep] ?? `prep ${r.prep}`}`;
 }
 
-const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
+export const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
   closed_with_evidence: { text: "Closed with evidence", mark: "done" },
   waiting_for_reviewers: { text: "Held · waiting for two reviewers", mark: "held" },
   kept_open: { text: "Kept open · not complete yet", mark: "held" },
 };
 
 /** A decision feed line for the events that report a result. Start-of-work events stay off the feed. */
-function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "who" | "step"> | null {
+export function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "caseId" | "who" | "step"> | null {
   const verdict = `${c.read.state} · ${c.read.reason}`;
   switch (e.type) {
     case "received":
@@ -177,7 +177,7 @@ export function flowView(replay: Replay, state: ReplayState): FlowView {
     if (!("caseId" in e)) continue;
     const c = byId.get(e.caseId)!;
     const l = line(e, c);
-    if (l) feed.push({ ...l, key: i, who: who(c, EVENT_FACE[e.type] ?? "known"), step: i + 1 });
+    if (l) feed.push({ ...l, key: i, caseId: e.caseId, who: who(c, EVENT_FACE[e.type] ?? "known"), step: i + 1 });
   }
 
   return {

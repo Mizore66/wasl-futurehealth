@@ -4,7 +4,6 @@ import { useScroll } from "motion/react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ContactCta } from "@/components/site/contact";
 import { NameJoiner, PEOPLE } from "@/components/site/name-joiner";
 import { cta, display, figure, h2, lead, link, small } from "@/components/site/styles";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
@@ -150,9 +149,9 @@ function Copy({ id, f, mode, person, onPick }: { id: BeatId; f: StoryFigures; mo
             proof.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-7">
-            <a href="#pilot" className={cta}>
-              Request a pilot
-            </a>
+            <Link href="/app" className={cta}>
+              Open the dashboard
+            </Link>
             <Link href="/how-it-works" className={link}>
               See how it works
             </Link>
@@ -254,9 +253,11 @@ function Copy({ id, f, mode, person, onPick }: { id: BeatId; f: StoryFigures; mo
             Three months, free, alongside your team. A clinician checks every case before Wasl may mark it done.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-7">
-            <ContactCta />
-            <Link href="/pilot" className={cn(link, "text-(--ink)")}>
-              See how a pilot works
+            <Link href="/app" className={cta}>
+              Open the dashboard
+            </Link>
+            <Link href="/app/pipeline" className={cn(link, "text-(--ink)")}>
+              See the pipeline
             </Link>
           </div>
         </>
@@ -264,8 +265,7 @@ function Copy({ id, f, mode, person, onPick }: { id: BeatId; f: StoryFigures; mo
   }
 }
 
-/** The last beat doubles as the page's #pilot anchor, which the header's request link targets. */
-const sectionId = (id: BeatId) => (id === "start" ? "pilot" : `beat-${id}`);
+const sectionId = (id: BeatId) => `beat-${id}`;
 
 const panel = "bg-(--paper)/94 p-[clamp(1.25rem,2.4vw,2.25rem)]";
 

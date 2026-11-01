@@ -13,6 +13,7 @@ async function noSeriousAxe(page: Page) {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
+const aisha = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1009$/;
 const fatima = `/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1037")}`;
 
 test.describe("Today", () => {
@@ -98,6 +99,23 @@ test.describe("Today", () => {
     await expect(page).toHaveURL(/AHS-sr-1009$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
+
+  test("avatars open the record where there is one; elsewhere they select the row", async ({ page }) => {
+    await page.goto("/app/today");
+    const list = page.getByRole("region", { name: "Your list" });
+    await expect(page.getByRole("link", { name: "Open AHS-sr-1011's record" })).toHaveCount(0);
+    const row = list.getByRole("button", { name: /AHS-sr-1011/ });
+    await row.locator("..").click({ position: { x: 22, y: 24 } });
+    await expect(row).toHaveAttribute("aria-pressed", "true");
+
+    await page.getByRole("tab", { name: "Waiting 6" }).click();
+    await list.getByRole("button", { name: /Aisha Al Mansoori/ }).click();
+    await expect(page.getByRole("region", { name: "Open patient" }).getByRole("link", { name: "Open Aisha Al Mansoori's record" })).toBeVisible();
+    await shot(page, "today-avatar-links");
+    await noSeriousAxe(page);
+    await list.getByRole("link", { name: "Open Aisha Al Mansoori's record" }).click();
+    await expect(page).toHaveURL(aisha);
+  });
 });
 
 test.describe("Patients", () => {
@@ -123,6 +141,12 @@ test.describe("Patients", () => {
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page).toHaveURL(/q=1037/);
     await page.getByRole("link", { name: "Fatima Al Zaabi" }).click();
+    await expect(page).toHaveURL(fatima);
+  });
+
+  test("the avatar is part of the record link", async ({ page }) => {
+    await page.goto("/app/patients?q=1037");
+    await page.getByRole("link", { name: "Fatima Al Zaabi" }).locator(".wav-root").click();
     await expect(page).toHaveURL(fatima);
   });
 });
@@ -214,8 +238,19 @@ test.describe("Referrals", () => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
     await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
-    await pane.getByRole("button", { name: "Boston grade 2, mostly seen" }).click();
+    await pane.getByRole("group", { name: "Boston grade" }).getByRole("button", { name: /^2\s*Mostly seen$/ }).click();
     await expect(pane.getByRole("status")).toContainText("Graded 2, mostly seen. The case stays held until the report is complete.");
+  });
+
+  test("a referral's avatar opens the patient record", async ({ page }) => {
+    await page.goto("/app/referrals");
+    await expect(page.getByRole("link", { name: "Open AHS-sr-1004's record" })).toHaveCount(0);
+    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+    await expect(page.getByRole("region", { name: "Open referral" }).getByRole("link", { name: "Open Aisha Al Mansoori's record" })).toBeVisible();
+    await shot(page, "referrals-avatar-links");
+    await noSeriousAxe(page);
+    await page.getByRole("region", { name: "Referral list" }).getByRole("link", { name: "Open Aisha Al Mansoori's record" }).click();
+    await expect(page).toHaveURL(aisha);
   });
 
   test("search is wired to q", async ({ page }) => {

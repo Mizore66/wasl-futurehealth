@@ -1,7 +1,7 @@
-import { ContactCta } from "@/components/site/contact";
+import Link from "next/link";
 import { SiteFooter } from "@/components/site/footer";
 import { Reveal } from "@/components/site/reveal";
-import { body, display, h2, h3, lead, section, small, wrap } from "@/components/site/styles";
+import { body, cta, display, h2, h3, lead, section, small, wrap } from "@/components/site/styles";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "How it works" };
@@ -220,7 +220,7 @@ export default function Page() {
         </Reveal>
       </section>
 
-      <section id="pilot" aria-labelledby="decide-title" className="scroll-mt-4 bg-(--sand)">
+      <section id="decide" aria-labelledby="decide-title" className="scroll-mt-4 bg-(--sand)">
         <Reveal className={cn(wrap, section, "flex flex-col items-center text-center")}>
           <h2 id="decide-title" className={h2}>
             Who decides
@@ -228,7 +228,9 @@ export default function Page() {
           <p className="m-0 mt-8 max-w-[36ch] text-balance text-[clamp(1.5rem,1rem_+_1.4vw,2.25rem)] font-medium leading-[1.3] tracking-[-0.01em]">
             Wasl suggests. When it is unsure, two people decide. Every step is written down, so anyone can see later who did what.
           </p>
-          <ContactCta className="mt-12" />
+          <Link href="/app" className={cn(cta, "mt-12")}>
+            Open the dashboard
+          </Link>
         </Reveal>
       </section>
 

@@ -181,3 +181,82 @@ test("reading: real report, recorded Gemma answer and latency, played 5x faster"
   await page.clock.runFor(1000);
   await expectNoSeriousAxe(page);
 });
+
+test("pipeline: a chip opens that person's profile, pauses the replay, and Escape resumes it", async ({ page }) => {
+  await freezeClock(page);
+  await page.goto("/app/pipeline");
+  await page.clock.runFor(500);
+
+  const chip = page.locator('[data-stage="closed"] a[data-case]').first();
+  const id = (await chip.getAttribute("data-case"))!;
+  const person = replay.cases.find((c) => c.id === id)!.person;
+  await chip.focus();
+  await expect(chip).toBeFocused();
+  await chip.click();
+
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("heading", { name: person.name })).toBeVisible();
+  await expect(sheet.getByTestId("report-name")).toHaveText(person.reportName);
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText(/Replay of a recorded run · (generated|demo cast) name/);
+  await expect(sheet.getByRole("list", { name: "Steps in this run" }).getByRole("listitem").first()).toContainText("Received");
+  await expect(page).toHaveURL((url) => url.searchParams.get("person") === id);
+
+  const held = await position(page);
+  await page.clock.runFor(3000);
+  expect(await position(page), "an open profile holds the replay").toBe(held);
+  await page.screenshot({ path: `${SHOTS}-profile.png` });
+  await page.clock.resume();
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
+  const axe = await new AxeBuilder({ page }).include('[role="dialog"]').analyze();
+  expect(axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical").map((v) => v.id)).toEqual([]);
+  expect(await position(page), "still held on real timers").toBe(held);
+
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page).toHaveURL(/\/app\/pipeline$/);
+  await expect.poll(() => position(page), "closing resumes a playing replay").toBeGreaterThan(held);
+
+  await page.getByRole("button", { name: "Pause" }).click();
+  const paused = await position(page);
+  await page.locator("a[data-case]").first().click();
+  await expect(sheet).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await page.waitForTimeout(2500);
+  expect(await position(page), "closing leaves a paused replay paused").toBe(paused);
+});
+
+test("pipeline: Fatima's profile, opened from its link, leads to her patient record", async ({ page }) => {
+  const fatima = replay.cases.find((c) => c.person.name === "Fatima Al Zaabi")!;
+  await page.goto(`/app/pipeline?person=${fatima.id}`);
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByRole("heading", { name: "Fatima Al Zaabi" })).toBeVisible();
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run · demo cast name");
+  await sheet.getByRole("link", { name: "Open full record" }).click();
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+  await expect(page.locator("h1")).toContainText("Fatima");
+});
+
+test("pipeline: a generated person's profile says there is no record", async ({ page }) => {
+  const generated = replay.cases.find((c) => c.person.source === "generated")!;
+  await page.goto(`/app/pipeline?person=${generated.id}`);
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run · generated name");
+  await expect(sheet.getByRole("link", { name: "Open full record" })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(page).toHaveURL(/\/app\/pipeline$/);
+});
+
+test("matching and reading: the demo patient opens her record", async ({ page }) => {
+  await freezeClock(page);
+  await page.goto("/app/pipeline/matching");
+  await page.clock.runFor(800);
+  await page.getByRole("button", { name: "Pause" }).click();
+  await page.getByRole("link", { name: /The referral/ }).click();
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+
+  await page.goto("/app/pipeline/reading");
+  await page.clock.runFor(800);
+  await page.getByRole("link", { name: "Fatima Al Zaabi's report SKM-dr-226" }).click();
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+});

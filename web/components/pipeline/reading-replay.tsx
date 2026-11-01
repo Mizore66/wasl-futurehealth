@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import Link from "next/link";
 import readerJson from "@/data/reader.json";
 import { Avatar } from "@/components/avatar/avatar";
 import type { PersonSeed } from "@/lib/people/types";
@@ -58,7 +59,7 @@ function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held
 const s1 = (ms: number) => (ms / 1000).toFixed(1);
 
 /** The demo patient a report stands for: the line under its title and the face beside it. */
-export type StandsFor = { line: string; seed: PersonSeed };
+export type StandsFor = { line: string; seed: PersonSeed; record: string };
 
 export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode; standsFor: Record<string, StandsFor> }) {
   const play = usePlayback(track, READER_TICK_MS);
@@ -121,10 +122,20 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
           <h2 id="report-h" className="m-0 text-section font-medium">
             Colonoscopy report {c.uid}
           </h2>
-          <p className="m-0 mt-1 flex min-w-0 items-center gap-2 text-small text-muted">
-            <Avatar person={standsFor[c.uid]?.seed} size={20} label={standsFor[c.uid] ? "" : "No demo patient"} />
-            <span className="truncate">{standsFor[c.uid]?.line ?? "Not tied to a demo patient"}</span>
-          </p>
+          {standsFor[c.uid] ? (
+            <Link
+              href={standsFor[c.uid].record}
+              className="mt-1 flex min-w-0 items-center gap-2 self-start rounded-chip text-small text-ink-soft no-underline hover:text-ink hover:underline"
+            >
+              <Avatar person={standsFor[c.uid].seed} size={20} label="" />
+              <span className="truncate">{standsFor[c.uid].line}</span>
+            </Link>
+          ) : (
+            <p className="m-0 mt-1 flex min-w-0 items-center gap-2 text-small text-muted">
+              <Avatar size={20} label="No demo patient" />
+              <span className="truncate">Not tied to a demo patient</span>
+            </p>
+          )}
           <div className="mt-3 h-[268px] overflow-hidden rounded-control bg-ground px-4 py-3">
             <p className="m-0 text-body leading-[22px]" data-testid="report-text">
               {c.segments.map((s, i) => {

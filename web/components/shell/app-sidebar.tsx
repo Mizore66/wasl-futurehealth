@@ -91,7 +91,7 @@ function isActive(pathname: string, href: string) {
 
 function Brand() {
   return (
-    <div className="flex items-center gap-2.5 px-2.5">
+    <Link href="/" title="Back to the Wasl site" className="flex items-center gap-2.5 rounded-control px-2.5 text-ink no-underline hover:text-ink">
       <span aria-hidden className="flex size-6 flex-none items-center justify-center rounded-control bg-ink text-[15px] font-semibold leading-none text-white">
         <span lang="ar" dir="rtl">
           و
@@ -101,7 +101,7 @@ function Brand() {
         <span className="text-section font-semibold leading-5">Wasl</span>
         <span className="text-small text-muted">ADPHC · CRC programme</span>
       </span>
-    </div>
+    </Link>
   );
 }
 

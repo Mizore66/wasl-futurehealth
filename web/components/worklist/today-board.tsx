@@ -5,6 +5,7 @@ import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
+import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { dayToDate, formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
@@ -193,26 +194,29 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
               const on = p?.id === r.id;
               const over = r.days > STANDARD_DAYS;
               return (
-                <button
-                  key={r.id}
-                  aria-pressed={on}
-                  onClick={() => setS((prev) => ({ ...prev, sel: r.id, ...fresh }))}
-                  className={cn("block h-[68px] w-full cursor-pointer rounded-control px-2.5 py-3 text-left", on ? "bg-active" : "bg-transparent hover:bg-ground")}
-                >
-                  <span className="flex min-w-0 items-center gap-2">
+                <div key={r.id} className={cn("relative flex h-[68px] items-start gap-2 rounded-control px-2.5 py-3", on ? "bg-active" : "hover:bg-ground")}>
+                  <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord} className="relative z-10">
                     <Avatar person={r.seed} size={24} label="" />
-                    <span className="whitespace-nowrap font-semibold">{r.name}</span>
-                    {r.nameAr && (
-                      <span lang="ar" dir="rtl" className="truncate text-muted">
-                        {r.nameAr}
+                  </RecordAvatar>
+                  <button
+                    aria-pressed={on}
+                    onClick={() => setS((prev) => ({ ...prev, sel: r.id, ...fresh }))}
+                    className="min-w-0 flex-1 cursor-pointer bg-transparent p-0 text-left after:absolute after:inset-0 after:rounded-control"
+                  >
+                    <span className="flex min-h-6 min-w-0 items-center gap-2">
+                      <span className="whitespace-nowrap font-semibold">{r.name}</span>
+                      {r.nameAr && (
+                        <span lang="ar" dir="rtl" className="truncate text-muted">
+                          {r.nameAr}
+                        </span>
+                      )}
+                      <span className={cn("ml-auto flex-none whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
+                        {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
                       </span>
-                    )}
-                    <span className={cn("ml-auto flex-none whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
-                      {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
                     </span>
-                  </span>
-                  <span className="mt-1 block truncate pl-8 text-muted">{r.status}</span>
-                </button>
+                    <span className="mt-1 block truncate text-muted">{r.status}</span>
+                  </button>
+                </div>
               );
             })}
             {list.length === 0 && <p className="m-2 rounded-card border border-dashed border-control px-3 py-2.5 text-muted">Nobody left in this view.</p>}
@@ -230,7 +234,9 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
           <section aria-label="Open patient" className="flex min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-pad">
             <div className="flex items-start justify-between gap-6">
               <div className="flex min-w-0 items-start gap-4">
-                <Avatar person={p.seed} size={56} label="" />
+                <RecordAvatar id={p.id} name={p.name} linked={p.hasRecord}>
+                  <Avatar person={p.seed} size={56} label="" />
+                </RecordAvatar>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-3">
                     <h2 className="m-0 text-title font-semibold">{p.name}</h2>
@@ -245,7 +251,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                     {p.hasRecord && (
                       <>
                         {" · "}
-                        <Link href={caseHref("/app/patients", p.id)} className="no-underline">
+                        <Link href={caseHref("/app/patients", p.id)} className="underline">
                           Open record
                         </Link>
                       </>

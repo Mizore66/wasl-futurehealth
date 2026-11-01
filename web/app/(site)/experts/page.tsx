@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { programmeView } from "@/components/programme/model";
 import { exactlyOnce, fixed, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
@@ -271,9 +272,9 @@ export default async function Page() {
               readers, and closes the loop only under a certified gate. Every other loop goes to two human reviewers.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-7">
-              <a href="#pilot" className={ctaX}>
-                Request a shadow pilot
-              </a>
+              <Link href="/app" className={ctaX}>
+                Open the dashboard
+              </Link>
               <a href="#safety" className="text-[16px] font-semibold text-(--teal) underline underline-offset-[0.18em] hover:text-(--ink)">
                 Read the safety case
               </a>
@@ -617,9 +618,7 @@ MSA|AA|SKM-dr-237|`}
               A free three-month shadow pilot: one primary care clinic, one endoscopy unit, a clinician confirming every closure, and your
               coordinator’s list as the reference.
             </p>
-            <a href="#pilot" className={cn(ctaX, "mt-8")}>
-              Request a shadow pilot: [team email]
-            </a>
+            <p className="m-0 mt-8 text-[20px] font-semibold leading-normal">To request one, write to [team email].</p>
           </div>
           <div>
             <h3 className={h3x}>What the pilot needs from you</h3>

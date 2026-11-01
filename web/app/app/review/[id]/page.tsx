@@ -4,6 +4,7 @@ import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
+import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { apiMode, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 
@@ -31,7 +32,9 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <Avatar {...view.faces.referral} size={40} label="" />
+            <RecordAvatar id={view.caseId} name={view.name} linked>
+              <Avatar {...view.faces.referral} size={40} label="" />
+            </RecordAvatar>
             <h1 className="m-0 text-title font-semibold">{view.name}</h1>
             {view.nameAr && (
               <span lang="ar" dir="rtl" className="font-arabic text-section text-muted">

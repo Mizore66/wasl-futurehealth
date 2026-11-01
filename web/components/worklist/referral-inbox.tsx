@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
+import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
@@ -162,30 +163,34 @@ export function ReferralInbox({
               const inline = x.state === "new" && x.flags.length === 0;
               const review = (x.state === "new" && x.flags.length > 0) || x.state === "grade";
               return (
-                <div key={x.id} className={cn("flex min-h-[68px] items-center rounded-control", on ? "bg-active" : "hover:bg-ground")}>
-                  <button aria-pressed={on} onClick={() => open(x.id)} className="min-w-0 flex-1 cursor-pointer bg-transparent px-2.5 py-3 text-left">
-                    <span className="flex min-w-0 items-center gap-2">
+                <div key={x.id} className={cn("relative flex min-h-[68px] items-center rounded-control", on ? "bg-active" : "hover:bg-ground")}>
+                  <span className="flex min-w-0 flex-1 items-start gap-2 px-2.5 py-3">
+                    <RecordAvatar id={x.id} name={x.name} linked={x.hasRecord} className="relative z-10">
                       <Avatar person={x.seed} size={24} label="" />
-                      <span className="whitespace-nowrap font-semibold">{x.name}</span>
-                      {x.nameAr && (
-                        <span lang="ar" dir="rtl" className="truncate text-muted">
-                          {x.nameAr}
-                        </span>
-                      )}
-                      {(x.state === "new" || x.state === "grade") && (
-                        <span className={cn("ml-auto flex-none whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
-                      )}
-                    </span>
-                    <span className="mt-1 block truncate pl-8 text-muted">{lineFor(x, over[x.id])}</span>
-                  </button>
+                    </RecordAvatar>
+                    <button aria-pressed={on} onClick={() => open(x.id)} className="min-w-0 flex-1 cursor-pointer bg-transparent p-0 text-left after:absolute after:inset-0 after:rounded-control">
+                      <span className="flex min-h-6 min-w-0 items-center gap-2">
+                        <span className="whitespace-nowrap font-semibold">{x.name}</span>
+                        {x.nameAr && (
+                          <span lang="ar" dir="rtl" className="truncate text-muted">
+                            {x.nameAr}
+                          </span>
+                        )}
+                        {(x.state === "new" || x.state === "grade") && (
+                          <span className={cn("ml-auto flex-none whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
+                        )}
+                      </span>
+                      <span className="mt-1 block truncate text-muted">{lineFor(x, over[x.id])}</span>
+                    </button>
+                  </span>
                   <span className="flex-none pr-2.5">
                     {inline && (
-                      <button onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="h-8 cursor-pointer rounded-control bg-cta px-3 text-body font-medium text-white">
+                      <button onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10 h-8 cursor-pointer rounded-control bg-cta px-3 text-body font-medium text-white">
                         Accept
                       </button>
                     )}
                     {review && (
-                      <button onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="h-8 cursor-pointer rounded-control bg-active px-3 text-body text-ink hover:bg-control">
+                      <button onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10 h-8 cursor-pointer rounded-control bg-active px-3 text-body text-ink hover:bg-control">
                         Review
                       </button>
                     )}
@@ -205,7 +210,9 @@ export function ReferralInbox({
           <section aria-label="Open referral" className="min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-pad">
             <div className="flex items-start justify-between gap-6">
               <div className="flex min-w-0 items-start gap-4">
-                <Avatar person={r.seed} size={56} label="" />
+                <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord}>
+                  <Avatar person={r.seed} size={56} label="" />
+                </RecordAvatar>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-3">
                     <h2 className="m-0 text-title font-semibold">{r.name}</h2>
@@ -220,7 +227,7 @@ export function ReferralInbox({
                     {r.hasRecord && (
                       <>
                         {" · "}
-                        <Link href={caseHref("/app/patients", r.id)} className="no-underline">
+                        <Link href={caseHref("/app/patients", r.id)} className="underline">
                           Open record
                         </Link>
                       </>
@@ -308,7 +315,6 @@ export function ReferralInbox({
                     {GRADES.map(([n, w]) => (
                       <button
                         key={n}
-                        aria-label={`Boston grade ${n}, ${w.toLowerCase()}`}
                         onClick={() => act(r.id, "accepted", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
                         className="flex h-12 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
                       >

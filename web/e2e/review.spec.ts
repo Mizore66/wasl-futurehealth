@@ -36,7 +36,7 @@ test.describe("review, fixtures mode", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
     await expect(page.getByText("Simulated queue: rebuilt from the review_hold case")).toBeVisible();
     await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
-    const row = page.getByRole("link", { name: /Mariam Al Shamsi/ });
+    const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
     await expect(row).toContainText("Identity · Bowel prep");
     await expect(row).toContainText("SKM-dr-293");
     await page.screenshot({ path: "test-results/screens/review-queue.png", fullPage: true });
@@ -44,6 +44,16 @@ test.describe("review, fixtures mode", () => {
     await row.click();
     await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1175$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
+  });
+
+  test("the patient's avatar opens her record from the queue and the desk", async ({ page }) => {
+    const record = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1175$/;
+    await page.goto("/app/review");
+    await page.getByRole("link", { name: "Open Mariam Al Shamsi's record" }).click();
+    await expect(page).toHaveURL(record);
+    await page.goto(desk);
+    await page.getByRole("link", { name: "Open Mariam Al Shamsi's record" }).click();
+    await expect(page).toHaveURL(record);
   });
 
   test("the desk shows both records, both readers and the quote", async ({ page }) => {

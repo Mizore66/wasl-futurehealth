@@ -27,18 +27,21 @@ export function playback<S>(track: Track<S>, state: Playback<S>, action: Playbac
   }
 }
 
-/** The one timer for a replay screen. It starts on the rest frame, so the first paint is a complete still. */
-export function usePlayback<S>(track: Track<S>, intervalMs: number) {
+/**
+ * The one timer for a replay screen. It starts on the rest frame, so the first paint is a complete still.
+ * `hold` stops the timer without touching `paused`, so whatever held it (an open profile) resumes only a playing replay.
+ */
+export function usePlayback<S>(track: Track<S>, intervalMs: number, hold = false) {
   const [state, dispatch] = useReducer(
     (s: Playback<S>, a: PlaybackAction<S>) => playback(track, s, a),
     { frame: track.rest, paused: false },
   );
 
   useEffect(() => {
-    if (state.paused) return;
+    if (state.paused || hold) return;
     const id = window.setInterval(() => dispatch({ type: "tick" }), intervalMs);
     return () => window.clearInterval(id);
-  }, [state.paused, intervalMs]);
+  }, [state.paused, hold, intervalMs]);
 
   return {
     ...state,
