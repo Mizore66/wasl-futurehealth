@@ -152,6 +152,9 @@ func main() {
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
 	drN := fs.Int("dr", 0, "gen: diabetic retinopathy screening loops (doh2024dr); 0 = no DR loops (other feeds byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
+	drRecallMsg := fs.Bool("drrecallmsg", false, "outreach: a resolved DR loop flagged recall_overdue (-drnext) gets a consent-gated recall message, kind dr_next_recall (outreachgaps.go)")
+	rejMsg := fs.Bool("rejmsg", false, "outreach: a finally rejected lung work-up / DR eye-clinic referral gets a consent-gated patient message; CRC patient_informed counts its referral_rejected_next_steps intent (outreachgaps.go)")
+	drSeenLink := fs.Bool("drseenlink", false, "DR next loop: a later eye-clinic note on an untrusted link raises a link question and counts as a visit only after a human 'same' (outreachgaps.go)")
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
@@ -187,6 +190,7 @@ func main() {
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
 	BreastShare = *breastShare
+	DRRecallMsg, RejectedMsg, DRSeenLinkAsk = *drRecallMsg, *rejMsg, *drSeenLink
 	LinkContradictionDOB = *linkConfirmDOB
 	SecondIDContradictionConfirm = *secondIDConfirm
 	LTTProg = *lttProg
@@ -298,6 +302,11 @@ func main() {
 	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-secondidconfirm=%v", SecondIDContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
+	}
+	for i, on := range []bool{DRRecallMsg, RejectedMsg, DRSeenLinkAsk} { // outreachgaps.go: every child, only when on
+		if on {
+			v7Args = append(v7Args, []string{"-drrecallmsg", "-rejmsg", "-drseenlink"}[i])
+		}
 	}
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")

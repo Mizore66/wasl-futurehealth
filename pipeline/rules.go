@@ -39,6 +39,8 @@ var ProgTemplates = true
 var outreachTplKind = map[string]string{
 	"lung_followup_due": "remind", "lung_overdue_recall": "recall",
 	"dr_repeat_photo": "repeat", "dr_clinic_due": "remind", "dr_overdue_recall": "recall", "dr_rebook": "rebook",
+	// outreachgaps.go: -drrecallmsg (overdue next-due recall reuses drsfu-recall), -rejmsg (rejected referral)
+	"dr_next_recall": "recall", "lung_referral_rejected": "rejected", "dr_referral_rejected": "rejected",
 }
 
 // outreachTpl: the approved template id for an outreach intent of this programme ("" when none applies). Language:
