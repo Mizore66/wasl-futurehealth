@@ -420,6 +420,11 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	}
 	for _, j := range rejected { // rejected work-up referrals (handoffext.go), after every other lung event
 		g.rejectLung(j)
+		// a re-referred PET/CT with low uptake closes the work-up exactly as on the main path, so it owes the same
+		// surveillance CT (appended after the main-path candidates: their draws on the surveillance stream are unchanged)
+		if lt := j.lt; LungPETSurv && lt.Lung.Path == "pet" && lt.State == "closed" && lt.Lung.Outcome == "pet_low" {
+			survCands = append(survCands, petSurvCand{lt: lt, p: j.p, typ: lt.Lung.Type, mean: j.mean, petDay: lt.ClosedDay})
+		}
 	}
 	if LungPETSurv { // after every other lung event, on its own RNG stream
 		g.genPETSurv(survCands, hosp)
