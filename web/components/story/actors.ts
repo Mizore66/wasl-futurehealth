@@ -1,7 +1,11 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { createFigure, FIGURE_SCALE, type Figure } from "./figure";
 import type { Kit } from "./kit";
+import { lookOf, type FigureLook } from "./look";
 import { COLOR } from "./palette";
-import { CAST, JOIN, RIDE, RUN, clamp01, ease, span, walkAt, type CastKey, type FaceKey, type StoryFigures } from "./script";
+import { resolveEffect } from "./resolve";
+import { CAST, FACE_SEEDS, JOIN, RESOLVE, RIDE, RUN, clamp01, ease, span, walkAt, type CastKey, type FaceKey, type StoryFigures } from "./script";
 import { PLACES, rand, uNear, vec } from "./world";
 
 /** What moves in the world. Every pose is a function of `p`; only the chip replay reads the clock. */
@@ -14,8 +18,6 @@ export interface Actor {
 export interface Cast {
   kit: Kit;
   mobile: boolean;
-  faces: Record<FaceKey, THREE.Texture>;
-  unknown: THREE.Texture;
   figures: StoryFigures;
   road: THREE.CatmullRomCurve3;
   thread: THREE.CatmullRomCurve3;
@@ -23,19 +25,19 @@ export interface Cast {
   pick: { person: CastKey; at: number };
 }
 
-const STRIDE = 0.55;
+const SHADOW = 1.5;
 
 /** A contact shadow that belongs to an actor, so it hides with it. */
 function shade(kit: Kit, x: number, z: number, w: number, d = w): THREE.Mesh {
   const m = new THREE.Mesh(kit.geo.shadow, kit.mat.shadow);
-  m.position.set(x, 0.008, z);
+  m.position.set(x, 0.02, z);
   m.scale.set(w, 1, d);
   m.renderOrder = 1;
   return m;
 }
-const HOP = 0.18;
-/** The one overshoot in the story: a pebble turning over. */
-const easeBack = (t: number) => 1 + 2.2 * (t - 1) ** 3 + 1.2 * (t - 1) ** 2;
+
+/** The look of each named person, from the same seed their 2D avatar draws. */
+const LOOKS = Object.fromEntries((Object.keys(FACE_SEEDS) as FaceKey[]).map((k) => [k, lookOf(FACE_SEEDS[k])])) as Record<FaceKey, FigureLook>;
 
 /** Where the thread tip is (0..1 along the thread) for a scroll position. */
 export function tipU(p: number, ring1: number): number {
@@ -102,53 +104,62 @@ function ribbon(curve: THREE.Curve<THREE.Vector3>, segments: number, width: numb
 }
 
 /**
- * A pebble person walking: hop height from the stride phase, a squash at each landing, a sway that
- * alternates feet, and a contact shadow that shrinks at the top of a hop. Pure arithmetic per frame.
+ * How each kind of person travels: small forward hops, upright. Fatima's long walk is the calm one,
+ * low and long with no squash; the people crossing the streets are livelier.
  */
-function gait(distance: number) {
-  const phase = distance / STRIDE;
+const GAIT = {
+  fatima: { hop: 0.035, stride: 1.05, squash: 0 },
+  people: { hop: 0.07, stride: 0.6, squash: 0.03 },
+  passing: { hop: 0.11, stride: 0.5, squash: 0.06 },
+} as const;
+type Gait = (typeof GAIT)[keyof typeof GAIT];
+
+/** A pose for a road distance. Pure arithmetic, so scrolling back plays it in reverse. */
+function gait(distance: number, g: Gait) {
+  const phase = distance / g.stride;
   const f = phase - Math.floor(phase);
-  const hop = HOP * Math.abs(Math.sin(Math.PI * f));
-  const land = f < 0.15 ? Math.sin((f / 0.15) * Math.PI) : 0;
-  const foot = Math.floor(phase) % 2 === 0 ? 1 : -1;
-  return { hop, squash: land, sway: foot * Math.sin(Math.PI * f), f };
+  const arc = Math.sin(Math.PI * f);
+  const landing = f < 0.15 ? Math.sin((f / 0.15) * Math.PI) : 0;
+  return { lift: g.hop * arc, arc, squash: g.squash * landing };
 }
+
+const AT_REST = { lift: 0, arc: 0, squash: 0 };
+type Pose = typeof AT_REST;
+
+/** Stands an object on the ground for a pose, upright, facing `yaw`, `size` tall in its own scale. */
+function stand(o: THREE.Object3D, x: number, z: number, yaw: number, pose: Pose, size = 1) {
+  o.position.set(x, pose.lift, z);
+  o.rotation.set(0, yaw, 0);
+  o.scale.set(size * (1 + pose.squash * 0.5), size * (1 - pose.squash), size * (1 + pose.squash * 0.5));
+}
+
+/** The contact shadow under a pose: a little smaller at the top of a hop. */
+const shadowScale = (pose: Pose) => SHADOW * (1 - 0.2 * pose.arc);
 
 const camDir = new THREE.Vector3();
 const tmp = new THREE.Vector3();
 const tan = new THREE.Vector3();
 
-/** Yaw that turns a pebble's face (+z) toward the camera, leaning a little toward where it travels. */
+/** Yaw that turns a figure's face (+z) toward the camera, leaning a little toward where it travels. */
 function faceYaw(at: THREE.Vector3, camera: THREE.Camera, travel?: THREE.Vector3): number {
   camDir.copy(camera.position).sub(at).setY(0).normalize();
   if (travel) camDir.addScaledVector(travel, 0.35).normalize();
   return Math.atan2(camDir.x, camDir.z);
 }
 
+/** A person and the contact shadow that stands under them. */
+function person(c: Cast, look: FigureLook): Figure & { shadow: THREE.Mesh } {
+  return { ...createFigure(c.kit, look), shadow: shade(c.kit, 0, 0, SHADOW) };
+}
+
 /** Fatima: walks out of her clinic, across the city, and into the hospital, where she becomes "?". */
 export function fatima(c: Cast): Actor & { at: THREE.Vector3 } {
-  const { kit } = c;
   const group = new THREE.Group();
-  const body = new THREE.Group();
-  const peb = kit.pebble(c.faces.fatima, c.unknown);
-  peb.group.position.y = 0.5;
-  body.add(peb.group);
-  const footGeo = new THREE.SphereGeometry(0.11, 12, 8).scale(1, 0.55, 1.4);
-  const feet = [-1, 1].map((s) => {
-    const m = new THREE.Mesh(footGeo, kit.mat.stone);
-    m.position.set(s * 0.17, 0.05, 0);
-    body.add(m);
-    return m;
-  });
-  const shadow = new THREE.Mesh(kit.geo.shadow, kit.mat.shadow);
-  shadow.renderOrder = 1;
-  group.add(body, shadow);
-
+  const her = person(c, LOOKS.fatima);
+  group.add(her.group, her.shadow);
   const length = c.road.getLength();
   const at = new THREE.Vector3();
-  const end = c.road.getPointAt(1);
-  // The thread reaches her at the end of the join, so she stands where the thread ends.
-  end.z += 0.0;
+  let wearing: CastKey = "fatima";
 
   return {
     group,
@@ -157,31 +168,18 @@ export function fatima(c: Cast): Actor & { at: THREE.Vector3 } {
       const s = walkAt(p);
       c.road.getPointAt(s, at);
       c.road.getTangentAt(s, tan);
-      const g = gait(s * length);
       const walking = s > 0 && s < 1;
-      const hop = walking ? g.hop : 0;
-      body.position.set(at.x, hop, at.z);
-      const sq = walking ? g.squash : 0;
-      body.scale.set(1 + sq * 0.05, 1 - sq * 0.1, 1 + sq * 0.05);
-      shadow.position.set(at.x, 0.008, at.z);
-      shadow.scale.setScalar(1.15 * (1 - (hop / HOP) * 0.2));
-      for (const [i, m] of feet.entries()) {
-        const swing = walking ? g.sway * (i ? 1 : -1) * 0.16 : 0;
-        m.position.z = swing;
-        m.visible = !c.mobile && p < 0.42;
-      }
+      const pose = walking ? gait(s * length, GAIT.fatima) : AT_REST;
+      stand(her.group, at.x, at.z, faceYaw(at, camera, walking ? tan : undefined), pose);
+      her.shadow.position.set(at.x, 0.02, at.z);
+      her.shadow.scale.setScalar(shadowScale(pose));
 
-      // At the hospital door she turns over: the "?" is what the hospital's record shows.
-      const who = CAST[c.pick.person].outcome;
+      if (wearing !== c.pick.person) her.setLook(LOOKS[(wearing = c.pick.person)]);
+      // At the hospital door her colour drains: the "?" is what the hospital's record shows.
       const replay = clamp01((now - c.pick.at) / 1200);
       const j = span(p, JOIN.from, JOIN.to) * ease(replay);
-      const back = who === "review" ? 0 : easeBack(span(j, 0.7, 0.86));
-      const over = easeBack(span(p, 0.343, 0.362)) * (1 - back);
-      const wantFront = who === "apart" && back > 0 ? c.faces.stranger : c.faces[c.pick.person];
-      if (peb.frontMat.map !== wantFront) peb.frontMat.map = wantFront;
-
-      const yaw = faceYaw(at, camera, walking ? tan : undefined);
-      body.rotation.set(walking ? 0.1 : 0, yaw + Math.PI * over, walking ? g.sway * 0.05 : 0, "YXZ");
+      const back = CAST[wearing].outcome === "joined" ? ease(span(j, RESOLVE.known[0], RESOLVE.known[1])) : 0;
+      her.setKnown(1 - ease(span(p, 0.343, 0.362)) * (1 - back));
       return replay < 1;
     },
   };
@@ -192,7 +190,7 @@ export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.V
   const { kit } = c;
   const group = new THREE.Group();
   const strip = ribbon(c.thread, c.mobile ? 600 : 1200, 0.13, Math.PI * 9);
-  const mesh = new THREE.Mesh(strip.geometry, kit.mat.teal);
+  const mesh = new THREE.Mesh(strip.geometry, kit.mat.thread);
   mesh.frustumCulled = false;
   group.add(mesh);
 
@@ -226,27 +224,31 @@ export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.V
   c.thread.getPointAt(u2 - 0.004, fray.position);
   group.add(fray);
 
-  const reviewers = [0, 1].map(() => {
-    const m = new THREE.Mesh(kit.geo.pebble, kit.mat.unknown);
-    m.scale.setScalar(0.8);
-    group.add(m);
-    return m;
+  const reviewers = [0, 1].map((i) => {
+    const r = person(c, lookOf({ key: `p-reviewer-${i}` }));
+    group.add(r.group, r.shadow);
+    return r;
   });
+  const stranger = person(c, LOOKS.stranger);
+  group.add(stranger.group, stranger.shadow);
 
-  const bead = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), kit.mat.teal);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 14), kit.mat.teal);
+  const effect = resolveEffect(c, u1);
+  group.add(effect.group);
+
+  const bead = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), kit.mat.thread);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 20, 14), kit.mat.thread);
   group.add(bead, head);
   const tip = new THREE.Vector3();
   const lit = new THREE.Color(COLOR.tealBright);
   const held = new THREE.Color(COLOR.held);
-  const ink = new THREE.Color(COLOR.unknown);
+  const ink = new THREE.Color(COLOR.differs);
   const stone = new THREE.Color(COLOR.stone);
 
   return {
     group,
     tip,
     ring1: u1,
-    update(p, now) {
+    update(p, now, camera) {
       const who = CAST[c.pick.person].outcome;
       const replay = clamp01((now - c.pick.at) / 1200);
       const j = span(p, JOIN.from, JOIN.to) * ease(replay);
@@ -269,12 +271,35 @@ export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.V
       const frayed = who === "review" ? ease(span(j, 0.5, 0.64)) : 0;
       fray.visible = frayed > 0;
       fray.scale.setScalar(Math.max(frayed, 0.001));
+      for (let i = 0; i < gates.length; i++) gates[i].scale.setScalar(1 + 0.2 * effect.fire(j, who, i));
+      effect.update(p, j, who, fatimaAt);
+
       const come = who === "review" ? ease(span(j, 0.56, 0.8)) : 0;
-      reviewers.forEach((r, i) => {
-        r.visible = come > 0;
-        r.position.set(fatimaAt.x - 1.3 + i * 2.6, 0.4, fatimaAt.z + THREE.MathUtils.lerp(-1.2, 0.4, come));
-        r.rotation.y = i ? -0.5 : 0.5;
-      });
+      for (let i = 0; i < reviewers.length; i++) {
+        const r = reviewers[i];
+        const on = come > 0 && p < RIDE.from;
+        r.group.visible = r.shadow.visible = on;
+        if (!on) continue;
+        const x = fatimaAt.x + (i ? 1.2 : -1.9);
+        const z = fatimaAt.z + THREE.MathUtils.lerp(-1.4, i ? 0.75 : -0.6, come);
+        tmp.set(x, 0, z);
+        const pose = come < 1 ? gait(come * 1.8, GAIT.people) : AT_REST;
+        stand(r.group, x, z, faceYaw(tmp, camera), pose);
+        r.shadow.position.set(x, 0.02, z);
+        r.shadow.scale.setScalar(shadowScale(pose));
+      }
+      const apart = who === "apart" ? ease(span(j, RESOLVE.apart[0], RESOLVE.apart[1])) : 0;
+      const standing = apart > 0 && p < RIDE.from;
+      stranger.group.visible = stranger.shadow.visible = standing;
+      if (standing) {
+        const x = fatimaAt.x + THREE.MathUtils.lerp(3.4, 1.3, apart);
+        const z = fatimaAt.z + 0.95;
+        tmp.set(x, 0, z);
+        const pose = apart < 1 ? gait(apart * 1.8, GAIT.people) : AT_REST;
+        stand(stranger.group, x, z, faceYaw(tmp, camera), pose);
+        stranger.shadow.position.set(x, 0.02, z);
+        stranger.shadow.scale.setScalar(shadowScale(pose));
+      }
       const pulse = span(j, 0.86, 0.98);
       bead.visible = who === "joined" && pulse > 0 && pulse < 1;
       if (bead.visible) c.thread.getPointAt(Math.max(0.6, 1 - pulse), bead.position);
@@ -291,15 +316,12 @@ export function slabAndReaders(c: Cast): Actor {
   const slab = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.7, 0.08), kit.mat.surface);
   slab.position.copy(S);
   group.add(slab);
-  const lineGeo = new THREE.BoxGeometry(0.9, 0.07, 0.02);
-  const lineMat = kit.tint(COLOR.stone);
-  for (let i = 0; i < 5; i++) {
-    const l = new THREE.Mesh(lineGeo, i === 2 ? lineMat : kit.mat.stone);
-    l.position.set(S.x - (i === 0 ? 0.2 : 0), S.y + 0.55 - i * 0.26, S.z + 0.05);
-    if (i === 0) l.scale.x = 0.5;
-    group.add(l);
-  }
   const lineY = S.y + 0.55 - 2 * 0.26;
+  const lineAt = (w: number, x: number, row: number) => new THREE.BoxGeometry(w, 0.07, 0.02).translate(S.x + x, S.y + 0.55 - row * 0.26, S.z + 0.05);
+  // Every line of the report but the one the readers land on: that one changes colour.
+  group.add(new THREE.Mesh(mergeGeometries([lineAt(0.45, -0.2, 0), lineAt(0.9, 0, 1), lineAt(0.9, 0, 3), lineAt(0.9, 0, 4)])!, kit.mat.stone));
+  const lineMat = kit.tint(COLOR.stone);
+  group.add(new THREE.Mesh(lineAt(0.9, 0, 2), lineMat));
 
   const rulesMat = Object.assign(kit.tint(COLOR.stone), { flatShading: true });
   const aiMat = kit.tint(COLOR.stone);
@@ -310,8 +332,8 @@ export function slabAndReaders(c: Cast): Actor {
   ai.position.set(S.x + 2.1, lineY, S.z + 0.9);
   ai.rotation.y = -0.9;
   const bandGeo = new THREE.BoxGeometry(1, 0.04, 0.04).translate(0.5, 0, 0);
-  const bandL = new THREE.Mesh(bandGeo, kit.mat.teal);
-  const bandR = new THREE.Mesh(bandGeo, kit.mat.teal);
+  const bandL = new THREE.Mesh(bandGeo, kit.mat.thread);
+  const bandR = new THREE.Mesh(bandGeo, kit.mat.thread);
   bandL.position.copy(rules.position);
   bandR.position.copy(ai.position);
   const toLine = (from: THREE.Vector3) => Math.atan2(-(S.z + 0.06 - from.z), S.x - from.x);
@@ -320,6 +342,22 @@ export function slabAndReaders(c: Cast): Actor {
   const reach = rules.position.distanceTo(new THREE.Vector3(S.x - 0.45, lineY, S.z + 0.06));
   const shades = [shade(kit, rules.position.x, rules.position.z, 1.4, 0.7), shade(kit, ai.position.x, ai.position.z, 1.4, 0.7)];
   group.add(rules, ai, bandL, bandR, ...shades);
+
+  // One scan line per reader, sweeping its half of the report. Both land on the same line, which then
+  // glows. If the two readers disagreed the case would be held, and the lines would not meet.
+  const scanGeo = new THREE.PlaneGeometry(0.58, 0.05);
+  const scans = [-1, 1].map((side) => {
+    const m = new THREE.Mesh(scanGeo, kit.mat.thread);
+    m.position.set(S.x + side * 0.3, lineY, S.z + 0.066);
+    group.add(m);
+    return m;
+  });
+  const glowMat = new THREE.MeshBasicMaterial({ map: kit.glowMap, color: COLOR.thread, transparent: true, depthWrite: false, opacity: 0 });
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.56), glowMat);
+  glow.position.set(S.x, lineY, S.z + 0.07);
+  glow.renderOrder = 2;
+  group.add(glow);
+  const TOP = S.y + 0.8;
 
   const lit = new THREE.Color(COLOR.tealBright);
   const stone = new THREE.Color(COLOR.stone);
@@ -336,6 +374,13 @@ export function slabAndReaders(c: Cast): Actor {
       lineMat.color.copy(met && p > 0.74 ? teal : stone);
       rulesMat.color.copy(show && r > 0 ? lit : stone);
       aiMat.color.copy(show && r > 0 ? lit : stone);
+      for (let i = 0; i < scans.length; i++) {
+        const t = ease(span(p, 0.757 + i * 0.003, 0.769 + i * 0.003));
+        scans[i].visible = show && t > 0 && !met;
+        scans[i].position.y = THREE.MathUtils.lerp(TOP, lineY, t);
+      }
+      glow.visible = show && met && p < 0.83;
+      glowMat.opacity = 0.9 * (1 - 0.45 * span(p, 0.772, 0.79));
       return false;
     },
   };
@@ -353,7 +398,7 @@ export function receipt(c: Cast): Actor & { at: THREE.Vector3 } {
     if (i === 0) l.scale.x = 0.55;
     card.add(l);
   }
-  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.03, 32).rotateX(Math.PI / 2), kit.mat.teal);
+  const seal = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.03, 32).rotateX(Math.PI / 2), kit.mat.thread);
   seal.position.set(0, -0.3, 0.035);
   card.add(seal);
   const at = new THREE.Vector3();
@@ -378,13 +423,14 @@ export function receipt(c: Cast): Actor & { at: THREE.Vector3 } {
 export function nurse(c: Cast): Actor {
   const { kit } = c;
   const group = new THREE.Group();
-  const peb = kit.pebble(c.faces.nurse, c.unknown);
+  const figure = createFigure(kit, LOOKS.nurse);
   const N = vec(PLACES.nurse);
-  peb.group.position.set(N.x, 0.5, N.z);
-  group.add(peb.group);
+  // She stands on a step behind the window, so her head and shoulders show above the sill.
+  figure.group.position.set(N.x, N.y - 0.2, N.z);
+  group.add(figure.group);
   const ringGeo = new THREE.RingGeometry(0.94, 1, 96).rotateX(-Math.PI / 2);
   const rings = [0, 1, 2].map(() => {
-    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: COLOR.teal, transparent: true, opacity: 0, depthWrite: false }));
+    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: COLOR.tealBright, transparent: true, opacity: 0, depthWrite: false }));
     m.position.set(N.x, 0.04, N.z + 1.4);
     m.renderOrder = 2;
     group.add(m);
@@ -406,6 +452,33 @@ export function nurse(c: Cast): Actor {
   };
 }
 
+/** Small figures at a distance: instanced body and head, no faces, one matrix per person. */
+function crowd(kit: Kit, n: number) {
+  const bodies = new THREE.InstancedMesh(kit.figure.bodyLow, kit.mat.crowd, n);
+  const heads = new THREE.InstancedMesh(kit.figure.headLow, kit.mat.crowd, n);
+  bodies.frustumCulled = heads.frustumCulled = false;
+  const color = new THREE.Color();
+  return {
+    bodies,
+    heads,
+    place(i: number, o: THREE.Object3D) {
+      o.updateMatrix();
+      bodies.setMatrixAt(i, o.matrix);
+      heads.setMatrixAt(i, o.matrix);
+    },
+    paint(i: number, cloth: string, skin: string) {
+      bodies.setColorAt(i, color.set(cloth));
+      heads.setColorAt(i, color.set(skin));
+    },
+    flush() {
+      bodies.instanceMatrix.needsUpdate = true;
+      heads.instanceMatrix.needsUpdate = true;
+      if (bodies.instanceColor) bodies.instanceColor.needsUpdate = true;
+      if (heads.instanceColor) heads.instanceColor.needsUpdate = true;
+    },
+  };
+}
+
 /**
  * The other people the wide shots show: five at the hospital, each with a line back to a clinic.
  * In the gap only the ID-number matches have a (grey) line; at the end all are teal but one, held
@@ -416,33 +489,32 @@ export function others(c: Cast): Actor {
   const group = new THREE.Group();
   const found = 5 - c.figures.missedOfFive;
   const spots = [0, 1, 2, 3, 4].map((i) => new THREE.Vector3(76.6 + i * 1.5, 0, 3.4 + (i % 2) * 0.9));
-  const bodies = spots.map(() => kit.tint(COLOR.surface));
   const missing = spots.map((_, i) => i >= found);
-  spots.forEach((s, i) => {
-    const m = new THREE.Mesh(kit.geo.pebble, bodies[i]);
-    m.position.set(s.x, 0.5, s.z);
-    m.rotation.y = -0.2;
-    group.add(m, shade(kit, s.x, s.z, 1.2));
-  });
   const HELD = 3;
+  const people = crowd(kit, spots.length + 2);
+  const looks = Array.from({ length: spots.length + 2 }, (_, i) => lookOf({ key: `p-waiting-${i}` }));
+  const d = new THREE.Object3D();
+  d.scale.setScalar(FIGURE_SCALE);
+  const shadows = new THREE.InstancedMesh(kit.geo.shadow, kit.mat.shadow, spots.length);
+  shadows.renderOrder = 1;
+  shadows.frustumCulled = false;
+  spots.forEach((s, i) => {
+    d.position.copy(s);
+    d.rotation.set(0, -0.2, 0);
+    people.place(i, d);
+    shadows.setMatrixAt(i, new THREE.Matrix4().makeScale(SHADOW, 1, SHADOW).setPosition(s.x, 0.02, s.z));
+  });
+  group.add(people.bodies, people.heads, shadows);
   const lines = spots.map((s, i) => {
     const a = new THREE.Vector3(2 + i * 1.8, 3.3, -1 - i * 0.6);
-    const b = new THREE.Vector3(s.x, 0.95, s.z);
+    const b = new THREE.Vector3(s.x, 1.45, s.z);
     const mid = a.clone().lerp(b, 0.5).setY(13 + i * 1.2);
     const tube = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(a, mid, b), 64, 0.09, 5, false);
-    const m = new THREE.Mesh(tube, kit.mat.grey);
+    const m = new THREE.Mesh<THREE.BufferGeometry, THREE.Material>(tube, kit.mat.grey);
     group.add(m);
     return m;
   });
-  const helpers = [0, 1].map((k) => {
-    const m = new THREE.Mesh(kit.geo.pebble, kit.mat.unknown);
-    m.scale.setScalar(0.75);
-    m.position.set(spots[HELD].x - 0.7 + k * 1.4, 0.38, spots[HELD].z + 1.1);
-    group.add(m);
-    return m;
-  });
-  const surface = new THREE.Color(COLOR.surface);
-  const unknown = new THREE.Color(COLOR.unknown);
+  let painted: boolean | null = null;
   return {
     group,
     update(p) {
@@ -450,16 +522,27 @@ export function others(c: Cast): Actor {
       group.visible = p > 0.415;
       lines.forEach((m, i) => {
         m.visible = end || (p > 0.415 && p < 0.56 && !missing[i]);
-        m.material = end ? (i === HELD ? kit.mat.held : kit.mat.teal) : kit.mat.grey;
+        m.material = end ? (i === HELD ? kit.mat.held : kit.mat.thread) : kit.mat.grey;
       });
-      bodies.forEach((b, i) => b.color.copy(!end && missing[i] ? unknown : surface));
-      helpers.forEach((h) => (h.visible = end));
+      if (end === painted) return false;
+      painted = end;
+      looks.forEach((l, i) => {
+        const grey = !end && i < spots.length && missing[i];
+        people.paint(i, grey ? COLOR.unknown : l.cloth, grey ? COLOR.unknown : l.skin);
+      });
+      // The two beside the held person exist only at the end; until then they stand under the floor.
+      [0, 1].forEach((k) => {
+        d.position.set(spots[HELD].x - 0.7 + k * 1.4, end ? 0 : -9, spots[HELD].z + 1.1);
+        d.rotation.set(0, 0, 0);
+        people.place(spots.length + k, d);
+      });
+      people.flush();
       return false;
     },
   };
 }
 
-/** Other people crossing the streets, blank-faced, moving only as the visitor scrolls. */
+/** Other people crossing the streets, moving only as the visitor scrolls. */
 export function passersby(c: Cast): Actor {
   const { kit } = c;
   const r = rand(5);
@@ -476,17 +559,21 @@ export function passersby(c: Cast): Actor {
     [-6, 12, -6, -2],
   ].slice(0, c.mobile ? 6 : 10);
   const n = lanes.length;
-  const bodies = new THREE.InstancedMesh(kit.geo.pebbleLow, kit.mat.raised, n);
+  const people = crowd(kit, n);
+  lanes.forEach((_, i) => {
+    const l = lookOf({ key: `p-passing-${i}` });
+    people.paint(i, l.cloth, l.skin);
+  });
   const shadows = new THREE.InstancedMesh(kit.geo.shadow, kit.mat.shadow, n);
   shadows.renderOrder = 1;
-  bodies.frustumCulled = shadows.frustumCulled = false;
+  shadows.frustumCulled = false;
   const speed = lanes.map(() => 3 + r() * 3);
   const offset = lanes.map(() => r());
   const d = new THREE.Object3D();
   const a = new THREE.Vector3();
   const b = new THREE.Vector3();
   return {
-    group: new THREE.Group().add(bodies, shadows),
+    group: new THREE.Group().add(people.bodies, people.heads, shadows),
     update(p) {
       for (let i = 0; i < n; i++) {
         const [x0, z0, x1, z1] = lanes[i];
@@ -495,20 +582,17 @@ export function passersby(c: Cast): Actor {
         const len = a.distanceTo(b);
         const raw = (p * speed[i] + offset[i]) % 2;
         const t = raw < 1 ? raw : 2 - raw;
-        const g = gait(raw * len);
         tmp.copy(a).lerp(b, t);
-        d.position.set(tmp.x, 0.5 + g.hop, tmp.z);
-        d.rotation.set(0, Math.atan2(b.x - a.x, b.z - a.z) + (raw < 1 ? 0 : Math.PI) + Math.PI / 2, g.sway * 0.05);
-        d.scale.set(0.9, 0.9 - g.squash * 0.08, 0.9);
-        d.updateMatrix();
-        bodies.setMatrixAt(i, d.matrix);
-        d.position.set(tmp.x, 0.008, tmp.z);
+        const pose = gait(raw * len, GAIT.passing);
+        stand(d, tmp.x, tmp.z, Math.atan2(b.x - a.x, b.z - a.z) + (raw < 1 ? 0 : Math.PI), pose, FIGURE_SCALE);
+        people.place(i, d);
+        d.position.set(tmp.x, 0.02, tmp.z);
         d.rotation.set(0, 0, 0);
-        d.scale.setScalar(1.05);
+        d.scale.setScalar(shadowScale(pose));
         d.updateMatrix();
         shadows.setMatrixAt(i, d.matrix);
       }
-      bodies.instanceMatrix.needsUpdate = true;
+      people.flush();
       shadows.instanceMatrix.needsUpdate = true;
       return false;
     },

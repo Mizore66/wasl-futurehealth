@@ -4,7 +4,8 @@ import { describe, expect, it } from "vitest";
 import { QUOTED, exactlyOnce, missedByIdOnly, missedOfFive, published, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE, LTT_TIERS, OPERATING_TAU } from "@/components/site/ltt";
 import { CAMERA_KEYS } from "@/components/story/rig";
-import { BEATS, CAST, CUES, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt } from "@/components/story/script";
+import { JOIN_SAYS } from "@/components/story/copy";
+import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
 import { result } from "@/lib/results";
 
@@ -125,5 +126,20 @@ describe("landing story", () => {
       expect(c.outcome, k).toBe(expected);
       expect(p.outcome).toBe(c.outcome);
     }
+  });
+});
+
+describe("the identity effect's record cards", () => {
+  const birthWords = { agrees: "Same birth date", differs: "Different birth date", similar: "Birth dates almost match" } as const;
+
+  it.each(Object.entries(JOIN_BARS))("%s: the birth-date bar says what the verdict says", (outcome, bars) => {
+    const said = JOIN_SAYS[outcome as keyof typeof JOIN_BARS];
+    expect(said).toContain(birthWords[bars[1] as keyof typeof birthWords]);
+  });
+
+  it.each(Object.entries(JOIN_BARS))("%s: the name is only similar and the ID number is missing", (_, bars) => {
+    expect(bars[0]).toBe("similar");
+    expect(JOIN_SAYS.name).toContain("Similar name");
+    expect(bars[2]).toBe("missing");
   });
 });

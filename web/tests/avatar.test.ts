@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SKIN, signature, type PersonSeed } from "@/components/avatar/traits";
+import { CLOTH, SKIN, portrait, signature, topFill, type PersonSeed } from "@/components/avatar/traits";
+import { lookOf } from "@/components/story/look";
 import { LAB_SALIENT as SALIENT, SYSTEMS, type SystemId } from "@/app/lab/systems";
 
 const SEXES = ["female", "male", undefined] as const;
@@ -57,5 +58,16 @@ describe.each(ids)("avatar system %s", (id) => {
     }
     console.log(`${id}: ${clashes.length} salient collisions in 200`, clashes.slice(0, 3));
     expect(clashes.length).toBeLessThanOrEqual(8);
+  });
+});
+
+describe("3D figure look", () => {
+  it.each(people.slice(0, 30).map((p) => [p.key, p]))("%s wears the colours and top their 2D avatar draws", (_, p) => {
+    const f = portrait(p as PersonSeed);
+    expect(lookOf(p as PersonSeed)).toEqual({ skin: SKIN[f.skin], cloth: CLOTH[f.cloth], top: f.top, topColor: topFill(f.top, f.topColor), eyes: f.eyes, mouth: f.mouth });
+  });
+
+  it("is the same look for the same seed", () => {
+    expect(lookOf({ key: "p-fatima-zaabi", sex: "female" })).toEqual(lookOf({ key: "p-fatima-zaabi", sex: "female" }));
   });
 });

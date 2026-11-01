@@ -51,6 +51,12 @@ export type Accent = (typeof ACCENTS)[keyof typeof ACCENTS][number];
 
 export const COVERINGS: ReadonlySet<Top> = new Set(["shayla", "hijab", "ghutra", "kufi"]);
 
+export function topFill(top: Top, color: number): string {
+  if (top === "ghutra") return GHUTRA[color];
+  if (top === "shayla" || top === "hijab" || top === "kufi") return COVER[color];
+  return HAIR[color];
+}
+
 export function topsFor(sex?: Sex): readonly Top[] {
   return sex === "female" ? FEMALE_TOPS : sex === "male" ? MALE_TOPS : NEUTRAL_TOPS;
 }

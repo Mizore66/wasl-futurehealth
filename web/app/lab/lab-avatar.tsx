@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { Avatar, AvatarFrame, INK, PortraitSvg, TopBehind, TopFront, UnknownSvg, topFill, type AvatarState } from "@/components/avatar/avatar";
+import { Avatar, AvatarFrame, INK, PortraitSvg, TopBehind, TopFront, UnknownSvg, type AvatarState } from "@/components/avatar/avatar";
+import { topFill } from "@/components/avatar/traits";
 import { BG, CLOTH, SKIN, portrait, type PersonSeed } from "@/components/avatar/traits";
 import { MOTIFS, sadu, token, type SaduFeatures, type SystemId, type TokenFeatures } from "./systems";
 

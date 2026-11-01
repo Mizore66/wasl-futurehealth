@@ -1,17 +1,11 @@
 import type { ReactNode } from "react";
 import "./avatar.css";
-import { BG, CLOTH, COVER, GHUTRA, HAIR, SKIN, portrait, type PersonSeed, type PortraitFeatures, type Top } from "./traits";
+import { BG, CLOTH, HAIR, SKIN, portrait, topFill, type PersonSeed, type PortraitFeatures, type Top } from "./traits";
 
 /** `resolving` plays the joining moment once: "?" shrinks away and the face opens in its place. */
 export type AvatarState = "known" | "unknown" | "resolving";
 
 export const INK = "#1b2224";
-
-export function topFill(top: Top, color: number): string {
-  if (top === "ghutra") return GHUTRA[color];
-  if (top === "shayla" || top === "hijab" || top === "kufi") return COVER[color];
-  return HAIR[color];
-}
 
 /** Hair or headwear drawn behind the head. */
 export function TopBehind({ top, fill }: { top: Top; fill: string }) {
