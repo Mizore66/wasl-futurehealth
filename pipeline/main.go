@@ -174,6 +174,7 @@ func main() {
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
 	linkConfirmDOB := fs.Bool("linkconfirmdob", false, "linker: with -linkconfirm, real birth dates more than a year apart also count as a contradiction (v7.go)")
 	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	eidGuard := fs.Bool("eidguard", false, "linker+closure (B8 hardening, post hoc, default off): equal Emirates IDs on contradicting registrations do not force a link, and no closure rides an Emirates-ID path to a contradicting person (eidguard.go)")
 	secondIDConfirm := fs.Bool("secondidconfirm", true, "linker: with -linkconfirm, a second-identifier 'same' on a pair with contradicting sex or real birth dates needs a confirming review (second_identifier_confirm; v7.go)")
 	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
 	replayWL := fs.Bool("replayworklist", true, "ltt/sweep: the offline review loop answers items in emission order with the live reviewer's worklists (sweep.go)")
@@ -203,6 +204,7 @@ func main() {
 	DRRecallMsg, RejectedMsg, DRSeenLinkAsk = *drRecallMsg, *rejMsg, *drSeenLink
 	LinkContradictionDOB = *linkConfirmDOB
 	SecondIDContradictionConfirm = *secondIDConfirm
+	EIDContraGuard = *eidGuard
 	LTTProg = *lttProg
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
@@ -267,6 +269,9 @@ func main() {
 	}
 	TauFromLTT = TauFromLTT || *tauLTT
 	PolicyName = policyName()
+	if EIDContraGuard {
+		PolicyName += "+eidguard" // post-hoc B8 hardening, default off: stamped on every decision so lanes are never mixed
+	}
 	if ModelSet != "" {
 		PolicyName += "+models=" + ModelSet
 	}
@@ -330,6 +335,9 @@ func main() {
 		if on {
 			v7Args = append(v7Args, []string{"-drrecallmsg", "-rejmsg", "-drseenlink"}[i])
 		}
+	}
+	if EIDContraGuard { // B8 hardening (eidguard.go): every child, only when on
+		v7Args = append(v7Args, "-eidguard")
 	}
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")

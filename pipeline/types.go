@@ -151,6 +151,7 @@ type DownFact struct {
 	RecPk    string  `json:"rec_pk,omitempty"`    // downstream registration (endpoint of the path)
 	RecDob   string  `json:"rec_dob,omitempty"`
 	EIDSecond bool   `json:"eid_second,omitempty"` // the Emirates ID on both registrations confirms the pair (eidSecond)
+	EIDContra string `json:"eid_contra,omitempty"` // eidguard.go: an Emirates-ID path ends on, or passes through, a registration that contradicts the referral's (sex|dob); never trusted for closure
 	IDConfirmed bool `json:"id_confirmed,omitempty"` // a human confirmed this registration pair on another loop (ReuseIDConfirm)
 }
 
