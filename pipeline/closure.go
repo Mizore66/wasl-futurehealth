@@ -121,9 +121,13 @@ func (c *ClosureCore) pcal(p float64) float64 {
 }
 
 func linkBlock(f *LoopFacts, d DownFact, pc float64) map[string]interface{} {
-	return map[string]interface{}{"loop": f.LoopID, "referral_patient": f.SRRec, "downstream_event": d.Provider + "/" + d.RType + "/" + d.EventID,
+	b := map[string]interface{}{"loop": f.LoopID, "referral_patient": f.SRRec, "downstream_event": d.Provider + "/" + d.RType + "/" + d.EventID,
 		"weakest_edge": map[string]interface{}{"a": d.Weak.A, "b": d.Weak.B, "p": d.Weak.P, "basis": d.Weak.Basis},
 		"path_strength": d.Strength, "path_p_cal": round4(pc), "tau": TauHigh, "hops": d.Hops, "near_miss": d.NearMiss, "linker": "wasl-v3-retrained+iso+eid"}
+	if d.EIDContra != "" { // eidguard.go: the weakest edge shown is the pair put to review, not an edge of the link graph
+		b["eid_contra"], b["review_pair_substituted"] = d.EIDContra, true
+	}
+	return b
 }
 
 func evBlock(d DownFact, human string) map[string]interface{} {

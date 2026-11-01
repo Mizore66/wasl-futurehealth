@@ -464,8 +464,12 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 				L.Stats["eid_links"]++
 				continue
 			}
-			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides
+			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides. Below Lo
+			// the pair would be invisible, so it is kept as a near-miss candidate and the loop asks a reviewer.
 			L.Stats["eid_contradicted_"+why]++
+			if c.p < L.Lo {
+				c.p = L.Lo
+			}
 		}
 		if c.p >= L.Thr {
 			if V7Cal != nil {
@@ -672,7 +676,9 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		ds := L.downOf(L.recs[y], st, L.edgeOf(weak[y]), hops[y], false)
 		if EIDContraGuard {
 			if why, x := L.eidPathContradiction(s, y, pred); why != "" {
-				we := Edge{A: L.recs[s].Pk, B: L.recs[x].Pk, P: round4(L.adj[s][x]), Basis: "eid-contradiction"}
+				// the question pair is a registration the path passes through, not necessarily a graph edge: its P is the
+				// pair's real model score (0 when never scored) and the provenance block says it is substituted
+				we := Edge{A: L.recs[s].Pk, B: L.recs[x].Pk, P: round4(L.pscore[pk2(s, x)]), Basis: "eid-contradiction"}
 				for i := range ds {
 					ds[i].EIDContra, ds[i].Weak = why, we
 				}
