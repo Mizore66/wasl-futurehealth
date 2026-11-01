@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
+import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import type { Mark } from "./flow";
@@ -12,6 +14,9 @@ export type FieldCheck = { name: string; referral: string; report: string; verdi
 
 export type MatchCase = {
   tab: string;
+  referralSeed: PersonSeed;
+  /** Whether the linker's decision alone makes the link trusted, before any person reviews it. */
+  trustedByLinker: boolean;
   report: string;
   referralName: string;
   referralMeta: string;
@@ -23,7 +28,7 @@ export type MatchCase = {
   linker: string;
   fields: FieldCheck[];
   /** The real referral first, then runner-ups that are illustrative (gap G7). */
-  candidates: { ar: string; meta: string; similarity: number }[];
+  candidates: { ar: string; meta: string; similarity: number; seed: PersonSeed }[];
   outcome: { held: boolean; pill: string; text: string; tech: string };
 };
 
@@ -129,9 +134,12 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                   <li key={`${ci}-${i}`} className={cn("-mx-2 h-[68px] rounded-control border-t border-rule p-2", best && "bg-active")}>
                     {i < shown ? (
                       <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                        <div className="flex items-baseline justify-between gap-3">
-                          <span lang="ar" dir="rtl" className="whitespace-nowrap text-section font-medium">
-                            {k.ar}
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="flex items-center gap-2">
+                            <Avatar person={k.seed} size={22} label="" />
+                            <span lang="ar" dir="rtl" className="whitespace-nowrap text-section font-medium">
+                              {k.ar}
+                            </span>
                           </span>
                           <span className="text-body">{k.similarity.toFixed(2)}</span>
                         </div>
@@ -205,11 +213,14 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
 
           <div className="mt-3 grid grid-cols-[minmax(0,1fr)_172px_minmax(0,1fr)] gap-3">
             <div className={cn("rounded-control px-4", scored ? "border border-line" : "border border-dashed border-control")}>
-              <div className="flex h-16 flex-col justify-center">
-                <div lang="ar" dir="rtl" className="truncate text-left text-title font-medium">
-                  {scored ? C.referralName : "Searching…"}
+              <div className="flex h-16 items-center gap-3">
+                <Avatar person={scored ? C.referralSeed : undefined} size={40} label={scored ? "The referral" : "Referral not chosen yet"} />
+                <div className="flex min-w-0 flex-col justify-center">
+                  <div lang="ar" dir="rtl" className="truncate text-left text-[20px] font-medium leading-7">
+                    {scored ? C.referralName : "Searching…"}
+                  </div>
+                  <div className="truncate text-small text-muted">{scored ? C.referralMeta : "Referral not chosen yet"}</div>
                 </div>
-                <div className="text-small text-muted">{scored ? C.referralMeta : "Referral not chosen yet"}</div>
               </div>
               {C.fields.map((fd) => (
                 <div key={fd.name} className={cn("flex h-9 items-center truncate border-t border-rule text-body", !scored && "text-muted")}>
@@ -243,9 +254,17 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
             </div>
 
             <div className="rounded-control border border-line px-4">
-              <div className="flex h-16 flex-col justify-center">
-                <div className="truncate text-title font-medium">{C.reportName}</div>
-                <div className="text-small text-muted">{C.reportMeta}</div>
+              <div className="flex h-16 items-center gap-3">
+                <Avatar
+                  person={C.referralSeed}
+                  state={decided && C.trustedByLinker ? "resolving" : "unknown"}
+                  size={40}
+                  label={decided && C.trustedByLinker ? "Same patient as the referral" : "Not yet confirmed as the referral's patient"}
+                />
+                <div className="flex min-w-0 flex-col justify-center">
+                  <div className="truncate text-[20px] font-medium leading-7">{C.reportName}</div>
+                  <div className="truncate text-small text-muted">{C.reportMeta}</div>
+                </div>
               </div>
               {C.fields.map((fd) => (
                 <div key={fd.name} className={cn("flex h-9 items-center truncate border-t border-rule text-body", fd.verdict === "missing" && "text-muted")}>

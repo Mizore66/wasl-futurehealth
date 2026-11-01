@@ -36,6 +36,14 @@
  "cases": [
   {
    "id": "showcase-01",
+   "person": {
+    "key": "replay|0410c223b7ad1abb",
+    "sex": "male",
+    "name": "Moataz Al Qasabi",
+    "nameAr": "معتز القصبي",
+    "reportName": "Moataz Alqasabi",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "0410c223b7ad1abb00645e89ea139749f9818a8fe24502f1140faff0b47cd3ac",
@@ -57,6 +65,14 @@
   },
   {
    "id": "showcase-02",
+   "person": {
+    "key": "replay|0b9bcb701384a125",
+    "sex": "female",
+    "name": "Rola Al Abed",
+    "nameAr": "رولا العبد",
+    "reportName": "Rola Alabed",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "0b9bcb701384a1257a9572b67b30866b50d9219d91189f3cb4c27fcc0ce6b8bf",
@@ -78,6 +94,14 @@
   },
   {
    "id": "showcase-03",
+   "person": {
+    "key": "replay|0c6d4e3d7f5fa7b8",
+    "sex": "female",
+    "name": "Aziza Al Majali",
+    "nameAr": "عزيزة المجالي",
+    "reportName": "Aziza Almajali",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "0c6d4e3d7f5fa7b8b34297ca1f283c0e1c18213649fa7d3aeb0299e93ce1ab29",
@@ -99,6 +123,14 @@
   },
   {
    "id": "showcase-04",
+   "person": {
+    "key": "replay|20ff1b8d77c84357",
+    "sex": "female",
+    "name": "Amina Al Zubairi",
+    "nameAr": "أمينة الزبيري",
+    "reportName": "Amina Alzubairi",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "20ff1b8d77c843574c000702bed86e677d44e5ff52de89c96aa4f1acb71379ba",
@@ -120,6 +152,14 @@
   },
   {
    "id": "showcase-05",
+   "person": {
+    "key": "replay|45d3f44bd854c04e",
+    "sex": "female",
+    "name": "Mariam Al Banna",
+    "nameAr": "مريم البنا",
+    "reportName": "Mariam Albanna",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "45d3f44bd854c04e4995677b56b62ca806cfdc0516c573c6f28570477ac4f9ca",
@@ -141,6 +181,14 @@
   },
   {
    "id": "showcase-06",
+   "person": {
+    "key": "replay|4daee19f8af7685a",
+    "sex": "female",
+    "name": "Dina Al Khayyat",
+    "nameAr": "دينا الخياط",
+    "reportName": "Dina Alkhayyat",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "4daee19f8af7685a7f960adcd5c487afd96d90550ac21108824e788ca067e471",
@@ -162,6 +210,14 @@
   },
   {
    "id": "showcase-07",
+   "person": {
+    "key": "replay|5098bef22af2162b",
+    "sex": "female",
+    "name": "Ghada Al Sharaa",
+    "nameAr": "غادة الشرع",
+    "reportName": "Ghada Alsharaa",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "5098bef22af2162b63ffe7da77982868cacaf9d6e02f50e65b5d6af3f1597ffc",
@@ -183,6 +239,14 @@
   },
   {
    "id": "showcase-08",
+   "person": {
+    "key": "replay|513d7e1658f93bd7",
+    "sex": "male",
+    "name": "Adham Al Salem",
+    "nameAr": "أدهم السالم",
+    "reportName": "Adham Alsalem",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "513d7e1658f93bd71e22893959475172f03d217ffd0660a7da7f844f346495be",
@@ -204,6 +268,14 @@
   },
   {
    "id": "showcase-09",
+   "person": {
+    "key": "replay|5733a12bea68f5e1",
+    "sex": "male",
+    "name": "Hamad Al Agha",
+    "nameAr": "حمد الآغا",
+    "reportName": "Hamad Alagha",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "5733a12bea68f5e1f949f657e3abecac845b790fea7731fc9be53205107548db",
@@ -225,6 +297,14 @@
   },
   {
    "id": "showcase-10",
+   "person": {
+    "key": "replay|5863fdb1ea6910b4",
+    "sex": "female",
+    "name": "Meriem Al Aghbari",
+    "nameAr": "مريم الاغبري",
+    "reportName": "Meriem Alaghbari",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "5863fdb1ea6910b46b95215e29ca417cc5e527ddbb583f78306a0742e22480e2",
@@ -246,6 +326,14 @@
   },
   {
    "id": "showcase-11",
+   "person": {
+    "key": "replay|62b59da1234225e8",
+    "sex": "male",
+    "name": "Wael Al Khayat",
+    "nameAr": "وائل الخياط",
+    "reportName": "Wael Alkhayat",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "62b59da1234225e886f9489ae3e61950223a5381afd489bdfe47d99b382a1a0e",
@@ -267,6 +355,13 @@
   },
   {
    "id": "showcase-12",
+   "person": {
+    "key": "ahs-mushrif|AHS-MRN000985",
+    "name": "Fatima Al Zaabi",
+    "nameAr": "فاطمة الزعابي",
+    "reportName": "Fatima Alzaabi",
+    "source": "canonical-cast"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a",
@@ -288,6 +383,14 @@
   },
   {
    "id": "showcase-13",
+   "person": {
+    "key": "replay|9cacabd63c3efa65",
+    "sex": "male",
+    "name": "Mohamad Al Aryan",
+    "nameAr": "محمد العريان",
+    "reportName": "Mohamad Alaryan",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "9cacabd63c3efa651c5e0114a28b6c23a62200c97a8ebca3fd016d2beb154d3f",
@@ -309,6 +412,14 @@
   },
   {
    "id": "showcase-14",
+   "person": {
+    "key": "replay|aa31e6d09da41835",
+    "sex": "male",
+    "name": "Mahmud Al Alimi",
+    "nameAr": "محمود العليمي",
+    "reportName": "Mahmud Alalimi",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "aa31e6d09da418351dab30ed49f528ef26adc0808e4e00680acc4b9a2dc5aa35",
@@ -330,6 +441,14 @@
   },
   {
    "id": "showcase-15",
+   "person": {
+    "key": "replay|aca7ae21f7eccd6b",
+    "sex": "male",
+    "name": "Fahad Al Khodaim",
+    "nameAr": "فهد الخديم",
+    "reportName": "Fahad Alkhodaim",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "aca7ae21f7eccd6b980c5b9657dec561aefa4be0b1a87e31ed5895dab3611d76",
@@ -351,6 +470,14 @@
   },
   {
    "id": "showcase-16",
+   "person": {
+    "key": "replay|b7d5dbf14539b212",
+    "sex": "male",
+    "name": "Aziz Al Buraiki",
+    "nameAr": "عزيز البريكي",
+    "reportName": "Aziz Alburaiki",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796",
@@ -372,6 +499,13 @@
   },
   {
    "id": "showcase-17",
+   "person": {
+    "key": "ahs-mushrif|AHS-MRN000962",
+    "name": "Aisha Al Mansoori",
+    "nameAr": "عائشة المنصوري",
+    "reportName": "Aisha Al Mansoori",
+    "source": "canonical-cast"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d",
@@ -393,6 +527,14 @@
   },
   {
    "id": "showcase-18",
+   "person": {
+    "key": "replay|bf83491445d1eaef",
+    "sex": "female",
+    "name": "Hana Al Zaaq",
+    "nameAr": "هناء الزعاق",
+    "reportName": "Hana Alzaaq",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "bf83491445d1eaefb132ace07fece69a3e8f2e14f988acff6544380c5fab5951",
@@ -414,6 +556,14 @@
   },
   {
    "id": "showcase-19",
+   "person": {
+    "key": "replay|c6ec4ebee92530b0",
+    "sex": "female",
+    "name": "Amal Al Omrani",
+    "nameAr": "أمل العمراني",
+    "reportName": "Amal Alomrani",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "c6ec4ebee92530b0b9f55f73668bfc9851b8c9de3dc375318eeca299e3fe8598",
@@ -435,6 +585,14 @@
   },
   {
    "id": "showcase-20",
+   "person": {
+    "key": "replay|e5ffa25ece2a63d8",
+    "sex": "male",
+    "name": "Yasser Al Sobeai",
+    "nameAr": "ياسر السبيعي",
+    "reportName": "Yasser Alsobeai",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "e5ffa25ece2a63d8244e419269ffafdee49bcaa261d3cb993d708ebbd0398b08",
@@ -456,6 +614,14 @@
   },
   {
    "id": "showcase-21",
+   "person": {
+    "key": "replay|eaf28ab5a70d8ac3",
+    "sex": "female",
+    "name": "Mariam Al Khayyat",
+    "nameAr": "مريم الخياط",
+    "reportName": "Mariam Alkhayyat",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "eaf28ab5a70d8ac323e1d69c661dc0ba6339a7bd60eb9006e43e2dfba2632bec",
@@ -477,6 +643,14 @@
   },
   {
    "id": "showcase-22",
+   "person": {
+    "key": "replay|f58b06785af544aa",
+    "sex": "female",
+    "name": "Dima Al Fahmi",
+    "nameAr": "ديما الفهمي",
+    "reportName": "Dima Alfahmi",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "f58b06785af544aa335fb862eb9fa76a8016fb9a35f8d7b7bc1f48718cb849ef",
@@ -498,6 +672,14 @@
   },
   {
    "id": "showcase-23",
+   "person": {
+    "key": "replay|ffd4ad0cbc49062c",
+    "sex": "male",
+    "name": "Hicham Al Obaidi",
+    "nameAr": "هشام العبيدي",
+    "reportName": "Hicham Alobaidi",
+    "source": "generated"
+   },
    "source": "hl7",
    "read": {
     "reportSha": "ffd4ad0cbc49062c87b4efdab330d23dd0ff6912609329b37c7a7ef187abbc2c",

@@ -5,6 +5,7 @@ import { getCase, getDashboard, getFixtures } from "@/lib/api/source";
 import { CRC_FIXTURES } from "@/lib/api/schema";
 import { linkScore } from "@/components/worklist/model";
 import { personFor } from "@/lib/people";
+import { beforeReview, linkTrust, referralSeed, TRUSTED } from "@/lib/people/identity";
 
 export const metadata = { title: "Identity matching" };
 
@@ -17,7 +18,7 @@ const providerName = (id: string) => PROVIDER[id] ?? id;
  */
 type CrcFixture = (typeof CRC_FIXTURES)[number];
 
-const RUNNERS_UP: Record<CrcFixture, MatchCase["candidates"]> = {
+const RUNNERS_UP: Record<CrcFixture, Omit<MatchCase["candidates"][number], "seed">[]> = {
   evidence_closure: [
     { ar: "فاطمة الزعبي", meta: "Al Bateen · 61", similarity: 0.91 },
     { ar: "فطيم الزعابي", meta: "Al Mushrif · 47", similarity: 0.86 },
@@ -63,6 +64,8 @@ async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase |
 
   return {
     tab: `${short} · ${sr}`,
+    referralSeed: referralSeed(loop),
+    trustedByLinker: TRUSTED[linkTrust(beforeReview(detail), link)],
     report: reportId,
     referralName: referral.recorded_name,
     referralMeta: `${providerName(referral.provider)} · stool test referral ${loop.split("/").at(-1)}`,
@@ -80,8 +83,8 @@ async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase |
       { name: "Provider", referral: providerName(referral.provider), report: providerName(report.provider), verdict: "differs" },
     ],
     candidates: [
-      { ar: referral.recorded_name, meta: `${providerName(referral.provider)} · ${referral.age}`, similarity: TOP_SIMILARITY[fixture] },
-      ...RUNNERS_UP[fixture],
+      { ar: referral.recorded_name, meta: `${providerName(referral.provider)} · ${referral.age}`, similarity: TOP_SIMILARITY[fixture], seed: referralSeed(loop) },
+      ...RUNNERS_UP[fixture].map((k) => ({ ...k, seed: { key: `illustrative|${k.ar}` } })),
     ],
     outcome: !above
       ? {

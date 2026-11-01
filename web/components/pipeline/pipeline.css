@@ -1,0 +1,26 @@
+/* The decision feed: rows sit at a fixed pitch from the top, slide down one pitch as a new decision lands, and the new one fades in. */
+.pipe-feed-row {
+  position: absolute;
+  inset-inline: 0;
+  transition: top 320ms ease-out;
+}
+
+.pipe-feed-new {
+  animation: pipe-feed-in 320ms ease-out;
+}
+
+@keyframes pipe-feed-in {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe-feed-row {
+    transition: none;
+  }
+  .pipe-feed-new {
+    animation: none;
+  }
+}

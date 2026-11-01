@@ -2,6 +2,8 @@
 
 import { motion } from "motion/react";
 import readerJson from "@/data/reader.json";
+import { Avatar } from "@/components/avatar/avatar";
+import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import type { Mark } from "./flow";
@@ -55,7 +57,10 @@ function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held
 
 const s1 = (ms: number) => (ms / 1000).toFixed(1);
 
-export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode; standsFor: Record<string, string> }) {
+/** The demo patient a report stands for: the line under its title and the face beside it. */
+export type StandsFor = { line: string; seed: PersonSeed };
+
+export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode; standsFor: Record<string, StandsFor> }) {
   const play = usePlayback(track, READER_TICK_MS);
   const v = readerView(reader, play.frame);
   const { c, f } = v;
@@ -116,7 +121,10 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
           <h2 id="report-h" className="m-0 text-section font-medium">
             Colonoscopy report {c.uid}
           </h2>
-          <p className="m-0 truncate text-small text-muted">{standsFor[c.uid] ?? "Not tied to a demo patient"}</p>
+          <p className="m-0 mt-1 flex min-w-0 items-center gap-2 text-small text-muted">
+            <Avatar person={standsFor[c.uid]?.seed} size={20} label={standsFor[c.uid] ? "" : "No demo patient"} />
+            <span className="truncate">{standsFor[c.uid]?.line ?? "Not tied to a demo patient"}</span>
+          </p>
           <div className="mt-3 h-[268px] overflow-hidden rounded-control bg-ground px-4 py-3">
             <p className="m-0 text-body leading-[22px]" data-testid="report-text">
               {c.segments.map((s, i) => {

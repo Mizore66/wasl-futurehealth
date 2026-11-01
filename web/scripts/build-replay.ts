@@ -1,7 +1,10 @@
 // Builds data/replay.json from the recorded showcase run in pipeline/results/showcase.
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { COUNTERS, type Counters, type Outcome, type Replay, type ReplayEvent, type ScriptedCase } from "../lib/replay/types";
+import { hash } from "../components/avatar/traits";
+import type { People } from "../lib/people/types";
+import { COUNTERS, type Counters, type Outcome, type Replay, type ReplayEvent, type ReplayPerson, type ScriptedCase } from "../lib/replay/types";
+import type { ReaderData } from "../components/pipeline/reader-types";
 
 const web = path.join(import.meta.dirname, "..");
 const showcase = path.join(web, "..", "pipeline", "results", "showcase");
@@ -62,8 +65,84 @@ picked.sort((a, b) => (a.report_sha < b.report_sha ? -1 : 1));
 const outcomeOf = (state: string): Outcome =>
   state === "closed" ? "closed_with_evidence" : state === "needs_human" ? "waiting_for_reviewers" : "kept_open";
 
+/*
+ * Names. Run after build-people and build-reader: a report the Report reading page tells as a cast member's
+ * keeps that person from data/people.json, so both pages show the same name and face. Every other report
+ * gets a generated name: a common given name and an "Al" family name drawn from different people in the
+ * cohort's Wikidata pool, so the pairing names nobody in it. The draw keys on the report's hash, so it is stable.
+ */
+type PoolPerson = { en: string; ar: string; sex: string; origin: string };
+type Part = { en: string; ar: string };
+const pool: PoolPerson[] = JSON.parse(readFileSync(path.join(web, "..", "data", "persons3.json"), "utf8"));
+const people = (JSON.parse(readFileSync(path.join(web, "data", "people.json"), "utf8")) as People).people;
+const reader = JSON.parse(readFileSync(path.join(web, "data", "reader.json"), "utf8")) as ReaderData;
+
+const twoWords = pool.filter((p) => p.origin === "arab" && /^[A-Za-z]{3,9} (al-)?[A-Za-z]{3,9}$/i.test(p.en) && p.ar.split(" ").length === 2);
+const split = (p: PoolPerson, i: number): Part => ({ en: p.en.split(" ")[i], ar: p.ar.split(" ")[i] });
+
+/** Parts that at least `min` people in the pool share, spelled the way most of them spell it in Arabic. */
+function common(parts: Part[], min: number): Part[] {
+  const byEn = new Map<string, Map<string, number>>();
+  for (const x of parts) {
+    const ar = byEn.get(x.en) ?? new Map<string, number>();
+    byEn.set(x.en, ar.set(x.ar, (ar.get(x.ar) ?? 0) + 1));
+  }
+  return [...byEn]
+    .filter(([, ar]) => [...ar.values()].reduce((n, k) => n + k, 0) >= min)
+    .map(([en, ar]) => ({ en, ar: [...ar].sort((x, y) => y[1] - x[1])[0][0] }))
+    .sort((x, y) => (x.en < y.en ? -1 : 1));
+}
+
+const given = {
+  female: common(twoWords.filter((p) => p.sex === "F").map((p) => split(p, 0)), 15),
+  male: common(twoWords.filter((p) => p.sex === "M").map((p) => split(p, 0)), 15),
+};
+const family = common(
+  twoWords.filter((p) => /^al-/i.test(p.en.split(" ")[1]) && p.ar.split(" ")[1].startsWith("ال")).map((p) => {
+    const f = split(p, 1);
+    return { en: `Al ${f.en[3].toUpperCase()}${f.en.slice(4)}`, ar: f.ar };
+  }),
+  2,
+);
+const realNames = new Set(pool.map((p) => p.en.toLowerCase().replace(/ al-/, " al ")));
+
+/** A downstream clinic's Latin record runs the family name together, as "Fatima Alzaabi" does. */
+const reportSpelling = (name: string) => name.replace(/ Al (\w)/, (_, c: string) => ` Al${c.toLowerCase()}`);
+
+const castBySha = new Map(reader.cases.filter((c) => c.standsFor).map((c) => [c.sha, c.standsFor!.loop]));
+const taken = new Set<string>();
+
+function personFor(reportSha: string): ReplayPerson {
+  const loop = castBySha.get(reportSha);
+  if (loop) {
+    const provider = loop.split("/")[0];
+    const cast = Object.values(people).filter((p) => p.loop === loop);
+    const referral = cast.find((p) => p.provider === provider);
+    const report = cast.find((p) => p.provider !== provider);
+    if (!referral || !report) throw new Error(`people.json: no cast for ${loop}; run build-people first`);
+    return {
+      key: referral.registration,
+      ...(referral.sex ? { sex: referral.sex } : {}),
+      name: referral.display_name,
+      nameAr: referral.display_name_ar,
+      reportName: report.recorded_name,
+      source: "canonical-cast",
+    };
+  }
+  for (let salt = 0; ; salt++) {
+    const sex = hash(`${reportSha}|sex|${salt}`) % 2 === 0 ? "female" : "male";
+    const g = given[sex][hash(`${reportSha}|given|${salt}`) % given[sex].length];
+    const f = family[hash(`${reportSha}|family|${salt}`) % family.length];
+    const name = `${g.en} ${f.en}`;
+    if (taken.has(name) || realNames.has(name.toLowerCase())) continue;
+    taken.add(name);
+    return { key: `replay|${reportSha.slice(0, 16)}`, sex, name, nameAr: `${g.ar} ${f.ar}`, reportName: reportSpelling(name), source: "generated" };
+  }
+}
+
 const cases: ScriptedCase[] = picked.map((r, i) => ({
   id: `showcase-${String(i + 1).padStart(2, "0")}`,
+  person: personFor(r.report_sha),
   source: report.source.Source === "hl7" ? "hl7" : "fhir",
   read: {
     reportSha: r.report_sha,
@@ -152,4 +231,4 @@ for (const k of COUNTERS) {
 }
 
 writeFileSync(path.join(web, "data", "replay.json"), JSON.stringify(replay, null, 1) + "\n");
-console.log(`build-replay: ${cases.length} cases, ${events.length} events, totals ${JSON.stringify(totals)}`);
+console.log(`build-replay: ${cases.length} cases (${cases.map((c) => c.person.name).join(", ")}), ${events.length} events, totals ${JSON.stringify(totals)}`);

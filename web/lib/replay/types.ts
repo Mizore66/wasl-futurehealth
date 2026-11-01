@@ -3,6 +3,8 @@
  * Built by scripts/build-replay.ts. Counters tick toward the run's real totals and never past them.
  */
 
+import type { Sex } from "@/lib/people/types";
+
 export const COUNTERS = ["fhirMessages", "readerReports", "outputs", "chainsVerified"] as const;
 export type CounterKey = (typeof COUNTERS)[number];
 export type Counters = Record<CounterKey, number>;
@@ -28,8 +30,24 @@ export type ReaderRead = {
 
 export type Outcome = "closed_with_evidence" | "waiting_for_reviewers" | "kept_open";
 
+/**
+ * Who a scripted report belongs to. A report a demo fixture quotes keeps that fixture's cast member;
+ * every other report gets a name generated from the cohort's name pool (data/persons3.json).
+ */
+export type ReplayPerson = {
+  /** Avatar person key: the fixture referral's registration, or one derived from the report's hash. */
+  key: string;
+  sex?: Sex;
+  name: string;
+  nameAr: string;
+  /** The name as the colonoscopy report spells it in Latin script, all the replay shows until the report is matched. */
+  reportName: string;
+  source: "canonical-cast" | "generated";
+};
+
 export type ScriptedCase = {
   id: string;
+  person: ReplayPerson;
   source: "fhir" | "hl7";
   read: ReaderRead;
   gatePassed: boolean;

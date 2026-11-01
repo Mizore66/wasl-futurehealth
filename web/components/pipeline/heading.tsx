@@ -8,7 +8,7 @@ const VIEWS = [
   { href: "/app/pipeline/reading", label: "Report reading" },
 ] as const;
 
-export const REPLAY_LINE = "Replaying the recorded showcase run · synthetic patients · real report texts";
+export const REPLAY_LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
 
 /** The pipeline screens' title block: heading, the one honesty line, and links between the three views. */
 export function PipelineHeading({

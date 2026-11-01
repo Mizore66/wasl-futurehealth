@@ -1,12 +1,13 @@
 import { initialState, next, type CaseProgress, type ReplayState } from "@/lib/replay/reducer";
 import type { Outcome, ReaderRead, Replay, ReplayEvent, ScriptedCase } from "@/lib/replay/types";
+import type { PersonSeed } from "@/lib/people/types";
 import type { Track } from "./playback";
 
 export type Mark = "queued" | "working" | "done" | "held" | "failed";
 
 export type RowId = "received" | "matching" | "reading" | "gate" | "closed" | "review" | "open" | "ledger";
 
-/** The eight stage rows of the case flow (pipeline-brief "The state vocabulary"), with the backend term small and grey. */
+/** The eight stage rows of the case flow (pipeline-brief "The state vocabulary"), with the backend term small and muted. */
 export const ROWS: { id: RowId; label: string; tech: string; branch?: boolean }[] = [
   { id: "received", label: "Received", tech: "HL7 v2 · FHIR R4" },
   { id: "matching", label: "Matching identity", tech: "Arabic and Latin names" },
@@ -50,12 +51,30 @@ export function place(p: CaseProgress): { row: RowId; mark: Mark } {
 
 export const SLOTS = 4;
 
-export type Chip = { id: string; label: string; mark: Mark; active: boolean };
+/** What a chip's avatar shows: "?" until the report is matched, the joining moment, then the face. */
+export type ChipFace = "unknown" | "resolving" | "known";
+
+export type Chip = {
+  id: string;
+  who: Who;
+  mark: Mark;
+  active: boolean;
+  /** The two readers: both at work, or both answered. Only while the case sits in the reading row. */
+  readers?: "reading" | "read";
+};
+
+function faceOf(p: CaseProgress): ChipFace {
+  if (p.phase === "received" || p.phase === "matching") return "unknown";
+  return p.phase === "matched" ? "resolving" : "known";
+}
 export type FlowRow = (typeof ROWS)[number] & { count: number; chips: Chip[]; more: number };
 
-export type LedgerLine = { caseLabel: string; closed: boolean } | null;
+/** Who a chip or line is about, as the system knows them at that moment: the report's own spelling and "?" until it is matched. */
+export type Who = { name: string; seed: PersonSeed; face: ChipFace };
 
-export type FeedLine = { key: number; caseLabel: string; text: string; tech: string; mark: Mark; step: number };
+export type LedgerLine = { who: Who; closed: boolean } | null;
+
+export type FeedLine = { key: number; who: Who; text: string; tech: string; mark: Mark; step: number };
 
 export type FlowView = {
   rows: FlowRow[];
@@ -69,7 +88,13 @@ export type FlowView = {
   chains: number;
 };
 
-export const caseLabel = (id: string) => `Case ${id.replace(/^showcase-/, "")}`;
+const seedOf = (c: ScriptedCase): PersonSeed => ({ key: c.person.key, sex: c.person.sex });
+
+function who(c: ScriptedCase, face: ChipFace): Who {
+  return { name: face === "unknown" ? c.person.reportName : c.person.name, seed: seedOf(c), face };
+}
+
+const EVENT_FACE: Partial<Record<ReplayEvent["type"], ChipFace>> = { received: "unknown", matching: "unknown" };
 
 const PREP_WORD: Record<string, string> = { adequate: "prep adequate", inadequate: "prep inadequate", not_stated: "prep not stated" };
 const CAECUM_WORD: Record<string, string> = { yes: "caecum reached", no: "caecum not reached", not_stated: "caecum not stated" };
@@ -86,7 +111,7 @@ const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
 };
 
 /** A decision feed line for the events that report a result. Start-of-work events stay off the feed. */
-function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "caseLabel" | "step"> | null {
+function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "who" | "step"> | null {
   const verdict = `${c.read.state} · ${c.read.reason}`;
   switch (e.type) {
     case "received":
@@ -112,7 +137,7 @@ function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "caseLabe
   }
 }
 
-export const FEED_ROWS = 7;
+export const FEED_ROWS = 6;
 
 export function flowView(replay: Replay, state: ReplayState): FlowView {
   const byId = new Map(replay.cases.map((c) => [c.id, c]));
@@ -132,7 +157,16 @@ export function flowView(replay: Replay, state: ReplayState): FlowView {
     return {
       ...r,
       count: here.length,
-      chips: shown.map((p) => ({ id: p.id, label: caseLabel(p.id), mark: p.mark, active: p.id === activeCase })),
+      chips: shown.map((p) => {
+        const progress = state.cases[p.id];
+        return {
+          id: p.id,
+          who: who(byId.get(p.id)!, faceOf(progress)),
+          mark: p.mark,
+          active: p.id === activeCase,
+          readers: progress.phase === "reading" ? "reading" : progress.phase === "read" ? "read" : undefined,
+        } satisfies Chip;
+      }),
       more: here.length - shown.length,
     };
   });
@@ -141,8 +175,9 @@ export function flowView(replay: Replay, state: ReplayState): FlowView {
   for (let i = played.length - 1; i >= 0 && feed.length < FEED_ROWS; i--) {
     const e = played[i];
     if (!("caseId" in e)) continue;
-    const l = line(e, byId.get(e.caseId)!);
-    if (l) feed.push({ ...l, key: i, caseLabel: caseLabel(e.caseId), step: i + 1 });
+    const c = byId.get(e.caseId)!;
+    const l = line(e, c);
+    if (l) feed.push({ ...l, key: i, who: who(c, EVENT_FACE[e.type] ?? "known"), step: i + 1 });
   }
 
   return {
@@ -151,7 +186,7 @@ export function flowView(replay: Replay, state: ReplayState): FlowView {
     activeCase,
     latestRecorded:
       lastRecorded && "caseId" in lastRecorded
-        ? { caseLabel: caseLabel(lastRecorded.caseId), closed: byId.get(lastRecorded.caseId)!.outcome === "closed_with_evidence" }
+        ? { who: who(byId.get(lastRecorded.caseId)!, "known"), closed: byId.get(lastRecorded.caseId)!.outcome === "closed_with_evidence" }
         : null,
     step: state.cursor,
     steps: replay.events.length - 1,
