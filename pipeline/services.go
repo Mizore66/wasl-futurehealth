@@ -403,6 +403,19 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 	return ids
 }
 
+// linkerStatus builds the linker status document. The caller holds the mutex that serialises L.Apply and marshals the
+// result after releasing it, so the document must own copies of everything the apply loop mutates. It used to alias
+// L.Stats, and marshalling that map raced with L.Apply: 80 "concurrent map iteration and map write" crashes in the x10 run.
+func linkerStatus(L *LinkerCore, processed, present uint64, published, suppressed int64, recovered float64, inflight, retries int64, uptime float64) map[string]interface{} {
+	stats := make(map[string]int, len(L.Stats))
+	for k, v := range L.Stats {
+		stats[k] = v
+	}
+	return map[string]interface{}{"processed": processed, "present_at_start": present, "published": published, "suppressed": suppressed,
+		"records": len(L.recs), "first_new_output_s": recovered,
+		"pseq": append([]uint64{}, L.PSeq...), "inflight": inflight, "pub_retries": retries, "uptime": uptime, "stats": stats}
+}
+
 func runLinker(dataDir string, P int, runDir string) {
 	nc, js := connect("linker")
 	defer nc.Close()
@@ -430,9 +443,7 @@ func runLinker(dataDir string, P int, runDir string) {
 	go func() {
 		for {
 			mu.Lock()
-			st := map[string]interface{}{"processed": next - 1, "present_at_start": hwm, "published": published, "suppressed": suppressed,
-				"records": len(L.recs), "first_new_output_s": recovered,
-				"pseq": append([]uint64{}, L.PSeq...), "inflight": atomic.LoadInt64(&ap.inflight), "pub_retries": atomic.LoadInt64(&ap.retries), "uptime": time.Since(start).Seconds(), "stats": L.Stats}
+			st := linkerStatus(L, next-1, hwm, published, suppressed, recovered, atomic.LoadInt64(&ap.inflight), atomic.LoadInt64(&ap.retries), time.Since(start).Seconds())
 			mu.Unlock()
 			writeStatus(runDir, "linker", st)
 			time.Sleep(300 * time.Millisecond)
