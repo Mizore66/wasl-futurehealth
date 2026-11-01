@@ -93,6 +93,7 @@ type LoopTruth struct {
 	TBLatent   string   `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
 	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
 	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
+	Breast     *BreastTruth `json:"breast,omitempty"` // breast recall loop (genbreast.go)
 	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
 }
 
@@ -102,6 +103,8 @@ type HandoffTruth struct {
 	ActBy   float64 `json:"act_by"`
 	ActDay  float64 `json:"act_day"` // -1 = never (or after TEnd)
 	Urgent  bool    `json:"urgent"`
+	Intake  string  `json:"intake,omitempty"` // lung work-up / DR (handoffext.go): the rejected intake ServiceRequest
+	Unit    string  `json:"unit,omitempty"`   // lung work-up / DR: the rejecting unit
 }
 
 type Truth struct {
@@ -278,7 +281,7 @@ func crcFemale(ps []Person, crc []int) float64 {
 // GenSplit selects the person split a cohort is drawn from: eval (default) | cal (Learn-then-Test calibration cohorts).
 var GenSplit = "eval"
 
-func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools, nLung int, lungDir string, nDR int, drDir string) {
+func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, nDistract, nPersons, nCerv int, pools *Pools, nLung int, lungDir string, nDR int, drDir string, nBreast int, breastDir string) {
 	b, err := os.ReadFile(filepath.Join(dataDir, "persons3.json"))
 	if err != nil {
 		panic(err)
@@ -1387,6 +1390,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			bg = append(bg, &ps[rest[k]])
 		}
 		genDR(drDirFor(drDir, reportsPath), seed, nDR, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if nBreast > 0 { // breast recall loops (genbreast.go): own RNG stream, background women with no other loop, after DR
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()

@@ -1,0 +1,572 @@
+{
+  "source": "Independent author (GPT-6.1 Sol, OpenAI) - deterministic stdlib generator gen_breast_heldout.py, random seed 9241, synthetic breast screening texts, 2026-11-01",
+  "reports": [
+    {
+      "id": "hb01",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB01\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nFINDINGS\nRight breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nLeft breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nPrevious screen, 2023: bilateral BI-RADS 2. That historical assessment is not today's assessment.\nFinal overall assessment: BI-RADS 1. CPT II final-assessment code: 3341F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "hard:prior_category",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb02",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB02\nScreening mammogram | 01 Nov 2026\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nLT: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": null,
+        "label": "B1",
+        "coded": null
+      },
+      "tags": []
+    },
+    {
+      "id": "hb03",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB03\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nL: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 1. CPT II final-assessment code: 3341F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": []
+    },
+    {
+      "id": "hb04",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB04\nScreening mammogram | 01 Nov 2026\nScann ed copy | D1GITAL | Acces sion verified\nDear screening team,\nPrevious screen, 2023: bilateral BI-RADS 2. That historical assessment is not today's assessment.\nRight breast: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nLeft breast: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nFinal overall assessment: BI-RADS 1.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "hard:prior_category",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "hb05",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB05\nScreening mammogram | 01 Nov 2026\n[Current examination]\nRT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nLT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 1. CPT II final-assessment code: 3341F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": []
+    },
+    {
+      "id": "hb06",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB06\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nL: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nSUMMARY: Management follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": null,
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb07",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB07\nScreening mammogram | 01 Nov 2026\nFINDINGS\nRight breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nLeft breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nPrevious screen, 2023: bilateral BI-RADS 2. That historical assessment is not today's assessment.\nFinal overall assessment: BI-RADS 1. CPT II final-assessment code: 3341F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": [
+        "hard:prior_category"
+      ]
+    },
+    {
+      "id": "hb08",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB08\nScreening mammogram | 01 Nov 2026\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nLT: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nFinal overall assessment: BI-RADS 1.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": null
+      },
+      "tags": []
+    },
+    {
+      "id": "hb09",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB09\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nL: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 1. CPT II final-assessment code: 3341F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": "1",
+        "label": "B1",
+        "coded": "3341F"
+      },
+      "tags": []
+    },
+    {
+      "id": "hb10",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB10\nScreening mammogram | 01 Nov 2026\nDear screening team,\nPrevious screen, 2023: bilateral BI-RADS 2. That historical assessment is not today's assessment.\nRight breast: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nLeft breast: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "1",
+        "overall": null,
+        "label": "B1",
+        "coded": null
+      },
+      "tags": [
+        "hard:prior_category"
+      ]
+    },
+    {
+      "id": "hb11",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB11\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\n[Current examination]\nالثدي الأيمن: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nالثدي الأيسر: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 2. CPT II final-assessment code: 3342F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "hard:benign_not_negative",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb12",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB12\nScreening mammogram | 01 Nov 2026\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nL: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nSUMMARY: Final overall assessment: BI-RADS 2.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "hard:benign_not_negative"
+      ]
+    },
+    {
+      "id": "hb13",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB13\nScreening mammogram | 01 Nov 2026\nFINDINGS\nRight breast: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nLeft breast: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nPrevious screen, 2023: bilateral BI-RADS 1. That historical assessment is not today's assessment.\nFinal overall assessment: BI-RADS 2. CPT II final-assessment code: 3342F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "hard:benign_not_negative",
+        "hard:prior_category"
+      ]
+    },
+    {
+      "id": "hb14",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB14\nScreening mammogram | 01 Nov 2026\nScann ed copy | D1GITAL | Acces sion verified\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nLT: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": null,
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "hard:benign_not_negative",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "hb15",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB15\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nL: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 2. CPT II final-assessment code: 3342F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "hard:benign_not_negative"
+      ]
+    },
+    {
+      "id": "hb16",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB16\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nDear screening team,\nPrevious screen, 2023: bilateral BI-RADS 1. That historical assessment is not today's assessment.\nRight breast: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nLeft breast: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nFinal overall assessment: BI-RADS 2.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "2",
+        "overall": "2",
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "hard:benign_not_negative",
+        "hard:prior_category",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb17",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB17\nScreening mammogram | 01 Nov 2026\n[Current examination]\nRT: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nLT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 2. CPT II final-assessment code: 3342F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "1",
+        "overall": "2",
+        "label": "B2",
+        "coded": "3342F"
+      },
+      "tags": [
+        "hard:benign_not_negative"
+      ]
+    },
+    {
+      "id": "hb18",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB18\nScreening mammogram | 01 Nov 2026\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.\nL: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nSUMMARY: Management follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "2",
+        "overall": null,
+        "label": "B2",
+        "coded": null
+      },
+      "tags": [
+        "hard:benign_not_negative"
+      ]
+    },
+    {
+      "id": "hb19",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB19\nScreening mammogram | 01 Nov 2026\nFINDINGS\nRight breast: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.\nLeft breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nPrevious screen, 2023: bilateral BI-RADS 1. That historical assessment is not today's assessment.\nFinal overall assessment: BI-RADS 0. CPT II final-assessment code: 3340F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "0",
+        "b_left": "1",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "hard:prior_category"
+      ]
+    },
+    {
+      "id": "hb20",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB20\nScreening mammogram | 01 Nov 2026\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: An oval circumscribed mass has probably benign morphology. Short-interval imaging at six months is advised; BI-RADS 3.\nLT: A focal asymmetry cannot be resolved on these screening views. Additional diagnostic mammographic views and targeted ultrasound are required; this breast remains incomplete; BI-RADS 0.\nFinal overall assessment: BI-RADS 0.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "3",
+        "b_left": "0",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "hard:zero_over_three"
+      ]
+    },
+    {
+      "id": "hb21",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB21\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\n--- screening worksheet ---\nالثدي الأيمن: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.\nالثدي الأيسر: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 0. CPT II final-assessment code: 3340F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "0",
+        "b_left": "2",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb22",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB22\nScreening mammogram | 01 Nov 2026\nDear screening team,\nPrevious screen, 2023: bilateral BI-RADS 1. That historical assessment is not today's assessment.\nRight breast: Technically inadequate: motion obscures detail; repeat acquisition required. No BI-RADS category assigned to this breast.\nLeft breast: A focal asymmetry cannot be resolved on these screening views. Additional diagnostic mammographic views and targeted ultrasound are required; this breast remains incomplete; BI-RADS 0.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "0",
+        "overall": null,
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "hard:prior_category",
+        "hard:technical_override"
+      ]
+    },
+    {
+      "id": "hb23",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB23\nScreening mammogram | 01 Nov 2026\n[Current examination]\nRT: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.\nLT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 0. CPT II final-assessment code: 3340F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "0",
+        "b_left": "1",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": []
+    },
+    {
+      "id": "hb24",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB24\nScreening mammogram | 01 Nov 2026\nScann ed copy | D1GITAL | Acces sion verified\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nL: A focal asymmetry cannot be resolved on these screening views. Additional diagnostic mammographic views and targeted ultrasound are required; this breast remains incomplete; BI-RADS 0.\nSUMMARY: Superseding amendment: preliminary overall BI-RADS 2 was entered in error and is withdrawn. Final overall assessment: BI-RADS 0.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "0",
+        "overall": "0",
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "hard:corrected_assessment",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "hb25",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB25\nScreening mammogram | 01 Nov 2026\nFINDINGS\nRight breast: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.\nLeft breast: Probably benign circumscribed oval mass; six-month imaging; BI-RADS 3.\nComparison: no earlier category quoted.\nFinal overall assessment: BI-RADS 0. CPT II final-assessment code: 3340F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "0",
+        "b_left": "3",
+        "overall": "0",
+        "label": "B0",
+        "coded": "3340F"
+      },
+      "tags": [
+        "hard:zero_over_three"
+      ]
+    },
+    {
+      "id": "hb26",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB26\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: A focal asymmetry cannot be resolved on these screening views. Additional diagnostic mammographic views and targeted ultrasound are required; this breast remains incomplete; BI-RADS 0.\nLT: Technically inadequate: posterior tissue excluded by positioning; pectoral muscle not shown; repeat acquisition required. No BI-RADS category assigned to this breast.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "0",
+        "b_left": "TR",
+        "overall": null,
+        "label": "B0",
+        "coded": null
+      },
+      "tags": [
+        "hard:technical_override",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb27",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB27\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Probably benign circumscribed oval mass; six-month imaging; BI-RADS 3.\nL: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 3. CPT II final-assessment code: 3343F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "3",
+        "b_left": "1",
+        "overall": "3",
+        "label": "B3",
+        "coded": "3343F"
+      },
+      "tags": []
+    },
+    {
+      "id": "hb28",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB28\nScreening mammogram | 01 Nov 2026\nDear screening team,\nComparison: no earlier category quoted.\nRight breast: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nLeft breast: An oval circumscribed mass has probably benign morphology. Short-interval imaging at six months is advised; BI-RADS 3.\nFinal overall assessment: BI-RADS 3.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "3",
+        "overall": "3",
+        "label": "B3",
+        "coded": null
+      },
+      "tags": []
+    },
+    {
+      "id": "hb29",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB29\nScreening mammogram | 01 Nov 2026\n[Current examination]\nRT: Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4A.\nLT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 4. CPT II final-assessment code: 3344F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "4",
+        "b_left": "1",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse"
+      ]
+    },
+    {
+      "id": "hb30",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB30\nScreening mammogram | 01 Nov 2026\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nL: Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling. No suspicious mass is seen; this does not remove the concern about the calcifications; BI-RADS 4B.\nSUMMARY: Superseding amendment: preliminary overall BI-RADS 0 was entered in error and is withdrawn. Final overall assessment: BI-RADS 4.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "4",
+        "overall": "4",
+        "label": "B4",
+        "coded": null
+      },
+      "tags": [
+        "hard:corrected_assessment",
+        "hard:negative_scope",
+        "hard:subcategory_collapse"
+      ]
+    },
+    {
+      "id": "hb31",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB31\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nFINDINGS\nالثدي الأيمن: Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4C.\nالثدي الأيسر: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.\nComparison: no earlier category quoted.\nFinal overall assessment: BI-RADS 4. CPT II final-assessment code: 3344F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "4",
+        "b_left": "0",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb32",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB32\nScreening mammogram | 01 Nov 2026\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: Technically inadequate: posterior tissue excluded by positioning; pectoral muscle not shown; repeat acquisition required. No BI-RADS category assigned to this breast.\nLT: Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling. No suspicious mass is seen; this does not remove the concern about the calcifications; BI-RADS 4A.\nFinal overall assessment: BI-RADS 4.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "4",
+        "overall": "4",
+        "label": "B4",
+        "coded": null
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse",
+        "hard:technical_override"
+      ]
+    },
+    {
+      "id": "hb33",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB33\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4B.\nL: Probably benign circumscribed oval mass; six-month imaging; BI-RADS 3.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Final overall assessment: BI-RADS 4. CPT II final-assessment code: 3344F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "4",
+        "b_left": "3",
+        "overall": "4",
+        "label": "B4",
+        "coded": "3344F"
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse"
+      ]
+    },
+    {
+      "id": "hb34",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB34\nScreening mammogram | 01 Nov 2026\nScann ed copy | D1GITAL | Acces sion verified\nDear screening team,\nComparison: no earlier category quoted.\nRight breast: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nLeft breast: Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling. No suspicious mass is seen; this does not remove the concern about the calcifications; BI-RADS 4C.\nManagement follows the breast-specific findings above; no overall category is stated.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "1",
+        "b_left": "4",
+        "overall": null,
+        "label": "B4",
+        "coded": null
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "hb35",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB35\nScreening mammogram | 01 Nov 2026\n[Current examination]\nRT: Highly suggestive irregular spiculated mass; no suspicious calcification; biopsy advised; BI-RADS 5.\nLT: Benign vascular calcification; no suspicious lesion; BI-RADS 2.\n[Earlier examination]\nComparison: no earlier category quoted.\n[Conclusion]\nFinal overall assessment: BI-RADS 5. CPT II final-assessment code: 3345F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "5",
+        "b_left": "2",
+        "overall": "5",
+        "label": "B5",
+        "coded": "3345F"
+      },
+      "tags": [
+        "hard:negative_scope"
+      ]
+    },
+    {
+      "id": "hb36",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB36\nScreening mammogram | 01 Nov 2026\nوحدة فحص الثدي - أبوظبي\nMAMMOGRAPHY / two-view digital acquisition\nComparison: no earlier category quoted.\nR: Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4C.\nL: Highly suggestive irregular spiculated mass; no suspicious calcification; biopsy advised; BI-RADS 5.\nSUMMARY: Final overall assessment: BI-RADS 5. CPT II final-assessment code: 3345F.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "4",
+        "b_left": "5",
+        "overall": "5",
+        "label": "B5",
+        "coded": "3345F"
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:subcategory_collapse",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "hb37",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB37\nScreening mammogram | 01 Nov 2026\nFINDINGS\nRight breast: Highly suggestive irregular spiculated mass; no suspicious calcification; biopsy advised; BI-RADS 5.\nLeft breast: Technically inadequate: motion obscures detail; repeat acquisition required. No BI-RADS category assigned to this breast.\nComparison: no earlier category quoted.\nFinal overall assessment: BI-RADS 5. CPT II final-assessment code: 3345F.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "5",
+        "b_left": "TR",
+        "overall": "5",
+        "label": "B5",
+        "coded": "3345F"
+      },
+      "tags": [
+        "hard:negative_scope",
+        "hard:technical_override"
+      ]
+    },
+    {
+      "id": "hb38",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Dune | HB38\nScreening mammogram | 01 Nov 2026\nComparison: no earlier category quoted.\nBREAST-BY-BREAST RECORD:\nRT: Technically inadequate: positioning excludes required breast tissue; repeat acquisition required. No BI-RADS category assigned to this breast.\nLT: No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.\nTechnical repeat required for the inadequate breast image set(s); no overall BI-RADS assessment is assigned.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "1",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "hard:technical_not_incomplete"
+      ]
+    },
+    {
+      "id": "hb39",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Palm | HB39\nScreening mammogram | 01 Nov 2026\n--- screening worksheet ---\nR: Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.\nL: Technically inadequate: posterior tissue excluded by positioning; pectoral muscle not shown; repeat acquisition required. No BI-RADS category assigned to this breast.\nComparison field: Comparison: no earlier category quoted.\nDisposition field: Technical repeat required for the inadequate breast image set(s); no overall BI-RADS assessment is assigned.\nAuthorised by screening radiologist; recall centre notified.",
+      "key": {
+        "b_right": "2",
+        "b_left": "TR",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "hard:technical_not_incomplete"
+      ]
+    },
+    {
+      "id": "hb40",
+      "text": "Abu Dhabi | Synthetic Breast Screening Unit Pearl | HB40\nScreening mammogram | 01 Nov 2026\nDear screening team,\nComparison: no earlier category quoted.\nRight breast: Technically inadequate: motion obscures detail; repeat acquisition required. No BI-RADS category assigned to this breast.\nLeft breast: Technically inadequate: positioning excludes required breast tissue; repeat acquisition required. No BI-RADS category assigned to this breast.\nTechnical repeat required for the inadequate breast image set(s); no overall BI-RADS assessment is assigned.\nAuthorized by screening radiologist; recall center notified.",
+      "key": {
+        "b_right": "TR",
+        "b_left": "TR",
+        "overall": null,
+        "label": "TR",
+        "coded": null
+      },
+      "tags": [
+        "hard:technical_not_incomplete"
+      ]
+    }
+  ]
+}

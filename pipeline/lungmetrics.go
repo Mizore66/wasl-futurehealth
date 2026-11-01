@@ -119,7 +119,7 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			}
 		}
 	}
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"loops": n, "rule": "fleischner2017", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed", "truth_closed": tp + fn,
 			"pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn),
@@ -132,6 +132,113 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 			"accuracy": frac(recOK, recN), "correct": recOK},
 		"appropriate_followup_within_window": map[string]interface{}{"eligible": afN, "truth": frac(afT, afN), "wasl_measured": frac(afP, afN),
 			"per_loop_agreement": frac(afAgree, afN), "published_reference": 0.38},
+	}
+	handoffBlock(out, ids, final, tr, "lung_nodule") // rejected work-up referrals (handoffext.go)
+	if sm := petSurvMetrics(final, tr, ids); sm != nil { // -lungsurv only: absent otherwise, so the report is unchanged
+		out["pet_surveillance"] = sm
+	}
+	return out
+}
+
+// petSurvMetrics: the surveillance-CT obligation after a PET/CT low-uptake closure (lungsurv.go), scored against the
+// generator's pet_surveillance truth: obligations opened, closures (a surveillance CT for the same person, stable or
+// resolved), false closures with attribution, escalation, overdue accuracy and patient outreach on the child loops.
+func petSurvMetrics(final map[string]*Decision, tr *Truth, ids []string) map[string]interface{} {
+	n, opened, stateOK, ovOK, tp, fp, fn := 0, 0, 0, 0, 0, 0, 0
+	escT, escP, escBoth, ovT, ovP, withinT, withinP := 0, 0, 0, 0, 0, 0, 0
+	conf, attr, adh, outr := map[string]map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
+	has := map[string]bool{}
+	for _, id := range ids {
+		lt := tr.Loops[id]
+		if lt.Lung.Surv == nil {
+			continue
+		}
+		s := lt.Lung.Surv
+		has[s.Loop] = true
+		n++
+		adh[s.Adherence]++
+		d := final[s.Loop]
+		ps := "missing"
+		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil {
+			ps = d.State
+			opened++
+		} else {
+			d = nil
+		}
+		if conf[s.State] == nil {
+			conf[s.State] = map[string]int{}
+		}
+		conf[s.State][ps]++
+		if ps == s.State {
+			stateOK++
+		}
+		t, p := s.State == "closed", ps == "closed"
+		switch {
+		case t && p:
+			tp++
+		case p && !t:
+			fp++
+			if d.ClosingReport != s.CTReport {
+				attr["false_wrong_report"]++
+			} else {
+				attr["false_truth_"+s.State]++
+			}
+		case t && !p:
+			fn++
+			attr["missed_pred_"+ps]++
+		}
+		if s.State == "escalated" {
+			escT++
+		}
+		if ps == "escalated" {
+			escP++
+			if s.State == "escalated" {
+				escBoth++
+			}
+		}
+		po := d != nil && d.Overdue
+		if s.Overdue {
+			ovT++
+		}
+		if po {
+			ovP++
+		}
+		if po == s.Overdue {
+			ovOK++
+		}
+		if t && s.Within {
+			withinT++
+		}
+		if p && d.Lung.WithinWindow {
+			withinP++
+		}
+		if d != nil {
+			for _, o := range d.Outreach {
+				st := "released"
+				if !o.Released {
+					st = o.Suppress
+				}
+				outr[o.Kind+":"+st]++
+			}
+		}
+	}
+	extra := 0 // child loops opened where the truth has no PET-low surveillance obligation
+	for id, d := range final {
+		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil && id == d.LoopID && baseLoop(id) != id && !has[id] {
+			extra++
+		}
+	}
+	if n == 0 && extra == 0 {
+		return nil
+	}
+	return map[string]interface{}{"definition": "surveillance CT after a PET/CT low-uptake closure (child loop <loop>#surv; BTS 2015)",
+		"obligations": n, "opened": opened, "extra_opened": extra, "adherence_truth": adh, "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
+		"closure": map[string]interface{}{"truth_closed": tp + fn, "pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn,
+			"precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn), "false_closure_rate_upper95": r3(wilsonUp(fp, tp+fp)), "attribution": attr,
+			"truth_closed_within_window": withinT, "pred_closed_within_window": withinP},
+		"escalation":            map[string]interface{}{"truth_escalated": escT, "pred_escalated": escP, "both": escBoth},
+		"overdue":               map[string]interface{}{"truth_overdue": ovT, "pred_overdue": ovP},
+		"overdue_flag_accuracy": frac(ovOK, n), "overdue_flag_correct": ovOK, "patient_outreach_final": outr,
 	}
 }
 

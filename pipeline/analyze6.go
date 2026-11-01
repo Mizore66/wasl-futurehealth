@@ -119,53 +119,7 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 				}
 			}
 		}
-		if lt.Handoff != nil || d.Handoff != nil {
-			if a.ho == nil {
-				a.ho, a.hoStatus = map[string]int{}, map[string]int{}
-			}
-			t, q := lt.Handoff, d.Handoff
-			switch {
-			case t != nil && q != nil:
-				a.ho["packets_matched"]++
-			case t != nil:
-				a.ho["packets_missed"]++
-			default:
-				a.ho["packets_pipeline_only"]++
-			}
-			if t != nil {
-				a.ho["truth_packets"]++
-				if t.Urgent {
-					a.ho["truth_urgent"]++
-				}
-				if t.ActDay >= 0 {
-					a.ho["truth_referrer_acted"]++
-					if t.ActDay <= t.ActBy {
-						a.ho["truth_acted_by_act_by"]++
-					}
-				}
-				if lt.State == "closed" {
-					a.ho["truth_closed_after_handoff"]++
-				}
-			}
-			if q != nil {
-				a.hoStatus[q.Status]++
-				if q.ReferralID != "" && q.ReasonCode != "" && q.Advice != "" && q.Alternative != "" && q.Responsible != "" && q.DecidedBy != "" && q.Consent != "" {
-					a.ho["packets_all_required_fields"]++
-				}
-				if q.PatientInformed {
-					a.ho["patient_informed"]++
-				}
-				if t != nil && (q.ActedAt >= 0) == (t.ActDay >= 0) {
-					a.ho["acted_state_correct"]++
-				}
-				if d.State == "closed" {
-					a.ho["closed"]++
-					if lt.State != "closed" {
-						a.ho["false_closures"]++
-					}
-				}
-			}
-		}
+		tallyHandoff(&a.ho, &a.hoStatus, lt, d, pg)
 		if lt.EcState != "none" {
 			a.ecLoops++
 			a.ecTrig[lt.EcTrigger]++
@@ -218,5 +172,73 @@ func analyze6(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if dm := drMetrics(final, tr); dm != nil { // third loop type: doh2024dr-specific metrics replace the screening ones
 		out["diabetic_retinopathy"] = dm
 	}
+	if bm := breastMetrics(final, tr); bm != nil { // fourth loop type: doh2025breast-specific metrics replace the screening ones
+		out["breast"] = bm
+	}
 	return out
+}
+
+// tallyHandoff: hand-off packet (handoff.go) detection, action and outcome counts for one loop; the maps are created on
+// the first loop with a packet in truth or in the pipeline.
+func tallyHandoff(ho, hoStatus *map[string]int, lt *LoopTruth, d *Decision, prog string) {
+	if d == nil || (lt.Handoff == nil && d.Handoff == nil) {
+		return
+	}
+	if *ho == nil {
+		*ho, *hoStatus = map[string]int{}, map[string]int{}
+	}
+	a, st := *ho, *hoStatus
+	t, q := lt.Handoff, d.Handoff
+	switch {
+	case t != nil && q != nil:
+		a["packets_matched"]++
+	case t != nil:
+		a["packets_missed"]++
+	default:
+		a["packets_pipeline_only"]++
+	}
+	if t != nil {
+		a["truth_packets"]++
+		if t.Urgent {
+			a["truth_urgent"]++
+		}
+		if t.ActDay >= 0 {
+			a["truth_referrer_acted"]++
+			if t.ActDay <= t.ActBy {
+				a["truth_acted_by_act_by"]++
+			}
+		}
+		if lt.State == "closed" {
+			a["truth_closed_after_handoff"]++
+		}
+	}
+	if q != nil {
+		st[q.Status]++
+		if handoffComplete(q, prog) {
+			a["packets_all_required_fields"]++
+		}
+		if q.PatientInformed {
+			a["patient_informed"]++
+		}
+		if t != nil && (q.ActedAt >= 0) == (t.ActDay >= 0) {
+			a["acted_state_correct"]++
+		}
+		if d.State == "closed" {
+			a["closed"]++
+			if lt.State != "closed" {
+				a["false_closures"]++
+			}
+		}
+	}
+}
+
+// handoffBlock: the hand-off counts for a lung or DR metrics block, only when a packet exists (no switch, no key).
+func handoffBlock(m map[string]interface{}, ids []string, final map[string]*Decision, tr *Truth, prog string) {
+	var ho, st map[string]int
+	for _, id := range ids {
+		tallyHandoff(&ho, &st, tr.Loops[id], final[id], prog)
+	}
+	if ho != nil {
+		m["handoff"] = map[string]interface{}{"counts": ho, "final_status": st}
+	}
 }

@@ -63,7 +63,10 @@ func main() {
 	hold := fs.String("hold", "", "demo: loop id whose two-reader disagreement is held for the presenter")
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
 	lungWk := fs.Bool("lungworkup", true, "lung nodule > 8 mm: PET/CT or tissue result can close the loop (lungworkup.go)")
+	lungSurv := fs.Bool("lungsurv", false, "lung nodule: a PET/CT low-uptake closure makes a surveillance CT due (child loop <loop>#surv); gen adds the surveillance CTs (lungsurv.go)")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
+	refReject := fs.Bool("refreject", false, "gen: lung work-up and DR eye-clinic referrals can be rejected by the unit (hand-off packet truth; handoffext.go)")
+	xrefLink := fs.Bool("xreflink", false, "hand-off: a rejected referral intake that cites the loop's referral but never linked by identity raises a link question (handoffref.go)")
 	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
 	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
 	rdouble := fs.String("rdouble", "none", "v6: double review policy none|merge|merge+close")
@@ -139,14 +142,20 @@ func main() {
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
 	drN := fs.Int("dr", 0, "gen: diabetic retinopathy screening loops (doh2024dr); 0 = no DR loops (other feeds byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
+	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
+	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
 	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
-	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	linkConfirmDOB := fs.Bool("linkconfirmdob", false, "linker: with -linkconfirm, real birth dates more than a year apart also count as a contradiction (v7.go)")
+	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
+	replayWL := fs.Bool("replayworklist", true, "ltt/sweep: the offline review loop answers items in emission order with the live reviewer's worklists (sweep.go)")
 	reuseLink := fs.Bool("reuselink", true, "review worklist: one link question per registration pair; other loops' queued twins are dropped once it is answered (v7.go)")
 	reuseConfirm := fs.Bool("reuseconfirm", true, "outreach guard: a second-identifier confirmation counts for the same registration pair on other loops (v7.go)")
 	eidSecond := fs.Bool("eidsecond", true, "outreach guard: a matching Emirates ID with agreeing name, sex and DOB counts as the second identifier (v7.go)")
@@ -156,9 +165,13 @@ func main() {
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	PrepQuery, ErrUngraded = *prepQ, *errUng
-	Handoff, LungWorkup = *handoff, *lungWk
+	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
+	XRefLinkQ = *xrefLink
+	RefRejectExt = *refReject
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
-	ReuseLinkAnswer, LinkContradictionConfirm = *reuseLink, *linkConfirm
+	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
+	DRNextOn = *drNext
+	LinkContradictionDOB = *linkConfirmDOB
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -168,6 +181,11 @@ func main() {
 	if (cmd == "gen" && *drN > 0) || os.Getenv("WSI_DR_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_eye-hosp.ndjson")) {
 		EnableDR()
 		os.Setenv("WSI_DR_PROVIDERS", "1")
+	}
+	// breast recall programme: same, after the DR providers
+	if (cmd == "gen" && *breastN > 0) || os.Getenv("WSI_BREAST_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_bau-hosp.ndjson")) {
+		EnableBreast()
+		os.Setenv("WSI_BREAST_PROVIDERS", "1")
 	}
 	ModelSet = *modelSet
 	DualMerge = *dual
@@ -259,9 +277,15 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
-	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), "-errungraded", fmt.Sprint(ErrUngraded))
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
+	}
+	if DRNextOn { // DR next loop (drnext.go): every child, only when on
+		v7Args = append(v7Args, "-drnext")
+	}
+	if LungPETSurv { // reaches every child only when on, so the child argument lists are unchanged when off
+		v7Args = append(v7Args, "-lungsurv")
 	}
 	if ShadowMode { // pilot switches reach every child (closure engines, reviewer, linker) only when on
 		v7Args = append(v7Args, "-shadow")
@@ -331,7 +355,7 @@ func main() {
 	absRun, _ := filepath.Abs(*run)
 	switch cmd {
 	case "gen":
-		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData)
+		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
 	case "producer":
@@ -361,6 +385,8 @@ func main() {
 		runLungCache(*lungData, *readerURL, *out)
 	case "drcache": // ask local Gemma 3 4B once per unique DR corpus text; write the replayable cache + reader scores
 		runDRCache(*drData, *readerURL, *out)
+	case "breastcache": // ask local Gemma 3 4B once per unique breast corpus text; write the replayable cache + reader scores
+		runBreastCache(*breastData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")

@@ -30,7 +30,7 @@ const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -43,7 +43,7 @@ type apiCase struct {
 	Review    string    `json:"review"`  // none | open | signed
 	Closed    bool      `json:"closed"`
 	ClosedDay float64   `json:"closed_day,omitempty"`
-	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the three
+	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	last      *Decision // full last decision (detail view)
 	decisions []*Decision
 }
@@ -123,7 +123,7 @@ func loadAPI(run, data string) *apiServer {
 	for _, c := range s.cases {
 		d := c.last
 		c.Programme, c.State, c.Dropoff, c.Owner, c.Provider = d.Prog, d.State, d.Dropoff, d.Owner, d.Provider
-		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed", d.ClosedDay
+		c.SRDay, c.Deadline, c.Overdue, c.Priority, c.Closed, c.ClosedDay = d.SRDay, d.Deadline, d.Overdue, d.Priority, d.State == "closed" || d.State == "no_followup_needed" || d.State == "no_referral_needed" || d.State == "no_recall_needed", d.ClosedDay
 		c.Consent = consentFromDecision(d)
 	}
 	// reviewer sign-offs (signed resolutions)
@@ -259,10 +259,11 @@ func firstNonEmpty(a ...string) string {
 	return ""
 }
 
-// pickFixtures selects the three demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
+// pickFixtures selects the demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
 //   evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
 //   false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
 //   review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
+//   dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
 func (s *apiServer) pickFixtures() {
 	s.fixtures = map[string]string{}
 	ids := append([]string{}, s.order...)
@@ -277,8 +278,12 @@ func (s *apiServer) pickFixtures() {
 		}
 		return false
 	}
+	holdAlt := ""
 	for _, id := range ids {
 		c := s.cases[id]
+		if c.Programme == "diabetic_retinopathy" && s.fixtures["dr_exam_closure"] == "" && drExamClosure(c) {
+			s.fixtures["dr_exam_closure"] = id
+		}
 		if c.Programme != "crc" {
 			continue
 		}
@@ -296,10 +301,50 @@ func (s *apiServer) pickFixtures() {
 		if s.fixtures["review_hold"] == "" && c.Closed && linkSigned(s.signoffs[id]) && evidenceSigned(s.signoffs[id]) && consentHeldThenGranted(c) {
 			s.fixtures["review_hold"] = id
 		}
+		// fallback when no loop had consent held then granted (rare once consent is recorded up front): the same signed link
+		// and evidence, with outreach held by the consent hold or the second-identifier guard at some point
+		if holdAlt == "" && c.Closed && linkSigned(s.signoffs[id]) && evidenceSigned(s.signoffs[id]) && heldEver(c) {
+			holdAlt = id
+		}
+	}
+	if s.fixtures["review_hold"] == "" && holdAlt != "" {
+		s.fixtures["review_hold"] = holdAlt
 	}
 	for tag, id := range s.fixtures {
 		s.cases[id].Fixture = tag
 	}
+}
+
+// drExamClosure: a referable DR screen (R2/M1/R3...) closed by an eye-clinic exam within the deadline, over a
+// cross-provider link, with both text readers agreeing on the screening report and on the clinic note (no coded
+// grade), contact consent granted, and no human help anywhere in the loop's history (no review item, no
+// sign-off, no override, no earlier reader disagreement).
+func drExamClosure(c *apiCase) bool {
+	d := c.last
+	if d == nil || d.DR == nil || d.State != "closed" || d.HumanAssisted || c.Consent != "granted" || c.Review != "none" {
+		return false
+	}
+	dr := d.DR
+	if dr.Rec == nil || dr.Rec.Action != DRRefer || !dr.Examined || !dr.WithinDeadline || dr.Coded {
+		return false
+	}
+	for _, x := range c.decisions {
+		for _, b := range x.Chain {
+			if b.Type == "human_signoff" || (b.Type == "evidence" && (b.Body["agree"] != true || fmt.Sprint(b.Body["human_override"]) != "")) {
+				return false
+			}
+		}
+	}
+	ev, cross := 0, false
+	for _, b := range d.Chain {
+		switch b.Type {
+		case "evidence":
+			ev++
+		case "link_decision":
+			cross = cross || fmt.Sprint(b.Body["hops"]) != "0"
+		}
+	}
+	return ev == 2 && cross
 }
 
 func evidenceSigned(so []map[string]interface{}) bool {
@@ -442,6 +487,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.DR != nil { // diabetic_retinopathy: grade, rule, deadline, eye-clinic outcome
 		m["dr"] = c.last.DR
 	}
+	if c.last != nil && c.last.Breast != nil { // breast: BI-RADS category, rule, deadline, assessment outcome
+		m["breast"] = c.last.Breast
+	}
 	return m
 }
 
@@ -536,7 +584,7 @@ func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
 	hist := []map[string]interface{}{}
 	for _, d := range c.decisions {
 		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
-			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "policy": d.Policy, "sig": d.Sig})
+			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
@@ -592,8 +640,11 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	if act == "" && c.Programme == "diabetic_retinopathy" && drEvAlt(req.Decision) != nil { // DR evidence labels (R2M0, examined_followup, ...)
 		act = ActSignEvidence
 	}
+	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
+		act = ActSignEvidence
+	}
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy cases (docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {

@@ -64,6 +64,7 @@ type LungTruth struct {
 	FollowUps []string `json:"followups,omitempty"`
 	Path      string   `json:"workup_path,omitempty"` // > 8 mm solid (lungworkup.go): ct | pet | tissue
 	PETDay    float64  `json:"pet_day,omitempty"`     // FDG-avid PET/CT day (tissue expected within 28 days)
+	Surv      *LungSurvTruth `json:"pet_surveillance,omitempty"` // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
 }
 
 type lungGen struct {
@@ -186,14 +187,18 @@ func keyNum(k map[string]interface{}, f string) float64 { x, _ := k[f].(float64)
 
 // pickFollowup: a follow-up text of this nodule type and outcome whose prior size is closest to the index nodule.
 func (g *lungGen) pickFollowup(typ, outcome string, mean int) lungDoc {
+	return pickFollowupR(g.fus, g.r, typ, outcome, mean)
+}
+
+func pickFollowupR(fus []lungDoc, r *rand.Rand, typ, outcome string, mean int) lungDoc {
 	var c []lungDoc
-	for _, d := range g.fus {
+	for _, d := range fus {
 		if d.Key["type"] == typ && d.Key["outcome"] == outcome {
 			c = append(c, d)
 		}
 	}
 	if len(c) == 0 {
-		for _, d := range g.fus {
+		for _, d := range fus {
 			if d.Key["outcome"] == outcome {
 				c = append(c, d)
 			}
@@ -207,7 +212,7 @@ func (g *lungGen) pickFollowup(typ, outcome string, mean int) lungDoc {
 	if len(c) > 2 {
 		c = c[:2]
 	}
-	return c[g.r.Intn(len(c))]
+	return c[r.Intn(len(c))]
 }
 
 func (g *lungGen) drawOutcome(typ string, allowNA bool) string {
@@ -247,6 +252,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	src, hosp := lungProviders[0], lungProviders[1]
 	order := r.Perm(len(bg))
 	next := 0
+	var survCands []petSurvCand // -lungsurv: PET/CT low-uptake closures (lungsurv.go)
 	pick := func(young bool) *Person {
 		for ; next < len(order); next++ {
 			p := bg[order[next]]
@@ -257,6 +263,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		}
 		panic("lung: not enough background persons")
 	}
+	var rejected []extRejection // work-up referrals the unit rejects (handoffext.go), simulated after every other lung event
 	for k := 0; k < nLung; k++ {
 		p := pick(r.Float64() < .04)
 		F := -420 + 510*r.Float64() // index CT day
@@ -383,15 +390,14 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 		}
 		if wkPath != "" {
 			state, closed = g.workup(p, hosp, lt, wkPath, wkT0, mean)
+			if LungPETSurv && wkPath == "pet" && state == "closed" && lt.Lung.Outcome == "pet_low" {
+				survCands = append(survCands, petSurvCand{lt: lt, p: p, typ: typ, mean: mean, petDay: closed})
+			}
 		}
-		lt.State = state
-		if state == "closed" || state == "no_followup_needed" {
-			lt.ClosedDay = closed
+		lungFinish(lt, state, closed)
+		if Handoff && RefRejectExt && LungWorkup && inScope && rec.Action == FlCTPET && lt.Lung.Adherence == "never" && u01(seed, loop, "refrej", "pick") < ExtRejectP {
+			rejected = append(rejected, extRejection{p: p, lt: lt, srID: srID, src: src, unit: hosp, t0: F, urgent: true, mean: mean})
 		}
-		lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-F > float64(rec.WinHi) ||
-			state == "awaiting_tissue" && TEnd-lt.Lung.PETDay > TissueDueDays
-		lt.Dropoff = lungDropoff(state, false)
-		lt.Pathway = "lung_" + lt.Lung.Adherence + "_" + state
 	}
 	// distractors: other people's chest CTs at the follow-up hospital (a CT for the wrong patient must never close a loop)
 	for k := 0; k < nLung/8; k++ {
@@ -411,6 +417,24 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			tr.Distract[g.workupReport(hosp.ID, y, t, t+g.lognorm(1, .7), LungPETCode, text, lab)] = true
 		}
 	}
+	for _, j := range rejected { // rejected work-up referrals (handoffext.go), after every other lung event
+		g.rejectLung(j)
+	}
+	if LungPETSurv { // after every other lung event, on its own RNG stream
+		g.genPETSurv(survCands, hosp)
+	}
+}
+
+// lungFinish: the loop's truth from its final state.
+func lungFinish(lt *LoopTruth, state string, closed float64) {
+	lt.State = state
+	if state == "closed" || state == "no_followup_needed" {
+		lt.ClosedDay = closed
+	}
+	lt.Overdue = (state == "open" || state == "not_assessable") && TEnd-lt.SRDay > float64(lt.Lung.Rec.WinHi) ||
+		state == "awaiting_tissue" && TEnd-lt.Lung.PETDay > TissueDueDays
+	lt.Dropoff = lungDropoff(state, false)
+	lt.Pathway = "lung_" + lt.Lung.Adherence + "_" + state
 }
 
 // lungDropoff: where an unresolved lung loop is stuck (same function for truth and pipeline).
