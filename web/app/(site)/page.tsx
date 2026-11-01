@@ -19,12 +19,14 @@ export default function Page() {
           closuresWrong: closures.value,
         }}
       />
-      <SiteFooter
-        big
-        honesty="simulated"
-        qualifier="Fatima and every other patient shown here are made up."
-        rest={`Test results come from simulated patients; Wasl claims no results on real patients yet. The ${wait}-day figure is from a published Abu Dhabi study (BMC Cancer, 2021).`}
-      />
+      <div id="notes">
+        <SiteFooter
+          big
+          honesty="simulated"
+          qualifier="Fatima and every other patient shown here are made up."
+          rest={`Test results come from simulated patients; Wasl claims no results on real patients yet. The ${wait}-day figure is from a published Abu Dhabi study (BMC Cancer, 2021).`}
+        />
+      </div>
     </>
   );
 }

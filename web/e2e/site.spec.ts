@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { BEATS, CUES } from "../components/story/script";
 import { ROUTES as APP_ROUTES } from "./routes";
 
 const ROUTES = [
@@ -113,41 +114,43 @@ test("the pilot page is gone and no page links to it", async ({ page }) => {
   }
 });
 
-test("landing: the closing beat opens the dashboard and the pipeline", async ({ page }) => {
-  await page.goto("/?story=stills");
-  const start = page.locator('[data-beat="start"]');
-  await expect(start.getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
-  await start.getByRole("link", { name: "Open the dashboard" }).click();
-  await expect(page).toHaveURL(/\/app$/);
-});
-
 const results = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8"));
 const closures = results.entries["v2.safety.crc_false_closures"];
+const waitDays = results.entries["published.crc_followup_median_wait_days"].value;
+const standardDays = results.entries["published.crc_followup_standard_days"].value;
 
-/** Each beat of the landing story and a line of its copy, in scroll order. */
-const BEATS = [
-  ["lost", "Nobody lost"],
-  ["unknown", "Done, and nobody knew"],
-  ["wait", "The typical wait for the follow-up check"],
-  ["join", "One person, two spellings"],
-  ["proof", "Done only when it is proven"],
-  ["receipt", "It is also a word for a receipt"],
-  ["who", "Who notices the difference"],
-  ["start", "Try it at one clinic first"],
-] as const;
+/** Scrolls the 3D story to scroll progress `p` and waits for the damped camera and the copy to settle. */
+async function scrollStory(page: Page, p: number) {
+  await page.evaluate((p) => {
+    const el = document.querySelector<HTMLElement>('[data-story="3d"]')!;
+    const top = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo(0, top + p * (el.offsetHeight - window.innerHeight));
+  }, p);
+  await page.waitForTimeout(700);
+}
+
+const onCues = (page: Page) => page.locator("[data-cue][data-on]");
+
+async function openStory(page: Page) {
+  await page.goto("/?story=3d");
+  await expect(page.locator('[data-story="3d"] canvas')).toHaveCount(1);
+  await page.waitForFunction(() => typeof window.__wasl3d === "function");
+}
 
 for (const vp of WIDTHS) {
-  test(`landing at ${vp.w}px: the 3D room scrolls through every beat with its copy`, async ({ page }) => {
+  test(`landing at ${vp.w}px: every line of the story arrives and leaves, one at a time`, async ({ page }) => {
+    test.setTimeout(150_000);
     await page.setViewportSize({ width: vp.w, height: vp.h });
-    await page.goto("/?story=3d");
-    await expect(page.locator('[data-story="3d"] canvas')).toHaveCount(1);
-    await page.waitForFunction(() => typeof window.__wasl3d === "function");
-    for (const [id, line] of BEATS) {
-      const section = page.locator(`[data-beat="${id}"]`);
-      await section.evaluate((el: HTMLElement) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + el.offsetHeight * 0.45 - window.innerHeight * 0.3));
-      await page.waitForTimeout(900);
-      await expect(section.getByText(line, { exact: false }).first()).toBeInViewport();
-      await page.screenshot({ path: `test-results/screens/story-${id}-${vp.w}.png` });
+    await openStory(page);
+    for (const c of CUES) {
+      await scrollStory(page, c.from + (c.to - c.from) * 0.55);
+      await expect(onCues(page), c.id).toHaveCount(1);
+      await expect(onCues(page)).toHaveAttribute("data-cue", c.id);
+      await page.screenshot({ path: `test-results/screens/story-${c.id}-${vp.w}.png` });
+      if (c.exit !== false) {
+        await scrollStory(page, Math.min(1, c.to + 0.002));
+        await expect(page.locator(`[data-cue="${c.id}"]`), `${c.id} leaves`).not.toHaveAttribute("data-on");
+      }
     }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, "no horizontal scroll").toBeLessThanOrEqual(0);
@@ -157,50 +160,99 @@ for (const vp of WIDTHS) {
   });
 }
 
-test("landing: the live join follows the chips, and the dot wall counts results.json", async ({ page }) => {
-  await page.goto("/?story=3d");
-  await expect(page.locator("[data-dots]")).toHaveAttribute("data-dots", String(closures.denominator));
-  await page.locator('[data-beat="join"]').scrollIntoViewIfNeeded();
+test("landing: the Day counter runs to the published wait, with its tick at the standard", async ({ page }) => {
+  await openStory(page);
+  const counter = page.locator("[data-counter]");
+  await expect(counter).toHaveAttribute("data-standard", String(standardDays));
+  await expect(counter).toHaveAttribute("data-max", String(waitDays));
+  await expect(counter).toContainText(`${standardDays} · standard`);
+  await scrollStory(page, 0.05);
+  await expect(counter).toHaveCSS("opacity", "0");
+  await scrollStory(page, 0.24);
+  const mid = Number(await counter.getAttribute("data-day"));
+  expect(mid).toBeGreaterThan(0);
+  expect(mid).toBeLessThan(waitDays);
+  await scrollStory(page, 0.336);
+  await expect(counter).toHaveAttribute("data-day", String(waitDays));
+  await expect(counter.locator("[data-day-value]")).toHaveText(String(waitDays));
+  await expect(counter).toContainText("published");
+});
+
+test("landing: the closures figure and the other numbers come from results.json", async ({ page }) => {
+  await openStory(page);
+  expect(closures.value).toBe(0);
+  await scrollStory(page, 0.81);
+  const cue = page.locator('[data-cue="none-wrong"]');
+  await expect(cue).toHaveAttribute("data-on", "");
+  await expect(cue).toContainText("None wrong");
+  await expect(cue.locator('[data-figure="closures"]')).toContainText(`of ${closures.denominator.toLocaleString("en-US")} cases Wasl marked done.`);
+  await expect(cue.locator('[data-honesty="simulated"]')).toHaveText("simulated");
+  await expect(page.locator('[data-figure="wait"]')).toHaveText(`${waitDays} days`);
+  await expect(page.locator('[data-cue="wait"] [data-honesty="published"]')).toHaveText("published study, 2021");
+  await expect(page.locator('[data-figure="missed"]')).toHaveText("About 3 in 5");
+  await expect(page.locator("main")).not.toContainText("2,090");
+});
+
+test("landing: the chips change the join, only in the join beat", async ({ page }) => {
+  await openStory(page);
+  const join = page.locator('[data-cue="join"]');
+  await expect(join).toHaveCSS("visibility", "hidden");
+  await scrollStory(page, 0.72);
+  await expect(join).toHaveAttribute("data-on", "");
   const group = page.getByRole("group", { name: "Choose a person" });
   const verdict = page.getByTestId("verdict");
   await expect(group.getByRole("button", { name: "Fatima" })).toHaveAttribute("aria-pressed", "true");
-  await expect(verdict).toHaveText("Same person");
+  await expect(verdict).toHaveAttribute("data-outcome", "joined");
+  await expect(verdict).toHaveText("Same birth date. Same person.");
   await expect(page.getByTestId("hospital-name")).toHaveText("F. Alzabi");
 
   await group.getByRole("button", { name: "Khalid" }).click();
   await expect(group.getByRole("button", { name: "Fatima" })).toHaveAttribute("aria-pressed", "false");
-  await expect(verdict).toHaveText("Same person");
+  await expect(verdict).toHaveAttribute("data-outcome", "apart");
   await expect(page.getByTestId("hospital-name")).toHaveText("Khaled Alkitbi");
 
   await group.getByRole("button", { name: "Aisha" }).click();
-  await expect(verdict).toHaveText("Not joined. A person decides.");
-  await expect(page.getByTestId("hospital-name")).toHaveText("Aysha Al Mazroui");
+  await expect(verdict).toHaveAttribute("data-outcome", "review");
+  await expect(verdict).toHaveText("Birth dates almost match. A person decides.");
+  await page.waitForTimeout(1400);
+  await page.screenshot({ path: "test-results/screens/story-join-aisha-1440.png" });
+
+  await scrollStory(page, 0.8);
+  await expect(join).toHaveCSS("visibility", "hidden");
 });
 
-test("landing with reduced motion: stills with the same copy and the 2D name picker, no canvas", async ({ page }) => {
+test("landing: the hero and the close open the dashboard and the pipeline", async ({ page }) => {
+  await openStory(page);
+  for (const [id, p] of [
+    ["hero", 0],
+    ["close", 1],
+  ] as const) {
+    await scrollStory(page, p);
+    const cue = page.locator(`[data-cue="${id}"]`);
+    await expect(cue.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
+    await expect(cue.getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
+  }
+  const close = page.locator('[data-cue="close"]');
+  await expect(close).toHaveAttribute("data-on", "");
+  await expect(close.getByRole("link", { name: "Wasl, home" })).toBeVisible();
+  await close.getByRole("link", { name: "Open the dashboard" }).click();
+  await expect(page).toHaveURL(/\/app$/);
+});
+
+test("landing with reduced motion: stills with every line and the 2D name picker, no canvas", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator('[data-story="stills"]')).toHaveCount(1);
   await expect(page.locator("canvas")).toHaveCount(0);
-  for (const [id, line] of BEATS) {
-    const section = page.locator(`[data-beat="${id}"]`);
-    await expect(section.getByText(line, { exact: false }).first()).toBeVisible();
-    await expect(section.locator('svg[role="img"]')).toHaveCount(1);
-  }
+  for (const b of BEATS) await expect(page.locator(`[data-beat="${b.id}"] svg[role="img"]`)).toHaveCount(1);
+  for (const c of CUES) await expect(page.locator(`[data-cue="${c.id}"]`)).toBeVisible();
+  await expect(page.locator('[data-cue="hero"]').getByRole("link", { name: "See the pipeline" })).toHaveAttribute("href", "/app/pipeline");
   const group = page.getByRole("group", { name: "Choose a person" });
   await group.getByRole("button", { name: "Aisha" }).click();
-  await expect(page.getByTestId("verdict")).toHaveText("Not joined yet");
-  await expect(page.locator('[data-thread="broken"]')).toHaveCount(1);
+  await expect(page.getByTestId("verdict")).toHaveText("A person decides");
+  await group.getByRole("button", { name: "Khalid" }).click();
+  await expect(page.getByTestId("verdict")).toHaveText("Two different people");
   await page.screenshot({ path: "test-results/screens/story-stills-1440.png", fullPage: true });
-});
-
-test("landing: the figures carry their honesty words", async ({ page }) => {
-  await page.goto("/?story=stills");
-  await expect(page.locator('[data-figure="missed"]')).toHaveText("About 3 in 5");
-  await expect(page.getByText("from testing on simulated patients", { exact: false }).first()).toBeVisible();
-  await expect(page.locator('[data-figure="wait"]')).toHaveText(`${results.entries["published.crc_followup_median_wait_days"].display} days`);
-  await expect(page.locator('[data-honesty="published"]')).toHaveText("From a published study, 2021.");
-  await expect(page.locator('[data-figure="closures"]')).toHaveText(`of ${closures.denominator.toLocaleString("en-US")} cases Wasl marked done. In testing on simulated patients.`);
 });
 
 test("how it works: six moments, and the tracker's tick against Wasl's open case", async ({ page }) => {

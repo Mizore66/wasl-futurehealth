@@ -3,7 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { QUOTED, exactlyOnce, missedByIdOnly, missedOfFive, published, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE, LTT_TIERS, OPERATING_TAU } from "@/components/site/ltt";
-import { BEATS, CAMERA_KEYS, CAST, beatAt, local } from "@/components/story/beats";
+import { CAMERA_KEYS } from "@/components/story/rig";
+import { BEATS, CAST, CUES, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
 import { result } from "@/lib/results";
 
@@ -69,13 +70,40 @@ describe("Learn-then-Test tiers", () => {
 });
 
 describe("landing story", () => {
-  it("splits the whole scroll track into the eight beats, in order, with no gap", () => {
-    expect(BEATS.map((b) => b.id)).toEqual(["lost", "unknown", "wait", "join", "proof", "receipt", "who", "start"]);
+  it("splits the whole scroll track into the nine beats of the road, in order, with no gap", () => {
+    expect(BEATS.map((b) => b.id)).toEqual(["clinic", "city", "door", "gap", "thread", "join", "proof", "home", "end"]);
     expect(BEATS[0].from).toBe(0);
     expect(BEATS.at(-1)!.to).toBe(1);
     BEATS.slice(1).forEach((b, i) => expect(b.from).toBe(BEATS[i].to));
-    expect(beatAt(0.4)).toBe("join");
-    expect(local(0.41, "join")).toBeCloseTo(0.5);
+    expect(beatAt(0.7)).toBe("join");
+  });
+
+  it("never shows two lines of story text at once, and every line gets its moment", () => {
+    for (let i = 0; i <= 10000; i++) {
+      const p = i / 10000;
+      expect(CUES.filter((c) => cueAt(c, p).fade > 0).length, `p = ${p}`).toBeLessThanOrEqual(1);
+    }
+    for (const c of CUES) {
+      expect(cueOn(c.from + (c.to - c.from) * 0.55)?.id).toBe(c.id);
+      expect((c.to - c.from) * TRACK_VH.desktop, `${c.id} owns enough scroll to read`).toBeGreaterThanOrEqual(30);
+    }
+  });
+
+  it("reveals words with scroll, so scrolling back un-reveals them", () => {
+    const c = CUES.find((x) => x.id === "booked")!;
+    const len = c.to - c.from;
+    expect(cueAt(c, c.from + len * 0.05).reveal).toBeLessThan(cueAt(c, c.from + len * 0.2).reveal);
+    expect(cueAt(c, c.from + len * 0.05)).toEqual(cueAt(c, c.from + len * 0.05));
+    expect(cueAt(c, c.to + 0.001)).toEqual({ reveal: 0, fade: 0 });
+    expect(cueAt(CUES[0], 0)).toEqual({ reveal: 1, fade: 1 });
+    expect(cueAt(CUES.at(-1)!, 1)).toEqual({ reveal: 1, fade: 1 });
+  });
+
+  it("counts the Day counter from 0 to the published wait over the walk", () => {
+    const wait = published("crc_followup_median_wait_days");
+    expect(dayAt(WALK.from, wait)).toBe(0);
+    expect(dayAt(WALK.to, wait)).toBe(wait);
+    expect(dayAt((WALK.from + WALK.to) / 2, wait)).toBeGreaterThan(published("crc_followup_standard_days") - 20);
   });
 
   it("keeps the camera keys in scroll order from 0 to 1", () => {
@@ -85,12 +113,17 @@ describe("landing story", () => {
     expect([...ps].sort((a, b) => a - b)).toEqual(ps);
   });
 
-  it("joins the two records only when the birth dates agree, in 3D and in the 2D picker alike", () => {
+  it("joins on a matching birth date, holds a near match for a person, and keeps different people apart", () => {
+    const born = (d: string) => d.match(/Born (\d+) (\w+) (\d+)\./)!.slice(1);
     for (const [k, c] of Object.entries(CAST)) {
       const p = PEOPLE[k as keyof typeof PEOPLE];
-      const born = (d: string) => d.match(/Born ([^.]+)\./)![1];
-      expect(c.joined).toBe(born(p.clinicDetail) === born(p.hospitalDetail));
-      expect(p.joined).toBe(c.joined);
+      const [d1, m1, y1] = born(p.clinicDetail);
+      const [d2, m2, y2] = born(p.hospitalDetail);
+      const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const swapped = y1 === y2 && Number(d1) === months.indexOf(m2) + 1 && Number(d2) === months.indexOf(m1) + 1;
+      const expected = d1 === d2 && m1 === m2 && y1 === y2 ? "joined" : swapped ? "review" : "apart";
+      expect(c.outcome, k).toBe(expected);
+      expect(p.outcome).toBe(c.outcome);
     }
   });
 });

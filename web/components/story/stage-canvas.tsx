@@ -4,14 +4,14 @@ import type { MotionValue } from "motion/react";
 import { useEffect, useRef } from "react";
 import { PortraitSvg, UnknownSvg } from "@/components/avatar/avatar";
 import { portrait } from "@/components/avatar/traits";
-import { FACE_SEEDS, type CastKey, type FaceKey, type StoryFigures } from "./beats";
-import { places } from "./parts";
-import { beam, crowd, ledge, noticers, readers, receipt } from "./room";
+import { FACE_SEEDS, type AnchorId, type CastKey, type FaceKey, type StoryFigures } from "./script";
 import { createStage, type Stage, type StageStats } from "./stage";
+
+export type Anchors = Partial<Record<AnchorId, { x: number; y: number }>>;
 
 declare global {
   interface Window {
-    /** Read by the perf probe (e2e/story-perf.spec.ts). */
+    /** Read by the perf probe and the tests. */
     __wasl3d?: () => StageStats;
   }
 }
@@ -34,21 +34,25 @@ export default function StageCanvas({
   figures,
   mobile,
   onSlow,
+  onAnchors,
 }: {
   progress: MotionValue<number>;
   figures: StoryFigures;
   person: CastKey;
   mobile: boolean;
   onSlow: () => void;
+  onAnchors: (a: Anchors) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const facesRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Stage | null>(null);
   const personRef = useRef(person);
   const slowRef = useRef(onSlow);
+  const anchorsRef = useRef(onAnchors);
   useEffect(() => {
     slowRef.current = onSlow;
-  }, [onSlow]);
+    anchorsRef.current = onAnchors;
+  }, [onSlow, onAnchors]);
 
   useEffect(() => {
     let stage: Stage | null = null;
@@ -66,8 +70,8 @@ export default function StageCanvas({
         unknown: imgs[keys.length],
         figures,
         mobile,
-        build: (w) => [crowd(w), places(w), ledge(w), beam(w), readers(w), receipt(w), noticers(w)],
         onSlow: () => slowRef.current(),
+        onAnchors: (a) => anchorsRef.current(a),
       });
       stageRef.current = stage;
       if (personRef.current !== "fatima") stage.setPerson(personRef.current);

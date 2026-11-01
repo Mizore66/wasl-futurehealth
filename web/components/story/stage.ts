@@ -1,8 +1,10 @@
 import * as THREE from "three";
-import { CAMERA_KEYS, FACE_SEEDS, type CastKey, type FaceKey, type StoryFigures } from "./beats";
+import { fatima, makeThread, nurse, others, passersby, receipt, receiptU, slabAndReaders, standardStone, thread, tipU, type Actor, type Cast } from "./actors";
 import { createKit, faceTexture } from "./kit";
 import { COLOR } from "./palette";
-import type { Part, World } from "./parts";
+import { cameraAt, type Subjects } from "./rig";
+import { CUES, FACE_SEEDS, walkAt, type AnchorId, type CastKey, type FaceKey, type StoryFigures } from "./script";
+import { PLACES, buildCity, buildClinic, buildHospital, buildPaving, makeRoad } from "./world";
 
 export interface StageOptions {
   canvas: HTMLCanvasElement;
@@ -10,10 +12,10 @@ export interface StageOptions {
   unknown: CanvasImageSource;
   figures: StoryFigures;
   mobile: boolean;
-  /** Scene builders; each adds its props and returns the parts that move. */
-  build: (w: World) => Part[];
   /** Called once if the first 60 frames run slower than 33 ms at the median. */
   onSlow: () => void;
+  /** Where each anchored line of copy should sit, as fractions of the viewport. Called on every resize. */
+  onAnchors: (anchors: Partial<Record<AnchorId, { x: number; y: number }>>) => void;
 }
 
 export interface StageStats {
@@ -23,6 +25,8 @@ export interface StageStats {
   dpr: number;
   /** CPU time of each render() call, ms. */
   renderMs: number[];
+  /** Frames drawn since load; the idle check reads it. */
+  frames: number;
 }
 
 export interface Stage {
@@ -33,21 +37,7 @@ export interface Stage {
   stats(): StageStats;
 }
 
-const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] ?? 0;
-
-const keyTmp = new THREE.Vector3();
-
-/** The camera pose for a scroll position: eased between the keys in beats.ts. */
-function cameraAt(p: number, pos: THREE.Vector3, look: THREE.Vector3) {
-  let i = 0;
-  while (i < CAMERA_KEYS.length - 2 && p > CAMERA_KEYS[i + 1].p) i++;
-  const a = CAMERA_KEYS[i];
-  const b = CAMERA_KEYS[i + 1];
-  const t = smoother(Math.min(1, Math.max(0, (p - a.p) / (b.p - a.p || 1))));
-  pos.set(a.pos[0], a.pos[1], a.pos[2]).lerp(keyTmp.set(b.pos[0], b.pos[1], b.pos[2]), t);
-  look.set(a.look[0], a.look[1], a.look[2]).lerp(keyTmp.set(b.look[0], b.look[1], b.look[2]), t);
-}
 
 export function createStage(o: StageOptions): Stage {
   const renderer = new THREE.WebGLRenderer({ canvas: o.canvas, antialias: !o.mobile, powerPreference: "high-performance" });
@@ -60,37 +50,74 @@ export function createStage(o: StageOptions): Stage {
   renderer.setClearColor(COLOR.ground);
 
   const scene = new THREE.Scene();
-  const FOG_NEAR = 16;
-  const FOG_FAR = 64;
-  const fog = new THREE.Fog(COLOR.ground, FOG_NEAR, FOG_FAR);
+  const fog = new THREE.Fog(COLOR.ground, 16, 46);
   scene.fog = fog;
-  const camera = new THREE.PerspectiveCamera(o.mobile ? 38 : 30, 1, 0.5, 120);
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 400);
 
   const kit = createKit(o.mobile);
   const faces = {} as Record<FaceKey, THREE.Texture>;
   for (const k of Object.keys(FACE_SEEDS) as FaceKey[]) faces[k] = faceTexture(o.faces[k]);
   const unknown = faceTexture(o.unknown);
-  const world: World = { kit, mobile: o.mobile, faces, unknown, figures: o.figures, fog, pick: { person: "fatima", at: -Infinity } };
 
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400).rotateX(-Math.PI / 2), kit.mat.floor);
-  floor.position.set(36, 0, 0);
+  const road = makeRoad();
+  const cast: Cast = {
+    kit,
+    mobile: o.mobile,
+    faces,
+    unknown,
+    figures: o.figures,
+    road,
+    thread: makeThread(road),
+    pick: { person: "fatima", at: -Infinity },
+  };
+
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(700, 700).rotateX(-Math.PI / 2), kit.mat.floor);
+  floor.position.set(39, 0, 0);
   floor.matrixAutoUpdate = false;
   floor.updateMatrix();
-  scene.add(floor);
+  scene.add(floor, buildPaving(kit, road));
 
-  const parts = o.build(world);
-  for (const part of parts) scene.add(part.group);
+  const chunks = buildCity(kit, road, o.mobile);
+  for (const c of chunks) scene.add(c.near, c.far, c.shadow);
+  buildClinic(kit);
+  buildHospital(kit);
+  standardStone(cast);
+
+  const her = fatima(cast);
+  const line = thread(cast, her.at);
+  const card = receipt(cast);
+  const actors: Actor[] = [her, line, card, slabAndReaders(cast), nurse(cast), others(cast), passersby(cast)];
+  for (const a of actors) scene.add(a.group);
   for (const mesh of kit.mergeStatics()) scene.add(mesh);
+
+  const subjects: Subjects = { fatima: new THREE.Vector3(), tip: new THREE.Vector3(), receipt: new THREE.Vector3() };
+  function locate(p: number) {
+    road.getPointAt(walkAt(p), subjects.fatima).setY(0.5);
+    cast.thread.getPointAt(Math.max(0.001, tipU(p, line.ring1)), subjects.tip);
+    cast.thread.getPointAt(Math.max(0.002, receiptU(p) * 0.985), subjects.receipt).y += 0.75;
+  }
 
   let target = 0;
   let shown = -1;
-  const camLook = new THREE.Vector3();
-  /** Narrow screens see less of the room at the same distance, so the camera steps back along its view line. */
+  const look = new THREE.Vector3();
   let pull = 1;
+
+  function pose(p: number) {
+    locate(p);
+    const view = cameraAt(p, o.mobile, subjects, camera.position, look);
+    if (pull !== 1) camera.position.sub(look).multiplyScalar(pull).add(look);
+    camera.lookAt(look);
+    if (camera.fov !== view.fov) {
+      camera.fov = view.fov;
+      camera.updateProjectionMatrix();
+    }
+    return view;
+  }
 
   let raf = 0;
   let last = 0;
   let warm = 60;
+  let frames = 0;
   const warmGaps: number[] = [];
   const renderMs: number[] = [];
   const gaps: number[] = [];
@@ -124,26 +151,32 @@ export function createStage(o: StageOptions): Stage {
 
   function frame(now: number) {
     raf = 0;
+    frames++;
     const gap = last ? now - last : 0;
     const dt = gap ? Math.min(0.1, gap / 1000) : 1 / 60;
     const continuous = gap > 0 && gap < 40;
     last = now;
 
-    shown = shown < 0 ? target : shown + (target - shown) * (1 - Math.exp(-dt * 7));
-    if (Math.abs(target - shown) < 1e-5) shown = target;
-    cameraAt(shown, camera.position, camLook);
-    if (pull !== 1) camera.position.sub(camLook).multiplyScalar(pull).add(camLook);
-    camera.lookAt(camLook);
+    // Frame-rate independent damping (half-life about 90 ms), so trackpad noise never shows.
+    shown = shown < 0 ? target : shown + (target - shown) * (1 - Math.exp(-dt * 7.7));
+    if (Math.abs(target - shown) < 2e-5) shown = target;
+    const view = pose(shown);
+    fog.near = view.fogNear * pull;
+    fog.far = view.fogFar * pull;
 
-    fog.far = FOG_FAR;
-    let busy = shown !== target;
-    for (const part of parts) {
-      const on = shown >= part.window[0] && shown <= part.window[1];
-      part.group.visible = on;
-      if (on && part.update(shown, now)) busy = true;
+    // Chunks past the fog are hidden; far ones draw plain boxes.
+    const wide = fog.far > 100;
+    for (const c of chunks) {
+      const d = Math.abs(c.x - camera.position.x);
+      const on = d < fog.far + 12;
+      const close = on && !wide && d < 30;
+      c.near.visible = close;
+      c.far.visible = on && !close;
+      c.shadow.visible = on && !wide;
     }
-    fog.near = FOG_NEAR * pull;
-    fog.far *= pull;
+
+    let busy = shown !== target;
+    for (const a of actors) if (a.update(shown, now, camera)) busy = true;
 
     const t0 = performance.now();
     renderer.render(scene, camera);
@@ -151,7 +184,6 @@ export function createStage(o: StageOptions): Stage {
     if (renderMs.length > 600) renderMs.shift();
 
     if (warm > 0) {
-      // The warm-up asks for every frame, so each gap counts, however long.
       if (gap) warmGaps.push(gap);
       if (--warm === 0 && median(warmGaps) > 33) o.onSlow();
       busy = true;
@@ -162,20 +194,48 @@ export function createStage(o: StageOptions): Stage {
     else last = 0;
   }
 
+  const ANCHOR: Record<AnchorId, (s: Subjects) => THREE.Vector3> = {
+    "fatima-door": (s) => s.fatima.clone().add(new THREE.Vector3(-0.75, 0.3, 0)),
+    "clinic-door": () => new THREE.Vector3(PLACES.clinicDoor[0] + 1.1, 2.4, PLACES.clinicDoor[2]),
+    walker: (s) => s.fatima.clone().add(new THREE.Vector3(0.6, 0.8, 0)),
+    slab: () => new THREE.Vector3(PLACES.slab[0] + 0.75, PLACES.slab[1] + 0.5, PLACES.slab[2]),
+    report: () => new THREE.Vector3(PLACES.slab[0] + 0.7, PLACES.slab[1] + 1.15, PLACES.slab[2]),
+    nurse: () => new THREE.Vector3(PLACES.window[0], 3.4, PLACES.window[2]),
+    gap: () => new THREE.Vector3(PLACES.gap[0], 0, PLACES.gap[2]),
+    tip: (s) => s.tip.clone().add(new THREE.Vector3(0, 0.5, 0)),
+    receipt: (s) => s.receipt.clone().add(new THREE.Vector3(0, 0.95, 0)),
+  };
+
+  /** Projects each anchored cue's point once, with the camera where it holds during that cue. */
+  function project() {
+    const out: Partial<Record<AnchorId, { x: number; y: number }>> = {};
+    for (const c of CUES) {
+      if (!("anchor" in c.place)) continue;
+      const p = c.from + (c.to - c.from) * 0.5;
+      pose(p);
+      camera.updateMatrixWorld();
+      const v = ANCHOR[c.place.anchor](subjects).project(camera);
+      out[c.place.anchor] = { x: (v.x + 1) / 2, y: (1 - v.y) / 2 };
+    }
+    o.onAnchors(out);
+  }
+
   function resize() {
     const { clientWidth: w, clientHeight: h } = o.canvas;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
-    pull = camera.aspect < 0.8 ? 1.9 : camera.aspect < 1.3 ? 1.3 : 1;
-    // The copy owns the left third on desktop and the lower part on phones; push the subject away from it.
-    if (o.mobile) camera.setViewOffset(w, h, 0, h * 0.27, w, h);
-    else camera.setViewOffset(w, h, -w * 0.15, 0, w, h);
+    pull = !o.mobile && camera.aspect < 1.3 ? 1.3 : 1;
+    // On a phone the subject sits a third of the way down, above the text band.
+    if (o.mobile) camera.setViewOffset(w, h, 0, h * 0.16, w, h);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
+    project();
     invalidate();
   }
 
   resize();
+  pose(0);
   renderer.compile(scene, camera);
   invalidate();
 
@@ -185,17 +245,28 @@ export function createStage(o: StageOptions): Stage {
       invalidate();
     },
     setPerson(person) {
-      world.pick = { person, at: performance.now() };
+      cast.pick = { person, at: performance.now() };
       invalidate();
     },
     resize,
-    stats: () => ({ renderer: rendererName, calls: renderer.info.render.calls, triangles: renderer.info.render.triangles, dpr, renderMs: [...renderMs] }),
+    stats: () => ({
+      renderer: rendererName,
+      calls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      dpr,
+      renderMs: [...renderMs],
+      frames,
+    }),
     dispose() {
       cancelAnimationFrame(raf);
+      const seen = new Set<unknown>();
       scene.traverse((obj) => {
         if (!(obj instanceof THREE.Mesh)) return;
-        obj.geometry.dispose();
-        (obj.material as THREE.Material).dispose();
+        for (const r of [obj.geometry, obj.material]) {
+          if (seen.has(r)) continue;
+          seen.add(r);
+          r.dispose();
+        }
       });
       for (const t of [...Object.values(faces), unknown]) t.dispose();
       kit.dispose();
