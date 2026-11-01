@@ -188,6 +188,7 @@ type FactsMsg struct {
 	Part     int        `json:"part"`
 	PSeq     uint64     `json:"pseq"` // deterministic per-partition sequence assigned by the linker core
 	OriginTs int64      `json:"ots"`
+	Arr      *float64   `json:"arr,omitempty"` // HistClock: arrival day of the input that produced the facts
 }
 
 type Block struct {
