@@ -126,8 +126,32 @@ export const WALK = { from: 0.15, to: 0.335 } as const;
 export const RUN = { from: 0.556, to: 0.636 } as const;
 /** The receipt's ride home, from the hospital back to the clinic window. */
 export const RIDE = { from: 0.83, to: 0.872 } as const;
-/** The join at the hospital door: name ring, birth-date ring, the face turns back. */
+/** The join at the hospital door: scan, compare, lock, resolve. */
 export const JOIN = { from: 0.672, to: 0.73 } as const;
+
+/** The stretches of the join's own progress `j` (0 to 1) that each part of the identity effect owns. */
+export const RESOLVE = {
+  scan: [0, 0.16],
+  nameBar: [0.16, 0.26],
+  birthBar: [0.37, 0.45],
+  lock: [0.5, 0.7],
+  known: [0.7, 0.88],
+  burst: [0.7, 0.97],
+  apart: [0.62, 0.86],
+} as const;
+
+/** How a field of the two records compares. */
+export type BarState = "similar" | "agrees" | "differs" | "missing";
+
+/**
+ * What the record cards show for each ending, in the order name, birth date, ID number. It says in
+ * bars what JOIN_SAYS (copy.tsx) says in words, and the tests hold the two together.
+ */
+export const JOIN_BARS: Record<Outcome, readonly [BarState, BarState, BarState]> = {
+  joined: ["similar", "agrees", "missing"],
+  apart: ["similar", "differs", "missing"],
+  review: ["similar", "similar", "missing"],
+};
 
 export function walkAt(p: number): number {
   return smoother(span(p, WALK.from, WALK.to));

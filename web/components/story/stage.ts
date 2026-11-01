@@ -1,15 +1,13 @@
 import * as THREE from "three";
 import { fatima, makeThread, nurse, others, passersby, receipt, receiptU, slabAndReaders, standardStone, thread, tipU, type Actor, type Cast } from "./actors";
-import { createKit, faceTexture } from "./kit";
+import { createKit } from "./kit";
 import { COLOR } from "./palette";
 import { cameraAt, type Subjects } from "./rig";
-import { CUES, FACE_SEEDS, walkAt, type AnchorId, type CastKey, type FaceKey, type StoryFigures } from "./script";
-import { PLACES, buildCity, buildClinic, buildHospital, buildPaving, makeRoad } from "./world";
+import { CUES, walkAt, type AnchorId, type CastKey, type StoryFigures } from "./script";
+import { PLACES, buildCity, buildClinic, buildHospital, buildRoad, makeRoad } from "./world";
 
 export interface StageOptions {
   canvas: HTMLCanvasElement;
-  faces: Record<FaceKey, CanvasImageSource>;
-  unknown: CanvasImageSource;
   figures: StoryFigures;
   mobile: boolean;
   /** Called once if the first 60 frames run slower than 33 ms at the median. */
@@ -55,16 +53,11 @@ export function createStage(o: StageOptions): Stage {
   const camera = new THREE.PerspectiveCamera(30, 1, 0.3, 400);
 
   const kit = createKit(o.mobile);
-  const faces = {} as Record<FaceKey, THREE.Texture>;
-  for (const k of Object.keys(FACE_SEEDS) as FaceKey[]) faces[k] = faceTexture(o.faces[k]);
-  const unknown = faceTexture(o.unknown);
 
   const road = makeRoad();
   const cast: Cast = {
     kit,
     mobile: o.mobile,
-    faces,
-    unknown,
     figures: o.figures,
     road,
     thread: makeThread(road),
@@ -75,9 +68,10 @@ export function createStage(o: StageOptions): Stage {
   floor.position.set(39, 0, 0);
   floor.matrixAutoUpdate = false;
   floor.updateMatrix();
-  scene.add(floor, buildPaving(kit, road));
+  scene.add(floor, buildRoad(kit, road));
 
-  const chunks = buildCity(kit, road, o.mobile);
+  const { chunks, wide: wideCity } = buildCity(kit, road, o.mobile);
+  scene.add(wideCity);
   for (const c of chunks) scene.add(c.near, c.far, c.shadow);
   buildClinic(kit);
   buildHospital(kit);
@@ -166,13 +160,14 @@ export function createStage(o: StageOptions): Stage {
 
     // Chunks past the fog are hidden; far ones draw plain boxes.
     const wide = fog.far > 100;
+    wideCity.visible = wide;
     for (const c of chunks) {
       const d = Math.abs(c.x - camera.position.x);
-      const on = d < fog.far + 12;
-      const close = on && !wide && d < 30;
+      const on = !wide && d < fog.far + 12;
+      const close = on && d < 30;
       c.near.visible = close;
       c.far.visible = on && !close;
-      c.shadow.visible = on && !wide;
+      c.shadow.visible = on;
     }
 
     let busy = shown !== target;
@@ -268,7 +263,6 @@ export function createStage(o: StageOptions): Stage {
           r.dispose();
         }
       });
-      for (const t of [...Object.values(faces), unknown]) t.dispose();
       kit.dispose();
       renderer.dispose();
     },

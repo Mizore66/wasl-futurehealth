@@ -402,3 +402,22 @@ test("experts: KPI bars, outcome table, exactly-once figure and the τ picker re
   await expect(cell("False closures, with review")).toHaveText("0");
   await expect(tiers.locator('[aria-pressed="true"]')).toHaveCount(1);
 });
+
+test("figure lab: a figure wears its seed's look, and at known 0 it is the grey question mark", async ({ page }) => {
+  await page.goto("/lab/figures");
+  await expect(page.getByText("Lab · not part of the product")).toBeVisible();
+  await page.waitForFunction(() => typeof window.__figureProbe === "function");
+  const seen = await page.evaluate(() => ({
+    known: window.__figureProbe!("p-fatima-zaabi", "female", 1),
+    again: window.__figureProbe!("p-fatima-zaabi", "female", 1),
+    other: window.__figureProbe!("p-khalid-kitbi", "male", 1),
+    unknown: window.__figureProbe!("p-fatima-zaabi", "female", 0),
+  }));
+  expect(seen.known.body).toBe(seen.known.look.cloth);
+  expect(seen.known.head).toBe(seen.known.look.skin);
+  expect(seen.again).toEqual(seen.known);
+  expect(seen.other.look).not.toEqual(seen.known.look);
+  expect(seen.known).toMatchObject({ faceVisible: true, askVisible: false });
+  expect(seen.known.hairVisible).toBe(seen.known.look.top !== "bald");
+  expect(seen.unknown).toMatchObject({ hairVisible: false, faceVisible: false, askVisible: true });
+});

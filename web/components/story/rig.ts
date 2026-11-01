@@ -27,7 +27,7 @@ export interface CameraKey extends Pose {
 const DOOR_B: V3 = [72, 1.05, 2.9];
 const SLAB: V3 = [PLACES.slab[0], PLACES.slab[1], PLACES.slab[2]];
 const WINDOW: V3 = [PLACES.window[0], 1.2, 1.5];
-const MID: V3 = [39, 0, 0];
+const MID: V3 = [40, 0, 0];
 
 const near: Pose["fog"] = [16, 46];
 const city: Pose["fog"] = [22, 60];
