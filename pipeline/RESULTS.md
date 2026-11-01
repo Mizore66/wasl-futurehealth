@@ -406,7 +406,7 @@ Read with care: reader A was written against the same templates it is scored on,
 
 ## Showcase run: every component in one integrated run
 
-`WASL_POLICY=v7ltt WASL_READER=live WASL_SOURCE=hl7 WASL_IMAGE=cached WASL_LUNG=800 scripts/demo.sh all` (seed 2026; chaos on: process kills plus a NATS node kill; HL7 connection drops and duplicate re-sends). Outputs: [`results/showcase/`](results/showcase/).
+`WASL_POLICY=v7ltt WASL_READER=live WASL_SOURCE=hl7 WASL_IMAGE=cached WASL_LUNG=800 scripts/demo.sh all` (seed 2026; chaos on: process kills plus a NATS node kill; HL7 connection drops and duplicate re-sends). Outputs: [`results/showcase/`](results/showcase/) (since replaced by the `cfcf50f` showcase run below).
 
 **Configuration:**
 - live local Gemma 3 4B reader;
@@ -1397,6 +1397,25 @@ Every hold was a true match whose real birth dates differ by more than a year fr
 **Held-out lung by origin (1.60, p 0.04 at `0f6a532`).** Review items arise only on loops that reach a follow-up event, and the generated cohort put fewer Western loops in those states (23.0% vs 27–32%; adherence is drawn independently of origin). Among those loops the load is 34–39 items per 100 (max/min 1.14, p 0.77). Attributed to cohort mix and small counts.
 
 **Dev CRC by sex (1.046, p 0.046 at `0f6a532`).** Men carry about 3 more items per 100, higher in 4 of 5 seeds and not removed by adjusting for origin, placeholder birth date, pathway or registration count. The mechanism is not identified. With about 16 subgroup tests per evaluation (Bonferroni cut about 0.003), this is flagged for re-check, not claimed as an effect. At the new code it is 1.043 (p 0.076) dev and 1.017 (p 0.52) held-out.
+
+### Showcase run at `cfcf50f`: every component in one integrated run
+
+`WASL_POLICY=v7ltt WASL_READER=live WASL_SOURCE=hl7 WASL_IMAGE=cached WASL_LUNG=800 WASL_DR=1200 WASL_BREAST=150 WASL_LUNGSURV=1 WASL_DRNEXT=1 WASL_XREFLINK=1 WASL_REFREJECT=true scripts/demo.sh all` (seed 2026; chaos on: linker and closure+prep kills, an HL7 listener kill, a NATS node kill; HL7 connection drops and duplicate re-sends). Live local Gemma 3 4B reader: 245 unique report bodies, all read. Outputs replace [`results/showcase/`](results/showcase/).
+
+| | Result |
+|---|---|
+| CRC with review | P 1.000, R 0.854, **0/481 false closures** |
+| Cervical with review | P 1.000, R 0.967, 0/204 |
+| Lung nodules (800 loops) | P 1.000, R 0.983, 0/297; recommendation accuracy 1.000; surveillance CT 6/6 closed, 0 false, 2/2 escalated |
+| Diabetic retinopathy (1,200) | P 1.000, R 0.997, 0/1,122; referral closures R 0.968; next due date agrees with truth 0.997 |
+| Breast (150) | P 1.000, R 0.993, 0/144; recall loops R 0.889 |
+| Lung and DR hand-off | 3/3 and 3/3 packets, 0 false closures after re-referral |
+| ≤31-day KPI | EID-only 0.126, truth 0.329, Wasl 0.319 |
+| HL7 ingest and exactly-once | 40,983 messages, 0 lost, 0 duplicated; 0 duplicate outputs in 31,677; 0 final-state mismatches |
+| Provenance / forged / tamper | 3,163/3,163 chains verified; 0/24 forged events with effect; 17/17 tamper attacks detected, 0 false alarms |
+| Wrong-patient messages / without granted consent | 0 / 0 (1,811 released, 317 held for consent, 93 cancelled) |
+
+One seed with the live 4B reader, so recall is not comparable with the frozen evaluation (5 seeds, cached 26B answers). Unlike the previous showcase, consent holds fired here (317 held, 0 released without consent); why the order changed with the new programmes has not been traced.
 
 ### Learn-then-Test at `5496563` ([`results/ltt/`](results/ltt/LTT.md))
 
