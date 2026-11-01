@@ -41,6 +41,9 @@ DRNEXT="${WASL_DRNEXT:-0}"         # DR next loop (pipeline/drnext.go): next due
 [ "$DRNEXT" = 0 ] || { PARGS+=(-drnext); RUN="$RUN-drnext"; }
 LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go); 0 = off
 [ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
+# WASL_HISTCLOCK=1 judges look-back history (lung/DR/breast inputs arriving before day 0) at its arrival time, not at
+# the day-0 clock (pipeline/linker.go HistClock; default off)
+[ "${WASL_HISTCLOCK:-0}" = 0 ] || { PARGS+=(-histclock); RUN="$RUN-histclock"; }
 # hand-off (default off): WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question
 [ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
 # WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
