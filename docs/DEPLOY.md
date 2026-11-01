@@ -8,7 +8,7 @@ production-ready; the gaps are listed at the end.
 ## One command
 
 ```bash
-scripts/deploy_up.sh            # = WASL_JS_KEY=<random, this shell only> docker compose up --build
+scripts/deploy_up.sh            # = random environment key + docker compose up --build
 ```
 
 This builds the image, starts a 3-node NATS JetStream cluster, runs the demo cohort end to end (with kill/restart
@@ -49,11 +49,20 @@ JSON model weights only: no keys, no patient data, no run outputs.
 ## Configuration
 
 - `WASL_JS_KEY` (required): the JetStream encryption key, passed to the three NATS containers only. It must start with
-  a letter. `scripts/deploy_up.sh` makes a random one for that shell if it is unset and never writes it to disk. A
-  deployment injects it from its KMS/HSM; losing it makes the stores unreadable.
+  a letter. `scripts/deploy_up.sh` makes a random one if it is unset; the script does not write it to the repository or
+  image. Docker does store container environment configuration on the Docker host, so protect that host and use suitable
+  secret/KMS controls in production. Losing the key makes retained stores unreadable.
+- **Retained volumes need the original key.** If this Compose project's `nats-*` volumes exist and `WASL_JS_KEY` is
+  unset, `deploy_up.sh` refuses to generate an incompatible key. Supply the original key to keep the data. To discard
+  this deployment's stores and run data intentionally, run `docker compose down -v`, then rerun `deploy_up.sh`.
 - `WASL_SEED`, `WASL_POLICY` (`v7strict`, `v7ltt`, `v6`), `WASL_SOURCE` (`fhir`, `hl7`), `WASL_LUNG`, `WASL_DR`,
   `WASL_BREAST`: as in `scripts/demo.sh`. The reader is the cached one (no model server in the package).
-- `docker compose down` keeps the volumes; `docker compose down -v` deletes the stores and the run.
+- `docker compose down` keeps the volumes; `docker compose down -v` deletes the stores and the run. Each new pipeline
+  run recreates `FHIR`/`PREP`/`FACTS`/`OUT` and deletes the `SEEN`, `FHIRSUB` and `FHIRPOLL` KV buckets before services
+  start. Thus a new cohort cannot silently inherit replay suppression, subscription/polling checkpoints or EOF state;
+  service restarts within that run still resume from their checkpoints. Setup fails if reset fails.
+- `WASL_NATS_URL` and `WASL_NATS_EXTERNAL=1` must be set together. Either setting alone is rejected by the Go commands
+  and `scripts/demo.sh`; with neither set, the demo uses its local three-node cluster.
 
 ## Pointing it at real HL7 feeds
 
@@ -80,7 +89,8 @@ What was checked instead:
 - The Go build stage compiles statically for `linux/amd64` and `linux/arm64` (`CGO_ENABLED=0 go build -trimpath`),
   and `GOOS=linux go vet` passes.
 - `nats-server -t` accepts `deploy/nats/nats.conf`.
-- `scripts/check_deploy.py` passes.
+- `scripts/check_deploy.py` passes. `scripts/test_deploy.py` exercises retained-volume key refusal and external-NATS
+  validation with a fake Docker CLI; no Docker daemon is needed.
 - The container path was emulated natively: a tree with exactly the files the `Dockerfile` copies, a static binary,
   `scripts/demo.sh container` run against three `nats-server` processes started from `deploy/nats/nats.conf` (ports
   changed to local ones) with `WASL_NATS_URL` and `WASL_NATS_EXTERNAL=1`, then `scripts/demo.sh serve`. Results are
@@ -125,7 +135,8 @@ storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/sc
   shared run directory or status in NATS KV instead of files.
 - **No TLS or authentication** on NATS, MLLP or the API. NATS needs TLS and accounts/nkeys between nodes and clients;
   MLLP needs a VPN or TLS wrapper; the API needs authentication and role-based access (the API's review action is a demo).
-- **Key management** is an environment variable. A deployment needs KMS/HSM injection and a key-rotation procedure.
+- **Key management** is an environment variable recorded in Docker host container configuration. A deployment needs
+  host-secret controls, KMS/HSM injection and a key-rotation procedure.
 - **NATS containers run as the image's default user** and NATS limits (4 GB file store per node) are the demo's;
   size them from the scale results in [`pipeline/results/scale/`](../pipeline/results/scale/).
 - **No backups, monitoring or alerting** (the SLOs in `WRITEUP.md` are a design, not implemented here).
