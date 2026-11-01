@@ -102,7 +102,7 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 		return out
 	}
 	ls.facts = f
-	if HistClock && m.Arr != nil && *m.Arr < c.now { // look-back history: judge it at its own time, not at the day-0 clock
+	if HistClock && m.Arr != nil && *m.Arr < 0 && *m.Arr < c.now { // pre-day-0 look-back history only: never rewind a live-day decision
 		saved := c.now
 		c.now = *m.Arr
 		out = c.eval(ls, m.InSeq, m.ID)
