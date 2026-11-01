@@ -33,6 +33,10 @@ func main() {
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
+	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
+		runMCF(os.Stdin, os.Stdout)
+		return
+	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
 	data := fs.String("data", "../cohort", "cohort dir")
 	wasl := fs.String("wasl", "../../wasl/data", "wasl data dir (persons, encoder, scorer)")
