@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/nats-io/nats.go"
@@ -244,10 +245,23 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 	dobHeld, dobHeldWrong, dobReleasedWrong := 0, 0, 0
 	sidHeld, sidHeldWrong := 0, 0
 	guardRel := map[string]int{}
+	// own-programme outreach: a message about a resource of a programme-specific provider (lung, DR, breast) on a loop of
+	// another programme. CRC and cervical share providers, so that pair is not tested here (BuildOutreach filters by Prog).
+	progOfProv := map[string]string{}
+	for prog, pcs := range map[string][]ProvCfg{"lung_nodule": lungProviders, "diabetic_retinopathy": drProviders, "breast": breastProviders} {
+		for _, pc := range pcs {
+			progOfProv[pc.ID] = prog
+		}
+	}
+	var crossProg cnt
 	for k, x := range intents {
 		lt := o.tr.Loops[baseLoop(k.loop)] // child loops (<loop>#surv) message the parent's patient
 		if lt == nil {
 			continue
+		}
+		if ep := progOfProv[strings.SplitN(x.Event, "/", 2)[0]]; ep != "" && ep != lt.Prog {
+			crossProg.n++
+			crossProg.wrong += map[bool]int{true: 1}[released[k]]
 		}
 		wrong := o.tr.PKQid[o.evPK[x.Event]] != lt.Qid
 		w := 0
@@ -328,6 +342,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		"linker_stats": rp.L.Stats, "wrong_list": wrongList,
 		"dob_guard": map[string]int{"held": dobHeld, "held_wrong": dobHeldWrong, "released_wrong": dobReleasedWrong},
 		"v7_second_id_held": sidHeld, "v7_second_id_held_wrong": sidHeldWrong, "v7_released_by_guard": guardRel,
+		"cross_programme_outreach": map[string]int{"intents": crossProg.n, "released": crossProg.wrong},
 	}
 }
 

@@ -29,7 +29,10 @@ GSURV=(); [ "${WASL_LUNGSURV:=1}" = 0 ] || { PARGS+=(-lungsurv); GSURV=(-lungsur
 : "${WASL_REFREJECT:=true}"
 # WASL_DRNEXT=1 (default on): next due DR rescreen / clinic review and recall_overdue (pipeline/drnext.go), generator and engine
 [ "${WASL_DRNEXT:=1}" = 0 ] || { PARGS+=(-drnext); GSURV+=(-drnext); }
-export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT
+# WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women who hold another
+# programme's loop (pipeline/genbreast.go); needed above about 85 breast loops per cohort
+[ "${WASL_BREASTSHARE:=0}" = 0 ] || GSURV+=(-breastshare)
+export WASL_LUNGSURV WASL_XREFLINK WASL_REFREJECT WASL_DRNEXT WASL_BREASTSHARE
 if [ -n "$(git -C "$ROOT" status --porcelain -- pipeline booking scripts models data patient-parsers)" ] && [ -z "${WASL_ALLOW_DIRTY:-}" ]; then
   echo "refusing: uncommitted changes in code/models/data (the evaluation must be frozen to a commit)"; exit 1
 fi
@@ -71,6 +74,8 @@ if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
     m["handoff_xreflink"] = True
 if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung work-up / DR eye-clinic referrals (handoffext.go)
     m["handoff_refreject"] = True
+if os.environ.get("WASL_BREASTSHARE", "0") not in ("", "0"):  # gen: breast loops may use women with another loop (genbreast.go)
+    m["breast_share"] = True
 json.dump(m, open(out, 'w'), indent=1)
 print("frozen", rev[:12], "seeds", seeds)
 P
