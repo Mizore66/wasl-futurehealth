@@ -184,10 +184,35 @@ func (L *LinkerCore) mergeAllowed(ra, rb int, force bool) bool {
 	return true
 }
 
+// eidClash reports whether the two clusters hold registrations with different Luhn-valid Emirates IDs. A single-digit
+// typo never keeps a number Luhn-valid, so two valid, different numbers belong to two people. Candidates are linked in
+// score order, so the pairwise EID conflict (cannot2) is not enough on its own: a registration without an Emirates ID
+// can bridge the two clusters first, and a later cannot-link then sits inside one cluster. X10: three of the six
+// failures (two wrong-patient pairs and a false closure) were such clusters.
+func (L *LinkerCore) eidClash(ra, rb int) bool {
+	for _, x := range L.members[ra] {
+		rx := L.recs[x]
+		if rx.Eid == "" {
+			continue
+		}
+		for _, y := range L.members[rb] {
+			ry := L.recs[y]
+			if (rx.eidOK && ry.eidOK && rx.Eid != ry.Eid) || eidContradict(rx.Eid, ry.Eid) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) bool {
 	ra, rb := L.Find(a), L.Find(b)
 	if ra == rb {
 		L.addEdge(a, b, p, basis)
+		return false
+	}
+	if basis != "human" && L.eidClash(ra, rb) { // a reviewer's "same" may still override (an Emirates ID can be reissued)
+		L.Stats["eid_cluster_clash"]++
 		return false
 	}
 	if !L.mergeAllowed(ra, rb, force) {
@@ -455,6 +480,11 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			if c.p < L.Lo {
 				c.p = L.Lo
 			}
+		}
+		if eidContradict(r.Eid, o.Eid) { // a typo broke the check digit on a side, but the numbers are clearly different
+			L.cannot2(r.idx, c.j)
+			L.Stats["eid_conflicts"]++
+			continue
 		}
 		if c.p >= L.Thr {
 			if V7Cal != nil {
@@ -988,4 +1018,21 @@ func contactOf(m map[string]string, pk string) string {
 		return s
 	}
 	return "unknown"
+}
+
+// eidContradict reports whether two captured Emirates ID numbers cannot be one person's number. Capture noise is a
+// one-digit slip per registration, so two copies of one number differ in at most two positions (a transposition is the
+// largest realistic slip); three or more differences mean two numbers. This covers pairs the Luhn rule cannot judge
+// because a typo broke the check digit on a side. Missing, truncated or default/dummy numbers say nothing.
+func eidContradict(a, b string) bool {
+	if len(a) != 15 || len(b) != 15 || dummyEID(a) || dummyEID(b) {
+		return false
+	}
+	d := 0
+	for i := 0; i < 15; i++ {
+		if a[i] != b[i] {
+			d++
+		}
+	}
+	return d >= 3
 }
