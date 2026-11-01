@@ -29,7 +29,7 @@ func selfOutreach(f *LoopFacts, prog, kind string) Outreach {
 	switch {
 	case f.MsgOptOut:
 		o.Suppress = SupConsent
-	case ConsentHold && f.Contact != "granted":
+	case f.Contact != "granted": // C11-C13 always require a grant, even if the legacy ConsentHold switch is disabled.
 		if f.Contact == "unknown" || f.Contact == "" {
 			o.Suppress, o.Guard = SupConsentHold, "held_until_consent"
 		} else {
@@ -47,7 +47,8 @@ func rejectedOutreach(d *Decision, f *LoopFacts, prog, kind string) {
 		return
 	}
 	o := selfOutreach(f, prog, kind)
-	d.Outreach = append(d.Outreach, o)
+	// A final rejection supersedes contradictory due, overdue or rebooking outreach for the same referral.
+	d.Outreach = []Outreach{o}
 	d.Handoff.PatientInformed = o.Released
 }
 
