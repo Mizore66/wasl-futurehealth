@@ -47,6 +47,8 @@ func main() {
 	speed := fs.Float64("speed", 0, "simulated days per wall second (0 = max)")
 	chaos := fs.Int("chaos", 0, "kill/restart cycles")
 	natsKill := fs.Bool("natskill", false, "also kill+restart one NATS node during the run")
+	chaosSpan := fs.Float64("chaosspan", 0, "orchestrate: seconds over which the kill/restart cycles are spread (0 = default, 15 s; larger cohorts have a longer feed)")
+	quietTO := fs.Duration("quiettimeout", 5*time.Minute, "orchestrate: stop waiting for quiescence after this long (larger cohorts need more)")
 	seed := fs.Int64("seed", 2026, "")
 	loops := fs.Int("loops", 1500, "")
 	distract := fs.Int("distract", 700, "")
@@ -129,7 +131,7 @@ func main() {
 	tauLTT := fs.Bool("taultt", false, "internal: -tauclose came from Learn-then-Test (forwarded to workers by v7ltt)")
 	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
-	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration)")
+	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
@@ -228,6 +230,7 @@ func main() {
 	}
 	NoiseModel = *noise
 	GenSplit = *split
+	ChaosSpan, QuietTimeout = *chaosSpan, *quietTO
 	ReaderMode = *readerMode
 	switch *readerMode {
 	case "cached":
@@ -635,10 +638,14 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		panic("WASL_JS_KEY must start with a letter (nats-server parses a leading digit as a number)")
 	}
 	natsBin := filepath.Join(filepath.Dir(self), "..", "bin", "nats-server")
-	for i := 0; i < 3; i++ {
-		o.start(fmt.Sprintf("nats-%d", i), natsBin, "-c", natsConf(run, i))
+	if NatsExternal { // deployment: the cluster runs outside the orchestrator (docker-compose nats-0..2)
+		fmt.Printf("NATS: external cluster %s (not started or killed by the orchestrator)\n", NatsURL)
+	} else {
+		for i := 0; i < 3; i++ {
+			o.start(fmt.Sprintf("nats-%d", i), natsBin, "-c", natsConf(run, i))
+		}
+		time.Sleep(1500 * time.Millisecond)
 	}
-	time.Sleep(1500 * time.Millisecond)
 	c := func(args ...string) []string {
 		return append(append(args, "-data", data, "-wasl", wasl, "-run", run, "-P", fmt.Sprint(P)), govArgs...)
 	}
@@ -693,6 +700,9 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if speed > 0 {
 		expect = TEnd / speed
 	}
+	if ChaosSpan > 0 { // larger cohorts: spread the kill/restart cycles over the longer feed (default 0 = unchanged)
+		expect = ChaosSpan
+	}
 	victims := [][]string{{"linker"}, {fmt.Sprintf("closure-%d", rng.Intn(P)), "prep-0"}, {"linker", fmt.Sprintf("closure-%d", rng.Intn(P))},
 		{fmt.Sprintf("closure-%d", rng.Intn(P)), "prep-1"}, {"linker", "prep-2"}}
 	var subDone sync.WaitGroup
@@ -701,6 +711,8 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	subExpect := 6.0 // full-speed feed length (s) measured on this cohort
 	if speed > 0 {
 		subExpect = expect
+	} else if ChaosSpan > 0 {
+		subExpect = ChaosSpan * 6 / 15
 	}
 	if SrcCfg.Source == "hl7" && SrcCfg.SubKill > 0 { // kill/restart the MLLP listener mid-feed (sender reconnects, re-sends unACKed)
 		subDone.Add(1)
@@ -789,7 +801,9 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 			evMu.Unlock()
 			fmt.Printf("chaos cycle %d: killed %v at %.1fs, restarted after %.1fs\n", cy+1, vs, ev["t_kill"], down)
 		}
-		if natsKill {
+		if natsKill && NatsExternal {
+			fmt.Println("chaos: NATS node kill skipped (external cluster)")
+		} else if natsKill {
 			time.Sleep(time.Duration(expect * 0.1 * float64(time.Second)))
 			o.kill("nats-2")
 			ev := map[string]interface{}{"cycle": "nats", "victims": []string{"nats-2"}, "t_kill": time.Since(t0).Seconds()}
@@ -886,7 +900,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		if stable >= 6 {
 			break
 		}
-		if time.Since(t0) > 5*time.Minute {
+		if time.Since(t0) > QuietTimeout {
 			fmt.Println("timeout waiting for quiescence")
 			break
 		}

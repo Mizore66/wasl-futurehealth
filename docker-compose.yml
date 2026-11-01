@@ -1,0 +1,101 @@
+# Wasl on-premise package (docs/DEPLOY.md): a 3-node NATS JetStream cluster with encryption at rest, the pipeline
+# (demo cohort end to end, chaos on) and the read API.
+#   One command:  scripts/deploy_up.sh          (makes a JetStream key for this shell only, then `docker compose up`)
+#   By hand:      WASL_JS_KEY=k<64 hex> docker compose up --build
+# The key must start with a letter (nats-server parses a leading digit as a number). It is never written to disk by
+# this package; a deployment keeps it in its KMS/HSM and injects it at start.
+
+x-wasl-env: &wasl-env
+  WASL_NATS_URL: nats://nats-0:4222,nats://nats-1:4222,nats://nats-2:4222
+  WASL_NATS_EXTERNAL: "1"
+  WASL_OUT: /var/lib/wasl
+  WASL_SEED: ${WASL_SEED:-2026}
+  WASL_POLICY: ${WASL_POLICY:-v7strict}
+  WASL_SOURCE: ${WASL_SOURCE:-fhir}
+  WASL_READER: cached
+  WASL_LUNG: ${WASL_LUNG:-0}
+  WASL_DR: ${WASL_DR:-0}
+  WASL_BREAST: ${WASL_BREAST:-0}
+
+x-nats: &nats
+  image: nats:2.12.1-alpine
+  command: ["nats-server", "-c", "/etc/nats/wasl.conf"]
+  volumes:
+    - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
+  healthcheck:
+    test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
+    interval: 5s
+    timeout: 3s
+    retries: 24
+  restart: unless-stopped
+
+services:
+  nats-0:
+    <<: *nats
+    hostname: nats-0
+    environment:
+      NATS_SERVER_NAME: n0
+      WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
+    volumes:
+      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
+      - nats-0:/data
+  nats-1:
+    <<: *nats
+    hostname: nats-1
+    environment:
+      NATS_SERVER_NAME: n1
+      WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
+    volumes:
+      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
+      - nats-1:/data
+  nats-2:
+    <<: *nats
+    hostname: nats-2
+    environment:
+      NATS_SERVER_NAME: n2
+      WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
+    volumes:
+      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
+      - nats-2:/data
+
+  # One-shot: generate the demo cohort, run every pipeline service against the cluster (with kill/restart chaos),
+  # then audit, tamper check, booking and the summary (scripts/demo.sh container). Exits 0 when the run is done.
+  pipeline:
+    build: .
+    image: wasl:local
+    command: ["container"]
+    environment: *wasl-env
+    volumes:
+      - wasl-run:/var/lib/wasl
+    depends_on:
+      nats-0: {condition: service_healthy}
+      nats-1: {condition: service_healthy}
+      nats-2: {condition: service_healthy}
+    restart: "no"
+
+  # Read API over the finished run (docs/API.md), on the host's loopback only.
+  api:
+    build: .
+    image: wasl:local
+    command: ["serve"]
+    environment:
+      <<: *wasl-env
+      WASL_API_ADDR: 0.0.0.0:8088
+    volumes:
+      - wasl-run:/var/lib/wasl
+    ports:
+      - "127.0.0.1:${WASL_API_PORT:-8088}:8088"
+    depends_on:
+      pipeline: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8088/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+
+volumes:
+  nats-0:
+  nats-1:
+  nats-2:
+  wasl-run:
