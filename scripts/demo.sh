@@ -17,6 +17,7 @@
 #      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
 #      WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (pipeline/genadv.go; default 0 = off): relatives' Emirates IDs / wrong referral numbers.
 #      WASL_BREASTSHARE=1 lets breast loops use women who hold another programme's loop once the others run out (default 0).
+#      WASL_LDCT=N adds N lung cancer screening LDCT loops (acr2022lungrads, fifth loop type; default 0).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -38,6 +39,8 @@ DR="${WASL_DR:-0}"                 # diabetic retinopathy screening loops (third
 [ "$DR" = 0 ] || RUN="$RUN-dr"
 BREAST="${WASL_BREAST:-0}"         # breast screening recall loops (fourth loop type); 0 = off
 [ "$BREAST" = 0 ] || RUN="$RUN-breast"
+LDCT="${WASL_LDCT:-0}"             # lung cancer screening LDCT loops (fifth loop type); 0 = off
+[ "$LDCT" = 0 ] || RUN="$RUN-ldct"
 MODELSET="${WASL_MODELSET:-}"; [ -z "$MODELSET" ] || RUN="$RUN-$MODELSET"
 MARGS=(); [ -z "$MODELSET" ] || MARGS=(-modelset "$MODELSET")
 SHADOW="${WASL_SHADOW:-0}"; AUTOAUDIT="${WASL_AUTOAUDIT:-0}"   # pilot switches (pipeline/pilot.go); 0 = off
@@ -131,6 +134,11 @@ check() {
       [ -s "$ROOT/$f" ] || need "$f" "committed in the repo (corpus: scripts/breast_corpus.py; cache: wsi7 breastcache with llama-server on :8791)"
     done
   fi
+  if [ "$LDCT" != 0 ]; then
+    for f in data/ldct/screen_reports.json data/ldct/workup_notes.json models/ldct_gemma_cache.json; do
+      [ -s "$ROOT/$f" ] || need "$f" "committed in the repo (corpus: scripts/ldct_corpus.py; cache: wsi7 ldctcache with llama-server on :8791)"
+    done
+  fi
   if [ -n "$MODELSET" ]; then for f in encoder_$MODELSET lgb_stream_$MODELSET iso_$MODELSET iso_v7_$MODELSET; do
     [ -s "$ROOT/models/$f.json" ] || need "models/$f.json" "WASL_MODELSET=$MODELSET needs the full chain (encoder/README.md)"; done; fi
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
@@ -146,7 +154,7 @@ cohort() {
   rm -rf "$BASE" "$COHORT" "$OUT/run/base"; mkdir -p "$BASE" "$COHORT"
   "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
     -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-    -out "$BASE" -seed "$SEED" -persons "${WASL_PERSONS:-6500}" -cerv "${WASL_CERV:-600}" ${SARGS[@]+"${SARGS[@]}"} -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
+    -out "$BASE" -seed "$SEED" -persons "${WASL_PERSONS:-6500}" -cerv "${WASL_CERV:-600}" ${SARGS[@]+"${SARGS[@]}"} -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" -ldct "$LDCT" -ldctdata "$ROOT/data/ldct" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
   "$BIN/wsi7" sim -data "$BASE" -wasl "$ROOT/models" -run "$OUT/run/base" ${MARGS[@]+"${MARGS[@]}"} > "$OUT/run/base.json" 2> "$OUT/run/base.err"
   python3 "$ROOT/pipeline/augment_cohort.py" "$BASE" "$OUT/run/base" "$COHORT"
   echo "cohort → $COHORT"
@@ -178,7 +186,7 @@ snapshot() {  # write static API responses for frontend development (no backend 
   curl -sf "http://$A/healthz" > "$D/healthz.json"
   curl -sf "http://$A/api/dashboard" > "$D/dashboard.json"
   curl -sf "http://$A/api/fixtures" > "$D/fixtures.json"
-  for prog in crc cervical lung_nodule diabetic_retinopathy breast; do   # first page per programme present in the run
+  for prog in crc cervical lung_nodule diabetic_retinopathy breast lung_ldct; do   # first page per programme present in the run
     curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$D/cases_${prog}_page1.json.tmp" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open('$D/cases_${prog}_page1.json.tmp')).get('cases') else 1)" &&
       mv "$D/cases_${prog}_page1.json.tmp" "$D/cases_${prog}_page1.json" || rm -f "$D/cases_${prog}_page1.json.tmp"

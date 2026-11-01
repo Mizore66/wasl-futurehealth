@@ -1,0 +1,37 @@
+{
+ "ldct": {
+  "ldct-screen": {
+   "agree": 49,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "ls17 B:LR2 want LR3"
+   ],
+   "reader_a_regex_correct": 50,
+   "reader_b_gemma_correct": 49,
+   "reader_b_unavailable": 0,
+   "reports": 50,
+   "to_review": 1
+  },
+  "ldct-workup": {
+   "agree": 36,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "lw18 B:wk_incomplete want wk_surveillance",
+    "lw19 B:wk_incomplete want wk_surveillance",
+    "lw20 B:wk_incomplete want wk_surveillance",
+    "lw21 B:wk_incomplete want wk_surveillance",
+    "lw23 B:wk_incomplete want wk_surveillance",
+    "lw26 B:wk_dna want wk_incomplete",
+    "lw43 B:wk_treatment want indeterminate",
+    "lw44 B:wk_treatment want indeterminate",
+    "lw45 B:wk_treatment want indeterminate"
+   ],
+   "reader_a_regex_correct": 45,
+   "reader_b_gemma_correct": 36,
+   "reader_b_unavailable": 0,
+   "reports": 45,
+   "to_review": 9
+  }
+ },
+ "note": "dev corpus only (scripts/ldct_corpus.py, seed 31): the readers were written against these texts; NOT a fair test. No held-out set exists for this loop. Prompt v1 (first prompt)"
+}
