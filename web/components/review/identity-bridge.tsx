@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { Avatar, type AvatarState } from "@/components/avatar/avatar";
+import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
 import type { ReviewView, Verdict } from "./case-view";
+import type { IdentityAnswer } from "./decision";
 import { Mark, type Shape, type Tone } from "./marks";
 
 const VERDICT: Record<Verdict, { shape: Shape; tone: Tone }> = {
@@ -15,14 +18,31 @@ const VERDICT: Record<Verdict, { shape: Shape; tone: Tone }> = {
 const ARABIC = /[؀-ۿ]/;
 const CELL = "flex h-9 items-center overflow-hidden text-ellipsis whitespace-nowrap border-t border-rule";
 
-function RecordCard({ name, source, values, arabic }: { name: string; source: string; values: string[]; arabic?: boolean }) {
+type Shown = { person: PersonSeed; state: AvatarState; label: string };
+
+/** The report's face follows the reviewer's answer: "?" until they choose, then the referral's face or a stranger's. */
+function reportFace(view: ReviewView, answer: IdentityAnswer | undefined): Shown {
+  const { referral, report } = view.faces;
+  if (answer === "same") return { person: referral.person, state: report.state === "unknown" ? "resolving" : "known", label: `Same patient as ${view.name}` };
+  if (answer === "different") return { person: { key: view.reportRegistration }, state: "resolving", label: "A different patient" };
+  return { ...report, label: report.state === "unknown" ? "Not yet confirmed as this patient" : `Same patient as ${view.name}` };
+}
+
+function RecordCard({ name, source, values, arabic, face }: { name: string; source: string; values: string[]; arabic?: boolean; face: Shown }) {
   return (
     <div className="min-w-0 rounded-control border border-line px-4">
-      <div className="flex h-16 flex-col justify-center">
-        <div lang={arabic ? "ar" : undefined} dir={arabic ? "rtl" : undefined} className={cn("font-medium", arabic ? "pb-1 text-left font-arabic text-[22px] leading-[30px]" : "text-title")}>
-          {name}
+      <div className="flex h-16 items-center gap-3">
+        <Avatar person={face.person} state={face.state} size={40} label={face.label} />
+        <div className="flex min-w-0 flex-col justify-center">
+          <div
+            lang={arabic ? "ar" : undefined}
+            dir={arabic ? "rtl" : undefined}
+            className={cn("truncate font-medium", arabic ? "pb-1 text-left font-arabic text-[22px] leading-[30px]" : "text-[20px] leading-7")}
+          >
+            {name}
+          </div>
+          <div className="truncate text-small text-muted">{source}</div>
         </div>
-        <div className="text-small text-muted">{source}</div>
       </div>
       {values.map((v, i) => (
         <div key={i} className={cn(CELL, v === "not on report" ? "text-muted" : "text-ink")}>
@@ -57,8 +77,9 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
   );
 }
 
-export function IdentityBridge({ view }: { view: ReviewView }) {
+export function IdentityBridge({ view, answer }: { view: ReviewView; answer?: IdentityAnswer }) {
   const [why, setWhy] = useState(false);
+  const joined = answer === "same" || (!answer && view.faces.report.state === "known");
   return (
     <section aria-labelledby="bridge-h" className="rounded-card border border-line bg-surface p-6">
       <div className="flex items-center justify-between gap-3">
@@ -80,12 +101,30 @@ export function IdentityBridge({ view }: { view: ReviewView }) {
       </div>
 
       <div className="mt-3 grid grid-cols-[minmax(0,1fr)_176px_minmax(0,1fr)] gap-3">
-        <RecordCard name={view.referralName} source={view.referralSource} values={view.identity.map((r) => r.referral)} arabic />
+        <RecordCard
+          name={view.referralName}
+          source={view.referralSource}
+          values={view.identity.map((r) => r.referral)}
+          arabic
+          face={{ ...view.faces.referral, label: view.name }}
+        />
         <div>
           <div aria-hidden className="relative h-16">
-            <div className="absolute -inset-x-3 top-[31px] h-0.5 bg-ink" />
-            <div className="absolute left-1/2 top-[27px] -ml-[5px] size-2.5 rounded-full border-2 border-ink bg-surface" />
-            <div className="absolute inset-x-0 top-[42px] text-center text-small text-muted">proposed link</div>
+            <div
+              className={cn(
+                "absolute -inset-x-3 top-[31px] h-0.5 transition-colors",
+                joined ? "bg-hue" : answer === "different" ? "border-t-2 border-dashed border-control bg-transparent" : "bg-ink",
+              )}
+            />
+            <div
+              className={cn(
+                "absolute left-1/2 top-[27px] -ml-[5px] size-2.5 rounded-full border-2",
+                joined ? "border-hue bg-hue" : "border-ink bg-surface",
+              )}
+            />
+            <div className={cn("absolute inset-x-0 top-[42px] text-center text-small", joined ? "font-medium text-hue" : "text-muted")}>
+              {answer === "same" ? "same patient" : answer === "different" ? "not the same" : joined ? "confirmed link" : "proposed link"}
+            </div>
           </div>
           {view.identity.map((r) => (
             <div key={r.field} className="flex h-9 items-center gap-1.5 border-t border-rule px-1">
@@ -96,7 +135,7 @@ export function IdentityBridge({ view }: { view: ReviewView }) {
             </div>
           ))}
         </div>
-        <RecordCard name={view.reportName} source={view.reportSource} values={view.identity.map((r) => r.report)} />
+        <RecordCard name={view.reportName} source={view.reportSource} values={view.identity.map((r) => r.report)} face={reportFace(view, answer)} />
       </div>
 
       <p className="m-0 mt-4 font-medium">{view.identitySummary}</p>

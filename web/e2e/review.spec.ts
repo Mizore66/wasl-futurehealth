@@ -73,8 +73,11 @@ test.describe("review, fixtures mode", () => {
     await expect(r.getByRole("radiogroup", { name: /Bowel prep/ })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(r.locator('li[data-kind="current"]')).toContainText("your signature");
+    const bridge = page.getByRole("region", { name: "Is this the same person?" });
+    await expect(bridge.getByRole("img", { name: "Not yet confirmed as this patient" })).toHaveAttribute("data-state", "unknown");
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
+    await expect(bridge.getByRole("img", { name: "Same patient as Mariam Al Shamsi" })).toHaveAttribute("data-state", "resolving");
     await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toHaveAttribute("aria-checked", "true");
     await expect(r.getByText("Answer the bowel prep question to sign.")).toBeVisible();
     await expect(r.getByRole("button", { name: "Close the case" })).toHaveCount(0);

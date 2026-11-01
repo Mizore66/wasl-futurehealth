@@ -63,7 +63,7 @@ export function LanguageSheet({
                 )}
               >
                 <span className="flex-1">{o.label}</span>
-                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={on ? "#0a0a0a" : "transparent"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={on ? "var(--color-ink)" : "transparent"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5 12l5 5 9-10" />
                 </svg>
               </Link>

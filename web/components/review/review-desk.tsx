@@ -120,7 +120,7 @@ export function ReviewDesk({ view, mode, next }: { view: ReviewView; mode: ApiMo
   return (
     <div className="mt-6 flex flex-wrap items-start gap-3">
       <div className="flex min-w-0 flex-[999_1_560px] flex-col gap-3">
-        <IdentityBridge view={view} />
+        <IdentityBridge view={view} answer={draft.identity} />
         <ReadersTable view={view} signed={outcome?.prepCell} />
       </div>
 

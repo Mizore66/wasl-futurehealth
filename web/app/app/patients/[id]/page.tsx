@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { STANDARD_DAYS } from "@/components/worklist/days";
@@ -7,6 +8,7 @@ import { getAudit, getCase } from "@/lib/api/source";
 import { caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
 import { personFor, personForLoop } from "@/lib/people";
+import { recordFace, referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({ params }: PageProps<"/app/patients/[id]">) {
@@ -57,29 +59,32 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   return (
     <>
       <header className="flex flex-wrap items-start justify-between gap-gap">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-3">
-            <h1 className="m-0 text-title font-semibold">{person?.display_name ?? shortId(c.id)}</h1>
-            {person && (
-              <span lang="ar" dir="rtl" className="text-section text-muted">
-                {person.display_name_ar}
+        <div className="flex min-w-0 items-center gap-4">
+          <Avatar person={referralSeed(c.id)} size={56} label="" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <h1 className="m-0 text-title font-semibold">{person?.display_name ?? shortId(c.id)}</h1>
+              {person && (
+                <span lang="ar" dir="rtl" className="text-section text-muted">
+                  {person.display_name_ar}
+                </span>
+              )}
+              <span className="text-small text-muted">
+                {person && `${person.age} · `}
+                <span className="font-mono">{shortId(c.id)}</span>
               </span>
-            )}
-            <span className="text-small text-muted">
-              {person && `${person.age} · `}
-              <span className="font-mono">{shortId(c.id)}</span>
-            </span>
+            </div>
+            <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
+              {closedIn !== null ? (
+                <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
+              ) : (
+                <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
+              )}
+              <span className="text-muted">
+                {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
+              </span>
+            </p>
           </div>
-          <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
-            {closedIn !== null ? (
-              <Pill tone={closedIn <= due ? "positive" : "neutral"}>Closed day {closedIn}</Pill>
-            ) : (
-              <Pill tone={c.overdue ? "negative" : "neutral"}>{caseStage(detail).label}</Pill>
-            )}
-            <span className="text-muted">
-              {statusWords(c).status === "Closed" ? "closed with evidence" : statusWords(c).status.toLowerCase()} · owner {ownerLabel(c.owner)}
-            </span>
-          </p>
         </div>
         <HonestyLabel kind="simulated">Simulated names</HonestyLabel>
       </header>
@@ -123,9 +128,11 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
             <ul className="m-0 mt-3 list-none p-0">
               {detail.identities.map((idn) => {
                 const p = personFor(idn.registration);
+                const face = recordFace(detail, idn.registration);
                 return (
-                  <li key={idn.registration} className="flex items-baseline justify-between gap-3 border-t border-rule py-2.5 first:border-t-0">
-                    <span className="min-w-0">
+                  <li key={idn.registration} className="flex items-center gap-3 border-t border-rule py-2.5 first:border-t-0">
+                    <Avatar {...face} size={32} label={face.state === "unknown" ? "Not yet confirmed as this patient" : ""} />
+                    <span className="min-w-0 flex-1">
                       <span className="block text-small text-muted">{providerLabel(idn.provider)}</span>
                       {p ? (
                         <span lang={p.recorded_script === "arabic" ? "ar" : undefined} dir={p.recorded_script === "arabic" ? "rtl" : undefined} className="font-medium">

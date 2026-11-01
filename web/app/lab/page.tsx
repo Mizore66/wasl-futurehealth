@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Avatar, AvatarPair } from "@/components/avatar/avatar";
-import { SYSTEMS, type SystemId } from "@/components/avatar/traits";
+import { LabAvatar as Avatar, LabAvatarPair as AvatarPair } from "./lab-avatar";
+import { SYSTEMS, type SystemId } from "./systems";
 import { CAST, FATIMA, FATMA } from "./cast";
 import { PipelineMock } from "./pipeline-mock";
 import { ResolveLoop } from "./resolve-loop";

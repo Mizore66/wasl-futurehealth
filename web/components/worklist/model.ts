@@ -3,6 +3,8 @@ import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
 import { personForLoop } from "@/lib/people";
+import { referralSeed } from "@/lib/people/identity";
+import type { PersonSeed } from "@/lib/people/types";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 
 /*
@@ -87,6 +89,8 @@ export type WorkItem = {
   nameAr?: string;
   age?: number;
   named: boolean;
+  /** The referral patient, whose face the row shows. */
+  seed: PersonSeed;
   view: View;
   status: string;
   next: string;
@@ -111,6 +115,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkI
     nameAr: person?.display_name_ar,
     age: person?.age,
     named: !!person,
+    seed: referralSeed(c.id),
     view,
     status: words.status,
     next: words.next,

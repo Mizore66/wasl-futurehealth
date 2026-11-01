@@ -1,38 +1,20 @@
 import type { ReactNode } from "react";
 import "./avatar.css";
-import {
-  BG,
-  CLOTH,
-  COVER,
-  GHUTRA,
-  HAIR,
-  MOTIFS,
-  SKIN,
-  portrait,
-  sadu,
-  token,
-  type PersonSeed,
-  type PortraitFeatures,
-  type SaduFeatures,
-  type SystemId,
-  type TokenFeatures,
-  type Top,
-} from "./traits";
+import { BG, CLOTH, COVER, GHUTRA, HAIR, SKIN, portrait, type PersonSeed, type PortraitFeatures, type Top } from "./traits";
 
+/** `resolving` plays the joining moment once: "?" shrinks away and the face opens in its place. */
 export type AvatarState = "known" | "unknown" | "resolving";
 
-const INK = "#1b2224";
-const VOID = "#e9e5de";
-const VOID_INK = "#8b8f8c";
+export const INK = "#1b2224";
 
-function topFill(top: Top, color: number): string {
+export function topFill(top: Top, color: number): string {
   if (top === "ghutra") return GHUTRA[color];
   if (top === "shayla" || top === "hijab" || top === "kufi") return COVER[color];
   return HAIR[color];
 }
 
 /** Hair or headwear drawn behind the head. */
-function TopBehind({ top, fill }: { top: Top; fill: string }) {
+export function TopBehind({ top, fill }: { top: Top; fill: string }) {
   switch (top) {
     case "short":
       return <circle cx="32" cy="27" r="13.6" fill={fill} />;
@@ -53,7 +35,7 @@ function TopBehind({ top, fill }: { top: Top; fill: string }) {
 }
 
 /** Hair or headwear drawn over the head. Coverings leave an oval opening for the face (even-odd). */
-function TopFront({ top, fill }: { top: Top; fill: string }) {
+export function TopFront({ top, fill }: { top: Top; fill: string }) {
   switch (top) {
     case "short":
     case "wavy":
@@ -114,7 +96,7 @@ function TopFront({ top, fill }: { top: Top; fill: string }) {
 const FACE_RY = [12.6, 13.6, 14.6];
 const FACE_RX = [12.4, 11.4, 10.6];
 
-function PortraitSvg({ f }: { f: PortraitFeatures }) {
+export function PortraitSvg({ f }: { f: PortraitFeatures }) {
   const skin = SKIN[f.skin];
   const fill = topFill(f.top, f.topColor);
   const hairInk = HAIR[f.topColor % HAIR.length];
@@ -182,162 +164,76 @@ function Mouth({ kind, ink }: { kind: number; ink: string }) {
   return <ellipse cx="32" cy="39" rx="2.2" ry="1.5" fill={ink} />;
 }
 
-/** Point on a circle centred on (32,32); angle in degrees, 0 at twelve o'clock. */
-function polar(r: number, deg: number): string {
-  const a = ((deg - 90) * Math.PI) / 180;
-  return `${(32 + r * Math.cos(a)).toFixed(2)} ${(32 + r * Math.sin(a)).toFixed(2)}`;
-}
-
-function arc(r: number, from: number, to: number): string {
-  const large = to - from > 180 ? 1 : 0;
-  return `M${polar(r, from)}A${r} ${r} 0 ${large} 1 ${polar(r, to)}`;
-}
-
-const ORBIT_SPANS = [110, 170, 250];
-
-function TokenSvg({ f }: { f: TokenFeatures }) {
-  const rot = f.rotation * 45;
-  const seg = 360 / f.segments;
-  const gap = f.segments === 1 ? 0 : 22;
+/** The "?" face: a faint bust behind a question mark, for a record whose link is not trusted yet. */
+export function UnknownSvg() {
   return (
     <svg viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" fill={BG[f.bg]} />
-      {f.segments === 1 ? (
-        <circle cx="32" cy="32" r="26" fill="none" stroke={CLOTH[f.ring]} strokeWidth="8" />
-      ) : (
-        Array.from({ length: f.segments }, (_, i) => (
-          <path
-            key={i}
-            d={arc(26, rot + i * seg + gap / 2, rot + (i + 1) * seg - gap / 2)}
-            fill="none"
-            stroke={CLOTH[f.ring]}
-            strokeWidth="8"
-            strokeLinecap="round"
-          />
-        ))
+      <rect width="64" height="64" fill="var(--color-raised, #efe8dc)" />
+      <ellipse cx="32" cy="66" rx="23" ry="17" fill="var(--color-unknown, #8c9496)" opacity="0.3" />
+      <ellipse cx="32" cy="30" rx="12" ry="13.6" fill="var(--color-unknown, #8c9496)" opacity="0.3" />
+      <text x="32" y="37" textAnchor="middle" fontSize="20" fontWeight="700" fontFamily="system-ui, sans-serif" fill="var(--color-muted, #56666a)">
+        ?
+      </text>
+    </svg>
+  );
+}
+
+/** The two stacked layers every avatar system shares, so the "?" → face moment is one CSS rule. */
+export function AvatarFrame({
+  face,
+  unknown,
+  state,
+  size,
+  radius = "999px",
+  label,
+}: {
+  face?: ReactNode;
+  unknown: ReactNode;
+  state: AvatarState;
+  size: number;
+  radius?: string;
+  label: string;
+}) {
+  return (
+    <span
+      className="wav-root"
+      data-state={face ? state : "unknown"}
+      role={label ? "img" : undefined}
+      aria-label={label || undefined}
+      aria-hidden={label ? undefined : true}
+      style={{ width: size, height: size, borderRadius: radius }}
+    >
+      {face && (
+        <span className="wav-layer wav-face" style={{ borderRadius: radius, overflow: "hidden" }}>
+          {face}
+        </span>
       )}
-      <path d={arc(17.5, rot + 200, rot + 200 + ORBIT_SPANS[f.orbitSpan])} fill="none" stroke={CLOTH[f.orbit]} strokeWidth="5" strokeLinecap="round" />
-      <circle cx="32" cy="32" r="12" fill={SKIN[f.skin]} />
-      {f.glyph === 1 && <circle cx="32" cy="32" r="3.4" fill={INK} />}
-      {f.glyph === 2 && <path d="M32 27L37 32L32 37L27 32Z" fill={INK} />}
-      {f.glyph === 3 && <circle cx="32" cy="32" r="5" fill="none" stroke={INK} strokeWidth="1.8" />}
-    </svg>
+      <span className="wav-layer wav-unknown" style={{ borderRadius: radius, overflow: "hidden" }}>
+        {unknown}
+      </span>
+    </span>
   );
 }
-
-function Motif({ kind, ink }: { kind: number; ink: string }) {
-  const xs = [0, 8, 16, 24, 32, 40, 48, 56];
-  switch (MOTIFS[kind]) {
-    case "triangles":
-      return <path d={xs.map((x) => `M${x} 64L${x + 4} 54L${x + 8} 64Z`).join("")} fill={ink} />;
-    case "diamonds":
-      return <path d={xs.map((x) => `M${x + 4} 52L${x + 8} 58L${x + 4} 64L${x} 58Z`).join("")} fill={ink} />;
-    case "chevrons":
-      return <path d={xs.map((x) => `M${x} 61L${x + 4} 55L${x + 8} 61`).join("")} stroke={ink} strokeWidth="2.6" fill="none" />;
-    case "checks":
-      return <path d={xs.map((x, i) => `M${x} ${i % 2 ? 52 : 58}h8v6h-8Z`).join("")} fill={ink} />;
-    case "stripes":
-      return (
-        <g fill={ink}>
-          <rect x="0" y="53" width="64" height="2.5" />
-          <rect x="0" y="58.5" width="64" height="2.5" />
-        </g>
-      );
-    default:
-      return <g fill={ink}>{xs.map((x) => <circle key={x} cx={x + 4} cy="58" r="2.2" />)}</g>;
-  }
-}
-
-function SaduSvg({ f }: { f: SaduFeatures }) {
-  const fill = topFill(f.top, f.topColor);
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" fill={BG[f.bg]} />
-      <TopBehind top={f.top} fill={fill} />
-      <path d="M8 64C8 52 18 46 32 46C46 46 56 52 56 64Z" fill={SKIN[f.skin]} opacity="0.55" />
-      <ellipse cx="32" cy="30" rx="11.6" ry="13.4" fill={SKIN[f.skin]} />
-      <TopFront top={f.top} fill={fill} />
-      <rect x="0" y="50" width="64" height="14" fill={CLOTH[f.band]} />
-      <Motif kind={f.motif} ink={CLOTH[f.thread]} />
-    </svg>
-  );
-}
-
-function UnknownSvg({ system }: { system: SystemId }) {
-  const q = (
-    <text x="32" y={system === "token" ? 39.5 : 37} textAnchor="middle" fontSize="20" fontWeight="700" fontFamily="system-ui, sans-serif" fill={VOID_INK}>
-      ?
-    </text>
-  );
-  if (system === "token") {
-    return (
-      <svg viewBox="0 0 64 64" aria-hidden>
-        <rect width="64" height="64" fill={VOID} />
-        <circle cx="32" cy="32" r="26" fill="none" stroke={VOID_INK} strokeOpacity="0.45" strokeWidth="3" strokeDasharray="5 6" />
-        {q}
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" fill={VOID} />
-      <ellipse cx="32" cy="66" rx="23" ry="17" fill={VOID_INK} opacity="0.22" />
-      <ellipse cx="32" cy="30" rx="12" ry="13.6" fill={VOID_INK} opacity="0.22" />
-      {q}
-    </svg>
-  );
-}
-
-export function Face({ system, person }: { system: SystemId; person: PersonSeed }) {
-  if (system === "portrait") return <PortraitSvg f={portrait(person)} />;
-  if (system === "token") return <TokenSvg f={token(person)} />;
-  return <SaduSvg f={sadu(person)} />;
-}
-
-export const RADIUS: Record<SystemId, string> = { portrait: "999px", token: "999px", sadu: "24%" };
 
 export interface AvatarProps {
-  system: SystemId;
   /** The person the system believes in. Omit for a record no link has reached. */
   person?: PersonSeed;
   state?: AvatarState;
   size?: number;
+  /** Accessible name. Pass "" when a visible name sits beside the avatar and it is decoration. */
   label?: string;
 }
 
-export function Avatar({ system, person, state = person ? "known" : "unknown", size = 32, label }: AvatarProps) {
-  const radius = RADIUS[system];
+/** The patient avatar: a flat portrait drawn from a person key, or "?" while the record's link is not trusted. */
+export function Avatar({ person, state = person ? "known" : "unknown", size = 32, label }: AvatarProps) {
+  const unknown = state === "unknown" || !person;
   return (
-    <span
-      className="wav-root"
-      data-state={person ? state : "unknown"}
-      role="img"
-      aria-label={label ?? (state === "unknown" || !person ? "Identity not yet confirmed" : "Patient")}
-      style={{ width: size, height: size, borderRadius: radius }}
-    >
-      {person && (
-        <span className="wav-layer wav-face" style={{ borderRadius: radius, overflow: "hidden" }}>
-          <Face system={system} person={person} />
-        </span>
-      )}
-      <span className="wav-layer wav-unknown" style={{ borderRadius: radius, overflow: "hidden" }}>
-        <UnknownSvg system={system} />
-      </span>
-    </span>
-  );
-}
-
-/** Two records side by side: overlapped and ringed when they are one person, apart with ≠ when they are two. */
-export function AvatarPair({ system, a, b, size = 32, caption }: { system: SystemId; a: PersonSeed; b: PersonSeed; size?: number; caption?: ReactNode }) {
-  const same = a.key === b.key;
-  return (
-    <span className="wav-pair" data-same={same} style={{ ["--pair-size" as string]: `${size}px` }}>
-      <Avatar system={system} person={a} size={size} />
-      <span className="wav-link" aria-hidden>
-        ≠
-      </span>
-      <Avatar system={system} person={b} size={size} label={same ? "Same person" : "A different person"} />
-      {caption}
-    </span>
+    <AvatarFrame
+      face={person && <PortraitSvg f={portrait(person)} />}
+      unknown={<UnknownSvg />}
+      state={state}
+      size={size}
+      label={label ?? (unknown ? "Identity not yet confirmed" : "Patient")}
+    />
   );
 }

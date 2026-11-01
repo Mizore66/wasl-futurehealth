@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { SALIENT, SKIN, SYSTEMS, signature, type PersonSeed, type SystemId } from "@/components/avatar/traits";
+import { SKIN, signature, type PersonSeed } from "@/components/avatar/traits";
+import { LAB_SALIENT as SALIENT, SYSTEMS, type SystemId } from "@/app/lab/systems";
 
 const SEXES = ["female", "male", undefined] as const;
 const people: PersonSeed[] = Array.from({ length: 200 }, (_, i) => ({ key: `person-${String(i).padStart(4, "0")}`, sex: SEXES[i % 3] }));

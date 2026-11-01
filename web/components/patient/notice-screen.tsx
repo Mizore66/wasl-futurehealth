@@ -25,7 +25,7 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
           <p className={type.body}>{n.next}</p>
           <div className="mt-4 flex items-center gap-3">
             <span aria-hidden="true" className="flex size-11 flex-none items-center justify-center rounded-full bg-raised">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3d3d3d" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-ink-soft)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
               </svg>
@@ -51,7 +51,7 @@ export function NoticeScreen({ lang }: { lang: Lang }) {
                 <path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z" />
               </svg>
               <span className="flex-1 text-[16px]">{n.rights}</span>
-              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5f6368" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none ltr:-scale-x-100">
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none ltr:-scale-x-100">
                 <path d="M15 6l-6 6 6 6" />
               </svg>
             </button>
