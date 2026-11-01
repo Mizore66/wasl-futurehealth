@@ -194,14 +194,15 @@ func TestBreastSharedWomanOwnProgrammeOnly(t *testing.T) {
 	}
 }
 
-// Metrics: shared breast loops get their own block (absent otherwise), and a message about a breast-unit resource on
-// another programme's loop is counted as cross-programme outreach.
+// Metrics: shared breast loops get their own block (absent otherwise), and outreach is counted in both directions
+// between breast and another programme, including CRC and cervical provider events.
 func TestBreastShareMetrics(t *testing.T) {
 	rec4, _ := breastRule("B4")
 	tr := &Truth{Loops: map[string]*LoopTruth{
 		"B1": {Loop: "B1", Qid: "Q1", Prog: "breast", State: "closed", Breast: &BreastTruth{Label: "B4", Rec: rec4, Screens: []string{"S1"}, Notes: []string{"N1"}, SharedWith: []string{"crc"}}},
 		"B2": {Loop: "B2", Qid: "Q2", Prog: "breast", State: "open", Breast: &BreastTruth{Label: "B4", Rec: rec4, Screens: []string{"S2"}}},
 		"C1": {Loop: "C1", Qid: "Q1", Prog: "crc", State: "open"},
+		"V1": {Loop: "V1", Qid: "Q1", Prog: "cervical", State: "open"},
 	}, PKQid: map[string]string{"bau-hosp|BAU-1": "Q1", "ahs-mushrif|AHS-1": "Q1"}}
 	final := map[string]*Decision{
 		"B1": {State: "closed", ClosingReport: "N1", Breast: &BreastDecision{Rec: &rec4, Outcome: "return_routine"}},
@@ -216,13 +217,22 @@ func TestBreastShareMetrics(t *testing.T) {
 	if _, ok := breastMetrics(final, tr)["shared_person"]; ok {
 		t.Fatal("shared_person block present without shared loops")
 	}
-	o := &offline{tr: tr, evPK: map[string]string{"bau-hosp/DiagnosticReport/N1": "bau-hosp|BAU-1", "C1": "ahs-mushrif|AHS-1"},
+	o := &offline{tr: tr, evPK: map[string]string{"bau-hosp/DiagnosticReport/N1": "bau-hosp|BAU-1", "C1": "ahs-mushrif|AHS-1", "V1": "ahs-mushrif|AHS-1",
+		"skmc-endo/DiagnosticReport/CRC1": "ahs-mushrif|AHS-1", "corniche-wh/Appointment/CX1": "bau-hosp|BAU-1", "noor-endo/Appointment/VX1": "ahs-mushrif|AHS-1"},
 		optT: map[string]bool{}, dob: map[string]string{}}
-	rp := &replayOut{L: &LinkerCore{}, outs: []OutMsg{{Dec: &Decision{LoopID: "C1", Outreach: []Outreach{
-		{Kind: "appointment_reminder", Event: "bau-hosp/DiagnosticReport/N1", Released: true, Basis: "eid"},
-		{Kind: "appointment_reminder", Event: "C1", Released: true, Basis: "self"}}}}}}
+	rp := &replayOut{L: &LinkerCore{}, outs: []OutMsg{
+		{Dec: &Decision{LoopID: "C1", Outreach: []Outreach{
+			{Kind: "appointment_reminder", Event: "bau-hosp/DiagnosticReport/N1", Released: true, Basis: "eid"},
+			{Kind: "appointment_reminder", Event: "C1", Released: true, Basis: "self"}}}},
+		{Dec: &Decision{LoopID: "B1", Outreach: []Outreach{
+			{Kind: "appointment_reminder", Event: "skmc-endo/DiagnosticReport/CRC1", Released: true, Basis: "eid"},
+			{Kind: "appointment_reminder", Event: "corniche-wh/Appointment/CX1", Released: true, Basis: "eid"}}}},
+		{Dec: &Decision{LoopID: "V1", Outreach: []Outreach{
+			{Kind: "appointment_reminder", Event: "V1", Released: true, Basis: "self"},
+			{Kind: "appointment_reminder", Event: "noor-endo/Appointment/VX1", Released: true, Basis: "eid"}}}},
+	}}
 	g := govMetrics(o, rp)
-	if c := g["cross_programme_outreach"].(map[string]int); c["intents"] != 1 || c["released"] != 1 {
-		t.Fatalf("cross-programme outreach %v, want 1 intent, 1 released", c)
+	if c := g["cross_programme_outreach"].(map[string]int); c["intents"] != 3 || c["released"] != 3 {
+		t.Fatalf("cross-programme outreach %v, want 3 intents, 3 released", c)
 	}
 }

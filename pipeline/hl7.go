@@ -248,8 +248,13 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 	if rt := gs(res, "resourceType"); (rt == "DiagnosticReport" || rt == "ServiceRequest") && m.hl7DRRebuild(res) { // hl7dr.go: OBR-4 decides
 		return prov, msgID, res, nil
 	}
-	if rt := gs(res, "resourceType"); (rt == "DiagnosticReport" || rt == "ServiceRequest") && m.hl7BreastRebuild(res) { // hl7breast.go
-		return prov, msgID, res, nil
+	if rt := gs(res, "resourceType"); rt == "DiagnosticReport" || rt == "ServiceRequest" {
+		if m.hl7BreastRebuild(res) { // hl7breast.go
+			return prov, msgID, res, nil
+		}
+		if hl7BreastRebuildOn && hl7BreastCode(res) != "" {
+			return "", "", nil, fmt.Errorf("hl7: invalid breast segments")
+		}
 	}
 	if gs(res, "resourceType") == "DiagnosticReport" && m.hl7LungRebuild(res) {
 		return prov, msgID, res, nil
