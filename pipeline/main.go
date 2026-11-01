@@ -128,6 +128,7 @@ func main() {
 	lttGrid := fs.String("lttgrid", "0.999,0.995,0.99,0.98,0.95,0.90,0.80,0.70,0.50", "ltt: candidate closure link tiers, strict to loose")
 	tauLTT := fs.Bool("taultt", false, "internal: -tauclose came from Learn-then-Test (forwarded to workers by v7ltt)")
 	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
+	lttProg := fs.Bool("lttprog", false, "ltt: per-programme resolution and counts, second_identifier_confirm tally (ltt.go; off = rows as before)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
@@ -154,6 +155,7 @@ func main() {
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
 	linkConfirmDOB := fs.Bool("linkconfirmdob", false, "linker: with -linkconfirm, real birth dates more than a year apart also count as a contradiction (v7.go)")
 	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	secondIDConfirm := fs.Bool("secondidconfirm", true, "linker: with -linkconfirm, a second-identifier 'same' on a pair with contradicting sex or real birth dates needs a confirming review (second_identifier_confirm; v7.go)")
 	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
 	replayWL := fs.Bool("replayworklist", true, "ltt/sweep: the offline review loop answers items in emission order with the live reviewer's worklists (sweep.go)")
 	reuseLink := fs.Bool("reuselink", true, "review worklist: one link question per registration pair; other loops' queued twins are dropped once it is answered (v7.go)")
@@ -172,6 +174,8 @@ func main() {
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
 	LinkContradictionDOB = *linkConfirmDOB
+	SecondIDContradictionConfirm = *secondIDConfirm
+	LTTProg = *lttProg
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -277,7 +281,7 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
-	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-secondidconfirm=%v", SecondIDContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
 	}

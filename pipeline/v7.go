@@ -265,6 +265,11 @@ func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Pur
 // second-identifier answer it confirms, it never merges or cuts a cluster.
 const IDConfirm = "second_identifier_confirm"
 
+// SecondIDContradictionConfirm: the IDConfirm hold above, on its own switch so it can be measured apart from the link
+// contradiction confirm. It applies only with -linkconfirm (which still turns both off); default on, so behaviour is
+// unchanged. Flag -secondidconfirm.
+var SecondIDContradictionConfirm = true
+
 // secondIDPurpose: a messaging-confirmation item (the outreach guard's question or its confirming review).
 func secondIDPurpose(p string) bool { return p == "second_identifier" || p == IDConfirm }
 
