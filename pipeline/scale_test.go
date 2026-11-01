@@ -15,6 +15,26 @@ func TestNatsURLDefaultUnchanged(t *testing.T) {
 	}
 }
 
+func TestValidateNatsConfig(t *testing.T) {
+	tests := []struct {
+		name, rawURL, external string
+		ok                     bool
+	}{
+		{name: "local defaults", ok: true},
+		{name: "external pair", rawURL: "nats://nats-0:4222", external: "1", ok: true},
+		{name: "URL only", rawURL: "nats://nats-0:4222"},
+		{name: "external only", external: "1"},
+		{name: "URL with external disabled", rawURL: "nats://nats-0:4222", external: "0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := validateNatsConfig(tt.rawURL, tt.external); (err == nil) != tt.ok {
+				t.Fatalf("validateNatsConfig(%q, %q) error = %v, valid = %v", tt.rawURL, tt.external, err, tt.ok)
+			}
+		})
+	}
+}
+
 func TestNatsFirstHostPort(t *testing.T) {
 	old := NatsURL
 	defer func() { NatsURL = old }()

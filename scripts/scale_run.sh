@@ -6,7 +6,8 @@
 #   x10:    every person split (64,394 persons, training persons included: NOT a held-out accuracy estimate),
 #           15,000 CRC, 6,000 cervical, 8,000 lung, 12,000 DR, 400 breast (breast is capped by the women pool), 7,000 distractors
 # WASL_SCALE_TAMPER=0|1: run the tamper check (default 1 for normal, 0 for x10: it replays the whole run 17 times).
-# Writes <results dir>/<label>/: summary.txt, report7.json, orchestrate.json, rss.json, timing.json, tamper.txt.
+# Writes <results dir>/<label>/: summary.txt, report7.json, orchestrate.json, rss.json, timing.json, tamper.txt;
+# unexpected linker exits also retain a sanitized linker-restarts.log for the separate safety investigation.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LABEL="${1:?normal|x10}"; SCR="${2:?scratch dir}"; RES="${3:-$ROOT/pipeline/results/scale}"
@@ -48,6 +49,23 @@ for k in ("linker", "reviewer", "fhirsub", "malaffi", "closures"):   # live stat
 for ev in o.get("chaos", []):
     ev.pop("status_before_kill", None)
 json.dump(o, open(sys.argv[2], "w"), indent=1, default=str)
+EOF
+python3 - "$RUN/logs/linker.log" "$D/linker-restarts.log" "$D/orchestrate.json" <<'EOF'
+import json, os, re, sys
+src, dst, orchestrate = sys.argv[1:]
+o = json.load(open(orchestrate))
+n = o.get("supervisor", {}).get("linker", {}).get("unexpected_exits_restarted", 0)
+if not n:
+    if os.path.exists(dst):
+        os.remove(dst)
+    raise SystemExit(0)
+text = open(src).read()
+text = re.sub(r"/Users/\S+?/pipeline/", "<worktree>/pipeline/", text)
+text = re.sub(r"/opt/homebrew/Cellar/go/\S+/libexec/", "<go>/", text)
+text = re.sub(r"/(?:Users|home)/[^\s:]+", "<local>", text)
+with open(dst, "w") as f:
+    f.write("# Sanitized linker log: %d unexpected supervisor restarts; original retained in scratch.\n" % n)
+    f.write(text)
 EOF
 python3 - "$D/timing.json" "$LABEL" "$t0" "$t1" "$t2" "$t3" "$t4" "$t5" "$L0" "$L1" "$(sysctl -n hw.ncpu 2>/dev/null || nproc)" "$(sysctl -n hw.memsize 2>/dev/null || echo 0)" <<'EOF'
 import json, sys

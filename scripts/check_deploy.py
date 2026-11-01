@@ -94,6 +94,20 @@ for l in df:
             elif not included(s if not os.path.isdir(os.path.join(ROOT, s)) else s + "/x"):
                 err("Dockerfile: COPY source %s excluded by .dockerignore" % s)
 
+# ---------- shell entrypoints ----------
+up = open(os.path.join(ROOT, "scripts/deploy_up.sh")).read()
+for need in ("docker volume ls", "Refusing to generate a different key", "docker compose down -v",
+             "not written to repo or image"):
+    if need not in up:
+        err("deploy_up.sh: missing retained-volume/key safeguard %r" % need)
+if "never written to disk" in up or "never writes it to disk" in up:
+    err("deploy_up.sh: Docker host container configuration makes a never-disk claim inaccurate")
+demo = open(os.path.join(ROOT, "scripts/demo.sh")).read()
+for need in ("WASL_NATS_URL requires WASL_NATS_EXTERNAL=1", "WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL",
+             "validate_nats_config"):
+    if need not in demo:
+        err("demo.sh: missing external-NATS validation %r" % need)
+
 # ---------- deploy/nats/nats.conf ----------
 nc = open(os.path.join(ROOT, "deploy/nats/nats.conf")).read()
 for need in ("cipher: chachapoly", "key: $WASL_JS_KEY", "nats-route://nats-0:6222", "nats-route://nats-1:6222",

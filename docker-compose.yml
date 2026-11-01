@@ -1,9 +1,9 @@
 # Wasl on-premise package (docs/DEPLOY.md): a 3-node NATS JetStream cluster with encryption at rest, the pipeline
 # (demo cohort end to end, chaos on) and the read API.
-#   One command:  scripts/deploy_up.sh          (makes a JetStream key for this shell only, then `docker compose up`)
+#   One command:  scripts/deploy_up.sh          (makes a JetStream key if none is supplied, then `docker compose up`)
 #   By hand:      WASL_JS_KEY=k<64 hex> docker compose up --build
-# The key must start with a letter (nats-server parses a leading digit as a number). It is never written to disk by
-# this package; a deployment keeps it in its KMS/HSM and injects it at start.
+# The key must start with a letter (nats-server parses a leading digit as a number). It is not written to the repo or
+# image; Docker stores container environment configuration on its host. A deployment injects it from its KMS/HSM.
 
 x-wasl-env: &wasl-env
   WASL_NATS_URL: nats://nats-0:4222,nats://nats-1:4222,nats://nats-2:4222

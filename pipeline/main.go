@@ -166,6 +166,10 @@ func main() {
 	autoAudit := fs.Float64("autoaudit", 0, "pilot: fraction of automatic closures given a post-closure clinician audit (normal mode only; 0 = off)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	if err := validateNatsConfig(os.Getenv("WASL_NATS_URL"), os.Getenv("WASL_NATS_EXTERNAL")); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
 	PrepQuery, ErrUngraded = *prepQ, *errUng
 	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
 	XRefLinkQ = *xrefLink

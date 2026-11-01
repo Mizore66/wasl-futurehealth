@@ -9,10 +9,11 @@ package main
 // output high-water mark; outputs at/above it are re-published with deterministic msg ids (JetStream dedupe).
 import (
 	"bufio"
-	"math"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -43,6 +44,17 @@ func natsURL(env string, off int) string {
 // NatsExternal: WASL_NATS_EXTERNAL=1 with WASL_NATS_URL = the cluster is managed outside the orchestrator, which then
 // neither starts nor kills NATS nodes (the -natskill chaos cycle is skipped and reported as such).
 var NatsExternal = os.Getenv("WASL_NATS_EXTERNAL") == "1" && os.Getenv("WASL_NATS_URL") != ""
+
+// validateNatsConfig rejects a half-configured external cluster before a command opens data, models or services.
+func validateNatsConfig(rawURL, external string) error {
+	if rawURL != "" && external != "1" {
+		return errors.New("WASL_NATS_URL requires WASL_NATS_EXTERNAL=1")
+	}
+	if rawURL == "" && external == "1" {
+		return errors.New("WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL")
+	}
+	return nil
+}
 
 // natsFirstHostPort: host:port of the first NATS URL (the API health check dials it).
 func natsFirstHostPort() string {
@@ -145,8 +157,35 @@ func setupStreams(replicas, P int) {
 	nc, js := connect("setup")
 	defer nc.Close()
 	ctx := context.Background()
+	// A cohort is a fresh run, not a service restart. In particular, external NATS volumes survive the run directory:
+	// retaining SEEN would suppress regenerated ids, while FHIRSUB/FHIRPOLL could resume beyond or at EOF of new input.
+	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL"} {
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteKeyValue(ctx, bucket)
+			if err == nil || errors.Is(err, jetstream.ErrBucketNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset KV bucket %s: %v", bucket, err))
+		}
+	}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
-		js.DeleteStream(ctx, s)
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteStream(ctx, s)
+			if err == nil || errors.Is(err, jetstream.ErrStreamNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset stream %s: %v", s, err))
+		}
 	}
 	subj := map[string][]string{"FHIR": {"fhir.>"}, "PREP": {"prep"}, "FACTS": {"facts.>"}, "OUT": {"out.>"}}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
