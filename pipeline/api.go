@@ -30,7 +30,7 @@ const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | ifhas
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -419,7 +419,7 @@ func (s *apiServer) envelope(body map[string]interface{}) map[string]interface{}
 
 func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 	nats := "not_required_for_read_api"
-	if conn, err := net.DialTimeout("tcp", natsFirstHostPort(), 300*time.Millisecond); err == nil {
+	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", 14822+PortOff), 300*time.Millisecond); err == nil {
 		conn.Close()
 		nats = "up"
 	}
@@ -490,8 +490,8 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Breast != nil { // breast: BI-RADS category, rule, deadline, assessment outcome
 		m["breast"] = c.last.Breast
 	}
-	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
-		m["ldct"] = c.last.LDCT
+	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
+		m["ifhas"] = c.last.Ifhas
 	}
 	return m
 }
@@ -646,7 +646,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
 		act = ActSignEvidence
 	}
-	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
+	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(req.Decision) != nil { // IFHAS labels (bp=H;glyc=N;lipid=N;weight=O, glyc=managed, dna)
 		act = ActSignEvidence
 	}
 	if act == "" {

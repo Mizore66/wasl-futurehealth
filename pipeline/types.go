@@ -261,6 +261,7 @@ type Decision struct {
 	LDCT           *LDCTDecision   `json:"ldct,omitempty"`   // lung cancer screening loop: Lung-RADS category, rule, clocks, follow-up / work-up outcome (ldct.go)
 	Handoff        *HandoffPacket `json:"handoff,omitempty"` // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
+	Ifhas          *IfhasDecision `json:"ifhas,omitempty"` // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.
