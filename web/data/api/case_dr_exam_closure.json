@@ -1,0 +1,410 @@
+{
+ "api_reviews": [],
+ "booking": {
+  "data_mode": "simulated",
+  "reason": "case does not need a colonoscopy slot at the end of the run",
+  "status": "not_applicable"
+ },
+ "case": {
+  "closed": true,
+  "closed_day": -15.454,
+  "consent": "granted",
+  "deadline_day": 91,
+  "decisions": 3,
+  "dr": {
+   "screen_report": "PHC-dr-1077",
+   "screen_label": "R2M0",
+   "rec": {
+    "action": "refer",
+    "deadline_days": 91,
+    "urgency": "routine",
+    "cell": "R2M0"
+   },
+   "grade_day": -63.02478009259259,
+   "deadline_day": 27.975219907407407,
+   "clinic_note": "EYE-dr-83",
+   "outcome": "examined_followup",
+   "examined": true,
+   "within_deadline": true,
+   "next_due": {
+    "kind": "clinic_review",
+    "from_day": -15.454108796296296,
+    "interval_days": 183,
+    "due_day": 167.54589120370372,
+    "basis": "note_review_interval"
+   }
+  },
+  "dropoff": "",
+  "fixture": "dr_exam_closure",
+  "id": "phc-retina/ServiceRequest/PHC-sr-1029",
+  "overdue": false,
+  "owner": "",
+  "priority": "",
+  "programme": "diabetic_retinopathy",
+  "provider": "phc-retina",
+  "referral_day": -63.0247,
+  "review": "none",
+  "state": "closed"
+ },
+ "current": {
+  "id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4210",
+  "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+  "in_seq": 4210,
+  "prov": "phc-retina",
+  "sr_day": -63.02478009259259,
+  "now": 0,
+  "state": "closed",
+  "overdue": false,
+  "unowned": true,
+  "reported_closed": false,
+  "closed_day": -15.454108796296296,
+  "closing_report": "EYE-dr-83",
+  "notif_day": -1,
+  "ack_day": -1,
+  "ref_status": "none",
+  "ref_day": -1,
+  "dropoff": "",
+  "prog": "diabetic_retinopathy",
+  "deadline": 91,
+  "proc_day": -15.454108796296296,
+  "chain": [
+   {
+    "type": "evidence",
+    "body": {
+     "agree": true,
+     "human_override": "",
+     "label": "R2M0",
+     "reader_a_fields": {
+      "label": "R2M0",
+      "m_left": "0",
+      "m_right": "0",
+      "quote": "Right eye: severe non-proliferative diabetic retinopathy; no maculopathy",
+      "r_left": "1",
+      "r_right": "2"
+     },
+     "reader_a_regex": "R2M0",
+     "reader_b": "R2M0",
+     "reader_b_fields": {
+      "label": "R2M0",
+      "m_left": "0",
+      "m_right": "0",
+      "quote": "mild non-proliferative diabetic retinopathy",
+      "r_left": "1",
+      "r_right": "2"
+     },
+     "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+     "report": "phc-retina/DiagnosticReport/PHC-dr-1077",
+     "rule": "two_reader_field_consensus"
+    },
+    "prev": "genesis",
+    "hash": "08387aff32485b85b7152d0cf659756088456c9c4f61949e136e375533f30212"
+   },
+   {
+    "type": "recommendation",
+    "body": {
+     "action": "refer",
+     "cell": "R2M0",
+     "deadline_days": 91,
+     "grade_day": -63.0247,
+     "rule": "doh2024dr",
+     "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
+     "urgency": "routine"
+    },
+    "prev": "08387aff32485b85b7152d0cf659756088456c9c4f61949e136e375533f30212",
+    "hash": "be6ec00c7423a1b6fc1454aa6943874c7cd840799374cacf5459869177cce541"
+   },
+   {
+    "type": "link_decision",
+    "body": {
+     "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-83",
+     "hops": 1,
+     "linker": "wasl-v3-retrained+iso+eid",
+     "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+     "near_miss": false,
+     "path_p_cal": 1,
+     "path_strength": 1,
+     "referral_patient": "phc-retina|PHC-MRN001029",
+     "tau": 0.99,
+     "weakest_edge": {
+      "a": "phc-retina|PHC-MRN001029",
+      "b": "eye-hosp|EYE-MRN000072",
+      "basis": "eid",
+      "p": 1
+     }
+    },
+    "prev": "be6ec00c7423a1b6fc1454aa6943874c7cd840799374cacf5459869177cce541",
+    "hash": "a1a9ab4834a1a6fb5613f0b3386b5f54beadf6756001777432f129d2ae7d5290"
+   },
+   {
+    "type": "evidence",
+    "body": {
+     "agree": true,
+     "human_override": "",
+     "label": "examined_followup",
+     "reader_a_fields": {
+      "attended": "yes",
+      "fundus": "examined",
+      "label": "examined_followup",
+      "outcome": "followup",
+      "quote": "Fundus examined after dilation: maculopathy without centre involvement",
+      "review_days": 183
+     },
+     "reader_a_regex": "examined_followup",
+     "reader_b": "examined_followup",
+     "reader_b_fields": {
+      "attended": "yes",
+      "fundus": "examined",
+      "label": "examined_followup",
+      "outcome": "followup",
+      "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months."
+     },
+     "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+     "report": "eye-hosp/DiagnosticReport/EYE-dr-83",
+     "rule": "two_reader_field_consensus"
+    },
+    "prev": "a1a9ab4834a1a6fb5613f0b3386b5f54beadf6756001777432f129d2ae7d5290",
+    "hash": "98c334e68aaf351a076255d5fab1b95d4f8d7c535ccec47989b7c35ac08789fc"
+   },
+   {
+    "type": "closure_decision",
+    "body": {
+     "closed_day": -15.454,
+     "deadline_day": 27.9752,
+     "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+     "outcome": "examined_followup",
+     "policy": "trusted link (p_cal\u003e=tau|eid|human) AND two-reader agreement that the retina was examined (or clinician sign-off)",
+     "programme": "diabetic_retinopathy",
+     "rule": "doh2024dr",
+     "state": "closed",
+     "within_deadline": true
+    },
+    "prev": "98c334e68aaf351a076255d5fab1b95d4f8d7c535ccec47989b7c35ac08789fc",
+    "hash": "df7357fcce26e7d880599a8ffa1ac7783499cf0fc1cb1e7c94b7f336693e437c"
+   }
+  ],
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "contact": "granted",
+  "sig": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1",
+  "dr": {
+   "screen_report": "PHC-dr-1077",
+   "screen_label": "R2M0",
+   "rec": {
+    "action": "refer",
+    "deadline_days": 91,
+    "urgency": "routine",
+    "cell": "R2M0"
+   },
+   "grade_day": -63.02478009259259,
+   "deadline_day": 27.975219907407407,
+   "clinic_note": "EYE-dr-83",
+   "outcome": "examined_followup",
+   "examined": true,
+   "within_deadline": true,
+   "next_due": {
+    "kind": "clinic_review",
+    "from_day": -15.454108796296296,
+    "interval_days": 183,
+    "due_day": 167.54589120370372,
+    "basis": "note_review_interval"
+   }
+  }
+ },
+ "decisions": [
+  {
+   "consent_log": [],
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3040",
+   "dropoff": "no_eye_exam",
+   "escalations": [],
+   "in_seq": 3040,
+   "outreach": [],
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "91db1e122d14ee9566280234d2e69f88cdb6e24d8a41c7f6d07f719f019e54c1",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3059",
+   "dropoff": "no_eye_exam",
+   "escalations": [],
+   "in_seq": 3059,
+   "outreach": [],
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "8f02d46417e6d8fef35320049ba253d8049b3d503fd0b5d4a4ae5e3388efb095",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4210",
+   "dropoff": "",
+   "escalations": [],
+   "in_seq": 4210,
+   "outreach": [],
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1",
+   "state": "closed"
+  }
+ ],
+ "evidence": [
+  {
+   "agree": true,
+   "human_override": "",
+   "label": "R2M0",
+   "reader_a_fields": {
+    "label": "R2M0",
+    "m_left": "0",
+    "m_right": "0",
+    "quote": "Right eye: severe non-proliferative diabetic retinopathy; no maculopathy",
+    "r_left": "1",
+    "r_right": "2"
+   },
+   "reader_a_regex": "R2M0",
+   "reader_b": "R2M0",
+   "reader_b_fields": {
+    "label": "R2M0",
+    "m_left": "0",
+    "m_right": "0",
+    "quote": "mild non-proliferative diabetic retinopathy",
+    "r_left": "1",
+    "r_right": "2"
+   },
+   "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+   "report": "phc-retina/DiagnosticReport/PHC-dr-1077",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "agree": true,
+   "human_override": "",
+   "label": "examined_followup",
+   "reader_a_fields": {
+    "attended": "yes",
+    "fundus": "examined",
+    "label": "examined_followup",
+    "outcome": "followup",
+    "quote": "Fundus examined after dilation: maculopathy without centre involvement",
+    "review_days": 183
+   },
+   "reader_a_regex": "examined_followup",
+   "reader_b": "examined_followup",
+   "reader_b_fields": {
+    "attended": "yes",
+    "fundus": "examined",
+    "label": "examined_followup",
+    "outcome": "followup",
+    "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months."
+   },
+   "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
+   "report": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "rule": "two_reader_field_consensus"
+  }
+ ],
+ "holds": [
+  {
+   "deadline_day": 27.9752,
+   "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
+   "programme": "diabetic_retinopathy",
+   "reason": "awaiting_eye_clinic_exam",
+   "rule": "doh2024dr",
+   "state": "review_hold"
+  }
+ ],
+ "identities": [
+  {
+   "provider": "phc-retina",
+   "registration": "phc-retina|PHC-MRN001029",
+   "role": "referral"
+  },
+  {
+   "provider": "eye-hosp",
+   "registration": "eye-hosp|EYE-MRN000072",
+   "role": "downstream"
+  }
+ ],
+ "links": [
+  {
+   "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "hops": 1,
+   "linker": "wasl-v3-retrained+iso+eid",
+   "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "near_miss": false,
+   "path_p_cal": 1,
+   "path_strength": 1,
+   "referral_patient": "phc-retina|PHC-MRN001029",
+   "tau": 0.99,
+   "weakest_edge": {
+    "a": "phc-retina|PHC-MRN001029",
+    "b": "eye-hosp|EYE-MRN000072",
+    "basis": "eid",
+    "p": 1
+   }
+  }
+ ],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-10-31T23:47:27Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+ },
+ "outreach": [],
+ "review_items": [],
+ "signoffs": [],
+ "timeline": [
+  {
+   "arrival_day": -62.3283,
+   "category": "dr-screen",
+   "day": -63.0247,
+   "id": "phc-retina/DiagnosticReport/PHC-dr-1077",
+   "provider": "phc-retina",
+   "raw_sha": "c38d96c7958379d9",
+   "seq": 3035,
+   "source": "fhir",
+   "status": "final",
+   "type": "DiagnosticReport"
+  },
+  {
+   "arrival_day": -62.2646,
+   "category": "dr-screening",
+   "day": -63.0247,
+   "id": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "provider": "phc-retina",
+   "raw_sha": "a6205e3097afabdd",
+   "seq": 3040,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": -61.8124,
+   "category": "",
+   "day": -61.8124,
+   "id": "phc-retina/Consent/dr-consent-PHC-sr-1029",
+   "provider": "phc-retina",
+   "raw_sha": "93b5f16ef274784c",
+   "seq": 3059,
+   "source": "fhir",
+   "status": "permit",
+   "type": "Consent"
+  },
+  {
+   "arrival_day": -15.2304,
+   "category": "dr-clinic",
+   "day": -15.454,
+   "id": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "provider": "eye-hosp",
+   "raw_sha": "7762253d11f1159f",
+   "seq": 4210,
+   "source": "fhir",
+   "status": "final",
+   "type": "DiagnosticReport"
+  }
+ ]
+}

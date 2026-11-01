@@ -6,7 +6,7 @@ import { z } from "zod";
  * Enums are closed: a new state or decision value fails the contract tests first.
  */
 
-export const Programme = z.enum(["crc", "cervical", "lung_nodule"]);
+export const Programme = z.enum(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"]);
 
 export const CaseState = z.enum([
   "open",
@@ -21,6 +21,10 @@ export const CaseState = z.enum([
   "escalated",
   "not_assessable",
   "out_of_scope",
+  "no_referral_needed",
+  "no_recall_needed",
+  /** Lung PET-avid nodule waiting for tissue (pipeline/lung.go). In the served data, not yet listed in docs/API.md. */
+  "awaiting_tissue",
 ]);
 
 export const Dropoff = z.enum([
@@ -39,11 +43,19 @@ export const Dropoff = z.enum([
   "escalated",
   "not_assessable",
   "out_of_scope",
+  "no_eye_exam",
+  "ungradable_no_repeat",
+  "technical_repeat_not_done",
+  "no_assessment_outcome",
+  /** See CaseState: served, not yet listed in docs/API.md. */
+  "awaiting_tissue",
 ]);
 
 export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
 export const ReviewStatus = z.enum(["none", "open", "signed"]);
-export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold"]);
+export const FixtureName = z.enum(["evidence_closure", "false_closure_trap", "review_hold", "dr_exam_closure"]);
+/** The three CRC fixtures every run has; `dr_exam_closure` exists only in runs with DR loops. */
+export const CRC_FIXTURES = ["evidence_closure", "false_closure_trap", "review_hold"] as const;
 export const Role = z.enum(["coordinator", "clinician", "reviewer", "auditor"]);
 
 /** Small-cell suppression: counts 1 to 4 arrive as the string "<5". */
@@ -81,6 +93,62 @@ export const LungFinding = z.looseObject({
     .optional(),
 });
 
+const DR_OUTCOMES = ["examined_treated", "examined_followup", "examined_discharged", "not_examined", "dna", "not_assessable"] as const;
+
+export const DrFinding = z.looseObject({
+  screen_report: z.string().optional(),
+  screen_label: z.string().optional(),
+  coded_grade: z.boolean().optional(),
+  rec: z
+    .looseObject({
+      action: z.enum(["refer", "rescreen", "repeat_photo"]),
+      deadline_days: z.number().optional(),
+      urgency: z.enum(["urgent", "routine"]).optional(),
+      cell: z.string().optional(),
+    })
+    .optional(),
+  grade_day: z.number().optional(),
+  deadline_day: z.number().optional(),
+  clinic_note: z.string().optional(),
+  outcome: z.enum(DR_OUTCOMES).optional(),
+  examined: z.boolean().optional(),
+  within_deadline: z.boolean().optional(),
+  next_due: z
+    .looseObject({
+      kind: z.enum(["rescreen", "clinic_review"]),
+      basis: z.enum([
+        "doh2024dr_annual_rescreen",
+        "discharged_to_annual_screening",
+        "note_review_interval",
+        "assumed_followup_91d",
+        "assumed_treated_28d",
+      ]),
+      due_day: z.number(),
+    })
+    .optional(),
+});
+
+const BREAST_OUTCOMES = ["return_routine", "early_recall", "to_treatment", "incomplete", "dna"] as const;
+
+export const BreastFinding = z.looseObject({
+  screen_report: z.string().optional(),
+  screen_label: z.string().optional(),
+  coded_birads: z.boolean().optional(),
+  rec: z
+    .looseObject({
+      action: z.enum(["routine", "recall", "repeat_mammogram"]),
+      deadline_days: z.number().optional(),
+      urgency: z.string().optional(),
+      cell: z.string().optional(),
+    })
+    .optional(),
+  screen_day: z.number().optional(),
+  deadline_day: z.number().optional(),
+  assessment_document: z.string().optional(),
+  outcome: z.enum(BREAST_OUTCOMES).optional(),
+  within_deadline: z.boolean().optional(),
+});
+
 export const CaseSummary = z.looseObject({
   id: z.string(),
   programme: Programme,
@@ -99,6 +167,8 @@ export const CaseSummary = z.looseObject({
   fixture: z.union([FixtureName, z.literal("")]).default(""),
   decisions: z.number().optional(),
   lung: LungFinding.optional(),
+  dr: DrFinding.optional(),
+  breast: BreastFinding.optional(),
 });
 
 export const ChainEntry = z.looseObject({
@@ -127,13 +197,18 @@ export const Evidence = z.looseObject({
   report: z.string(),
   agree: z.boolean(),
   label: z.string(),
-  quote: z.string(),
+  /** CRC and cervical evidence carries one quote; lung, DR and breast evidence carry one per reader in `reader_*_fields`. */
+  quote: z.string().default(""),
   human_override: z.string().default(""),
   reader_model: z.string().optional(),
   rule: z.string().optional(),
   regex: z.string().optional(),
   gemma: z.string().optional(),
   fields: z.record(z.string(), z.unknown()).optional(),
+  reader_a_regex: z.string().optional(),
+  reader_b: z.string().optional(),
+  reader_a_fields: z.looseObject({ quote: z.string().optional() }).optional(),
+  reader_b_fields: z.looseObject({ quote: z.string().optional() }).optional(),
 });
 
 export const Identity = z.looseObject({ provider: z.string(), registration: z.string(), role: z.string() });
@@ -153,7 +228,9 @@ export const TimelineEvent = z.looseObject({
 
 export const Hold = z.looseObject({
   loop: z.string(),
-  report: z.string(),
+  /** Absent when the hold waits for a report that has not arrived (DR, breast). */
+  report: z.string().optional(),
+  reason: z.string().optional(),
   rule: z.string(),
   policy: z.string().optional(),
   programme: z.string().optional(),
@@ -241,6 +318,8 @@ export const CurrentDecision = z.looseObject({
   chain: z.array(ChainEntry).default([]),
   sig: z.string().optional(),
   lung: LungFinding.optional(),
+  dr: DrFinding.optional(),
+  breast: BreastFinding.optional(),
 });
 
 export const CaseDetail = withMeta({
@@ -284,6 +363,7 @@ export const Fixtures = withMeta({
     evidence_closure: CaseSummary,
     false_closure_trap: CaseSummary,
     review_hold: CaseSummary,
+    dr_exam_closure: CaseSummary.optional(),
   }),
 });
 
@@ -309,7 +389,12 @@ export const Dashboard = withMeta({
   by_programme: z.record(z.string(), z.looseObject({ cases: z.number(), closed: z.number(), overdue: z.number() })),
   sla: z.record(z.string(), z.number()),
   small_cell_rule: z.string().optional(),
-  fixtures: z.object({ evidence_closure: z.string(), false_closure_trap: z.string(), review_hold: z.string() }),
+  fixtures: z.object({
+    evidence_closure: z.string(),
+    false_closure_trap: z.string(),
+    review_hold: z.string(),
+    dr_exam_closure: z.string().optional(),
+  }),
   providers: z.array(z.looseObject({ provider: z.string(), loops: Count })),
   origins: z.array(z.looseObject({ origin: z.string(), loops: Count })),
   metrics: z.looseObject({
@@ -355,7 +440,18 @@ const LUNG_OUTCOMES = ["stable", "resolved", "growing", "suspicious_solid", "not
 /** Index-CT labels such as `solid/6-8/single` or `ground_glass/<6/multiple`. */
 const LUNG_INDEX_LABEL = /^[a-z_]+\/[^/\s]+\/[a-z]+$/;
 
-export const ReviewDecision = z.union([z.enum(CRC_DECISIONS), z.enum(LUNG_OUTCOMES), z.string().regex(LUNG_INDEX_LABEL)]);
+/** DR screening grades as the review endpoint accepts them: `R{0|1|2|3A|3S}M{0|1}`, optional `/urgent`, or `U`. */
+const DR_GRADE = /^(R(0|1|2|3A|3S)M[01](\/urgent)?|U)$/;
+const BREAST_LABELS = ["B0", "B1", "B2", "B3", "B4", "B5", "TR", ...BREAST_OUTCOMES] as const;
+
+export const ReviewDecision = z.union([
+  z.enum(CRC_DECISIONS),
+  z.enum(LUNG_OUTCOMES),
+  z.string().regex(LUNG_INDEX_LABEL),
+  z.enum(DR_OUTCOMES),
+  z.string().regex(DR_GRADE),
+  z.enum(BREAST_LABELS),
+]);
 
 export const ReviewRequest = z.object({
   item: z.string(),

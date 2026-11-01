@@ -33,11 +33,11 @@ test.describe("Programme", () => {
     await page.goto("/app");
     await expect(page.locator("h1")).toHaveText("Programme");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
-    await expect(page.getByTestId("kpi-eid")).toContainText("12.4%");
-    await expect(page.getByTestId("kpi-wasl")).toContainText("32.0%");
-    await expect(page.getByRole("img", { name: "On a 0 to 100% scale: reported 12.4%, measured by Wasl 32.0%, target 90%." })).toBeVisible();
-    await expect(page.getByTestId("kpi-truth")).toHaveText("Within 1 point of the true rate (33.0%) in testing");
-    await expect(page.getByText("1 in 4 on your chase list is already done.")).toBeVisible();
+    await expect(page.getByTestId("kpi-eid")).toContainText("12.6%");
+    await expect(page.getByTestId("kpi-wasl")).toContainText("31.9%");
+    await expect(page.getByRole("img", { name: "On a 0 to 100% scale: reported 12.6%, measured by Wasl 31.9%, target 90%." })).toBeVisible();
+    await expect(page.getByTestId("kpi-truth")).toHaveText("Within 1 point of the true rate (32.9%) in testing");
+    await expect(page.getByText("1 in 6 on your chase list is already done.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme.png", fullPage: true });
     await axe(page);
   });
@@ -65,9 +65,9 @@ test.describe("Programme", () => {
     const rows = page.locator('section[aria-labelledby="stall-h"] ol a');
     await expect(rows).toHaveCount(3);
     const expected = [
-      ["No acknowledgement", "363", "no_acknowledgement"],
-      ["Not booked", "239", "not_booked"],
-      ["Never notified", "192", "never_notified"],
+      ["No acknowledgement", "390", "no_acknowledgement"],
+      ["Not booked", "252", "not_booked"],
+      ["Never notified", "183", "never_notified"],
     ];
     for (const [i, [label, count, dropoff]] of expected.entries()) {
       await expect(rows.nth(i)).toContainText(label);
@@ -80,7 +80,7 @@ test.describe("Programme", () => {
 
   test("Open today's list and See proof go where the board says", async ({ page }) => {
     await page.goto("/app");
-    await expect(page.getByLabel("Safety")).toContainText("0 false closures in 2,090 tested.");
+    await expect(page.getByLabel("Safety")).toContainText("0 false closures in 3,025 tested.");
     await page.getByRole("link", { name: "See proof" }).click();
     await expect(page).toHaveURL(/\/app\/results$/);
     await page.goto("/app");
@@ -99,16 +99,16 @@ test.describe("Results", () => {
     await page.goto("/app/results");
     await expect(page.locator("h1")).toHaveText("Results");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
-    await expect(page.getByText("Frozen evaluation at code e4c7553")).toBeVisible();
-    await expect(page.getByTestId("lead-figure")).toHaveText("0 of 2,090");
-    await expect(page.getByRole("img", { name: /95% upper bound 0\.18%/ })).toBeVisible();
-    await expect(page.getByText("Recall 0.737 (0.724–0.750).")).toBeVisible();
-    await expect(page.getByText(/0 of 11,846 wrong-patient messages and 0 of 7,544 sent without consent/)).toBeVisible();
-    await expect(page.getByTestId("kpi-error")).toHaveText("3.4 points off");
-    await expect(page.getByText("Emirates ID only: 19.7 points off · mean of 5 seeds")).toBeVisible();
-    await expect(page.getByRole("img", { name: "Within 31 days, held-out noise: Emirates ID only 13.0%, Wasl 29.4%, truth 32.7%." })).toBeVisible();
+    await expect(page.getByText("Frozen evaluation at code 5496563")).toBeVisible();
+    await expect(page.getByTestId("lead-figure")).toHaveText("0 of 3,025");
+    await expect(page.getByRole("img", { name: /95% upper bound 0\.12%/ })).toBeVisible();
+    await expect(page.getByText("Recall 0.782 (0.769–0.795).")).toBeVisible();
+    await expect(page.getByText(/0 of 14,451 wrong-patient messages and 0 of 9,602 sent without consent/)).toBeVisible();
+    await expect(page.getByTestId("kpi-error")).toHaveText("3.1 points off");
+    await expect(page.getByText("Emirates ID only: 20.7 points off · mean of 5 seeds")).toBeVisible();
+    await expect(page.getByRole("img", { name: "Within 31 days, held-out noise: Emirates ID only 12.2%, Wasl 29.8%, truth 32.9%." })).toBeVisible();
     await expect(page.getByTestId("demo-cohort")).toHaveText(
-      "Demo cohort, one run on training-time noise: Emirates ID only 12.4%, Wasl 32.0%, truth 33.0%.",
+      "Demo cohort, one run on training-time noise: Emirates ID only 12.6%, Wasl 31.9%, truth 32.9%.",
     );
     await expect(page.getByText("3 of 7")).toBeVisible();
     await expect(page.getByTestId("double-review")).toHaveText("0in 8,422");

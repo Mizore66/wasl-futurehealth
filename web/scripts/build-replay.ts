@@ -40,9 +40,12 @@ const totals: Counters = {
   chainsVerified: chains,
 };
 
+const closingReads = ledger.filter((r) => r.state === "closed").length;
+if (closingReads === 0) throw new Error("reader_ledger.jsonl has no closing read");
+
 /** Reports per reader verdict in the scripted loop: every closing read, then a mix that matches the ledger's shape. */
 const QUOTA: Record<string, number> = {
-  "closed/criteria_met": 4,
+  "closed/criteria_met": closingReads,
   "not_closed/incomplete_exam": 4,
   "not_closed/awaiting_histology": 3,
   "not_closed/inadequate_prep": 2,
@@ -68,8 +71,8 @@ const cases: ScriptedCase[] = picked.map((r, i) => ({
     caecumQuote: r.caecum_quote,
     prep: r.prep,
     prepQuote: r.prep_quote,
-    polypsRemoved: r.polyps_removed,
-    polypsQuote: r.polyps_quote,
+    tissueTaken: r.tissue_taken,
+    tissueQuote: r.tissue_quote,
     histologyPresent: r.histology_present,
     histologyQuote: r.histology_quote,
     state: r.state,

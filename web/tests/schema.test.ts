@@ -54,6 +54,16 @@ describe("docs/api-samples contract", () => {
     expect(Fixtures.safeParse(sample).success).toBe(false);
   });
 
+  it("rejects an unknown programme and an unknown DR outcome", () => {
+    const fx = loadSample("fixtures.json") as { fixtures: { dr_exam_closure: { programme: string; dr: { outcome: string } } } };
+    expect(Fixtures.safeParse(fx).success).toBe(true);
+    fx.fixtures.dr_exam_closure.dr.outcome = "seen";
+    expect(Fixtures.safeParse(fx).success).toBe(false);
+    fx.fixtures.dr_exam_closure.dr.outcome = "examined_followup";
+    fx.fixtures.dr_exam_closure.programme = "prostate";
+    expect(Fixtures.safeParse(fx).success).toBe(false);
+  });
+
   it("accepts small-cell counts as \"<5\"", () => {
     const d = Dashboard.parse(loadSample("dashboard.json"));
     const values = d.origins.flatMap((o) => Object.values((o.dropoff ?? {}) as Record<string, unknown>));
@@ -67,7 +77,12 @@ describe("ReviewRequest", () => {
     (decision) => expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(true),
   );
 
-  it("rejects an unknown decision", () => {
-    expect(ReviewRequest.safeParse({ item: "rv-1", decision: "close it" }).success).toBe(false);
+  it.each(["R0M0", "R2M1", "R3SM0", "R3AM1", "R1M0/urgent", "U", "examined_treated", "not_assessable", "B0", "B5", "TR", "early_recall"])(
+    "accepts the DR or breast label %s",
+    (decision) => expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(true),
+  );
+
+  it.each(["close it", "R9M0", "R2M2", "B6", "examined"])("rejects %s", (decision) => {
+    expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(false);
   });
 });

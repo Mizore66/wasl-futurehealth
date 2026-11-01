@@ -1,9 +1,10 @@
 import { AppSidebar, type NavCounts } from "@/components/shell/app-sidebar";
-import { getDashboard } from "@/lib/api/source";
+import { getCases } from "@/lib/api/source";
 
+/** The Review queue is CRC only, so the badge counts open CRC reviews, not the dashboard's all-programme total. */
 async function navCounts(): Promise<NavCounts> {
-  const open = (await getDashboard()).review.open;
-  return { review: typeof open === "number" ? open : undefined };
+  const { total } = await getCases({ review: "open", programme: "crc", limit: 1 });
+  return { review: total > 0 ? total : undefined };
 }
 
 export default function AppLayout({ children }: LayoutProps<"/app">) {

@@ -7,9 +7,9 @@ export type ReviewQueue = {
   source: "open" | "rebuilt";
 };
 
-/** Cases waiting for a second signature, oldest referral first. */
+/** CRC cases waiting for a second signature, oldest referral first: the desk asks the CRC questions. */
 export async function reviewQueue(): Promise<ReviewQueue> {
-  const open = await getCases({ review: "open", limit: 50 });
+  const open = await getCases({ review: "open", programme: "crc", limit: 50 });
   if (open.cases.length > 0) {
     const details = await Promise.all(open.cases.map((c) => getCase(c.id)));
     const cases = details.filter((d): d is CaseDetail => d !== null && d.review_items.length > 0);

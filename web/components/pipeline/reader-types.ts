@@ -1,6 +1,9 @@
 /* data/reader.json, built by scripts/build-reader.ts. */
 
-export type ReaderField = "caecum" | "prep" | "polyps" | "histology";
+export type ReaderField = "caecum" | "prep" | "tissue" | "histology";
+
+/** A field the rules reader in reports43.json was never asked: it answered "polyp removed", not "tissue taken". */
+export const NOT_ASKED = "not_asked";
 
 export type ReaderSegment = { text: string; field?: ReaderField };
 

@@ -1,5 +1,5 @@
 import type { Track } from "./playback";
-import type { ReaderCase, ReaderData, ReaderField } from "./reader-types";
+import { NOT_ASKED, type ReaderCase, type ReaderData, type ReaderField } from "./reader-types";
 
 /** One tick on screen stands for 4.5 s of the recorded run: the reader's real latency, played 5x faster. */
 const TICK_MS = 900;
@@ -24,7 +24,7 @@ export function readerFrames(data: ReaderData) {
 export const FIELDS: { k: ReaderField; name: string; key: string }[] = [
   { k: "caecum", name: "Caecum reached", key: "caecum_reached" },
   { k: "prep", name: "Bowel prep graded", key: "prep" },
-  { k: "polyps", name: "Polyp removed", key: "polyps_removed" },
+  { k: "tissue", name: "Tissue taken", key: "tissue_taken" },
   { k: "histology", name: "Histology back", key: "histology_present" },
 ];
 
@@ -38,6 +38,8 @@ export type ReaderView = {
   agreed: boolean;
   gated: boolean;
   elapsedMs: number;
+  /** Fields both readers answered; only these can agree or disagree. */
+  compared: ReaderField[];
   disagree: ReaderField[];
 };
 
@@ -48,6 +50,7 @@ export function readerView(data: ReaderData, frame: number): ReaderView {
   const c = data.cases[index];
   const t = perCase[index];
   const f = frame - offsets[index];
+  const compared = FIELDS.map((x) => x.k).filter((k) => c.rules[k] !== NOT_ASKED);
   return {
     index,
     c,
@@ -57,7 +60,8 @@ export function readerView(data: ReaderData, frame: number): ReaderView {
     agreed: f >= t.agree,
     gated: f >= t.gate,
     elapsedMs: f < 1 ? 0 : Math.min((f - 1) * RECORDED_MS_PER_FRAME, c.ai.latencyMs),
-    disagree: FIELDS.filter((x) => c.rules[x.k] !== c.ai[x.k]).map((x) => x.k),
+    compared,
+    disagree: compared.filter((k) => c.rules[k] !== c.ai[k]),
   };
 }
 

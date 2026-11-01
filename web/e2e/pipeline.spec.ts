@@ -71,7 +71,7 @@ test("pipeline: pause, step, play, switch off a server and tamper, totals within
   await page.getByRole("button", { name: "Tamper with a step" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Changed record detected at step 2" })).toBeVisible();
   await expect(page.locator('[aria-label="Sealed chain"] [data-broken]')).toHaveCount(2);
-  await expect(page.getByText(/no longer matches 839cd918f436/).first()).toBeVisible();
+  await expect(page.getByText(/no longer matches a81e5d7bd109/).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Pause" }).click();
   await page.clock.runFor(1000);
@@ -101,7 +101,7 @@ test("matching: the score lands against the 0.99 line, runner-ups labelled illus
   await expect(page.getByText(LINE)).toBeVisible();
   await page.clock.runFor(800);
   await page.getByRole("button", { name: "Pause" }).click();
-  await expect(page.getByTestId("match-p")).toHaveText("0.989");
+  await expect(page.getByTestId("match-p")).toHaveText("0.949");
   await expect(page.getByText("auto-close line 0.99")).toBeVisible();
   await expect(page.getByText(/illustrative/i).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}-matching-rest.png`, fullPage: true });
@@ -130,23 +130,24 @@ test("reading: real report, recorded Gemma answer and latency, played 5x faster"
   await expect(page.getByText(/played 5× faster/).first()).toBeVisible();
   await page.clock.runFor(800);
   await page.getByRole("button", { name: "Pause" }).click();
-  await expect(page.getByTestId("ai-timer")).toHaveText("16.2 s recorded");
+  await expect(page.getByTestId("ai-timer")).toHaveText("8.8 s recorded");
   await expect(page.getByTestId("gate-pill")).toHaveText("Passed");
   await expect(page.getByTestId("report-text")).toContainText("The preparation was excellent and all surfaces were well seen.");
-  await expect(page.getByText("Fatima Al Zaabi's report SKM-dr-237")).toBeVisible();
+  await expect(page.getByText("Fatima Al Zaabi's report SKM-dr-226")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}-reading-rest.png`, fullPage: true });
 
-  await page.getByRole("button", { name: "Report u43" }).click();
+  await page.getByRole("button", { name: "Report u38" }).click();
   await expect(page.getByTestId("gate-pill")).toHaveText("Waiting");
-  for (let i = 0; i < 5; i++) await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect(page.getByTestId("ai-timer")).toHaveText("reading · 18.0 s");
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Step", exact: true }).click();
+  await expect(page.getByTestId("ai-timer")).toHaveText("reading · 9.0 s");
   await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect(page.getByTestId("ai-timer")).toHaveText("19.9 s recorded");
+  await expect(page.getByTestId("ai-timer")).toHaveText("10.1 s recorded");
   await page.getByRole("button", { name: "Step", exact: true }).click();
-  await expect(page.locator('[data-field="prep"]')).toContainText("disagree");
+  await expect(page.locator('[data-field="caecum"]')).toContainText("disagree");
+  await expect(page.locator('[data-field="tissue"]')).toContainText("not compared");
   await page.getByRole("button", { name: "Step", exact: true }).click();
   await expect(page.getByTestId("gate-pill")).toHaveText("Two reviewers");
-  await page.screenshot({ path: `${SHOTS}-reading-u43.png`, fullPage: true });
+  await page.screenshot({ path: `${SHOTS}-reading-u38.png`, fullPage: true });
 
   await page.getByRole("button", { name: "Report u6" }).click();
   await page.getByRole("button", { name: "Play" }).click();

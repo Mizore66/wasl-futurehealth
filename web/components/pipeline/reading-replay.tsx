@@ -7,7 +7,7 @@ import { MarkShape, PlaybackControls, Picker } from "./controls";
 import type { Mark } from "./flow";
 import { usePlayback } from "./playback";
 import { FIELDS, READER_SPEEDUP, READER_TICK_MS, readerFrames, readerStart, readerTrack, readerView } from "./reader-timeline";
-import type { ReaderAnswer, ReaderCase, ReaderData, ReaderField } from "./reader-types";
+import { NOT_ASKED, type ReaderAnswer, type ReaderCase, type ReaderData, type ReaderField } from "./reader-types";
 
 const reader = readerJson as ReaderData;
 const track = readerTrack(reader);
@@ -16,11 +16,12 @@ const frames = readerFrames(reader);
 const WORDS: Record<Exclude<ReaderField, "histology">, Record<string, string>> = {
   caecum: { yes: "reached", no: "not reached", not_stated: "not stated" },
   prep: { adequate: "adequate", inadequate: "inadequate", not_stated: "not graded" },
-  polyps: { yes: "polyp removed", no: "none removed" },
+  tissue: { yes: "tissue taken", no: "none taken" },
 };
 
 function valueWord(a: ReaderAnswer, k: ReaderField): string {
-  if (k === "histology") return a.histology === "yes" ? "back" : a.polyps === "yes" ? "not back" : "not needed";
+  if (a[k] === NOT_ASKED) return "not asked";
+  if (k === "histology") return a.histology === "yes" ? "back" : a.tissue === "yes" ? "not back" : "not needed";
   return WORDS[k][a[k]] ?? a[k].replaceAll("_", " ");
 }
 
@@ -42,7 +43,7 @@ function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held
     };
   }
   if (c.ai.state === "closed") {
-    return { kind: "pass", pill: "Passed", text: "Both readers agree on all four checks. Closed with evidence.", tech: `${c.ai.state} · ${c.ai.reason} · per-field agreement` };
+    return { kind: "pass", pill: "Passed", text: "Both readers agree on every check they both read. Closed with evidence.", tech: `${c.ai.state} · ${c.ai.reason} · per-field agreement` };
   }
   return {
     kind: "held",
@@ -67,7 +68,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
     { label: "Received", mark: "done", detail: `report ${c.uid}` },
     { label: "Rules reader", mark: stageState(v.rulesDone, f >= 1), detail: "DoH checklist" },
     { label: "AI reader", mark: stageState(v.aiDone, f >= 1), detail: `${s1(v.elapsedMs)} s` },
-    { label: "Agreement", mark: stageState(v.agreed, v.aiDone), detail: v.agreed ? `${4 - v.disagree.length} of 4` : "" },
+    { label: "Agreement", mark: stageState(v.agreed, v.aiDone), detail: v.agreed ? `${v.compared.length - v.disagree.length} of ${v.compared.length}` : "" },
     { label: "Safety gate", mark: gateMark, detail: v.gated ? result.pill : "" },
   ];
   const WORD: Record<Mark, string> = { queued: "queued", working: "working", done: "done", held: "held", failed: "failed" };
@@ -179,6 +180,8 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
           </div>
 
           {FIELDS.map((fd) => {
+            const compared = v.compared.includes(fd.k);
+            const settled = v.agreed && compared;
             const same = c.rules[fd.k] === c.ai[fd.k];
             const downgraded = c.ai.downgraded.includes(fd.k);
             const quoted = c.segments.some((s) => s.field === fd.k);
@@ -195,11 +198,11 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
                   sub={v.aiDone ? (downgraded ? "downgraded by the reader's own check" : quoted ? "quote found in report" : "") : ""}
                 />
                 <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                  <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={cn("flex-none", !v.agreed ? "text-control" : same ? "text-positive" : "text-warning")}>
-                    <path d={!v.agreed ? "M4 8h8" : same ? "M3 8.5l3 3 7-7" : "M4 4l8 8M12 4l-8 8"} />
+                  <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={cn("flex-none", !settled ? "text-control" : same ? "text-positive" : "text-warning")}>
+                    <path d={!settled ? "M4 8h8" : same ? "M3 8.5l3 3 7-7" : "M4 4l8 8M12 4l-8 8"} />
                   </svg>
-                  <span className={cn("text-body", !v.agreed ? "text-muted" : same ? "text-ink" : "font-medium text-warning")}>
-                    {!v.agreed ? "waiting" : same ? "agree" : "disagree"}
+                  <span className={cn("text-body", !settled ? "text-muted" : same ? "text-ink" : "font-medium text-warning")}>
+                    {!v.agreed ? "waiting" : !compared ? "not compared" : same ? "agree" : "disagree"}
                   </span>
                 </span>
               </div>

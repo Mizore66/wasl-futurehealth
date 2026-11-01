@@ -1,7 +1,7 @@
 {
  "label": "replay",
  "source": {
-  "run": "./run/v7ltt-live-hl7-image-lung",
+  "run": "./run/v7ltt-live-hl7-image-lung-dr-breast-drnext-lungsurv-xreflink",
   "files": [
    "pipeline/results/showcase/summary.txt",
    "pipeline/results/showcase/reader_ledger.jsonl",
@@ -10,27 +10,27 @@
   ]
  },
  "totals": {
-  "fhirMessages": 34308,
-  "readerReports": 135,
-  "outputs": 25620,
-  "chainsVerified": 1741
+  "fhirMessages": 40983,
+  "readerReports": 245,
+  "outputs": 31677,
+  "chainsVerified": 3163
  },
  "facts": {
-  "loops": 2900,
+  "loops": 4250,
   "duplicates": 0,
   "lost": 0,
-  "throughputEvS": 626,
+  "throughputEvS": 895,
   "forgedEvents": 24,
   "forgedWithEffect": 0,
   "tamperAttacks": 17,
   "tamperDetected": 17,
-  "readerModel": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
+  "readerModel": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
   "readerStates": {
-   "needs_human/missing_documentation": 119,
-   "not_closed/incomplete_exam": 6,
-   "not_closed/awaiting_histology": 4,
+   "not_closed/incomplete_exam": 127,
+   "needs_human/missing_documentation": 109,
    "not_closed/inadequate_prep": 2,
-   "closed/criteria_met": 4
+   "not_closed/awaiting_histology": 4,
+   "closed/criteria_met": 3
   }
  },
  "cases": [
@@ -38,19 +38,19 @@
    "id": "showcase-01",
    "source": "hl7",
    "read": {
-    "reportSha": "09c14185a2eae3d302321da79082d619054a17b25c4dcc2d0e0d3e1f10f8c5e7",
+    "reportSha": "0410c223b7ad1abb00645e89ea139749f9818a8fe24502f1140faff0b47cd3ac",
     "caecumReached": "not_stated",
-    "caecumQuote": "",
+    "caecumQuote": "The scope was then passed a short distance up the ileum, which appeared normal.",
     "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "prepQuote": "\"”, ",
+    "tissueTaken": "yes",
+    "tissueQuote": "”, ",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "needs_human",
     "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 15961
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 9781
    },
    "gatePassed": false,
    "outcome": "waiting_for_reviewers"
@@ -64,14 +64,14 @@
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "needs_human",
     "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 14826
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 6317
    },
    "gatePassed": false,
    "outcome": "waiting_for_reviewers"
@@ -80,124 +80,124 @@
    "id": "showcase-03",
    "source": "hl7",
    "read": {
-    "reportSha": "1e273a9f746aa1f4394011b729ab5876107be035f627f56bef5526d4c39af560",
-    "caecumReached": "not_stated",
-    "caecumQuote": "",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 15828
-   },
-   "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "id": "showcase-04",
-   "source": "hl7",
-   "read": {
-    "reportSha": "3805f32298d6e72f213fb19e07846e65ef614636f0d8adb6e69bbfcf329b2e13",
-    "caecumReached": "yes",
-    "caecumQuote": "passed by directed vision to the distal descending colon",
-    "prep": "adequate",
-    "prepQuote": "Following a barium enema prep",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "closed",
-    "reason": "criteria_met",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 14815
-   },
-   "gatePassed": true,
-   "outcome": "closed_with_evidence"
-  },
-  {
-   "id": "showcase-05",
-   "source": "hl7",
-   "read": {
-    "reportSha": "383e63d0b65fafa2ace3b79fab4ffe29db2db5432f43d03960c0214daefeebc9",
-    "caecumReached": "not_stated",
-    "caecumQuote": "",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 16056
-   },
-   "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "id": "showcase-06",
-   "source": "hl7",
-   "read": {
-    "reportSha": "3deff2f0bab6dc95247f7eb3bb6c1143e180f8ab1b903a1b26629ebfcfa8160e",
-    "caecumReached": "yes",
-    "caecumQuote": "The colonoscope was inserted into the rectal ampulla and advanced to the cecum.",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 16933
-   },
-   "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "id": "showcase-07",
-   "source": "hl7",
-   "read": {
-    "reportSha": "442e88477fecd9da1ea7d53be94d1930a4aebc54fd48053770a77d0468716cab",
+    "reportSha": "0c6d4e3d7f5fa7b8b34297ca1f283c0e1c18213649fa7d3aeb0299e93ce1ab29",
     "caecumReached": "no",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "not_closed",
     "reason": "incomplete_exam",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 15782
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 8014
    },
    "gatePassed": false,
    "outcome": "kept_open"
   },
   {
-   "id": "showcase-08",
+   "id": "showcase-04",
    "source": "hl7",
    "read": {
-    "reportSha": "46f391c0f03c76dd2aede697f693159189517011e37dd235b32ca854f0785b87",
+    "reportSha": "20ff1b8d77c843574c000702bed86e677d44e5ff52de89c96aa4f1acb71379ba",
     "caecumReached": "not_stated",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "needs_human",
     "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 14148
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 6664
+   },
+   "gatePassed": false,
+   "outcome": "waiting_for_reviewers"
+  },
+  {
+   "id": "showcase-05",
+   "source": "hl7",
+   "read": {
+    "reportSha": "45d3f44bd854c04e4995677b56b62ca806cfdc0516c573c6f28570477ac4f9ca",
+    "caecumReached": "yes",
+    "caecumQuote": "The Olympus pediatric variable colonoscope was introduced into the rectum and advanced carefully through the colon to the cecum identified by the ileocecalvalve",
+    "prep": "adequate",
+    "prepQuote": "Preparation was good",
+    "tissueTaken": "no",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "closed",
+    "reason": "criteria_met",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 8647
+   },
+   "gatePassed": true,
+   "outcome": "closed_with_evidence"
+  },
+  {
+   "id": "showcase-06",
+   "source": "hl7",
+   "read": {
+    "reportSha": "4daee19f8af7685a7f960adcd5c487afd96d90550ac21108824e788ca067e471",
+    "caecumReached": "no",
+    "caecumQuote": "",
+    "prep": "not_stated",
+    "prepQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "not_closed",
+    "reason": "incomplete_exam",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 7534
+   },
+   "gatePassed": false,
+   "outcome": "kept_open"
+  },
+  {
+   "id": "showcase-07",
+   "source": "hl7",
+   "read": {
+    "reportSha": "5098bef22af2162b63ffe7da77982868cacaf9d6e02f50e65b5d6af3f1597ffc",
+    "caecumReached": "not_stated",
+    "caecumQuote": "",
+    "prep": "not_stated",
+    "prepQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 7222
+   },
+   "gatePassed": false,
+   "outcome": "waiting_for_reviewers"
+  },
+  {
+   "id": "showcase-08",
+   "source": "hl7",
+   "read": {
+    "reportSha": "513d7e1658f93bd71e22893959475172f03d217ffd0660a7da7f844f346495be",
+    "caecumReached": "yes",
+    "caecumQuote": "The scope was advanced with some difficulty to the terminal ileum.",
+    "prep": "not_stated",
+    "prepQuote": "",
+    "tissueTaken": "yes",
+    "tissueQuote": "Biopsies were obtained x2 in the terminal ileum, cecum, ascending colon, transverse colon, descending colon, sigmoid, and rectum. Then, the polyp was snared...",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12265
    },
    "gatePassed": false,
    "outcome": "waiting_for_reviewers"
@@ -211,14 +211,14 @@
     "caecumQuote": "The scope was then passed through the transverse colon and ascending colon to the cecum.",
     "prep": "inadequate",
     "prepQuote": "There was some solid stool encountered. The scope was maneuvered around this. There was relatively poor prep as the scope was advanced through the sigmoid colon",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "No masses or polyps were noted.",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "not_closed",
     "reason": "inadequate_prep",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 23380
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 11171
    },
    "gatePassed": false,
    "outcome": "kept_open"
@@ -230,40 +230,40 @@
     "reportSha": "5863fdb1ea6910b46b95215e29ca417cc5e527ddbb583f78306a0742e22480e2",
     "caecumReached": "yes",
     "caecumQuote": "The scope was introduced and passed with minimal difficulty to the cecum. This was verified anatomically and video photographs were taken of the ileocecal valve",
-    "prep": "adequate",
+    "prep": "not_stated",
     "prepQuote": "4/4",
-    "polypsRemoved": "yes",
-    "polypsQuote": "A snare was placed on the stalk of the polyp and divided with electrocautery. The polyp was recovered and sent for pathologic examination.",
+    "tissueTaken": "yes",
+    "tissueQuote": "The polyp was recovered and sent for pathologic examination.",
     "histologyPresent": "no",
     "histologyQuote": "one of which is assuredly an adenoma",
-    "state": "not_closed",
-    "reason": "awaiting_histology",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 28642
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12810
    },
    "gatePassed": false,
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "id": "showcase-11",
    "source": "hl7",
    "read": {
-    "reportSha": "5bb6f7720d355cca23adfcd305827bafb201d0fdc0c0430a8c0c482a2cfef4ab",
-    "caecumReached": "not_stated",
-    "caecumQuote": "",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "reportSha": "62b59da1234225e886f9489ae3e61950223a5381afd489bdfe47d99b382a1a0e",
+    "caecumReached": "yes",
+    "caecumQuote": "The scope was placed in the rectal ampulla and advanced to the cecum.",
+    "prep": "adequate",
+    "prepQuote": "She was then given a total of 7.5 mg of Versed with adequate sedation.",
+    "tissueTaken": "yes",
+    "tissueQuote": "One was resected using the electrocautery snare and the other four were ablated using the snare and cautery.",
     "histologyPresent": "no",
     "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 16055
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12090
    },
    "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
+   "outcome": "kept_open"
   },
   {
    "id": "showcase-12",
@@ -273,15 +273,15 @@
     "caecumReached": "yes",
     "caecumQuote": "The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon into the cecum and then through the ileoce",
     "prep": "adequate",
-    "prepQuote": "The preparation was excellent and all surfaces were well seen.  ",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "prepQuote": "The preparation was excellent and all surfaces were well seen.",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "closed",
     "reason": "criteria_met",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 16233
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 8849
    },
    "gatePassed": true,
    "outcome": "closed_with_evidence"
@@ -290,103 +290,103 @@
    "id": "showcase-13",
    "source": "hl7",
    "read": {
-    "reportSha": "7643dd669167b5599751f84166734a33128e1be3f380aec810908da2c0177d09",
-    "caecumReached": "not_stated",
-    "caecumQuote": "",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 15329
-   },
-   "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "id": "showcase-14",
-   "source": "hl7",
-   "read": {
-    "reportSha": "91f786ba95e3bd7e5985c5dfd9abe890fb675954f21a9089d28e8f0bc1ed6c52",
-    "caecumReached": "not_stated",
-    "caecumQuote": "",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
-    "histologyPresent": "no",
-    "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 18541
-   },
-   "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "id": "showcase-15",
-   "source": "hl7",
-   "read": {
     "reportSha": "9cacabd63c3efa651c5e0114a28b6c23a62200c97a8ebca3fd016d2beb154d3f",
     "caecumReached": "yes",
     "caecumQuote": "all the way toward the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve",
     "prep": "adequate",
     "prepQuote": "bowel preparation was good",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "closed",
     "reason": "criteria_met",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 11542
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 7529
    },
    "gatePassed": true,
    "outcome": "closed_with_evidence"
   },
   {
-   "id": "showcase-16",
+   "id": "showcase-14",
    "source": "hl7",
    "read": {
     "reportSha": "aa31e6d09da418351dab30ed49f528ef26adc0808e4e00680acc4b9a2dc5aa35",
     "caecumReached": "yes",
     "caecumQuote": "The Olympus pediatric variable colonoscope was introduced into the rectum and advanced carefully through the colon into the cecum and then through the ileocecal",
     "prep": "adequate",
-    "prepQuote": "The preparation was excellent and all surfaces were well seen.",
-    "polypsRemoved": "yes",
-    "polypsQuote": "Two polyps were identified and were removed.",
+    "prepQuote": "The preparation was excellent",
+    "tissueTaken": "yes",
+    "tissueQuote": "Two polyps were identified and were removed.",
     "histologyPresent": "no",
     "histologyQuote": "1 Follow up biopsy report.",
     "state": "not_closed",
     "reason": "awaiting_histology",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 24108
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 10843
    },
    "gatePassed": false,
    "outcome": "kept_open"
   },
   {
-   "id": "showcase-17",
+   "id": "showcase-15",
    "source": "hl7",
    "read": {
     "reportSha": "aca7ae21f7eccd6b980c5b9657dec561aefa4be0b1a87e31ed5895dab3611d76",
     "caecumReached": "yes",
     "caecumQuote": "The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon to the cecum identified by the ileocecal",
     "prep": "inadequate",
-    "prepQuote": "The preparation was poor, but mucosa was visible after lavage and suction.",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "prepQuote": "The preparation was poor",
+    "tissueTaken": "yes",
+    "tissueQuote": "Biopsies were taken",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "not_closed",
     "reason": "inadequate_prep",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 23907
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 9890
+   },
+   "gatePassed": false,
+   "outcome": "kept_open"
+  },
+  {
+   "id": "showcase-16",
+   "source": "hl7",
+   "read": {
+    "reportSha": "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796",
+    "caecumReached": "yes",
+    "caecumQuote": "It was passed to the level of the cecum.",
+    "prep": "not_stated",
+    "prepQuote": "",
+    "tissueTaken": "yes",
+    "tissueQuote": "This was approximately 3 mm in size and was completely removed using multiple bites with cold biopsy forceps. This was also removed using the cold biopsy forces",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12338
+   },
+   "gatePassed": false,
+   "outcome": "waiting_for_reviewers"
+  },
+  {
+   "id": "showcase-17",
+   "source": "hl7",
+   "read": {
+    "reportSha": "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d",
+    "caecumReached": "no",
+    "caecumQuote": "The scope was intubated from the anus to the level of the hepatic flexure.",
+    "prep": "not_stated",
+    "prepQuote": "",
+    "tissueTaken": "yes",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "not_closed",
+    "reason": "incomplete_exam",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 11421
    },
    "gatePassed": false,
    "outcome": "kept_open"
@@ -395,82 +395,82 @@
    "id": "showcase-18",
    "source": "hl7",
    "read": {
-    "reportSha": "b1693b7d3766811b828d4ace654228c598f5c635f7a25ab1c39249e40103e721",
+    "reportSha": "bf83491445d1eaefb132ace07fece69a3e8f2e14f988acff6544380c5fab5951",
     "caecumReached": "yes",
-    "caecumQuote": "The scope then was advanced through rest of the transverse colon to ascending colon and cecum.",
-    "prep": "not_stated",
-    "prepQuote": "",
-    "polypsRemoved": "yes",
-    "polypsQuote": "Multiple colon polyps (5).",
+    "caecumQuote": "The instrument was advanced to the cecum after placing the patient in a supine position.",
+    "prep": "adequate",
+    "prepQuote": "The patient was well prepared and a good examination was possible.",
+    "tissueTaken": "yes",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
-    "state": "needs_human",
-    "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 24258
+    "state": "not_closed",
+    "reason": "awaiting_histology",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 9066
    },
    "gatePassed": false,
-   "outcome": "waiting_for_reviewers"
+   "outcome": "kept_open"
   },
   {
    "id": "showcase-19",
    "source": "hl7",
    "read": {
-    "reportSha": "b7d3e16caee42c3a656b634f0a9cc978edfe3d2b01839ebbf6bf6ebba7240ccb",
-    "caecumReached": "no",
+    "reportSha": "c6ec4ebee92530b0b9f55f73668bfc9851b8c9de3dc375318eeca299e3fe8598",
+    "caecumReached": "not_stated",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "yes",
-    "polypsQuote": "",
-    "histologyPresent": "yes",
-    "histologyQuote": "tubulovillous adenoma with focal high-grade dysplasia",
-    "state": "not_closed",
-    "reason": "incomplete_exam",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 21270
+    "tissueTaken": "no",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 6620
    },
    "gatePassed": false,
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "id": "showcase-20",
    "source": "hl7",
    "read": {
-    "reportSha": "bbd5ac84747ca236c5baba151be013771675cab27cfce3fe3802cf71818271fe",
-    "caecumReached": "no",
+    "reportSha": "e5ffa25ece2a63d8244e419269ffafdee49bcaa261d3cb993d708ebbd0398b08",
+    "caecumReached": "not_stated",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "yes",
-    "polypsQuote": "forceps removal",
-    "histologyPresent": "yes",
-    "histologyQuote": "Hyperplastic polyp",
-    "state": "not_closed",
-    "reason": "incomplete_exam",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 14222
+    "tissueTaken": "yes",
+    "tissueQuote": "",
+    "histologyPresent": "no",
+    "histologyQuote": "",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 6592
    },
    "gatePassed": false,
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "id": "showcase-21",
    "source": "hl7",
    "read": {
-    "reportSha": "bf7f0683061459b61024bea909eb8f28f6c3255e999800b95879d6ec3c4c8ea5",
+    "reportSha": "eaf28ab5a70d8ac323e1d69c661dc0ba6339a7bd60eb9006e43e2dfba2632bec",
     "caecumReached": "not_stated",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "needs_human",
     "reason": "missing_documentation",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 15780
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 6168
    },
    "gatePassed": false,
    "outcome": "waiting_for_reviewers"
@@ -479,61 +479,40 @@
    "id": "showcase-22",
    "source": "hl7",
    "read": {
-    "reportSha": "bf83491445d1eaefb132ace07fece69a3e8f2e14f988acff6544380c5fab5951",
-    "caecumReached": "yes",
-    "caecumQuote": "The instrument was advanced to the cecum after placing the patient in a supine position.",
+    "reportSha": "f58b06785af544aa335fb862eb9fa76a8016fb9a35f8d7b7bc1f48718cb849ef",
+    "caecumReached": "not_stated",
+    "caecumQuote": "With the patient in left decubitus position, had received a cumulative dose of 4 mg of Versed and 75 mg of Demerol, using Olympus video colonoscope under direct",
     "prep": "adequate",
-    "prepQuote": "The patient was well prepared and a good examination was possible.",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "prepQuote": "The colon itself was adequately prepped.",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
-    "state": "closed",
-    "reason": "criteria_met",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 19729
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12776
    },
-   "gatePassed": true,
-   "outcome": "closed_with_evidence"
+   "gatePassed": false,
+   "outcome": "waiting_for_reviewers"
   },
   {
    "id": "showcase-23",
    "source": "hl7",
    "read": {
-    "reportSha": "ca9cdb0df6d1a8b22380f8efa5e6585e65ce8286443df2e04c1cd3e539f65ffa",
-    "caecumReached": "yes",
-    "caecumQuote": "The flexible 165 cm CF video Olympus colonoscope was inserted through the anus and passed under TV-directed monitor through the area of the rectum, sigmoid, and",
-    "prep": "adequate",
-    "prepQuote": "He had an excellent prep.",
-    "polypsRemoved": "yes",
-    "polypsQuote": "He had a 2-3 mm polyp in the left colon that was removed with a jumbo biopsy forceps.",
-    "histologyPresent": "no",
-    "histologyQuote": "2-3 mm polyp in the left colon that was removed with a jumbo biopsy forceps",
-    "state": "not_closed",
-    "reason": "awaiting_histology",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 22358
-   },
-   "gatePassed": false,
-   "outcome": "kept_open"
-  },
-  {
-   "id": "showcase-24",
-   "source": "hl7",
-   "read": {
-    "reportSha": "f0c4d9310b35cf3be67e6b8078de24cfbd19eefb27927f15e4b7d5475e2ecaa0",
+    "reportSha": "ffd4ad0cbc49062c87b4efdab330d23dd0ff6912609329b37c7a7ef187abbc2c",
     "caecumReached": "no",
     "caecumQuote": "",
     "prep": "not_stated",
     "prepQuote": "",
-    "polypsRemoved": "no",
-    "polypsQuote": "",
+    "tissueTaken": "no",
+    "tissueQuote": "",
     "histologyPresent": "no",
     "histologyQuote": "",
     "state": "not_closed",
     "reason": "incomplete_exam",
-    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
-    "latencyMs": 16762
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 7534
    },
    "gatePassed": false,
    "outcome": "kept_open"
@@ -544,7 +523,7 @@
    "type": "received",
    "caseId": "showcase-01",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1781
    }
   },
   {
@@ -563,14 +542,14 @@
    "type": "received",
    "caseId": "showcase-02",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "read",
    "caseId": "showcase-01",
    "add": {
-    "readerReports": 5
+    "readerReports": 10
    }
   },
   {
@@ -599,21 +578,21 @@
    "type": "received",
    "caseId": "showcase-03",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-01",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-02",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -642,21 +621,21 @@
    "type": "received",
    "caseId": "showcase-04",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-02",
    "add": {
-    "outputs": 1068
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-03",
    "add": {
-    "readerReports": 5
+    "readerReports": 10
    }
   },
   {
@@ -675,7 +654,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-03",
-   "outcome": "waiting_for_reviewers"
+   "outcome": "kept_open"
   },
   {
    "type": "reading",
@@ -685,21 +664,21 @@
    "type": "received",
    "caseId": "showcase-05",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-03",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-04",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -709,7 +688,7 @@
   {
    "type": "gate",
    "caseId": "showcase-04",
-   "passed": true
+   "passed": false
   },
   {
    "type": "matched",
@@ -718,7 +697,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-04",
-   "outcome": "closed_with_evidence"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
@@ -728,22 +707,21 @@
    "type": "received",
    "caseId": "showcase-06",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-04",
    "add": {
-    "outputs": 1068,
-    "chainsVerified": 435
+    "outputs": 1378
    }
   },
   {
    "type": "read",
    "caseId": "showcase-05",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -753,7 +731,7 @@
   {
    "type": "gate",
    "caseId": "showcase-05",
-   "passed": false
+   "passed": true
   },
   {
    "type": "matched",
@@ -762,7 +740,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-05",
-   "outcome": "waiting_for_reviewers"
+   "outcome": "closed_with_evidence"
   },
   {
    "type": "reading",
@@ -772,21 +750,22 @@
    "type": "received",
    "caseId": "showcase-07",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-05",
    "add": {
-    "outputs": 1067
+    "outputs": 1377,
+    "chainsVerified": 1054
    }
   },
   {
    "type": "read",
    "caseId": "showcase-06",
    "add": {
-    "readerReports": 5
+    "readerReports": 10
    }
   },
   {
@@ -805,7 +784,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-06",
-   "outcome": "waiting_for_reviewers"
+   "outcome": "kept_open"
   },
   {
    "type": "reading",
@@ -815,21 +794,21 @@
    "type": "received",
    "caseId": "showcase-08",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1781
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-06",
    "add": {
-    "outputs": 1068
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-07",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -848,7 +827,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-07",
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
@@ -858,21 +837,21 @@
    "type": "received",
    "caseId": "showcase-09",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-07",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-08",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -901,21 +880,21 @@
    "type": "received",
    "caseId": "showcase-10",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-08",
    "add": {
-    "outputs": 1068
+    "outputs": 1378
    }
   },
   {
    "type": "read",
    "caseId": "showcase-09",
    "add": {
-    "readerReports": 5
+    "readerReports": 10
    }
   },
   {
@@ -944,21 +923,21 @@
    "type": "received",
    "caseId": "showcase-11",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-09",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-10",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -977,7 +956,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-10",
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
@@ -987,21 +966,21 @@
    "type": "received",
    "caseId": "showcase-12",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-10",
    "add": {
-    "outputs": 1068
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-11",
    "add": {
-    "readerReports": 5
+    "readerReports": 11
    }
   },
   {
@@ -1020,7 +999,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-11",
-   "outcome": "waiting_for_reviewers"
+   "outcome": "kept_open"
   },
   {
    "type": "reading",
@@ -1030,21 +1009,21 @@
    "type": "received",
    "caseId": "showcase-13",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-11",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-12",
    "add": {
-    "readerReports": 6
+    "readerReports": 10
    }
   },
   {
@@ -1073,22 +1052,22 @@
    "type": "received",
    "caseId": "showcase-14",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-12",
    "add": {
-    "outputs": 1068,
-    "chainsVerified": 435
+    "outputs": 1378,
+    "chainsVerified": 1054
    }
   },
   {
    "type": "read",
    "caseId": "showcase-13",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -1098,102 +1077,103 @@
   {
    "type": "gate",
    "caseId": "showcase-13",
-   "passed": false
-  },
-  {
-   "type": "matched",
-   "caseId": "showcase-14"
-  },
-  {
-   "type": "outcome",
-   "caseId": "showcase-13",
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "type": "reading",
-   "caseId": "showcase-14"
-  },
-  {
-   "type": "received",
-   "caseId": "showcase-15",
-   "add": {
-    "fhirMessages": 1429
-   }
-  },
-  {
-   "type": "recorded",
-   "caseId": "showcase-13",
-   "add": {
-    "outputs": 1067
-   }
-  },
-  {
-   "type": "read",
-   "caseId": "showcase-14",
-   "add": {
-    "readerReports": 5
-   }
-  },
-  {
-   "type": "matching",
-   "caseId": "showcase-15"
-  },
-  {
-   "type": "gate",
-   "caseId": "showcase-14",
-   "passed": false
-  },
-  {
-   "type": "matched",
-   "caseId": "showcase-15"
-  },
-  {
-   "type": "outcome",
-   "caseId": "showcase-14",
-   "outcome": "waiting_for_reviewers"
-  },
-  {
-   "type": "reading",
-   "caseId": "showcase-15"
-  },
-  {
-   "type": "received",
-   "caseId": "showcase-16",
-   "add": {
-    "fhirMessages": 1430
-   }
-  },
-  {
-   "type": "recorded",
-   "caseId": "showcase-14",
-   "add": {
-    "outputs": 1068
-   }
-  },
-  {
-   "type": "read",
-   "caseId": "showcase-15",
-   "add": {
-    "readerReports": 6
-   }
-  },
-  {
-   "type": "matching",
-   "caseId": "showcase-16"
-  },
-  {
-   "type": "gate",
-   "caseId": "showcase-15",
    "passed": true
   },
   {
    "type": "matched",
+   "caseId": "showcase-14"
+  },
+  {
+   "type": "outcome",
+   "caseId": "showcase-13",
+   "outcome": "closed_with_evidence"
+  },
+  {
+   "type": "reading",
+   "caseId": "showcase-14"
+  },
+  {
+   "type": "received",
+   "caseId": "showcase-15",
+   "add": {
+    "fhirMessages": 1782
+   }
+  },
+  {
+   "type": "recorded",
+   "caseId": "showcase-13",
+   "add": {
+    "outputs": 1377,
+    "chainsVerified": 1055
+   }
+  },
+  {
+   "type": "read",
+   "caseId": "showcase-14",
+   "add": {
+    "readerReports": 11
+   }
+  },
+  {
+   "type": "matching",
+   "caseId": "showcase-15"
+  },
+  {
+   "type": "gate",
+   "caseId": "showcase-14",
+   "passed": false
+  },
+  {
+   "type": "matched",
+   "caseId": "showcase-15"
+  },
+  {
+   "type": "outcome",
+   "caseId": "showcase-14",
+   "outcome": "kept_open"
+  },
+  {
+   "type": "reading",
+   "caseId": "showcase-15"
+  },
+  {
+   "type": "received",
+   "caseId": "showcase-16",
+   "add": {
+    "fhirMessages": 1781
+   }
+  },
+  {
+   "type": "recorded",
+   "caseId": "showcase-14",
+   "add": {
+    "outputs": 1377
+   }
+  },
+  {
+   "type": "read",
+   "caseId": "showcase-15",
+   "add": {
+    "readerReports": 10
+   }
+  },
+  {
+   "type": "matching",
+   "caseId": "showcase-16"
+  },
+  {
+   "type": "gate",
+   "caseId": "showcase-15",
+   "passed": false
+  },
+  {
+   "type": "matched",
    "caseId": "showcase-16"
   },
   {
    "type": "outcome",
    "caseId": "showcase-15",
-   "outcome": "closed_with_evidence"
+   "outcome": "kept_open"
   },
   {
    "type": "reading",
@@ -1203,22 +1183,21 @@
    "type": "received",
    "caseId": "showcase-17",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-15",
    "add": {
-    "outputs": 1067,
-    "chainsVerified": 435
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-16",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -1237,117 +1216,117 @@
   {
    "type": "outcome",
    "caseId": "showcase-16",
-   "outcome": "kept_open"
-  },
-  {
-   "type": "reading",
-   "caseId": "showcase-17"
-  },
-  {
-   "type": "received",
-   "caseId": "showcase-18",
-   "add": {
-    "fhirMessages": 1430
-   }
-  },
-  {
-   "type": "recorded",
-   "caseId": "showcase-16",
-   "add": {
-    "outputs": 1068
-   }
-  },
-  {
-   "type": "read",
-   "caseId": "showcase-17",
-   "add": {
-    "readerReports": 5
-   }
-  },
-  {
-   "type": "matching",
-   "caseId": "showcase-18"
-  },
-  {
-   "type": "gate",
-   "caseId": "showcase-17",
-   "passed": false
-  },
-  {
-   "type": "matched",
-   "caseId": "showcase-18"
-  },
-  {
-   "type": "outcome",
-   "caseId": "showcase-17",
-   "outcome": "kept_open"
-  },
-  {
-   "type": "reading",
-   "caseId": "showcase-18"
-  },
-  {
-   "type": "received",
-   "caseId": "showcase-19",
-   "add": {
-    "fhirMessages": 1429
-   }
-  },
-  {
-   "type": "recorded",
-   "caseId": "showcase-17",
-   "add": {
-    "outputs": 1067
-   }
-  },
-  {
-   "type": "read",
-   "caseId": "showcase-18",
-   "add": {
-    "readerReports": 6
-   }
-  },
-  {
-   "type": "matching",
-   "caseId": "showcase-19"
-  },
-  {
-   "type": "gate",
-   "caseId": "showcase-18",
-   "passed": false
-  },
-  {
-   "type": "matched",
-   "caseId": "showcase-19"
-  },
-  {
-   "type": "outcome",
-   "caseId": "showcase-18",
    "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
+   "caseId": "showcase-17"
+  },
+  {
+   "type": "received",
+   "caseId": "showcase-18",
+   "add": {
+    "fhirMessages": 1782
+   }
+  },
+  {
+   "type": "recorded",
+   "caseId": "showcase-16",
+   "add": {
+    "outputs": 1378
+   }
+  },
+  {
+   "type": "read",
+   "caseId": "showcase-17",
+   "add": {
+    "readerReports": 11
+   }
+  },
+  {
+   "type": "matching",
+   "caseId": "showcase-18"
+  },
+  {
+   "type": "gate",
+   "caseId": "showcase-17",
+   "passed": false
+  },
+  {
+   "type": "matched",
+   "caseId": "showcase-18"
+  },
+  {
+   "type": "outcome",
+   "caseId": "showcase-17",
+   "outcome": "kept_open"
+  },
+  {
+   "type": "reading",
+   "caseId": "showcase-18"
+  },
+  {
+   "type": "received",
+   "caseId": "showcase-19",
+   "add": {
+    "fhirMessages": 1782
+   }
+  },
+  {
+   "type": "recorded",
+   "caseId": "showcase-17",
+   "add": {
+    "outputs": 1377
+   }
+  },
+  {
+   "type": "read",
+   "caseId": "showcase-18",
+   "add": {
+    "readerReports": 10
+   }
+  },
+  {
+   "type": "matching",
+   "caseId": "showcase-19"
+  },
+  {
+   "type": "gate",
+   "caseId": "showcase-18",
+   "passed": false
+  },
+  {
+   "type": "matched",
+   "caseId": "showcase-19"
+  },
+  {
+   "type": "outcome",
+   "caseId": "showcase-18",
+   "outcome": "kept_open"
+  },
+  {
+   "type": "reading",
    "caseId": "showcase-19"
   },
   {
    "type": "received",
    "caseId": "showcase-20",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-18",
    "add": {
-    "outputs": 1068
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-19",
    "add": {
-    "readerReports": 5
+    "readerReports": 11
    }
   },
   {
@@ -1366,7 +1345,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-19",
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
@@ -1376,21 +1355,21 @@
    "type": "received",
    "caseId": "showcase-21",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-19",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-20",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
   },
   {
@@ -1409,7 +1388,7 @@
   {
    "type": "outcome",
    "caseId": "showcase-20",
-   "outcome": "kept_open"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
@@ -1419,21 +1398,21 @@
    "type": "received",
    "caseId": "showcase-22",
    "add": {
-    "fhirMessages": 1430
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-20",
    "add": {
-    "outputs": 1068
+    "outputs": 1378
    }
   },
   {
    "type": "read",
    "caseId": "showcase-21",
    "add": {
-    "readerReports": 6
+    "readerReports": 10
    }
   },
   {
@@ -1462,21 +1441,21 @@
    "type": "received",
    "caseId": "showcase-23",
    "add": {
-    "fhirMessages": 1429
+    "fhirMessages": 1782
    }
   },
   {
    "type": "recorded",
    "caseId": "showcase-21",
    "add": {
-    "outputs": 1067
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-22",
    "add": {
-    "readerReports": 5
+    "readerReports": 11
    }
   },
   {
@@ -1486,7 +1465,7 @@
   {
    "type": "gate",
    "caseId": "showcase-22",
-   "passed": true
+   "passed": false
   },
   {
    "type": "matched",
@@ -1495,37 +1474,25 @@
   {
    "type": "outcome",
    "caseId": "showcase-22",
-   "outcome": "closed_with_evidence"
+   "outcome": "waiting_for_reviewers"
   },
   {
    "type": "reading",
    "caseId": "showcase-23"
   },
   {
-   "type": "received",
-   "caseId": "showcase-24",
-   "add": {
-    "fhirMessages": 1430
-   }
-  },
-  {
    "type": "recorded",
    "caseId": "showcase-22",
    "add": {
-    "outputs": 1068,
-    "chainsVerified": 436
+    "outputs": 1377
    }
   },
   {
    "type": "read",
    "caseId": "showcase-23",
    "add": {
-    "readerReports": 6
+    "readerReports": 11
    }
-  },
-  {
-   "type": "matching",
-   "caseId": "showcase-24"
   },
   {
    "type": "gate",
@@ -1533,47 +1500,15 @@
    "passed": false
   },
   {
-   "type": "matched",
-   "caseId": "showcase-24"
-  },
-  {
    "type": "outcome",
    "caseId": "showcase-23",
    "outcome": "kept_open"
   },
   {
-   "type": "reading",
-   "caseId": "showcase-24"
-  },
-  {
    "type": "recorded",
    "caseId": "showcase-23",
    "add": {
-    "outputs": 1067
-   }
-  },
-  {
-   "type": "read",
-   "caseId": "showcase-24",
-   "add": {
-    "readerReports": 6
-   }
-  },
-  {
-   "type": "gate",
-   "caseId": "showcase-24",
-   "passed": false
-  },
-  {
-   "type": "outcome",
-   "caseId": "showcase-24",
-   "outcome": "kept_open"
-  },
-  {
-   "type": "recorded",
-   "caseId": "showcase-24",
-   "add": {
-    "outputs": 1068
+    "outputs": 1378
    }
   },
   {

@@ -10,6 +10,7 @@ export type ProgrammeView = {
   /** N in "1 in N on your chase list is already done"; null when the run has no CRC closure metrics. */
   chaseOneIn: number | null;
   stalls: Stall[];
+  /** Colorectal and cervical cases, the programmes the stalls come from. */
   cases: number;
 };
 
@@ -23,6 +24,9 @@ const STALL_LABEL: Partial<Record<Dropoff, string>> = {
   inadequate: "Repeat needed",
   awaiting_histology: "Awaiting histology",
 };
+
+/** The stall drop-offs are the colorectal and cervical pathway's; the other programmes have their own. */
+const STALL_PROGRAMMES = ["crc", "cervical"] as const;
 
 const pctOf = (x: number) => Math.round(x * 1000) / 10;
 
@@ -47,7 +51,7 @@ export function programmeView(d: Dashboard): ProgrammeView {
     target: target ? Number(target[1]) : null,
     chaseOneIn: chaseList > 0 && alreadyDone > 0 ? Math.round(chaseList / alreadyDone) : null,
     stalls,
-    cases: d.cases,
+    cases: STALL_PROGRAMMES.reduce((n, p) => n + (d.by_programme[p]?.cases ?? 0), 0),
   };
 }
 

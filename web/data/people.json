@@ -2,10 +2,10 @@
  "label": "simulated",
  "note": "The API returns registrations, not names, and data/persons3.json has no registration mapping. Names are the design's synthetic cast.",
  "people": {
-  "ahs-mushrif|AHS-MRN001050": {
-   "registration": "ahs-mushrif|AHS-MRN001050",
+  "ahs-mushrif|AHS-MRN000985": {
+   "registration": "ahs-mushrif|AHS-MRN000985",
    "provider": "ahs-mushrif",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
    "fixture": "evidence_closure",
    "display_name": "Fatima Al Zaabi",
    "display_name_ar": "فاطمة الزعابي",
@@ -14,10 +14,10 @@
    "recorded_script": "arabic",
    "source": "canonical-cast"
   },
-  "skmc-endo|SKM-MRN000404": {
-   "registration": "skmc-endo|SKM-MRN000404",
+  "skmc-endo|SKM-MRN000392": {
+   "registration": "skmc-endo|SKM-MRN000392",
    "provider": "skmc-endo",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
    "fixture": "evidence_closure",
    "display_name": "Fatima Al Zaabi",
    "display_name_ar": "فاطمة الزعابي",
@@ -26,10 +26,10 @@
    "recorded_script": "latin",
    "source": "canonical-cast"
   },
-  "ahs-mushrif|AHS-MRN001064": {
-   "registration": "ahs-mushrif|AHS-MRN001064",
+  "ahs-mushrif|AHS-MRN000962": {
+   "registration": "ahs-mushrif|AHS-MRN000962",
    "provider": "ahs-mushrif",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1009",
    "fixture": "false_closure_trap",
    "display_name": "Aisha Al Mansoori",
    "display_name_ar": "عائشة المنصوري",
@@ -38,10 +38,10 @@
    "recorded_script": "arabic",
    "source": "canonical-cast"
   },
-  "skmc-endo|SKM-MRN000412": {
-   "registration": "skmc-endo|SKM-MRN000412",
-   "provider": "skmc-endo",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+  "noor-endo|NOO-MRN000441": {
+   "registration": "noor-endo|NOO-MRN000441",
+   "provider": "noor-endo",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1009",
    "fixture": "false_closure_trap",
    "display_name": "Aisha Al Mansoori",
    "display_name_ar": "عائشة المنصوري",
@@ -50,10 +50,10 @@
    "recorded_script": "latin",
    "source": "canonical-cast"
   },
-  "ahs-mushrif|AHS-MRN001569": {
-   "registration": "ahs-mushrif|AHS-MRN001569",
+  "ahs-mushrif|AHS-MRN000516": {
+   "registration": "ahs-mushrif|AHS-MRN000516",
    "provider": "ahs-mushrif",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1175",
    "fixture": "review_hold",
    "display_name": "Mariam Al Shamsi",
    "display_name_ar": "مريم الشامسي",
@@ -62,10 +62,10 @@
    "recorded_script": "arabic",
    "source": "canonical-cast"
   },
-  "noor-endo|NOO-MRN000678": {
-   "registration": "noor-endo|NOO-MRN000678",
-   "provider": "noor-endo",
-   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
+  "skmc-endo|SKM-MRN000511": {
+   "registration": "skmc-endo|SKM-MRN000511",
+   "provider": "skmc-endo",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1175",
    "fixture": "review_hold",
    "display_name": "Mariam Al Shamsi",
    "display_name_ar": "مريم الشامسي",

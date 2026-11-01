@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { PipelineHeading } from "@/components/pipeline/heading";
 import { MatchingReplay, type MatchCase } from "@/components/pipeline/matching-replay";
 import { getCase, getDashboard, getFixtures } from "@/lib/api/source";
-import type { FixtureName } from "@/lib/api/schema";
+import { CRC_FIXTURES } from "@/lib/api/schema";
+import { linkScore } from "@/components/worklist/model";
 import { personFor } from "@/lib/people";
 
 export const metadata = { title: "Identity matching" };
@@ -14,7 +15,9 @@ const providerName = (id: string) => PROVIDER[id] ?? id;
  * Runner-up referrals the search would also return. The API keeps only the chosen link, so these are
  * the design's illustrative near-misses (gap G7), labelled as such on screen.
  */
-const RUNNERS_UP: Record<FixtureName, MatchCase["candidates"]> = {
+type CrcFixture = (typeof CRC_FIXTURES)[number];
+
+const RUNNERS_UP: Record<CrcFixture, MatchCase["candidates"]> = {
   evidence_closure: [
     { ar: "فاطمة الزعبي", meta: "Al Bateen · 61", similarity: 0.91 },
     { ar: "فطيم الزعابي", meta: "Al Mushrif · 47", similarity: 0.86 },
@@ -32,11 +35,12 @@ const RUNNERS_UP: Record<FixtureName, MatchCase["candidates"]> = {
   ],
 };
 /** Illustrative too: the top candidate's bar. The linker's real output is the calibrated probability below it. */
-const TOP_SIMILARITY: Record<FixtureName, number> = { evidence_closure: 0.97, false_closure_trap: 0.95, review_hold: 0.96 };
+const TOP_SIMILARITY: Record<CrcFixture, number> = { evidence_closure: 0.97, false_closure_trap: 0.95, review_hold: 0.96 };
 
-const ORDER: FixtureName[] = ["evidence_closure", "false_closure_trap", "review_hold"];
+/** What the weakest edge of the chosen link rests on, in words. A `human` edge was a below-line name match two reviewers confirmed. */
+const BASIS: Record<string, string> = { eid: "Emirates ID", human: "name", wasl: "name and details", p_cal: "name and details" };
 
-async function matchCase(fixture: FixtureName, loop: string): Promise<MatchCase | null> {
+async function matchCase(fixture: CrcFixture, loop: string): Promise<MatchCase | null> {
   const detail = await getCase(loop);
   const link = detail?.links[0];
   if (!detail || !link) return null;
@@ -46,7 +50,14 @@ async function matchCase(fixture: FixtureName, loop: string): Promise<MatchCase 
 
   const reportId = link.downstream_event.split("/").at(-1)!;
   const byEid = link.weakest_edge.basis === "eid";
-  const above = link.path_p_cal >= link.tau;
+  const basis = BASIS[link.weakest_edge.basis] ?? link.weakest_edge.basis;
+  const score = linkScore(detail, link);
+  const above = score >= link.tau;
+  const p = score.toFixed(3);
+  const tech = `link_decision · basis ${link.weakest_edge.basis} · path_p_cal ${link.path_p_cal}${score !== link.path_p_cal ? ` · review p ${score}` : ""} · tau ${link.tau}`;
+  const noDob = detail.review_items.some((r) => r.kinds.includes("link") && r.reason === "second_identifier");
+  const confirmed = detail.signoffs.some((s) => s.kinds.includes("link") && s.link === "same");
+  const reviewed = confirmed ? " Two reviewers later confirmed the same patient." : "";
   const short = referral.display_name.split(" ")[0];
   const sr = loop.split("-").at(-1);
 
@@ -57,9 +68,9 @@ async function matchCase(fixture: FixtureName, loop: string): Promise<MatchCase 
     referralMeta: `${providerName(referral.provider)} · stool test referral ${loop.split("/").at(-1)}`,
     reportName: report.recorded_name,
     reportMeta: `${providerName(report.provider)} · colonoscopy report ${reportId}`,
-    p: link.path_p_cal,
+    p: score,
     tau: link.tau,
-    basis: byEid ? "Emirates ID" : "name",
+    basis,
     linker: link.linker,
     fields: [
       { name: "Name", referral: referral.recorded_name, report: report.recorded_name, verdict: "agrees" },
@@ -72,25 +83,27 @@ async function matchCase(fixture: FixtureName, loop: string): Promise<MatchCase 
       { ar: referral.recorded_name, meta: `${providerName(referral.provider)} · ${referral.age}`, similarity: TOP_SIMILARITY[fixture] },
       ...RUNNERS_UP[fixture],
     ],
-    outcome: above
+    outcome: !above
       ? {
-          held: false,
-          pill: "Matched",
-          text: `Matched on the ${byEid ? "Emirates ID" : "name"}, ${link.path_p_cal.toFixed(2)} against the ${link.tau} line.`,
-          tech: `link_decision · basis ${link.weakest_edge.basis} · path_p_cal ${link.path_p_cal} · tau ${link.tau}`,
+          held: true,
+          pill: "Two reviewers",
+          text: `A name alone stops at ${p}, under the ${link.tau} line, so it never closes by itself.${reviewed}`,
+          tech: `${tech}${confirmed ? " · human_signoff same" : ""}`,
         }
-      : {
-          held: false,
-          pill: "Matched · second identifier",
-          text: `A name alone stops at ${link.path_p_cal}, under the ${link.tau} line, so it never closes by itself. The date of birth agreed as the second identifier.`,
-          tech: `link_decision · basis ${link.weakest_edge.basis} · path_p_cal ${link.path_p_cal} · tau ${link.tau} · second identifier: exact DOB`,
-        },
+      : noDob
+        ? {
+            held: true,
+            pill: "Second identifier",
+            text: `Matched on the ${basis}, ${p} against the ${link.tau} line, but the report has no date of birth. Messages wait for a second identifier.${reviewed}`,
+            tech: `${tech} · outreach_guard second_identifier${confirmed ? " · human_signoff same" : ""}`,
+          }
+        : { held: false, pill: "Matched", text: `Matched on the ${basis}, ${p} against the ${link.tau} line.`, tech },
   };
 }
 
 export default async function Page() {
   const [fx, dashboard] = await Promise.all([getFixtures(), getDashboard()]);
-  const cases = (await Promise.all(ORDER.map((name) => matchCase(name, fx.fixtures[name].id)))).filter((c): c is MatchCase => c !== null);
+  const cases = (await Promise.all(CRC_FIXTURES.map((name) => matchCase(name, fx.fixtures[name].id)))).filter((c): c is MatchCase => c !== null);
   if (cases.length === 0) notFound();
 
   return (

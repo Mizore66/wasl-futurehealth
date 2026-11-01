@@ -14,6 +14,7 @@ export const ROUTES = [
   `/app/review/${id("review_hold")}`,
   "/app/patients",
   `/app/patients/${id("evidence_closure")}`,
+  `/app/patients/${id("dr_exam_closure")}`,
   "/app/referrals",
   "/app/pipeline",
   "/app/pipeline/matching",

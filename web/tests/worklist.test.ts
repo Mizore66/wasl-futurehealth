@@ -26,26 +26,26 @@ describe("Today's tabs", () => {
   const byShort = (s: string) => page.cases.find((c) => c.id.endsWith(s))!;
   it("puts an unowned case under No owner, an incomplete report under Waiting, an unbooked one under To call", () => {
     expect(workItem(byShort("sr-1000"), RUN_DAY, false).view).toBe("none");
-    expect(workItem(byShort("sr-1021"), RUN_DAY, true).view).toBe("waiting");
+    expect(workItem(byShort("sr-1009"), RUN_DAY, true).view).toBe("waiting");
     expect(workItem(byShort("sr-1005"), RUN_DAY, false).view).toBe("call");
   });
 
   it("names only the simulated cast and falls back to the short id", () => {
-    expect(workItem(byShort("sr-1021"), RUN_DAY, true).name).toBe("Aisha Al Mansoori");
+    expect(workItem(byShort("sr-1009"), RUN_DAY, true).name).toBe("Aisha Al Mansoori");
     expect(workItem(byShort("sr-1005"), RUN_DAY, false).name).toBe("AHS-sr-1005");
   });
 });
 
 describe("patient record", () => {
-  it("ends Fatima's record closed on day 26, sealed with the audit's closure hash", () => {
+  it("ends Fatima's record closed on day 27, sealed with the audit's closure hash", () => {
     const d = detail("evidence_closure");
     const a = audit("evidence_closure");
     const nodes = recordNodes(d, a.chain);
     const last = nodes.at(-1)!;
-    expect(last).toMatchObject({ kind: "current", who: "Closed", when: "day 26 · 27 Jun" });
+    expect(last).toMatchObject({ kind: "current", who: "Closed", when: "day 27 · 22 Jun" });
     expect(last.hash).toBe(a.chain.find((e) => e.type === "closure_decision")!.hash);
     const link = nodes.find((n) => n.who === "Wasl")!;
-    expect(link.what).toContain("by name and details, p 0.989");
+    expect(link.what).toContain("by name and details, p 0.949 before review, confirmed in review");
     expect(link.hash).toBe(a.chain.find((e) => e.type === "link_decision")!.hash);
   });
 
@@ -57,7 +57,7 @@ describe("patient record", () => {
 
   it("reads the checklist from the readers' fields", () => {
     expect(closureChecks(detail("evidence_closure").evidence[0]).map((k) => k.result)).toEqual(["Yes", "Adequate", "Not needed: no tissue taken"]);
-    expect(closureChecks(detail("false_closure_trap").evidence[0]).map((k) => k.result)).toEqual(["Not stated", "Not stated", "Not needed: no tissue taken"]);
+    expect(closureChecks(detail("false_closure_trap").evidence[0]).map((k) => k.result)).toEqual(["No", "Not stated", "Missing"]);
   });
 });
 
@@ -82,12 +82,12 @@ describe("patients filters from the query string", () => {
 describe("referral inbox", () => {
   const byShort = (s: string) => page.cases.find((c) => c.id.endsWith(s))!;
   it("flags an incomplete report for review and leaves the clinic's own drop-offs out", () => {
-    expect(referralFrom(byShort("sr-1021"), RUN_DAY, true)).toMatchObject({ state: "grade", flags: ["Report incomplete"] });
-    expect(referralFrom(byShort("sr-1006"), RUN_DAY, false)).toBeNull();
+    expect(referralFrom(byShort("sr-1009"), RUN_DAY, true)).toMatchObject({ state: "grade", flags: ["Report incomplete"] });
+    expect(referralFrom(byShort("sr-1005"), RUN_DAY, false)).toBeNull();
   });
 
   it("turns a missing owner into a flag, so the row shows Review instead of Accept", () => {
-    expect(referralFrom(byShort("sr-1000"), RUN_DAY, false)!.flags).toEqual(["No owner at the clinic"]);
-    expect(referralFrom(byShort("sr-1005"), RUN_DAY, false)!.flags).toEqual([]);
+    expect(referralFrom(byShort("sr-1022"), RUN_DAY, false)!.flags).toEqual(["No owner at the clinic"]);
+    expect(referralFrom(byShort("sr-1004"), RUN_DAY, false)!.flags).toEqual([]);
   });
 });

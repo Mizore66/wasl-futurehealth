@@ -22,16 +22,22 @@ describe("programmeView over the dashboard sample", () => {
     expect(programmeView({ ...dashboard, metrics: { ...dashboard.metrics, crc_kpi_31d: kpi } }).target).toBeNull();
   });
 
-  it("derives 1 in 4 from the cases Wasl closed beyond the Emirates-ID match", () => {
-    expect(view.chaseOneIn).toBe(4);
+  it("derives 1 in 6 from the cases Wasl closed beyond the Emirates-ID match", () => {
+    expect(view.chaseOneIn).toBe(6);
   });
 
   it("lists the three largest stalls, largest first, never closed or in-progress cases", () => {
     expect(view.stalls).toEqual([
-      { dropoff: "no_acknowledgement", label: "No acknowledgement", count: 363 },
-      { dropoff: "not_booked", label: "Not booked", count: 239 },
-      { dropoff: "never_notified", label: "Never notified", count: 192 },
+      { dropoff: "no_acknowledgement", label: "No acknowledgement", count: 390 },
+      { dropoff: "not_booked", label: "Not booked", count: 252 },
+      { dropoff: "never_notified", label: "Never notified", count: 183 },
     ]);
+  });
+
+  it("counts only the colorectal and cervical cases the stalls come from", () => {
+    expect(dashboard.cases).toBeGreaterThan(view.cases);
+    expect(view.cases).toBe(dashboard.by_programme.crc.cases + dashboard.by_programme.cervical.cases);
+    expect(view.cases).toBe(2_100);
   });
 
   it("skips small-cell counts the API suppresses as <5", () => {

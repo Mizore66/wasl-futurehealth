@@ -48,7 +48,7 @@ const PROVIDERS: Record<string, string> = {
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
 
-const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", human: "a person", below_tau: "below the line" };
+const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", wasl: "name and details", human: "a person", below_tau: "below the line" };
 
 /** Reader fields arrive as `caecum/prep/tissue/histology`, e.g. `yes/not_stated/no/no`. */
 const CHECK_FIELDS = ["Caecum reached", "Prep graded", "Tissue taken", "Histology back"] as const;

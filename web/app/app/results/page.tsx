@@ -146,7 +146,7 @@ function Readers() {
         <span className="whitespace-nowrap text-[30px] font-medium leading-10">3 of {corpora.value}</span>
         <span className="text-body text-muted">found an unsafe phrasing; each was fixed by a general rule</span>
       </div>
-      <p className="m-0 mt-4 text-body">The last 2 fair tests passed with both readers. Shipped reader v7.1: 0 unsafe on every corpus.</p>
+      <p className="m-0 mt-4 text-body">The last 2 fair tests passed with both readers. Current reader v7.2: 0 unsafe on every corpus.</p>
       <p className="m-0 mt-1 text-small text-muted">
         Over all {corpora.value}: the larger reader closed 6 of 211 wrongly, the local reader 10 of 137.
       </p>
