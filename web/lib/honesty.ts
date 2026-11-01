@@ -5,6 +5,7 @@ export const HONESTY = {
   designed: "Designed, not built",
   replay: "Replay of a recorded run",
   illustrative: "Illustrative",
+  published: "Published",
 } as const;
 
 export type HonestyKind = keyof typeof HONESTY;

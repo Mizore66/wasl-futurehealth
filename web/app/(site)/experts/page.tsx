@@ -1,5 +1,5 @@
 import { programmeView } from "@/components/programme/model";
-import { exactlyOnce, fixed, missedByIdOnly, QUOTED, upperBound } from "@/components/site/figures";
+import { exactlyOnce, fixed, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
 import { Reveal } from "@/components/site/reveal";
 import { wrapExpert } from "@/components/site/styles";
@@ -307,7 +307,7 @@ export default async function Page() {
             <figcaption className={cn("mt-6 text-[14px] leading-[1.55]", muted)}>
               Bars run from 0 to 40%. Under ID-only tracking {Math.round(missedByIdOnly() * 100)}% of real completions look lost
               {chaseOneIn !== null && <>, and about 1 in {chaseOneIn} on the chase list is already done</>}. Published Abu Dhabi baseline: {QUOTED.baselineRate.value} of FIT+ patients had a
-              colonoscopy, median {QUOTED.medianWaitDays.value} days, against a {QUOTED.standardDays.value}-day standard and a target above 90%
+              colonoscopy, median {published("crc_followup_median_wait_days")} days, against a {published("crc_followup_standard_days")}-day standard and a target above 90%
               (SEHA, BMC Cancer 2021).
             </figcaption>
           </figure>

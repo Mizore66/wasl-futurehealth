@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
-    "gen": "node scripts/sync-samples.mjs && tsx scripts/build-replay.ts && tsx scripts/build-results.ts && tsx scripts/build-people.ts && tsx scripts/build-reader.ts",
+    "gen": "node scripts/sync-samples.mjs && tsx scripts/build-results.ts && tsx scripts/build-people.ts && tsx scripts/build-reader.ts && tsx scripts/build-replay.ts",
     "verify": "next typegen && tsc --noEmit && eslint && vitest run && next build && playwright test"
   },
   "dependencies": {
@@ -23,6 +23,7 @@
     "radix-ui": "^1.8.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "three": "0.187.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
@@ -32,6 +33,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "0.187.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "shadcn": "^4.23.0",

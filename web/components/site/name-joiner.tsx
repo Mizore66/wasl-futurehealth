@@ -17,7 +17,7 @@ type Pair = {
   reason: string;
 };
 
-const PEOPLE = {
+export const PEOPLE = {
   fatima: {
     first: "Fatima",
     arabic: "فاطمة الزعابي",
@@ -47,7 +47,7 @@ const PEOPLE = {
   },
 } satisfies Record<string, Pair>;
 
-type Key = keyof typeof PEOPLE;
+export type Key = keyof typeof PEOPLE;
 const ORDER: Key[] = ["fatima", "khalid", "aisha"];
 
 /** The thread between the two records: one solid teal line when joined, two grey stubs with a gap when not. */

@@ -3,6 +3,10 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type { ResultEntry, Results } from "../lib/results/types";
 
+/** `published` marks a figure from a peer-reviewed study, not from Wasl's own testing. `lib/honesty.ts` does not list it yet. */
+type Label = ResultEntry["label"] | "published";
+type Entry = Omit<ResultEntry, "label"> & { label: Label };
+
 const web = path.join(import.meta.dirname, "..");
 const repo = path.join(web, "..");
 const read = (f: string) => readFileSync(path.join(repo, f), "utf8").replace(/\r\n/g, "\n");
@@ -13,8 +17,8 @@ const PITCH = "docs/PITCH.md";
 const DASHBOARD = "docs/api-samples/dashboard.json";
 const SHOWCASE = "pipeline/results/showcase/summary.txt";
 
-const entries: Record<string, ResultEntry> = {};
-function put(id: string, e: Omit<ResultEntry, "id">) {
+const entries: Record<string, Entry> = {};
+function put(id: string, e: Omit<Entry, "id">) {
   if (entries[id]) throw new Error(`duplicate result id ${id}`);
   entries[id] = { id, ...e };
 }
@@ -74,7 +78,7 @@ const evidence = evidenceBlock
     return { what, result, source: BRIEF, label: "simulated" as const };
   });
 
-function fromBrief(id: string, pattern: RegExp, context: string, label: ResultEntry["label"] = "simulated") {
+function fromBrief(id: string, pattern: RegExp, context: string, label: Label = "simulated") {
   const m = evidenceBlock!.match(pattern);
   if (!m) throw new Error(`${BRIEF}: no match for ${id} (${pattern})`);
   put(id, { value: num(m[1]), display: m[1], label, source: BRIEF, context });
@@ -86,6 +90,13 @@ fromBrief("hl7.resources_exactly_once", /([\d,]+)\/[\d,]+ resources delivered ex
 fromBrief("encoder.recall_at_10", /R@10 (0\.\d+) vs/, "Wasl encoder, name-pair recall at 10");
 fromBrief("encoder.recall_at_10_best_single", /R@10 0\.\d+ vs (0\.\d+)/, "best single off-the-shelf encoder");
 fromBrief("reader.corpora", /: (\d+) more 300-report corpora/, "adversarial report corpora, 4 model families");
+
+// The published Abu Dhabi baseline the landing quotes (the BRIEF's own citation: SEHA, BMC Cancer 2021).
+const baseline = brief.match(/after a median \*\*(\d+) days\*\*, against a (\d+)-day standard \(SEHA, BMC Cancer 2021\)/);
+if (!baseline) throw new Error(`${BRIEF}: published colonoscopy wait not found`);
+const cited = "SEHA, BMC Cancer 2021, as cited in docs/BRIEF.md";
+put("published.crc_followup_median_wait_days", { value: num(baseline[1]), display: baseline[1], label: "published", source: BRIEF, context: `median days from a positive FIT to colonoscopy in Abu Dhabi; ${cited}` });
+put("published.crc_followup_standard_days", { value: num(baseline[2]), display: baseline[2], label: "published", source: BRIEF, context: `the follow-up standard that wait is measured against; ${cited}` });
 
 // Demo cohort KPI: the run the API serves (docs/api-samples).
 const dashboard = JSON.parse(read(DASHBOARD));
@@ -134,7 +145,7 @@ const conflicts = [
   },
 ];
 
-const results: Results = {
+const results: Omit<Results, "entries"> & { entries: Record<string, Entry> } = {
   frozen_revision: revision,
   sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE],
   entries,

@@ -106,40 +106,86 @@ test("the request action stays on the page and shows the placeholder address", a
   }
 });
 
-test("landing: the name picker joins two spellings only when the birth dates agree", async ({ page }) => {
-  await page.goto("/");
+const results = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8"));
+const closures = results.entries["v2.safety.crc_false_closures"];
+
+/** Each beat of the landing story and a line of its copy, in scroll order. */
+const BEATS = [
+  ["lost", "Nobody lost"],
+  ["unknown", "Done, and nobody knew"],
+  ["wait", "The typical wait for the follow-up check"],
+  ["join", "One person, two spellings"],
+  ["proof", "Done only when it is proven"],
+  ["receipt", "It is also a word for a receipt"],
+  ["who", "Who notices the difference"],
+  ["start", "Try it at one clinic first"],
+] as const;
+
+for (const vp of WIDTHS) {
+  test(`landing at ${vp.w}px: the 3D room scrolls through every beat with its copy`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.w, height: vp.h });
+    await page.goto("/?story=3d");
+    await expect(page.locator('[data-story="3d"] canvas')).toHaveCount(1);
+    await page.waitForFunction(() => typeof window.__wasl3d === "function");
+    for (const [id, line] of BEATS) {
+      const section = page.locator(`[data-beat="${id}"]`);
+      await section.evaluate((el: HTMLElement) => window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY + el.offsetHeight * 0.45 - window.innerHeight * 0.3));
+      await page.waitForTimeout(900);
+      await expect(section.getByText(line, { exact: false }).first()).toBeInViewport();
+      await page.screenshot({ path: `test-results/screens/story-${id}-${vp.w}.png` });
+    }
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, "no horizontal scroll").toBeLessThanOrEqual(0);
+    const axe = await new AxeBuilder({ page }).analyze();
+    const serious = axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+    expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+  });
+}
+
+test("landing: the live join follows the chips, and the dot wall counts results.json", async ({ page }) => {
+  await page.goto("/?story=3d");
+  await expect(page.locator("[data-dots]")).toHaveAttribute("data-dots", String(closures.denominator));
+  await page.locator('[data-beat="join"]').scrollIntoViewIfNeeded();
   const group = page.getByRole("group", { name: "Choose a person" });
   const verdict = page.getByTestId("verdict");
-
   await expect(group.getByRole("button", { name: "Fatima" })).toHaveAttribute("aria-pressed", "true");
   await expect(verdict).toHaveText("Same person");
   await expect(page.getByTestId("hospital-name")).toHaveText("F. Alzabi");
-  await expect(page.locator('[data-thread="joined"]')).toHaveCount(1);
 
   await group.getByRole("button", { name: "Khalid" }).click();
-  await expect(group.getByRole("button", { name: "Khalid" })).toHaveAttribute("aria-pressed", "true");
   await expect(group.getByRole("button", { name: "Fatima" })).toHaveAttribute("aria-pressed", "false");
   await expect(verdict).toHaveText("Same person");
   await expect(page.getByTestId("hospital-name")).toHaveText("Khaled Alkitbi");
 
   await group.getByRole("button", { name: "Aisha" }).click();
-  await expect(verdict).toHaveText("Not joined yet");
-  await expect(page.getByText("The names are close, but the birth dates differ. A person decides.")).toBeVisible();
-  await expect(page.locator('[data-thread="broken"]')).toHaveCount(1);
-  await expect(page.locator('[data-thread="joined"]')).toHaveCount(0);
-  await page.locator("header").first().screenshot({ path: "test-results/screens/site-home-aisha.png" });
-
-  await group.getByRole("button", { name: "Fatima" }).click();
-  await expect(verdict).toHaveText("Same person");
+  await expect(verdict).toHaveText("Not joined. A person decides.");
+  await expect(page.getByTestId("hospital-name")).toHaveText("Aysha Al Mazroui");
 });
 
-test("landing: the three figures carry their honesty words", async ({ page }) => {
+test("landing with reduced motion: stills with the same copy and the 2D name picker, no canvas", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
-  await expect(page.locator('[data-figure="missed"]')).toHaveText("3 in 5");
+  await expect(page.locator('[data-story="stills"]')).toHaveCount(1);
+  await expect(page.locator("canvas")).toHaveCount(0);
+  for (const [id, line] of BEATS) {
+    const section = page.locator(`[data-beat="${id}"]`);
+    await expect(section.getByText(line, { exact: false }).first()).toBeVisible();
+    await expect(section.locator('svg[role="img"]')).toHaveCount(1);
+  }
+  const group = page.getByRole("group", { name: "Choose a person" });
+  await group.getByRole("button", { name: "Aisha" }).click();
+  await expect(page.getByTestId("verdict")).toHaveText("Not joined yet");
+  await expect(page.locator('[data-thread="broken"]')).toHaveCount(1);
+  await page.screenshot({ path: "test-results/screens/story-stills-1440.png", fullPage: true });
+});
+
+test("landing: the figures carry their honesty words", async ({ page }) => {
+  await page.goto("/?story=stills");
+  await expect(page.locator('[data-figure="missed"]')).toHaveText("About 3 in 5");
   await expect(page.getByText("from testing on simulated patients", { exact: false }).first()).toBeVisible();
-  await expect(page.locator('[data-figure="wait"]')).toHaveText("72 days");
-  await expect(page.getByText("From a published study, 2021.", { exact: false })).toBeVisible();
-  await expect(page.locator('[data-figure="closures"]')).toHaveText("of 3,025 cases Wasl marked done. In testing on simulated patients.");
+  await expect(page.locator('[data-figure="wait"]')).toHaveText(`${results.entries["published.crc_followup_median_wait_days"].display} days`);
+  await expect(page.locator('[data-honesty="published"]')).toHaveText("From a published study, 2021.");
+  await expect(page.locator('[data-figure="closures"]')).toHaveText(`of ${closures.denominator.toLocaleString("en-US")} cases Wasl marked done. In testing on simulated patients.`);
 });
 
 test("how it works: six moments, and the tracker's tick against Wasl's open case", async ({ page }) => {
