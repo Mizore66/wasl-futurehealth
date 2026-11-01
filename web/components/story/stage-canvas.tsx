@@ -40,10 +40,12 @@ export default function StageCanvas({
   }, [onSlow, onAnchors]);
 
   useEffect(() => {
+    const still = new URLSearchParams(location.search).get("still");
     const stage = createStage({
       canvas: canvasRef.current!,
       figures,
       mobile,
+      stillAt: still === null ? null : Number(still),
       onSlow: () => slowRef.current(),
       onAnchors: (a) => anchorsRef.current(a),
     });

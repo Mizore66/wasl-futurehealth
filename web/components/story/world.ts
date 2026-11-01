@@ -3,6 +3,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { Kit } from "./kit";
 import { CITY, COLOR } from "./palette";
+import { ease } from "./script";
 
 /**
  * The miniature city: one road from Fatima's clinic in the west to the hospital in the east, with
@@ -54,6 +55,87 @@ export function makeRoad(): THREE.CatmullRomCurve3 {
   );
   c.arcLengthDivisions = 600;
   return c;
+}
+
+/** One passer-by's beat: a straight street walked back and forth at its own pace, on the clock. */
+export interface Lane {
+  x0: number;
+  z0: number;
+  x1: number;
+  z1: number;
+  /** World units per second. */
+  speed: number;
+  /** Where in its round trip this person is at time zero, 0 to 1. */
+  phase: number;
+  length: number;
+  yaw: number;
+}
+
+const lane = (x0: number, z0: number, x1: number, z1: number, speed: number, phase: number): Lane => ({
+  x0,
+  z0,
+  x1,
+  z1,
+  speed,
+  phase,
+  length: Math.hypot(x1 - x0, z1 - z0),
+  yaw: Math.atan2(x1 - x0, z1 - z0),
+});
+
+/**
+ * The side streets, desktop's ten with a phone's six first. None touches the road, so nobody walks
+ * through Fatima, the thread or the receipt, and none touches another, so nobody walks through anybody.
+ * City blocks and trees keep clear of them.
+ */
+const LANES: readonly Lane[] = [
+  lane(17, -3, 17, 2.6, 1.0, 0.1),
+  lane(24, -4, 24, 2.6, 0.85, 0.55),
+  lane(28, -8, 28, 2.6, 1.15, 0.3),
+  lane(32.5, 3.8, 32.5, -3, 0.9, 0.8),
+  lane(24, 12, 36, 12, 1.05, 0.65),
+  lane(60.5, -4, 60.5, 4.2, 0.95, 0.2),
+  lane(64.5, 16, 65, 10.6, 0.8, 0.45),
+  lane(14.5, 3.7, 30, 3.7, 1.2, 0.05),
+  lane(88.6, 13, 88.6, -6, 1.1, 0.7),
+  lane(-6, 12, -6, -2, 0.9, 0.35),
+];
+
+export const lanesFor = (mobile: boolean): readonly Lane[] => (mobile ? LANES.slice(0, 6) : LANES);
+
+/** Seconds a passer-by takes to turn round at the end of a lane. */
+const TURN_S = 0.6;
+
+export interface LanePose {
+  x: number;
+  z: number;
+  yaw: number;
+  /** Share of the current leg walked, 0 to 1; stays 1 through the turn at its end. */
+  along: number;
+}
+
+/** Where a lane's walker is at a time, written into `out`. Pure, so it needs no state and allocates nothing. */
+export function laneAt(l: Lane, seconds: number, out: LanePose): LanePose {
+  const walk = l.length / l.speed;
+  const leg = walk + TURN_S;
+  const trip = seconds + l.phase * 2 * leg;
+  const legs = Math.floor(trip / leg);
+  const into = trip - legs * leg;
+  const back = legs % 2 === 1;
+  out.along = Math.min(1, into / walk);
+  const u = back ? 1 - out.along : out.along;
+  out.x = l.x0 + (l.x1 - l.x0) * u;
+  out.z = l.z0 + (l.z1 - l.z0) * u;
+  const turned = into > walk ? ease((into - walk) / TURN_S) : 0;
+  out.yaw = l.yaw + (back ? Math.PI : 0) + turned * Math.PI;
+  return out;
+}
+
+/** Whether a point is within `pad` of a lane. */
+function nearLane(l: Lane, x: number, z: number, pad: number): boolean {
+  const dx = l.x1 - l.x0;
+  const dz = l.z1 - l.z0;
+  const t = Math.max(0, Math.min(1, ((x - l.x0) * dx + (z - l.z0) * dz) / (l.length * l.length)));
+  return Math.hypot(x - (l.x0 + dx * t), z - (l.z0 + dz * t)) < pad;
 }
 
 /** Arc-length position (0..1) on the road nearest a point. */
@@ -174,6 +256,8 @@ export function buildCity(kit: Kit, road: THREE.CatmullRomCurve3, mobile: boolea
   const r = rand(11);
   const roadPts = road.getSpacedPoints(300);
   const nearRoad = (x: number, z: number, pad: number) => roadPts.some((p) => Math.abs(p.x - x) < pad && Math.abs(p.z - z) < pad);
+  const lanes = lanesFor(mobile);
+  const onStreet = (x: number, z: number, pad: number) => lanes.some((l) => nearLane(l, x, z, pad));
   const inRect = (x: number, z: number, rc: Rect, pad: number) => x > rc.x0 - pad && x < rc.x1 + pad && z > rc.z0 - pad && z < rc.z1 + pad;
   const CHUNK = 12;
   const bins = new Map<number, { near: THREE.BufferGeometry[]; far: THREE.BufferGeometry[]; shadow: THREE.BufferGeometry[] }>();
@@ -203,10 +287,16 @@ export function buildCity(kit: Kit, road: THREE.CatmullRomCurve3, mobile: boolea
       const h = HEIGHTS[Math.floor(r() * tall)];
       const tone = TONES[Math.floor(r() * TONES.length)];
       const yaw = (r() - 0.5) * 0.12;
+      const detail = blockDetail(w, h, d, tone, r, mobile);
+      // Checked after the block's random draws, so a street takes out its own blocks and leaves the rest of the city as it was.
+      if (onStreet(x, z, reach * Math.SQRT2 + 0.6)) {
+        for (const g of detail) g.dispose();
+        continue;
+      }
       const m = new THREE.Matrix4().makeRotationY(yaw).setPosition(x, h / 2, z);
       const bin = binOf(x);
       bin.near.push(colored(new RoundedBoxGeometry(w, h, d, 1, BEVEL), tone).applyMatrix4(m));
-      for (const g of blockDetail(w, h, d, tone, r, mobile)) bin.near.push(g.applyMatrix4(m));
+      for (const g of detail) bin.near.push(g.applyMatrix4(m));
       bin.far.push(colored(new THREE.BoxGeometry(w, h, d), tone).applyMatrix4(m));
       const s = shadowGeo.clone().applyMatrix4(new THREE.Matrix4().makeScale(w + 1.6, 1, d + 1.6).setPosition(x + 0.25, 0.018, z + 0.35));
       bin.shadow.push(s);
@@ -227,6 +317,10 @@ export function buildCity(kit: Kit, road: THREE.CatmullRomCurve3, mobile: boolea
     const x = p.x - t.z * off * side;
     const z = p.z + t.x * off * side;
     const parts = r() < 0.5 ? palm(1.5 + r() * 0.6) : tree(0.75 + r() * 0.3, 0.42 + r() * 0.16);
+    if (onStreet(x, z, 1)) {
+      for (const g of parts) g.dispose();
+      continue;
+    }
     const m = new THREE.Matrix4().setPosition(x, 0, z);
     const bin = binOf(x);
     for (const g of parts) bin.near.push(g.applyMatrix4(m));

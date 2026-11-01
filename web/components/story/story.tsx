@@ -15,7 +15,8 @@ const StageCanvas = dynamic(() => import("./stage-canvas"), { ssr: false });
 
 /**
  * `stills` is the server render and the fallback (reduced motion, no WebGL2, little memory, or a slow
- * first second); `3d` is the scroll story. `?story=3d|stills` forces one, for tests and probes.
+ * first second); `3d` is the scroll story. `?story=3d|stills` forces one, for tests and probes, and
+ * `&still=<seconds>` stops the passers-by at that time, for anything that compares pixels.
  */
 type Mode = "stills" | "3d";
 let detected: Mode | null = null;
