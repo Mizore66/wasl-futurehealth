@@ -448,6 +448,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	}
 	if OutreachOn {
 		d.Outreach = lungOutreach(f, ld, state, d.Overdue, now)
+		rejectedOutreach(d, f, "lung_nodule", "lung_referral_rejected") // -rejmsg (outreachgaps.go)
 		d.ConsentLog = lungConsentLog(ls, f, d.Outreach) // consent hold / cancel history, as for the screening programmes
 	}
 	d.Contact = f.Contact
