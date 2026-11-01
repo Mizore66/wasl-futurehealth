@@ -1451,6 +1451,14 @@ Same seeds and person split as before. New in the cohorts: 70 breast loops per r
 - Small denominators give wide bounds: breast recall 0/31 (95% upper bound 11.2%), lung hand-off 0/6 (45.9%), lung surveillance 0/41 (8.6%).
 - **Subgroups** (weak evidence after about 16 tests): dev CRC by origin 1.119 (p 0.015) and dev standardised 1.099 (p 0.015) are the lowest p-values; neither passes a Bonferroni cut, and the placeholder trace above explains most of the CRC origin gap. Held-out lung by origin is 1.56 (p 0.053), the cohort-mix pattern traced above. Breast by origin (inf dev, 4.27 held-out) rests on a few items per group and is not interpretable.
 
+## Fifth loop type: lung cancer screening LDCT
+
+**Status: built; every result below is simulated.** Rule `acr2022lungrads` adds a separate `lung_ldct` programme through the canonical mock Malaffi → NATS → linker → closure → review path, with regex plus cached Gemma 3 4B readers, an optional coded Lung-RADS path, deterministic default-off `-ldct N` generation, metrics and API review labels. It is not the incidental-nodule/Fleischner `lung_nodule` programme.
+
+**Post-hoc safety review.** Addenda and same-day rereads cannot close LR3/LR4A follow-up; wrong-kind labels hold explicitly; benign annual work-up closure requires benign tissue or an MDT decision. Sign-off, denied/opted-out/`MsgOptOut`, closed-loop and outcome-negation regressions pass. In the matched 300-index/303-loop rerun, with-review resolved and action closure P/R were both 1.000/1.000 with 0/278 and 0/21 false closures, and state/triage/overdue accuracy was 1.000. Without review, resolved/action recall was 0.986/0.810 because the two new benign-evidence holds await review. Wrong-patient releases, releases without granted consent, opt-out-timing violations, duplicate/lost outputs and forgery effects were all 0. Non-LDCT feeds were byte-identical to LDCT-off; CRC, incidental lung, DR and breast metrics were unchanged, while one additional simulated cervical wrong-link sign-off reduced live recall from 0.967 to 0.962 with false closures still 0, so exact live cross-programme parity is not claimed.
+
+**Reader evidence is development-only, including integrated runs.** After the safety change, reader A scored 50/50 reports and 43/45 work-ups, Gemma v2 48/50 and 39/45, with 0 agreed-but-wrong; no labels or cache answers were rewritten. No held-out LDCT corpus exists, the generator reuses dev texts, and all cohorts/reviewers are simulated, so these are not fair reader tests. Coded/text agreement only shows that the code matches reader A's summary reading; it is not independent full-report validation and agreeing paths can still be wrong.
+
 ## Sixth loop type: IFHAS abnormal cardiometabolic-result follow-up
 
 **Status: built; every result below is simulated.** Rule `doh2025ifhas` adds follow-up of abnormal IFHAS blood pressure, HbA1c/glucose, lipids and BMI, behind generator `-ifhas N` and run wiring `WASL_IFHAS=N` (both default 0). It uses printed-panel plus coded-FHIR screening readers, regex plus cached local Gemma 3 4B follow-up-note readers, trusted cross-provider links and independent per-domain closure clocks. The 59-day routine clock includes a 28-day receiving-clinic Wasl assumption; the severe-result 10-day management clock is also a modelling choice. No paid model calls were made.
@@ -1472,3 +1480,48 @@ Same seeds and person split as before. New in the cohorts: 70 breast loops per r
 | Breast | 0.994 | 0.994 |
 
 Every no-review programme block was identical; with-review false closures, wrong-patient releases and consent violations remained zero in both. These differences are a measured non-parity disclosure, not an improvement claim or a rerun of the frozen evaluation.
+
+## Integrated seven-programme run at `73ec4e4`
+
+`WASL_LUNG=800 WASL_DR=1200 WASL_BREAST=160 WASL_LDCT=300 WASL_IFHAS=700 WASL_LUNGSURV=1 WASL_DRNEXT=1 WASL_XREFLINK=1 WASL_REFREJECT=true scripts/demo.sh all` (seed 2026, cached readers, FHIR, `v7strict`, chaos on). IFHAS is 700 here because 800 loops plus its 100 distractors exceeded the remaining synthetic background-person pool after the other six programmes. The frozen evaluation's larger held-out pool passed a generation-capacity check at 800 on all five seeds.
+
+| Programme | With-review result |
+|---|---|
+| CRC | P 1.000, R 0.860, 0/484 false closures |
+| Cervical | P 1.000, R 0.962, 0/203 false closures |
+| Incidental lung nodule | P 1.000, R 0.993, 0/300 false closures |
+| Diabetic retinopathy | P 1.000, R 0.996, 0/1,121 false closures; referral recall 0.952 |
+| Breast | P 1.000, R 0.994, 0/154 false closures; recall-loop recall 0.909 |
+| Lung cancer screening LDCT | P 1.000, R 1.000, 0/278 false closures; action-loop P/R 1.000/1.000 |
+| IFHAS | P 1.000, R 0.990, 0/616 false closures; follow-up-loop P/R 1.000/0.975 |
+
+Wrong-patient messages, releases without granted consent and releases before a late opt-out was recorded were all 0; duplicate outputs and final-state mismatches were 0; 4,176/4,176 provenance chains verified, 0/24 forged events had effect, and the tamper checks fired. This is one synthetic seed with simulated reviewers and reused development reader corpora for LDCT/IFHAS, not a held-out reader or clinical-effectiveness evaluation. C14 surveillance follow-ups and the adversarial generators remained off. API samples were regenerated from this run.
+
+### Frozen seven-programme evaluation at `73ec4e4` ([`results/final/`](results/final/SUMMARY.md))
+
+`WASL_LDCT=300 WASL_IFHAS=800 scripts/final_eval.sh`, with the existing frozen cohort sizes and flags. Five seeds × v1/v2 noise, held-out persons, cached readers, FHIR, `v7strict`, chaos on. C14 surveillance follow-ups and adversarial generation stayed off. This supersedes the `5496563` artifacts for the current integrated head; the old table remains above as historical evidence.
+
+| Mean with-review recall | Dev noise v1 | Held-out noise v2 |
+|---|---:|---:|
+| CRC | 0.845 | 0.786 |
+| Cervical | 0.972 | 0.906 |
+| Incidental lung nodule | 0.983 | 0.953 |
+| Diabetic retinopathy; referral loop | 0.997; 0.970 | 0.994; 0.899 |
+| Breast; recall loop | 0.997; 0.982 | 0.997; 0.971 |
+| Lung cancer screening LDCT; action loop | 0.998; 0.976 | 0.999; 0.987 |
+| IFHAS; follow-up loop | 0.989; 0.968 | 0.969; 0.906 |
+
+| Pooled safety | v1 | v2 |
+|---|---:|---:|
+| CRC / cervical / lung / DR / breast false closures | 0/3,163; 0/1,410; 0/2,024; 0/5,634; 0/345 | 0/3,040; 0/1,303; 0/1,908; 0/5,628; 0/339 |
+| DR referral / breast recall false closures | 0/267; 0/31 | 0/234; 0/24 |
+| LDCT / LDCT action false closures | 0/1,398; 0/109 | 0/1,414; 0/122 |
+| IFHAS / IFHAS follow-up false closures | 0/3,481; 0/1,141 | 0/3,392; 0/1,047 |
+| Lung surveillance false closures; extra loops without truth obligation | 0/41; 0 | 0/32; 0 |
+| Wrong-patient messages / without granted consent | 0/17,041; 0/12,380 | 0/16,472; 0/11,565 |
+
+Duplicate/lost outputs, ingest loss/duplication, final-state mismatches and forged effects were 0; tamper detection was 85/85 with 0 false alarms in each noise model. Review load was 36.6 (v1) and 33.1 (v2) items per 100 loops across the changed seven-programme mix; these are not like-for-like workload comparisons with `5496563`. The post-hoc pair-keyed reviewer change also prevents treating small recall differences from that baseline as isolated effects of any one feature.
+
+The A1 surveillance truth fix removed the previously disclosed extra-loop mismatch: `lung_surv_extra_opened=0` in both pooled evaluations; one surveillance obligation was missed in each. Subgroup evidence remains weak under roughly 16 tests (Bonferroni cut about 0.003): the lowest programme-standardised origin result was v1 p=0.013, and v2 lung origin p=0.039; neither passes that cut. Small denominators retain wide zero-event bounds.
+
+**Reader caveat:** held-out persons and v2 identity noise do not make LDCT/IFHAS reader results independent. Their generators still reuse development texts, including the tuned IFHAS corpus. No paid calls or new held-out reader corpora were used.

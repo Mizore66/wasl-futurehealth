@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-10-31T22:49:08.796461Z",
- "code_revision": "549656327365434be941e216aa9003960e1b9e06",
+ "frozen_at": "2026-11-01T12:59:41.204084Z",
+ "code_revision": "73ec4e4c1314657415679ccb4e328c3be535c423",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -23,6 +23,8 @@
  "lung_loops_per_run": 1088,
  "dr_loops_per_run": 1200,
  "breast_loops_per_run": 70,
+ "ldct_loops_per_run": 300,
+ "ifhas_loops_per_run": 800,
  "crc_loops_per_run": 2040,
  "cervical_loops_per_run": 816,
  "persons_cap": "all held-out (8,871)",
@@ -50,9 +52,14 @@
   "models/dr_gemma_cache.json": "6791669bce82247b8334e67e4dc09a9c45fc0f7fb37e44495b0155a50f9f50ca",
   "data/dr/screen_reports.json": "db550575155c1db2f8c492837b41196ff54846d657c71ab8a294076954c01d39",
   "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436",
-  "models/breast_gemma_cache.json": "8f8fc25a73ed1158631adca809f51975bb652c5e137c57c8acbcbe49ce95fecc",
+  "models/breast_gemma_cache.json": "a16bf1659538da7bc8d37b88326e70a2692d557037e07a89c88dbf5cba0c0b93",
   "data/breast/screen_reports.json": "8330c936c87f77a27a73a4ece7d687cd1c70db2a860d0eb5848ab38c2f3a1102",
-  "data/breast/assess_notes.json": "b95a6f7139823cd95712fabbf6d7e4fc35e9016eaed3b5339b230c06e1a93f8a"
+  "data/breast/assess_notes.json": "b95a6f7139823cd95712fabbf6d7e4fc35e9016eaed3b5339b230c06e1a93f8a",
+  "models/ldct_gemma_cache.json": "68abe29f4a79b8bc3cc6b972ea3e55667968d179d72646b91102e54dd7c88967",
+  "data/ldct/screen_reports.json": "0b8bc78004b880b71331acd88eba248e777de171d7b451b49f0adab41991b4a9",
+  "data/ldct/workup_notes.json": "362e25355b860ba1a76fa2231546b275ffd54a66d7eb02216a850907bc89c192",
+  "models/ifhas_gemma_cache.json": "836ffe14bf80d7acb4a646b5a50f31488636b59afdc0f3ccfa4f89e3b79fa266",
+  "data/ifhas/followup_notes.json": "54e37c8c97e8d261e25d9593773540f70757d477f3c8e4bbef8b0a00a4945980"
  },
  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
  "limitations": [

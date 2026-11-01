@@ -1,11 +1,11 @@
 {
  "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
  "anchors": {
-  "fhir": "ad142eb00b6509091101301f9d7281e544fe56c7f15f0cb64dce608b8e1b28c7",
-  "out.p0": "954f6b2eab4aee1437e950ceb41e69237faa62e6d0a7e0a2f176fb8e8abb64fd",
-  "out.p1": "54c3fd1a87bd2384977078f0fd37ef9b8513a89110abdab1784b53f8b210cc39",
-  "out.p2": "ad77bd392c4c23d54d5eacbe1fca6bf911a1b93b287cbd14fd5b903b12936a2f",
-  "out.p3": "9153284bdabcdb766aeadc42e2a1cfdff86e5e21bc1c2ebac12ce0ea9962f37b"
+  "fhir": "e3e2ab47a602ec9d592415b245d1d0ce88f25f7ee4499e0b08ce55c2542a887a",
+  "out.p0": "4bf0eb5df43ffcf93e014e0d399feecedce43c73b936e6789c4ab237faaffe8c",
+  "out.p1": "386d500c18a5c91334dd677c1e1b30c11955a6b0f29aa62275e1a037ec6ef842",
+  "out.p2": "3bb9b8f30055a1b616f06e2c3e7d4f0a80e625471ffcdd097dcd5bec083cc795",
+  "out.p3": "c7bc1b0156a9dce2daf59f43b36d2c155e55172a972487a51c15514ba2c10fa0"
  },
  "case": "phc-retina/ServiceRequest/PHC-sr-1029",
  "chain": [
@@ -127,19 +127,19 @@
  "chain_verified": true,
  "decision_signatures": [
   {
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3040",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4195",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
    "recomputed": "91db1e122d14ee9566280234d2e69f88cdb6e24d8a41c7f6d07f719f019e54c1",
    "sig": "91db1e122d14ee9566280234d2e69f88cdb6e24d8a41c7f6d07f719f019e54c1"
   },
   {
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3059",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4212",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
    "recomputed": "8f02d46417e6d8fef35320049ba253d8049b3d503fd0b5d4a4ae5e3388efb095",
    "sig": "8f02d46417e6d8fef35320049ba253d8049b3d503fd0b5d4a4ae5e3388efb095"
   },
   {
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4210",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@6020",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
    "recomputed": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1",
    "sig": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1"
@@ -149,10 +149,10 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-01T13:15:21Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  }
 }
