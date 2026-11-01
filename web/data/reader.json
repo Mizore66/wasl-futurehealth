@@ -1,0 +1,155 @@
+{
+ "label": "replay",
+ "source": {
+  "reports": "data/evidence/reports43.json",
+  "ledger": "pipeline/results/showcase/reader_ledger.jsonl"
+ },
+ "cases": [
+  {
+   "uid": "u31",
+   "title": "Colonoscopy - 16",
+   "sha": "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a",
+   "standsFor": {
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+    "report": "SKM-dr-237"
+   },
+   "segments": [
+    {
+     "text": "… "
+    },
+    {
+     "text": "DESCRIPTION OF PROCEDURE: "
+    },
+    {
+     "text": "The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon into the cecum and then through the ileoce",
+     "field": "caecum"
+    },
+    {
+     "text": "cal valve into the terminal ileum. "
+    },
+    {
+     "text": "The preparation was excellent and all surfaces were well seen.",
+     "field": "prep"
+    },
+    {
+     "text": " The mucosa throughout the colon and in the terminal ileum was normal, with no evidence of colitis. Special attention was paid to the rectum, including retroflexed views of the distal rectum and the anorectal junction."
+    },
+    {
+     "text": " …"
+    }
+   ],
+   "rules": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "ai": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met",
+    "downgraded": [],
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
+    "latencyMs": 16233
+   }
+  },
+  {
+   "uid": "u6",
+   "title": "Colonoscopy with Biopsy - 4",
+   "sha": "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d",
+   "segments": [
+    {
+     "text": "… "
+    },
+    {
+     "text": "A digital rectal examination was performed, after which time "
+    },
+    {
+     "text": "the scope was intubated from the anus to the level of the hepatic flexure.",
+     "field": "caecum"
+    },
+    {
+     "text": " This was intubated fairly easily; however, the patient was clearly in some discomfort and was shouting out, despite the amount of anesthesia she was provided. In truth, the pain she was experiencing was out of proportion to any maneuver or difficulty with the procedure."
+    },
+    {
+     "text": " …"
+    }
+   ],
+   "rules": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam"
+   },
+   "ai": {
+    "caecum": "no",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "not_closed",
+    "reason": "incomplete_exam",
+    "downgraded": [],
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
+    "latencyMs": 22199
+   }
+  },
+  {
+   "uid": "u43",
+   "title": "Colonoscopy",
+   "sha": "45d3f44bd854c04e4995677b56b62ca806cfdc0516c573c6f28570477ac4f9ca",
+   "segments": [
+    {
+     "text": "… "
+    },
+    {
+     "text": "PROCEDURE: "
+    },
+    {
+     "text": "The Olympus pediatric variable colonoscope was introduced into the rectum and advanced carefully through the colon to the cecum identified by the ileocecal",
+     "field": "caecum"
+    },
+    {
+     "text": " valve and the appendiceal orifice. "
+    },
+    {
+     "text": "Preparation was good, although there was some residual material in the cecum that was difficult to clear completely.",
+     "field": "prep"
+    },
+    {
+     "text": " The mucosa was normal throughout the colon. No polyps or other lesions were identified, and no blood was noted."
+    },
+    {
+     "text": " …"
+    }
+   ],
+   "rules": {
+    "caecum": "yes",
+    "prep": "adequate",
+    "polyps": "no",
+    "histology": "no",
+    "state": "closed",
+    "reason": "criteria_met"
+   },
+   "ai": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "polyps": "no",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "downgraded": [
+     "prep"
+    ],
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v2(schema+histology-check)",
+    "latencyMs": 19892
+   }
+  }
+ ]
+}
