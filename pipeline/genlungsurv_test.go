@@ -84,3 +84,45 @@ func TestGenLungSurvFlag(t *testing.T) {
 		t.Fatalf("want %d extra follow-up hospital lines, got %d", cts, len(lb)-len(la))
 	}
 }
+
+// A1 regression (post-hoc, found in the frozen evaluation at 5496563: extra_opened 3 dev / 4 held-out): a PET/CT with
+// low uptake reached on the rejected-referral path (handoffext.go rejectLung, adherence "rejected") closes the work-up
+// like any other, so the truth must carry the same surveillance obligation the engine opens. Before the fix the
+// candidates were collected before the rejections were simulated, and these loops had no pet_surveillance truth.
+func TestGenLungSurvRejectedPathOwesSurveillance(t *testing.T) {
+	if _, err := os.Stat("../data/persons3.json"); err != nil {
+		t.Skip("persons3.json not available")
+	}
+	savedP, savedOn, savedS, savedR, savedH := append([]ProvCfg{}, Providers...), LungOn, LungPETSurv, RefRejectExt, Handoff
+	defer func() { Providers, LungOn, LungPETSurv, RefRejectExt, Handoff = savedP, savedOn, savedS, savedR, savedH }()
+	EnableLung()
+	LungPETSurv, RefRejectExt, Handoff = true, true, true
+	out := t.TempDir()
+	devnull, _ := os.Open(os.DevNull)
+	stdout := os.Stdout
+	os.Stdout = devnull
+	runGen("../data", out, "../data/evidence/reports43.json", "../data/evidence/pathology_templates.json", lungSurvRejSeed, 150, 40, 5000, 60,
+		loadPools("../patient-parsers/econsult_testset.json", "../patient-parsers/teachback_testset.json"), 1088, "", 0, "", 0, "")
+	os.Stdout = stdout
+	var tr Truth
+	tb, _ := os.ReadFile(filepath.Join(out, "truth.json"))
+	json.Unmarshal(tb, &tr)
+	rejectedLow := 0
+	for id, lt := range tr.Loops {
+		if lt.Lung == nil || lt.State != "closed" || lt.Lung.Outcome != "pet_low" {
+			continue
+		}
+		if s := lt.Lung.Surv; s == nil || s.Loop != id+"#surv" || s.PETDay != lt.ClosedDay {
+			t.Fatalf("PET-low closure %s (adherence %s) has no matching surveillance truth: %+v", id, lt.Lung.Adherence, lt.Lung.Surv)
+		}
+		if lt.Lung.Adherence == "rejected" {
+			rejectedLow++
+		}
+	}
+	if rejectedLow == 0 {
+		t.Fatal("no PET-low closure on the rejected-referral path: the regression case is not exercised")
+	}
+}
+
+// lungSurvRejSeed: a seed whose 1,088-loop lung cohort has a PET-low closure on the rejected-referral path.
+var lungSurvRejSeed int64 = 1
