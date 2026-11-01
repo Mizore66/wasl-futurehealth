@@ -285,7 +285,11 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colposcopy" {
 				kind = "colonoscopy" // procedure-report slot; Judge6 routes on the presence of a coded conclusion
 			}
-			if kind == "breast-screen" && ev.Coded != "" {
+			if kind == "ldct-screen" && ev.Coded != "" {
+				ev.Ev = LDCTCodedJudge(ev.Text, ev.Coded) // ldctread.go: coded Lung-RADS = second reader, must equal regex
+			} else if kind == "ldct-screen" || kind == "ldct-workup" {
+				ev.Ev = LDCTJudge(ev.Text, kind) // ldctread.go: regex + cached Gemma 3 4B
+			} else if kind == "breast-screen" && ev.Coded != "" {
 				ev.Ev = BreastCodedJudge(ev.Text, ev.Coded) // breastread.go: coded BI-RADS = second reader, must equal regex
 			} else if kind == "breast-screen" || kind == "breast-assess" {
 				ev.Ev = BreastJudge(ev.Text, kind) // breastread.go: regex + cached Gemma 3 4B

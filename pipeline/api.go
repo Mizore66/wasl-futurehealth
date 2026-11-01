@@ -30,7 +30,7 @@ const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -490,6 +490,9 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Breast != nil { // breast: BI-RADS category, rule, deadline, assessment outcome
 		m["breast"] = c.last.Breast
 	}
+	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
+		m["ldct"] = c.last.LDCT
+	}
 	return m
 }
 
@@ -641,6 +644,9 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		act = ActSignEvidence
 	}
 	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
+		act = ActSignEvidence
+	}
+	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
 		act = ActSignEvidence
 	}
 	if act == "" {

@@ -145,6 +145,8 @@ func main() {
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	ldctN := fs.Int("ldct", 0, "gen: lung cancer screening LDCT loops (acr2022lungrads); 0 = no LDCT loops (other feeds byte-identical)")
+	ldctData := fs.String("ldctdata", "", "gen/ldctcache: LDCT corpus dir(s), comma-separated for ldctcache (default <reports dir>/../ldct)")
 	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
@@ -187,6 +189,12 @@ func main() {
 		EnableBreast()
 		os.Setenv("WSI_BREAST_PROVIDERS", "1")
 	}
+	// lung cancer screening (LDCT) programme: same, after the breast providers
+	if (cmd == "gen" && *ldctN > 0) || os.Getenv("WSI_LDCT_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_thx-hosp.ndjson")) {
+		EnableLDCT()
+		os.Setenv("WSI_LDCT_PROVIDERS", "1")
+	}
+	LDCTGenN, LDCTGenDir = *ldctN, *ldctData
 	ModelSet = *modelSet
 	DualMerge = *dual
 	switch *policy {
@@ -387,6 +395,8 @@ func main() {
 		runDRCache(*drData, *readerURL, *out)
 	case "breastcache": // ask local Gemma 3 4B once per unique breast corpus text; write the replayable cache + reader scores
 		runBreastCache(*breastData, *readerURL, *out)
+	case "ldctcache": // ask local Gemma 3 4B once per unique LDCT corpus text; write the replayable cache + reader scores
+		runLDCTCache(*ldctData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")

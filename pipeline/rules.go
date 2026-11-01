@@ -93,6 +93,9 @@ func InKPICohort(prog, cat string) bool {
 
 func progOfText(s string) string {
 	s = strings.ToLower(s)
+	if strings.Contains(s, "lung cancer screening") { // LDCT screening (ldct.go); not the incidental-nodule loop
+		return "lung_ldct"
+	}
 	if strings.Contains(s, "breast screening") || strings.Contains(s, "mammogra") {
 		return "breast"
 	}

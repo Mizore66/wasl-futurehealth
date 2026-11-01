@@ -94,6 +94,7 @@ type LoopTruth struct {
 	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
 	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
 	Breast     *BreastTruth `json:"breast,omitempty"` // breast recall loop (genbreast.go)
+	LDCT       *LDCTTruth   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop (genldct.go)
 	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
 }
 
@@ -1397,6 +1398,13 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			bg = append(bg, &ps[rest[k]])
 		}
 		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if LDCTGenN > 0 { // lung cancer screening LDCT loops (genldct.go): own RNG stream, background persons with no other loop, after breast
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genLDCT(ldctDirFor(LDCTGenDir, reportsPath), seed, LDCTGenN, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()

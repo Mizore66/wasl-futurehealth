@@ -1,6 +1,6 @@
 # Fifth loop type: lung cancer screening with low-dose CT and Lung-RADS follow-up (design)
 
-Status: design, 1 Nov 2026. Built on this branch; results go in `pipeline/RESULTS.md` (written by the coordinator).
+Status: built on this branch, 1 Nov 2026; evaluation is synthetic/simulated only. Results go in `pipeline/RESULTS.md` (written by the coordinator).
 
 **Claim tested** (as for lung nodules, DR and breast): one engine closes every follow-up loop. A new loop type is a rule table, two report readers and a generator, not a new pipeline. The LDCT loop runs through the same mock Malaffi → NATS → prep → identity linker → closure → reviewer → audit path as the other programmes, in the same integrated run.
 
@@ -94,15 +94,31 @@ A pure function from a screening LDCT label to an action and clocks in days from
 - Reader B: local Gemma 3 4B (Q4_K_M via the shared `llama-server`), JSON-schema constrained, verbatim-quote grounded, cached once per unique text into `models/ldct_gemma_cache.json` (`wsi7 ldctcache`). No model calls during runs.
 - Coded path (A7): coded category = second reader, must equal reader A.
 
-**Corpus:** `scripts/ldct_corpus.py` (seed 31), written by this work: about 45 screening reports and 45 work-up documents with a labelled key. Traps: a prior exam's category; several findings with the worst deciding; a stated final category; S modifier ("Lung-RADS 2S"); 4A vs 4B vs 4X; word-only categories; negation ("no suspicious nodule"); comparison pending (category 0); infectious findings with 1–3 month LDCT; work-up with biopsy awaited; MDT pending; benign biopsy; did not attend; declined biopsy; treatment without MDT wording.
+**Corpus:** `scripts/ldct_corpus.py` (seed 31), written by this work: 50 screening reports and 45 work-up documents with a labelled key. Traps: a prior exam's category; several findings with the worst deciding; a stated final category; S modifier ("Lung-RADS 2S"); 4A vs 4B vs 4X; word-only categories; negation ("no suspicious nodule"); comparison pending (category 0); infectious findings with 1–3 month LDCT; work-up with biopsy awaited; MDT pending; benign biopsy; did not attend; declined biopsy; treatment without MDT wording.
 
 **Not a fair test.** There is no held-out corpus for this loop: authoring one with another model family was not approved for this task. Reader accuracy is measured only on the dev corpus the readers were written against, and the generator reuses dev text, so every reader and integrated-run number for this loop is optimistic.
+
+**Built (dev corpus: 50 LDCT reports, 45 work-up documents; `pipeline/results/ldct-readers/`):**
+- Reader A (regex) was iterated on this corpus until it read every text as keyed (50/50, 45/45; one fix: "referred from lung cancer screening" was being read as a cancer diagnosis).
+- Reader B prompt v1: LDCT reports 49/50, work-up 36/45 (it read "interval CT in 3 months" as no decision). Prompt v2 (one revision on dev: a per-nodule category is not the overall category; a planned interval CT is surveillance; MDT only when named): reports 48/50, work-up 41/45. v2 is frozen.
+- With v2, both readers agree on 48/50 reports and 41/45 work-up documents, 0 agreed-but-wrong. The 3 "treatment referral without MDT wording" traps are never agreed (reader A says indeterminate; Gemma says treatment), so they go to a human.
+- Coded path: the generator's structured summaries are read by reader A as their coded category for every category (unit test, 140 texts).
 
 ## 5. Generator (`wsi7 gen -ldct N`, `genldct.go`)
 
 **Providers:** `lcs-centre`, a DoH-designated lung cancer screening centre (screening LDCT reports, follow-up LDCTs, tracking ServiceRequests); `thx-hosp`, a thoracic diagnostic unit and lung MDT at a regional hospital (work-up documents; registered under a name variant with the CRC linkage noise model; other persons' documents are distractors).
 
-**Cohort:** N persons aged 55–75 (DoH 6.1.1; smoking eligibility is assumed to have been checked by the centre and is not modelled), any sex, from the background pool with no other loop. Own RNG stream (seed + `ldctSeedOffset`), emitted after every other programme, so `-ldct 0` leaves every other feed byte-identical (test). Capacity is checked against the free person pool and reported in the results.
+**Cohort:** N persons aged 55–75 (DoH 6.1.1; smoking eligibility is assumed to have been checked by the centre and is not modelled), any sex, from the background pool with no other loop. Own RNG stream (seed + `ldctSeedOffset`), emitted after every other programme, so `-ldct 0` leaves every other feed and every other loop's truth byte-identical (`genldct_test.go`).
+
+**Capacity (checked against the free person pool, seed 2026 unless stated):** each run needs N index persons + N/8 distractor persons aged 55–75 with no other loop (child loops reuse the index person).
+
+| Cohort | Free persons 55–75 | Largest N |
+|---|---|---|
+| Demo (6,500 persons, 1,500 CRC, 600 cervical) | 1,151 | about 1,020 |
+| Demo + 800 lung + 1,200 DR + 160 breast | 415 | about 365 |
+| Frozen evaluation (8,871 held-out persons, 2,040 CRC, 816 cervical, 1,088 lung, 1,200 DR, 70 breast) | 891 (seed 37: 870) | about 770 |
+
+The LDCT cohort is not sex-restricted, so it competes less for persons than breast does.
 
 **Simulated parameters (assumptions):**
 - Category at the index scan: LR0 2%, LR1 35%, LR2 50%, LR3 7%, LR4A 3.5%, LR4B 2%, LR4X 0.5% (recall 3/4A/4B/4X = 13%, under the DoH Appendix 4 ceiling of 25%).
@@ -121,7 +137,9 @@ A pure function from a screening LDCT label to an action and clocks in days from
 - DoH Appendix 4, truth vs Wasl-measured: abnormal recall rate (index scans with 3/4A/4B/4X; acceptable <25%); lung cancer detection rate (work-up loops closed as referred for treatment per screen; DoH 0.5–1%). Wasl KPI: action loops with the recommended step documented within the clock.
 - Reader agreement and agreed-but-wrong counts end to end (`two_reader`).
 
-**Pass gates:** 0 LDCT false closures; no new wrong-patient messages or messages without consent; every other programme's metrics identical with LDCT on and off on the same seed. Reader accuracy is reported but, with no held-out set, is not a gate.
+**Pass gates:** 0 LDCT false closures; no new wrong-patient messages or messages without consent; every other programme's outcome metrics identical with LDCT on and off on the same seed. Reader accuracy is reported but, with no held-out set, is not a gate.
+
+**Matched-run disclosure (seed 2026; 800 lung, 1,200 DR, 160 breast; LDCT 300 vs 0):** the complete existing-programme objects in `programmes_live` and `programmes_no_review`, plus CRC/cervical closure and drop-off, CRC KPI and existing-reader objects, were exactly equal. The shared identity-candidate review queue was not identical: existing-programme review items were 1,585 with LDCT vs 1,581 without (+4 net: cervical +1, CRC −1, DR +2, lung +2; breast 0). Queue diffs included four added cross-programme link reviews and a changed pair on an existing evidence item. Wrong-signoff counts and all programme outcome/state metrics were unchanged. This small review-load effect is disclosed rather than claiming reviewer-workload parity.
 
 `final_aggregate.py` adds `ldct_*` metrics and the safety line `ldct_false_closures`; `WASL_LDCT` (default 0) in `demo.sh` and `final_eval.sh`.
 
