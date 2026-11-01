@@ -1,42 +1,52 @@
 {
  "by_programme": {
   "breast": {
-   "cases": 150,
-   "closed": 144,
+   "cases": 160,
+   "closed": 154,
    "overdue": 6
   },
   "cervical": {
    "cases": 600,
-   "closed": 205,
-   "overdue": 268
+   "closed": 203,
+   "overdue": 269
   },
   "crc": {
    "cases": 1500,
-   "closed": 479,
-   "overdue": 873
+   "closed": 484,
+   "overdue": 868
   },
   "diabetic_retinopathy": {
    "cases": 1200,
-   "closed": 1122,
-   "overdue": 55
+   "closed": 1121,
+   "overdue": 56
+  },
+  "ifhas": {
+   "cases": 700,
+   "closed": 616,
+   "overdue": 68
+  },
+  "lung_ldct": {
+   "cases": 303,
+   "closed": 278,
+   "overdue": 11
   },
   "lung_nodule": {
-   "cases": 905,
-   "closed": 303,
-   "overdue": 161
+   "cases": 906,
+   "closed": 306,
+   "overdue": 158
   }
  },
  "capacity": {
   "condition": {
    "by_region": {
     "AA": {
-     "cases": 278,
+     "cases": 277,
      "slots": 348,
-     "slots_per_case": 1.25
+     "slots_per_case": 1.26
     },
     "AD": {
-     "cases": 556,
-     "slots": 548,
+     "cases": 551,
+     "slots": 544,
      "slots_per_case": 0.99
     },
     "DH": {
@@ -46,12 +56,12 @@
     }
    },
    "condition": "misallocated",
-   "open_cases_needing_slot": 834,
+   "open_cases_needing_slot": 828,
    "pooling_note": "slots exist in another region: network pooling (cross-site booking) recovers them",
    "pooling_relevant": true,
    "shortfall_slots": 0,
-   "slots": 996,
-   "slots_per_case": 1.19
+   "slots": 992,
+   "slots_per_case": 1.2
   },
   "data_mode": "simulated",
   "inputs": {
@@ -61,19 +71,19 @@
     "DH": 0.1
    },
    "misallocated_scenario": false,
-   "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink",
+   "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink",
    "seed": 2026,
    "slots_per_open_case": 1.2
   },
   "levers": {
    "data_mode": "synthetic App 9 fields; Dik 2015 published score weights",
    "pathway": {
-    "clinic": 140,
-    "direct": 694
+    "clinic": 137,
+    "direct": 691
    },
    "prep_risk_band": {
-    "high": 245,
-    "low": 589
+    "high": 242,
+    "low": 586
    },
    "requires_clinician_order": true,
    "schema": "wasl-levers/1",
@@ -82,42 +92,46 @@
   "note": "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
   "status": "simulated_decision_support",
   "summary": {
-   "cross_region": 72,
+   "cross_region": 68,
    "female_list": {
     "protect": 4,
     "release_days": 7,
-    "within_31d_share_everyone_else": 0.965,
+    "within_31d_share_everyone_else": 0.97,
     "within_31d_share_women_requiring_female_list": 1
    },
    "median_wait_days": 17,
    "no_slot": 0,
-   "nurse_call": 94,
+   "nurse_call": 87,
    "overbooked": 0,
-   "suggested": 834,
-   "within_31d": 810,
-   "within_31d_share": 0.971
+   "suggested": 828,
+   "within_31d": 807,
+   "within_31d_share": 0.975
   }
  },
- "cases": 4355,
- "closed": 2253,
+ "cases": 5369,
+ "closed": 3162,
  "dropoff": {
-  "": 2253,
-  "awaiting_histology": 80,
+  "": 3162,
+  "awaiting_histology": 79,
   "awaiting_tissue": 1,
   "escalated": 32,
-  "in_progress": 187,
-  "inadequate": 142,
+  "followup_ldct_not_done": 18,
+  "in_progress": 189,
+  "inadequate": 141,
+  "incomplete_scan_not_completed": 3,
   "never_notified": 183,
-  "no_acknowledgement": 390,
+  "no_acknowledgement": 395,
   "no_assessment_outcome": 4,
-  "no_eye_exam": 53,
-  "no_followup_ct": 498,
-  "no_show": 105,
+  "no_eye_exam": 54,
+  "no_followup_ct": 496,
+  "no_followup_documented": 84,
+  "no_show": 104,
+  "no_workup_outcome": 4,
   "not_assessable": 5,
-  "not_booked": 252,
+  "not_booked": 254,
   "out_of_scope": 69,
-  "referral_rejected": 17,
-  "referral_unanswered": 62,
+  "referral_rejected": 16,
+  "referral_unanswered": 54,
   "technical_repeat_not_done": 2,
   "ungradable_no_repeat": 20
  },
@@ -130,11 +144,11 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-01T13:15:21Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "metrics": {
   "closure": {
@@ -159,13 +173,13 @@
     },
     "loops": 600,
     "wasl_live_with_review": {
-     "closed_pred": 205,
-     "false_closure_rate_upper95": 0.018,
+     "closed_pred": 203,
+     "false_closure_rate_upper95": 0.019,
      "false_closures": 0,
-     "missed": 6,
+     "missed": 8,
      "precision": 1,
-     "recall": 0.972,
-     "tp": 205
+     "recall": 0.962,
+     "tp": 203
     },
     "wasl_no_review": {
      "closed_pred": 121,
@@ -198,13 +212,13 @@
     },
     "loops": 1500,
     "wasl_live_with_review": {
-     "closed_pred": 479,
+     "closed_pred": 484,
      "false_closure_rate_upper95": 0.008,
      "false_closures": 0,
-     "missed": 84,
+     "missed": 79,
      "precision": 1,
-     "recall": 0.851,
-     "tp": 479
+     "recall": 0.86,
+     "tp": 484
     },
     "wasl_no_review": {
      "closed_pred": 176,
@@ -218,12 +232,12 @@
    }
   },
   "consent_timing": {
-   "intents_cancelled_by_consent": 85,
-   "intents_ever_held_for_consent": 322,
-   "opted_out_loops": 184,
+   "intents_cancelled_by_consent": 106,
+   "intents_ever_held_for_consent": 437,
+   "opted_out_loops": 229,
    "released_after_opt_out_on_file": 0,
    "released_before_opt_out_recorded": 0,
-   "released_total": 1556,
+   "released_total": 1902,
    "released_without_granted_consent": 0
   },
   "crc_kpi_31d": {
@@ -251,12 +265,12 @@
    "wasl_live": {
     "accepted_eligible": 1306,
     "eligible_referrals": 1337,
-    "kpi_accepted_referrals_only": 0.326,
+    "kpi_accepted_referrals_only": 0.327,
     "kpi_all_referrals": 0.319,
-    "kpi_among_procedures_seen": 0.652,
+    "kpi_among_procedures_seen": 0.651,
     "per_loop_agreement_with_truth": 0.99,
-    "procedures_seen": 653,
-    "within_31d": 426
+    "procedures_seen": 656,
+    "within_31d": 427
    },
    "wasl_no_review": {
     "accepted_eligible": 1306,
@@ -276,7 +290,7 @@
    "lost_outputs": 0
   },
   "forged": {
-   "consent_records_accepted": 3987,
+   "consent_records_accepted": 5000,
    "forged_consent_target_genuinely_opted_out": 0,
    "forged_events": 24,
    "forged_target_pair_falsely_merged_by_linker": 0,
@@ -285,35 +299,39 @@
    "rbac_denied_signoff": 12
   },
   "provenance": {
-   "closed_chains": 3161,
-   "hash_verified": 3161,
+   "closed_chains": 4176,
+   "hash_verified": 4176,
    "tamper_detected": true,
-   "with_human_signoff": 327
+   "with_human_signoff": 391
   },
-  "throughput_ev_s": 781.3689366121132
+  "throughput_ev_s": 667.4680203957197
  },
  "origins": [
   {
    "acknowledged": 634,
-   "closed_within_31d": 217,
+   "closed_within_31d": 272,
    "dropoff": {
-    "": 761,
-    "awaiting_histology": 35,
+    "": 1158,
+    "awaiting_histology": 34,
     "awaiting_tissue": "\u003c5",
     "escalated": 16,
-    "in_progress": 95,
+    "followup_ldct_not_done": 8,
+    "in_progress": 97,
     "inadequate": 76,
+    "incomplete_scan_not_completed": "\u003c5",
     "never_notified": 97,
-    "no_acknowledgement": 179,
+    "no_acknowledgement": 178,
     "no_assessment_outcome": "\u003c5",
     "no_eye_exam": 32,
-    "no_followup_ct": 186,
-    "no_show": 60,
+    "no_followup_ct": 185,
+    "no_followup_documented": 47,
+    "no_show": 59,
+    "no_workup_outcome": "\u003c5",
     "not_assessable": "\u003c5",
-    "not_booked": 121,
+    "not_booked": 124,
     "out_of_scope": 42,
-    "referral_rejected": 11,
-    "referral_unanswered": 37,
+    "referral_rejected": 10,
+    "referral_unanswered": 31,
     "technical_repeat_not_done": "\u003c5",
     "ungradable_no_repeat": 13
    },
@@ -325,61 +343,69 @@
     "econsult_referrer_action": "\u003c5",
     "econsult_rejected_clinician_review": 34,
     "econsult_unanswered_3d": 21,
+    "followup_needs_tracking": "\u003c5",
     "handoff_medical_director": 9,
     "handoff_urgent_14d": 6,
-    "no_ack_7d": 237,
+    "no_ack_7d": 236,
     "noncompliant_message": 293,
     "not_notified_21d": 109,
-    "open_econsult": 47,
+    "open_econsult": 40,
     "overdue_breast_recall": "\u003c5",
-    "overdue_cervical_deadline": 139,
-    "overdue_crc_deadline": 432,
+    "overdue_cervical_deadline": 138,
+    "overdue_crc_deadline": 428,
     "overdue_dr_referral": 21,
-    "overdue_lung_nodule_window": 73,
+    "overdue_ifhas_followup": 35,
+    "overdue_ldct_followup": "\u003c5",
+    "overdue_ldct_workup": "\u003c5",
+    "overdue_lung_nodule_window": 72,
     "prep_grade_unanswered_5wd": "\u003c5",
     "rebook_after_dna": "\u003c5",
     "refer_specialist_mdt": 17,
-    "referral_rejected": 12,
-    "referral_unanswered_7d": 51,
+    "referral_rejected": 11,
+    "referral_unanswered_7d": 43,
     "rejected_inadequate": 76,
-    "rejected_no_show": 59,
+    "rejected_no_show": 58,
     "repeat_ct_not_assessable": "\u003c5",
     "repeat_photo_overdue": 13,
     "risk_not_recorded_treated_high": 23,
-    "teachback_clarify": 11,
+    "teachback_clarify": 10,
     "teachback_misunderstood_callback": 11,
     "teachback_needs_human_callback": 14,
     "technical_repeat_overdue": "\u003c5",
     "tissue_after_avid_pet_overdue": "\u003c5",
     "unowned": 169,
-    "urgent_dr_referral_open": 7
+    "urgent_dr_referral_open": 7,
+    "urgent_ifhas_result_open": "\u003c5",
+    "urgent_ldct_workup_open": "\u003c5"
    },
-   "evidenced_closed": 462,
-   "loops": 2231,
+   "evidenced_closed": 600,
+   "loops": 2819,
    "noncompliant_message_flagged": 293,
    "notified": 927,
    "notified_within_21d": 913,
    "origin": "arab",
-   "referral_accepted": 987,
-   "referral_rejected": 12
+   "referral_accepted": 996,
+   "referral_rejected": 11
   },
   {
    "acknowledged": 114,
-   "closed_within_31d": 31,
+   "closed_within_31d": 41,
    "dropoff": {
-    "": 98,
-    "awaiting_histology": 7,
+    "": 148,
+    "awaiting_histology": 8,
     "escalated": "\u003c5",
+    "followup_ldct_not_done": "\u003c5",
     "in_progress": 11,
     "inadequate": 14,
     "never_notified": 19,
-    "no_acknowledgement": 48,
+    "no_acknowledgement": 49,
     "no_eye_exam": "\u003c5",
     "no_followup_ct": 36,
+    "no_followup_documented": 5,
     "no_show": 9,
-    "not_booked": 24,
+    "not_booked": 23,
     "out_of_scope": "\u003c5",
-    "referral_unanswered": 6,
+    "referral_unanswered": 7,
     "ungradable_no_repeat": "\u003c5"
    },
    "escalations": {
@@ -387,17 +413,18 @@
     "econsult_re_refer": "\u003c5",
     "econsult_rejected_clinician_review": "\u003c5",
     "econsult_unanswered_3d": "\u003c5",
-    "no_ack_7d": 52,
+    "no_ack_7d": 53,
     "noncompliant_message": 51,
     "not_notified_21d": 20,
-    "open_econsult": 15,
+    "open_econsult": 16,
     "overdue_cervical_deadline": 31,
-    "overdue_crc_deadline": 79,
+    "overdue_crc_deadline": 80,
     "overdue_dr_referral": "\u003c5",
+    "overdue_ifhas_followup": 5,
     "overdue_lung_nodule_window": 13,
     "prep_grade_unanswered_5wd": "\u003c5",
     "refer_specialist_mdt": "\u003c5",
-    "referral_unanswered_7d": 11,
+    "referral_unanswered_7d": 12,
     "rejected_inadequate": 14,
     "rejected_no_show": 9,
     "repeat_photo_overdue": "\u003c5",
@@ -405,37 +432,41 @@
     "teachback_clarify": "\u003c5",
     "teachback_misunderstood_callback": "\u003c5",
     "teachback_needs_human_callback": "\u003c5",
-    "unowned": 27
+    "unowned": 27,
+    "urgent_dr_referral_open": "\u003c5"
    },
-   "evidenced_closed": 79,
-   "loops": 360,
+   "evidenced_closed": 93,
+   "loops": 434,
    "noncompliant_message_flagged": 51,
    "notified": 175,
    "notified_within_21d": 171,
    "origin": "filipino",
-   "referral_accepted": 185,
+   "referral_accepted": 184,
    "referral_rejected": 0
   },
   {
    "acknowledged": 297,
-   "closed_within_31d": 95,
+   "closed_within_31d": 126,
    "dropoff": {
-    "": 274,
+    "": 414,
     "awaiting_histology": 19,
     "escalated": 6,
+    "followup_ldct_not_done": 5,
     "in_progress": 50,
-    "inadequate": 30,
+    "inadequate": 29,
     "never_notified": 48,
-    "no_acknowledgement": 102,
+    "no_acknowledgement": 105,
     "no_assessment_outcome": "\u003c5",
-    "no_eye_exam": 18,
-    "no_followup_ct": 108,
+    "no_eye_exam": 17,
+    "no_followup_ct": 107,
+    "no_followup_documented": 19,
     "no_show": 25,
+    "no_workup_outcome": "\u003c5",
     "not_assessable": "\u003c5",
     "not_booked": 74,
     "out_of_scope": 13,
     "referral_rejected": 5,
-    "referral_unanswered": 11,
+    "referral_unanswered": 9,
     "ungradable_no_repeat": "\u003c5"
    },
    "escalations": {
@@ -446,59 +477,70 @@
     "econsult_referrer_action": "\u003c5",
     "econsult_rejected_clinician_review": 10,
     "econsult_unanswered_3d": 7,
+    "followup_needs_tracking": "\u003c5",
     "handoff_medical_director": "\u003c5",
     "handoff_urgent_14d": "\u003c5",
-    "no_ack_7d": 131,
+    "no_ack_7d": 132,
     "noncompliant_message": 131,
     "not_notified_21d": 55,
     "open_econsult": 20,
     "overdue_breast_recall": "\u003c5",
-    "overdue_cervical_deadline": 65,
-    "overdue_crc_deadline": 228,
-    "overdue_dr_referral": 12,
-    "overdue_lung_nodule_window": 41,
+    "overdue_cervical_deadline": 66,
+    "overdue_crc_deadline": 227,
+    "overdue_dr_referral": 11,
+    "overdue_ifhas_followup": 17,
+    "overdue_ldct_followup": "\u003c5",
+    "overdue_ldct_workup": "\u003c5",
+    "overdue_lung_nodule_window": 40,
     "prep_grade_unanswered_5wd": "\u003c5",
     "refer_specialist_mdt": 6,
     "referral_rejected": 5,
-    "referral_unanswered_7d": 17,
-    "rejected_inadequate": 30,
+    "referral_unanswered_7d": 19,
+    "rejected_inadequate": 29,
     "rejected_no_show": 25,
     "repeat_photo_overdue": "\u003c5",
     "risk_not_recorded_treated_high": 15,
+    "surveillance_after_workup": "\u003c5",
     "teachback_clarify": "\u003c5",
     "teachback_misunderstood_callback": 8,
     "teachback_needs_human_callback": 5,
     "unowned": 77,
-    "urgent_dr_referral_open": 7
+    "urgent_dr_referral_open": 6,
+    "urgent_ifhas_result_open": "\u003c5",
+    "urgent_ldct_workup_open": "\u003c5"
    },
-   "evidenced_closed": 222,
-   "loops": 1008,
+   "evidenced_closed": 277,
+   "loops": 1226,
    "noncompliant_message_flagged": 131,
    "notified": 476,
    "notified_within_21d": 466,
    "origin": "south_asian",
-   "referral_accepted": 517,
+   "referral_accepted": 515,
    "referral_rejected": 5
   },
   {
    "acknowledged": 189,
-   "closed_within_31d": 76,
+   "closed_within_31d": 80,
    "dropoff": {
-    "": 200,
-    "awaiting_histology": 19,
+    "": 295,
+    "awaiting_histology": 18,
     "escalated": 6,
+    "followup_ldct_not_done": "\u003c5",
     "in_progress": 31,
     "inadequate": 22,
+    "incomplete_scan_not_completed": "\u003c5",
     "never_notified": 19,
-    "no_acknowledgement": 61,
+    "no_acknowledgement": 63,
     "no_eye_exam": "\u003c5",
-    "no_followup_ct": 71,
+    "no_followup_ct": 70,
+    "no_followup_documented": 13,
     "no_show": 11,
+    "no_workup_outcome": "\u003c5",
     "not_assessable": "\u003c5",
     "not_booked": 33,
     "out_of_scope": 11,
     "referral_rejected": "\u003c5",
-    "referral_unanswered": 8,
+    "referral_unanswered": 7,
     "technical_repeat_not_done": "\u003c5",
     "ungradable_no_repeat": "\u003c5"
    },
@@ -508,19 +550,22 @@
     "econsult_re_refer": "\u003c5",
     "econsult_rejected_clinician_review": 8,
     "econsult_unanswered_3d": 6,
-    "no_ack_7d": 77,
+    "no_ack_7d": 79,
     "noncompliant_message": 102,
     "not_notified_21d": 22,
-    "open_econsult": 20,
-    "overdue_cervical_deadline": 33,
-    "overdue_crc_deadline": 134,
+    "open_econsult": 21,
+    "overdue_cervical_deadline": 34,
+    "overdue_crc_deadline": 133,
     "overdue_dr_referral": "\u003c5",
-    "overdue_lung_nodule_window": 29,
+    "overdue_ifhas_followup": 11,
+    "overdue_ldct_followup": "\u003c5",
+    "overdue_ldct_workup": "\u003c5",
+    "overdue_lung_nodule_window": 28,
     "prep_grade_unanswered_5wd": "\u003c5",
     "rebook_after_dna": "\u003c5",
     "refer_specialist_mdt": 6,
     "referral_rejected": "\u003c5",
-    "referral_unanswered_7d": 19,
+    "referral_unanswered_7d": 21,
     "rejected_inadequate": 22,
     "rejected_no_show": 10,
     "repeat_ct_not_assessable": "\u003c5",
@@ -530,33 +575,35 @@
     "teachback_misunderstood_callback": "\u003c5",
     "teachback_needs_human_callback": 6,
     "technical_repeat_overdue": "\u003c5",
-    "unowned": 42
+    "unowned": 42,
+    "urgent_ifhas_result_open": "\u003c5",
+    "urgent_ldct_workup_open": "\u003c5"
    },
-   "evidenced_closed": 151,
-   "loops": 651,
+   "evidenced_closed": 171,
+   "loops": 784,
    "noncompliant_message_flagged": 102,
    "notified": 289,
    "notified_within_21d": 287,
    "origin": "western",
-   "referral_accepted": 301,
+   "referral_accepted": 299,
    "referral_rejected": "\u003c5"
   }
  ],
- "overdue": 1363,
+ "overdue": 1436,
  "providers": [
   {
    "acknowledged": 941,
-   "closed_within_31d": 284,
+   "closed_within_31d": 286,
    "dropoff": {
-    "awaiting_histology": 63,
-    "in_progress": 142,
-    "inadequate": 100,
+    "awaiting_histology": 62,
+    "in_progress": 144,
+    "inadequate": 99,
     "never_notified": 140,
-    "no_acknowledgement": 301,
+    "no_acknowledgement": 305,
     "no_show": 73,
-    "not_booked": 193,
-    "referral_rejected": 14,
-    "referral_unanswered": 50
+    "not_booked": 195,
+    "referral_rejected": 13,
+    "referral_unanswered": 43
    },
    "escalations": {
     "econsult_re_refer": 27,
@@ -565,36 +612,36 @@
     "econsult_unanswered_3d": 25,
     "handoff_medical_director": 9,
     "handoff_urgent_14d": 6,
-    "no_ack_7d": 380,
+    "no_ack_7d": 382,
     "noncompliant_message": 402,
     "not_notified_21d": 157,
-    "open_econsult": 70,
-    "overdue_cervical_deadline": 268,
-    "overdue_crc_deadline": 577,
+    "open_econsult": 66,
+    "overdue_cervical_deadline": 269,
+    "overdue_crc_deadline": 573,
     "prep_grade_unanswered_5wd": 7,
-    "referral_rejected": 14,
-    "referral_unanswered_7d": 77,
-    "rejected_inadequate": 100,
+    "referral_rejected": 13,
+    "referral_unanswered_7d": 75,
+    "rejected_inadequate": 99,
     "rejected_no_show": 73,
     "teachback_clarify": 16,
     "teachback_misunderstood_callback": 17,
     "teachback_needs_human_callback": 21,
     "unowned": 249
    },
-   "evidenced_closed": 522,
+   "evidenced_closed": 524,
    "loops": 1598,
    "noncompliant_message_flagged": 402,
    "notified": 1423,
    "notified_within_21d": 1397,
    "provider": "ahs-mushrif",
-   "referral_accepted": 1507,
-   "referral_rejected": 14
+   "referral_accepted": 1510,
+   "referral_rejected": 13
   },
   {
    "acknowledged": 0,
-   "closed_within_31d": 6,
+   "closed_within_31d": 8,
    "dropoff": {
-    "": 136,
+    "": 144,
     "no_assessment_outcome": "\u003c5",
     "technical_repeat_not_done": "\u003c5"
    },
@@ -602,8 +649,8 @@
     "overdue_breast_recall": "\u003c5",
     "technical_repeat_overdue": "\u003c5"
    },
-   "evidenced_closed": 8,
-   "loops": 150,
+   "evidenced_closed": 10,
+   "loops": 160,
    "noncompliant_message_flagged": 0,
    "notified": 0,
    "notified_within_21d": 0,
@@ -612,18 +659,63 @@
    "referral_rejected": 0
   },
   {
+   "acknowledged": 0,
+   "closed_within_31d": 94,
+   "dropoff": {
+    "": 417,
+    "no_followup_documented": 84
+   },
+   "escalations": {
+    "overdue_ifhas_followup": 68,
+    "urgent_ifhas_result_open": "\u003c5"
+   },
+   "evidenced_closed": 199,
+   "loops": 700,
+   "noncompliant_message_flagged": 0,
+   "notified": 0,
+   "notified_within_21d": 0,
+   "provider": "ifh-screen",
+   "referral_accepted": 0,
+   "referral_rejected": 0
+  },
+  {
+   "acknowledged": 0,
+   "closed_within_31d": "\u003c5",
+   "dropoff": {
+    "": 257,
+    "followup_ldct_not_done": 18,
+    "incomplete_scan_not_completed": "\u003c5",
+    "no_workup_outcome": "\u003c5"
+   },
+   "escalations": {
+    "followup_needs_tracking": "\u003c5",
+    "overdue_ldct_followup": 8,
+    "overdue_ldct_workup": "\u003c5",
+    "surveillance_after_workup": "\u003c5",
+    "urgent_ldct_workup_open": "\u003c5"
+   },
+   "evidenced_closed": 21,
+   "loops": 303,
+   "noncompliant_message_flagged": 0,
+   "notified": 0,
+   "notified_within_21d": 0,
+   "provider": "lcs-centre",
+   "referral_accepted": 0,
+   "referral_rejected": 0
+  },
+  {
    "acknowledged": 293,
-   "closed_within_31d": 97,
+   "closed_within_31d": 96,
    "dropoff": {
     "awaiting_histology": 17,
     "in_progress": 45,
     "inadequate": 42,
     "never_notified": 43,
-    "no_acknowledgement": 89,
-    "no_show": 30,
+    "no_acknowledgement": 90,
+    "no_show": 29,
     "not_booked": 59,
     "referral_rejected": "\u003c5",
-    "referral_unanswered": 12
+    "referral_unanswered": 11
    },
    "escalations": {
     "econsult_re_refer": "\u003c5",
@@ -631,36 +723,36 @@
     "econsult_unanswered_3d": 11,
     "handoff_medical_director": "\u003c5",
     "handoff_urgent_14d": "\u003c5",
-    "no_ack_7d": 117,
+    "no_ack_7d": 118,
     "noncompliant_message": 175,
     "not_notified_21d": 49,
-    "open_econsult": 32,
-    "overdue_crc_deadline": 296,
+    "open_econsult": 31,
+    "overdue_crc_deadline": 295,
     "prep_grade_unanswered_5wd": "\u003c5",
     "referral_rejected": "\u003c5",
-    "referral_unanswered_7d": 21,
+    "referral_unanswered_7d": 20,
     "rejected_inadequate": 42,
-    "rejected_no_show": 30,
+    "rejected_no_show": 29,
     "teachback_clarify": "\u003c5",
     "teachback_misunderstood_callback": 7,
     "teachback_needs_human_callback": 5,
     "unowned": 66
    },
-   "evidenced_closed": 162,
+   "evidenced_closed": 163,
    "loops": 502,
    "noncompliant_message_flagged": 175,
    "notified": 444,
    "notified_within_21d": 440,
    "provider": "medlab",
-   "referral_accepted": 478,
+   "referral_accepted": 479,
    "referral_rejected": "\u003c5"
   },
   {
    "acknowledged": 0,
-   "closed_within_31d": 17,
+   "closed_within_31d": 16,
    "dropoff": {
     "": 1061,
-    "no_eye_exam": 53,
+    "no_eye_exam": 54,
     "no_show": "\u003c5",
     "not_assessable": "\u003c5",
     "ungradable_no_repeat": 20
@@ -668,12 +760,12 @@
    "escalations": {
     "clinician_decision_no_fundal_view": "\u003c5",
     "dr_recall_overdue": 9,
-    "overdue_dr_referral": 35,
+    "overdue_dr_referral": 36,
     "rebook_after_dna": "\u003c5",
     "repeat_photo_overdue": 20,
     "urgent_dr_referral_open": 14
    },
-   "evidenced_closed": 61,
+   "evidenced_closed": 60,
    "loops": 1200,
    "noncompliant_message_flagged": 0,
    "notified": 0,
@@ -689,13 +781,13 @@
     "": 136,
     "awaiting_tissue": "\u003c5",
     "escalated": 32,
-    "no_followup_ct": 498,
+    "no_followup_ct": 496,
     "not_assessable": "\u003c5",
     "out_of_scope": 69
    },
    "escalations": {
     "clinician_decision_outside_fleischner": 69,
-    "overdue_lung_nodule_window": 156,
+    "overdue_lung_nodule_window": 153,
     "overdue_lung_surveillance_ct": "\u003c5",
     "refer_specialist_mdt": 33,
     "referral_rejected": "\u003c5",
@@ -703,8 +795,8 @@
     "risk_not_recorded_treated_high": 55,
     "tissue_after_avid_pet_overdue": "\u003c5"
    },
-   "evidenced_closed": 167,
-   "loops": 905,
+   "evidenced_closed": 170,
+   "loops": 906,
    "noncompliant_message_flagged": 0,
    "notified": 0,
    "notified_within_21d": 0,
@@ -714,9 +806,9 @@
   }
  ],
  "review": {
-  "none": 3009,
-  "open": 30,
-  "signed": 1316
+  "none": 3889,
+  "open": 34,
+  "signed": 1446
  },
  "sla": {
   "ack_days": 7,
@@ -726,20 +818,20 @@
  },
  "small_cell_rule": "counts 1-4 shown as \u003c5",
  "states": {
-  "awaiting_histology": 80,
+  "awaiting_histology": 79,
   "awaiting_tissue": 1,
-  "booked": 141,
-  "closed": 920,
+  "booked": 143,
+  "closed": 1147,
   "escalated": 32,
-  "inadequate": 142,
-  "no_followup_needed": 136,
-  "no_recall_needed": 136,
+  "inadequate": 141,
+  "no_followup_needed": 553,
+  "no_recall_needed": 401,
   "no_referral_needed": 1061,
-  "no_show": 105,
+  "no_show": 104,
   "not_assessable": 5,
-  "open": 1464,
+  "open": 1571,
   "out_of_scope": 69,
   "procedure_done": 46,
-  "referral_rejected": 17
+  "referral_rejected": 16
  }
 }
