@@ -163,6 +163,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	// ---- review items (identical shape to the screening programmes: link first, evidence only on a trusted link)
 	pending, pendSet := []string{}, map[string]bool{}
 	var newItems []*ReviewItem
+	var raiseLog *[]string // -lungsurv2 / -lungsurvstable: the open items a surveillance child raised (its pending list)
 	raise := func(r row, kind string) {
 		pair := [2]string{r.d.Weak.A, r.d.Weak.B}
 		key, report := pair[0]+"|"+pair[1], ""
@@ -175,7 +176,13 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			reason, hold, key = LinkConfirm, s.Hold, key+"#linkconfirm"
 			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
 		}
-		if _, ok := signed[id]; ok || pendSet[id] {
+		if _, ok := signed[id]; ok {
+			return
+		}
+		if raiseLog != nil {
+			*raiseLog = append(*raiseLog, id)
+		}
+		if pendSet[id] {
 			return
 		}
 		pendSet[id] = true
@@ -390,11 +397,42 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 	}
 	var petChild *Decision // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
+	record := func(fn func()) []string { // the items a child raised, in order, once each
+		var log []string
+		raiseLog = &log
+		fn()
+		raiseLog = nil
+		seen, out := map[string]bool{}, []string(nil)
+		for _, id := range log {
+			if !seen[id] {
+				seen[id], out = true, append(out, id)
+			}
+		}
+		return out
+	}
+	hooks := survHooks{labelOf, raise, withSignoff}
+	var laterKids []*Decision // -lungsurv2: the 1- and 2-year surveillance children
 	if LungPETSurv && state == "closed" && ld.Outcome == "pet_low" && len(chain) > 0 {
 		k0 := len(pending)
 		petChild = c.petSurvLoop(f, ld, closedDay, chain[len(chain)-1].Hash, fus, labelOf, raise, withSignoff)
 		ld.Surveillance = petChild.Lung.Surveillance
-		finishPETSurv(ls, f, petChild, pending[k0:], now)
+		k1 := len(pending)
+		var laterPend [][]string
+		if LungPETSurv2 { // before the first child's signature: its surveillance object points at the next round
+			laterKids, laterPend = c.petSurvLater(f, ld, petChild, fus, hooks, record)
+		}
+		finishPETSurv(ls, f, petChild, pending[k0:k1], now)
+		for i, k := range laterKids { // own consent-history key: same parent event and kinds as the first child
+			finishSurvChild(ls, f, k, laterPend[i], now, "|"+k.LoopID)
+		}
+	}
+	var stableChild *Decision // -lungsurvstable: the stable-CT child with review items (lungsurv.go stableSurvLoop)
+	if LungStableSurv && len(chain) > 0 {
+		var items []string
+		items = record(func() { stableChild = c.stableSurvLoop(f, ld, state, closedDay, chain[len(chain)-1].Hash, fus, hooks) })
+		if stableChild != nil {
+			finishSurvChild(ls, f, stableChild, items, now, "")
+		}
 	}
 	workup := ld.Rec != nil && rec.Action == FlCTPET && ld.Scope == "in_scope"
 	var refSRs []srFact // the work-up unit's answers to a PET/CT or tissue referral (handoffext.go); untrusted ones are asked about
@@ -462,7 +500,12 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	for _, it := range newItems {
 		out = append(out, OutMsg{ID: it.ItemID, Kind: "review", Item: it})
 	}
-	fu := c.surveillanceLoop(f, ld, state, closedDay, fus, now)
+	var fu *Decision
+	if LungStableSurv {
+		fu = stableChild
+	} else {
+		fu = c.surveillanceLoop(f, ld, state, closedDay, fus, now)
+	}
 	if petChild != nil {
 		fu = petChild
 	}
@@ -471,6 +514,17 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		fu.ID = fmt.Sprintf("dec-%s@%s", fu.LoopID, mid)
 		ls.lastFU = fu
 		out = append(out, OutMsg{ID: fu.ID, Kind: "decision", Dec: fu})
+	}
+	for _, k := range laterKids { // -lungsurv2: each later child is its own loop
+		if prev := ls.lastFU2[k.LoopID]; prev == nil || prev.Sig != k.Sig {
+			k.Now, k.InSeq = now, inSeq
+			k.ID = fmt.Sprintf("dec-%s@%s", k.LoopID, mid)
+			if ls.lastFU2 == nil {
+				ls.lastFU2 = map[string]*Decision{}
+			}
+			ls.lastFU2[k.LoopID] = k
+			out = append(out, OutMsg{ID: k.ID, Kind: "decision", Dec: k})
+		}
 	}
 	return out
 }

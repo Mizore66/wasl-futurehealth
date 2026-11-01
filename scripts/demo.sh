@@ -10,6 +10,8 @@
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
 #      WASL_DRNEXT=1 (with WASL_DR) tracks the next DR due date and a recall_overdue flag (pipeline/drnext.go; default off).
 #      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
+#      WASL_LUNGSURV2=1 (with WASL_LUNGSURV=1) adds the later surveillance CTs at about 1 and 2 years (BTS 2015; default 0 = off).
+#      WASL_LUNGSURVSTABLE=1 gives the stable-CT surveillance child review items, truth and metrics (default 0 = off).
 #      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
 #      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
 #      WASL_WRONGEID=p / WASL_WRONGREF=p adversarial cohorts (pipeline/genadv.go; default 0 = off): relatives' Emirates IDs / wrong referral numbers.
@@ -44,6 +46,10 @@ LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake l
 # WASL_HISTCLOCK=1 judges look-back history (lung/DR/breast inputs arriving before day 0) at its arrival time, not at
 # the day-0 clock (pipeline/linker.go HistClock; default off)
 [ "${WASL_HISTCLOCK:-0}" = 0 ] || { PARGS+=(-histclock); RUN="$RUN-histclock"; }
+LUNGSURV2="${WASL_LUNGSURV2:-0}"   # later surveillance CTs (1 and 2 years) after a PET/CT low-uptake closure; needs WASL_LUNGSURV=1; 0 = off
+[ "$LUNGSURV2" = 0 ] || [ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv2); RUN="$RUN-lungsurv2"; }
+LUNGSURVSTABLE="${WASL_LUNGSURVSTABLE:-0}"   # stable-CT surveillance child: review items, truth and metrics (lungsurv.go); 0 = off
+[ "$LUNGSURVSTABLE" = 0 ] || { PARGS+=(-lungsurvstable); RUN="$RUN-lungsurvstable"; }
 # hand-off (default off): WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question
 [ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
 # WASL_SECONDIDCONFIRM=0: a contradicted second-identifier 'same' counts at once (-secondidconfirm=false; default on, v7.go)
@@ -60,6 +66,8 @@ WRONGEID="${WASL_WRONGEID:-0}"; WRONGREF="${WASL_WRONGREF:-0}"
 [ "$WRONGREF" = 0 ] || { GARGS+=(-wrongref "$WRONGREF"); RUN="$RUN-wrongref$WRONGREF"; }
 # WASL_BREASTSHARE=1 (gen, default off): breast loops beyond the women with no other loop use women with another loop
 [ "${WASL_BREASTSHARE:-0}" = 0 ] || GARGS+=(-breastshare)
+[ "$LUNGSURV2" = 0 ] || [ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv2)
+[ "$LUNGSURVSTABLE" = 0 ] || GARGS+=(-lungsurvstable)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()
