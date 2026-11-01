@@ -959,7 +959,7 @@ The listener rebuilds code, date, status, text and coded result from the segment
 
 With `-handoff=false -lungworkup=false` the generator output is byte-identical to the previous one, with and without `-lung 800`.
 
-**Still open:** PET/CT closures do not yet open a surveillance-CT child loop. Lung loops have no e-consult or hand-off packet. The reader-B coded result is synthetic, not from a real PACS or LIS.
+**Still open at the time:** PET/CT closures did not yet open a surveillance-CT child loop, and lung loops had no hand-off packet; both were built later (see "Fourth loop type, follow-up tracking and hand-off extensions"). The reader-B coded result is synthetic, not from a real PACS or LIS.
 
 ### Frozen evaluation with every new piece on (`a3ad83a`)
 
