@@ -176,15 +176,21 @@ func (m *HL7Msg) hl7BreastRebuild(res map[string]interface{}) bool {
 		if gs(res, "resourceType") != "ServiceRequest" {
 			return false
 		}
+		orc := m.seg("ORC")
+		st := ""
+		for k, v := range hl7OrderStatus {
+			if orc != nil && fld(orc, 5) == v {
+				st = k
+			}
+		}
+		if st == "" {
+			return false
+		}
 		res["category"] = []interface{}{map[string]interface{}{"text": breastOrderCode}}
 		res["code"] = map[string]interface{}{"text": hl7Unesc(c[1])}
+		res["status"] = st
 		if t := ts(fld(obr, 6)); t != "" {
 			res["authoredOn"] = t
-		}
-		for st, v := range hl7OrderStatus {
-			if orc := m.seg("ORC"); orc != nil && fld(orc, 5) == v {
-				res["status"] = st
-			}
 		}
 		if p := strings.Split(fld(obr, 29), "^"); len(p) == 2 && p[1] != "" {
 			res["supportingInfo"] = []interface{}{map[string]interface{}{"reference": "DiagnosticReport/" + p[1]}}
@@ -194,14 +200,18 @@ func (m *HL7Msg) hl7BreastRebuild(res map[string]interface{}) bool {
 	if hl7BreastDisplay[c[0]] == "" || gs(res, "resourceType") != "DiagnosticReport" {
 		return false
 	}
+	st := map[string]string{"F": "final", "C": "corrected", "P": "preliminary"}[fld(obr, 25)]
+	if st == "" {
+		return false
+	}
 	res["code"] = map[string]interface{}{"coding": []interface{}{
 		map[string]interface{}{"system": "urn:wsi:proc", "code": c[0], "display": hl7Unesc(c[1])}}}
+	res["status"] = st
 	if t := ts(fld(obr, 7)); t != "" {
 		res["effectiveDateTime"] = t
 	}
-	if st := map[string]string{"F": "final", "C": "corrected", "P": "preliminary"}[fld(obr, 25)]; st != "" {
-		res["status"] = st
-	}
+	delete(res, "conclusionCode")
+	delete(res, "presentedForm")
 	var text strings.Builder
 	tx := false
 	for _, obx := range m.Segs["OBX"] {
@@ -210,7 +220,10 @@ func (m *HL7Msg) hl7BreastRebuild(res map[string]interface{}) bool {
 			text.WriteString(fld(obx, 5))
 			tx = true
 		case "CWE":
-			v := strings.Split(obx[5], "^")
+			var v []string
+			if len(obx) > 5 {
+				v = strings.Split(obx[5], "^")
+			}
 			for len(v) < 3 {
 				v = append(v, "")
 			}

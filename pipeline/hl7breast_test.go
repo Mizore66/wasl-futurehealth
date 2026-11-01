@@ -115,6 +115,116 @@ func TestHL7BreastFromSegments(t *testing.T) {
 	}
 }
 
+// Malformed breast segments must not panic or fall back to clinical values in the ZWS backup.
+func TestHL7BreastFailClosed(t *testing.T) {
+	mutate := func(t *testing.T, res map[string]interface{}, fn func([]string) []string) *HL7Msg {
+		t.Helper()
+		segs := strings.Split(strings.TrimRight(string(EncodeHL7("bsu-screen", res, "c1")), "\r"), "\r")
+		m, err := ParseHL7([]byte(strings.Join(fn(segs), "\r") + "\r"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
+	}
+	report := func() map[string]interface{} { return brRes("breast-screen", "Right breast: BI-RADS 4. Final assessment: BI-RADS 4.", "3344F") }
+	for _, tc := range []struct {
+		name string
+		res  map[string]interface{}
+		fn   func([]string) []string
+	}{
+		{"OBR-4 coding system", report(), func(segs []string) []string {
+			for i, s := range segs {
+				if strings.HasPrefix(s, "OBR|") {
+					f := strings.Split(s, "|")
+					f[4] = "breast-screen^Screening mammogram^LN"
+					segs[i] = strings.Join(f, "|")
+				}
+			}
+			return segs
+		}},
+		{"OBR-25 status", report(), func(segs []string) []string {
+			for i, s := range segs {
+				if strings.HasPrefix(s, "OBR|") {
+					f := strings.Split(s, "|")
+					f[25] = "X"
+					segs[i] = strings.Join(f, "|")
+				}
+			}
+			return segs
+		}},
+		{"ORC-5 status", brSRRes(), func(segs []string) []string {
+			for i, s := range segs {
+				if strings.HasPrefix(s, "ORC|") {
+					f := strings.Split(s, "|")
+					f[5] = "X"
+					segs[i] = strings.Join(f, "|")
+				}
+			}
+			return segs
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, _, err := mutate(t, tc.res, tc.fn).ToResource(); err == nil {
+				t.Fatal("malformed breast segments used the ZWS clinical copy instead of being rejected")
+			}
+		})
+	}
+	t.Run("dropped CWE OBX", func(t *testing.T) {
+		m := mutate(t, report(), func(segs []string) []string {
+			out := segs[:0]
+			for _, s := range segs {
+				if !strings.HasPrefix(s, "OBX|") || fld(strings.Split(s, "|"), 2) != "CWE" {
+					out = append(out, s)
+				}
+			}
+			return out
+		})
+		_, _, res, err := m.ToResource()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := res["conclusionCode"]; ok {
+			t.Fatal("missing CWE OBX retained the ZWS conclusionCode")
+		}
+	})
+	t.Run("dropped TX OBX", func(t *testing.T) {
+		m := mutate(t, report(), func(segs []string) []string {
+			out := segs[:0]
+			for _, s := range segs {
+				if !strings.HasPrefix(s, "OBX|") || fld(strings.Split(s, "|"), 2) != "TX" {
+					out = append(out, s)
+				}
+			}
+			return out
+		})
+		_, _, res, err := m.ToResource()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, ok := res["presentedForm"]; ok {
+			t.Fatal("missing TX OBX retained the ZWS presentedForm")
+		}
+	})
+	t.Run("short CWE OBX", func(t *testing.T) {
+		m := mutate(t, report(), func(segs []string) []string {
+			for i, s := range segs {
+				if strings.HasPrefix(s, "OBX|") && fld(strings.Split(s, "|"), 2) == "CWE" {
+					segs[i] = "OBX|2|CWE"
+				}
+			}
+			return segs
+		})
+		_, _, res, err := m.ToResource()
+		if err != nil {
+			t.Fatal(err)
+		}
+		cc := res["conclusionCode"].([]interface{})[0].(map[string]interface{})
+		if gs(cc, "code") != "" || gs(cc, "text") != "" {
+			t.Fatalf("short CWE OBX retained backup coded value: %+v", cc)
+		}
+	})
+}
+
 // genBreastCohort writes a small breast cohort (no lung, no DR) and returns its directory.
 func genBreastCohort(t *testing.T, seed int64, nBreast int) string {
 	out := t.TempDir()

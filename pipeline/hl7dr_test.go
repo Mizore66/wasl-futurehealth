@@ -95,6 +95,27 @@ func TestHL7DRFromSegments(t *testing.T) {
 	}
 }
 
+func TestHL7DRShortCWE(t *testing.T) {
+	segs := strings.Split(strings.TrimRight(string(EncodeHL7("phc-retina", drRes("dr-screen", codedSummaryText("R2M1"), "R2M1"), "c1")), "\r"), "\r")
+	for i, s := range segs {
+		if strings.HasPrefix(s, "OBX|") && fld(strings.Split(s, "|"), 2) == "CWE" {
+			segs[i] = "OBX|2|CWE"
+		}
+	}
+	m, err := ParseHL7([]byte(strings.Join(segs, "\r") + "\r"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, res, err := m.ToResource()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cc := res["conclusionCode"].([]interface{})[0].(map[string]interface{})
+	if gs(cc, "text") != "" {
+		t.Fatalf("short CWE OBX retained the backup grade: %+v", cc)
+	}
+}
+
 func codedSummaryText(label string) string {
 	return "Automated grading result (approved grading system, secondary grader confirmed). Right eye: " + label + ". Left eye: R0M0."
 }
