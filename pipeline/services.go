@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,7 +29,29 @@ import (
 // machine: WASL_PORT_OFFSET=100 moves 14822 to 14922, and so on. Child processes inherit the variable.
 var PortOff = func() int { n, _ := strconv.Atoi(os.Getenv("WASL_PORT_OFFSET")); return n }()
 
-var NatsURL = fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+PortOff, 14823+PortOff, 14824+PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+var NatsURL = natsURL(os.Getenv("WASL_NATS_URL"), PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+
+// natsURL: the three local cluster nodes on the offset ports, unless WASL_NATS_URL names an external cluster
+// (deployment: a NATS JetStream cluster the orchestrator does not start, e.g. the docker-compose nats-0..2 services).
+func natsURL(env string, off int) string {
+	if env != "" {
+		return env
+	}
+	return fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+off, 14823+off, 14824+off)
+}
+
+// NatsExternal: WASL_NATS_EXTERNAL=1 with WASL_NATS_URL = the cluster is managed outside the orchestrator, which then
+// neither starts nor kills NATS nodes (the -natskill chaos cycle is skipped and reported as such).
+var NatsExternal = os.Getenv("WASL_NATS_EXTERNAL") == "1" && os.Getenv("WASL_NATS_URL") != ""
+
+// natsFirstHostPort: host:port of the first NATS URL (the API health check dials it).
+func natsFirstHostPort() string {
+	u := strings.Split(NatsURL, ",")[0]
+	if i := strings.Index(u, "://"); i >= 0 {
+		u = u[i+3:]
+	}
+	return u
+}
 
 // retry runs f until it succeeds (broker leader elections make control-plane calls fail transiently).
 func retry(what string, f func() error) {
