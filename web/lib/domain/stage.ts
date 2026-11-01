@@ -2,7 +2,7 @@ import type { CaseDetail } from "@/lib/api/schema";
 
 /*
  * The 8-step pipeline vocabulary (pipeline-brief "The state vocabulary").
- * Plain words lead; `technical` is the backend term shown small and grey.
+ * Plain words lead; `technical` is the backend term shown small and muted.
  */
 
 export const PIPELINE_STEPS = [

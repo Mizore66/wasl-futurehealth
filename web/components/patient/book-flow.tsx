@@ -43,7 +43,7 @@ export function BookFlow({ query }: { query: PhoneQuery }) {
             <div role="img" aria-label={b.mapLabel} className="relative size-16 flex-none overflow-hidden rounded-control bg-raised">
               <span aria-hidden="true" className="absolute top-[22px] right-0 left-0 h-1.5 bg-surface" />
               <span aria-hidden="true" className="absolute top-0 bottom-0 left-[38px] w-1.5 bg-surface" />
-              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="#141414" className="absolute top-3 left-5">
+              <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="var(--color-ink)" className="absolute top-3 left-5">
                 <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
               </svg>
             </div>
@@ -142,7 +142,7 @@ export function BookFlow({ query }: { query: PhoneQuery }) {
                       on ? "bg-cta" : "border-[1.5px] border-muted bg-surface",
                     )}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={on ? "#ffffff" : "transparent"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={on ? "var(--color-surface)" : "transparent"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M5 12l5 5 9-10" />
                     </svg>
                   </span>

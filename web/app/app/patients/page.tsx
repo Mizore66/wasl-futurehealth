@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
 import { STANDARD_DAYS } from "@/components/worklist/days";
@@ -113,7 +114,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             {rows.map(({ c, it }) => (
               <tr key={c.id} className="border-t border-rule">
                 <td className="px-4 py-2.5">
-                  <span className="flex items-baseline gap-2">
+                  <span className="flex items-center gap-2.5">
+                    <Avatar person={it.seed} size={24} label="" />
                     {it.hasRecord ? (
                       <Link href={caseHref("/app/patients", c.id)} className="font-medium no-underline">
                         {it.name}

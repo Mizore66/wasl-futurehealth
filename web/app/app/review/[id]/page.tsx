@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Avatar } from "@/components/avatar/avatar";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
@@ -13,7 +14,8 @@ export async function generateMetadata({ params }: PageProps<"/app/review/[id]">
 
 export default async function Page({ params }: PageProps<"/app/review/[id]">) {
   const id = caseIdFromParam((await params).id);
-  const [detail, queue] = await Promise.all([getCase(id), reviewQueue()]);
+  const queue = await reviewQueue();
+  const detail = queue.cases.find((c) => c.case.id === id) ?? (await getCase(id));
   if (!detail) notFound();
   const view = reviewView(detail);
 
@@ -28,7 +30,8 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
     <>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-baseline gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Avatar {...view.faces.referral} size={40} label="" />
             <h1 className="m-0 text-title font-semibold">{view.name}</h1>
             {view.nameAr && (
               <span lang="ar" dir="rtl" className="font-arabic text-section text-muted">

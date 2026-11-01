@@ -1,15 +1,11 @@
 /**
- * Seed → features for the three lab avatar systems. Pure and deterministic: the same person key
+ * Seed → features for the product avatar, a flat portrait. Pure and deterministic: the same person key
  * gives the same features on every screen. Rendering lives in avatar.tsx.
  */
 
-export type Sex = "female" | "male";
+import type { PersonSeed, Sex } from "@/lib/people/types";
 
-/** The person the system believes in. `key` is a person key, never a record id. */
-export interface PersonSeed {
-  key: string;
-  sex?: Sex;
-}
+export type { PersonSeed, Sex };
 
 /** FNV-1a, 32-bit. Small and stable across runtimes. */
 export function hash(text: string): number {
@@ -22,7 +18,7 @@ export function hash(text: string): number {
 }
 
 /** murmur3 finaliser over (seed, slot): each feature draws from its own independent stream. */
-function draw(seed: number, slot: number, n: number): number {
+export function draw(seed: number, slot: number, n: number): number {
   let h = (seed ^ Math.imul(slot + 1, 0x9e3779b9)) >>> 0;
   h ^= h >>> 16;
   h = Math.imul(h, 0x85ebca6b);
@@ -55,7 +51,7 @@ export type Accent = (typeof ACCENTS)[keyof typeof ACCENTS][number];
 
 export const COVERINGS: ReadonlySet<Top> = new Set(["shayla", "hijab", "ghutra", "kufi"]);
 
-function topsFor(sex?: Sex): readonly Top[] {
+export function topsFor(sex?: Sex): readonly Top[] {
   return sex === "female" ? FEMALE_TOPS : sex === "male" ? MALE_TOPS : NEUTRAL_TOPS;
 }
 
@@ -91,74 +87,8 @@ export function portrait(p: PersonSeed): PortraitFeatures {
   };
 }
 
-export interface TokenFeatures {
-  skin: number;
-  bg: number;
-  ring: number;
-  segments: number;
-  rotation: number;
-  orbit: number;
-  orbitSpan: number;
-  glyph: number;
-}
-
-export function token(p: PersonSeed): TokenFeatures {
-  const s = hash(p.key);
-  return {
-    skin: draw(s, 0, SKIN.length),
-    bg: draw(s, 3, BG.length),
-    ring: draw(s, 4, CLOTH.length),
-    segments: 1 + draw(s, 1, 4),
-    rotation: draw(s, 2, 8),
-    orbit: draw(s, 5, CLOTH.length),
-    orbitSpan: draw(s, 6, 3),
-    glyph: draw(s, 7, 4),
-  };
-}
-
-export const MOTIFS = ["triangles", "diamonds", "chevrons", "checks", "stripes", "dots"] as const;
-
-export interface SaduFeatures {
-  skin: number;
-  top: Top;
-  topColor: number;
-  bg: number;
-  band: number;
-  thread: number;
-  motif: number;
-}
-
-/** A faceless bust over a band woven in an Al Sadu motif: identity is carried by colour and pattern, not by a drawn face. */
-export function sadu(p: PersonSeed): SaduFeatures {
-  const s = hash(p.key);
-  const tops = topsFor(p.sex);
-  const top = tops[draw(s, 1, tops.length)];
-  const colors = top === "ghutra" ? GHUTRA.length : COVERINGS.has(top) ? COVER.length : HAIR.length;
-  const band = draw(s, 4, CLOTH.length);
-  return {
-    skin: draw(s, 0, SKIN.length),
-    top,
-    topColor: draw(s, 2, colors),
-    bg: draw(s, 3, BG.length),
-    band,
-    thread: (band + 1 + draw(s, 5, CLOTH.length - 1)) % CLOTH.length,
-    motif: draw(s, 6, MOTIFS.length),
-  };
-}
-
-export const SYSTEMS = {
-  portrait: { name: "A · Portrait", features: portrait },
-  token: { name: "B · Token", features: token },
-  sadu: { name: "C · Sadu bust", features: sadu },
-} as const;
-export type SystemId = keyof typeof SYSTEMS;
-
 /** Features a viewer can tell apart at 24px: the big colour fields and the silhouette. */
-export const SALIENT: Record<SystemId, readonly string[]> = {
-  portrait: ["skin", "top", "topColor", "bg", "cloth"],
-  token: ["skin", "bg", "ring", "segments", "orbit"],
-  sadu: ["skin", "top", "bg", "band", "thread", "motif"],
-};
+export const SALIENT = ["skin", "top", "topColor", "bg", "cloth"] as const;
 
 export function signature(f: object, keys?: readonly string[]): string {
   const entries = Object.entries(f).filter(([k]) => !keys || keys.includes(k));

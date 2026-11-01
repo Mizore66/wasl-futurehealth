@@ -82,7 +82,7 @@ function Kpi() {
   const x = (v: number) => `${(v / AXIS) * 100}%`;
   const ticks = [0, 0.1, 0.2, 0.3, 0.4];
   const rows = [
-    { label: "Emirates ID only", e: eid, bar: "bg-[#8a8a8a]", top: 30 },
+    { label: "Emirates ID only", e: eid, bar: "bg-unknown", top: 30 },
     { label: "Wasl", e: wasl, bar: "bg-hue", top: 72 },
   ];
 
@@ -177,7 +177,7 @@ function Review() {
         </span>
         <span className="text-body">One reviewer</span>
         <span data-testid="single-review" className="flex items-center gap-2">
-          <span className="block h-2.5 w-[84%] flex-none bg-[#8a8a8a]" />
+          <span className="block h-2.5 w-[84%] flex-none bg-unknown" />
           <span className="text-[24px] font-medium leading-8">{single.display}</span>
         </span>
       </div>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar/avatar";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
@@ -34,8 +35,14 @@ export default async function Page() {
           <li key={view.caseId}>
             <Link
               href={caseHref("/app/review", view.caseId)}
-              className="grid grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-4 rounded-card border border-line bg-surface px-6 py-4 text-ink no-underline hover:bg-active hover:text-ink"
+              className="grid grid-cols-[auto_minmax(0,2fr)_minmax(0,3fr)_auto] items-center gap-4 rounded-card border border-line bg-surface px-6 py-4 text-ink no-underline hover:bg-active hover:text-ink"
             >
+              <span className="flex items-center">
+                <Avatar {...view.faces.referral} size={32} label="" />
+                <span className="-ml-2 flex rounded-full ring-2 ring-surface">
+                  <Avatar {...view.faces.report} size={32} label={view.faces.report.state === "unknown" ? "Report not yet confirmed as this patient" : ""} />
+                </span>
+              </span>
               <span className="min-w-0">
                 <span className="block font-medium">{view.name}</span>
                 <span className="block text-small text-muted">

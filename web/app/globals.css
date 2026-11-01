@@ -2,32 +2,34 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Achromatic ledger (design-brief-v2 + canonical facts). Light mode only. */
+/* Sand and thread: one palette for the site and the app (round 2). Light mode only. */
 @theme {
-  --color-ground: #f2f4f7;
-  --color-surface: #ffffff;
-  --color-raised: #eceef1;
-  --color-active: #e6e8ec;
-  --color-line: #e3e6ea;
-  --color-rule: #eef0f3;
-  --color-control: #d0d4da;
-  --color-ink: #0a0a0a;
-  --color-ink-soft: #3d3d3d;
-  --color-muted: #5f6368;
-  --color-cta: #141414;
-  --color-hue: #1d5fbf;
-  --color-positive: #2e7d32;
-  --color-negative: #c4242a;
-  --color-warning: #92400e;
-  --color-pill-positive-bg: #dcfae5;
-  --color-pill-positive-ink: #04250e;
-  --color-pill-negative-bg: #ffedea;
-  --color-pill-negative-ink: #831c1e;
-  --color-pill-warning-bg: #fffbeb;
-  --color-pill-warning-ink: #92400e;
-  --color-pill-neutral-bg: #eceef1;
-  --color-pill-neutral-ink: #3d3d3d;
-  --color-phone-ground: #f4f3f1;
+  --color-ground: #f6f3ee;
+  --color-surface: #fffdf8;
+  --color-raised: #efe8dc;
+  --color-active: #e6dccb;
+  --color-line: #e2d9c9;
+  --color-rule: #ece5d8;
+  --color-control: #d3c8b4;
+  --color-ink: #0b2427;
+  --color-ink-soft: #34494b;
+  --color-muted: #4f5f63;
+  --color-cta: #0b2427;
+  --color-hue: #0f4f4c;
+  --color-positive: #2f6b3a;
+  --color-negative: #a8322a;
+  --color-warning: #8a5a12;
+  --color-pill-positive-bg: #e3ecdf;
+  --color-pill-positive-ink: #1d4426;
+  --color-pill-negative-bg: #f6e1dc;
+  --color-pill-negative-ink: #7a221c;
+  --color-pill-warning-bg: #f4e8d2;
+  --color-pill-warning-ink: #6b450c;
+  --color-pill-neutral-bg: #efe8dc;
+  --color-pill-neutral-ink: #34494b;
+  --color-phone-ground: #f6f3ee;
+  --color-mint: #dbe8e6;
+  --color-unknown: #8c9496;
 
   --radius-card: 8px;
   --radius-control: 6px;
@@ -84,23 +86,23 @@
 :root {
   color-scheme: light;
   --radius: 0.5rem;
-  --background: #f2f4f7;
-  --foreground: #0a0a0a;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #141414;
-  --primary-foreground: #ffffff;
-  --secondary: #e6e8ec;
-  --secondary-foreground: #0a0a0a;
-  --muted-foreground: #5f6368;
-  --accent: #e6e8ec;
-  --accent-foreground: #0a0a0a;
-  --destructive: #c4242a;
-  --border: #e3e6ea;
-  --input: #d0d4da;
-  --ring: #1d5fbf;
+  --background: var(--color-ground);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-cta);
+  --primary-foreground: var(--color-surface);
+  --secondary: var(--color-active);
+  --secondary-foreground: var(--color-ink);
+  --muted-foreground: var(--color-muted);
+  --accent: var(--color-active);
+  --accent-foreground: var(--color-ink);
+  --destructive: var(--color-negative);
+  --border: var(--color-line);
+  --input: var(--color-control);
+  --ring: var(--color-hue);
 }
 
 @layer base {

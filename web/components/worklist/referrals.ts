@@ -2,6 +2,8 @@ import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
+import { referralSeed } from "@/lib/people/identity";
+import type { PersonSeed } from "@/lib/people/types";
 import { ownerLabel, providerLabel } from "./model";
 
 /** Where a referral sits in the endoscopy unit's inbox, derived from the case's drop-off. */
@@ -25,6 +27,7 @@ export type Referral = {
   name: string;
   nameAr?: string;
   age?: number;
+  seed: PersonSeed;
   clinic: string;
   state: ReferralState;
   /** Whole days since the referral at run day `now`. */
@@ -59,6 +62,7 @@ export function referralFrom(c: CaseSummary, now: number, hasRecord: boolean): R
     name: person?.display_name ?? shortId(c.id),
     nameAr: person?.display_name_ar,
     age: person?.age,
+    seed: referralSeed(c.id),
     clinic: providerLabel(c.provider),
     state,
     waiting: Math.floor(now - c.referral_day),

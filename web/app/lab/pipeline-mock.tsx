@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { Avatar } from "@/components/avatar/avatar";
-import type { SystemId } from "@/components/avatar/traits";
+import { LabAvatar as Avatar } from "./lab-avatar";
+import type { SystemId } from "./systems";
 import { CAST } from "./cast";
 
 const FLOW = [

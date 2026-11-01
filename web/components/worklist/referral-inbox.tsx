@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
+import { Avatar } from "@/components/avatar/avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
@@ -163,7 +164,8 @@ export function ReferralInbox({
               return (
                 <div key={x.id} className={cn("flex min-h-[68px] items-center rounded-control", on ? "bg-active" : "hover:bg-ground")}>
                   <button aria-pressed={on} onClick={() => open(x.id)} className="min-w-0 flex-1 cursor-pointer bg-transparent px-2.5 py-3 text-left">
-                    <span className="flex min-w-0 items-baseline gap-2">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Avatar person={x.seed} size={24} label="" />
                       <span className="whitespace-nowrap font-semibold">{x.name}</span>
                       {x.nameAr && (
                         <span lang="ar" dir="rtl" className="truncate text-muted">
@@ -174,7 +176,7 @@ export function ReferralInbox({
                         <span className={cn("ml-auto flex-none whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
                       )}
                     </span>
-                    <span className="mt-1 block truncate text-muted">{lineFor(x, over[x.id])}</span>
+                    <span className="mt-1 block truncate pl-8 text-muted">{lineFor(x, over[x.id])}</span>
                   </button>
                   <span className="flex-none pr-2.5">
                     {inline && (
@@ -202,26 +204,29 @@ export function ReferralInbox({
         {r ? (
           <section aria-label="Open referral" className="min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-pad">
             <div className="flex items-start justify-between gap-6">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <h2 className="m-0 text-title font-semibold">{r.name}</h2>
-                  {r.nameAr && (
-                    <span lang="ar" dir="rtl" className="text-section text-muted">
-                      {r.nameAr}
-                    </span>
-                  )}
+              <div className="flex min-w-0 items-start gap-4">
+                <Avatar person={r.seed} size={56} label="" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <h2 className="m-0 text-title font-semibold">{r.name}</h2>
+                    {r.nameAr && (
+                      <span lang="ar" dir="rtl" className="text-section text-muted">
+                        {r.nameAr}
+                      </span>
+                    )}
+                  </div>
+                  <p className="m-0 mt-1 text-muted">
+                    {[r.age, `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}
+                    {r.hasRecord && (
+                      <>
+                        {" · "}
+                        <Link href={caseHref("/app/patients", r.id)} className="no-underline">
+                          Open record
+                        </Link>
+                      </>
+                    )}
+                  </p>
                 </div>
-                <p className="m-0 mt-1 text-muted">
-                  {[r.age, `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}
-                  {r.hasRecord && (
-                    <>
-                      {" · "}
-                      <Link href={caseHref("/app/patients", r.id)} className="no-underline">
-                        Open record
-                      </Link>
-                    </>
-                  )}
-                </p>
               </div>
               <div className="flex-none text-right">
                 <div className="flex items-baseline justify-end gap-1.5">

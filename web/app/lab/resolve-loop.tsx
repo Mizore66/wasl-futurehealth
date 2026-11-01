@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Avatar } from "@/components/avatar/avatar";
-import type { PersonSeed, SystemId } from "@/components/avatar/traits";
+import type { PersonSeed } from "@/components/avatar/traits";
+import { LabAvatar as Avatar } from "./lab-avatar";
+import type { SystemId } from "./systems";
 
 const CYCLE = ["unknown", "resolving", "known"] as const;
 

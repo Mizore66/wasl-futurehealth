@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion } from "motion/react";
+import { Avatar } from "@/components/avatar/avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { dayToDate, formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
@@ -198,7 +199,8 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   onClick={() => setS((prev) => ({ ...prev, sel: r.id, ...fresh }))}
                   className={cn("block h-[68px] w-full cursor-pointer rounded-control px-2.5 py-3 text-left", on ? "bg-active" : "bg-transparent hover:bg-ground")}
                 >
-                  <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Avatar person={r.seed} size={24} label="" />
                     <span className="whitespace-nowrap font-semibold">{r.name}</span>
                     {r.nameAr && (
                       <span lang="ar" dir="rtl" className="truncate text-muted">
@@ -209,7 +211,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                       {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
                     </span>
                   </span>
-                  <span className="mt-1 block truncate text-muted">{r.status}</span>
+                  <span className="mt-1 block truncate pl-8 text-muted">{r.status}</span>
                 </button>
               );
             })}
@@ -227,26 +229,29 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
         {p ? (
           <section aria-label="Open patient" className="flex min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-pad">
             <div className="flex items-start justify-between gap-6">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <h2 className="m-0 text-title font-semibold">{p.name}</h2>
-                  {p.nameAr && (
-                    <span lang="ar" dir="rtl" className="text-section text-muted">
-                      {p.nameAr}
-                    </span>
-                  )}
+              <div className="flex min-w-0 items-start gap-4">
+                <Avatar person={p.seed} size={56} label="" />
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-baseline gap-3">
+                    <h2 className="m-0 text-title font-semibold">{p.name}</h2>
+                    {p.nameAr && (
+                      <span lang="ar" dir="rtl" className="text-section text-muted">
+                        {p.nameAr}
+                      </span>
+                    )}
+                  </div>
+                  <p className="m-0 mt-1 text-muted">
+                    {[p.age, p.named ? p.short : null, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}
+                    {p.hasRecord && (
+                      <>
+                        {" · "}
+                        <Link href={caseHref("/app/patients", p.id)} className="no-underline">
+                          Open record
+                        </Link>
+                      </>
+                    )}
+                  </p>
                 </div>
-                <p className="m-0 mt-1 text-muted">
-                  {[p.age, p.named ? p.short : null, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}
-                  {p.hasRecord && (
-                    <>
-                      {" · "}
-                      <Link href={caseHref("/app/patients", p.id)} className="no-underline">
-                        Open record
-                      </Link>
-                    </>
-                  )}
-                </p>
               </div>
               <div className="flex-none text-right">
                 <div className="flex items-baseline justify-end gap-1.5">

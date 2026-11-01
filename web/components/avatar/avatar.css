@@ -36,7 +36,7 @@
   position: absolute;
   inset: -3px;
   border-radius: 999px;
-  border: 2px solid var(--avatar-join, #0f4f4c);
+  border: 2px solid var(--avatar-join, var(--color-hue));
   opacity: 0;
   animation: wav-join 900ms 300ms ease-out both;
   pointer-events: none;
@@ -92,12 +92,12 @@
 
 .wav-pair[data-same="true"] > .wav-link + .wav-root {
   margin-left: calc(var(--pair-size) * -0.28);
-  box-shadow: 0 0 0 2px var(--avatar-paper, #fffdf8), 0 0 0 3.5px var(--avatar-join, #0f4f4c);
+  box-shadow: 0 0 0 2px var(--avatar-paper, var(--color-surface)), 0 0 0 3.5px var(--avatar-join, var(--color-hue));
 }
 
 .wav-link {
   font: 600 12px/1 ui-monospace, monospace;
-  color: var(--avatar-muted, #5b6b6c);
+  color: var(--avatar-muted, var(--color-muted));
 }
 
 .wav-pair[data-same="true"] .wav-link {

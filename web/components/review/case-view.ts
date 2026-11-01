@@ -3,6 +3,7 @@ import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { personFor } from "@/lib/people";
+import { recordFace, type Face } from "@/lib/people/identity";
 import type { ReviewItems } from "./decision";
 
 /*
@@ -25,6 +26,9 @@ export type ReviewView = {
   age: number;
   referralName: string;
   reportName: string;
+  /** The referral's face, and the report's as the API's links and signatures leave it. */
+  faces: { referral: Face; report: Face };
+  reportRegistration: string;
   referralSource: string;
   reportSource: string;
   unit: string;
@@ -131,6 +135,11 @@ export function reviewView(c: CaseDetail): ReviewView {
     nameAr: a?.display_name_ar ?? "",
     age: a?.age ?? 0,
     referralName: a?.recorded_name ?? "",
+    faces: {
+      referral: recordFace(c, referral?.registration ?? ""),
+      report: recordFace(c, downstream?.registration ?? ""),
+    },
+    reportRegistration: downstream?.registration ?? "",
     reportName: b?.recorded_name ?? "",
     referralSource: `${providerName(c.case.provider)} · stool test referral`,
     reportSource: `${unit} · colonoscopy report`,
