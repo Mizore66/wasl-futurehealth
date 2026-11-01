@@ -25,6 +25,37 @@ type ProgRule struct {
 var Rules = map[string]ProgRule{
 	"crc":      {"crc", "Colonoscopy", 21, "referral", 31, "fitfu"},
 	"cervical": {"cervical", "Colposcopy", 21, "specimen", 90, "ccsfu"},
+	// lung and DR loops run their own engines (lung.go, dr.go) with their own clocks; only the template family is read
+	"lung_nodule":          {"lung_nodule", "Follow-up CT", 0, "", 0, "lnfu"},
+	"diabetic_retinopathy": {"diabetic_retinopathy", "Retinal examination", 0, "", 0, "drsfu"},
+}
+
+// ProgTemplates: lung and DR outreach intents name the approved template of their programme family (lnfu, drsfu) in
+// the loop's language, so a message for those loops has approved wording of its own instead of none. Off: intents carry
+// no template id (as before). Flag -progtpl.
+var ProgTemplates = true
+
+// outreachTplKind: the template kind used for each lung / DR outreach intent kind.
+var outreachTplKind = map[string]string{
+	"lung_followup_due": "remind", "lung_overdue_recall": "recall",
+	"dr_repeat_photo": "repeat", "dr_clinic_due": "remind", "dr_overdue_recall": "recall", "dr_rebook": "rebook",
+}
+
+// outreachTpl: the approved template id for an outreach intent of this programme ("" when none applies). Language:
+// the loop's recorded preference, else the sender's default; anything but Arabic gets English.
+func outreachTpl(prog, kind string, f *LoopFacts) string {
+	fam, tk := Rules[prog].Tpl, outreachTplKind[kind]
+	if !ProgTemplates || fam == "" || tk == "" {
+		return ""
+	}
+	lang := f.SRLang
+	if lang == "" {
+		lang = provDefaultLang[f.Provider]
+	}
+	if lang != "ar" {
+		lang = "en"
+	}
+	return fam + "-" + tk + "-" + TemplateVersion + "/" + lang
 }
 
 // DeadlineDays: days from referral by which the closing procedure must happen.
@@ -62,6 +93,9 @@ func InKPICohort(prog, cat string) bool {
 
 func progOfText(s string) string {
 	s = strings.ToLower(s)
+	if strings.Contains(s, "breast screening") || strings.Contains(s, "mammogra") {
+		return "breast"
+	}
 	if strings.Contains(s, "diabetic eye screening") || strings.Contains(s, "retinopathy") {
 		return "diabetic_retinopathy"
 	}

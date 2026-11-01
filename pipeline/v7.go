@@ -219,21 +219,28 @@ var ReuseLinkAnswer = true
 // real birth dates more than a year apart) does not merge; the loop raises a confirming link review that shows the
 // contradiction (LinkConfirm), and only that answer merges. Added after the Learn-then-Test re-run at 4b58c9b found one
 // false closure and one wrong-patient message from a simulated double reviewer error that merged a woman born 1972 with
-// a man born 1973; a disclosed post-hoc rule, like the override block (OverrideConfirm). Flag -linkconfirm.
+// a man born 1973; a disclosed post-hoc rule, like the override block (OverrideConfirm). Extended (post hoc) to the
+// outreach guard's second-identifier answer (IDConfirm below). Flag -linkconfirm.
 var LinkContradictionConfirm = true
+
+// LinkContradictionDOB: also treat two real birth dates more than a year apart as a contradiction. Off by default:
+// in the 0f6a532 frozen evaluation every one of the 675 held answers was a true match held on the birth-date arm (the
+// noise model's realistic date typos), none was a wrong merge, and 26 confirming reviews then split true links; the sex
+// arm held no true match. Turned off after that trace (post hoc, disclosed). Flag -linkconfirmdob.
+var LinkContradictionDOB = false
 
 // LinkConfirm is the purpose of the confirming link review raised for a held "same".
 const LinkConfirm = "link_contradiction_confirm"
 
-// linkContradiction: "sex" when both records carry a known, different sex; "dob" when both carry a real (non-
-// placeholder) birth date and they are more than 365 days apart; "" otherwise. A placeholder DOB or unknown sex is
+// linkContradiction: "sex" when both records carry a known, different sex; with LinkContradictionDOB, "dob" when both
+// carry a real (non-placeholder) birth date and they are more than 365 days apart; "" otherwise. A placeholder DOB or unknown sex is
 // missing data, not a contradiction.
 func linkContradiction(a, b *Rec) string {
 	known := func(s string) bool { return s == "M" || s == "F" }
 	if known(a.Sex) && known(b.Sex) && a.Sex != b.Sex {
 		return "sex"
 	}
-	if len(a.Dob) == 10 && len(b.Dob) == 10 && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
+	if LinkContradictionDOB && len(a.Dob) == 10 && len(b.Dob) == 10 && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
 		ta, ea := time.Parse("2006-01-02", a.Dob)
 		tb, eb := time.Parse("2006-01-02", b.Dob)
 		if ea == nil && eb == nil {
@@ -249,8 +256,22 @@ func linkContradiction(a, b *Rec) string {
 	return ""
 }
 
-// heldLink: a signed link answer the linker held for a confirming review.
-func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Purpose != LinkConfirm }
+// heldLink: a signed link answer the linker held for a confirming review (a plain link question has no purpose).
+func heldLink(s Signoff) bool { return s.Hold != "" && s.Link == "same" && s.Purpose == "" }
+
+// IDConfirm is the purpose of the confirming review raised for a held second-identifier "same". The same rule as
+// LinkConfirm, on the messaging path (post-hoc extension, same flag -linkconfirm): a messaging confirmation on a pair
+// whose records contradict counts (msgConfirmed, ReuseIDConfirm) only after this review answers "same". Like the
+// second-identifier answer it confirms, it never merges or cuts a cluster.
+const IDConfirm = "second_identifier_confirm"
+
+// secondIDPurpose: a messaging-confirmation item (the outreach guard's question or its confirming review).
+func secondIDPurpose(p string) bool { return p == "second_identifier" || p == IDConfirm }
+
+// heldIDConfirm: a second-identifier "same" the linker held for a confirming review.
+func heldIDConfirm(s Signoff) bool {
+	return s.Hold != "" && s.Link == "same" && s.Purpose == "second_identifier"
+}
 
 var defaultEIDs = map[string]bool{"000000000000000": true, "111111111111111": true, "222222222222222": true, "999999999999999": true}
 

@@ -1,0 +1,918 @@
+{
+ "cases": [
+  {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 42,
+   "decisions": 4,
+   "dr": {
+    "screen_report": "PHC-dr-1",
+    "screen_label": "R2M0/urgent",
+    "coded_grade": true,
+    "rec": {
+     "action": "refer",
+     "deadline_days": 42,
+     "urgency": "urgent",
+     "cell": "R2M0/urgent"
+    },
+    "grade_day": -11.383344907407407,
+    "deadline_day": 30.616655092592595
+   },
+   "dropoff": "no_eye_exam",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1",
+   "overdue": true,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -11.3832,
+   "review": "none",
+   "state": "open"
+  },
+  {
+   "closed": true,
+   "closed_day": -53.5855,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 4,
+   "dr": {
+    "screen_report": "PHC-dr-13",
+    "screen_label": "R1M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R1M0"
+    },
+    "grade_day": -53.58555555555556,
+    "deadline_day": 311.4144444444444,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -53.58555555555556,
+     "interval_days": 365,
+     "due_day": 311.4144444444444,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-10",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -71.1984,
+   "review": "signed",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -14.0724,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-106",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -14.072511574074074,
+    "deadline_day": 350.9274884259259,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -14.072511574074074,
+     "interval_days": 365,
+     "due_day": 350.9274884259259,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-100",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -14.0724,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -91.5625,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1046",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -91.5625925925926,
+    "deadline_day": 273.4374074074074,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -91.5625925925926,
+     "interval_days": 365,
+     "due_day": 273.4374074074074,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1000",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -91.5625,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -57.3796,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1047",
+    "screen_label": "R0M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -57.3796875,
+    "deadline_day": 307.6203125,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -57.3796875,
+     "interval_days": 365,
+     "due_day": 307.6203125,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1001",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -57.3796,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -43.0466,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1048",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -43.04668981481481,
+    "deadline_day": 321.95331018518516,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -43.04668981481481,
+     "interval_days": 365,
+     "due_day": 321.95331018518516,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1002",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -43.0466,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -85.068,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1049",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -85.06813657407407,
+    "deadline_day": 279.93186342592594,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -85.06813657407407,
+     "interval_days": 365,
+     "due_day": 279.93186342592594,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1003",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -85.068,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 91,
+   "decisions": 5,
+   "dr": {
+    "screen_report": "PHC-dr-1050",
+    "screen_label": "R0M1",
+    "rec": {
+     "action": "refer",
+     "deadline_days": 91,
+     "urgency": "routine",
+     "cell": "R0M1"
+    },
+    "grade_day": -46.59759259259259,
+    "deadline_day": 44.40240740740741
+   },
+   "dropoff": "no_eye_exam",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1004",
+   "overdue": true,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -46.5975,
+   "review": "signed",
+   "state": "open"
+  },
+  {
+   "closed": true,
+   "closed_day": -23.3861,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1051",
+    "screen_label": "R0M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -23.386180555555555,
+    "deadline_day": 341.61381944444446,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -23.386180555555555,
+     "interval_days": 365,
+     "due_day": 341.61381944444446,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1005",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -23.3861,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 10.0389,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1052",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": 10.038877314814815,
+    "deadline_day": 375.03887731481484,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": 10.038877314814815,
+     "interval_days": 365,
+     "due_day": 375.03887731481484,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1006",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 10.0389,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -107.0142,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1053",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -107.01434027777778,
+    "deadline_day": 257.98565972222224,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -107.01434027777778,
+     "interval_days": 365,
+     "due_day": 257.98565972222224,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1007",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -107.0142,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -107.2129,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1054",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -107.21302083333333,
+    "deadline_day": 257.7869791666667,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -107.21302083333333,
+     "interval_days": 365,
+     "due_day": 257.7869791666667,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1008",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -107.2129,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -18.0216,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1055",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -18.02170138888889,
+    "deadline_day": 346.9782986111111,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -18.02170138888889,
+     "interval_days": 365,
+     "due_day": 346.9782986111111,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1009",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -18.0216,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -58.1192,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-107",
+    "screen_label": "R0M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -58.11929398148148,
+    "deadline_day": 306.88070601851854,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -58.11929398148148,
+     "interval_days": 365,
+     "due_day": 306.88070601851854,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-101",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -58.1192,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 12.2619,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1056",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": 12.261863425925926,
+    "deadline_day": 377.2618634259259,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": 12.261863425925926,
+     "interval_days": 365,
+     "due_day": 377.2618634259259,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1010",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 12.2619,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 44.5183,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1057",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": 44.518287037037034,
+    "deadline_day": 409.51828703703706,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": 44.518287037037034,
+     "interval_days": 365,
+     "due_day": 409.51828703703706,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1011",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 44.5183,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -12.6394,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1058",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -12.639548611111111,
+    "deadline_day": 352.36045138888886,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -12.639548611111111,
+     "interval_days": 365,
+     "due_day": 352.36045138888886,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1012",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -12.6394,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 29.3281,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1059",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": 29.328136574074072,
+    "deadline_day": 394.32813657407405,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": 29.328136574074072,
+     "interval_days": 365,
+     "due_day": 394.32813657407405,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1013",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 29.3281,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -103.1438,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1060",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -103.14393518518519,
+    "deadline_day": 261.85606481481483,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -103.14393518518519,
+     "interval_days": 365,
+     "due_day": 261.85606481481483,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1014",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -103.1438,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -17.3654,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1061",
+    "screen_label": "R0M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -17.36550925925926,
+    "deadline_day": 347.6344907407407,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -17.36550925925926,
+     "interval_days": 365,
+     "due_day": 347.6344907407407,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1015",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -17.3654,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -35.7858,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1062",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -35.78590277777778,
+    "deadline_day": 329.2140972222222,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -35.78590277777778,
+     "interval_days": 365,
+     "due_day": 329.2140972222222,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1016",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -35.7858,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 42,
+   "decisions": 6,
+   "dr": {
+    "screen_report": "PHC-dr-1063",
+    "screen_label": "R3AM0",
+    "coded_grade": true,
+    "rec": {
+     "action": "refer",
+     "deadline_days": 42,
+     "urgency": "urgent",
+     "cell": "R3AM0"
+    },
+    "grade_day": 10.66769675925926,
+    "deadline_day": 52.66769675925926,
+    "clinic_note": "EYE-dr-80",
+    "outcome": "dna"
+   },
+   "dropoff": "no_show",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1017",
+   "overdue": true,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 10.6677,
+   "review": "none",
+   "state": "no_show"
+  },
+  {
+   "closed": true,
+   "closed_day": -62.2183,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-1064",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -62.21835648148148,
+    "deadline_day": 302.78164351851854,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -62.21835648148148,
+     "interval_days": 365,
+     "due_day": 302.78164351851854,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1018",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -62.2183,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 72.7442,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1065",
+    "screen_label": "R0M0",
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": 72.74422453703704,
+    "deadline_day": 437.74422453703704,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": 72.74422453703704,
+     "interval_days": 365,
+     "due_day": 437.74422453703704,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1019",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": 72.7442,
+   "review": "none",
+   "state": "no_referral_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -25.6064,
+   "consent": "granted",
+   "deadline_day": 365,
+   "decisions": 2,
+   "dr": {
+    "screen_report": "PHC-dr-108",
+    "screen_label": "R0M0",
+    "coded_grade": true,
+    "rec": {
+     "action": "rescreen",
+     "deadline_days": 365,
+     "cell": "R0M0"
+    },
+    "grade_day": -25.60646990740741,
+    "deadline_day": 339.3935300925926,
+    "next_due": {
+     "kind": "rescreen",
+     "from_day": -25.60646990740741,
+     "interval_days": 365,
+     "due_day": 339.3935300925926,
+     "basis": "doh2024dr_annual_rescreen"
+    }
+   },
+   "dropoff": "",
+   "fixture": "",
+   "id": "phc-retina/ServiceRequest/PHC-sr-102",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -25.6064,
+   "review": "none",
+   "state": "no_referral_needed"
+  }
+ ],
+ "limit": 25,
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-10-31T23:47:27Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+ },
+ "offset": 0,
+ "total": 1200
+}

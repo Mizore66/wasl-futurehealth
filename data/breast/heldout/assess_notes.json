@@ -1,0 +1,695 @@
+{
+  "source": "Independent author (GPT-6.1 Sol, OpenAI) - deterministic stdlib generator gen_breast_heldout.py, random seed 9241, synthetic breast screening texts, 2026-11-01",
+  "reports": [
+    {
+      "id": "ha01",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA01\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\nPLAN: Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha02",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA02\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram. Historical record only: a 2021 core biopsy was benign. That earlier biopsy is not a result from the current episode.\nShe attended the recalled-screen assessment appointment. Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\nOur decision: Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:historical_biopsy"
+      ]
+    },
+    {
+      "id": "ha03",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA03\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\nDisposition | Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha04",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA04\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\nP: Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha05",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA05\nCurrent screening-recall episode | 01 Nov 2026\nScann ed clinic c0py | rec all episode\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\n[Next step] Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "ha06",
+      "text": "Abu Dhabi | Synthetic Breast MDT Palm | HA06\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Additional mammographic views and targeted ultrasound were performed. This episode's image-guided core biopsy shows benign fibroadenomatoid change, concordant with the imaging.\n4. Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha07",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA07\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\nPLAN: Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha08",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA08\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe attended the recalled-screen assessment appointment. Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\nOur decision: Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha09",
+      "text": "Abu Dhabi | Synthetic Breast MDT Palm | HA09\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\nDisposition | Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha10",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA10\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\nP: Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha11",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA11\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\n[Next step] Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha12",
+      "text": "Abu Dhabi | Synthetic Breast MDT Pearl | HA12\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\n4. Assessment complete: return to routine breast screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha13",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA13\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic mammographic views and targeted ultrasound were performed. The recalled asymmetry resolves as summation of normal tissue. No biopsy was performed in this episode.\nPLAN: Assessment complete: return to routine breast screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha14",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA14\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram. Historical record only: a 2021 core biopsy was benign. That earlier biopsy is not a result from the current episode.\nShe attended the recalled-screen assessment appointment. Targeted ultrasound and core biopsy were performed. This episode's core shows benign stromal fibrosis, concordant with imaging.\nOur decision: Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "hard:historical_biopsy"
+      ]
+    },
+    {
+      "id": "ha15",
+      "text": "Abu Dhabi | Synthetic Breast MDT Palm | HA15\nCurrent screening-recall episode | 01 Nov 2026\nScann ed clinic c0py | rec all episode\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Targeted ultrasound and core biopsy were performed. This episode's core shows benign stromal fibrosis, concordant with imaging.\nDisposition | Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "ha16",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA16\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Diagnostic views and targeted ultrasound were performed. A probably benign oval mass remains. No biopsy was performed in this episode.\nP: Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha17",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA17\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Diagnostic views and targeted ultrasound were performed. A probably benign oval mass remains. No biopsy was performed in this episode.\n[Next step] Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha18",
+      "text": "Abu Dhabi | Synthetic Breast MDT Pearl | HA18\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Diagnostic views and targeted ultrasound were performed. A probably benign oval mass remains. No biopsy was performed in this episode.\n4. Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "hard:imaging_not_biopsy"
+      ]
+    },
+    {
+      "id": "ha19",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA19\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms ductal carcinoma in situ (DCIS), with no invasive carcinoma identified in the cores.\nPLAN: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "hard:malignant_in_situ",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha20",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA20\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe attended the recalled-screen assessment appointment. Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nOur decision: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha21",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA21\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms ductal carcinoma in situ (DCIS), with no invasive carcinoma identified in the cores.\nDisposition | MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "hard:malignant_in_situ"
+      ]
+    },
+    {
+      "id": "ha22",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA22\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nP: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha23",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA23\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms ductal carcinoma in situ (DCIS), with no invasive carcinoma identified in the cores.\n[Next step] MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "hard:malignant_in_situ"
+      ]
+    },
+    {
+      "id": "ha24",
+      "text": "Abu Dhabi | Synthetic Breast MDT Palm | HA24\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\n4. MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha25",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA25\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nScann ed clinic c0py | rec all episode\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nPLAN: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "language:arabic",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "ha26",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA26\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe attended the recalled-screen assessment appointment. Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nOur decision: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha27",
+      "text": "Abu Dhabi | Synthetic Breast MDT Pearl | HA27\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nDisposition | MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha28",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA28\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Diagnostic imaging and image-guided core biopsy were completed. This episode's core biopsy confirms invasive carcinoma of no special type.\nP: MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha29",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA29\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram. Historical record only: a 2021 core biopsy was benign. That earlier biopsy is not a result from the current episode.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Diagnostic imaging was performed and a core biopsy was taken during this episode. Histology has not been issued; the result is awaited.\n[Next step] No final management decision; review once current histology is available.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:historical_biopsy",
+        "hard:pending_histology"
+      ]
+    },
+    {
+      "id": "ha30",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA30\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Diagnostic imaging was performed and a core biopsy was taken during this episode. Histology has not been issued; the result is awaited.\n4. No final management decision; review once current histology is available.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:pending_histology"
+      ]
+    },
+    {
+      "id": "ha31",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA31\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic imaging was performed and a core biopsy was taken during this episode. Histology has not been issued; the result is awaited.\nPLAN: No final management decision; review once current histology is available.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:pending_histology",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha32",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA32\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe attended the recalled-screen assessment appointment. Diagnostic imaging was performed and a core biopsy was taken during this episode. Histology has not been issued; the result is awaited.\nOur decision: No final management decision; review once current histology is available.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:pending_histology"
+      ]
+    },
+    {
+      "id": "ha33",
+      "text": "Abu Dhabi | Synthetic Breast MDT Pearl | HA33\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | She declined all assessment procedures after administrative check-in. No clinical breast examination, additional imaging, ultrasound or biopsy took place. The encounter was administrative only.\nDisposition | Rebooking offered; assessment and management decision remain outstanding.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:declined_assessment"
+      ]
+    },
+    {
+      "id": "ha34",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA34\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: She declined assessment because she wished to reconsider consent. No clinical breast examination, additional imaging, ultrasound or biopsy took place. The encounter was administrative only.\nP: Rebooking offered; assessment and management decision remain outstanding.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:declined_assessment"
+      ]
+    },
+    {
+      "id": "ha35",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA35\nCurrent screening-recall episode | 01 Nov 2026\nScann ed clinic c0py | rec all episode\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] She could not remain because of an urgent family commitment and left before assessment started. No clinical breast examination, additional imaging, ultrasound or biopsy took place. The encounter was administrative only.\n[Next step] Rebooking offered; assessment and management decision remain outstanding.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:declined_assessment",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "ha36",
+      "text": "Abu Dhabi | Synthetic Breast MDT Pearl | HA36\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Clinical breast examination was performed. Targeted imaging could not be completed at this visit and remains outstanding. No biopsy result is reported for this episode.\n4. Return to finish diagnostic imaging; no final screening or treatment disposition has been made.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:assessment_without_resolution"
+      ]
+    },
+    {
+      "id": "ha37",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA37\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Clinical breast examination was performed. Targeted imaging could not be completed at this visit and remains outstanding. No biopsy result is reported for this episode.\nPLAN: Return to finish diagnostic imaging; no final screening or treatment disposition has been made.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:assessment_without_resolution",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha38",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA38\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe attended the recalled-screen assessment appointment. Clinical breast examination was performed. Targeted imaging could not be completed at this visit and remains outstanding. No biopsy result is reported for this episode.\nOur decision: Return to finish diagnostic imaging; no final screening or treatment disposition has been made.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:assessment_without_resolution"
+      ]
+    },
+    {
+      "id": "ha39",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA39\nCurrent screening-recall episode | 01 Nov 2026\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She attended the recalled-screen assessment appointment.\nEvidence | Diagnostic imaging and core sampling were completed. This episode's core biopsy is benign, but the result is radiologically discordant with the persistent suspicious distortion.\nDisposition | Repeat sampling is requested. Management remains undecided; the benign result does not authorize routine screening.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:benign_discordance"
+      ]
+    },
+    {
+      "id": "ha40",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA40\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram.\nO: She attended the recalled-screen assessment appointment.\nA: Diagnostic imaging and core sampling were completed. This episode's core biopsy is benign, but the result is radiologically discordant with the persistent suspicious distortion.\nP: Repeat sampling is requested. Management remains undecided; the benign result does not authorize routine screening.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:benign_discordance"
+      ]
+    },
+    {
+      "id": "ha41",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA41\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She attended the recalled-screen assessment appointment.\n[Work-up] Further imaging and core biopsy were performed. This episode's core confirms invasive breast carcinoma.\n[Next step] MDT management discussion has been deferred pending completion of staging and patient consultation. No treatment referral or final management decision has yet been issued.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:malignant_not_yet_treatment"
+      ]
+    },
+    {
+      "id": "ha42",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA42\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She attended the recalled-screen assessment appointment.\n3. Further imaging and core biopsy were performed. This episode's core confirms invasive breast carcinoma.\n4. MDT management discussion has been deferred pending completion of staging and patient consultation. No treatment referral or final management decision has yet been issued.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:malignant_not_yet_treatment"
+      ]
+    },
+    {
+      "id": "ha43",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Pearl | HA43\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She attended the recalled-screen assessment appointment.\nASSESSMENT: Diagnostic imaging was performed and a core biopsy was taken during this episode. Histology has not been issued; the result is awaited.\nPLAN: No final management decision; review once current histology is available.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "hard:pending_histology",
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha44",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA44\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram. Historical record only: a 2021 core biopsy was benign. That earlier biopsy is not a result from the current episode.\nShe did not attend the scheduled in-person recalled-screen assessment appointment. Administrative telephone contact confirmed that she had not attended. The call concerned appointment dates only; no clinical assessment, imaging or biopsy occurred.\nOur decision: Recall remains open; a new appointment is offered. No decision yet.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "hard:historical_biopsy",
+        "hard:nonattendance_contact"
+      ]
+    },
+    {
+      "id": "ha45",
+      "text": "Abu Dhabi | Synthetic Breast MDT Palm | HA45\nCurrent screening-recall episode | 01 Nov 2026\nScann ed clinic c0py | rec all episode\nMDT episode summary\nBackground | Referral: recalled following a screening mammogram.\nVisit | She did not attend the scheduled in-person recalled-screen assessment appointment.\nEvidence | Administrative telephone contact confirmed that she had not attended. The call concerned appointment dates only; no clinical assessment, imaging or biopsy occurred.\nDisposition | Recall remains open; a new appointment is offered. No decision yet.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "hard:nonattendance_contact",
+        "scan:ocr"
+      ]
+    },
+    {
+      "id": "ha46",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA46\nCurrent screening-recall episode | 01 Nov 2026\nS: Referral: recalled following a screening mammogram. Historical record only: a 2021 core biopsy was benign. That earlier biopsy is not a result from the current episode.\nO: She did not attend the scheduled in-person recalled-screen assessment appointment.\nA: Administrative telephone contact confirmed that she had not attended. The call concerned appointment dates only; no clinical assessment, imaging or biopsy occurred.\nP: Recall remains open; a new appointment is offered. No decision yet.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "hard:historical_biopsy",
+        "hard:nonattendance_contact"
+      ]
+    },
+    {
+      "id": "ha47",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA47\nCurrent screening-recall episode | 01 Nov 2026\nRecalled-screen pathway checklist\n[Referral] Referral: recalled following a screening mammogram.\n[Visit] She did not attend the scheduled in-person recalled-screen assessment appointment.\n[Work-up] Administrative telephone contact confirmed that she had not attended. The call concerned appointment dates only; no clinical assessment, imaging or biopsy occurred.\n[Next step] Recall remains open; a new appointment is offered. No decision yet.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "hard:nonattendance_contact"
+      ]
+    },
+    {
+      "id": "ha48",
+      "text": "Abu Dhabi | Synthetic Breast MDT Dune | HA48\nCurrent screening-recall episode | 01 Nov 2026\nClinical chronology\n1. Referral: recalled following a screening mammogram.\n2. She did not attend the scheduled in-person recalled-screen assessment appointment.\n3. Attendance register checked: no attendance and no clinical assessment, further imaging or biopsy in this episode.\n4. Recall remains open; a new appointment is offered. No decision yet.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": []
+    },
+    {
+      "id": "ha49",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Dune | HA49\nCurrent screening-recall episode | 01 Nov 2026\nوحدة تقييم الثدي - أبوظبي\nREFERRAL / HISTORY: Referral: recalled following a screening mammogram.\nATTENDANCE: She did not attend the scheduled in-person recalled-screen assessment appointment.\nASSESSMENT: Attendance register checked: no attendance and no clinical assessment, further imaging or biopsy in this episode.\nPLAN: Recall remains open; a new appointment is offered. No decision yet.\nAuthorised entry; breast assessment centre.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "language:arabic"
+      ]
+    },
+    {
+      "id": "ha50",
+      "text": "Abu Dhabi | Synthetic Diagnostic Breast Assessment Unit Palm | HA50\nCurrent screening-recall episode | 01 Nov 2026\nDear referring screening unit,\nReferral: recalled following a screening mammogram.\nShe did not attend the scheduled in-person recalled-screen assessment appointment. Attendance register checked: no attendance and no clinical assessment, further imaging or biopsy in this episode.\nOur decision: Recall remains open; a new appointment is offered. No decision yet.\nAuthorized entry; breast assessment center.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": []
+    }
+  ]
+}

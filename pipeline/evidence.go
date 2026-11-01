@@ -28,6 +28,7 @@ type ReaderVerdict struct {
 	Quote     string `json:"quote,omitempty"`
 	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
 	DR        *DRFields   `json:"dr,omitempty"`   // diabetic retinopathy loop: fields this reader extracted (drread.go)
+	Breast    *BreastFields `json:"breast,omitempty"` // breast recall loop: fields this reader extracted (breastread.go)
 }
 
 type TwoVerdict struct {
@@ -396,6 +397,7 @@ func LoadJudge2(path string) *Judge2 {
 	}
 	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
 	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
+	loadBreastCache(filepath.Dir(path)) // breast recall reader B answers, if present (breastread.go)
 	return j
 }
 
@@ -473,6 +475,22 @@ var Templates = map[string]Template{
 	"ccsfu-notify-v1/ar": {"ccsfu-notify-v1/ar", "ar", "notify", "مرحبًا. نتيجة فحص صحة المرأة الخاص بك في {{provider}} جاهزة. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق لمناقشة الخطوة التالية. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	"ccsfu-remind-v1/en": {"ccsfu-remind-v1/en", "en", "remind", "Reminder from {{provider}}: your care team would like to speak with you about your recent women's health screening. Please call or book through the app. Reply 1 to confirm you received this message."},
 	"ccsfu-remind-v1/ar": {"ccsfu-remind-v1/ar", "ar", "remind", "تذكير من {{provider}}: يود فريق الرعاية التحدث معك بخصوص فحص صحة المرأة الذي أجريته مؤخرًا. يرجى الاتصال أو الحجز عبر التطبيق. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	// lung-nodule follow-up (lung.go outreach kinds lung_followup_due / lung_overdue_recall); same wording rules: no
+	// test name, no finding, the privacy line, "Reply 1". The patient may not know about an incidental finding.
+	"lnfu-remind-v1/en": {"lnfu-remind-v1/en", "en", "remind", "Reminder from {{provider}}: your care team would like to arrange your follow-up appointment. Please call or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"lnfu-remind-v1/ar": {"lnfu-remind-v1/ar", "ar", "remind", "تذكير من {{provider}}: يود فريق الرعاية ترتيب موعد المتابعة الخاص بك. يرجى الاتصال أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"lnfu-recall-v1/en": {"lnfu-recall-v1/en", "en", "recall", "Hello. {{provider}} has been trying to reach you about a follow-up appointment that is now due. Please contact your care team or book through the app as soon as you can. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"lnfu-recall-v1/ar": {"lnfu-recall-v1/ar", "ar", "recall", "مرحبًا. يحاول {{provider}} التواصل معك بخصوص موعد متابعة حان وقته الآن. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق في أقرب وقت ممكن. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	// diabetic retinopathy screening follow-up (dr.go outreach kinds dr_repeat_photo / dr_clinic_due /
+	// dr_overdue_recall / dr_rebook); "eye check" names the area, as "women's health screening" does, not the test
+	"drsfu-repeat-v1/en": {"drsfu-repeat-v1/en", "en", "repeat", "Hello. {{provider}} would like you to come back to repeat your recent eye check. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"drsfu-repeat-v1/ar": {"drsfu-repeat-v1/ar", "ar", "repeat", "مرحبًا. يود {{provider}} أن تعود لإعادة فحص العين الذي أجريته مؤخرًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"drsfu-remind-v1/en": {"drsfu-remind-v1/en", "en", "remind", "Reminder from {{provider}}: your care team would like you to book your next eye appointment. Please call or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"drsfu-remind-v1/ar": {"drsfu-remind-v1/ar", "ar", "remind", "تذكير من {{provider}}: يود فريق الرعاية أن تحجز موعدك القادم لفحص العين. يرجى الاتصال أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"drsfu-recall-v1/en": {"drsfu-recall-v1/en", "en", "recall", "Hello. {{provider}} has been trying to reach you about your next eye appointment, which is now due. Please contact your care team or book through the app as soon as you can. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"drsfu-recall-v1/ar": {"drsfu-recall-v1/ar", "ar", "recall", "مرحبًا. يحاول {{provider}} التواصل معك بخصوص موعدك القادم لفحص العين، وقد حان وقته الآن. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق في أقرب وقت ممكن. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"drsfu-rebook-v1/en": {"drsfu-rebook-v1/en", "en", "rebook", "Hello. You were not able to attend your recent eye appointment, and {{provider}} would like to book a new one for you. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"drsfu-rebook-v1/ar": {"drsfu-rebook-v1/ar", "ar", "rebook", "مرحبًا. لم تتمكن من حضور موعد فحص العين الأخير، ويود {{provider}} حجز موعد جديد لك. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	// v6 teach-back (sent after the acknowledgement; the reply is parsed against the loop's expected next step)
 	"tb-prompt-v1/en":  {"tb-prompt-v1/en", "en", "teachback", "Thank you. To make sure our message was clear: in your own words, what is your next step, and when? You can reply in Arabic or English."},
 	"tb-prompt-v1/ar":  {"tb-prompt-v1/ar", "ar", "teachback", "شكرًا لك. للتأكد من وضوح رسالتنا: بكلماتك الخاصة، ما هي خطوتك التالية، ومتى؟ يمكنك الرد بالعربية أو الإنجليزية."},
@@ -516,10 +534,12 @@ var ProvDisplay = map[string][2]string{ // en, ar
 }
 
 // Result-disclosure deny-list (EN regex + AR token list). A message that names the test, its result or a finding is blocked.
-var denyEN = regexp.MustCompile(`(?i)\b(positive|negative|abnormal|normal result|results? (?:is|was|were|are|show|shows|showed)|blood|bleed\w*|cancer\w*|tumou?r\w*|polyp\w*|stool|f(?:a)?ecal|FIT|immunochemical|h(?:a)?emoglobin|colonoscop\w*|biopsy|pap|smear|hpv|cytolog\w*|colposcop\w*|cervi\w*)\b`)
+var denyEN = regexp.MustCompile(`(?i)\b(positive|negative|abnormal|normal result|results? (?:is|was|were|are|show|shows|showed)|blood|bleed\w*|cancer\w*|tumou?r\w*|polyp\w*|stool|f(?:a)?ecal|FIT|immunochemical|h(?:a)?emoglobin|colonoscop\w*|biopsy|pap|smear|hpv|cytolog\w*|colposcop\w*|cervi\w*|nodul\w*|lungs?|pulmonary|CT|retin\w*|macul\w*|fleischner)\b`)
 var denyAR = map[string]bool{"إيجابي": true, "إيجابية": true, "ايجابي": true, "سلبي": true, "سلبية": true, "دم": true, "الدم": true, "نزيف": true,
 	"سرطان": true, "السرطان": true, "ورم": true, "أورام": true, "براز": true, "البراز": true, "زوائد": true, "لحمية": true, "منظار": true, "تنظير": true, "خزعة": true, "طبيعي": true,
-	"طبيعية": true, "مسحة": true, "الحليمي": true}
+	"طبيعية": true, "مسحة": true, "الحليمي": true,
+	// lung-nodule and retinopathy findings (lnfu / drsfu families)
+	"عقدة": true, "العقدة": true, "عقيدة": true, "رئة": true, "الرئة": true, "رئوية": true, "الرئوية": true, "شبكية": true, "الشبكية": true, "اعتلال": true}
 
 func guardText(t string) string {
 	if strings.Contains(t, "{{") {

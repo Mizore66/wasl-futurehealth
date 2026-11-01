@@ -437,10 +437,10 @@ func report7(data, wasl, run string, P int) {
 		var oe OutEnvelope
 		json.Unmarshal(m.Data, &oe)
 		d := oe.Dec
-		if d == nil || !o.optT[d.LoopID] {
+		if d == nil || !o.optT[baseLoop(d.LoopID)] { // child loops (<loop>#surv) carry the parent's consent
 			continue
 		}
-		cs, ok := consentSeq[srPK[d.LoopID]]
+		cs, ok := consentSeq[srPK[baseLoop(d.LoopID)]]
 		for _, x := range d.Outreach {
 			if !x.Released {
 				continue
@@ -497,7 +497,7 @@ func report7(data, wasl, run string, P int) {
 			switch {
 			case x.Released:
 				relTotal[k] = true
-				if !grantedAt(srPK[d.LoopID], d.InSeq) {
+				if !grantedAt(srPK[baseLoop(d.LoopID)], d.InSeq) {
 					relNoGrant[k] = true
 				}
 			case x.Suppress == SupConsentHold:
@@ -569,6 +569,9 @@ func report7(data, wasl, run string, P int) {
 	}
 	if dm, ok := res["programmes_live"].(map[string]interface{})["diabetic_retinopathy"].(map[string]interface{}); ok {
 		dm["two_reader"] = drTwoReader(preps, &tr) // third loop type: screening and clinic-note reader agreement end to end
+	}
+	if bm, ok := res["programmes_live"].(map[string]interface{})["breast"].(map[string]interface{}); ok {
+		bm["two_reader"] = breastTwoReader(preps, &tr) // fourth loop type: screening and assessment reader agreement end to end
 	}
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)

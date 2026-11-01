@@ -44,7 +44,7 @@ func EnableDR() {
 	DROn = true
 	Providers = append(Providers, drProviders...)
 	provDefaultLang["phc-retina"], provDefaultLang["eye-hosp"] = "en", "en"
-	ProvDisplay["phc-retina"] = [2]string{"Diabetes clinic, primary care", "عيادة السكري، الرعاية الأولية"}
+	ProvDisplay["phc-retina"] = [2]string{"Primary care eye screening", "فحص العين، الرعاية الأولية"}
 	ProvDisplay["eye-hosp"] = [2]string{"Eye clinic, regional hospital", "عيادة العيون، المستشفى الإقليمي"}
 }
 
@@ -61,12 +61,14 @@ type DRTruth struct {
 	Outcome    string   `json:"outcome,omitempty"` // label of the note that decided the state
 	Notes      []string `json:"notes,omitempty"`   // eye-clinic note ids in time order
 	Within     bool     `json:"within_deadline,omitempty"`
-	JawdaExam  bool     `json:"jawda_exam"` // a retinal exam by an eye-care professional happened in the window (DoH JAWDA 5.1.4)
+	JawdaExam  bool     `json:"jawda_exam"`         // a retinal exam by an eye-care professional happened in the window (DoH JAWDA 5.1.4)
+	Next       *DRNext  `json:"next_due,omitempty"` // -drnext: next due contact and recall truth (drnext.go)
 }
 
 type drGen struct {
 	*lungGen
 	screens, notes []lungDoc
+	noteText       map[string]string // clinic-note id -> text (-drnext reads the stated review interval)
 }
 
 func (g *drGen) pick(docs []lungDoc, labels ...string) lungDoc {
@@ -157,7 +159,7 @@ func (g *drGen) screen(prov string, x *reg, day float64, label string, coded boo
 // genDR appends nDR DR loops (+ distractor clinic notes). bg = background persons; persons with any loop are skipped.
 func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]GenEvent, regs map[string]*reg, mrnN, ctr, textUse map[string]int) {
 	lg := &lungGen{r: rand.New(rand.NewSource(seed + drSeedOffset)), seed: seed, tr: tr, evs: evs, regs: regs, mrnN: mrnN, ctr: ctr, textUse: textUse}
-	g := &drGen{lungGen: lg, screens: loadLungDocs(drDir, "screen_reports.json"), notes: loadLungDocs(drDir, "clinic_notes.json")}
+	g := &drGen{lungGen: lg, screens: loadLungDocs(drDir, "screen_reports.json"), notes: loadLungDocs(drDir, "clinic_notes.json"), noteText: map[string]string{}}
 	r := g.r
 	src, hosp := drProviders[0], drProviders[1]
 	taken := map[string]bool{}
@@ -183,13 +185,12 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 		}
 		panic("dr: not enough background persons")
 	}
-	note := func(p *Person, t float64, label string) (string, bool) {
-		y := g.getReg(p, hosp)
-		d := g.pick(g.notes, label)
-		arr := t + g.lognorm(1, .7)
-		id := g.report(hosp.ID, y, t, arr, "dr-clinic", d.Text, d.ID, label, "")
-		return id, arr <= TEnd
+	type drFollow struct {
+		p  *Person
+		dt *DRTruth
 	}
+	var follows []drFollow
+	var rejected []extRejection // DR referrals the eye clinic rejects (handoffext.go), simulated after every other DR event
 	for k := 0; k < nDR; k++ {
 		p := pick()
 		S := -120 + 210*r.Float64()
@@ -235,76 +236,163 @@ func genDR(drDir string, seed int64, nDR int, bg []*Person, tr *Truth, evs *[]Ge
 			default:
 				dt.Adherence = "never"
 			}
-			for v := 0; dt.Adherence != "never" && v < 3; v++ {
-				var lab string
-				switch y := r.Float64(); {
-				case v == 0 && y < .10:
-					lab = "dna"
-				case y < .18:
-					lab = "not_examined"
-				case y < .25:
-					lab = "not_assessable"
-				default:
-					tp := .25
-					if rec.Urgency == "urgent" {
-						tp = .60
-					}
-					switch z := r.Float64(); {
-					case z < tp:
-						lab = "examined_treated"
-					case z < tp+.25:
-						lab = "examined_discharged"
-					default:
-						lab = "examined_followup"
-					}
-				}
-				id, seen := note(p, t, lab)
-				if !seen {
-					break
-				}
-				dt.Notes = append(dt.Notes, id)
-				lt.ScriptHosp = g.regs[p.Qid+"|"+hosp.ID].script
-				switch {
-				case lab == "dna":
-					state, dt.Outcome = "no_show", lab
-					t += 14 + 28*r.Float64()
-					continue
-				case lab == "not_examined":
-					state, dt.Outcome = "open", lab
-					if r.Float64() < .7 {
-						t += 14 + 28*r.Float64()
-						continue
-					}
-				case lab == "not_assessable":
-					state, dt.Outcome = "not_assessable", lab
-				default:
-					state, closed, dt.Outcome = "closed", t, lab
-					dt.Within, lt.ProcDay, dt.JawdaExam = t <= G+dl, t, true
-				}
-				break
+			if dt.Adherence != "never" {
+				state, closed = g.visits(p, hosp, t, lt, state, closed)
 			}
 		}
-		lt.State = state
-		if state == "closed" || state == "no_referral_needed" {
-			lt.ClosedDay = closed
+		drFinish(lt, state, closed)
+		if DRNextOn && (state == "closed" || state == "no_referral_needed") { // drnext.go (no draw from the DR stream)
+			rd := 0
+			if state == "closed" {
+				rd = drReviewDays(g.noteText[dt.Notes[len(dt.Notes)-1]])
+			}
+			dt.Next = drNextRule(state, map[bool]string{true: dt.Outcome}[state == "closed"], closed, rd)
+			dt.Next.Overdue = dt.Next.DueDay < TEnd
+			if dt.Next.Kind == "clinic_review" {
+				follows = append(follows, drFollow{p, dt})
+			}
 		}
-		switch {
-		case rec.Action == DRRefer:
-			lt.Overdue = (state == "open" || state == "no_show") && TEnd-dt.GradeDay > float64(rec.Deadline)
-		case rec.Action == DRRepeatPhoto:
-			lt.Overdue = TEnd-dt.GradeDay > float64(rec.Deadline)
+		if Handoff && RefRejectExt && rec.Action == DRRefer && dt.Adherence == "never" && u01(seed, loop, "refrej", "pick") < ExtRejectP {
+			rejected = append(rejected, extRejection{p: p, lt: lt, srID: srID, src: src, unit: hosp, t0: dt.GradeDay, urgent: rec.Urgency == "urgent"})
 		}
-		lt.Dropoff = drDropoff(state, rec.Action, false)
-		lt.Pathway = "dr_" + dt.Adherence + "_" + state
 	}
 	// distractors: other diabetics' eye-clinic notes at the hospital (a note for the wrong patient must never close a loop)
 	for k := 0; k < nDR/8; k++ {
 		p := pick()
 		t := -120 + 230*r.Float64()
 		lab := fmt.Sprint(g.notes[r.Intn(len(g.notes))].Key["label"])
-		id, _ := note(p, t, lab)
+		id, _ := g.note(hosp, p, t, lab)
 		tr.Distract[id] = true
 	}
+	for _, j := range rejected {
+		g.rejectDR(j)
+	}
+	// -drnext: follow-up eye-clinic visits after a clinic closure, on their own RNG stream and after every other DR event,
+	// so the -drnext=false events are unchanged. Simulated (not from data): 55% seen around the due day (+-14 d), 20% seen
+	// 21-81 days late, 25% never; a visit is a DNA 12% of the time, then rebooked 14-42 days later 70% of the time.
+	if DRNextOn {
+		rn := rand.New(rand.NewSource(seed + drNextSeedOffset))
+		g.r = rn // note() draws its text and arrival lag from this stream from here on
+		for _, f := range follows {
+			n := f.dt.Next
+			var t float64
+			switch a := rn.Float64(); {
+			case a < .55:
+				t = n.DueDay - 14 + 28*rn.Float64()
+			case a < .75:
+				t = n.DueDay + 21 + 60*rn.Float64()
+			default:
+				continue
+			}
+			for v := 0; v < 2; v++ {
+				lab := "examined_followup"
+				switch y := rn.Float64(); {
+				case y < .12:
+					lab = "dna"
+				case y < .30:
+					lab = "examined_treated"
+				case y < .45:
+					lab = "examined_discharged"
+				}
+				id, seen := g.note(hosp, f.p, t, lab)
+				if !seen {
+					break
+				}
+				f.dt.Notes = append(f.dt.Notes, id)
+				if lab != "dna" {
+					n.Seen, n.SeenDay, n.SeenReport = true, t, id
+					break
+				}
+				if rn.Float64() >= .7 {
+					break
+				}
+				t += 14 + 28*rn.Float64()
+			}
+			n.Overdue = !n.Seen && n.DueDay < TEnd
+		}
+	}
+}
+
+func (g *drGen) note(hosp ProvCfg, p *Person, t float64, label string) (string, bool) {
+	y := g.getReg(p, hosp)
+	d := g.pick(g.notes, label)
+	arr := t + g.lognorm(1, .7)
+	id := g.report(hosp.ID, y, t, arr, "dr-clinic", d.Text, d.ID, label, "")
+	g.noteText[id] = d.Text
+	return id, arr <= TEnd
+}
+
+// visits: eye-clinic visits of a referable patient from day t (up to three: a missed visit is rebooked, a visit that only
+// checked vision is repeated 70% of the time); the loop's state and closing day.
+func (g *drGen) visits(p *Person, hosp ProvCfg, t float64, lt *LoopTruth, state string, closed float64) (string, float64) {
+	r, dt := g.r, lt.DR
+	G, dl := dt.GradeDay, float64(dt.Rec.Deadline)
+	for v := 0; v < 3; v++ {
+		var lab string
+		switch y := r.Float64(); {
+		case v == 0 && y < .10:
+			lab = "dna"
+		case y < .18:
+			lab = "not_examined"
+		case y < .25:
+			lab = "not_assessable"
+		default:
+			tp := .25
+			if dt.Rec.Urgency == "urgent" {
+				tp = .60
+			}
+			switch z := r.Float64(); {
+			case z < tp:
+				lab = "examined_treated"
+			case z < tp+.25:
+				lab = "examined_discharged"
+			default:
+				lab = "examined_followup"
+			}
+		}
+		id, seen := g.note(hosp, p, t, lab)
+		if !seen {
+			break
+		}
+		dt.Notes = append(dt.Notes, id)
+		lt.ScriptHosp = g.regs[p.Qid+"|"+hosp.ID].script
+		switch {
+		case lab == "dna":
+			state, dt.Outcome = "no_show", lab
+			t += 14 + 28*r.Float64()
+			continue
+		case lab == "not_examined":
+			state, dt.Outcome = "open", lab
+			if r.Float64() < .7 {
+				t += 14 + 28*r.Float64()
+				continue
+			}
+		case lab == "not_assessable":
+			state, dt.Outcome = "not_assessable", lab
+		default:
+			state, closed, dt.Outcome = "closed", t, lab
+			dt.Within, lt.ProcDay, dt.JawdaExam = t <= G+dl, t, true
+		}
+		break
+	}
+	return state, closed
+}
+
+// drFinish: the loop's truth from its final state.
+func drFinish(lt *LoopTruth, state string, closed float64) {
+	dt, rec := lt.DR, lt.DR.Rec
+	lt.State = state
+	if state == "closed" || state == "no_referral_needed" {
+		lt.ClosedDay = closed
+	}
+	switch {
+	case rec.Action == DRRefer:
+		lt.Overdue = (state == "open" || state == "no_show") && TEnd-dt.GradeDay > float64(rec.Deadline)
+	case rec.Action == DRRepeatPhoto:
+		lt.Overdue = TEnd-dt.GradeDay > float64(rec.Deadline)
+	}
+	lt.Dropoff = drDropoff(state, rec.Action, false)
+	lt.Pathway = "dr_" + dt.Adherence + "_" + state
 }
 
 // drDropoff: where an unresolved DR loop is stuck (same function for truth and pipeline).

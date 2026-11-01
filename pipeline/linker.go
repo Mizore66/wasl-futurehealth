@@ -62,6 +62,7 @@ type LinkerCore struct {
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
 	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
 	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
+	xref         map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
 	ann          ANNIndex
 }
 
@@ -86,7 +87,7 @@ func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
-		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}}
+		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
 }
 
 func NewLinkerCoreANN(gbm *GBM, P int) *LinkerCore {
@@ -584,7 +585,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
 			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
-				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy"}[e.Category]
+				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -620,6 +621,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		f.DR = base.DR
 		f.Down = append(f.Down, drScreenFacts(L.recs[s])...) // screening reports on the screen's own registration
 	}
+	if base.Breast != nil {
+		f.Breast = base.Breast
+		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
+	}
 	inC := map[int]bool{}
 	for _, y := range ms {
 		inC[y] = true
@@ -644,6 +649,9 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 			}
 		}
 		f.Down = append(f.Down, ds...)
+	}
+	if XRefLinkQ {
+		f.Down = append(f.Down, L.xrefFacts(loop, s, inC)...)
 	}
 	// near-miss hospital records (scored lo<=p<thr against any cluster member): candidates for a missed link
 	nm := map[int][2]float64{}
@@ -698,16 +706,26 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			break
 		}
 		L.Stats["signoffs"]++
-		if so.Purpose == "second_identifier" {
+		if secondIDPurpose(so.Purpose) {
 			// messaging confirmation: "same" is recorded on the sign-off (outreach released), "different" keeps the
 			// message held and is escalated to identity review; neither changes the clusters
-			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
-			affLoops[so.LoopID] = true
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose == "second_identifier" {
+				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
+					// the records contradict: the confirmation counts only after a confirming review (closure raises IDConfirm)
+					sc := *so
+					sc.Hold = c
+					so = &sc
+					L.Stats["second_id_same_held_contradiction"]++
+				}
+			}
+			L.signoffs[so.LoopID] = append(L.signoffs[so.LoopID], *so)
+			affLoops[so.LoopID] = true
 			if ReuseIDConfirm && okA && okB {
 				// the answer is about the two registrations, not the loop: it holds for the patient's other loops too
-				if so.Link == "same" {
+				// (a held "same" neither confirms nor withdraws an earlier confirmation of the pair)
+				if so.Link == "same" && so.Hold == "" {
 					L.idConfirmed[pk2(a, b)] = true
 				} else if so.Link == "different" {
 					delete(L.idConfirmed, pk2(a, b))
@@ -855,6 +873,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			rec.evOrder = append(rec.evOrder, key)
 		}
 		rec.evs[key] = e
+		if XRefLinkQ && L.noteXRef(e, i) { // a rejected intake citing a referral: that loop may need a link question
+			affLoops[e.XRef] = true
+		}
 		if e.RType == "ServiceRequest" && e.Category != "referral-intake" {
 			loop := e.Provider + "/ServiceRequest/" + e.ID
 			if _, ok := L.loops[loop]; !ok {
@@ -863,7 +884,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}

@@ -67,10 +67,19 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 				}
 			}
 		}
+		if XRefLinkQ && e.Category == "referral-intake" { // the referral this intake answers (handoffref.go)
+			e.XRef = xrefOf(res)
+		}
 		if e.Category == "dr-screening" { // diabetic retinopathy screen (dr.go)
 			e.DR = &DRSR{}
 			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
 				e.DR.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
+			}
+		}
+		if e.Category == "breast-screening" { // breast screening mammogram (breast.go)
+			e.Breast = &BreastSR{}
+			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
+				e.Breast.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
 			}
 		}
 		if e.Lung != nil {
@@ -131,7 +140,7 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
-				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go)
+				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic", "breast-screen", "breast-assess": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go); breast screen | assessment (breast.go)
 					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}

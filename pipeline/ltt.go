@@ -39,6 +39,7 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 		Released      int     `json:"messages_released"`
 		WrongReleased int     `json:"wrong_patient_released"`
 		Items         int     `json:"review_items"`
+		Dropped       int     `json:"review_items_dropped,omitempty"` // raised but dropped by the worklists (-replayworklist)
 		ReviewerH1k   float64 `json:"reviewer_hours_per_1k_loops"`
 	}
 	rows := []row{}
@@ -62,11 +63,11 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 				}
 				wrongLoops := map[string]bool{}
 				for _, x := range rp.outs {
-					if x.Dec == nil || o.tr.Loops[x.Dec.LoopID] == nil {
+					if x.Dec == nil || o.tr.Loops[baseLoop(x.Dec.LoopID)] == nil {
 						continue
 					}
 					for _, m := range x.Dec.Outreach {
-						if m.Released && o.tr.PKQid[o.evPK[m.Event]] != o.tr.Loops[x.Dec.LoopID].Qid {
+						if m.Released && o.tr.PKQid[o.evPK[m.Event]] != o.tr.Loops[baseLoop(x.Dec.LoopID)].Qid {
 							wrongLoops[x.Dec.LoopID] = true
 						}
 					}
@@ -77,8 +78,13 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 					LoopsWrongMsg: len(wrongLoops), Released: g["released"].(int), WrongReleased: g["wrong_patient_released"].(int), Items: len(sos),
 					ReviewerH1k: r3(1000 * secs / 3600 / float64(len(o.tr.Loops)))}
 				r.TruthClosed = r.TP + acc["missed"].(int)
+				for id := range rp.items {
+					if _, ok := sos[id]; !ok && mode {
+						r.Dropped++
+					}
+				}
 				rows = append(rows, r)
-				fmt.Fprintf(os.Stderr, "ltt %s review=%v tau=%.4f closed=%d FC=%d R=%.3f wrongmsg=%d items=%d\n", r.Cohort, mode, tau, r.Closed, r.FalseClosures, r.Recall, r.WrongReleased, r.Items)
+				fmt.Fprintf(os.Stderr, "ltt %s review=%v tau=%.4f closed=%d FC=%d R=%.3f wrongmsg=%d items=%d dropped=%d\n", r.Cohort, mode, tau, r.Closed, r.FalseClosures, r.Recall, r.WrongReleased, r.Items, r.Dropped)
 			}
 		}
 	}

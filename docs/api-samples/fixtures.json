@@ -1,21 +1,62 @@
 {
  "fixtures": {
+  "dr_exam_closure": {
+   "closed": true,
+   "closed_day": -15.454,
+   "consent": "granted",
+   "deadline_day": 91,
+   "decisions": 3,
+   "dr": {
+    "screen_report": "PHC-dr-1077",
+    "screen_label": "R2M0",
+    "rec": {
+     "action": "refer",
+     "deadline_days": 91,
+     "urgency": "routine",
+     "cell": "R2M0"
+    },
+    "grade_day": -63.02478009259259,
+    "deadline_day": 27.975219907407407,
+    "clinic_note": "EYE-dr-83",
+    "outcome": "examined_followup",
+    "examined": true,
+    "within_deadline": true,
+    "next_due": {
+     "kind": "clinic_review",
+     "from_day": -15.454108796296296,
+     "interval_days": 183,
+     "due_day": 167.54589120370372,
+     "basis": "note_review_interval"
+    }
+   },
+   "dropoff": "",
+   "fixture": "dr_exam_closure",
+   "id": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "diabetic_retinopathy",
+   "provider": "phc-retina",
+   "referral_day": -63.0247,
+   "review": "none",
+   "state": "closed"
+  },
   "evidence_closure": {
    "closed": true,
-   "closed_day": 57.4415,
+   "closed_day": 52.1296,
    "consent": "granted",
    "deadline_day": 31,
-   "decisions": 6,
+   "decisions": 10,
    "dropoff": "",
    "fixture": "evidence_closure",
-   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1007",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
    "overdue": false,
-   "owner": "Practitioner/ahs-mushrif-nurse-2",
+   "owner": "",
    "priority": "",
    "programme": "crc",
    "provider": "ahs-mushrif",
-   "referral_day": 30.8369,
-   "review": "none",
+   "referral_day": 24.9531,
+   "review": "signed",
    "state": "closed"
   },
   "false_closure_trap": {
@@ -23,34 +64,34 @@
    "closed_day": 0,
    "consent": "granted",
    "deadline_day": 31,
-   "decisions": 9,
+   "decisions": 14,
    "dropoff": "inadequate",
    "fixture": "false_closure_trap",
-   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1021",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1009",
    "overdue": true,
-   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "owner": "Practitioner/ahs-mushrif-nurse-4",
    "priority": "",
    "programme": "crc",
    "provider": "ahs-mushrif",
-   "referral_day": 85.9041,
-   "review": "none",
+   "referral_day": 77.7085,
+   "review": "signed",
    "state": "inadequate"
   },
   "review_hold": {
    "closed": true,
-   "closed_day": 67.4124,
+   "closed_day": 36.8378,
    "consent": "granted",
    "deadline_day": 31,
-   "decisions": 11,
+   "decisions": 15,
    "dropoff": "",
    "fixture": "review_hold",
-   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1474",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-1175",
    "overdue": false,
-   "owner": "Practitioner/ahs-mushrif-nurse-3",
+   "owner": "Practitioner/ahs-mushrif-nurse-6",
    "priority": "",
    "programme": "crc",
    "provider": "ahs-mushrif",
-   "referral_day": 16.9241,
+   "referral_day": 20.991,
    "review": "signed",
    "state": "closed"
   }
@@ -58,10 +99,10 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-27T04:31:43Z",
+  "loaded_at": "2026-10-31T23:47:27Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
-  "policy": "v7strict+cal=true+guard=true+tau=0.98",
-  "reader_model": "gemma-4-26b/cached",
-  "run": "v7strict-cached-fhir"
+  "policy": "v7strict+cal=true+guard=true+tau=0.99",
+  "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
+  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
  }
 }

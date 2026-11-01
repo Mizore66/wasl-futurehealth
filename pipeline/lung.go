@@ -59,6 +59,7 @@ type LungDecision struct {
 	FollowUpCT   bool    `json:"followup_ct_seen,omitempty"` // a trusted follow-up CT exists (Decision.ProcDay is its day)
 	Closer       string  `json:"closer,omitempty"`          // > 8 mm work-up (lungworkup.go): ct | pet | tissue
 	TissueDue    float64 `json:"tissue_due_day,omitempty"`  // FDG-avid PET/CT: tissue result expected by this day
+	Surveillance *LungSurv `json:"surveillance,omitempty"`  // -lungsurv: surveillance CT due after a PET/CT low-uptake closure (lungsurv.go)
 	Scope        string  `json:"scope"`                      // in_scope | <exclusion reason>
 }
 
@@ -345,10 +346,15 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 					"policy": "trusted link (p_cal>=tau|eid|human) AND two-reader agreement on the follow-up CT (or clinician sign-off)"})
 			case "pet_low", "benign":
 				state, closedDay, closing = "closed", r.d.Day, r.d.ReportID
-				chain = appendBlock(ch, "closure_decision", map[string]interface{}{"loop": f.LoopID, "state": "closed", "programme": "lung_nodule",
+				body := map[string]interface{}{"loop": f.LoopID, "state": "closed", "programme": "lung_nodule",
 					"rule": "fleischner2017", "outcome": lab, "closer": ld.Closer, "closed_day": round4(closedDay),
 					"next_step": map[string]string{"pet_low": "CT surveillance (BTS 2015: Herder < 10%)", "benign": "benign tissue diagnosis: management per lung MDT"}[lab],
-					"policy": "trusted link AND the coded result agrees with the report text (or clinician sign-off); Fleischner > 8 mm: CT at 3 months, PET/CT or tissue sampling"})
+					"policy": "trusted link AND the coded result agrees with the report text (or clinician sign-off); Fleischner > 8 mm: CT at 3 months, PET/CT or tissue sampling"}
+				if LungPETSurv && lab == "pet_low" { // the work-up closes; the surveillance CT becomes the child loop's obligation (lungsurv.go)
+					body["closed_into"], body["surveillance_loop"] = "surveillance_ct_due", f.LoopID+"#surv"
+					body["surveillance_ct_due_day"] = round4(closedDay + PETSurvHiDays)
+				}
+				chain = appendBlock(ch, "closure_decision", body)
 			case "malignant":
 				state = "escalated"
 				chain = appendBlock(ch, "escalation_decision", map[string]interface{}{"loop": f.LoopID, "state": "escalated", "programme": "lung_nodule",
@@ -380,6 +386,24 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 				hold(map[bool]string{true: "not_assessable", false: "review_hold"}[state == "not_assessable"], map[string]interface{}{"reason": reason, "report": holdRow.d.ReportID})
 			} else if unlinked {
 				hold("review_hold", map[string]interface{}{"reason": "followup_ct_identity_link_unconfirmed"})
+			}
+		}
+	}
+	var petChild *Decision // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
+	if LungPETSurv && state == "closed" && ld.Outcome == "pet_low" && len(chain) > 0 {
+		k0 := len(pending)
+		petChild = c.petSurvLoop(f, ld, closedDay, chain[len(chain)-1].Hash, fus, labelOf, raise, withSignoff)
+		ld.Surveillance = petChild.Lung.Surveillance
+		finishPETSurv(ls, f, petChild, pending[k0:], now)
+	}
+	workup := ld.Rec != nil && rec.Action == FlCTPET && ld.Scope == "in_scope"
+	var refSRs []srFact // the work-up unit's answers to a PET/CT or tissue referral (handoffext.go); untrusted ones are asked about
+	if workup {
+		var ask []row
+		refSRs, ask = c.extReferrals(f, "lung_nodule")
+		for _, r := range ask {
+			if state != "closed" {
+				raise(r, "link")
 			}
 		}
 	}
@@ -419,24 +443,12 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		esc = append(esc, "risk_not_recorded_treated_high")
 	}
 	d.Escalations = esc
+	if workup { // rejected work-up referral: hand-off packet to the imaging centre (handoffext.go)
+		extHandoff(d, f, "lung_nodule", refSRs, true, terminal, now)
+	}
 	if OutreachOn {
 		d.Outreach = lungOutreach(f, ld, state, d.Overdue, now)
-		if ls.contact == nil {
-			ls.contact = map[string]string{}
-		}
-		for _, o := range d.Outreach { // consent hold / cancel history, as for the screening programmes
-			st := map[bool]string{true: "released", false: "other"}[o.Released]
-			if o.Suppress == SupConsentHold {
-				st = "held"
-			} else if o.Suppress == SupConsent {
-				st = "cancelled"
-			}
-			k := o.Event + "|" + o.Kind
-			if prev, seen := ls.contact[k]; (seen && prev != st) || (!seen && (st == "held" || st == "cancelled")) {
-				d.ConsentLog = append(d.ConsentLog, ConsentTransition{Event: o.Event, Kind: o.Kind, From: prev, To: st, Contact: f.Contact})
-			}
-			ls.contact[k] = st
-		}
+		d.ConsentLog = lungConsentLog(ls, f, d.Outreach) // consent hold / cancel history, as for the screening programmes
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
@@ -450,7 +462,11 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	for _, it := range newItems {
 		out = append(out, OutMsg{ID: it.ItemID, Kind: "review", Item: it})
 	}
-	if fu := c.surveillanceLoop(f, ld, state, closedDay, fus, now); fu != nil && (ls.lastFU == nil || ls.lastFU.Sig != fu.Sig) {
+	fu := c.surveillanceLoop(f, ld, state, closedDay, fus, now)
+	if petChild != nil {
+		fu = petChild
+	}
+	if fu != nil && (ls.lastFU == nil || ls.lastFU.Sig != fu.Sig) {
 		fu.Now, fu.InSeq = now, inSeq
 		fu.ID = fmt.Sprintf("dec-%s@%s", fu.LoopID, mid)
 		ls.lastFU = fu

@@ -1,0 +1,46 @@
+{
+ "heldout": {
+  "breast-assess": {
+   "agree": 38,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "ha19 A:incomplete want to_treatment",
+    "ha20 A:incomplete want to_treatment",
+    "ha21 A:incomplete want to_treatment",
+    "ha22 A:incomplete want to_treatment",
+    "ha23 A:incomplete want to_treatment",
+    "ha24 A:incomplete want to_treatment",
+    "ha25 A:incomplete want to_treatment",
+    "ha26 A:incomplete want to_treatment",
+    "ha27 A:incomplete want to_treatment",
+    "ha28 A:incomplete want to_treatment",
+    "ha39 A:return_routine want incomplete",
+    "ha40 A:return_routine want incomplete"
+   ],
+   "reader_a_regex_correct": 38,
+   "reader_b_gemma_correct": 50,
+   "reader_b_unavailable": 0,
+   "reports": 50,
+   "to_review": 12
+  },
+  "breast-screen": {
+   "agree": 34,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 20,
+   "coded_path_agree_but_wrong": 0,
+   "coded_path_texts": 20,
+   "errors": [
+    "hb18 A:B1 want B2",
+    "hb38 B:B0 want TR",
+    "hb39 A:B2 want TR",
+    "hb39 B:B0 want TR",
+    "hb40 B:B0 want TR"
+   ],
+   "reader_a_regex_correct": 38,
+   "reader_b_gemma_correct": 35,
+   "reader_b_unavailable": 2,
+   "reports": 40,
+   "to_review": 6
+  }
+ }
+}

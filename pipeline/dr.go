@@ -36,6 +36,7 @@ type DRDecision struct {
 	Outcome        string  `json:"outcome,omitempty"`
 	Examined       bool    `json:"examined,omitempty"` // a trusted, read eye-clinic note records a retinal exam (JAWDA 5.1.4)
 	WithinDeadline bool    `json:"within_deadline,omitempty"`
+	Next           *DRNext `json:"next_due,omitempty"` // -drnext: next due rescreen / clinic review of a resolved loop (drnext.go)
 }
 
 // drScreenFacts: screening reports on the tracking ServiceRequest's own registration (no identity link needed).
@@ -308,6 +309,43 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 	}
+	if DRNextOn && (state == "closed" || state == "no_referral_needed") { // drnext.go: next due date and recall flag
+		rd := 0
+		for _, r := range notes {
+			if r.d.ReportID == closing && r.d.Ev != nil && r.d.Ev.Regex.DR != nil {
+				rd = r.d.Ev.Regex.DR.ReviewDays
+			}
+		}
+		n := drNextRule(state, map[bool]string{true: dd.Outcome}[state == "closed"], closedDay, rd)
+		var seen *row
+		for i, rs := range [][]row{screens, notes} {
+			for j := range rs {
+				r := rs[j]
+				if r.d.Day <= closedDay || r.d.ReportID == closing || (i == 1 && !r.trusted) {
+					continue
+				}
+				if lab, _ := labelOf(r); lab != "" && lab != "dna" && (seen == nil || r.d.Day < seen.d.Day) {
+					seen = &rs[j]
+				}
+			}
+		}
+		if seen != nil {
+			n.Seen, n.SeenDay, n.SeenReport = true, seen.d.Day, seen.d.ReportID
+		}
+		n.Overdue = !n.Seen && now > n.DueDay
+		dd.Next = n
+	}
+	referable := recOK && rec.Action == DRRefer
+	var refSRs []srFact // the eye clinic's answers to the referral (handoffext.go); untrusted ones are asked about
+	if referable {
+		var ask []row
+		refSRs, ask = c.extReferrals(f, "diabetic_retinopathy")
+		for _, r := range ask {
+			if state != "closed" {
+				raise(r, "link")
+			}
+		}
+	}
 	d := &Decision{LoopID: f.LoopID, Provider: f.Provider, SRDay: f.SRDay, State: state, Owner: owner, Prog: "diabetic_retinopathy",
 		Deadline: float64(rec.Deadline), ProcDay: procDay, ClosingReport: closing, Chain: chain, Pending: pending, NotifDay: -1, AckDay: -1,
 		RefStatus: "none", RefDay: -1, DR: dd}
@@ -329,6 +367,9 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	if d.Overdue {
 		esc = append(esc, map[bool]string{true: "repeat_photo_overdue", false: "overdue_dr_referral"}[rec.Action == DRRepeatPhoto])
 	}
+	if dd.Next != nil && dd.Next.Overdue {
+		esc = append(esc, "dr_recall_overdue")
+	}
 	switch state {
 	case "no_show":
 		esc = append(esc, "rebook_after_dna")
@@ -340,6 +381,9 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	d.Escalations = esc
+	if referable { // rejected referral: hand-off packet to the screening clinic (handoffext.go)
+		extHandoff(d, f, "diabetic_retinopathy", refSRs, rec.Urgency == "urgent", state == "closed", now)
+	}
 	if OutreachOn {
 		d.Outreach = drOutreach(f, dd, state, d.Overdue, now)
 		if ls.contact == nil {
@@ -398,7 +442,7 @@ func drOutreach(f *LoopFacts, dd *DRDecision, state string, overdue bool, now fl
 	}
 	var out []Outreach
 	for _, k := range kinds {
-		o := Outreach{Kind: k, Event: f.LoopID, Basis: "self", PCal: 1, Channel: "phone_then_letter", Sender: f.Provider}
+		o := Outreach{Kind: k, Event: f.LoopID, Basis: "self", PCal: 1, Channel: "phone_then_letter", Sender: f.Provider, Template: outreachTpl("diabetic_retinopathy", k, f)}
 		switch {
 		case f.MsgOptOut:
 			o.Suppress = SupConsent

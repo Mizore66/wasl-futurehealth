@@ -7,6 +7,10 @@
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
 #      WASL_LUNG=N adds N incidental lung-nodule loops (Fleischner 2017, second loop type; default 0 = screening cohort only).
 #      WASL_DR=N adds N diabetic retinopathy screening loops (doh2024dr, third loop type; default 0).
+#      WASL_DRNEXT=1 (with WASL_DR) tracks the next DR due date and a recall_overdue flag (pipeline/drnext.go; default off).
+#      WASL_LUNGSURV=1 tracks the surveillance CT due after a PET/CT low-uptake lung closure (child loop; default 0 = off).
+#      WASL_REFREJECT=true lets lung work-up and DR eye-clinic referrals be rejected (hand-off packets; default false).
+#      WASL_BREAST=N adds N breast screening recall loops (doh2025breast, fourth loop type; default 0).
 #      WASL_MODELSET=X runs the alternative linkage chain models/{encoder_X,lgb_stream_X,iso_X,iso_v7_X}.json (default: unset = the default chain).
 #      Pilot switches (default off): WASL_SHADOW=1 shadow mode (every automatic closure is confirmed by a clinician first);
 #      WASL_AUTOAUDIT=p post-closure clinician audit of a fraction p of automatic closures (normal mode). See pipeline/pilot.go.
@@ -23,14 +27,24 @@ LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop t
 [ "$LUNG" = 0 ] || RUN="$RUN-lung"
 DR="${WASL_DR:-0}"                 # diabetic retinopathy screening loops (third loop type); 0 = off
 [ "$DR" = 0 ] || RUN="$RUN-dr"
+BREAST="${WASL_BREAST:-0}"         # breast screening recall loops (fourth loop type); 0 = off
+[ "$BREAST" = 0 ] || RUN="$RUN-breast"
 MODELSET="${WASL_MODELSET:-}"; [ -z "$MODELSET" ] || RUN="$RUN-$MODELSET"
 MARGS=(); [ -z "$MODELSET" ] || MARGS=(-modelset "$MODELSET")
 SHADOW="${WASL_SHADOW:-0}"; AUTOAUDIT="${WASL_AUTOAUDIT:-0}"   # pilot switches (pipeline/pilot.go); 0 = off
 PARGS=(); [ "$SHADOW" = 0 ] || { PARGS+=(-shadow); RUN="$RUN-shadow"; }   # cohort generation never sees them
 [ "$AUTOAUDIT" = 0 ] || { PARGS+=(-autoaudit "$AUTOAUDIT"); RUN="$RUN-autoaudit$AUTOAUDIT"; }
+DRNEXT="${WASL_DRNEXT:-0}"         # DR next loop (pipeline/drnext.go): next due date + recall_overdue; gen adds follow-up visits; 0 = off
+[ "$DRNEXT" = 0 ] || { PARGS+=(-drnext); RUN="$RUN-drnext"; }
+LUNGSURV="${WASL_LUNGSURV:-0}"     # surveillance CT after a PET/CT low-uptake lung closure (pipeline/lungsurv.go); 0 = off
+[ "$LUNGSURV" = 0 ] || { PARGS+=(-lungsurv); RUN="$RUN-lungsurv"; }   # engine side; the generator gets it through GARGS
+# hand-off (default off): WASL_XREFLINK=1 a rejected intake that cites the referral but never linked raises a link question
+[ "${WASL_XREFLINK:-0}" = 0 ] || { PARGS+=(-xreflink); RUN="$RUN-xreflink"; }
 IMAGE="${WASL_IMAGE:-off}"         # off (default) | cached (models/image_verdicts.json) | live (python image/serve.py <model> <images>)
 RARGS=(-reader "$READER" -reader-url "$READER_URL" -image "$IMAGE" -imgcache "$ROOT/models/image_verdicts.json" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"})
 GARGS=(); [ "$IMAGE" = off ] || GARGS=(-imgphotos -imgcache "$ROOT/models/image_verdicts.json")
+[ "$DRNEXT" = 0 ] || GARGS+=(-drnext)
+[ "$LUNGSURV" = 0 ] || GARGS+=(-lungsurv)
 # H7 simulated-reviewer stress test and mitigations (all off by default): WASL_REVIEW_RHO=0.5, WASL_REVIEW_BLIND=1,
 # WASL_REVIEW_ROTATE=1, WASL_SENIOR_AUDIT=0.02. Error rates and correlations are assumed stress-test values.
 HARGS=()
@@ -63,6 +77,11 @@ check() {
       [ -s "$ROOT/$f" ] || need "$f" "committed in the repo (corpus: scripts/dr_corpus.py; cache: wsi7 drcache with llama-server on :8791)"
     done
   fi
+  if [ "$BREAST" != 0 ]; then
+    for f in data/breast/screen_reports.json data/breast/assess_notes.json models/breast_gemma_cache.json; do
+      [ -s "$ROOT/$f" ] || need "$f" "committed in the repo (corpus: scripts/breast_corpus.py; cache: wsi7 breastcache with llama-server on :8791)"
+    done
+  fi
   if [ -n "$MODELSET" ]; then for f in encoder_$MODELSET lgb_stream_$MODELSET iso_$MODELSET iso_v7_$MODELSET; do
     [ -s "$ROOT/models/$f.json" ] || need "models/$f.json" "WASL_MODELSET=$MODELSET needs the full chain (encoder/README.md)"; done; fi
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
@@ -75,9 +94,9 @@ build()  { (cd "$ROOT/pipeline" && go vet . && go build -o "$BIN/wsi7" .); echo 
 test_()  { (cd "$ROOT/pipeline" && go test -count=1 .); }
 cohort() {
   rm -rf "$BASE" "$COHORT" "$OUT/run/base"; mkdir -p "$BASE" "$COHORT"
-  "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" \
+  "$BIN/wsi7" gen -wasl "$ROOT/data" -reports "$ROOT/data/evidence/reports43.json" -pathology "$ROOT/data/evidence/pathology_templates.json" -prepquery="${WASL_PREPQUERY:-true}" -handoff="${WASL_HANDOFF:-true}" -lungworkup="${WASL_LUNGWORKUP:-true}" -refreject="${WASL_REFREJECT:-false}" \
     -ecpool "$ROOT/patient-parsers/econsult_testset.json" -tbpool "$ROOT/patient-parsers/teachback_testset.json" \
-    -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
+    -out "$BASE" -seed "$SEED" -persons 6500 -cerv 600 -lung "$LUNG" -lungdata "$ROOT/data/lung" -dr "$DR" -drdata "$ROOT/data/dr" -breast "$BREAST" -breastdata "$ROOT/data/breast" ${GARGS[@]+"${GARGS[@]}"} > "$OUT/gen.json"
   "$BIN/wsi7" sim -data "$BASE" -wasl "$ROOT/models" -run "$OUT/run/base" ${MARGS[@]+"${MARGS[@]}"} > "$OUT/run/base.json" 2> "$OUT/run/base.err"
   python3 "$ROOT/pipeline/augment_cohort.py" "$BASE" "$OUT/run/base" "$COHORT"
   echo "cohort → $COHORT"
@@ -108,8 +127,12 @@ snapshot() {  # write static API responses for frontend development (no backend 
   curl -sf "http://$A/healthz" > "$D/healthz.json"
   curl -sf "http://$A/api/dashboard" > "$D/dashboard.json"
   curl -sf "http://$A/api/fixtures" > "$D/fixtures.json"
-  curl -sf "http://$A/api/cases?programme=crc&limit=25" > "$D/cases_crc_page1.json"
-  for tag in evidence_closure false_closure_trap review_hold; do
+  for prog in crc cervical lung_nodule diabetic_retinopathy breast; do   # first page per programme present in the run
+    curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$D/cases_${prog}_page1.json.tmp" &&
+      python3 -c "import json,sys;sys.exit(0 if json.load(open('$D/cases_${prog}_page1.json.tmp')).get('cases') else 1)" &&
+      mv "$D/cases_${prog}_page1.json.tmp" "$D/cases_${prog}_page1.json" || rm -f "$D/cases_${prog}_page1.json.tmp"
+  done
+  for tag in $(python3 -c "import json;print(' '.join(sorted(json.load(open('$D/fixtures.json'))['fixtures'])))"); do
     id=$(python3 -c "import json;print(json.load(open('$D/fixtures.json'))['fixtures']['$tag']['id'])")
     curl -sf "http://$A/api/cases/$id" > "$D/case_$tag.json"
     curl -sf "http://$A/api/cases/$id/audit" > "$D/case_${tag}_audit.json"

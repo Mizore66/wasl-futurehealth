@@ -32,48 +32,51 @@
    "with_review": true,
    "tau_close": 0.999,
    "loops": 2100,
-   "closed": 609,
-   "tp": 609,
+   "closed": 614,
+   "tp": 614,
    "false_closures": 0,
    "truth_closed": 745,
-   "recall": 0.817,
+   "recall": 0.824,
    "loops_with_wrong_patient_message": 0,
-   "messages_released": 1399,
+   "messages_released": 1405,
    "wrong_patient_released": 0,
-   "review_items": 1924,
-   "reviewer_hours_per_1k_loops": 29.179
+   "review_items": 1773,
+   "review_items_dropped": 7,
+   "reviewer_hours_per_1k_loops": 27.052
   },
   {
    "cohort": "cal-s102",
    "with_review": true,
    "tau_close": 0.995,
    "loops": 2100,
-   "closed": 620,
-   "tp": 620,
+   "closed": 621,
+   "tp": 621,
    "false_closures": 0,
    "truth_closed": 745,
-   "recall": 0.832,
+   "recall": 0.834,
    "loops_with_wrong_patient_message": 0,
-   "messages_released": 1415,
+   "messages_released": 1418,
    "wrong_patient_released": 0,
-   "review_items": 1342,
-   "reviewer_hours_per_1k_loops": 21.121
+   "review_items": 1247,
+   "review_items_dropped": 5,
+   "reviewer_hours_per_1k_loops": 19.77
   },
   {
    "cohort": "cal-s102",
    "with_review": true,
    "tau_close": 0.99,
    "loops": 2100,
-   "closed": 620,
-   "tp": 620,
+   "closed": 621,
+   "tp": 621,
    "false_closures": 0,
    "truth_closed": 745,
-   "recall": 0.832,
+   "recall": 0.834,
    "loops_with_wrong_patient_message": 0,
-   "messages_released": 1415,
+   "messages_released": 1418,
    "wrong_patient_released": 0,
-   "review_items": 1342,
-   "reviewer_hours_per_1k_loops": 21.121
+   "review_items": 1247,
+   "review_items_dropped": 5,
+   "reviewer_hours_per_1k_loops": 19.77
   },
   {
    "cohort": "cal-s102",
@@ -88,8 +91,9 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1419,
    "wrong_patient_released": 0,
-   "review_items": 1118,
-   "reviewer_hours_per_1k_loops": 17.826
+   "review_items": 1079,
+   "review_items_dropped": 1,
+   "reviewer_hours_per_1k_loops": 17.269
   },
   {
    "cohort": "cal-s102",
@@ -104,8 +108,9 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1419,
    "wrong_patient_released": 0,
-   "review_items": 1091,
-   "reviewer_hours_per_1k_loops": 17.461
+   "review_items": 1056,
+   "review_items_dropped": 1,
+   "reviewer_hours_per_1k_loops": 16.951
   },
   {
    "cohort": "cal-s102",
@@ -120,8 +125,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1425,
    "wrong_patient_released": 0,
-   "review_items": 1048,
-   "reviewer_hours_per_1k_loops": 16.931
+   "review_items": 1029,
+   "reviewer_hours_per_1k_loops": 16.624
   },
   {
    "cohort": "cal-s102",
@@ -136,8 +141,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1425,
    "wrong_patient_released": 0,
-   "review_items": 1035,
-   "reviewer_hours_per_1k_loops": 16.785
+   "review_items": 1017,
+   "reviewer_hours_per_1k_loops": 16.485
   },
   {
    "cohort": "cal-s102",
@@ -152,8 +157,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1426,
    "wrong_patient_released": 0,
-   "review_items": 1009,
-   "reviewer_hours_per_1k_loops": 16.431
+   "review_items": 996,
+   "reviewer_hours_per_1k_loops": 16.201
   },
   {
    "cohort": "cal-s102",
@@ -168,8 +173,8 @@
    "loops_with_wrong_patient_message": 0,
    "messages_released": 1426,
    "wrong_patient_released": 0,
-   "review_items": 1009,
-   "reviewer_hours_per_1k_loops": 16.431
+   "review_items": 996,
+   "reviewer_hours_per_1k_loops": 16.201
   },
   {
    "cohort": "cal-s102",
