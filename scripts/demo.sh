@@ -206,7 +206,16 @@ snapshot() {  # write static API responses for frontend development (no backend 
   done
   echo "API samples → $D"
 }
+# A run must use a binary built from the current sources. The 2 Nov X10 rerun used a bin/wsi7 older than its fixes and
+# reproduced the old crashes; only a prebuilt WASL_BIN (container mode) is trusted as given.
+stale_bin() {
+  [ -z "${WASL_BIN:-}" ] || return 0
+  [ -x "$BIN/wsi7" ] || return 0
+  local newer; newer="$(find "$ROOT/pipeline" -maxdepth 1 \( -name '*.go' -o -name go.mod -o -name go.sum \) -newer "$BIN/wsi7" | head -1)"
+  [ -z "$newer" ] || { echo "stale binary: $BIN/wsi7 is older than ${newer#$ROOT/}; run: scripts/demo.sh build" >&2; exit 2; }
+}
 validate_nats_config
+case "${1:-all}" in cohort|run|audit|tamper|report|serve|snapshot|final) stale_bin;; esac
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;
