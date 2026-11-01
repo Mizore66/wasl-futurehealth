@@ -1,6 +1,6 @@
 """Stage 6: booking as SIMULATED decision support for a materialised Wasl run (not live scheduling).
 
-usage: python booking/suggest.py <run_dir> [--slots-per-fit 1.2] [--seed 2026] [--misallocated]
+usage: python booking/suggest.py <run_dir> [--slots-per-fit 1.2] [--seed 2026] [--misallocated] [--optimiser myopic|greedy|lookahead]
 
 Reads the run's final decisions (out_log.ndjson) + referral demographics (fhir_log.ndjson), takes every CRC loop that is
 still open at the end of the run and would need a colonoscopy slot (and every cervical loop that needs a colposcopy,
@@ -12,6 +12,9 @@ and per case the queue-lever suggestions (booking/booking/levers.py): `pathway` 
 SYNTHETIC App 9 fields) and `prep_risk` (Dik 2015 published score, cut-off >=2, suggested prep intervention; any regimen
 change requires a clinician order).
 The optimiser does NOT beat greedy in our tests; we make no optimisation claim (see booking/RESULTS.md).
+`--optimiser lookahead` (off by default) swaps in the multi-period rolling-horizon optimiser (booking/booking/lookahead.py,
+solved by `wsi7 mcf`); the stress-test flags (--arrivals bursty, --female-share, --colpo-female-share,
+--crc-urgent-share) are for booking/sim/lookahead_eval.py. With every new flag at its default, booking.json is unchanged.
 """
 from __future__ import annotations
 import json, os, sys, argparse, collections, hashlib
@@ -20,6 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
 from booking.calendar import Calendar
 from booking.engine import BookingEngine
+from booking.lookahead import LookaheadEngine
 from booking import levers
 
 REG = ["AD", "AA", "DH"]
@@ -77,6 +81,24 @@ def calendar(n_fit, slots_per_fit, rng, misallocated, f_share=0.25, start=0, day
 FEMALE_PROTECT = 4.0   # demand-sized female-list protection, released 7 days out (booking/RESULTS.md, female-list gap)
 
 
+BURST_STARTS, BURST_LEN, BURST_SHARE = (5, 20, 35, 50), 4, 0.6   # stress test [A]: 60% of requests in four 4-day surges
+
+
+def arrival_day(k, a):
+    """Request day over 60 days: uniform (default) or bursty (stress test only)."""
+    if getattr(a, "arrivals", "uniform") == "bursty" and stable_u(k, "burst") < BURST_SHARE:
+        return BURST_STARTS[int(stable_u(k, "bwhich") * len(BURST_STARTS))] + int(stable_u(k, "bday") * BURST_LEN)
+    return int(stable_u(k, "arr") * 60)
+
+
+def make_engine(a, cal, prep_lead):
+    """Default: the myopic per-day assignment engine. greedy = its ablation; lookahead = multi-period optimiser."""
+    kw = dict(eps=0.05, prep_lead=prep_lead, protect=a.female_protect or None)
+    if getattr(a, "optimiser", "myopic") == "lookahead":
+        return LookaheadEngine(cal, NoShowModel(), lookahead_days=a.lookahead_days, gamma=a.gamma, forecast=a.forecast, **kw)
+    return BookingEngine(cal, NoShowModel(), solver="greedy" if getattr(a, "optimiser", "myopic") == "greedy" else "assignment", **kw)
+
+
 def wd(xs):
     return round(sum(1 for c in xs if c["status"] == "suggested" and c["booking"]["within_deadline"]) / len(xs), 3) if xs else None
 
@@ -90,8 +112,8 @@ def cervical(last, sr, a, rng):
     first colposcopy inside the loop's DoH window (App 5). Same engine, SYNTHETIC colposcopy-clinic calendar."""
     need = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "cervical" and d["state"] in NEEDS_SLOT]
     # same slot density per day as the CRC calendar (slots_per_fit over its 95-day window), over 160 days so repeats fit
-    cal, _ = calendar(len(need), a.slots_per_fit * 160 / 95, rng, a.misallocated, f_share=COLPO_FEMALE_SHARE, days=160)
-    eng = BookingEngine(cal, NoShowModel(), eps=0.05, prep_lead=1, protect=a.female_protect or None)
+    cal, _ = calendar(len(need), a.slots_per_fit * 160 / 95, rng, a.misallocated, f_share=a.colpo_female_share, days=160)
+    eng = make_engine(a, cal, 1)
     meta, by_day = {}, collections.defaultdict(list)
     for k, d in need:
         demo = sr.get(k, {})
@@ -99,19 +121,24 @@ def cervical(last, sr, a, rng):
         prefs = Prefs(female_endoscopist="hard" if u < 0.25 else ("soft" if u < 0.6 else "none"),
                       arabic_only=demo.get("lang") == "ar" and stable_u(k, "ar") < 0.3, region=PROV_REGION.get(d["prov"], "AD"),
                       travel_ok=stable_u(k, "travel") < 0.3, prior_no_show=d["state"] == "no_show")
-        day = int(stable_u(k, "arr") * 60)
+        day = arrival_day(k, a)
         repeat = d["state"] == "inadequate"
         lo, hi = (day + REPEAT_WINDOW[0], day + REPEAT_WINDOW[1]) if repeat else (day, day + int(d.get("deadline") or 56))
         meta[k] = (d, prefs, day, repeat, lo, hi)
         by_day[day].append(Event("result_accepted", k, day, prefs, hi, lo))   # booked when the result arrives
+    if getattr(a, "forecast", "") == "oracle" and isinstance(eng, LookaheadEngine):
+        eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
-    for day in range(0, 200):
-        for ev in by_day.get(day, []):
-            eng.submit(ev)
-        for b in eng.step(day):
-            out[b.loop_id] = b
-        if day > max(by_day, default=0) and not eng.pending:
-            break
+    try:
+        for day in range(0, 200):
+            for ev in by_day.get(day, []):
+                eng.submit(ev)
+            for b in eng.step(day):
+                out[b.loop_id] = b
+            if day > max(by_day, default=0) and not eng.pending:
+                break
+    finally:
+        getattr(eng, "close", lambda: None)()
     cases = {}
     for k, (d, prefs, day, repeat, lo, hi) in meta.items():
         base = {"procedure": "colposcopy", "repeat_after_unsatisfactory": repeat, "requested_day": day, "window_days": [lo, hi],
@@ -129,26 +156,37 @@ def cervical(last, sr, a, rng):
         "cases": len(cases), "repeat_after_unsatisfactory": sum(1 for c in cases.values() if c["repeat_after_unsatisfactory"]),
         "suggested": len(sugg), "no_slot": len(cases) - len(sugg), "within_window": within,
         "within_window_share": round(within / len(cases), 3) if cases else None,
-        "repeat_window_days": list(REPEAT_WINDOW), "colposcopy_female_clinic_share_assumed": COLPO_FEMALE_SHARE,
+        "repeat_window_days": list(REPEAT_WINDOW), "colposcopy_female_clinic_share_assumed": a.colpo_female_share,
         "note": "Synthetic colposcopy-clinic calendar at the same slots-per-case assumption; decision support only."}}
 
 
-def main():
+def main(argv=None, preloaded=None, write=True, quiet=False):
     ap = argparse.ArgumentParser()
     ap.add_argument("run")
     ap.add_argument("--slots-per-fit", type=float, default=1.2, help="assumed endoscopy capacity (slots per open FIT+ case)")
     ap.add_argument("--seed", type=int, default=2026)
     ap.add_argument("--misallocated", action="store_true", help="put capacity in the wrong regions (pooling scenario)")
     ap.add_argument("--female-protect", type=float, default=FEMALE_PROTECT, help="female-list protection factor (0 = off)")
-    a = ap.parse_args()
-    last, sr = load(a.run)
+    # multi-period lookahead (booking/booking/lookahead.py) and stress tests; all off by default
+    ap.add_argument("--optimiser", choices=["myopic", "greedy", "lookahead"], default="myopic",
+                    help="myopic = per-day exact assignment (default); greedy = its ablation; lookahead = rolling horizon")
+    ap.add_argument("--lookahead-days", type=int, default=28, help="lookahead: forecast horizon in days")
+    ap.add_argument("--gamma", type=float, default=0.8, help="lookahead: cost weight of forecast (phantom) demand")
+    ap.add_argument("--forecast", choices=["trailing", "oracle"], default="trailing",
+                    help="lookahead: trailing arrival rate (deployable) or true future counts (upper bound only)")
+    ap.add_argument("--arrivals", choices=["uniform", "bursty"], default="uniform", help="stress test: request-day pattern")
+    ap.add_argument("--female-share", type=float, default=0.25, help="share of endoscopy lists with a female endoscopist [A]")
+    ap.add_argument("--colpo-female-share", type=float, default=COLPO_FEMALE_SHARE, help="share of colposcopy clinics run by a female clinician [A]")
+    ap.add_argument("--crc-urgent-share", type=float, default=0.0,
+                    help="stress test: share of CRC cases given a hypothetical 14-day target instead of 31 days [A]")
+    ap.add_argument("--out", default=None, help="output path (default <run>/booking.json)")
+    a = ap.parse_args(argv)
+    last, sr = preloaded if preloaded is not None else load(a.run)
     rng = np.random.default_rng(a.seed)
     open_cases = [(k, d) for k, d in sorted(last.items()) if d.get("prog") == "crc" and d["state"] in NEEDS_SLOT]
     as_of = 0  # suggestions are made from the start of an empty synthetic calendar window
-    cal, share = calendar(len(open_cases), a.slots_per_fit, rng, a.misallocated)
-    for _ in range(90):
-        pass
-    eng = BookingEngine(cal, NoShowModel(), eps=0.05, prep_lead=5, protect=a.female_protect or None)  # female-list protection
+    cal, share = calendar(len(open_cases), a.slots_per_fit, rng, a.misallocated, f_share=a.female_share)
+    eng = make_engine(a, cal, 5)  # female-list protection on by default
     meta = {}
     for k, d in open_cases:
         demo = sr.get(k, {})
@@ -158,22 +196,28 @@ def main():
         prefs = Prefs(female_endoscopist=fem_pref, arabic_only=demo.get("lang") == "ar" and stable_u(k, "ar") < 0.3,
                       region=region, travel_ok=stable_u(k, "travel") < (0.6 if a.misallocated else 0.3),
                       prior_no_show=d["state"] == "no_show")
-        day = int(as_of + stable_u(k, "arr") * 60)  # spread requests over 60 days
+        day = as_of + arrival_day(k, a)  # spread requests over 60 days
         meta[k] = (d, prefs, day)
+    urgent = {k for k in meta if a.crc_urgent_share > 0 and stable_u(k, "urgent") < a.crc_urgent_share}
     by_day = collections.defaultdict(list)
     for k, (_, prefs, day) in meta.items():
-        by_day[day].append(Event("result_accepted", k, day, prefs, day + 31))
+        by_day[day].append(Event("result_accepted", k, day, prefs, day + (14 if k in urgent else 31)))
+    if a.forecast == "oracle" and isinstance(eng, LookaheadEngine):
+        eng.set_oracle([ev for evs in by_day.values() for ev in evs])
     out = {}
-    for day in sorted(by_day):
-        for ev in by_day[day]:
-            eng.submit(ev)
-        for b in eng.step(day):
-            out[b.loop_id] = b
-    for day in range(max(by_day) + 1 if by_day else 1, (max(by_day) if by_day else 0) + 90):  # drain the queue
-        if not eng.pending:
-            break
-        for b in eng.step(day):
-            out[b.loop_id] = b
+    try:
+        for day in sorted(by_day):
+            for ev in by_day[day]:
+                eng.submit(ev)
+            for b in eng.step(day):
+                out[b.loop_id] = b
+        for day in range(max(by_day) + 1 if by_day else 1, (max(by_day) if by_day else 0) + 90):  # drain the queue
+            if not eng.pending:
+                break
+            for b in eng.step(day):
+                out[b.loop_id] = b
+    finally:
+        getattr(eng, "close", lambda: None)()
     cases, unbooked = {}, 0
     reg_demand, reg_booked_out = collections.Counter(), collections.Counter()
     for k, (d, prefs, day) in meta.items():
@@ -184,6 +228,8 @@ def main():
             unbooked += 1
             cases[k] = {"status": "no_slot_within_horizon", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region,
                         "constraints": prefs.__dict__, "reason": "capacity", "state_at_run_end": d["state"], **lv}
+            if a.crc_urgent_share > 0:
+                cases[k]["target_days"] = 14 if k in urgent else 31
             continue
         ru = b.unit.split("-")[0]
         if ru != prefs.region:
@@ -191,6 +237,8 @@ def main():
         cases[k] = {"status": "suggested", "procedure": "colonoscopy", "requested_day": day, "region": prefs.region, "constraints": prefs.__dict__,
                     "state_at_run_end": d["state"], "booking": b.to_json(), "cross_region": ru != prefs.region,
                     "wait_days": b.day - day, **lv}
+        if a.crc_urgent_share > 0:
+            cases[k]["target_days"] = 14 if k in urgent else 31
     cerv = cervical(last, sr, a, rng)
     sugg = [c for c in cases.values() if c["status"] == "suggested"]
     within = sum(1 for c in sugg if c["booking"]["within_deadline"])
@@ -231,7 +279,18 @@ def main():
         "cases": {**cases, **cerv["cases"]},
         "cervical": cerv["summary"],
     }
-    json.dump(res, open(os.path.join(a.run, "booking.json"), "w"), indent=1)
+    given = {"optimiser": (a.optimiser, "myopic"), "arrivals": (a.arrivals, "uniform"), "female_list_share": (a.female_share, 0.25),
+             "colposcopy_female_share": (a.colpo_female_share, COLPO_FEMALE_SHARE), "crc_urgent_share": (a.crc_urgent_share, 0.0)}
+    opt = {k: v for k, (v, dflt) in given.items() if v != dflt}
+    if a.optimiser == "lookahead":
+        opt.update(lookahead_days=a.lookahead_days, gamma=a.gamma, forecast=a.forecast,
+                   method="rolling-horizon min-cost flow over real + forecast demand (booking/booking/lookahead.py, wsi7 mcf)")
+    if opt:   # only when a non-default optimiser or stress test is on, so the default booking.json is unchanged
+        res["inputs"]["optimiser"] = opt
+    if write:
+        json.dump(res, open(a.out or os.path.join(a.run, "booking.json"), "w"), indent=1)
+    if quiet:
+        return res
     s = res["summary"]; c = res["capacity"]
     print(f"booking (simulated): {n} open CRC cases; capacity {c['condition']} ({c['slots']} slots, {c['slots_per_case']}/case); "
           f"suggested {s['suggested']}, within 31 d {s['within_31d']} ({s['within_31d_share']}), cross-region {s['cross_region']}, "
@@ -240,6 +299,7 @@ def main():
     cs = res["cervical"]
     print(f"booking (simulated): {cs['cases']} cervical cases needing colposcopy ({cs['repeat_after_unsatisfactory']} repeats after "
           f"an unsatisfactory exam); suggested {cs['suggested']}, inside the DoH window {cs['within_window']} ({cs['within_window_share']})")
+    return res
 
 
 if __name__ == "__main__":
