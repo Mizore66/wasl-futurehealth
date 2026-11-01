@@ -84,6 +84,7 @@ Lists are always `[]`, never `null`.
 
 - **Later surveillance CTs** (runs with `WASL_LUNGSURV2=1` and `WASL_LUNGSURV=1`, flag `-lungsurv2`; default off): a stable first surveillance CT opens `<loop>#surv2` (CT at about 1 year, window 300-420 days from the PET/CT) and a stable `#surv2` opens `<loop>#surv3` (about 2 years, 670-790 days); BTS 2015 recommends CT at 3 months and 1 year, and 2 years in total when growth is measured by 2D diameters (the windows are Wasl policy). A CT more than 30 days before a later round's window cannot decide that round; a CT inside the 30-day tolerance can decide it but has `within_window: false` because both window bounds are required (the tolerance is Wasl policy). A resolved nodule or growth ends the chain. Each later child carries `lung.surveillance` with `"round": 2|3` and `from_report` = the previous round's CT; its first chain block (`surveillance_opened`) names the previous child as `parent` with its `parent_head`. The surveillance object of each round gains `next` (the next round's object) once it opens, so the parent case shows the whole chain: `lung.surveillance.next.next`. Same states, escalation and outreach kinds as the first CT.
 - **Stable-CT surveillance child** (runs with `WASL_LUNGSURVSTABLE=1`, flag `-lungsurvstable`; default off): the existing child `<loop>#surv` opened by a stable follow-up CT whose Fleischner cell recommends a further CT now also carries `lung.surveillance` with `"reason": "fleischner_stable"` (window from the Fleischner cell, `from_day` = the day it counts from; the parent case does not carry it). An untrusted link or reader disagreement on a later CT raises a review item on the parent loop and the child holds (`hold_decision`, `pending` lists the items); outreach `lung_surveillance_due` / `lung_surveillance_recall`; escalation `overdue_lung_nodule_window` as before. Without the flag the child is unchanged (no `lung.surveillance`).
+- **Rejected work-up referral message** (flag `-rejmsg`, `WASL_REJMSG=1`, default off): when the PET/CT or tissue-sampling unit finally rejects the referral (hand-off packet), the decision's `outreach` adds kind `lung_referral_rejected` (template `lnfu-rejected-v2/en|ar`), sent to the imaging centre's own registration under the same consent hold. The packet's `patient_informed` is `true` once it is released.
 
 ### Programme `diabetic_retinopathy` (third loop type: retinal screening to eye-clinic exam, rule `doh2024dr`)
 
@@ -124,7 +125,7 @@ Lists are always `[]`, never `null`.
   - `awaiting_eye_clinic_exam`, `retina_not_examined`, `clinic_note_readers_disagree`, `clinic_note_identity_link_unconfirmed`;
   - `did_not_attend_rebook`, `no_fundal_view_clinician_decides`.
 - **Escalations** (`decisions[].escalations`): `overdue_dr_referral`, `repeat_photo_overdue`, `urgent_dr_referral_open`, `rebook_after_dna`, `clinician_decision_no_fundal_view`.
-- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`. Sent by phone, then letter, in the screening clinic's name, under the same consent hold as the other programmes.
+- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`; with `-drrecallmsg` also `dr_next_recall` (below); with `-rejmsg` also `dr_referral_rejected` (template `drsfu-rejected-v2/en|ar`) when the eye clinic finally rejects the referral, and the hand-off packet's `patient_informed` is `true` once it is released. Sent by phone, then letter, in the screening clinic's name, under the same consent hold as the other programmes.
 
 - **Next due** (runs with `WASL_DRNEXT=1`, flag `-drnext`): a resolved loop's `dr` object adds `next_due` (omitted otherwise):
 
@@ -133,6 +134,8 @@ Lists are always `[]`, never `null`.
 ```
 
   `kind` is `rescreen|clinic_review`; `basis` is `doh2024dr_annual_rescreen`, `discharged_to_annual_screening`, `note_review_interval`, `assumed_followup_91d` or `assumed_treated_28d`. `seen`, `seen_day` and `seen_report` mark the first later read screen or attended clinic visit; `recall_overdue: true` (with escalation `dr_recall_overdue`) when none came by `due_day`. The loop stays resolved.
+  - With `-drrecallmsg` (`WASL_DRRECALLMSG=1`, default off), a loop with `recall_overdue: true` also gets outreach kind `dr_next_recall` (template `drsfu-recall-v2/en|ar`), sent to the screening registration only with granted consent; the loop stays resolved.
+  - With `-drseenlink` (`WASL_DRSEENLINK=1`, default off), a later eye-clinic note on an untrusted identity link (not read as did-not-attend), when no trusted later visit exists, raises an ordinary link review item (`review_items`, one question per registration pair); it counts as `seen` only after a human "same". The loop's `pending` stays empty (it is resolved); the question is in the review queue.
 
 ### Programme `breast` (fourth loop type: screening mammogram recall to assessment outcome, rule `doh2025breast`)
 
