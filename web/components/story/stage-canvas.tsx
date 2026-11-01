@@ -72,5 +72,6 @@ export default function StageCanvas({
     stageRef.current?.setPerson(person);
   }, [person]);
 
-  return <canvas ref={canvasRef} aria-hidden className="block size-full" />;
+  // A fresh canvas per layout: antialiasing is fixed when a canvas's context is made, and phones turn it off.
+  return <canvas key={mobile ? "phone" : "desktop"} ref={canvasRef} aria-hidden className="block size-full" />;
 }

@@ -24,8 +24,8 @@ export const PLACES = {
   hospitalDoor: [72, 0, 1.5],
   /** The record slab on the hospital wall, beside the door. */
   slab: [72, 1.45, 1.58],
-  /** The middle of the open sand. */
-  gap: [48.5, 0, 5],
+  /** The west end of the open sand, above the road. The caption beside it runs east across the empty ground. */
+  gap: [38.6, 0, -0.5],
 } as const satisfies Record<string, V3>;
 
 /** The road, west to east. Fatima, the thread and the receipt all travel it. */
@@ -475,7 +475,7 @@ export function buildHospital(kit: Kit) {
   for (const [x, z] of [
     [84.2, 6.8],
     [80.2, 7.6],
-    [62.2, 7.0],
+    [63.4, 8.1],
   ]) {
     plant(palm(2.6), x, z);
     kit.shadowAt(x, z, 2);

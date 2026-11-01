@@ -19,9 +19,9 @@ export interface Figure {
 /** Hair settles from this high above the head while the colour reaches it. */
 const SETTLE = 0.34;
 
-/** Dark print on light skin. On the deepest tones a dark print vanishes at road size, so it goes light. */
+/** Dark print on light skin. On the deepest tones a dark print vanishes at road size, so it goes a soft warm light. */
 function inkFor(skin: string): string {
-  return new THREE.Color(skin).getHSL({ h: 0, s: 0, l: 0 }).l < 0.3 ? "#f3e6d8" : "#1b2224";
+  return new THREE.Color(skin).getHSL({ h: 0, s: 0, l: 0 }).l < 0.3 ? "#dcbfa3" : "#1b2224";
 }
 
 export function createFigure(kit: Kit, look: FigureLook, geo: FigureGeo = kit.figure): Figure {

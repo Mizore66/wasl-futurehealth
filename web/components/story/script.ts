@@ -25,9 +25,6 @@ export function beatAt(p: number): BeatId {
   return (BEATS.find((b) => p < b.to) ?? BEATS[BEATS.length - 1]).id;
 }
 
-/** The track is this many viewport heights tall. */
-export const TRACK_VH = { desktop: 1300, mobile: 1050 } as const;
-
 /** Things in the world a line of copy can point at. The stage projects each once per resize. */
 export type AnchorId = "fatima-door" | "clinic-door" | "walker" | "slab" | "report" | "nurse" | "gap" | "tip" | "receipt";
 
@@ -98,6 +95,10 @@ export const CUES: readonly TextCue[] = [
   { id: "close", from: 0.958, to: 1, place: { zone: "tc" }, band: "bottom", exit: false },
 ];
 
+/** Of a cue's window, the share its words take to arrive and the share it takes to leave. */
+const REVEAL_SHARE = 0.3;
+const FADE_SHARE = 0.15;
+
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const span = (s: number, a: number, b: number) => clamp01((s - a) / (b - a));
 export const ease = (t: number) => t * t * (3 - 2 * t);
@@ -110,9 +111,61 @@ export const smoother = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 export function cueAt(c: TextCue, p: number): { reveal: number; fade: number } {
   if (p < c.from || (p > c.to && c.exit !== false)) return { reveal: 0, fade: 0 };
   const len = c.to - c.from;
-  const reveal = c.enter === false ? 1 : span(p, c.from, c.from + len * 0.3);
-  const fade = c.exit === false ? 1 : 1 - span(p, c.to - len * 0.15, c.to);
+  const reveal = c.enter === false ? 1 : span(p, c.from, c.from + len * REVEAL_SHARE);
+  const fade = c.exit === false ? 1 : 1 - span(p, c.to - len * FADE_SHARE, c.to);
   return { reveal, fade };
+}
+
+/**
+ * How much page scroll each stretch of the story owns, in pixels at a 900px viewport, where a wheel
+ * notch is 100. A hold is at least READ_PX.hold so a line stays readable for 4 notches even on a
+ * 781px laptop viewport. Stretches with no text keep PACE_PX: the camera moves there, and any quicker
+ * it would swing across a whole shot in one notch.
+ */
+const PACE_PX = 10_800;
+const READ_PX = { reveal: 130, hold: 480, fade: 70 } as const;
+
+/** Story progress against scroll position, one knot at each edge of each cue's arrival, hold and exit. */
+const SCROLL_KNOTS: readonly { p: number; px: number }[] = (() => {
+  const knots = [{ p: 0, px: 0 }];
+  const reach = (p: number, floor = 0) => {
+    const last = knots[knots.length - 1];
+    if (p > last.p) knots.push({ p, px: last.px + Math.max(floor, (p - last.p) * PACE_PX) });
+  };
+  for (const c of CUES) {
+    const len = c.to - c.from;
+    reach(c.from);
+    reach(c.enter === false ? c.from : c.from + len * REVEAL_SHARE, READ_PX.reveal);
+    reach(c.exit === false ? c.to : c.to - len * FADE_SHARE, READ_PX.hold);
+    reach(c.to, READ_PX.fade);
+  }
+  reach(1);
+  return knots;
+})();
+
+const SCROLL_PX = SCROLL_KNOTS[SCROLL_KNOTS.length - 1].px;
+
+/** The scrolled part of the track, in viewport heights, plus the one viewport the sticky stage fills. A phone page runs shorter. */
+export const TRACK_VH = {
+  desktop: Math.ceil(SCROLL_PX / 9) + 100,
+  mobile: Math.ceil((SCROLL_PX / 9) * 0.75) + 100,
+} as const;
+
+function acrossKnots(value: number, from: "p" | "px", to: "p" | "px"): number {
+  let i = 1;
+  while (i < SCROLL_KNOTS.length - 1 && value > SCROLL_KNOTS[i][from]) i++;
+  const [a, b] = [SCROLL_KNOTS[i - 1], SCROLL_KNOTS[i]];
+  return a[to] + ((value - a[from]) / (b[from] - a[from])) * (b[to] - a[to]);
+}
+
+/** Story progress at page progress `q`. The one place scroll becomes `p`; everything else reads `p`. */
+export function storyAt(q: number): number {
+  return q <= 0 ? 0 : q >= 1 ? 1 : acrossKnots(q * SCROLL_PX, "px", "p");
+}
+
+/** Page progress at story progress `p`, the inverse of storyAt. */
+export function pageAt(p: number): number {
+  return p <= 0 ? 0 : p >= 1 ? 1 : acrossKnots(p, "p", "px") / SCROLL_PX;
 }
 
 /** The cue on screen at `p`, if any. */
