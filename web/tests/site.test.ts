@@ -5,7 +5,7 @@ import { QUOTED, exactlyOnce, missedByIdOnly, missedOfFive, published, upperBoun
 import { LTT_SOURCE, LTT_TIERS, OPERATING_TAU } from "@/components/site/ltt";
 import { CAMERA_KEYS } from "@/components/story/rig";
 import { JOIN_SAYS } from "@/components/story/copy";
-import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt } from "@/components/story/script";
+import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt, pageAt, storyAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
 import { result } from "@/lib/results";
 
@@ -86,7 +86,32 @@ describe("landing story", () => {
     }
     for (const c of CUES) {
       expect(cueOn(c.from + (c.to - c.from) * 0.55)?.id).toBe(c.id);
-      expect((c.to - c.from) * TRACK_VH.desktop, `${c.id} owns enough scroll to read`).toBeGreaterThanOrEqual(30);
+    }
+  });
+
+  it("maps page scroll to story progress monotonically, with exact ends and an exact inverse", () => {
+    expect(storyAt(0)).toBe(0);
+    expect(storyAt(1)).toBe(1);
+    expect(pageAt(0)).toBe(0);
+    expect(pageAt(1)).toBe(1);
+    let last = 0;
+    for (let i = 1; i <= 10000; i++) {
+      const q = i / 10000;
+      const p = storyAt(q);
+      expect(p, `q = ${q}`).toBeGreaterThan(last);
+      expect(pageAt(p)).toBeCloseTo(q, 9);
+      last = p;
+    }
+  });
+
+  it("gives every cue's readable part at least 4 wheel notches of page on a desktop viewport", () => {
+    const pxPerPage = ((TRACK_VH.desktop - 100) / 100) * 900;
+    for (const c of CUES) {
+      const len = c.to - c.from;
+      const [from, to] = [c.enter === false ? c.from : c.from + len * 0.3, c.exit === false ? c.to : c.to - len * 0.15];
+      expect(cueAt(c, from + 1e-9), c.id).toEqual({ reveal: 1, fade: 1 });
+      expect(cueAt(c, to - 1e-9), c.id).toEqual({ reveal: 1, fade: 1 });
+      expect((pageAt(to) - pageAt(from)) * pxPerPage, c.id).toBeGreaterThanOrEqual(400);
     }
   });
 

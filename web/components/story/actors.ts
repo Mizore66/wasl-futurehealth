@@ -185,6 +185,9 @@ export function fatima(c: Cast): Actor & { at: THREE.Vector3 } {
   };
 }
 
+/** A gate ring stands `foot` above the ground and swells upward from there, so it never cuts the floor. */
+const RING = { radius: 0.62, tube: 0.06, foot: 0.05 } as const;
+
 /** The teal thread, the two rings at the hospital door, and what the join does for each chip. */
 export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.Vector3; ring1: number } {
   const { kit } = c;
@@ -197,14 +200,13 @@ export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.V
   const end = c.thread.getPointAt(1);
   const u1 = uNear(c.thread, end.x - 1.3, end.z + 2.35);
   const u2 = uNear(c.thread, end.x - 0.45, end.z + 1.25);
-  const ringGeo = new THREE.TorusGeometry(0.62, 0.06, 12, c.mobile ? 40 : 64);
+  const ringGeo = new THREE.TorusGeometry(RING.radius, RING.tube, 12, c.mobile ? 40 : 64);
   const ringMats = [0, 1].map(() => kit.tint(COLOR.stone));
   const gates = [u1, u2].map((u, i) => {
     const m = new THREE.Mesh(ringGeo, ringMats[i]);
     c.thread.getPointAt(u, m.position);
     c.thread.getTangentAt(u, tan);
     m.rotation.y = Math.atan2(tan.x, tan.z);
-    m.position.y = 0.62;
     group.add(m);
     return m;
   });
@@ -271,7 +273,11 @@ export function thread(c: Cast, fatimaAt: THREE.Vector3): Actor & { tip: THREE.V
       const frayed = who === "review" ? ease(span(j, 0.5, 0.64)) : 0;
       fray.visible = frayed > 0;
       fray.scale.setScalar(Math.max(frayed, 0.001));
-      for (let i = 0; i < gates.length; i++) gates[i].scale.setScalar(1 + 0.2 * effect.fire(j, who, i));
+      for (let i = 0; i < gates.length; i++) {
+        const swell = 1 + 0.2 * effect.fire(j, who, i);
+        gates[i].scale.setScalar(swell);
+        gates[i].position.y = RING.foot + (RING.radius + RING.tube) * swell;
+      }
       effect.update(p, j, who, fatimaAt);
 
       const come = who === "review" ? ease(span(j, 0.56, 0.8)) : 0;

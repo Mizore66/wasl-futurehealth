@@ -1,13 +1,13 @@
 "use client";
 
-import { useScroll } from "motion/react";
+import { useScroll, useTransform } from "motion/react";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { NameJoiner } from "@/components/site/name-joiner";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { cn } from "@/lib/utils";
 import { CueBody, type JoinStep } from "./copy";
-import { BEATS, CUES, JOIN, TRACK_VH, WALK, beatAt, cueAt, dayAt, span, type BeatId, type CastKey, type StoryFigures, type TextCue } from "./script";
+import { BEATS, CUES, JOIN, TRACK_VH, WALK, beatAt, cueAt, dayAt, span, storyAt, type BeatId, type CastKey, type StoryFigures, type TextCue } from "./script";
 import type { Anchors } from "./stage-canvas";
 import { Still } from "./stills";
 
@@ -18,31 +18,37 @@ const StageCanvas = dynamic(() => import("./stage-canvas"), { ssr: false });
  * first second); `3d` is the scroll story. `?story=3d|stills` forces one, for tests and probes.
  */
 type Mode = "stills" | "3d";
-type Device = { mode: Mode; mobile: boolean };
-let detected: Device | null = null;
+let detected: Mode | null = null;
 
 /** What this device gets, decided once per page load on the client; the server always renders stills. */
-function detect(): Device {
+function detectMode(): Mode {
   if (detected) return detected;
   const forced = new URLSearchParams(location.search).get("story");
-  const mobile = matchMedia("(max-width: 767px)").matches;
-  if (forced === "3d" || forced === "stills") return (detected = { mode: forced, mobile });
+  if (forced === "3d" || forced === "stills") return (detected = forced);
   const probe = document.createElement("canvas").getContext("webgl2");
   probe?.getExtension("WEBGL_lose_context")?.loseContext();
   const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const room = !reduce && probe && !(memory !== undefined && memory <= 2);
-  return (detected = { mode: room ? "3d" : "stills", mobile });
+  return (detected = room ? "3d" : "stills");
 }
-const SERVER: Device = { mode: "stills", mobile: false };
 const never = () => () => {};
+
+/** The phone layout follows the viewport for as long as the page is open. */
+const PHONE = "(max-width: 767px)";
+function watchPhone(onChange: () => void) {
+  const query = matchMedia(PHONE);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
 
 const sectionId = (id: BeatId) => `beat-${id}`;
 
 export function Story({ figures }: { figures: StoryFigures }) {
-  const device = useSyncExternalStore(never, detect, () => SERVER);
+  const detectedMode = useSyncExternalStore<Mode>(never, detectMode, () => "stills");
+  const mobile = useSyncExternalStore(watchPhone, () => matchMedia(PHONE).matches, () => false);
   const [slowAt, setSlowAt] = useState<BeatId | null>(null);
-  const mode: Mode = slowAt ? "stills" : device.mode;
+  const mode: Mode = slowAt ? "stills" : detectedMode;
 
   useEffect(() => {
     if (slowAt) document.getElementById(sectionId(slowAt))?.scrollIntoView();
@@ -52,7 +58,7 @@ export function Story({ figures }: { figures: StoryFigures }) {
     if (new URLSearchParams(location.search).get("story") !== "3d") setSlowAt(beat);
   }, []);
 
-  if (mode === "3d") return <Journey figures={figures} mobile={device.mobile} onSlow={onSlow} />;
+  if (mode === "3d") return <Journey figures={figures} mobile={mobile} onSlow={onSlow} />;
   return <Stills figures={figures} />;
 }
 
@@ -97,6 +103,13 @@ const BAND = {
   bottom: "inset-x-4 bottom-[8dvh]",
 };
 
+/** What keeps text readable over any part of the scene: a soft pool of paper behind it, not a card. */
+const PAPER_GLOW =
+  "[text-shadow:0_0_18px_var(--paper),0_0_4px_var(--paper)] before:absolute before:-inset-x-10 before:-inset-y-6 before:-z-10 before:rounded-[3rem] before:bg-(--paper)/70 before:blur-2xl before:content-['']";
+/** The same pool for chrome that has dark glass and towers behind it, where a cue would have open ground. */
+const CHROME_GLOW =
+  "[text-shadow:0_0_12px_var(--paper),0_0_3px_var(--paper)] before:absolute before:-inset-x-16 before:-inset-y-14 before:-z-10 before:rounded-[3rem] before:bg-(--paper)/90 before:blur-2xl before:content-['']";
+
 /** Cues the visitor can act on; hidden ones leave the tab order. */
 const ACTIONS = new Set(["hero", "join", "close"]);
 
@@ -112,10 +125,20 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
   const overlay = useRef<HTMLDivElement>(null);
   const day = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
+  const story = useTransform(scrollYProgress, storyAt);
   const [person, setPerson] = useState<CastKey>("fatima");
   const [step, setStep] = useState<JoinStep>("name");
   const [anchors, setAnchors] = useState<Anchors>({});
-  const slow = useCallback(() => onSlow(beatAt(scrollYProgress.get())), [onSlow, scrollYProgress]);
+  const slow = useCallback(() => onSlow(beatAt(story.get())), [onSlow, story]);
+
+  // The track's height changes with the layout, so the scroll offset has to follow to stay on the same line.
+  const layout = useRef(mobile);
+  useLayoutEffect(() => {
+    if (layout.current === mobile) return;
+    layout.current = mobile;
+    const el = track.current!;
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY + scrollYProgress.get() * (el.offsetHeight - window.innerHeight), behavior: "instant" });
+  }, [mobile, scrollYProgress]);
 
   useEffect(() => {
     const root = overlay.current!;
@@ -157,14 +180,14 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
       const s: JoinStep = span(p, JOIN.from, JOIN.to) < 0.45 ? "name" : "outcome";
       if (s !== lastStep) setStep((lastStep = s));
     }
-    apply(scrollYProgress.get());
-    return scrollYProgress.on("change", apply);
-  }, [scrollYProgress, figures.waitDays]);
+    apply(story.get());
+    return story.on("change", apply);
+  }, [story, figures.waitDays]);
 
   return (
     <div ref={track} data-story="3d" className="relative" style={{ height: `${mobile ? TRACK_VH.mobile : TRACK_VH.desktop}dvh` }}>
       <div className="sticky top-0 h-dvh overflow-hidden" data-dots={figures.closuresDone}>
-        <StageCanvas progress={scrollYProgress} person={person} figures={figures} mobile={mobile} onSlow={slow} onAnchors={setAnchors} />
+        <StageCanvas progress={story} person={person} figures={figures} mobile={mobile} onSlow={slow} onAnchors={setAnchors} />
         <div ref={overlay} className="story-copy pointer-events-none absolute inset-0">
           {CUES.map((c) => {
             const a = "anchor" in c.place && !mobile ? anchors[c.place.anchor] : undefined;
@@ -173,7 +196,7 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
               <div
                 key={c.id}
                 data-cue={c.id}
-                className={cn("absolute [transform:translateY(var(--rise,0px))] [text-shadow:0_0_18px_var(--paper),0_0_4px_var(--paper)] before:absolute before:-inset-x-10 before:-inset-y-6 before:-z-10 before:rounded-[3rem] before:bg-(--paper)/70 before:blur-2xl before:content-['']", cueClass(c, mobile), "anchor" in c.place && !mobile && !a && "invisible")}
+                className={cn("absolute [transform:translateY(var(--rise,0px))]", PAPER_GLOW, cueClass(c, mobile), "anchor" in c.place && !mobile && !a && "invisible")}
                 style={
                   a
                     ? {
@@ -194,11 +217,11 @@ function Journey({ figures, mobile, onSlow }: { figures: StoryFigures; mobile: b
         <a
           href="#notes"
           className={cn(
-            "absolute bottom-3 z-10 text-[12px] leading-none text-(--muted) no-underline [text-shadow:0_0_6px_var(--paper),0_0_2px_var(--paper)] hover:text-(--ink)",
+            "absolute bottom-3 z-10 text-[12px] leading-none text-(--ink) no-underline underline-offset-2 hover:underline [text-shadow:0_0_6px_var(--paper),0_0_2px_var(--paper)] before:absolute before:-inset-x-5 before:-inset-y-3 before:-z-10 before:rounded-full before:bg-(--paper)/90 before:blur-md before:content-['']",
             mobile ? "left-1/2 -translate-x-1/2" : "right-[clamp(1rem,2vw,2rem)]",
           )}
         >
-          <HonestyLabel kind="simulated" className="h-auto bg-transparent px-0 text-[12px] text-(--muted)">
+          <HonestyLabel kind="simulated" className="h-auto bg-transparent px-0 text-[12px] text-inherit">
             Synthetic people · simulated results
           </HonestyLabel>
         </a>
@@ -218,10 +241,10 @@ function DayCounter({ ref, figures, mobile }: { ref: React.Ref<HTMLDivElement>; 
       data-counter
       data-max={figures.waitDays}
       data-standard={figures.standardDays}
-      className={cn("absolute z-10 w-[min(15rem,42vw)] opacity-0", mobile ? "right-4 top-[3dvh] w-[11rem]" : "right-[clamp(1rem,4vw,4.5rem)] top-[clamp(1.5rem,5vh,3rem)]")}
+      className={cn("absolute z-10 w-[min(15rem,42vw)] text-(--ink) opacity-0", CHROME_GLOW, mobile ? "right-4 top-[3dvh] w-[11rem]" : "right-[clamp(1rem,4vw,4.5rem)] top-[clamp(1.5rem,5vh,3rem)]")}
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[14px] font-semibold uppercase tracking-[0.08em] text-(--muted)">Day</span>
+        <span className="text-[14px] font-semibold uppercase tracking-[0.08em]">Day</span>
         <span data-day-value className="text-[clamp(1.75rem,1rem_+_1.6vw,2.75rem)] font-bold leading-none tabular-nums tracking-[-0.03em]">
           0
         </span>
@@ -230,13 +253,13 @@ function DayCounter({ ref, figures, mobile }: { ref: React.Ref<HTMLDivElement>; 
         <div data-day-bar className="absolute inset-0 origin-left scale-x-0 bg-(--teal)" />
         <div className="absolute -top-[5px] h-[13px] w-[2px] bg-(--ink)" style={{ left: `${(figures.standardDays / figures.waitDays) * 100}%` }} />
       </div>
-      <div className="relative mt-1.5 h-[18px] text-[12px] leading-none text-(--muted)">
+      <div className="relative mt-1.5 h-[18px] text-[12px] leading-none">
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${(figures.standardDays / figures.waitDays) * 100}%` }}>
           {figures.standardDays} · standard
         </span>
         <span className="absolute right-0">{figures.waitDays}</span>
       </div>
-      <div className="mt-1 text-[12px] leading-[1.3] text-(--muted)">
+      <div className="mt-1 text-[12px] leading-[1.3]">
         Typical wait in Abu Dhabi, <span className="italic">published</span>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
-import { BEATS, CUES } from "../components/story/script";
+import { BEATS, CUES, TRACK_VH, WALK, pageAt } from "../components/story/script";
 import { ROUTES as APP_ROUTES } from "./routes";
 
 const ROUTES = [
@@ -146,11 +146,11 @@ const standardDays = results.entries["published.crc_followup_standard_days"].val
 
 /** Scrolls the 3D story to scroll progress `p` and waits for the damped camera and the copy to settle. */
 async function scrollStory(page: Page, p: number) {
-  await page.evaluate((p) => {
+  await page.evaluate((q) => {
     const el = document.querySelector<HTMLElement>('[data-story="3d"]')!;
     const top = el.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo(0, top + p * (el.offsetHeight - window.innerHeight));
-  }, p);
+    window.scrollTo(0, top + q * (el.offsetHeight - window.innerHeight));
+  }, pageAt(p));
   await page.waitForTimeout(700);
 }
 
@@ -185,34 +185,42 @@ for (const vp of WIDTHS) {
   });
 }
 
-/** Every line box of text inside the cue on screen, with the colour it is drawn in. */
-async function textRuns(page: Page) {
-  return page.evaluate(() => {
-    const cue = document.querySelector<HTMLElement>("[data-cue][data-on]")!;
+const ON_CUE = "[data-cue][data-on]";
+const COUNTER = "[data-counter]";
+const MARK = '[data-story="3d"] a[href="#notes"]';
+
+/** Every line box of text inside the elements a selector finds, with the colour it is drawn in. */
+async function textRuns(page: Page, selector: string) {
+  return page.evaluate((selector) => {
     const runs: { text: string; color: string; x: number; y: number; w: number; h: number }[] = [];
-    const walker = document.createTreeWalker(cue, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      const text = n.textContent!.trim();
-      if (!text) continue;
-      const range = document.createRange();
-      range.selectNodeContents(n);
-      const color = getComputedStyle(n.parentElement!).color;
-      for (const r of range.getClientRects()) {
-        if (r.width < 2 || r.bottom < 0 || r.top > innerHeight) continue;
-        runs.push({ text, color, x: r.left, y: r.top, w: r.width, h: r.height });
+    for (const el of document.querySelectorAll(selector)) {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const text = n.textContent!.trim();
+        if (!text) continue;
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        const color = getComputedStyle(n.parentElement!).color;
+        for (const r of range.getClientRects()) {
+          if (r.width < 2 || r.bottom < 0 || r.top > innerHeight) continue;
+          runs.push({ text, color, x: r.left, y: r.top, w: r.width, h: r.height });
+        }
       }
     }
     return runs;
-  });
+  }, selector);
 }
 
 /**
- * For each line of the cue on screen: the 2nd-percentile contrast between the text colour and the
- * rendered pixels behind that line, with the glyphs made transparent but their paper halo kept.
+ * For each line of the text a selector finds: the 2nd-percentile contrast between the text colour and
+ * the rendered pixels behind that line, with the glyphs made transparent but their paper halo kept.
  */
-async function lineContrasts(page: Page) {
-  const runs = await textRuns(page);
-  const hide = await page.addStyleTag({ content: "[data-cue] * { color: transparent !important; -webkit-text-fill-color: transparent !important; text-decoration-color: transparent !important; }" });
+async function lineContrasts(page: Page, selector: string) {
+  const runs = await textRuns(page, selector);
+  expect(runs.length, `${selector} has text on screen`).toBeGreaterThan(0);
+  const hide = await page.addStyleTag({
+    content: `[data-cue] *, ${COUNTER} *, ${MARK} * { color: transparent !important; -webkit-text-fill-color: transparent !important; text-decoration-color: transparent !important; }`,
+  });
   await page.waitForTimeout(100);
   const shot = (await page.screenshot({ scale: "css" })).toString("base64");
   await hide.evaluate((tag) => (tag as Element).remove());
@@ -244,24 +252,120 @@ async function lineContrasts(page: Page) {
   );
 }
 
+const CONTRAST_WHY =
+  "Each line box is screenshotted with its glyphs transparent (their paper halo and backdrop stay), and the text colour must reach 4.5:1 against the 2nd-percentile pixel behind it. " +
+  "A median, or even the 10th percentile, passes a 2px thread arc drawn straight through a headline; the 2nd percentile fails it, and with the glyphs hidden there are no anti-aliased glyph edges to trip it.";
+
 for (const vp of WIDTHS) {
-  test(`landing at ${vp.w}px: every line of every cue reads at 4.5:1 against what is drawn behind it`, async ({ page }) => {
+  test(`landing at ${vp.w}px: every line of every cue and the honesty mark read at 4.5:1 against what is drawn behind them`, async ({ page }) => {
     test.setTimeout(180_000);
     await page.setViewportSize({ width: vp.w, height: vp.h });
     await openStory(page);
     const low: string[] = [];
+    const faint: string[] = [];
     for (const c of CUES) {
       await scrollStory(page, c.from + (c.to - c.from) * 0.55);
       await expect(onCues(page)).toHaveAttribute("data-cue", c.id);
-      for (const l of await lineContrasts(page)) if (l.ratio < 4.5) low.push(`${c.id} "${l.text}" ${l.ratio.toFixed(2)}:1`);
+      const held = await onCues(page).evaluate((el) => [el, ...el.querySelectorAll("[data-w]")].map((e) => Number(getComputedStyle(e).opacity)));
+      if (held.some((o) => o < 1)) faint.push(c.id);
+      for (const l of await lineContrasts(page, `${ON_CUE}, ${MARK}`)) if (l.ratio < 4.5) low.push(`${c.id} "${l.text}" ${l.ratio.toFixed(2)}:1`);
     }
-    expect(
-      low,
-      "Each line box is screenshotted with its glyphs transparent (their paper halo and backdrop stay), and the text colour must reach 4.5:1 against the 2nd-percentile pixel behind it. " +
-        "A median, or even the 10th percentile, passes a 2px thread arc drawn straight through a headline; the 2nd percentile fails it, and with the glyphs hidden there are no anti-aliased glyph edges to trip it.",
-    ).toEqual([]);
+    expect(faint, "at its hold a cue and every word in it are at full opacity").toEqual([]);
+    expect(low, CONTRAST_WHY).toEqual([]);
+  });
+
+  test(`landing at ${vp.w}px: the Day counter reads at 4.5:1 all through the walk`, async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: vp.w, height: vp.h });
+    await openStory(page);
+    const counter = page.locator(COUNTER);
+    const low: string[] = [];
+    for (const p of [WALK.from, 0.165, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.315, 0.325, WALK.to, WALK.to + 0.005]) {
+      await scrollStory(page, p);
+      await expect(counter).toHaveCSS("opacity", "1");
+      for (const l of await lineContrasts(page, COUNTER)) if (l.ratio < 4.5) low.push(`p=${p} "${l.text}" ${l.ratio.toFixed(2)}:1`);
+    }
+    expect(low, CONTRAST_WHY).toEqual([]);
   });
 }
+
+test("landing at 1440x900: wheel notches never skip a line, and every cue stays fully readable for 4 notches", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openStory(page);
+  await page.mouse.move(1000, 500);
+  const readable = new Map<string, number>();
+  let run = { cue: "", notches: 0 };
+  let end = false;
+  for (let notch = 0; notch < 400 && !end; notch++) {
+    const now = await page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-story="3d"]')!;
+      const cue = document.querySelector<HTMLElement>("[data-cue][data-on]");
+      const full = !!cue && [cue, ...cue.querySelectorAll("[data-w]")].every((el) => Number(getComputedStyle(el).opacity) === 1);
+      return { id: full ? cue.dataset.cue! : "", done: track.getBoundingClientRect().bottom <= innerHeight + 1 };
+    });
+    run = now.id === run.cue ? { cue: run.cue, notches: run.notches + 1 } : { cue: now.id, notches: 1 };
+    if (run.cue) readable.set(run.cue, Math.max(readable.get(run.cue) ?? 0, run.notches));
+    end = now.done;
+    if (!end) {
+      await page.mouse.wheel(0, 100);
+      await page.waitForTimeout(170);
+    }
+  }
+  expect(end, "the wheel reaches the end of the story").toBe(true);
+  const short = CUES.filter((c) => (readable.get(c.id) ?? 0) < 4).map((c) => `${c.id}: ${readable.get(c.id) ?? 0}`);
+  expect(short, "fully readable notches for each cue").toEqual([]);
+});
+
+test("landing: crossing the phone breakpoint rebuilds the layout and keeps the story where it is", async ({ page }) => {
+  test.setTimeout(90_000);
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(String(e)));
+  const layout = () =>
+    page.evaluate(() => {
+      const track = document.querySelector<HTMLElement>('[data-story="3d"]')!;
+      const mark = document.querySelector('[data-story="3d"] a[href="#notes"]')!.getBoundingClientRect();
+      const top = track.getBoundingClientRect().top + scrollY;
+      return {
+        trackVh: (track.offsetHeight / innerHeight) * 100,
+        markRight: innerWidth - mark.right,
+        markCentre: mark.left + mark.width / 2,
+        page: (scrollY - top) / (track.offsetHeight - innerHeight),
+        canvases: document.querySelectorAll('[data-story="3d"] canvas').length,
+      };
+    });
+  await page.setViewportSize({ width: 700, height: 900 });
+  await openStory(page);
+  await scrollStory(page, 0.49);
+  const narrow = await layout();
+  expect(narrow.trackVh).toBeCloseTo(TRACK_VH.mobile, 0);
+  expect(narrow.markCentre).toBeCloseTo(350, -1);
+
+  await page.setViewportSize({ width: 1328, height: 781 });
+  await page.waitForTimeout(900);
+  const wide = await layout();
+  expect(wide.trackVh, "the desktop track").toBeCloseTo(TRACK_VH.desktop, 0);
+  expect(wide.markRight, "the mark sits at the right").toBeLessThan(40);
+  expect(wide.canvases, "the old stage is gone").toBe(1);
+  expect(Math.abs(wide.page - narrow.page), "same place in the story").toBeLessThan(0.002);
+  await expect(onCues(page)).toHaveAttribute("data-cue", "never-hears");
+  await expect.poll(() => page.evaluate(() => window.__wasl3d?.().frames ?? 0), "the new stage draws").toBeGreaterThan(0);
+
+  await scrollStory(page, 1);
+  const close = await page.locator('[data-cue="close"]').boundingBox();
+  expect(close!.y, "the closing text sits above the city, not in the phone's bottom band").toBeLessThan(781 * 0.3);
+
+  await scrollStory(page, 0.72);
+  const before = await layout();
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.waitForTimeout(900);
+  const back = await layout();
+  expect(back.trackVh).toBeCloseTo(TRACK_VH.mobile, 0);
+  expect(back.markCentre).toBeCloseTo(350, -1);
+  expect(Math.abs(back.page - before.page), "same place in the story").toBeLessThan(0.002);
+  await expect(onCues(page)).toHaveAttribute("data-cue", "join");
+  expect(errors).toEqual([]);
+});
 
 test("landing: the Day counter runs to the published wait, with its tick at the standard", async ({ page }) => {
   await openStory(page);

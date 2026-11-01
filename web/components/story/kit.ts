@@ -76,7 +76,7 @@ function dot(g: CanvasRenderingContext2D, x: number, y: number, r: number) {
   g.fill();
 }
 
-/** The avatar's eyes and mouths, in its 64-unit space, thickened to survive at road size. */
+/** The avatar's eyes, in its 64-unit space, thickened to survive at road size. */
 const EYES: readonly Draw[] = [
   (g) => {
     dot(g, 27.4, 31, 2.3);
@@ -90,10 +90,11 @@ const EYES: readonly Draw[] = [
     dot(g, 36.6, 31, 1.1);
   },
 ];
+/** Small and closed, every one, so nobody on the road looks startled. */
 const MOUTHS: readonly Draw[] = [
-  (g) => g.stroke(new Path2D("M28.6 38.4Q32 41.2 35.4 38.4")),
-  (g) => g.stroke(new Path2D("M29.4 39H34.6")),
-  (g) => dot(g, 32, 39, 1.9),
+  (g) => g.stroke(new Path2D("M29.8 38.6Q32 40.2 34.2 38.6")),
+  (g) => g.stroke(new Path2D("M30.2 39.2H33.8")),
+  (g) => g.stroke(new Path2D("M30 39.4Q32.4 39.9 34 38.6")),
 ];
 
 /** The part of the avatar's 64-unit space the face patch on a head shows. */
@@ -139,6 +140,7 @@ export function createKit(mobile: boolean) {
       g.lineWidth = 1.9;
       g.lineCap = "round";
       EYES[eyes](g);
+      g.lineWidth = 1.5;
       MOUTHS[mouth](g);
     });
   const questionMap = () =>

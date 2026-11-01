@@ -75,8 +75,11 @@ const WIDE: Omit<CameraKey, "p"> = {
   fog: far,
   phone: { target: [38, 0, 3], off: [100, 120, 30], fov: 34 },
 };
-/** The wide shot tilted up, so the city sits under the closing lines instead of behind them. */
-const END: Omit<CameraKey, "p"> = { ...WIDE, look: [0, 13, 0], phone: { ...WIDE.phone, off: [130, 156, 39], look: [0, -20, 0], fog: [150, 300] } };
+/**
+ * The wide shot tilted up, so the city sits under the closing lines instead of behind them. A portrait
+ * frame can only hold the whole road corner to corner: clinic top left, hospital above the text.
+ */
+const END: Omit<CameraKey, "p"> = { ...WIDE, look: [0, 13, 0], phone: { target: [50, 0, 0], off: [94.4, 155.6, 54.5], look: [0, 0, 0], fov: 34, fog: [200, 360] } };
 const BEHIND_TIP: Omit<CameraKey, "p"> = {
   target: "tip",
   off: [-6.5, 3.6, 4.8],
