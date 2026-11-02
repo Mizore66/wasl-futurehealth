@@ -120,8 +120,28 @@ func TestLinkFunnelWriterWritesConfigAndPair(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	if !strings.Contains(lines[0], `"modelset":""`) {
+		t.Fatalf("default config lost modelset identity: %s", lines[0])
+	}
 	if len(lines) != 2 || !strings.Contains(lines[0], `"candidate_k":10`) || !strings.Contains(lines[0], `"hnsw_ef_search":64`) || !strings.Contains(lines[0], `"review_floor":0.01`) || !strings.Contains(lines[1], `"seq":7`) {
 		t.Fatalf("unexpected trace: %s", b)
+	}
+}
+
+func TestLinkFunnelWriterStampsModelSet(t *testing.T) {
+	old := ModelSet
+	t.Cleanup(func() { ModelSet = old })
+	ModelSet = "pairfeat1"
+	path := filepath.Join(t.TempDir(), "trace.ndjson")
+	w := newLinkFunnelWriter(path, LinkFunnelConfig{CandidateK: 10, ModelSet: ModelSet})
+	w.Append(LinkTrace{Kind: "pair", Seq: 1})
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	first := strings.SplitN(string(b), "\n", 2)[0]
+	if !strings.Contains(first, `"modelset":"pairfeat1"`) {
+		t.Fatalf("modelset not stamped: %s", first)
 	}
 }
 
