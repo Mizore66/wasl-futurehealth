@@ -1,6 +1,6 @@
 {
- "frozen_at": "2026-11-01T12:59:41.204084Z",
- "code_revision": "73ec4e4c1314657415679ccb4e328c3be535c423",
+ "frozen_at": "2026-11-02T04:33:36.064230Z",
+ "code_revision": "075abc5ad04ae14dff01dc7b9ddd1cedd5671d51",
  "policy": "v7strict",
  "thresholds": {
   "tau_high_messaging": 0.99,
@@ -20,6 +20,11 @@
   "v1": "training-time corruptions (gen.go)",
   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
  },
+ "selected_noise_models": [
+  "v1",
+  "v2"
+ ],
+ "eid_guard": false,
  "lung_loops_per_run": 1088,
  "dr_loops_per_run": 1200,
  "breast_loops_per_run": 70,

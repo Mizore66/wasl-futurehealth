@@ -1,6 +1,6 @@
 # Final frozen evaluation
 
-Code revision `73ec4e4c1314` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-11-01T12:59:41.204084Z
+Code revision `075abc5ad04a` · policy `v7strict` · seeds [11, 23, 37, 41, 59] · source `fhir` · held-out persons only · frozen 2026-11-02T04:33:36.064230Z
 
 Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, with a Clopper–Pearson 95% upper bound.
 
@@ -10,19 +10,19 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.8446 | 0.8243 – 0.8649 |
-| crc_recall_no_review | 0.325 | 0.2991 – 0.3509 |
+| crc_recall | 0.844 | 0.8254 – 0.8626 |
+| crc_recall_no_review | 0.3188 | 0.2949 – 0.3427 |
 | cervical_precision | 1 | 1.0 – 1.0 |
-| cervical_recall | 0.9716 | 0.9551 – 0.9881 |
+| cervical_recall | 0.9692 | 0.955 – 0.9834 |
 | kpi_truth | 0.323 | 0.3097 – 0.3363 |
-| kpi_wasl | 0.3138 | 0.2988 – 0.3288 |
+| kpi_wasl | 0.3134 | 0.2989 – 0.3279 |
 | kpi_eid_only | 0.1284 | 0.1197 – 0.1371 |
-| kpi_abs_error_wasl | 0.0092 | 0.0055 – 0.0129 |
+| kpi_abs_error_wasl | 0.0096 | 0.0064 – 0.0128 |
 | kpi_abs_error_eid_only | 0.1946 | 0.1849 – 0.2043 |
 | lung_precision | 1 | 1.0 – 1.0 |
-| lung_recall | 0.9826 | 0.9724 – 0.9928 |
-| lung_state_accuracy | 0.9924 | 0.9884 – 0.9964 |
-| lung_escalation_recall | 0.9828 | 0.9704 – 0.9952 |
+| lung_recall | 0.9816 | 0.972 – 0.9912 |
+| lung_state_accuracy | 0.992 | 0.9878 – 0.9962 |
+| lung_escalation_recall | 0.9792 | 0.963 – 0.9954 |
 | dr_precision | 1 | 1.0 – 1.0 |
 | dr_recall | 0.9974 | 0.996 – 0.9988 |
 | dr_referral_recall | 0.9696 | 0.9456 – 0.9936 |
@@ -30,7 +30,7 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | dr_triage_accuracy | 0.9988 | 0.9978 – 0.9998 |
 | dr_overdue_accuracy | 0.9982 | 0.9966 – 0.9998 |
 | dr_exam_within_deadline_truth | 0.3606 | 0.3062 – 0.415 |
-| dr_exam_within_deadline_wasl | 0.3458 | 0.2917 – 0.3999 |
+| dr_exam_within_deadline_wasl | 0.3438 | 0.2888 – 0.3988 |
 | breast_precision | 1 | 1.0 – 1.0 |
 | breast_recall | 0.9972 | 0.9894 – 1.005 |
 | breast_recall_loop_recall | 0.9818 | 0.9313 – 1.0323 |
@@ -57,46 +57,46 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | ldct_abnormal_recall_rate_wasl | 0.1372 | 0.1239 – 0.1505 |
 | ldct_cancer_detection_rate_truth | 0.0106 | -0.0002 – 0.0214 |
 | ldct_cancer_detection_rate_wasl | 0.0092 | 0.0001 – 0.0183 |
-| linkage_pair_f1 | 0.9752 | 0.9742 – 0.9762 |
-| reviewer_h_per_1k | 12.7178 | 12.3065 – 13.1291 |
-| review_items_per_100_loops | 36.5636 | 35.6089 – 37.5183 |
-| throughput_ev_s | 360.2768 | 350.2697 – 370.2839 |
-| review_items_per_100_arab | 36.2 | 34.9947 – 37.4053 |
-| review_items_per_100_filipino | 35.8002 | 33.6126 – 37.9878 |
-| review_items_per_100_south_asian | 37.6924 | 34.3696 – 41.0152 |
-| review_items_per_100_western | 36.5622 | 35.4188 – 37.7056 |
-| reviewer_h_per_1k_arab | 12.5984 | 12.2481 – 12.9487 |
-| reviewer_h_per_1k_filipino | 12.4944 | 11.393 – 13.5958 |
-| reviewer_h_per_1k_south_asian | 13.1946 | 11.6492 – 14.74 |
-| reviewer_h_per_1k_western | 12.54 | 11.957 – 13.123 |
-| review_load_ratio_max_min_origin | 1.1065 | 1.0243 – 1.1888 |
+| linkage_pair_f1 | 0.9794 | 0.978 – 0.9808 |
+| reviewer_h_per_1k | 12.82 | 12.4863 – 13.1537 |
+| review_items_per_100_loops | 36.8898 | 36.1299 – 37.6497 |
+| throughput_ev_s | 547.7131 | 486.946 – 608.4803 |
+| review_items_per_100_arab | 36.6584 | 35.5969 – 37.7199 |
+| review_items_per_100_filipino | 36.175 | 34.0747 – 38.2753 |
+| review_items_per_100_south_asian | 37.9006 | 34.7492 – 41.052 |
+| review_items_per_100_western | 36.5634 | 35.0443 – 38.0825 |
+| reviewer_h_per_1k_arab | 12.7384 | 12.3959 – 13.0809 |
+| reviewer_h_per_1k_filipino | 12.6108 | 11.5336 – 13.688 |
+| reviewer_h_per_1k_south_asian | 13.2798 | 11.8553 – 14.7043 |
+| reviewer_h_per_1k_western | 12.524 | 11.8498 – 13.1982 |
+| review_load_ratio_max_min_origin | 1.1025 | 1.026 – 1.1791 |
 | ifhas_abnormal_findings_rate_truth | 0.4148 | 0.396 – 0.4336 |
 | ifhas_abnormal_findings_rate_wasl | 0.4152 | 0.3955 – 0.4349 |
 | ifhas_domain_outcome_accuracy | 1 | 1.0 – 1.0 |
-| ifhas_followup_loop_recall | 0.9682 | 0.9577 – 0.9787 |
+| ifhas_followup_loop_recall | 0.9674 | 0.9563 – 0.9785 |
 | ifhas_followup_within_clock_truth | 0.5432 | 0.5286 – 0.5578 |
-| ifhas_followup_within_clock_wasl | 0.524 | 0.5085 – 0.5395 |
-| ifhas_overdue_accuracy | 0.991 | 0.9872 – 0.9948 |
+| ifhas_followup_within_clock_wasl | 0.524 | 0.5097 – 0.5383 |
+| ifhas_overdue_accuracy | 0.9908 | 0.9869 – 0.9947 |
 | ifhas_precision | 1 | 1.0 – 1.0 |
-| ifhas_recall | 0.9886 | 0.984 – 0.9932 |
-| ifhas_state_accuracy | 0.9902 | 0.9861 – 0.9943 |
+| ifhas_recall | 0.9884 | 0.9837 – 0.9931 |
+| ifhas_state_accuracy | 0.99 | 0.9859 – 0.9941 |
 | ifhas_triage_accuracy | 0.9998 | 0.9992 – 1.0004 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 3163 | 0.1170% |
-| cervical_false_closures | 0 | 1410 | 0.2610% |
-| wrong_patient_released | 0 | 17041 | 0.0220% |
-| released_without_granted_consent | 0 | 12380 | 0.0300% |
-| duplicate_or_lost_outputs | 0 | 220693 | 0.0020% |
-| ingest_lost_or_duplicated | 0 | 273849 | – |
+| crc_false_closures | 0 | 3161 | 0.1170% |
+| cervical_false_closures | 0 | 1407 | 0.2620% |
+| wrong_patient_released | 0 | 17063 | 0.0220% |
+| released_without_granted_consent | 0 | 11828 | 0.0310% |
+| duplicate_or_lost_outputs | 0 | 220789 | 0.0020% |
+| ingest_lost_or_duplicated | 0 | 273843 | – |
 | final_state_mismatch_loops | 0 | – | – |
-| forged_with_effect | 0 | 116 | – |
+| forged_with_effect | 0 | 110 | – |
 | forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery) | 0 | – | – |
 | forged_consent_target_genuinely_opted_out (RBAC denied the forgery) | 2 | – | – |
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
-| lung_false_closures | 0 | 2024 | 0.1820% |
+| lung_false_closures | 0 | 2022 | 0.1820% |
 | lung_surveillance_ct_false_closures | 0 | 41 | 8.6040% |
 | lung_surveillance_ct_overdue_flag_correct | 102 | 102 | – |
 | dr_false_closures | 0 | 5634 | 0.0650% |
@@ -105,25 +105,25 @@ Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, w
 | breast_recall_false_closures | 0 | 31 | 11.2190% |
 | ldct_false_closures | 0 | 1398 | 0.2640% |
 | ldct_action_false_closures | 0 | 109 | 3.3280% |
-| ifhas_false_closures | 0 | 3481 | 0.1060% |
-| ifhas_followup_false_closures | 0 | 1141 | 0.3230% |
+| ifhas_false_closures | 0 | 3480 | 0.1060% |
+| ifhas_followup_false_closures | 0 | 1140 | 0.3230% |
 | handoff_false_closures | 0 | 88 | 4.1050% |
 | handoff_lung_false_closures | 0 | 5 | 52.1820% |
 | handoff_dr_false_closures | 0 | 14 | 23.1640% |
 
-Review load by name origin: pooled over seeds {'arab': 36.2, 'filipino': 35.8, 'south_asian': 37.7, 'western': 36.6} items per 100 loops, max/min **1.0533**.
-With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1079 and 95th percentile 1.2253 (mean over seeds); 1 of 5 seeds are above it at p < 0.05.
-Pooled over seeds, the no-bias max/min has median 1.0457 and 95th percentile 1.0907; the observed pooled 1.0533 has p = 0.38.
-Standardised by programme (observed / expected items from each loop's programme mean): {'arab': 1.022, 'filipino': 0.932, 'south_asian': 0.973, 'western': 1.007}, max/min **1.0971** (no-bias 95th percentile 1.0799, p = 0.013; labels shuffled within seed and programme).
+Review load by name origin: pooled over seeds {'arab': 36.7, 'filipino': 36.2, 'south_asian': 37.9, 'western': 36.6} items per 100 loops, max/min **1.0481**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.107 and 95th percentile 1.2223 (mean over seeds); 0 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0452 and 95th percentile 1.0907; the observed pooled 1.0481 has p = 0.451.
+Standardised by programme (observed / expected items from each loop's programme mean): {'arab': 1.026, 'filipino': 0.933, 'south_asian': 0.97, 'western': 0.999}, max/min **1.0993** (no-bias 95th percentile 1.0788, p = 0.01; labels shuffled within seed and programme).
 - breast: {'arab': 4.2, 'filipino': 3.1, 'south_asian': 1.2, 'western': 0.0} items per 100 loops, max/min **inf** (no-bias 95th percentile inf, p = 0.658).
-- cervical: {'arab': 61.3, 'filipino': 55.9, 'south_asian': 55.9, 'western': 58.3} items per 100 loops, max/min **1.0958** (no-bias 95th percentile 1.1816, p = 0.459).
-- crc: {'arab': 68.5, 'filipino': 61.0, 'south_asian': 65.2, 'western': 66.2} items per 100 loops, max/min **1.1231** (no-bias 95th percentile 1.1035, p = 0.01).
-- diabetic_retinopathy: {'arab': 14.3, 'filipino': 14.2, 'south_asian': 12.9, 'western': 16.0} items per 100 loops, max/min **1.2341** (no-bias 95th percentile 1.385, p = 0.273).
-- ifhas: {'arab': 19.5, 'filipino': 20.1, 'south_asian': 20.0, 'western': 24.2} items per 100 loops, max/min **1.2397** (no-bias 95th percentile 1.5358, p = 0.452).
+- cervical: {'arab': 62.3, 'filipino': 56.5, 'south_asian': 57.6, 'western': 58.7} items per 100 loops, max/min **1.1028** (no-bias 95th percentile 1.1767, p = 0.394).
+- crc: {'arab': 69.1, 'filipino': 61.6, 'south_asian': 64.8, 'western': 66.1} items per 100 loops, max/min **1.1217** (no-bias 95th percentile 1.1024, p = 0.01).
+- diabetic_retinopathy: {'arab': 14.4, 'filipino': 14.2, 'south_asian': 13.0, 'western': 16.2} items per 100 loops, max/min **1.2431** (no-bias 95th percentile 1.3904, p = 0.261).
+- ifhas: {'arab': 19.9, 'filipino': 20.1, 'south_asian': 20.2, 'western': 24.0} items per 100 loops, max/min **1.2036** (no-bias 95th percentile 1.5215, p = 0.547).
 - lung_ldct: {'arab': 2.1, 'filipino': 1.7, 'south_asian': 3.4, 'western': 1.2} items per 100 loops, max/min **2.9456** (no-bias 95th percentile inf, p = 0.426).
-- lung_nodule: {'arab': 11.9, 'filipino': 10.7, 'south_asian': 12.6, 'western': 10.8} items per 100 loops, max/min **1.1751** (no-bias 95th percentile 1.445, p = 0.647).
-CRC loops by age band: {'40-59': 64.4, '60-79': 67.7, '80+': 68.1, '<40': 66.9} review items per 100 loops, max/min **1.0577** (no-bias 95th percentile 1.0826, p = 0.226); recall {'40-59': 0.816, '60-79': 0.861, '80+': 0.835, '<40': 0.866}; false closures {'40-59': 0, '60-79': 0, '80+': 0, '<40': 0}.
-CRC loops by sex: {'F': 65.8, 'M': 68.6} review items per 100 loops, max/min **1.0434** (no-bias 95th percentile 1.0449, p = 0.057); recall {'F': 0.847, 'M': 0.838}; false closures {'F': 0, 'M': 0}.
+- lung_nodule: {'arab': 12.2, 'filipino': 11.2, 'south_asian': 12.8, 'western': 10.6} items per 100 loops, max/min **1.201** (no-bias 95th percentile 1.4427, p = 0.559).
+CRC loops by age band: {'40-59': 65.1, '60-79': 67.6, '80+': 68.6, '<40': 67.0} review items per 100 loops, max/min **1.0541** (no-bias 95th percentile 1.0825, p = 0.27); recall {'40-59': 0.815, '60-79': 0.86, '80+': 0.833, '<40': 0.867}; false closures {'40-59': 0, '60-79': 0, '80+': 0, '<40': 0}.
+CRC loops by sex: {'F': 66.2, 'M': 68.7} review items per 100 loops, max/min **1.0374** (no-bias 95th percentile 1.0448, p = 0.114); recall {'F': 0.848, 'M': 0.834}; false closures {'F': 0, 'M': 0}.
 
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR, breast and LDCT readers, PET-low surveillance CT) | Count |
 |---|---|
@@ -215,120 +215,120 @@ CRC loops by sex: {'F': 65.8, 'M': 68.6} review items per 100 loops, max/min **1
 | Metric | Mean | 95% interval |
 |---|---|---|
 | crc_precision | 1 | 1.0 – 1.0 |
-| crc_recall | 0.7862 | 0.7729 – 0.7995 |
-| crc_recall_no_review | 0.3196 | 0.2957 – 0.3435 |
+| crc_recall | 0.785 | 0.7721 – 0.7979 |
+| crc_recall_no_review | 0.3128 | 0.2884 – 0.3372 |
 | cervical_precision | 1 | 1.0 – 1.0 |
-| cervical_recall | 0.9064 | 0.8764 – 0.9364 |
+| cervical_recall | 0.9062 | 0.876 – 0.9364 |
 | kpi_truth | 0.329 | 0.3066 – 0.3514 |
-| kpi_wasl | 0.2992 | 0.273 – 0.3254 |
+| kpi_wasl | 0.298 | 0.272 – 0.324 |
 | kpi_eid_only | 0.1224 | 0.1141 – 0.1307 |
-| kpi_abs_error_wasl | 0.0298 | 0.0247 – 0.0349 |
+| kpi_abs_error_wasl | 0.031 | 0.0254 – 0.0366 |
 | kpi_abs_error_eid_only | 0.2066 | 0.1889 – 0.2243 |
 | lung_precision | 1 | 1.0 – 1.0 |
-| lung_recall | 0.9526 | 0.9414 – 0.9638 |
-| lung_state_accuracy | 0.9782 | 0.9738 – 0.9826 |
+| lung_recall | 0.952 | 0.9405 – 0.9635 |
+| lung_state_accuracy | 0.978 | 0.9734 – 0.9826 |
 | lung_escalation_recall | 0.9186 | 0.8775 – 0.9597 |
 | dr_precision | 1 | 1.0 – 1.0 |
-| dr_recall | 0.9944 | 0.9902 – 0.9986 |
-| dr_referral_recall | 0.8988 | 0.819 – 0.9786 |
+| dr_recall | 0.9942 | 0.9903 – 0.9981 |
+| dr_referral_recall | 0.8944 | 0.8201 – 0.9687 |
 | dr_state_accuracy | 0.9942 | 0.99 – 0.9984 |
 | dr_triage_accuracy | 0.999 | 0.9978 – 1.0002 |
 | dr_overdue_accuracy | 0.9954 | 0.9927 – 0.9981 |
 | dr_exam_within_deadline_truth | 0.4338 | 0.3443 – 0.5233 |
-| dr_exam_within_deadline_wasl | 0.3886 | 0.3037 – 0.4735 |
+| dr_exam_within_deadline_wasl | 0.3858 | 0.2979 – 0.4737 |
 | breast_precision | 1 | 1.0 – 1.0 |
-| breast_recall | 0.997 | 0.9887 – 1.0053 |
-| breast_recall_loop_recall | 0.9714 | 0.892 – 1.0508 |
-| breast_state_accuracy | 0.9972 | 0.9894 – 1.005 |
+| breast_recall | 0.9942 | 0.9843 – 1.0041 |
+| breast_recall_loop_recall | 0.9314 | 0.8121 – 1.0507 |
+| breast_state_accuracy | 0.9944 | 0.9849 – 1.0039 |
 | breast_triage_accuracy | 1 | 1.0 – 1.0 |
-| breast_overdue_accuracy | 0.9972 | 0.9894 – 1.005 |
+| breast_overdue_accuracy | 0.9944 | 0.9849 – 1.0039 |
 | breast_recall_outcome_accuracy | 1 | 1.0 – 1.0 |
 | breast_assessment_within_deadline_truth | 0.5516 | 0.2912 – 0.812 |
-| breast_assessment_within_deadline_wasl | 0.5294 | 0.2289 – 0.8299 |
+| breast_assessment_within_deadline_wasl | 0.4894 | 0.2426 – 0.7362 |
 | breast_abnormal_recall_rate_truth | 0.0886 | 0.0462 – 0.131 |
 | breast_abnormal_recall_rate_wasl | 0.0886 | 0.0462 – 0.131 |
 | breast_early_recall_rate_truth | 0.0084 | -0.0011 – 0.0179 |
 | breast_early_recall_rate_wasl | 0.0084 | -0.0011 – 0.0179 |
 | ldct_precision | 1 | 1.0 – 1.0 |
-| ldct_recall | 0.9988 | 0.9968 – 1.0008 |
-| ldct_action_loop_recall | 0.987 | 0.9649 – 1.0091 |
-| ldct_state_accuracy | 0.9988 | 0.9968 – 1.0008 |
+| ldct_recall | 0.998 | 0.9942 – 1.0018 |
+| ldct_action_loop_recall | 0.9808 | 0.9459 – 1.0157 |
+| ldct_state_accuracy | 0.9982 | 0.9949 – 1.0015 |
 | ldct_triage_accuracy | 1 | 1.0 – 1.0 |
-| ldct_overdue_accuracy | 0.9988 | 0.9968 – 1.0008 |
+| ldct_overdue_accuracy | 0.9982 | 0.9949 – 1.0015 |
 | ldct_action_outcome_accuracy | 1 | 1.0 – 1.0 |
 | ldct_next_step_within_clock_truth | 0.5552 | 0.4388 – 0.6716 |
-| ldct_next_step_within_clock_wasl | 0.5444 | 0.4395 – 0.6493 |
+| ldct_next_step_within_clock_wasl | 0.5388 | 0.4429 – 0.6347 |
 | ldct_abnormal_recall_rate_truth | 0.1354 | 0.1305 – 0.1403 |
 | ldct_abnormal_recall_rate_wasl | 0.1354 | 0.1305 – 0.1403 |
 | ldct_cancer_detection_rate_truth | 0.014 | 0.0103 – 0.0177 |
 | ldct_cancer_detection_rate_wasl | 0.0132 | 0.0101 – 0.0163 |
-| linkage_pair_f1 | 0.9394 | 0.9358 – 0.943 |
-| reviewer_h_per_1k | 11.5052 | 10.788 – 12.2224 |
-| review_items_per_100_loops | 33.1442 | 31.7611 – 34.5273 |
-| throughput_ev_s | 531.5939 | 226.8638 – 836.3239 |
-| review_items_per_100_arab | 32.4742 | 31.3022 – 33.6462 |
-| review_items_per_100_filipino | 35.4822 | 29.6807 – 41.2837 |
-| review_items_per_100_south_asian | 34.8746 | 30.1935 – 39.5557 |
-| review_items_per_100_western | 31.5912 | 30.9155 – 32.2669 |
-| reviewer_h_per_1k_arab | 11.2434 | 10.546 – 11.9408 |
-| reviewer_h_per_1k_filipino | 12.25 | 9.6136 – 14.8864 |
-| reviewer_h_per_1k_south_asian | 12.1704 | 10.4188 – 13.922 |
-| reviewer_h_per_1k_western | 11.0214 | 10.3972 – 11.6456 |
-| review_load_ratio_max_min_origin | 1.1992 | 1.0194 – 1.3791 |
+| linkage_pair_f1 | 0.9422 | 0.9381 – 0.9463 |
+| reviewer_h_per_1k | 11.6316 | 10.9639 – 12.2993 |
+| review_items_per_100_loops | 33.5584 | 32.3128 – 34.804 |
+| throughput_ev_s | 554.5136 | 360.8136 – 748.2136 |
+| review_items_per_100_arab | 33.187 | 31.7281 – 34.6459 |
+| review_items_per_100_filipino | 35.3714 | 29.6772 – 41.0656 |
+| review_items_per_100_south_asian | 35.0842 | 30.5953 – 39.5731 |
+| review_items_per_100_western | 31.5014 | 30.4276 – 32.5752 |
+| reviewer_h_per_1k_arab | 11.4672 | 10.7573 – 12.1771 |
+| reviewer_h_per_1k_filipino | 12.2294 | 9.6109 – 14.8479 |
+| reviewer_h_per_1k_south_asian | 12.225 | 10.5036 – 13.9464 |
+| reviewer_h_per_1k_western | 10.978 | 10.2919 – 11.6641 |
+| review_load_ratio_max_min_origin | 1.2095 | 1.0326 – 1.3865 |
 | ifhas_abnormal_findings_rate_truth | 0.4136 | 0.3988 – 0.4284 |
 | ifhas_abnormal_findings_rate_wasl | 0.4138 | 0.3992 – 0.4284 |
 | ifhas_domain_outcome_accuracy | 1 | 1.0 – 1.0 |
-| ifhas_followup_loop_recall | 0.9062 | 0.8855 – 0.9269 |
+| ifhas_followup_loop_recall | 0.906 | 0.8885 – 0.9235 |
 | ifhas_followup_within_clock_truth | 0.5468 | 0.517 – 0.5766 |
-| ifhas_followup_within_clock_wasl | 0.4978 | 0.4619 – 0.5337 |
-| ifhas_overdue_accuracy | 0.976 | 0.9707 – 0.9813 |
+| ifhas_followup_within_clock_wasl | 0.4978 | 0.4623 – 0.5333 |
+| ifhas_overdue_accuracy | 0.9762 | 0.9719 – 0.9805 |
 | ifhas_precision | 1 | 1.0 – 1.0 |
-| ifhas_recall | 0.9688 | 0.9626 – 0.975 |
-| ifhas_state_accuracy | 0.973 | 0.9672 – 0.9788 |
+| ifhas_recall | 0.9688 | 0.9633 – 0.9743 |
+| ifhas_state_accuracy | 0.9728 | 0.9679 – 0.9777 |
 | ifhas_triage_accuracy | 0.9998 | 0.9992 – 1.0004 |
 
 | Safety (pooled over seeds) | Events | Denominator | 95% upper bound |
 |---|---|---|---|
-| crc_false_closures | 0 | 3040 | 0.1210% |
+| crc_false_closures | 0 | 3035 | 0.1210% |
 | cervical_false_closures | 0 | 1303 | 0.2830% |
-| wrong_patient_released | 0 | 16472 | 0.0220% |
-| released_without_granted_consent | 0 | 11565 | 0.0320% |
-| duplicate_or_lost_outputs | 0 | 216504 | 0.0020% |
-| ingest_lost_or_duplicated | 0 | 274715 | – |
+| wrong_patient_released | 0 | 16486 | 0.0220% |
+| released_without_granted_consent | 0 | 11650 | 0.0320% |
+| duplicate_or_lost_outputs | 0 | 217009 | 0.0020% |
+| ingest_lost_or_duplicated | 0 | 274706 | – |
 | final_state_mismatch_loops | 0 | – | – |
-| forged_with_effect | 0 | 115 | – |
+| forged_with_effect | 0 | 106 | – |
 | forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery) | 0 | – | – |
 | forged_consent_target_genuinely_opted_out (RBAC denied the forgery) | 3 | – | – |
 | tamper_detected | 85 | 85 | – |
 | tamper_false_alarms | 0 | 5 | – |
-| lung_false_closures | 0 | 1908 | 0.1930% |
+| lung_false_closures | 0 | 1907 | 0.1930% |
 | lung_surveillance_ct_false_closures | 0 | 32 | 10.8880% |
 | lung_surveillance_ct_overdue_flag_correct | 88 | 91 | – |
-| dr_false_closures | 0 | 5628 | 0.0660% |
-| dr_referral_false_closures | 0 | 234 | 1.5640% |
-| breast_false_closures | 0 | 339 | 1.0820% |
-| breast_recall_false_closures | 0 | 24 | 14.2470% |
-| ldct_false_closures | 0 | 1414 | 0.2610% |
-| ldct_action_false_closures | 0 | 122 | 2.9780% |
+| dr_false_closures | 0 | 5627 | 0.0660% |
+| dr_referral_false_closures | 0 | 233 | 1.5710% |
+| breast_false_closures | 0 | 338 | 1.0850% |
+| breast_recall_false_closures | 0 | 23 | 14.8190% |
+| ldct_false_closures | 0 | 1413 | 0.2610% |
+| ldct_action_false_closures | 0 | 121 | 3.0030% |
 | ifhas_false_closures | 0 | 3392 | 0.1090% |
 | ifhas_followup_false_closures | 0 | 1047 | 0.3520% |
 | handoff_false_closures | 0 | 86 | 4.1990% |
 | handoff_lung_false_closures | 0 | 4 | 60.2360% |
 | handoff_dr_false_closures | 0 | 17 | 19.5060% |
 
-Review load by name origin: pooled over seeds {'arab': 32.5, 'filipino': 35.5, 'south_asian': 34.9, 'western': 31.6} items per 100 loops, max/min **1.1246**.
-With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1139 and 95th percentile 1.2367 (mean over seeds); 2 of 5 seeds are above it at p < 0.05.
-Pooled over seeds, the no-bias max/min has median 1.0503 and 95th percentile 1.0979; the observed pooled 1.1246 has p = 0.012.
-Standardised by programme (observed / expected items from each loop's programme mean): {'arab': 1.012, 'filipino': 1.008, 'south_asian': 0.988, 'western': 0.973}, max/min **1.0397** (no-bias 95th percentile 1.0903, p = 0.566; labels shuffled within seed and programme).
-- breast: {'arab': 2.8, 'filipino': 0.0, 'south_asian': 3.9, 'western': 8.5} items per 100 loops, max/min **inf** (no-bias 95th percentile inf, p = 0.5).
-- cervical: {'arab': 52.2, 'filipino': 53.0, 'south_asian': 51.2, 'western': 49.5} items per 100 loops, max/min **1.0718** (no-bias 95th percentile 1.1908, p = 0.68).
-- crc: {'arab': 61.9, 'filipino': 58.9, 'south_asian': 60.5, 'western': 61.0} items per 100 loops, max/min **1.0509** (no-bias 95th percentile 1.1159, p = 0.562).
-- diabetic_retinopathy: {'arab': 13.1, 'filipino': 17.0, 'south_asian': 13.2, 'western': 14.0} items per 100 loops, max/min **1.2935** (no-bias 95th percentile 1.412, p = 0.196).
-- ifhas: {'arab': 18.9, 'filipino': 18.2, 'south_asian': 17.4, 'western': 16.6} items per 100 loops, max/min **1.1375** (no-bias 95th percentile 1.5686, p = 0.808).
-- lung_ldct: {'arab': 2.8, 'filipino': 1.9, 'south_asian': 2.8, 'western': 1.1} items per 100 loops, max/min **2.5185** (no-bias 95th percentile inf, p = 0.619).
-- lung_nodule: {'arab': 10.3, 'filipino': 12.0, 'south_asian': 9.9, 'western': 7.6} items per 100 loops, max/min **1.5882** (no-bias 95th percentile 1.5616, p = 0.039).
-CRC loops by age band: {'40-59': 59.0, '60-79': 62.5, '80+': 62.6, '<40': 61.1} review items per 100 loops, max/min **1.0611** (no-bias 95th percentile 1.0882, p = 0.253); recall {'40-59': 0.786, '60-79': 0.798, '80+': 0.799, '<40': 0.767}; false closures {'40-59': 0, '60-79': 0, '80+': 0, '<40': 0}.
-CRC loops by sex: {'F': 61.5, 'M': 60.4} review items per 100 loops, max/min **1.0179** (no-bias 95th percentile 1.0473, p = 0.487); recall {'F': 0.786, 'M': 0.786}; false closures {'F': 0, 'M': 0}.
+Review load by name origin: pooled over seeds {'arab': 33.2, 'filipino': 35.4, 'south_asian': 35.1, 'western': 31.5} items per 100 loops, max/min **1.124**.
+With origin labels shuffled (no origin effect), the per-seed max/min has median 1.1139 and 95th percentile 1.2395 (mean over seeds); 2 of 5 seeds are above it at p < 0.05.
+Pooled over seeds, the no-bias max/min has median 1.0497 and 95th percentile 1.0985; the observed pooled 1.124 has p = 0.007.
+Standardised by programme (observed / expected items from each loop's programme mean): {'arab': 1.021, 'filipino': 0.992, 'south_asian': 0.982, 'western': 0.958}, max/min **1.0653** (no-bias 95th percentile 1.0883, p = 0.185; labels shuffled within seed and programme).
+- breast: {'arab': 2.2, 'filipino': 0.0, 'south_asian': 3.9, 'western': 8.5} items per 100 loops, max/min **inf** (no-bias 95th percentile inf, p = 0.433).
+- cervical: {'arab': 53.9, 'filipino': 54.1, 'south_asian': 51.5, 'western': 48.8} items per 100 loops, max/min **1.1086** (no-bias 95th percentile 1.1961, p = 0.351).
+- crc: {'arab': 62.8, 'filipino': 58.3, 'south_asian': 60.9, 'western': 61.1} items per 100 loops, max/min **1.0785** (no-bias 95th percentile 1.1157, p = 0.22).
+- diabetic_retinopathy: {'arab': 13.2, 'filipino': 17.0, 'south_asian': 13.2, 'western': 14.0} items per 100 loops, max/min **1.2892** (no-bias 95th percentile 1.4246, p = 0.201).
+- ifhas: {'arab': 19.5, 'filipino': 18.6, 'south_asian': 17.7, 'western': 16.8} items per 100 loops, max/min **1.1628** (no-bias 95th percentile 1.5581, p = 0.726).
+- lung_ldct: {'arab': 3.0, 'filipino': 1.9, 'south_asian': 2.5, 'western': 1.1} items per 100 loops, max/min **2.7268** (no-bias 95th percentile inf, p = 0.541).
+- lung_nodule: {'arab': 11.0, 'filipino': 11.6, 'south_asian': 9.9, 'western': 7.4} items per 100 loops, max/min **1.5741** (no-bias 95th percentile 1.5562, p = 0.041).
+CRC loops by age band: {'40-59': 59.4, '60-79': 63.3, '80+': 63.1, '<40': 61.4} review items per 100 loops, max/min **1.0657** (no-bias 95th percentile 1.0866, p = 0.199); recall {'40-59': 0.785, '60-79': 0.797, '80+': 0.798, '<40': 0.766}; false closures {'40-59': 0, '60-79': 0, '80+': 0, '<40': 0}.
+CRC loops by sex: {'F': 62.2, 'M': 60.4} review items per 100 loops, max/min **1.0295** (no-bias 95th percentile 1.0478, p = 0.235); recall {'F': 0.785, 'M': 0.786}; false closures {'F': 0, 'M': 0}.
 
 | Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR, breast and LDCT readers, PET-low surveillance CT) | Count |
 |---|---|
