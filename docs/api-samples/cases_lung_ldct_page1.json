@@ -2,175 +2,15 @@
  "cases": [
   {
    "closed": true,
-   "closed_day": 8.0062,
+   "closed_day": -151.7103,
    "consent": "granted",
    "deadline_day": 0,
-   "decisions": 3,
+   "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-1",
    "ldct": {
     "scan_report": "LCS-ct-1",
-    "scan_label": "LR1",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 8.006238425925925,
-    "due_day": 373.0062384259259
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 8.0062,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -251.4031,
-   "consent": "denied",
-   "deadline_day": 0,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-10",
-   "ldct": {
-    "scan_report": "LCS-ct-10",
-    "scan_label": "LR1",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": -251.4032175925926,
-    "due_day": 113.5967824074074
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": -251.4031,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 40.9435,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-100",
-   "ldct": {
-    "scan_report": "LCS-ct-108",
-    "scan_label": "LR1",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 40.94354166666667,
-    "due_day": 405.94354166666665
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 40.9435,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 69.7091,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-101",
-   "ldct": {
-    "scan_report": "LCS-ct-109",
-    "scan_label": "LR1",
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 69.70914351851852,
-    "due_day": 434.70914351851854
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 69.7091,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": false,
-   "closed_day": 0,
-   "consent": "granted",
-   "deadline_day": 213,
-   "decisions": 4,
-   "dropoff": "followup_ldct_not_done",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-102",
-   "ldct": {
-    "scan_report": "LCS-ct-110",
-    "scan_label": "LR3",
-    "rec": {
-     "action": "followup_ldct",
-     "due_days": 183,
-     "deadline_days": 213,
-     "urgency": "routine",
-     "cell": "LR3",
-     "next_step": "LDCT in 6 months"
-    },
-    "scan_day": 33.57042824074074,
-    "due_day": 216.57042824074074,
-    "deadline_day": 246.57042824074074
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 33.5704,
-   "review": "signed",
-   "state": "open"
-  },
-  {
-   "closed": true,
-   "closed_day": -144.6456,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-103",
-   "ldct": {
-    "scan_report": "LCS-ct-112",
     "scan_label": "LR2",
     "rec": {
      "action": "annual",
@@ -179,27 +19,280 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -144.6457175925926,
-    "due_day": 220.3542824074074
+    "scan_day": -151.71042824074075,
+    "due_day": 213.28957175925925
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -144.6456,
+   "referral_day": -151.7103,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -136.0411,
+   "closed_day": -1.1607,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-10",
+   "ldct": {
+    "scan_report": "LCS-ct-10",
+    "scan_label": "LR1",
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -1.160787037037037,
+    "due_day": 363.83921296296296
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -1.1607,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -270.9377,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-100",
+   "ldct": {
+    "scan_report": "LCS-ct-106",
+    "scan_label": "LR2",
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -270.93783564814817,
+    "due_day": 94.06216435185183
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -270.9377,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -146.0376,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-101",
+   "ldct": {
+    "scan_report": "LCS-ct-107",
+    "scan_label": "LR2",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -146.03769675925926,
+    "due_day": 218.96230324074074
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -146.0376,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -165.0542,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-102",
+   "ldct": {
+    "scan_report": "LCS-ct-108",
+    "scan_label": "LR2",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -165.05427083333333,
+    "due_day": 199.94572916666667
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -165.0542,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -258.8178,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-103",
+   "ldct": {
+    "scan_report": "LCS-ct-109",
+    "scan_label": "LR1",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -258.81789351851853,
+    "due_day": 106.18210648148147
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -258.8178,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -128.5171,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-104",
+   "ldct": {
+    "scan_report": "LCS-ct-110",
+    "scan_label": "LR1",
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -128.51721064814814,
+    "due_day": 236.48278935185186
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -128.5171,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -156.6221,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-105",
+   "ldct": {
+    "scan_report": "LCS-ct-111",
+    "scan_label": "LR1",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -156.62223379629629,
+    "due_day": 208.37776620370371
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -156.6221,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -14.8061,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-106",
+   "ldct": {
+    "scan_report": "LCS-ct-112",
+    "scan_label": "LR2",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -14.806203703703703,
+    "due_day": 350.1937962962963
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -14.8061,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -235.0543,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-107",
    "ldct": {
     "scan_report": "LCS-ct-113",
     "scan_label": "LR2",
@@ -211,27 +304,27 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -136.0411689814815,
-    "due_day": 228.9588310185185
+    "scan_day": -235.05439814814815,
+    "due_day": 129.94560185185185
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -136.0411,
+   "referral_day": -235.0543,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -170.9349,
-   "consent": "denied",
+   "closed_day": -264.039,
+   "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
    "dropoff": "",
    "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-105",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-108",
    "ldct": {
     "scan_report": "LCS-ct-114",
     "scan_label": "LR2",
@@ -243,179 +336,83 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -170.9349537037037,
-    "due_day": 194.0650462962963
+    "scan_day": -264.0391087962963,
+    "due_day": 100.96089120370368
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -170.9349,
+   "referral_day": -264.039,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -291.9375,
+   "closed_day": -238.3192,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-106",
-   "ldct": {
-    "scan_report": "LCS-ct-115",
-    "scan_label": "LR2",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR2",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": -291.93758101851853,
-    "due_day": 73.06241898148147
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": -291.9375,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -81.981,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-107",
-   "ldct": {
-    "scan_report": "LCS-ct-116",
-    "scan_label": "LR1",
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": -81.98113425925926,
-    "due_day": 283.01886574074075
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": -81.981,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 71.3544,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-108",
-   "ldct": {
-    "scan_report": "LCS-ct-117",
-    "scan_label": "LR1",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 71.35435185185185,
-    "due_day": 436.35435185185185
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 71.3544,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 16.7913,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
    "dropoff": "",
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-109",
    "ldct": {
-    "scan_report": "LCS-ct-118",
-    "scan_label": "LR2",
-    "coded_lungrads": true,
+    "scan_report": "LCS-ct-115",
+    "scan_label": "LR1",
     "rec": {
      "action": "annual",
      "due_days": 365,
      "deadline_days": 0,
-     "cell": "LR2",
+     "cell": "LR1",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": 16.79125,
-    "due_day": 381.79125
+    "scan_day": -238.31925925925927,
+    "due_day": 126.68074074074073
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": 16.7913,
+   "referral_day": -238.3192,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": 75.8931,
+   "closed_day": -249.7224,
    "consent": "granted",
    "deadline_day": 0,
-   "decisions": 3,
+   "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-11",
    "ldct": {
     "scan_report": "LCS-ct-11",
-    "scan_label": "LR1",
+    "scan_label": "LR2",
     "rec": {
      "action": "annual",
      "due_days": 365,
      "deadline_days": 0,
-     "cell": "LR1",
+     "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": 75.89306712962963,
-    "due_day": 440.8930671296296
+    "scan_day": -249.72248842592592,
+    "due_day": 115.27751157407408
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": 75.8931,
+   "referral_day": -249.7224,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -38.2931,
+   "closed_day": -117.3975,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -423,8 +420,9 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-110",
    "ldct": {
-    "scan_report": "LCS-ct-119",
+    "scan_report": "LCS-ct-116",
     "scan_label": "LR2",
+    "coded_lungrads": true,
     "rec": {
      "action": "annual",
      "due_days": 365,
@@ -432,21 +430,21 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -38.29318287037037,
-    "due_day": 326.7068171296296
+    "scan_day": -117.39755787037036,
+    "due_day": 247.60244212962965
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -38.2931,
+   "referral_day": -117.3975,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -192.1034,
+   "closed_day": -96.0833,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -454,7 +452,7 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-111",
    "ldct": {
-    "scan_report": "LCS-ct-120",
+    "scan_report": "LCS-ct-117",
     "scan_label": "LR2",
     "coded_lungrads": true,
     "rec": {
@@ -464,21 +462,21 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -192.1035185185185,
-    "due_day": 172.8964814814815
+    "scan_day": -96.08336805555555,
+    "due_day": 268.9166319444445
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -192.1034,
+   "referral_day": -96.0833,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -282.9455,
+   "closed_day": -74.0361,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -486,62 +484,62 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-112",
    "ldct": {
-    "scan_report": "LCS-ct-121",
+    "scan_report": "LCS-ct-118",
     "scan_label": "LR2",
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -74.0361574074074,
+    "due_day": 290.9638425925926
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -74.0361,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 72.8342,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-113",
+   "ldct": {
+    "scan_report": "LCS-ct-119",
+    "scan_label": "LR1",
     "coded_lungrads": true,
     "rec": {
      "action": "annual",
      "due_days": 365,
      "deadline_days": 0,
-     "cell": "LR2",
+     "cell": "LR1",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -282.94560185185185,
-    "due_day": 82.05439814814815
+    "scan_day": 72.8341550925926,
+    "due_day": 437.8341550925926
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -282.9455,
+   "referral_day": 72.8342,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -287.9883,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-113",
-   "ldct": {
-    "scan_report": "LCS-ct-122",
-    "scan_label": "LR2",
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR2",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": -287.9883796296296,
-    "due_day": 77.0116203703704
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": -287.9883,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -145.0037,
+   "closed_day": -268.5347,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -549,64 +547,63 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-114",
    "ldct": {
-    "scan_report": "LCS-ct-123",
-    "scan_label": "LR2",
+    "scan_report": "LCS-ct-120",
+    "scan_label": "LR1",
+    "coded_lungrads": true,
     "rec": {
      "action": "annual",
      "due_days": 365,
      "deadline_days": 0,
-     "cell": "LR2",
+     "cell": "LR1",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -145.00376157407408,
-    "due_day": 219.99623842592592
+    "scan_day": -268.5347800925926,
+    "due_day": 96.4652199074074
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -145.0037,
+   "referral_day": -268.5347,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
-   "closed": false,
-   "closed_day": 0,
+   "closed": true,
+   "closed_day": -43.9153,
    "consent": "granted",
-   "deadline_day": 213,
-   "decisions": 3,
-   "dropoff": "followup_ldct_not_done",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-115",
    "ldct": {
-    "scan_report": "LCS-ct-124",
-    "scan_label": "LR3",
+    "scan_report": "LCS-ct-121",
+    "scan_label": "LR1",
     "coded_lungrads": true,
     "rec": {
-     "action": "followup_ldct",
-     "due_days": 183,
-     "deadline_days": 213,
-     "urgency": "routine",
-     "cell": "LR3",
-     "next_step": "LDCT in 6 months"
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": 39.17243055555556,
-    "due_day": 222.17243055555556,
-    "deadline_day": 252.17243055555556
+    "scan_day": -43.91537037037037,
+    "due_day": 321.0846296296296
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": 39.1724,
+   "referral_day": -43.9153,
    "review": "none",
-   "state": "open"
+   "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -88.1559,
+   "closed_day": -64.4187,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -614,39 +611,7 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-116",
    "ldct": {
-    "scan_report": "LCS-ct-126",
-    "scan_label": "LR1",
-    "coded_lungrads": true,
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR1",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": -88.15597222222222,
-    "due_day": 276.8440277777778
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": -88.1559,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 81.1559,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-117",
-   "ldct": {
-    "scan_report": "LCS-ct-127",
+    "scan_report": "LCS-ct-122",
     "scan_label": "LR2",
     "coded_lungrads": true,
     "rec": {
@@ -656,91 +621,61 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": 81.15585648148148,
-    "due_day": 446.15585648148146
+    "scan_day": -64.41877314814815,
+    "due_day": 300.58122685185185
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": 81.1559,
+   "referral_day": -64.4187,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": 76.899,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-118",
-   "ldct": {
-    "scan_report": "LCS-ct-128",
-    "scan_label": "LR2",
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR2",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 76.89902777777777,
-    "due_day": 441.89902777777775
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 76.899,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 56.6832,
-   "consent": "granted",
-   "deadline_day": 0,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-119",
-   "ldct": {
-    "scan_report": "LCS-ct-129",
-    "scan_label": "LR2",
-    "rec": {
-     "action": "annual",
-     "due_days": 365,
-     "deadline_days": 0,
-     "cell": "LR2",
-     "next_step": "continue annual screening: LDCT in 12 months"
-    },
-    "scan_day": 56.68318287037037,
-    "due_day": 421.6831828703704
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "lung_ldct",
-   "provider": "lcs-centre",
-   "referral_day": 56.6832,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -161.8339,
+   "closed_day": -150.5421,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
    "dropoff": "",
    "fixture": "",
-   "id": "lcs-centre/ServiceRequest/LCS-sr-12",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-117",
    "ldct": {
-    "scan_report": "LCS-ct-12",
+    "scan_report": "LCS-ct-123",
+    "scan_label": "LR1",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR1",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -150.5422337962963,
+    "due_day": 214.4577662037037
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -150.5421,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -116.2121,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-118",
+   "ldct": {
+    "scan_report": "LCS-ct-124",
     "scan_label": "LR1",
     "rec": {
      "action": "annual",
@@ -749,21 +684,84 @@
      "cell": "LR1",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -161.8339699074074,
-    "due_day": 203.1660300925926
+    "scan_day": -116.2121875,
+    "due_day": 248.7878125
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -161.8339,
+   "referral_day": -116.2121,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "closed": true,
-   "closed_day": -136.5249,
+   "closed_day": -177.0408,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-119",
+   "ldct": {
+    "scan_report": "LCS-ct-125",
+    "scan_label": "LR2",
+    "coded_lungrads": true,
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": -177.0408912037037,
+    "due_day": 187.9591087962963
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": -177.0408,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 52.8421,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "lcs-centre/ServiceRequest/LCS-sr-12",
+   "ldct": {
+    "scan_report": "LCS-ct-12",
+    "scan_label": "LR2",
+    "rec": {
+     "action": "annual",
+     "due_days": 365,
+     "deadline_days": 0,
+     "cell": "LR2",
+     "next_step": "continue annual screening: LDCT in 12 months"
+    },
+    "scan_day": 52.84207175925926,
+    "due_day": 417.8420717592593
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "lung_ldct",
+   "provider": "lcs-centre",
+   "referral_day": 52.8421,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -170.0555,
    "consent": "granted",
    "deadline_day": 0,
    "decisions": 2,
@@ -771,8 +769,9 @@
    "fixture": "",
    "id": "lcs-centre/ServiceRequest/LCS-sr-120",
    "ldct": {
-    "scan_report": "LCS-ct-130",
+    "scan_report": "LCS-ct-126",
     "scan_label": "LR2",
+    "coded_lungrads": true,
     "rec": {
      "action": "annual",
      "due_days": 365,
@@ -780,15 +779,15 @@
      "cell": "LR2",
      "next_step": "continue annual screening: LDCT in 12 months"
     },
-    "scan_day": -136.5250462962963,
-    "due_day": 228.4749537037037
+    "scan_day": -170.05560185185186,
+    "due_day": 194.94439814814814
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "lung_ldct",
    "provider": "lcs-centre",
-   "referral_day": -136.5249,
+   "referral_day": -170.0555,
    "review": "none",
    "state": "no_recall_needed"
   }
@@ -797,12 +796,12 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-01T13:15:21Z",
+  "loaded_at": "2026-11-02T04:59:26Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
   "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "offset": 0,
- "total": 303
+ "total": 306
 }

@@ -3,21 +3,21 @@
   {
    "breast": {
     "screen_report": "BSU-br-1",
-    "screen_label": "B2",
+    "screen_label": "B1",
     "coded_birads": true,
     "rec": {
      "action": "routine",
      "deadline_days": 730,
-     "cell": "B2"
+     "cell": "B1"
     },
-    "screen_day": -109.29444444444445,
-    "deadline_day": 620.7055555555555
+    "screen_day": 52.85748842592593,
+    "deadline_day": 782.8574884259259
    },
    "closed": true,
-   "closed_day": -109.2943,
+   "closed_day": 52.8575,
    "consent": "granted",
    "deadline_day": 730,
-   "decisions": 2,
+   "decisions": 3,
    "dropoff": "",
    "fixture": "",
    "id": "bsu-screen/ServiceRequest/BSU-sr-1",
@@ -26,24 +26,25 @@
    "priority": "",
    "programme": "breast",
    "provider": "bsu-screen",
-   "referral_day": -109.2943,
+   "referral_day": 52.8575,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "breast": {
     "screen_report": "BSU-br-11",
-    "screen_label": "B2",
+    "screen_label": "B1",
+    "coded_birads": true,
     "rec": {
      "action": "routine",
      "deadline_days": 730,
-     "cell": "B2"
+     "cell": "B1"
     },
-    "screen_day": -98.50746527777778,
-    "deadline_day": 631.4925347222222
+    "screen_day": -106.35194444444444,
+    "deadline_day": 623.6480555555555
    },
    "closed": true,
-   "closed_day": -98.5074,
+   "closed_day": -106.3518,
    "consent": "granted",
    "deadline_day": 730,
    "decisions": 2,
@@ -55,325 +56,25 @@
    "priority": "",
    "programme": "breast",
    "provider": "bsu-screen",
-   "referral_day": -98.5074,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-103",
-    "screen_label": "B2",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B2"
-    },
-    "screen_day": -40.336412037037036,
-    "deadline_day": 689.663587962963
-   },
-   "closed": true,
-   "closed_day": -40.3363,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-100",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -40.3363,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-104",
-    "screen_label": "B2",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B2"
-    },
-    "screen_day": 71.32938657407408,
-    "deadline_day": 801.3293865740741
-   },
-   "closed": true,
-   "closed_day": 71.3294,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-101",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 71.3294,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-105",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -36.95408564814815,
-    "deadline_day": 693.0459143518518
-   },
-   "closed": true,
-   "closed_day": -36.954,
-   "consent": "denied",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-102",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -36.954,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-106",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -15.620451388888888,
-    "deadline_day": 714.3795486111111
-   },
-   "closed": true,
-   "closed_day": -15.6204,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-103",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -15.6204,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-107",
-    "screen_label": "B0",
-    "coded_birads": true,
-    "rec": {
-     "action": "recall",
-     "deadline_days": 14,
-     "urgency": "routine",
-     "cell": "B0"
-    },
-    "screen_day": -101.82046296296296,
-    "deadline_day": -87.82046296296296,
-    "assessment_document": "BAU-br-8",
-    "outcome": "return_routine"
-   },
-   "closed": true,
-   "closed_day": -43.6148,
-   "consent": "denied",
-   "deadline_day": 14,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-104",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -101.8204,
-   "review": "none",
-   "state": "closed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-108",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -25.859247685185185,
-    "deadline_day": 704.1407523148148
-   },
-   "closed": true,
-   "closed_day": -25.8591,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-105",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -25.8591,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-109",
-    "screen_label": "B1",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 76.43834490740741,
-    "deadline_day": 806.4383449074074
-   },
-   "closed": true,
-   "closed_day": 76.4383,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-106",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 76.4383,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-110",
-    "screen_label": "B2",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B2"
-    },
-    "screen_day": -41.45625,
-    "deadline_day": 688.54375
-   },
-   "closed": true,
-   "closed_day": -41.4562,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-107",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -41.4562,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-111",
-    "screen_label": "B2",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B2"
-    },
-    "screen_day": 35.03649305555555,
-    "deadline_day": 765.0364930555555
-   },
-   "closed": true,
-   "closed_day": 35.0365,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-108",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 35.0365,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-112",
-    "screen_label": "B1",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 14.057025462962963,
-    "deadline_day": 744.057025462963
-   },
-   "closed": true,
-   "closed_day": 14.057,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-109",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 14.057,
+   "referral_day": -106.3518,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "breast": {
     "screen_report": "BSU-br-12",
-    "screen_label": "B2",
+    "screen_label": "B1",
     "coded_birads": true,
     "rec": {
      "action": "routine",
      "deadline_days": 730,
-     "cell": "B2"
+     "cell": "B1"
     },
-    "screen_day": 65.95004629629629,
-    "deadline_day": 795.9500462962963
+    "screen_day": 33.03630787037037,
+    "deadline_day": 763.0363078703704
    },
    "closed": true,
-   "closed_day": 65.95,
+   "closed_day": 33.0363,
    "consent": "granted",
    "deadline_day": 730,
    "decisions": 3,
@@ -385,304 +86,7 @@
    "priority": "",
    "programme": "breast",
    "provider": "bsu-screen",
-   "referral_day": 65.95,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-113",
-    "screen_label": "B1",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -71.0317824074074,
-    "deadline_day": 658.9682175925926
-   },
-   "closed": true,
-   "closed_day": -71.0317,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-110",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -71.0317,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-114",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 21.525810185185186,
-    "deadline_day": 751.5258101851852
-   },
-   "closed": true,
-   "closed_day": 21.5258,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-111",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 21.5258,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-115",
-    "screen_label": "B1",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -6.0535648148148145,
-    "deadline_day": 723.9464351851852
-   },
-   "closed": true,
-   "closed_day": -6.0535,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-112",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -6.0535,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-116",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -61.10188657407407,
-    "deadline_day": 668.8981134259259
-   },
-   "closed": true,
-   "closed_day": -61.1018,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-113",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -61.1018,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-117",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 43.83964120370371,
-    "deadline_day": 773.8396412037036
-   },
-   "closed": true,
-   "closed_day": 43.8396,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-114",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 43.8396,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-118",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -103.99748842592592,
-    "deadline_day": 626.0025115740741
-   },
-   "closed": true,
-   "closed_day": -103.9974,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-115",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -103.9974,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-119",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 71.11893518518518,
-    "deadline_day": 801.1189351851851
-   },
-   "closed": true,
-   "closed_day": 71.1189,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-116",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 71.1189,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-120",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": 28.490636574074074,
-    "deadline_day": 758.4906365740741
-   },
-   "closed": true,
-   "closed_day": 28.4906,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-117",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": 28.4906,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-121",
-    "screen_label": "B1",
-    "coded_birads": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -76.59012731481481,
-    "deadline_day": 653.4098726851852
-   },
-   "closed": true,
-   "closed_day": -76.59,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-118",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -76.59,
-   "review": "none",
-   "state": "no_recall_needed"
-  },
-  {
-   "breast": {
-    "screen_report": "BSU-br-122",
-    "screen_label": "B1",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 730,
-     "cell": "B1"
-    },
-    "screen_day": -7.708784722222222,
-    "deadline_day": 722.2912152777777
-   },
-   "closed": true,
-   "closed_day": -7.7087,
-   "consent": "granted",
-   "deadline_day": 730,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-119",
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "breast",
-   "provider": "bsu-screen",
-   "referral_day": -7.7087,
+   "referral_day": 33.0363,
    "review": "none",
    "state": "no_recall_needed"
   },
@@ -690,20 +94,19 @@
    "breast": {
     "screen_report": "BSU-br-13",
     "screen_label": "B1",
-    "coded_birads": true,
     "rec": {
      "action": "routine",
      "deadline_days": 730,
      "cell": "B1"
     },
-    "screen_day": 28.361851851851853,
-    "deadline_day": 758.3618518518518
+    "screen_day": -109.02038194444444,
+    "deadline_day": 620.9796180555555
    },
    "closed": true,
-   "closed_day": 28.3619,
+   "closed_day": -109.0203,
    "consent": "granted",
    "deadline_day": 730,
-   "decisions": 3,
+   "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "bsu-screen/ServiceRequest/BSU-sr-12",
@@ -712,13 +115,13 @@
    "priority": "",
    "programme": "breast",
    "provider": "bsu-screen",
-   "referral_day": 28.3619,
+   "referral_day": -109.0203,
    "review": "none",
    "state": "no_recall_needed"
   },
   {
    "breast": {
-    "screen_report": "BSU-br-123",
+    "screen_report": "BSU-br-14",
     "screen_label": "B1",
     "coded_birads": true,
     "rec": {
@@ -726,23 +129,622 @@
      "deadline_days": 730,
      "cell": "B1"
     },
-    "screen_day": -41.62579861111111,
-    "deadline_day": 688.3742013888889
+    "screen_day": -10.700625,
+    "deadline_day": 719.299375
    },
    "closed": true,
-   "closed_day": -41.6257,
-   "consent": "granted",
+   "closed_day": -10.7005,
+   "consent": "denied",
    "deadline_day": 730,
    "decisions": 2,
    "dropoff": "",
    "fixture": "",
-   "id": "bsu-screen/ServiceRequest/BSU-sr-120",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-13",
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "breast",
    "provider": "bsu-screen",
-   "referral_day": -41.6257,
+   "referral_day": -10.7005,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-15",
+    "screen_label": "B2",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B2"
+    },
+    "screen_day": 6.3078125,
+    "deadline_day": 736.3078125
+   },
+   "closed": true,
+   "closed_day": 6.3078,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-14",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 6.3078,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-16",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": 82.0165625,
+    "deadline_day": 812.0165625
+   },
+   "closed": true,
+   "closed_day": 82.0166,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-15",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 82.0166,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-17",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": 84.86246527777777,
+    "deadline_day": 814.8624652777778
+   },
+   "closed": true,
+   "closed_day": 84.8625,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-16",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 84.8625,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-18",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -56.17418981481482,
+    "deadline_day": 673.8258101851852
+   },
+   "closed": true,
+   "closed_day": -56.1741,
+   "consent": "denied",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-17",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -56.1741,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-19",
+    "screen_label": "B0",
+    "rec": {
+     "action": "recall",
+     "deadline_days": 14,
+     "urgency": "routine",
+     "cell": "B0"
+    },
+    "screen_day": 38.01321759259259,
+    "deadline_day": 52.01321759259259,
+    "assessment_document": "BAU-br-1",
+    "outcome": "return_routine",
+    "within_deadline": true
+   },
+   "closed": true,
+   "closed_day": 43.3163,
+   "consent": "granted",
+   "deadline_day": 14,
+   "decisions": 4,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-18",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 38.0132,
+   "review": "none",
+   "state": "closed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-20",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -12.983043981481481,
+    "deadline_day": 717.0169560185185
+   },
+   "closed": true,
+   "closed_day": -12.9829,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-19",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -12.9829,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-3",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": 15.235162037037037,
+    "deadline_day": 745.2351620370371
+   },
+   "closed": true,
+   "closed_day": 15.2352,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 4,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-2",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 5.2179,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-21",
+    "screen_label": "B2",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B2"
+    },
+    "screen_day": 43.367719907407405,
+    "deadline_day": 773.3677199074074
+   },
+   "closed": true,
+   "closed_day": 43.3677,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-20",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 43.3677,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-22",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -77.60207175925926,
+    "deadline_day": 652.3979282407407
+   },
+   "closed": true,
+   "closed_day": -77.602,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-21",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -77.602,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-23",
+    "screen_label": "B2",
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B2"
+    },
+    "screen_day": -90.92230324074075,
+    "deadline_day": 639.0776967592592
+   },
+   "closed": true,
+   "closed_day": -90.9222,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-22",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -90.9222,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-24",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -89.75900462962963,
+    "deadline_day": 640.2409953703703
+   },
+   "closed": true,
+   "closed_day": -89.7589,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-23",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -89.7589,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-25",
+    "screen_label": "B1",
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": 23.39790509259259,
+    "deadline_day": 753.3979050925926
+   },
+   "closed": true,
+   "closed_day": 23.3979,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-24",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 23.3979,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-26",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": 45.26645833333333,
+    "deadline_day": 775.2664583333333
+   },
+   "closed": true,
+   "closed_day": 45.2665,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-25",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 45.2665,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-27",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -56.453148148148145,
+    "deadline_day": 673.5468518518519
+   },
+   "closed": true,
+   "closed_day": -56.453,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-26",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -56.453,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-28",
+    "screen_label": "B2",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B2"
+    },
+    "screen_day": 40.94738425925926,
+    "deadline_day": 770.9473842592593
+   },
+   "closed": true,
+   "closed_day": 40.9474,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-27",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": 40.9474,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-29",
+    "screen_label": "B2",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B2"
+    },
+    "screen_day": -13.847627314814815,
+    "deadline_day": 716.1523726851851
+   },
+   "closed": true,
+   "closed_day": -13.8475,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-28",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -13.8475,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-30",
+    "screen_label": "B1",
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -66.55604166666667,
+    "deadline_day": 663.4439583333333
+   },
+   "closed": true,
+   "closed_day": -66.5559,
+   "consent": "denied",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-29",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -66.5559,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-4",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -5.273680555555556,
+    "deadline_day": 724.7263194444445
+   },
+   "closed": true,
+   "closed_day": -5.2736,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-3",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -5.2736,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-31",
+    "screen_label": "B1",
+    "coded_birads": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -85.62674768518518,
+    "deadline_day": 644.3732523148149
+   },
+   "closed": true,
+   "closed_day": -85.6266,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-30",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -85.6266,
+   "review": "none",
+   "state": "no_recall_needed"
+  },
+  {
+   "breast": {
+    "screen_report": "BSU-br-32",
+    "screen_label": "B1",
+    "rec": {
+     "action": "routine",
+     "deadline_days": 730,
+     "cell": "B1"
+    },
+    "screen_day": -64.32863425925926,
+    "deadline_day": 665.6713657407407
+   },
+   "closed": true,
+   "closed_day": -64.3285,
+   "consent": "granted",
+   "deadline_day": 730,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "bsu-screen/ServiceRequest/BSU-sr-31",
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "breast",
+   "provider": "bsu-screen",
+   "referral_day": -64.3285,
    "review": "none",
    "state": "no_recall_needed"
   }
@@ -751,12 +753,12 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-01T13:15:21Z",
+  "loaded_at": "2026-11-02T04:59:26Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
   "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "offset": 0,
- "total": 160
+ "total": 70
 }

@@ -7,246 +7,262 @@
  },
  "case": {
   "closed": true,
-  "closed_day": -15.454,
+  "closed_day": 34.04,
   "consent": "granted",
-  "deadline_day": 91,
-  "decisions": 3,
+  "deadline_day": 42,
+  "decisions": 4,
   "dr": {
-   "screen_report": "PHC-dr-1077",
-   "screen_label": "R2M0",
+   "screen_report": "PHC-dr-166",
+   "screen_label": "R3AM1",
    "rec": {
     "action": "refer",
-    "deadline_days": 91,
-    "urgency": "routine",
-    "cell": "R2M0"
+    "deadline_days": 42,
+    "urgency": "urgent",
+    "cell": "R3AM1"
    },
-   "grade_day": -63.02478009259259,
-   "deadline_day": 27.975219907407407,
-   "clinic_note": "EYE-dr-83",
-   "outcome": "examined_followup",
+   "grade_day": 25.341805555555556,
+   "deadline_day": 67.34180555555555,
+   "clinic_note": "EYE-dr-12",
+   "outcome": "examined_discharged",
    "examined": true,
    "within_deadline": true,
    "next_due": {
-    "kind": "clinic_review",
-    "from_day": -15.454108796296296,
-    "interval_days": 183,
-    "due_day": 167.54589120370372,
-    "basis": "note_review_interval"
+    "kind": "rescreen",
+    "from_day": 34.039965277777775,
+    "interval_days": 365,
+    "due_day": 399.03996527777775,
+    "basis": "discharged_to_annual_screening"
    }
   },
   "dropoff": "",
   "fixture": "dr_exam_closure",
-  "id": "phc-retina/ServiceRequest/PHC-sr-1029",
+  "id": "phc-retina/ServiceRequest/PHC-sr-160",
   "overdue": false,
   "owner": "",
   "priority": "",
   "programme": "diabetic_retinopathy",
   "provider": "phc-retina",
-  "referral_day": -63.0247,
+  "referral_day": 25.3418,
   "review": "none",
   "state": "closed"
  },
  "current": {
-  "id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@6020",
-  "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
-  "in_seq": 6020,
+  "id": "dec-phc-retina/ServiceRequest/PHC-sr-160@tick-d29-p1",
+  "loop": "phc-retina/ServiceRequest/PHC-sr-160",
+  "in_seq": 21172,
   "prov": "phc-retina",
-  "sr_day": -63.02478009259259,
-  "now": 0,
+  "sr_day": 25.341805555555556,
+  "now": 29,
   "state": "closed",
   "overdue": false,
   "unowned": true,
   "reported_closed": false,
-  "closed_day": -15.454108796296296,
-  "closing_report": "EYE-dr-83",
+  "closed_day": 34.039965277777775,
+  "closing_report": "EYE-dr-12",
   "notif_day": -1,
   "ack_day": -1,
   "ref_status": "none",
   "ref_day": -1,
   "dropoff": "",
   "prog": "diabetic_retinopathy",
-  "deadline": 91,
-  "proc_day": -15.454108796296296,
+  "deadline": 42,
+  "proc_day": 34.039965277777775,
   "chain": [
    {
     "type": "evidence",
     "body": {
      "agree": true,
      "human_override": "",
-     "label": "R2M0",
+     "label": "R3AM1",
      "reader_a_fields": {
-      "label": "R2M0",
+      "label": "R3AM1",
       "m_left": "0",
-      "m_right": "0",
-      "quote": "Right eye: severe non-proliferative diabetic retinopathy; no maculopathy",
-      "r_left": "1",
+      "m_right": "1",
+      "quote": "Right eye: R2M1",
+      "r_left": "3A",
       "r_right": "2"
      },
-     "reader_a_regex": "R2M0",
-     "reader_b": "R2M0",
+     "reader_a_regex": "R3AM1",
+     "reader_b": "R3AM1",
      "reader_b_fields": {
-      "label": "R2M0",
-      "m_left": "0",
+      "label": "R3AM1",
+      "m_left": "1",
       "m_right": "0",
-      "quote": "mild non-proliferative diabetic retinopathy",
-      "r_left": "1",
+      "quote": "Right eye: R2M1",
+      "r_left": "3A",
       "r_right": "2"
      },
      "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
-     "report": "phc-retina/DiagnosticReport/PHC-dr-1077",
+     "report": "phc-retina/DiagnosticReport/PHC-dr-166",
      "rule": "two_reader_field_consensus"
     },
     "prev": "genesis",
-    "hash": "08387aff32485b85b7152d0cf659756088456c9c4f61949e136e375533f30212"
+    "hash": "9e49c165c69b44f0c64f7773068ba61007d4427f4089a23853b2da8fb78b909b"
    },
    {
     "type": "recommendation",
     "body": {
      "action": "refer",
-     "cell": "R2M0",
-     "deadline_days": 91,
-     "grade_day": -63.0247,
+     "cell": "R3AM1",
+     "deadline_days": 42,
+     "grade_day": 25.3418,
      "rule": "doh2024dr",
      "source": "DoH Abu Dhabi DOH/ST/SDMDMT/V1/2024 cl. 3.13.81, 3.13.85; deadlines: NHS Diabetic Eye Screening Programme Pathway Standards (2018)",
-     "urgency": "routine"
+     "urgency": "urgent"
     },
-    "prev": "08387aff32485b85b7152d0cf659756088456c9c4f61949e136e375533f30212",
-    "hash": "be6ec00c7423a1b6fc1454aa6943874c7cd840799374cacf5459869177cce541"
+    "prev": "9e49c165c69b44f0c64f7773068ba61007d4427f4089a23853b2da8fb78b909b",
+    "hash": "b313964d8c259c6591ebe2dbf8c15a72a137984a951c846aa27576292ed6a26f"
    },
    {
     "type": "link_decision",
     "body": {
-     "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-83",
+     "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-12",
      "hops": 1,
      "linker": "wasl-v3-retrained+iso+eid",
-     "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+     "loop": "phc-retina/ServiceRequest/PHC-sr-160",
      "near_miss": false,
-     "path_p_cal": 1,
+     "path_p_cal": 0.9985,
      "path_strength": 1,
-     "referral_patient": "phc-retina|PHC-MRN001029",
+     "referral_patient": "phc-retina|PHC-MRN000160",
      "tau": 0.99,
      "weakest_edge": {
-      "a": "phc-retina|PHC-MRN001029",
-      "b": "eye-hosp|EYE-MRN000072",
-      "basis": "eid",
+      "a": "phc-retina|PHC-MRN000160",
+      "b": "eye-hosp|EYE-MRN000011",
+      "basis": "wasl",
       "p": 1
      }
     },
-    "prev": "be6ec00c7423a1b6fc1454aa6943874c7cd840799374cacf5459869177cce541",
-    "hash": "a1a9ab4834a1a6fb5613f0b3386b5f54beadf6756001777432f129d2ae7d5290"
+    "prev": "b313964d8c259c6591ebe2dbf8c15a72a137984a951c846aa27576292ed6a26f",
+    "hash": "664bf399dbad4283a3ec3453fcb934392768006b7f14c0a5e1de131c99a72934"
    },
    {
     "type": "evidence",
     "body": {
      "agree": true,
      "human_override": "",
-     "label": "examined_followup",
+     "label": "examined_discharged",
      "reader_a_fields": {
       "attended": "yes",
       "fundus": "examined",
-      "label": "examined_followup",
-      "outcome": "followup",
-      "quote": "Fundus examined after dilation: maculopathy without centre involvement",
-      "review_days": 183
+      "label": "examined_discharged",
+      "outcome": "discharged",
+      "quote": "DFE shows no sight-threatening disease"
      },
-     "reader_a_regex": "examined_followup",
-     "reader_b": "examined_followup",
+     "reader_a_regex": "examined_discharged",
+     "reader_b": "examined_discharged",
      "reader_b_fields": {
       "attended": "yes",
       "fundus": "examined",
-      "label": "examined_followup",
-      "outcome": "followup",
-      "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months."
+      "label": "examined_discharged",
+      "outcome": "discharged",
+      "quote": "DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic."
      },
      "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
-     "report": "eye-hosp/DiagnosticReport/EYE-dr-83",
+     "report": "eye-hosp/DiagnosticReport/EYE-dr-12",
      "rule": "two_reader_field_consensus"
     },
-    "prev": "a1a9ab4834a1a6fb5613f0b3386b5f54beadf6756001777432f129d2ae7d5290",
-    "hash": "98c334e68aaf351a076255d5fab1b95d4f8d7c535ccec47989b7c35ac08789fc"
+    "prev": "664bf399dbad4283a3ec3453fcb934392768006b7f14c0a5e1de131c99a72934",
+    "hash": "1804b035b46d4bfcd187457d91b0b405f9e1a6ee3b0e51e75699e4c24ed2c0c5"
    },
    {
     "type": "closure_decision",
     "body": {
-     "closed_day": -15.454,
-     "deadline_day": 27.9752,
-     "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
-     "outcome": "examined_followup",
+     "closed_day": 34.04,
+     "deadline_day": 67.3418,
+     "loop": "phc-retina/ServiceRequest/PHC-sr-160",
+     "outcome": "examined_discharged",
      "policy": "trusted link (p_cal\u003e=tau|eid|human) AND two-reader agreement that the retina was examined (or clinician sign-off)",
      "programme": "diabetic_retinopathy",
      "rule": "doh2024dr",
      "state": "closed",
      "within_deadline": true
     },
-    "prev": "98c334e68aaf351a076255d5fab1b95d4f8d7c535ccec47989b7c35ac08789fc",
-    "hash": "df7357fcce26e7d880599a8ffa1ac7783499cf0fc1cb1e7c94b7f336693e437c"
+    "prev": "1804b035b46d4bfcd187457d91b0b405f9e1a6ee3b0e51e75699e4c24ed2c0c5",
+    "hash": "6f7e4e709342a1083bb3b3a12e73e63356fd8c02226c2c5363ec39d4420a9b79"
    }
   ],
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "contact": "granted",
-  "sig": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1",
+  "sig": "b415f60bcf75c7a5daefcb5eeda4eb5eda8ccf37b556b942ae019772bb4a0131",
   "dr": {
-   "screen_report": "PHC-dr-1077",
-   "screen_label": "R2M0",
+   "screen_report": "PHC-dr-166",
+   "screen_label": "R3AM1",
    "rec": {
     "action": "refer",
-    "deadline_days": 91,
-    "urgency": "routine",
-    "cell": "R2M0"
+    "deadline_days": 42,
+    "urgency": "urgent",
+    "cell": "R3AM1"
    },
-   "grade_day": -63.02478009259259,
-   "deadline_day": 27.975219907407407,
-   "clinic_note": "EYE-dr-83",
-   "outcome": "examined_followup",
+   "grade_day": 25.341805555555556,
+   "deadline_day": 67.34180555555555,
+   "clinic_note": "EYE-dr-12",
+   "outcome": "examined_discharged",
    "examined": true,
    "within_deadline": true,
    "next_due": {
-    "kind": "clinic_review",
-    "from_day": -15.454108796296296,
-    "interval_days": 183,
-    "due_day": 167.54589120370372,
-    "basis": "note_review_interval"
+    "kind": "rescreen",
+    "from_day": 34.039965277777775,
+    "interval_days": 365,
+    "due_day": 399.03996527777775,
+    "basis": "discharged_to_annual_screening"
    }
   }
  },
  "decisions": [
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4195",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-160@phc-retina/ServiceRequest/PHC-sr-160@14516",
    "dropoff": "no_eye_exam",
-   "escalations": [],
-   "in_seq": 4195,
+   "escalations": [
+    "urgent_dr_referral_open"
+   ],
+   "in_seq": 14516,
    "outreach": [],
    "overdue": false,
    "owner": "",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "sig": "91db1e122d14ee9566280234d2e69f88cdb6e24d8a41c7f6d07f719f019e54c1",
+   "sig": "520b9003a055fac4ed93e435081e4f04377162562752c48f6e315e7dc95704ef",
    "state": "open"
   },
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4212",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-160@phc-retina/ServiceRequest/PHC-sr-160@14657",
    "dropoff": "no_eye_exam",
-   "escalations": [],
-   "in_seq": 4212,
+   "escalations": [
+    "urgent_dr_referral_open"
+   ],
+   "in_seq": 14657,
    "outreach": [],
    "overdue": false,
    "owner": "",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "sig": "8f02d46417e6d8fef35320049ba253d8049b3d503fd0b5d4a4ae5e3388efb095",
+   "sig": "b49343c6fbf6bf96a8274edfe5f415ee0e7ccf78c91d9771384d306aef69e0ba",
    "state": "open"
   },
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@6020",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-160@phc-retina/ServiceRequest/PHC-sr-160@17582",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 6020,
+   "in_seq": 17582,
    "outreach": [],
    "overdue": false,
    "owner": "",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "sig": "f913cbeb48bf8a4ee4334e78ec68dc7d69450ec1a8aaa6502d9ccee5ecd73dc1",
+   "sig": "18a6c569cc77c35172d2dd3561e0af95185f127df47895330b3587d3077ce6db",
+   "state": "closed"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-160@tick-d29-p1",
+   "dropoff": "",
+   "escalations": [],
+   "in_seq": 21172,
+   "outreach": [],
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "sig": "b415f60bcf75c7a5daefcb5eeda4eb5eda8ccf37b556b942ae019772bb4a0131",
    "state": "closed"
   }
  ],
@@ -254,59 +270,58 @@
   {
    "agree": true,
    "human_override": "",
-   "label": "R2M0",
+   "label": "R3AM1",
    "reader_a_fields": {
-    "label": "R2M0",
+    "label": "R3AM1",
     "m_left": "0",
-    "m_right": "0",
-    "quote": "Right eye: severe non-proliferative diabetic retinopathy; no maculopathy",
-    "r_left": "1",
+    "m_right": "1",
+    "quote": "Right eye: R2M1",
+    "r_left": "3A",
     "r_right": "2"
    },
-   "reader_a_regex": "R2M0",
-   "reader_b": "R2M0",
+   "reader_a_regex": "R3AM1",
+   "reader_b": "R3AM1",
    "reader_b_fields": {
-    "label": "R2M0",
-    "m_left": "0",
+    "label": "R3AM1",
+    "m_left": "1",
     "m_right": "0",
-    "quote": "mild non-proliferative diabetic retinopathy",
-    "r_left": "1",
+    "quote": "Right eye: R2M1",
+    "r_left": "3A",
     "r_right": "2"
    },
    "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
-   "report": "phc-retina/DiagnosticReport/PHC-dr-1077",
+   "report": "phc-retina/DiagnosticReport/PHC-dr-166",
    "rule": "two_reader_field_consensus"
   },
   {
    "agree": true,
    "human_override": "",
-   "label": "examined_followup",
+   "label": "examined_discharged",
    "reader_a_fields": {
     "attended": "yes",
     "fundus": "examined",
-    "label": "examined_followup",
-    "outcome": "followup",
-    "quote": "Fundus examined after dilation: maculopathy without centre involvement",
-    "review_days": 183
+    "label": "examined_discharged",
+    "outcome": "discharged",
+    "quote": "DFE shows no sight-threatening disease"
    },
-   "reader_a_regex": "examined_followup",
-   "reader_b": "examined_followup",
+   "reader_a_regex": "examined_discharged",
+   "reader_b": "examined_discharged",
    "reader_b_fields": {
     "attended": "yes",
     "fundus": "examined",
-    "label": "examined_followup",
-    "outcome": "followup",
-    "quote": "Fundus examined after dilation: maculopathy without centre involvement. Observe; OCT and review in 6 months."
+    "label": "examined_discharged",
+    "outcome": "discharged",
+    "quote": "DFE shows no sight-threatening disease. Return to annual retinal screening; discharged from eye clinic."
    },
    "reader_model": "gemma-3-4b-it-Q4_K_M/dr-v5(cached)",
-   "report": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "report": "eye-hosp/DiagnosticReport/EYE-dr-12",
    "rule": "two_reader_field_consensus"
   }
  ],
  "holds": [
   {
-   "deadline_day": 27.9752,
-   "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "deadline_day": 67.3418,
+   "loop": "phc-retina/ServiceRequest/PHC-sr-160",
    "policy": "no closure without a trusted link and two-reader agreement (or an authorised clinician decision)",
    "programme": "diabetic_retinopathy",
    "reason": "awaiting_eye_clinic_exam",
@@ -317,30 +332,30 @@
  "identities": [
   {
    "provider": "phc-retina",
-   "registration": "phc-retina|PHC-MRN001029",
+   "registration": "phc-retina|PHC-MRN000160",
    "role": "referral"
   },
   {
    "provider": "eye-hosp",
-   "registration": "eye-hosp|EYE-MRN000072",
+   "registration": "eye-hosp|EYE-MRN000011",
    "role": "downstream"
   }
  ],
  "links": [
   {
-   "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "downstream_event": "eye-hosp/DiagnosticReport/EYE-dr-12",
    "hops": 1,
    "linker": "wasl-v3-retrained+iso+eid",
-   "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "loop": "phc-retina/ServiceRequest/PHC-sr-160",
    "near_miss": false,
-   "path_p_cal": 1,
+   "path_p_cal": 0.9985,
    "path_strength": 1,
-   "referral_patient": "phc-retina|PHC-MRN001029",
+   "referral_patient": "phc-retina|PHC-MRN000160",
    "tau": 0.99,
    "weakest_edge": {
-    "a": "phc-retina|PHC-MRN001029",
-    "b": "eye-hosp|EYE-MRN000072",
-    "basis": "eid",
+    "a": "phc-retina|PHC-MRN000160",
+    "b": "eye-hosp|EYE-MRN000011",
+    "basis": "wasl",
     "p": 1
    }
   }
@@ -348,7 +363,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-01T13:15:21Z",
+  "loaded_at": "2026-11-02T04:59:26Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
@@ -359,49 +374,49 @@
  "signoffs": [],
  "timeline": [
   {
-   "arrival_day": -62.3283,
+   "arrival_day": 25.8562,
    "category": "dr-screen",
-   "day": -63.0247,
-   "id": "phc-retina/DiagnosticReport/PHC-dr-1077",
+   "day": 25.3418,
+   "id": "phc-retina/DiagnosticReport/PHC-dr-166",
    "provider": "phc-retina",
-   "raw_sha": "c38d96c7958379d9",
-   "seq": 4182,
+   "raw_sha": "86c4af4b08be64bb",
+   "seq": 14498,
    "source": "fhir",
    "status": "final",
    "type": "DiagnosticReport"
   },
   {
-   "arrival_day": -62.2646,
+   "arrival_day": 25.9051,
    "category": "dr-screening",
-   "day": -63.0247,
-   "id": "phc-retina/ServiceRequest/PHC-sr-1029",
+   "day": 25.3418,
+   "id": "phc-retina/ServiceRequest/PHC-sr-160",
    "provider": "phc-retina",
-   "raw_sha": "a6205e3097afabdd",
-   "seq": 4195,
+   "raw_sha": "80edea782a56da40",
+   "seq": 14516,
    "source": "fhir",
    "status": "active",
    "type": "ServiceRequest"
   },
   {
-   "arrival_day": -61.8124,
+   "arrival_day": 26.3668,
    "category": "",
-   "day": -61.8124,
-   "id": "phc-retina/Consent/dr-consent-PHC-sr-1029",
+   "day": 26.3668,
+   "id": "phc-retina/Consent/dr-consent-PHC-sr-160",
    "provider": "phc-retina",
-   "raw_sha": "93b5f16ef274784c",
-   "seq": 4212,
+   "raw_sha": "19c09fbb4c9a18d6",
+   "seq": 14657,
    "source": "fhir",
    "status": "permit",
    "type": "Consent"
   },
   {
-   "arrival_day": -15.2304,
+   "arrival_day": 34.5309,
    "category": "dr-clinic",
-   "day": -15.454,
-   "id": "eye-hosp/DiagnosticReport/EYE-dr-83",
+   "day": 34.04,
+   "id": "eye-hosp/DiagnosticReport/EYE-dr-12",
    "provider": "eye-hosp",
-   "raw_sha": "7762253d11f1159f",
-   "seq": 6020,
+   "raw_sha": "719ae17b0bd9a065",
+   "seq": 17582,
    "source": "fhir",
    "status": "final",
    "type": "DiagnosticReport"

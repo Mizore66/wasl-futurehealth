@@ -1,0 +1,16 @@
+── Wasl baseline (simulated cohort; one seed) ──
+crc       with review : P 0.984  R 0.759  false closures 9/578
+crc       no review   : P 0.983  R 0.312  false closures 4/238
+cervical  with review : P 0.996  R 0.892  false closures 1/248
+cervical  no review   : P 0.993  R 0.538  false closures 1/150
+CRC ≤31-day KPI (all referrals): EID-only 0.130 | truth 0.324 | Wasl 0.286
+exactly-once: duplicates 0 / 42698 outputs; final-state mismatches 0
+provenance chains verified 4706/4706; forged events with effect 0/20
+wrong-patient messages released 0; messages before late opt-out recorded 0
+consent hold: released 2309, without granted consent 0; held-for-consent 531, cancelled 149
+throughput 694 ev/s; reviewer-h/1k loops 10.9
+lung_nodule (Fleischner 2017): P 0.997  R 0.939  false closures 1/384; escalation recall 0.850; overdue acc 0.973; recommendation acc 1.000 (coverage 1.000); appropriate follow-up truth 0.380 vs Wasl 0.339
+diabetic_retinopathy (doh2024dr): P 1.000  R 0.993  false closures 0/1128; referral closures P 1.000 R 0.869; triage acc 1.000 (coverage 1.000); overdue acc 0.993; exam within deadline truth 0.391 vs Wasl 0.326
+breast (doh2025breast): P 1.000  R 1.000  false closures 0/70; recall-loop closures P 1.000 R 1.000; triage acc 1.000 (coverage 1.000); overdue acc 1.000; assessment within clock truth 0.400 vs Wasl 0.400; abnormal recall rate truth 0.071 vs Wasl 0.071
+lung_ldct (acr2022lungrads): P 1.000  R 0.990  false closures 0/286; action-loop closures P 1.000 R 0.909; triage acc 1.000 (coverage 1.000); overdue acc 0.990; next step within clock truth 0.537 vs Wasl 0.463; abnormal recall rate truth 0.140 vs Wasl 0.140
+ifhas (doh2025ifhas): P 1.000  R 0.968  false closures 0/691; follow-up-loop closures P 1.000 R 0.905; triage acc 0.999 (coverage 1.000); overdue acc 0.974; follow-up within clock truth 0.572 vs Wasl 0.522; abnormal findings rate truth 0.398 vs Wasl 0.399
