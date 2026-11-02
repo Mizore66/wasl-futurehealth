@@ -1,6 +1,6 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2]
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3]
 NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/.
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
@@ -16,9 +16,14 @@ import subprocess
 import sys
 
 PROTOCOLS = {
-    "pairfeat1": {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1"},
-    "pairfeat2": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t"},
+    "pairfeat1": {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1",
+                  "namesakes": 0.0},
+    "pairfeat2": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                  "namesakes": 0.0},
+    "pairfeat3": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                  "namesakes": 0.10},
 }
+NAMESAKE_FLOOR = 500
 DEFAULT_MODELSET = "pairfeat1"
 PERSONS = 5000
 BASELINE_FILES = ["encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"]
@@ -45,8 +50,88 @@ def parity_csv_name(modelset):
     return f"feat_cal_{PROTOCOLS[modelset]['cal_seed']}_gbm.csv"
 
 
+def namesake_cal_csv_name(modelset):
+    return f"feat_cal_{PROTOCOLS[modelset]['cal_seed']}_ns.csv"
+
+
+class NamesakeFloorError(Exception):
+    exit_code = 3
+
+
+def _namesake_args(modelset):
+    rate = PROTOCOLS[modelset]["namesakes"]
+    return ["-namesakes", str(rate)] if rate else []
+
+
+def train_argv(wsi, data, enc, modelset, seed, out):
+    proto = PROTOCOLS[modelset]
+    return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "train", "-persons", str(PERSONS),
+            "-noise", proto["noise"], "-seed", str(seed)] + _namesake_args(modelset) + ["-out", out]
+
+
+def cal_argv(wsi, data, enc, modelset, out):
+    proto = PROTOCOLS[modelset]
+    return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
+            "-noise", proto["noise"], "-seed", str(proto["cal_seed"]), "-out", out]
+
+
+def parity_argv(wsi, data, enc, modelset, gbmfile, out):
+    proto = PROTOCOLS[modelset]
+    return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
+            "-noise", proto["noise"], "-seed", str(proto["cal_seed"]), "-gbmfile", gbmfile, "-out", out]
+
+
+def namesake_cal_argv(wsi, data, enc, modelset, gbmfile, out):
+    proto = PROTOCOLS[modelset]
+    return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
+            "-noise", proto["noise"], "-seed", str(proto["cal_seed"])] + _namesake_args(modelset) + \
+        ["-gbmfile", gbmfile, "-out", out]
+
+
+def _sidecar_rows_total(sidecars):
+    total = 0
+    for sc in sidecars:
+        if not isinstance(sc, dict):
+            with open(sc) as f:
+                sc = json.load(f)
+        total += int(sc["base_namesake_rows"])
+    return total
+
+
+def check_namesake_floor(sidecars):
+    total = _sidecar_rows_total(sidecars)
+    if total < NAMESAKE_FLOOR:
+        raise NamesakeFloorError(f"namesake floor not met: {total} < {NAMESAKE_FLOOR}")
+    return total
+
+
+def _read_gbm_rows(path):
+    out = []
+    with open(path, newline="") as f:
+        for row in csv.reader(f):
+            if len(row) != 38:
+                raise ValueError(f"expected 38 fields per row, got {len(row)}")
+            out.append((float(row[0]), float(row[-1])))
+    return out
+
+
+def namesake_slice(csv_path, sidecar_path):
+    with open(sidecar_path) as f:
+        listed = json.load(f)["rows"]
+    rows = _read_gbm_rows(csv_path)
+    picked = [rows[i] for i in listed]
+    diff = [p for label, p in picked if label == 0]
+    return {"rows": len(picked), "different_person": len(diff),
+            "different_at_review_0_01": sum(1 for p in diff if p >= 0.01),
+            "different_at_merge_0_7": sum(1 for p in diff if p >= 0.7)}
+
+
+def plain_cal_diff_at_merge(parity_csv):
+    return sum(1 for label, p in _read_gbm_rows(parity_csv) if label == 0 and p >= 0.7)
+
+
 def parse_args(argv):
-    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2]"
+    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3]"
     args = list(argv[1:])
     modelset = DEFAULT_MODELSET
     if "--modelset" in args:
@@ -97,6 +182,22 @@ def base_manifest(root, encoder, modelset=DEFAULT_MODELSET):
             "rounds": 400, "num_leaves": 63, "learning_rate": 0.05, "seed": 1,
             "encoder_sha256": sha256(encoder),
             "code_sha256": {name: sha256(os.path.join(root, name)) for name in files}}
+
+
+def training_manifest(root, encoder, modelset, sidecars):
+    """base_manifest, plus namesake records for modelsets with namesakes. sidecars: seed -> (path, parsed)."""
+    m = base_manifest(root, encoder, modelset)
+    rate = PROTOCOLS[modelset]["namesakes"]
+    if rate:
+        m["namesakes"] = rate
+        m["namesake_floor"] = NAMESAKE_FLOOR
+        m["namesake_seeds"] = {
+            str(seed): {"namesakes_added": int(sc["namesakes_added"]),
+                        "base_namesake_rows": int(sc["base_namesake_rows"]),
+                        "sidecar_sha256": sha256(path)}
+            for seed, (path, sc) in sorted(sidecars.items())}
+        m["namesake_base_rows_total"] = sum(int(sc["base_namesake_rows"]) for _, sc in sidecars.values())
+    return m
 
 
 def check_clean_tree(root):
@@ -153,8 +254,8 @@ def write_json(path, obj):
 
 
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
-                      modelset=DEFAULT_MODELSET):
-    return {
+                      modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None):
+    m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
         "csv_sha256": {n: sha256(os.path.join(out, n)) for n in csv_names},
@@ -162,6 +263,10 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         f"{modelset}_chain_sha256": {n: sha256(os.path.join(chain_dir, n)) for n in chain_files(modelset)},
         "parity": {"rows": rows, "max_abs_delta": max_delta},
     }
+    if namesake_slice is not None:
+        m["namesake_slice"] = namesake_slice
+        m["plain_cal_diff_at_merge_0_7"] = plain_cal_diff_at_merge_0_7
+    return m
 
 
 def check_models_free(models_dir, modelset):
@@ -200,19 +305,31 @@ def main(argv):
     shutil.copyfile(os.path.join(models, "encoder_weights.json"), enc)
     if sha256(enc) != sha256(os.path.join(models, "encoder_weights.json")):
         raise RuntimeError("encoder copy SHA256 mismatch")
-    write_json(os.path.join(out, "training-manifest.json"), base_manifest(root, enc, modelset))
+    tm = os.path.join(out, "training-manifest.json")
     wsi = os.path.join(root, "bin", "wsi7")
     data = os.path.join(root, "data")
-    noise = proto["noise"]
+    ns_rate = proto["namesakes"]
+    if not ns_rate:
+        write_json(tm, base_manifest(root, enc, modelset))
     cal_seed = proto["cal_seed"]
     csvs = []
+    sidecars = {}
     for seed, name in zip(proto["train_seeds"], train_csv_names(modelset)):
-        run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "train", "-persons", str(PERSONS),
-             "-noise", noise, "-seed", str(seed), "-out", os.path.join(out, name)], root)
+        path = os.path.join(out, name)
+        run(train_argv(wsi, data, enc, modelset, seed, path), root)
         csvs.append(name)
+        if ns_rate:
+            with open(path + ".namesakes.json") as f:
+                sidecars[seed] = (path + ".namesakes.json", json.load(f))
+    if ns_rate:
+        write_json(tm, training_manifest(root, enc, modelset, sidecars))
+        try:
+            check_namesake_floor([sc for _, sc in sidecars.values()])
+        except NamesakeFloorError as e:
+            print(str(e), file=sys.stderr)
+            sys.exit(NamesakeFloorError.exit_code)
     cal = cal_csv_name(modelset)
-    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", noise,
-         "-seed", str(cal_seed), "-out", os.path.join(out, cal)], root)
+    run(cal_argv(wsi, data, enc, modelset, os.path.join(out, cal)), root)
     csvs.append(cal)
     fit = [sys.executable, "-I", os.path.join(root, "encoder", "fit_scorer.py")]
     for name in train_csv_names(modelset):
@@ -220,18 +337,25 @@ def main(argv):
     fit += ["--cal", os.path.join(out, cal), "--outdir", chain, "--suffix", modelset]
     run(fit, root)
     parity_csv = parity_csv_name(modelset)
-    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", noise,
-         "-seed", str(cal_seed), "-gbmfile", os.path.join(chain, f"lgb_stream_{modelset}.json"),
-         "-out", os.path.join(out, parity_csv)], root)
+    gbm = os.path.join(chain, f"lgb_stream_{modelset}.json")
+    run(parity_argv(wsi, data, enc, modelset, gbm, os.path.join(out, parity_csv)), root)
     csvs.append(parity_csv)
     import numpy as np  # only to read the .npy
     py = [float(x) for x in np.load(os.path.join(chain, f"cal_p_{modelset}.npy")).ravel()]
     check_prefix_identity(os.path.join(out, cal), os.path.join(out, parity_csv))
     go = read_p_column(os.path.join(out, parity_csv))
     delta = check_go_parity(go, py, tolerance=TOLERANCE)
-    head = check_head_unchanged(root, os.path.join(out, "training-manifest.json"))
+    extra = {}
+    if ns_rate:
+        ns_csv = namesake_cal_csv_name(modelset)
+        ns_path = os.path.join(out, ns_csv)
+        run(namesake_cal_argv(wsi, data, enc, modelset, gbm, ns_path), root)
+        csvs.append(ns_csv)
+        extra = {"namesake_slice": namesake_slice(ns_path, ns_path + ".namesakes.json"),
+                 "plain_cal_diff_at_merge_0_7": plain_cal_diff_at_merge(os.path.join(out, parity_csv))}
+    head = check_head_unchanged(root, tm)
     write_json(os.path.join(out, "artifact-manifest.json"),
-               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset))
+               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, **extra))
     copy_chain_to_models(chain, models, modelset)
     print(f"done: modelset={modelset} rows={len(go)} max_abs_delta={delta}")
 

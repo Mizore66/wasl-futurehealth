@@ -236,10 +236,16 @@ class CopyToModels(unittest.TestCase):
 class Protocols(unittest.TestCase):
     def test_constants(self):
         self.assertEqual(fp.PROTOCOLS["pairfeat1"],
-                         {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1"})
+                         {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1",
+                          "namesakes": 0.0})
         self.assertEqual(fp.PROTOCOLS["pairfeat2"],
-                         {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t"})
-        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2"])
+                         {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                          "namesakes": 0.0})
+        self.assertEqual(fp.PROTOCOLS["pairfeat3"],
+                         {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                          "namesakes": 0.10})
+        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3"])
+        self.assertEqual(fp.NAMESAKE_FLOOR, 500)
 
     def test_chain_files(self):
         for ms in ("pairfeat1", "pairfeat2"):
@@ -343,6 +349,158 @@ class Protocols(unittest.TestCase):
             lines = f.read().splitlines()
         self.assertIn("models/*_pairfeat1.json", lines)
         self.assertIn("models/*_pairfeat2.json", lines)
+        self.assertIn("models/*_pairfeat3.json", lines)
+
+
+def write_rows(path, rows):
+    with open(path, "w", newline="") as f:
+        csv.writer(f).writerows(rows)
+
+
+def labelled(label, p):
+    r = go_row(p)
+    r[0] = str(label)
+    return r
+
+
+class Pairfeat3(unittest.TestCase):
+    W, D, E = "/w/bin/wsi7", "/w/data", "/o/enc.json"
+
+    def test_cli_and_chain(self):
+        self.assertEqual(fp.parse_args(["x", "o", "--modelset", "pairfeat3"]), ("o", "pairfeat3"))
+        self.assertEqual(fp.chain_files("pairfeat3"), [f"{k}_pairfeat3.json" for k in
+                                                       ("encoder", "lgb_stream", "iso", "iso_v7")])
+        self.assertEqual(fp.cal_csv_name("pairfeat3"), "feat_cal_2011.csv")
+        self.assertEqual(fp.parity_csv_name("pairfeat3"), "feat_cal_2011_gbm.csv")
+        self.assertEqual(fp.namesake_cal_csv_name("pairfeat3"), "feat_cal_2011_ns.csv")
+
+    def test_validate_output_pairfeat3(self):
+        with tempfile.TemporaryDirectory() as home:
+            base = os.path.join(home, "wasl-ml-data", "agents2", "hardening", "pairfeat3")
+            os.makedirs(base)
+            p = os.path.join(base, "r")
+            self.assertEqual(fp.validate_output(p, home, "pairfeat3"), p)
+            with self.assertRaises(ValueError):
+                fp.validate_output(p, home, "pairfeat2")
+
+    def test_old_argv_unchanged(self):
+        for ms, seed, noise in (("pairfeat1", 1001, "v1"), ("pairfeat2", 1019, "v1t")):
+            self.assertEqual(
+                fp.train_argv(self.W, self.D, self.E, ms, seed, "/o/t.csv"),
+                [self.W, "featdump", "-wasl", self.D, "-encfile", self.E, "-split", "train", "-persons", "5000",
+                 "-noise", noise, "-seed", str(seed), "-out", "/o/t.csv"])
+            cal = fp.cal_argv(self.W, self.D, self.E, ms, "/o/c.csv")
+            self.assertEqual(cal, [self.W, "featdump", "-wasl", self.D, "-encfile", self.E, "-split", "cal",
+                                   "-noise", noise, "-seed", str(fp.PROTOCOLS[ms]["cal_seed"]), "-out", "/o/c.csv"])
+            par = fp.parity_argv(self.W, self.D, self.E, ms, "/c/g.json", "/o/p.csv")
+            self.assertEqual(par[-4:], ["-gbmfile", "/c/g.json", "-out", "/o/p.csv"])
+            for argv in (cal, par):
+                self.assertNotIn("-namesakes", argv)
+
+    def test_pairfeat3_argv(self):
+        t = fp.train_argv(self.W, self.D, self.E, "pairfeat3", 1019, "/o/t.csv")
+        self.assertEqual(t, [self.W, "featdump", "-wasl", self.D, "-encfile", self.E, "-split", "train",
+                             "-persons", "5000", "-noise", "v1t", "-seed", "1019", "-namesakes", "0.1",
+                             "-out", "/o/t.csv"])
+        for argv in (fp.cal_argv(self.W, self.D, self.E, "pairfeat3", "/o/c.csv"),
+                     fp.parity_argv(self.W, self.D, self.E, "pairfeat3", "/c/g.json", "/o/p.csv")):
+            self.assertNotIn("-namesakes", argv)
+        ns = fp.namesake_cal_argv(self.W, self.D, self.E, "pairfeat3", "/c/lgb_stream_pairfeat3.json",
+                                  "/o/feat_cal_2011_ns.csv")
+        self.assertEqual(ns, [self.W, "featdump", "-wasl", self.D, "-encfile", self.E, "-split", "cal",
+                              "-noise", "v1t", "-seed", "2011", "-namesakes", "0.1",
+                              "-gbmfile", "/c/lgb_stream_pairfeat3.json", "-out", "/o/feat_cal_2011_ns.csv"])
+
+    def test_floor(self):
+        fp.check_namesake_floor([{"base_namesake_rows": 250}, {"base_namesake_rows": 250}])
+        with self.assertRaises(fp.NamesakeFloorError) as cm:
+            fp.check_namesake_floor([{"base_namesake_rows": 250}, {"base_namesake_rows": 249}])
+        self.assertEqual(str(cm.exception), "namesake floor not met: 499 < 500")
+        self.assertEqual(fp.NamesakeFloorError.exit_code, 3)
+
+    def test_namesake_slice(self):
+        with tempfile.TemporaryDirectory() as d:
+            rows = [labelled(1, 0.9), labelled(0, 0.005), labelled(0, 0.01), labelled(0, 0.7),
+                    labelled(0, 0.95), labelled(0, 0.9)]  # last row not listed
+            c = os.path.join(d, "ns.csv")
+            write_rows(c, rows)
+            sc = os.path.join(d, "ns.csv.namesakes.json")
+            fp.write_json(sc, {"rate": 0.1, "seed": 2011, "namesakes_added": 5, "base_namesake_rows": 5,
+                               "rows": [0, 1, 2, 3, 4]})
+            self.assertEqual(fp.namesake_slice(c, sc),
+                             {"rows": 5, "different_person": 4, "different_at_review_0_01": 3,
+                              "different_at_merge_0_7": 2})
+
+    def test_plain_cal_diff(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = os.path.join(d, "g.csv")
+            write_rows(c, [labelled(0, 0.7), labelled(0, 0.69), labelled(1, 0.99), labelled(0, 0.99)])
+            self.assertEqual(fp.plain_cal_diff_at_merge(c), 2)
+
+    def test_training_manifest(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d)
+            enc = os.path.join(d, "enc.json")
+            with open(enc, "wb") as f:
+                f.write(b"enc")
+            sides = {}
+            for s in fp.PROTOCOLS["pairfeat3"]["train_seeds"]:
+                p = os.path.join(d, f"s{s}.json")
+                with open(p, "w") as f:
+                    f.write(str(s))
+                sides[s] = (p, {"namesakes_added": 90 + s % 7, "base_namesake_rows": 110})
+            m = fp.training_manifest(d, enc, "pairfeat3", sides)
+            self.assertEqual(m["modelset"], "pairfeat3")
+            self.assertEqual(m["noise"], "v1t")
+            self.assertEqual(m["namesakes"], 0.1)
+            self.assertEqual(m["namesake_floor"], 500)
+            self.assertEqual(m["namesake_base_rows_total"], 550)
+            self.assertEqual(sorted(m["namesake_seeds"]), ["1019", "1021", "1031", "1033", "1039"])
+            e = m["namesake_seeds"]["1021"]
+            self.assertEqual(e["namesakes_added"], 90 + 1021 % 7)
+            self.assertEqual(e["base_namesake_rows"], 110)
+            self.assertEqual(e["sidecar_sha256"], sh(b"1021"))
+            self.assertEqual(fp.training_manifest(d, enc, "pairfeat2", {}), fp.base_manifest(d, enc, "pairfeat2"))
+
+    def test_artifact_manifest_pairfeat3(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain, out = (os.path.join(d, n) for n in ("models", "chain", "out"))
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b")
+            for n in fp.chain_files("pairfeat3"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c")
+            with open(os.path.join(out, "feat_cal_2011_ns.csv"), "wb") as f:
+                f.write(b"ns")
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            sl = {"rows": 1, "different_person": 1, "different_at_review_0_01": 1, "different_at_merge_0_7": 0}
+            m = fp.artifact_manifest("a" * 40, out, ["feat_cal_2011_ns.csv"], models, chain, 3, 0.0,
+                                     "pairfeat3", namesake_slice=sl, plain_cal_diff_at_merge_0_7=31)
+            self.assertEqual(sorted(m), sorted(["git_head", "training_manifest_sha256", "csv_sha256",
+                                                "baseline_chain_sha256", "pairfeat3_chain_sha256", "parity",
+                                                "namesake_slice", "plain_cal_diff_at_merge_0_7"]))
+            self.assertEqual(m["namesake_slice"], sl)
+            self.assertEqual(m["plain_cal_diff_at_merge_0_7"], 31)
+            self.assertEqual(m["csv_sha256"], {"feat_cal_2011_ns.csv": sh(b"ns")})
+
+    def test_models_guard_pairfeat3(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain = os.path.join(d, "models"), os.path.join(d, "chain")
+            os.makedirs(models)
+            os.makedirs(chain)
+            for n in fp.chain_files("pairfeat3"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"x")
+            with open(os.path.join(models, "iso_pairfeat3.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.check_models_free(models, "pairfeat3")
+            with self.assertRaises(ValueError):
+                fp.copy_chain_to_models(chain, models, "pairfeat3")
 
 
 if __name__ == "__main__":
