@@ -1585,6 +1585,21 @@ Subgroup evidence remains weak under roughly 16 tests (Bonferroni cut about 0.00
 
 **Reader caveat:** held-out persons and v2 identity noise do not make LDCT/IFHAS reader results independent. Their generators still reuse development texts, including the tuned IFHAS corpus. No paid calls or new held-out reader corpora were used.
 
+### Post-hoc clean-review sensitivity at `6403180`
+
+The five held-out v2 frozen lanes were rerun with ordinary simulated reviewer error set from 4% to **0%** and day-15 ungraded-prep simulated reviewer error from 25% to **0%**. All other settings stayed unchanged, including held-out people, cached readers, FHIR, `v7strict`, chaos and default-off EID guard. No model, threshold, calibrator, reader or generator changed; no paid calls were made. The decision code is unchanged from `075abc5`; `6403180` added evidence and documentation only.
+
+| CRC result over five seeds | Reviewer-error stress | Clean-review sensitivity |
+|---|---:|---:|
+| Mean recall | 0.785 | **0.859** |
+| 95% t interval over seed means | 0.772–0.798 | **0.835–0.883** |
+| Mean precision | 1.000 | **1.000** |
+| Pooled false closures | 0/3,035 | **0/3,322** |
+
+The paired seed recalls were 0.791→0.863, 0.790→0.866, 0.785→0.872, 0.767→0.825 and 0.792→0.869, a mean increase of **7.4 percentage points**. Clean-review wrong-patient releases were 0/16,534 and releases without granted consent 0/11,610; all programme false-closure, duplicate/loss, final-state and forgery-effect counters remained zero. One lung-surveillance obligation was missed and 89/91 surveillance overdue flags were correct.
+
+This is a **post-hoc reviewer-error sensitivity**, not a replacement frozen headline or measured clinical performance. Zero injected error makes simulated reviewers agree with simulated truth; it does not establish error-free clinicians. Identity noise, missing evidence, ungraded prep, reader/rule limits, timing and chaos remain. Full per-seed, programme, safety and subgroup evidence is in [`results/clean-review-sensitivity/`](results/clean-review-sensitivity/README.md).
+
 ## Post-hoc identity, scale and deployment hardening
 
 All changes in this section followed review or observed failures and are disclosed as post-hoc. No paid calls were used. The B8 closure guard remains default-off and is evaluated separately from the headline frozen evaluation.
