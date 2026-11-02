@@ -502,45 +502,98 @@ class Preflight(unittest.TestCase):
         self.assertEqual(self.pf("dev-stress", "pairfeat1"), self.r.hashes(CAND_FILES))
         self.pf("dev-stress", "baseline")
 
+    def upstream(self):
+        self.r.artifact_manifest()
+        self.r.selection()
+        self.r.stress()
+
     def good_vm(self, **kw):
+        ex = lambda n: _sha(os.path.join(self.r.exp, n))
         vm = {"git_head": HEAD, "mode": "validation-clean", "seeds": [401, 409, 419, 421, 431], "selected_modelset": "pairfeat1",
               "baseline_chain_sha256": self.r.hashes(BASE_FILES), "pairfeat1_chain_sha256": self.r.hashes(CAND_FILES),
               "runner_sha256": _sha(os.path.join(self.r.root, "scripts", "pairfeat_experiment.sh")),
               "analyzer_sha256": _sha(os.path.join(self.r.root, "scripts", "pairfeat_compare.py")),
-              "settings": pfc.expected_settings("validation-clean")}
+              "settings": pfc.expected_settings("validation-clean"),
+              "artifact_manifest_sha256": ex("artifact-manifest.json"), "selection_sha256": ex("selection.json"),
+              "stress_sha256": ex("stress.json")}
         vm.update(kw)
         return vm
 
-    def test_validation_uses_only_frozen_manifest(self):
+    def test_validation_manifest_fields(self):
         self.refused("validation-clean", "baseline", msg="validation-manifest.json")
+        self.upstream()
         vp = os.path.join(self.r.exp, "validation-manifest.json")
         _wj(vp, self.good_vm())
-        # no artifact-manifest, selection or stress present: validation needs only its frozen manifest
         self.assertEqual(self.pf("validation-clean", "pairfeat1"), self.r.hashes(CAND_FILES))
         self.assertEqual(self.pf("validation-clean", "baseline"), self.r.hashes(BASE_FILES))
         bad = [{"git_head": "c" * 40}, {"seeds": [401, 409, 419, 421]}, {"seeds": [307, 311, 313]},
                {"runner_sha256": "0" * 64}, {"analyzer_sha256": "0" * 64}, {"selected_modelset": None},
                {"settings": dict(pfc.expected_settings("validation-clean"), linkfloor="0.2")},
                {"settings": pfc.expected_settings("dev-clean")}, {"mode": "dev-clean"},
-               {"pairfeat1_chain_sha256": {"encoder_pairfeat1.json": "0" * 64}}]
+               {"pairfeat1_chain_sha256": {"encoder_pairfeat1.json": "0" * 64}},
+               {"pairfeat1_chain_sha256": chain(CAND_FILES, "x")}, {"baseline_chain_sha256": chain(BASE_FILES, "x")},
+               {"artifact_manifest_sha256": "0" * 64}, {"selection_sha256": "0" * 64}, {"stress_sha256": "0" * 64}]
         for kw in bad:
             _wj(vp, self.good_vm(**kw))
             for a in pfc.ARMS:
                 self.refused("validation-clean", a)
-        # each arm's lane is bound to its own frozen chain
-        _wj(vp, self.good_vm(pairfeat1_chain_sha256=chain(CAND_FILES, "x")))
-        self.refused("validation-clean", "pairfeat1", msg="encoder_pairfeat1.json")
-        _wj(vp, self.good_vm(baseline_chain_sha256=chain(BASE_FILES, "x")))
-        self.refused("validation-clean", "baseline", msg="encoder_weights.json")
+        for k in ("artifact_manifest_sha256", "selection_sha256", "stress_sha256"):
+            vm = self.good_vm()
+            del vm[k]
+            _wj(vp, vm)
+            self.refused("validation-clean", "baseline", msg=k)
         _wj(vp, self.good_vm())
         with open(os.path.join(self.r.root, "scripts", "pairfeat_compare.py"), "a") as h:
             h.write("tampered")
         self.refused("validation-clean", "baseline", msg="analyzer")
+
+    def test_validation_lane_bound_to_own_model_files(self):
+        self.upstream()
+        vp = os.path.join(self.r.exp, "validation-manifest.json")
         _wj(vp, self.good_vm())
         p = os.path.join(self.r.root, "models", "lgb_stream_pairfeat1.json")
         with open(p, "a") as h:
             h.write("refit")
         self.refused("validation-clean", "pairfeat1", msg="lgb_stream_pairfeat1.json")
+        self.pf("validation-clean", "baseline")
+
+    def test_hand_written_manifest_cannot_bypass_freeze(self):
+        vp = os.path.join(self.r.exp, "validation-manifest.json")
+        # no upstream files at all: a hand-written manifest with plausible hashes is refused
+        _wj(vp, {
+            "git_head": HEAD, "mode": "validation-clean", "seeds": [401, 409, 419, 421, 431], "selected_modelset": "pairfeat1",
+            "baseline_chain_sha256": self.r.hashes(BASE_FILES), "pairfeat1_chain_sha256": self.r.hashes(CAND_FILES),
+            "runner_sha256": _sha(os.path.join(self.r.root, "scripts", "pairfeat_experiment.sh")),
+            "analyzer_sha256": _sha(os.path.join(self.r.root, "scripts", "pairfeat_compare.py")),
+            "settings": pfc.expected_settings("validation-clean"),
+            "artifact_manifest_sha256": "1" * 64, "selection_sha256": "2" * 64, "stress_sha256": "3" * 64})
+        for a in pfc.ARMS:
+            self.refused("validation-clean", a, msg="artifact-manifest.json")
+        self.upstream()
+        good = self.good_vm()
+        for name in ("artifact-manifest.json", "selection.json", "stress.json"):
+            os.rename(os.path.join(self.r.exp, name), os.path.join(self.r.exp, name + ".bak"))
+            _wj(vp, good)
+            self.refused("validation-clean", "baseline", msg=name)
+            os.rename(os.path.join(self.r.exp, name + ".bak"), os.path.join(self.r.exp, name))
+        # selection or stress rewritten as failing, with the manifest re-hashed to match: still refused (no freeze bypass)
+        for writer, kw in ((self.r.selection, {"selected_modelset": None, "pass": False}), (self.r.stress, {"pass": False}),
+                           (self.r.artifact_manifest, {"git_head": "c" * 40})):
+            self.upstream()
+            writer(**kw)
+            if writer is self.r.selection:  # keep stress consistent with the rewritten selection
+                self.r.stress()
+            _wj(vp, self.good_vm())
+            for a in pfc.ARMS:
+                self.refused("validation-clean", a)
+        # stress computed against a different selection than the current one
+        self.upstream()
+        self.r.selection(extra=1)
+        _wj(vp, self.good_vm())
+        self.refused("validation-clean", "baseline", msg="stress.json")
+        self.upstream()
+        _wj(vp, self.good_vm())
+        self.pf("validation-clean", "baseline")
 
     def test_invalid_mode_or_arm(self):
         self.r.artifact_manifest()
@@ -737,26 +790,54 @@ class CLI(unittest.TestCase):
                                       self.make_arm("pairfeat1", 5, mode="dev-stress")), 0)
         self.assertFalse(_rj(os.path.join(self.exp, "stress.json"))["pass"])
 
-    def test_validation_uses_frozen_manifest_hashes(self):
-        vm = {"git_head": HEAD, "mode": "validation-clean", "seeds": [401, 409, 419, 421, 431], "selected_modelset": "pairfeat1",
-              "baseline_chain_sha256": self.maps["baseline"], "pairfeat1_chain_sha256": self.maps["pairfeat1"],
-              "runner_sha256": "1" * 64, "analyzer_sha256": "2" * 64, "settings": pfc.expected_settings("validation-clean")}
+    def test_validation_analysis_requires_verified_frozen_manifest(self):
+        r = Repo(os.path.join(self.td.name, "v"))
+        self.exp = r.exp
+        self.maps = {"baseline": r.hashes(BASE_FILES), "pairfeat1": r.hashes(CAND_FILES)}
         b = self.make_arm("baseline", 5, mode="validation-clean")
         c = self.make_arm("pairfeat1", 6, mode="validation-clean")
+        out = os.path.join(r.exp, "validation-clean-summary.json")
+        run = lambda head=HEAD: pfc.analyse("validation-clean", out, {"baseline": b, "pairfeat1": c}, repo=r.root, head=head)
         with self.assertRaises(OSError):
-            self.run_cli("validation-clean", b, c)
-        vp = os.path.join(self.exp, "validation-manifest.json")
-        _wj(vp, dict(vm, pairfeat1_chain_sha256=chain(CAND_FILES, "x")))
-        with self.assertRaises(ValueError):
-            self.run_cli("validation-clean", b, c)
-        _wj(vp, dict(vm, git_head="c" * 40))
-        with self.assertRaises(ValueError):
-            self.run_cli("validation-clean", b, c)
+            run()  # no validation manifest
+        r.artifact_manifest()
+        r.selection()
+        r.stress()
+        vm = pfc.freeze_validation(r.exp, r.root, HEAD)
+        vp = os.path.join(r.exp, "validation-manifest.json")
+        bad = [{"runner_sha256": "1" * 64}, {"analyzer_sha256": "2" * 64}, {"git_head": "c" * 40},
+               {"settings": dict(pfc.expected_settings("validation-clean"), policy="v7ltt")},
+               {"settings": dict(pfc.expected_settings("validation-clean"), linkfloor="0.2")},
+               {"artifact_manifest_sha256": "0" * 64}, {"selection_sha256": "0" * 64}, {"stress_sha256": "0" * 64},
+               {"pairfeat1_chain_sha256": chain(CAND_FILES, "x")}, {"seeds": [307, 311, 313]}]
+        for kw in bad:
+            _wj(vp, dict(vm, **kw))
+            with self.assertRaises((ValueError, OSError), msg=str(kw)):
+                run()
+            self.assertFalse(os.path.exists(out))
         _wj(vp, vm)
-        self.assertEqual(self.run_cli("validation-clean", b, c), 0)
-        s = _rj(os.path.join(self.exp, "validation-clean-summary.json"))
-        self.assertTrue(s["gate"]["pass"])
-        self.assertEqual(s["gate"]["kind"], "validation")
+        with self.assertRaises(ValueError):
+            run(head="c" * 40)  # current HEAD moved since freeze
+        sel = _rj(os.path.join(r.exp, "selection.json"))
+        r.selection(selected_modelset=None, **{"pass": False})  # upstream selection no longer the frozen one
+        with self.assertRaises(ValueError):
+            run()
+        _wj(os.path.join(r.exp, "selection.json"), sel)
+        st = _rj(os.path.join(r.exp, "stress.json"))
+        _wj(os.path.join(r.exp, "stress.json"), dict(st, **{"pass": False}))
+        with self.assertRaises(ValueError):
+            run()
+        _wj(os.path.join(r.exp, "stress.json"), st)
+        self.assertFalse(os.path.exists(out))
+        res = run()
+        self.assertTrue(res["gate"]["pass"])
+        self.assertEqual(res["gate"]["kind"], "validation")
+        self.assertEqual(_rj(out)["gate"], res["gate"])
+        # the headline validation verdict is write-once
+        before = _rb(out)
+        with self.assertRaises(FileExistsError):
+            run()
+        self.assertEqual(_rb(out), before)
 
 
 class Runner(unittest.TestCase):
@@ -845,16 +926,29 @@ class Runner(unittest.TestCase):
     def test_validation_requires_frozen_manifest(self):
         self.real_artifact_manifest()
         self.assert_refused(self.run_sh(self.root, "validation-clean", "baseline", preflight_only=True), "validation-manifest.json")
-        vm = {"git_head": self.head, "mode": "validation-clean", "seeds": [401, 409, 419, 421, 431], "selected_modelset": "pairfeat1",
-              "baseline_chain_sha256": {f: _sha(os.path.join(REPO, "models", f)) for f in BASE_FILES},
-              "pairfeat1_chain_sha256": chain(CAND_FILES, "c"),
-              "runner_sha256": _sha(SCRIPT), "analyzer_sha256": _sha(os.path.join(HERE, "pairfeat_compare.py")),
-              "settings": pfc.expected_settings("validation-clean")}
+        am = _rj(os.path.join(self.exp, "artifact-manifest.json"))
+        ident = {"git_head": self.head, "baseline_chain_sha256": am["baseline_chain_sha256"],
+                 "pairfeat1_chain_sha256": am["pairfeat1_chain_sha256"]}
+        sp, tp = os.path.join(self.exp, "selection.json"), os.path.join(self.exp, "stress.json")
+        _wj(sp, dict(ident, selected_modelset="pairfeat1", mode="dev-clean", seeds=[307, 311, 313], **{"pass": True}))
+        _wj(tp, dict(ident, mode="dev-stress", seeds=[307, 311, 313], selection_sha256=_sha(sp), **{"pass": True}))
+        ex = lambda n: _sha(os.path.join(self.exp, n))
+        vm = dict(ident, mode="validation-clean", seeds=[401, 409, 419, 421, 431], selected_modelset="pairfeat1",
+                  runner_sha256=_sha(SCRIPT), analyzer_sha256=_sha(os.path.join(HERE, "pairfeat_compare.py")),
+                  settings=pfc.expected_settings("validation-clean"), artifact_manifest_sha256=ex("artifact-manifest.json"),
+                  selection_sha256=ex("selection.json"), stress_sha256=ex("stress.json"))
         vp = os.path.join(self.exp, "validation-manifest.json")
         for kw in ({"git_head": "0" * 40}, {"seeds": [211, 223, 227, 229, 233]}, {"runner_sha256": "0" * 64},
-                   {"analyzer_sha256": "0" * 64}, {"baseline_chain_sha256": chain(BASE_FILES, "x")}):
+                   {"analyzer_sha256": "0" * 64}, {"baseline_chain_sha256": chain(BASE_FILES, "x")},
+                   {"selection_sha256": "0" * 64}, {"stress_sha256": "0" * 64}, {"artifact_manifest_sha256": "0" * 64}):
             _wj(vp, dict(vm, **kw))
             self.assert_refused(self.run_sh(self.root, "validation-clean", "baseline", preflight_only=True))
+        # a hand-written manifest is refused once the stress result it hashes is a failure
+        st = _rj(tp)
+        _wj(tp, dict(st, **{"pass": False}))
+        _wj(vp, dict(vm, stress_sha256=ex("stress.json")))
+        self.assert_refused(self.run_sh(self.root, "validation-clean", "baseline", preflight_only=True), "stress.json")
+        _wj(tp, st)
         _wj(vp, vm)
         r = self.run_sh(self.root, "validation-clean", "baseline", preflight_only=True)
         self.assertEqual(r.returncode, 0, r.stderr)
