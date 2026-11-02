@@ -278,6 +278,9 @@ func dobFeats(da, db string) []float64 {
 	if da == "" || db == "" {
 		return []float64{0, 0, 0, 0, 0, -1, 0}
 	}
+	if len(da) != 10 || len(db) != 10 {
+		return []float64{0, 0, 0, 0, 0, -1, 0}
+	}
 	ya, ma, dda := da[:4], da[5:7], da[8:10]
 	yb, mb, ddb := db[:4], db[5:7], db[8:10]
 	b := func(x bool) float64 {
@@ -293,17 +296,92 @@ func dobFeats(da, db string) []float64 {
 	return []float64{1, b(da == db), b(ya == yb), b(ya == yb && ma == ddb && dda == mb), b(ma+dda == "0701" || mb+ddb == "0701"), yd, b(ma == mb && dda == ddb)}
 }
 
-const NFEAT = 23 // 21 classical + cos + bestgap
+const NFEAT = 30 // legacy 0..22 + pairfeat1 comparisons 23..29
+
+func boolFloat(x bool) float64 {
+	if x {
+		return 1
+	}
+	return 0
+}
+
+func stringSetEq(a, b []string) bool {
+	sa, sb := map[string]bool{}, map[string]bool{}
+	for _, x := range a {
+		sa[x] = true
+	}
+	for _, x := range b {
+		sb[x] = true
+	}
+	if len(sa) == 0 || len(sa) != len(sb) {
+		return false
+	}
+	for x := range sa {
+		if !sb[x] {
+			return false
+		}
+	}
+	return true
+}
+
+func stringSeqEq(a, b []string) bool {
+	if len(a) == 0 || len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// pairExtraFeats returns features 23..29; NaN marks unavailable evidence (missing, dummy, placeholder or invalid).
+// f23 EID digit mismatches, f24 only the decade digit of the birth year differs, f25 differing DOB digits,
+// f26 day-only change, f27 month-only change, f28 equal token sets, f29 equal skeleton sequences.
+func pairExtraFeats(a, b *Rec) []float64 {
+	nan := math.NaN()
+	out := []float64{nan, nan, nan, nan, nan, nan, nan}
+	if a.Eid != "" && b.Eid != "" && len(a.Eid) == len(b.Eid) && !dummyEID(a.Eid) && !dummyEID(b.Eid) {
+		n := 0
+		for i := range a.Eid {
+			if a.Eid[i] != b.Eid[i] {
+				n++
+			}
+		}
+		out[0] = float64(n)
+	}
+	if realDob(a.Dob) && realDob(b.Dob) && !placeholderDob(a.Dob) && !placeholderDob(b.Dob) {
+		ndiff, diffPos, pos := 0, 0, 0
+		for i := 0; i < 10; i++ {
+			if i == 4 || i == 7 {
+				continue
+			}
+			if a.Dob[i] != b.Dob[i] {
+				ndiff++
+				diffPos = pos
+			}
+			pos++
+		}
+		out[1], out[2] = 0, float64(ndiff)
+		if ndiff == 1 && diffPos == 2 {
+			out[1] = 1
+		}
+		out[3] = boolFloat(a.Dob[:7] == b.Dob[:7] && a.Dob != b.Dob)
+		out[4] = boolFloat(a.Dob[:4] == b.Dob[:4] && a.Dob[8:] == b.Dob[8:] && a.Dob != b.Dob)
+	}
+	if len(a.tok) > 0 && len(b.tok) > 0 {
+		out[5] = boolFloat(stringSetEq(a.tok, b.tok))
+	}
+	if len(a.skel) > 0 && len(b.skel) > 0 {
+		out[6] = boolFloat(stringSeqEq(a.skel, b.skel))
+	}
+	return out
+}
 
 func pairFeats(a, b *Rec, cos, gap float64) []float64 {
 	ta, tb, sa, sb := a.tok, b.tok, a.skel, b.skel
 	f := make([]float64, 0, NFEAT)
-	b2f := func(x bool) float64 {
-		if x {
-			return 1
-		}
-		return 0
-	}
 	first, last := 0.0, 0.0
 	if len(ta) > 0 && len(tb) > 0 {
 		first = jaroWinkler(ta[0], tb[0])
@@ -329,10 +407,11 @@ func pairFeats(a, b *Rec, cos, gap float64) []float64 {
 	}
 	nd := math.Abs(float64(len(ta) - len(tb)))
 	f = append(f, jaroWinkler(a.lat, b.lat), jaroWinkler(sortedJoin(ta), sortedJoin(tb)), first, last, softTok(ta, tb),
-		b2f(len(sa) > 0 && len(sb) > 0 && sa[0] == sb[0]), b2f(len(sa) > 0 && len(sb) > 0 && sa[len(sa)-1] == sb[len(sb)-1]),
+		boolFloat(len(sa) > 0 && len(sb) > 0 && sa[0] == sb[0]), boolFloat(len(sa) > 0 && len(sb) > 0 && sa[len(sa)-1] == sb[len(sb)-1]),
 		jac, jaroWinkler(strings.Join(sa, ""), strings.Join(sb, "")), float64(len(ta)), float64(len(tb)), nd)
 	f = append(f, dobFeats(a.Dob, b.Dob)...)
-	f = append(f, b2f(a.Sex == b.Sex), b2f(a.isAr == b.isAr), cos, gap)
+	f = append(f, boolFloat(a.Sex == b.Sex), boolFloat(a.isAr == b.isAr), cos, gap)
+	f = append(f, pairExtraFeats(a, b)...)
 	return f
 }
 
