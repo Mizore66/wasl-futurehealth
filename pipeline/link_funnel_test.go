@@ -110,7 +110,7 @@ func TestLinkFunnelWriterDisabled(t *testing.T) {
 
 func TestLinkFunnelWriterWritesConfigAndPair(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "trace.ndjson")
-	w := newLinkFunnelWriter(path, LinkFunnelConfig{CandidateK: 10, CandidateCap: 300, ANNMode: "hnsw", HNSWM: 16, HNSWEfConstruct: 100, HNSWEfSearch: 64, MergeThreshold: 0.7, ReviewFloor: 0.2})
+	w := newLinkFunnelWriter(path, LinkFunnelConfig{CandidateK: 10, CandidateCap: 300, ANNMode: "hnsw", HNSWM: 16, HNSWEfConstruct: 100, HNSWEfSearch: 64, MergeThreshold: 0.7, ReviewFloor: 0.01})
 	w.Append(LinkTrace{Kind: "pair", Seq: 7, A: "a", B: "b", Stage: "near"})
 	if w.Err() != nil {
 		t.Fatal(w.Err())
@@ -120,7 +120,7 @@ func TestLinkFunnelWriterWritesConfigAndPair(t *testing.T) {
 		t.Fatal(err)
 	}
 	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
-	if len(lines) != 2 || !strings.Contains(lines[0], `"candidate_k":10`) || !strings.Contains(lines[0], `"hnsw_ef_search":64`) || !strings.Contains(lines[1], `"seq":7`) {
+	if len(lines) != 2 || !strings.Contains(lines[0], `"candidate_k":10`) || !strings.Contains(lines[0], `"hnsw_ef_search":64`) || !strings.Contains(lines[0], `"review_floor":0.01`) || !strings.Contains(lines[1], `"seq":7`) {
 		t.Fatalf("unexpected trace: %s", b)
 	}
 }
