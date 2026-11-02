@@ -180,3 +180,31 @@ func TestFeatDumpPairFeatSchemaDeterministic(t *testing.T) {
 		t.Fatal("all training EID features are NaN")
 	}
 }
+
+func TestModelPolicyArgsForwardedToChildren(t *testing.T) {
+	args := modelPolicyArgs("pairfeat1", "v7strict")
+	got := map[string]string{}
+	for i := 0; i+1 < len(args); i += 2 {
+		got[args[i]] = args[i+1]
+	}
+	if got["-modelset"] != "pairfeat1" || got["-policy"] != "v7strict" || len(args) != 4 {
+		t.Fatalf("child args %v", args)
+	}
+	if err := validateModelPolicy(got["-modelset"], got["-policy"]); err != nil {
+		t.Fatalf("child would reject its own args: %v", err)
+	}
+}
+
+func TestModelPolicyArgsDefaultsAddNothing(t *testing.T) {
+	if a := modelPolicyArgs("", ""); len(a) != 0 {
+		t.Fatalf("default parent produced child args %v", a)
+	}
+	if a := modelPolicyArgs("real_v2", ""); len(a) != 2 || a[0] != "-modelset" {
+		t.Fatalf("modelset-only args %v", a)
+	}
+	for _, a := range modelPolicyArgs("", "") {
+		if a == "-policy" {
+			t.Fatal("-policy forwarded for empty policy")
+		}
+	}
+}
