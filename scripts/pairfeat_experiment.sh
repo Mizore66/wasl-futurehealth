@@ -3,8 +3,9 @@
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
 #   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
 #         | validation-clean (eval; 401 409 419 421 431; rerr 0/0)
-#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 (-modelset <candidate> on orchestrate/audit/report7 only)
-# Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367. The experiment parent serves exactly one candidate,
+#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 (-modelset <candidate> on orchestrate/audit/report7 only)
+# Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461.
+# The experiment parent serves exactly one candidate,
 # inferred from the single <candidate>_chain_sha256 key of its artifact-manifest.json (or, for validation, the candidate
 # its frozen validation-manifest.json records); ARM must be baseline or that candidate, and the baseline arm uses the
 # candidate's seeds.
@@ -36,7 +37,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -61,6 +62,7 @@ case "$CAND" in
   pairfeat1) DEV_SEEDS="307 311 313";;
   pairfeat2) DEV_SEEDS="317 331 337";;
   pairfeat3) DEV_SEEDS="347 353 367";;
+  pairfeat4) DEV_SEEDS="433 449 461";;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2;; esac
@@ -166,7 +168,7 @@ if pfc.mode_settings(mode, cand)["seeds"] != seeds or arm not in pfc.arms(cand):
     sys.exit("seed mismatch")
 lanes = []
 for seed in seeds:
-    lm = pfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, arm, mode)  # funnel floor 0.01, arm modelset, mode scope
+    lm = pfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, arm, mode, cand)  # floor 0.01, arm modelset, mode scope; wrong_pair: truth pk_qid
     if lm["analysis_errors"] or lm["trace_error"] or lm["replay_mismatch"]:
         sys.exit("seed %d: analysis/trace-write error or replay mismatch" % seed)
     lanes.append(lm)
