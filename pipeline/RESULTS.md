@@ -1649,6 +1649,71 @@ L5 was strongly associated with DOB distortion descriptively: its share of truth
 
 The proposed development design uses new seeds from non-`eval` people, varied noise/evidence/horizon and independently authored report text, with person-disjoint pre-registered validation. Frozen and B8 seeds remain locked; no training implementation was requested or performed. Full categories, denominators, paired-lane accounting, caveats, split design, row-level evidence and the deterministic classifier are in [`results/recall-analysis/`](results/recall-analysis/README.md). The coordinator reproduced its JSON, CSV and console output byte-identically.
 
+### CRC candidate review-floor experiment at `8832e82`
+
+**Built:** the opt-in `-linkfloor` flag accepts `(0,0.2]` and defaults to **0.2**, leaving default behavior unchanged. It lowers only review routing for candidates that retrieval already produced. Merge remains 0.7, the closure tier 0.99, the uncorroborated cap 0.989, and the equal-EID contradiction clamp 0.2; EID/cannot-link, second-identifier, evidence, consent and attachment rules are unchanged. The configured floor reaches orchestrate children, audit/replay, report7 and policy identity. The default-parity test establishes repeatability at 0.2, not byte parity with a pre-change binary.
+
+**Simulated evaluation:** paired CRC-only v2 cohorts used cached readers, image off, FHIR, chaos 0, subkill 1 and no paid calls. Development seeds were 101/103/107. The frozen selection rule required at least +1.0 percentage point pooled CRC closure-recall gain, no listed safety/replay/analysis failure and no increased linkage contamination, preferring 0.05 if both candidates passed. Validation seeds 211/223/227/229/233 were untouched until development and stress selection succeeded and the configuration was frozen. CRC closure recall is exact pooled `(pred_closed − false_closures) / truth_closed`, not link attach rate.
+
+| Clean development | 0.2 baseline | 0.05 | 0.01 |
+|---|---:|---:|---:|
+| Seed 101 | 0.8348 | 0.8478 | 0.8478 |
+| Seed 103 | 0.8174 | 0.8217 | 0.8435 |
+| Seed 107 | 0.8488 | 0.8537 | 0.8585 |
+| Pooled TP / truth | 554/665 | 559/665 | 565/665 |
+| Pooled recall | 0.8331 | 0.8406 | **0.8496** |
+| Pooled gain vs baseline | — | +0.7519pp | **+1.6541pp** |
+| Mean seed recall, 95% t interval (n=3) | 0.7946–0.8727 | 0.7988–0.8833 | 0.8307–0.8692 |
+| Selection | retained baseline | **failed +1.0pp gate** | **selected** |
+
+The 0.01 arm's mean paired per-seed gain was +1.6296pp, with a wide small-n 95% t interval of −0.5163 to +3.7754pp. This interval is descriptive; selection used the predeclared pooled gate, not statistical significance.
+
+The selected arm then passed a separate synthetic stress run with 4% ordinary reviewer error and 25% day-15 ungraded-prep reviewer error. These are assumed stress values, **not measured clinician rates**.
+
+| Development, reviewer-error stress | 0.2 baseline | 0.01 |
+|---|---:|---:|
+| Seed 101 | 0.7783 | 0.7913 |
+| Seed 103 | 0.7435 | 0.7696 |
+| Seed 107 | 0.7756 | 0.7854 |
+| Pooled TP / truth | 509/665 | 520/665 |
+| Pooled recall | 0.7654 | **0.7820** |
+| Pooled gain | — | **+1.6541pp; gate passed** |
+| Mean seed recall, 95% t interval (n=3) | 0.7177–0.8139 | 0.7542–0.8100 |
+
+| Untouched clean validation | 0.2 baseline | 0.01 |
+|---|---:|---:|
+| Seed 211 | 0.8489 | 0.8667 |
+| Seed 223 | 0.8494 | 0.8703 |
+| Seed 227 | 0.8230 | 0.8451 |
+| Seed 229 | 0.8333 | 0.8378 |
+| Seed 233 | 0.8756 | 0.8955 |
+| Pooled TP / truth | 941/1,113 | 960/1,113 |
+| Pooled recall | 0.8455 | **0.8625** |
+| Pooled gain | — | **+1.7071pp; gate passed** |
+| Mean seed recall, 95% t interval (n=5) | 0.8213–0.8708 | 0.8348–0.8914 |
+
+Validation improved on every seed. Its mean paired per-seed gain was +1.7045pp (95% t interval +0.8120 to +2.5971pp). The small-n intervals do not establish clinical effectiveness or generalization beyond these synthetic cohorts. The validated non-default candidate is **0.01**; the shipped default remains **0.2**.
+
+Reviewer burden increased modestly. `Link pairs` are distinct link-review pairs; `Items` and `Hours` cover all reviewer work, pooled across the arm's seeds. No link-review item was unanswered.
+
+| Mode | Floor | Link pairs | Items | Hours |
+|---|---:|---:|---:|---:|
+| Development clean | 0.2 / 0.05 / 0.01 | 507 / 517 / 528 | 1,071 / 1,085 / 1,096 | 34.943 / 35.265 / 35.503 |
+| Development stress | 0.2 / 0.01 | 506 / 528 | 1,063 / 1,090 | 35.967 / 36.718 |
+| Validation clean | 0.2 / 0.01 | 908 / 936 | 1,830 / 1,870 | 61.003 / 62.381 |
+
+All arms had **zero false closures, wrong-patient releases, replay mismatches, analysis errors and funnel trace-write errors**. The injected stress errors produced 87 wrong final sign-offs in the baseline arm and 89 in the 0.01 arm; these cost recall but did not become wrong-patient releases. Linkage contamination did not increase, but was not zero: development and stress each retained 36 false-merge pairs, 30 impure clusters and 30 cross-person edges in both arms; validation retained 144, 125 and 131 respectively in both arms. These are not perfect-linkage or non-CRC safety claims.
+
+Residual truth-closed CRC loops remained open. The funnel categories below partition those misses: `attached_or_closed` includes both closed loops and attached-but-not-closed loops, so the latter are separated below. Attach count is not closure recall.
+
+| Mode | Floor | Residual misses | Attached, not closed | Below review | No candidate | Demographic rejection | Routed review | Linked report not attached |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| Development clean | 0.2 / 0.05 / 0.01 | 111 / 106 / 100 | 15 / 15 / 15 | 60 / 54 / 48 | 3 / 3 / 3 | 2 / 2 / 2 | 0 / 0 / 0 | 31 / 32 / 32 |
+| Development stress | 0.2 / 0.01 | 156 / 145 | 52 / 52 | 60 / 48 | 3 / 3 | 2 / 2 | 6 / 6 | 33 / 34 |
+| Validation clean | 0.2 / 0.01 | 172 / 153 | 26 / 26 | 104 / 84 | 8 / 8 | 1 / 1 | 0 / 0 | 33 / 34 |
+
+**Post-hoc disclosures:** development lanes completed at runtime revision `039d449`. Aggregation then failed because report7 exposes `pred_closed` and `false_closures`, not `tp`. The analyzer-only fix at `8832e82` derived exact TP and added consistency tests; preserved development lanes were reclassified offline without rerunning them or inspecting candidate results before the fix. Stress and validation ran at `8832e82`, with no runtime change from `039d449`. An earlier pre-generation dependency failure (missing NATS) and all failed artifacts were preserved. Lowering `LinkReview` also changes the strength assigned to untrusted `xrefFacts` referral-reference rows; this second behavior is included in the measured runs. The floor applies globally, but these CRC-focused cohorts do not establish non-CRC recall or safety. All results are simulated; no clinical effectiveness is proven.
+
 ### Deployment verification limit
 
 Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.
