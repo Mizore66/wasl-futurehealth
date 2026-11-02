@@ -1,7 +1,8 @@
 """Aggregate analyzer for the CRC review-floor paired experiment (development lanes only select; never reads validation paths).
 
 Selection rule, fixed before any result: among arms passing the gate prefer 0.05 over 0.01 (less reviewer exposure);
-select none if neither passes. CRC closure recall is report7 programmes_live.crc.tp / truth_closed, NOT funnel attached_or_closed.
+select none if neither passes. CRC closure recall is tp / truth_closed with tp = programmes_live.crc.pred_closed - false_closures
+(report7 exposes no "tp" field; derived and cross-checked against the reported 3-decimal recall), NOT funnel attached_or_closed.
 "unanswered" = a link review item (kinds contains "link", no "reason") with no reviewer decision recorded by item id or by pair.
 Small-n caveat: t intervals with 3 (dev) or 5 (validation) seeds are wide and only indicative.
 """
@@ -79,7 +80,12 @@ def review_load(queue, decisions):
 
 def lane_metrics(seed, report7, funnel, status, load):
     crc = _req(report7, "programmes_live", "crc")
-    tp, truth = _req(crc, "tp"), _req(crc, "truth_closed")
+    truth = _req(crc, "truth_closed")
+    tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
+    if tp < 0 or tp > truth:
+        raise ValueError("derived CRC tp %d outside [0, truth_closed=%d]" % (tp, truth))
+    if truth and abs(tp / truth - _req(crc, "recall")) > 0.00051:
+        raise ValueError("derived CRC recall %.5f disagrees with reported %r" % (tp / truth, crc["recall"]))
     if _req(funnel, "truth_closed") != truth:
         raise ValueError("funnel/CRC truth_closed mismatch")
     lk = _req(report7, "linkage")
