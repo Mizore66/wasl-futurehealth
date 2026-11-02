@@ -290,6 +290,9 @@ func (g *GBM) Predict(x []float64) float64 {
 		n := t
 		for !n.leaf {
 			v := x[n.feat]
+			if math.IsNaN(v) && !n.missNaN {
+				v = 0 // LightGBM NumericalDecision: NaN becomes 0 unless missing_type is NaN
+			}
 			var left bool
 			if (n.missZero && math.Abs(v) <= 1e-35) || (n.missNaN && math.IsNaN(v)) {
 				left = n.defLeft
