@@ -1784,6 +1784,81 @@ The scorer-addressable category (below review) shrank by four. The categories a 
 
 **Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. No further seeds, thresholds, features, hyperparameters or encoder fallback are authorized for this arm.
 
+### CRC decade-noise pair-scorer experiment at `9bf8017` (not selected)
+
+**Outcome:** the experiment failed its pre-registered development selection gate and stopped as specified. `pairfeat2` is **not a candidate**. This is the successor to the feature-first `pairfeat1` experiment above, which could not test its decade-digit DOB hypothesis because its training noise contained no same-person decade-digit-only pairs. The default model and the default review floor of 0.2 are unchanged. All results below are simulated; they prove no clinical effectiveness.
+
+**Built:** an opt-in `pairfeat2` modelset (code at `9bf8017`) uses the same 30-feature layout, fixed encoder, LightGBM configuration and calibrator procedure as `pairfeat1` (400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search). The only intended change is the training noise. Runtime, features, retrieval, merge 0.7, closure tier 0.99, the uncorroborated cap and the identity, consent and attachment rules are unchanged. `pairfeat2` is accepted only with `v7strict`. Generated model files are git-ignored.
+
+**Training noise `v1t` (training only):** identical to v1 (DOB corrupted with probability 0.3) except that a corrupted DOB first takes, with probability 0.20, a typo branch that replaces exactly one of the eight YYYYMMDD digits, chosen uniformly, with a different digit chosen uniformly from the other nine. The remaining 0.80 of corruptions follow v1's existing branches with v1's existing draw sequence. The typo may produce a calendar-invalid date; existing missing-data handling applies. This is a generic keystroke typo and makes same-person decade-digit-only pairs (position 2 alone differs) appear in training. It deliberately does **not** copy v2's plus or minus ten-year error, because that is the held-out evaluation corruption model and training on it would leak the evaluation. `v1t` is refused by every command except `featdump`, so simulated cohorts, the runtime and evaluation noise are unaffected; v1 and v2 `gen` output was verified byte-identical before and after the change.
+
+**Seeds (all previously unused):** train 1019, 1021, 1031, 1033 and 1039 (5,000 persons each), calibrators on cal seed 2011 (the whole cal split), paired development (dev/v2) seeds 317, 331 and 337. Validation seeds 401, 409, 419, 421 and 431 were not touched.
+
+**Training and calibration metrics:** train had 1,511,069 retrieved pairs (41,992 same-person); cal had 139,084 (6,034 same-person). Cal pair AUC was 0.99990 and AP 0.99877. At raw LightGBM score >= 0.99 (an uncalibrated threshold, not the calibrated closure tier) cal pair precision was 0.9998 and recall 0.9375. Pair AUC is diagnostic, not the selection gate.
+
+**Artifact identity and parity:** the training manifest is `07595ba5`. Chain files: `lgb_stream_pairfeat2` `b0afcdcf`, `iso_pairfeat2` `3293079c`, `iso_v7_pairfeat2` `aeca71e8`; `encoder_pairfeat2` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. The governing manifest `912c27de` bound the development lanes, and both arms used the same binary (`1b12c36c`) at `9bf8017`. Go/Python scoring parity over all 139,084 cal rows had max |delta| 1.1e-16 (limit 1e-9).
+
+**Hard-negative slices (cal split, seed 2011):**
+
+| Slice | Rows | Same-person | Different-person | Different-person at raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|---:|
+| near EID | 1,020 | 1,018 | 2 | 2 | 0 |
+| decade-digit DOB | 144 | 39 | 105 | 1 | 0 |
+| same surname | 18,781 | 4,986 | 13,795 | 120 | 14 |
+| placeholder DOB | 78,253 | 1,657 | 76,596 | 153 | 20 |
+| cross-script names | 45,349 | 3,021 | 42,328 | 172 | 17 |
+
+The decade-digit DOB slice now contains 39 same-person rows (it had none under v1 in `pairfeat1`), so the precondition that experiment lacked is met and feature 24 can be learned as a same-person signal. Overall different-person routing exposure on cal: of 133,050 different-person pairs, 280 scored raw >= 0.01 (review) and 31 scored raw >= 0.7 (merge). The `pairfeat1` figures were 195 and 23 of 137,660 on a different cal seed and cohort, so they are not a like-for-like comparison.
+
+**Paired development clean (seeds 317, 331, 337; both arms `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, FHIR, chaos 0, subkill 1):** exact TP is `pred_closed - false_closures`, not attach rate; truth-closed denominators match across arms.
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat2` TP / truth | `pairfeat2` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 317 | 196/224 | 0.8750 | 207/224 | 0.9241 | +4.91pp |
+| 331 | 196/219 | 0.8950 | 205/219 | 0.9361 | +4.11pp |
+| 337 | 189/219 | 0.8630 | 198/219 | 0.9041 | +4.11pp |
+| Pooled | 581/662 | 0.8776 | 610/662 | 0.9215 | **+4.3807pp** |
+
+The mean paired per-seed gain was +4.3766pp with a 95% t interval of +3.2276 to +5.5257pp (n=3; small-n and descriptive only). The gain clears the +2.0pp recall criterion in every seed.
+
+**Gate verdict: not selected.** The selection gate requires the recall gain and also no increase in linkage contamination and a distinct link-review pair count no more than 10% above baseline. Four reasons failed:
+- False-merge pairs increased, 31 to 43 (per seed 12 to 15, 7 to 13, 12 to 15).
+- Impure clusters increased, 28 to 39 (per seed 10 to 14, 7 to 10, 11 to 15).
+- Cross-person edges increased, 29 to 40 (per seed 11 to 14, 7 to 11, 11 to 15). Contamination rose in every seed.
+- Distinct link-review pairs rose 523 to 652 (+24.7%) against a cap of 575.3 (baseline plus 10%).
+
+**Safety and workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in both arms, with zero wrong final sign-offs and zero unanswered review items. Reviewer workload rose: items 1,067 to 1,211 and simulated reviewer hours 35.04 to 39.31 (per seed 10.93 to 12.32, 11.70 to 13.24, 12.41 to 13.75). The zero-safety result is n=3 development evidence and is not a validated safety property.
+
+| Residual truth-closed misses | Baseline | `pairfeat2` |
+|---|---:|---:|
+| Total open | 81 | 52 |
+| Attached, not closed | 17 | 18 |
+| Below review | 35 | 4 |
+| No candidate generated | 4 | 4 |
+| Demographic rejection | 1 | 0 |
+| Routed to review | 0 | 0 |
+| Linked report not attached | 24 | 26 |
+
+The scorer-addressable category (below review) fell from 35 to 4, which accounts for the recall gain; the categories a scorer change cannot reach ("no candidate generated" 4, unchanged) did not move, and "linked report not attached" and "attached, not closed" were not reduced (24 to 26 and 17 to 18).
+
+**Interpretation:** in development, the retrained scorer recovered most of the misses that fell below the review floor, and the recall gain is observed in these simulated cohorts (n=3, descriptive). It came with more cross-person linkage and more link-review load. By the pre-registered rule the arm is not selected. A read-only diagnosis of the contamination increase was run after the gate and is reported below. This is a development result from three seeds, not validation evidence, and no claim is made that it would generalize.
+
+**Post-hoc diagnosis (read-only, after the gate; development lanes only; nothing was changed or re-run):** direct cross-person model edges (score >= 0.7) were compared between arms across the three development seeds. `pairfeat2` added 23 cross-person edges that baseline did not have and removed 11 that baseline had (recomputed totals match `report7` on two seeds and are one edge above it on the third). In baseline, 15 of the 23 added pairs were review-band candidates and 8 were below the 0.01 floor, so some pairs moved from near-zero to the merge tier. Of the 23 added cross-person edges, 21 had an Emirates ID on only one side (so the ID check could not veto them) and 2 had none; 14 were cross-script. Their DOBs: missing on one side 7, equal 2, one digit apart 5, two digits apart 5 and three or more digits apart 4 (6 of the last 9 involve a YYYY-01-01 placeholder). Several pairs share a given name with a different family name; this was read by eye on a subset and not counted. In the same lanes `pairfeat2` added 216 same-person edges, which are dominated by one-digit (135) and two-digit (44) DOB differences. Reading: the typo noise made DOB disagreement cheaper as evidence against a match in general, not only for decade-digit-only pairs, so where the DOB is missing, a placeholder or one or two digits off, and the ID is on one side only, name similarity alone could carry a pair to the merge tier. The same relaxation plausibly accounts for the recall gain; this was not isolated by an ablation. The extra link-review load is also mostly the recall gain: of 150 link-review pairs present only in `pairfeat2`, 148 are same-person; across all 150, 109 were below the floor in baseline, 22 were in the review band and 19 were already linked; 21 baseline review pairs were no longer asked. This is a diagnosis of three development seeds, not a tested fix, and no change is authorized from it.
+
+**Not run:** per the pre-registered stop rule, synthetic reviewer stress and untouched validation were **not run**. No validation manifest was frozen and eval seeds 401, 409, 419, 421 and 431 remain untouched. No threshold, gate criterion, feature, hyperparameter, seed or analysis rule was changed after seeing results.
+
+**Result-affecting rulings:**
+- The `pairfeat1` training manifest gained a `modelset` field for future runs; the brief required both recording the modelset and byte-identical `pairfeat1` behaviour, and recording won. The completed `pairfeat1` run's stored manifests are untouched.
+- The pre-generalization `pairfeat1` arm roots are archival only: the harness now requires a `candidate` field in `build.json` and `selection.json`, which they lack, so they cannot be re-analysed. `pairfeat1` is concluded and its aggregate outputs are write-once.
+- `v1t` is training-only and refused outside `featdump` (configuration error, exit 2), so it cannot reach generation, the runtime or evaluation.
+
+**Process rulings and deviations:**
+- Go task A and Python tasks B and C ran in parallel, since they touched disjoint files; the cost was only commit interleaving.
+- Deferred minor review findings (none affect results): the `--modelset=X` form is unsupported and fails closed; the driver's main flow is covered end to end by the run, not by a unit test; the `featdump` `v1t` test fails rather than skips when data or models are absent; the typo-shape test bounds are loose; the `-noise` help text omits `v1t`; a non-string validation-manifest candidate raises a TypeError (fails closed); lane seed identity rests on the directory name; the gate's distinct-pairs fallback key.
+- Strict same-HEAD binding from training through selection was kept, so HEAD stayed at `9bf8017` for the whole run.
+
+**Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model and default floor 0.2 are unchanged. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
+
 ### Deployment verification limit
 
 Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.
