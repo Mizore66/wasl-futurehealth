@@ -184,10 +184,14 @@ def classify_loop(D, loop, t):
         a = D["rd"].get(i["item"]) or (pair_ans.get(pairkey(*i["pair"])) or (None, None))[1]
         if a is not None:
             answers[i["item"]] = a
+    events = D["pairs"].get(expected, [])
+    if events and events[-1].get("stage") in ("below_review", "rejected_demographic") \
+            and not any(pairkey(*i["pair"]) == expected for i in items):
+        items = []  # an explicit terminal trace for the expected pair is not relabelled by another pair's item on the loop
+        answers = {}
     snap = D["members"].get(sre["pk"])
     ms = snap[1] if snap else None
     clustered = bool(ms) and rep["pk"] in ms
-    events = D["pairs"].get(expected, [])
     split_after = None
     if ms and not clustered:
         linked = [e["_pos"] for e in events if e.get("stage") == "linked"]
@@ -230,6 +234,19 @@ def main(argv):
     except FileNotFoundError:
         pass
     except OSError:
+        print("input_unreadable", file=sys.stderr)
+        return 2
+    try:  # a linker trace-write failure means the trace is incomplete: never publish funnel evidence from it
+        sp = os.path.join(run, "status-linker.json")
+        if os.path.exists(sp):
+            with open(sp, encoding="utf-8") as f:
+                st = json.load(f)
+            if not isinstance(st, dict):
+                raise ValueError("status")
+            if st.get("link_funnel_error"):
+                print("link_funnel_write_error", file=sys.stderr)
+                return 2
+    except (OSError, ValueError):
         print("input_unreadable", file=sys.stderr)
         return 2
     try:

@@ -88,6 +88,9 @@ for seed in seeds:
             "-rerr", "0", "-errungraded", "0"] + rd
     run([bin_, "audit"] + tail, o + "/audit.log")
     run([bin_, "report7"] + tail, o + "/report7.log")
+    # the linker's trace writer must have reported status and no write error, or the trace is incomplete
+    st = json.load(open(os.path.join(r, "status-linker.json")))  # required: a missing file aborts the lane
+    assert not st.get("link_funnel_error"), "link funnel trace write failed"
     run(["python3", "-I", root + "/scripts/link_funnel.py", r, o + "/cohort", o + "/funnel.json"], o + "/classifier.log")
 PY
 
@@ -109,6 +112,8 @@ for seed in seeds:
     r = json.load(open(o + "/run/main/report7.json"))
     crc = r["programmes_live"]["crc"]
     org = r["outreach_live"]["by_origin"]
+    st = json.load(open(o + "/run/main/status-linker.json"))  # required; absent file aborts
+    assert not st.get("link_funnel_error"), (seed, "link funnel trace write failed")
     assert f["analysis_errors"] == 0, (seed, "incomplete funnel")
     assert set(f["categories"]) <= ALLOWED, (seed, "unexpected category")
     assert sum(f["categories"].values()) + f["analysis_errors"] == f["truth_closed"], (seed, "funnel does not reconcile")
