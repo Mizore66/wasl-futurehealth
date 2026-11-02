@@ -1720,9 +1720,9 @@ Residual truth-closed CRC loops remained open. The funnel categories below parti
 
 **Built:** an opt-in `pairfeat1` modelset (code at `dc21cec`) keeps the 23 existing pair features byte-compatible and appends seven at indices 23-29: `eid_hamming`, `dob_decade_digit_only`, `dob_digit_difference_count`, `dob_day_only`, `dob_month_only`, `name_token_set_equal` and `name_skeleton_equal`. Missing or placeholder DOBs yield NaN rather than agreement. The chain is a local copy of the default encoder (not retrained), a refit 30-feature LightGBM and two refit calibrators. `pairfeat1` is accepted only with `v7strict`; `v7ltt` fails closed. Merge 0.7, closure tier 0.99, the uncorroborated cap, the equal-EID clamp, EID/cannot-link, second-identifier, evidence, consent and attachment rules are unchanged. Generated model files are git-ignored.
 
-**Training protocol (simulated):** one fit with the existing scorer configuration on fresh train-split seeds 1001, 1003, 1007, 1009 and 1013 (5,000 persons each) under training noise v1, with the fixed encoder: 400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search. Calibrators were refit on cal-split seed 2003 only. Train had 1,508,325 retrieved pairs (42,270 same-person); cal had 143,933 (6,273 same-person). Cal pair AUC was 0.99997 and AP 0.99944. At calibrated 0.99 the cal pair precision was 0.9990 and recall 0.9434. Pair AUC is diagnostic, not the selection gate.
+**Training protocol (simulated):** one fit with the existing scorer configuration on fresh train-split seeds 1001, 1003, 1007, 1009 and 1013 (5,000 persons each) under training noise v1, with the fixed encoder: 400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search. Calibrators were refit on cal-split seed 2003 only. Train had 1,508,325 retrieved pairs (42,270 same-person); cal (the whole cal split, 3,588 persons) had 143,933 (6,273 same-person). Cal pair AUC was 0.99997 and AP 0.99944. At raw LightGBM score >= 0.99 (a threshold on the uncalibrated score, not the calibrated closure tier) cal pair precision was 0.9990 and recall 0.9434. Overall different-person routing exposure on cal: of 137,660 different-person pairs, 195 scored raw >= 0.01 (review) and 23 scored raw >= 0.7 (merge); the slice table below breaks this down. Pair AUC is diagnostic, not the selection gate.
 
-**Artifact identity and parity:** all four artifacts were hashed in the frozen manifests (training manifest `e368b3bc`, governing manifest `287cc80b`). Chain files: `lgb_stream_pairfeat1` `f1d3ac57`, `iso_pairfeat1` `b12b9908`, `iso_v7_pairfeat1` `202de5a8`; `encoder_pairfeat1` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. Both development arms used the same binary (`967bada4`) at `dc21cec`. Go/Python scoring parity over all 143,933 cal rows had max |delta| 2.2e-16 (limit 1e-9).
+**Artifact identity and parity:** the artifact manifest hashes all four `pairfeat1` chain files and the baseline chain (the training manifest `e368b3bc` hashes the encoder and code; the governing manifest `287cc80b` bound the development lanes). Chain files: `lgb_stream_pairfeat1` `f1d3ac57`, `iso_pairfeat1` `b12b9908`, `iso_v7_pairfeat1` `202de5a8`; `encoder_pairfeat1` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. Both development arms used the same binary (`967bada4`) at `dc21cec`. Go/Python scoring parity over all 143,933 cal rows had max |delta| 2.2e-16 (limit 1e-9).
 
 **Hard-negative slices (cal split, seed 2003):**
 
@@ -1759,11 +1759,11 @@ The mean paired per-seed gain was +0.5704pp with a 95% t interval of -1.0598 to 
 | Routed to review | 0 | 0 |
 | Linked report not attached | 22 | 22 |
 
-The scorer-addressable category (below review) shrank by four; the attachment and candidate-generation categories, which no scorer change can reach, were unchanged.
+The scorer-addressable category (below review) shrank by four. The categories a scorer change cannot reach, "linked report not attached" (22) and "no candidate generated" (4), were unchanged; "attached, not closed" (11) was also unchanged but is not claimed to be scorer-unreachable.
 
 **Not run:** per the pre-registered stop rule, synthetic reviewer stress and untouched validation were **not run**. No validation manifest was frozen and eval seeds 401, 409, 419, 421 and 431 remain untouched. All output roots, including both arms' logs, are preserved locally.
 
-**Post-hoc changes and rulings (all disclosed):**
+**Result-affecting post-hoc changes and rulings:**
 - The plan's decade feature test (`diffPos == 3`) contradicted the spec: feature 24 is set only when YYYYMMDD position 2 (the tens-of-year digit) alone differs.
 - The `dobFeats` guard is length-only (`len != 10` returns the existing missing sentinel); a real-date check would have changed legacy features 0-22 for invalid 10-character dates.
 - The Go LightGBM reader now maps NaN to 0 when a node's missing type is not NaN, matching LightGBM; legacy features are never NaN, so default scores are unchanged (pinned by a parity test).
@@ -1771,9 +1771,16 @@ The scorer-addressable category (below review) shrank by four; the attachment an
 - Review of Task 2 found orchestrate/audit children received `-modelset` but not `-policy`, so the strict guard would have rejected every child; `-policy` is now forwarded to children rather than loosening the guard.
 - The candidate arm passes `-modelset pairfeat1` to orchestrate, audit and report7 but not to the simulator, so both arms share identical cohort and truth inputs.
 - Final whole-branch review found `read_p_column` expected a header row that the Go dump does not write. This was fixed before the fit (`dc21cec`), together with a row-by-row feature identity check against the dump, an end-of-run Git HEAD assertion and a git-ignore rule for the generated chain.
+- The artifact manifest shape (`git_head`, per-arm hash maps keyed by chain filename) was specified by ruling because the plan only said "four hashes".
+
+**Process rulings and deviations:**
 - Python tests were run by direct path under `-I` because `encoder/` is not a package.
 - `lightgbm` 4.7.0 was not installed in the environment and was installed (free, PyPI) before the fit.
-- The artifact manifest shape (`git_head`, per-arm hash maps keyed by chain filename) was specified by ruling because the plan only said "four hashes".
+- The Task 5 driver imports numpy only to read the cal score `.npy` (the plan said standard library only).
+- The Task 6 fix round was widened to two minor findings: validation preflight re-verifies upstream hashes and the passing selection/stress decisions, and the validation output is write-once.
+- Strict same-HEAD binding from training through validation was accepted as intended; a harness fix mid-experiment would have required a refit and new manifest.
+- Go tasks ran sequentially (1, 2, 3) and Python tasks 4-6 in parallel; Task 2 ran concurrently with Task 1's review.
+- These results docs were first committed (`742f863`) before the independent document review; this correction follows that review.
 
 **Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. No further seeds, thresholds, features, hyperparameters or encoder fallback are authorized for this arm.
 
