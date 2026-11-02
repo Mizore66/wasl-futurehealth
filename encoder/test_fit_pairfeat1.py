@@ -122,24 +122,57 @@ class CleanTree(unittest.TestCase):
                 fp.check_clean_tree(d)
 
 
+def go_row(p=None, nan=False):
+    feats = ["NaN" if nan and i == 0 else "%.17g" % (0.1 * i) for i in range(30)]
+    r = ["1", "0"] + feats + ["0", "1", "0", "0", "1"]
+    return r + (["%.17g" % p] if p is not None else [])
+
+
 class ReadP(unittest.TestCase):
-    def write(self, d, rows):
-        p = os.path.join(d, "x.csv")
+    def write(self, d, rows, name="x.csv"):
+        p = os.path.join(d, name)
         with open(p, "w", newline="") as f:
             csv.writer(f).writerows(rows)
         return p
 
-    def test_reads_last_column(self):
+    def test_reads_headerless_38(self):
         with tempfile.TemporaryDirectory() as d:
-            p = self.write(d, [["a", "b", "p"], ["NaN", "1", "0.25"], ["2", "3", "0.5"]])
+            p = self.write(d, [go_row(0.25, nan=True), go_row(0.5)])
             self.assertEqual(fp.read_p_column(p), [0.25, 0.5])
 
-    def test_requires_p_and_finite(self):
+    def test_rejects_bad_width_and_nonfinite(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(ValueError):
-                fp.read_p_column(self.write(d, [["a", "b"], ["1", "2"]]))
+                fp.read_p_column(self.write(d, [go_row()]))
             with self.assertRaises(ValueError):
-                fp.read_p_column(self.write(d, [["a", "p"], ["1", "NaN"]]))
+                fp.read_p_column(self.write(d, [go_row(0.5)[:-1] + ["NaN"]]))
+
+    def test_prefix_identity(self):
+        with tempfile.TemporaryDirectory() as d:
+            plain = self.write(d, [go_row(nan=True), go_row()], "a.csv")
+            good = self.write(d, [go_row(0.1, nan=True), go_row(0.2)], "b.csv")
+            fp.check_prefix_identity(plain, good)
+            bad_rows = [go_row(0.1, nan=True), go_row(0.2)]
+            bad_rows[1][5] = "9"
+            bad = self.write(d, bad_rows, "c.csv")
+            with self.assertRaises(ValueError):
+                fp.check_prefix_identity(plain, bad)
+            short = self.write(d, [go_row(0.1, nan=True)], "d.csv")
+            with self.assertRaises(ValueError):
+                fp.check_prefix_identity(plain, short)
+
+
+class HeadCheck(unittest.TestCase):
+    def test_head(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d)
+            head = subprocess.check_output(["git", "-C", d, "rev-parse", "HEAD"], text=True).strip()
+            m = os.path.join(d, "m.json")
+            fp.write_json(m, {"git_head": head})
+            self.assertEqual(fp.check_head_unchanged(d, m), head)
+            fp.write_json(m, {"git_head": "0" * 40})
+            with self.assertRaises(ValueError):
+                fp.check_head_unchanged(d, m)
 
 
 class ArtifactManifest(unittest.TestCase):
