@@ -144,6 +144,7 @@ func main() {
 	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
+	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
@@ -189,6 +190,10 @@ func main() {
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
 	if err := validateNoise(cmd, *noise); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	if err := validateNamesakes(cmd, NamesakeRate); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	}
