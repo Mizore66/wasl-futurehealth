@@ -33,7 +33,7 @@ func mf(base string) string {
 // validateModelPolicy: the pairfeat1/pairfeat2/pairfeat3 model sets are calibrated for the strict closure tier only, so any other
 // policy (v7ltt's LTT-selected tau, v6, or none) is a configuration error rather than a silent mismatch.
 func validateModelPolicy(modelSet, policy string) error {
-	if (modelSet == "pairfeat1" || modelSet == "pairfeat2" || modelSet == "pairfeat3") && policy != "v7strict" {
+	if (modelSet == "pairfeat1" || modelSet == "pairfeat2" || modelSet == "pairfeat3" || modelSet == "pairfeat4") && policy != "v7strict" {
 		return fmt.Errorf("modelset %s supports only -policy v7strict (got %q); v7ltt needs a separate selection", modelSet, policy)
 	}
 	return nil
@@ -222,6 +222,17 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		}
 		nsAdded = len(ns)
 	}
+	nfBase := map[int]int{}
+	nfAdded := 0
+	if FamilyNamesakeRate > 0 {
+		fr := rand.New(rand.NewSource(familySeed(seed)))
+		nf, fbase := buildFamilyNamesakes(ps, pool, FamilyNamesakeRate, fr)
+		for i := range nf {
+			register(len(ps)+nsAdded+i, &nf[i], fr)
+			nfBase[len(ps)+nsAdded+i] = fbase[i]
+		}
+		nfAdded = len(nf)
+	}
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
 	L := NewLinkerCore(nil, 1)
@@ -232,7 +243,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	w := bufio.NewWriter(f)
 	pids := []int{}
 	npos, nneg := 0, 0
-	nsRows := []int{}
+	nsRows, nfRows := []int{}, []int{}
 	rowIdx := 0
 	for _, g := range regs {
 		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid}
@@ -250,10 +261,11 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 				npos++
 			} else {
 				nneg++
-				if b, ok := nsBase[g.pid]; ok && pids[c.j] == b {
+				if namesakePairRow(nsBase, g.pid, pids[c.j]) {
 					nsRows = append(nsRows, rowIdx)
-				} else if b, ok := nsBase[pids[c.j]]; ok && g.pid == b {
-					nsRows = append(nsRows, rowIdx)
+				}
+				if namesakePairRow(nfBase, g.pid, pids[c.j]) {
+					nfRows = append(nfRows, rowIdx)
 				}
 			}
 			corr := 0
@@ -292,8 +304,13 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	}
 	w.Flush()
 	f.Close()
-	sc, err := json.Marshal(map[string]any{"rate": NamesakeRate, "seed": seed, "namesakes_added": nsAdded,
-		"base_namesake_rows": len(nsRows), "rows": nsRows})
+	scm := map[string]any{"rate": NamesakeRate, "seed": seed, "namesakes_added": nsAdded,
+		"base_namesake_rows": len(nsRows), "rows": nsRows}
+	if FamilyNamesakeRate > 0 {
+		scm["family_rate"], scm["family_namesakes_added"] = FamilyNamesakeRate, nfAdded
+		scm["family_base_namesake_rows"], scm["family_rows"] = len(nfRows), nfRows
+	}
+	sc, err := json.Marshal(scm)
 	if err != nil {
 		panic(err)
 	}

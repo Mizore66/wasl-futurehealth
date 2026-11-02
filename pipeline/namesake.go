@@ -10,15 +10,23 @@ import (
 
 var NamesakeRate float64 // flag -namesakes; training-only (featdump)
 
-func validateNamesakes(cmd string, rate float64) error {
-	if rate < 0 || rate >= 1 {
-		return fmt.Errorf("-namesakes must be in [0, 1) (got %v)", rate)
+var FamilyNamesakeRate float64 // flag -familynamesakes; training-only (featdump)
+
+func validateNamesakeRate(flag, cmd string, rate float64) error {
+	if !(rate >= 0 && rate < 1) {
+		return fmt.Errorf("%s must be in [0, 1) (got %v)", flag, rate)
 	}
 	if rate > 0 && cmd != "featdump" {
-		return fmt.Errorf("-namesakes is training-only and valid only for featdump (got command %q)", cmd)
+		return fmt.Errorf("%s is training-only and valid only for featdump (got command %q)", flag, cmd)
 	}
 	return nil
 }
+
+func validateNamesakes(cmd string, rate float64) error {
+	return validateNamesakeRate("-namesakes", cmd, rate)
+}
+
+func familySeed(seed int64) int64 { return seed*2654435761 + 130363 }
 
 func namesakeSeed(seed int64) int64 { return seed*2654435761 + 104729 }
 
@@ -65,14 +73,31 @@ func firstLastEn(en string) (string, string) {
 }
 
 // buildNamesakes: ns[i] is the namesake of ps[base[i]]; pool is every person of the same split with non-empty Ar and En.
+// Given-name kind: donor shares the first English token, differs in the last.
 func buildNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []int) {
+	return buildNamesakesBy(ps, pool, rate, r, false, "ns-")
+}
+
+// buildFamilyNamesakes: the family-name kind; donor shares the last English token, differs in the first.
+func buildFamilyNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []int) {
+	return buildNamesakesBy(ps, pool, rate, r, true, "nf-")
+}
+
+func buildNamesakesBy(ps, pool []Person, rate float64, r *rand.Rand, byLast bool, prefix string) ([]Person, []int) {
 	if rate <= 0 {
 		return nil, nil
 	}
-	byFirst := map[string][]int{}
+	key := func(en string) (shared, other string) {
+		f, l := firstLastEn(en)
+		if byLast {
+			return l, f
+		}
+		return f, l
+	}
+	idx := map[string][]int{}
 	for i := range pool {
-		f, _ := firstLastEn(pool[i].En)
-		byFirst[f] = append(byFirst[f], i)
+		k, _ := key(pool[i].En)
+		idx[k] = append(idx[k], i)
 	}
 	var ns []Person
 	var base []int
@@ -81,12 +106,12 @@ func buildNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []
 		if r.Float64() >= rate {
 			continue
 		}
-		f, l := firstLastEn(b.En)
+		k, o := key(b.En)
 		var elig []int
-		for _, j := range byFirst[f] {
+		for _, j := range idx[k] {
 			d := &pool[j]
-			_, dl := firstLastEn(d.En)
-			if d.Qid != b.Qid && d.Origin == b.Origin && d.Sex == b.Sex && dl != l {
+			_, do := key(d.En)
+			if d.Qid != b.Qid && d.Origin == b.Origin && d.Sex == b.Sex && do != o {
 				elig = append(elig, j)
 			}
 		}
@@ -98,9 +123,20 @@ func buildNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []
 		if !ok {
 			continue
 		}
-		ns = append(ns, Person{Qid: "ns-" + b.Qid, Ar: d.Ar, En: d.En, Als: d.Als, Dob: dob, Sex: d.Sex,
+		ns = append(ns, Person{Qid: prefix + b.Qid, Ar: d.Ar, En: d.En, Als: d.Als, Dob: dob, Sex: d.Sex,
 			Cc: d.Cc, Eid: newEID(dob, r), Spl: b.Spl, Origin: d.Origin, ArSrc: d.ArSrc})
 		base = append(base, bi)
 	}
 	return ns, base
+}
+
+// namesakePairRow: pair (a, b) is a namesake and its own base person, in either orientation.
+func namesakePairRow(nsBase map[int]int, a, b int) bool {
+	if x, ok := nsBase[a]; ok && x == b {
+		return true
+	}
+	if x, ok := nsBase[b]; ok && x == a {
+		return true
+	}
+	return false
 }
