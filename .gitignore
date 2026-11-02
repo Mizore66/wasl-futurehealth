@@ -15,3 +15,4 @@ ml-data/
 !models/image/*.pt
 .claude/worktrees/
 models/*_pairfeat1.json
+models/*_pairfeat2.json
