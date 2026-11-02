@@ -175,7 +175,7 @@ out = lfc.aggregate_arm(float(floor), lanes)
 with open(os.path.join(work, "build.json")) as h:
     out["build"] = json.load(h)
 out["scope"] = {"mode": mode, "floor": float(floor), "seeds": seeds, "reader": "cached", "image": "off", "chaos": 0, "nats_kill": False,
-                "note": "tp is report7 programmes_live.crc.tp; link attach rate is separate"}
+                "note": "tp = report7 programmes_live.crc.pred_closed - false_closures; link attach rate is separate"}
 with open(os.path.join(work, "summary.json"), "w") as h:
     json.dump(out, h, indent=1, sort_keys=True)
 print(json.dumps({"floor": floor, "recall": out["recall"], "tp": out["tp"], "truth_closed": out["truth_closed"]}, sort_keys=True))
