@@ -1,0 +1,204 @@
+import csv
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+import unittest
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import fit_pairfeat1 as fp  # noqa: E402
+
+FILES = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
+         "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
+
+
+def sh(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def make_repo(d):
+    for name in FILES:
+        p = os.path.join(d, name)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "wb") as f:
+            f.write(name.encode())
+    subprocess.check_call(["git", "-C", d, "init", "-q"])
+    subprocess.check_call(["git", "-C", d, "add", "."])
+    subprocess.check_call(["git", "-C", d, "-c", "user.name=t", "-c", "user.email=t@t",
+                           "commit", "-q", "-m", "x"])
+
+
+class ValidateOutput(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.home = self.tmp.name
+        self.parent = os.path.join(self.home, "wasl-ml-data", "agents2", "hardening", "pairfeat1")
+        os.makedirs(self.parent)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_new_path_ok(self):
+        p = os.path.join(self.parent, "run1")
+        self.assertEqual(fp.validate_output(p, self.home), p)
+
+    def test_existing_rejected(self):
+        p = os.path.join(self.parent, "run1")
+        os.mkdir(p)
+        with self.assertRaises(ValueError):
+            fp.validate_output(p, self.home)
+
+    def test_outside_rejected(self):
+        with self.assertRaises(ValueError):
+            fp.validate_output(os.path.join(self.home, "elsewhere"), self.home)
+
+    def test_dotdot_rejected(self):
+        with self.assertRaises(ValueError):
+            fp.validate_output(os.path.join(self.parent, "..", "pairfeat1", "x"), self.home)
+
+
+class Parity(unittest.TestCase):
+    def test_valid_returns_max(self):
+        self.assertAlmostEqual(fp.check_go_parity([0.1, 0.2], [0.1, 0.2 + 5e-10]), 5e-10, places=15)
+
+    def test_row_mismatch(self):
+        with self.assertRaises(ValueError):
+            fp.check_go_parity([0.1], [0.1, 0.2])
+
+    def test_empty(self):
+        with self.assertRaises(ValueError):
+            fp.check_go_parity([], [])
+
+    def test_nan(self):
+        with self.assertRaises(ValueError):
+            fp.check_go_parity([float("nan")], [0.1])
+
+    def test_too_big(self):
+        with self.assertRaises(ValueError):
+            fp.check_go_parity([0.1], [0.1 + 1e-6])
+
+
+class BaseManifest(unittest.TestCase):
+    def test_fields(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d)
+            enc = os.path.join(d, "enc.json")
+            with open(enc, "wb") as f:
+                f.write(b"enc")
+            m = fp.base_manifest(d, enc)
+            head = subprocess.check_output(["git", "-C", d, "rev-parse", "HEAD"], text=True).strip()
+            self.assertEqual(m["git_head"], head)
+            self.assertEqual(m["nfeat"], 30)
+            self.assertEqual(m["train"], {"split": "train", "seeds": [1001, 1003, 1007, 1009, 1013], "persons": 5000})
+            self.assertEqual(m["cal"], {"split": "cal", "seeds": [2003], "persons": 0})
+            self.assertEqual(m["noise"], "v1")
+            self.assertEqual(m["rounds"], 400)
+            self.assertEqual(m["num_leaves"], 63)
+            self.assertEqual(m["learning_rate"], 0.05)
+            self.assertEqual(m["seed"], 1)
+            self.assertEqual(m["encoder_sha256"], sh(b"enc"))
+            self.assertEqual(m["code_sha256"], {n: sh(n.encode()) for n in FILES})
+
+
+class CleanTree(unittest.TestCase):
+    def test_clean_dirty_untracked(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d)
+            fp.check_clean_tree(d)
+            os.makedirs(os.path.join(d, "pipeline", "__pycache__"))
+            with open(os.path.join(d, "pipeline", "__pycache__", "a.pyc"), "w") as f:
+                f.write("x")
+            fp.check_clean_tree(d)
+            with open(os.path.join(d, "pipeline", "new.go"), "w") as f:
+                f.write("x")
+            with self.assertRaises(ValueError):
+                fp.check_clean_tree(d)
+            os.remove(os.path.join(d, "pipeline", "new.go"))
+            with open(os.path.join(d, "pipeline", "gen.go"), "w") as f:
+                f.write("changed")
+            with self.assertRaises(ValueError):
+                fp.check_clean_tree(d)
+
+
+class ReadP(unittest.TestCase):
+    def write(self, d, rows):
+        p = os.path.join(d, "x.csv")
+        with open(p, "w", newline="") as f:
+            csv.writer(f).writerows(rows)
+        return p
+
+    def test_reads_last_column(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = self.write(d, [["a", "b", "p"], ["NaN", "1", "0.25"], ["2", "3", "0.5"]])
+            self.assertEqual(fp.read_p_column(p), [0.25, 0.5])
+
+    def test_requires_p_and_finite(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(ValueError):
+                fp.read_p_column(self.write(d, [["a", "b"], ["1", "2"]]))
+            with self.assertRaises(ValueError):
+                fp.read_p_column(self.write(d, [["a", "p"], ["1", "NaN"]]))
+
+
+class ArtifactManifest(unittest.TestCase):
+    def test_keys_and_hashes(self):
+        with tempfile.TemporaryDirectory() as d:
+            models = os.path.join(d, "models")
+            chain = os.path.join(d, "chain")
+            out = os.path.join(d, "out")
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b" + n.encode())
+            for n in fp.CHAIN_FILES:
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c" + n.encode())
+            with open(os.path.join(out, "feat_cal_2003.csv"), "wb") as f:
+                f.write(b"csv")
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            head = "a" * 40
+            m = fp.artifact_manifest(head, out, ["feat_cal_2003.csv"], models, chain, 7, 1e-12)
+            self.assertEqual(sorted(m), sorted(["git_head", "training_manifest_sha256", "csv_sha256",
+                                                "baseline_chain_sha256", "pairfeat1_chain_sha256", "parity"]))
+            self.assertEqual(m["git_head"], head)
+            self.assertEqual(m["training_manifest_sha256"], sh(b"{}"))
+            self.assertEqual(m["csv_sha256"], {"feat_cal_2003.csv": sh(b"csv")})
+            self.assertEqual(m["baseline_chain_sha256"],
+                             {n: sh(b"b" + n.encode()) for n in ["encoder_weights.json", "lgb_stream.json",
+                                                                 "iso.json", "iso_v7.json"]})
+            self.assertEqual(m["pairfeat1_chain_sha256"],
+                             {n: sh(b"c" + n.encode()) for n in ["encoder_pairfeat1.json", "lgb_stream_pairfeat1.json",
+                                                                 "iso_pairfeat1.json", "iso_v7_pairfeat1.json"]})
+            self.assertEqual(m["parity"], {"rows": 7, "max_abs_delta": 1e-12})
+            fp.write_json(os.path.join(out, "artifact-manifest.json"), m)
+            with open(os.path.join(out, "artifact-manifest.json")) as f:
+                self.assertEqual(json.load(f), m)
+
+
+class CopyToModels(unittest.TestCase):
+    def test_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as d:
+            models = os.path.join(d, "models")
+            chain = os.path.join(d, "chain")
+            os.makedirs(models)
+            os.makedirs(chain)
+            for n in fp.CHAIN_FILES:
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"x")
+            with open(os.path.join(models, "iso_pairfeat1.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.copy_chain_to_models(chain, models)
+            self.assertFalse(os.path.exists(os.path.join(models, "encoder_pairfeat1.json")))
+            os.remove(os.path.join(models, "iso_pairfeat1.json"))
+            fp.copy_chain_to_models(chain, models)
+            for n in fp.CHAIN_FILES:
+                self.assertTrue(os.path.exists(os.path.join(models, n)))
+
+
+if __name__ == "__main__":
+    unittest.main()
