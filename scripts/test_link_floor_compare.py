@@ -33,7 +33,8 @@ def arm(floor, tp, truth, **kw):
 
 
 def report(tp=5, truth=10, **kw):
-    r = {"programmes_live": {"crc": {"tp": tp, "truth_closed": truth, "false_closures": 0}},
+    r = {"programmes_live": {"crc": {"pred_closed": tp, "truth_closed": truth, "false_closures": 0,
+                                     "recall": round(tp / truth, 3)}},
          "outreach_live": {"wrong_patient_released": 0, "by_origin": {"a": {"wrong_released": 0}}},
          "live_vs_replay_final_mismatch": 0,
          "linkage": {"false_merge_pairs": 1, "impure_clusters": 2, "cross_person_edges_by_basis": {"eid": 1, "human": 2}},
@@ -60,6 +61,32 @@ class Analyzer(unittest.TestCase):
         self.assertEqual(a["reviewer"]["items"], 14)
         self.assertEqual(a["reviewer"]["distinct_pairs"], 12)
         self.assertEqual(a["per_seed"]["1"]["tp"], 5)
+
+    def test_tp_derived_from_pred_closed_minus_false_closures(self):
+        r = report(tp=7, truth=10)
+        r["programmes_live"]["crc"].update(pred_closed=9, false_closures=2, recall=0.7)
+        m = lfc.lane_metrics(1, r, FUNNEL, {}, LOAD)
+        self.assertEqual((m["tp"], m["false_closures"]), (7, 2))
+        r2 = report(tp=1, truth=90)
+        m2 = lfc.lane_metrics(2, r2, dict(FUNNEL, truth_closed=90), {}, LOAD)
+        a = lfc.aggregate_arm(0.2, [m, m2])
+        self.assertEqual((a["tp"], a["truth_closed"]), (8, 100))
+
+    def test_inconsistent_crc_fields_rejected(self):
+        def bad(**kw):
+            r = report(tp=7, truth=10)
+            r["programmes_live"]["crc"].update(kw)
+            with self.assertRaises(ValueError):
+                lfc.lane_metrics(1, r, FUNNEL, {}, LOAD)
+        bad(pred_closed=1, false_closures=2, recall=0.0)        # negative tp
+        bad(pred_closed=11, false_closures=0, recall=1.0)       # tp > truth
+        bad(pred_closed=7, false_closures=0, recall=0.8)        # recall disagrees
+        r = report(tp=7, truth=10)
+        r["programmes_live"]["crc"]["recall"] = 0.7004          # within 0.00051 tolerance passes
+        lfc.lane_metrics(1, r, FUNNEL, {}, LOAD)
+        del r["programmes_live"]["crc"]["pred_closed"]
+        with self.assertRaises(KeyError):
+            lfc.lane_metrics(1, r, FUNNEL, {}, LOAD)
 
     def test_missing_required_field_fails_loudly(self):
         r = report()
