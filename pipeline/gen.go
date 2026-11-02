@@ -234,6 +234,22 @@ func luhnOK(s string) bool {
 	return sum%10 == 0
 }
 
+// drawEID: Emirates ID capture at one registration: 62% valid, 26% missing, 12% mistyped (one digit). Shared by runGen and runFeatDump.
+func drawEID(p *Person, r *rand.Rand) string {
+	x := r.Float64()
+	switch {
+	case x < .62:
+		return p.Eid
+	case x < .88:
+		return ""
+	default:
+		bs := []byte(p.Eid)
+		i := 3 + r.Intn(12)
+		bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
+		return string(bs)
+	}
+}
+
 type reg struct {
 	pk, mrn, name, dob, sex, eid, script, lang string
 }
@@ -402,18 +418,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		if r.Float64() < .02 {
 			g.sex = "U"
 		}
-		x := r.Float64() // Emirates ID capture: 62% valid, 26% missing, 12% mistyped (one digit)
-		switch {
-		case x < .62:
-			g.eid = p.Eid
-		case x < .88:
-			g.eid = ""
-		default:
-			bs := []byte(p.Eid)
-			i := 3 + r.Intn(12)
-			bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
-			g.eid = string(bs)
-		}
+		g.eid = drawEID(p, r)
 		if r.Float64() < .82 { // preferred language recorded at this provider
 			g.lang = langOf(p)
 		}
