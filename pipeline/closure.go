@@ -11,9 +11,10 @@ import (
 	"sort"
 )
 
+var LinkReview = 0.20 // below: ignored; -linkfloor may lower review routing only
+
 const (
 	TauHigh       = 0.99 // calibrated link probability gate (v3 operating point)
-	LinkReview    = 0.20 // below: ignored
 	OwnerGrace    = 3.0
 	NotifSLA      = 21.0 // days from referral to a compliant result notification
 	AckSLA        = 7.0  // days from notification to patient acknowledgement
