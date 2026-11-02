@@ -30,11 +30,20 @@ func mf(base string) string {
 	return strings.TrimSuffix(base, ".json") + "_" + ModelSet + ".json"
 }
 
-// validateModelPolicy: the pairfeat1 model set is calibrated for the strict closure tier only, so any other
+// validateModelPolicy: the pairfeat1/pairfeat2 model sets are calibrated for the strict closure tier only, so any other
 // policy (v7ltt's LTT-selected tau, v6, or none) is a configuration error rather than a silent mismatch.
 func validateModelPolicy(modelSet, policy string) error {
-	if modelSet == "pairfeat1" && policy != "v7strict" {
-		return fmt.Errorf("modelset pairfeat1 supports only -policy v7strict (got %q); v7ltt needs a separate selection", policy)
+	if (modelSet == "pairfeat1" || modelSet == "pairfeat2") && policy != "v7strict" {
+		return fmt.Errorf("modelset %s supports only -policy v7strict (got %q); v7ltt needs a separate selection", modelSet, policy)
+	}
+	return nil
+}
+
+// validateNoise: v1t is the training-only DOB noise model, valid for featdump alone; every other command
+// (gen, evaluation runs) would silently mix training noise into evaluation data, so it is a configuration error.
+func validateNoise(cmd, noise string) error {
+	if noise == "v1t" && cmd != "featdump" {
+		return fmt.Errorf("-noise v1t is training-only and valid only for featdump (got command %q)", cmd)
 	}
 	return nil
 }
@@ -185,6 +194,8 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 			var dob string
 			if NoiseModel == "v2" {
 				dob = noisyDob2(p.Dob, r, .3)
+			} else if NoiseModel == "v1t" {
+				dob = noisyDobV1T(p.Dob, r, .3)
 			} else {
 				dob = noisyDob(p.Dob, r, .3)
 			}

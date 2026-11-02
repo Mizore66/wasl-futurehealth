@@ -196,6 +196,27 @@ func noisyDob(dob string, r *rand.Rand, p float64) string {
 	if r.Float64() > p {
 		return dob
 	}
+	return corruptDob1(dob, r)
+}
+
+// noisyDobV1T: training-only v1t DOB noise. Same corruption probability as v1; a corrupted DOB first takes, with
+// probability .20, a single-digit typo (one of the eight YYYYMMDD digits replaced by a uniformly chosen different
+// digit), otherwise v1's corruption branches. Never used for evaluation (v2 is the held-out corruption model).
+func noisyDobV1T(dob string, r *rand.Rand, p float64) string {
+	if r.Float64() > p {
+		return dob
+	}
+	if r.Float64() < .20 {
+		i := []int{0, 1, 2, 3, 5, 6, 8, 9}[r.Intn(8)]
+		b := []byte(dob)
+		b[i] = byte('0' + (int(b[i]-'0')+1+r.Intn(9))%10)
+		return string(b)
+	}
+	return corruptDob1(dob, r)
+}
+
+// corruptDob1: v1's DOB corruption (after the corrupt/keep draw), extracted verbatim from noisyDob.
+func corruptDob1(dob string, r *rand.Rand) string {
 	y, m, d := dob[:4], dob[5:7], dob[8:10]
 	x := r.Float64()
 	switch {
