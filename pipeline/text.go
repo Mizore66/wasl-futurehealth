@@ -298,6 +298,13 @@ func dobFeats(da, db string) []float64 {
 
 const NFEAT = 30 // legacy 0..22 + pairfeat1 comparisons 23..29
 
+func boolInt(x bool) int {
+	if x {
+		return 1
+	}
+	return 0
+}
+
 func boolFloat(x bool) float64 {
 	if x {
 		return 1

@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -107,7 +108,8 @@ func runEncNoise(wasl, split, outPath string, seed int64) {
 // (LinkerCore.candidates: exact top-K cosine + rule-key blocking, pairFeats). Persons of one split register at 1-4
 // distinct providers (gen.go registration model: provider script mix, name/DOB/sex noise); registrations stream in
 // random order and every candidate pair (new, earlier) is written once.
-// CSV columns: label (same person), corr (v7 corroborated), f0..f22[, p from -gbmfile].
+// CSV columns: label,corr,f0..f29,near_eid,decade_dob,same_surname,placeholder_dob,cross_script[,p from -gbmfile]
+// (37 columns, 38 with p). Features and p are %.17g (exact float64 round-trip, NaN as NaN); slice columns are 0/1.
 func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, seed int64) {
 	var gbm *GBM
 	if gbmPath != "" {
@@ -133,8 +135,8 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		ps = ps[:nPersons]
 	}
 	type regT struct {
-		pid            int
-		name, dob, sex string
+		pid                 int
+		name, dob, sex, eid string
 	}
 	regs := []regT{}
 	for pid, p := range ps {
@@ -177,7 +179,8 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 			if r.Float64() < .02 {
 				sex = "U"
 			}
-			regs = append(regs, regT{pid, name, dob, sex})
+			eid := drawEID(&p, r)
+			regs = append(regs, regT{pid, name, dob, sex, eid})
 		}
 	}
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
@@ -191,7 +194,8 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	pids := []int{}
 	npos, nneg := 0, 0
 	for _, g := range regs {
-		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex}
+		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid}
+		rec.eidOK = luhnOK(rec.Eid)
 		rec.lat = latinForm(rec.Name)
 		rec.tok = tokensOf(rec.lat)
 		rec.skel = skeleton(rec.tok)
@@ -212,10 +216,20 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 			}
 			fmt.Fprintf(w, "%d,%d", lab, corr)
 			for _, x := range c.feat {
-				fmt.Fprintf(w, ",%.9g", x)
+				fmt.Fprintf(w, ",%.17g", x)
+			}
+			slices := []int{
+				boolInt(!math.IsNaN(c.feat[23]) && (c.feat[23] == 1 || c.feat[23] == 2)),
+				boolInt(c.feat[24] == 1),
+				boolInt(c.feat[6] == 1),
+				boolInt(placeholderDob(rec.Dob) || placeholderDob(L.recs[c.j].Dob)),
+				boolInt(c.feat[20] == 0),
+			}
+			for _, x := range slices {
+				fmt.Fprintf(w, ",%d", x)
 			}
 			if gbm != nil {
-				fmt.Fprintf(w, ",%.9g", gbm.Predict(c.feat))
+				fmt.Fprintf(w, ",%.17g", gbm.Predict(c.feat))
 			}
 			w.WriteByte('\n')
 		}
@@ -224,6 +238,9 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		pids = append(pids, g.pid)
 		for _, k := range rec.keys {
 			L.keyIdx[k] = append(L.keyIdx[k], rec.idx)
+		}
+		if rec.eidOK {
+			L.eidIdx[rec.Eid] = append(L.eidIdx[rec.Eid], rec.idx)
 		}
 	}
 	w.Flush()
