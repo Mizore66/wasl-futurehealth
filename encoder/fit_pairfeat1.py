@@ -1,10 +1,11 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR
-NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/pairfeat1/.
-Orchestration is stdlib only (numpy is imported solely to read cal_p_pairfeat1.npy).
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2]
+NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/.
+Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
 import csv
+import glob
 import hashlib
 import json
 import math
@@ -14,12 +15,49 @@ import shutil
 import subprocess
 import sys
 
-TRAIN_SEEDS = [1001, 1003, 1007, 1009, 1013]
-CAL_SEED = 2003
+PROTOCOLS = {
+    "pairfeat1": {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1"},
+    "pairfeat2": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t"},
+}
+DEFAULT_MODELSET = "pairfeat1"
+PERSONS = 5000
 BASELINE_FILES = ["encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"]
-CHAIN_FILES = ["encoder_pairfeat1.json", "lgb_stream_pairfeat1.json",
-               "iso_pairfeat1.json", "iso_v7_pairfeat1.json"]
 TOLERANCE = 1e-9
+
+
+def chain_files(modelset):
+    return [f"encoder_{modelset}.json", f"lgb_stream_{modelset}.json",
+            f"iso_{modelset}.json", f"iso_v7_{modelset}.json"]
+
+
+CHAIN_FILES = chain_files(DEFAULT_MODELSET)
+
+
+def train_csv_names(modelset):
+    return [f"feat_train_{s}.csv" for s in PROTOCOLS[modelset]["train_seeds"]]
+
+
+def cal_csv_name(modelset):
+    return f"feat_cal_{PROTOCOLS[modelset]['cal_seed']}.csv"
+
+
+def parity_csv_name(modelset):
+    return f"feat_cal_{PROTOCOLS[modelset]['cal_seed']}_gbm.csv"
+
+
+def parse_args(argv):
+    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2]"
+    args = list(argv[1:])
+    modelset = DEFAULT_MODELSET
+    if "--modelset" in args:
+        i = args.index("--modelset")
+        if i + 1 >= len(args):
+            sys.exit(usage)
+        modelset = args[i + 1]
+        del args[i:i + 2]
+    if len(args) != 1 or modelset not in PROTOCOLS:
+        sys.exit(usage)
+    return args[0], modelset
 
 
 def sha256(path):
@@ -30,8 +68,8 @@ def sha256(path):
     return h.hexdigest()
 
 
-def validate_output(path, home):
-    parent = os.path.realpath(os.path.join(home, "wasl-ml-data", "agents2", "hardening", "pairfeat1"))
+def validate_output(path, home, modelset=DEFAULT_MODELSET):
+    parent = os.path.realpath(os.path.join(home, "wasl-ml-data", "agents2", "hardening", modelset))
     if ".." in pathlib.PurePath(path).parts or os.path.lexists(path):
         raise ValueError("output must be a new path without .. segments")
     if os.path.commonpath([parent, os.path.realpath(os.path.dirname(path))]) != parent:
@@ -48,12 +86,14 @@ def check_go_parity(go_scores, python_scores, tolerance=1e-9):
     return delta
 
 
-def base_manifest(root, encoder):
+def base_manifest(root, encoder, modelset=DEFAULT_MODELSET):
+    proto = PROTOCOLS[modelset]
     files = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
              "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
     return {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
-            "nfeat": 30, "train": {"split": "train", "seeds": [1001, 1003, 1007, 1009, 1013], "persons": 5000},
-            "cal": {"split": "cal", "seeds": [2003], "persons": 0}, "noise": "v1",
+            "nfeat": 30, "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
+            "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
+            "modelset": modelset, "noise": proto["noise"],
             "rounds": 400, "num_leaves": 63, "learning_rate": 0.05, "seed": 1,
             "encoder_sha256": sha256(encoder),
             "code_sha256": {name: sha256(os.path.join(root, name)) for name in files}}
@@ -112,23 +152,31 @@ def write_json(path, obj):
         f.write("\n")
 
 
-def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta):
+def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
+                      modelset=DEFAULT_MODELSET):
     return {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
         "csv_sha256": {n: sha256(os.path.join(out, n)) for n in csv_names},
         "baseline_chain_sha256": {n: sha256(os.path.join(models_dir, n)) for n in BASELINE_FILES},
-        "pairfeat1_chain_sha256": {n: sha256(os.path.join(chain_dir, n)) for n in CHAIN_FILES},
+        f"{modelset}_chain_sha256": {n: sha256(os.path.join(chain_dir, n)) for n in chain_files(modelset)},
         "parity": {"rows": rows, "max_abs_delta": max_delta},
     }
 
 
-def copy_chain_to_models(chain_dir, models_dir):
-    targets = [os.path.join(models_dir, n) for n in CHAIN_FILES]
+def check_models_free(models_dir, modelset):
+    existing = sorted(glob.glob(os.path.join(glob.escape(models_dir), f"*_{modelset}.json")))
+    if existing:
+        raise ValueError("refusing: existing model files: " + ", ".join(os.path.basename(p) for p in existing))
+
+
+def copy_chain_to_models(chain_dir, models_dir, modelset=DEFAULT_MODELSET):
+    names = chain_files(modelset)
+    targets = [os.path.join(models_dir, n) for n in names]
     for t in targets:
         if os.path.lexists(t):
             raise ValueError(f"refusing to overwrite {t}")
-    for n, t in zip(CHAIN_FILES, targets):
+    for n, t in zip(names, targets):
         shutil.copyfile(os.path.join(chain_dir, n), t)
 
 
@@ -137,56 +185,55 @@ def run(cmd, cwd):
 
 
 def main(argv):
-    if len(argv) != 2:
-        sys.exit("usage: fit_pairfeat1.py NEW_OUTPUT_DIR")
+    arg, modelset = parse_args(argv)
+    proto = PROTOCOLS[modelset]
     root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-    out = validate_output(os.path.abspath(argv[1]), os.path.expanduser("~"))
+    out = validate_output(os.path.abspath(arg), os.path.expanduser("~"), modelset)
     models = os.path.join(root, "models")
-    for n in CHAIN_FILES:
-        if os.path.lexists(os.path.join(models, n)):
-            sys.exit(f"refusing: models/{n} already exists")
+    check_models_free(models, modelset)
     check_clean_tree(root)
     run(["go", "build", "-o", os.path.join(root, "bin", "wsi7"), "."], os.path.join(root, "pipeline"))
     os.mkdir(out)
     chain = os.path.join(out, "chain")
     os.mkdir(chain)
-    enc = os.path.join(chain, "encoder_pairfeat1.json")
+    enc = os.path.join(chain, f"encoder_{modelset}.json")
     shutil.copyfile(os.path.join(models, "encoder_weights.json"), enc)
     if sha256(enc) != sha256(os.path.join(models, "encoder_weights.json")):
         raise RuntimeError("encoder copy SHA256 mismatch")
-    write_json(os.path.join(out, "training-manifest.json"), base_manifest(root, enc))
+    write_json(os.path.join(out, "training-manifest.json"), base_manifest(root, enc, modelset))
     wsi = os.path.join(root, "bin", "wsi7")
     data = os.path.join(root, "data")
+    noise = proto["noise"]
+    cal_seed = proto["cal_seed"]
     csvs = []
-    for seed in TRAIN_SEEDS:
-        name = f"feat_train_{seed}.csv"
-        run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "train", "-persons", "5000",
-             "-noise", "v1", "-seed", str(seed), "-out", os.path.join(out, name)], root)
+    for seed, name in zip(proto["train_seeds"], train_csv_names(modelset)):
+        run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "train", "-persons", str(PERSONS),
+             "-noise", noise, "-seed", str(seed), "-out", os.path.join(out, name)], root)
         csvs.append(name)
-    cal = f"feat_cal_{CAL_SEED}.csv"
-    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", "v1",
-         "-seed", str(CAL_SEED), "-out", os.path.join(out, cal)], root)
+    cal = cal_csv_name(modelset)
+    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", noise,
+         "-seed", str(cal_seed), "-out", os.path.join(out, cal)], root)
     csvs.append(cal)
     fit = [sys.executable, "-I", os.path.join(root, "encoder", "fit_scorer.py")]
-    for seed in TRAIN_SEEDS:
-        fit += ["--train", os.path.join(out, f"feat_train_{seed}.csv")]
-    fit += ["--cal", os.path.join(out, cal), "--outdir", chain, "--suffix", "pairfeat1"]
+    for name in train_csv_names(modelset):
+        fit += ["--train", os.path.join(out, name)]
+    fit += ["--cal", os.path.join(out, cal), "--outdir", chain, "--suffix", modelset]
     run(fit, root)
-    parity_csv = "feat_cal_2003_gbm.csv"
-    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", "v1",
-         "-seed", str(CAL_SEED), "-gbmfile", os.path.join(chain, "lgb_stream_pairfeat1.json"),
+    parity_csv = parity_csv_name(modelset)
+    run([wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal", "-noise", noise,
+         "-seed", str(cal_seed), "-gbmfile", os.path.join(chain, f"lgb_stream_{modelset}.json"),
          "-out", os.path.join(out, parity_csv)], root)
     csvs.append(parity_csv)
     import numpy as np  # only to read the .npy
-    py = [float(x) for x in np.load(os.path.join(chain, "cal_p_pairfeat1.npy")).ravel()]
+    py = [float(x) for x in np.load(os.path.join(chain, f"cal_p_{modelset}.npy")).ravel()]
     check_prefix_identity(os.path.join(out, cal), os.path.join(out, parity_csv))
     go = read_p_column(os.path.join(out, parity_csv))
     delta = check_go_parity(go, py, tolerance=TOLERANCE)
     head = check_head_unchanged(root, os.path.join(out, "training-manifest.json"))
     write_json(os.path.join(out, "artifact-manifest.json"),
-               artifact_manifest(head, out, csvs, models, chain, len(go), delta))
-    copy_chain_to_models(chain, models)
-    print(f"done: rows={len(go)} max_abs_delta={delta}")
+               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset))
+    copy_chain_to_models(chain, models, modelset)
+    print(f"done: modelset={modelset} rows={len(go)} max_abs_delta={delta}")
 
 
 if __name__ == "__main__":
