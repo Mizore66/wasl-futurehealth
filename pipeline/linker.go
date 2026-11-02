@@ -982,6 +982,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			affRoots[L.Find(z)] = true
 		}
 	}
+	L.emitClusters(affRoots)
 	for _, r := range keysOf(affRoots) {
 		for _, m := range L.members[r] {
 			for _, lp := range L.recs[m].srs {

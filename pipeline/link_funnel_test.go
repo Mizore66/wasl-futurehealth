@@ -12,6 +12,16 @@ func scoredGBM(value float64) *GBM {
 	return &GBM{trees: []*gbmNode{{leaf: true, value: value}}}
 }
 
+func pairsOnly(in []LinkTrace) []LinkTrace {
+	out := []LinkTrace{}
+	for _, e := range in {
+		if e.Kind == "pair" {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 func traceFixture(gbm *GBM, second *Prep) (*LinkerCore, []LinkTrace, []FactsMsg) {
 	L := NewLinkerCore(gbm, 1)
 	var traces []LinkTrace
@@ -24,25 +34,29 @@ func traceFixture(gbm *GBM, second *Prep) (*LinkerCore, []LinkTrace, []FactsMsg)
 
 func TestLinkFunnelCandidateStages(t *testing.T) {
 	t.Run("not generated", func(t *testing.T) {
-		_, traces, _ := traceFixture(scoredGBM(0), eidEvent("r-2", "noor-endo", "N2", "Different Person", "1980-01-01", ""))
+		_, all, _ := traceFixture(scoredGBM(0), eidEvent("r-2", "noor-endo", "N2", "Different Person", "1980-01-01", ""))
+		traces := pairsOnly(all)
 		if len(traces) != 0 {
 			t.Fatalf("unexpected candidate events: %+v", traces)
 		}
 	})
 	t.Run("below review", func(t *testing.T) {
-		_, traces, _ := traceFixture(scoredGBM(-10), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		_, all, _ := traceFixture(scoredGBM(-10), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		traces := pairsOnly(all)
 		if len(traces) != 1 || traces[0].Stage != "below_review" {
 			t.Fatalf("got %+v", traces)
 		}
 	})
 	t.Run("near", func(t *testing.T) {
-		_, traces, _ := traceFixture(scoredGBM(0), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		_, all, _ := traceFixture(scoredGBM(0), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		traces := pairsOnly(all)
 		if len(traces) != 1 || traces[0].Stage != "near" {
 			t.Fatalf("got %+v", traces)
 		}
 	})
 	t.Run("linked", func(t *testing.T) {
-		L, traces, _ := traceFixture(constGBM(), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		L, all, _ := traceFixture(constGBM(), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+		traces := pairsOnly(all)
 		if !sameCluster(L, "ahs-mushrif|A1", "noor-endo|N2") {
 			t.Fatal("fixture did not link")
 		}
@@ -60,6 +74,7 @@ func TestLinkFunnelRejectedDemographic(t *testing.T) {
 	L.trace = func(e LinkTrace) { traces = append(traces, e) }
 	L.Apply(first)
 	L.Apply(eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", e2))
+	traces = pairsOnly(traces)
 	if len(traces) != 1 || traces[0].Stage != "rejected_demographic" || traces[0].Reason != "eid_conflict" {
 		t.Fatalf("got %+v", traces)
 	}
@@ -119,5 +134,38 @@ func TestLinkFunnelWriterFailureIsStickyAndDoesNotPanic(t *testing.T) {
 	w.Append(LinkTrace{Kind: "pair", Stage: "near"})
 	if w.Err() == nil {
 		t.Fatal("failure must remain visible")
+	}
+}
+
+func TestLinkFunnelClusterSnapshot(t *testing.T) {
+	L, traces, _ := traceFixture(constGBM(), eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+	if !sameCluster(L, "ahs-mushrif|A1", "noor-endo|N2") {
+		t.Fatal("fixture did not link")
+	}
+	var snaps []LinkTrace
+	for _, e := range traces {
+		if e.Kind == "cluster" {
+			snaps = append(snaps, e)
+		}
+	}
+	if len(snaps) == 0 {
+		t.Fatalf("no cluster snapshots: %+v", traces)
+	}
+	last := snaps[len(snaps)-1]
+	want := []string{"ahs-mushrif|A1", "noor-endo|N2"}
+	if last.Root != "ahs-mushrif|A1" || !reflect.DeepEqual(last.Members, want) {
+		t.Fatalf("got %+v", last)
+	}
+	// the first Apply snapshots the singleton; snapshots follow the pair events of the same Apply
+	if len(snaps[0].Members) != 1 {
+		t.Fatalf("first snapshot %+v", snaps[0])
+	}
+}
+
+func TestLinkFunnelNoSnapshotWhenTraceOff(t *testing.T) {
+	L := NewLinkerCore(constGBM(), 1)
+	L.Apply(eidEvent("sr-1", "ahs-mushrif", "A1", "Lamia Eddinari", "1999-07-19", ""))
+	if L.trace != nil {
+		t.Fatal("trace must default to off")
 	}
 }
