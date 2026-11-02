@@ -39,6 +39,19 @@ func validateModelPolicy(modelSet, policy string) error {
 	return nil
 }
 
+// modelPolicyArgs is the child-process forwarding of -modelset and -policy. Children re-run main(), so a child
+// that receives -modelset must also receive -policy or validateModelPolicy rejects it. Both empty = no argv.
+func modelPolicyArgs(modelSet, policy string) []string {
+	var a []string
+	if modelSet != "" {
+		a = append(a, "-modelset", modelSet)
+	}
+	if policy != "" {
+		a = append(a, "-policy", policy)
+	}
+	return a
+}
+
 func runEncEmbed(encPath, inPath, outPath string) {
 	enc := LoadEncoder(encPath)
 	f, err := os.Open(inPath)
