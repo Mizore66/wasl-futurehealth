@@ -1,8 +1,8 @@
 """Protected analyzer for the paired CRC pair-scorer experiment: baseline (default modelset) vs one candidate modelset
-(pairfeat1, pairfeat2 or pairfeat3), both -linkfloor 0.01.
+(pairfeat1, pairfeat2, pairfeat3 or pairfeat4), both -linkfloor 0.01.
 
-Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337), pairfeat3 (347 353 367); validation
-seeds 401 409 419 421 431 for both. An experiment parent serves exactly one candidate, inferred from the single
+Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337), pairfeat3 (347 353 367),
+pairfeat4 (433 449 461); validation seeds 401 409 419 421 431 for all. An experiment parent serves exactly one candidate, inferred from the single
 <candidate>_chain_sha256 key of its artifact-manifest.json (zero, several or unknown candidate keys are refused). Its
 baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
 candidate and are checked against it.
@@ -34,6 +34,12 @@ Gates (fixed before any result). Gains are pooled CRC closure-recall percentage 
   false closures, wrong-patient releases (total and by origin), replay mismatches, analysis errors and trace-write errors
   in BOTH arms; no increase in false-merge pairs, impure clusters or summed cross-person edges; candidate distinct
   link-review pairs <= 1.10 x baseline (baseline 0 requires candidate 0).
+Review-load gate per candidate (CANDIDATES[c]["review_gate"], pre-registered): "total" (pairfeat1-pairfeat3) gates the
+  distinct link-review pairs above. "wrong_pair" (pairfeat4 only) instead gates wrong_distinct_pairs, the distinct
+  link-review pairs whose two registrations belong to different persons in each lane's cohort/truth.json pk_qid (an
+  unmapped registration aborts the analysis): candidate <= 1.10 x baseline, or <= 1 when baseline is 0. Its gate also
+  reports, not gating, the total distinct-pair ratio and extra reviewer hours per extra true closure
+  ((cand_hours - base_hours) / (cand_tp - base_tp), null unless tp rises). Total-gate outputs carry no wrong-pair fields.
 CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_closed is a link attach rate, not recall).
 Residual categories and reviewer wrong_final_signoffs are reported outcomes, not gate substitutions.
 Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and descriptive only.
@@ -49,8 +55,12 @@ from fractions import Fraction
 
 # The allowed candidate set. Each candidate has its own development seeds (also used by the baseline arm of that
 # candidate's experiment parent); validation seeds are shared.
-CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313]}, "pairfeat2": {"dev_seeds": [317, 331, 337]},
-              "pairfeat3": {"dev_seeds": [347, 353, 367]}}
+# review_gate: "total" gates all distinct link-review pairs; "wrong_pair" gates different-person ones (see gate()).
+CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"},
+              "pairfeat2": {"dev_seeds": [317, 331, 337], "review_gate": "total"},
+              "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
+              "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"}}
+WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
 VALIDATION_SEEDS = [401, 409, 419, 421, 431]
 MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candidate)
     "dev-clean": {"split": "dev", "rerr": "0", "errungraded": "0"},
@@ -63,12 +73,13 @@ MAX_REVIEW_GROWTH = 0.10
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
-MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3"}
+MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4"}
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
     "pairfeat1": ("encoder_pairfeat1.json", "lgb_stream_pairfeat1.json", "iso_pairfeat1.json", "iso_v7_pairfeat1.json"),
     "pairfeat2": ("encoder_pairfeat2.json", "lgb_stream_pairfeat2.json", "iso_pairfeat2.json", "iso_v7_pairfeat2.json"),
     "pairfeat3": ("encoder_pairfeat3.json", "lgb_stream_pairfeat3.json", "iso_pairfeat3.json", "iso_v7_pairfeat3.json"),
+    "pairfeat4": ("encoder_pairfeat4.json", "lgb_stream_pairfeat4.json", "iso_pairfeat4.json", "iso_v7_pairfeat4.json"),
 }
 CHAIN_SUFFIX = "_chain_sha256"
 CHAIN_KEY = {a: a + CHAIN_SUFFIX for a in ALLOWED_ARMS}
@@ -114,6 +125,11 @@ def _check_candidate(candidate):
     if not isinstance(candidate, str) or candidate not in CANDIDATES:
         raise PreflightError("unknown candidate %r (allowed %s)" % (candidate, sorted(CANDIDATES)))
     return candidate
+
+
+def review_gate(candidate):
+    """The pre-registered review-load gate of a candidate: "total" or "wrong_pair"."""
+    return CANDIDATES[_check_candidate(candidate)]["review_gate"]
 
 
 def arms(candidate):
@@ -557,14 +573,39 @@ def read_build(root, arm, mode, candidate):
     return b
 
 
-def review_load(queue, decisions):
-    """Link-review burden from review_queue.json items and reviewer decision records (answered by item or by pair)."""
+def review_load(queue, decisions, pk_qid=None):
+    """Link-review burden from review_queue.json items and reviewer decision records (answered by item or by pair).
+    With pk_qid (a wrong_pair experiment's cohort/truth.json registration -> person map) it also counts
+    wrong_distinct_pairs, the distinct link-review pairs of two different persons; an unmapped registration on a
+    link-review item is an analysis error (ValueError). Without pk_qid the result is the total-gate load, unchanged."""
     items = [i for i in queue if "link" in (i.get("kinds") or []) and not i.get("reason")]
     key = lambda i: tuple(sorted(i["pair"]))
     answered_items = {d["item"] for d in decisions}
     answered_pairs = {key(i) for i in items if i["item"] in answered_items}
     un = sum(1 for i in items if i["item"] not in answered_items and key(i) not in answered_pairs)
-    return {"items": len(items), "distinct_pairs": len({key(i) for i in items}), "unanswered": un}
+    out = {"items": len(items), "distinct_pairs": len({key(i) for i in items}), "unanswered": un}
+    if pk_qid is not None:
+        out["wrong_distinct_pairs"] = len(_wrong_pairs(items, pk_qid))
+    return out
+
+
+def _wrong_pairs(items, pk_qid):
+    if not isinstance(pk_qid, dict):
+        raise ValueError("cohort/truth.json pk_qid must map registrations to persons")
+    wrong = set()
+    for i in items:
+        pair = i.get("pair")
+        if not isinstance(pair, list) or len(pair) != 2:
+            raise ValueError("link-review item %r must name exactly two registrations" % (i.get("item"),))
+        persons = []
+        for reg in pair:
+            p = pk_qid.get(reg) if isinstance(reg, str) else None
+            if not isinstance(p, str) or not p:
+                raise ValueError("link-review item %r registration is not mapped by cohort/truth.json pk_qid" % (i.get("item"),))
+            persons.append(p)
+        if persons[0] != persons[1]:
+            wrong.add(tuple(sorted(pair)))
+    return wrong
 
 
 def lane_metrics(seed, report7, funnel, status, load):
@@ -594,6 +635,13 @@ def lane_metrics(seed, report7, funnel, status, load):
     org = _req(report7, "outreach_live", "by_origin")
     rv = _req(report7, "reviewer")
     allk = _req(rv, "by_kind", "all")
+    reviewer = {"items": _req(allk, "items"), "hours": _req(allk, "sim_hours"),
+                "wrong_final_signoffs": _req(allk, "wrong_final_signoffs"),
+                "distinct_pairs": _req(load, "distinct_pairs"), "unanswered": _req(load, "unanswered"),
+                "link_items": _req(load, "items"),
+                "by_programme": _req(rv, "by_programme"), "by_origin": _req(rv, "by_origin")}
+    if "wrong_distinct_pairs" in load:  # wrong_pair experiments only
+        reviewer["wrong_distinct_pairs"] = load["wrong_distinct_pairs"]
     return {
         "seed": seed, "tp": tp, "truth_closed": truth, "recall": tp / truth if truth else None,
         "categories": {c: cats.get(c, 0) for c in FUNNEL_CATEGORIES},
@@ -607,11 +655,7 @@ def lane_metrics(seed, report7, funnel, status, load):
         "false_merge_pairs": _req(lk, "false_merge_pairs"),
         "impure_clusters": _req(lk, "impure_clusters"),
         "cross_person_edges": sum(_req(lk, "cross_person_edges_by_basis").values()),
-        "reviewer": {"items": _req(allk, "items"), "hours": _req(allk, "sim_hours"),
-                     "wrong_final_signoffs": _req(allk, "wrong_final_signoffs"),
-                     "distinct_pairs": _req(load, "distinct_pairs"), "unanswered": _req(load, "unanswered"),
-                     "link_items": _req(load, "items"),
-                     "by_programme": _req(rv, "by_programme"), "by_origin": _req(rv, "by_origin")},
+        "reviewer": reviewer,
     }
 
 
@@ -634,6 +678,11 @@ def aggregate_arm(arm, lanes):
     a["categories"] = {c: sum(l["categories"][c] for l in lanes) for c in FUNNEL_CATEGORIES}
     a["residual"] = {c: sum(l["residual"][c] for l in lanes) for c in RESIDUAL}
     a["reviewer"] = {k: sum(l["reviewer"][k] for l in lanes) for k in REVIEWER_SUMS}
+    has = ["wrong_distinct_pairs" in l["reviewer"] for l in lanes]
+    if any(has):
+        if not all(has):
+            raise ValueError("wrong_distinct_pairs present in only some lanes of arm %s" % arm)
+        a["reviewer"]["wrong_distinct_pairs"] = sum(l["reviewer"]["wrong_distinct_pairs"] for l in lanes)
     return a
 
 
@@ -683,10 +732,36 @@ def gate(base, cand, kind):
             reasons.append(k + " increased")
     bd, cd = base["reviewer"]["distinct_pairs"], cand["reviewer"]["distinct_pairs"]
     limit = bd * (1 + Fraction(str(MAX_REVIEW_GROWTH)))
+    if cand.get("arm") in CANDIDATES and review_gate(cand["arm"]) == "wrong_pair":
+        return _wrong_pair_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, limit)
     if (bd == 0 and cd != 0) or cd > limit:
         reasons.append("distinct link-review pairs %d exceed %.2f (baseline %d +%d%%)" % (cd, float(limit), bd, round(100 * MAX_REVIEW_GROWTH)))
     return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
             "distinct_pairs": {"baseline": bd, ck: cd, "max_allowed": float(limit)}, "reasons": reasons}
+
+
+def _wrong_pair_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, total_limit):
+    """Review-load part of the gate for a "wrong_pair" candidate (pre-registered for pairfeat4): different-person distinct
+    link-review pairs <= 1.10 x baseline, or <= 1 when the baseline has none. Total pairs are reported, not gated."""
+    ws = []
+    for label, a in (("baseline", base), ("candidate", cand)):
+        v = a["reviewer"].get("wrong_distinct_pairs")
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ValueError("wrong_pair gate needs reviewer.wrong_distinct_pairs in the %s arm" % label)
+        ws.append(v)
+    bw, cw = ws
+    growth = 1 + Fraction(str(MAX_REVIEW_GROWTH))
+    limit = Fraction(WRONG_PAIR_ZERO_BASELINE_MAX) if bw == 0 else bw * growth
+    if cw > limit:
+        reasons.append("wrong-pair link-review pairs %d exceed %.2f (baseline %d +%d%%)" % (cw, float(limit), bw, round(100 * MAX_REVIEW_GROWTH)))
+    dtp = cand["tp"] - base["tp"]
+    extra = (cand["reviewer"]["hours"] - base["reviewer"]["hours"]) / dtp if dtp > 0 else None
+    return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
+            "review_gate": "wrong_pair",
+            "wrong_distinct_pairs": {"baseline": bw, ck: cw, "max_allowed": float(limit)},
+            "distinct_pairs": {"baseline": bd, ck: cd, "ratio": cd / bd if bd else None,
+                               "old_gate_max_allowed": float(total_limit), "gating": False},
+            "extra_hours_per_extra_closure": extra, "reasons": reasons}
 
 
 def select(base, cand):
@@ -702,7 +777,8 @@ def _recall(a):
     return a["tp"] / a["truth_closed"] if a["truth_closed"] else None
 
 
-def _load_lane(path, seed, arm, mode):
+def _load_lane(path, seed, arm, mode, candidate):
+    """One lane's metrics. A wrong_pair experiment's lanes (both arms) also read cohort/truth.json pk_qid."""
     def j(p):
         with open(os.path.join(path, p)) as h:
             return json.load(h)
@@ -717,7 +793,8 @@ def _load_lane(path, seed, arm, mode):
     if os.path.exists(dp):
         with open(dp) as h:
             dec = [json.loads(x) for x in h if x.strip()]
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec))
+    pk = _req(j("cohort/truth.json"), "pk_qid") if review_gate(candidate) == "wrong_pair" else None
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk))
 
 
 # ---------------------------------------------------------------- CLI
@@ -748,7 +825,7 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         if b["model_chain_sha256"] != gov[CHAIN_KEY[a]]:
             raise ValueError("arm %s model_chain_sha256 disagrees with %s" % (a, gov_name))
         builds[a] = b
-        arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode) for s in seeds])
+        arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode, candidate) for s in seeds])
         arm_res[a]["build"] = b
     if builds["baseline"]["git_head"] != builds[candidate]["git_head"]:
         raise ValueError("arms were built at different git heads")
