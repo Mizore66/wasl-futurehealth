@@ -7,6 +7,9 @@
 # NEW_ROOT must be a new path under ~/wasl-ml-data (one root per arm; never reused or deleted).
 # validation-clean refuses to start unless ../validation-manifest.json (written by the controller, never here) matches the
 # current git HEAD, the analyzer SHA256 and the five validation seeds, and the floor is 0.2 (baseline) or the manifest's selected floor.
+# dev-stress likewise needs ../selection.json (written by link_floor_compare.py dev-clean) with non-null selected_floor, and
+# allows only floor 0.2 or exactly that selected floor.
+# The tracked tree must be clean and pipeline/ and scripts/ must have no untracked files before any build.
 # Cached reader, image off, chaos 0, subkill 1, no NATS kill.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -33,6 +36,18 @@ PARENT="$(dirname "$REQ")"
 PARENT="$(cd "$PARENT" && pwd -P)"
 case "$PARENT/" in "$DATA_BASE"/*) ;; *) echo "root resolves outside ~/wasl-ml-data" >&2; exit 2;; esac
 
+if [ "$MODE" = dev-stress ]; then
+  SEL="$PARENT/selection.json"
+  [ -f "$SEL" ] && [ ! -L "$SEL" ] || { echo "selection.json missing in $PARENT; dev-stress is refused" >&2; exit 2; }
+  python3 -I - "$SEL" "$FLOOR" <<'PY' || { echo "dev-stress floor must be 0.2 or the selected arm in selection.json" >&2; exit 2; }
+import json, sys
+with open(sys.argv[1]) as h:
+    sel = json.load(h).get("selected_floor")
+assert isinstance(sel, (int, float)) and not isinstance(sel, bool) and sel in (0.05, 0.01), "no selected floor"
+assert float(sys.argv[2]) in (0.2, float(sel)), "floor not authorised"
+PY
+fi
+
 if [ "$MODE" = validation-clean ]; then
   MAN="$PARENT/validation-manifest.json"
   [ -f "$MAN" ] && [ ! -L "$MAN" ] || { echo "validation-manifest.json missing in $PARENT; validation lanes are refused" >&2; exit 2; }
@@ -40,8 +55,10 @@ if [ "$MODE" = validation-clean ]; then
   python3 -I - "$MAN" "$HEAD" "$ROOT/scripts/link_floor_compare.py" "$FLOOR" "$SEEDS" <<'PY' || { echo "validation manifest does not match frozen inputs" >&2; exit 2; }
 import hashlib, json, sys
 man, head, analyzer, floor, seeds = sys.argv[1:6]
-m = json.load(open(man))
-sha = hashlib.sha256(open(analyzer, "rb").read()).hexdigest()
+with open(man) as h:
+    m = json.load(h)
+with open(analyzer, "rb") as h:
+    sha = hashlib.sha256(h.read()).hexdigest()
 assert m.get("git_head") == head, "git head"
 assert m.get("analyzer_sha256") == sha, "analyzer sha256"
 assert m.get("seeds") == [int(x) for x in seeds.split()], "seeds"
@@ -50,6 +67,10 @@ assert isinstance(sel, (int, float)) and not isinstance(sel, bool) and sel in (0
 assert float(floor) in (0.2, float(sel)), "floor is neither baseline nor selected"
 PY
 fi
+
+DIRTY="$(git -C "$ROOT" status --porcelain --untracked-files=all -- pipeline scripts | grep -v '__pycache__' || true)"
+TRACKED="$(git -C "$ROOT" diff HEAD --name-only)"
+if [ -n "$DIRTY" ] || [ -n "$TRACKED" ]; then echo "working tree not clean (tracked changes or untracked files under pipeline/scripts); refusing to build" >&2; exit 2; fi
 
 WORK="$PARENT/$(basename "$REQ")"
 mkdir "$WORK"
@@ -120,9 +141,10 @@ for seed in seeds:
             "-rerr", rerr, "-errungraded", erru] + lf + rd
     run([bin_, "audit"] + tail, o + "/audit.log")
     run([bin_, "report7"] + tail, o + "/report7.log")
-    st = json.load(open(os.path.join(r, "status-linker.json")))  # required: a missing file aborts the lane
+    with open(os.path.join(r, "status-linker.json")) as h:
+        st = json.load(h)  # required: a missing file aborts the lane
     assert not st.get("link_funnel_error"), "link funnel trace write failed"
-    run(["python3", "-I", root + "/scripts/link_funnel.py", r, o + "/cohort", o + "/funnel.json"], o + "/classifier.log")
+    run(["python3", "-I", root + "/scripts/link_funnel.py", r, o + "/cohort", o + "/funnel.json", split, rerr, erru], o + "/classifier.log")
 PY
 
 python3 -I - "$ROOT" "$WORK" "$MODE" "$FLOOR" $SEEDS <<'PY'
@@ -134,15 +156,7 @@ import link_floor_compare as lfc
 assert lfc.MODES[mode]["seeds"] == seeds
 lanes = []
 for seed in seeds:
-    o = os.path.join(work, "v2-s%d" % seed)
-    f = json.load(open(o + "/funnel.json"))
-    r = json.load(open(o + "/run/main/report7.json"))
-    st = json.load(open(o + "/run/main/status-linker.json"))
-    lfc.check_funnel_floor(f, floor)  # requires config.review_floor == the arm floor
-    q = json.load(open(o + "/run/main/review_queue.json"))
-    dp = o + "/run/main/reviewer_decisions.ndjson"
-    dec = [json.loads(x) for x in open(dp) if x.strip()] if os.path.exists(dp) else []
-    m = lfc.lane_metrics(seed, r, f, st, lfc.review_load(q, dec))
+    m = lfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, floor)  # also requires funnel config.review_floor == floor
     assert m["analysis_errors"] == 0 and m["trace_error"] == 0, (seed, "analysis or trace-write error")
     assert m["replay_mismatch"] == 0, (seed, "replay mismatch")
     lanes.append(m)

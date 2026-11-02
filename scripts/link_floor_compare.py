@@ -2,6 +2,7 @@
 
 Selection rule, fixed before any result: among arms passing the gate prefer 0.05 over 0.01 (less reviewer exposure);
 select none if neither passes. CRC closure recall is report7 programmes_live.crc.tp / truth_closed, NOT funnel attached_or_closed.
+"unanswered" = a link review item (kinds contains "link", no "reason") with no reviewer decision recorded by item id or by pair.
 Small-n caveat: t intervals with 3 (dev) or 5 (validation) seeds are wide and only indicative.
 """
 import json
@@ -139,19 +140,27 @@ def select_arm(base, cands):
     return {"selected_floor": sel, "arms": arms, "baseline_recall": base["recall"] if "recall" in base else base["tp"] / base["truth_closed"]}
 
 
-def _load_lane(path, seed):
-    j = lambda p: json.load(open(os.path.join(path, p)))
+def _load_lane(path, seed, floor=None):
+    def j(p):
+        with open(os.path.join(path, p)) as h:
+            return json.load(h)
     r = j("run/main/report7.json")
     q = j("run/main/review_queue.json")
+    f = j("funnel.json")
+    if floor is not None:
+        check_funnel_floor(f, floor)
     dec = []
     dp = os.path.join(path, "run/main/reviewer_decisions.ndjson")
     if os.path.exists(dp):
-        dec = [json.loads(x) for x in open(dp) if x.strip()]
-    return lane_metrics(seed, r, j("funnel.json"), j("run/main/status-linker.json"), review_load(q, dec))
+        with open(dp) as h:
+            dec = [json.loads(x) for x in h if x.strip()]
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec))
 
 
 def main(argv):
-    """link_floor_compare.py MODE OUT_JSON ROOT_FLOOR... where each arg is FLOOR=ROOT; baseline is 0.2. Development modes only."""
+    """link_floor_compare.py MODE OUT_JSON FLOOR=ROOT ...; baseline 0.2 required. Development modes only.
+    dev-clean additionally writes selection.json (exactly that name) into the directory of OUT_JSON, which must be the
+    experiment parent directory: the lane runner reads it to authorise dev-stress arms."""
     if len(argv) < 3 or argv[0] not in MODES:
         print("usage: link_floor_compare.py MODE OUT_JSON FLOOR=ROOT ...", file=sys.stderr)
         return 2
@@ -173,6 +182,9 @@ def main(argv):
            "note": "t intervals use n=%d seeds: small-n, indicative only" % len(seeds)}
     if mode == "dev-clean":
         res["selection"] = select_arm(base, cands)
+        sel = dict(res["selection"], mode=mode, seeds=seeds)
+        with open(os.path.join(os.path.dirname(os.path.abspath(out)), "selection.json"), "w") as h:
+            json.dump(sel, h, indent=1, sort_keys=True)
     else:
         kind = "stress" if mode == "dev-stress" else "validation"
         res["gates"] = {str(c["floor"]): gate(base, c, kind) for c in cands}

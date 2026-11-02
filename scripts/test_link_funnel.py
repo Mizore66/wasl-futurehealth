@@ -129,6 +129,18 @@ class EndToEnd(FunnelBase):
         self.assertEqual(out["scope"]["noise"], "v2")
         self.assertEqual(out["link_attach_rate"], 0.0)
 
+    def test_scope_default_and_explicit(self):
+        pair = {"kind": "pair", "seq": 3, "a": "p|S1", "b": "p|R1", "stage": "below_review", "p": 0.1}
+        run, coh, out = self.build([pair])
+        link_funnel.main([run, coh, out])
+        self.assertEqual(jl(out)["scope"], {"person_split": "dev", "noise": "v2", "reviewer_error": 0,
+                                            "day15_ungraded_prep_reviewer_error": 0})
+        link_funnel.main([run, coh, out, "eval", "0.04", "0.25"])
+        self.assertEqual(jl(out)["scope"], {"person_split": "eval", "noise": "v2", "reviewer_error": 0.04,
+                                            "day15_ungraded_prep_reviewer_error": 0.25})
+        for bad in (["train", "0", "0"], ["dev", "x", "0"], ["dev", "0"]):
+            self.assertEqual(link_funnel.main([run, coh, out] + bad), 2)
+
     def test_weakest_edge_item_matched_by_loop_and_second_identifier_ignored(self):
         pair = {"kind": "pair", "seq": 1, "a": "p|R1", "b": "p|S1", "stage": "near"}
         items = [{"item": "i1", "loop": "p/ServiceRequest/sr1", "kinds": ["link"], "pair": ["p|X", "p|R1"]},
