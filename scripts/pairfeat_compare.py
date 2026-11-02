@@ -1,7 +1,7 @@
 """Protected analyzer for the paired CRC pair-scorer experiment: baseline (default modelset) vs one candidate modelset
-(pairfeat1 or pairfeat2), both -linkfloor 0.01.
+(pairfeat1, pairfeat2 or pairfeat3), both -linkfloor 0.01.
 
-Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337); validation
+Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337), pairfeat3 (347 353 367); validation
 seeds 401 409 419 421 431 for both. An experiment parent serves exactly one candidate, inferred from the single
 <candidate>_chain_sha256 key of its artifact-manifest.json (zero, several or unknown candidate keys are refused). Its
 baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
@@ -49,7 +49,8 @@ from fractions import Fraction
 
 # The allowed candidate set. Each candidate has its own development seeds (also used by the baseline arm of that
 # candidate's experiment parent); validation seeds are shared.
-CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313]}, "pairfeat2": {"dev_seeds": [317, 331, 337]}}
+CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313]}, "pairfeat2": {"dev_seeds": [317, 331, 337]},
+              "pairfeat3": {"dev_seeds": [347, 353, 367]}}
 VALIDATION_SEEDS = [401, 409, 419, 421, 431]
 MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candidate)
     "dev-clean": {"split": "dev", "rerr": "0", "errungraded": "0"},
@@ -62,11 +63,12 @@ MAX_REVIEW_GROWTH = 0.10
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
-MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2"}
+MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3"}
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
     "pairfeat1": ("encoder_pairfeat1.json", "lgb_stream_pairfeat1.json", "iso_pairfeat1.json", "iso_v7_pairfeat1.json"),
     "pairfeat2": ("encoder_pairfeat2.json", "lgb_stream_pairfeat2.json", "iso_pairfeat2.json", "iso_v7_pairfeat2.json"),
+    "pairfeat3": ("encoder_pairfeat3.json", "lgb_stream_pairfeat3.json", "iso_pairfeat3.json", "iso_v7_pairfeat3.json"),
 }
 CHAIN_SUFFIX = "_chain_sha256"
 CHAIN_KEY = {a: a + CHAIN_SUFFIX for a in ALLOWED_ARMS}
