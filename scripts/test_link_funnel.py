@@ -361,5 +361,66 @@ class AnalysisErrorTests(unittest.TestCase):
         self.assertEqual(link_funnel.main([run, coh, out]), 2)
         self.assertFalse(os.path.exists(out))
 
+class TerminalStagePrecedenceTests(FunnelBase):
+    OTHER = {"item": "i1", "loop": "p/ServiceRequest/sr1", "kinds": ["link"], "pair": ["p|S1", "p|X"]}
+    ANS = [{"item": "i1", "link": "same", "t": 1}]
+
+    def test_below_review_with_other_pair_item_stays_below_review(self):
+        ev = {"kind": "pair", "seq": 1, "a": "p|S1", "b": "p|R1", "stage": "below_review", "p": 0.01}
+        self.assertEqual(self.go([ev], [self.OTHER], self.ANS)[1]["details"], {"candidate_below_review|below_review_floor": 1})
+
+    def test_rejected_demographic_with_other_pair_item_stays_rejected(self):
+        ev = {"kind": "pair", "seq": 1, "a": "p|S1", "b": "p|R1", "stage": "rejected_demographic", "reason": "eid_conflict"}
+        self.assertEqual(self.go([ev], [self.OTHER], self.ANS)[1]["details"], {"candidate_rejected_demographic|eid_conflict": 1})
+
+    def test_near_with_weakest_edge_item_still_routed_review(self):
+        ev = {"kind": "pair", "seq": 1, "a": "p|S1", "b": "p|R1", "stage": "near"}
+        self.assertEqual(self.go([ev], [self.OTHER], self.ANS)[1]["details"], {"candidate_routed_review|answered_same": 1})
+
+    def test_below_review_with_direct_item_is_routed_review(self):
+        ev = {"kind": "pair", "seq": 1, "a": "p|S1", "b": "p|R1", "stage": "below_review"}
+        direct = {"item": "i2", "loop": "other", "kinds": ["link"], "pair": ["p|R1", "p|S1"]}
+        ans = [{"item": "i2", "link": "different", "t": 1}]
+        self.assertEqual(self.go([ev], [self.OTHER, direct], ans)[1]["details"], {"candidate_routed_review|answered_different": 1})
+
+class LinkerStatusGateTests(unittest.TestCase):
+    def status(self, content):
+        run, coh, out = make_run([{}], [pair(1, 0, "below_review")])
+        if content is not None:
+            with open(os.path.join(run, "status-linker.json"), "w") as f:
+                f.write(content)
+        with open(out, "w") as f:
+            f.write("{}")
+        return run, coh, out
+
+    def test_write_error_fails_loudly_without_stale_output(self):
+        run, coh, out = self.status(json.dumps({"link_funnel_error": "write /secret/path: no space"}))
+        self.assertEqual(link_funnel.main([run, coh, out]), 2)
+        self.assertFalse(os.path.exists(out))
+
+    def test_write_error_message_is_fixed_and_sanitized(self):
+        import contextlib, io
+        run, coh, out = self.status(json.dumps({"link_funnel_error": "write /secret/path: no space"}))
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            link_funnel.main([run, coh, out])
+        self.assertEqual(err.getvalue().strip(), "link_funnel_write_error")
+
+    def test_malformed_or_unreadable_status_fails_safely(self):
+        for bad in ("not json", "[]", '"x"'):
+            run, coh, out = self.status(bad)
+            self.assertEqual(link_funnel.main([run, coh, out]), 2, bad)
+            self.assertFalse(os.path.exists(out))
+
+    def test_clean_or_absent_status_is_accepted(self):
+        for c in (None, "{}", json.dumps({"link_funnel_error": ""}), json.dumps({"processed": 3})):
+            run, coh, out = self.status(c)
+            self.assertEqual(link_funnel.main([run, coh, out]), 0, c)
+
+    def test_harness_requires_and_checks_linker_status(self):
+        src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "link_funnel_dev.sh")).read()
+        self.assertIn("status-linker.json", src)
+        self.assertIn("link_funnel_error", src)
+
 if __name__ == "__main__":
     unittest.main()
