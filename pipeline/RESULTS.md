@@ -1005,7 +1005,7 @@ The aggregate now reports the pooled ratio and both no-bias references (`scripts
 Post-hoc change after the `a3ad83a` freeze, made after the review-load trace above. Disclosed.
 
 - **Surname variants (`-corrshared`, `-corrfuzzy`).** An exact-DOB, same-sex link also corroborates when the names share two distinct skeleton tokens of 3+ letters in any order (maternal middle surname, hyphenated or reordered name), or when the last surname skeletons (4+ letters) are within one edit (transliteration). Checked before the run on the cal split (persons held out from the eval cohorts; cohorts 101-107, both noise models): **0 additional false corroborations** among 1.7M candidate pairs of different persons (3 and 15 with the old rule, unchanged); +356 / +912 true pairs corroborated.
-- **Emirates ID as the message second identifier (`-eidsecond`).** The Joint Commission and JCI accept an assigned ID number as one of two identifiers, and DoH pairs the Emirates ID with the name; no public Emirates ID error rate exists, and the Luhn check cannot catch a valid number that belongs to someone else ([`docs/research/eid-second-identifier.md`](../docs/research/eid-second-identifier.md)). So the number counts only when it is the same 784-prefixed, Luhn-valid, non-default ID on both registrations, sex and names agree, the birth dates do not contradict (equal, or the same year when one is a placeholder), and no other registration carries it with a different sex or name. Unit tests cover a relative's card, a reused number, a default ID and contradicting dates. **Limit:** the generator never gives a person someone else's Emirates ID, so this evaluation cannot measure the rule's safety; a relative with the same sex and surname still passes (the residual risk).
+- **Emirates ID as the message second identifier (`-eidsecond`).** The Joint Commission and JCI accept an assigned ID number as one of two identifiers, and DoH pairs the Emirates ID with the name; no public Emirates ID error rate exists, and the Luhn check cannot catch a valid number that belongs to someone else ([`docs/research/eid-second-identifier.md`](../docs/research/eid-second-identifier.md)). So the number counts only when it is the same 784-prefixed, Luhn-valid, non-default ID on both registrations, sex and names agree, the birth dates do not contradict (equal, or the same year when one is a placeholder), and no other registration carries it with a different sex or name. Unit tests cover a relative's card, a reused number, a default ID and contradicting dates. **Limit:** the headline evaluation used here does not give a person someone else's Emirates ID, so it cannot measure the rule's safety under that stress; a relative with the same sex and surname still passes (the residual risk). The later post-hoc B8 evaluation below adds wrong-EID cohorts and separately measures the optional closure guard.
 
 | | Dev noise v1: `a3ad83a` → `03e430d` | Held-out v2: `a3ad83a` → `03e430d` |
 |---|---|---|
@@ -1539,3 +1539,62 @@ Duplicate/lost outputs, ingest loss/duplication, final-state mismatches and forg
 The A1 surveillance truth fix removed the previously disclosed extra-loop mismatch: `lung_surv_extra_opened=0` in both pooled evaluations; one surveillance obligation was missed in each. Subgroup evidence remains weak under roughly 16 tests (Bonferroni cut about 0.003): the lowest programme-standardised origin result was v1 p=0.013, and v2 lung origin p=0.039; neither passes that cut. Small denominators retain wide zero-event bounds.
 
 **Reader caveat:** held-out persons and v2 identity noise do not make LDCT/IFHAS reader results independent. Their generators still reuse development texts, including the tuned IFHAS corpus. No paid calls or new held-out reader corpora were used.
+
+## Integrated seven-programme run at `075abc5`
+
+`WASL_PERSONS=0 WASL_LUNG=800 WASL_DR=1200 WASL_BREAST=70 WASL_LDCT=300 WASL_IFHAS=800 WASL_LUNGSURV=1 WASL_DRNEXT=1 WASL_XREFLINK=1 WASL_REFREJECT=true scripts/demo.sh all` (seed 2026, cached readers, FHIR, `v7strict`, chaos on). The full held-out person pool supports 800 IFHAS loops plus distractors; the default 6,500-person pool had only 882 eligible IFHAS adults and could not support the required 900. This run used 70 breast loops, versus 160 in the earlier integrated run.
+
+| Programme | With-review result |
+|---|---|
+| CRC | P 1.000, R 0.837, 0/471 false closures |
+| Cervical | P 1.000, R 0.977, 0/217 false closures |
+| Incidental lung nodule | P 1.000, R 0.977, 0/298 false closures |
+| Diabetic retinopathy | P 1.000, R 0.996, 0/1,129 false closures; referral recall 0.923 |
+| Breast | P 1.000, R 1.000, 0/69 false closures; recall-loop recall 1.000 |
+| Lung cancer screening LDCT | P 1.000, R 0.996, 0/281 false closures; action-loop recall 0.962 |
+| IFHAS | P 1.000, R 0.984, 0/679 false closures; follow-up-loop recall 0.957 |
+
+Wrong-patient messages, releases without granted consent and releases before a late opt-out was recorded were all 0; duplicate outputs and final-state mismatches were 0; 4,187/4,187 provenance chains verified; 0/19 forged events had effect; tamper detection was 17/17 with no baseline false alarm. Throughput was 628 events/s and reviewer time 12.3 h/1k loops under concurrent evaluation load; this is not a controlled capacity benchmark. This is one synthetic seed with simulated reviewers and reused development reader corpora for LDCT/IFHAS, not independent reader or clinical-effectiveness evidence. C14 surveillance follow-ups and adversarial generation remained off. Sanitized artifacts are in [`results/integrated-075/`](results/integrated-075/). API samples were regenerated from this run and verified to contain all seven programme case lists and all four fixtures.
+
+## Post-hoc identity, scale and deployment hardening
+
+All changes in this section followed review or observed failures and are disclosed as post-hoc. No paid calls were used. The B8 closure guard remains default-off and is evaluated separately from the headline frozen evaluation.
+
+### Minor outreach fixes
+
+At `5a7094c` (merged at `3d2b6e6`), LDCT and IFHAS outreach now requires `Contact == granted`, matching the other programmes, and cross-programme provider attribution counts LDCT and IFHAS providers. Focused regressions and the full Go suite passed. The unused legacy `DispatchC` path retains its documented consent behavior.
+
+### X10 scale and identity hardening
+
+The original x10 run was a failed safety result: 80 unexpected linker restarts, one CRC false closure, one cervical false closure and four wrong-patient releases. Fixes at `b67371d` (merged at `879505d`) covered mutex-protected linker status snapshots, EID-conflict detection including non-Luhn IDs, cluster-bridge prevention, and placeholder-DOB corroboration requiring informative name skeletons. The calibrator was **not refit** for the placeholder-DOB rule. No closure threshold or default guard setting changed.
+
+A subsequent rerun used a stale binary and reproduced old crashes; it is not evidence against the fixed sources. A stale-binary guard was added at `bb8b1d7` (merged at `8e0d821`). The first correctly rebuilt rerun then had zero unexpected restarts and zero false closures, but still one wrong-patient release. Root-cause tracing showed that an EID-clash refusal was not durable: after a wrong simulated reviewer-different split removed the clashing EID, a bridge record could merge the previously refused pair. At `5045e15` (merged at `e27eefc`), an EID-clash refusal now also records a cannot-link constraint. Two regressions failed on the unfixed code and passed after the fix; the full Go and race suites and `go vet` passed.
+
+A fresh, explicitly rebuilt x10 run at `e27eefc` then measured zero unexpected linker restarts, wrong-patient releases, CRC/cervical false closures in either lane, consent violations, duplicate/lost outputs, final-state mismatches and forged effects. Lung, DR and breast false closures were also zero; provenance verified 30,567/30,567. It recorded 2,374 `eid_cluster_clash` events and 95 `cannot_rejects`. A fresh normal-scale run passed the same measured safety checks. Full tables and the preserved historical failures are in [`results/scale/README.md`](results/scale/README.md), with sanitized artifacts in `normal-hardened/` and `x10-hardened/`.
+
+These are single-seed simulated runs on a shared host, not controlled capacity benchmarks. X10 includes training persons and is not held-out accuracy evidence. The final x10 run did not execute the optional full tamper replay. Historical failed artifacts were preserved rather than rewritten.
+
+### Fresh B8 wrong-EID evaluation at `075abc5`
+
+The post-hoc `-eidguard` change (`27d03b4`, hardened at `97aaab1` and merged at `4b8aceb`) adds equal-EID demographic contradiction checks, direct/multi-hop/hub and arrival-order handling, below-threshold near-miss review routing, human same/different behavior and cross-programme closure checks. It remains **off by default**. It does not refit the linker or calibrator.
+
+Fresh seeds **17 and 29** used v2 held-out noise, seven programmes, cached readers, FHIR, `v7strict`, chaos, LDCT 300 and IFHAS 800. Four matched lanes compared clean versus 2% wrong-EID generation and guard off versus on. The 4% reviewer error is an assumed stress value, not a measured clinician error rate.
+
+| Cohort | Guard | CRC / cervical / lung false closures | CRC recall | Cervical recall | Review items / 100 loops |
+|---|---|---|---:|---:|---:|
+| Clean | Off | 0/1,178; 0/523; 0/802 | 0.7715 | 0.9090 | 31.651 |
+| Clean | On | 0/1,176; 0/524; 0/801 | 0.7700 | 0.9110 | 32.735 |
+| Wrong EID 2% | Off | **16/1,166; 2/520; 1/796** | 0.7535 | 0.9005 | 31.9205 |
+| Wrong EID 2% | On | 0/1,133; 0/515; 0/794 | 0.7420 | 0.8955 | 33.012 |
+
+Under wrong-EID stress, the guard removed all **19 observed false closures**. CRC recall cost 1.15 percentage points, cervical recall cost 0.50 points, and review load increased by 1.0915 items per 100 loops (reviewer time 10.9645 → 11.308 h/1k loops). In the clean cohort, CRC recall changed by −0.15 points, cervical by +0.20 points, and review load increased by 1.084 items per 100 loops. Two seeds cannot establish the small clean-cohort recall differences.
+
+Every lane had zero wrong-patient releases, releases without granted consent, duplicate/lost outputs, ingest loss/duplication, final-state mismatches and forged effects. All other programme false-closure counters were zero, and each lane detected 34/34 tamper attacks with no baseline false alarms.
+
+Guard-on wrong-EID linkage still contained **298 false-merge pairs, 122 impure clusters, 78 cross-person EID edges, one cross-person human edge and 99 cross-person `wasl` edges** across the two seeds. Guard-off had 1,623 false-merge pairs, 568 impure clusters, 905 cross-person EID edges and 99 `wasl` edges. Clean lanes retained 156 false-merge pairs, 68 impure clusters and 99 `wasl` edges in both guard settings. Mean pair recall fell from 0.8690 to 0.8535 under wrong-EID stress and from 0.8970 to 0.8810 in clean cohorts when the guard was enabled. Compatible/missing-demographic wrong EIDs, same-surname relatives and model/human-only contamination remain possible.
+
+The complete manifests, per-seed reports, subgroup analyses, tamper evidence and pooled safety counters are in [`results/b8-hardening/`](results/b8-hardening/README.md). These two post-hoc seeds supplement rather than replace the five-seed headline evaluation.
+
+### Deployment verification limit
+
+Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.

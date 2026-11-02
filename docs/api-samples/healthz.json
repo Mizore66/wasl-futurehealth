@@ -1,5 +1,5 @@
 {
- "cases": 5369,
+ "cases": 5368,
  "dependencies": {
   "ingest_adapter": "fhir",
   "materialised_run": "loaded",
@@ -9,7 +9,7 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-01T13:15:21Z",
+  "loaded_at": "2026-11-02T04:59:26Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",

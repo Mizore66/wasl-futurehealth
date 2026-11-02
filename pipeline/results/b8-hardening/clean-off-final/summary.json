@@ -1,0 +1,836 @@
+{
+ "manifest": {
+  "frozen_at": "2026-11-02T04:18:45.738142Z",
+  "code_revision": "075abc5ad04ae14dff01dc7b9ddd1cedd5671d51",
+  "policy": "v7strict",
+  "thresholds": {
+   "tau_high_messaging": 0.99,
+   "tau_close_v7strict": 0.99,
+   "uncorroborated_cap": 0.989,
+   "calibrator": "models/iso_v7.json (stratified)",
+   "dob_second_id_guard": true,
+   "reviewer_error": 0.04,
+   "double_review": "merge+close"
+  },
+  "reader": "cached second reader: gemma-4-26b-a4b-it-self (sha256-keyed)",
+  "reports": "data/evidence/reports43.json",
+  "models_dir": "models",
+  "source": "fhir",
+  "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
+  "noise_models": {
+   "v1": "training-time corruptions (gen.go)",
+   "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
+  },
+  "selected_noise_models": [
+   "v2"
+  ],
+  "eid_guard": false,
+  "lung_loops_per_run": 1088,
+  "dr_loops_per_run": 1200,
+  "breast_loops_per_run": 70,
+  "ldct_loops_per_run": 300,
+  "ifhas_loops_per_run": 800,
+  "crc_loops_per_run": 2040,
+  "cervical_loops_per_run": 816,
+  "persons_cap": "all held-out (8,871)",
+  "seeds": [
+   17,
+   29
+  ],
+  "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
+  "hashes": {
+   "models/encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+   "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
+   "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
+   "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
+   "models/gemma_cache.json": "176e152f42ffd63b5fb2af83a2f927cae57d8d6b04e13840e328a4dae7784bcd",
+   "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
+   "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+   "data/evidence/reports43.json": "e1545ef8a765966836c7c25f5f02a81999874ab1eade457f39dd31328a7dadfd",
+   "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7",
+   "models/lung_gemma_cache.json": "6a6b829caf3b2a056c85b97c33cae6bce8ec3ed0462838ccc15e2f76985fc2d4",
+   "data/lung/finding_reports.json": "eef1263f68d4e02d1d63e7af7985612be3f210fe7defe2a8d804f95058886280",
+   "data/lung/followup_reports.json": "f4e29164cc84b7b1f48c8f7939ba10d0a7c994e362263d3596fb037f6a64f4cf",
+   "models/dr_gemma_cache.json": "6791669bce82247b8334e67e4dc09a9c45fc0f7fb37e44495b0155a50f9f50ca",
+   "data/dr/screen_reports.json": "db550575155c1db2f8c492837b41196ff54846d657c71ab8a294076954c01d39",
+   "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436",
+   "models/breast_gemma_cache.json": "a16bf1659538da7bc8d37b88326e70a2692d557037e07a89c88dbf5cba0c0b93",
+   "data/breast/screen_reports.json": "8330c936c87f77a27a73a4ece7d687cd1c70db2a860d0eb5848ab38c2f3a1102",
+   "data/breast/assess_notes.json": "b95a6f7139823cd95712fabbf6d7e4fc35e9016eaed3b5339b230c06e1a93f8a",
+   "models/ldct_gemma_cache.json": "68abe29f4a79b8bc3cc6b972ea3e55667968d179d72646b91102e54dd7c88967",
+   "data/ldct/screen_reports.json": "0b8bc78004b880b71331acd88eba248e777de171d7b451b49f0adab41991b4a9",
+   "data/ldct/workup_notes.json": "362e25355b860ba1a76fa2231546b275ffd54a66d7eb02216a850907bc89c192",
+   "models/ifhas_gemma_cache.json": "836ffe14bf80d7acb4a646b5a50f31488636b59afdc0f3ccfa4f89e3b79fa266",
+   "data/ifhas/followup_notes.json": "54e37c8c97e8d261e25d9593773540f70757d477f3c8e4bbef8b0a00a4945980"
+  },
+  "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
+  "limitations": [
+   "the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test",
+   "synthetic cohorts, reviewers, capacity; no clinician labels",
+   "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
+   "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
+   "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
+  ],
+  "lung_pet_surveillance": "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure",
+  "dr_next_due": "on (-drnext): next due rescreen / clinic review and recall_overdue",
+  "handoff_xreflink": true,
+  "handoff_refreject": true
+ },
+ "by_noise": {
+  "v2": {
+   "seeds": 2,
+   "metrics": {
+    "crc_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "crc_recall": [
+     0.7715,
+     0.7143,
+     0.8287
+    ],
+    "crc_recall_no_review": [
+     0.32,
+     0.2692,
+     0.3708
+    ],
+    "cervical_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "cervical_recall": [
+     0.909,
+     0.7819,
+     1.0361
+    ],
+    "cervical_recall_no_review": [
+     0.546,
+     0.5333,
+     0.5587
+    ],
+    "kpi_wasl": [
+     0.293,
+     0.2676,
+     0.3184
+    ],
+    "kpi_truth": [
+     0.328,
+     0.2772,
+     0.3788
+    ],
+    "kpi_eid_only": [
+     0.1295,
+     0.1231,
+     0.1359
+    ],
+    "kpi_abs_error_wasl": [
+     0.035,
+     0.0096,
+     0.0604
+    ],
+    "kpi_abs_error_eid_only": [
+     0.1985,
+     0.1413,
+     0.2557
+    ],
+    "linkage_pair_f1": [
+     0.942,
+     0.9166,
+     0.9674
+    ],
+    "reviewer_h_per_1k": [
+     10.999,
+     10.3891,
+     11.6089
+    ],
+    "review_items_per_100_loops": [
+     31.651,
+     27.5724,
+     35.7296
+    ],
+    "review_items_per_100_arab": [
+     32.099,
+     29.6849,
+     34.5131
+    ],
+    "reviewer_h_per_1k_arab": [
+     11.139,
+     9.6143,
+     12.6637
+    ],
+    "review_items_per_100_filipino": [
+     30.3525,
+     16.8143,
+     43.8907
+    ],
+    "reviewer_h_per_1k_filipino": [
+     10.1995,
+     7.6519,
+     12.7471
+    ],
+    "review_items_per_100_south_asian": [
+     32.799,
+     22.5071,
+     43.0909
+    ],
+    "reviewer_h_per_1k_south_asian": [
+     11.536,
+     10.5449,
+     12.5271
+    ],
+    "review_items_per_100_western": [
+     28.9615,
+     16.3127,
+     41.6103
+    ],
+    "reviewer_h_per_1k_western": [
+     10.109,
+     3.5146,
+     16.7034
+    ],
+    "review_load_ratio_max_min_origin": [
+     1.1382,
+     0.9307,
+     1.3458
+    ],
+    "throughput_ev_s": [
+     686.6852,
+     452.4641,
+     920.9062
+    ],
+    "lung_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "lung_recall": [
+     0.945,
+     0.8942,
+     0.9958
+    ],
+    "lung_state_accuracy": [
+     0.9735,
+     0.9671,
+     0.9799
+    ],
+    "lung_escalation_recall": [
+     0.8925,
+     0.3525,
+     1.4325
+    ],
+    "dr_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "dr_recall": [
+     0.9925,
+     0.9607,
+     1.0243
+    ],
+    "dr_referral_recall": [
+     0.8635,
+     0.3743,
+     1.3527
+    ],
+    "dr_state_accuracy": [
+     0.9925,
+     0.9607,
+     1.0243
+    ],
+    "dr_triage_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "dr_overdue_accuracy": [
+     0.993,
+     0.9676,
+     1.0184
+    ],
+    "dr_exam_within_deadline_truth": [
+     0.46,
+     -0.4167,
+     1.3367
+    ],
+    "dr_exam_within_deadline_wasl": [
+     0.3805,
+     -0.1722,
+     0.9332
+    ],
+    "breast_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_recall": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_recall_loop_recall": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_state_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_triage_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_overdue_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_recall_outcome_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "breast_assessment_within_deadline_truth": [
+     0.2,
+     -2.3412,
+     2.7412
+    ],
+    "breast_assessment_within_deadline_wasl": [
+     0.2,
+     -2.3412,
+     2.7412
+    ],
+    "breast_abnormal_recall_rate_truth": [
+     0.05,
+     -0.2168,
+     0.3168
+    ],
+    "breast_abnormal_recall_rate_wasl": [
+     0.05,
+     -0.2168,
+     0.3168
+    ],
+    "breast_early_recall_rate_truth": [
+     0.014,
+     0.014,
+     0.014
+    ],
+    "breast_early_recall_rate_wasl": [
+     0.014,
+     0.014,
+     0.014
+    ],
+    "ldct_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "ldct_recall": [
+     0.9965,
+     0.952,
+     1.041
+    ],
+    "ldct_action_loop_recall": [
+     0.9695,
+     0.582,
+     1.357
+    ],
+    "ldct_state_accuracy": [
+     0.997,
+     0.9589,
+     1.0351
+    ],
+    "ldct_triage_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "ldct_overdue_accuracy": [
+     0.997,
+     0.9589,
+     1.0351
+    ],
+    "ldct_action_outcome_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "ldct_next_step_within_clock_truth": [
+     0.5955,
+     -0.1478,
+     1.3388
+    ],
+    "ldct_next_step_within_clock_wasl": [
+     0.571,
+     -0.4836,
+     1.6256
+    ],
+    "ldct_abnormal_recall_rate_truth": [
+     0.1315,
+     0.0235,
+     0.2395
+    ],
+    "ldct_abnormal_recall_rate_wasl": [
+     0.1315,
+     0.0235,
+     0.2395
+    ],
+    "ldct_cancer_detection_rate_truth": [
+     0.0135,
+     -0.0691,
+     0.0961
+    ],
+    "ldct_cancer_detection_rate_wasl": [
+     0.0115,
+     -0.0965,
+     0.1195
+    ],
+    "ifhas_precision": [
+     1,
+     1.0,
+     1.0
+    ],
+    "ifhas_recall": [
+     0.9675,
+     0.8341,
+     1.1009
+    ],
+    "ifhas_followup_loop_recall": [
+     0.8965,
+     0.4073,
+     1.3857
+    ],
+    "ifhas_state_accuracy": [
+     0.971,
+     0.8694,
+     1.0726
+    ],
+    "ifhas_triage_accuracy": [
+     0.9995,
+     0.9931,
+     1.0059
+    ],
+    "ifhas_overdue_accuracy": [
+     0.975,
+     0.8988,
+     1.0512
+    ],
+    "ifhas_domain_outcome_accuracy": [
+     1,
+     1.0,
+     1.0
+    ],
+    "ifhas_followup_within_clock_truth": [
+     0.539,
+     0.1197,
+     0.9583
+    ],
+    "ifhas_followup_within_clock_wasl": [
+     0.49,
+     -0.0945,
+     1.0745
+    ],
+    "ifhas_abnormal_findings_rate_truth": [
+     0.3915,
+     0.3089,
+     0.4741
+    ],
+    "ifhas_abnormal_findings_rate_wasl": [
+     0.392,
+     0.3031,
+     0.4809
+    ],
+    "stalled_days_after_deadline_flagged_median": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "stalled_days_before_deadline_first_escalation_median": [
+     22.9,
+     21.6294,
+     24.1706
+    ],
+    "stalled_share_flagged": [
+     1.0,
+     1.0,
+     1.0
+    ],
+    "results_within_21d_agreement": [
+     1,
+     1.0,
+     1.0
+    ]
+   },
+   "safety_pooled": {
+    "crc_false_closures": [
+     0,
+     1178,
+     0.00313
+    ],
+    "cervical_false_closures": [
+     0,
+     523,
+     0.00703
+    ],
+    "wrong_patient_released": [
+     0,
+     6557,
+     0.00056
+    ],
+    "released_without_granted_consent": [
+     0,
+     4734,
+     0.00078
+    ],
+    "duplicate_or_lost_outputs": [
+     0,
+     85747,
+     4e-05
+    ],
+    "ingest_lost_or_duplicated": [
+     0,
+     109482,
+     null
+    ],
+    "final_state_mismatch_loops": [
+     0,
+     null,
+     null
+    ],
+    "forged_with_effect": [
+     0,
+     42,
+     null
+    ],
+    "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": [
+     0,
+     null,
+     null
+    ],
+    "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": [
+     0,
+     null,
+     null
+    ],
+    "tamper_detected": [
+     34,
+     34,
+     null
+    ],
+    "tamper_false_alarms": [
+     0,
+     2,
+     null
+    ],
+    "lung_false_closures": [
+     0,
+     802,
+     0.00459
+    ],
+    "lung_surveillance_ct_false_closures": [
+     0,
+     18,
+     0.1853
+    ],
+    "lung_surveillance_ct_overdue_flag_correct": [
+     39,
+     41,
+     null
+    ],
+    "dr_false_closures": [
+     0,
+     2254,
+     0.00164
+    ],
+    "dr_referral_false_closures": [
+     0,
+     107,
+     0.03389
+    ],
+    "breast_false_closures": [
+     0,
+     139,
+     0.02619
+    ],
+    "breast_recall_false_closures": [
+     0,
+     6,
+     0.45926
+    ],
+    "ldct_false_closures": [
+     0,
+     566,
+     0.0065
+    ],
+    "ldct_action_false_closures": [
+     0,
+     51,
+     0.06978
+    ],
+    "ifhas_false_closures": [
+     0,
+     1371,
+     0.00269
+    ],
+    "ifhas_followup_false_closures": [
+     0,
+     398,
+     0.00923
+    ],
+    "handoff_false_closures": [
+     0,
+     29,
+     0.11944
+    ],
+    "handoff_lung_false_closures": [
+     0,
+     4,
+     0.60236
+    ],
+    "handoff_dr_false_closures": [
+     0,
+     5,
+     0.52182
+    ]
+   },
+   "pooled_counts": {
+    "lung_workup_pred_awaiting_tissue": 3,
+    "lung_workup_pred_closed_by_ct": 37,
+    "lung_workup_pred_closed_by_pet": 34,
+    "lung_workup_pred_closed_by_tissue": 25,
+    "lung_workup_truth_awaiting_tissue": 4,
+    "lung_workup_truth_path_ct": 57,
+    "lung_workup_truth_path_pet": 76,
+    "lung_workup_truth_path_tissue": 24,
+    "lung_surv_obligations": 41,
+    "lung_surv_opened": 34,
+    "lung_surv_extra_opened": 0,
+    "lung_surv_truth_closed": 19,
+    "lung_surv_pred_closed": 18,
+    "lung_surv_tp": 18,
+    "lung_surv_false_closures": 0,
+    "lung_surv_missed": 1,
+    "lung_surv_truth_overdue": 10,
+    "lung_surv_pred_overdue": 8,
+    "lung_surv_overdue_flag_correct": 39,
+    "lung_surv_outreach_lung_surveillance_due:consent_unknown_hold": 2,
+    "lung_surv_outreach_lung_surveillance_recall:released": 8,
+    "dr_reader_dr-clinic_instances": 498,
+    "dr_reader_dr-clinic_agree": 483,
+    "dr_reader_dr-clinic_agree_but_wrong": 0,
+    "dr_reader_dr-clinic_coded": 0,
+    "dr_reader_dr-screen_instances": 2477,
+    "dr_reader_dr-screen_agree": 2236,
+    "dr_reader_dr-screen_agree_but_wrong": 0,
+    "dr_reader_dr-screen_coded": 1514,
+    "breast_reader_breast-assess_instances": 25,
+    "breast_reader_breast-assess_agree": 25,
+    "breast_reader_breast-assess_agree_but_wrong": 0,
+    "breast_reader_breast-assess_coded": 0,
+    "breast_reader_breast-screen_instances": 142,
+    "breast_reader_breast-screen_agree": 142,
+    "breast_reader_breast-screen_agree_but_wrong": 0,
+    "breast_reader_breast-screen_coded": 101,
+    "ldct_reader_ldct-screen_instances": 649,
+    "ldct_reader_ldct-screen_agree": 644,
+    "ldct_reader_ldct-screen_agree_but_wrong": 0,
+    "ldct_reader_ldct-screen_coded": 384,
+    "ldct_reader_ldct-workup_instances": 96,
+    "ldct_reader_ldct-workup_agree": 88,
+    "ldct_reader_ldct-workup_agree_but_wrong": 0,
+    "ldct_reader_ldct-workup_coded": 0,
+    "ifhas_reader_ifhas-followup_instances": 829,
+    "ifhas_reader_ifhas-followup_agree": 675,
+    "ifhas_reader_ifhas-followup_agree_but_wrong": 0,
+    "ifhas_reader_ifhas-screen_instances": 1600,
+    "ifhas_reader_ifhas-screen_agree": 1566,
+    "ifhas_reader_ifhas-screen_agree_but_wrong": 0,
+    "handoff_acted_state_correct": 131,
+    "handoff_closed": 29,
+    "handoff_packets_all_required_fields": 131,
+    "handoff_packets_matched": 131,
+    "handoff_truth_acted_by_act_by": 62,
+    "handoff_truth_closed_after_handoff": 31,
+    "handoff_truth_packets": 131,
+    "handoff_truth_referrer_acted": 99,
+    "handoff_truth_urgent": 96,
+    "handoff_lung_acted_state_correct": 8,
+    "handoff_lung_closed": 4,
+    "handoff_lung_packets_all_required_fields": 8,
+    "handoff_lung_packets_matched": 8,
+    "handoff_lung_truth_acted_by_act_by": 5,
+    "handoff_lung_truth_closed_after_handoff": 4,
+    "handoff_lung_truth_packets": 8,
+    "handoff_lung_truth_referrer_acted": 7,
+    "handoff_lung_truth_urgent": 8,
+    "handoff_dr_acted_state_correct": 10,
+    "handoff_dr_closed": 5,
+    "handoff_dr_packets_all_required_fields": 10,
+    "handoff_dr_packets_matched": 10,
+    "handoff_dr_truth_acted_by_act_by": 5,
+    "handoff_dr_truth_closed_after_handoff": 5,
+    "handoff_dr_truth_packets": 10,
+    "handoff_dr_truth_referrer_acted": 8,
+    "handoff_dr_truth_urgent": 9
+   },
+   "review_load_by_origin": {
+    "per_seed_mean_ci": [
+     1.1382,
+     0.9307,
+     1.3458
+    ],
+    "pooled_items_per_100": {
+     "arab": 32.1,
+     "filipino": 30.4,
+     "south_asian": 32.8,
+     "western": 29.0
+    },
+    "pooled_ratio": 1.1332,
+    "no_bias_median_mean": 1.1134,
+    "no_bias_p95_mean": 1.2416,
+    "seeds_above_no_bias_p05": 0,
+    "seeds_with_reference": 2,
+    "pooled_no_bias_median": 1.0794,
+    "pooled_no_bias_p95": 1.1678,
+    "pooled_p_value": 0.12,
+    "standardised": {
+     "observed_over_expected": {
+      "arab": 1.044,
+      "filipino": 0.921,
+      "south_asian": 0.969,
+      "western": 0.941
+     },
+     "ratio": 1.1334,
+     "no_bias_p95": 1.1445,
+     "p_value": 0.079
+    },
+    "by_programme": {
+     "breast": {
+      "items_per_100": {
+       "arab": 2.9,
+       "filipino": 0.0,
+       "south_asian": 0.0,
+       "western": 0.0
+      },
+      "ratio": Infinity,
+      "no_bias_p95": Infinity,
+      "p_value": 1.0
+     },
+     "cervical": {
+      "items_per_100": {
+       "arab": 58.3,
+       "filipino": 47.1,
+       "south_asian": 50.9,
+       "western": 51.3
+      },
+      "ratio": 1.237,
+      "no_bias_p95": 1.3122,
+      "p_value": 0.18
+     },
+     "crc": {
+      "items_per_100": {
+       "arab": 59.4,
+       "filipino": 57.6,
+       "south_asian": 57.5,
+       "western": 52.5
+      },
+      "ratio": 1.133,
+      "no_bias_p95": 1.19,
+      "p_value": 0.228
+     },
+     "diabetic_retinopathy": {
+      "items_per_100": {
+       "arab": 11.2,
+       "filipino": 10.4,
+       "south_asian": 13.1,
+       "western": 13.5
+      },
+      "ratio": 1.2959,
+      "no_bias_p95": 1.7943,
+      "p_value": 0.597
+     },
+     "ifhas": {
+      "items_per_100": {
+       "arab": 16.9,
+       "filipino": 13.9,
+       "south_asian": 12.0,
+       "western": 17.8
+      },
+      "ratio": 1.4838,
+      "no_bias_p95": 2.0671,
+      "p_value": 0.435
+     },
+     "lung_ldct": {
+      "items_per_100": {
+       "arab": 1.8,
+       "filipino": 0.0,
+       "south_asian": 3.1,
+       "western": 2.0
+      },
+      "ratio": Infinity,
+      "no_bias_p95": Infinity,
+      "p_value": 0.522
+     },
+     "lung_nodule": {
+      "items_per_100": {
+       "arab": 11.3,
+       "filipino": 4.3,
+       "south_asian": 7.8,
+       "western": 7.9
+      },
+      "ratio": 2.6269,
+      "no_bias_p95": 2.0497,
+      "p_value": 0.007
+     }
+    }
+   },
+   "crc_by_age_band_and_sex": {
+    "age_band": {
+     "pooled_items_per_100": {
+      "40-59": 58.1,
+      "60-79": 55.1,
+      "80+": 59.4,
+      "<40": 58.9
+     },
+     "pooled_ratio": 1.0784,
+     "pooled_no_bias_p95": 1.1459,
+     "pooled_p_value": 0.461,
+     "crc_recall": {
+      "40-59": 0.761,
+      "60-79": 0.753,
+      "80+": 0.771,
+      "<40": 0.798
+     },
+     "crc_false_closures": {
+      "40-59": 0,
+      "60-79": 0,
+      "80+": 0,
+      "<40": 0
+     }
+    },
+    "sex": {
+     "pooled_items_per_100": {
+      "F": 58.3,
+      "M": 56.8
+     },
+     "pooled_ratio": 1.0261,
+     "pooled_no_bias_p95": 1.0812,
+     "pooled_p_value": 0.532,
+     "crc_recall": {
+      "F": 0.78,
+      "M": 0.751
+     },
+     "crc_false_closures": {
+      "F": 0,
+      "M": 0
+     }
+    }
+   }
+  }
+ }
+}

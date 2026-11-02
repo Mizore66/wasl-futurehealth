@@ -1,0 +1,605 @@
+{
+  "clean-off-final": {
+    "seeds": [
+      17,
+      29
+    ],
+    "crc_recall": 0.7715,
+    "cervical_recall": 0.909,
+    "review_items_per_100_loops": 31.651,
+    "reviewer_hours_per_1k_loops": 10.999,
+    "pair_precision_mean": 0.9915,
+    "pair_recall_mean": 0.897,
+    "false_merge_pairs": 156,
+    "impure_clusters": 68,
+    "cross_person_edges_by_basis": {
+      "wasl": 99
+    },
+    "wrong_final_signoffs": 231,
+    "safety": {
+      "crc_false_closures": {
+        "events": 0,
+        "denominator": 1178,
+        "upper95": 0.00313
+      },
+      "cervical_false_closures": {
+        "events": 0,
+        "denominator": 523,
+        "upper95": 0.00703
+      },
+      "wrong_patient_released": {
+        "events": 0,
+        "denominator": 6557,
+        "upper95": 0.00056
+      },
+      "released_without_granted_consent": {
+        "events": 0,
+        "denominator": 4734,
+        "upper95": 0.00078
+      },
+      "duplicate_or_lost_outputs": {
+        "events": 0,
+        "denominator": 85747,
+        "upper95": 4e-05
+      },
+      "ingest_lost_or_duplicated": {
+        "events": 0,
+        "denominator": 109482,
+        "upper95": null
+      },
+      "final_state_mismatch_loops": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_with_effect": {
+        "events": 0,
+        "denominator": 42,
+        "upper95": null
+      },
+      "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "tamper_detected": {
+        "events": 34,
+        "denominator": 34,
+        "upper95": null
+      },
+      "tamper_false_alarms": {
+        "events": 0,
+        "denominator": 2,
+        "upper95": null
+      },
+      "lung_false_closures": {
+        "events": 0,
+        "denominator": 802,
+        "upper95": 0.00459
+      },
+      "lung_surveillance_ct_false_closures": {
+        "events": 0,
+        "denominator": 18,
+        "upper95": 0.1853
+      },
+      "lung_surveillance_ct_overdue_flag_correct": {
+        "events": 39,
+        "denominator": 41,
+        "upper95": null
+      },
+      "dr_false_closures": {
+        "events": 0,
+        "denominator": 2254,
+        "upper95": 0.00164
+      },
+      "dr_referral_false_closures": {
+        "events": 0,
+        "denominator": 107,
+        "upper95": 0.03389
+      },
+      "breast_false_closures": {
+        "events": 0,
+        "denominator": 139,
+        "upper95": 0.02619
+      },
+      "breast_recall_false_closures": {
+        "events": 0,
+        "denominator": 6,
+        "upper95": 0.45926
+      },
+      "ldct_false_closures": {
+        "events": 0,
+        "denominator": 566,
+        "upper95": 0.0065
+      },
+      "ldct_action_false_closures": {
+        "events": 0,
+        "denominator": 51,
+        "upper95": 0.06978
+      },
+      "ifhas_false_closures": {
+        "events": 0,
+        "denominator": 1371,
+        "upper95": 0.00269
+      },
+      "ifhas_followup_false_closures": {
+        "events": 0,
+        "denominator": 398,
+        "upper95": 0.00923
+      },
+      "handoff_false_closures": {
+        "events": 0,
+        "denominator": 29,
+        "upper95": 0.11944
+      },
+      "handoff_lung_false_closures": {
+        "events": 0,
+        "denominator": 4,
+        "upper95": 0.60236
+      },
+      "handoff_dr_false_closures": {
+        "events": 0,
+        "denominator": 5,
+        "upper95": 0.52182
+      }
+    }
+  },
+  "clean-on": {
+    "seeds": [
+      17,
+      29
+    ],
+    "crc_recall": 0.77,
+    "cervical_recall": 0.911,
+    "review_items_per_100_loops": 32.735,
+    "reviewer_hours_per_1k_loops": 11.3325,
+    "pair_precision_mean": 0.9915,
+    "pair_recall_mean": 0.881,
+    "false_merge_pairs": 156,
+    "impure_clusters": 68,
+    "cross_person_edges_by_basis": {
+      "wasl": 99
+    },
+    "wrong_final_signoffs": 233,
+    "safety": {
+      "crc_false_closures": {
+        "events": 0,
+        "denominator": 1176,
+        "upper95": 0.00313
+      },
+      "cervical_false_closures": {
+        "events": 0,
+        "denominator": 524,
+        "upper95": 0.00702
+      },
+      "wrong_patient_released": {
+        "events": 0,
+        "denominator": 6582,
+        "upper95": 0.00056
+      },
+      "released_without_granted_consent": {
+        "events": 0,
+        "denominator": 4713,
+        "upper95": 0.00078
+      },
+      "duplicate_or_lost_outputs": {
+        "events": 0,
+        "denominator": 85757,
+        "upper95": 4e-05
+      },
+      "ingest_lost_or_duplicated": {
+        "events": 0,
+        "denominator": 109482,
+        "upper95": null
+      },
+      "final_state_mismatch_loops": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_with_effect": {
+        "events": 0,
+        "denominator": 42,
+        "upper95": null
+      },
+      "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "tamper_detected": {
+        "events": 34,
+        "denominator": 34,
+        "upper95": null
+      },
+      "tamper_false_alarms": {
+        "events": 0,
+        "denominator": 2,
+        "upper95": null
+      },
+      "lung_false_closures": {
+        "events": 0,
+        "denominator": 801,
+        "upper95": 0.00459
+      },
+      "lung_surveillance_ct_false_closures": {
+        "events": 0,
+        "denominator": 18,
+        "upper95": 0.1853
+      },
+      "lung_surveillance_ct_overdue_flag_correct": {
+        "events": 39,
+        "denominator": 41,
+        "upper95": null
+      },
+      "dr_false_closures": {
+        "events": 0,
+        "denominator": 2254,
+        "upper95": 0.00164
+      },
+      "dr_referral_false_closures": {
+        "events": 0,
+        "denominator": 107,
+        "upper95": 0.03389
+      },
+      "breast_false_closures": {
+        "events": 0,
+        "denominator": 139,
+        "upper95": 0.02619
+      },
+      "breast_recall_false_closures": {
+        "events": 0,
+        "denominator": 6,
+        "upper95": 0.45926
+      },
+      "ldct_false_closures": {
+        "events": 0,
+        "denominator": 566,
+        "upper95": 0.0065
+      },
+      "ldct_action_false_closures": {
+        "events": 0,
+        "denominator": 51,
+        "upper95": 0.06978
+      },
+      "ifhas_false_closures": {
+        "events": 0,
+        "denominator": 1368,
+        "upper95": 0.00269
+      },
+      "ifhas_followup_false_closures": {
+        "events": 0,
+        "denominator": 395,
+        "upper95": 0.0093
+      },
+      "handoff_false_closures": {
+        "events": 0,
+        "denominator": 28,
+        "upper95": 0.12344
+      },
+      "handoff_lung_false_closures": {
+        "events": 0,
+        "denominator": 4,
+        "upper95": 0.60236
+      },
+      "handoff_dr_false_closures": {
+        "events": 0,
+        "denominator": 5,
+        "upper95": 0.52182
+      }
+    }
+  },
+  "wrong-off": {
+    "seeds": [
+      17,
+      29
+    ],
+    "crc_recall": 0.7535,
+    "cervical_recall": 0.9005,
+    "review_items_per_100_loops": 31.9205,
+    "reviewer_hours_per_1k_loops": 10.9645,
+    "pair_precision_mean": 0.919,
+    "pair_recall_mean": 0.869,
+    "false_merge_pairs": 1623,
+    "impure_clusters": 568,
+    "cross_person_edges_by_basis": {
+      "eid": 905,
+      "wasl": 99
+    },
+    "wrong_final_signoffs": 230,
+    "safety": {
+      "crc_false_closures": {
+        "events": 16,
+        "denominator": 1166,
+        "upper95": 0.02219
+      },
+      "cervical_false_closures": {
+        "events": 2,
+        "denominator": 520,
+        "upper95": 0.01382
+      },
+      "wrong_patient_released": {
+        "events": 0,
+        "denominator": 6624,
+        "upper95": 0.00056
+      },
+      "released_without_granted_consent": {
+        "events": 0,
+        "denominator": 4650,
+        "upper95": 0.00079
+      },
+      "duplicate_or_lost_outputs": {
+        "events": 0,
+        "denominator": 85727,
+        "upper95": 4e-05
+      },
+      "ingest_lost_or_duplicated": {
+        "events": 0,
+        "denominator": 109482,
+        "upper95": null
+      },
+      "final_state_mismatch_loops": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_with_effect": {
+        "events": 0,
+        "denominator": 42,
+        "upper95": null
+      },
+      "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "tamper_detected": {
+        "events": 34,
+        "denominator": 34,
+        "upper95": null
+      },
+      "tamper_false_alarms": {
+        "events": 0,
+        "denominator": 2,
+        "upper95": null
+      },
+      "lung_false_closures": {
+        "events": 1,
+        "denominator": 796,
+        "upper95": 0.00698
+      },
+      "lung_surveillance_ct_false_closures": {
+        "events": 0,
+        "denominator": 18,
+        "upper95": 0.1853
+      },
+      "lung_surveillance_ct_overdue_flag_correct": {
+        "events": 39,
+        "denominator": 41,
+        "upper95": null
+      },
+      "dr_false_closures": {
+        "events": 0,
+        "denominator": 2251,
+        "upper95": 0.00164
+      },
+      "dr_referral_false_closures": {
+        "events": 0,
+        "denominator": 104,
+        "upper95": 0.03485
+      },
+      "breast_false_closures": {
+        "events": 0,
+        "denominator": 139,
+        "upper95": 0.02619
+      },
+      "breast_recall_false_closures": {
+        "events": 0,
+        "denominator": 6,
+        "upper95": 0.45926
+      },
+      "ldct_false_closures": {
+        "events": 0,
+        "denominator": 565,
+        "upper95": 0.00651
+      },
+      "ldct_action_false_closures": {
+        "events": 0,
+        "denominator": 50,
+        "upper95": 0.07112
+      },
+      "ifhas_false_closures": {
+        "events": 0,
+        "denominator": 1353,
+        "upper95": 0.00272
+      },
+      "ifhas_followup_false_closures": {
+        "events": 0,
+        "denominator": 380,
+        "upper95": 0.00966
+      },
+      "handoff_false_closures": {
+        "events": 0,
+        "denominator": 28,
+        "upper95": 0.12344
+      },
+      "handoff_lung_false_closures": {
+        "events": 0,
+        "denominator": 4,
+        "upper95": 0.60236
+      },
+      "handoff_dr_false_closures": {
+        "events": 0,
+        "denominator": 5,
+        "upper95": 0.52182
+      }
+    }
+  },
+  "wrong-on": {
+    "seeds": [
+      17,
+      29
+    ],
+    "crc_recall": 0.742,
+    "cervical_recall": 0.8955,
+    "review_items_per_100_loops": 33.012,
+    "reviewer_hours_per_1k_loops": 11.308,
+    "pair_precision_mean": 0.9835,
+    "pair_recall_mean": 0.8534999999999999,
+    "false_merge_pairs": 298,
+    "impure_clusters": 122,
+    "cross_person_edges_by_basis": {
+      "eid": 78,
+      "human": 1,
+      "wasl": 99
+    },
+    "wrong_final_signoffs": 233,
+    "safety": {
+      "crc_false_closures": {
+        "events": 0,
+        "denominator": 1133,
+        "upper95": 0.00325
+      },
+      "cervical_false_closures": {
+        "events": 0,
+        "denominator": 515,
+        "upper95": 0.00714
+      },
+      "wrong_patient_released": {
+        "events": 0,
+        "denominator": 6481,
+        "upper95": 0.00057
+      },
+      "released_without_granted_consent": {
+        "events": 0,
+        "denominator": 4647,
+        "upper95": 0.00079
+      },
+      "duplicate_or_lost_outputs": {
+        "events": 0,
+        "denominator": 85719,
+        "upper95": 4e-05
+      },
+      "ingest_lost_or_duplicated": {
+        "events": 0,
+        "denominator": 109482,
+        "upper95": null
+      },
+      "final_state_mismatch_loops": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_with_effect": {
+        "events": 0,
+        "denominator": 42,
+        "upper95": null
+      },
+      "forged_target_pair_falsely_merged_by_linker (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "forged_consent_target_genuinely_opted_out (RBAC denied the forgery)": {
+        "events": 0,
+        "denominator": null,
+        "upper95": null
+      },
+      "tamper_detected": {
+        "events": 34,
+        "denominator": 34,
+        "upper95": null
+      },
+      "tamper_false_alarms": {
+        "events": 0,
+        "denominator": 2,
+        "upper95": null
+      },
+      "lung_false_closures": {
+        "events": 0,
+        "denominator": 794,
+        "upper95": 0.00464
+      },
+      "lung_surveillance_ct_false_closures": {
+        "events": 0,
+        "denominator": 18,
+        "upper95": 0.1853
+      },
+      "lung_surveillance_ct_overdue_flag_correct": {
+        "events": 39,
+        "denominator": 41,
+        "upper95": null
+      },
+      "dr_false_closures": {
+        "events": 0,
+        "denominator": 2251,
+        "upper95": 0.00164
+      },
+      "dr_referral_false_closures": {
+        "events": 0,
+        "denominator": 104,
+        "upper95": 0.03485
+      },
+      "breast_false_closures": {
+        "events": 0,
+        "denominator": 139,
+        "upper95": 0.02619
+      },
+      "breast_recall_false_closures": {
+        "events": 0,
+        "denominator": 6,
+        "upper95": 0.45926
+      },
+      "ldct_false_closures": {
+        "events": 0,
+        "denominator": 565,
+        "upper95": 0.00651
+      },
+      "ldct_action_false_closures": {
+        "events": 0,
+        "denominator": 50,
+        "upper95": 0.07112
+      },
+      "ifhas_false_closures": {
+        "events": 0,
+        "denominator": 1351,
+        "upper95": 0.00273
+      },
+      "ifhas_followup_false_closures": {
+        "events": 0,
+        "denominator": 378,
+        "upper95": 0.00971
+      },
+      "handoff_false_closures": {
+        "events": 0,
+        "denominator": 27,
+        "upper95": 0.1277
+      },
+      "handoff_lung_false_closures": {
+        "events": 0,
+        "denominator": 4,
+        "upper95": 0.60236
+      },
+      "handoff_dr_false_closures": {
+        "events": 0,
+        "denominator": 5,
+        "upper95": 0.52182
+      }
+    }
+  }
+}
