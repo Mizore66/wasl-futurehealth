@@ -1862,3 +1862,91 @@ The scorer-addressable category (below review) fell from 35 to 4, which accounts
 ### Deployment verification limit
 
 Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.
+
+### CRC namesake hard-negative pair-scorer experiment at `f3a2f3c` (not selected)
+
+**Outcome:** the experiment failed its pre-registered development selection gate and stopped as specified. `pairfeat3` is **not a candidate**. This is the successor to the `pairfeat2` experiment above, motivated by its post-hoc diagnosis: the new cross-person edges there were mostly pairs with a missing, placeholder or one-to-two-digit-off DOB, an Emirates ID on one side only and a shared given name, which name similarity alone carried to the merge tier. The hypothesis was that training lacked different-person pairs of that shape, so adding them would keep the recall gain without the contamination. The recall gain was kept (+5.87pp here against +4.38pp for `pairfeat2`, on different development seeds, so not like-for-like), but contamination and link-review workload still rose and the gate failed on the same four reasons. The default model and the default review floor of 0.2 are unchanged. All results below are simulated; they prove no clinical effectiveness.
+
+**Built:** an opt-in `pairfeat3` modelset (code at `f3a2f3c`) uses the same 30-feature layout, fixed encoder, `v1t` training noise, LightGBM configuration and calibrator procedure as `pairfeat2` (400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search). The only intended change is the training data. Runtime, features, retrieval, merge 0.7, closure tier 0.99, the uncorroborated cap and the identity, consent and attachment rules are unchanged. `pairfeat3` is accepted only with `v7strict`. Generated model files are git-ignored.
+
+**Training data, synthetic namesakes (training only):** `featdump` gained a `-namesakes` rate, valid only for `featdump` (0 or a value in [0, 1); anything else is a configuration error, exit 2). The rate was 0.10 for training, which is an assumption; no public namesake rate was used. For each sampled person, with probability 0.10 one synthetic namesake is added:
+- Its names (Arabic, English, aliases), sex, country code and origin come from a real person in the same split who shares the base person's first English token (case-insensitive), origin and sex and has a different last English token. If no such person exists, no namesake is added.
+- Its DOB is the base person's true DOB with one digit of YYYYMMDD replaced (probability 0.60) or two distinct digits replaced (0.40), each by a different digit. The result must be a valid date in 1900-2025 and differ from the base DOB; up to 20 redraws are made, after which no namesake is added (about 0.2% of DOB draws in unit tests; the rate in the training run was not recorded).
+- Its Emirates ID is new and Luhn-valid.
+- It is registered like any other person (same registration-count draw, providers, name noise, DOB noise and ID capture) using its own seeded stream, so the main stream is untouched.
+- `-namesakes 0` (the default) leaves `featdump` output byte-identical, verified against SHA-256 goldens recorded before the change and pinned in a test; `gen` output for v1 and v2 was also verified byte-identical. Namesakes cannot reach generation, the runtime or evaluation.
+
+The change adds two kinds of different-person training rows: base-namesake pairs (shared first name, different surname, DOB one or two digits off) and namesake-to-donor pairs (near-identical names, unrelated DOB, different ID). The stop floor and the namesake slice below count only the first kind.
+
+**Seeds:** train 1019, 1021, 1031, 1033 and 1039 (5,000 persons each, namesakes 0.10) and cal 2011 (the whole cal split) were reused from `pairfeat2`, so namesakes are the only training change. Calibrators and parity use the plain cal dump (no namesakes), because deployment cohorts have none. A second cal dump with namesakes 0.10 was scored with the fitted model for a namesake slice report only. Paired development (dev/v2) seeds are 347, 353 and 367, fresh because 317, 331 and 337 were inspected in the `pairfeat2` diagnosis. Validation seeds 401, 409, 419, 421 and 431 were not touched.
+
+**Namesake floor and counts:** the pre-registered stop check required at least 500 base-namesake candidate rows across the five train dumps; there were 5,199 (1,054, 1,068, 959, 1,058 and 1,060 per seed). The five dumps added 2,054 namesakes (412, 428, 396, 413 and 405). Fewer than the nominal 500 per seed were added; people without an eligible donor get none (the exact split of causes was not tabulated).
+
+**Training and calibration metrics:** train had 1,660,380 retrieved pairs (45,492 same-person); plain cal had 139,084 (6,034 same-person). Cal pair AUC was 0.99993 and AP 0.99890. At raw LightGBM score >= 0.99 (an uncalibrated threshold, not the calibrated closure tier) cal pair precision was 0.9998 and recall 0.9108. Pair AUC is diagnostic, not the selection gate.
+
+**Artifact identity and parity:** the training manifest is `6f66cd03`. Chain files: `lgb_stream_pairfeat3` `87c947b2`, `iso_pairfeat3` `6f94f565`, `iso_v7_pairfeat3` `378a7317`; `encoder_pairfeat3` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. The governing manifest `0dd0e3cc` bound the development lanes, and both arms used the same binary (`9d50c3a2`) at `f3a2f3c`. Go/Python scoring parity over all 139,084 cal rows had max |delta| 1.1e-16 (limit 1e-9).
+
+**Hard-negative slices (plain cal split, seed 2011):**
+
+| Slice | Rows | Same-person | Different-person | Different-person at raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|---:|
+| near EID | 1,020 | 1,018 | 2 | 2 | 0 |
+| decade-digit DOB | 144 | 39 | 105 | 0 | 0 |
+| same surname | 18,781 | 4,986 | 13,795 | 115 | 11 |
+| placeholder DOB | 78,253 | 1,657 | 76,596 | 145 | 16 |
+| cross-script names | 45,349 | 3,021 | 42,328 | 161 | 11 |
+
+Different-person pairs on plain cal that scored raw >= 0.7 numbered 23 for `pairfeat3` against 31 for `pairfeat2`. This is like for like (same cal seed, same plain cal dump; the helper was checked to reproduce `pairfeat2`'s 31). It is information only, not a gate, and it did not carry through to the development lanes (see the gate verdict).
+
+**Namesake slice (diagnostic cal dump with namesakes 0.10, scored with the fitted model, information only):** 465 base-namesake rows, all different-person; 14 scored raw >= 0.01 and 1 scored >= 0.7. Read this slice with care. It mostly measures easy pairs: in a scratch sample of 216 base-namesake rows `pairfeat2` itself put only 2 at raw >= 0.7, so a small `pairfeat3` count is weak evidence of the mechanism. The harder new negatives are the namesake-to-donor pairs (near-identical names, unrelated DOB), which neither the floor nor this slice counts.
+
+**Paired development clean (seeds 347, 353, 367; both arms `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, FHIR, chaos 0, subkill 1):** exact TP is `pred_closed - false_closures`, not attach rate; truth-closed denominators match across arms.
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat3` TP / truth | `pairfeat3` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 347 | 211/235 | 0.8979 | 223/235 | 0.9489 | +5.11pp |
+| 353 | 187/222 | 0.8423 | 200/222 | 0.9009 | +5.86pp |
+| 367 | 204/242 | 0.8430 | 220/242 | 0.9091 | +6.61pp |
+| Pooled | 602/699 | 0.8612 | 643/699 | 0.9199 | **+5.8655pp** |
+
+The mean paired per-seed gain was +5.8579pp with a 95% t interval of +3.9882 to +7.7276pp (n=3; small-n and descriptive only). The gain clears the +2.0pp recall criterion in every seed.
+
+**Gate verdict: not selected.** The selection gate is unchanged and pre-registered: the recall gain, no increase in linkage contamination, and a distinct link-review pair count no more than 10% above baseline (the user kept the 1.10x limit for this experiment). Four reasons failed:
+- False-merge pairs increased, 24 to 32 (per seed 10 to 12, 10 to 11, 4 to 9).
+- Impure clusters increased, 23 to 27 (per seed 9 to 8, 10 to 10, 4 to 9).
+- Cross-person edges increased, 23 to 28 (per seed 9 to 8, 10 to 11, 4 to 9). The rise is not in every seed: seed 347 fell by one on impure clusters and cross-person edges, but false-merge pairs rose in all three.
+- Distinct link-review pairs rose 568 to 703 (+23.8%) against a cap of 624.8 (baseline plus 10%).
+
+**Safety and workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in both arms, with zero wrong final sign-offs and zero unanswered review items. Reviewer workload rose: items 1,116 to 1,270 and simulated reviewer hours 36.99 to 42.00 (per seed 12.60 to 13.72, 11.53 to 13.14, 12.86 to 15.14). The zero-safety result is n=3 development evidence and is not a validated safety property.
+
+| Residual truth-closed misses | Baseline | `pairfeat3` |
+|---|---:|---:|
+| Total open | 97 | 56 |
+| Attached, not closed | 11 | 12 |
+| Below review | 56 | 12 |
+| No candidate generated | 5 | 4 |
+| Demographic rejection | 0 | 0 |
+| Routed to review | 0 | 1 |
+| Linked report not attached | 25 | 27 |
+
+The scorer-addressable category (below review) fell from 56 to 12, which accounts for most of the recall gain (below review fell by 44; net open misses fell by 41); the categories a scorer change cannot reach did not improve materially ("no candidate generated" 5 to 4, "attached, not closed" 11 to 12, "linked report not attached" 25 to 27).
+
+**Interpretation:** in development, adding namesake hard negatives did not remove the cost seen in `pairfeat2`. The like-for-like cal count of different-person pairs at raw >= 0.7 fell from 31 to 23, but in the development lanes contamination still rose (false-merge pairs 24 to 32) and link-review load rose by 23.8%. Cal-split pair counts are therefore not a reliable predictor of development contamination here. The development seeds differ from `pairfeat2`'s (347, 353, 367 against 317, 331, 337), so the `pairfeat2` and `pairfeat3` development contamination increases are not a like-for-like comparison, and no claim is made that one arm is better than the other. No diagnosis of the new cross-person edges was run for this experiment, so why they persisted is untested; plausible readings, such as namesake training that does not resemble the evaluation pairs or contamination that does not come from the shape trained against, are not supported by an ablation. This is a development result from three seeds, not validation evidence, and no claim is made that it would generalize.
+
+**Not run:** per the pre-registered stop rule, synthetic reviewer stress and untouched validation were **not run**. No validation manifest was frozen and eval seeds 401, 409, 419, 421 and 431 remain untouched. No threshold, gate criterion, feature, hyperparameter, seed or analysis rule was changed after seeing results.
+
+**Result-affecting rulings:**
+- The namesake DOB draws the one-or-two-digit count once, before the redraw loop, and redraws only positions and digits up to 20 times. The plan's code redrew the count on each retry, which gave a one-digit share of about 0.77 against the approved 0.60; the approved design text was followed.
+- The 0.10 namesake rate is an assumption, fixed before the run and not tuned.
+- Namesakes are training-only and refused outside `featdump`, so simulated cohorts, the runtime and evaluation noise are unaffected.
+- The plain cal dump (no namesakes) feeds the calibrators and parity; the namesake cal dump feeds only the information-only slice.
+
+**Process rulings and deviations:**
+- Go task A and Python tasks B and C ran in parallel, since they touched disjoint files; the cost was only commit interleaving.
+- Task C edited seven existing harness assertions, because making `pairfeat3` a real candidate necessarily changes the exact candidate-set checks; the reviewer confirmed intent was preserved.
+- A final cross-task review found no must-fix items before the run. It also pointed out the namesake-to-donor rows and the slice limits described above, and these are disclosed here.
+- Deferred minor review findings (none affect results): `validateNamesakes` accepts NaN (the driver only sends 0.1); the stderr person count excludes namesakes; the training manifest is written after the train dumps for `pairfeat3` (HEAD did not move during the run); `code_sha256` omits the namesake and main Go files (the recorded git head pins them); the namesake slice reader has no finiteness or range assertions and the namesake-cal sidecar hash is not recorded; a missing train sidecar gives a raw traceback; the driver's main flow is covered end to end by the run rather than by a unit test; some docstrings still list only `pairfeat1` and `pairfeat2`; the Task A rows test checks only label 0 (the sidecar row set was independently verified against person identifiers in the final review); there is no end-to-end `pairfeat3` fixture test (the equivalent check was run by hand in the final review).
+- Task B edited two existing driver tests, as its brief required.
+- Strict same-HEAD binding was kept, so HEAD stayed at `f3a2f3c` for the whole run.
+
+**Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model and default floor 0.2 are unchanged. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
