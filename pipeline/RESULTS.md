@@ -1624,6 +1624,16 @@ Guard-on wrong-EID linkage still contained **298 false-merge pairs, 122 impure c
 
 The complete manifests, per-seed reports, subgroup analyses, tamper evidence and pooled safety counters are in [`results/b8-hardening/`](results/b8-hardening/README.md). These two post-hoc seeds supplement rather than replace the five-seed headline evaluation.
 
+### CRC recall-loss analysis on B8 seeds 17/29
+
+A read-only offline classifier analysed truth-closed CRC loops left open in the four fresh B8 lanes. It did not rerun the pipeline, train a model, change a threshold/calibrator or tune on evaluation seeds. In wrong-EID guard-on, 394 of 1,527 truth-closed loops remained open. First-match barriers were identity/linking 195 (49.5%), simulated reviewer error 105 (26.6%), timing/ungraded prep 45 (11.4%), and model/rule/other 49 (12.4%). The largest single category was 146 loops with no established link and no review item. Ungraded prep appeared in 241 misses across categories; pending histology and unanswered review explained none in this replay.
+
+Most loss was baseline: 351 wrong-on misses were also missed in clean-on. Guard-off also closed 13 truth-closed loops using another person's report. Excluding those wrong-patient closures, right-patient recall was 0.7446 guard-off versus 0.7420 guard-on: a net four-loop or 0.26-point cost, rather than the headline 17-loop or 1.15-point difference. This accounting does not excuse guard-off false closures.
+
+L5 was strongly associated with DOB distortion descriptively: its share of truth-closed loops was 2.2% with exact DOB and 27.1% with a year shift of up to ten years. Ungraded-prep recall was 0.700 versus 0.861 with agreed adequate prep; days 105–120 had recall 0.591. All 40 E4 misses came from one report phrasing (u18), so they are not a general reader-error estimate. Two-seed subgroup intervals overlapped, but that is not evidence of no bias.
+
+The proposed development design uses new seeds from non-`eval` people, varied noise/evidence/horizon and independently authored report text, with person-disjoint pre-registered validation. Frozen and B8 seeds remain locked; no training implementation was requested or performed. Full categories, denominators, paired-lane accounting, caveats, split design, row-level evidence and the deterministic classifier are in [`results/recall-analysis/`](results/recall-analysis/README.md). The coordinator reproduced its JSON, CSV and console output byte-identically.
+
 ### Deployment verification limit
 
 Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.
