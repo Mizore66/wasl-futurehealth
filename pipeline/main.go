@@ -245,6 +245,10 @@ func main() {
 	}
 	GenIfhasN, GenIfhasDir = *ifhasN, *ifhasData
 	ModelSet = *modelSet
+	if err := validateModelPolicy(ModelSet, *policy); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
 	DualMerge = *dual
 	switch *policy {
 	case "v7strict":

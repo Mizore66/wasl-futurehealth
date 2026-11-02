@@ -29,6 +29,15 @@ func mf(base string) string {
 	return strings.TrimSuffix(base, ".json") + "_" + ModelSet + ".json"
 }
 
+// validateModelPolicy: the pairfeat1 model set is calibrated for the strict closure tier only, so any other
+// policy (v7ltt's LTT-selected tau, v6, or none) is a configuration error rather than a silent mismatch.
+func validateModelPolicy(modelSet, policy string) error {
+	if modelSet == "pairfeat1" && policy != "v7strict" {
+		return fmt.Errorf("modelset pairfeat1 supports only -policy v7strict (got %q); v7ltt needs a separate selection", policy)
+	}
+	return nil
+}
+
 func runEncEmbed(encPath, inPath, outPath string) {
 	enc := LoadEncoder(encPath)
 	f, err := os.Open(inPath)

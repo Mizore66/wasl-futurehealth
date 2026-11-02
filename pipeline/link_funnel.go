@@ -20,6 +20,7 @@ type LinkFunnelConfig struct {
 	HNSWEfSearch    int     `json:"hnsw_ef_search,omitempty"`
 	MergeThreshold  float64 `json:"merge_threshold"`
 	ReviewFloor     float64 `json:"review_floor"`
+	ModelSet        string  `json:"modelset"`
 }
 
 type LinkTrace struct {
