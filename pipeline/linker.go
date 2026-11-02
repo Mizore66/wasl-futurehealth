@@ -84,7 +84,7 @@ func (L *LinkerCore) attachANN() {
 }
 
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
-	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: 0.2, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
+	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
 		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
@@ -495,8 +495,8 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides. Below Lo
 			// the pair would be invisible, so it is kept as a near-miss candidate and the loop asks a reviewer.
 			L.Stats["eid_contradicted_"+why]++
-			if c.p < L.Lo {
-				c.p = L.Lo
+			if min := 0.2; c.p < min { // fixed at 0.2 regardless of -linkfloor
+				c.p = min
 			}
 		}
 		if eidContradict(r.Eid, o.Eid) { // a typo broke the check digit on a side, but the numbers are clearly different
