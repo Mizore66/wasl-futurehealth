@@ -233,5 +233,117 @@ class CopyToModels(unittest.TestCase):
                 self.assertTrue(os.path.exists(os.path.join(models, n)))
 
 
+class Protocols(unittest.TestCase):
+    def test_constants(self):
+        self.assertEqual(fp.PROTOCOLS["pairfeat1"],
+                         {"train_seeds": [1001, 1003, 1007, 1009, 1013], "cal_seed": 2003, "noise": "v1"})
+        self.assertEqual(fp.PROTOCOLS["pairfeat2"],
+                         {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t"})
+        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2"])
+
+    def test_chain_files(self):
+        for ms in ("pairfeat1", "pairfeat2"):
+            self.assertEqual(fp.chain_files(ms), [f"encoder_{ms}.json", f"lgb_stream_{ms}.json",
+                                                  f"iso_{ms}.json", f"iso_v7_{ms}.json"])
+        self.assertEqual(fp.CHAIN_FILES, fp.chain_files("pairfeat1"))
+
+    def test_csv_names(self):
+        self.assertEqual(fp.train_csv_names("pairfeat2"), [f"feat_train_{s}.csv" for s in (1019, 1021, 1031, 1033, 1039)])
+        self.assertEqual(fp.cal_csv_name("pairfeat2"), "feat_cal_2011.csv")
+        self.assertEqual(fp.parity_csv_name("pairfeat2"), "feat_cal_2011_gbm.csv")
+        self.assertEqual(fp.cal_csv_name("pairfeat1"), "feat_cal_2003.csv")
+        self.assertEqual(fp.parity_csv_name("pairfeat1"), "feat_cal_2003_gbm.csv")
+
+    def test_parse_args(self):
+        self.assertEqual(fp.parse_args(["x", "out"]), ("out", "pairfeat1"))
+        self.assertEqual(fp.parse_args(["x", "out", "--modelset", "pairfeat2"]), ("out", "pairfeat2"))
+        for bad in (["x"], ["x", "out", "--modelset", "nope"], ["x", "out", "--modelset"], ["x", "a", "b"]):
+            with self.assertRaises(SystemExit):
+                fp.parse_args(bad)
+
+    def test_validate_output_parent_per_modelset(self):
+        with tempfile.TemporaryDirectory() as home:
+            base = os.path.join(home, "wasl-ml-data", "agents2", "hardening")
+            os.makedirs(os.path.join(base, "pairfeat1"))
+            os.makedirs(os.path.join(base, "pairfeat2"))
+            p2 = os.path.join(base, "pairfeat2", "r")
+            self.assertEqual(fp.validate_output(p2, home, "pairfeat2"), p2)
+            with self.assertRaises(ValueError):
+                fp.validate_output(p2, home, "pairfeat1")
+            with self.assertRaises(ValueError):
+                fp.validate_output(os.path.join(base, "pairfeat1", "r"), home, "pairfeat2")
+
+    def test_base_manifest_pairfeat2(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d)
+            enc = os.path.join(d, "enc.json")
+            with open(enc, "wb") as f:
+                f.write(b"enc")
+            m = fp.base_manifest(d, enc, "pairfeat2")
+            self.assertEqual(m["modelset"], "pairfeat2")
+            self.assertEqual(m["noise"], "v1t")
+            self.assertEqual(m["train"], {"split": "train", "seeds": [1019, 1021, 1031, 1033, 1039], "persons": 5000})
+            self.assertEqual(m["cal"], {"split": "cal", "seeds": [2011], "persons": 0})
+            self.assertEqual(m["rounds"], 400)
+            self.assertEqual(m["num_leaves"], 63)
+            self.assertEqual(m["learning_rate"], 0.05)
+            self.assertEqual(m["seed"], 1)
+            m1 = fp.base_manifest(d, enc)
+            self.assertEqual(m1["modelset"], "pairfeat1")
+
+    def test_artifact_manifest_pairfeat2(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain, out = (os.path.join(d, n) for n in ("models", "chain", "out"))
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b")
+            for n in fp.chain_files("pairfeat2"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c" + n.encode())
+            with open(os.path.join(out, "feat_cal_2011.csv"), "wb") as f:
+                f.write(b"csv")
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            m = fp.artifact_manifest("a" * 40, out, ["feat_cal_2011.csv"], models, chain, 3, 0.0, "pairfeat2")
+            self.assertEqual(sorted(m), sorted(["git_head", "training_manifest_sha256", "csv_sha256",
+                                                "baseline_chain_sha256", "pairfeat2_chain_sha256", "parity"]))
+            self.assertEqual(m["pairfeat2_chain_sha256"],
+                             {n: sh(b"c" + n.encode()) for n in fp.chain_files("pairfeat2")})
+
+    def test_copy_and_overwrite_guard_pairfeat2(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain = os.path.join(d, "models"), os.path.join(d, "chain")
+            os.makedirs(models)
+            os.makedirs(chain)
+            for n in fp.chain_files("pairfeat2"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"x")
+            fp.check_models_free(models, "pairfeat2")
+            with open(os.path.join(models, "extra_pairfeat2.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.check_models_free(models, "pairfeat2")
+            fp.check_models_free(models, "pairfeat1")
+            with open(os.path.join(models, "iso_pairfeat2.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.copy_chain_to_models(chain, models, "pairfeat2")
+            self.assertFalse(os.path.exists(os.path.join(models, "encoder_pairfeat2.json")))
+            os.remove(os.path.join(models, "iso_pairfeat2.json"))
+            os.remove(os.path.join(models, "extra_pairfeat2.json"))
+            fp.copy_chain_to_models(chain, models, "pairfeat2")
+            for n in fp.chain_files("pairfeat2"):
+                self.assertTrue(os.path.exists(os.path.join(models, n)))
+
+    def test_gitignore(self):
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, ".gitignore")) as f:
+            lines = f.read().splitlines()
+        self.assertIn("models/*_pairfeat1.json", lines)
+        self.assertIn("models/*_pairfeat2.json", lines)
+
+
 if __name__ == "__main__":
     unittest.main()
