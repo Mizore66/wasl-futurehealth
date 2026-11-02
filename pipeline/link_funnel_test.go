@@ -1,7 +1,10 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -76,5 +79,45 @@ func TestLinkFunnelDoesNotChangeDecisions(t *testing.T) {
 	onOut := append(on.Apply(a), on.Apply(b)...)
 	if !reflect.DeepEqual(canon(offOut), canon(onOut)) || !reflect.DeepEqual(off.Stats, on.Stats) {
 		t.Fatal("tracing changed facts or linker stats")
+	}
+}
+
+func TestLinkFunnelWriterDisabled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "trace.ndjson")
+	w := newLinkFunnelWriter("", LinkFunnelConfig{})
+	if w != nil {
+		t.Fatal("empty path must disable the writer")
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatalf("unexpected trace file: %v", err)
+	}
+}
+
+func TestLinkFunnelWriterWritesConfigAndPair(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "trace.ndjson")
+	w := newLinkFunnelWriter(path, LinkFunnelConfig{CandidateK: 10, CandidateCap: 300, ANNMode: "hnsw", HNSWM: 16, HNSWEfConstruct: 100, HNSWEfSearch: 64, MergeThreshold: 0.7, ReviewFloor: 0.2})
+	w.Append(LinkTrace{Kind: "pair", Seq: 7, A: "a", B: "b", Stage: "near"})
+	if w.Err() != nil {
+		t.Fatal(w.Err())
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(b)), "\n")
+	if len(lines) != 2 || !strings.Contains(lines[0], `"candidate_k":10`) || !strings.Contains(lines[0], `"hnsw_ef_search":64`) || !strings.Contains(lines[1], `"seq":7`) {
+		t.Fatalf("unexpected trace: %s", b)
+	}
+}
+
+func TestLinkFunnelWriterFailureIsStickyAndDoesNotPanic(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing", "trace.ndjson")
+	w := newLinkFunnelWriter(path, LinkFunnelConfig{})
+	if w.Err() == nil {
+		t.Fatal("expected open failure")
+	}
+	w.Append(LinkTrace{Kind: "pair", Stage: "near"})
+	if w.Err() == nil {
+		t.Fatal("failure must remain visible")
 	}
 }

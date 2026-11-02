@@ -1,5 +1,10 @@
 package main
 
+import (
+	"encoding/json"
+	"os"
+)
+
 // Diagnostics-only candidate tracing for the linker. Callbacks must never write linker state.
 
 var LinkFunnelPath string
@@ -34,4 +39,38 @@ func (L *LinkerCore) emitLink(e LinkTrace) {
 	e.Kind = "pair"
 	e.Seq = L.traceSeq
 	L.trace(e)
+}
+
+type linkFunnelWriter struct {
+	enc *json.Encoder
+	err error
+}
+
+func newLinkFunnelWriter(path string, cfg LinkFunnelConfig) *linkFunnelWriter {
+	if path == "" {
+		return nil
+	}
+	w := &linkFunnelWriter{}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		w.err = err
+		return w
+	}
+	w.enc = json.NewEncoder(f)
+	w.err = w.enc.Encode(LinkTrace{Kind: "config", Config: &cfg})
+	return w
+}
+
+func (w *linkFunnelWriter) Append(e LinkTrace) {
+	if w == nil || w.err != nil {
+		return
+	}
+	w.err = w.enc.Encode(e)
+}
+
+func (w *linkFunnelWriter) Err() error {
+	if w == nil {
+		return nil
+	}
+	return w.err
 }
