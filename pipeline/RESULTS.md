@@ -1513,7 +1513,7 @@ Wrong-patient messages, releases without granted consent and releases before a l
 
 ### Frozen seven-programme evaluation at `73ec4e4` ([`results/final/`](results/final/SUMMARY.md))
 
-`WASL_LDCT=300 WASL_IFHAS=800 scripts/final_eval.sh`, with the existing frozen cohort sizes and flags. Five seeds × v1/v2 noise, held-out persons, cached readers, FHIR, `v7strict`, chaos on. C14 surveillance follow-ups and adversarial generation stayed off. This supersedes the `5496563` artifacts for the current integrated head; the old table remains above as historical evidence.
+`WASL_LDCT=300 WASL_IFHAS=800 scripts/final_eval.sh`, with the existing frozen cohort sizes and flags. Five seeds × v1/v2 noise, held-out persons, cached readers, FHIR, `v7strict`, chaos on. C14 surveillance follow-ups and adversarial generation stayed off. This was the frozen evaluation at `73ec4e4`; it is retained as historical evidence. The final-code rerun at `075abc5` is below.
 
 | Mean with-review recall | Dev noise v1 | Held-out noise v2 |
 |---|---:|---:|
@@ -1555,6 +1555,35 @@ The A1 surveillance truth fix removed the previously disclosed extra-loop mismat
 | IFHAS | P 1.000, R 0.984, 0/679 false closures; follow-up-loop recall 0.957 |
 
 Wrong-patient messages, releases without granted consent and releases before a late opt-out was recorded were all 0; duplicate outputs and final-state mismatches were 0; 4,187/4,187 provenance chains verified; 0/19 forged events had effect; tamper detection was 17/17 with no baseline false alarm. Throughput was 628 events/s and reviewer time 12.3 h/1k loops under concurrent evaluation load; this is not a controlled capacity benchmark. This is one synthetic seed with simulated reviewers and reused development reader corpora for LDCT/IFHAS, not independent reader or clinical-effectiveness evidence. C14 surveillance follow-ups and adversarial generation remained off. Sanitized artifacts are in [`results/integrated-075/`](results/integrated-075/). API samples were regenerated from this run and verified to contain all seven programme case lists and all four fixtures.
+
+### Frozen seven-programme evaluation at `075abc5`
+
+`WASL_LDCT=300 WASL_IFHAS=800 scripts/final_eval.sh`, with the existing frozen cohort sizes and flags. Five seeds × v1/v2 noise, held-out persons, cached readers, FHIR, `v7strict`, chaos on. C14 surveillance follow-ups and adversarial generation stayed off; the EID guard retained its default-off setting. This is the final-code rerun and supersedes the `73ec4e4` artifacts, which remain above as historical evidence.
+
+| Mean with-review recall | Dev noise v1 | Held-out noise v2 |
+|---|---:|---:|
+| CRC | 0.844 | 0.785 |
+| Cervical | 0.969 | 0.906 |
+| Incidental lung nodule | 0.982 | 0.952 |
+| Diabetic retinopathy; referral loop | 0.997; 0.970 | 0.994; 0.894 |
+| Breast; recall loop | 0.997; 0.982 | 0.994; 0.931 |
+| Lung cancer screening LDCT; action loop | 0.998; 0.976 | 0.998; 0.981 |
+| IFHAS; follow-up loop | 0.988; 0.967 | 0.969; 0.906 |
+
+| Pooled safety | v1 | v2 |
+|---|---:|---:|
+| CRC / cervical / lung / DR / breast false closures | 0/3,161; 0/1,407; 0/2,022; 0/5,634; 0/345 | 0/3,035; 0/1,303; 0/1,907; 0/5,627; 0/338 |
+| DR referral / breast recall false closures | 0/267; 0/31 | 0/233; 0/23 |
+| LDCT / LDCT action false closures | 0/1,398; 0/109 | 0/1,413; 0/121 |
+| IFHAS / IFHAS follow-up false closures | 0/3,480; 0/1,140 | 0/3,392; 0/1,047 |
+| Lung surveillance false closures; extra loops without truth obligation | 0/41; 0 | 0/32; 0 |
+| Wrong-patient messages / without granted consent | 0/17,063; 0/11,828 | 0/16,486; 0/11,650 |
+
+Duplicate/lost outputs, ingest loss/duplication, final-state mismatches and forged effects were 0; tamper detection was 85/85 with 0 false alarms in each noise model. Review load was 36.9 (v1) and 33.6 (v2) items per 100 loops; reviewer time was 12.8 and 11.6 h/1k loops. One surveillance obligation was missed in each noise model; surveillance overdue flags were correct for 102/102 obligations in v1 and 88/91 in v2, with zero surveillance false closures.
+
+Subgroup evidence remains weak under roughly 16 tests (Bonferroni cut about 0.003). The programme-standardised origin ratio was 1.0993 (p=0.010) in v1 and 1.0653 (p=0.185) in v2; v2 CRC age-band and sex ratios were 1.0657 (p=0.199) and 1.0295 (p=0.235). The lowest programme-specific origin result was v2 lung p=0.041. None passes the Bonferroni cut. Small denominators retain wide zero-event bounds.
+
+**Reader caveat:** held-out persons and v2 identity noise do not make LDCT/IFHAS reader results independent. Their generators still reuse development texts, including the tuned IFHAS corpus. No paid calls or new held-out reader corpora were used.
 
 ## Post-hoc identity, scale and deployment hardening
 
