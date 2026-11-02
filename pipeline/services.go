@@ -487,7 +487,7 @@ func runLinker(dataDir string, P int, runDir string) {
 	defer nc.Close()
 	gbm := LoadGBM(filepath.Join(dataDir, mf("lgb_stream.json")))
 	L := NewLinkerCoreANN(gbm, P)
-	cfg := LinkFunnelConfig{CandidateK: L.K, CandidateCap: L.Cap, ANNMode: *annMode, MergeThreshold: L.Thr, ReviewFloor: L.Lo}
+	cfg := LinkFunnelConfig{CandidateK: L.K, CandidateCap: L.Cap, ANNMode: *annMode, MergeThreshold: L.Thr, ReviewFloor: L.Lo, ModelSet: ModelSet}
 	if *annMode == "hnsw" {
 		cfg.HNSWM, cfg.HNSWEfConstruct, cfg.HNSWEfSearch = 16, 100, 64
 	}
