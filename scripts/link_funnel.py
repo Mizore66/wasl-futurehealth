@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Offline six-category CRC link funnel classifier (diagnostics only; truth is offline, never published)."""
-import collections, json, sys
+import collections, json, os, sys
 
 CATEGORIES = {
     "candidate_not_generated", "candidate_below_review",
@@ -16,13 +16,18 @@ ERROR_CODES = {
 }
 
 
-def classify_pair(events, items, answers, attached, closed, clustered=False):
+def classify_pair(events, items, answers, attached, closed, clustered=False, split_after=None):
     if attached:
         return "attached_or_closed", "report_attached"
     if closed:
         return "attached_or_closed", "loop_closed"
     if clustered:  # latest cluster snapshot holds both registrations (direct or transitive link)
         return "linked_report_not_attached", "eligible_cluster_without_report"
+    if split_after is not None:
+        # the latest cluster snapshot excludes the report after the last pair-level link: a stale "linked" cannot stand
+        events = [e for e in events if e.get("_pos", -1) > split_after and e.get("stage") != "linked"]
+        if not events:
+            return "candidate_routed_review", "answered_different"
     latest = events[-1] if events else None
     stage = latest.get("stage") if latest else None
     if stage == "linked":
@@ -86,7 +91,7 @@ def pairkey(a, b):
 
 
 def ordered(records):
-    """Dedupe exact records, then sort by (seq default 0, file order)."""
+    """Dedupe exact records, then sort by (seq default 0, file order); each kept record gets its stream position _pos."""
     seen, out = set(), []
     for n, r in enumerate(records):
         k = json.dumps(r, sort_keys=True)
@@ -94,7 +99,7 @@ def ordered(records):
             seen.add(k)
             out.append((r.get("seq", 0), n, r))
     out.sort(key=lambda x: (x[0], x[1]))
-    return [r for _, _, r in out]
+    return [dict(r, _pos=i) for i, (_, _, r) in enumerate(out)]
 
 
 def load(run, cohort):
@@ -121,20 +126,24 @@ def load(run, cohort):
             sr[str(e.get("provider")) + "/ServiceRequest/" + str(e.get("id"))] = e
     with open(run + "/review_queue.json", encoding="utf-8") as f:
         queue = json.load(f)
-    rd = {o["item"]: o for o in read_ndjson(run + "/reviewer_decisions.ndjson")}
+    rd = {}
+    for o in read_ndjson(run + "/reviewer_decisions.ndjson"):  # repeated records for one item: latest t wins, then file order
+        if o["item"] not in rd or o.get("t", 0) >= rd[o["item"]].get("t", 0):
+            rd[o["item"]] = o
     trace = read_ndjson(run + "/link_funnel.ndjson")
     configs = []
     for c in trace:
         if c.get("kind") == "config" and c.get("config") not in configs:
             configs.append(c.get("config"))
     pairs = collections.defaultdict(list)
-    for r in ordered([t for t in trace if t.get("kind") == "pair"]):
-        pairs[pairkey(r.get("a"), r.get("b"))].append(r)
     members = {}
-    for r in ordered([t for t in trace if t.get("kind") == "cluster"]):
-        s = frozenset(r.get("members") or [])
-        for m in s:
-            members[m] = s
+    for r in ordered([t for t in trace if t.get("kind") in ("pair", "cluster")]):  # one stream so snapshot/pair order is comparable
+        if r["kind"] == "pair":
+            pairs[pairkey(r.get("a"), r.get("b"))].append(r)
+        else:
+            s = frozenset(r.get("members") or [])
+            for m in s:
+                members[m] = (r["_pos"], s)
     return dict(truth=truth, fin=fin, sr=sr, col=col, queue=queue, rd=rd, configs=configs, pairs=pairs, members=members)
 
 
@@ -162,19 +171,29 @@ def classify_loop(D, loop, t):
     want = str(rep.get("provider")) + "/DiagnosticReport/" + str(rep.get("id"))
     attached = any((b.get("body") or {}).get("report") == want for b in fin.get("chain") or [])
     all_items = link_items(D["queue"])
-    pair_ans = {}
-    for i in all_items:
-        if i["item"] in D["rd"]:
-            pair_ans.setdefault(pairkey(*i["pair"]), D["rd"][i["item"]])
+    pair_ans = {}  # latest answer per pair by reviewer t, ties to the later queue item
+    for n, i in enumerate(all_items):
+        a = D["rd"].get(i["item"])
+        if a is not None:
+            k = pairkey(*i["pair"])
+            if k not in pair_ans or (a.get("t", 0), n) >= pair_ans[k][0]:
+                pair_ans[k] = ((a.get("t", 0), n), a)
     items = [i for i in all_items if i.get("loop") == loop or pairkey(*i["pair"]) == expected]
     answers = {}
     for i in items:
-        a = D["rd"].get(i["item"]) or pair_ans.get(pairkey(*i["pair"]))
+        a = D["rd"].get(i["item"]) or (pair_ans.get(pairkey(*i["pair"])) or (None, None))[1]
         if a is not None:
             answers[i["item"]] = a
-    ms = D["members"].get(sre["pk"])
+    snap = D["members"].get(sre["pk"])
+    ms = snap[1] if snap else None
     clustered = bool(ms) and rep["pk"] in ms
-    return classify_pair(D["pairs"].get(expected, []), items, answers, attached, closed, clustered)
+    events = D["pairs"].get(expected, [])
+    split_after = None
+    if ms and not clustered:
+        linked = [e["_pos"] for e in events if e.get("stage") == "linked"]
+        if linked and max(linked) < snap[0]:
+            split_after = snap[0]
+    return classify_pair(events, items, answers, attached, closed, clustered, split_after)
 
 
 def analyse(D):
@@ -206,9 +225,16 @@ def main(argv):
         print("usage: link_funnel.py RUN_DIR COHORT_DIR OUT_JSON", file=sys.stderr)
         return 2
     run, cohort, out = argv
+    try:  # never leave output from an earlier run behind a failed analysis
+        os.remove(out)
+    except FileNotFoundError:
+        pass
+    except OSError:
+        print("input_unreadable", file=sys.stderr)
+        return 2
     try:
         D = load(run, cohort)
-    except (OSError, ValueError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
         print("input_unreadable", file=sys.stderr)
         return 2
     rows, n, cfg = analyse(D)
