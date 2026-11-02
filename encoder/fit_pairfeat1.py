@@ -73,18 +73,37 @@ def check_clean_tree(root):
 
 
 def read_p_column(path):
+    """Parse headerless featdump CSV (38 fields: 2 + 30 features + 5 slices + p)."""
+    out = []
     with open(path, newline="") as f:
-        rows = csv.reader(f)
-        header = next(rows, None)
-        if not header or header[-1] != "p":
-            raise ValueError("last CSV column must be named p")
-        out = []
-        for row in rows:
+        for row in csv.reader(f):
+            if len(row) != 38:
+                raise ValueError(f"expected 38 fields per row, got {len(row)}")
             v = float(row[-1])
             if not math.isfinite(v):
                 raise ValueError("non-finite p in Go output")
             out.append(v)
     return out
+
+
+def check_prefix_identity(plain_csv, gbm_csv):
+    """First 37 columns of the -gbmfile dump must be byte-identical to the fit CSV, row by row."""
+    with open(plain_csv, newline="") as a, open(gbm_csv, newline="") as b:
+        ra, rb = list(csv.reader(a)), list(csv.reader(b))
+    if len(ra) != len(rb):
+        raise ValueError("cal dump row-count mismatch")
+    for i, (x, y) in enumerate(zip(ra, rb)):
+        if len(x) != 37 or len(y) != 38 or x != y[:37]:
+            raise ValueError(f"cal dump prefix mismatch at row {i}")
+
+
+def check_head_unchanged(root, manifest_path):
+    with open(manifest_path) as f:
+        want = json.load(f)["git_head"]
+    head = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip()
+    if head != want:
+        raise ValueError(f"git HEAD {head} differs from training manifest {want}")
+    return want
 
 
 def write_json(path, obj):
@@ -160,9 +179,10 @@ def main(argv):
     csvs.append(parity_csv)
     import numpy as np  # only to read the .npy
     py = [float(x) for x in np.load(os.path.join(chain, "cal_p_pairfeat1.npy")).ravel()]
+    check_prefix_identity(os.path.join(out, cal), os.path.join(out, parity_csv))
     go = read_p_column(os.path.join(out, parity_csv))
     delta = check_go_parity(go, py, tolerance=TOLERANCE)
-    head = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip()
+    head = check_head_unchanged(root, os.path.join(out, "training-manifest.json"))
     write_json(os.path.join(out, "artifact-manifest.json"),
                artifact_manifest(head, out, csvs, models, chain, len(go), delta))
     copy_chain_to_models(chain, models)
