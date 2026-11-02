@@ -162,10 +162,116 @@ func TestLinkFunnelClusterSnapshot(t *testing.T) {
 	}
 }
 
+func snapshotsOf(in []LinkTrace) []LinkTrace {
+	out := []LinkTrace{}
+	for _, e := range in {
+		if e.Kind == "cluster" {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+func TestLinkFunnelSplitByOtherPairResnapshots(t *testing.T) {
+	// A-B-C chain; a "different" answer on the A-B... pair cuts the weakest edge on the a-c path without any pair event on (S,R)
+	L := NewLinkerCore(constGBM(), 1)
+	var traces []LinkTrace
+	L.trace = func(e LinkTrace) { traces = append(traces, e) }
+	names := []string{"A1", "B2", "C3"}
+	for i, m := range names {
+		p := eidEvent("r-"+m, "prov-"+m, m, "Lamia Eddinari", "1999-07-19", "")
+		p.Seq = uint64(i + 1)
+		L.Apply(p)
+	}
+	a, c := "prov-A1|A1", "prov-C3|C3"
+	if !sameCluster(L, a, c) {
+		t.Fatal("fixture did not link")
+	}
+	traces = nil
+	L.Apply(&Prep{Seq: 10, Kind: "signoff", So: &Signoff{ItemID: "x", LoopID: "L", Kinds: []string{"link"}, Pair: [2]string{a, c}, Link: "different",
+		Role: RoleReviewer, Reads: []string{"r1"}}})
+	if sameCluster(L, a, c) {
+		t.Fatal("cannot-link did not split the cluster")
+	}
+	for _, e := range pairsOnly(traces) {
+		if e.Stage == "linked" {
+			t.Fatalf("unexpected linked event on split: %+v", e)
+		}
+	}
+	got := map[string][]string{}
+	for _, e := range snapshotsOf(traces) {
+		got[e.Root] = e.Members
+		if e.Seq != 10 {
+			t.Fatalf("snapshot seq %d", e.Seq)
+		}
+	}
+	for _, pk := range []string{a, c} {
+		found := false
+		for _, m := range got {
+			for _, x := range m {
+				if x == pk {
+					found = true
+					if len(m) == 0 {
+						t.Fatal("empty snapshot")
+					}
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("no re-snapshot containing %s: %+v", pk, got)
+		}
+	}
+	for _, m := range got {
+		hasA, hasC := false, false
+		for _, x := range m {
+			hasA = hasA || x == a
+			hasC = hasC || x == c
+		}
+		if hasA && hasC {
+			t.Fatalf("latest snapshot still joins the split pair: %+v", got)
+		}
+	}
+}
+
+func TestLinkFunnelTraceOnOffSameApplyOutcome(t *testing.T) {
+	run := func(traced bool) (*LinkerCore, []FactsMsg) {
+		L := NewLinkerCore(constGBM(), 1)
+		if traced {
+			L.trace = func(LinkTrace) {}
+		}
+		var outs []FactsMsg
+		for i, m := range []string{"A1", "B2", "C3"} {
+			p := eidEvent("r-"+m, "prov-"+m, m, "Lamia Eddinari", "1999-07-19", "")
+			p.Seq = uint64(i + 1)
+			outs = append(outs, L.Apply(p)...)
+		}
+		outs = append(outs, L.Apply(&Prep{Seq: 10, Kind: "signoff", So: &Signoff{ItemID: "x", LoopID: "L", Kinds: []string{"link"},
+			Pair: [2]string{"prov-A1|A1", "prov-C3|C3"}, Link: "different", Role: RoleReviewer, Reads: []string{"r1"}}})...)
+		return L, outs
+	}
+	off, offOut := run(false)
+	on, onOut := run(true)
+	if !reflect.DeepEqual(canon(offOut), canon(onOut)) {
+		t.Fatal("tracing changed emitted facts")
+	}
+	if !reflect.DeepEqual(off.Stats, on.Stats) || !reflect.DeepEqual(off.members, on.members) || !reflect.DeepEqual(off.cannot, on.cannot) || !reflect.DeepEqual(off.adj, on.adj) {
+		t.Fatal("tracing changed clusters, cannot-link state, or stats")
+	}
+	for pk := range off.byPk {
+		if off.Find(off.byPk[pk]) != on.Find(on.byPk[pk]) {
+			t.Fatalf("cluster root differs for %s", pk)
+		}
+	}
+}
+
 func TestLinkFunnelNoSnapshotWhenTraceOff(t *testing.T) {
 	L := NewLinkerCore(constGBM(), 1)
-	L.Apply(eidEvent("sr-1", "ahs-mushrif", "A1", "Lamia Eddinari", "1999-07-19", ""))
 	if L.trace != nil {
 		t.Fatal("trace must default to off")
+	}
+	L.Apply(eidEvent("sr-1", "ahs-mushrif", "A1", "Lamia Eddinari", "1999-07-19", ""))
+	L.Apply(eidEvent("r-2", "noor-endo", "N2", "Lamia Eddinari", "1999-07-19", ""))
+	if L.trace != nil || !sameCluster(L, "ahs-mushrif|A1", "noor-endo|N2") {
+		t.Fatal("untraced Apply must still link and keep tracing off")
 	}
 }
