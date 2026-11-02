@@ -344,9 +344,7 @@ func main() {
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
 	v7Args = append(v7Args, linkFloorArgs()...)
 	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-secondidconfirm=%v", SecondIDContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
-	if ModelSet != "" {
-		v7Args = append(v7Args, "-modelset", ModelSet)
-	}
+	v7Args = append(v7Args, modelPolicyArgs(ModelSet, *policy)...)
 	for i, on := range []bool{DRRecallMsg, RejectedMsg, DRSeenLinkAsk} { // outreachgaps.go: every child, only when on
 		if on {
 			v7Args = append(v7Args, []string{"-drrecallmsg", "-rejmsg", "-drseenlink"}[i])
