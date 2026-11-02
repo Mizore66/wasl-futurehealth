@@ -141,6 +141,7 @@ func main() {
 	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
 	lttProg := fs.Bool("lttprog", false, "ltt: per-programme resolution and counts, second_identifier_confirm tally (ltt.go; off = rows as before)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
+	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
@@ -187,6 +188,11 @@ func main() {
 	autoAudit := fs.Float64("autoaudit", 0, "pilot: fraction of automatic closures given a post-closure clinician audit (normal mode only; 0 = off)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	if err := validateLinkFloor(*linkFloor); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	LinkReview = *linkFloor
 	LinkFunnelPath = *linkFunnel
 	if *linkFunnel != "" {
 		LinkFunnelArgs = []string{"-linkfunnel", *linkFunnel}
@@ -273,7 +279,7 @@ func main() {
 		TauClose = *tauClose
 	}
 	TauFromLTT = TauFromLTT || *tauLTT
-	PolicyName = policyName()
+	PolicyName = policyName() + linkFloorPolicySuffix()
 	if EIDContraGuard {
 		PolicyName += "+eidguard" // post-hoc B8 hardening, default off: stamped on every decision so lanes are never mixed
 	}
@@ -332,6 +338,7 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
+	v7Args = append(v7Args, linkFloorArgs()...)
 	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-secondidconfirm=%v", SecondIDContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
 	if ModelSet != "" {
 		v7Args = append(v7Args, "-modelset", ModelSet)
