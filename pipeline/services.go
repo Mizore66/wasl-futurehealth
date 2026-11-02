@@ -421,6 +421,14 @@ func runLinker(dataDir string, P int, runDir string) {
 	defer nc.Close()
 	gbm := LoadGBM(filepath.Join(dataDir, mf("lgb_stream.json")))
 	L := NewLinkerCoreANN(gbm, P)
+	cfg := LinkFunnelConfig{CandidateK: L.K, CandidateCap: L.Cap, ANNMode: *annMode, MergeThreshold: L.Thr, ReviewFloor: L.Lo}
+	if *annMode == "hnsw" {
+		cfg.HNSWM, cfg.HNSWEfConstruct, cfg.HNSWEfSearch = 16, 100, 64
+	}
+	trace := newLinkFunnelWriter(LinkFunnelPath, cfg)
+	if trace != nil {
+		L.trace = trace.Append
+	}
 	present := presentIDs(js, "FACTS", ">")
 	hwm := uint64(len(present))
 	ctx := context.Background()
@@ -444,6 +452,9 @@ func runLinker(dataDir string, P int, runDir string) {
 		for {
 			mu.Lock()
 			st := linkerStatus(L, next-1, hwm, published, suppressed, recovered, atomic.LoadInt64(&ap.inflight), atomic.LoadInt64(&ap.retries), time.Since(start).Seconds())
+			if trace.Err() != nil {
+				st["link_funnel_error"] = trace.Err().Error()
+			}
 			mu.Unlock()
 			writeStatus(runDir, "linker", st)
 			time.Sleep(300 * time.Millisecond)
