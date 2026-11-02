@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"sort"
 )
 
 // Diagnostics-only candidate tracing for the linker. Callbacks must never write linker state.
@@ -22,14 +23,16 @@ type LinkFunnelConfig struct {
 }
 
 type LinkTrace struct {
-	Kind   string            `json:"kind"`
-	Seq    uint64            `json:"seq,omitempty"`
-	A      string            `json:"a,omitempty"`
-	B      string            `json:"b,omitempty"`
-	P      float64           `json:"p,omitempty"`
-	Stage  string            `json:"stage,omitempty"`
-	Reason string            `json:"reason,omitempty"`
-	Config *LinkFunnelConfig `json:"config,omitempty"`
+	Kind    string            `json:"kind"`
+	Seq     uint64            `json:"seq,omitempty"`
+	A       string            `json:"a,omitempty"`
+	B       string            `json:"b,omitempty"`
+	P       float64           `json:"p,omitempty"`
+	Stage   string            `json:"stage,omitempty"`
+	Reason  string            `json:"reason,omitempty"`
+	Root    string            `json:"root,omitempty"`
+	Members []string          `json:"members,omitempty"`
+	Config  *LinkFunnelConfig `json:"config,omitempty"`
 }
 
 func (L *LinkerCore) emitLink(e LinkTrace) {
@@ -73,4 +76,29 @@ func (w *linkFunnelWriter) Err() error {
 		return nil
 	}
 	return w.err
+}
+
+// emitClusters snapshots every affected cluster at the end of Apply (root PK and sorted member PKs), so an offline
+// reader can tell which expected pairs were joined transitively. Diagnostics only.
+func (L *LinkerCore) emitClusters(roots map[int]bool) {
+	if L.trace == nil {
+		return
+	}
+	seen := map[int]bool{}
+	for _, r := range keysOf(roots) {
+		if r < 0 || r >= len(L.recs) {
+			continue
+		}
+		r = L.Find(r)
+		if seen[r] {
+			continue
+		}
+		seen[r] = true
+		pks := []string{}
+		for _, m := range L.members[r] {
+			pks = append(pks, L.recs[m].Pk)
+		}
+		sort.Strings(pks)
+		L.trace(LinkTrace{Kind: "cluster", Seq: L.traceSeq, Root: L.recs[r].Pk, Members: pks})
+	}
 }
