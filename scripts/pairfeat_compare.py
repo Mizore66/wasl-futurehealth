@@ -16,7 +16,9 @@ Experiment parent layout (EXPERIMENT_DIR)
                            pairfeat1_chain_sha256 (other keys ignored)
   selection.json           dev-clean result: selected_modelset "pairfeat1" only on a passing gate, else null
   stress.json              dev-stress result: pass true/false
-  validation-manifest.json frozen by freeze-validation; the only file validation-clean lanes and analysis read
+  validation-manifest.json frozen by freeze-validation; validation-clean lanes and analysis need it plus the unchanged
+                           artifact-manifest/selection/stress files whose SHA256 it records (still passing at this HEAD);
+                           the validation OUT_JSON is write-once
   <arm roots>/build.json   per-arm identity written by the runner; <arm roots>/v2-s<seed>/ lanes
 
 Gates (fixed before any result). Gains are pooled CRC closure-recall percentage points, candidate minus baseline:
@@ -218,15 +220,34 @@ def check_validation_manifest(vm, repo, head):
     _check_maps(vm, "validation-manifest.json")
 
 
+def check_frozen_validation(vm, exp_dir, repo, head):
+    """A validation-manifest.json authorises validation only if it is what freeze-validation would write now: its own
+    fields match HEAD, seeds, settings and the runner/analyzer SHA256, and the recorded artifact-manifest, selection and
+    stress SHA256 still match those files, which must still be a passing selection and stress at this HEAD."""
+    check_validation_manifest(vm, repo, head)
+    ap, sp, tp = (os.path.join(exp_dir, n) for n in (ARTIFACT_MANIFEST, SELECTION, STRESS))
+    for key, path in (("artifact_manifest_sha256", ap), ("selection_sha256", sp), ("stress_sha256", tp)):
+        _read_json(path)  # regular file required
+        if not _is_hex(vm.get(key), 64) or vm[key] != sha256_file(path):
+            raise PreflightError("validation-manifest.json %s does not match %s" % (key, os.path.basename(path)))
+    am = _read_json(ap)
+    check_artifact_manifest(am, head)
+    for a in ARMS:
+        if vm[CHAIN_KEY[a]] != am[CHAIN_KEY[a]]:
+            raise PreflightError("validation-manifest.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
+    check_selection(_read_json(sp), am, head)
+    check_stress(_read_json(tp), am, head, sha256_file(sp))
+
+
 def preflight(mode, arm, exp_dir, repo, head):
     """All refusals that must happen before any build. Returns the arm's verified model-chain hashes."""
     if mode not in MODES:
         raise PreflightError("invalid mode: %r" % (mode,))
     if arm not in ARMS:
         raise PreflightError("invalid arm: %r" % (arm,))
-    if mode == "validation-clean":  # validation reads only its frozen manifest
+    if mode == "validation-clean":  # authorised only by a frozen manifest whose upstream files still verify
         vm = _read_json(os.path.join(exp_dir, VALIDATION_MANIFEST))
-        check_validation_manifest(vm, repo, head)
+        check_frozen_validation(vm, exp_dir, repo, head)
         return _check_files_match(repo, arm, vm[CHAIN_KEY[arm]], "validation-manifest.json")
     am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
     check_artifact_manifest(am, head)
@@ -602,14 +623,13 @@ def _load_lane(path, seed, arm, mode):
 
 # ---------------------------------------------------------------- CLI
 
-def analyse(mode, out, roots):
+def analyse(mode, out, roots, repo=REPO, head=None):
     exp = os.path.dirname(os.path.abspath(out))
     seeds = MODES[mode]["seeds"]
     try:
         if mode == "validation-clean":
             gov = _read_json(os.path.join(exp, VALIDATION_MANIFEST))
-            if gov.get("seeds") != seeds or gov.get("selected_modelset") != CANDIDATE:
-                raise ValueError("validation-manifest.json seeds/selection do not authorise validation")
+            check_frozen_validation(gov, exp, repo, head or git_head(repo))
             gov_name = VALIDATION_MANIFEST
         else:
             gov = _read_json(os.path.join(exp, ARTIFACT_MANIFEST))
@@ -656,6 +676,8 @@ def analyse(mode, out, roots):
         _write_once(os.path.join(exp, STRESS), res["stress"])
     else:
         res["gate"] = gate(base, cand, "validation")
+        _write_once(out, res)  # the headline validation verdict is never overwritten
+        return res
     with open(out, "w") as h:
         json.dump(res, h, indent=1, sort_keys=True)
     return res

@@ -10,9 +10,11 @@
 #   artifact-manifest.json   training artifacts: git_head + baseline/pairfeat1 model-chain SHA256 (required by dev modes)
 #   selection.json           written by `pairfeat_compare.py dev-clean`; dev-stress needs selected_modelset "pairfeat1"
 #   stress.json              written by `pairfeat_compare.py dev-stress`; consumed by `pairfeat_compare.py freeze-validation`
-#   validation-manifest.json written by `pairfeat_compare.py freeze-validation`; the only file validation-clean reads
+#   validation-manifest.json written by `pairfeat_compare.py freeze-validation`; authorises validation-clean only while the
+#                            artifact-manifest/selection/stress files it hashes are unchanged and still pass
 # dev-clean/dev-stress require artifact-manifest.json git_head == current HEAD and the arm's four models/ files to match its
-# map; validation-clean requires the frozen manifest's HEAD, seeds, settings, runner/analyzer SHA256 and the arm's hashes.
+# map; validation-clean requires the frozen manifest's HEAD, seeds, settings, runner/analyzer SHA256, upstream file SHA256
+# (re-verified selection and stress) and the arm's hashes.
 # All refusals happen before any build. PAIRFEAT_PREFLIGHT_ONLY=1 stops after the refusals (tests; nothing is built or created).
 # The tracked tree must be clean and pipeline/ and scripts/ must have no untracked files before any build.
 # Arms must run sequentially (shared bin/wsi7, removed on exit); build.json records git head, binary SHA256, mode, arm,
