@@ -14,6 +14,16 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "link_floor_experiment.sh")
 
 
+def _rb(p):
+    with open(p, "rb") as h:
+        return h.read()
+
+
+def _wj(p, o):
+    with open(p, "w") as h:
+        json.dump(o, h)
+
+
 def arm(floor, tp, truth, **kw):
     a = {"floor": floor, "tp": tp, "truth_closed": truth, "false_closures": 0, "wrong_released_total": 0,
          "wrong_released_by_origin": {"a": 0, "b": 0}, "replay_mismatch": 0, "analysis_errors": 0,
@@ -165,21 +175,63 @@ class Harness(unittest.TestCase):
 
     def test_validation_manifest_mismatch_rejected(self):
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=HERE, capture_output=True, text=True).stdout.strip()
-        sha = hashlib.sha256(open(os.path.join(HERE, "link_floor_compare.py"), "rb").read()).hexdigest()
+        sha = hashlib.sha256(_rb(os.path.join(HERE, "link_floor_compare.py"))).hexdigest()
         good = {"git_head": head, "selected_floor": 0.05, "analyzer_sha256": sha, "seeds": [211, 223, 227, 229, 233]}
         mp = os.path.join(self.home, "wasl-ml-data", "exp", "validation-manifest.json")
         cases = [dict(good, git_head="0" * 40), dict(good, analyzer_sha256="0" * 64), dict(good, seeds=[211]),
                  dict(good, selected_floor=0.01)]
         for m in cases:
-            json.dump(m, open(mp, "w"))
+            _wj(mp, m)
             r = self.run_sh(self.home, self.root, "validation-clean", "0.05")
             self.assertEqual(r.returncode, 2, m)
             self.assertFalse(os.path.exists(self.root))
         # a floor that is neither baseline nor the selected arm is refused even with a good manifest
-        json.dump(good, open(mp, "w"))
+        _wj(mp, good)
         r = self.run_sh(self.home, self.root, "validation-clean", "0.01")
         self.assertEqual(r.returncode, 2)
         self.assertFalse(os.path.exists(self.root))
+
+    def test_dev_stress_requires_selection(self):
+        r = self.run_sh(self.home, self.root, "dev-stress", "0.2")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("selection.json missing", r.stderr)
+        sp = os.path.join(self.home, "wasl-ml-data", "exp", "selection.json")
+        _wj(sp, {"selected_floor": None})
+        r = self.run_sh(self.home, self.root, "dev-stress", "0.2")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("must be 0.2 or the selected arm", r.stderr)
+        _wj(sp, {"selected_floor": 0.05})
+        r = self.run_sh(self.home, self.root, "dev-stress", "0.01")
+        self.assertEqual(r.returncode, 2)
+        self.assertIn("must be 0.2 or the selected arm", r.stderr)
+        self.assertFalse(os.path.exists(self.root))
+
+    def test_clean_tree_check_is_in_runner(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertLess(text.index("status --porcelain --untracked-files=all"), text.index('"$ROOT/scripts/demo.sh" build'))
+
+    def test_review_load(self):
+        q = [{"item": "a", "kinds": ["link"], "pair": ["x", "y"]}, {"item": "b", "kinds": ["link"], "pair": ["y", "x"]},
+             {"item": "c", "kinds": ["link"], "pair": ["p", "q"]}, {"item": "d", "kinds": ["link"], "pair": ["m", "n"], "reason": "second_identifier"},
+             {"item": "e", "kinds": ["other"], "pair": ["u", "v"]}]
+        self.assertEqual(lfc.review_load(q, [{"item": "a"}]), {"items": 3, "distinct_pairs": 2, "unanswered": 1})
+        self.assertEqual(lfc.review_load(q, []), {"items": 3, "distinct_pairs": 2, "unanswered": 3})
+
+    def test_cli_dev_clean_writes_selection(self):
+        out = os.path.join(self.home, "wasl-ml-data", "exp")
+        for fl, tp in (("0.2", 5), ("0.05", 6)):
+            for sd in (101, 103, 107):
+                d = os.path.join(out, "a" + fl, "v2-s%d" % sd)
+                os.makedirs(os.path.join(d, "run/main"))
+                _wj(d + "/funnel.json", dict(FUNNEL, config={"review_floor": float(fl)}))
+                _wj(d + "/run/main/report7.json", report(tp=tp))
+                _wj(d + "/run/main/review_queue.json", [])
+                _wj(d + "/run/main/status-linker.json", {})
+        args = ["dev-clean", out + "/summary-clean.json"] + ["%s=%s/a%s" % (f, out, f) for f in ("0.2", "0.05")]
+        self.assertEqual(lfc.main(args), 0)
+        with open(out + "/selection.json") as h:
+            self.assertEqual(json.load(h)["selected_floor"], 0.05)
 
     def test_modes_table(self):
         self.assertEqual(lfc.MODES["dev-clean"], {"split": "dev", "seeds": [101, 103, 107], "rerr": "0", "errungraded": "0"})

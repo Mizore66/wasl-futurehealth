@@ -225,8 +225,19 @@ def analyse(D):
 
 
 def main(argv):
+    scope = {"person_split": "dev", "reviewer_error": 0, "day15_ungraded_prep_reviewer_error": 0}
+    if len(argv) == 6:  # optional scope: SPLIT RERR ERRUNGRADED (the 3-arg diagnostic form stays dev/0/0)
+        try:
+            scope = {"person_split": argv[3], "reviewer_error": float(argv[4]), "day15_ungraded_prep_reviewer_error": float(argv[5])}
+        except ValueError:
+            print("bad_scope", file=sys.stderr)
+            return 2
+        if scope["person_split"] not in ("dev", "eval"):
+            print("bad_scope", file=sys.stderr)
+            return 2
+        argv = argv[:3]
     if len(argv) != 3:
-        print("usage: link_funnel.py RUN_DIR COHORT_DIR OUT_JSON", file=sys.stderr)
+        print("usage: link_funnel.py RUN_DIR COHORT_DIR OUT_JSON [SPLIT RERR ERRUNGRADED]", file=sys.stderr)
         return 2
     run, cohort, out = argv
     try:  # never leave output from an earlier run behind a failed analysis
@@ -257,7 +268,8 @@ def main(argv):
     rows, n, cfg = analyse(D)
     summary = public_summary(rows, n)
     summary["config"] = cfg
-    summary["scope"] = {"person_split": "dev", "noise": "v2", "reviewer_error": 0, "day15_ungraded_prep_reviewer_error": 0}
+    scope["noise"] = "v2"
+    summary["scope"] = scope
     with open(out, "w", encoding="utf-8") as f:
         json.dump(summary, f, indent=1, sort_keys=True)
         f.write("\n")
