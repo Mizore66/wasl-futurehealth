@@ -418,7 +418,9 @@ class LinkerStatusGateTests(unittest.TestCase):
             self.assertEqual(link_funnel.main([run, coh, out]), 0, c)
 
     def test_harness_requires_and_checks_linker_status(self):
-        src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "link_funnel_dev.sh")).read()
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "link_funnel_dev.sh")
+        with open(path) as h:
+            src = h.read()
         self.assertIn("status-linker.json", src)
         self.assertIn("link_funnel_error", src)
 
