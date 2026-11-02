@@ -141,7 +141,8 @@ func main() {
 	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
 	lttProg := fs.Bool("lttprog", false, "ltt: per-programme resolution and counts, second_identifier_confirm tally (ltt.go; off = rows as before)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
-	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
+	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
+	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
@@ -186,6 +187,10 @@ func main() {
 	autoAudit := fs.Float64("autoaudit", 0, "pilot: fraction of automatic closures given a post-closure clinician audit (normal mode only; 0 = off)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	LinkFunnelPath = *linkFunnel
+	if *linkFunnel != "" {
+		LinkFunnelArgs = []string{"-linkfunnel", *linkFunnel}
+	}
 	if err := validateNatsConfig(os.Getenv("WASL_NATS_URL"), os.Getenv("WASL_NATS_EXTERNAL")); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
@@ -722,7 +727,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if err := setup.Run(); err != nil {
 		panic(err)
 	}
-	o.start("linker", "", c("linker")...)
+	o.start("linker", "", append(c("linker"), LinkFunnelArgs...)...)
 	for k := 0; k < P; k++ {
 		o.start(fmt.Sprintf("closure-%d", k), "", c("closure", "-part", fmt.Sprint(k))...)
 	}
