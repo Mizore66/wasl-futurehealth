@@ -30,10 +30,10 @@ func mf(base string) string {
 	return strings.TrimSuffix(base, ".json") + "_" + ModelSet + ".json"
 }
 
-// validateModelPolicy: the pairfeat1/pairfeat2 model sets are calibrated for the strict closure tier only, so any other
+// validateModelPolicy: the pairfeat1/pairfeat2/pairfeat3 model sets are calibrated for the strict closure tier only, so any other
 // policy (v7ltt's LTT-selected tau, v6, or none) is a configuration error rather than a silent mismatch.
 func validateModelPolicy(modelSet, policy string) error {
-	if (modelSet == "pairfeat1" || modelSet == "pairfeat2") && policy != "v7strict" {
+	if (modelSet == "pairfeat1" || modelSet == "pairfeat2" || modelSet == "pairfeat3") && policy != "v7strict" {
 		return fmt.Errorf("modelset %s supports only -policy v7strict (got %q); v7ltt needs a separate selection", modelSet, policy)
 	}
 	return nil
@@ -151,6 +151,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 			ps = append(ps, p)
 		}
 	}
+	pool := append([]Person(nil), ps...) // every person of the split, file order, before the shuffle
 	r := rand.New(rand.NewSource(seed))
 	r.Shuffle(len(ps), func(i, j int) { ps[i], ps[j] = ps[j], ps[i] })
 	if nPersons > 0 && nPersons < len(ps) {
@@ -161,7 +162,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		name, dob, sex, eid string
 	}
 	regs := []regT{}
-	for pid, p := range ps {
+	register := func(pid int, p *Person, r *rand.Rand) {
 		k := 1
 		if x := r.Float64(); x < .1 {
 			k = 4
@@ -203,9 +204,23 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 			if r.Float64() < .02 {
 				sex = "U"
 			}
-			eid := drawEID(&p, r)
+			eid := drawEID(p, r)
 			regs = append(regs, regT{pid, name, dob, sex, eid})
 		}
+	}
+	for pid := range ps {
+		register(pid, &ps[pid], r)
+	}
+	nsBase := map[int]int{}
+	nsAdded := 0
+	if NamesakeRate > 0 {
+		nr := rand.New(rand.NewSource(namesakeSeed(seed)))
+		ns, base := buildNamesakes(ps, pool, NamesakeRate, nr)
+		for i := range ns {
+			register(len(ps)+i, &ns[i], nr)
+			nsBase[len(ps)+i] = base[i]
+		}
+		nsAdded = len(ns)
 	}
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
@@ -217,6 +232,8 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	w := bufio.NewWriter(f)
 	pids := []int{}
 	npos, nneg := 0, 0
+	nsRows := []int{}
+	rowIdx := 0
 	for _, g := range regs {
 		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid}
 		rec.eidOK = luhnOK(rec.Eid)
@@ -233,6 +250,11 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 				npos++
 			} else {
 				nneg++
+				if b, ok := nsBase[g.pid]; ok && pids[c.j] == b {
+					nsRows = append(nsRows, rowIdx)
+				} else if b, ok := nsBase[pids[c.j]]; ok && g.pid == b {
+					nsRows = append(nsRows, rowIdx)
+				}
 			}
 			corr := 0
 			if corroborated(rec, L.recs[c.j], c.feat) {
@@ -256,6 +278,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 				fmt.Fprintf(w, ",%.17g", gbm.Predict(c.feat))
 			}
 			w.WriteByte('\n')
+			rowIdx++
 		}
 		rec.idx = len(L.recs)
 		L.recs = append(L.recs, rec)
@@ -269,5 +292,13 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	}
 	w.Flush()
 	f.Close()
+	sc, err := json.Marshal(map[string]any{"rate": NamesakeRate, "seed": seed, "namesakes_added": nsAdded,
+		"base_namesake_rows": len(nsRows), "rows": nsRows})
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(outPath+".namesakes.json", append(sc, '\n'), 0o644); err != nil {
+		panic(err)
+	}
 	fmt.Fprintf(os.Stderr, "featdump %s: %d persons, %d registrations, %d positive / %d negative pairs\n", split, len(ps), len(regs), npos, nneg)
 }
