@@ -64,6 +64,8 @@ type LinkerCore struct {
 	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
 	xref         map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
 	ann          ANNIndex
+	trace        func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq     uint64
 }
 
 var annMode = new(string)
@@ -205,7 +207,16 @@ func (L *LinkerCore) eidClash(ra, rb int) bool {
 	return false
 }
 
-func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) bool {
+func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) (merged bool) {
+	if L.trace != nil {
+		defer func() {
+			e := LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: p, Stage: "linked"}
+			if L.Find(a) != L.Find(b) {
+				e.Stage, e.Reason = "rejected_demographic", "merge_constraint"
+			}
+			L.emitLink(e)
+		}()
+	}
 	ra, rb := L.Find(a), L.Find(b)
 	if ra == rb {
 		L.addEdge(a, b, p, basis)
@@ -271,6 +282,7 @@ func (L *LinkerCore) CannotLink(a, b int) []int {
 	L.cannot[a][b], L.cannot[b][a] = true, true
 	root := L.Find(a)
 	if root != L.Find(b) {
+		L.emitUnlinked(a, b)
 		return nil
 	}
 	for {
@@ -318,6 +330,7 @@ func (L *LinkerCore) CannotLink(a, b int) []int {
 		roots = append(roots, comp[0])
 	}
 	L.Stats["splits"]++
+	L.emitUnlinked(a, b)
 	return roots
 }
 
@@ -467,6 +480,7 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			if r.Eid != o.Eid {
 				L.cannot2(r.idx, c.j)
 				L.Stats["eid_conflicts"]++
+				L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_conflict"})
 				continue
 			}
 			why := ""
@@ -488,6 +502,7 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 		if eidContradict(r.Eid, o.Eid) { // a typo broke the check digit on a side, but the numbers are clearly different
 			L.cannot2(r.idx, c.j)
 			L.Stats["eid_conflicts"]++
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_contradiction"})
 			continue
 		}
 		if c.p >= L.Thr {
@@ -496,6 +511,7 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			}
 			L.Link(r.idx, c.j, c.p, false, "wasl")
 		} else if c.p >= L.Lo {
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "near"})
 			if L.near[r.idx] == nil {
 				L.near[r.idx] = map[int]float64{}
 			}
@@ -504,6 +520,15 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			}
 			L.near[r.idx][c.j], L.near[c.j][r.idx] = c.p, c.p
 			aff[L.Find(c.j)] = true
+		} else {
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "below_review"})
+		}
+	}
+	if L.trace != nil { // transitive merges: candidates that ended in the new record's cluster
+		for _, c := range cs {
+			if L.Find(c.j) == L.Find(r.idx) {
+				L.emitLink(LinkTrace{A: r.Pk, B: L.recs[c.j].Pk, P: c.p, Stage: "linked"})
+			}
 		}
 	}
 	aff[L.Find(r.idx)] = true
@@ -753,6 +778,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
 func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	out := []FactsMsg{}
+	L.traceSeq = p.Seq
 	if p.Skip {
 		return out
 	}
@@ -1039,4 +1065,11 @@ func eidContradict(a, b string) bool {
 		}
 	}
 	return d >= 3
+}
+
+func (L *LinkerCore) emitUnlinked(a, b int) {
+	if L.trace == nil {
+		return
+	}
+	L.emitLink(LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: L.pscore[pk2(a, b)], Stage: "unlinked"})
 }
