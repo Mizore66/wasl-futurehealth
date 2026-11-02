@@ -1,21 +1,29 @@
-"""Protected analyzer for the paired CRC pair-scorer experiment: baseline (default modelset) vs pairfeat1, both -linkfloor 0.01.
+"""Protected analyzer for the paired CRC pair-scorer experiment: baseline (default modelset) vs one candidate modelset
+(pairfeat1 or pairfeat2), both -linkfloor 0.01.
+
+Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337); validation
+seeds 401 409 419 421 431 for both. An experiment parent serves exactly one candidate, inferred from the single
+<candidate>_chain_sha256 key of its artifact-manifest.json (zero, several or unknown candidate keys are refused). Its
+baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
+candidate and are checked against it.
 
 Usage
-  pairfeat_compare.py MODE OUT_JSON baseline=ROOT pairfeat1=ROOT
+  pairfeat_compare.py MODE OUT_JSON baseline=ROOT <candidate>=ROOT
       MODE dev-clean | dev-stress | validation-clean. OUT_JSON must sit in the experiment parent directory (the directory
       holding the arm roots and the manifests below). dev-clean also writes selection.json, dev-stress also writes stress.json
-      (both write-once, next to OUT_JSON).
+      (both write-once, next to OUT_JSON). <candidate> must be the parent's candidate.
   pairfeat_compare.py freeze-validation EXPERIMENT_DIR
-      Writes EXPERIMENT_DIR/validation-manifest.json (write-once) only when selection.json selected pairfeat1 and stress.json
-      passed, all at the current git HEAD with unchanged model files.
+      Writes EXPERIMENT_DIR/validation-manifest.json (write-once) only when selection.json selected the parent's candidate
+      and stress.json passed, all at the current git HEAD with unchanged model files.
   pairfeat_compare.py preflight MODE ARM EXPERIMENT_DIR
-      Used by scripts/pairfeat_experiment.sh before any build; prints the arm's verified model-chain hashes as JSON.
+      Used by scripts/pairfeat_experiment.sh before any build; prints {"candidate", "seeds", "model_chain_sha256"} for the
+      arm as JSON (refuses an arm the parent does not serve).
 
 Experiment parent layout (EXPERIMENT_DIR)
-  artifact-manifest.json   training artifacts (written by encoder/fit_pairfeat1.py): git_head, baseline_chain_sha256,
-                           pairfeat1_chain_sha256 (other keys ignored)
-  selection.json           dev-clean result: selected_modelset "pairfeat1" only on a passing gate, else null
-  stress.json              dev-stress result: pass true/false
+  artifact-manifest.json   training artifacts (written by encoder/fit_pairfeat1.py --modelset <candidate>): git_head,
+                           baseline_chain_sha256 and exactly one <candidate>_chain_sha256 (other keys ignored)
+  selection.json           dev-clean result: candidate, selected_modelset = candidate only on a passing gate, else null
+  stress.json              dev-stress result: candidate, pass true/false
   validation-manifest.json frozen by freeze-validation; validation-clean lanes and analysis need it plus the unchanged
                            artifact-manifest/selection/stress files whose SHA256 it records (still passing at this HEAD);
                            the validation OUT_JSON is write-once
@@ -39,24 +47,29 @@ import subprocess
 import sys
 from fractions import Fraction
 
-MODES = {
-    "dev-clean": {"split": "dev", "seeds": [307, 311, 313], "rerr": "0", "errungraded": "0"},
-    "dev-stress": {"split": "dev", "seeds": [307, 311, 313], "rerr": "0.04", "errungraded": "0.25"},
-    "validation-clean": {"split": "eval", "seeds": [401, 409, 419, 421, 431], "rerr": "0", "errungraded": "0"},
+# The allowed candidate set. Each candidate has its own development seeds (also used by the baseline arm of that
+# candidate's experiment parent); validation seeds are shared.
+CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313]}, "pairfeat2": {"dev_seeds": [317, 331, 337]}}
+VALIDATION_SEEDS = [401, 409, 419, 421, 431]
+MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candidate)
+    "dev-clean": {"split": "dev", "rerr": "0", "errungraded": "0"},
+    "dev-stress": {"split": "dev", "rerr": "0.04", "errungraded": "0.25"},
+    "validation-clean": {"split": "eval", "rerr": "0", "errungraded": "0"},
 }
 FLOOR = "0.01"
 MIN_GAIN_PP = {"selection": 2.0, "validation": 1.0}
 MAX_REVIEW_GROWTH = 0.10
-ARMS = ("baseline", "pairfeat1")
+ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
-CANDIDATE = "pairfeat1"
-MODELSET = {"baseline": "", "pairfeat1": "pairfeat1"}
+MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2"}
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
     "pairfeat1": ("encoder_pairfeat1.json", "lgb_stream_pairfeat1.json", "iso_pairfeat1.json", "iso_v7_pairfeat1.json"),
+    "pairfeat2": ("encoder_pairfeat2.json", "lgb_stream_pairfeat2.json", "iso_pairfeat2.json", "iso_v7_pairfeat2.json"),
 }
-CHAIN_KEY = {"baseline": "baseline_chain_sha256", "pairfeat1": "pairfeat1_chain_sha256"}
+CHAIN_SUFFIX = "_chain_sha256"
+CHAIN_KEY = {a: a + CHAIN_SUFFIX for a in ALLOWED_ARMS}
 GATE_KINDS = ("selection", "validation", "stress")
 T_CRIT = {3: 4.303, 5: 2.776}  # two-sided 95%, df = n-1
 SAFETY = ("false_closures", "wrong_released_total", "replay_mismatch", "analysis_errors", "trace_error")
@@ -95,11 +108,34 @@ class GuardError(ValueError):
     pass
 
 
-def expected_settings(mode):
+def _check_candidate(candidate):
+    if not isinstance(candidate, str) or candidate not in CANDIDATES:
+        raise PreflightError("unknown candidate %r (allowed %s)" % (candidate, sorted(CANDIDATES)))
+    return candidate
+
+
+def arms(candidate):
+    """The two arms of an experiment parent serving this candidate."""
+    return ("baseline", _check_candidate(candidate))
+
+
+def mode_settings(mode, candidate):
+    """Split, seeds and reviewer-error settings of a mode in an experiment serving this candidate."""
     m = MODES[mode]
-    s = {"mode": mode, "split": m["split"], "seeds": list(m["seeds"]), "rerr": m["rerr"], "errungraded": m["errungraded"],
+    _check_candidate(candidate)
+    seeds = VALIDATION_SEEDS if mode == "validation-clean" else CANDIDATES[candidate]["dev_seeds"]
+    return {"split": m["split"], "seeds": list(seeds), "rerr": m["rerr"], "errungraded": m["errungraded"]}
+
+
+def modes(candidate):
+    return {mode: mode_settings(mode, candidate) for mode in MODES}
+
+
+def expected_settings(mode, candidate):
+    m = mode_settings(mode, candidate)
+    s = {"mode": mode, "split": m["split"], "seeds": m["seeds"], "rerr": m["rerr"], "errungraded": m["errungraded"],
          "linkfloor": FLOOR, "policy": POLICY, "nats_kill": False, "cohort": "crc-only", "dual": True,
-         "candidate_modelset": CANDIDATE, "candidate_modelset_commands": list(MODEL_CMDS), "arms": list(ARMS),
+         "candidate_modelset": candidate, "candidate_modelset_commands": list(MODEL_CMDS), "arms": list(arms(candidate)),
          "arms_sequential": True}
     s.update(LANE)
     return s
@@ -153,9 +189,36 @@ def _check_chain_map(m, arm, what):
         raise PreflightError("%s %s must map exactly %s to SHA256 values" % (what, CHAIN_KEY[arm], list(CHAIN_FILES[arm])))
 
 
-def _check_maps(doc, what):
-    for a in ARMS:
+def infer_candidate(doc, what):
+    """The single candidate whose <candidate>_chain_sha256 key a document carries (besides baseline_chain_sha256)."""
+    if not isinstance(doc, dict):
+        raise PreflightError("%s malformed" % what)
+    found = sorted(k[:-len(CHAIN_SUFFIX)] for k in doc
+                   if isinstance(k, str) and k.endswith(CHAIN_SUFFIX) and k != CHAIN_KEY["baseline"])
+    if len(found) != 1:
+        raise PreflightError("%s must carry exactly one candidate <candidate>%s key, found %s (allowed %s)"
+                             % (what, CHAIN_SUFFIX, found, sorted(CANDIDATES)))
+    if found[0] not in CANDIDATES:
+        raise PreflightError("%s names unknown candidate %r (allowed %s)" % (what, found[0], sorted(CANDIDATES)))
+    return found[0]
+
+
+def _check_maps(doc, candidate, what):
+    for a in arms(candidate):
         _check_chain_map(doc.get(CHAIN_KEY[a]), a, what)
+
+
+def _check_recorded_candidate(doc, candidate, what):
+    """A frozen decision file records the candidate it was computed for and carries only that candidate's chain."""
+    if doc.get("candidate") != candidate:
+        raise PreflightError("%s candidate %r is not this experiment's candidate %s" % (what, doc.get("candidate"), candidate))
+    if infer_candidate(doc, what) != candidate:
+        raise PreflightError("%s carries another candidate's chain" % what)
+
+
+def _check_arm(arm, candidate, what):
+    if arm not in arms(candidate):
+        raise PreflightError("arm %s is not served by this experiment: %s serves candidate %s" % (arm, what, candidate))
 
 
 def _check_files_match(repo, arm, frozen, what):
@@ -167,93 +230,114 @@ def _check_files_match(repo, arm, frozen, what):
 
 
 def check_artifact_manifest(am, head):
+    """Returns the candidate the experiment parent serves."""
     if not isinstance(am, dict) or not _is_hex(am.get("git_head"), 40):
         raise PreflightError("artifact-manifest.json needs a full git_head")
     if am["git_head"] != head:
         raise PreflightError("artifact-manifest.json git_head does not match current HEAD")
-    _check_maps(am, "artifact-manifest.json")
+    candidate = infer_candidate(am, "artifact-manifest.json")
+    _check_maps(am, candidate, "artifact-manifest.json")
+    return candidate
 
 
-def check_selection(sel, am, head):
+def check_selection(sel, am, head, candidate):
     if not isinstance(sel, dict):
         raise PreflightError("selection.json malformed")
-    if sel.get("selected_modelset") != CANDIDATE or sel.get("pass") is not True:
-        raise PreflightError("selection.json did not select pairfeat1")
-    if sel.get("mode") != "dev-clean" or sel.get("seeds") != MODES["dev-clean"]["seeds"]:
+    if sel.get("selected_modelset") != candidate or sel.get("pass") is not True:
+        raise PreflightError("selection.json did not select %s" % candidate)
+    _check_recorded_candidate(sel, candidate, "selection.json")
+    if sel.get("mode") != "dev-clean" or sel.get("seeds") != mode_settings("dev-clean", candidate)["seeds"]:
         raise PreflightError("selection.json mode/seeds are not the dev-clean selection")
     if sel.get("git_head") != head:
         raise PreflightError("selection.json git_head does not match current HEAD")
-    for a in ARMS:
+    for a in arms(candidate):
         if sel.get(CHAIN_KEY[a]) != am[CHAIN_KEY[a]]:
             raise PreflightError("selection.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
 
 
-def check_stress(st, am, head, selection_sha):
+def check_stress(st, am, head, selection_sha, candidate):
     if not isinstance(st, dict) or st.get("pass") is not True:
         raise PreflightError("stress.json did not pass")
-    if st.get("mode") != "dev-stress" or st.get("seeds") != MODES["dev-stress"]["seeds"]:
+    _check_recorded_candidate(st, candidate, "stress.json")
+    if st.get("mode") != "dev-stress" or st.get("seeds") != mode_settings("dev-stress", candidate)["seeds"]:
         raise PreflightError("stress.json mode/seeds are not the dev-stress lanes")
     if st.get("git_head") != head:
         raise PreflightError("stress.json git_head does not match current HEAD")
     if st.get("selection_sha256") != selection_sha:
         raise PreflightError("stress.json was not computed against this selection.json")
-    for a in ARMS:
+    for a in arms(candidate):
         if st.get(CHAIN_KEY[a]) != am[CHAIN_KEY[a]]:
             raise PreflightError("stress.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
 
 
 def check_validation_manifest(vm, repo, head):
+    """Returns the candidate the frozen manifest records."""
     if not isinstance(vm, dict) or not _is_hex(vm.get("git_head"), 40):
         raise PreflightError("validation-manifest.json needs a full git_head")
     if vm["git_head"] != head:
         raise PreflightError("validation-manifest.json git_head does not match current HEAD")
-    if vm.get("mode") != "validation-clean" or vm.get("seeds") != MODES["validation-clean"]["seeds"]:
+    candidate = vm.get("candidate")
+    if candidate not in CANDIDATES:
+        raise PreflightError("validation-manifest.json candidate %r is not an allowed candidate" % (candidate,))
+    _check_recorded_candidate(vm, candidate, "validation-manifest.json")
+    if vm.get("mode") != "validation-clean" or vm.get("seeds") != mode_settings("validation-clean", candidate)["seeds"]:
         raise PreflightError("validation-manifest.json seeds/mode are not the frozen validation seeds")
-    if vm.get("selected_modelset") != CANDIDATE:
-        raise PreflightError("validation-manifest.json selected_modelset is not pairfeat1")
-    if vm.get("settings") != expected_settings("validation-clean"):
+    if vm.get("selected_modelset") != candidate:
+        raise PreflightError("validation-manifest.json selected_modelset is not %s" % candidate)
+    if vm.get("settings") != expected_settings("validation-clean", candidate):
         raise PreflightError("validation-manifest.json settings differ from the protected validation settings")
     if vm.get("runner_sha256") != sha256_file(os.path.join(repo, RUNNER_REL)):
         raise PreflightError("validation-manifest.json runner_sha256 does not match scripts/pairfeat_experiment.sh")
     if vm.get("analyzer_sha256") != sha256_file(os.path.join(repo, ANALYZER_REL)):
         raise PreflightError("validation-manifest.json analyzer_sha256 does not match scripts/pairfeat_compare.py")
-    _check_maps(vm, "validation-manifest.json")
+    _check_maps(vm, candidate, "validation-manifest.json")
+    return candidate
 
 
 def check_frozen_validation(vm, exp_dir, repo, head):
     """A validation-manifest.json authorises validation only if it is what freeze-validation would write now: its own
-    fields match HEAD, seeds, settings and the runner/analyzer SHA256, and the recorded artifact-manifest, selection and
-    stress SHA256 still match those files, which must still be a passing selection and stress at this HEAD."""
-    check_validation_manifest(vm, repo, head)
+    fields match HEAD, candidate, seeds, settings and the runner/analyzer SHA256, and the recorded artifact-manifest,
+    selection and stress SHA256 still match those files, which must still be a passing selection and stress at this HEAD
+    for the same candidate. Returns the candidate."""
+    candidate = check_validation_manifest(vm, repo, head)
     ap, sp, tp = (os.path.join(exp_dir, n) for n in (ARTIFACT_MANIFEST, SELECTION, STRESS))
     for key, path in (("artifact_manifest_sha256", ap), ("selection_sha256", sp), ("stress_sha256", tp)):
         _read_json(path)  # regular file required
         if not _is_hex(vm.get(key), 64) or vm[key] != sha256_file(path):
             raise PreflightError("validation-manifest.json %s does not match %s" % (key, os.path.basename(path)))
     am = _read_json(ap)
-    check_artifact_manifest(am, head)
-    for a in ARMS:
+    if check_artifact_manifest(am, head) != candidate:
+        raise PreflightError("validation-manifest.json candidate %s is not the artifact-manifest.json candidate" % candidate)
+    for a in arms(candidate):
         if vm[CHAIN_KEY[a]] != am[CHAIN_KEY[a]]:
             raise PreflightError("validation-manifest.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
-    check_selection(_read_json(sp), am, head)
-    check_stress(_read_json(tp), am, head, sha256_file(sp))
+    check_selection(_read_json(sp), am, head, candidate)
+    check_stress(_read_json(tp), am, head, sha256_file(sp), candidate)
+    return candidate
+
+
+def preflight_identity(mode, arm, exp_dir, repo, head):
+    """All refusals that must happen before any build. Returns (candidate, the arm's verified model-chain hashes)."""
+    if mode not in MODES:
+        raise PreflightError("invalid mode: %r" % (mode,))
+    if arm not in ALLOWED_ARMS:
+        raise PreflightError("invalid arm: %r" % (arm,))
+    if mode == "validation-clean":  # authorised only by a frozen manifest whose upstream files still verify
+        vm = _read_json(os.path.join(exp_dir, VALIDATION_MANIFEST))
+        candidate = check_frozen_validation(vm, exp_dir, repo, head)
+        _check_arm(arm, candidate, VALIDATION_MANIFEST)
+        return candidate, _check_files_match(repo, arm, vm[CHAIN_KEY[arm]], "validation-manifest.json")
+    am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
+    candidate = check_artifact_manifest(am, head)
+    _check_arm(arm, candidate, ARTIFACT_MANIFEST)
+    if mode == "dev-stress":
+        check_selection(_read_json(os.path.join(exp_dir, SELECTION)), am, head, candidate)
+    return candidate, _check_files_match(repo, arm, am[CHAIN_KEY[arm]], "artifact-manifest.json")
 
 
 def preflight(mode, arm, exp_dir, repo, head):
     """All refusals that must happen before any build. Returns the arm's verified model-chain hashes."""
-    if mode not in MODES:
-        raise PreflightError("invalid mode: %r" % (mode,))
-    if arm not in ARMS:
-        raise PreflightError("invalid arm: %r" % (arm,))
-    if mode == "validation-clean":  # authorised only by a frozen manifest whose upstream files still verify
-        vm = _read_json(os.path.join(exp_dir, VALIDATION_MANIFEST))
-        check_frozen_validation(vm, exp_dir, repo, head)
-        return _check_files_match(repo, arm, vm[CHAIN_KEY[arm]], "validation-manifest.json")
-    am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
-    check_artifact_manifest(am, head)
-    if mode == "dev-stress":
-        check_selection(_read_json(os.path.join(exp_dir, SELECTION)), am, head)
-    return _check_files_match(repo, arm, am[CHAIN_KEY[arm]], "artifact-manifest.json")
+    return preflight_identity(mode, arm, exp_dir, repo, head)[1]
 
 
 def freeze_validation(exp_dir, repo=REPO, head=None):
@@ -264,17 +348,17 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
         raise PreflightError("validation-manifest.json already exists; it is frozen and never rewritten")
     ap, sp, tp = (os.path.join(exp_dir, n) for n in (ARTIFACT_MANIFEST, SELECTION, STRESS))
     am = _read_json(ap)
-    check_artifact_manifest(am, head)
-    check_selection(_read_json(sp), am, head)
-    check_stress(_read_json(tp), am, head, sha256_file(sp))
-    for a in ARMS:
+    candidate = check_artifact_manifest(am, head)
+    check_selection(_read_json(sp), am, head, candidate)
+    check_stress(_read_json(tp), am, head, sha256_file(sp), candidate)
+    for a in arms(candidate):
         _check_files_match(repo, a, am[CHAIN_KEY[a]], "artifact-manifest.json")
-    vm = {"git_head": head, "mode": "validation-clean", "seeds": list(MODES["validation-clean"]["seeds"]),
-          "selected_modelset": CANDIDATE,
-          "baseline_chain_sha256": dict(am["baseline_chain_sha256"]), "pairfeat1_chain_sha256": dict(am["pairfeat1_chain_sha256"]),
+    vm = {"git_head": head, "mode": "validation-clean", "seeds": mode_settings("validation-clean", candidate)["seeds"],
+          "candidate": candidate, "selected_modelset": candidate,
+          "baseline_chain_sha256": dict(am["baseline_chain_sha256"]), CHAIN_KEY[candidate]: dict(am[CHAIN_KEY[candidate]]),
           "runner_sha256": sha256_file(os.path.join(repo, RUNNER_REL)),
           "analyzer_sha256": sha256_file(os.path.join(repo, ANALYZER_REL)),
-          "settings": expected_settings("validation-clean"),
+          "settings": expected_settings("validation-clean", candidate),
           "artifact_manifest_sha256": sha256_file(ap), "selection_sha256": sha256_file(sp), "stress_sha256": sha256_file(tp),
           "note": "frozen before any validation lane; eval/v2 seeds are not inspected before this file exists"}
     _write_once(vp, vm)
@@ -285,13 +369,16 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
 
 def lane_commands(root, bin_, o, seed, mode, arm):
     """(name, argv, log) for one lane. gen/sim/augment are identical in both arms (identical cohort and truth denominator);
-    only the candidate's orchestrate/audit/report7 carry -modelset pairfeat1. Both arms use -linkfloor 0.01 and v7strict."""
+    only the candidate's orchestrate/audit/report7 carry -modelset <candidate>. Both arms use -linkfloor 0.01 and v7strict.
+    The seed is the caller's; guard() checks it against the experiment candidate's seed set."""
+    if arm not in ALLOWED_ARMS:
+        raise ValueError("invalid arm " + repr(arm))
     m = MODES[mode]
     split, rerr, erru = m["split"], m["rerr"], m["errungraded"]
     r = o + "/run/main"
     rd = ["-reader", LANE["reader"], "-image", LANE["image"]]
     lf = ["-linkfloor", FLOOR]
-    ms = ["-modelset", CANDIDATE] if arm == CANDIDATE else []
+    ms = ["-modelset", MODELSET[arm]] if MODELSET[arm] else []
     gen = [bin_, "gen", "-wasl", root + "/data", "-reports", root + "/data/evidence/reports43.json",
            "-pathology", root + "/data/evidence/pathology_templates.json",
            "-ecpool", root + "/patient-parsers/econsult_testset.json", "-tbpool", root + "/patient-parsers/teachback_testset.json",
@@ -311,23 +398,25 @@ def lane_commands(root, bin_, o, seed, mode, arm):
             ("report7", [bin_, "report7"] + tail, "report7.log"), ("classifier", cls, "classifier.log")]
 
 
-def guard(argv, mode, arm, bin_):
-    """Refuse any subprocess argument outside the protected settings for this mode and arm."""
+def guard(argv, mode, arm, bin_, candidate):
+    """Refuse any subprocess argument outside the protected settings for this mode, arm and experiment candidate."""
     def bad(msg):
         raise GuardError(msg + ": " + " ".join(str(a) for a in argv[:2]))
     if mode not in MODES:
         raise GuardError("invalid mode")
-    if arm not in ARMS:
-        raise GuardError("invalid arm")
+    if not isinstance(candidate, str) or candidate not in CANDIDATES:
+        raise GuardError("invalid candidate")
+    if arm not in arms(candidate):
+        raise GuardError("invalid arm %r for the %s experiment" % (arm, candidate))
     if not isinstance(argv, list) or len(argv) < 3 or not all(isinstance(a, str) for a in argv):
         raise GuardError("malformed argv")
-    m = MODES[mode]
+    m = mode_settings(mode, candidate)
     for a in argv:
         low = a.lower()
         if "frozen" in low or "b8" in low or "heldout" in low:
             bad("protected setting " + a)
         if "v7ltt" in low:
-            bad("v7ltt is not permitted (pairfeat1 supports v7strict only)")
+            bad("v7ltt is not permitted (pairfeat candidates support v7strict only)")
         if a.startswith("--") or (a.startswith("-") and "=" in a):
             bad("only single-dash separate-value flags are allowed: " + a)
 
@@ -433,7 +522,7 @@ def check_funnel_modelset(funnel, arm):
     cfg = funnel.get("config")
     if not isinstance(cfg, dict) or "modelset" not in cfg:
         raise ValueError("funnel config.modelset missing")
-    if not isinstance(cfg["modelset"], str) or cfg["modelset"] != MODELSET[arm]:
+    if arm not in MODELSET or not isinstance(cfg["modelset"], str) or cfg["modelset"] != MODELSET[arm]:
         raise ValueError("funnel modelset %r does not match arm %s" % (cfg["modelset"], arm))
 
 
@@ -445,13 +534,17 @@ def check_funnel_scope(funnel, mode):
         raise ValueError("funnel scope %r does not match mode %s" % (sc, mode))
 
 
-def read_build(root, arm, mode):
+def read_build(root, arm, mode, candidate):
+    if candidate not in CANDIDATES or arm not in arms(candidate):
+        raise ValueError("arm %r is not an arm of the %r experiment" % (arm, candidate))
     with open(os.path.join(root, "build.json")) as h:
         b = json.load(h)
     if not _is_hex(b.get("git_head"), 40) or not _is_hex(b.get("binary_sha256"), 64):
         raise ValueError("build.json needs full git_head and binary_sha256")
     if b.get("arm") != arm or b.get("modelset") != MODELSET[arm] or b.get("mode") != mode:
         raise ValueError("build.json arm/modelset/mode do not match %s %s" % (arm, mode))
+    if b.get("candidate") != candidate:
+        raise ValueError("build.json candidate %r is not the experiment candidate %s" % (b.get("candidate"), candidate))
     fl = b.get("floor")
     if isinstance(fl, bool) or not isinstance(fl, (int, float)) or fl != float(FLOOR):
         raise ValueError("build.json floor must be 0.01")
@@ -521,7 +614,7 @@ def lane_metrics(seed, report7, funnel, status, load):
 
 
 def aggregate_arm(arm, lanes):
-    if arm not in ARMS:
+    if arm not in ALLOWED_ARMS:
         raise ValueError("invalid arm " + repr(arm))
     a = {"arm": arm, "modelset": MODELSET[arm], "per_seed": {str(l["seed"]): l for l in lanes}}
     a["tp"] = sum(l["tp"] for l in lanes)
@@ -563,8 +656,9 @@ def gate(base, cand, kind):
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
-    if base.get("arm") != "baseline" or cand.get("arm") != CANDIDATE:
-        reasons.append("arms must be baseline vs pairfeat1")
+    ck = cand.get("arm") if cand.get("arm") in CANDIDATES else "candidate"
+    if base.get("arm") != "baseline" or cand.get("arm") not in CANDIDATES:
+        reasons.append("arms must be baseline vs a candidate (%s)" % "/".join(sorted(CANDIDATES)))
     if base["truth_closed"] != cand["truth_closed"]:
         reasons.append("truth_closed differs between arms")
     need = MIN_GAIN_PP.get(kind, 0.0)
@@ -590,13 +684,16 @@ def gate(base, cand, kind):
     if (bd == 0 and cd != 0) or cd > limit:
         reasons.append("distinct link-review pairs %d exceed %.2f (baseline %d +%d%%)" % (cd, float(limit), bd, round(100 * MAX_REVIEW_GROWTH)))
     return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
-            "distinct_pairs": {"baseline": bd, "pairfeat1": cd, "max_allowed": float(limit)}, "reasons": reasons}
+            "distinct_pairs": {"baseline": bd, ck: cd, "max_allowed": float(limit)}, "reasons": reasons}
 
 
 def select(base, cand):
+    c = cand.get("arm")
+    if c not in CANDIDATES:
+        raise ValueError("selection needs a candidate arm, got %r" % (c,))
     g = gate(base, cand, "selection")
-    return {"selected_modelset": CANDIDATE if g["pass"] else None, "pass": g["pass"], "gate": g,
-            "baseline_recall": _recall(base), "pairfeat1_recall": _recall(cand)}
+    return {"candidate": c, "selected_modelset": c if g["pass"] else None, "pass": g["pass"], "gate": g,
+            "baseline_recall": _recall(base), c + "_recall": _recall(cand)}
 
 
 def _recall(a):
@@ -625,39 +722,46 @@ def _load_lane(path, seed, arm, mode):
 
 def analyse(mode, out, roots, repo=REPO, head=None):
     exp = os.path.dirname(os.path.abspath(out))
-    seeds = MODES[mode]["seeds"]
+    named = sorted(set(roots) - {"baseline"})
+    if "baseline" not in roots or len(roots) != 2 or len(named) != 1 or named[0] not in CANDIDATES:
+        raise ValueError("analysis needs exactly baseline and one candidate arm (%s), got %s" % (sorted(CANDIDATES), sorted(roots)))
     try:
         if mode == "validation-clean":
             gov = _read_json(os.path.join(exp, VALIDATION_MANIFEST))
-            check_frozen_validation(gov, exp, repo, head or git_head(repo))
+            candidate = check_frozen_validation(gov, exp, repo, head or git_head(repo))
             gov_name = VALIDATION_MANIFEST
         else:
             gov = _read_json(os.path.join(exp, ARTIFACT_MANIFEST))
             gov_name = ARTIFACT_MANIFEST
-        _check_maps(gov, gov_name)
+            candidate = infer_candidate(gov, gov_name)
+        _check_maps(gov, candidate, gov_name)
     except PreflightError as e:
         raise OSError(str(e)) if "missing" in str(e) else ValueError(str(e))
-    builds, arms = {}, {}
-    for a in ARMS:
-        b = read_build(roots[a], a, mode)
+    if named[0] != candidate:
+        raise ValueError("candidate arm %s is not the experiment candidate %s (%s)" % (named[0], candidate, gov_name))
+    seeds = mode_settings(mode, candidate)["seeds"]
+    builds, arm_res = {}, {}
+    for a in arms(candidate):
+        b = read_build(roots[a], a, mode, candidate)
         if b["model_chain_sha256"] != gov[CHAIN_KEY[a]]:
             raise ValueError("arm %s model_chain_sha256 disagrees with %s" % (a, gov_name))
         builds[a] = b
-        arms[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode) for s in seeds])
-        arms[a]["build"] = b
-    if builds["baseline"]["git_head"] != builds[CANDIDATE]["git_head"]:
+        arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode) for s in seeds])
+        arm_res[a]["build"] = b
+    if builds["baseline"]["git_head"] != builds[candidate]["git_head"]:
         raise ValueError("arms were built at different git heads")
-    if builds["baseline"]["binary_sha256"] != builds[CANDIDATE]["binary_sha256"]:
+    if builds["baseline"]["binary_sha256"] != builds[candidate]["binary_sha256"]:
         raise ValueError("arms used different binaries")
     head = builds["baseline"]["git_head"]
     if gov.get("git_head") != head:
         raise ValueError("arm builds are not at the %s git_head" % gov_name)
-    base, cand = arms["baseline"], arms[CANDIDATE]
-    res = {"mode": mode, "seeds": seeds, "arms": arms, "git_head": head, "binary_sha256": builds["baseline"]["binary_sha256"],
+    base, cand = arm_res["baseline"], arm_res[candidate]
+    res = {"mode": mode, "candidate": candidate, "seeds": seeds, "arms": arm_res, "git_head": head,
+           "binary_sha256": builds["baseline"]["binary_sha256"],
            "paired_gain_t95": paired_gain_interval(base, cand),
            "note": "simulated; t intervals use n=%d seeds: small-n, descriptive only" % len(seeds)}
-    ident = {"mode": mode, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
-             "baseline_chain_sha256": gov["baseline_chain_sha256"], "pairfeat1_chain_sha256": gov["pairfeat1_chain_sha256"],
+    ident = {"mode": mode, "candidate": candidate, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
+             "baseline_chain_sha256": gov["baseline_chain_sha256"], CHAIN_KEY[candidate]: gov[CHAIN_KEY[candidate]],
              "governing_manifest_sha256": sha256_file(os.path.join(exp, gov_name))}
     if mode == "dev-clean":
         sel = select(base, cand)
@@ -667,7 +771,7 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     elif mode == "dev-stress":
         sp = os.path.join(exp, SELECTION)
         try:
-            check_selection(_read_json(sp), gov, head)
+            check_selection(_read_json(sp), gov, head, candidate)
         except PreflightError as e:
             raise ValueError("dev-stress needs a passing selection: " + str(e))
         g = gate(base, cand, "stress")
@@ -693,29 +797,36 @@ def main(argv):
         except PreflightError as e:
             print("freeze refused: " + str(e), file=sys.stderr)
             return 2
-        print(json.dumps({"frozen": VALIDATION_MANIFEST, "git_head": vm["git_head"], "seeds": vm["seeds"]}, sort_keys=True))
+        print(json.dumps({"frozen": VALIDATION_MANIFEST, "git_head": vm["git_head"], "candidate": vm["candidate"],
+                          "seeds": vm["seeds"]}, sort_keys=True))
         return 0
     if argv[:1] == ["preflight"]:
         if len(argv) != 4:
             print("usage: pairfeat_compare.py preflight MODE ARM EXPERIMENT_DIR", file=sys.stderr)
             return 2
         try:
-            print(json.dumps(preflight(argv[1], argv[2], argv[3], REPO, git_head(REPO)), sort_keys=True))
+            candidate, chain = preflight_identity(argv[1], argv[2], argv[3], REPO, git_head(REPO))
         except PreflightError as e:
             print("preflight refused: " + str(e), file=sys.stderr)
             return 2
+        print(json.dumps({"candidate": candidate, "seeds": mode_settings(argv[1], candidate)["seeds"],
+                          "model_chain_sha256": chain}, sort_keys=True))
         return 0
-    usage = "usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT pairfeat1=ROOT | freeze-validation EXPERIMENT_DIR"
+    usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT <candidate>=ROOT (candidate %s) "
+             "| freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR" % "|".join(sorted(CANDIDATES)))
     if len(argv) != 4 or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
         print(usage, file=sys.stderr)
         return 2
     roots = {}
     for a in argv[2:]:
         name, _, root = a.partition("=")
-        if name not in ARMS or name in roots or not root:
+        if name not in ALLOWED_ARMS or name in roots or not root:
             print("bad or repeated arm " + name, file=sys.stderr)
             return 2
         roots[name] = root
+    if "baseline" not in roots:
+        print("a baseline arm is required: " + usage, file=sys.stderr)
+        return 2
     res = analyse(argv[0], argv[1], roots)
     print(json.dumps(res["gate"], sort_keys=True))
     return 0

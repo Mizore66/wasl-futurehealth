@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # One protected paired CRC pair-scorer lane set (all seeds of a mode) for one model arm. No paid model use.
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
-#   MODE  dev-clean (dev; 307 311 313; rerr 0/0) | dev-stress (dev; 307 311 313; rerr 0.04, ungraded 0.25)
+#   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
 #         | validation-clean (eval; 401 409 419 421 431; rerr 0/0)
-#   ARM   baseline (default modelset) | pairfeat1 (-modelset pairfeat1 on orchestrate/audit/report7 only)
+#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 (-modelset <candidate> on orchestrate/audit/report7 only)
+# Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337. The experiment parent serves exactly one candidate,
+# inferred from the single <candidate>_chain_sha256 key of its artifact-manifest.json (or, for validation, the candidate
+# its frozen validation-manifest.json records); ARM must be baseline or that candidate, and the baseline arm uses the
+# candidate's seeds.
 # Both arms: -linkfloor 0.01, -policy v7strict; gen/sim/augment are identical, so cohort and truth denominator match.
 # NEW_ROOT must be a new path under ~/wasl-ml-data (one root per arm; never reused or deleted). Its parent is the
 # experiment directory, which holds (see scripts/pairfeat_compare.py):
-#   artifact-manifest.json   training artifacts: git_head + baseline/pairfeat1 model-chain SHA256 (required by dev modes)
-#   selection.json           written by `pairfeat_compare.py dev-clean`; dev-stress needs selected_modelset "pairfeat1"
+#   artifact-manifest.json   training artifacts: git_head + baseline and one candidate model-chain SHA256 (required by dev modes)
+#   selection.json           written by `pairfeat_compare.py dev-clean`; dev-stress needs selected_modelset = the candidate
 #   stress.json              written by `pairfeat_compare.py dev-stress`; consumed by `pairfeat_compare.py freeze-validation`
 #   validation-manifest.json written by `pairfeat_compare.py freeze-validation`; authorises validation-clean only while the
 #                            artifact-manifest/selection/stress files it hashes are unchanged and still pass
@@ -18,7 +22,7 @@
 # All refusals happen before any build. PAIRFEAT_PREFLIGHT_ONLY=1 stops after the refusals (tests; nothing is built or created).
 # The tracked tree must be clean and pipeline/ and scripts/ must have no untracked files before any build.
 # Arms must run sequentially (shared bin/wsi7, removed on exit); build.json records git head, binary SHA256, mode, arm,
-# modelset, floor 0.01 and the arm's model-chain SHA256. Cached reader, image off, FHIR, chaos 0, subkill 1, no NATS kill, HNSW.
+# candidate, modelset, floor 0.01 and the arm's model-chain SHA256. Cached reader, image off, FHIR, chaos 0, subkill 1, no NATS kill, HNSW.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="/opt/anaconda3/bin:$PATH"
@@ -27,12 +31,12 @@ while read -r v; do [ -n "$v" ] && unset "$v"; done < <(compgen -e | grep '^WASL
 [ "$#" -eq 3 ] && [ -n "$1" ] || { echo "usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM" >&2; exit 2; }
 REQ="$1"; MODE="$2"; ARM="$3"
 case "$MODE" in
-  dev-clean)        SPLIT=dev;  SEEDS="307 311 313";             RERR=0;    ERRU=0;;
-  dev-stress)       SPLIT=dev;  SEEDS="307 311 313";             RERR=0.04; ERRU=0.25;;
-  validation-clean) SPLIT=eval; SEEDS="401 409 419 421 431";     RERR=0;    ERRU=0;;
+  dev-clean)        SPLIT=dev;  RERR=0;    ERRU=0;;
+  dev-stress)       SPLIT=dev;  RERR=0.04; ERRU=0.25;;
+  validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -45,10 +49,24 @@ PARENT="$(dirname "$REQ")"
 PARENT="$(cd "$PARENT" && pwd -P)"
 case "$PARENT/" in "$DATA_BASE"/*) ;; *) echo "root resolves outside ~/wasl-ml-data" >&2; exit 2;; esac
 
-# identity refusals (artifact manifest, passing selection, frozen validation manifest, model-chain SHA256) before any build
-python3 -I "$ROOT/scripts/pairfeat_compare.py" preflight "$MODE" "$ARM" "$PARENT" >/dev/null \
+# identity refusals (artifact manifest + its one candidate, passing selection, frozen validation manifest, model-chain
+# SHA256) before any build
+PF="$(python3 -I "$ROOT/scripts/pairfeat_compare.py" preflight "$MODE" "$ARM" "$PARENT")" \
   || { echo "preflight refused: $MODE $ARM lanes are not authorised by the manifests in $PARENT" >&2; exit 2; }
-if [ "${PAIRFEAT_PREFLIGHT_ONLY:-}" = 1 ]; then echo "preflight ok ($MODE $ARM); PAIRFEAT_PREFLIGHT_ONLY set, nothing built"; exit 0; fi
+CAND="$(printf '%s\n' "$PF" | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["candidate"])')" \
+  || { echo "preflight refused: no experiment candidate reported for $PARENT" >&2; exit 2; }
+# independent seed table (cross-checked against pairfeat_compare.CANDIDATES before any lane)
+VAL_SEEDS="401 409 419 421 431"
+case "$CAND" in
+  pairfeat1) DEV_SEEDS="307 311 313";;
+  pairfeat2) DEV_SEEDS="317 331 337";;
+  *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
+esac
+case "$ARM" in baseline|"$CAND") ;; *) echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2;; esac
+if [ "$MODE" = validation-clean ]; then SEEDS="$VAL_SEEDS"; else SEEDS="$DEV_SEEDS"; fi
+if [ "${PAIRFEAT_PREFLIGHT_ONLY:-}" = 1 ]; then
+  echo "preflight ok ($MODE $ARM; candidate $CAND seeds $SEEDS); PAIRFEAT_PREFLIGHT_ONLY set, nothing built"; exit 0
+fi
 
 DIRTY="$(git -C "$ROOT" status --porcelain --untracked-files=all -- pipeline scripts | grep -v '__pycache__' || true)"
 TRACKED="$(git -C "$ROOT" diff HEAD --name-only)"
@@ -56,22 +74,25 @@ if [ -n "$DIRTY" ] || [ -n "$TRACKED" ]; then echo "working tree not clean (trac
 
 # independent re-check on the clean tree: the governing manifest is bound to this exact HEAD (and, for validation, these scripts)
 HEAD="$(git -C "$ROOT" rev-parse HEAD)"
-python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" <<'PY' \
-  || { echo "manifest is not bound to the current clean HEAD; refusing to build" >&2; exit 2; }
+python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" "$CAND" <<'PY' \
+  || { echo "manifest is not bound to the current clean HEAD and candidate; refusing to build" >&2; exit 2; }
 import hashlib, json, os, sys
-parent, mode, head, runner, analyzer = sys.argv[1:6]
+parent, mode, head, runner, analyzer, cand = sys.argv[1:7]
 sha = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()
 name = "validation-manifest.json" if mode == "validation-clean" else "artifact-manifest.json"
 with open(os.path.join(parent, name)) as h:
     m = json.load(h)
 if m.get("git_head") != head:
     sys.exit(1)
-if mode == "validation-clean" and (m.get("runner_sha256") != sha(runner) or m.get("analyzer_sha256") != sha(analyzer)):
+if [k for k in m if k.endswith("_chain_sha256") and k != "baseline_chain_sha256"] != [cand + "_chain_sha256"]:
+    sys.exit(1)  # exactly one candidate chain, and it is this run's candidate
+if mode == "validation-clean" and (m.get("runner_sha256") != sha(runner) or m.get("analyzer_sha256") != sha(analyzer)
+                                   or m.get("candidate") != cand):
     sys.exit(1)
 if mode == "dev-stress":
     with open(os.path.join(parent, "selection.json")) as h:
         s = json.load(h)
-    if s.get("git_head") != head or s.get("selected_modelset") != "pairfeat1" or s.get("pass") is not True:
+    if s.get("git_head") != head or s.get("selected_modelset") != cand or s.get("candidate") != cand or s.get("pass") is not True:
         sys.exit(1)
 PY
 
@@ -83,33 +104,35 @@ mkdir "$WORK"
 trap 'rm -f "$ROOT/bin/wsi7"' EXIT
 
 # per-arm identity before any lane: full git head + SHA256 of the freshly built binary + the arm's verified model chain
-python3 -I - "$ROOT" "$WORK" "$PARENT" "$HEAD" "$ROOT/bin/wsi7" "$MODE" "$ARM" <<'PY'
+python3 -I - "$ROOT" "$WORK" "$PARENT" "$HEAD" "$ROOT/bin/wsi7" "$MODE" "$ARM" "$CAND" <<'PY'
 import hashlib, json, os, sys
-root, work, parent, head, binp, mode, arm = sys.argv[1:8]
+root, work, parent, head, binp, mode, arm, cand = sys.argv[1:9]
 sys.path.insert(0, os.path.join(root, "scripts"))
 import pairfeat_compare as pfc
-chain = pfc.preflight(mode, arm, parent, root, head)  # re-verified after the build, immediately before recording
+got, chain = pfc.preflight_identity(mode, arm, parent, root, head)  # re-verified after the build, immediately before recording
+if got != cand:
+    sys.exit("experiment candidate changed since preflight (%s != %s)" % (got, cand))
 with open(binp, "rb") as h:
     sha = hashlib.sha256(h.read()).hexdigest()
 with open(os.path.join(work, "build.json"), "w") as h:
-    json.dump({"git_head": head, "binary_sha256": sha, "mode": mode, "arm": arm, "modelset": pfc.MODELSET[arm],
+    json.dump({"git_head": head, "binary_sha256": sha, "mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm],
                "floor": float(pfc.FLOOR), "policy": pfc.POLICY, "model_chain_sha256": chain}, h, indent=1, sort_keys=True)
 PY
 
-python3 -I - "$ROOT" "$WORK" "$MODE" "$ARM" "$SPLIT" "$RERR" "$ERRU" $SEEDS <<'PY'
+python3 -I - "$ROOT" "$WORK" "$MODE" "$ARM" "$CAND" "$SPLIT" "$RERR" "$ERRU" $SEEDS <<'PY'
 import json, os, subprocess, sys
-root, work, mode, arm, split, rerr, erru = sys.argv[1:8]
-seeds = [int(x) for x in sys.argv[8:]]
+root, work, mode, arm, cand, split, rerr, erru = sys.argv[1:9]
+seeds = [int(x) for x in sys.argv[9:]]
 sys.path.insert(0, os.path.join(root, "scripts"))
 import pairfeat_compare as pfc
-m = pfc.MODES[mode]
-if (m["split"], m["seeds"], m["rerr"], m["errungraded"]) != (split, seeds, rerr, erru) or arm not in pfc.ARMS:
+m = pfc.mode_settings(mode, cand)
+if (m["split"], m["seeds"], m["rerr"], m["errungraded"]) != (split, seeds, rerr, erru) or arm not in pfc.arms(cand):
     sys.exit("mode settings mismatch")
 bin_ = os.path.join(root, "bin", "wsi7")
 
 def run(argv, log):
     try:
-        pfc.guard(argv, mode, arm, bin_)
+        pfc.guard(argv, mode, arm, bin_, cand)
     except pfc.GuardError as e:
         sys.stderr.write("REFUSED by guard: %s\n" % e)
         sys.exit(2)
@@ -132,13 +155,13 @@ for seed in seeds:
         run(argv, os.path.join(o, log))
 PY
 
-python3 -I - "$ROOT" "$WORK" "$MODE" "$ARM" $SEEDS <<'PY'
+python3 -I - "$ROOT" "$WORK" "$MODE" "$ARM" "$CAND" $SEEDS <<'PY'
 import json, os, sys
-root, work, mode, arm = sys.argv[1:5]
-seeds = [int(x) for x in sys.argv[5:]]
+root, work, mode, arm, cand = sys.argv[1:6]
+seeds = [int(x) for x in sys.argv[6:]]
 sys.path.insert(0, os.path.join(root, "scripts"))
 import pairfeat_compare as pfc
-if pfc.MODES[mode]["seeds"] != seeds:
+if pfc.mode_settings(mode, cand)["seeds"] != seeds or arm not in pfc.arms(cand):
     sys.exit("seed mismatch")
 lanes = []
 for seed in seeds:
@@ -147,12 +170,11 @@ for seed in seeds:
         sys.exit("seed %d: analysis/trace-write error or replay mismatch" % seed)
     lanes.append(lm)
 out = pfc.aggregate_arm(arm, lanes)
-with open(os.path.join(work, "build.json")) as h:
-    out["build"] = json.load(h)
-out["scope"] = {"mode": mode, "arm": arm, "modelset": pfc.MODELSET[arm], "floor": float(pfc.FLOOR), "policy": pfc.POLICY,
+out["build"] = pfc.read_build(work, arm, mode, cand)
+out["scope"] = {"mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm], "floor": float(pfc.FLOOR), "policy": pfc.POLICY,
                 "seeds": seeds, "reader": "cached", "image": "off", "chaos": 0, "nats_kill": False,
                 "note": "simulated; tp = report7 programmes_live.crc.pred_closed - false_closures; link attach rate is separate"}
 with open(os.path.join(work, "summary.json"), "w") as h:
     json.dump(out, h, indent=1, sort_keys=True)
-print(json.dumps({"arm": arm, "mode": mode, "recall": out["recall"], "tp": out["tp"], "truth_closed": out["truth_closed"]}, sort_keys=True))
+print(json.dumps({"arm": arm, "candidate": cand, "mode": mode, "recall": out["recall"], "tp": out["tp"], "truth_closed": out["truth_closed"]}, sort_keys=True))
 PY
