@@ -218,20 +218,66 @@ class Harness(unittest.TestCase):
         self.assertEqual(lfc.review_load(q, [{"item": "a"}]), {"items": 3, "distinct_pairs": 2, "unanswered": 1})
         self.assertEqual(lfc.review_load(q, []), {"items": 3, "distinct_pairs": 2, "unanswered": 3})
 
-    def test_cli_dev_clean_writes_selection(self):
-        out = os.path.join(self.home, "wasl-ml-data", "exp")
-        for fl, tp in (("0.2", 5), ("0.05", 6)):
-            for sd in (101, 103, 107):
-                d = os.path.join(out, "a" + fl, "v2-s%d" % sd)
-                os.makedirs(os.path.join(d, "run/main"))
-                _wj(d + "/funnel.json", dict(FUNNEL, config={"review_floor": float(fl)}))
-                _wj(d + "/run/main/report7.json", report(tp=tp))
-                _wj(d + "/run/main/review_queue.json", [])
-                _wj(d + "/run/main/status-linker.json", {})
-        args = ["dev-clean", out + "/summary-clean.json"] + ["%s=%s/a%s" % (f, out, f) for f in ("0.2", "0.05")]
+    def make_arm(self, out, fl, tp, head="a" * 40, cfg_floor=None, mode="dev-clean", build=True):
+        m = lfc.MODES[mode]
+        scope = {"person_split": m["split"], "reviewer_error": float(m["rerr"]),
+                 "day15_ungraded_prep_reviewer_error": float(m["errungraded"]), "noise": "v2"}
+        root = os.path.join(out, "a" + fl)
+        for sd in m["seeds"]:
+            d = os.path.join(root, "v2-s%d" % sd)
+            os.makedirs(os.path.join(d, "run/main"))
+            _wj(d + "/funnel.json", dict(FUNNEL, scope=scope, config={"review_floor": float(cfg_floor or fl)}))
+            _wj(d + "/run/main/report7.json", report(tp=tp))
+            _wj(d + "/run/main/review_queue.json", [])
+            _wj(d + "/run/main/status-linker.json", {})
+        if build:
+            _wj(root + "/build.json", {"git_head": head, "binary_sha256": "b" * 64, "floor": float(fl), "mode": mode})
+        return root
+
+    def exp(self):
+        return os.path.join(self.home, "wasl-ml-data", "exp")
+
+    def test_cli_dev_clean_writes_selection_with_head(self):
+        out = self.exp()
+        args = ["dev-clean", out + "/summary-clean.json"] + ["%s=%s" % (f, self.make_arm(out, f, tp)) for f, tp in (("0.2", 5), ("0.05", 6))]
         self.assertEqual(lfc.main(args), 0)
         with open(out + "/selection.json") as h:
-            self.assertEqual(json.load(h)["selected_floor"], 0.05)
+            sel = json.load(h)
+        self.assertEqual(sel["selected_floor"], 0.05)
+        self.assertEqual(sel["git_head"], "a" * 40)
+
+    def test_mislabeled_arm_rejected(self):
+        out = self.exp()
+        base = self.make_arm(out, "0.2", 5)
+        swapped = self.make_arm(out, "0.05", 6, cfg_floor="0.01")  # root holds a 0.01 lane labelled 0.05
+        with self.assertRaises(ValueError):
+            lfc.main(["dev-clean", out + "/s.json", "0.2=" + base, "0.05=" + swapped])
+
+    def test_wrong_scope_rejected(self):
+        out = self.exp()
+        base = self.make_arm(out, "0.2", 5)
+        stress = self.make_arm(out, "0.05", 6, mode="dev-stress")
+        with self.assertRaises(ValueError):
+            lfc.main(["dev-clean", out + "/s.json", "0.2=" + base, "0.05=" + stress])
+
+    def test_head_mismatch_or_missing_build_rejected(self):
+        out = self.exp()
+        base = self.make_arm(out, "0.2", 5)
+        other = self.make_arm(out, "0.05", 6, head="c" * 40)
+        with self.assertRaises(ValueError):
+            lfc.main(["dev-clean", out + "/s.json", "0.2=" + base, "0.05=" + other])
+        nob = self.make_arm(out, "0.01", 6, build=False)
+        with self.assertRaises((ValueError, OSError)):
+            lfc.main(["dev-clean", out + "/s.json", "0.2=" + base, "0.01=" + nob])
+        self.assertFalse(os.path.exists(out + "/selection.json"))
+
+    def test_runner_writes_identity_before_lanes(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        i = text.index('"binary_sha256": sha')
+        self.assertIn("binary_sha256", text)
+        self.assertLess(text.index('"$ROOT/scripts/demo.sh" build'), i)
+        self.assertLess(i, text.index('for seed in seeds:'))
 
     def test_modes_table(self):
         self.assertEqual(lfc.MODES["dev-clean"], {"split": "dev", "seeds": [101, 103, 107], "rerr": "0", "errungraded": "0"})

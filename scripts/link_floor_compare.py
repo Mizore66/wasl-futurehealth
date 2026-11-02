@@ -48,6 +48,25 @@ def check_funnel_floor(funnel, floor):
         raise ValueError("funnel review_floor %r != configured %s" % (v, floor))
 
 
+def check_funnel_scope(funnel, mode):
+    """Funnel scope must equal the mode's split / reviewer error / day-15 ungraded-prep error."""
+    m = MODES[mode]
+    sc = funnel.get("scope")
+    want = {"person_split": m["split"], "reviewer_error": float(m["rerr"]), "day15_ungraded_prep_reviewer_error": float(m["errungraded"])}
+    if not isinstance(sc, dict) or any(k not in sc or sc[k] != v for k, v in want.items()):
+        raise ValueError("funnel scope %r does not match mode %s" % (sc, mode))
+
+
+def read_build(root):
+    """Per-arm identity written by the lane runner; full 40-hex git head and 64-hex binary SHA256 are required."""
+    with open(os.path.join(root, "build.json")) as h:
+        b = json.load(h)
+    hx = lambda v, n: isinstance(v, str) and len(v) == n and all(c in "0123456789abcdef" for c in v)
+    if not hx(b.get("git_head"), 40) or not hx(b.get("binary_sha256"), 64):
+        raise ValueError("build.json needs full git_head and binary_sha256")
+    return b
+
+
 def review_load(queue, decisions):
     """Link-review burden from review_queue.json items and reviewer decision records (answered by item or by pair)."""
     items = [i for i in queue if "link" in (i.get("kinds") or []) and not i.get("reason")]
@@ -140,7 +159,7 @@ def select_arm(base, cands):
     return {"selected_floor": sel, "arms": arms, "baseline_recall": base["recall"] if "recall" in base else base["tp"] / base["truth_closed"]}
 
 
-def _load_lane(path, seed, floor=None):
+def _load_lane(path, seed, floor=None, mode=None):
     def j(p):
         with open(os.path.join(path, p)) as h:
             return json.load(h)
@@ -149,6 +168,8 @@ def _load_lane(path, seed, floor=None):
     f = j("funnel.json")
     if floor is not None:
         check_funnel_floor(f, floor)
+    if mode is not None:
+        check_funnel_scope(f, mode)
     dec = []
     dp = os.path.join(path, "run/main/reviewer_decisions.ndjson")
     if os.path.exists(dp):
@@ -166,23 +187,31 @@ def main(argv):
         return 2
     mode, out = argv[0], argv[1]
     seeds = MODES[mode]["seeds"]
-    arms = {}
+    arms, heads = {}, set()
     for a in argv[2:]:
         f, root = a.split("=", 1)
         if f not in FLOORS or f in arms:
             print("bad or repeated floor " + f, file=sys.stderr)
             return 2
-        arms[f] = aggregate_arm(float(f), [_load_lane(os.path.join(root, "v2-s%d" % s), s) for s in seeds])
+        b = read_build(root)
+        if float(b.get("floor", -1)) != float(f) or b.get("mode") != mode:
+            raise ValueError("build.json floor/mode does not match arm %s %s" % (f, mode))
+        heads.add(b["git_head"])
+        arms[f] = aggregate_arm(float(f), [_load_lane(os.path.join(root, "v2-s%d" % s), s, f, mode) for s in seeds])
+        arms[f]["build"] = b
     if "0.2" not in arms:
         print("baseline 0.2 required", file=sys.stderr)
         return 2
+    if len(heads) != 1:
+        raise ValueError("arms were built at different git heads: %s" % sorted(heads))
+    head = next(iter(heads))
     base = arms["0.2"]
     cands = [v for k, v in arms.items() if k != "0.2"]
-    res = {"mode": mode, "seeds": seeds, "arms": arms,
+    res = {"mode": mode, "seeds": seeds, "arms": arms, "git_head": head,
            "note": "t intervals use n=%d seeds: small-n, indicative only" % len(seeds)}
     if mode == "dev-clean":
         res["selection"] = select_arm(base, cands)
-        sel = dict(res["selection"], mode=mode, seeds=seeds)
+        sel = dict(res["selection"], mode=mode, seeds=seeds, git_head=head)
         with open(os.path.join(os.path.dirname(os.path.abspath(out)), "selection.json"), "w") as h:
             json.dump(sel, h, indent=1, sort_keys=True)
     else:
