@@ -1,12 +1,52 @@
 # Scale runs: normal versus approximately 10×
 
-**The x10 run is a failed safety result, not a release candidate.** With chaos on it produced one CRC false closure,
-one cervical false closure and four released wrong-patient messages. It also had **80 unexpected linker process
+## Post-hardening validation
+
+Fresh normal and x10 runs completed at decision code `e27eefc`; their sanitized artifacts were committed at `075abc5`.
+Both passed the measured safety and replay checks:
+
+| Metric | Normal | x10 |
+|---|---:|---:|
+| Unexpected linker restarts | 0 | 0 |
+| CRC false closures, live / no-review | 0/484 / 0/175 | 0/4,741 / 0/1,868 |
+| Cervical false closures, live / no-review | 0/203 / 0/117 | 0/1,983 / 0/1,054 |
+| Lung / DR / breast false closures | 0/299 / 0/1,121 / 0/144 | 0/3,021 / 0/11,359 / 0/386 |
+| Wrong-patient releases | 0 | 0 |
+| Releases without granted consent | 0 | 0 |
+| Duplicate / lost outputs | 0/31,087 | 0/310,662 |
+| Live-versus-replay final-state mismatches | 0 | 0 |
+| Provenance chains verified | 3,162/3,162 | 30,567/30,567 |
+| Forged events with effect | 0/19 | 0/24 |
+| Throughput | 708 events/s | 858 events/s |
+| Reviewer time | 13.3 h/1k loops | 13.7 h/1k loops |
+| Total measured wall time | 519.8 s | 5,436.7 s |
+
+Artifacts are in [`normal-hardened/`](normal-hardened/) and [`x10-hardened/`](x10-hardened/). These are single-seed
+simulated runs on a shared host, not controlled capacity benchmarks. The x10 cohort includes training persons, so its
+accuracy is not held-out evidence. Its tamper replay remained off; the forged-event counter above is the integrated
+RBAC check, not 24 successful tamper replays.
+
+The fixes were post-hoc and followed observed failures: linker status snapshotting, EID-conflict and cluster-bridge
+handling, placeholder-DOB corroboration, and durable cannot-link constraints after EID-clash refusals. The
+placeholder-DOB rule did not trigger a calibrator refit. The final x10 run recorded 2,374 `eid_cluster_clash` events
+and 95 `cannot_rejects`. No threshold or guard default was changed.
+
+Earlier evidence is retained below and in `normal/` and `x10/`: the original x10 had 80 unexpected linker restarts,
+two false closures and four wrong-patient releases; a stale-binary rerun had 43 unexpected restarts, three live false
+closures and four wrong-patient releases and must not be attributed to the fixed sources; the first correctly rebuilt
+rerun had zero crashes and false closures but still one wrong-patient release. Root-cause analysis showed that an EID-clash refusal could be lost after a wrong simulated
+reviewer split. The durable cannot-link fix addressed that mechanism, and the fresh rerun above then measured zero
+wrong-patient releases. These later zero counts do not erase any historical failure.
+
+## Historical baseline and failure analysis
+
+**The historical x10 run is a failed safety result, not a release candidate.** With chaos on it produced one CRC false
+closure, one cervical false closure and four released wrong-patient messages. It also had **80 unexpected linker process
 restarts**, separate from its one scheduled linker chaos kill; the normal run had zero unexpected linker exits. No
 threshold or safety rule was changed after seeing these results. The normal-size comparison had zero for all three
 primary safety measures.
 
-Both runs used seed 2026, `v7strict`, cached evidence/image readers, mock FHIR Subscription ingest, three prep workers,
+Both historical runs used seed 2026, `v7strict`, cached evidence/image readers, mock FHIR Subscription ingest, three prep workers,
 four closure partitions, three NATS nodes and the standard kill/restart chaos cycles. Full sanitized reports are in
 [`normal/`](normal/) and [`x10/`](x10/); `report7.json` is the source for the metrics below.
 
