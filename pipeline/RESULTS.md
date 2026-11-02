@@ -1952,3 +1952,103 @@ The scorer-addressable category (below review) fell from 56 to 12, which account
 - Strict same-HEAD binding was kept, so HEAD stayed at `f3a2f3c` for the whole run.
 
 **Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model and default floor 0.2 are unchanged. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
+
+### CRC symmetric-namesake pair-scorer experiment at `a643daf` (not selected)
+
+**Outcome:** the experiment failed its pre-registered development selection gate on contamination and stopped as specified. `pairfeat4` is **not a candidate**. It is the successor to the `pairfeat3` experiment above, motivated by that diagnosis: about half of the new false edges there shared a family name with a different given name (the shape of relatives), the complementary shape to the given-name namesakes `pairfeat3` trained on. The hypothesis was that adding family-name namesakes to the `pairfeat3` recipe would keep the recall gain and remove the remaining false merges. The recall gain was kept (+5.8394pp pooled), and the new wrong-pair review gate passed (7 to 4), but false-merge pairs rose 38 to 41 and cross-person edges 36 to 37, so the gate failed on those two reasons. Impure clusters were unchanged (35 to 35). The default model and the default review floor of 0.2 are unchanged. All results below are simulated, development-only and descriptive (n=3 seeds); they prove no clinical effectiveness.
+
+**Built:** an opt-in `pairfeat4` modelset (code at `a643daf`) uses the same 30-feature layout, fixed encoder, `v1t` training noise, LightGBM configuration and calibrator procedure as `pairfeat3` (400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search). The only intended change is the training data. Runtime, features, retrieval, merge 0.7, closure tier 0.99, the uncorroborated cap and the identity, consent and attachment rules are unchanged. `pairfeat4` is accepted only with `v7strict`. Generated model files are git-ignored.
+
+**Training data, family-name namesakes (training only):** `featdump` gained a `-familynamesakes` rate beside `-namesakes`, with the same validation (0 or a value in [0, 1) and only for `featdump`; anything else is a configuration error, exit 2). The rate was 0.10 for training, which is an assumption; no public rate was used. For each sampled person, with probability 0.10 one synthetic family-name namesake is added:
+- Its names (Arabic, English, aliases), sex, country code and origin come from a real person in the same split who shares the base person's last English token (case-insensitive), origin and sex and has a different first English token. If no such person exists, none is added.
+- Its DOB is the base person's true DOB with one digit of YYYYMMDD replaced (probability 0.60) or two distinct digits replaced (0.40), built exactly as in the given-name kind (digit count drawn once, up to 20 redraws, valid date in 1900-2025, differs from the base DOB).
+- Its Emirates ID is new and Luhn-valid.
+- It is registered like any other person using its own seeded stream, independent of the given-name stream and registered after it, so the given-name draws and the main stream are untouched.
+- Given-name namesakes are unchanged at 0.10; the two kinds are independent, so a person can get one, both or neither.
+- `-familynamesakes 0` (the default) leaves `featdump` output byte-identical, verified against SHA-256 goldens recorded before the change (including a `-namesakes 0.1` run) and pinned in a test; `gen` output for v1 and v2 was also verified byte-identical. Namesakes cannot reach generation, the runtime or evaluation.
+- Not addressed by either kind: identical-DOB pairs with otherwise different names, and sex mismatches.
+
+**Seeds:** train 1019, 1021, 1031, 1033 and 1039 (5,000 persons each, both kinds at 0.10) and cal 2011 (the whole cal split) are the `pairfeat3` seeds, so the family kind is the only training change. Calibrators and parity use the plain cal dump (no namesakes), because deployment cohorts have none. A second cal dump with both kinds at 0.10 was scored with the fitted model for slice reports only. Paired development (dev/v2) seeds are 433, 449 and 461, fresh. They differ from the earlier experiments' development seeds (`pairfeat2` 317, 331, 337; `pairfeat3` 347, 353, 367), so cross-experiment development comparisons are not like for like. Validation seeds 401, 409, 419, 421 and 431 were not touched.
+
+**Namesake floor and counts:** the pre-registered stop check required at least 500 base-namesake candidate rows of each kind across the five train dumps. There were 5,169 given-name rows (1,042, 1,059, 960, 1,060 and 1,048 per seed) and 3,297 family-name rows (690, 784, 664, 547 and 612). The dumps added 2,054 given-name namesakes (412, 428, 396, 413 and 405) and 1,284 family-name namesakes (249, 292, 261, 229 and 253). Given-name namesake counts match `pairfeat3`'s; row counts differ slightly because adding family namesakes changes the registration set and the shuffle.
+
+**Training and calibration metrics:** train had 1,762,366 retrieved pairs (47,645 same-person); plain cal had 139,084 (6,034 same-person). Cal pair AUC was 0.99991 and AP 0.99642 (`pairfeat3`: 0.99993 and 0.99890). At raw LightGBM score >= 0.99 (an uncalibrated threshold, not the calibrated closure tier) cal pair precision was 0.9996 and recall 0.8941 (`pairfeat3`: 0.9998 and 0.9108). Pair AUC is diagnostic, not the selection gate.
+
+**Artifact identity and parity:** the training manifest is `c371897e`. Chain files: `lgb_stream_pairfeat4` `b9433674`, `iso_pairfeat4` `92b1af69`, `iso_v7_pairfeat4` `fe76d2c8`; `encoder_pairfeat4` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. The governing manifest `0f0903d3` bound the development lanes, and both arms used the same binary (`81553cc0`) at `a643daf`. Go/Python scoring parity over all 139,084 cal rows had max |delta| 2.2e-16 (limit 1e-9).
+
+**Hard-negative slices (plain cal split, seed 2011):**
+
+| Slice | Rows | Same-person | Different-person | Different-person at raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|---:|
+| near EID | 1,020 | 1,018 | 2 | 1 | 0 |
+| decade-digit DOB | 144 | 39 | 105 | 0 | 0 |
+| same surname | 18,781 | 4,986 | 13,795 | 120 | 12 |
+| placeholder DOB | 78,253 | 1,657 | 76,596 | 165 | 17 |
+| cross-script names | 45,349 | 3,021 | 42,328 | 168 | 12 |
+
+Different-person pairs on plain cal that scored raw >= 0.7 numbered 31 for `pairfeat2`, 23 for `pairfeat3` and 26 for `pairfeat4`. This is like for like (same plain cal dump, seed 2011) and information only, not a gate. The count did not fall further here.
+
+**Namesake slices (diagnostic cal dump with both kinds at 0.10, scored with the fitted model, information only):** 457 given-name base rows, all different-person; 17 scored raw >= 0.01 and 1 scored >= 0.7. 214 family-name base rows, all different-person; 6 scored >= 0.01 and none >= 0.7. For a same-dump comparison, the `pairfeat3` model on the same `pairfeat4` diagnostic dump scored 14 at 0.01 and 1 at 0.7 on the given-name rows, and 24 at 0.01 and 0 at 0.7 on the family-name rows. So the family-name rows were scored lower by `pairfeat4` than by `pairfeat3` at the review floor (6 against 24), while the given-name rows moved slightly the other way (17 against 14). These dumps differ from `pairfeat3`'s own diagnostic dump (465 given-name rows there), so `pairfeat3`'s recorded slice is not the comparator. As before, these slices mostly measure easy pairs and are weak evidence of mechanism.
+
+**Paired development clean (seeds 433, 449, 461; both arms `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, FHIR, chaos 0, subkill 1):** exact TP is `pred_closed - false_closures`, not attach rate; truth-closed denominators match across arms.
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat4` TP / truth | `pairfeat4` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 433 | 210/249 | 0.8434 | 227/249 | 0.9116 | +6.83pp |
+| 449 | 189/219 | 0.8630 | 203/219 | 0.9269 | +6.39pp |
+| 461 | 188/217 | 0.8664 | 197/217 | 0.9078 | +4.15pp |
+| Pooled | 587/685 | 0.8569 | 627/685 | 0.9153 | **+5.8394pp** |
+
+The mean paired per-seed gain was +5.7892pp with a 95% t interval of +2.2163 to +9.3620pp (n=3; small-n and descriptive only). The gain clears the +2.0pp recall criterion in every seed.
+
+**Pre-registered review-load gate change (this experiment only):** before any run, and approved by the user together with the design, the review-load criterion for `pairfeat4` changed from the total distinct link-review pair count to the count of different-person distinct link-review pairs (pairs whose two registrations belong to different persons in the offline truth). The limit is at most 1.10x baseline, or at most 1 when the baseline is 0. The total-pair ratio and extra reviewer hours per extra true closure are reported but do not gate. The reason was that in the `pairfeat2` and `pairfeat3` lanes almost all extra link-review pairs were same-person (148 of 150 and 165 of 166), so the total-pair gate mostly penalised the recall gain itself. The change is for `pairfeat4` only; `pairfeat1` to `pairfeat3` keep the total-pair gate and are not re-judged. The other gates (recall gain, contamination) are unchanged.
+
+**Gate verdict: not selected.** Two reasons failed:
+- False-merge pairs increased, 38 to 41 (per seed 10 to 10, 11 to 16, 17 to 15).
+- Cross-person edges increased, 36 to 37 (per seed 9 to 9, 10 to 13, 17 to 15). The rise is concentrated in one seed (449); seeds 433 and 461 did not rise.
+
+Passed: recall gain (+5.8394pp against 2.0pp); impure clusters 35 to 35 (per seed 8 to 9, 10 to 12, 17 to 14); and the wrong-pair review gate, with different-person distinct link-review pairs falling from 7 to 4 against a limit of 7.7 (per seed 3 to 2, 3 to 2, 1 to 0). Reported, not gating: distinct link-review pairs rose 522 to 638 (ratio 1.22; the old total-pair limit would have been 574.2, so the old gate would also have failed), and extra reviewer hours per extra true closure were 0.116 (39.788 minus 35.144 hours over 40 extra closures).
+
+**Disclosure about the new gate:** the final cross-task review observed that at these small counts the wrong-pair limit allows almost no net new wrong-pair review. With a baseline of about 2 such pairs the limit is 2.2, so one extra wrong pair fails; the rule is also not monotone (baseline 0 allows 1, baseline 1 allows 1). Re-run on `pairfeat3`'s lanes the gate would have failed (3 wrong pairs against a limit of 2.2). The controller kept the approved gate exactly as approved, since changing a pre-registered gate overnight without the user would have been an unapproved change. Here the gate passed with margin (4 against 7.7), so it did not decide the outcome; the failure came from the two contamination criteria.
+
+**Safety and workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in both arms, with zero wrong final sign-offs and zero unanswered review items. Reviewer workload rose: items 1,097 to 1,244 and simulated reviewer hours 35.14 to 39.79 (per seed 12.09 to 13.57, 11.75 to 13.49, 11.30 to 12.72). The zero-safety result is n=3 development evidence and is not a validated safety property.
+
+| Residual truth-closed misses | Baseline | `pairfeat4` |
+|---|---:|---:|
+| Total open | 98 | 58 |
+| Attached, not closed | 12 | 12 |
+| Below review | 48 | 8 |
+| No candidate generated | 4 | 5 |
+| Demographic rejection | 1 | 0 |
+| Routed to review | 1 | 0 |
+| Linked report not attached | 32 | 33 |
+
+The scorer-addressable category (below review) fell from 48 to 8, which accounts for the recall gain (net open misses fell by 40, matching the 40 extra exact closures); the categories a scorer change cannot reach did not improve ("no candidate generated" 4 to 5, "attached, not closed" 12 to 12, "linked report not attached" 32 to 33).
+
+**Interpretation:** in development, adding family-name namesakes did not remove the contamination cost: false-merge pairs rose by 3 and cross-person edges by 1, small counts from three seeds. Under the new gate the review-load result passed: of the 150 pairs asked only in `pairfeat4`, 147 are same-person, and different-person review pairs fell (7 to 4). The old total-pair gate would still have failed; the workload rise tracks the recall gain. The like-for-like plain-cal count at raw >= 0.7 rose from 23 to 26 and development false-merge pairs rose by 3; with three seeds and different development seeds from `pairfeat3`, no relationship between the cal count and development contamination is claimed. The development seeds differ from the earlier experiments', so no claim is made that `pairfeat4` is better or worse than `pairfeat3` on contamination. This is a development result from three seeds, not validation evidence, and no claim is made that it would generalize.
+
+**Post-hoc diagnosis (read-only, after the gate; development lanes only; nothing was changed or re-run):** with the same method as the `pairfeat3` diagnosis, direct cross-person model edges (score >= 0.7) were compared between arms. `pairfeat4` added 18 cross-person edges that baseline did not have and removed 18 that baseline had, a recomputed net change of 0 (37 against 37). The harness reports 36 against 37 (+1): the recomputed `pairfeat4` totals match the report on all three seeds, but the recomputed baseline is one edge above the report on seed 433 (10 against 9), which accounts for the difference. Of the added 18, 10 had an Emirates ID on one side only and 8 had none; 13 were cross-script; in baseline 8 had been below the 0.01 floor, 7 in the review band, 2 rejected by the demographic check and 1 already linked transitively. Their DOBs: 8 of the 18 pair a YYYY-01-01 placeholder date with a different year, 5 are missing on one side, 2 are equal, 2 are one digit apart and 1 is two digits apart. Six of the 18 scored >= 0.9999, five of them with weak name similarity (read by eye, not a counted feature); none of `pairfeat3`'s added edges scored that high (its maximum was about 0.98).
+- On the plain cal dump, `pairfeat4` has 2 different-person rows at raw >= 0.9999, where `pairfeat2` and `pairfeat3` have 0. Both rows have both DOBs present, the same month and day, a year gap capped at 10, an equal surname skeleton, a full-name Jaro-Winkler similarity of 0.665 and no EID or DOB extras; `pairfeat3` scores them about 1e-7.
+- Training data does not explain it by label balance. In training seed 1019, rows with that feature pattern held 268 positive and 10,315 negative pairs for `pairfeat4` (263 and 9,696 for `pairfeat3`); rows of the pattern with low name similarity held 10 positive and about 9,000 negative in both. The cause is unknown; tree extrapolation outside the trained feature region is suspected but untested.
+- Clusters: the rise in false-merge pairs (38 to 41) is 3 extra pairs from larger impure clusters; the impure-cluster count did not change (35 to 35).
+- Review: of 150 link-review pairs present only in `pairfeat4`, 147 are same-person and 3 are different-person; 123 were below the floor in baseline, 14 were in the review band and 13 were already linked; 34 baseline review pairs were no longer asked.
+- Reading: `pairfeat4` scored fewer of the family-name rows at the review floor than `pairfeat3` did on the same dump (6 against 24); whether the family-name training data caused this was not tested, and 'relative-shaped' is a descriptive label, not a verified property but 8 of the 18 new false edges are placeholder-DOB pairs with a year gap, a shape neither namesake kind covers; the rest are missing, equal or one-to-two-digit-off DOBs, and some scored very high; the training labels checked (seed 1019) show no imbalance that explains it, and the cause is unknown. This is a diagnosis of three development seeds with small counts, not a tested fix, and no change is authorized from it.
+
+**Not run:** per the pre-registered stop rule, synthetic reviewer stress, the validation freeze and untouched validation were **not run**. No validation manifest was frozen and eval seeds 401, 409, 419, 421 and 431 remain untouched. No threshold, gate criterion, feature, hyperparameter, seed or analysis rule was changed after seeing results.
+
+**Result-affecting rulings:**
+- The 0.10 family-name namesake rate is an assumption, fixed before the run and not tuned. The given-name rate stays at 0.10.
+- The family kind uses the same DOB construction as the given-name kind (digit count drawn once, before the redraw loop), as approved.
+- The review-load gate change above is pre-registered and approved before any run, and applies to `pairfeat4` only. The controller kept it unchanged after the final review pointed out its small-count behaviour (ledger ruling).
+- An unmapped registration in the wrong-pair count aborts the analysis before any write-once file is written, rather than counting as an analysis error, so the decision stays re-runnable; this did not occur.
+- Namesakes are training-only and refused outside `featdump`, so simulated cohorts, the runtime and evaluation noise are unaffected.
+- The plain cal dump (no namesakes) feeds the calibrators and parity; the diagnostic cal dump feeds only the information-only slices.
+
+**Process rulings and deviations:**
+- Go task A (`featdump` flag), Python task B (training driver) and Python task C (harness gate) ran in parallel, since they touched disjoint files; the cost was only commit interleaving.
+- Task C edited existing harness assertions only where making `pairfeat4` a real candidate changes exact candidate-set checks; the reviewer confirmed intent was preserved.
+- A final cross-task review found no must-fix items before the run. It also supplied the same-dump `pairfeat3` slice comparator and the note on the gate's small-count behaviour, both disclosed here.
+- Deferred minor review findings (none affect results): some test and doc comments are stale or slightly inaccurate; a missing family sidecar key would raise a bare `KeyError` (the real sidecar carries every key); `check_namesake_floor` returns a tuple for `pairfeat4` and an int otherwise; the zero-baseline failure reason text prints "+10%" although the limit is the absolute 1; no test covers the wrong-pair gate with a total baseline of 0; the arms' `truth.json` files are not cross-checked in the analyser (their hashes were identical in the review on `pairfeat3` lanes); the base manifest's `code_sha256` omits `namesake.go` and `main.go` (the recorded git head pins them); there is no permanent end-to-end test of the driver (a reduced-scale smoke run covered it in the final review).
+- Strict same-HEAD binding was kept, so HEAD stayed at `a643daf` for the whole run.
+
+**Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model and default floor 0.2 are unchanged. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
