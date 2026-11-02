@@ -1714,6 +1714,69 @@ Residual truth-closed CRC loops remained open. The funnel categories below parti
 
 **Post-hoc disclosures:** development lanes completed at runtime revision `039d449`. Aggregation then failed because report7 exposes `pred_closed` and `false_closures`, not `tp`. The analyzer-only fix at `8832e82` derived exact TP and added consistency tests; preserved development lanes were reclassified offline without rerunning them or inspecting candidate results before the fix. Stress and validation ran at `8832e82`, with no runtime change from `039d449`. An earlier pre-generation dependency failure (missing NATS) and all failed artifacts were preserved. Lowering `LinkReview` also changes the strength assigned to untrusted `xrefFacts` referral-reference rows; this second behavior is included in the measured runs. The floor applies globally, but these CRC-focused cohorts do not establish non-CRC recall or safety. All results are simulated; no clinical effectiveness is proven.
 
+### CRC feature-first pair-scorer experiment at `dc21cec` (not selected)
+
+**Outcome:** the experiment failed its pre-registered development selection gate and stopped as specified. `pairfeat1` is **not a candidate**. The default model and the default review floor of 0.2 are unchanged. All results below are simulated; they prove no clinical effectiveness.
+
+**Built:** an opt-in `pairfeat1` modelset (code at `dc21cec`) keeps the 23 existing pair features byte-compatible and appends seven at indices 23-29: `eid_hamming`, `dob_decade_digit_only`, `dob_digit_difference_count`, `dob_day_only`, `dob_month_only`, `name_token_set_equal` and `name_skeleton_equal`. Missing or placeholder DOBs yield NaN rather than agreement. The chain is a local copy of the default encoder (not retrained), a refit 30-feature LightGBM and two refit calibrators. `pairfeat1` is accepted only with `v7strict`; `v7ltt` fails closed. Merge 0.7, closure tier 0.99, the uncorroborated cap, the equal-EID clamp, EID/cannot-link, second-identifier, evidence, consent and attachment rules are unchanged. Generated model files are git-ignored.
+
+**Training protocol (simulated):** one fit with the existing scorer configuration on fresh train-split seeds 1001, 1003, 1007, 1009 and 1013 (5,000 persons each) under training noise v1, with the fixed encoder: 400 rounds, 63 leaves, learning rate 0.05, seed 1, no hyperparameter search. Calibrators were refit on cal-split seed 2003 only. Train had 1,508,325 retrieved pairs (42,270 same-person); cal had 143,933 (6,273 same-person). Cal pair AUC was 0.99997 and AP 0.99944. At calibrated 0.99 the cal pair precision was 0.9990 and recall 0.9434. Pair AUC is diagnostic, not the selection gate.
+
+**Artifact identity and parity:** all four artifacts were hashed in the frozen manifests (training manifest `e368b3bc`, governing manifest `287cc80b`). Chain files: `lgb_stream_pairfeat1` `f1d3ac57`, `iso_pairfeat1` `b12b9908`, `iso_v7_pairfeat1` `202de5a8`; `encoder_pairfeat1` `5e6284f8` is identical to the baseline encoder. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. Both development arms used the same binary (`967bada4`) at `dc21cec`. Go/Python scoring parity over all 143,933 cal rows had max |delta| 2.2e-16 (limit 1e-9).
+
+**Hard-negative slices (cal split, seed 2003):**
+
+| Slice | Rows | Same-person | Different-person | Different-person at raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|---:|
+| near EID | 1,037 | 1,037 | 0 | 0 | 0 |
+| decade-digit DOB | 94 | 0 | 94 | 0 | 0 |
+| same surname | 19,515 | 5,037 | 14,478 | 103 | 14 |
+| placeholder DOB | 83,774 | 1,905 | 81,869 | 81 | 10 |
+| cross-script names | 47,698 | 3,166 | 44,532 | 114 | 15 |
+
+**Decade-noise finding:** the frozen v1 training noise produced **zero same-person decade-digit-only DOB pairs** (all 94 decade rows in cal are different-person; the near-EID slice likewise contains no different-person pairs). Feature 24 could therefore only be learned as a different-person signal. The earlier development diagnostic hypothesis, that decade-digit DOB errors seen under v2 evaluation noise are recoverable by this feature, **was not tested** by this protocol. Training on v2 noise would have leaked the evaluation corruption model, so it was not done; changing training noise would be a new experiment.
+
+**Paired development clean (seeds 307, 311, 313; both arms `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, FHIR, chaos 0, subkill 1):** exact TP is `pred_closed - false_closures`, not attach rate; truth-closed denominators match.
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat1` TP / truth | `pairfeat1` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 307 | 185/212 | 0.8726 | 185/212 | 0.8726 | +0.00pp |
+| 311 | 207/233 | 0.8884 | 210/233 | 0.9013 | +1.29pp |
+| 313 | 208/236 | 0.8814 | 209/236 | 0.8856 | +0.42pp |
+| Pooled | 600/681 | 0.8811 | 604/681 | 0.8869 | **+0.5874pp** |
+
+The mean paired per-seed gain was +0.5704pp with a 95% t interval of -1.0598 to +2.2006pp (n=3; small-n and descriptive only). **Gate verdict: +0.5874pp is below the required +2.0pp, so `pairfeat1` was not selected.** The 4-loop pooled difference is small relative to this noise.
+
+**Safety, contamination, workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in both arms, with zero wrong final sign-offs and zero unanswered review items. Linkage contamination decreased but was not zero: false-merge pairs 35 to 26, impure clusters 27 to 25, cross-person edges 31 to 25. This is n=3 development evidence from a not-selected arm and is not a validated contamination benefit. Distinct link-review pairs rose 556 to 577 (+3.8%, within the 10% limit), items 1,128 to 1,153 and reviewer hours 37.721 to 38.354.
+
+| Residual truth-closed misses | Baseline | `pairfeat1` |
+|---|---:|---:|
+| Total open | 81 | 77 |
+| Attached, not closed | 11 | 11 |
+| Below review | 44 | 40 |
+| No candidate generated | 4 | 4 |
+| Demographic rejection | 0 | 0 |
+| Routed to review | 0 | 0 |
+| Linked report not attached | 22 | 22 |
+
+The scorer-addressable category (below review) shrank by four; the attachment and candidate-generation categories, which no scorer change can reach, were unchanged.
+
+**Not run:** per the pre-registered stop rule, synthetic reviewer stress and untouched validation were **not run**. No validation manifest was frozen and eval seeds 401, 409, 419, 421 and 431 remain untouched. All output roots, including both arms' logs, are preserved locally.
+
+**Post-hoc changes and rulings (all disclosed):**
+- The plan's decade feature test (`diffPos == 3`) contradicted the spec: feature 24 is set only when YYYYMMDD position 2 (the tens-of-year digit) alone differs.
+- The `dobFeats` guard is length-only (`len != 10` returns the existing missing sentinel); a real-date check would have changed legacy features 0-22 for invalid 10-character dates.
+- The Go LightGBM reader now maps NaN to 0 when a node's missing type is not NaN, matching LightGBM; legacy features are never NaN, so default scores are unchanged (pinned by a parity test).
+- `featdump` writes features and scores with `%.17g` so Go/Python parity is meaningful.
+- Review of Task 2 found orchestrate/audit children received `-modelset` but not `-policy`, so the strict guard would have rejected every child; `-policy` is now forwarded to children rather than loosening the guard.
+- The candidate arm passes `-modelset pairfeat1` to orchestrate, audit and report7 but not to the simulator, so both arms share identical cohort and truth inputs.
+- Final whole-branch review found `read_p_column` expected a header row that the Go dump does not write. This was fixed before the fit (`dc21cec`), together with a row-by-row feature identity check against the dump, an end-of-run Git HEAD assertion and a git-ignore rule for the generated chain.
+- Python tests were run by direct path under `-I` because `encoder/` is not a package.
+- `lightgbm` 4.7.0 was not installed in the environment and was installed (free, PyPI) before the fit.
+- The artifact manifest shape (`git_head`, per-arm hash maps keyed by chain filename) was specified by ruling because the plan only said "four hashes".
+
+**Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. No further seeds, thresholds, features, hyperparameters or encoder fallback are authorized for this arm.
+
 ### Deployment verification limit
 
 Static deployment validation passed: `scripts/check_deploy.py` found the expected five services and four volumes, all five tests in `scripts/test_deploy.py` passed, and shell syntax checks passed. The Docker CLI is unavailable in the evaluation environment, so the image build, Compose startup, container healthchecks and containerized demo were **not executed**. Static checks are not presented as Docker runtime evidence.
