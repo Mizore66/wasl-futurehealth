@@ -10,6 +10,7 @@
 # dev-stress likewise needs ../selection.json (written by link_floor_compare.py dev-clean) with non-null selected_floor, and
 # allows only floor 0.2 or exactly that selected floor.
 # The tracked tree must be clean and pipeline/ and scripts/ must have no untracked files before any build.
+# Arms must run sequentially (shared bin/wsi7, removed on exit); build.json records git head + binary SHA256 per arm.
 # Cached reader, image off, chaos 0, subkill 1, no NATS kill.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -78,6 +79,16 @@ mkdir "$WORK"
 "$ROOT/scripts/demo.sh" check
 "$ROOT/scripts/demo.sh" build
 trap 'rm -f "$ROOT/bin/wsi7"' EXIT
+
+# per-arm identity before any lane: full git head + SHA256 of the freshly built binary (arms run sequentially: bin/wsi7 is shared)
+python3 -I - "$WORK/build.json" "$(git -C "$ROOT" rev-parse HEAD)" "$ROOT/bin/wsi7" "$FLOOR" "$MODE" <<'PY'
+import hashlib, json, sys
+out, head, binp, floor, mode = sys.argv[1:6]
+with open(binp, "rb") as h:
+    sha = hashlib.sha256(h.read()).hexdigest()
+with open(out, "w") as h:
+    json.dump({"git_head": head, "binary_sha256": sha, "floor": float(floor), "mode": mode}, h, indent=1, sort_keys=True)
+PY
 
 python3 -I - "$ROOT" "$WORK" "$MODE" "$SPLIT" "$FLOOR" "$RERR" "$ERRU" $SEEDS <<'PY'
 import json, os, subprocess, sys
@@ -156,11 +167,13 @@ import link_floor_compare as lfc
 assert lfc.MODES[mode]["seeds"] == seeds
 lanes = []
 for seed in seeds:
-    m = lfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, floor)  # also requires funnel config.review_floor == floor
+    m = lfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, floor, mode)  # also requires funnel config.review_floor == floor
     assert m["analysis_errors"] == 0 and m["trace_error"] == 0, (seed, "analysis or trace-write error")
     assert m["replay_mismatch"] == 0, (seed, "replay mismatch")
     lanes.append(m)
 out = lfc.aggregate_arm(float(floor), lanes)
+with open(os.path.join(work, "build.json")) as h:
+    out["build"] = json.load(h)
 out["scope"] = {"mode": mode, "floor": float(floor), "seeds": seeds, "reader": "cached", "image": "off", "chaos": 0, "nats_kill": False,
                 "note": "tp is report7 programmes_live.crc.tp; link attach rate is separate"}
 with open(os.path.join(work, "summary.json"), "w") as h:
