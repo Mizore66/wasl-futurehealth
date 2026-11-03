@@ -505,13 +505,23 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_contradiction"})
 			continue
 		}
+		capped := false // xscript.go: cross-script review cap, pairfeat5 only
+		if XScriptCap && c.p > XScriptCapP && xscriptWeak(r, o, c.feat) {
+			c.p = XScriptCapP
+			capped = true
+			L.Stats["xscript_capped"]++
+		}
+		reason := ""
+		if capped {
+			reason = "xscript_cap"
+		}
 		if c.p >= L.Thr {
 			if V7Cal != nil {
 				L.pcal7[pk2(r.idx, c.j)] = V7Cal.Predict(c.p, corroborated(r, o, c.feat))
 			}
 			L.Link(r.idx, c.j, c.p, false, "wasl")
 		} else if c.p >= L.Lo {
-			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "near"})
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "near", Reason: reason})
 			if L.near[r.idx] == nil {
 				L.near[r.idx] = map[int]float64{}
 			}
@@ -521,7 +531,7 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			L.near[r.idx][c.j], L.near[c.j][r.idx] = c.p, c.p
 			aff[L.Find(c.j)] = true
 		} else {
-			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "below_review"})
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "below_review", Reason: reason})
 		}
 	}
 	if L.trace != nil { // transitive merges: candidates that ended in the new record's cluster
