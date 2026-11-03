@@ -2052,3 +2052,188 @@ The scorer-addressable category (below review) fell from 48 to 8, which accounts
 - Strict same-HEAD binding was kept, so HEAD stayed at `a643daf` for the whole run.
 
 **Scope:** the model applies globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model and default floor 0.2 are unchanged. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
+
+**Post-hoc follow-up (after this section was written; training-side data, nothing above re-judged):** the very high `pairfeat4` scores (six added cross-person edges at >= 0.9999, two plain-cal different-person rows at that level) were traced to the fit, not the training labels. For both plain-cal rows, one feature (name-skeleton similarity) contributed +62.8 log-odds, +44.0 of it (about 70%) from a single leaf that held 117 training rows with 1 positive whose pre-tree score was p = 4.5e-15 (leaf hessian sum 0.0013). `pairfeat4` was fitted with LightGBM's default `lambda_l2 = 0`, so such low-hessian leaves took unregularised Newton steps: the largest |leaf value| in `pairfeat4` is 3,337.6 (70 leaves above 5), against 7.8 for the baseline scorer, 12.8 for `pairfeat2` and 13.2 for `pairfeat3`. The `pairfeat5` refit of the same training recipe with `lambda_l2 = 1` has a largest |leaf value| of 3.63. That experiment is reported in the next section.
+
+### CRC regularised pair-scorer with cross-script review cap at `56d31fd` (selected under the amended gate; not promoted to default)
+
+**Outcome:** `pairfeat5` passed the development selection gate, synthetic reviewer stress and the frozen five-seed validation, all under a cap-aware review gate that was amended and pre-registered before any `pairfeat5` development lane ran (Amendment 1 below). In paired simulated CRC validation cohorts pooled recall rose from 0.8683 to 0.9301 (+6.18pp pooled; mean paired per-seed gain +6.19pp, 95% t interval +4.72 to +7.67pp, n=5) and every contamination count fell (false-merge pairs 173 to 87). The run of record (run-2, HEAD `56d31fd`) is a disclosed second pass: a first run (run-1) stopped during validation on a classifier gap, and the whole chain was re-run after a diagnostic-only fix. The cap has a cost the CRC recall gate does not measure: capped same-person pairs left unmerged and unreviewed outnumbered capped different-person pairs (validation 269 against 80), which splits identities away from CRC loops. That cost is reported below as an open product question, not a gate failure. The default model, the default noise and the default review floor of 0.2 are unchanged; nothing was promoted to default. All results are simulated; they prove no clinical effectiveness.
+
+**Design motivation (post-hoc `pairfeat4` investigation, disclosed):** the investigation in the follow-up paragraph above found the near-certain `pairfeat4` scores came from unregularised leaves. An exploratory refit of the `pairfeat4` training CSVs with `lambda_l2 = 1` removed every leaf above 5 (largest 3.6) and lowered the plain-cal count of different-person rows at raw >= 0.7 from 26 to 21 (with `min_sum_hessian_in_leaf = 1` added as well: 23), with 0 rows at >= 0.9999. Across 12 baseline development lanes from the earlier experiments (already used; read only), none of the 122 false model edges were exact twins (same source name and DOB); 81 were cross-script, 106 had an Emirates ID on one side only and 16 on neither, and 65 had a DOB missing on one side. On the regularised cal scores, cross-script pairs with the ID not valid on both sides and DOBs not exactly equal held 10 of the 21 different-person rows at >= 0.7 and 535 of 5,876 same-person rows at >= 0.7. The cap rule's shape was taken from the false edges on those already-used development lanes of earlier experiments (not `pairfeat5`'s seeds); the rule and the `lambda_l2` value were then checked on these cal-split (training-side) figures. `pairfeat5`'s own development seeds were fresh.
+
+**Built:** an opt-in `pairfeat5` modelset with two changes.
+- Fit (code at `c3bd6c7`, `7390a99`): the `pairfeat4` training protocol (same 30 features, fixed encoder, `v1t` noise, both namesake kinds at 0.10, calibrators and parity on the plain cal dump, 400 rounds, 63 leaves, learning rate 0.05, seed 1) with LightGBM `lambda_l2 = 1.0`; all other parameters unchanged. `fit_scorer.py` without `--lambda-l2` is byte-identical to before. A stop check required no leaf with |value| > 5 (read from the fit report).
+- Cross-script review cap (runtime, code at `d07e8a7`, `pairfeat5` only; off for every other modelset including baseline): for a model candidate pair whose registrations differ in script (feature 20 is 0), whose Emirates ID is not Luhn-valid on both sides and whose DOBs are not exactly equal (feature 13 is not 1; a missing DOB counts as not equal), a model score above 0.69 is capped at 0.69, below the 0.7 merge threshold. The pair cannot merge on the model alone; above the review floor it becomes a near (review-band) candidate. The cap sits after the Emirates ID handling, so a forced equal-EID link is unaffected. Capped pairs are traced with `reason: "xscript_cap"`.
+- `pairfeat5` is accepted only with `v7strict`. Retrieval, features, merge 0.7, closure tier 0.99, the uncorroborated cap and the identity, consent and attachment rules are unchanged. Generated model files are git-ignored.
+
+**Seeds:** train 1019, 1021, 1031, 1033 and 1039 (5,000 persons each) and cal 2011 are `pairfeat4`'s, so the fit change is `lambda_l2` only. Paired development (dev/v2) seeds 521, 541 and 547 were fresh. Validation used eval/v2 seeds 401, 409, 419, 421 and 431 after development and stress passed (see the run history for their first, partial use in run-1).
+
+**Amendment 1, cap-aware review gate (pre-registered before any `pairfeat5` development lane):** the approved design kept `pairfeat4`'s wrong-pair review gate (different-person distinct link-review pairs at most 1.10x baseline, or 1 when the baseline is 0). Before any `pairfeat5` development lane, a read-only estimate on the already-used `pairfeat4` development lanes (seeds 433, 449, 461; nothing tuned) found that 20 of the 37 different-person model edges at >= 0.7 in the `pairfeat4` arm met the cap rule (approximated from registration fields). If each became a different-person review pair, the expected `pairfeat5` count was about 24 against a limit of 7.7 (baseline 7), so the original gate would have counted every prevented false merge as review harm and failed by construction. The estimate also found 222 of 2,656 same-person edges met the rule (about 74 per lane). The user chose to keep the cap, and with the user's approval the gate `wrong_pair_cap` was pre-registered in the plan (`09524fe`) and the harness (`3af6821`) before seeds 521, 541 and 547 were used. For `pairfeat5` only (`pairfeat4` keeps `wrong_pair`):
+- Recall, safety, false-merge pairs, impure clusters and cross-person edges gates unchanged.
+- Uncapped wrong-pair reviews (different-person link-review pairs without an `xscript_cap` record, candidate) at most 1.10x the baseline's wrong-pair reviews (at most 1 when that is 0).
+- Prevented false merges (baseline minus candidate false-merge pairs) at least 1.
+- Capped wrong-pair reviews (candidate) at most 2 per prevented false merge.
+- The baseline trace must contain no `xscript_cap` record (else analysis aborts before any write).
+- Reported, not gating: capped same-person pairs, total distinct review pairs and ratio, extra reviewer hours per extra true closure, full capped-pair counts.
+
+The estimate turned out wrong. Capped wrong-pair reviews were 0 in every lane, because the review queue asks only the link questions an open loop depends on and no capped different-person pair was asked: none of the 24 (development) or 81 (validation) different-person capped pairs became a link-review pair, and in the development diagnosis 279 of 374 capped pairs were never queued (details below). Under the original `wrong_pair` gate `pairfeat5` would also have passed (1 wrong-pair review against a limit of 3.3 in development and in stress, 4 against 6.6 in validation), so the amendment did not decide the outcome.
+
+**Run history, in order (all artifacts preserved):**
+- **run-0-preamend (HEAD `d07e8a7`, information only).** The fit started before the amendment. When the user asked to check the review-gate risk, the driver was stopped during the fit, before any development lane; the fit itself (training-side only) completed. Because HEAD then moved to `09524fe`, its artifact manifest could not bind later lanes. It is kept for information: namesake floors passed, largest |leaf| 3.63, plain-cal 21. No lane used it.
+- **Refused run-1 attempt (HEAD `3af6821`).** The driver refused before writing anything because the run-0 model files were still in `models/` (overwrite refusal). They were moved aside and the driver relaunched.
+- **run-1 (HEAD `3af6821`).** Fit identical to run-0 (same four chain-file hashes). Development clean passed and stress passed (figures equal to run-2's below except distinct link-review pairs, which differed by 1 or 2 per arm, review items and reviewer hours). The validation manifest was frozen at `3af6821`. The validation baseline arm completed (956/1101) and the `pairfeat5` arm completed seed 401; seed 409 ran through `orchestrate`, `audit` and `report7`, then the funnel classifier stopped on it with an analysis error: for one CRC loop the expected true pair had a single trace record, stage near at p 0.69 with reason `xscript_cap`, no link-review item and no shared cluster. The cap had left a loop-relevant true pair neither merged nor queued, a state the classifier treated as impossible. Candidate seeds 419, 421 and 431 were not run. This was not a gate failure; the protocol could not complete at `3af6821`.
+- **Classifier fix (`56d31fd`, user-approved).** `scripts/link_funnel.py` gained the funnel category `candidate_capped_not_queued` (detail `capped_near_without_review_item`), returned only when the latest record is near with reason `xscript_cap` and there is no review item; any other near-without-item case still raises. The category is a residual (open-loop) category for diagnosis; no gate reads it. `pairfeat1`-`pairfeat4` outputs are byte-identical (pinned by a test). On the preserved run-1 seed-409 lane it gave 0 analysis errors and 1 capped-not-queued loop.
+- **run-2 (HEAD `56d31fd`, run of record, user-approved).** The protocol binds fit, development, stress, freeze and validation to one HEAD, so the whole chain was re-run. The fit was identical again. Development and stress seeds were therefore run a second time with the same model and the same linker code (only the classifier changed). Validation seeds were partly seen once before: in run-1 the baseline arm was complete and its 956/1101 was seen; `pairfeat5` seed 401 had completed and seed 409 had run through `orchestrate`, `audit` and `report7` before the classifier stopped. No run-1 `pairfeat5` validation recall or gate figure was read, but one capped loop's trace on seed 409 was read to diagnose the stop. The run-2 baseline validation arm reproduced run-1's 956/1101. This is a disclosed second pass over those seeds, not untouched validation in the strict sense.
+- **run-2 stress lane crash (set aside, re-run).** The baseline stress lane for seed 541 failed in `orchestrate` with a NATS "no servers available" panic, and the resume then failed at `go build` with "no space left on device" (203 MiB free). The panic was attributed to the same full-disk condition (attributed, not proven). With user approval, disk space was freed (the Go build cache and unreferenced earlier scale-run outputs), the partial baseline stress lanes for seeds 521 and 541 were kept aside, the baseline stress arm was run again from seed 521, and the `pairfeat5` stress arm, which had never started, was then run, before the freeze and validation.
+
+| run-1 against run-2 (same seeds, same model) | Recall run-1 / run-2 | Distinct link-review pairs run-1 / run-2 | Items run-1 / run-2 | Reviewer hours run-1 / run-2 |
+|---|---:|---:|---:|---:|
+| Development clean, baseline | 605/719 / 605/719 | 544 / 546 | 1,090 / 1,088 | 35.477 / 35.418 |
+| Development clean, `pairfeat5` | 653/719 / 653/719 | 550 / 549 | 1,119 / 1,117 | 36.511 / 36.466 |
+| Development stress, baseline | 547/719 / 547/719 | 543 / 545 | 1,083 / 1,084 | 35.449 / 35.460 |
+| Development stress, `pairfeat5` | 592/719 / 592/719 | 548 / 549 | 1,114 / 1,113 | 36.504 / 36.484 |
+
+Recall, contamination counts, capped-pair counts and gate decisions were identical between runs; only distinct link-review pairs (by 1 or 2 per arm), review items (by 1 or 2 per arm) and reviewer hours moved. The binary hash also differs (`35a290da` at `3af6821`, `f489224d` at `56d31fd`), although the linker source is unchanged between them: the `3af6821..56d31fd` diff touches only `scripts/`, so the hash difference is presumably Go's embedded VCS stamp. Task A had already found that the traced `orchestrate` lane is not byte-reproducible between two runs of the same binary, which is the likely source; this was not isolated.
+
+**Training and calibration metrics:** train had 1,762,366 retrieved pairs (47,645 same-person); plain cal had 139,084 (6,034 same-person). Namesake floors passed with the same counts as `pairfeat4`: 5,169 given-name and 3,297 family-name base rows (floor 500 each); 2,054 given-name and 1,284 family-name namesakes added. Largest |leaf value| 3.634 (limit 5). Cal pair AUC was 0.99991 and AP 0.99895 (`pairfeat4`: 0.99991 and 0.99642). At raw LightGBM score >= 0.99 (an uncalibrated threshold, not the calibrated closure tier) cal pair precision was 1.0000 and recall 0.8918 (`pairfeat4`: 0.9996 and 0.8941). Pair AUC is diagnostic, not the selection gate.
+
+**Artifact identity and parity:** the training manifest is `13d7226d`. Chain files: `lgb_stream_pairfeat5` `41cbb8f3`, `iso_pairfeat5` `782ef505`, `iso_v7_pairfeat5` `e454b022`; `encoder_pairfeat5` `5e6284f8` is identical to the baseline encoder. The same four hashes were produced in run-0, run-1 and run-2. The baseline chain is `lgb_stream` `13d3e272`, `iso` `17e434ad`, `iso_v7` `63ef7bd0`. In run-2 the governing manifest `bab8ea26` bound every lane, both arms used the same binary (`f489224d`) at `56d31fd`, the selection decision is `9be7428f`, the stress decision `baf5f9ba` and the validation manifest `74a131b5`. Go/Python scoring parity over all 139,084 cal rows had max |delta| 1.1e-16 (limit 1e-9).
+
+**Hard-negative slices (plain cal split, seed 2011):**
+
+| Slice | Rows | Same-person | Different-person | Different-person at raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|---:|
+| near EID | 1,020 | 1,018 | 2 | 2 | 0 |
+| decade-digit DOB | 144 | 39 | 105 | 1 | 0 |
+| same surname | 18,781 | 4,986 | 13,795 | 134 | 9 |
+| placeholder DOB | 78,253 | 1,657 | 76,596 | 184 | 15 |
+| cross-script names | 45,349 | 3,021 | 42,328 | 199 | 11 |
+
+Different-person pairs on plain cal that scored raw >= 0.7 numbered 31 for `pairfeat2`, 23 for `pairfeat3`, 26 for `pairfeat4` and 21 for `pairfeat5` (same plain cal dump; information only, not a gate; these are raw scores before the runtime cap). Against `pairfeat4`, every slice's count at >= 0.7 fell or stayed level and every slice's count at >= 0.01 rose (for example cross-script 168 to 199), consistent with regularisation pulling extreme scores toward the middle. Namesake slices (diagnostic cal dump, information only): 457 given-name base rows, 18 at >= 0.01 and 1 at >= 0.7; 214 family-name base rows, 8 at >= 0.01 and 0 at >= 0.7 (`pairfeat4` on a dump with the same namesake sidecar: 17 and 1, 6 and 0).
+
+**Paired development clean (seeds 521, 541, 547; both arms `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, FHIR, chaos 0, subkill 1):** exact TP is `pred_closed - false_closures`, not attach rate; truth-closed denominators match across arms.
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat5` TP / truth | `pairfeat5` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 521 | 196/234 | 0.8376 | 213/234 | 0.9103 | +7.26pp |
+| 541 | 211/248 | 0.8508 | 228/248 | 0.9194 | +6.85pp |
+| 547 | 198/237 | 0.8354 | 212/237 | 0.8945 | +5.91pp |
+| Pooled | 605/719 | 0.8414 | 653/719 | 0.9082 | **+6.6759pp** |
+
+The mean paired per-seed gain was +6.6757pp with a 95% t interval of +4.9456 to +8.4058pp (n=3; small-n and descriptive only).
+
+**Selection gate verdict: passed** (`wrong_pair_cap`):
+- Recall gain +6.6759pp against +2.0pp.
+- False-merge pairs fell, 52 to 19 (per seed 11 to 5, 8 to 2, 33 to 12).
+- Impure clusters fell, 37 to 16 (per seed 11 to 5, 7 to 2, 19 to 9).
+- Cross-person edges fell, 42 to 17 (per seed 11 to 5, 8 to 2, 23 to 10). Contamination fell in every seed.
+- Uncapped wrong-pair reviews 3 to 1 against a limit of 3.3 (per seed 1 to 1, 2 to 0, 0 to 0).
+- Prevented false merges 33 (at least 1 required); capped wrong-pair reviews 0 against a limit of 66.
+- Reported, not gating: capped same-person pairs 350; distinct link-review pairs 546 to 549 (ratio 1.005; the old total-pair limit would have been 600.6); extra reviewer hours per extra true closure 0.022 (36.466 minus 35.418 hours over 48 extra closures).
+
+**Development stress (same seeds; 4% ordinary and 25% day-15 ungraded-prep synthetic reviewer error, assumed stress values, not measured clinician rates):**
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat5` TP / truth | `pairfeat5` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 521 | 179/234 | 0.7650 | 194/234 | 0.8291 | +6.41pp |
+| 541 | 190/248 | 0.7661 | 206/248 | 0.8306 | +6.45pp |
+| 547 | 178/237 | 0.7511 | 192/237 | 0.8101 | +5.91pp |
+| Pooled | 547/719 | 0.7608 | 592/719 | 0.8234 | **+6.2587pp** |
+
+The mean paired per-seed gain was +6.2563pp (95% t interval +5.5033 to +7.0094pp, n=3). **Stress gate: passed** (minimum gain 0). Contamination matched development clean (false-merge pairs 52 to 19, impure clusters 37 to 16, cross-person edges 42 to 17); uncapped wrong-pair reviews 3 to 1 (limit 3.3); prevented false merges 33; capped wrong-pair reviews 0 (limit 66); distinct link-review pairs 545 to 549. The injected errors produced 79 wrong final sign-offs in the baseline arm and 82 in the `pairfeat5` arm; they cost recall and did not become wrong-patient releases.
+
+**Validation clean (seeds 401, 409, 419, 421, 431; same settings; configuration frozen in the validation manifest before the run-2 validation lanes; see the run history for the run-1 first pass):**
+
+| Seed | Baseline TP / truth | Baseline recall | `pairfeat5` TP / truth | `pairfeat5` recall | Gain |
+|---|---:|---:|---:|---:|---:|
+| 401 | 188/218 | 0.8624 | 203/218 | 0.9312 | +6.88pp |
+| 409 | 190/221 | 0.8597 | 205/221 | 0.9276 | +6.79pp |
+| 419 | 193/215 | 0.8977 | 204/215 | 0.9488 | +5.12pp |
+| 421 | 183/215 | 0.8512 | 199/215 | 0.9256 | +7.44pp |
+| 431 | 202/232 | 0.8707 | 213/232 | 0.9181 | +4.74pp |
+| Pooled | 956/1,101 | 0.8683 | 1,024/1,101 | 0.9301 | **+6.1762pp** |
+
+The mean paired per-seed gain was +6.1935pp with a 95% t interval of +4.7177 to +7.6693pp (n=5; small-n and descriptive only). Recall rose on every seed.
+
+**Validation gate verdict: passed** (`wrong_pair_cap`, minimum gain +1.0pp):
+- Recall gain +6.1762pp.
+- False-merge pairs fell, 173 to 87 (per seed 30 to 11, 40 to 21, 41 to 19, 30 to 15, 32 to 21).
+- Impure clusters fell, 131 to 75 (per seed 25 to 10, 30 to 19, 26 to 13, 25 to 14, 25 to 19).
+- Cross-person edges fell, 144 to 79 (per seed 27 to 10, 34 to 21, 29 to 15, 26 to 14, 28 to 19). Contamination fell in every seed but is not zero.
+- Uncapped wrong-pair reviews 6 to 4 against a limit of 6.6 (per seed 2 to 1, 3 to 2, 1 to 1, 0 to 0, 0 to 0).
+- Prevented false merges 86; capped wrong-pair reviews 0 against a limit of 172.
+- Reported, not gating: capped same-person pairs 564; distinct link-review pairs 892 to 892 (ratio 1.000; old total-pair limit 981.2); extra reviewer hours per extra true closure 0.0255 (61.717 minus 59.983 hours over 68 extra closures).
+
+**Safety and workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in both arms in every run-2 mode, with zero unanswered review items and zero wrong final sign-offs outside the injected stress errors. `Link pairs` are distinct link-review pairs; `Items` and `Hours` cover all reviewer work, pooled across the arm's seeds.
+
+| Mode | Arm | Link pairs | Wrong-pair reviews (all uncapped) | Items | Hours |
+|---|---|---:|---:|---:|---:|
+| Development clean | baseline / `pairfeat5` | 546 / 549 | 3 / 1 | 1,088 / 1,117 | 35.418 / 36.466 |
+| Development stress | baseline / `pairfeat5` | 545 / 549 | 3 / 1 | 1,084 / 1,113 | 35.460 / 36.484 |
+| Validation clean | baseline / `pairfeat5` | 892 / 892 | 6 / 4 | 1,805 / 1,846 | 59.983 / 61.717 |
+
+The zero-safety result is simulated evidence from these cohorts and is not a validated safety property.
+
+| Residual truth-closed misses | Development clean baseline | Development clean `pairfeat5` | Validation baseline | Validation `pairfeat5` |
+|---|---:|---:|---:|---:|
+| Total open | 114 | 66 | 145 | 77 |
+| Attached, not closed | 19 | 20 | 23 | 26 |
+| Below review | 64 | 14 | 80 | 6 |
+| Capped, not queued | 0 | 0 | 0 | 2 |
+| No candidate generated | 3 | 3 | 3 | 3 |
+| Demographic rejection | 0 | 0 | 1 | 0 |
+| Routed to review | 0 | 0 | 0 | 0 |
+| Linked report not attached | 28 | 29 | 38 | 40 |
+
+The scorer-addressable category (below review) fell from 64 to 14 in development and from 80 to 6 in validation, which accounts for the recall gain (validation net open misses fell by 68, matching the 68 extra exact closures). Two validation loops (seeds 409 and 431) stayed open because a capped true pair was left neither merged nor queued; development had none. The categories a scorer change cannot reach did not improve ("linked report not attached" 38 to 40 and "attached, not closed" 23 to 26 in validation).
+
+**Capped-pair report (not gating):** distinct pairs with an `xscript_cap` record in the `pairfeat5` arm, split by offline truth; the baseline arms had none.
+
+| Lane | Capped pairs | Same-person | Different-person | Capped, not queued (loops) |
+|---|---:|---:|---:|---:|
+| Development 521 | 121 | 115 | 6 | 0 |
+| Development 541 | 121 | 115 | 6 | 0 |
+| Development 547 | 132 | 120 | 12 | 0 |
+| Development total | 374 | 350 | 24 | 0 |
+| Validation 401 | 132 | 118 | 14 | 0 |
+| Validation 409 | 135 | 117 | 18 | 1 |
+| Validation 419 | 121 | 104 | 17 | 0 |
+| Validation 421 | 117 | 101 | 16 | 0 |
+| Validation 431 | 140 | 124 | 16 | 1 |
+| Validation total | 645 | 564 | 81 | 2 |
+
+Stress lanes had the same capped counts as development clean (374, 350, 24). Most capped pairs are same-person: 350 of 374 in development and 564 of 645 in validation.
+
+**Cost not captured by CRC recall: split identities (read-only diagnosis; development on the run-1 lanes, whose capped counts and recall equal run-2's; validation on run-2):** the link-review queue asks only the link questions a loop depends on, so a capped pair that no open CRC loop needs is neither merged nor asked. In the development diagnosis the 374 capped pairs ended as: 95 queued (all same-person, all linked by the reviewer), 49 same-person linked through another path without being queued, 206 same-person and 24 different-person left in the review band without being queued. No capped pair reached the review queue without being linked. At the end of the lanes, capped pairs left unmerged and unreviewed in separate clusters were:
+
+| Capped pairs left apart at the end | Same-person | Of these, in one cluster in the paired baseline lane | Different-person | Of these, in one cluster in the paired baseline lane |
+|---|---:|---:|---:|---:|
+| Development (seeds 521, 541, 547) | 183 | 128 | 24 | 15 |
+| Validation (seeds 401-431) | 269 | 187 | 80 | 43 |
+
+So on validation the cap left 187 same-person pairs apart that the baseline arm had joined, against 43 different-person pairs it kept apart that the baseline had joined (development 128 against 15). These are registrations of one person held as separate identities away from CRC loops; CRC recall does not price them, and the clean lanes have no simulated reviewer error, so a queued same-person pair would have been linked. Two cautions apply. The comparator is the baseline arm (the default model, with no cap), not `pairfeat5` without the cap; no cap-off `pairfeat5` arm was run, so how much of the false-merge reduction comes from the cap and how much from regularisation is not isolated. And the prevented false-merge count (33 in development, 86 in validation) counts different-person registration pairs inside clusters, so it is not expected to equal the different-person capped pairs (15 and 43) the baseline joined. One of the 81 different-person capped validation pairs ended in one cluster anyway, by a path not traced further. Whether capped pairs should always be queued for review, and what that would cost, is an open product question: in the development diagnosis, queueing every capped pair would have added up to 279 link-review pairs to run-1's 550 (not run).
+
+**Interpretation:** in these simulated CRC cohorts the regularised refit with the cross-script cap kept the recall gain the earlier pair-scorer experiments found (+6.18pp pooled on validation) and, unlike `pairfeat2`-`pairfeat4`, reduced every contamination count in every seed, with no rise in distinct link-review pairs on validation (892 to 892). The cost moved out of the CRC metrics into unmerged same-person registrations, as reported above. The development seeds differ from the earlier experiments' and validation is a disclosed second pass, so no claim is made that it would generalize beyond these synthetic cohorts. This makes `pairfeat5` a candidate that passed its pre-registered gates, not a validated default.
+
+**Implementation notes (from parked review findings; none changed a result):**
+- `L.pscore` keeps the raw, uncapped model score for a capped pair (it is written before the cap), so the cluster-average merge guard (`GuardThr` 0.25) sees the raw value. Both 0.69 and any raw score above it sit far above 0.25, so this can change a guard decision only when a cluster's average pair score is near 0.25. A capped pair can still end in one cluster through a third record; the cap never claimed to stop that.
+- The transitive `linked` trace record also carries the raw score for a capped pair, so trace readers must use the `near` or `below_review` record with `reason: "xscript_cap"` for the capped value.
+- The linker stat `xscript_capped` counts cap firings, not distinct pairs; it equalled the distinct capped-pair count in every lane checked (development and validation).
+- The cap relies on the merge threshold being above 0.69 (default 0.7, used in every lane here); a threshold at or below 0.69 would let capped pairs merge.
+
+**Result-affecting rulings:**
+- Amendment 1 (cap-aware gate, ratio 2 per prevented false merge) was user-approved and committed at `09524fe`/`3af6821` before any `pairfeat5` development lane; the fitted model and every other gate were unchanged.
+- The classifier category `candidate_capped_not_queued` was added after run-1 stopped in validation, with user approval; it is diagnostic and no gate reads it, and the whole chain was re-run at the new HEAD rather than resuming validation.
+- run-0-preamend is information only; run-2 is the run of record; the run-1 development and stress figures are kept as the first record and their differences are reported above.
+- The leaf stop check reads `max_abs_leaf` from the fit report (missing or non-finite stops the run, exit 4) instead of re-walking the trees in the driver, so the check is not independent of `fit_scorer`'s tree walk.
+- An unmapped registration in the capped-pair or wrong-pair counts aborts the analysis before any write-once file; this did not occur.
+
+**Process rulings and deviations:**
+- Go task A (linker cap) and Python tasks B (fit) and C (harness) ran in parallel on disjoint files; the cost was only commit interleaving. C2 (cap-aware gate) and C3 (classifier category) followed.
+- Task A could not show trace byte-identity for other modelsets on the traced `orchestrate` lane, because that lane is not reproducible run to run even with the base binary; identity was shown on `featdump`, generation and simulation output (byte-identical) and an identical trace schema. The ruling accepted this because the harness compares paired lanes, not trace bytes.
+- Task B's fix round (`7390a99`) was not run strictly test-first.
+- Task C2 was not written in strict test-first order (only the pre-existing `pairfeat5` tests were red first); its tests were added and pass.
+- Deferred minor review findings (none affect results): a test subclass re-runs inherited tests; truth is loaded only through the wrong-pair path; no end-to-end exit-4 test in the driver's main flow; a stale `encdev` doc comment; no missing-DOB feature-13 assertion in the linker test; a test fixture uses stage "model"; the gate trusts the loader for the baseline's zero capped count; the baseline scan checks pair records only; the zero-baseline reason text; a weak abort-message assertion and a no-op slice in a test; `aggregate_arm` silently drops the new category on mixed lanes (unreachable through the lane loader).
+- Strict same-HEAD binding was kept, so run-2 stayed at `56d31fd` from fit through validation.
+
+**Scope:** the model and cap apply globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model, default noise and default floor 0.2 are unchanged and `pairfeat5` was not promoted. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
