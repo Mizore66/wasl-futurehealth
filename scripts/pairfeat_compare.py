@@ -13,6 +13,9 @@ a pairfeat5 artifact-manifest.json and a write-once experiment.json {"candidate"
 (init-experiment); it serves the arms baseline, pairfeat5 (the reference, run exactly as a pairfeat5 lane) and r1review, and
 records r1review in selection.json, stress.json and validation-manifest.json (which also hashes experiment.json). Without
 experiment.json such a parent is a plain pairfeat5 experiment; a malformed or contradicting experiment.json is refused.
+Amendment 2: every arm of an r1review experiment runs gen -imgphotos and orchestrate/audit/report7 -image cached (both
+-imgcache <repo>/models/image_verdicts.json; build.json records image, imgphotos and the cache SHA256, equal in all arms);
+pairfeat1-pairfeat5 experiments keep -image off. init-experiment refuses a parent already holding a decision file.
 
 Usage
   pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT
@@ -86,7 +89,9 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               # commands, analysed against baseline and against its reference arm pairfeat5 (identity: experiment.json)
               "r1review": {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619],
                            "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
-                           "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"]}}
+                           "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"],
+                           # amendment 2: every arm of an r1review experiment runs gen -imgphotos and the cached image reader
+                           "lane_image": True}}
 WRONG_GATES = ("wrong_pair", "wrong_pair_cap")  # review gates that read cohort/truth.json pk_qid
 CAP_WRONG_PER_PREVENTED = 2  # wrong_pair_cap gate: allowed capped different-person review pairs per prevented false merge
 WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
@@ -122,8 +127,22 @@ def reference(candidate):
     return CANDIDATES.get(candidate, {}).get("reference")
 
 
+IMAGE_VERDICTS = "models/image_verdicts.json"  # cached image-reader verdicts and the gen photo pool (repo-relative)
+
+
+def lane_image(candidate):
+    """True when every arm of this candidate's experiment runs synthetic photos (gen -imgphotos) and the cached image
+    reader (-image cached on orchestrate/audit/report7); False (image off) for pairfeat1-pairfeat5."""
+    return bool(CANDIDATES.get(candidate, {}).get("lane_image"))
+
+
+def lane_image_mode(candidate):
+    return "cached" if lane_image(candidate) else "off"
+
+
 CHAIN_CANDIDATES = tuple(c for c in CANDIDATES if chain_of(c) == c)  # candidates that own a <candidate>_chain_sha256 key
 EXTRA_FLAGS = tuple(sorted({f for c in CANDIDATES for f in extra_flags(c)}))
+BARE_FLAGS = EXTRA_FLAGS + ("-imgphotos",)  # bare boolean flags the guard counts (and whose misspellings it refuses)
 MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
             "pairfeat5": "pairfeat5"}
 MODELSET.update({c: MODELSET[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
@@ -222,6 +241,8 @@ def expected_settings(mode, candidate):
         s["reference"] = reference(candidate)
         s["candidate_extra_flags"] = extra_flags(candidate)
     s.update(LANE)
+    if lane_image(candidate):  # amendment 2 (keys absent, image "off", for pairfeat1-pairfeat5)
+        s.update({"image": lane_image_mode(candidate), "imgphotos": True, "imgcache": IMAGE_VERDICTS})
     return s
 
 
@@ -325,6 +346,9 @@ def init_experiment(exp_dir, candidate):
     ep = os.path.join(exp_dir, EXPERIMENT)
     if os.path.lexists(ep):
         raise PreflightError("experiment.json already exists; it is written once and never rewritten")
+    for n in (SELECTION, STRESS, VALIDATION_MANIFEST):
+        if os.path.lexists(os.path.join(exp_dir, n)):
+            raise PreflightError("%s already exists: experiment.json must name the candidate before any decision" % n)
     am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
     found = infer_candidate(am, ARTIFACT_MANIFEST)
     if found != chain_of(candidate) or found != reference(candidate):
@@ -505,16 +529,24 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
 
 # ---------------------------------------------------------------- lane commands and guard
 
-def lane_commands(root, bin_, o, seed, mode, arm):
+def lane_commands(root, bin_, o, seed, mode, arm, candidate=None):
     """(name, argv, log) for one lane. gen/sim/augment are identical in both arms (identical cohort and truth denominator);
     only the candidate's orchestrate/audit/report7 carry -modelset <candidate>. Both arms use -linkfloor 0.01 and v7strict.
-    The seed is the caller's; guard() checks it against the experiment candidate's seed set."""
+    The seed is the caller's; guard() checks it against the experiment candidate's seed set. candidate is the experiment's
+    (default: the arm itself, or none for baseline); in an r1review experiment every arm adds gen -imgphotos and
+    -image cached, both with -imgcache <root>/models/image_verdicts.json."""
     if arm not in ALLOWED_ARMS:
         raise ValueError("invalid arm " + repr(arm))
+    if candidate is None:
+        candidate = arm if arm in CANDIDATES else None
+    elif candidate not in CANDIDATES:
+        raise ValueError("invalid candidate " + repr(candidate))
+    img = lane_image(candidate)
+    ic = ["-imgcache", root + "/" + IMAGE_VERDICTS] if img else []
     m = MODES[mode]
     split, rerr, erru = m["split"], m["rerr"], m["errungraded"]
     r = o + "/run/main"
-    rd = ["-reader", LANE["reader"], "-image", LANE["image"]]
+    rd = ["-reader", LANE["reader"], "-image", lane_image_mode(candidate)] + ic
     lf = ["-linkfloor", FLOOR]
     ms = ["-modelset", MODELSET[arm]] if MODELSET[arm] else []
     ex = extra_flags(arm)  # r1review arm only: -r1review, last on orchestrate/audit/report7
@@ -523,6 +555,8 @@ def lane_commands(root, bin_, o, seed, mode, arm):
            "-ecpool", root + "/patient-parsers/econsult_testset.json", "-tbpool", root + "/patient-parsers/teachback_testset.json",
            "-out", o + "/base", "-split", split, "-seed", str(seed), "-loops", LANE["loops"], "-distract", LANE["distract"],
            "-cerv", "0", "-noise", LANE["noise"], "-lung", "0", "-dr", "0", "-breast", "0", "-ldct", "0", "-ifhas", "0"]
+    if img:
+        gen += ic + ["-imgphotos"]
     sim = [bin_, "sim", "-data", o + "/base", "-wasl", root + "/models", "-run", o + "/run/base"]
     aug = ["python3", "-I", root + "/pipeline/augment_cohort.py", o + "/base", o + "/run/base", o + "/cohort"]
     orch = [bin_, "orchestrate", "-data", o + "/cohort", "-wasl", root + "/models", "-run", r, "-preps", LANE["preps"],
@@ -550,6 +584,7 @@ def guard(argv, mode, arm, bin_, candidate):
     if not isinstance(argv, list) or len(argv) < 3 or not all(isinstance(a, str) for a in argv):
         raise GuardError("malformed argv")
     m = mode_settings(mode, candidate)
+    img = lane_image(candidate)
     for a in argv:
         low = a.lower()
         if "frozen" in low or "b8" in low or "heldout" in low:
@@ -558,7 +593,7 @@ def guard(argv, mode, arm, bin_, candidate):
             bad("v7ltt is not permitted (pairfeat candidates support v7strict only)")
         if a.startswith("--") or (a.startswith("-") and "=" in a):
             bad("only single-dash separate-value flags are allowed: " + a)
-        if a.startswith("-") and a not in EXTRA_FLAGS and any(f[1:].lower() in low for f in EXTRA_FLAGS):
+        if a.startswith("-") and a not in BARE_FLAGS and any(f[1:].lower() in low for f in BARE_FLAGS):
             bad("flag spelling " + a)
 
     def val(flag):
@@ -584,8 +619,8 @@ def guard(argv, mode, arm, bin_, candidate):
         want = MODELSET[arm] or None
         if ms != want:
             bad("-modelset must be %r for arm %s" % (want, arm))
-        if val("-reader") != LANE["reader"] or val("-image") != LANE["image"]:
-            bad("reader must be cached, image off")
+        if val("-reader") != LANE["reader"] or val("-image") != lane_image_mode(candidate):
+            bad("reader must be cached, image %s" % lane_image_mode(candidate))
         if val("-policy") != POLICY:
             bad("policy must be v7strict")
         if val("-rerr") != m["rerr"] or val("-errungraded") != m["errungraded"]:
@@ -626,8 +661,15 @@ def guard(argv, mode, arm, bin_, candidate):
             bad("orchestrate seed/rseed")
     if cmd == "link_funnel.py" and argv[-3:] != [m["split"], m["rerr"], m["errungraded"]]:
         bad("classifier scope")
-    for f in EXTRA_FLAGS:  # bare boolean flags: exactly once on the arm's model commands, never anywhere else
-        want = 1 if cmd in MODEL_CMDS and f in extra_flags(arm) else 0
+    cache = val("-imgcache")
+    if img and cmd in ("gen",) + MODEL_CMDS:  # image experiments: the repo's models/image_verdicts.json, nothing else
+        if cache != os.path.join(os.path.dirname(os.path.dirname(bin_)), IMAGE_VERDICTS):
+            bad("-imgcache must be the repository " + IMAGE_VERDICTS)
+    elif cache is not None or "-imgcache" in argv:
+        bad("-imgcache is only allowed in image experiments on gen/orchestrate/audit/report7")
+    bare = [(f, 1 if cmd in MODEL_CMDS and f in extra_flags(arm) else 0) for f in EXTRA_FLAGS]
+    bare.append(("-imgphotos", 1 if img and cmd == "gen" else 0))
+    for f, want in bare:  # bare boolean flags: exactly where required, never anywhere else
         if argv.count(f) != want:
             bad("%s must appear %d time(s) on %s for arm %s" % (f, want, cmd, arm))
         if want:
@@ -696,6 +738,11 @@ def read_build(root, arm, mode, candidate):
         raise ValueError("build.json candidate %r is not the experiment candidate %s" % (b.get("candidate"), candidate))
     if b.get("extra_flags", []) != extra_flags(arm):  # recorded only for arms with extra flags (r1review)
         raise ValueError("build.json extra_flags %r do not match arm %s" % (b.get("extra_flags"), arm))
+    if lane_image(candidate):  # amendment 2: every arm records image cached, photos on and the verdict cache SHA256
+        if b.get("image") != "cached" or b.get("imgphotos") is not True or not _is_hex(b.get("image_verdicts_sha256"), 64):
+            raise ValueError("build.json must record image cached, imgphotos true and image_verdicts_sha256 (%s experiment)" % candidate)
+    elif any(k in b for k in IMAGE_BUILD_KEYS):
+        raise ValueError("build.json records an image setting but the %s experiment runs with the image reader off" % candidate)
     fl = b.get("floor")
     if isinstance(fl, bool) or not isinstance(fl, (int, float)) or fl != float(FLOOR):
         raise ValueError("build.json floor must be 0.01")
@@ -704,6 +751,19 @@ def read_build(root, arm, mode, candidate):
     except PreflightError as e:
         raise ValueError(str(e))
     return b
+
+
+IMAGE_BUILD_KEYS = ("image", "imgphotos", "image_verdicts_sha256")
+
+
+def image_build(repo, candidate):
+    """build.json fields for an image experiment's arm (none for pairfeat1-pairfeat5); the verdict cache must exist."""
+    if not lane_image(candidate):
+        return {}
+    p = os.path.join(repo, IMAGE_VERDICTS)
+    if os.path.islink(p) or not os.path.isfile(p):
+        raise PreflightError("image experiment needs " + IMAGE_VERDICTS)
+    return {"image": lane_image_mode(candidate), "imgphotos": True, "image_verdicts_sha256": sha256_file(p)}
 
 
 def review_load(queue, decisions, pk_qid=None, capped=None):
@@ -1172,6 +1232,8 @@ def analyse(mode, out, roots, repo=REPO, head=None):
             raise ValueError("arms were built at different git heads")
         if builds["baseline"]["binary_sha256"] != builds[a]["binary_sha256"]:
             raise ValueError("arms used different binaries")
+    if lane_image(candidate) and len({builds[a]["image_verdicts_sha256"] for a in arms(candidate)}) != 1:
+        raise ValueError("arms used different image_verdicts.json")
     head = builds["baseline"]["git_head"]
     if gov.get("git_head") != head:
         raise ValueError("arm builds are not at the %s git_head" % gov_name)
@@ -1184,6 +1246,8 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     ident = {"mode": mode, "candidate": candidate, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
              "baseline_chain_sha256": gov["baseline_chain_sha256"], CHAIN_KEY[candidate]: gov[CHAIN_KEY[candidate]],
              "governing_manifest_sha256": sha256_file(os.path.join(exp, gov_name))}
+    if lane_image(candidate):
+        res["image_verdicts_sha256"] = ident["image_verdicts_sha256"] = builds["baseline"]["image_verdicts_sha256"]
     if ref_arm:  # three-arm candidate: reference arm, paired gains over it, and the reference gate (pass needs both gates)
         res["reference"] = ident["reference"] = ref_arm
         res["paired_gain_vs_reference_t95"] = paired_gain_interval(ref, cand)
