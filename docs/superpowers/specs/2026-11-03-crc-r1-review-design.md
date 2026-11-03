@@ -79,3 +79,14 @@ The vs-pairfeat5 safety gate originally listed "wrong final sign-offs 0". That c
 - Photo attachment is simulated with assumed rates tied to the text answer key: 85% of reports that document the caecum get a true caecum photo, and 10% of the others get a mis-filed non-caecal photo.
 - The result therefore means "if units photograph caecal completion as DoH App. 11 s2.2 requires". It is not a measured documentation rate.
 - The CNN was trained on HyperKvasir (Norwegian video frames) and needs local recalibration.
+
+## Amendment 3 (user-approved 3 Nov 2026, after the first dev-clean): gate r1review against pairfeat5 only, fresh seeds
+
+**Why.** Dev-clean on 557 563 569 (experiment `pairfeat5/r1review-run-1`, HEAD `4377e83`) failed gate 1 on one count only: uncapped wrong-pair link-review pairs 6 against a cap of 5.5 (baseline 5 + 10%). The pairfeat5 arm had the same 6 and the r1review arm's link output is identical to pairfeat5's, so the failure is a property of the pairfeat5 linker, not of r1review. Diagnosis (read-only): all 11 wrong-pair reviews (5 baseline, 6 pairfeat5) are cross-script lookalikes at p 0.01–0.09, just above the 0.01 review floor (Arabic-script referral name against a Latin-script endoscopy name, shared given name, same sex, birth year equal or one apart, often a 1 January placeholder). pairfeat5 moved 2 below the floor and 3 above it. All 11 were answered "different" correctly; none caused a merge or a closure. Gate 2 passed: recall 89.97% → 93.22% (+3.24pp), false closures 0, false merges, impure clusters, cross-person edges and wrong-pair reviews identical to pairfeat5, hours 1.023×. pairfeat5 already passed its own vs-baseline gates on five validation seeds (`pairfeat5/run-2`).
+
+**Change.**
+- For the `r1review` candidate, gate 1 (vs baseline) is reported, not gating. Gate 2 (vs pairfeat5) gates, unchanged: recall gain ≥ +1.0pp selection, ≥ 0 stress, ≥ +0.5pp validation; the SAFETY set zero in every lane of every arm; `false_merge_pairs`, `impure_clusters`, `cross_person_edges` and wrong-pair link-review pairs not above the pairfeat5 arm's; total reviewer hours ≤ 1.10 × the pairfeat5 arm's.
+- Fresh seeds, never used: development 571 577 587; validation 631 641 643 647 653. Seeds 557 563 569 and 601 607 613 617 619 are retired unused for validation and join the never-touch list.
+- New experiment directory and a pairfeat5 refit at the new HEAD; the chain must equal `pairfeat5/run-2`'s.
+
+**Disclosure.** This is a post-hoc gate change made after seeing dev-clean results on 557 563 569; those results are reported alongside the rerun. Nothing about the r1review mechanism or its thresholds changes.
