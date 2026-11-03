@@ -7,11 +7,21 @@ pairfeat4 (433 449 461), pairfeat5 (521 541 547); validation seeds 401 409 419 4
 baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
 candidate and are checked against it.
 
+Three-arm candidate r1review (development seeds 557 563 569, validation 601 607 613 617 619): the pairfeat5 chain (same model
+files, manifest key pairfeat5_chain_sha256, -modelset pairfeat5) plus -r1review on orchestrate/audit/report7. Its parent holds
+a pairfeat5 artifact-manifest.json and a write-once experiment.json {"candidate": "r1review", "reference": "pairfeat5"}
+(init-experiment); it serves the arms baseline, pairfeat5 (the reference, run exactly as a pairfeat5 lane) and r1review, and
+records r1review in selection.json, stress.json and validation-manifest.json (which also hashes experiment.json). Without
+experiment.json such a parent is a plain pairfeat5 experiment; a malformed or contradicting experiment.json is refused.
+
 Usage
-  pairfeat_compare.py MODE OUT_JSON baseline=ROOT <candidate>=ROOT
+  pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT
       MODE dev-clean | dev-stress | validation-clean. OUT_JSON must sit in the experiment parent directory (the directory
       holding the arm roots and the manifests below). dev-clean also writes selection.json, dev-stress also writes stress.json
-      (both write-once, next to OUT_JSON). <candidate> must be the parent's candidate.
+      (both write-once, next to OUT_JSON). <candidate> must be the parent's candidate; a three-arm candidate also needs
+      its reference root (r1review: baseline=, pairfeat5= and r1review=).
+  pairfeat_compare.py init-experiment EXPERIMENT_DIR r1review
+      Writes EXPERIMENT_DIR/experiment.json (write-once) when artifact-manifest.json carries exactly the pairfeat5 chain.
   pairfeat_compare.py freeze-validation EXPERIMENT_DIR
       Writes EXPERIMENT_DIR/validation-manifest.json (write-once) only when selection.json selected the parent's candidate
       and stress.json passed, all at the current git HEAD with unchanged model files.
@@ -43,6 +53,13 @@ Review-load gate per candidate (CANDIDATES[c]["review_gate"], pre-registered): "
   "wrong_pair_cap" (pairfeat5, amendment 1) additionally reads each lane's run/main/link_funnel.ndjson (the baseline's must hold
   no xscript_cap record): uncapped different-person review pairs <= 1.10 x baseline (<= 1 if none), prevented
   false_merge_pairs (baseline - candidate) >= 1, capped different-person review pairs <= 2 x prevented.
+Three-arm reference gate (r1review, pre-registered): gate(baseline, r1review) above with wrong_pair_cap, and
+  reference_gate(pairfeat5, r1review): recall gain over pairfeat5 >= +1.0 selection, >= 0 stress, >= +0.5 validation; false
+  closures, wrong releases (total and by origin), wrong final sign-offs, replay mismatches, analysis and trace-write errors
+  zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and reviewer.wrong_distinct_pairs not above
+  pairfeat5's; reviewer hours <= 1.10 x pairfeat5's. pass (and selected_modelset = r1review) needs both gates. Both
+  non-baseline arms report capped pairs; every arm reports completion_undocumented review items and their answers
+  (reported, not gating).
 CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_closed is a link attach rate, not recall).
 Residual categories and reviewer wrong_final_signoffs are reported outcomes, not gate substitutions.
 Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and descriptive only.
@@ -64,7 +81,12 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
               "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
               # report_xscript_cap: each candidate-arm lane also reports its distinct capped pairs (not gating)
-              "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap", "report_xscript_cap": True}}
+              "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap", "report_xscript_cap": True},
+              # three-arm candidate: the pairfeat5 chain (same model files and manifest key) plus -r1review on its model
+              # commands, analysed against baseline and against its reference arm pairfeat5 (identity: experiment.json)
+              "r1review": {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619],
+                           "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                           "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"]}}
 WRONG_GATES = ("wrong_pair", "wrong_pair_cap")  # review gates that read cohort/truth.json pk_qid
 CAP_WRONG_PER_PREVENTED = 2  # wrong_pair_cap gate: allowed capped different-person review pairs per prevented false merge
 WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
@@ -77,11 +99,34 @@ MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candida
 FLOOR = "0.01"
 MIN_GAIN_PP = {"selection": 2.0, "validation": 1.0}
 MAX_REVIEW_GROWTH = 0.10
+# reference gate (three-arm candidates only): candidate minus reference-arm recall, and reviewer hours growth
+REF_MIN_GAIN_PP = {"selection": 1.0, "stress": 0.0, "validation": 0.5}
+REF_MAX_HOURS_GROWTH = 0.10
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
+
+
+def chain_of(arm):
+    """The candidate whose model chain (files, manifest key, -modelset) an arm runs: itself unless it borrows one."""
+    return CANDIDATES.get(arm, {}).get("chain", arm)
+
+
+def extra_flags(arm):
+    """Bare boolean flags an arm adds to orchestrate/audit/report7 (only r1review: -r1review)."""
+    return list(CANDIDATES.get(arm, {}).get("extra_flags", []))
+
+
+def reference(candidate):
+    """The reference arm of a three-arm candidate, else None."""
+    return CANDIDATES.get(candidate, {}).get("reference")
+
+
+CHAIN_CANDIDATES = tuple(c for c in CANDIDATES if chain_of(c) == c)  # candidates that own a <candidate>_chain_sha256 key
+EXTRA_FLAGS = tuple(sorted({f for c in CANDIDATES for f in extra_flags(c)}))
 MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
             "pairfeat5": "pairfeat5"}
+MODELSET.update({c: MODELSET[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
     "pairfeat1": ("encoder_pairfeat1.json", "lgb_stream_pairfeat1.json", "iso_pairfeat1.json", "iso_v7_pairfeat1.json"),
@@ -90,8 +135,9 @@ CHAIN_FILES = {
     "pairfeat4": ("encoder_pairfeat4.json", "lgb_stream_pairfeat4.json", "iso_pairfeat4.json", "iso_v7_pairfeat4.json"),
     "pairfeat5": ("encoder_pairfeat5.json", "lgb_stream_pairfeat5.json", "iso_pairfeat5.json", "iso_v7_pairfeat5.json"),
 }
+CHAIN_FILES.update({c: CHAIN_FILES[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_SUFFIX = "_chain_sha256"
-CHAIN_KEY = {a: a + CHAIN_SUFFIX for a in ALLOWED_ARMS}
+CHAIN_KEY = {a: chain_of(a) + CHAIN_SUFFIX for a in ALLOWED_ARMS}
 GATE_KINDS = ("selection", "validation", "stress")
 T_CRIT = {3: 4.303, 5: 2.776}  # two-sided 95%, df = n-1
 SAFETY = ("false_closures", "wrong_released_total", "replay_mismatch", "analysis_errors", "trace_error")
@@ -103,12 +149,15 @@ RESIDUAL = ("candidate_not_generated", "candidate_below_review", "candidate_reje
 # extra funnel category (also a CRC closure miss), present only for report_xscript_cap candidates' analyses
 CAP_CATEGORY = "candidate_capped_not_queued"
 REVIEWER_SUMS = ("items", "hours", "distinct_pairs", "unanswered", "link_items", "wrong_final_signoffs")
+COMPLETION_PURPOSE = "completion_undocumented"  # review-item reason raised by -r1review (reported in three-arm analyses)
+COMPLETION_KEYS = ("items", "adequate", "inadequate", "other", "unanswered", "wrong")
 
 ARTIFACT_MANIFEST = "artifact-manifest.json"
 SELECTION = "selection.json"
 STRESS = "stress.json"
 VALIDATION_MANIFEST = "validation-manifest.json"
-RESERVED = (ARTIFACT_MANIFEST, SELECTION, STRESS, VALIDATION_MANIFEST)
+EXPERIMENT = "experiment.json"  # write-once identity of a three-arm experiment (init-experiment)
+RESERVED = (ARTIFACT_MANIFEST, SELECTION, STRESS, VALIDATION_MANIFEST, EXPERIMENT)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -144,15 +193,18 @@ def review_gate(candidate):
 
 
 def arms(candidate):
-    """The two arms of an experiment parent serving this candidate."""
-    return ("baseline", _check_candidate(candidate))
+    """The arms of an experiment parent serving this candidate: baseline and the candidate, with the reference arm
+    between them for a three-arm candidate (r1review: baseline, pairfeat5, r1review)."""
+    ref = reference(_check_candidate(candidate))
+    return ("baseline", ref, candidate) if ref else ("baseline", candidate)
 
 
 def mode_settings(mode, candidate):
     """Split, seeds and reviewer-error settings of a mode in an experiment serving this candidate."""
     m = MODES[mode]
     _check_candidate(candidate)
-    seeds = VALIDATION_SEEDS if mode == "validation-clean" else CANDIDATES[candidate]["dev_seeds"]
+    seeds = (CANDIDATES[candidate].get("validation_seeds", VALIDATION_SEEDS) if mode == "validation-clean"
+             else CANDIDATES[candidate]["dev_seeds"])
     return {"split": m["split"], "seeds": list(seeds), "rerr": m["rerr"], "errungraded": m["errungraded"]}
 
 
@@ -164,8 +216,11 @@ def expected_settings(mode, candidate):
     m = mode_settings(mode, candidate)
     s = {"mode": mode, "split": m["split"], "seeds": m["seeds"], "rerr": m["rerr"], "errungraded": m["errungraded"],
          "linkfloor": FLOOR, "policy": POLICY, "nats_kill": False, "cohort": "crc-only", "dual": True,
-         "candidate_modelset": candidate, "candidate_modelset_commands": list(MODEL_CMDS), "arms": list(arms(candidate)),
+         "candidate_modelset": MODELSET[candidate], "candidate_modelset_commands": list(MODEL_CMDS), "arms": list(arms(candidate)),
          "arms_sequential": True}
+    if reference(candidate):  # three-arm candidates only (keys absent for pairfeat1-pairfeat5)
+        s["reference"] = reference(candidate)
+        s["candidate_extra_flags"] = extra_flags(candidate)
     s.update(LANE)
     return s
 
@@ -219,17 +274,65 @@ def _check_chain_map(m, arm, what):
 
 
 def infer_candidate(doc, what):
-    """The single candidate whose <candidate>_chain_sha256 key a document carries (besides baseline_chain_sha256)."""
+    """The single candidate whose <candidate>_chain_sha256 key a document carries (besides baseline_chain_sha256).
+    Only chain-owning candidates (pairfeat1-pairfeat5) have a key; r1review is named only by experiment.json."""
     if not isinstance(doc, dict):
         raise PreflightError("%s malformed" % what)
     found = sorted(k[:-len(CHAIN_SUFFIX)] for k in doc
                    if isinstance(k, str) and k.endswith(CHAIN_SUFFIX) and k != CHAIN_KEY["baseline"])
     if len(found) != 1:
         raise PreflightError("%s must carry exactly one candidate <candidate>%s key, found %s (allowed %s)"
-                             % (what, CHAIN_SUFFIX, found, sorted(CANDIDATES)))
-    if found[0] not in CANDIDATES:
-        raise PreflightError("%s names unknown candidate %r (allowed %s)" % (what, found[0], sorted(CANDIDATES)))
+                             % (what, CHAIN_SUFFIX, found, sorted(CHAIN_CANDIDATES)))
+    if found[0] not in CHAIN_CANDIDATES:
+        raise PreflightError("%s names unknown candidate %r (allowed %s)" % (what, found[0], sorted(CHAIN_CANDIDATES)))
     return found[0]
+
+
+def read_experiment(exp_dir):
+    """The parsed experiment.json of a parent, or None when it has none. A present file must be exactly
+    {"candidate": <three-arm candidate>, "reference": <its reference arm>}."""
+    ep = os.path.join(exp_dir, EXPERIMENT)
+    if not os.path.lexists(ep):
+        return None
+    e = _read_json(ep)
+    if not isinstance(e, dict) or set(e) != {"candidate", "reference"} or not isinstance(e["candidate"], str) \
+            or e["candidate"] not in CANDIDATES or not reference(e["candidate"]) or e["reference"] != reference(e["candidate"]):
+        raise PreflightError("experiment.json must be exactly {\"candidate\": <three-arm candidate>, \"reference\": <its reference>}"
+                             " (allowed %s)" % sorted(c for c in CANDIDATES if reference(c)))
+    return e
+
+
+def resolve_candidate(doc, what, exp_dir=None):
+    """The candidate an experiment parent serves: experiment.json's three-arm candidate when the parent has one and its
+    chain and reference are the chain doc carries, else the candidate inferred from doc's chain key. A contradicting
+    experiment.json is refused."""
+    found = infer_candidate(doc, what)
+    e = read_experiment(exp_dir) if exp_dir is not None else None
+    if e is None:
+        return found
+    if chain_of(e["candidate"]) != found or e["reference"] != found:
+        raise PreflightError("experiment.json candidate %s (reference %s) contradicts the %s chain in %s"
+                             % (e["candidate"], e["reference"], found, what))
+    return e["candidate"]
+
+
+def init_experiment(exp_dir, candidate):
+    """Write EXPERIMENT_DIR/experiment.json (write-once) naming a three-arm candidate and its reference, only when the
+    parent's artifact-manifest.json carries exactly that reference chain (baseline plus one well-formed chain map)."""
+    if not isinstance(candidate, str) or candidate not in CANDIDATES or not reference(candidate):
+        raise PreflightError("init-experiment needs a three-arm candidate (%s), got %r"
+                             % ("|".join(sorted(c for c in CANDIDATES if reference(c))), candidate))
+    ep = os.path.join(exp_dir, EXPERIMENT)
+    if os.path.lexists(ep):
+        raise PreflightError("experiment.json already exists; it is written once and never rewritten")
+    am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
+    found = infer_candidate(am, ARTIFACT_MANIFEST)
+    if found != chain_of(candidate) or found != reference(candidate):
+        raise PreflightError("artifact-manifest.json carries the %s chain, %s needs %s" % (found, candidate, chain_of(candidate)))
+    _check_maps(am, candidate, ARTIFACT_MANIFEST)
+    e = {"candidate": candidate, "reference": reference(candidate)}
+    _write_once(ep, e)
+    return e
 
 
 def _check_maps(doc, candidate, what):
@@ -241,7 +344,7 @@ def _check_recorded_candidate(doc, candidate, what):
     """A frozen decision file records the candidate it was computed for and carries only that candidate's chain."""
     if doc.get("candidate") != candidate:
         raise PreflightError("%s candidate %r is not this experiment's candidate %s" % (what, doc.get("candidate"), candidate))
-    if infer_candidate(doc, what) != candidate:
+    if infer_candidate(doc, what) != chain_of(candidate):
         raise PreflightError("%s carries another candidate's chain" % what)
 
 
@@ -258,13 +361,13 @@ def _check_files_match(repo, arm, frozen, what):
     return cur
 
 
-def check_artifact_manifest(am, head):
-    """Returns the candidate the experiment parent serves."""
+def check_artifact_manifest(am, head, exp_dir=None):
+    """Returns the candidate the experiment parent serves (experiment.json in exp_dir names a three-arm candidate)."""
     if not isinstance(am, dict) or not _is_hex(am.get("git_head"), 40):
         raise PreflightError("artifact-manifest.json needs a full git_head")
     if am["git_head"] != head:
         raise PreflightError("artifact-manifest.json git_head does not match current HEAD")
-    candidate = infer_candidate(am, "artifact-manifest.json")
+    candidate = resolve_candidate(am, "artifact-manifest.json", exp_dir)
     _check_maps(am, candidate, "artifact-manifest.json")
     return candidate
 
@@ -335,8 +438,12 @@ def check_frozen_validation(vm, exp_dir, repo, head):
         if not _is_hex(vm.get(key), 64) or vm[key] != sha256_file(path):
             raise PreflightError("validation-manifest.json %s does not match %s" % (key, os.path.basename(path)))
     am = _read_json(ap)
-    if check_artifact_manifest(am, head) != candidate:
+    if check_artifact_manifest(am, head, exp_dir) != candidate:
         raise PreflightError("validation-manifest.json candidate %s is not the artifact-manifest.json candidate" % candidate)
+    if reference(candidate):  # three-arm: the experiment.json the freeze saw, byte for byte
+        ep = os.path.join(exp_dir, EXPERIMENT)
+        if not _is_hex(vm.get("experiment_sha256"), 64) or vm["experiment_sha256"] != sha256_file(ep):
+            raise PreflightError("validation-manifest.json experiment_sha256 does not match experiment.json")
     for a in arms(candidate):
         if vm[CHAIN_KEY[a]] != am[CHAIN_KEY[a]]:
             raise PreflightError("validation-manifest.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
@@ -357,7 +464,7 @@ def preflight_identity(mode, arm, exp_dir, repo, head):
         _check_arm(arm, candidate, VALIDATION_MANIFEST)
         return candidate, _check_files_match(repo, arm, vm[CHAIN_KEY[arm]], "validation-manifest.json")
     am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
-    candidate = check_artifact_manifest(am, head)
+    candidate = check_artifact_manifest(am, head, exp_dir)
     _check_arm(arm, candidate, ARTIFACT_MANIFEST)
     if mode == "dev-stress":
         check_selection(_read_json(os.path.join(exp_dir, SELECTION)), am, head, candidate)
@@ -377,7 +484,7 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
         raise PreflightError("validation-manifest.json already exists; it is frozen and never rewritten")
     ap, sp, tp = (os.path.join(exp_dir, n) for n in (ARTIFACT_MANIFEST, SELECTION, STRESS))
     am = _read_json(ap)
-    candidate = check_artifact_manifest(am, head)
+    candidate = check_artifact_manifest(am, head, exp_dir)
     check_selection(_read_json(sp), am, head, candidate)
     check_stress(_read_json(tp), am, head, sha256_file(sp), candidate)
     for a in arms(candidate):
@@ -390,6 +497,8 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
           "settings": expected_settings("validation-clean", candidate),
           "artifact_manifest_sha256": sha256_file(ap), "selection_sha256": sha256_file(sp), "stress_sha256": sha256_file(tp),
           "note": "frozen before any validation lane; eval/v2 seeds are not inspected before this file exists"}
+    if reference(candidate):
+        vm["experiment_sha256"] = sha256_file(os.path.join(exp_dir, EXPERIMENT))
     _write_once(vp, vm)
     return vm
 
@@ -408,6 +517,7 @@ def lane_commands(root, bin_, o, seed, mode, arm):
     rd = ["-reader", LANE["reader"], "-image", LANE["image"]]
     lf = ["-linkfloor", FLOOR]
     ms = ["-modelset", MODELSET[arm]] if MODELSET[arm] else []
+    ex = extra_flags(arm)  # r1review arm only: -r1review, last on orchestrate/audit/report7
     gen = [bin_, "gen", "-wasl", root + "/data", "-reports", root + "/data/evidence/reports43.json",
            "-pathology", root + "/data/evidence/pathology_templates.json",
            "-ecpool", root + "/patient-parsers/econsult_testset.json", "-tbpool", root + "/patient-parsers/teachback_testset.json",
@@ -418,9 +528,9 @@ def lane_commands(root, bin_, o, seed, mode, arm):
     orch = [bin_, "orchestrate", "-data", o + "/cohort", "-wasl", root + "/models", "-run", r, "-preps", LANE["preps"],
             "-threads", LANE["threads"], "-source", LANE["source"], "-subkill", LANE["subkill"], "-chaos", LANE["chaos"],
             "-ann", LANE["ann"], "-rerr", rerr, "-errungraded", erru, "-rdouble", LANE["rdouble"], "-dual",
-            "-rseed", str(seed), "-seed", str(seed), "-policy", POLICY, "-linkfunnel", r + "/link_funnel.ndjson"] + ms + lf + rd
+            "-rseed", str(seed), "-seed", str(seed), "-policy", POLICY, "-linkfunnel", r + "/link_funnel.ndjson"] + ms + lf + rd + ex
     tail = ["-data", o + "/cohort", "-wasl", root + "/models", "-run", r, "-ann", LANE["ann"], "-dual", "-policy", POLICY,
-            "-rerr", rerr, "-errungraded", erru] + ms + lf + rd
+            "-rerr", rerr, "-errungraded", erru] + ms + lf + rd + ex
     cls = ["python3", "-I", root + "/scripts/link_funnel.py", r, o + "/cohort", o + "/funnel.json", split, rerr, erru]
     return [("gen", gen, "gen.log"), ("sim", sim, "sim.log"), ("augment", aug, "augment.log"),
             ("orchestrate", orch, "orchestrate.log"), ("audit", [bin_, "audit"] + tail, "audit.log"),
@@ -448,6 +558,8 @@ def guard(argv, mode, arm, bin_, candidate):
             bad("v7ltt is not permitted (pairfeat candidates support v7strict only)")
         if a.startswith("--") or (a.startswith("-") and "=" in a):
             bad("only single-dash separate-value flags are allowed: " + a)
+        if a.startswith("-") and a not in EXTRA_FLAGS and any(f[1:].lower() in low for f in EXTRA_FLAGS):
+            bad("flag spelling " + a)
 
     def val(flag):
         idx = [i for i, a in enumerate(argv) if a == flag]
@@ -514,6 +626,14 @@ def guard(argv, mode, arm, bin_, candidate):
             bad("orchestrate seed/rseed")
     if cmd == "link_funnel.py" and argv[-3:] != [m["split"], m["rerr"], m["errungraded"]]:
         bad("classifier scope")
+    for f in EXTRA_FLAGS:  # bare boolean flags: exactly once on the arm's model commands, never anywhere else
+        want = 1 if cmd in MODEL_CMDS and f in extra_flags(arm) else 0
+        if argv.count(f) != want:
+            bad("%s must appear %d time(s) on %s for arm %s" % (f, want, cmd, arm))
+        if want:
+            i = argv.index(f)
+            if i != len(argv) - 1 and not argv[i + 1].startswith("-"):
+                bad(f + " is a bare boolean flag and takes no value")
 
 
 # ---------------------------------------------------------------- lane metrics
@@ -574,6 +694,8 @@ def read_build(root, arm, mode, candidate):
         raise ValueError("build.json arm/modelset/mode do not match %s %s" % (arm, mode))
     if b.get("candidate") != candidate:
         raise ValueError("build.json candidate %r is not the experiment candidate %s" % (b.get("candidate"), candidate))
+    if b.get("extra_flags", []) != extra_flags(arm):  # recorded only for arms with extra flags (r1review)
+        raise ValueError("build.json extra_flags %r do not match arm %s" % (b.get("extra_flags"), arm))
     fl = b.get("floor")
     if isinstance(fl, bool) or not isinstance(fl, (int, float)) or fl != float(FLOOR):
         raise ValueError("build.json floor must be 0.01")
@@ -659,7 +781,30 @@ def xscript_cap_counts(lines, pk_qid):
     return {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
 
 
-def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None):
+def completion_review(queue, decisions):
+    """Reported only (three-arm analyses): distinct review items with reason completion_undocumented and the reviewer's
+    answers from reviewer_decisions.ndjson (adequate, inadequate, other answer, unanswered; wrong = the simulated
+    reviewer's answer disagreed with truth)."""
+    ids = []
+    for i in queue:
+        if i.get("reason") == COMPLETION_PURPOSE and i.get("item") not in ids:
+            ids.append(i.get("item"))
+    by_item = {d.get("item"): d for d in decisions}
+    out = dict.fromkeys(COMPLETION_KEYS, 0)
+    out["items"] = len(ids)
+    for i in ids:
+        d = by_item.get(i)
+        if d is None:
+            out["unanswered"] += 1
+            continue
+        ev = d.get("evidence")
+        out[ev if ev in ("adequate", "inadequate") else "other"] += 1
+        if d.get("wrong") is True:
+            out["wrong"] += 1
+    return out
+
+
+def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None, completion=None):
     crc = _req(report7, "programmes_live", "crc")
     truth = _req(crc, "truth_closed")
     tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
@@ -714,6 +859,8 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidat
     }
     if xscript_cap is not None:  # report_xscript_cap candidate arm only; reported, never gated
         m["xscript_cap"] = dict(xscript_cap)
+    if completion is not None:  # three-arm analyses only; reported, never gated
+        m["completion_undocumented"] = dict(completion)
     return m
 
 
@@ -748,6 +895,11 @@ def aggregate_arm(arm, lanes):
         if not all(xs):
             raise ValueError("xscript_cap present in only some lanes of arm %s" % arm)
         a["xscript_cap"] = {k: sum(l["xscript_cap"][k] for l in lanes) for k in XSCRIPT_KEYS}
+    cs = ["completion_undocumented" in l for l in lanes]
+    if any(cs):
+        if not all(cs):
+            raise ValueError("completion_undocumented present in only some lanes of arm %s" % arm)
+        a["completion_undocumented"] = {k: sum(l["completion_undocumented"][k] for l in lanes) for k in COMPLETION_KEYS}
     return a
 
 
@@ -869,13 +1021,75 @@ def _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, tota
             "extra_hours_per_extra_closure": extra, "reasons": reasons}
 
 
-def select(base, cand):
+def reference_gate(ref, cand, kind):
+    """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
+    recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY, wrong releases by origin and
+    reviewer wrong_final_signoffs) zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and
+    reviewer.wrong_distinct_pairs not above the reference's; reviewer hours <= 1.10 x the reference's (0 if it has 0)."""
+    if kind not in GATE_KINDS:
+        raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
+    reasons = []
+    ca = cand.get("arm")
+    ra = reference(ca) if ca in CANDIDATES else None
+    if not ra or ref.get("arm") != ra:
+        reasons.append("arms must be a three-arm candidate vs its reference arm (%s)"
+                       % ", ".join("%s vs %s" % (c, reference(c)) for c in sorted(CANDIDATES) if reference(c)))
+    rk = ref.get("arm") if isinstance(ref.get("arm"), str) else "reference"
+    ck = ca if isinstance(ca, str) else "candidate"
+    if ref["truth_closed"] != cand["truth_closed"]:
+        reasons.append("truth_closed differs between reference and candidate")
+    need = REF_MIN_GAIN_PP[kind]
+    gain = None
+    if not ref["truth_closed"] or not cand["truth_closed"]:
+        reasons.append("truth_closed is zero")
+    else:
+        g = 100 * (Fraction(cand["tp"], cand["truth_closed"]) - Fraction(ref["tp"], ref["truth_closed"]))
+        gain = float(g)
+        if g < Fraction(str(need)):
+            reasons.append("gain vs reference %.4fpp below %.1fpp" % (gain, need))
+    for label, a in (("reference ", ref), ("", cand)):
+        for k in SAFETY:
+            if a[k] != 0:
+                reasons.append(label + k + " nonzero")
+        if any(v != 0 for v in a["wrong_released_by_origin"].values()):
+            reasons.append(label + "wrong_released_by_origin nonzero")
+        if a["reviewer"]["wrong_final_signoffs"] != 0:
+            reasons.append(label + "wrong_final_signoffs nonzero")
+    above = {}
+    for k in CONTAM + ("wrong_distinct_pairs",):
+        vals = []
+        for label, a in (("reference", ref), ("candidate", cand)):
+            v = a["reviewer"].get(k) if k == "wrong_distinct_pairs" else a[k]
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                raise ValueError("reference gate needs %s in the %s arm" % ("reviewer." + k if k == "wrong_distinct_pairs" else k, label))
+            vals.append(v)
+        above[k] = {rk: vals[0], ck: vals[1]}
+        if vals[1] > vals[0]:
+            reasons.append("%s above reference (%d > %d)" % (k, vals[1], vals[0]))
+    rh, chh = ref["reviewer"]["hours"], cand["reviewer"]["hours"]
+    limit = Fraction(rh) * (1 + Fraction(str(REF_MAX_HOURS_GROWTH)))
+    if Fraction(chh) > limit:
+        reasons.append("reviewer hours %.2f exceed %.2f (reference %.2f +%d%%)" % (chh, float(limit), rh, round(100 * REF_MAX_HOURS_GROWTH)))
+    return {"pass": not reasons, "kind": kind, "reference": rk, "gain_pp": None if gain is None else round(gain, 4),
+            "min_gain_pp": need, "hours": {rk: rh, ck: chh, "max_allowed": float(limit)}, "not_above_reference": above,
+            "reasons": reasons}
+
+
+def select(base, cand, ref=None):
+    """The dev-clean selection record. A three-arm candidate (ref = its reference arm) is selected only when both
+    gate(base, cand) and reference_gate(ref, cand) pass."""
     c = cand.get("arm")
     if c not in CANDIDATES:
         raise ValueError("selection needs a candidate arm, got %r" % (c,))
     g = gate(base, cand, "selection")
-    return {"candidate": c, "selected_modelset": c if g["pass"] else None, "pass": g["pass"], "gate": g,
-            "baseline_recall": _recall(base), c + "_recall": _recall(cand)}
+    if ref is None:
+        return {"candidate": c, "selected_modelset": c if g["pass"] else None, "pass": g["pass"], "gate": g,
+                "baseline_recall": _recall(base), c + "_recall": _recall(cand)}
+    rg = reference_gate(ref, cand, "selection")
+    ok = g["pass"] and rg["pass"]
+    return {"candidate": c, "reference": ref.get("arm"), "selected_modelset": c if ok else None, "pass": ok, "gate": g,
+            "reference_gate": rg, "baseline_recall": _recall(base), "%s_recall" % ref.get("arm"): _recall(ref),
+            c + "_recall": _recall(cand)}
 
 
 def _recall(a):
@@ -902,17 +1116,19 @@ def _load_lane(path, seed, arm, mode, candidate):
     pk = _req(j("cohort/truth.json"), "pk_qid") if gate_kind in WRONG_GATES else None
     xs = None
     capped = None
-    report_xs = CANDIDATES[candidate].get("report_xscript_cap") and arm == candidate  # candidate arm only for the report
+    # non-baseline arms (the candidate, and a three-arm candidate's reference arm) report their capped pairs
+    report_xs = CANDIDATES[candidate].get("report_xscript_cap") and arm != "baseline"
     if report_xs or gate_kind == "wrong_pair_cap":
         with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:  # required: a missing trace aborts analysis
             same, diff = xscript_cap_pairs(h, pk)
         if report_xs:
             xs = {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
         if gate_kind == "wrong_pair_cap":
-            if arm != candidate and (same or diff):  # the baseline arm must contain no xscript_cap record
+            if arm == "baseline" and (same or diff):  # the baseline arm must contain no xscript_cap record
                 raise ValueError("baseline lane trace contains xscript_cap records")
             capped = diff
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate)
+    cu = completion_review(q, dec) if reference(candidate) else None  # three-arm analyses only, every arm
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu)
 
 
 # ---------------------------------------------------------------- CLI
@@ -920,7 +1136,8 @@ def _load_lane(path, seed, arm, mode, candidate):
 def analyse(mode, out, roots, repo=REPO, head=None):
     exp = os.path.dirname(os.path.abspath(out))
     named = sorted(set(roots) - {"baseline"})
-    if "baseline" not in roots or len(roots) != 2 or len(named) != 1 or named[0] not in CANDIDATES:
+    three = len(roots) == 3 and len(named) == 2 and any(reference(n) in named for n in named)  # baseline, reference, candidate
+    if "baseline" not in roots or not (three or len(roots) == 2) or not named or any(n not in CANDIDATES for n in named):
         raise ValueError("analysis needs exactly baseline and one candidate arm (%s), got %s" % (sorted(CANDIDATES), sorted(roots)))
     try:
         if mode == "validation-clean":
@@ -930,12 +1147,15 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         else:
             gov = _read_json(os.path.join(exp, ARTIFACT_MANIFEST))
             gov_name = ARTIFACT_MANIFEST
-            candidate = infer_candidate(gov, gov_name)
+            candidate = resolve_candidate(gov, gov_name, exp)
         _check_maps(gov, candidate, gov_name)
     except PreflightError as e:
         raise OSError(str(e)) if "missing" in str(e) else ValueError(str(e))
-    if named[0] != candidate:
-        raise ValueError("candidate arm %s is not the experiment candidate %s (%s)" % (named[0], candidate, gov_name))
+    if set(roots) != set(arms(candidate)):
+        if len(named) == 1 and named[0] != candidate:
+            raise ValueError("candidate arm %s is not the experiment candidate %s (%s)" % (named[0], candidate, gov_name))
+        raise ValueError("the %s experiment needs exactly the arm roots %s, got %s" % (candidate, list(arms(candidate)), sorted(roots)))
+    ref_arm = reference(candidate)
     seeds = mode_settings(mode, candidate)["seeds"]
     builds, arm_res = {}, {}
     for a in arms(candidate):
@@ -945,14 +1165,16 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         builds[a] = b
         arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode, candidate) for s in seeds])
         arm_res[a]["build"] = b
-    if builds["baseline"]["git_head"] != builds[candidate]["git_head"]:
-        raise ValueError("arms were built at different git heads")
-    if builds["baseline"]["binary_sha256"] != builds[candidate]["binary_sha256"]:
-        raise ValueError("arms used different binaries")
+    for a in arms(candidate)[1:]:
+        if builds["baseline"]["git_head"] != builds[a]["git_head"]:
+            raise ValueError("arms were built at different git heads")
+        if builds["baseline"]["binary_sha256"] != builds[a]["binary_sha256"]:
+            raise ValueError("arms used different binaries")
     head = builds["baseline"]["git_head"]
     if gov.get("git_head") != head:
         raise ValueError("arm builds are not at the %s git_head" % gov_name)
     base, cand = arm_res["baseline"], arm_res[candidate]
+    ref = arm_res[ref_arm] if ref_arm else None
     res = {"mode": mode, "candidate": candidate, "seeds": seeds, "arms": arm_res, "git_head": head,
            "binary_sha256": builds["baseline"]["binary_sha256"],
            "paired_gain_t95": paired_gain_interval(base, cand),
@@ -960,9 +1182,14 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     ident = {"mode": mode, "candidate": candidate, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
              "baseline_chain_sha256": gov["baseline_chain_sha256"], CHAIN_KEY[candidate]: gov[CHAIN_KEY[candidate]],
              "governing_manifest_sha256": sha256_file(os.path.join(exp, gov_name))}
+    if ref_arm:  # three-arm candidate: reference arm, paired gains over it, and the reference gate (pass needs both gates)
+        res["reference"] = ident["reference"] = ref_arm
+        res["paired_gain_vs_reference_t95"] = paired_gain_interval(ref, cand)
     if mode == "dev-clean":
-        sel = select(base, cand)
+        sel = select(base, cand, ref)
         res["gate"] = sel["gate"]
+        if ref_arm:
+            res["reference_gate"], res["pass"] = sel["reference_gate"], sel["pass"]
         res["selection"] = dict(sel, **ident)
         _write_once(os.path.join(exp, SELECTION), res["selection"])
     elif mode == "dev-stress":
@@ -974,9 +1201,16 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         g = gate(base, cand, "stress")
         res["gate"] = g
         res["stress"] = dict(ident, **{"pass": g["pass"], "gate": g, "selection_sha256": sha256_file(sp)})
+        if ref_arm:
+            rg = reference_gate(ref, cand, "stress")
+            res["reference_gate"], res["pass"] = rg, g["pass"] and rg["pass"]
+            res["stress"].update({"reference_gate": rg, "pass": res["pass"]})
         _write_once(os.path.join(exp, STRESS), res["stress"])
     else:
         res["gate"] = gate(base, cand, "validation")
+        if ref_arm:
+            res["reference_gate"] = reference_gate(ref, cand, "validation")
+            res["pass"] = res["gate"]["pass"] and res["reference_gate"]["pass"]
         _write_once(out, res)  # the headline validation verdict is never overwritten
         return res
     with open(out, "w") as h:
@@ -997,6 +1231,17 @@ def main(argv):
         print(json.dumps({"frozen": VALIDATION_MANIFEST, "git_head": vm["git_head"], "candidate": vm["candidate"],
                           "seeds": vm["seeds"]}, sort_keys=True))
         return 0
+    if argv[:1] == ["init-experiment"]:
+        if len(argv) != 3:
+            print("usage: pairfeat_compare.py init-experiment EXPERIMENT_DIR CANDIDATE", file=sys.stderr)
+            return 2
+        try:
+            e = init_experiment(os.path.abspath(argv[1]), argv[2])
+        except PreflightError as e:
+            print("init-experiment refused: " + str(e), file=sys.stderr)
+            return 2
+        print(json.dumps(dict(e, written=EXPERIMENT), sort_keys=True))
+        return 0
     if argv[:1] == ["preflight"]:
         if len(argv) != 4:
             print("usage: pairfeat_compare.py preflight MODE ARM EXPERIMENT_DIR", file=sys.stderr)
@@ -1009,9 +1254,10 @@ def main(argv):
         print(json.dumps({"candidate": candidate, "seeds": mode_settings(argv[1], candidate)["seeds"],
                           "model_chain_sha256": chain}, sort_keys=True))
         return 0
-    usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT <candidate>=ROOT (candidate %s) "
-             "| freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR" % "|".join(sorted(CANDIDATES)))
-    if len(argv) != 4 or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
+    usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT (candidate %s) "
+             "| init-experiment EXPERIMENT_DIR CANDIDATE | freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR"
+             % "|".join(sorted(CANDIDATES)))
+    if len(argv) not in (4, 5) or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
         print(usage, file=sys.stderr)
         return 2
     roots = {}
@@ -1025,7 +1271,10 @@ def main(argv):
         print("a baseline arm is required: " + usage, file=sys.stderr)
         return 2
     res = analyse(argv[0], argv[1], roots)
-    print(json.dumps(res["gate"], sort_keys=True))
+    if "reference_gate" in res:  # three-arm: both gates and the combined verdict
+        print(json.dumps({"gate": res["gate"], "reference_gate": res["reference_gate"], "pass": res["pass"]}, sort_keys=True))
+    else:
+        print(json.dumps(res["gate"], sort_keys=True))
     return 0
 
 
