@@ -715,15 +715,26 @@ class Pairfeat5(unittest.TestCase):
         self.assertIn("leaf value check failed: 5.0001 > 5.0", str(cm.exception))
         self.assertEqual(fp.LeafLimitError.exit_code, 4)
 
-    def test_read_max_abs_leaf(self):
-        dump = {"tree_info": [{"tree_structure": {"left_child": {"leaf_value": -4.5},
-                                                  "right_child": {"leaf_value": 1.0}}},
-                              {"tree_structure": {"leaf_value": 2.0}}]}
+    def test_read_max_abs_leaf_from_report(self):
         with tempfile.TemporaryDirectory() as d:
-            p = os.path.join(d, "g.json")
-            with open(p, "w") as f:
-                json.dump(dump, f)
-            self.assertEqual(fp.read_max_abs_leaf(p), 4.5)
+            self.assertEqual(fp.fit_report_path(d, "pairfeat5"), os.path.join(d, "fit_report_pairfeat5.json"))
+            with open(fp.fit_report_path(d, "pairfeat5"), "w") as f:
+                json.dump({"max_abs_leaf": 4.5, "lambda_l2": 1.0}, f)
+            self.assertEqual(fp.read_max_abs_leaf(d, "pairfeat5"), 4.5)
+
+    def test_read_max_abs_leaf_failures(self):
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(fp.LeafLimitError) as cm:  # report missing
+                fp.read_max_abs_leaf(d, "pairfeat5")
+            self.assertIn("fit report", str(cm.exception))
+            path = fp.fit_report_path(d, "pairfeat5")
+            for body in ('{"lambda_l2": 1.0}', '{"max_abs_leaf": NaN}', '{"max_abs_leaf": Infinity}',
+                         '{"max_abs_leaf": "3"}', '{"max_abs_leaf": null}', '{"max_abs_leaf": true}', 'not json'):
+                with open(path, "w") as f:
+                    f.write(body)
+                with self.assertRaises(fp.LeafLimitError, msg=body) as cm:
+                    fp.read_max_abs_leaf(d, "pairfeat5")
+                self.assertIn("leaf value check failed", str(cm.exception))
 
     def test_artifact_manifest_max_abs_leaf(self):
         with tempfile.TemporaryDirectory() as d:
@@ -738,11 +749,14 @@ class Pairfeat5(unittest.TestCase):
                     f.write(b"c")
             with open(os.path.join(out, "training-manifest.json"), "wb") as f:
                 f.write(b"{}")
-            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5", max_abs_leaf=3.6)
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5", max_abs_leaf=3.6,
+                                     lambda_l2=1.0)
             self.assertEqual(m["max_abs_leaf"], 3.6)
+            self.assertEqual(m["lambda_l2"], 1.0)
             self.assertIn("pairfeat5_chain_sha256", m)
             m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5")
             self.assertNotIn("max_abs_leaf", m)
+            self.assertNotIn("lambda_l2", m)
 
     def test_models_guard(self):
         with tempfile.TemporaryDirectory() as d:

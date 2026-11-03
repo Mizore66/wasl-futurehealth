@@ -67,19 +67,21 @@ class LeafLimitError(Exception):
     exit_code = 4
 
 
-def read_max_abs_leaf(path):
-    with open(path) as f:
-        dump = json.load(f)
-    best = 0.0
-    for t in dump["tree_info"]:
-        stack = [t["tree_structure"]]
-        while stack:
-            n = stack.pop()
-            if "leaf_value" in n:
-                best = max(best, abs(float(n["leaf_value"])))
-            else:
-                stack += [n["left_child"], n["right_child"]]
-    return best
+def fit_report_path(chain, modelset):
+    return os.path.join(chain, f"fit_report_{modelset}.json")
+
+
+def read_max_abs_leaf(chain, modelset):
+    """max_abs_leaf from the fit report written by fit_scorer; anything missing or invalid fails the check."""
+    path = fit_report_path(chain, modelset)
+    try:
+        with open(path) as f:
+            v = json.load(f)["max_abs_leaf"]
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise LeafLimitError(f"leaf value check failed: cannot read max_abs_leaf from fit report {path}: {e!r}")
+    if isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v):
+        raise LeafLimitError(f"leaf value check failed: max_abs_leaf in fit report is not a finite number: {v!r}")
+    return float(v)
 
 
 def check_leaf_limit(max_abs_leaf):
@@ -335,7 +337,7 @@ def write_json(path, obj):
 
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
-                      family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None):
+                      family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -352,6 +354,8 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         m["ns_cal_sidecar_sha256"] = ns_cal_sidecar_sha256
     if max_abs_leaf is not None:
         m["max_abs_leaf"] = max_abs_leaf
+    if lambda_l2 is not None:
+        m["lambda_l2"] = lambda_l2
     return m
 
 
@@ -424,7 +428,7 @@ def main(argv):
     leaf = None
     if "lambda_l2" in proto:
         try:
-            leaf = check_leaf_limit(read_max_abs_leaf(gbm))
+            leaf = check_leaf_limit(read_max_abs_leaf(chain, modelset))
         except LeafLimitError as e:
             print(str(e), file=sys.stderr)
             sys.exit(LeafLimitError.exit_code)
@@ -448,7 +452,8 @@ def main(argv):
             extra["ns_cal_sidecar_sha256"] = sha256(ns_path + ".namesakes.json")
     head = check_head_unchanged(root, tm)
     write_json(os.path.join(out, "artifact-manifest.json"),
-               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, max_abs_leaf=leaf, **extra))
+               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, max_abs_leaf=leaf,
+                                lambda_l2=proto.get("lambda_l2"), **extra))
     copy_chain_to_models(chain, models, modelset)
     print(f"done: modelset={modelset} rows={len(go)} max_abs_delta={delta}")
 
