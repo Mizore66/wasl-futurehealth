@@ -286,7 +286,7 @@ func parseIDFSeeds(s string) []int64 {
 // distinct providers (gen.go registration model: provider script mix, name/DOB/sex noise); registrations stream in
 // random order and every candidate pair (new, earlier) is written once.
 // CSV columns: label,corr,f0..f29,near_eid,decade_dob,same_surname,placeholder_dob,cross_script[,p from -gbmfile]
-// (37 columns, 38 with p); with -nameidf (pairfeat6) f0..f33: 41 columns, 42 with p. Features and p are %.17g (exact float64 round-trip, NaN as NaN); slice columns are 0/1.
+// (37 columns, 38 with p); with -nameidf (pairfeat6, pairfeat7) f0..f33: 41 columns, 42 with p. Features and p are %.17g (exact float64 round-trip, NaN as NaN); slice columns are 0/1.
 func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, seed int64) {
 	var gbm *GBM
 	if gbmPath != "" {
@@ -332,6 +332,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		}
 		xsAdded = len(xs)
 	}
+	regs, hn := pairfeat7Negatives(regs, ps, pool, seed, len(ps)+nsAdded+nfAdded+xsAdded, encPath) // pairfeat7.go
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
 	L := NewLinkerCore(nil, 1)
@@ -368,6 +369,11 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 				}
 				if namesakePairRow(xsBase, g.pid, pids[c.j]) {
 					xsRows = append(xsRows, rowIdx)
+				}
+				for _, k := range hn {
+					if namesakePairRow(k.base, g.pid, pids[c.j]) {
+						k.rows = append(k.rows, rowIdx)
+					}
 				}
 			}
 			corr := 0
@@ -415,6 +421,10 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	if XSNamesakeRate > 0 {
 		scm["xs_rate"], scm["xs_namesakes_added"] = XSNamesakeRate, xsAdded
 		scm["xs_base_namesake_rows"], scm["xs_rows"] = len(xsRows), xsRows
+	}
+	for _, k := range hn { // pairfeat7: md_* and rd_* keys, only for a kind whose rate is > 0
+		scm[k.key+"_rate"], scm[k.key+"_namesakes_added"] = k.rate, k.added
+		scm[k.key+"_base_namesake_rows"], scm[k.key+"_rows"] = len(k.rows), k.rows
 	}
 	sc, err := json.Marshal(scm)
 	if err != nil {
