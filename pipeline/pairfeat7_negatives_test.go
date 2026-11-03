@@ -132,7 +132,10 @@ func TestBuildMDNamesakes(t *testing.T) {
 		}
 	}
 	// a sampled person is never a donor: with d1 sampled too, b1 has no donor left (d1's own donor is d5)
-	for _, x := range func() []Person { g, _ := buildMDNamesakes(pool[:2], pool, 0.999999, rand.New(rand.NewSource(1))); return g }() {
+	for _, x := range func() []Person {
+		g, _ := buildMDNamesakes(pool[:2], pool, 0.999999, rand.New(rand.NewSource(1)))
+		return g
+	}() {
 		if x.Qid == "md-b1" || x.En == pool[0].En || x.En == pool[1].En {
 			t.Errorf("sampled person used as donor: %+v", x)
 		}
