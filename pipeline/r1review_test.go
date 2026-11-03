@@ -1,9 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/nats-io/nats.go"
 )
 
 // r1Set switches the evidence policy and the -r1review flag for one test and restores them afterwards.
@@ -173,5 +177,164 @@ func TestR1ReviewValveOnlyRoutesToReview(t *testing.T) {
 	v := r1Judge(r1ValveText, r1ValveG)
 	if v.Agree || v.Label != "disagree" || !v.R1Review || v.Rule != "R1_completion_review" {
 		t.Fatalf("valve-only: want completion review, got %+v", v)
+	}
+}
+
+// ---- Amendment 2 (r1photo): route to the clinician only with an image-verified caecal photo ----
+
+func r1JSON(t *testing.T, v *TwoVerdict) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+// the flag-off verdict for a report, after the optional image reader, as the prep stage builds it
+func r1OffVerdict(t *testing.T, text string, g gemmaEntry, iv *ImageVerdict) *TwoVerdict {
+	r0 := R1ReviewOn
+	R1ReviewOn = false
+	defer func() { R1ReviewOn = r0 }()
+	v := r1Judge(text, g)
+	applyImage(v, iv)
+	return v
+}
+
+func r1OnVerdict(text string, g gemmaEntry, iv *ImageVerdict) *TwoVerdict {
+	v := r1Judge(text, g)
+	applyImage(v, iv)
+	r1photoGate(v, iv)
+	return v
+}
+
+func TestR1PhotoGateVerifiedKeepsReview(t *testing.T) {
+	r1Set(t, true)
+	iv := &ImageVerdict{Model: "m", Photos: 1, Caecal: "verified", LandmarkP: .93, Prep: "none", Shas: []string{"c1"}}
+	v := r1OnVerdict(r1ValveText, r1ValveG, iv)
+	if v.Agree || v.Label != "disagree" || !v.R1Review || v.Rule != "R1_completion_review" || v.ReviewHint != "caecal_photo_verified" || v.Image != iv {
+		t.Fatalf("verified caecal photo: want completion review with the photo hint, got %+v", v)
+	}
+}
+
+func TestR1PhotoGateNoVerifiedPhotoIsFlagOffVerdict(t *testing.T) {
+	r1Set(t, true)
+	for _, iv := range []*ImageVerdict{
+		{Model: "m", Photos: 1, Caecal: "unverified", LandmarkP: .12, Prep: "none", Shas: []string{"c2"}},
+		{Model: "m", Photos: 0, Caecal: "missing", Prep: "none"},
+		nil, // image reader off
+	} {
+		want := r1JSON(t, r1OffVerdict(t, r1ValveText, r1ValveG, iv))
+		got := r1OnVerdict(r1ValveText, r1ValveG, iv)
+		if r1JSON(t, got) != want || got.Label != "inadequate" || got.Rule != "R1_completion_not_documented" {
+			t.Fatalf("caecal photo %+v: want the exact flag-off verdict\nwant %s\ngot  %s", iv, want, r1JSON(t, got))
+		}
+	}
+}
+
+func TestR1PhotoGateFlagOffNoOp(t *testing.T) {
+	r1Set(t, false)
+	for _, c := range []struct {
+		text string
+		g    gemmaEntry
+	}{{r1ValveText, r1ValveG}, {r1PastValve, gemmaEntry{Caecum: "no", Prep: "adequate", Polyps: "no", Histology: "no"}}} {
+		for _, iv := range []*ImageVerdict{{Caecal: "verified", Prep: "none"}, {Caecal: "missing", Prep: "none"}, nil} {
+			v := r1Judge(c.text, c.g)
+			applyImage(v, iv)
+			before := r1JSON(t, v)
+			r1photoGate(v, iv)
+			if r1JSON(t, v) != before {
+				t.Fatalf("flag off: r1photoGate changed the verdict\nbefore %s\nafter  %s", before, r1JSON(t, v))
+			}
+		}
+	}
+	// even a verdict carrying R1Review (never produced with the flag off) is left alone
+	v := &TwoVerdict{Kind: "colonoscopy", Label: "disagree", R1Review: true}
+	r1photoGate(v, nil)
+	if !v.R1Review || v.Label != "disagree" || v.Agree {
+		t.Fatalf("flag off: r1photoGate changed %+v", v)
+	}
+}
+
+// prep-stage integration: the FHIR report goes through prepMsg (judge, image reader, gate) and then closure.
+func r1PrepReport(t *testing.T, text string, media []map[string]interface{}) *TwoVerdict {
+	res := map[string]interface{}{"resourceType": "DiagnosticReport", "id": "R1", "status": "final",
+		"effectiveDateTime": "2026-01-11T00:00:00Z", "conclusion": text}
+	if media != nil {
+		res["media"] = media
+	}
+	b, _ := json.Marshal(res)
+	p := prepMsg(1, "fhir.skmc-endo", nats.Header{"Wsi-Arr": []string{"10"}}, b, nil, &sync.Map{})
+	if p.Ev == nil || p.Ev.Ev == nil {
+		t.Fatalf("prepMsg produced no verdict: %+v", p)
+	}
+	return p.Ev.Ev
+}
+
+func TestR1PhotoGatePrepStage(t *testing.T) {
+	r1Set(t, true)
+	j0, i0 := Judge, ImageR
+	t.Cleanup(func() { Judge, ImageR = j0, i0 })
+	Judge = &Judge2{cache: map[string]gemmaEntry{textSha(r1ValveText): r1ValveG}}
+	ImageR = &ImageReader{Mode: "cached", Model: "m", ThrLand: .5, ThrPr: .5, cache: map[string]imgScore{
+		"c1": {Sha: "c1", LandmarkP: .9}, "c2": {Sha: "c2", LandmarkP: .1}}}
+	photo := func(sha string) []map[string]interface{} {
+		return []map[string]interface{}{{"comment": "caecum", "link": map[string]interface{}{"display": "sha256:" + sha}}}
+	}
+	closeWith := func(ev *TwoVerdict) ([]OutMsg, *Decision) {
+		r := df("DiagnosticReport", "final", 1.0, "eid", false)
+		r.ReportID, r.Ev = "R1", ev
+		return pilotRun([]DownFact{r}, nil)
+	}
+	// verified caecal photo: one completion_undocumented item, held for the clinician
+	v := r1PrepReport(t, r1ValveText, photo("c1"))
+	outs, d := closeWith(v)
+	if its := pilotItems(outs, CompletionPurpose); len(its) != 1 || d.State == "inadequate" || r1HoldState(d) != "completion_review" {
+		t.Fatalf("verified photo: want one completion item and completion_review hold, got %d items, state %s, hold %q", len(its), d.State, r1HoldState(d))
+	}
+	// photo not recognised / no photo / image reader off: automatic inadequate, as with the flag off
+	for name, setup := range map[string]func() []map[string]interface{}{
+		"unverified": func() []map[string]interface{} { return photo("c2") },
+		"missing":    func() []map[string]interface{} { return nil },
+		"image off":  func() []map[string]interface{} { ImageR = nil; return photo("c1") },
+	} {
+		ir := ImageR
+		media := setup()
+		got := r1PrepReport(t, r1ValveText, media)
+		R1ReviewOn = false
+		want := r1PrepReport(t, r1ValveText, media)
+		R1ReviewOn, ImageR = true, ir
+		if r1JSON(t, got) != r1JSON(t, want) {
+			t.Fatalf("%s: want the flag-off prep verdict\nwant %s\ngot  %s", name, r1JSON(t, want), r1JSON(t, got))
+		}
+		if outs, d := closeWith(got); len(pilotItems(outs, CompletionPurpose)) != 0 || d.State != "inadequate" {
+			t.Fatalf("%s: want automatic inadequate, got state %s", name, d.State)
+		}
+	}
+}
+
+// reader B alone grades prep inadequate: an explicit inadequacy, so automatically inadequate with the flag on.
+func TestR1ReviewReaderBPrepInadequateStaysAuto(t *testing.T) {
+	g := gemmaEntry{Caecum: "not_stated", Prep: "inadequate", Polyps: "no", Histology: "no"}
+	r1Set(t, false)
+	off := r1Judge(r1ValveText, g)
+	if off.Regex.Prep != "not_stated" || off.Gemma.Prep != "inadequate" || !off.Agree || off.Label != "inadequate" {
+		t.Fatalf("fixture: want flag-off agreed inadequate with reader-B prep inadequate, got %+v", off)
+	}
+	R1ReviewOn = true
+	if on := r1Judge(r1ValveText, g); fmt.Sprintf("%+v", *on) != fmt.Sprintf("%+v", *off) {
+		t.Fatalf("reader-B explicit inadequacy changed by -r1review:\noff %+v\non  %+v", *off, *on)
+	}
+}
+
+// a pending completion review does not mask another inadequate report in the same loop: the loop holds as inadequate.
+func TestR1ReviewPendingPlusInadequateHoldsInadequate(t *testing.T) {
+	r1Set(t, true)
+	rep := r1Report(t, r1ValveText, r1ValveG)
+	rep.EventID = "ev-r1"
+	bad := autoReport("R2", "inadequate")
+	bad.EventID, bad.Day = "ev-r2", 11
+	outs, d := pilotRun([]DownFact{rep, bad}, nil)
+	if len(pilotItems(outs, CompletionPurpose)) != 1 || d.State != "inadequate" || r1HoldState(d) != "inadequate_evidence" || !hasEsc(d, "rejected_inadequate") {
+		t.Fatalf("pending completion review + inadequate report: state %s hold %q esc %v", d.State, r1HoldState(d), d.Escalations)
 	}
 }
