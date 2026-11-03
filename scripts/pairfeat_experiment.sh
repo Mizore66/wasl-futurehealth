@@ -8,7 +8,9 @@
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
 # r1review 557 563 569. An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
 # over a pairfeat5 artifact-manifest.json) serves three arms: baseline, pairfeat5 (reference; exactly a pairfeat5 lane) and
-# r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds.
+# r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds. Every arm of an r1review experiment runs gen with
+# -imgphotos and orchestrate/audit/report7 with -image cached (both -imgcache models/image_verdicts.json); pairfeat1-pairfeat5
+# experiments keep the image reader off (spec amendment 2).
 # The experiment parent serves exactly one candidate,
 # inferred from the single <candidate>_chain_sha256 key of its artifact-manifest.json (or, for validation, the candidate
 # its frozen validation-manifest.json records); ARM must be baseline or that candidate, and the baseline arm uses the
@@ -27,7 +29,9 @@
 # All refusals happen before any build. PAIRFEAT_PREFLIGHT_ONLY=1 stops after the refusals (tests; nothing is built or created).
 # The tracked tree must be clean and pipeline/ and scripts/ must have no untracked files before any build.
 # Arms must run sequentially (shared bin/wsi7, removed on exit); build.json records git head, binary SHA256, mode, arm,
-# candidate, modelset, floor 0.01 and the arm's model-chain SHA256. Cached reader, image off, FHIR, chaos 0, subkill 1, no NATS kill, HNSW.
+# candidate, modelset, floor 0.01 and the arm's model-chain SHA256 (r1review experiments: also image cached, imgphotos and the
+# image_verdicts.json SHA256). Cached reader, image off (r1review experiments: cached image reader), FHIR, chaos 0, subkill 1,
+# no NATS kill, HNSW.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="/opt/anaconda3/bin:$PATH"
@@ -140,6 +144,7 @@ with open(os.path.join(work, "build.json"), "w") as h:
          "floor": float(pfc.FLOOR), "policy": pfc.POLICY, "model_chain_sha256": chain}
     if pfc.extra_flags(arm):  # r1review arm only: recorded so the analysis can tell its lanes from pairfeat5 lanes
         b["extra_flags"] = pfc.extra_flags(arm)
+    b.update(pfc.image_build(root, cand))  # r1review experiments (every arm): image cached, imgphotos, verdict-cache SHA256
     json.dump(b, h, indent=1, sort_keys=True)
 PY
 
@@ -170,7 +175,7 @@ for seed in seeds:
     o = os.path.join(work, "v2-s%d" % seed)
     os.mkdir(o); os.mkdir(os.path.join(o, "run"))
     r = os.path.join(o, "run", "main")
-    for name, argv, log in pfc.lane_commands(root, bin_, o, seed, mode, arm):
+    for name, argv, log in pfc.lane_commands(root, bin_, o, seed, mode, arm, candidate=cand):
         if name == "classifier":
             with open(os.path.join(r, "status-linker.json")) as h:
                 st = json.load(h)  # required: a missing file aborts the lane
@@ -197,7 +202,8 @@ out = pfc.aggregate_arm(arm, lanes)
 out["build"] = pfc.read_build(work, arm, mode, cand)
 out["scope"] = {"mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm], "floor": float(pfc.FLOOR), "policy": pfc.POLICY,
                 **({"extra_flags": pfc.extra_flags(arm)} if pfc.extra_flags(arm) else {}),
-                "seeds": seeds, "reader": "cached", "image": "off", "chaos": 0, "nats_kill": False,
+                "seeds": seeds, "reader": "cached", "image": pfc.lane_image_mode(cand), "chaos": 0, "nats_kill": False,
+                **({"imgphotos": True} if pfc.lane_image(cand) else {}),
                 "note": "simulated; tp = report7 programmes_live.crc.pred_closed - false_closures; link attach rate is separate"}
 with open(os.path.join(work, "summary.json"), "w") as h:
     json.dump(out, h, indent=1, sort_keys=True)
