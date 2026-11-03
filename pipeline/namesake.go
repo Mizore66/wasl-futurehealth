@@ -119,8 +119,8 @@ func buildXSNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, 
 // the other, both with x's placeholder DOB and their true sex (no DOB or sex noise) and a drawn Emirates ID.
 func xsRegister(regs []fdReg, bpid int, b *Person, xpid int, x *Person, r *rand.Rand) []fdReg {
 	ar := r.Float64() < .5
-	regs = append(regs, fdReg{bpid, fdName(b, ar, r), x.Dob, b.Sex, drawEID(b, r)})
-	return append(regs, fdReg{xpid, fdName(x, !ar, r), x.Dob, x.Sex, drawEID(x, r)})
+	regs = append(regs, fdReg{bpid, fdName(b, ar, r), x.Dob, b.Sex, drawEID(b, r), b.Idx})
+	return append(regs, fdReg{xpid, fdName(x, !ar, r), x.Dob, x.Sex, drawEID(x, r), x.Idx})
 }
 
 var dobPos = []int{0, 1, 2, 3, 5, 6, 8, 9}

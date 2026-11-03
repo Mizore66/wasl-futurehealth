@@ -28,6 +28,7 @@ type Person struct {
 	Spl string   `json:"split"`
 	Origin string `json:"origin"`
 	ArSrc  string `json:"ar_src"`
+	Idx    int    `json:"-"` // 1 + index in the persons file (readPersons); 0 for synthetic namesakes (pairfeat6 leave-own-out)
 }
 
 type ProvCfg struct {

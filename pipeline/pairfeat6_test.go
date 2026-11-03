@@ -141,13 +141,14 @@ func TestNameIDFLoad(t *testing.T) {
 		t.Fatalf("loaded %+v", tb)
 	}
 	for name, body := range map[string]string{
-		"version":       `{"version":2,"registrations":10,"counts":{}}`,
-		"zero n":        `{"version":1,"registrations":0,"counts":{}}`,
-		"no counts":     `{"version":1,"registrations":10}`,
-		"count above n": `{"version":1,"registrations":10,"counts":{"a":11}}`,
-		"zero count":    `{"version":1,"registrations":10,"counts":{"a":0}}`,
-		"empty token":   `{"version":1,"registrations":10,"counts":{"":1}}`,
-		"malformed":     `{"version":1,`,
+		"version":        `{"version":3,"registrations":10,"counts":{}}`,
+		"v2 without own": `{"version":2,"registrations":10,"counts":{"a":1}}`,
+		"zero n":         `{"version":1,"registrations":0,"counts":{}}`,
+		"no counts":      `{"version":1,"registrations":10}`,
+		"count above n":  `{"version":1,"registrations":10,"counts":{"a":11}}`,
+		"zero count":     `{"version":1,"registrations":10,"counts":{"a":0}}`,
+		"empty token":    `{"version":1,"registrations":10,"counts":{"":1}}`,
+		"malformed":      `{"version":1,`,
 	} {
 		if _, err := readNameIDF(write(strings.ReplaceAll(name, " ", "_")+".json", body)); err == nil {
 			t.Errorf("%s accepted", name)

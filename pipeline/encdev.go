@@ -138,6 +138,7 @@ func runEncNoise(wasl, split, outPath string, seed int64) {
 type fdReg struct {
 	pid                 int
 	name, dob, sex, eid string
+	tid                 int // Person.Idx of the registering person
 }
 
 func readPersons(wasl string) []Person {
@@ -148,6 +149,9 @@ func readPersons(wasl string) []Person {
 	var all []Person
 	if err := json.Unmarshal(b, &all); err != nil {
 		panic(err)
+	}
+	for i := range all {
+		all[i].Idx = i + 1
 	}
 	return all
 }
@@ -214,7 +218,7 @@ func fdRegister(regs []fdReg, pid int, p *Person, r *rand.Rand) []fdReg {
 		if r.Float64() < .02 {
 			sex = "U"
 		}
-		regs = append(regs, fdReg{pid, name, dob, sex, drawEID(p, r)})
+		regs = append(regs, fdReg{pid, name, dob, sex, drawEID(p, r), p.Idx})
 	}
 	return regs
 }
@@ -227,7 +231,7 @@ func runNameIDF(wasl, split, outPath string, nPersons int, seeds []int64) {
 		panic("nameidf: -idfseeds is required")
 	}
 	all := readPersons(wasl)
-	t := NameIDFTable{Version: 1, Split: split, Persons: nPersons, Seeds: seeds, Noise: NoiseModel, Counts: map[string]int{}}
+	t := NameIDFTable{Version: 2, Own: map[string]map[string]int{}, OwnRegs: map[string]int{}, Split: split, Persons: nPersons, Seeds: seeds, Noise: NoiseModel, Counts: map[string]int{}}
 	for _, seed := range seeds {
 		ps, _, r := fdSample(all, split, nPersons, seed)
 		var regs []fdReg
@@ -236,12 +240,18 @@ func runNameIDF(wasl, split, outPath string, nPersons int, seeds []int64) {
 		}
 		for _, g := range regs {
 			seen := map[string]bool{}
+			key := strconv.Itoa(g.tid - 1) // persons-file index
+			if t.Own[key] == nil {
+				t.Own[key] = map[string]int{}
+			}
 			for _, s := range skeleton(tokensOf(latinForm(g.name))) {
 				if !seen[s] {
 					seen[s] = true
 					t.Counts[s]++
+					t.Own[key][s]++
 				}
 			}
+			t.OwnRegs[key]++
 			t.Registrations++
 		}
 	}
@@ -335,7 +345,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	nsRows, nfRows, xsRows := []int{}, []int{}, []int{}
 	rowIdx := 0
 	for _, g := range regs {
-		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid}
+		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid, tid: g.tid}
 		rec.eidOK = luhnOK(rec.Eid)
 		rec.lat = latinForm(rec.Name)
 		rec.tok = tokensOf(rec.lat)

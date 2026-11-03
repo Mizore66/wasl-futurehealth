@@ -10,7 +10,7 @@ package main
 //   f33 rarest unmatched token: the largest rarity weight among distinct skeleton tokens present on one side only
 //       (negative weights are not clamped); 0 when every token matches. f32 and f33 are NaN when a skeleton is empty.
 // Rarity weight of token t: log(N / (1 + c(t))), N training registrations and c(t) those whose skeleton contains t
-// (wsi nameidf, encdev.go); an unseen token has c = 0. Tokens are summed and compared in sorted order.
+// (wsi nameidf, encdev.go); an unseen token has c = 0. featdump rows use leave-own-out counts (looScope). Tokens are summed and compared in sorted order.
 import (
 	"encoding/json"
 	"fmt"
@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -36,6 +37,10 @@ type NameIDFTable struct {
 	Noise         string         `json:"noise"`
 	Registrations int            `json:"registrations"`
 	Counts        map[string]int `json:"counts"`
+	// Version 2 (Amendment 1): per-person own token counts and registration counts, keyed by the person's index in
+	// the persons file, for leave-own-out rarity in featdump rows.
+	Own     map[string]map[string]int `json:"own,omitempty"`
+	OwnRegs map[string]int            `json:"own_regs,omitempty"`
 }
 
 func readNameIDF(path string) (*NameIDFTable, error) {
@@ -47,8 +52,11 @@ func readNameIDF(path string) (*NameIDFTable, error) {
 	if err := json.Unmarshal(b, &t); err != nil {
 		return nil, fmt.Errorf("%s: %v", path, err)
 	}
-	if t.Version != 1 || t.Registrations <= 0 || t.Counts == nil {
-		return nil, fmt.Errorf("%s: want version 1, registrations > 0 and a counts map", path)
+	if (t.Version != 1 && t.Version != 2) || t.Registrations <= 0 || t.Counts == nil {
+		return nil, fmt.Errorf("%s: want version 1 or 2, registrations > 0 and a counts map", path)
+	}
+	if t.Version == 2 && (t.Own == nil || t.OwnRegs == nil) {
+		return nil, fmt.Errorf("%s: version 2 needs the own and own_regs maps", path)
 	}
 	for k, c := range t.Counts {
 		if k == "" || c < 1 || c > t.Registrations {
@@ -70,6 +78,41 @@ func LoadNameIDF(path string) *NameIDFTable {
 // Weight: log(N / (1 + c(t))).
 func (t *NameIDFTable) Weight(tok string) float64 {
 	return math.Log(float64(t.Registrations) / float64(1+t.Counts[tok]))
+}
+
+// looScope: leave-own-out rarity for one pair of featdump registrations (Amendment 1). With persons a and b both in
+// the table, c'(t) = c(t) - own_a(t) - own_b(t) and N' = N - regs_a - regs_b (once, when a and b are the same person);
+// a person absent from the table (tid 0, a synthetic namesake, or a v1 table) contributes nothing, and runtime records
+// carry no tid, so runtime counts are used as they are.
+type looScope struct {
+	t         *NameIDFTable
+	oa, ob    map[string]int
+	n, ra, rb int
+}
+
+func newLOO(a, b *Rec, t *NameIDFTable) looScope {
+	s := looScope{t: t, n: t.Registrations}
+	own := func(r *Rec) (map[string]int, int) {
+		if r.tid <= 0 {
+			return nil, 0
+		}
+		k := strconv.Itoa(r.tid - 1)
+		if m, ok := t.Own[k]; ok {
+			return m, t.OwnRegs[k]
+		}
+		return nil, 0
+	}
+	s.oa, s.ra = own(a)
+	if b.tid != a.tid {
+		s.ob, s.rb = own(b)
+	}
+	s.n -= s.ra + s.rb
+	return s
+}
+
+func (s looScope) weight(tok string) float64 {
+	c := s.t.Counts[tok] - s.oa[tok] - s.ob[tok]
+	return math.Log(float64(s.n) / float64(1+c))
 }
 
 // nameIDFFor: the table a process uses. featdump takes it only from -nameidf (pairfeat6 training dumps); every other
@@ -129,9 +172,10 @@ func pairfeat6Feats(a, b *Rec, t *NameIDFTable) []float64 {
 			}
 		}
 		sort.Strings(all)
+		loo := newLOO(a, b, t)
 		shared, rarest, unmatched := 0.0, 0.0, false
 		for _, x := range all {
-			w := t.Weight(x)
+			w := loo.weight(x)
 			if sa[x] && sb[x] {
 				shared += w
 			} else if !unmatched || w > rarest {
