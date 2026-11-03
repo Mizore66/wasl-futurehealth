@@ -370,8 +370,13 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			} else {
 				ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
 			}
+			var iv *ImageVerdict // hold-only image reader verdict; nil when the reader is off
 			if ImageR != nil && kind == "colonoscopy" && ev.Coded == "" && ev.Category == "colonoscopy" {
-				applyImage(ev.Ev, ImageR.Read(ev.Images))
+				iv = ImageR.Read(ev.Images)
+				applyImage(ev.Ev, iv)
+			}
+			if kind == "colonoscopy" {
+				r1photoGate(ev.Ev, iv) // r1review.go: completion review only with a verified caecal photo (no-op with the flag off)
 			}
 			ev.Images = nil
 			ev.Text = "" // the full body stays in the immutable FHIR log; downstream carries the verdict + hash
