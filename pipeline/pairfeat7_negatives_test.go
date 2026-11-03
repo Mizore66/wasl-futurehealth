@@ -71,6 +71,7 @@ func TestGivenOnly(t *testing.T) {
 		{"Abdullah Rahman", "Abdullah Rahmani", false},    // truncation (and the same skeleton)
 		{"Mohammed Salman", "Mohammed Salem", false},      // skeleton slm is a prefix of slmn
 		{"Mohammed Abd Karim", "Mohammed Abdullah", false},
+		{"Mohammed A", "Mohammed Ali", false}, // initial with an empty skeleton: only the token-prefix check rejects it
 	} {
 		a, b := newHNName(c.a), newHNName(c.b)
 		if givenOnly(a, b) != c.want || givenOnly(b, a) != c.want {
@@ -128,6 +129,12 @@ func TestBuildMDNamesakes(t *testing.T) {
 	for _, ps := range [][]Person{pool[6:7], pool[3:4]} { // no other Omar; no other female Mohammed
 		if got, _ := buildMDNamesakes(ps, pool, 0.999999, rand.New(rand.NewSource(1))); len(got) != 0 {
 			t.Errorf("%s got namesake %+v", ps[0].Qid, got)
+		}
+	}
+	// a sampled person is never a donor: with d1 sampled too, b1 has no donor left (d1's own donor is d5)
+	for _, x := range func() []Person { g, _ := buildMDNamesakes(pool[:2], pool, 0.999999, rand.New(rand.NewSource(1))); return g }() {
+		if x.Qid == "md-b1" || x.En == pool[0].En || x.En == pool[1].En {
+			t.Errorf("sampled person used as donor: %+v", x)
 		}
 	}
 	r, fresh := rand.New(rand.NewSource(3)), rand.New(rand.NewSource(3))
