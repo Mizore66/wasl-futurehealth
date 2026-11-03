@@ -698,6 +698,7 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 	landmarkOK := cq != "" && strings.Contains(text, cq) && reLandmark.MatchString(cq) && v.Regex.Caecum == "yes"
 	outs := map[string]bool{}
 	rules := map[string]bool{}
+	explicitInad := false // some reader combination is inadequate by an explicit statement, not by R1 (r1review.go)
 	for _, c := range opts("caecum") {
 		for _, p := range opts("prep") {
 			for _, po := range opts("polyps") {
@@ -716,16 +717,12 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 						lab = "awaiting_histology"
 					case s == "not_closed":
 						lab = "inadequate"
+						explicitInad = true
 					default:
 						lab = "needs_human"
 						if c == "not_stated" && R["caecum"] == "not_stated" && G["caecum"] == "not_stated" {
-							if R1ReviewOn { // r1review.go: a clinician decides completion; never an automatic verdict
-								rules["R1_completion_review"] = true
-								v.R1Review = true
-							} else {
-								lab = "inadequate"
-								rules["R1_completion_not_documented"] = true
-							}
+							lab = "inadequate"
+							rules["R1_completion_not_documented"] = true
 						}
 					}
 					outs[lab] = true
@@ -762,14 +759,6 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 			}
 		}
 	}
-	if v.R1Review { // r1review.go: outs holds needs_human, so the verdict is never agreed; keep the rule for tracing
-		rs := []string{}
-		for k := range rules {
-			rs = append(rs, k)
-		}
-		sort.Strings(rs)
-		v.Rule = strings.Join(rs, "+")
-	}
 	if v.Agree {
 		rs := []string{}
 		for k := range rules {
@@ -793,6 +782,11 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 		if rules["R2_prep_ungraded_caecum_landmark"] && v.Label != "inadequate" {
 			v.Flags = []string{"prep_grade_not_documented"}
 		}
+	}
+	// r1review.go: only a verdict that R1 alone made inadequate goes to the clinician; any explicit inadequacy (either
+	// reader) stays automatically inadequate, exactly as with the flag off
+	if R1ReviewOn && v.Agree && v.Label == "inadequate" && v.Rule == "R1_completion_not_documented" && !explicitInad {
+		v.Agree, v.Label, v.R1Review, v.Rule = false, "disagree", true, "R1_completion_review"
 	}
 	return v
 }
