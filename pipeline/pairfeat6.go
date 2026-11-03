@@ -115,9 +115,13 @@ func (s looScope) weight(tok string) float64 {
 	return math.Log(float64(s.n) / float64(1+c))
 }
 
-// nameIDFFor: the table a process uses. featdump takes it only from -nameidf (pairfeat6 training dumps); every other
-// command loads <wasl>/name_idf_pairfeat6.json when -modelset is pairfeat6 and uses none otherwise. -nameidf on any
-// command other than featdump is a configuration error.
+// usesNameIDF: the modelsets whose chain carries a name-rarity table name_idf_<modelset>.json and pair features
+// f30..f33 (pairfeat7 reuses pairfeat6's features and table code under its own file names).
+func usesNameIDF(modelSet string) bool { return modelSet == "pairfeat6" || modelSet == "pairfeat7" }
+
+// nameIDFFor: the table a process uses. featdump takes it only from -nameidf (pairfeat6 and pairfeat7 training dumps);
+// every other command loads <wasl>/name_idf_<modelset>.json when usesNameIDF(-modelset) and uses none otherwise.
+// -nameidf on any command other than featdump is a configuration error.
 func nameIDFFor(cmd, path, modelSet, wasl string) (*NameIDFTable, error) {
 	if cmd == "featdump" {
 		if path == "" {
@@ -128,8 +132,8 @@ func nameIDFFor(cmd, path, modelSet, wasl string) (*NameIDFTable, error) {
 	if path != "" {
 		return nil, fmt.Errorf("-nameidf is valid only for featdump (got command %q)", cmd)
 	}
-	if modelSet == "pairfeat6" {
-		return readNameIDF(filepath.Join(wasl, "name_idf_pairfeat6.json"))
+	if usesNameIDF(modelSet) {
+		return readNameIDF(filepath.Join(wasl, "name_idf_"+modelSet+".json"))
 	}
 	return nil, nil
 }
