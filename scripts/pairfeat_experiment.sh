@@ -5,6 +5,8 @@
 #         | validation-clean (eval; 401 409 419 421 431, r1review 631 641 643 647 653; rerr 0/0)
 #   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 | pairfeat6 | pairfeat7 (-modelset <candidate> on orchestrate/audit/report7 only)
 #         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
+#         | r1photo7 (-modelset pairfeat7 plus -r1review, all arms image on; seeds 769 773 787, validation 797 809 811 821 823;
+#           `init-experiment EXPERIMENT_DIR r1photo7 REFERENCE_FIT_DIR`, reference pairfeat5 refit)
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
 # pairfeat6 659 661 673 (validation 677 683 691 701 709); a pairfeat6 parent (its own chain) needs experiment.json from
 # `init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR`, which records the separately fitted pairfeat5 reference; it
@@ -49,7 +51,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -81,6 +83,7 @@ case "$CAND" in
   r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;
   pairfeat6) DEV_SEEDS="659 661 673"; VAL_SEEDS="677 683 691 701 709"; REF=pairfeat5; REFCHAIN=experiment;;
   pairfeat7) DEV_SEEDS="719 727 733"; VAL_SEEDS="739 743 751 757 761"; REF=pairfeat5; REFCHAIN=experiment;;
+  r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
@@ -109,20 +112,20 @@ if m.get("git_head") != head:
 if [k for k in m if k.endswith("_chain_sha256") and k != "baseline_chain_sha256"] != [chain + "_chain_sha256"]:
     sys.exit(1)  # exactly one candidate chain, and it is the chain this run's candidate runs
 ep = os.path.join(parent, "experiment.json")
-if chain != cand:  # a candidate borrowing a chain is named only by experiment.json
-    if not os.path.isfile(ep) or os.path.islink(ep):
-        sys.exit(1)
-    with open(ep) as h:
-        e = json.load(h)
-    if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != chain:
-        sys.exit(1)
-elif refchain == "experiment":  # its own chain plus a separately fitted reference (pairfeat6): experiment.json names both
+if refchain == "experiment":  # a separately fitted reference (pairfeat6, pairfeat7, r1photo7 on the pairfeat7 chain): experiment.json names both
     if not os.path.isfile(ep) or os.path.islink(ep):
         sys.exit(1)
     with open(ep) as h:
         e = json.load(h)
     if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref \
             or not isinstance(e.get("reference_model_chain"), dict):
+        sys.exit(1)
+elif chain != cand:  # a candidate borrowing a chain (r1review) is named only by experiment.json
+    if not os.path.isfile(ep) or os.path.islink(ep):
+        sys.exit(1)
+    with open(ep) as h:
+        e = json.load(h)
+    if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != chain:
         sys.exit(1)
 elif os.path.lexists(ep):
     sys.exit(1)  # a parent with experiment.json serves only the candidate it names
