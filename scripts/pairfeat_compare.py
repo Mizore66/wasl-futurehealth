@@ -128,7 +128,14 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               "pairfeat7": {"dev_seeds": [719, 727, 733], "validation_seeds": [739, 743, 751, 757, 761],
                             "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                             "reference": "pairfeat5", "reference_chain": "experiment", "reference_gate": "pairfeat6",
-                            "baseline_gating": False, "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
+                            "baseline_gating": False, "report_linked_pairs": True, "edge_classes": "pairfeat7"},
+              # r1photo7 (spec 2026-11-04-crc-r1photo7-design.md): the pairfeat7 chain plus -r1review, every arm image on,
+              # against the separately refit pairfeat5 reference; gated by r1review's recall margin AND pairfeat7's contamination
+              "r1photo7": {"dev_seeds": [769, 773, 787], "validation_seeds": [797, 809, 811, 821, 823],
+                           "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                           "chain": "pairfeat7", "reference": "pairfeat5", "reference_chain": "experiment",
+                           "reference_gate": "r1photo7", "extra_flags": ["-r1review"], "lane_image": True,
+                           "baseline_gating": False, "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
 RETIRED_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
@@ -420,11 +427,11 @@ def resolve_candidate(doc, what, exp_dir=None):
     experiment.json is refused; a pairfeat6 chain requires its experiment.json."""
     found = infer_candidate(doc, what)
     e = read_experiment(exp_dir) if exp_dir is not None else None
-    if reference_chain_in_experiment(found):  # pairfeat6: experiment.json is required and names it
-        if e is None or e["candidate"] != found:
+    if reference_chain_in_experiment(found):  # pairfeat6/7: experiment.json is required and names it (or a candidate borrowing its chain)
+        if e is None or chain_of(e["candidate"]) != found:
             raise PreflightError("a %s parent needs experiment.json naming %s and its separately fitted reference "
                                  "(init-experiment EXPERIMENT_DIR %s REFERENCE_FIT_DIR)" % (found, found, found))
-        return found
+        return e["candidate"]
     if e is None:
         return found
     if chain_of(e["candidate"]) != found or e["reference"] != found:
@@ -474,7 +481,7 @@ def init_experiment(exp_dir, candidate, reference_dir=None, repo=REPO):
     if reference_dir is None:
         raise PreflightError("init-experiment %s needs the reference fit directory (fit_pairfeat1.py --modelset %s output)"
                              % (candidate, ref))
-    if found != candidate:
+    if found != chain_of(candidate):
         raise PreflightError("artifact-manifest.json carries the %s chain, %s needs its own" % (found, candidate))
     if not _is_hex(am.get("git_head"), 40):
         raise PreflightError("artifact-manifest.json needs a full git_head")
@@ -1462,6 +1469,70 @@ def _pairfeat6_gate(ref, cand, kind, base):
             "hours": {rk: rh, ck: chh, "max_allowed": float(hlimit)}, "reported": reported, "reasons": reasons}
 
 
+def _r1photo7_gate(ref, cand, kind, base):
+    """Gate of r1photo7 against its reference arm pairfeat5 (spec 2026-11-04-crc-r1photo7-design.md, gates table): both
+    r1review's recall margin (gain >= REF_MIN_GAIN_PP[kind]) and pairfeat7's contamination rule (false_merge_pairs and
+    cross_person_edges strictly below the reference in selection and validation, not above in stress); uncapped wrong-pair
+    link-review pairs not above the reference; reviewer hours <= 1.10 x the reference's; truth_closed equal in all three
+    arms; the SAFETY set and wrong releases by origin zero in the baseline, reference and candidate arms. impure_clusters,
+    wrong final sign-offs and completion_undocumented are reported, not gated."""
+    if kind not in GATE_KINDS:
+        raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
+    if base is None or base.get("arm") != "baseline":
+        raise ValueError("the r1photo7 gate needs the baseline arm (SAFETY is gated in every arm)")
+    rk, ck = ref.get("arm"), cand.get("arm")
+    reasons = []
+    if ck != "r1photo7" or rk != reference(ck):
+        reasons.append("arms must be %s vs its reference arm %s" % ("r1photo7", reference("r1photo7")))
+    if not base["truth_closed"] == ref["truth_closed"] == cand["truth_closed"]:
+        reasons.append("truth_closed differs between arms")
+    need = REF_MIN_GAIN_PP[kind]
+    gain = None
+    if not ref["truth_closed"] or not cand["truth_closed"]:
+        reasons.append("truth_closed is zero")
+    else:
+        g = 100 * (Fraction(cand["tp"], cand["truth_closed"]) - Fraction(ref["tp"], ref["truth_closed"]))
+        gain = float(g)
+        if g < Fraction(str(need)):
+            reasons.append("gain vs reference %.4fpp below %.1fpp" % (gain, need))
+    for label, a in (("baseline ", base), ("reference ", ref), ("", cand)):
+        for k in SAFETY:
+            if a[k] != 0:
+                reasons.append(label + k + " nonzero")
+        if any(v != 0 for v in a["wrong_released_by_origin"].values()):
+            reasons.append(label + "wrong_released_by_origin nonzero")
+    strict = kind in PF6_STRICT_KINDS
+    contam = {}
+    for k in ("false_merge_pairs", "cross_person_edges"):
+        rv, cv = ref[k], cand[k]
+        contam[k] = {rk: rv, ck: cv, "rule": "strictly below" if strict else "not above"}
+        if strict and cv >= rv:
+            reasons.append("%s not strictly below reference (%d >= %d)" % (k, cv, rv))
+        elif not strict and cv > rv:
+            reasons.append("%s above reference (%d > %d)" % (k, cv, rv))
+    vals = []
+    for label, a in (("reference", ref), ("candidate", cand)):
+        v = a["reviewer"].get("uncapped_wrong_distinct_pairs")
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ValueError("r1photo7 gate needs reviewer.uncapped_wrong_distinct_pairs in the %s arm" % label)
+        vals.append(v)
+    ru, cu = vals
+    if cu > ru:
+        reasons.append("uncapped wrong-pair link-review pairs above reference (%d > %d)" % (cu, ru))
+    rh, chh = ref["reviewer"]["hours"], cand["reviewer"]["hours"]
+    hlimit = Fraction(rh) * PF6_GROWTH
+    if Fraction(chh) > hlimit:
+        reasons.append("reviewer hours %.2f exceed %.2f (reference %.2f +10%%)" % (chh, float(hlimit), rh))
+    reported = {"impure_clusters": {rk: ref["impure_clusters"], ck: cand["impure_clusters"]},
+                "wrong_final_signoffs": {rk: ref["reviewer"]["wrong_final_signoffs"], ck: cand["reviewer"]["wrong_final_signoffs"]},
+                "completion_undocumented": {rk: ref.get("completion_undocumented"), ck: cand.get("completion_undocumented")},
+                "gating": False}
+    return {"pass": not reasons, "kind": kind, "reference": rk, "gain_pp": None if gain is None else round(gain, 4),
+            "min_gain_pp": need, "contamination": contam,
+            "uncapped_wrong_distinct_pairs": {rk: ru, ck: cu, "max_allowed": ru},
+            "hours": {rk: rh, ck: chh, "max_allowed": float(hlimit)}, "reported": reported, "reasons": reasons}
+
+
 def reference_gate(ref, cand, kind, base=None):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
     recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
@@ -1474,6 +1545,8 @@ def reference_gate(ref, cand, kind, base=None):
     ca0 = cand.get("arm")
     if isinstance(ca0, str) and CANDIDATES.get(ca0, {}).get("reference_gate") == "pairfeat6":
         return _pairfeat6_gate(ref, cand, kind, base)
+    if isinstance(ca0, str) and CANDIDATES.get(ca0, {}).get("reference_gate") == "r1photo7":
+        return _r1photo7_gate(ref, cand, kind, base)
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
