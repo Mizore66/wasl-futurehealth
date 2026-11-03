@@ -42,6 +42,7 @@ type TwoVerdict struct {
 	// the report would get once prep is graded adequate. Closure then queries the endoscopy unit instead of a reviewer.
 	PrepUngraded bool   `json:"prep_ungraded,omitempty"`
 	GradedLabel  string `json:"graded_label,omitempty"`
+	R1Review     bool   `json:"r1_review,omitempty"`
 	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
 	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
 	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
@@ -718,8 +719,13 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 					default:
 						lab = "needs_human"
 						if c == "not_stated" && R["caecum"] == "not_stated" && G["caecum"] == "not_stated" {
-							lab = "inadequate"
-							rules["R1_completion_not_documented"] = true
+							if R1ReviewOn { // r1review.go: a clinician decides completion; never an automatic verdict
+								rules["R1_completion_review"] = true
+								v.R1Review = true
+							} else {
+								lab = "inadequate"
+								rules["R1_completion_not_documented"] = true
+							}
 						}
 					}
 					outs[lab] = true
@@ -755,6 +761,14 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 				v.Agree, v.Label = true, l
 			}
 		}
+	}
+	if v.R1Review { // r1review.go: outs holds needs_human, so the verdict is never agreed; keep the rule for tracing
+		rs := []string{}
+		for k := range rules {
+			rs = append(rs, k)
+		}
+		sort.Strings(rs)
+		v.Rule = strings.Join(rs, "+")
 	}
 	if v.Agree {
 		rs := []string{}
