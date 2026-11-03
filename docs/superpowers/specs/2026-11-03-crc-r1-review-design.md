@@ -59,3 +59,7 @@ Reader v7 (`a3f9ccd`) deliberately stopped counting the ileocaecal valve alone a
 - Commit trailer `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - No push or merge.
 - After the result is documented, thin the raw lanes of non-record runs.
+
+## Amendment 1 (before any r1review lane ran)
+
+The vs-pairfeat5 safety gate originally listed "wrong final sign-offs 0". That cannot hold in stress lanes. The 4% synthetic reviewer error makes about 80 wrong final sign-offs per arm by design: 79 for baseline and 82 for pairfeat5 in pairfeat5 run-2 dev-stress. The baseline gate has never gated on it. The corrected safety condition for the reference gate is the harness's existing `SAFETY` set in both the pairfeat5 and r1review arms: false closures, wrong releases, replay mismatches, analysis errors and trace errors. Wrong final sign-offs are reported, not gated.
