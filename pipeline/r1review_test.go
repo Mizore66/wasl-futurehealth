@@ -338,3 +338,18 @@ func TestR1ReviewPendingPlusInadequateHoldsInadequate(t *testing.T) {
 		t.Fatalf("pending completion review + inadequate report: state %s hold %q esc %v", d.State, r1HoldState(d), d.Escalations)
 	}
 }
+
+// readerscore has no image reader: with -r1review every completion-review conversion reverts (shipped behaviour
+// without photos), so the scored verdict is the flag-off one.
+func TestR1PhotoGateReaderScore(t *testing.T) {
+	r1Set(t, false)
+	j0 := Judge
+	t.Cleanup(func() { Judge = j0 })
+	Judge = &Judge2{cache: map[string]gemmaEntry{textSha(r1ValveText): r1ValveG}}
+	off := r1JSON(t, readerScoreVerdict(r1ValveText))
+	R1ReviewOn = true
+	v := readerScoreVerdict(r1ValveText)
+	if !v.Agree || v.Label != "inadequate" || v.Rule != "R1_completion_not_documented" || v.R1Review || r1JSON(t, v) != off {
+		t.Fatalf("readerscore with -r1review: want the flag-off verdict\nwant %s\ngot  %s", off, r1JSON(t, v))
+	}
+}
