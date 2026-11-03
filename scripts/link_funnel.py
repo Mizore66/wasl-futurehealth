@@ -5,7 +5,7 @@ import collections, json, os, sys
 CATEGORIES = {
     "candidate_not_generated", "candidate_below_review",
     "candidate_rejected_demographic", "candidate_routed_review",
-    "linked_report_not_attached", "attached_or_closed",
+    "linked_report_not_attached", "attached_or_closed", "candidate_capped_not_queued",
 }
 REASONS = {"eid_conflict", "eid_contradiction", "merge_constraint"}
 # fixed, identifier-free analysis error codes (the only strings an analysis_error row may carry)
@@ -53,6 +53,8 @@ def classify_pair(events, items, answers, attached, closed, clustered=False, spl
         r = latest.get("reason")
         return "candidate_rejected_demographic", r if r in REASONS else "unspecified_constraint"
     if stage == "near":
+        if latest.get("reason") == "xscript_cap":  # the cross-script cap stopped the merge and no review item was queued
+            return "candidate_capped_not_queued", "capped_near_without_review_item"
         raise ValueError("near_without_review_item")
     raise ValueError("unclassified_stage")
 

@@ -2186,5 +2186,46 @@ class CLIPairfeat4NoXscript(CLIPairfeat4):
             self.assertNotIn("xscript_cap", s["arms"][a]["per_seed"]["433"])
 
 
+class CappedNotQueuedCategory(unittest.TestCase):
+    CAT = "candidate_capped_not_queued"
+
+    def fun(self, **cats):
+        return funnel(5, 10, attached=5, candidate_below_review=4, **dict(cats))
+
+    def test_pairfeat5_lane_counts_and_partitions(self):
+        f = self.fun(**{self.CAT: 1})
+        m = pfc.lane_metrics(1, report(tp=5, truth=10), f, {}, dict(LOAD, wrong_distinct_pairs=0), candidate=P5)
+        self.assertEqual(m["categories"][self.CAT], 1)
+        self.assertEqual(m["residual"][self.CAT], 1)
+        self.assertEqual(sum(m["residual"].values()), 5)
+        z = pfc.lane_metrics(1, report(tp=5, truth=10), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=0), candidate=P5)
+        self.assertEqual((z["categories"][self.CAT], z["residual"][self.CAT]), (0, 0))
+        with self.assertRaises(ValueError):  # extra category not balanced by truth
+            pfc.lane_metrics(1, report(tp=5, truth=10), self.fun(**{self.CAT: 2}), {}, LOAD, candidate=P5)
+
+    def test_pairfeat5_arms_aggregate_the_category(self):
+        lanes = [pfc.lane_metrics(s, report(tp=5, truth=10), self.fun(**{self.CAT: 1}), {},
+                                  dict(LOAD, wrong_distinct_pairs=0), candidate=P5) for s in (521, 541, 547)]
+        a = pfc.aggregate_arm("baseline", lanes)
+        self.assertEqual((a["categories"][self.CAT], a["residual"][self.CAT]), (3, 3))
+        self.assertEqual(pfc.aggregate_arm(P5, lanes)["residual"][self.CAT], 3)
+
+    def test_earlier_candidates_unchanged_and_reject_it(self):
+        for cand in (None, "pairfeat1", "pairfeat4"):
+            kw = {} if cand is None else {"candidate": cand}
+            m = pfc.lane_metrics(1, report(tp=5, truth=10), funnel(5, 10), {}, LOAD, **kw)
+            plain = pfc.lane_metrics(1, report(tp=5, truth=10), funnel(5, 10), {}, LOAD)
+            self.assertEqual(m, plain)
+            self.assertNotIn(self.CAT, m["categories"])
+            self.assertNotIn(self.CAT, m["residual"])
+            with self.assertRaises(ValueError):
+                pfc.lane_metrics(1, report(tp=5, truth=10), self.fun(**{self.CAT: 1}), {}, LOAD, **kw)
+        lanes = [pfc.lane_metrics(s, report(), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=0), candidate=P4)
+                 for s in (433, 449, 461)]
+        a = pfc.aggregate_arm(P4, lanes)
+        self.assertNotIn(self.CAT, a["categories"])
+        self.assertNotIn(self.CAT, a["residual"])
+
+
 if __name__ == "__main__":
     unittest.main()
