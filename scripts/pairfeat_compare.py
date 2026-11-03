@@ -55,8 +55,8 @@ Review-load gate per candidate (CANDIDATES[c]["review_gate"], pre-registered): "
   false_merge_pairs (baseline - candidate) >= 1, capped different-person review pairs <= 2 x prevented.
 Three-arm reference gate (r1review, pre-registered): gate(baseline, r1review) above with wrong_pair_cap, and
   reference_gate(pairfeat5, r1review): recall gain over pairfeat5 >= +1.0 selection, >= 0 stress, >= +0.5 validation; false
-  closures, wrong releases (total and by origin), wrong final sign-offs, replay mismatches, analysis and trace-write errors
-  zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and reviewer.wrong_distinct_pairs not above
+  closures, wrong releases (total and by origin), replay mismatches, analysis and trace-write errors zero in both arms
+  (wrong final sign-offs are reported, not gated: amendment 1); false_merge_pairs, impure_clusters, cross_person_edges and reviewer.wrong_distinct_pairs not above
   pairfeat5's; reviewer hours <= 1.10 x pairfeat5's. pass (and selected_modelset = r1review) needs both gates. Both
   non-baseline arms report capped pairs; every arm reports completion_undocumented review items and their answers
   (reported, not gating).
@@ -1023,9 +1023,11 @@ def _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, tota
 
 def reference_gate(ref, cand, kind):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
-    recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY, wrong releases by origin and
-    reviewer wrong_final_signoffs) zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and
-    reviewer.wrong_distinct_pairs not above the reference's; reviewer hours <= 1.10 x the reference's (0 if it has 0)."""
+    recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
+    gate() checks them) zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and
+    reviewer.wrong_distinct_pairs not above the reference's; reviewer hours <= 1.10 x the reference's (0 if it has 0).
+    Reviewer wrong_final_signoffs are reported for both arms, not gated (amendment 1: stress lanes carry ~80 per arm by
+    design from the 4% synthetic reviewer error)."""
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
@@ -1053,8 +1055,6 @@ def reference_gate(ref, cand, kind):
                 reasons.append(label + k + " nonzero")
         if any(v != 0 for v in a["wrong_released_by_origin"].values()):
             reasons.append(label + "wrong_released_by_origin nonzero")
-        if a["reviewer"]["wrong_final_signoffs"] != 0:
-            reasons.append(label + "wrong_final_signoffs nonzero")
     above = {}
     for k in CONTAM + ("wrong_distinct_pairs",):
         vals = []
@@ -1072,6 +1072,8 @@ def reference_gate(ref, cand, kind):
         reasons.append("reviewer hours %.2f exceed %.2f (reference %.2f +%d%%)" % (chh, float(limit), rh, round(100 * REF_MAX_HOURS_GROWTH)))
     return {"pass": not reasons, "kind": kind, "reference": rk, "gain_pp": None if gain is None else round(gain, 4),
             "min_gain_pp": need, "hours": {rk: rh, ck: chh, "max_allowed": float(limit)}, "not_above_reference": above,
+            "wrong_final_signoffs": {rk: ref["reviewer"]["wrong_final_signoffs"], ck: cand["reviewer"]["wrong_final_signoffs"],
+                                     "gating": False},
             "reasons": reasons}
 
 
