@@ -145,6 +145,8 @@ func main() {
 	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
+	fs.Float64Var(&MDNamesakeRate, "mdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic missing-date namesake hard negative (pairfeat7 training only)")
+	fs.Float64Var(&RDNamesakeRate, "rdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic same-real-date stranger hard negative (pairfeat7 training only)")
 	fs.Float64Var(&XSNamesakeRate, "xsnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic cross-script namesake hard negative (pairfeat6 training only)")
 	fs.Float64Var(&FamilyNamesakeRate, "familynamesakes", 0, "featdump only: share of persons given a synthetic family-name namesake hard negative (training only)")
 	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
@@ -210,6 +212,15 @@ func main() {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	}
+	for _, v := range []struct {
+		flag string
+		rate float64
+	}{{"-mdnamesakes", MDNamesakeRate}, {"-rdnamesakes", RDNamesakeRate}} {
+		if err := validateIDFNamesakes(v.flag, cmd, v.rate, *nameIDFPath); err != nil {
+			fmt.Fprintln(os.Stderr, "configuration error:", err)
+			os.Exit(2)
+		}
+	}
 	if err := validateLinkFloor(*linkFloor); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
@@ -272,12 +283,12 @@ func main() {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	}
-	XScriptCap = xscriptCapFor(ModelSet) // xscript.go: cross-script review cap (pairfeat5, pairfeat6)
+	XScriptCap = xscriptCapFor(ModelSet) // xscript.go: cross-script review cap (pairfeat5, pairfeat6, pairfeat7)
 	if tb, err := nameIDFFor(cmd, *nameIDFPath, ModelSet, *wasl); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	} else {
-		NameIDF = tb // pairfeat6.go: non-nil only for -modelset pairfeat6 or featdump -nameidf
+		NameIDF = tb // pairfeat6.go: non-nil only for -modelset pairfeat6/pairfeat7 or featdump -nameidf
 	}
 	DualMerge = *dual
 	switch *policy {
