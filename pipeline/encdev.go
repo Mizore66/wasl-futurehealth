@@ -5,6 +5,7 @@ package main
 //   wsi encnoise -wasl <data dir> -split eval -seed 7 -out pairs.json   synthetic eval protocol: one noisy Arabic + one noisy
 //                                                                        Latin registration per person (gen.go noise model v1, or v2 with -noise v2)
 //   wsi featdump -wasl <data dir> -encfile <encoder.json> -split train -persons N -seed 1 -out feats.csv   pair-scorer rows
+//   wsi nameidf -wasl <data dir> -split train -persons 5000 -noise v1t -idfseeds 1019,... -out name_idf_pairfeat6.json   pairfeat6 name-rarity table
 import (
 	"bufio"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -45,11 +47,11 @@ func validateModelPolicy(modelSet, policy string) error {
 	return nil
 }
 
-// validateNoise: v1t is the training-only DOB noise model, valid for featdump alone; every other command
+// validateNoise: v1t is the training-only DOB noise model, valid for featdump and nameidf; every other command
 // (gen, evaluation runs) would silently mix training noise into evaluation data, so it is a configuration error.
 func validateNoise(cmd, noise string) error {
-	if noise == "v1t" && cmd != "featdump" {
-		return fmt.Errorf("-noise v1t is training-only and valid only for featdump (got command %q)", cmd)
+	if noise == "v1t" && cmd != "featdump" && cmd != "nameidf" {
+		return fmt.Errorf("-noise v1t is training-only and valid only for featdump and nameidf (got command %q)", cmd)
 	}
 	return nil
 }
@@ -132,17 +134,13 @@ func runEncNoise(wasl, split, outPath string, seed int64) {
 	}
 }
 
-// runFeatDump: training data for the pair scorer and its calibrators, produced exactly like the runtime linker
-// (LinkerCore.candidates: exact top-K cosine + rule-key blocking, pairFeats). Persons of one split register at 1-4
-// distinct providers (gen.go registration model: provider script mix, name/DOB/sex noise); registrations stream in
-// random order and every candidate pair (new, earlier) is written once.
-// CSV columns: label,corr,f0..f29,near_eid,decade_dob,same_surname,placeholder_dob,cross_script[,p from -gbmfile]
-// (37 columns, 38 with p). Features and p are %.17g (exact float64 round-trip, NaN as NaN); slice columns are 0/1.
-func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, seed int64) {
-	var gbm *GBM
-	if gbmPath != "" {
-		gbm = LoadGBM(gbmPath)
-	}
+// fdReg: one featdump registration (person index, name, DOB, sex, Emirates ID).
+type fdReg struct {
+	pid                 int
+	name, dob, sex, eid string
+}
+
+func readPersons(wasl string) []Person {
 	b, err := os.ReadFile(filepath.Join(wasl, "persons3.json"))
 	if err != nil {
 		panic(err)
@@ -151,6 +149,12 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	if err := json.Unmarshal(b, &all); err != nil {
 		panic(err)
 	}
+	return all
+}
+
+// fdSample: featdump's person sample: the split's persons with both names, shuffled with the seed and cut to nPersons,
+// the split pool in file order, and the generator after the shuffle.
+func fdSample(all []Person, split string, nPersons int, seed int64) ([]Person, []Person, *rand.Rand) {
 	ps := []Person{}
 	for _, p := range all {
 		if p.Spl == split && p.Ar != "" && p.En != "" {
@@ -163,57 +167,124 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	if nPersons > 0 && nPersons < len(ps) {
 		ps = ps[:nPersons]
 	}
-	type regT struct {
-		pid                 int
-		name, dob, sex, eid string
-	}
-	regs := []regT{}
-	register := func(pid int, p *Person, r *rand.Rand) {
-		k := 1
-		if x := r.Float64(); x < .1 {
-			k = 4
-		} else if x < .35 {
-			k = 3
-		} else if x < .7 {
-			k = 2
+	return ps, pool, r
+}
+
+// fdName: one noisy registration name of p in the given script (gen.go noise: v2, else v1/v1t).
+func fdName(p *Person, arabic bool, r *rand.Rand) string {
+	if arabic {
+		if NoiseModel == "v2" {
+			return noisyArabic2(p.Ar, r)
 		}
-		for _, pi := range r.Perm(len(Providers))[:k] {
-			prov := Providers[pi]
-			var name string
-			if r.Float64() < prov.PAr {
-				if NoiseModel == "v2" {
-					name = noisyArabic2(p.Ar, r)
-				} else {
-					name = noisyArabic(p.Ar, r)
-				}
-			} else {
-				opts := append([]string{p.En}, p.Als...)
-				src := p.En
-				if r.Float64() < .5 {
-					src = opts[r.Intn(len(opts))]
-				}
-				if NoiseModel == "v2" {
-					name = noisyLatin2(src, r)
-				} else {
-					name = noisyLatin(src, r)
+		return noisyArabic(p.Ar, r)
+	}
+	opts := append([]string{p.En}, p.Als...)
+	src := p.En
+	if r.Float64() < .5 {
+		src = opts[r.Intn(len(opts))]
+	}
+	if NoiseModel == "v2" {
+		return noisyLatin2(src, r)
+	}
+	return noisyLatin(src, r)
+}
+
+// fdRegister: p registers at 1-4 distinct providers (featdump's registration model); appended to regs.
+func fdRegister(regs []fdReg, pid int, p *Person, r *rand.Rand) []fdReg {
+	k := 1
+	if x := r.Float64(); x < .1 {
+		k = 4
+	} else if x < .35 {
+		k = 3
+	} else if x < .7 {
+		k = 2
+	}
+	for _, pi := range r.Perm(len(Providers))[:k] {
+		prov := Providers[pi]
+		name := fdName(p, r.Float64() < prov.PAr, r)
+		var dob string
+		if NoiseModel == "v2" {
+			dob = noisyDob2(p.Dob, r, .3)
+		} else if NoiseModel == "v1t" {
+			dob = noisyDobV1T(p.Dob, r, .3)
+		} else {
+			dob = noisyDob(p.Dob, r, .3)
+		}
+		sex := p.Sex
+		if r.Float64() < .02 {
+			sex = "U"
+		}
+		regs = append(regs, fdReg{pid, name, dob, sex, drawEID(p, r)})
+	}
+	return regs
+}
+
+// runNameIDF: the pairfeat6 name-rarity table (pairfeat6.go). For each seed it draws featdump's person sample and base
+// registrations exactly as featdump does (same code and RNG sequence; no namesake or cross-script registrations) and
+// counts, per skeleton token, the registrations whose skeleton contains it; N is the registration total.
+func runNameIDF(wasl, split, outPath string, nPersons int, seeds []int64) {
+	if len(seeds) == 0 {
+		panic("nameidf: -idfseeds is required")
+	}
+	all := readPersons(wasl)
+	t := NameIDFTable{Version: 1, Split: split, Persons: nPersons, Seeds: seeds, Noise: NoiseModel, Counts: map[string]int{}}
+	for _, seed := range seeds {
+		ps, _, r := fdSample(all, split, nPersons, seed)
+		var regs []fdReg
+		for pid := range ps {
+			regs = fdRegister(regs, pid, &ps[pid], r)
+		}
+		for _, g := range regs {
+			seen := map[string]bool{}
+			for _, s := range skeleton(tokensOf(latinForm(g.name))) {
+				if !seen[s] {
+					seen[s] = true
+					t.Counts[s]++
 				}
 			}
-			var dob string
-			if NoiseModel == "v2" {
-				dob = noisyDob2(p.Dob, r, .3)
-			} else if NoiseModel == "v1t" {
-				dob = noisyDobV1T(p.Dob, r, .3)
-			} else {
-				dob = noisyDob(p.Dob, r, .3)
-			}
-			sex := p.Sex
-			if r.Float64() < .02 {
-				sex = "U"
-			}
-			eid := drawEID(p, r)
-			regs = append(regs, regT{pid, name, dob, sex, eid})
+			t.Registrations++
 		}
 	}
+	b, err := json.Marshal(t)
+	if err != nil {
+		panic(err)
+	}
+	if err := os.WriteFile(outPath, append(b, '\n'), 0o644); err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(os.Stderr, "nameidf %s: %d registrations, %d tokens\n", split, t.Registrations, len(t.Counts))
+}
+
+// parseIDFSeeds: -idfseeds "1019,1021,..." (empty items skipped).
+func parseIDFSeeds(s string) []int64 {
+	var out []int64
+	for _, x := range strings.Split(s, ",") {
+		if x = strings.TrimSpace(x); x == "" {
+			continue
+		}
+		v, err := strconv.ParseInt(x, 10, 64)
+		if err != nil {
+			panic("bad -idfseeds " + s)
+		}
+		out = append(out, v)
+	}
+	return out
+}
+
+// runFeatDump: training data for the pair scorer and its calibrators, produced exactly like the runtime linker
+// (LinkerCore.candidates: exact top-K cosine + rule-key blocking, pairFeats). Persons of one split register at 1-4
+// distinct providers (gen.go registration model: provider script mix, name/DOB/sex noise); registrations stream in
+// random order and every candidate pair (new, earlier) is written once.
+// CSV columns: label,corr,f0..f29,near_eid,decade_dob,same_surname,placeholder_dob,cross_script[,p from -gbmfile]
+// (37 columns, 38 with p); with -nameidf (pairfeat6) f0..f33: 41 columns, 42 with p. Features and p are %.17g (exact float64 round-trip, NaN as NaN); slice columns are 0/1.
+func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, seed int64) {
+	var gbm *GBM
+	if gbmPath != "" {
+		gbm = LoadGBM(gbmPath)
+	}
+	ps, pool, r := fdSample(readPersons(wasl), split, nPersons, seed)
+	regs := []fdReg{}
+	register := func(pid int, p *Person, r *rand.Rand) { regs = fdRegister(regs, pid, p, r) }
 	for pid := range ps {
 		register(pid, &ps[pid], r)
 	}
@@ -239,6 +310,18 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		}
 		nfAdded = len(nf)
 	}
+	xsBase := map[int]int{}
+	xsAdded := 0
+	if XSNamesakeRate > 0 { // pairfeat6: base and cross-script namesake registrations (namesake.go)
+		xr := rand.New(rand.NewSource(xsSeed(seed)))
+		xs, xbase := buildXSNamesakes(ps, pool, XSNamesakeRate, xr)
+		first := len(ps) + nsAdded + nfAdded
+		for i := range xs {
+			regs = xsRegister(regs, xbase[i], &ps[xbase[i]], first+i, &xs[i], xr)
+			xsBase[first+i] = xbase[i]
+		}
+		xsAdded = len(xs)
+	}
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
 	L := NewLinkerCore(nil, 1)
@@ -249,7 +332,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	w := bufio.NewWriter(f)
 	pids := []int{}
 	npos, nneg := 0, 0
-	nsRows, nfRows := []int{}, []int{}
+	nsRows, nfRows, xsRows := []int{}, []int{}, []int{}
 	rowIdx := 0
 	for _, g := range regs {
 		rec := &Rec{Name: g.name, Dob: g.dob, Sex: g.sex, Eid: g.eid}
@@ -272,6 +355,9 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 				}
 				if namesakePairRow(nfBase, g.pid, pids[c.j]) {
 					nfRows = append(nfRows, rowIdx)
+				}
+				if namesakePairRow(xsBase, g.pid, pids[c.j]) {
+					xsRows = append(xsRows, rowIdx)
 				}
 			}
 			corr := 0
@@ -315,6 +401,10 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	if FamilyNamesakeRate > 0 {
 		scm["family_rate"], scm["family_namesakes_added"] = FamilyNamesakeRate, nfAdded
 		scm["family_base_namesake_rows"], scm["family_rows"] = len(nfRows), nfRows
+	}
+	if XSNamesakeRate > 0 {
+		scm["xs_rate"], scm["xs_namesakes_added"] = XSNamesakeRate, xsAdded
+		scm["xs_base_namesake_rows"], scm["xs_rows"] = len(xsRows), xsRows
 	}
 	sc, err := json.Marshal(scm)
 	if err != nil {
