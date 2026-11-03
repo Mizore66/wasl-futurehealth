@@ -206,7 +206,7 @@ func TestNameIDFBuild(t *testing.T) {
 	if tb.Registrations != n || !reflect.DeepEqual(tb.Counts, counts) {
 		t.Fatalf("table N=%d (%d tokens), recount N=%d (%d tokens)", tb.Registrations, len(tb.Counts), n, len(counts))
 	}
-	if tb.Version != 1 || tb.Split != "train" || tb.Persons != 400 || tb.Noise != "v1t" || !reflect.DeepEqual(tb.Seeds, seeds) {
+	if tb.Version != 2 || tb.Split != "train" || tb.Persons != 400 || tb.Noise != "v1t" || !reflect.DeepEqual(tb.Seeds, seeds) {
 		t.Fatalf("table header %+v", tb)
 	}
 	if n < 1200 {

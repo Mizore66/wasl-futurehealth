@@ -21,6 +21,7 @@ type Rec struct {
 	lat            string
 	tok, skel      []string
 	isAr           bool
+	tid            int // featdump only: 1 + persons-file index of the registering person, 0 = none (pairfeat6 leave-own-out)
 	emb            []float32
 	keys           []string
 	evOrder        []string
