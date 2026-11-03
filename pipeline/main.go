@@ -263,6 +263,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	}
+	XScriptCap = ModelSet == "pairfeat5" // xscript.go: cross-script review cap
 	DualMerge = *dual
 	switch *policy {
 	case "v7strict":
