@@ -2,9 +2,13 @@
 # One protected paired CRC pair-scorer lane set (all seeds of a mode) for one model arm. No paid model use.
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
 #   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
-#         | validation-clean (eval; 401 409 419 421 431; rerr 0/0)
+#         | validation-clean (eval; 401 409 419 421 431, r1review 601 607 613 617 619; rerr 0/0)
 #   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 (-modelset <candidate> on orchestrate/audit/report7 only)
-# Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547.
+#         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
+# Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
+# r1review 557 563 569. An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
+# over a pairfeat5 artifact-manifest.json) serves three arms: baseline, pairfeat5 (reference; exactly a pairfeat5 lane) and
+# r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds.
 # The experiment parent serves exactly one candidate,
 # inferred from the single <candidate>_chain_sha256 key of its artifact-manifest.json (or, for validation, the candidate
 # its frozen validation-manifest.json records); ARM must be baseline or that candidate, and the baseline arm uses the
@@ -37,7 +41,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 r1review)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -56,17 +60,20 @@ PF="$(python3 -I "$ROOT/scripts/pairfeat_compare.py" preflight "$MODE" "$ARM" "$
   || { echo "preflight refused: $MODE $ARM lanes are not authorised by the manifests in $PARENT" >&2; exit 2; }
 CAND="$(printf '%s\n' "$PF" | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["candidate"])')" \
   || { echo "preflight refused: no experiment candidate reported for $PARENT" >&2; exit 2; }
-# independent seed table (cross-checked against pairfeat_compare.CANDIDATES before any lane)
+# independent seed table (cross-checked against pairfeat_compare.CANDIDATES before any lane); CHAIN is the model chain
+# (manifest key) the candidate runs, REF a three-arm candidate's reference arm
 VAL_SEEDS="401 409 419 421 431"
+CHAIN="$CAND"; REF=""
 case "$CAND" in
   pairfeat1) DEV_SEEDS="307 311 313";;
   pairfeat2) DEV_SEEDS="317 331 337";;
   pairfeat3) DEV_SEEDS="347 353 367";;
   pairfeat4) DEV_SEEDS="433 449 461";;
   pairfeat5) DEV_SEEDS="521 541 547";;
+  r1review) DEV_SEEDS="557 563 569"; VAL_SEEDS="601 607 613 617 619"; CHAIN=pairfeat5; REF=pairfeat5;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
-case "$ARM" in baseline|"$CAND") ;; *) echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2;; esac
+case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
 if [ "$MODE" = validation-clean ]; then SEEDS="$VAL_SEEDS"; else SEEDS="$DEV_SEEDS"; fi
 if [ "${PAIRFEAT_PREFLIGHT_ONLY:-}" = 1 ]; then
   echo "preflight ok ($MODE $ARM; candidate $CAND seeds $SEEDS); PAIRFEAT_PREFLIGHT_ONLY set, nothing built"; exit 0
@@ -78,18 +85,28 @@ if [ -n "$DIRTY" ] || [ -n "$TRACKED" ]; then echo "working tree not clean (trac
 
 # independent re-check on the clean tree: the governing manifest is bound to this exact HEAD (and, for validation, these scripts)
 HEAD="$(git -C "$ROOT" rev-parse HEAD)"
-python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" "$CAND" <<'PY' \
+python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" "$CAND" "$CHAIN" <<'PY' \
   || { echo "manifest is not bound to the current clean HEAD and candidate; refusing to build" >&2; exit 2; }
 import hashlib, json, os, sys
-parent, mode, head, runner, analyzer, cand = sys.argv[1:7]
+parent, mode, head, runner, analyzer, cand, chain = sys.argv[1:8]
 sha = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()
 name = "validation-manifest.json" if mode == "validation-clean" else "artifact-manifest.json"
 with open(os.path.join(parent, name)) as h:
     m = json.load(h)
 if m.get("git_head") != head:
     sys.exit(1)
-if [k for k in m if k.endswith("_chain_sha256") and k != "baseline_chain_sha256"] != [cand + "_chain_sha256"]:
-    sys.exit(1)  # exactly one candidate chain, and it is this run's candidate
+if [k for k in m if k.endswith("_chain_sha256") and k != "baseline_chain_sha256"] != [chain + "_chain_sha256"]:
+    sys.exit(1)  # exactly one candidate chain, and it is the chain this run's candidate runs
+ep = os.path.join(parent, "experiment.json")
+if chain != cand:  # a candidate borrowing a chain is named only by experiment.json
+    if not os.path.isfile(ep) or os.path.islink(ep):
+        sys.exit(1)
+    with open(ep) as h:
+        e = json.load(h)
+    if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != chain:
+        sys.exit(1)
+elif os.path.lexists(ep):
+    sys.exit(1)  # a parent with experiment.json serves only the candidate it names
 if mode == "validation-clean" and (m.get("runner_sha256") != sha(runner) or m.get("analyzer_sha256") != sha(analyzer)
                                    or m.get("candidate") != cand):
     sys.exit(1)
@@ -119,8 +136,11 @@ if got != cand:
 with open(binp, "rb") as h:
     sha = hashlib.sha256(h.read()).hexdigest()
 with open(os.path.join(work, "build.json"), "w") as h:
-    json.dump({"git_head": head, "binary_sha256": sha, "mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm],
-               "floor": float(pfc.FLOOR), "policy": pfc.POLICY, "model_chain_sha256": chain}, h, indent=1, sort_keys=True)
+    b = {"git_head": head, "binary_sha256": sha, "mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm],
+         "floor": float(pfc.FLOOR), "policy": pfc.POLICY, "model_chain_sha256": chain}
+    if pfc.extra_flags(arm):  # r1review arm only: recorded so the analysis can tell its lanes from pairfeat5 lanes
+        b["extra_flags"] = pfc.extra_flags(arm)
+    json.dump(b, h, indent=1, sort_keys=True)
 PY
 
 python3 -I - "$ROOT" "$WORK" "$MODE" "$ARM" "$CAND" "$SPLIT" "$RERR" "$ERRU" $SEEDS <<'PY'
@@ -169,13 +189,14 @@ if pfc.mode_settings(mode, cand)["seeds"] != seeds or arm not in pfc.arms(cand):
     sys.exit("seed mismatch")
 lanes = []
 for seed in seeds:
-    lm = pfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, arm, mode, cand)  # floor 0.01, arm modelset, mode scope; wrong_pair: truth pk_qid; pairfeat5 candidate arm: capped-pair report from link_funnel.ndjson
+    lm = pfc._load_lane(os.path.join(work, "v2-s%d" % seed), seed, arm, mode, cand)  # floor 0.01, arm modelset, mode scope; wrong_pair: truth pk_qid; pairfeat5/r1review non-baseline arms: capped-pair report from link_funnel.ndjson; r1review experiments: completion_undocumented items
     if lm["analysis_errors"] or lm["trace_error"] or lm["replay_mismatch"]:
         sys.exit("seed %d: analysis/trace-write error or replay mismatch" % seed)
     lanes.append(lm)
 out = pfc.aggregate_arm(arm, lanes)
 out["build"] = pfc.read_build(work, arm, mode, cand)
 out["scope"] = {"mode": mode, "arm": arm, "candidate": cand, "modelset": pfc.MODELSET[arm], "floor": float(pfc.FLOOR), "policy": pfc.POLICY,
+                **({"extra_flags": pfc.extra_flags(arm)} if pfc.extra_flags(arm) else {}),
                 "seeds": seeds, "reader": "cached", "image": "off", "chaos": 0, "nats_kill": False,
                 "note": "simulated; tp = report7 programmes_live.crc.pred_closed - false_closures; link attach rate is separate"}
 with open(os.path.join(work, "summary.json"), "w") as h:
