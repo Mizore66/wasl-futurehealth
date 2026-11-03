@@ -39,6 +39,9 @@ func validateModelPolicy(modelSet, policy string) error {
 	if modelSet == "pairfeat5" && policy != "v7strict" {
 		return fmt.Errorf("modelset pairfeat5 supports only -policy v7strict (got %q); its cross-script review cap was selected under v7strict", policy)
 	}
+	if modelSet == "pairfeat6" && policy != "v7strict" {
+		return fmt.Errorf("modelset pairfeat6 supports only -policy v7strict (got %q); it keeps pairfeat5's cross-script review cap, selected under v7strict", policy)
+	}
 	return nil
 }
 
