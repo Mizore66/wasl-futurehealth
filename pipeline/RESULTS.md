@@ -2237,3 +2237,153 @@ So on validation the cap left 187 same-person pairs apart that the baseline arm 
 - Strict same-HEAD binding was kept, so run-2 stayed at `56d31fd` from fit through validation.
 
 **Scope:** the model and cap apply globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model, default noise and default floor 0.2 are unchanged and `pairfeat5` was not promoted. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
+
+### CRC "completion not documented" clinician review with an image-verified caecal photo (`r1review`) at `694a417` (selected under the amended gate; not promoted to default)
+
+**Outcome:** with the opt-in flag `-r1review`, a colonoscopy report that the two readers would otherwise mark `inadequate` only because they found no caecum statement goes to a clinician instead, but only when the hold-only image reader has verified a caecal photo on that report. Run on top of the `pairfeat5` linker, it passed development, stress and five-seed validation against the `pairfeat5` arm, under a gate that was changed after the first development run (Amendment 3 below). In paired simulated CRC validation cohorts pooled recall rose from 0.9406 (`pairfeat5`) to 0.9569 (+1.64pp pooled; mean paired per-seed gain +1.64pp, 95% t interval +1.17 to +2.11pp, n=5), with zero false closures in every arm and contamination counts identical to `pairfeat5`'s. Against the default baseline (0.8777) the gain was +7.92pp, but the vs-baseline check, reported and not gating under Amendment 3, **failed on validation**: wrong-pair reviews rose from 4 to 7 against a limit of 4.4. That rise comes from the `pairfeat5` linker, not from `-r1review` (the `pairfeat5` arm also had 7), so on these image-on seeds `pairfeat5` would fail its own wrong-pair check. Under the gates as pre-registered before Amendment 3, `r1review` would have stopped at run-1 development and would also have failed validation. Four assumptions carry the result: the photos are simulated at assumed rates, the image reader was trained on non-local images, the simulated clinician answers from the true label, and its error rate is assumed. The result therefore means "if units photograph caecal completion and a clinician can resolve it from the photo", not a measured effect. The default model, the default reader policy and the default review floor of 0.2 are unchanged; nothing was promoted to default. All results are simulated; they prove no clinical effectiveness.
+
+**Origin (post-hoc, disclosed):** the change came from a read-only diagnosis of the already-used `pairfeat5` development lanes (seeds 521, 541, 547), not from a prior plan. Of 66 missed true CRC closures, 17 were on the pair scorer's side and 49 happened after the link succeeded; the baseline arm showed the same post-link groups, so none was a scorer effect. In one group of 20 loops, both readers found no caecum statement (the common quote was "to the ileocecal valve"), rule `R1_completion_not_documented` labelled the report `inadequate` with both readers agreeing, no review item was raised, and the loop ended `inadequate` with a repeat requested, while the truth says the colonoscopy was complete: a wrong verdict as well as a missed closure. The other 29 post-link misses were mostly loops waiting on an ungraded bowel-prep grade when the run ended (25 of 29 within 15 days of the end), which is right-censoring at the run horizon rather than a defect. Reader v7 deliberately stopped counting the ileocaecal valve alone as caecal intubation after the corpus 6 false closures; this change keeps that rule: the valve alone never closes a loop automatically.
+
+**Built:** an opt-in flag with three parts.
+- Conversion (code at `573dd3e`, `e8c52d2`): with `-r1review` on, a report whose flag-off verdict is `inadequate`, agreed by both readers, with `R1_completion_not_documented` as its only rule becomes `needs_human` (rule `R1_completion_review`). A stated failure to reach the caecum, including the corpus 6 patterns, stays automatically `inadequate`, and no new pattern ever produces `adequate`.
+- Photo gate (Amendment 2, code at `b05a302`, `c8c9d14`): the converted report goes to a clinician only when the image reader returns `caecal_photo = "verified"`, a photo filed at the caecum station that the landmark CNN scores at or above its threshold. Every other converted report reverts to the flag-off verdict, an automatic `inadequate` with `R1_completion_not_documented`. With the image reader off, every conversion reverts, so `-r1review` changes nothing without `-image cached` (or `live`) and photos. `readerscore -r1review` runs without images, so all its conversions revert.
+- Review item (code at `573dd3e`, `d0a7f2f`): one evidence item with purpose `completion_undocumented`, showing the verified photo. Until it is answered, the loop is held as `completion_review` and no `rejected_inadequate` escalation is sent. A signed "adequate" closes through the existing override path, subject to the report's tissue and histology fields (the histology wait is keyed on the signed item's purpose); "inadequate" holds as before. The image reader still never closes a loop.
+- Synthetic reviewer: `completion_undocumented` items use `ErrUngraded`, the assumed error of a decision made without documentation (0 in clean lanes, 0.25 in stress lanes, assumed values, not measured clinician rates). The simulated reviewer answers from the report's true label, which assumes a clinician can resolve completion from the photo or the endoscopist.
+- With `-r1review` off, every output is byte-identical to before (pinned by tests).
+
+**Arms, seeds and photos:** three paired arms on the same cohorts: `baseline` (default model), `pairfeat5` (reference: `pairfeat5` chain, cap on) and `r1review` (`pairfeat5` chain, cap on, plus `-r1review`); all at `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, chaos 0. The scorer was not changed: the `pairfeat5` chain was refit at each run HEAD and had to equal `pairfeat5` run-2's, which it did both times (`lgb_stream_pairfeat5` `41cbb8f3`, `iso_pairfeat5` `782ef505`, `iso_v7_pairfeat5` `e454b022`, encoder `5e6284f8`; model files byte-identical; only the HEAD and the training-manifest hash differ). All three arms ran with synthetic photo attachment at generation (`-imgphotos`) and the image reader at `-image cached` (the simulation step itself runs image-off in every arm; see the rulings below), so the comparison inside this experiment is fair, but **none of these numbers is comparable with image-off runs**, including the `pairfeat5` section above (which also used other seeds). Photo attachment is simulated at assumed rates tied to the text answer key: 85% of reports that document the caecum get a true caecum photo, and 10% of the others get a mis-filed non-caecal photo. The landmark CNN was trained on HyperKvasir (Norwegian video frames) and was not recalibrated on local images. Seeds: run-1 development 557, 563 and 569 (used once, then retired); run-2 development 571, 577 and 587 and validation 631, 641, 643, 647 and 653, all never used before. The originally planned validation seeds 601, 607, 613, 617 and 619 were retired unused.
+
+**Gates (pre-registered; stop at the first failure):**
+- Gate 1, `r1review` against baseline: exactly the `pairfeat5` gates (`wrong_pair_cap`), recall gain at least +2.0pp for selection, 0 for stress and +1.0pp for validation. Under Amendment 3 this is reported, not gating.
+- Gate 2, `r1review` against `pairfeat5`: recall gain at least +1.0pp for selection, 0 for stress and +0.5pp for validation; the safety set (false closures, wrong releases, replay mismatches, analysis errors, trace errors) zero in every lane of every arm, stress included; false-merge pairs, impure clusters, cross-person edges and wrong-pair link-review pairs not above the `pairfeat5` arm's; total reviewer hours at most 1.10 times the `pairfeat5` arm's.
+- Reported, not gating: completion items and their answers, the corpus re-score, recall excluding loops whose true closure falls within 15 days of the lane's last decision, and wrong final sign-offs.
+
+**Amendment 1 (`7ba9275`, before any lane):** gate 2 first listed "wrong final sign-offs 0", which cannot hold in stress, where the 4% ordinary synthetic reviewer error makes about 80 per arm by design. It was replaced by the harness's existing safety set; wrong final sign-offs are reported.
+
+**Amendment 2 (`3ef7464`, user-approved, before any lane): the text-only design was estimated to be unsafe.** A read-only pre-run check of the lanes' 43-report corpus found that the text-only conversion moved 7 reports: 6 truly inadequate and 1 complete (the valve report). In the already-used `pairfeat5` run-2 stress lanes, 96 loops carried one of the truly inadequate converted reports and 26 the complete one. At the assumed 0.25 error, about 24 wrong "adequate" sign-offs were expected, so the stress gate of zero false closures would have failed by construction (about 4 at 0.04). On the held-out corpora about 80% of converted reports are truly complete, so the balance depends on the report mix. The run was stopped before any `r1review` lane and the user chose the photo gate above. The clinician item now shows a verified photo, the reviewer error stays `ErrUngraded`, and the image reader still never closes a loop.
+
+**Amendment 3 (`b349191`, harness `d45ec44`, `694a417`; user-approved, post-hoc, after the first development run):** run-1 development clean failed gate 1 on one count only (details below), a property of the `pairfeat5` linker that `-r1review` cannot change. Gate 1 became reported, not gating; gate 2 gates, unchanged; the baseline arm's safety set is still enforced; and development and validation moved to fresh seeds with a new experiment directory and a refit at the new HEAD. Nothing about the mechanism or its thresholds changed. This gate change was made after seeing development results, which are reported below alongside the rerun.
+
+**Run history, in order (all artifacts preserved):**
+- **Pre-run safety check (read-only):** stopped the text-only design before any lane (Amendment 2).
+- **Smoke lane (seed 101, 400 persons, exact harness command, HEAD `4377e83`):** the first attempt hung in `orchestrate` because the smoke test's own binary folder lacked the `nats-server` link that the harness's folder has; this was a test-setup gap, not a code defect. The rerun was clean: all seven steps exited 0, the safety counts were 0, recall 0.922, and all 4 completion items had a verified photo and were answered "awaiting histology" (the truth label), 0 wrong.
+- **Refit path refused once:** the fit script refused the planned output path (fit outputs must sit under the modelset's own directory), so both refits were written under the `pairfeat5` directory; this changes no result.
+- **run-1 (HEAD `4377e83`, development seeds 557, 563, 569): stopped at gate 1.** Development clean passed gate 2 but failed gate 1: uncapped wrong-pair link-review pairs 6 against a limit of 5.5 (baseline 5 plus 10%). The `pairfeat5` arm also had 6 and the `r1review` arm's link output was identical to `pairfeat5`'s. The selection file was written with nothing selected and the run stopped as pre-registered.
+- **Wrong-pair diagnosis (read-only):** all 11 wrong-pair reviews (5 baseline, 6 `pairfeat5`) were cross-script lookalikes scored 0.01 to 0.09, at or a few times above the 0.01 review floor: an Arabic-script referral name against a Latin-script endoscopy name, a shared given name, the same sex, and a birth year equal or one apart, often a 1 January placeholder, with the true person registered elsewhere. `pairfeat5` moved 2 of baseline's below the floor, moved 2 others above it, and asked 1 further pair that was already above the floor in baseline but not asked there. All 11 were answered "different" correctly and none caused a merge or a closure. With a baseline count of 5, a 10% limit fails on any net +1.
+- **run-2 (HEAD `694a417`, run of record, user-approved):** development, stress and validation all passed gate 2; no rerun or crash.
+
+| run-1 development clean (seeds 557, 563, 569) | Baseline | `pairfeat5` | `r1review` |
+|---|---:|---:|---:|
+| TP / truth | 566/678 | 610/678 | 632/678 |
+| Recall | 0.8348 | 0.8997 | 0.9322 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 44 | 28 | 28 |
+| Cross-person edges | 38 | 24 | 24 |
+| Impure clusters | 34 | 23 | 23 |
+| Wrong-pair reviews (all uncapped) | 5 | 6 | 6 |
+| Reviewer hours | 33.773 | 34.621 | 35.419 |
+| Completion items (wrong) | 0 | 0 | 23 (0) |
+
+On run-1, `r1review` gained +3.2448pp pooled over `pairfeat5` (mean paired per-seed +3.25pp, 95% t interval -1.23 to +7.73pp, n=3) and +9.7345pp over baseline; hours were 1.023 times `pairfeat5`'s. All 23 completion items had a verified photo and were answered "awaiting histology", matching the truth.
+
+**Artifact identity (run-2):** governing manifest `5138f172`, binary `fac06ad0` (all arms), image-verdict cache `5f90208c`, selection decision `a6b094e2`, stress decision `4fbc99d1`, validation manifest `59ee3085` (frozen before any validation lane), training manifest `86a1785d`; refit parity max |delta| 1.1e-16.
+
+**Paired development clean (run-2, seeds 571, 577, 587):**
+
+| Seed | Baseline TP / truth | `pairfeat5` TP / truth | `r1review` TP / truth | `r1review` recall | Gain vs `pairfeat5` |
+|---|---:|---:|---:|---:|---:|
+| 571 | 194/230 | 205/230 | 212/230 | 0.9217 | +3.04pp |
+| 577 | 181/204 | 187/204 | 193/204 | 0.9461 | +2.94pp |
+| 587 | 197/241 | 217/241 | 224/241 | 0.9295 | +2.90pp |
+| Pooled | 572/675 (0.8474) | 609/675 (0.9022) | 629/675 | 0.9319 | **+2.9630pp** |
+
+The mean paired per-seed gain over `pairfeat5` was +2.9631pp (95% t interval +2.7842 to +3.1419pp, n=3, descriptive only). **Selection gate 2: passed.** Safety counts were 0 in every lane of every arm; false-merge pairs (18), impure clusters (15), cross-person edges (15) and wrong-pair link-review pairs (3: 1 uncapped, 2 capped) were identical to `pairfeat5`'s; hours 34.972 to 35.821 (1.024 times, limit 1.10). Gate 1 (reported): +8.4444pp over baseline (mean paired +8.30pp, 95% t interval +1.61 to +14.99pp), uncapped wrong-pair reviews 2 to 1 (limit 2.2), false-merge pairs 36 to 18; it would have passed. All 20 extra closures over `pairfeat5` came through a completion item on the closing report, and no `pairfeat5` closure was lost.
+
+**Development stress (same seeds; 4% ordinary and 25% `ErrUngraded` synthetic reviewer error, assumed values):** pooled recall baseline 528/675 (0.7822), `pairfeat5` 562/675 (0.8326), `r1review` 578/675 (0.8563); +2.3704pp over `pairfeat5` (per seed +2.17, +2.45, +2.49pp; mean +2.37pp, 95% t interval +1.94 to +2.80pp, n=3) and +7.4074pp over baseline. **Stress gate 2: passed** (minimum gain 0). Safety counts were 0 in every arm; contamination equalled `pairfeat5`'s; wrong-pair link-review pairs 4 (`pairfeat5`) and 3 (`r1review`); hours 35.889 to 36.826 (1.026 times). Wrong final sign-offs were 77, 79 and 85 (reported). Gate 1 (reported) would have passed (uncapped wrong-pair reviews 2 to 1).
+
+**Validation clean (run-2, seeds 631, 641, 643, 647, 653; configuration frozen in the validation manifest before any validation lane):**
+
+| Seed | Baseline TP / truth | `pairfeat5` TP / truth | `r1review` TP / truth | `r1review` recall | Gain vs `pairfeat5` | Gain vs baseline |
+|---|---:|---:|---:|---:|---:|---:|
+| 631 | 197/231 | 217/231 | 220/231 | 0.9524 | +1.30pp | +9.96pp |
+| 641 | 210/237 | 223/237 | 228/237 | 0.9620 | +2.11pp | +7.59pp |
+| 643 | 211/242 | 228/242 | 231/242 | 0.9545 | +1.24pp | +8.26pp |
+| 647 | 185/209 | 199/209 | 203/209 | 0.9713 | +1.91pp | +8.61pp |
+| 653 | 216/242 | 225/242 | 229/242 | 0.9463 | +1.65pp | +5.37pp |
+| Pooled | 1,019/1,161 | 1,092/1,161 | 1,111/1,161 | 0.9569 | **+1.6365pp** | +7.9242pp |
+
+| Validation, pooled | Baseline | `pairfeat5` | `r1review` |
+|---|---:|---:|---:|
+| Recall | 0.8777 | 0.9406 | 0.9569 |
+| TP / truth | 1,019/1,161 | 1,092/1,161 | 1,111/1,161 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 177 | 79 | 79 |
+| Cross-person edges | 154 | 73 | 73 |
+| Impure clusters | 140 | 68 | 68 |
+| Wrong-pair reviews (all uncapped) | 4 | 7 | 7 |
+| Reviewer hours | 59.670 | 61.719 | 62.311 |
+| Completion items | 0 | 0 | 24 |
+
+Paired per-seed gain against `pairfeat5`: mean +1.6430pp, 95% t interval +1.1733 to +2.1126pp; against baseline: mean +7.9601pp, 95% t interval +5.8701 to +10.0501pp (n=5; small-n and descriptive only). Recall rose on every seed against both arms.
+
+**Validation gate 2 verdict: passed** (minimum gain +0.5pp): recall gain +1.6365pp; safety counts 0 in every lane of every arm; false-merge pairs, impure clusters, cross-person edges and wrong-pair link-review pairs identical to `pairfeat5`'s; hours 1.010 times (limit 1.10).
+
+**Validation gate 1 (reported, not gating): failed.** Contamination fell against baseline (false-merge pairs 177 to 79, prevented false merges 98; impure clusters 140 to 68; cross-person edges 154 to 73), capped wrong-pair reviews were 0 (limit 196), and distinct link-review pairs rose 927 to 943 (ratio 1.017). But uncapped wrong-pair reviews rose from 4 to 7 against a limit of 4.4. The `pairfeat5` arm has the same 7, so this is the `pairfeat5` linker: on these image-on seeds `pairfeat5` would fail its own wrong-pair check under its pre-registered validation gate, although it passed on its own validation seeds (6 to 4 on seeds 401-431). The extra wrong-pair reviews on these validation seeds were not traced pair by pair; the run-1 diagnosis above is the only one.
+
+**Completion items** (raised only when the image reader verified a caecal photo; "awaiting histology" means the reviewer judged the exam complete and the loop waits on histology):
+
+| Mode | Items | Answered "awaiting histology" | "adequate" | "inadequate" | Wrong | Closing-unsafe wrong | Safe-direction wrong |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Development clean | 24 | 23 | 0 | 1 | 0 | 0 | 0 |
+| Development stress | 23 | 19 | 1 | 3 | 4 | 1 | 3 |
+| Validation clean | 24 | 23 | 0 | 1 | 0 | 0 | 0 |
+
+In development, every item had a verified photo; of the 24 clean items, 20 gained a closure, 3 were on loops whose truth was still waiting on histology at the end of the run (staying open is correct), and 1 was a truly inadequate report that nevertheless carried a verified photo (answered "inadequate", correctly). Validation items were not traced one by one. Clean lanes have zero reviewer error and the answer comes from the true label, so a wrong answer there is impossible by construction. In stress, 3 of the 4 wrong answers were safe-direction (complete exams answered "inadequate", costing recall), and **1 was closing-unsafe**: the same truly inadequate report with a verified photo was answered "adequate". It did not cause a false closure only because another report on the same loop closed it correctly; with no such report it could have become a false closure (a signed "adequate" closes subject to the report's tissue and histology fields). The zero false closures in stress therefore rest on the assumed reviewer error rate and on this cohort's report mix, not on the mechanism.
+
+| Residual truth-closed misses | Dev clean baseline | Dev clean `pairfeat5` | Dev clean `r1review` | Validation baseline | Validation `pairfeat5` | Validation `r1review` |
+|---|---:|---:|---:|---:|---:|---:|
+| Total open | 103 | 66 | 46 | 142 | 69 | 50 |
+| Attached, not closed | 19 | 22 | 3 | 16 | 20 | 3 |
+| Below review | 46 | 6 | 6 | 84 | 8 | 8 |
+| Capped, not queued | 0 | 0 | 0 | 0 | 0 | 0 |
+| No candidate generated | 3 | 3 | 3 | 6 | 6 | 6 |
+| Demographic rejection | 0 | 0 | 0 | 1 | 0 | 0 |
+| Routed to review | 0 | 0 | 0 | 0 | 0 | 0 |
+| Linked report not attached | 35 | 35 | 34 | 35 | 35 | 33 |
+
+The category this change addresses, "attached, not closed", fell from 22 to 3 in development and from 20 to 3 in validation; scorer-side categories were unchanged against `pairfeat5`.
+
+**Remaining `r1review` misses by cause (development clean, read-only diagnosis, 46 loops):**
+- 34 linked, with the closing report not attached while the loop waits on an ungraded bowel-prep query (19 still awaiting the unit's grade, 15 past the day-15 escalation); 29 of the 34 had a true closure within 15 days of the run end. The cause is inferred from the final prep state and funnel stage; the outputs do not say directly that the prep stage held the report.
+- 6 below the review floor.
+- 3 never retrieved by any candidate path.
+- 3 converted reports without a verified photo (2 unverified, 1 no photo), reverted to automatic `inadequate` by design although all 3 exams were truly complete.
+
+**Horizon-excluded recall (development clean only):** excluding the 95 of 675 truth closures that fall after day 105 of the 120-day run (the same loops in all arms), recall was baseline 511/580 (0.8810), `pairfeat5` 546/580 (0.9414) and `r1review` 565/580 (0.9741). Stress and validation were not computed this way.
+
+**Reviewer workload:** against `pairfeat5`, total reviewer hours rose by 2.4% (development clean), 2.6% (stress) and 1.0% (validation), about 1.9 to 3.5 minutes of simulated reviewer time per extra closure; review items rose by the completion items in development and validation (validation 1,930 to 1,954) and by 27 for 23 items in stress. Distinct link-review pairs moved by 2 or fewer (validation 945 to 943); the cause was not isolated. Hours come from the simulated reviewer-time model, not measured clinician time.
+
+**Corpus check (reported, not gating):** the report corpora carry no photos, so the photo path cannot be tested on them. At HEAD, `readerscore -r1review` output was byte-identical to flag off on all 17 corpus and cache runs (MTSamples with 26B, and corpora 1 to 8 with 26B and 4B), with 0 unsafe labels. For information, a binary built at `e8c52d2` (text-only conversion, **before Amendment 2**) also gave 0 unsafe and 0 automatic unsafe labels everywhere, because `needs_human` never closes; it moved these reports to review:
+
+| Text-only conversion, pre-Amendment 2 | Moved to review | Truly complete | Truly inadequate |
+|---|---:|---:|---:|
+| Corpora 1-8, 26B cache | 278 | 220 | 58 |
+| Corpora 1-8, 4B cache | 263 | 223 | 40 |
+| MTSamples (43 reports), 26B | 7 | 1 | 6 |
+
+**Practical meaning:** in these simulated cohorts, sending "completion not documented" reports to a clinician when a caecal photo is verified recovered 20 (development, of 675 true closures) and 19 (validation, of 1,161) closures over `pairfeat5`, at about 1 to 2.6% more reviewer hours, without any false closure. A DoH pilot would need three things this experiment assumes rather than shows: units filing a caecal photo for each colonoscopy as the CRC specification requires (Appendix 11, section 2.2), with the real documentation rate measured; the landmark CNN recalibrated and validated on local images; and clinician time for these items, with their real error rate on them measured, since one wrong "adequate" in stress came close to a false closure. The text-only form must not be used: on this cohort's report mix it routes enough truly inadequate reports to a clinician that, at the assumed 25% stress error, about 24 wrong "adequate" sign-offs were expected (Amendment 2).
+
+**Result-affecting rulings:**
+- Amendments 1 and 2 were made before any `r1review` lane; Amendment 2 was user-approved and changed the mechanism.
+- Amendment 3 was user-approved and post-hoc: it changed which gate decides after a development failure. Run-1 figures are reported above.
+- All three arms run image-on (`-imgphotos`, `-image cached`); the simulation step itself runs image-off in every arm, which keeps the comparison fair.
+- Conversion was narrowed (`e8c52d2`) to verdicts that `R1_completion_not_documented` alone made `inadequate`; partial-R1 reports keep the flag-off verdict.
+- The corpus check was set to (a) HEAD identity and (b) text-only counts from a separate binary, labelled pre-Amendment 2.
+- The three-arm analysis refuses if a baseline or `pairfeat5` lane has any completion item, checks each lane's image stamp, and still enforces the baseline arm's safety set under Amendment 3 (a review finding fixed at `694a417` before any run-2 lane).
+
+**Process rulings and deviations:**
+- The Go and Python tasks ran in parallel on disjoint files, as for `pairfeat5`.
+- The traced `orchestrate` lane is not hash-reproducible run to run (as already found for `pairfeat5`); CRC figures matched.
+- Deferred minor review findings (none affect results): a completion item reuses the ordinary evidence item id by design; "wrong" counts last-wins per item; no completion-pending escalation; the kind guard applies the gate only to colonoscopy reports (correct today); some test gaps for mixed holds.
+
+**Scope:** synthetic data only, with synthetic photos, a synthetic reviewer and n=5 validation seeds. No non-CRC claim is made, and simulated results establish no clinical effectiveness. The default model, default reader policy and default floor 0.2 are unchanged and `-r1review` was not promoted.
