@@ -1,6 +1,6 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5]
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6]
 NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/.
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
@@ -26,6 +26,8 @@ PROTOCOLS = {
                   "namesakes": 0.10, "family_namesakes": 0.10},
     "pairfeat5": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                   "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0},
+    "pairfeat6": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                  "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34},
 }
 LEAF_LIMIT = 5.0
 NAMESAKE_FLOOR = 500
@@ -35,9 +37,34 @@ BASELINE_FILES = ["encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7
 TOLERANCE = 1e-9
 
 
+CODE_FILES = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
+              "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
+PAIRFEAT6_CODE_FILES = ["pipeline/pairfeat6.go", "pipeline/namesake.go"]
+
+
+def nfeat(modelset):
+    return PROTOCOLS[modelset].get("nfeat", 30)
+
+
+def uses_name_idf(modelset):
+    """pairfeat6: 34 features, the name-rarity table built first and part of the chain."""
+    return nfeat(modelset) == 34
+
+
+def csv_width(modelset, with_p):
+    return 2 + nfeat(modelset) + 5 + (1 if with_p else 0)
+
+
+def name_idf_name(modelset):
+    return f"name_idf_{modelset}.json"
+
+
 def chain_files(modelset):
-    return [f"encoder_{modelset}.json", f"lgb_stream_{modelset}.json",
-            f"iso_{modelset}.json", f"iso_v7_{modelset}.json"]
+    files = [f"encoder_{modelset}.json", f"lgb_stream_{modelset}.json",
+             f"iso_{modelset}.json", f"iso_v7_{modelset}.json"]
+    if uses_name_idf(modelset):
+        files.append(name_idf_name(modelset))
+    return files
 
 
 CHAIN_FILES = chain_files(DEFAULT_MODELSET)
@@ -98,6 +125,8 @@ def fit_argv(root, out, chain, modelset):
     lam = PROTOCOLS[modelset].get("lambda_l2")
     if lam is not None:
         argv += ["--lambda-l2", str(lam)]
+    if uses_name_idf(modelset):
+        argv += ["--nfeat", str(nfeat(modelset))]
     return argv
 
 
@@ -107,32 +136,64 @@ def _namesake_args(modelset):
     family = PROTOCOLS[modelset]["family_namesakes"]
     if family:
         args += ["-familynamesakes", str(family)]
+    xs = PROTOCOLS[modelset].get("xs_namesakes")
+    if xs:
+        args += ["-xsnamesakes", str(xs)]
     return args
 
 
-def train_argv(wsi, data, enc, modelset, seed, out):
+def _idf_args(modelset, idf):
+    if uses_name_idf(modelset):
+        if not idf:
+            raise ValueError(f"{modelset} dumps need the name-rarity table (-nameidf)")
+        return ["-nameidf", idf]
+    if idf is not None:
+        raise ValueError(f"{modelset} dumps take no name-rarity table")
+    return []
+
+
+def nameidf_argv(wsi, data, modelset, out):
+    proto = PROTOCOLS[modelset]
+    return [wsi, "nameidf", "-wasl", data, "-split", "train", "-persons", str(PERSONS), "-noise", proto["noise"],
+            "-idfseeds", ",".join(str(s) for s in proto["train_seeds"]), "-out", out]
+
+
+def check_name_idf_header(path, modelset):
+    """wsi nameidf does not guard -split/-noise, so confirm the table was built for this protocol."""
+    proto = PROTOCOLS[modelset]
+    with open(path) as f:
+        t = json.load(f)
+    want = {"version": 1, "split": "train", "persons": PERSONS, "noise": proto["noise"],
+            "seeds": list(proto["train_seeds"])}
+    got = {k: t.get(k) for k in want}
+    if got != want:
+        raise ValueError(f"name-rarity table header {got} differs from protocol {want}")
+
+
+def train_argv(wsi, data, enc, modelset, seed, out, idf=None):
     proto = PROTOCOLS[modelset]
     return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "train", "-persons", str(PERSONS),
-            "-noise", proto["noise"], "-seed", str(seed)] + _namesake_args(modelset) + ["-out", out]
+            "-noise", proto["noise"], "-seed", str(seed)] + _namesake_args(modelset) + _idf_args(modelset, idf) + ["-out", out]
 
 
-def cal_argv(wsi, data, enc, modelset, out):
+def cal_argv(wsi, data, enc, modelset, out, idf=None):
     proto = PROTOCOLS[modelset]
     return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
-            "-noise", proto["noise"], "-seed", str(proto["cal_seed"]), "-out", out]
+            "-noise", proto["noise"], "-seed", str(proto["cal_seed"])] + _idf_args(modelset, idf) + ["-out", out]
 
 
-def parity_argv(wsi, data, enc, modelset, gbmfile, out):
+def parity_argv(wsi, data, enc, modelset, gbmfile, out, idf=None):
     proto = PROTOCOLS[modelset]
     return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
-            "-noise", proto["noise"], "-seed", str(proto["cal_seed"]), "-gbmfile", gbmfile, "-out", out]
+            "-noise", proto["noise"], "-seed", str(proto["cal_seed"])] + _idf_args(modelset, idf) + \
+        ["-gbmfile", gbmfile, "-out", out]
 
 
-def namesake_cal_argv(wsi, data, enc, modelset, gbmfile, out):
+def namesake_cal_argv(wsi, data, enc, modelset, gbmfile, out, idf=None):
     proto = PROTOCOLS[modelset]
     return [wsi, "featdump", "-wasl", data, "-encfile", enc, "-split", "cal",
             "-noise", proto["noise"], "-seed", str(proto["cal_seed"])] + _namesake_args(modelset) + \
-        ["-gbmfile", gbmfile, "-out", out]
+        _idf_args(modelset, idf) + ["-gbmfile", gbmfile, "-out", out]
 
 
 def _load_sidecar(sc):
@@ -155,26 +216,31 @@ def check_namesake_floor(sidecars, modelset=None):
         ftotal = _sidecar_rows_total(sidecars, "family_base_namesake_rows")
         if ftotal < NAMESAKE_FLOOR:
             raise NamesakeFloorError(f"namesake floor not met (family): {ftotal} < {NAMESAKE_FLOOR}")
+        if PROTOCOLS[modelset].get("xs_namesakes"):
+            xtotal = _sidecar_rows_total(sidecars, "xs_base_namesake_rows")
+            if xtotal < NAMESAKE_FLOOR:
+                raise NamesakeFloorError(f"namesake floor not met (cross-script): {xtotal} < {NAMESAKE_FLOOR}")
+            return total, ftotal, xtotal
         return total, ftotal
     if total < NAMESAKE_FLOOR:
         raise NamesakeFloorError(f"namesake floor not met: {total} < {NAMESAKE_FLOOR}")
     return total
 
 
-def _read_gbm_rows(path):
+def _read_gbm_rows(path, width=38):
     out = []
     with open(path, newline="") as f:
         for row in csv.reader(f):
-            if len(row) != 38:
-                raise ValueError(f"expected 38 fields per row, got {len(row)}")
+            if len(row) != width:
+                raise ValueError(f"expected {width} fields per row, got {len(row)}")
             out.append((float(row[0]), float(row[-1])))
     return out
 
 
-def _slice(csv_path, sidecar_path, key):
+def _slice(csv_path, sidecar_path, key, width=38):
     with open(sidecar_path) as f:
         listed = json.load(f)[key]
-    rows = _read_gbm_rows(csv_path)
+    rows = _read_gbm_rows(csv_path, width)
     picked = []
     for i in listed:
         if not isinstance(i, int) or isinstance(i, bool) or not 0 <= i < len(rows):
@@ -191,20 +257,24 @@ def _slice(csv_path, sidecar_path, key):
             "different_at_merge_0_7": sum(1 for p in diff if p >= 0.7)}
 
 
-def namesake_slice(csv_path, sidecar_path):
-    return _slice(csv_path, sidecar_path, "rows")
+def namesake_slice(csv_path, sidecar_path, width=38):
+    return _slice(csv_path, sidecar_path, "rows", width)
 
 
-def family_namesake_slice(csv_path, sidecar_path):
-    return _slice(csv_path, sidecar_path, "family_rows")
+def family_namesake_slice(csv_path, sidecar_path, width=38):
+    return _slice(csv_path, sidecar_path, "family_rows", width)
 
 
-def plain_cal_diff_at_merge(parity_csv):
-    return sum(1 for label, p in _read_gbm_rows(parity_csv) if label == 0 and p >= 0.7)
+def xs_namesake_slice(csv_path, sidecar_path, width=38):
+    return _slice(csv_path, sidecar_path, "xs_rows", width)
+
+
+def plain_cal_diff_at_merge(parity_csv, width=38):
+    return sum(1 for label, p in _read_gbm_rows(parity_csv, width) if label == 0 and p >= 0.7)
 
 
 def parse_args(argv):
-    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5]"
+    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6]"
     args = list(argv[1:])
     modelset = DEFAULT_MODELSET
     if "--modelset" in args:
@@ -244,17 +314,23 @@ def check_go_parity(go_scores, python_scores, tolerance=1e-9):
     return delta
 
 
-def base_manifest(root, encoder, modelset=DEFAULT_MODELSET):
+def base_manifest(root, encoder, modelset=DEFAULT_MODELSET, name_idf=None):
     proto = PROTOCOLS[modelset]
-    files = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
-             "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
-    return {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
-            "nfeat": 30, "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
-            "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
-            "modelset": modelset, "noise": proto["noise"],
-            "rounds": 400, "num_leaves": 63, "learning_rate": 0.05, "seed": 1,
-            "encoder_sha256": sha256(encoder),
-            "code_sha256": {name: sha256(os.path.join(root, name)) for name in files}}
+    files = CODE_FILES + (PAIRFEAT6_CODE_FILES if uses_name_idf(modelset) else [])
+    m = {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
+         "nfeat": nfeat(modelset), "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
+         "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
+         "modelset": modelset, "noise": proto["noise"],
+         "rounds": 400, "num_leaves": 63, "learning_rate": 0.05, "seed": 1,
+         "encoder_sha256": sha256(encoder),
+         "code_sha256": {name: sha256(os.path.join(root, name)) for name in files}}
+    if uses_name_idf(modelset):
+        if name_idf is None:
+            raise ValueError(f"{modelset} manifest needs the name-rarity table")
+        m["name_idf_sha256"] = sha256(name_idf)
+    elif name_idf is not None:
+        raise ValueError(f"{modelset} has no name-rarity table")
+    return m
 
 
 def training_manifest(root, encoder, modelset, sidecars, base=None):
@@ -279,6 +355,14 @@ def training_manifest(root, encoder, modelset, sidecars, base=None):
                 e["family_base_namesake_rows"] = int(sc["family_base_namesake_rows"])
             m["family_namesake_base_rows_total"] = sum(
                 int(sc["family_base_namesake_rows"]) for _, sc in sidecars.values())
+        xs = PROTOCOLS[modelset].get("xs_namesakes")
+        if xs:
+            m["xs_namesakes"] = xs
+            for seed, (_, sc) in sorted(sidecars.items()):
+                e = m["namesake_seeds"][str(seed)]
+                e["xs_namesakes_added"] = int(sc["xs_namesakes_added"])
+                e["xs_base_namesake_rows"] = int(sc["xs_base_namesake_rows"])
+            m["xs_namesake_base_rows_total"] = sum(int(sc["xs_base_namesake_rows"]) for _, sc in sidecars.values())
     return m
 
 
@@ -295,13 +379,13 @@ def check_clean_tree(root):
         raise ValueError("untracked files under pipeline/encoder/scripts: " + ", ".join(others))
 
 
-def read_p_column(path):
-    """Parse headerless featdump CSV (38 fields: 2 + 30 features + 5 slices + p)."""
+def read_p_column(path, width=38):
+    """Parse headerless featdump CSV (default 38 fields: 2 + 30 features + 5 slices + p)."""
     out = []
     with open(path, newline="") as f:
         for row in csv.reader(f):
-            if len(row) != 38:
-                raise ValueError(f"expected 38 fields per row, got {len(row)}")
+            if len(row) != width:
+                raise ValueError(f"expected {width} fields per row, got {len(row)}")
             v = float(row[-1])
             if not math.isfinite(v):
                 raise ValueError("non-finite p in Go output")
@@ -309,14 +393,14 @@ def read_p_column(path):
     return out
 
 
-def check_prefix_identity(plain_csv, gbm_csv):
-    """First 37 columns of the -gbmfile dump must be byte-identical to the fit CSV, row by row."""
+def check_prefix_identity(plain_csv, gbm_csv, width=37):
+    """First `width` columns of the -gbmfile dump must be byte-identical to the fit CSV, row by row."""
     with open(plain_csv, newline="") as a, open(gbm_csv, newline="") as b:
         ra, rb = list(csv.reader(a)), list(csv.reader(b))
     if len(ra) != len(rb):
         raise ValueError("cal dump row-count mismatch")
     for i, (x, y) in enumerate(zip(ra, rb)):
-        if len(x) != 37 or len(y) != 38 or x != y[:37]:
+        if len(x) != width or len(y) != width + 1 or x != y[:width]:
             raise ValueError(f"cal dump prefix mismatch at row {i}")
 
 
@@ -337,7 +421,8 @@ def write_json(path, obj):
 
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
-                      family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None):
+                      family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None,
+                      xs_namesake_slice=None, name_idf_sha256=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -356,6 +441,10 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         m["max_abs_leaf"] = max_abs_leaf
     if lambda_l2 is not None:
         m["lambda_l2"] = lambda_l2
+    if xs_namesake_slice is not None:
+        m["xs_namesake_slice"] = xs_namesake_slice
+    if name_idf_sha256 is not None:
+        m["name_idf_sha256"] = name_idf_sha256
     return m
 
 
@@ -399,7 +488,12 @@ def main(argv):
     wsi = os.path.join(root, "bin", "wsi7")
     data = os.path.join(root, "data")
     ns_rate = proto["namesakes"]
-    base = base_manifest(root, enc, modelset)
+    idf = None
+    if uses_name_idf(modelset):  # pairfeat6: the name-rarity table first; every dump below reads it
+        idf = os.path.join(chain, name_idf_name(modelset))
+        run(nameidf_argv(wsi, data, modelset, idf), root)
+        check_name_idf_header(idf, modelset)
+    base = base_manifest(root, enc, modelset, name_idf=idf)
     if not ns_rate:
         write_json(tm, base)
     cal_seed = proto["cal_seed"]
@@ -407,7 +501,7 @@ def main(argv):
     sidecars = {}
     for seed, name in zip(proto["train_seeds"], train_csv_names(modelset)):
         path = os.path.join(out, name)
-        run(train_argv(wsi, data, enc, modelset, seed, path), root)
+        run(train_argv(wsi, data, enc, modelset, seed, path, idf=idf), root)
         csvs.append(name)
         if ns_rate:
             with open(path + ".namesakes.json") as f:
@@ -420,7 +514,7 @@ def main(argv):
             print(str(e), file=sys.stderr)
             sys.exit(NamesakeFloorError.exit_code)
     cal = cal_csv_name(modelset)
-    run(cal_argv(wsi, data, enc, modelset, os.path.join(out, cal)), root)
+    run(cal_argv(wsi, data, enc, modelset, os.path.join(out, cal), idf=idf), root)
     csvs.append(cal)
     run(fit_argv(root, out, chain, modelset), root)
     parity_csv = parity_csv_name(modelset)
@@ -432,28 +526,32 @@ def main(argv):
         except LeafLimitError as e:
             print(str(e), file=sys.stderr)
             sys.exit(LeafLimitError.exit_code)
-    run(parity_argv(wsi, data, enc, modelset, gbm, os.path.join(out, parity_csv)), root)
+    run(parity_argv(wsi, data, enc, modelset, gbm, os.path.join(out, parity_csv), idf=idf), root)
     csvs.append(parity_csv)
     import numpy as np  # only to read the .npy
     py = [float(x) for x in np.load(os.path.join(chain, f"cal_p_{modelset}.npy")).ravel()]
-    check_prefix_identity(os.path.join(out, cal), os.path.join(out, parity_csv))
-    go = read_p_column(os.path.join(out, parity_csv))
+    width = csv_width(modelset, False)
+    check_prefix_identity(os.path.join(out, cal), os.path.join(out, parity_csv), width=width)
+    go = read_p_column(os.path.join(out, parity_csv), width=width + 1)
     delta = check_go_parity(go, py, tolerance=TOLERANCE)
     extra = {}
     if ns_rate:
         ns_csv = namesake_cal_csv_name(modelset)
         ns_path = os.path.join(out, ns_csv)
-        run(namesake_cal_argv(wsi, data, enc, modelset, gbm, ns_path), root)
+        run(namesake_cal_argv(wsi, data, enc, modelset, gbm, ns_path, idf=idf), root)
         csvs.append(ns_csv)
-        extra = {"namesake_slice": namesake_slice(ns_path, ns_path + ".namesakes.json"),
-                 "plain_cal_diff_at_merge_0_7": plain_cal_diff_at_merge(os.path.join(out, parity_csv))}
+        extra = {"namesake_slice": namesake_slice(ns_path, ns_path + ".namesakes.json", width=width + 1),
+                 "plain_cal_diff_at_merge_0_7": plain_cal_diff_at_merge(os.path.join(out, parity_csv), width=width + 1)}
         if proto["family_namesakes"]:
-            extra["family_namesake_slice"] = family_namesake_slice(ns_path, ns_path + ".namesakes.json")
+            extra["family_namesake_slice"] = family_namesake_slice(ns_path, ns_path + ".namesakes.json", width=width + 1)
             extra["ns_cal_sidecar_sha256"] = sha256(ns_path + ".namesakes.json")
+        if proto.get("xs_namesakes"):
+            extra["xs_namesake_slice"] = xs_namesake_slice(ns_path, ns_path + ".namesakes.json", width=width + 1)
     head = check_head_unchanged(root, tm)
     write_json(os.path.join(out, "artifact-manifest.json"),
                artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, max_abs_leaf=leaf,
-                                lambda_l2=proto.get("lambda_l2"), **extra))
+                                lambda_l2=proto.get("lambda_l2"),
+                                name_idf_sha256=sha256(idf) if idf else None, **extra))
     copy_chain_to_models(chain, models, modelset)
     print(f"done: modelset={modelset} rows={len(go)} max_abs_delta={delta}")
 

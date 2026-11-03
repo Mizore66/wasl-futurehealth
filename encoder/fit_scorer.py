@@ -1,7 +1,7 @@
 """Refit the pair scorer and its calibrators on cosines from a given encoder.
 
 Inputs are `wsi featdump` CSVs (label, corr, f0..f29, near_eid, decade_dob, same_surname,
-placeholder_dob, cross_script[, p]; features may be NaN = missing, passed to LightGBM unimputed): train-split cohorts (LightGBM fit; several cohorts of
+placeholder_dob, cross_script[, p]; 34 features for modelset pairfeat6, f30..f33 appended; features may be NaN = missing, passed to LightGBM unimputed): train-split cohorts (LightGBM fit; several cohorts of
 runtime size so the base rate, and hence the raw-p scale the 0.7 union threshold acts on, matches the cal cohort) and
 one cal-split cohort (calibrators). Writes, with suffix X:
   lgb_stream_X.json  LightGBM dump_model JSON (read by pipeline/model.go LoadGBM), 400 trees, binary
@@ -10,7 +10,7 @@ one cal-split cohort (calibrators). Writes, with suffix X:
                      isotonic plateaus replaced by their one-sided 95% Clopper-Pearson lower bound (adjacent plateaus
                      pooled until monotone); the uncorroborated stratum is capped at 0.989 (pipeline/v7.go).
 
-Usage: python encoder/fit_scorer.py --train c1.csv [--train c2.csv ...] --cal feat_cal.csv --outdir DIR --suffix X [--lambda-l2 L]
+Usage: python encoder/fit_scorer.py --train c1.csv [--train c2.csv ...] --cal feat_cal.csv --outdir DIR --suffix X [--lambda-l2 L] [--nfeat 34]
 """
 import argparse
 import json
@@ -22,6 +22,7 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import average_precision_score, roc_auc_score
 
 NFEAT = 30
+NFEAT_CHOICES = (30, 34)
 SLICES = ("near_eid", "decade_dob", "same_surname", "placeholder_dob", "cross_script")
 PARAMS = {"objective": "binary", "num_leaves": 63, "learning_rate": 0.05, "min_child_samples": 50,
           "feature_fraction": 0.9, "bagging_fraction": 0.8, "bagging_freq": 1, "seed": 1, "verbose": -1,
@@ -54,13 +55,13 @@ def _nonneg_float(s):
     return v
 
 
-def load(path):
+def load(path, nfeat=NFEAT):
     d = np.loadtxt(path, delimiter=",", dtype=np.float64, ndmin=2)
-    if d.shape[0] == 0 or d.shape[1] not in (2 + NFEAT + len(SLICES), 3 + NFEAT + len(SLICES)):
-        raise ValueError(f"{path}: expected 37 or 38 columns, got {d.shape[1]}")
+    if d.shape[0] == 0 or d.shape[1] not in (2 + nfeat + len(SLICES), 3 + nfeat + len(SLICES)):
+        raise ValueError(f"{path}: expected {2 + nfeat + len(SLICES)} or {3 + nfeat + len(SLICES)} columns, got {d.shape[1]}")
     y, corr = d[:, 0].astype(int), d[:, 1].astype(int)
-    X = d[:, 2:2 + NFEAT]
-    raw = d[:, 2 + NFEAT:2 + NFEAT + len(SLICES)]
+    X = d[:, 2:2 + nfeat]
+    raw = d[:, 2 + nfeat:2 + nfeat + len(SLICES)]
     if not np.isin(d[:, :2], [0, 1]).all() or not np.isin(raw, [0, 1]).all():
         raise ValueError(f"{path}: labels, corr, and slice fields must be binary")
     slices = {name: raw[:, i].astype(bool) for i, name in enumerate(SLICES)}
@@ -130,15 +131,16 @@ def parse_args(argv=None):
     ap.add_argument("--outdir", required=True)
     ap.add_argument("--suffix", required=True)
     ap.add_argument("--lambda-l2", type=_nonneg_float, default=None, help="optional LightGBM lambda_l2 (>= 0)")
+    ap.add_argument("--nfeat", type=int, choices=NFEAT_CHOICES, default=NFEAT, help="feature columns per row (34: pairfeat6)")
     return ap.parse_args(argv)
 
 
 def main():
     a = parse_args()
     import lightgbm as lgb  # deferred so loader/report tests need no LightGBM
-    parts = [load(t) for t in a.train]
+    parts = [load(t, a.nfeat) for t in a.train]
     ytr, Xtr = np.concatenate([p[0] for p in parts]), np.concatenate([p[2] for p in parts])
-    yca, cca, Xca, sca = load(a.cal)
+    yca, cca, Xca, sca = load(a.cal, a.nfeat)
     bst = lgb.train(params_for(a.lambda_l2), lgb.Dataset(Xtr, ytr), ROUNDS)
     pca = bst.predict(Xca)
     os.makedirs(a.outdir, exist_ok=True)
@@ -158,6 +160,8 @@ def main():
     if a.lambda_l2 is not None:
         rep["lambda_l2"] = a.lambda_l2
         rep["max_abs_leaf"] = max_abs_leaf(dump)
+    if a.nfeat != NFEAT:
+        rep["nfeat"] = a.nfeat
     rep["hard_negative_slices"] = slice_report(yca, pca, sca)
     for t in (0.5, 0.7, 0.9, 0.98, 0.99):
         s = pca >= t
