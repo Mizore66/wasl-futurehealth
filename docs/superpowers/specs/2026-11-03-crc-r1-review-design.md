@@ -63,3 +63,19 @@ Reader v7 (`a3f9ccd`) deliberately stopped counting the ileocaecal valve alone a
 ## Amendment 1 (before any r1review lane ran)
 
 The vs-pairfeat5 safety gate originally listed "wrong final sign-offs 0". That cannot hold in stress lanes. The 4% synthetic reviewer error makes about 80 wrong final sign-offs per arm by design: 79 for baseline and 82 for pairfeat5 in pairfeat5 run-2 dev-stress. The baseline gate has never gated on it. The corrected safety condition for the reference gate is the harness's existing `SAFETY` set in both the pairfeat5 and r1review arms: false closures, wrong releases, replay mismatches, analysis errors and trace errors. Wrong final sign-offs are reported, not gated.
+
+## Amendment 2 (user-approved 3 Nov 2026, before any r1review lane ran): photo-gated routing ("r1photo")
+
+**Why.** A read-only pre-run check found the text-only design unsafe. In the lanes' report corpus (`reports43`, 43 texts), 7 reports are converted. 6 of them are truly inadequate and 1 is complete (the "to the ileocecal valve" report). In the pairfeat5 run-2 dev-stress lanes (used seeds, read only), 96 loops carry one of the truly inadequate converted reports and 26 carry the complete one. At the assumed `ErrUngraded` 0.25, that means about 24 wrong "adequate" sign-offs, so the stress gate of 0 false closures would fail by construction. (On the seven held-out corpora about 80% of converted reports are truly complete, so the balance depends on the report mix.)
+
+**Change.** A converted report is routed to the clinician only when the hold-only image reader returns `caecal_photo = "verified"`: a photo filed at the caecum station that the landmark CNN scores at or above its threshold. Every other converted report reverts to the flag-off verdict, an automatic `inadequate` with rule `R1_completion_not_documented`. With the image reader off, every converted report reverts. The clinician item shows the verified photo. Reviewer error stays `ErrUngraded`. The image reader still never closes a loop.
+
+**Experiment changes.**
+- All three arms (baseline, pairfeat5, r1review) run with synthetic photo attachment at `gen` (`-imgphotos`) and the image reader at `-image cached`, so the comparison inside the experiment is fair.
+- Numbers are not comparable with earlier image-off runs.
+- `pairfeat1`-`pairfeat5` experiments keep the image reader off.
+
+**Disclosure.**
+- Photo attachment is simulated with assumed rates tied to the text answer key: 85% of reports that document the caecum get a true caecum photo, and 10% of the others get a mis-filed non-caecal photo.
+- The result therefore means "if units photograph caecal completion as DoH App. 11 s2.2 requires". It is not a measured documentation rate.
+- The CNN was trained on HyperKvasir (Norwegian video frames) and needs local recalibration.
