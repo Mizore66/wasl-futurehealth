@@ -133,3 +133,43 @@
 
   Get an independent doc review, then commit those two files only.
 - [ ] Thin the raw lanes of non-record runs; keep the record run whole.
+
+---
+
+## Amendment 2: photo-gated routing (spec Amendment 2)
+
+### Task A2: photo gate (Go)
+
+**Files:** `pipeline/r1review.go`, `pipeline/r1review_test.go`, and `pipeline/services.go` (the prep stage where `applyImage` is called).
+
+- Add `func r1photoGate(v *TwoVerdict, iv *ImageVerdict)`. It is a no-op unless `R1ReviewOn && v != nil && v.R1Review`.
+  - If `iv != nil && iv.Caecal == "verified"`: keep the completion review and add review hint `caecal_photo_verified`, so the item carries the photo context. Reuse the existing `ReviewHint` / `Flags` fields.
+  - Otherwise: revert to exactly the flag-off verdict: `Agree = true`, `Label = "inadequate"`, `Rule = "R1_completion_not_documented"`, `R1Review = false`. Every other field must be as the flag-off judge would have produced.
+- In `services.go`, call it for colonoscopy reports right after the optional `applyImage`. Pass `iv = ImageR.Read(ev.Images)` when the image reader is on (reuse the same verdict object, do not read twice) and `nil` when it is off. It is the only verdict path that feeds closure. Confirm replay/audit/report7 consume the stored verdicts and do not re-judge.
+- Tests:
+  - verified → review;
+  - unverified, missing, and image off (nil) → exact flag-off verdict;
+  - flag off → `r1photoGate` never changes anything;
+  - prep-stage integration: a report with a verified caecal photo raises the `completion_undocumented` item; without the photo it stays auto-inadequate.
+
+  Flag-off byte-identity as in Task A.
+
+### Task B2: photo + image-reader lanes for r1review experiments (harness)
+
+**Files:** `scripts/pairfeat_compare.py`, `scripts/pairfeat_experiment.sh`, `scripts/test_pairfeat_compare.py`.
+
+- `CANDIDATES["r1review"]["lane_image"] = True`.
+- In an r1review experiment, every arm (baseline, pairfeat5, r1review) runs:
+  - `gen` with `-imgphotos`;
+  - orchestrate, audit and report7 with `-image cached`, if they accept it; check how `-image` is consumed.
+- `guard` requires `-image cached` and `-imgphotos` exactly in r1review experiments, and `-image off` with no `-imgphotos` in every other experiment. `build.json` records the image setting.
+- `pairfeat1`-`pairfeat5` argv, outputs and pins are unchanged.
+- Tests: argv per arm, guard refusals both ways, and the pins unchanged.
+
+### Task C (amended)
+
+- The run is as in Task C, with photos and the image reader on in all three arms.
+- The reported-only diagnosis adds:
+  - completion items with verified photos and their answers;
+  - converted reports reverted for lack of a verified photo;
+  - the image reader summary (`caecal_photo` counts).
