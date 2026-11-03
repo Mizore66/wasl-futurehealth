@@ -100,6 +100,8 @@ FUNNEL_CATEGORIES = ("candidate_not_generated", "candidate_below_review", "candi
                      "candidate_routed_review", "linked_report_not_attached", "attached_or_closed")
 RESIDUAL = ("candidate_not_generated", "candidate_below_review", "candidate_rejected_demographic",
             "candidate_routed_review", "linked_report_not_attached", "attached_not_closed")
+# extra funnel category (also a CRC closure miss), present only for report_xscript_cap candidates' analyses
+CAP_CATEGORY = "candidate_capped_not_queued"
 REVIEWER_SUMS = ("items", "hours", "distinct_pairs", "unanswered", "link_items", "wrong_final_signoffs")
 
 ARTIFACT_MANIFEST = "artifact-manifest.json"
@@ -657,7 +659,7 @@ def xscript_cap_counts(lines, pk_qid):
     return {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
 
 
-def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
+def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None):
     crc = _req(report7, "programmes_live", "crc")
     truth = _req(crc, "truth_closed")
     tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
@@ -668,7 +670,8 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
     if _req(funnel, "truth_closed") != truth:
         raise ValueError("funnel/CRC truth_closed mismatch")
     cats = _req(funnel, "categories")
-    unknown = set(cats) - set(FUNNEL_CATEGORIES)
+    extra = (CAP_CATEGORY,) if CANDIDATES.get(candidate, {}).get("report_xscript_cap") else ()
+    unknown = set(cats) - set(FUNNEL_CATEGORIES) - set(extra)
     if unknown:
         raise ValueError("unknown funnel categories %s" % sorted(unknown))
     attached = cats.get("attached_or_closed", 0)
@@ -678,6 +681,8 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
                 ("candidate_not_generated", "candidate_below_review", "candidate_rejected_demographic",
                  "candidate_routed_review", "linked_report_not_attached")}
     residual["attached_not_closed"] = attached - tp
+    for name in extra:
+        residual[name] = cats.get(name, 0)
     if sum(residual.values()) != truth - tp:
         raise ValueError("residual categories do not partition CRC closure misses")
     lk = _req(report7, "linkage")
@@ -694,7 +699,7 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
             reviewer[k] = load[k]
     m = {
         "seed": seed, "tp": tp, "truth_closed": truth, "recall": tp / truth if truth else None,
-        "categories": {c: cats.get(c, 0) for c in FUNNEL_CATEGORIES},
+        "categories": {c: cats.get(c, 0) for c in FUNNEL_CATEGORIES + extra},
         "residual": residual,
         "false_closures": _req(crc, "false_closures"),
         "wrong_released_total": _req(report7, "outreach_live", "wrong_patient_released"),
@@ -728,8 +733,9 @@ def aggregate_arm(arm, lanes):
         for k, v in l["wrong_released_by_origin"].items():
             org[k] = org.get(k, 0) + v
     a["wrong_released_by_origin"] = org
-    a["categories"] = {c: sum(l["categories"][c] for l in lanes) for c in FUNNEL_CATEGORIES}
-    a["residual"] = {c: sum(l["residual"][c] for l in lanes) for c in RESIDUAL}
+    extra = tuple(c for c in (CAP_CATEGORY,) if lanes and all(c in l["categories"] for l in lanes))
+    a["categories"] = {c: sum(l["categories"][c] for l in lanes) for c in FUNNEL_CATEGORIES + extra}
+    a["residual"] = {c: sum(l["residual"][c] for l in lanes) for c in RESIDUAL + extra}
     a["reviewer"] = {k: sum(l["reviewer"][k] for l in lanes) for k in REVIEWER_SUMS}
     for k in WRONG_KEYS:
         has = [k in l["reviewer"] for l in lanes]
@@ -906,7 +912,7 @@ def _load_lane(path, seed, arm, mode, candidate):
             if arm != candidate and (same or diff):  # the baseline arm must contain no xscript_cap record
                 raise ValueError("baseline lane trace contains xscript_cap records")
             capped = diff
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs)
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate)
 
 
 # ---------------------------------------------------------------- CLI

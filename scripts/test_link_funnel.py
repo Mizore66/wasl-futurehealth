@@ -53,6 +53,20 @@ class ClassifyTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "near_without_review_item"):
             classify_pair([{"stage": "near"}], [], {}, False, False)
 
+    def test_capped_near_without_item_is_its_own_category(self):
+        ev = [{"stage": "near", "p": 0.69, "reason": "xscript_cap"}]
+        self.assertEqual(classify_pair(ev, [], {}, False, False), ("candidate_capped_not_queued", "capped_near_without_review_item"))
+        self.assertIn("candidate_capped_not_queued", link_funnel.CATEGORIES)
+        # only the latest event's reason counts; other reasons still fail loudly
+        for bad in ([{"stage": "near", "reason": "xscript_cap"}, {"stage": "near", "reason": "other"}], [{"stage": "near", "reason": "other"}]):
+            with self.assertRaisesRegex(ValueError, "near_without_review_item"):
+                classify_pair(bad, [], {}, False, False)
+        # with a review item the routed-review path is unchanged
+        self.assertEqual(classify_pair(ev, [{"item": "x"}], {}, False, False), ("candidate_routed_review", "unanswered"))
+        s = public_summary([{"category": "candidate_capped_not_queued", "detail": "capped_near_without_review_item"}], 1)
+        self.assertEqual(s["categories"], {"candidate_capped_not_queued": 1})
+        self.assertEqual(s["missed"], 1)
+
 class SummaryTests(unittest.TestCase):
     def test_public_summary_has_no_identifiers(self):
         rows = [{"loop": "secret-loop", "registration": "secret-pk", "category": "candidate_below_review", "detail": "below_review_floor"}]
