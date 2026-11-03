@@ -1000,10 +1000,11 @@ class Candidates(unittest.TestCase):
                                          "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
                                          "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap",
                                                        "report_xscript_cap": True},
-                                         "r1review": {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619],
+                                         "r1review": {"dev_seeds": [571, 577, 587], "validation_seeds": [631, 641, 643, 647, 653],
                                                       "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                                                       "chain": "pairfeat5", "reference": "pairfeat5",
-                                                      "extra_flags": ["-r1review"], "lane_image": True}})
+                                                      "extra_flags": ["-r1review"], "lane_image": True,
+                                                      "baseline_gating": False}})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
                                                   "pairfeat5", "r1review"))
@@ -2306,11 +2307,11 @@ class ByteIdentity(unittest.TestCase):
 # ================================================================ candidate r1review (three arms: baseline, pairfeat5 reference, r1review)
 
 R1 = "r1review"
-R1_DEV = [557, 563, 569]
-R1_VAL = [601, 607, 613, 617, 619]
-R1_ENTRY = {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619], "review_gate": "wrong_pair_cap",
+R1_DEV = [571, 577, 587]
+R1_VAL = [631, 641, 643, 647, 653]
+R1_ENTRY = {"dev_seeds": [571, 577, 587], "validation_seeds": [631, 641, 643, 647, 653], "review_gate": "wrong_pair_cap",
             "report_xscript_cap": True, "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"],
-            "lane_image": True}
+            "lane_image": True, "baseline_gating": False}
 CU = "completion_undocumented"
 EXPERIMENT_JSON = {"candidate": R1, "reference": P5}
 
@@ -2359,9 +2360,9 @@ class R1reviewCandidate(unittest.TestCase):
 class R1reviewGuard(unittest.TestCase):
     ROOT = "/repo"
     BIN = "/repo/bin/wsi7"
-    O = "/data/exp/arm/v2-s557"
+    O = "/data/exp/arm/v2-s571"
 
-    def cmds(self, mode="dev-clean", arm_=R1, seed=557, cand=R1):
+    def cmds(self, mode="dev-clean", arm_=R1, seed=571, cand=R1):
         return {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_, candidate=cand)}
 
     def rejects(self, argv, arm_=R1, cand=R1, mode="dev-clean"):
@@ -2415,13 +2416,13 @@ class R1reviewGuard(unittest.TestCase):
         self.rejects(r["orchestrate"], cand=P5)
         self.rejects(self.cmds(arm_=P5, seed=521)["gen"], arm_=P5)
         with self.assertRaises(pfc.GuardError):
-            pfc.guard(self.cmds(arm_=P5, seed=557, cand=P5)["gen"], "dev-clean", P5, self.BIN, P5)
+            pfc.guard(self.cmds(arm_=P5, seed=571, cand=P5)["gen"], "dev-clean", P5, self.BIN, P5)
         pfc.guard(self.cmds(arm_=P5, seed=521, cand=P5)["gen"], "dev-clean", P5, self.BIN, P5)
 
     def test_output_paths_may_name_r1review(self):
-        o = "/data/agents2/hardening/r1review/dev/r1review/v2-s557"
+        o = "/data/agents2/hardening/r1review/dev/r1review/v2-s571"
         for a in pfc.arms(R1):
-            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, o, 557, "dev-clean", a, candidate=R1):
+            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, o, 571, "dev-clean", a, candidate=R1):
                 pfc.guard(argv, "dev-clean", a, self.BIN, R1)
 
 
@@ -2647,8 +2648,9 @@ class ReferenceGate(unittest.TestCase):
         self.assertAlmostEqual(s["pairfeat5_recall"], 530 / 600)
         s = pfc.select(base, ref_arm(R1, 535), ref_arm(P5, 530))         # baseline gate passes, reference gate fails
         self.assertEqual((s["selected_modelset"], s["pass"], s["gate"]["pass"], s["reference_gate"]["pass"]), (None, False, True, False))
-        s = pfc.select(base, ref_arm(R1, 510), ref_arm(P5, 500))         # reference gate passes, baseline gate fails
-        self.assertEqual((s["selected_modelset"], s["pass"], s["gate"]["pass"], s["reference_gate"]["pass"]), (None, False, False, True))
+        s = pfc.select(base, ref_arm(R1, 510), ref_arm(P5, 500))         # baseline gate fails: reported only (amendment 3)
+        self.assertEqual((s["selected_modelset"], s["pass"], s["gate"]["pass"], s["reference_gate"]["pass"]), (R1, True, False, True))
+        self.assertIs(s["gate"]["gating"], False)
         self.assertNotIn("reference_gate", pfc.select(base, cap_arm(P5, 530, 600, 10, 0, 2)))
 
 
@@ -2684,7 +2686,7 @@ class CompletionCount(unittest.TestCase):
                          {"items": 6, "adequate": 3, "inadequate": 3, "other": 0, "unanswered": 0, "wrong": 0})
         self.assertEqual(pfc.aggregate_arm(R1, lanes)["modelset"], P5)
         with self.assertRaises(ValueError):
-            pfc.aggregate_arm(R1, lanes[:2] + [pfc.lane_metrics(569, report(), funnel(5, 10), {}, load, candidate=R1)])
+            pfc.aggregate_arm(R1, lanes[:2] + [pfc.lane_metrics(587, report(), funnel(5, 10), {}, load, candidate=R1)])
 
 
 IMAGE_BUILD = {"image": "cached", "imgphotos": True, "image_verdicts_sha256": "e" * 64}
@@ -2780,7 +2782,7 @@ class CLIR1review(CLIFixture, unittest.TestCase):
         self.assertEqual((s["candidate"], s["reference"], s["pass"]), (R1, P5, True))
         self.assertEqual(s["reference_gate"], sel["reference_gate"])
         self.assertIn("paired_gain_vs_reference_t95", s)
-        self.assertEqual(s["paired_gain_vs_reference_t95"]["per_seed_gain_pp"], {"557": 10.0, "563": 10.0, "569": 10.0})
+        self.assertEqual(s["paired_gain_vs_reference_t95"]["per_seed_gain_pp"], {"571": 10.0, "577": 10.0, "587": 10.0})
         self.assertEqual(s["arms"][R1]["modelset"], P5)
         self.assertEqual(s["arms"][R1]["completion_undocumented"],
                          {"items": 9, "adequate": 3, "inadequate": 3, "other": 0, "unanswered": 3, "wrong": 0})
@@ -2842,9 +2844,9 @@ class CLIR1review(CLIFixture, unittest.TestCase):
 
     def test_pairfeat5_arm_is_a_pairfeat5_lane(self):
         root = self.make_arm(P5, 6, fm=1)
-        lane = os.path.join(root, "v2-s557")
-        inside = pfc._load_lane(lane, 557, P5, "dev-clean", R1)
-        alone = pfc._load_lane(lane, 557, P5, "dev-clean", P5)
+        lane = os.path.join(root, "v2-s571")
+        inside = pfc._load_lane(lane, 571, P5, "dev-clean", R1)
+        alone = pfc._load_lane(lane, 571, P5, "dev-clean", P5)
         self.assertEqual(inside.pop("completion_undocumented")["items"], 0)
         self.assertEqual(inside, alone)
 
@@ -2909,7 +2911,7 @@ class RunnerR1review(RunnerFixture, unittest.TestCase):
         for mode in ("dev-clean",):
             r = self.run_sh(self.root, mode, "baseline", preflight_only=True)
             self.assertEqual(r.returncode, 0, r.stderr)
-            self.assertIn("candidate r1review seeds 557 563 569", r.stdout)
+            self.assertIn("candidate r1review seeds 571 577 587", r.stdout)
         r = self.run_sh(self.root, "dev-clean", R1, preflight_only=True)
         self.assert_refused(r)                                     # fake pairfeat5 map: refused by preflight, not arm parsing
         self.assertNotIn("invalid arm", r.stderr)
@@ -2919,7 +2921,7 @@ class RunnerR1review(RunnerFixture, unittest.TestCase):
     def test_runner_tables(self):
         with open(SCRIPT) as h:
             text = h.read()
-        self.assertIn('r1review) DEV_SEEDS="557 563 569"; VAL_SEEDS="601 607 613 617 619"; CHAIN=pairfeat5; REF=pairfeat5;;', text)
+        self.assertIn('r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;', text)
         self.assertIn('pairfeat5) DEV_SEEDS="521 541 547";;', text)
         self.assertIn('VAL_SEEDS="401 409 419 421 431"', text)
 
@@ -2969,9 +2971,9 @@ def strip_image(argv):
 class R1reviewImageLanes(unittest.TestCase):
     ROOT = "/repo"
     BIN = "/repo/bin/wsi7"
-    O = "/data/exp/arm/v2-s557"
+    O = "/data/exp/arm/v2-s571"
 
-    def cmds(self, arm_, cand, mode="dev-clean", seed=557):
+    def cmds(self, arm_, cand, mode="dev-clean", seed=571):
         return {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_, candidate=cand)}
 
     def rejects(self, argv, arm_, cand, mode="dev-clean"):
@@ -3021,13 +3023,13 @@ class R1reviewImageLanes(unittest.TestCase):
             for argv in default.values():
                 self.assertNotIn("-imgphotos", argv)
                 self.assertNotIn("-imgcache", argv)
-        self.assertEqual({n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 557, "dev-clean", R1)},
+        self.assertEqual({n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 571, "dev-clean", R1)},
                          self.cmds(R1, R1))
 
     def test_guard_requires_image_in_r1review_experiments(self):
         for a in pfc.arms(R1):
             c = self.cmds(a, R1)
-            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 557, "dev-clean", a, candidate=R1):
+            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 571, "dev-clean", a, candidate=R1):
                 pfc.guard(argv, "dev-clean", a, self.BIN, R1)
             g = c["gen"]
             self.rejects([x for x in g if x != "-imgphotos"], a, R1)                      # photos required
@@ -3068,8 +3070,8 @@ class R1reviewImageLanes(unittest.TestCase):
                     self.rejects(m + ["-imgcache", IMGCACHE], a, cand)
         # an image-on lane of an r1review experiment is not a lane of a pairfeat5 experiment, and the reverse
         self.rejects(self.cmds(P5, R1, seed=521)["gen"], P5, P5)
-        self.rejects(self.cmds(P5, P5, seed=557)["orchestrate"], P5, R1)
-        self.rejects(self.cmds(P5, P5, seed=557)["gen"], P5, R1)
+        self.rejects(self.cmds(P5, P5, seed=571)["orchestrate"], P5, R1)
+        self.rejects(self.cmds(P5, P5, seed=571)["gen"], P5, R1)
 
 
 class R1reviewImageBuild(unittest.TestCase):
@@ -3179,10 +3181,118 @@ class CLIR1reviewLaneEvidence(CLIR1review):
 
     def test_pairfeat5_experiment_lanes_need_no_image_evidence(self):
         # a pairfeat5 experiment lane (no out_log, no image_reader) still loads exactly as before
-        lane = os.path.join(self.make_arm(P5, 6, fm=1, img_reader=None, out_log=False), "v2-s557")
-        pfc._load_lane(lane, 557, P5, "dev-clean", P5)
+        lane = os.path.join(self.make_arm(P5, 6, fm=1, img_reader=None, out_log=False), "v2-s571")
+        pfc._load_lane(lane, 571, P5, "dev-clean", P5)
         with self.assertRaises(ValueError):
-            pfc._load_lane(lane, 557, P5, "dev-clean", R1)
+            pfc._load_lane(lane, 571, P5, "dev-clean", R1)
+
+
+
+# ================================================================ amendment 3: r1review gated against pairfeat5 only, fresh seeds
+
+OLD_R1_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
+
+
+class R1reviewAmendment3(unittest.TestCase):
+    ROOT = "/repo"
+    BIN = "/repo/bin/wsi7"
+    O = "/data/exp/arm/v2-s571"
+
+    def test_fresh_seeds_and_retired_list(self):
+        self.assertEqual(pfc.mode_settings("dev-clean", R1)["seeds"], [571, 577, 587])
+        self.assertEqual(pfc.mode_settings("dev-stress", R1)["seeds"], [571, 577, 587])
+        self.assertEqual(pfc.mode_settings("validation-clean", R1)["seeds"], [631, 641, 643, 647, 653])
+        self.assertEqual(pfc.RETIRED_SEEDS, OLD_R1_SEEDS)
+        for c, spec in pfc.CANDIDATES.items():
+            self.assertFalse(set(spec["dev_seeds"] + spec.get("validation_seeds", [])) & set(OLD_R1_SEEDS), c)
+        self.assertIs(pfc.baseline_gating(R1), False)
+        for c in (P1, P2, P3, P4, P5):
+            self.assertIs(pfc.baseline_gating(c), True)
+
+    def test_new_seeds_accepted_old_seeds_refused(self):
+        for mode in pfc.MODES:
+            for a in pfc.arms(R1):
+                for seed in pfc.modes(R1)[mode]["seeds"]:
+                    for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, a, candidate=R1):
+                        pfc.guard(argv, mode, a, self.BIN, R1)
+                for seed in OLD_R1_SEEDS:
+                    c = {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, a, candidate=R1)}
+                    for n in ("gen", "orchestrate"):
+                        with self.assertRaises(pfc.GuardError, msg=(mode, a, seed, n)):
+                            pfc.guard(c[n], mode, a, self.BIN, R1)
+        # retired seeds are refused in every experiment, whatever its seed table
+        for cand in (P1, P5):
+            for seed in OLD_R1_SEEDS:
+                for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, "dev-clean", cand):
+                    if n in ("gen", "orchestrate"):
+                        with self.assertRaises(pfc.GuardError) as e:
+                            pfc.guard(argv, "dev-clean", cand, self.BIN, cand)
+                        self.assertIn("retired", str(e.exception))
+
+    def test_runner_seed_table(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;', text)
+        table = text.split('case "$CAND" in', 1)[1].split("esac", 1)[0]
+        for sd in OLD_R1_SEEDS:
+            self.assertNotIn(str(sd), table)
+
+    def test_baseline_gate_reported_not_gating(self):
+        base = cap_arm("baseline", 500, 600, 10, 0, 5)
+        for kind in pfc.GATE_KINDS:
+            g = pfc.gate(base, ref_arm(R1, 540, fm=5), kind)       # prevented 0: the cap gate fails vs baseline
+            self.assertFalse(g["pass"])
+            self.assertIs(g["gating"], False)
+        # pairfeat5 (and every other two-arm candidate) is still gated vs baseline, with unchanged gate JSON
+        g5 = pfc.gate(base, cap_arm(P5, 530, 600, 10, 0, 5), "selection")
+        self.assertFalse(g5["pass"])
+        self.assertNotIn("gating", g5)
+        s5 = pfc.select(base, cap_arm(P5, 530, 600, 10, 0, 5))
+        self.assertEqual((s5["selected_modelset"], s5["pass"]), (None, False))
+
+
+class CLIR1reviewAmendment3(CLIR1review):
+    def baseline_failing(self, mode="dev-clean", r=7):
+        # baseline fm 1 = r1review fm 1: no prevented false merge, so gate 1 (vs baseline) fails; gate 2 passes
+        return (self.make_arm("baseline", 5, mode=mode, fm=1), self.make_arm(P5, 6, mode=mode, fm=1),
+                self.make_arm(R1, r, mode=mode, fm=1, cu=3, answers=("adequate", "inadequate")))
+
+    def test_dev_clean_passes_when_only_the_baseline_gate_fails(self):
+        self.assertEqual(self.run3("dev-clean", self.baseline_failing()), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertFalse(sel["gate"]["pass"])
+        self.assertIs(sel["gate"]["gating"], False)
+        self.assertIn("false_merge_pairs not reduced (prevented 0)", sel["gate"]["reasons"])
+        self.assertTrue(sel["reference_gate"]["pass"])
+        self.assertEqual((sel["selected_modelset"], sel["pass"]), (R1, True))
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertTrue(s["pass"])
+        self.assertIs(s["gate"]["gating"], False)
+
+    def test_dev_clean_fails_when_the_reference_gate_fails(self):
+        self.assertEqual(self.run3("dev-clean", self.baseline_failing(r=6)), 0)   # gain vs pairfeat5 0pp
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual((sel["selected_modelset"], sel["pass"]), (None, False))
+
+    def test_stress_and_validation_follow_the_reference_gate(self):
+        r = Repo(os.path.join(self.td.name, "v"), cand=P5)
+        for fn in CAND5_FILES:
+            with open(os.path.join(r.root, "models", fn), "w") as h:
+                h.write("model " + fn)
+        self.exp = r.exp
+        self.maps = {"baseline": r.hashes(BASE_FILES), P5: r.hashes(CAND5_FILES), R1: r.hashes(CAND5_FILES)}
+        r.artifact_manifest()
+        pfc.init_experiment(r.exp, R1)
+        self.assertEqual(self.run3("dev-clean", self.baseline_failing()), 0)
+        self.assertEqual(self.run3("dev-stress", self.baseline_failing(mode="dev-stress")), 0)
+        st = _rj(os.path.join(r.exp, "stress.json"))
+        self.assertEqual((st["pass"], st["gate"]["pass"], st["reference_gate"]["pass"]), (True, False, True))
+        pfc.freeze_validation(r.exp, r.root, HEAD)
+        out = os.path.join(r.exp, "validation-clean-summary.json")
+        v = self.baseline_failing(mode="validation-clean")
+        res = pfc.analyse("validation-clean", out, {"baseline": v[0], P5: v[1], R1: v[2]}, repo=r.root, head=HEAD)
+        self.assertEqual((res["pass"], res["gate"]["pass"], res["reference_gate"]["pass"]), (True, False, True))
+        self.assertEqual(res["seeds"], [631, 641, 643, 647, 653])
 
 
 if __name__ == "__main__":
