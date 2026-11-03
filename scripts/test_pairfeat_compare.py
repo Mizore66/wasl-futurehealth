@@ -2688,6 +2688,12 @@ class CompletionCount(unittest.TestCase):
 
 
 IMAGE_BUILD = {"image": "cached", "imgphotos": True, "image_verdicts_sha256": "e" * 64}
+POLICY_BASE = "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01"
+
+
+def lane_policy(a, image="cached"):
+    """The decision policy stamp main.go writes for an arm (PolicyName: +models=<set>, then +image=<mode>)."""
+    return POLICY_BASE + ("+models=" + pfc.MODELSET[a] if pfc.MODELSET[a] else "") + ("+image=" + image if image else "")
 
 
 class CLIR1review(CLIFixture, unittest.TestCase):
@@ -2704,7 +2710,7 @@ class CLIR1review(CLIFixture, unittest.TestCase):
         pfc.init_experiment(self.exp, R1)
 
     def make_arm(self, a, tp, *args, recs=None, fm=None, wrong=2, hours=None, cu=0, answers=(), flags="auto",
-                 image=IMAGE_BUILD, **kw):
+                 image=IMAGE_BUILD, img_reader="auto", policies="auto", out_log=True, **kw):
         root = super().make_arm(a, tp, *args, **kw)
         bp = os.path.join(root, "build.json")
         if os.path.exists(bp):
@@ -2736,7 +2742,17 @@ class CLIR1review(CLIFixture, unittest.TestCase):
                 rj["linkage"]["false_merge_pairs"] = fm
             if hours is not None:
                 rj["reviewer"]["by_kind"]["all"]["sim_hours"] = hours
+            if img_reader == "auto":
+                rj["image_reader"] = {"mode": "cached", "model": "landmark-cnn", "colonoscopy_reports_read": 4}
+            elif img_reader is not None:
+                rj["image_reader"] = img_reader
             _wj(rp, rj)
+            if out_log:
+                pol = ([lane_policy(kw.get("build_arm") or a)] * 2) if policies == "auto" else policies
+                with open(os.path.join(root, d, "run/main/out_log.ndjson"), "w") as h:
+                    for i, pv in enumerate(pol):
+                        h.write(json.dumps({"seq": 2 * i + 1, "data": {"kind": "decision", "dec": {"id": "d%d" % i, "policy": pv}}}) + "\n")
+                        h.write(json.dumps({"seq": 2 * i + 2, "data": {"kind": "review", "item": {"item": "x%d" % i}}}) + "\n")
         return root
 
     def three(self, mode="dev-clean", b=5, f=6, r=7, **kw):
@@ -3126,6 +3142,47 @@ class RunnerR1reviewImage(unittest.TestCase):
         self.assertIn("pfc.lane_commands(root, bin_, o, seed, mode, arm, candidate=cand)", text)
         self.assertIn("pfc.image_build(root, cand)", text)
         self.assertIn('"image": pfc.lane_image_mode(cand)', text)
+
+
+
+# ================================================================ final-review M1: lane-level evidence for arm identity
+
+class CLIR1reviewLaneEvidence(CLIR1review):
+    """Three-arm r1review analysis refuses lanes whose own outputs contradict the arm build.json claims."""
+
+    def refused(self, roots):
+        with self.assertRaises(ValueError):
+            self.run3("dev-clean", roots)
+        self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+
+    def test_completion_items_only_in_the_r1review_arm(self):
+        b, f, r = self.three()
+        self.refused((b, self.make_arm(P5, 6, fm=1, cu=1, name="f-cu"), r))
+        self.refused((self.make_arm("baseline", 5, fm=3, cu=2, answers=("adequate",), name="b-cu"), f, r))
+        self.assertEqual(self.run3("dev-clean", (b, f, r)), 0)
+
+    def test_report7_image_reader_must_be_cached(self):
+        b, f, r = self.three()
+        for i, ir in enumerate((None, {"mode": "off"}, {"mode": "replay"}, {}, "cached")):
+            self.refused((b, f, self.make_arm(R1, 7, fm=1, img_reader=ir, name="r-img%d" % i)))
+        self.refused((self.make_arm("baseline", 5, fm=3, img_reader={"mode": "off"}, name="b-img"), f, r))
+
+    def test_decision_policy_stamps_image_and_modelset(self):
+        b, f, r = self.three()
+        for i, pol in enumerate(([], [lane_policy(R1, image=None)], [lane_policy(R1), lane_policy(R1, image="off")],
+                                 [lane_policy(R1) + "x"], [lane_policy("baseline")], [lane_policy(R1, image="replay")])):
+            self.refused((b, f, self.make_arm(R1, 7, fm=1, policies=pol, name="r-pol%d" % i)))
+        self.refused((b, f, self.make_arm(R1, 7, fm=1, out_log=False, name="r-nolog")))
+        self.refused((self.make_arm("baseline", 5, fm=3, policies=[lane_policy(P5)], name="b-pol"), f, r))
+        self.refused((b, self.make_arm(P5, 6, fm=1, policies=[lane_policy("baseline")], name="f-pol"), r))
+        self.assertEqual(self.run3("dev-clean", (b, f, r)), 0)
+
+    def test_pairfeat5_experiment_lanes_need_no_image_evidence(self):
+        # a pairfeat5 experiment lane (no out_log, no image_reader) still loads exactly as before
+        lane = os.path.join(self.make_arm(P5, 6, fm=1, img_reader=None, out_log=False), "v2-s557")
+        pfc._load_lane(lane, 557, P5, "dev-clean", P5)
+        with self.assertRaises(ValueError):
+            pfc._load_lane(lane, 557, P5, "dev-clean", R1)
 
 
 if __name__ == "__main__":

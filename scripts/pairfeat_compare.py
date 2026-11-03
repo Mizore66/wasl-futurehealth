@@ -1158,6 +1158,39 @@ def _recall(a):
     return a["tp"] / a["truth_closed"] if a["truth_closed"] else None
 
 
+def policy_parts(policy):
+    """The "+"-separated components of a decision policy stamp (main.go PolicyName), as a set."""
+    return set(policy.split("+")) if isinstance(policy, str) else set()
+
+
+def check_lane_image(report7, out_log_path, arm, candidate):
+    """Lane-level evidence for an image experiment (r1review): report7 image_reader.mode is cached, and every decision in
+    run/main/out_log.ndjson (at least one) carries a policy stamp with image=cached and exactly the arm's models=<set>
+    (none for baseline). build.json alone is not trusted for which reader and model chain a lane ran."""
+    ir = report7.get("image_reader")
+    if not isinstance(ir, dict) or ir.get("mode") != lane_image_mode(candidate):
+        raise ValueError("report7 image_reader %r is not the %s image reader (%s arm)" % (ir, lane_image_mode(candidate), arm))
+    want_models = {"models=" + MODELSET[arm]} if MODELSET[arm] else set()
+    n = 0
+    if os.path.islink(out_log_path) or not os.path.isfile(out_log_path):
+        raise ValueError("%s arm lane has no run/main/out_log.ndjson (decision policy stamps required)" % arm)
+    with open(out_log_path) as h:
+        for ln in h:
+            if not ln.strip():
+                continue
+            data = json.loads(ln).get("data")
+            if not isinstance(data, dict) or data.get("kind") != "decision":
+                continue
+            parts = policy_parts((data.get("dec") or {}).get("policy"))
+            if {x for x in parts if x.startswith("image=")} != {"image=" + lane_image_mode(candidate)} \
+                    or {x for x in parts if x.startswith("models=")} != want_models:
+                raise ValueError("%s arm decision policy %r does not stamp image=%s and %s"
+                                 % (arm, (data.get("dec") or {}).get("policy"), lane_image_mode(candidate), sorted(want_models) or "no models="))
+            n += 1
+    if n == 0:
+        raise ValueError("%s arm out_log.ndjson holds no decision" % arm)
+
+
 def _load_lane(path, seed, arm, mode, candidate):
     """One lane's metrics. A wrong_pair experiment's lanes (both arms) also read cohort/truth.json pk_qid."""
     def j(p):
@@ -1190,6 +1223,10 @@ def _load_lane(path, seed, arm, mode, candidate):
                 raise ValueError("baseline lane trace contains xscript_cap records")
             capped = diff
     cu = completion_review(q, dec) if reference(candidate) else None  # three-arm analyses only, every arm
+    if cu is not None and arm != candidate and cu["items"] != 0:  # only the -r1review arm can raise these items
+        raise ValueError("%s arm lane has %d completion_undocumented review items (only %s raises them)" % (arm, cu["items"], candidate))
+    if lane_image(candidate):
+        check_lane_image(r, os.path.join(path, "run/main/out_log.ndjson"), arm, candidate)
     return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu)
 
 
