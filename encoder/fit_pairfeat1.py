@@ -1,6 +1,6 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4]
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5]
 NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/.
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
@@ -24,7 +24,10 @@ PROTOCOLS = {
                   "namesakes": 0.10, "family_namesakes": 0.0},
     "pairfeat4": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                   "namesakes": 0.10, "family_namesakes": 0.10},
+    "pairfeat5": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                  "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0},
 }
+LEAF_LIMIT = 5.0
 NAMESAKE_FLOOR = 500
 DEFAULT_MODELSET = "pairfeat1"
 PERSONS = 5000
@@ -58,6 +61,42 @@ def namesake_cal_csv_name(modelset):
 
 class NamesakeFloorError(Exception):
     exit_code = 3
+
+
+class LeafLimitError(Exception):
+    exit_code = 4
+
+
+def read_max_abs_leaf(path):
+    with open(path) as f:
+        dump = json.load(f)
+    best = 0.0
+    for t in dump["tree_info"]:
+        stack = [t["tree_structure"]]
+        while stack:
+            n = stack.pop()
+            if "leaf_value" in n:
+                best = max(best, abs(float(n["leaf_value"])))
+            else:
+                stack += [n["left_child"], n["right_child"]]
+    return best
+
+
+def check_leaf_limit(max_abs_leaf):
+    if not max_abs_leaf <= LEAF_LIMIT:
+        raise LeafLimitError(f"leaf value check failed: {max_abs_leaf} > {LEAF_LIMIT}")
+    return max_abs_leaf
+
+
+def fit_argv(root, out, chain, modelset):
+    argv = [sys.executable, "-I", os.path.join(root, "encoder", "fit_scorer.py")]
+    for name in train_csv_names(modelset):
+        argv += ["--train", os.path.join(out, name)]
+    argv += ["--cal", os.path.join(out, cal_csv_name(modelset)), "--outdir", chain, "--suffix", modelset]
+    lam = PROTOCOLS[modelset].get("lambda_l2")
+    if lam is not None:
+        argv += ["--lambda-l2", str(lam)]
+    return argv
 
 
 def _namesake_args(modelset):
@@ -163,7 +202,7 @@ def plain_cal_diff_at_merge(parity_csv):
 
 
 def parse_args(argv):
-    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4]"
+    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5]"
     args = list(argv[1:])
     modelset = DEFAULT_MODELSET
     if "--modelset" in args:
@@ -296,7 +335,7 @@ def write_json(path, obj):
 
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
-                      family_namesake_slice=None, ns_cal_sidecar_sha256=None):
+                      family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -311,6 +350,8 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
     if family_namesake_slice is not None:
         m["family_namesake_slice"] = family_namesake_slice
         m["ns_cal_sidecar_sha256"] = ns_cal_sidecar_sha256
+    if max_abs_leaf is not None:
+        m["max_abs_leaf"] = max_abs_leaf
     return m
 
 
@@ -377,13 +418,16 @@ def main(argv):
     cal = cal_csv_name(modelset)
     run(cal_argv(wsi, data, enc, modelset, os.path.join(out, cal)), root)
     csvs.append(cal)
-    fit = [sys.executable, "-I", os.path.join(root, "encoder", "fit_scorer.py")]
-    for name in train_csv_names(modelset):
-        fit += ["--train", os.path.join(out, name)]
-    fit += ["--cal", os.path.join(out, cal), "--outdir", chain, "--suffix", modelset]
-    run(fit, root)
+    run(fit_argv(root, out, chain, modelset), root)
     parity_csv = parity_csv_name(modelset)
     gbm = os.path.join(chain, f"lgb_stream_{modelset}.json")
+    leaf = None
+    if "lambda_l2" in proto:
+        try:
+            leaf = check_leaf_limit(read_max_abs_leaf(gbm))
+        except LeafLimitError as e:
+            print(str(e), file=sys.stderr)
+            sys.exit(LeafLimitError.exit_code)
     run(parity_argv(wsi, data, enc, modelset, gbm, os.path.join(out, parity_csv)), root)
     csvs.append(parity_csv)
     import numpy as np  # only to read the .npy
@@ -404,7 +448,7 @@ def main(argv):
             extra["ns_cal_sidecar_sha256"] = sha256(ns_path + ".namesakes.json")
     head = check_head_unchanged(root, tm)
     write_json(os.path.join(out, "artifact-manifest.json"),
-               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, **extra))
+               artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, max_abs_leaf=leaf, **extra))
     copy_chain_to_models(chain, models, modelset)
     print(f"done: modelset={modelset} rows={len(go)} max_abs_delta={delta}")
 

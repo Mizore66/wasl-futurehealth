@@ -108,6 +108,88 @@ class SliceReportTest(unittest.TestCase):
                 fs.slice_report(np.array([0, 1]), np.array([0.5, bad]), {"a": np.array([True, True])})
 
 
+def _tree(leaf_values):
+    def node(vs):
+        if len(vs) == 1:
+            return {"leaf_index": 0, "leaf_value": vs[0]}
+        return {"split_feature": 0, "left_child": node(vs[:1]), "right_child": node(vs[1:])}
+    return {"tree_structure": node(leaf_values)}
+
+
+class LambdaL2Test(unittest.TestCase):
+    def test_params_for_none_is_params(self):
+        self.assertEqual(fs.params_for(None), fs.PARAMS)
+        self.assertNotIn("lambda_l2", fs.params_for(None))
+
+    def test_params_for_value_adds_only_lambda(self):
+        got = fs.params_for(1.0)
+        self.assertEqual(got["lambda_l2"], 1.0)
+        self.assertEqual({k: v for k, v in got.items() if k != "lambda_l2"}, fs.PARAMS)
+        self.assertNotIn("lambda_l2", fs.PARAMS)
+
+    def test_zero_is_given(self):
+        self.assertEqual(fs.params_for(0.0)["lambda_l2"], 0.0)
+
+    def test_parse_args(self):
+        base = ["--train", "a", "--cal", "c", "--outdir", "o", "--suffix", "s"]
+        self.assertIsNone(fs.parse_args(base).lambda_l2)
+        self.assertEqual(fs.parse_args(base + ["--lambda-l2", "1.0"]).lambda_l2, 1.0)
+        for bad in ("-0.5", "nan", "inf", "x"):
+            with self.assertRaises(SystemExit):
+                fs.parse_args(base + ["--lambda-l2", bad])
+
+    def test_max_abs_leaf(self):
+        dump = {"tree_info": [_tree([0.5, -3.25, 1.0]), _tree([2.0, -0.1]), {"tree_structure": {"leaf_value": 0.0}}]}
+        self.assertEqual(fs.max_abs_leaf(dump), 3.25)
+        self.assertEqual(fs.max_abs_leaf({"tree_info": [{"tree_structure": {"leaf_value": -7.5}}]}), 7.5)
+
+
+class TinyFitTest(unittest.TestCase):
+    def _csvs(self, d):
+        rng = np.random.RandomState(0)
+        paths = []
+        for name in ("tr", "cal"):
+            rows = []
+            for i in range(300):
+                y = i % 2
+                feats = [f"{(rng.rand() + 0.5 * y):.6f}" for _ in range(30)]
+                rows.append(_row(y, y, feats))
+            path = os.path.join(d, name + ".csv")
+            with open(path, "w") as h:
+                h.write("\n".join(rows) + "\n")
+            paths.append(path)
+        return paths
+
+    def _run(self, d, sfx, extra):
+        tr, cal = self._csvs(d)
+        import contextlib
+        import io
+        argv = ["fit_scorer.py", "--train", tr, "--cal", cal, "--outdir", d, "--suffix", sfx] + extra
+        old = sys.argv
+        sys.argv = argv
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                fs.main()
+        finally:
+            sys.argv = old
+        import json
+        return json.load(open(os.path.join(d, f"fit_report_{sfx}.json")))
+
+    def test_report_keys(self):
+        try:
+            import lightgbm  # noqa: F401
+        except ImportError:
+            self.skipTest("no lightgbm")
+        with tempfile.TemporaryDirectory() as d:
+            plain = self._run(d, "a", [])
+            reg = self._run(d, "b", ["--lambda-l2", "1.0"])
+        self.assertNotIn("lambda_l2", plain)
+        self.assertNotIn("max_abs_leaf", plain)
+        self.assertEqual(reg["lambda_l2"], 1.0)
+        self.assertGreater(reg["max_abs_leaf"], 0.0)
+        self.assertEqual(set(reg) - {"lambda_l2", "max_abs_leaf"}, set(plain))
+
+
 class ConstantsTest(unittest.TestCase):
     def test_contract(self):
         self.assertEqual(fs.NFEAT, 30)

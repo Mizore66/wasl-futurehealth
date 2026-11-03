@@ -247,7 +247,7 @@ class Protocols(unittest.TestCase):
         self.assertEqual(fp.PROTOCOLS["pairfeat4"],
                          {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                           "namesakes": 0.10, "family_namesakes": 0.10})
-        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4"])
+        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4", "pairfeat5"])
         self.assertEqual(fp.NAMESAKE_FLOOR, 500)
 
     def test_chain_files(self):
@@ -654,6 +654,112 @@ class Pairfeat4(unittest.TestCase):
             with self.assertRaises(ValueError):
                 fp.copy_chain_to_models(chain, models, "pairfeat4")
             fp.check_models_free(models, "pairfeat3")
+
+
+class Pairfeat5(unittest.TestCase):
+    W, D, E = "/w/bin/wsi7", "/w/data", "/o/enc.json"
+
+    def test_protocol(self):
+        want = dict(fp.PROTOCOLS["pairfeat4"], lambda_l2=1.0)
+        self.assertEqual(fp.PROTOCOLS["pairfeat5"], want)
+        for k in ("pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4"):
+            self.assertNotIn("lambda_l2", fp.PROTOCOLS[k])
+        self.assertEqual(fp.LEAF_LIMIT, 5.0)
+
+    def test_cli_chain_output_gitignore(self):
+        self.assertEqual(fp.parse_args(["x", "o", "--modelset", "pairfeat5"]), ("o", "pairfeat5"))
+        self.assertEqual(fp.chain_files("pairfeat5"), [f"{k}_pairfeat5.json" for k in
+                                                       ("encoder", "lgb_stream", "iso", "iso_v7")])
+        self.assertEqual(fp.cal_csv_name("pairfeat5"), "feat_cal_2011.csv")
+        with tempfile.TemporaryDirectory() as home:
+            base = os.path.join(home, "wasl-ml-data", "agents2", "hardening", "pairfeat5")
+            os.makedirs(base)
+            p = os.path.join(base, "r")
+            self.assertEqual(fp.validate_output(p, home, "pairfeat5"), p)
+            with self.assertRaises(ValueError):
+                fp.validate_output(p, home, "pairfeat4")
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, ".gitignore")) as f:
+            self.assertIn("models/*_pairfeat5.json", f.read().splitlines())
+
+    def test_dump_argv_equal_pairfeat4(self):
+        a, b = "pairfeat4", "pairfeat5"
+        self.assertEqual(fp.train_argv(self.W, self.D, self.E, a, 1019, "/o/t.csv"),
+                         fp.train_argv(self.W, self.D, self.E, b, 1019, "/o/t.csv"))
+        self.assertEqual(fp.cal_argv(self.W, self.D, self.E, a, "/o/c.csv"),
+                         fp.cal_argv(self.W, self.D, self.E, b, "/o/c.csv"))
+        self.assertEqual(fp.parity_argv(self.W, self.D, self.E, a, "/c/g.json", "/o/p.csv"),
+                         fp.parity_argv(self.W, self.D, self.E, b, "/c/g.json", "/o/p.csv"))
+        self.assertEqual(fp.namesake_cal_argv(self.W, self.D, self.E, a, "/c/g.json", "/o/n.csv"),
+                         fp.namesake_cal_argv(self.W, self.D, self.E, b, "/c/g.json", "/o/n.csv"))
+        self.assertEqual(fp.train_csv_names(a), fp.train_csv_names(b))
+
+    def test_fit_argv(self):
+        for ms in ("pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4"):
+            argv = fp.fit_argv("/r", "/o", "/o/chain", ms)
+            self.assertNotIn("--lambda-l2", argv)
+            self.assertEqual(argv[:3], [sys.executable, "-I", "/r/encoder/fit_scorer.py"])
+            self.assertEqual(argv[-6:], ["--cal", "/o/feat_cal_%d.csv" % fp.PROTOCOLS[ms]["cal_seed"],
+                                         "--outdir", "/o/chain", "--suffix", ms])
+        a4 = fp.fit_argv("/r", "/o", "/o/chain", "pairfeat4")
+        a5 = fp.fit_argv("/r", "/o", "/o/chain", "pairfeat5")
+        self.assertEqual(a5[-2:], ["--lambda-l2", "1.0"])
+        self.assertEqual(a5[:-2][:-1], a4[:-1])  # identical except suffix
+        self.assertEqual(a5[-3], "pairfeat5")
+
+    def test_leaf_check(self):
+        self.assertEqual(fp.check_leaf_limit(5.0), 5.0)
+        self.assertEqual(fp.check_leaf_limit(0.0), 0.0)
+        with self.assertRaises(fp.LeafLimitError) as cm:
+            fp.check_leaf_limit(5.0001)
+        self.assertIn("leaf value check failed: 5.0001 > 5.0", str(cm.exception))
+        self.assertEqual(fp.LeafLimitError.exit_code, 4)
+
+    def test_read_max_abs_leaf(self):
+        dump = {"tree_info": [{"tree_structure": {"left_child": {"leaf_value": -4.5},
+                                                  "right_child": {"leaf_value": 1.0}}},
+                              {"tree_structure": {"leaf_value": 2.0}}]}
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "g.json")
+            with open(p, "w") as f:
+                json.dump(dump, f)
+            self.assertEqual(fp.read_max_abs_leaf(p), 4.5)
+
+    def test_artifact_manifest_max_abs_leaf(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain, out = (os.path.join(d, n) for n in ("models", "chain", "out"))
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b")
+            for n in fp.chain_files("pairfeat5"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c")
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5", max_abs_leaf=3.6)
+            self.assertEqual(m["max_abs_leaf"], 3.6)
+            self.assertIn("pairfeat5_chain_sha256", m)
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5")
+            self.assertNotIn("max_abs_leaf", m)
+
+    def test_models_guard(self):
+        with tempfile.TemporaryDirectory() as d:
+            models = os.path.join(d, "models")
+            os.makedirs(models)
+            with open(os.path.join(models, "iso_pairfeat5.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.check_models_free(models, "pairfeat5")
+            fp.check_models_free(models, "pairfeat4")
+
+    def test_floor_applies(self):
+        def sc(g, f):
+            return {"base_namesake_rows": g, "family_base_namesake_rows": f}
+        self.assertEqual(fp.check_namesake_floor([sc(250, 250), sc(250, 250)], "pairfeat5"), (500, 500))
+        with self.assertRaises(fp.NamesakeFloorError):
+            fp.check_namesake_floor([sc(250, 250), sc(250, 249)], "pairfeat5")
 
 
 if __name__ == "__main__":

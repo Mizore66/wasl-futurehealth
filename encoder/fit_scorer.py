@@ -10,7 +10,7 @@ one cal-split cohort (calibrators). Writes, with suffix X:
                      isotonic plateaus replaced by their one-sided 95% Clopper-Pearson lower bound (adjacent plateaus
                      pooled until monotone); the uncorroborated stratum is capped at 0.989 (pipeline/v7.go).
 
-Usage: python encoder/fit_scorer.py --train c1.csv [--train c2.csv ...] --cal feat_cal.csv --outdir DIR --suffix X
+Usage: python encoder/fit_scorer.py --train c1.csv [--train c2.csv ...] --cal feat_cal.csv --outdir DIR --suffix X [--lambda-l2 L]
 """
 import argparse
 import json
@@ -28,6 +28,30 @@ PARAMS = {"objective": "binary", "num_leaves": 63, "learning_rate": 0.05, "min_c
           "deterministic": True, "num_threads": 8}
 ROUNDS = 400
 UNC_CAP = 0.989
+
+
+def params_for(lambda_l2=None):
+    return PARAMS if lambda_l2 is None else dict(PARAMS, lambda_l2=lambda_l2)
+
+
+def max_abs_leaf(dump):
+    best = 0.0
+    for t in dump["tree_info"]:
+        stack = [t["tree_structure"]]
+        while stack:
+            n = stack.pop()
+            if "leaf_value" in n:
+                best = max(best, abs(float(n["leaf_value"])))
+            else:
+                stack += [n["left_child"], n["right_child"]]
+    return best
+
+
+def _nonneg_float(s):
+    v = float(s)
+    if not np.isfinite(v) or v < 0:
+        raise argparse.ArgumentTypeError(f"must be a finite float >= 0, got {s}")
+    return v
 
 
 def load(path):
@@ -99,22 +123,28 @@ def conservative_iso(p, y, cap=None):
                                           "k": int(y[b[0]:b[1]].sum()), "lb": v} for b, v in zip(blocks, vals)]}
 
 
-def main():
+def parse_args(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--train", action="append", required=True, help="repeatable: one featdump CSV per simulated cohort")
     ap.add_argument("--cal", required=True)
     ap.add_argument("--outdir", required=True)
     ap.add_argument("--suffix", required=True)
-    a = ap.parse_args()
+    ap.add_argument("--lambda-l2", type=_nonneg_float, default=None, help="optional LightGBM lambda_l2 (>= 0)")
+    return ap.parse_args(argv)
+
+
+def main():
+    a = parse_args()
     import lightgbm as lgb  # deferred so loader/report tests need no LightGBM
     parts = [load(t) for t in a.train]
     ytr, Xtr = np.concatenate([p[0] for p in parts]), np.concatenate([p[2] for p in parts])
     yca, cca, Xca, sca = load(a.cal)
-    bst = lgb.train(PARAMS, lgb.Dataset(Xtr, ytr), ROUNDS)
+    bst = lgb.train(params_for(a.lambda_l2), lgb.Dataset(Xtr, ytr), ROUNDS)
     pca = bst.predict(Xca)
     os.makedirs(a.outdir, exist_ok=True)
     sfx = a.suffix
-    json.dump(bst.dump_model(), open(os.path.join(a.outdir, f"lgb_stream_{sfx}.json"), "w"))
+    dump = bst.dump_model()
+    json.dump(dump, open(os.path.join(a.outdir, f"lgb_stream_{sfx}.json"), "w"))
     iso = IsotonicRegression(out_of_bounds="clip", y_min=0, y_max=1).fit(pca, yca)
     json.dump({"X": iso.X_thresholds_.tolist(), "Y": iso.y_thresholds_.tolist()}, open(os.path.join(a.outdir, f"iso_{sfx}.json"), "w"))
     corr = (cca == 1) & (pca >= 0.7)
@@ -125,6 +155,9 @@ def main():
     rep = {"train_rows": len(ytr), "train_pos": int(ytr.sum()), "cal_rows": len(yca), "cal_pos": int(yca.sum()),
            "cal_auc": roc_auc_score(yca, pca), "cal_ap": average_precision_score(yca, pca),
            "corroborated_plateaus": c["plateaus"][-3:], "uncorroborated_top_plateaus": u["plateaus"][-3:]}
+    if a.lambda_l2 is not None:
+        rep["lambda_l2"] = a.lambda_l2
+        rep["max_abs_leaf"] = max_abs_leaf(dump)
     rep["hard_negative_slices"] = slice_report(yca, pca, sca)
     for t in (0.5, 0.7, 0.9, 0.98, 0.99):
         s = pca >= t
