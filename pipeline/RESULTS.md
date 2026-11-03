@@ -2490,4 +2490,153 @@ In plain words: the features did what they were built for on shared-common-token
   - (9) The edge classes are a deterministic approximation applied in order: cross-script lookalike, missing DOB, shared token, other.
 - Nothing was promoted; the default model, noise and floor 0.2 are unchanged. Synthetic data only; no non-CRC claim is made and no clinical effectiveness is proven.
 
-**Next: `pairfeat7`** (designed, not built): add training hard negatives for missing-date pairs that share a given name and differ otherwise, and for same-real-date pairs with different names, including cross-script ones, and test on fresh seeds.
+**Next: `pairfeat7`** — built and selected (see the next section).
+
+### CRC missing-date and same-real-date hard negatives (`pairfeat7`) at `58b170f` (selected under the pre-registered gate; not promoted to default)
+
+**Outcome:** `pairfeat7` passed its pre-registered development selection gate, development stress and the frozen five-seed validation, all against the `pairfeat5` arm, and is **selected as a candidate**. Recall did not change in development (614/675 in both arms) and rose by 5 true closures in validation (1,052 to 1,057 of 1,140), which is not significant at this n. Contamination fell: validation false-merge pairs 77 to 41, cross-person edges 70 to 38 and impure clusters 69 to 37, with zero safety counts in every lane of every arm. Against the default baseline, validation recall rose from 0.8781 to 0.9272 (+4.91pp pooled). Read the contamination gain with the bias disclosed below in mind: the same-real-date hard negatives are look-alike strangers picked by nearest name embedding, a shape `pairfeat5` never saw in training, so a lead on those edges is partly by construction. The default model, the default noise and the default review floor of 0.2 are unchanged; nothing was promoted to default. All results are simulated and prove no clinical effectiveness. `pairfeat7` and `r1review` have not been run together; that is a separate experiment and was not done.
+
+**Origin (post-hoc, disclosed):** the design came from a read-only diagnosis of the already-used `pairfeat6` development lanes (seeds 659, 661, 673). `pairfeat6` removed 7 different-person links (mostly common-name pairs with different birth years) and added 9: 4 with a birth date missing on one side and only a common given name shared (scores rose from the review band, 0.12 to 0.47 under `pairfeat5`, to 0.71 to 0.92), 4 with an identical real birth date and different names (one cluster of three edges in one seed) and 1 sharing a 1 January placeholder. Training had no negatives of either shape: with 5,000 people per seed, two records with the same real date are almost always the same person.
+
+**Built:** an opt-in `pairfeat7` modelset. Everything in `pairfeat6` carries over unchanged: pair features `f30` to `f33` (placeholder date, real exact date, shared-token rarity, rarest unmatched token), the leave-own-out rarity table, the cross-script hard negatives (`-xsnamesakes 0.10`), the `pairfeat5` settings (`lambda_l2 = 1.0`, 400 rounds, 63 leaves, learning rate 0.05, seed 1, `v1t` noise, both namesake kinds at 0.10), the 0.69 cross-script review cap and `v7strict` only. Two training-only hard-negative types are added, each for a nominal 10% of training people:
+- **Missing-date namesakes (`featdump -mdnamesakes 0.10`):** a different person of the same sex who shares the base person's given name and no other skeleton token (and no family token that is a prefix or truncation of the other's), registered with no birth date; the base person keeps theirs. Same script as the base person in half the cases, the opposite script in the other half. Truncated or initial-form names with a missing date are deliberately not generated as negatives: they are the truly ambiguous class, where real duplicates look the same, and should stay in review. Donors are drawn uniformly from the split. Fix round 1 (below) excludes donors who are themselves sampled base people.
+- **Same-real-date strangers (`featdump -rdnamesakes 0.10`):** a different person of the same sex with the same real, non-placeholder birth date as the base person and no skeleton token in common, again half same script and half opposite. The spec did not say how to pick the donor; a uniform draw gave only 4 and 11 candidate rows per seed, so the 500-row floor was unreachable (a pair with no shared token reaches the candidates only through the nearest-embedding list). The donor is therefore the eligible person whose name embedding is nearest to the base person's (605 base rows, 402 namesakes added, at train seed 1019 in the final fit). See disclosure 3.
+- Both are different people in truth, neither enters the rarity table, and each has its own row count and the 500-row floor. With any other modelset every dump and output is byte-identical to before (pinned by tests and digests).
+
+**Seeds:** train 1019, 1021, 1031, 1033 and 1039 (5,000 persons each) and cal 2011, as for `pairfeat5` and `pairfeat6`. Paired development (dev/v2) seeds 719, 727 and 733 and validation (eval/v2) seeds 739, 743, 751, 757 and 761 had never been used. All earlier seeds, including `pairfeat6`'s development 659, 661 and 673, were left untouched; `pairfeat6`'s validation seeds 677, 683, 691, 701 and 709 were never run and also remain unused. A one-lane smoke used seed 101 (dev split, not a protected seed, not evidence).
+
+**Arms:** `baseline` (default model), `pairfeat5` (reference: its chain refit at this HEAD) and `pairfeat7` (candidate), on the same cohorts; all at `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, image off, `-r1review` off, chaos 0. All arms used one binary (`5aeffd92`) at `58b170f`.
+
+**Gates (pre-registered, unchanged from `pairfeat6`; stop at the first failure), against the `pairfeat5` arm:**
+
+| | dev-clean (selection) | dev-stress | validation |
+|---|---|---|---|
+| `false_merge_pairs` | strictly below | not above | strictly below |
+| `cross_person_edges` | strictly below | not above | strictly below |
+| CRC recall gain | >= 0 | >= 0 | >= 0 |
+| uncapped wrong-pair link-review pairs | <= max(1.10 x ref, ref + 1) | same | same |
+| total reviewer hours | <= 1.10 x ref | same | same |
+
+In every lane of every arm, baseline included, false closures, wrong releases, replay mismatches, analysis errors and trace errors must be 0. Impure clusters, wrong final sign-offs, the baseline-versus-candidate gate, the diagnosed edge classes, true merges and capped pairs are reported, not gating.
+
+**Gate results (all passed):**
+
+| Gate | Dev clean `pairfeat5` / `pairfeat7` (limit) | Dev stress | Validation |
+|---|---|---|---|
+| False-merge pairs | 15 / 8 (strictly below) | 15 / 8 (not above) | 77 / 41 (strictly below) |
+| Cross-person edges | 13 / 7 (strictly below) | 13 / 7 (not above) | 70 / 38 (strictly below) |
+| Recall gain (pp) | 0.0 (>= 0) | 0.0 (>= 0) | +0.44 (>= 0) |
+| Uncapped wrong-pair reviews | 4 / 3 (5.0) | 4 / 3 (5.0) | 6 / 4 (7.0) |
+| Reviewer hours | 35.627 / 35.543 (39.190) | 36.554 / 36.488 (40.209) | 61.543 / 61.667 (67.697) |
+| Impure clusters (reported) | 13 / 7 | 13 / 7 | 69 / 37 |
+| Wrong final sign-offs (reported) | 0 / 0 | 79 / 79 | 0 / 0 |
+
+Validation hours were 1.002 times the reference. Safety was zero in every arm and every mode. The per-seed contamination counts for `pairfeat5` to `pairfeat7` were: development false-merge pairs 9 to 2, 2 to 3, 4 to 3 (seeds 719, 727, 733) and cross-person edges 8 to 2, 1 to 2, 4 to 3. So seed 727 rose by one in both counts and the development gain comes from seeds 719 and 733 (n=3, small counts). Validation false-merge pairs 21 to 10, 9 to 8, 16 to 7, 13 to 7, 18 to 9 and cross-person edges 17 to 9, 9 to 7, 15 to 7, 12 to 7, 17 to 8 (seeds 739, 743, 751, 757, 761), so validation fell in every seed.
+
+**Fit facts:** the training manifest is `bac8719b`. Namesake floors (at least 500 base rows each, summed over the five train seeds) passed: 5,696 given-name, 3,568 family-name, 5,653 cross-script, 1,084 missing-date and 3,069 same-real-date rows. (Per seed the missing-date count is about 210 to 230, so the floor is met only over the sum; this is how the floor is defined.) Largest |leaf value| 3.710 (the largest single contribution of any model leaf to a score; limit 5). Go/Python scoring parity over all 139,084 plain-cal rows had max |delta| 2.2e-16. The rarity table is the one `pairfeat6` used (SHA-256 `0ab7e592`). Chain files: `lgb_stream_pairfeat7` `312fe50c`, `iso_pairfeat7` `fcdb5e99`, `iso_v7_pairfeat7` `ba1062b4`, `name_idf_pairfeat7` `0ab7e592`; `encoder_pairfeat7` `5e6284f8` is the baseline encoder. Governing manifest `a3e04518`.
+
+**Reference refit:** the `pairfeat5` chain refit at `58b170f` was equal to `pairfeat5` run-2's (`lgb_stream_pairfeat5` `41cbb8f3`, `iso_pairfeat5` `782ef505`, `iso_v7_pairfeat5` `e454b022`, encoder `5e6284f8`), as it was for `pairfeat6`.
+
+**Plain-cal different-person pairs at raw score >= 0.7 (information only, not a gate):** 13 for `pairfeat7` against 21 for `pairfeat5` and 27 for `pairfeat6` (same plain cal dump, seed 2011). This was recorded at the fit, before any development lane, as an early sign pointing the right way.
+
+**Hard-negative slices (diagnostic namesake cal dump, seed 2011; information only):**
+
+| Slice | Rows | Different-person | At raw >= 0.01 | At raw >= 0.7 |
+|---|---:|---:|---:|---:|
+| given-name namesakes | 505 | 505 | 27 | 1 |
+| family-name namesakes | 226 | 226 | 15 | 0 |
+| cross-script namesakes | 468 | 468 | 28 | 1 |
+| missing-date namesakes | 0 | 0 | 0 | 0 |
+| same-real-date strangers | 327 | 327 | 78 | 2 |
+
+The missing-date calibration slice has 0 rows by design: those negatives exist only in the training seeds, so this fit has no calibration-side check of that type. The same-real-date slice is built from the small cal split's nearest-embedding pool, which is easier than the training pool, so these slice numbers must not be read as training hardness. Share of pairs at the unseen-token weight (train seed 1019 against cal 2011): same-person 5.6% against 7.1%, different-person 7.1% against 13.4%, as in `pairfeat6` (the remaining gap is a population shift, not a leak).
+
+**Smoke (seed 101, exact harness command):** all steps exited 0, safety counts were 0, recall was 0.909, and the lane had 6 different-person linked pairs (4 cross-script lookalikes, 1 ambiguous missing-date pair, 1 other; none of the two new classes).
+
+**Paired development clean (seeds 719, 727, 733), pooled:**
+
+| Development clean | Baseline | `pairfeat5` | `pairfeat7` |
+|---|---:|---:|---:|
+| TP / truth | 567/675 | 614/675 | 614/675 |
+| Recall | 0.8400 | 0.9096 | 0.9096 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 42 | 15 | 8 |
+| Cross-person edges | 35 | 13 | 7 |
+| Impure clusters | 32 | 13 | 7 |
+| Uncapped wrong-pair reviews | 5 | 4 | 3 |
+| Reviewer hours | 34.885 | 35.627 | 35.543 |
+| True merges (linked same-person pairs) | not computed | 2,486 | 2,485 |
+| Capped pairs (same-person / different-person) | cap off | 403 (380 / 23) | 388 (376 / 12) |
+
+Per-seed TP/truth was 205/223, 213/237, 196/215 in both `pairfeat5` and `pairfeat7` (gain 0 in every seed); baseline 189/223, 199/237, 179/215. The gain of `pairfeat7` over the baseline was +6.963pp pooled (mean paired per-seed +6.996pp, 95% t interval +4.48 to +9.51pp, n=3; small-n and descriptive only). Link pairs 542 / 553 / 550, review items 1,066 / 1,091 / 1,090, capped wrong-pair reviews 0 / 0 / 1 (limit 68), prevented false merges against baseline 34. Edge classes of the different-person links (`pairfeat5` to `pairfeat7`; a deterministic approximation applied in order): cross-script lookalike 5 to 3, missing date with ambiguous names 2 to 2, missing date with only the given name shared 1 to 1, shared token 1 to 1, other 3 to 0, same real date with different names 1 to 0. The two classes this design targeted are therefore not clearly reduced in development beyond the one same-real-date pair; the larger fall is in the cross-script and other classes. Counts this small do not support a more specific reading.
+
+**Development stress (same seeds; 4% ordinary and 25% day-15 ungraded-prep synthetic reviewer error, assumed stress values, not measured clinician rates):**
+
+| Development stress | Baseline | `pairfeat5` | `pairfeat7` |
+|---|---:|---:|---:|
+| TP / truth | 516/675 | 561/675 | 561/675 |
+| Recall | 0.7644 | 0.8311 | 0.8311 |
+| False-merge pairs | 42 | 15 | 8 |
+| Cross-person edges | 35 | 13 | 7 |
+| Uncapped wrong-pair reviews | 5 | 4 | 3 |
+| Reviewer hours | 35.497 | 36.554 | 36.488 |
+| Wrong final sign-offs | 82 | 79 | 79 |
+| True merges | not computed | 2,464 | 2,462 |
+
+Gain over the baseline +6.667pp pooled (mean paired +6.697pp, 95% t interval +4.05 to +9.34pp, n=3). The injected errors cost recall and did not become wrong-patient releases.
+
+**Validation clean (seeds 739, 743, 751, 757, 761; same settings; configuration frozen in the validation manifest before any validation lane):**
+
+| Validation clean | Baseline | `pairfeat5` | `pairfeat7` |
+|---|---:|---:|---:|
+| TP / truth | 1,001/1,140 | 1,052/1,140 | 1,057/1,140 |
+| Recall | 0.8781 | 0.9228 | 0.9272 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 140 | 77 | 41 |
+| Cross-person edges | 126 | 70 | 38 |
+| Impure clusters | 121 | 69 | 37 |
+| Uncapped wrong-pair reviews | 9 | 6 | 4 |
+| Reviewer hours | 59.718 | 61.543 | 61.667 |
+| True merges | not computed | 4,171 | 4,165 |
+| Capped pairs (same-person / different-person) | cap off | 668 (581 / 87) | 616 (565 / 51) |
+
+Per seed TP/truth: baseline 197/230, 204/230, 200/227, 227/247, 173/206; `pairfeat5` 211/230, 214/230, 207/227, 237/247, 183/206; `pairfeat7` 211/230, 215/230, 208/227, 237/247, 186/206.
+
+| Validation gain | Pooled | Mean paired per-seed | 95% t interval (n=5) | Per-seed gains (pp) |
+|---|---:|---:|---|---|
+| `pairfeat7` against `pairfeat5` | +0.44pp | +0.47pp | -0.27 to +1.21pp | 0.0, +0.43, +0.44, 0.0, +1.46 |
+| `pairfeat7` against baseline | +4.91pp | +4.95pp | +3.43 to +6.47pp | +6.09, +4.78, +3.52, +4.05, +6.31 |
+
+The interval against `pairfeat5` includes 0 and two of the five seeds are 0.0, so the recall gain over `pairfeat5` is not significant at this n; the gate required only that it be at least 0. The gain over the baseline is the `pairfeat5` linker and scorer effect, mostly carried over. The vs-baseline check (reported, not gating) also passes: prevented false merges 99, capped wrong-pair reviews 1 (limit 198), link pairs 888 to 907 (ratio 1.021), extra reviewer hours per extra true closure 0.035 (61.667 minus 59.718 hours over 56 extra closures).
+
+| Residual truth-closed misses | Dev baseline | Dev `pairfeat7` | Validation baseline | Validation `pairfeat5` | Validation `pairfeat7` |
+|---|---:|---:|---:|---:|---:|
+| Below review | 60 | 9 | 73 | 17 | 12 |
+| Rejected on demographics | 0 | 0 | 1 | 2 | 1 |
+| Attached, not closed | 20 | 24 | 23 | 23 | 24 |
+| No candidate generated | 6 | 6 | 9 | 9 | 9 |
+| Linked report not attached | 22 | 22 | 33 | 37 | 37 |
+
+(Development `pairfeat5` matches `pairfeat7` in every row.) The scorer-addressable category (below review) fell from 17 to 12 against `pairfeat5` in validation; the categories a scorer change cannot reach did not move.
+
+**Safety and workload:** false closures, wrong-patient releases, replay mismatches, analysis errors and trace-write errors were zero in all three arms in every mode, with zero unanswered review items. The 79 and 82 wrong final sign-offs in stress come from the injected reviewer error. The zero-safety result is simulated evidence from these cohorts and is not a validated safety property.
+
+**Stops, reruns and process rulings (in order):**
+- **Plan resolution 1 accepted by ruling.** The nearest-embedding same-date donor (above) was accepted because the spec did not specify the draw and the random draw cannot reach the floor; the cost if wrong, negatives harder than random, possibly over-penalising same-date pairs, was named, with the recall gate as the only check.
+- **Task B fix round 1 (`6c347df`).** The review of the hard-negative builder found that missing-date donors could be people who were themselves sampled as base people, which created exact-name, no-date different-person rows (about 105 to 108 per seed), contradicting the intent that truly ambiguous missing-date pairs not be trained as negatives. The fix excludes sampled people as donors and adds an initials test case; both new tests were mutation-checked. A re-run audit gave 0 such rows at seed 1019 and 4 at seed 1021; the 4 are a same-name homonym in the source data, not the fixed mechanism, and were accepted. No flag, no change: dumps without `-mdnamesakes` are unchanged.
+- **Same-real-date donors that are sampled people** were noted by the final review (Minor) and accepted: such a pair is a correct different-person label, only inconsistent with the missing-date rule.
+- **gofmt (`58b170f`).** The final review found one test file not gofmt-clean; a whitespace-only commit fixed it before the fit.
+- **Final review and server errors.** Two attempts of the final whole-branch review on the larger model stopped with server errors; the review was completed on the smaller fallback model and found no critical issue. The task E documentation writer also failed once on a server error and was retried, and the independent documentation review also failed once on the larger model and was rerun on the smaller one.
+- **Pauses.** The run was paused twice by the user (during fix round 1 and during the re-review) and resumed; work in the tree was preserved and verified before continuing. Two stale hung processes from earlier experiments were killed.
+- **No stop in the experiment itself:** the fit, reference refit, smoke, development, stress, freeze and validation each ran once at `58b170f`, with no protocol re-run.
+
+**Disclosures:**
+1. **Post-hoc design from used lanes.** The design follows a diagnosis of the used `pairfeat6` development lanes (659, 661, 673), which were themselves chosen after the `r1review` diagnosis. Development seeds 719, 727, 733 and validation seeds 739 to 761 were fresh.
+2. **Hard negatives built to our generator's patterns.** Both new hard-negative types copy shapes found in our own synthetic data, so a gain may partly reflect learning the generator rather than real naming.
+3. **Nearest-embedding donor favours `pairfeat7` by construction.** `pairfeat5` never sees look-alike same-date strangers, so `pairfeat7` is ahead on same-date edges before any real-world effect. Any genuine same-person pair with the same real date, no shared skeleton token and close embeddings (heavy transliteration or alias cases) is also pushed down, and the only guard is the recall gate (>= 0), which is weak against the loss of a few real pairs at about 675 and 1,140 truth-closed loops. Read the contamination improvement with that bias in mind. The true-merge counts bear on this: `pairfeat7` lost 1 true merge in development clean (2,486 to 2,485), 2 in stress (2,464 to 2,462) and 6 in validation (4,171 to 4,165, about 0.14%). Recall did not fall, but the small loss is real.
+4. **Third scorer candidate in a row tuned on diagnosed failures** (`pairfeat5`, `pairfeat6`, `pairfeat7`). The fresh validation seeds are the only unbiased evidence, and the validation gain over `pairfeat5` is not significant.
+5. **Missing-date calibration check is absent** (0 cal rows), and the plain-cal improvement (13 against 21) is a count on the calibration split used to fit the score calibration, not on a fresh cohort, and was not a gate.
+6. Capped different-person pairs fell 87 to 51 in validation while capped same-person pairs fell 581 to 565; the split-identity cost of the cap reported for `pairfeat5` was not re-measured here.
+7. Synthetic data only; n=3 (development, stress) and n=5 (validation), so intervals are descriptive.
+
+**Scope:** the model and cap apply globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model, default noise and default floor 0.2 are unchanged and `pairfeat7` was not promoted. `pairfeat7` and `r1review` have not been run together; that is a separate experiment and was not done. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
