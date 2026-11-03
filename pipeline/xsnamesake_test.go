@@ -120,6 +120,29 @@ func TestXSRegister(t *testing.T) {
 	b := pool[0]
 	b.Eid = newEID(b.Dob, rand.New(rand.NewSource(5))) // drawEID reads the person's ID
 	x := Person{Qid: "xs-b1", Ar: pool[1].Ar, En: pool[1].En, Dob: "1975-01-01", Sex: "M", Eid: newEID("1975-01-01", rand.New(rand.NewSource(2)))}
+	skel := func(n string) map[string]bool {
+		m := map[string]bool{}
+		for _, k := range skeleton(tokensOf(latinForm(n))) {
+			m[k] = true
+		}
+		return m
+	}
+	sb, sx := skel(b.En), skel(x.En)
+	for k := range sb { // keep only the tokens that tell the two names apart (the given name is shared)
+		if sx[k] {
+			delete(sb, k)
+			delete(sx, k)
+		}
+	}
+	has := func(name string, set map[string]bool) bool {
+		for k := range skel(name) {
+			if set[k] {
+				return true
+			}
+		}
+		return false
+	}
+	ownB, ownX := 0, 0
 	for seed := int64(1); seed <= 20; seed++ {
 		regs := xsRegister(nil, 3, &b, 10, &x, rand.New(rand.NewSource(seed)))
 		if len(regs) != 2 || regs[0].pid != 3 || regs[1].pid != 10 {
@@ -131,6 +154,18 @@ func TestXSRegister(t *testing.T) {
 		if isAr(regs[0].name) == isAr(regs[1].name) {
 			t.Fatalf("seed %d: same script %q / %q", seed, regs[0].name, regs[1].name)
 		}
+		if has(regs[0].name, sx) || has(regs[1].name, sb) {
+			t.Fatalf("seed %d: a registration carries the other person's name: %q / %q", seed, regs[0].name, regs[1].name)
+		}
+		if has(regs[0].name, sb) {
+			ownB++
+		}
+		if has(regs[1].name, sx) {
+			ownX++
+		}
+	}
+	if ownB < 15 || ownX < 15 {
+		t.Fatalf("own name survived noise in only %d (base) and %d (namesake) of 20 draws", ownB, ownX)
 	}
 }
 
