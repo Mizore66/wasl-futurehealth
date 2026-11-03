@@ -2712,7 +2712,7 @@ class CLIR1review(CLIFixture, unittest.TestCase):
         pfc.init_experiment(self.exp, R1)
 
     def make_arm(self, a, tp, *args, recs=None, fm=None, wrong=2, hours=None, cu=0, answers=(), flags="auto",
-                 image=IMAGE_BUILD, img_reader="auto", policies="auto", out_log=True, **kw):
+                 image=IMAGE_BUILD, img_reader="auto", policies="auto", out_log=True, r7=None, **kw):
         root = super().make_arm(a, tp, *args, **kw)
         bp = os.path.join(root, "build.json")
         if os.path.exists(bp):
@@ -2744,6 +2744,8 @@ class CLIR1review(CLIFixture, unittest.TestCase):
                 rj["linkage"]["false_merge_pairs"] = fm
             if hours is not None:
                 rj["reviewer"]["by_kind"]["all"]["sim_hours"] = hours
+            if r7 is not None:
+                r7(rj)
             if img_reader == "auto":
                 rj["image_reader"] = {"mode": "cached", "model": "landmark-cnn", "colonoscopy_reports_read": 4}
             elif img_reader is not None:
@@ -3293,6 +3295,108 @@ class CLIR1reviewAmendment3(CLIR1review):
         res = pfc.analyse("validation-clean", out, {"baseline": v[0], P5: v[1], R1: v[2]}, repo=r.root, head=HEAD)
         self.assertEqual((res["pass"], res["gate"]["pass"], res["reference_gate"]["pass"]), (True, False, True))
         self.assertEqual(res["seeds"], [631, 641, 643, 647, 653])
+
+
+
+# ================================================================ amendment 3 fix: SAFETY zero in the baseline arm too
+
+def _bad_false_closure(rj):  # one false closure; tp (pred_closed - false_closures) unchanged
+    rj["programmes_live"]["crc"]["false_closures"] = 1
+    rj["programmes_live"]["crc"]["pred_closed"] += 1
+
+
+def _bad_wrong_release(rj):
+    rj["outreach_live"]["wrong_patient_released"] = 1
+
+
+def _bad_by_origin(rj):
+    rj["outreach_live"]["by_origin"]["a"]["wrong_released"] = 1
+
+
+def _bad_replay(rj):
+    rj["live_vs_replay_final_mismatch"] = 1
+
+
+BASELINE_SAFETY_KEYS = pfc.SAFETY + ("wrong_released_by_origin",)
+
+
+class BaselineSafetyR1review(unittest.TestCase):
+    def test_every_baseline_safety_key_blocks_every_kind(self):
+        base_ok = cap_arm("baseline", 500, 600, 10, 0, 5)
+        for k in BASELINE_SAFETY_KEYS:
+            base = cap_arm("baseline", 500, 600, 10, 0, 5, **({k: {"a": 1}} if k == "wrong_released_by_origin" else {k: 1}))
+            for kind in pfc.GATE_KINDS:
+                rg = pfc.reference_gate(ref_arm(P5, 530), ref_arm(R1, 540), kind, base=base)
+                self.assertFalse(rg["pass"], (k, kind))
+                self.assertEqual(rg["reasons"], ["baseline " + k + " nonzero"], (k, kind))
+                self.assertTrue(pfc.reference_gate(ref_arm(P5, 530), ref_arm(R1, 540), kind, base=base_ok)["pass"])
+            s = pfc.select(base, ref_arm(R1, 540), ref_arm(P5, 530))
+            self.assertEqual((s["pass"], s["selected_modelset"]), (False, None), k)
+            self.assertIn("baseline " + k + " nonzero", s["reference_gate"]["reasons"])
+        # without a baseline arm the reference gate is the one reviewed before (JSON unchanged)
+        self.assertEqual(pfc.reference_gate(ref_arm(P5, 530), ref_arm(R1, 540), "selection"),
+                         pfc.reference_gate(ref_arm(P5, 530), ref_arm(R1, 540), "selection", base=base_ok))
+
+
+class CLIR1reviewBaselineSafety(CLIR1review):
+    BAD = (("false_closures", _bad_false_closure), ("wrong_released_total", _bad_wrong_release),
+           ("wrong_released_by_origin", _bad_by_origin), ("replay_mismatch", _bad_replay))
+
+    def arms3(self, mode, bad=None, tag=""):
+        # gate 1 fails on purpose (no prevented false merge) so only the baseline safety check can block the pass
+        return (self.make_arm("baseline", 5, mode=mode, fm=1, r7=bad, name="%s-b%s" % (mode, tag)),
+                self.make_arm(P5, 6, mode=mode, fm=1, name="%s-f%s" % (mode, tag)),
+                self.make_arm(R1, 7, mode=mode, fm=1, cu=3, answers=("adequate",), name="%s-r%s" % (mode, tag)))
+
+    def test_dev_clean_refuses_baseline_safety(self):
+        for k, bad in self.BAD:
+            sp = os.path.join(self.exp, "selection.json")
+            if os.path.exists(sp):
+                os.remove(sp)
+            self.assertEqual(self.run3("dev-clean", self.arms3("dev-clean", bad, k), out=os.path.join(self.exp, k + ".json")), 0)
+            sel = _rj(sp)
+            self.assertEqual((sel["pass"], sel["selected_modelset"]), (False, None), k)
+            self.assertIn("baseline " + k + " nonzero", sel["reference_gate"]["reasons"])
+
+    def setup_repo(self):
+        r = Repo(os.path.join(self.td.name, "v"), cand=P5)
+        for fn in CAND5_FILES:
+            with open(os.path.join(r.root, "models", fn), "w") as h:
+                h.write("model " + fn)
+        self.exp = r.exp
+        self.maps = {"baseline": r.hashes(BASE_FILES), P5: r.hashes(CAND5_FILES), R1: r.hashes(CAND5_FILES)}
+        r.artifact_manifest()
+        pfc.init_experiment(r.exp, R1)
+        return r
+
+    def test_stress_refuses_baseline_safety(self):
+        for k, bad in self.BAD:
+            with self.subTest(k=k):
+                self.td.cleanup()
+                self.td = tempfile.TemporaryDirectory()
+                self.setup_repo()
+                self.assertEqual(self.run3("dev-clean", self.arms3("dev-clean")), 0)
+                self.assertTrue(_rj(os.path.join(self.exp, "selection.json"))["pass"])
+                self.assertEqual(self.run3("dev-stress", self.arms3("dev-stress", bad)), 0)
+                st = _rj(os.path.join(self.exp, "stress.json"))
+                self.assertFalse(st["pass"], k)
+                self.assertIn("baseline " + k + " nonzero", st["reference_gate"]["reasons"])
+
+    def test_validation_refuses_baseline_safety(self):
+        r = self.setup_repo()
+        self.assertEqual(self.run3("dev-clean", self.arms3("dev-clean")), 0)
+        self.assertEqual(self.run3("dev-stress", self.arms3("dev-stress")), 0)
+        pfc.freeze_validation(r.exp, r.root, HEAD)
+        for k, bad in self.BAD:
+            out = os.path.join(r.exp, "validation-%s.json" % k)
+            v = self.arms3("validation-clean", bad, k)
+            res = pfc.analyse("validation-clean", out, {"baseline": v[0], P5: v[1], R1: v[2]}, repo=r.root, head=HEAD)
+            self.assertFalse(res["pass"], k)
+            self.assertIn("baseline " + k + " nonzero", res["reference_gate"]["reasons"])
+        v = self.arms3("validation-clean", None, "ok")
+        res = pfc.analyse("validation-clean", os.path.join(r.exp, "validation-ok.json"), {"baseline": v[0], P5: v[1], R1: v[2]},
+                          repo=r.root, head=HEAD)
+        self.assertTrue(res["pass"])
 
 
 if __name__ == "__main__":

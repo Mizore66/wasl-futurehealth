@@ -63,7 +63,7 @@ Three-arm reference gate (r1review, pre-registered): gate(baseline, r1review) ab
   (wrong final sign-offs are reported, not gated: amendment 1); false_merge_pairs, impure_clusters, cross_person_edges and reviewer.wrong_distinct_pairs not above
   pairfeat5's; reviewer hours <= 1.10 x pairfeat5's. Amendment 3: gate(baseline, r1review) is computed and written
   ("gating": false) but pass (and selected_modelset = r1review, stress and validation pass) needs only the reference gate.
-  Both
+  The reference gate also requires the SAFETY set (and wrong releases by origin) zero in the baseline arm. Both
   non-baseline arms report capped pairs; every arm reports completion_undocumented review items and their answers
   (reported, not gating).
 CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_closed is a link attach rate, not recall).
@@ -1110,13 +1110,15 @@ def _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, tota
             "extra_hours_per_extra_closure": extra, "reasons": reasons}
 
 
-def reference_gate(ref, cand, kind):
+def reference_gate(ref, cand, kind, base=None):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
     recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
     gate() checks them) zero in both arms; false_merge_pairs, impure_clusters, cross_person_edges and
     reviewer.wrong_distinct_pairs not above the reference's; reviewer hours <= 1.10 x the reference's (0 if it has 0).
     Reviewer wrong_final_signoffs are reported for both arms, not gated (amendment 1: stress lanes carry ~80 per arm by
-    design from the 4% synthetic reviewer error)."""
+    design from the 4% synthetic reviewer error). With base (the baseline arm), the same safety counts must also be zero
+    there ("baseline ..." reasons): amendment 3 makes gate(base, cand) non-gating for r1review but keeps the SAFETY set
+    zero in every lane of every arm."""
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
@@ -1138,7 +1140,7 @@ def reference_gate(ref, cand, kind):
         gain = float(g)
         if g < Fraction(str(need)):
             reasons.append("gain vs reference %.4fpp below %.1fpp" % (gain, need))
-    for label, a in (("reference ", ref), ("", cand)):
+    for label, a in ((("baseline ", base),) if base is not None else ()) + (("reference ", ref), ("", cand)):
         for k in SAFETY:
             if a[k] != 0:
                 reasons.append(label + k + " nonzero")
@@ -1176,7 +1178,7 @@ def select(base, cand, ref=None):
     if ref is None:
         return {"candidate": c, "selected_modelset": c if g["pass"] else None, "pass": g["pass"], "gate": g,
                 "baseline_recall": _recall(base), c + "_recall": _recall(cand)}
-    rg = reference_gate(ref, cand, "selection")
+    rg = reference_gate(ref, cand, "selection", base=base)
     ok = rg["pass"] and (g["pass"] or not baseline_gating(c))
     return {"candidate": c, "reference": ref.get("arm"), "selected_modelset": c if ok else None, "pass": ok, "gate": g,
             "reference_gate": rg, "baseline_recall": _recall(base), "%s_recall" % ref.get("arm"): _recall(ref),
@@ -1334,14 +1336,14 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         res["gate"] = g
         res["stress"] = dict(ident, **{"pass": g["pass"], "gate": g, "selection_sha256": sha256_file(sp)})
         if ref_arm:
-            rg = reference_gate(ref, cand, "stress")
+            rg = reference_gate(ref, cand, "stress", base=base)
             res["reference_gate"], res["pass"] = rg, rg["pass"] and (g["pass"] or not baseline_gating(candidate))
             res["stress"].update({"reference_gate": rg, "pass": res["pass"]})
         _write_once(os.path.join(exp, STRESS), res["stress"])
     else:
         res["gate"] = gate(base, cand, "validation")
         if ref_arm:
-            res["reference_gate"] = reference_gate(ref, cand, "validation")
+            res["reference_gate"] = reference_gate(ref, cand, "validation", base=base)
             res["pass"] = res["reference_gate"]["pass"] and (res["gate"]["pass"] or not baseline_gating(candidate))
         _write_once(out, res)  # the headline validation verdict is never overwritten
         return res
