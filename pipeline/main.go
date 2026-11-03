@@ -145,6 +145,7 @@ func main() {
 	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
+	fs.Float64Var(&XSNamesakeRate, "xsnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic cross-script namesake hard negative (pairfeat6 training only)")
 	fs.Float64Var(&FamilyNamesakeRate, "familynamesakes", 0, "featdump only: share of persons given a synthetic family-name namesake hard negative (training only)")
 	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
 	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
@@ -175,6 +176,7 @@ func main() {
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
+	idfSeeds := fs.String("idfseeds", "", "nameidf: comma-separated featdump seeds whose base registrations the rarity table counts")
 	nameIDFPath := fs.String("nameidf", "", "featdump only: pairfeat6 name-rarity table (wsi nameidf output); adds pair features f30-f33 (pairfeat6.go)")
 	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
@@ -201,6 +203,10 @@ func main() {
 		os.Exit(2)
 	}
 	if err := validateNamesakeRate("-familynamesakes", cmd, FamilyNamesakeRate); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	if err := validateXSNamesakes(cmd, XSNamesakeRate, *nameIDFPath); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
 		os.Exit(2)
 	}
@@ -564,6 +570,8 @@ func main() {
 		runEncNoise(*wasl, *split, *out, *seed)
 	case "featdump":
 		runFeatDump(*wasl, *encFile, *gbmFile, *split, *out, *persons, *seed)
+	case "nameidf":
+		runNameIDF(*wasl, *split, *out, *persons, parseIDFSeeds(*idfSeeds))
 	case "annsynth":
 		runAnnSynth(*wasl, *models, *out, *nRegs, *seed, *threads)
 	case "annbench":

@@ -30,6 +30,99 @@ func familySeed(seed int64) int64 { return seed*2654435761 + 130363 }
 
 func namesakeSeed(seed int64) int64 { return seed*2654435761 + 104729 }
 
+var XSNamesakeRate float64 // flag -xsnamesakes; training-only (featdump with -nameidf: pairfeat6)
+
+func xsSeed(seed int64) int64 { return seed*2654435761 + 155921 }
+
+// validateXSNamesakes: -xsnamesakes in [0, 1), featdump only, and only with -nameidf (pairfeat6 training dumps).
+func validateXSNamesakes(cmd string, rate float64, nameIDF string) error {
+	if err := validateNamesakeRate("-xsnamesakes", cmd, rate); err != nil {
+		return err
+	}
+	if rate > 0 && nameIDF == "" {
+		return fmt.Errorf("-xsnamesakes needs -nameidf (cross-script hard negatives are pairfeat6 training data)")
+	}
+	return nil
+}
+
+// otherTokensDisjoint: no token after the first of either name occurs anywhere in the other name.
+func otherTokensDisjoint(a, b []string) bool {
+	set := func(s []string) map[string]bool {
+		m := map[string]bool{}
+		for _, x := range s {
+			m[x] = true
+		}
+		return m
+	}
+	sa, sb := set(a), set(b)
+	for _, x := range a[1:] {
+		if sb[x] {
+			return false
+		}
+	}
+	for _, x := range b[1:] {
+		if sa[x] {
+			return false
+		}
+	}
+	return true
+}
+
+// buildXSNamesakes: the pairfeat6 cross-script hard negatives. For a share rate of ps, xs[i] is a different person
+// whose first English token equals ps[base[i]]'s, whose other tokens share nothing with the base name (and the reverse),
+// with the base person's sex and the 1 January placeholder of the base person's birth year. Donors come from pool (the
+// split, file order). A base with a single-token name, no usable year or no donor gets none.
+func buildXSNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []int) {
+	if rate <= 0 {
+		return nil, nil
+	}
+	idx := map[string][]int{}
+	for i := range pool {
+		if t := strings.Fields(strings.ToLower(pool[i].En)); len(t) > 1 {
+			idx[t[0]] = append(idx[t[0]], i)
+		}
+	}
+	var xs []Person
+	var base []int
+	for bi := range ps {
+		b := &ps[bi]
+		if r.Float64() >= rate {
+			continue
+		}
+		bt := strings.Fields(strings.ToLower(b.En))
+		if len(bt) < 2 || len(b.Dob) != 10 {
+			continue
+		}
+		dob := b.Dob[:4] + "-01-01"
+		if !realDob(dob) {
+			continue
+		}
+		var elig []int
+		for _, j := range idx[bt[0]] {
+			d := &pool[j]
+			if d.Qid != b.Qid && d.Sex == b.Sex && otherTokensDisjoint(bt, strings.Fields(strings.ToLower(d.En))) {
+				elig = append(elig, j)
+			}
+		}
+		if len(elig) == 0 {
+			continue
+		}
+		d := pool[elig[r.Intn(len(elig))]]
+		xs = append(xs, Person{Qid: "xs-" + b.Qid, Ar: d.Ar, En: d.En, Als: d.Als, Dob: dob, Sex: b.Sex, Cc: d.Cc,
+			Eid: newEID(dob, r), Spl: b.Spl, Origin: d.Origin, ArSrc: d.ArSrc})
+		base = append(base, bi)
+	}
+	return xs, base
+}
+
+// xsRegister: the two registrations of a cross-script namesake: base person b in a drawn script and the namesake x in
+// the other, both with x's placeholder DOB and their true sex (no DOB or sex noise) and a drawn Emirates ID.
+func xsRegister(regs []fdReg, bpid int, b *Person, xpid int, x *Person, r *rand.Rand) []fdReg {
+	ar := r.Float64() < .5
+	regs = append(regs, fdReg{bpid, fdName(b, ar, r), x.Dob, b.Sex, drawEID(b, r)})
+	return append(regs, fdReg{xpid, fdName(x, !ar, r), x.Dob, x.Sex, drawEID(x, r)})
+}
+
 var dobPos = []int{0, 1, 2, 3, 5, 6, 8, 9}
 
 func namesakeDob(dob string, r *rand.Rand) (string, bool) {
