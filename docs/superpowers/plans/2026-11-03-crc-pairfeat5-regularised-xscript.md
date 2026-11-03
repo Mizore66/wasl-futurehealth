@@ -75,3 +75,28 @@
 - [ ] Stop if a floor or the leaf check fails. Report fit metrics, `max_abs_leaf`, slices, `plain_cal_diff_at_merge_0_7` beside 31/23/26 (information only).
 - [ ] Paired dev-clean on 521 541 547 and gate; on pass, dev-stress, freeze-validation, validation-clean; stop at the first failed gate.
 - [ ] Document in `pipeline/RESULTS.md` (new section after `pairfeat4`) and `docs/BACKEND-HANDOFF.md`, including the capped-pair report and, if the dev gate fails, the same read-only false-merge diagnosis; also add a short post-hoc paragraph to the `pairfeat4` section pointing to the leaf-regularisation finding. Independent doc review before commit; commit only those two files.
+
+---
+
+## Amendment 1 (3 Nov 2026, user-approved before any `pairfeat5` development lane ran): cap-aware review gate
+
+**Why.** A read-only estimate on the already-used `pairfeat4` development lanes (seeds 433 449 461; nothing tuned, disclosed) found that 20 of the 37 different-person model edges at >= 0.7 in the `pairfeat4` arm meet the cap rule (approximated from registration fields). Under the approved design each of them becomes a different-person review pair, so the expected `pairfeat5` wrong-pair review count (about 24) exceeds the 1.10x limit (7.7, baseline 7) by construction: the gate would count every false merge the cap prevents as review harm. Also 222 of 2,656 same-person edges meet the rule (about 74 per lane), which the recall gate already prices. The user chose to keep the cap and pre-register a cap-aware review gate before seeds 521 541 547 are used. The fitted model and every other gate are unchanged.
+
+**Gate `wrong_pair_cap` (`pairfeat5` only; `pairfeat4` keeps `wrong_pair`).** For each arm, `wrong` is the set of distinct different-person link-review pairs (as for `wrong_pair`) and `capped_diff` is the set of distinct different-person pairs with a `reason: "xscript_cap"` pair record in `run/main/link_funnel.ndjson`.
+- Recall, safety, `false_merge_pairs`, `impure_clusters` and `cross_person_edges` gates unchanged.
+- Uncapped wrong-pair reviews `|wrong − capped_diff|` (candidate) <= 1.10 x baseline `|wrong|` (<= 1 when the baseline has none).
+- Prevented false merges `prevented = baseline false_merge_pairs − candidate false_merge_pairs` must be >= 1.
+- Capped wrong-pair reviews `|wrong ∩ capped_diff|` (candidate) <= **2** x `prevented`.
+- Reported, not gating: capped same-person pairs, total distinct review pairs and ratio, extra reviewer hours per extra true closure, the full `xscript_cap` counts.
+- The baseline arm's trace is read too and must contain no `xscript_cap` record (else analysis aborts before writes).
+- Applies to selection, stress and validation with the existing minimum gains.
+
+### Task C2: cap-aware review gate in the harness
+
+**Files:** `scripts/pairfeat_compare.py`, `scripts/test_pairfeat_compare.py`.
+
+- `CANDIDATES["pairfeat5"]["review_gate"] = "wrong_pair_cap"`; `CAP_WRONG_PER_PREVENTED = 2`.
+- Lane loading for a `wrong_pair_cap` candidate reads `cohort/truth.json` and `run/main/link_funnel.ndjson` in both arms; candidate lanes record `reviewer.capped_wrong_distinct_pairs` (`|wrong ∩ capped_diff|`) and `reviewer.uncapped_wrong_distinct_pairs`, baseline lanes record 0 capped and abort if any capped record exists; arm aggregation sums them (mixed presence is an error, as for `wrong_distinct_pairs`); `xscript_cap` reporting unchanged.
+- `gate()` dispatches `wrong_pair_cap` to a new function returning `review_gate`, `uncapped_wrong_distinct_pairs {baseline, candidate, max_allowed}`, `prevented_false_merges`, `capped_wrong_distinct_pairs {candidate, max_allowed}`, the reported fields, and reasons `"false_merge_pairs not reduced (prevented %d)"`, `"uncapped wrong-pair link-review pairs %d exceed %.2f ..."`, `"capped wrong-pair link-review pairs %d exceed %d (2 per prevented false merge)"`.
+- `pairfeat1`-`pairfeat4` gates, outputs and tests unchanged.
+- TDD: fixtures where the cap passes, fails on prevented = 0, fails on the 2:1 ratio, fails on uncapped growth; baseline capped record aborts before writes; `pairfeat4` gate JSON unchanged.
