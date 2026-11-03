@@ -144,15 +144,54 @@ class LambdaL2Test(unittest.TestCase):
         self.assertEqual(fs.max_abs_leaf({"tree_info": [{"tree_structure": {"leaf_value": -7.5}}]}), 7.5)
 
 
+class NFeatTest(unittest.TestCase):
+    def _load(self, lines, nfeat):
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "f.csv")
+            with open(path, "w") as h:
+                h.write("\n".join(lines) + "\n")
+            return fs.load(path, nfeat)
+
+    def test_34_features(self):
+        y, corr, X, sl = self._load([_row(1, 1, feats=["0.5"] * 34, sl=(1, 0, 0, 1, 0))], 34)
+        self.assertEqual(X.shape, (1, 34))
+        self.assertTrue(sl["near_eid"][0] and sl["placeholder_dob"][0])
+        y, corr, X, sl = self._load([_row(0, 0, feats=["0.5"] * 34, p="0.25")], 34)
+        self.assertEqual(X.shape, (1, 34))
+
+    def test_width_must_match_nfeat(self):
+        with self.assertRaises(ValueError):
+            self._load([_row()], 34)                         # a 37-column pairfeat5 row
+        with self.assertRaises(ValueError):
+            self._load([_row(feats=["0.5"] * 34)], 30)
+
+    def test_default_unchanged(self):
+        self.assertEqual(fs.NFEAT, 30)
+        self.assertEqual(fs.NFEAT_CHOICES, (30, 34))
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "f.csv")
+            with open(path, "w") as h:
+                h.write(_row() + "\n")
+            self.assertEqual(fs.load(path)[2].shape, (1, 30))
+
+    def test_parse_args(self):
+        base = ["--train", "a", "--cal", "c", "--outdir", "o", "--suffix", "s"]
+        self.assertEqual(fs.parse_args(base).nfeat, 30)
+        self.assertEqual(fs.parse_args(base + ["--nfeat", "34"]).nfeat, 34)
+        for bad in ("31", "x", "0"):
+            with self.assertRaises(SystemExit):
+                fs.parse_args(base + ["--nfeat", bad])
+
+
 class TinyFitTest(unittest.TestCase):
-    def _csvs(self, d):
+    def _csvs(self, d, nfeat=30):
         rng = np.random.RandomState(0)
         paths = []
         for name in ("tr", "cal"):
             rows = []
             for i in range(300):
                 y = i % 2
-                feats = [f"{(rng.rand() + 0.5 * y):.6f}" for _ in range(30)]
+                feats = [f"{(rng.rand() + 0.5 * y):.6f}" for _ in range(nfeat)]
                 rows.append(_row(y, y, feats))
             path = os.path.join(d, name + ".csv")
             with open(path, "w") as h:
@@ -160,8 +199,8 @@ class TinyFitTest(unittest.TestCase):
             paths.append(path)
         return paths
 
-    def _run(self, d, sfx, extra):
-        tr, cal = self._csvs(d)
+    def _run(self, d, sfx, extra, nfeat=30):
+        tr, cal = self._csvs(d, nfeat)
         import contextlib
         import io
         argv = ["fit_scorer.py", "--train", tr, "--cal", cal, "--outdir", d, "--suffix", sfx] + extra
@@ -188,6 +227,18 @@ class TinyFitTest(unittest.TestCase):
         self.assertEqual(reg["lambda_l2"], 1.0)
         self.assertGreater(reg["max_abs_leaf"], 0.0)
         self.assertEqual(set(reg) - {"lambda_l2", "max_abs_leaf"}, set(plain))
+
+    def test_nfeat_34_report(self):
+        try:
+            import lightgbm  # noqa: F401
+        except ImportError:
+            self.skipTest("no lightgbm")
+        with tempfile.TemporaryDirectory() as d:
+            plain = self._run(d, "a", [])
+            wide = self._run(d, "b", ["--nfeat", "34"], nfeat=34)
+        self.assertNotIn("nfeat", plain)
+        self.assertEqual(wide["nfeat"], 34)
+        self.assertEqual(set(wide) - {"nfeat"}, set(plain))
 
 
 class ConstantsTest(unittest.TestCase):

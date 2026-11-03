@@ -18,8 +18,8 @@ def sh(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def make_repo(d):
-    for name in FILES:
+def make_repo(d, names=FILES):
+    for name in names:
         p = os.path.join(d, name)
         os.makedirs(os.path.dirname(p), exist_ok=True)
         with open(p, "wb") as f:
@@ -247,7 +247,7 @@ class Protocols(unittest.TestCase):
         self.assertEqual(fp.PROTOCOLS["pairfeat4"],
                          {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                           "namesakes": 0.10, "family_namesakes": 0.10})
-        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4", "pairfeat5"])
+        self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4", "pairfeat5", "pairfeat6"])
         self.assertEqual(fp.NAMESAKE_FLOOR, 500)
 
     def test_chain_files(self):
@@ -774,6 +774,191 @@ class Pairfeat5(unittest.TestCase):
         self.assertEqual(fp.check_namesake_floor([sc(250, 250), sc(250, 250)], "pairfeat5"), (500, 500))
         with self.assertRaises(fp.NamesakeFloorError):
             fp.check_namesake_floor([sc(250, 250), sc(250, 249)], "pairfeat5")
+
+
+PF6_FILES = ["pipeline/pairfeat6.go", "pipeline/namesake.go"]
+EARLIER = ("pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4", "pairfeat5")
+
+
+def go_row6(p=None):
+    feats = ["%.17g" % (0.1 * i) for i in range(34)]
+    r = ["0", "0"] + feats + ["0", "1", "0", "1", "1"]
+    return r + (["%.17g" % p] if p is not None else [])
+
+
+class Pairfeat6(unittest.TestCase):
+    W, D, E, I = "/w/bin/wsi7", "/w/data", "/o/enc.json", "/o/chain/name_idf_pairfeat6.json"
+
+    def test_protocol_and_widths(self):
+        self.assertEqual(fp.PROTOCOLS["pairfeat6"], dict(fp.PROTOCOLS["pairfeat5"], xs_namesakes=0.1, nfeat=34))
+        for k in EARLIER:
+            self.assertNotIn("xs_namesakes", fp.PROTOCOLS[k])
+            self.assertNotIn("nfeat", fp.PROTOCOLS[k])
+            self.assertEqual((fp.nfeat(k), fp.csv_width(k, False), fp.csv_width(k, True)), (30, 37, 38))
+            self.assertFalse(fp.uses_name_idf(k))
+        self.assertEqual((fp.nfeat("pairfeat6"), fp.csv_width("pairfeat6", False), fp.csv_width("pairfeat6", True)), (34, 41, 42))
+        self.assertTrue(fp.uses_name_idf("pairfeat6"))
+
+    def test_cli_chain_output_gitignore(self):
+        self.assertEqual(fp.parse_args(["x", "o", "--modelset", "pairfeat6"]), ("o", "pairfeat6"))
+        self.assertEqual(fp.chain_files("pairfeat6"), ["encoder_pairfeat6.json", "lgb_stream_pairfeat6.json",
+                                                       "iso_pairfeat6.json", "iso_v7_pairfeat6.json", "name_idf_pairfeat6.json"])
+        self.assertEqual(fp.name_idf_name("pairfeat6"), "name_idf_pairfeat6.json")
+        for k in EARLIER:
+            self.assertEqual(len(fp.chain_files(k)), 4)
+        with tempfile.TemporaryDirectory() as home:
+            base = os.path.join(home, "wasl-ml-data", "agents2", "hardening", "pairfeat6")
+            os.makedirs(base)
+            p = os.path.join(base, "r")
+            self.assertEqual(fp.validate_output(p, home, "pairfeat6"), p)
+            with self.assertRaises(ValueError):
+                fp.validate_output(p, home, "pairfeat5")
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, ".gitignore")) as f:
+            self.assertIn("models/*_pairfeat6.json", f.read().splitlines())
+
+    def test_nameidf_argv(self):
+        self.assertEqual(fp.nameidf_argv(self.W, self.D, "pairfeat6", self.I),
+                         [self.W, "nameidf", "-wasl", self.D, "-split", "train", "-persons", "5000", "-noise", "v1t",
+                          "-idfseeds", "1019,1021,1031,1033,1039", "-out", self.I])
+
+    def test_name_idf_header(self):
+        good = {"version": 1, "split": "train", "persons": 5000, "noise": "v1t",
+                "seeds": [1019, 1021, 1031, 1033, 1039], "registrations": 10, "counts": {"a": 1}}
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "t.json")
+            fp.write_json(p, good)
+            fp.check_name_idf_header(p, "pairfeat6")
+            for k, v in (("split", "cal"), ("persons", 4000), ("noise", "v1"), ("seeds", [1019]), ("version", 2)):
+                fp.write_json(p, dict(good, **{k: v}))
+                with self.assertRaises(ValueError):
+                    fp.check_name_idf_header(p, "pairfeat6")
+
+    def test_dump_argv(self):
+        W, D, E, I = self.W, self.D, self.E, self.I
+        t5 = fp.train_argv(W, D, E, "pairfeat5", 1019, "/o/t.csv")
+        self.assertEqual(fp.train_argv(W, D, E, "pairfeat6", 1019, "/o/t.csv", idf=I),
+                         t5[:-2] + ["-xsnamesakes", "0.1", "-nameidf", I, "-out", "/o/t.csv"])
+        c5 = fp.cal_argv(W, D, E, "pairfeat5", "/o/c.csv")
+        self.assertEqual(fp.cal_argv(W, D, E, "pairfeat6", "/o/c.csv", idf=I), c5[:-2] + ["-nameidf", I, "-out", "/o/c.csv"])
+        p5 = fp.parity_argv(W, D, E, "pairfeat5", "/c/g.json", "/o/p.csv")
+        self.assertEqual(fp.parity_argv(W, D, E, "pairfeat6", "/c/g.json", "/o/p.csv", idf=I),
+                         p5[:-4] + ["-nameidf", I, "-gbmfile", "/c/g.json", "-out", "/o/p.csv"])
+        n5 = fp.namesake_cal_argv(W, D, E, "pairfeat5", "/c/g.json", "/o/n.csv")
+        self.assertEqual(fp.namesake_cal_argv(W, D, E, "pairfeat6", "/c/g.json", "/o/n.csv", idf=I),
+                         n5[:-4] + ["-xsnamesakes", "0.1", "-nameidf", I, "-gbmfile", "/c/g.json", "-out", "/o/n.csv"])
+        with self.assertRaises(ValueError):
+            fp.train_argv(W, D, E, "pairfeat6", 1019, "/o/t.csv")            # pairfeat6 needs the table
+        with self.assertRaises(ValueError):
+            fp.cal_argv(W, D, E, "pairfeat6", "/o/c.csv")
+        with self.assertRaises(ValueError):
+            fp.train_argv(W, D, E, "pairfeat5", 1019, "/o/t.csv", idf=I)     # earlier modelsets take none
+
+    def test_fit_argv(self):
+        a6 = fp.fit_argv("/r", "/o", "/o/chain", "pairfeat6")
+        self.assertEqual(a6[-4:], ["--lambda-l2", "1.0", "--nfeat", "34"])
+        self.assertEqual(a6[-5], "pairfeat6")
+        for k in EARLIER:
+            self.assertNotIn("--nfeat", fp.fit_argv("/r", "/o", "/o/chain", k))
+
+    def test_floor_three_kinds(self):
+        def sc(g, f, x):
+            return {"base_namesake_rows": g, "family_base_namesake_rows": f, "xs_base_namesake_rows": x}
+        self.assertEqual(fp.check_namesake_floor([sc(250, 250, 300), sc(250, 250, 200)], "pairfeat6"), (500, 500, 500))
+        with self.assertRaises(fp.NamesakeFloorError) as cm:
+            fp.check_namesake_floor([sc(250, 250, 250), sc(250, 250, 249)], "pairfeat6")
+        self.assertEqual(str(cm.exception), "namesake floor not met (cross-script): 499 < 500")
+        self.assertEqual(fp.check_namesake_floor([sc(250, 250, 0), sc(250, 250, 0)], "pairfeat5"), (500, 500))
+
+    def test_widths(self):
+        with tempfile.TemporaryDirectory() as d:
+            g = os.path.join(d, "g.csv")
+            write_rows(g, [go_row6(0.25), go_row6(0.5)])
+            self.assertEqual(fp.read_p_column(g, width=42), [0.25, 0.5])
+            with self.assertRaises(ValueError):
+                fp.read_p_column(g)                                            # default width 38
+            plain = os.path.join(d, "a.csv")
+            write_rows(plain, [go_row6(), go_row6()])
+            fp.check_prefix_identity(plain, g, width=41)
+            with self.assertRaises(ValueError):
+                fp.check_prefix_identity(plain, g)
+            self.assertEqual(fp.plain_cal_diff_at_merge(g, width=42), 0)
+
+    def test_xs_slice(self):
+        with tempfile.TemporaryDirectory() as d:
+            c = os.path.join(d, "ns.csv")
+            write_rows(c, [go_row6(0.9), go_row6(0.005), go_row6(0.01), go_row6(0.75)])
+            sc = os.path.join(d, "ns.csv.namesakes.json")
+            fp.write_json(sc, {"xs_rows": [1, 2, 3], "rows": [], "family_rows": []})
+            self.assertEqual(fp.xs_namesake_slice(c, sc, width=42),
+                             {"rows": 3, "different_person": 3, "different_at_review_0_01": 2, "different_at_merge_0_7": 1})
+            with self.assertRaises(ValueError):
+                fp.xs_namesake_slice(c, sc)
+
+    def test_base_and_training_manifest(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d, FILES + PF6_FILES)
+            enc, idf = os.path.join(d, "enc.json"), os.path.join(d, "name_idf_pairfeat6.json")
+            for p, b in ((enc, b"enc"), (idf, b"idf")):
+                with open(p, "wb") as f:
+                    f.write(b)
+            base = fp.base_manifest(d, enc, "pairfeat6", name_idf=idf)
+            self.assertEqual((base["nfeat"], base["name_idf_sha256"]), (34, sh(b"idf")))
+            self.assertEqual(base["code_sha256"], {n: sh(n.encode()) for n in FILES + PF6_FILES})
+            with self.assertRaises(ValueError):
+                fp.base_manifest(d, enc, "pairfeat6")
+            b5 = fp.base_manifest(d, enc, "pairfeat5")
+            self.assertEqual(b5["nfeat"], 30)
+            self.assertNotIn("name_idf_sha256", b5)
+            self.assertEqual(set(b5["code_sha256"]), set(FILES))
+            with self.assertRaises(ValueError):
+                fp.base_manifest(d, enc, "pairfeat5", name_idf=idf)
+            sides = {}
+            for s in fp.PROTOCOLS["pairfeat6"]["train_seeds"]:
+                p = os.path.join(d, f"s{s}.json")
+                with open(p, "w") as f:
+                    f.write(str(s))
+                sides[s] = (p, {"namesakes_added": 90, "base_namesake_rows": 110, "family_namesakes_added": 40,
+                                "family_base_namesake_rows": 60, "xs_namesakes_added": 70, "xs_base_namesake_rows": 150})
+            m = fp.training_manifest(d, enc, "pairfeat6", sides, base)
+            self.assertEqual((m["xs_namesakes"], m["xs_namesake_base_rows_total"], m["name_idf_sha256"]), (0.1, 750, sh(b"idf")))
+            self.assertEqual((m["namesake_seeds"]["1021"]["xs_namesakes_added"],
+                              m["namesake_seeds"]["1021"]["xs_base_namesake_rows"]), (70, 150))
+            m5 = fp.training_manifest(d, enc, "pairfeat5", sides)
+            self.assertNotIn("xs_namesakes", m5)
+            self.assertNotIn("xs_namesakes_added", m5["namesake_seeds"]["1021"])
+
+    def test_artifact_manifest_and_models(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain, out = (os.path.join(d, n) for n in ("models", "chain", "out"))
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b")
+            for n in fp.chain_files("pairfeat6") + fp.chain_files("pairfeat5"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c" + n.encode())
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            xl = {"rows": 3, "different_person": 3, "different_at_review_0_01": 2, "different_at_merge_0_7": 1}
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat6", max_abs_leaf=3.1,
+                                     lambda_l2=1.0, xs_namesake_slice=xl, name_idf_sha256="ab" * 32)
+            self.assertEqual(m["pairfeat6_chain_sha256"], {n: sh(b"c" + n.encode()) for n in fp.chain_files("pairfeat6")})
+            self.assertEqual((m["xs_namesake_slice"], m["name_idf_sha256"]), (xl, "ab" * 32))
+            m5 = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat5", max_abs_leaf=3.1, lambda_l2=1.0)
+            self.assertNotIn("xs_namesake_slice", m5)
+            self.assertNotIn("name_idf_sha256", m5)
+            fp.check_models_free(models, "pairfeat6")
+            with open(os.path.join(models, "name_idf_pairfeat6.json"), "wb") as f:
+                f.write(b"old")
+            with self.assertRaises(ValueError):
+                fp.check_models_free(models, "pairfeat6")
+            fp.check_models_free(models, "pairfeat5")
+            os.remove(os.path.join(models, "name_idf_pairfeat6.json"))
+            fp.copy_chain_to_models(chain, models, "pairfeat6")
+            with open(os.path.join(models, "name_idf_pairfeat6.json"), "rb") as f:
+                self.assertEqual(f.read(), b"cname_idf_pairfeat6.json")
 
 
 if __name__ == "__main__":
