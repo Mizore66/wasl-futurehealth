@@ -18,6 +18,15 @@ Amendment 2: every arm of an r1review experiment runs gen -imgphotos and orchest
 -imgcache <repo>/models/image_verdicts.json; build.json records image, imgphotos and the cache SHA256, equal in all arms);
 pairfeat1-pairfeat5 experiments keep -image off. init-experiment refuses a parent already holding a decision file.
 
+Three-arm candidate pairfeat6 (development 659 661 673, validation 677 683 691 701 709): its own chain (five files with the
+name-rarity table), image off, no extra flag; the reference arm pairfeat5 is a separate `fit_pairfeat1.py --modelset pairfeat5`
+fit at the same HEAD, recorded by `init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR` in experiment.json
+(`reference_model_chain`, `reference_artifact_manifest_sha256`); decision files carry that map as `reference_model_chain`.
+Gate (pre-registered, spec gates table): vs pairfeat5, recall gain >= 0; false_merge_pairs and cross_person_edges strictly
+below in selection and validation, not above in stress; uncapped wrong-pair review pairs <= max(1.10 x ref, ref + 1); reviewer
+hours <= 1.10 x ref; SAFETY zero in all three arms. vs-baseline computed, not gating. Reported: linked pairs (same/different
+person; diagnosed classes on development), capped pairs, rarity-table SHA256.
+
 Usage
   pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT
       MODE dev-clean | dev-stress | validation-clean. OUT_JSON must sit in the experiment parent directory (the directory
@@ -25,6 +34,7 @@ Usage
       (both write-once, next to OUT_JSON). <candidate> must be the parent's candidate; a three-arm candidate also needs
       its reference root (r1review: baseline=, pairfeat5= and r1review=).
   pairfeat_compare.py init-experiment EXPERIMENT_DIR r1review
+  | init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR
       Writes EXPERIMENT_DIR/experiment.json (write-once) when artifact-manifest.json carries exactly the pairfeat5 chain.
   pairfeat_compare.py freeze-validation EXPERIMENT_DIR
       Writes EXPERIMENT_DIR/validation-manifest.json (write-once) only when selection.json selected the parent's candidate
@@ -70,10 +80,12 @@ CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_cl
 Residual categories and reviewer wrong_final_signoffs are reported outcomes, not gate substitutions.
 Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and descriptive only.
 """
+import glob
 import hashlib
 import json
 import math
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -97,7 +109,14 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
                            # amendment 2: every arm of an r1review experiment runs gen -imgphotos and the cached image reader
                            "lane_image": True,
                            # amendment 3: gate 1 (vs baseline) is computed and reported, not gating; gate 2 decides
-                           "baseline_gating": False}}
+                           "baseline_gating": False},
+              # pairfeat6 (spec 2026-11-03-crc-pairfeat6-design.md): its own chain (pairfeat5's recipe, pair features
+              # f30-f33, a name-rarity table, cross-script hard negatives); three arms against a pairfeat5 reference refit
+              # separately at the same HEAD (its map lives in experiment.json); image off; gated vs pairfeat5 only
+              "pairfeat6": {"dev_seeds": [659, 661, 673], "validation_seeds": [677, 683, 691, 701, 709],
+                            "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                            "reference": "pairfeat5", "reference_chain": "experiment", "reference_gate": "pairfeat6",
+                            "baseline_gating": False, "report_linked_pairs": True}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
 RETIRED_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
@@ -117,6 +136,16 @@ MAX_REVIEW_GROWTH = 0.10
 # reference gate (three-arm candidates only): candidate minus reference-arm recall, and reviewer hours growth
 REF_MIN_GAIN_PP = {"selection": 1.0, "stress": 0.0, "validation": 0.5}
 REF_MAX_HOURS_GROWTH = 0.10
+# pairfeat6 gate vs its reference (spec gates table)
+PF6_STRICT_KINDS = ("selection", "validation")  # false_merge_pairs and cross_person_edges strictly below the reference
+PF6_GROWTH = Fraction(11, 10)  # uncapped wrong-pair review pairs and reviewer hours at most 1.10 x the reference
+PF6_WRONG_SLACK = 1  # ... or the reference + 1 uncapped wrong-pair review pairs, whichever is larger
+PF6_MIN_GAIN_PP = 0.0  # CRC recall gain over the reference >= 0 in every kind
+REFERENCE_CHAIN_KEY = "reference_model_chain"  # experiment.json / decision files: a separately fitted reference's map
+EXPERIMENT_KEYS = frozenset({"candidate", "reference"})
+EXPERIMENT_REF_KEYS = EXPERIMENT_KEYS | {REFERENCE_CHAIN_KEY, "reference_artifact_manifest_sha256"}
+EDGE_CLASSES = ("cross_script_lookalike", "missing_dob_ambiguous", "shared_token", "other", "unresolved")
+LINKED_KEYS = ("same_person", "different_person")
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
@@ -142,6 +171,23 @@ def baseline_gating(candidate):
     return CANDIDATES.get(candidate, {}).get("baseline_gating", True)
 
 
+def reference_chain_in_experiment(candidate):
+    """True for a three-arm candidate whose reference arm was fitted separately (pairfeat6): the reference's model map is
+    recorded in experiment.json and decision files under REFERENCE_CHAIN_KEY, not in artifact-manifest.json."""
+    return CANDIDATES.get(candidate, {}).get("reference_chain") == "experiment"
+
+
+def arm_chain(doc, arm, candidate):
+    """The model-chain map doc records for an arm of this candidate's experiment."""
+    if reference_chain_in_experiment(candidate) and arm == reference(candidate):
+        return doc.get(REFERENCE_CHAIN_KEY)
+    return doc.get(CHAIN_KEY[arm])
+
+
+def chain_label(arm, candidate):
+    return REFERENCE_CHAIN_KEY if reference_chain_in_experiment(candidate) and arm == reference(candidate) else CHAIN_KEY[arm]
+
+
 IMAGE_VERDICTS = "models/image_verdicts.json"  # cached image-reader verdicts and the gen photo pool (repo-relative)
 
 
@@ -159,7 +205,7 @@ CHAIN_CANDIDATES = tuple(c for c in CANDIDATES if chain_of(c) == c)  # candidate
 EXTRA_FLAGS = tuple(sorted({f for c in CANDIDATES for f in extra_flags(c)}))
 BARE_FLAGS = EXTRA_FLAGS + ("-imgphotos",)  # bare boolean flags the guard counts (and whose misspellings it refuses)
 MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
-            "pairfeat5": "pairfeat5"}
+            "pairfeat5": "pairfeat5", "pairfeat6": "pairfeat6"}
 MODELSET.update({c: MODELSET[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
@@ -168,6 +214,8 @@ CHAIN_FILES = {
     "pairfeat3": ("encoder_pairfeat3.json", "lgb_stream_pairfeat3.json", "iso_pairfeat3.json", "iso_v7_pairfeat3.json"),
     "pairfeat4": ("encoder_pairfeat4.json", "lgb_stream_pairfeat4.json", "iso_pairfeat4.json", "iso_v7_pairfeat4.json"),
     "pairfeat5": ("encoder_pairfeat5.json", "lgb_stream_pairfeat5.json", "iso_pairfeat5.json", "iso_v7_pairfeat5.json"),
+    "pairfeat6": ("encoder_pairfeat6.json", "lgb_stream_pairfeat6.json", "iso_pairfeat6.json", "iso_v7_pairfeat6.json",
+                  "name_idf_pairfeat6.json"),
 }
 CHAIN_FILES.update({c: CHAIN_FILES[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_SUFFIX = "_chain_sha256"
@@ -326,24 +374,39 @@ def infer_candidate(doc, what):
 
 def read_experiment(exp_dir):
     """The parsed experiment.json of a parent, or None when it has none. A present file must be exactly
-    {"candidate": <three-arm candidate>, "reference": <its reference arm>}."""
+    {"candidate": <three-arm candidate>, "reference": <its reference arm>}, plus, for a candidate whose reference was fitted
+    separately (pairfeat6), REFERENCE_CHAIN_KEY (a well-formed map of the reference's model files) and
+    "reference_artifact_manifest_sha256"."""
     ep = os.path.join(exp_dir, EXPERIMENT)
     if not os.path.lexists(ep):
         return None
     e = _read_json(ep)
-    if not isinstance(e, dict) or set(e) != {"candidate", "reference"} or not isinstance(e["candidate"], str) \
-            or e["candidate"] not in CANDIDATES or not reference(e["candidate"]) or e["reference"] != reference(e["candidate"]):
+    c = e.get("candidate") if isinstance(e, dict) else None
+    ok = isinstance(c, str) and c in CANDIDATES and bool(reference(c))
+    if ok:
+        want = EXPERIMENT_REF_KEYS if reference_chain_in_experiment(c) else EXPERIMENT_KEYS
+        ok = set(e) == want and e["reference"] == reference(c)
+    if not ok:
         raise PreflightError("experiment.json must be exactly {\"candidate\": <three-arm candidate>, \"reference\": <its reference>}"
-                             " (allowed %s)" % sorted(c for c in CANDIDATES if reference(c)))
+                             " (allowed %s)" % sorted(x for x in CANDIDATES if reference(x)))
+    if reference_chain_in_experiment(c):
+        _check_chain_map(e[REFERENCE_CHAIN_KEY], reference(c), EXPERIMENT)
+        if not _is_hex(e["reference_artifact_manifest_sha256"], 64):
+            raise PreflightError("experiment.json reference_artifact_manifest_sha256 must be a SHA256")
     return e
 
 
 def resolve_candidate(doc, what, exp_dir=None):
     """The candidate an experiment parent serves: experiment.json's three-arm candidate when the parent has one and its
     chain and reference are the chain doc carries, else the candidate inferred from doc's chain key. A contradicting
-    experiment.json is refused."""
+    experiment.json is refused; a pairfeat6 chain requires its experiment.json."""
     found = infer_candidate(doc, what)
     e = read_experiment(exp_dir) if exp_dir is not None else None
+    if reference_chain_in_experiment(found):  # pairfeat6: experiment.json is required and names it
+        if e is None or e["candidate"] != found:
+            raise PreflightError("a %s parent needs experiment.json naming %s and its separately fitted reference "
+                                 "(init-experiment EXPERIMENT_DIR %s REFERENCE_FIT_DIR)" % (found, found, found))
+        return found
     if e is None:
         return found
     if chain_of(e["candidate"]) != found or e["reference"] != found:
@@ -352,9 +415,23 @@ def resolve_candidate(doc, what, exp_dir=None):
     return e["candidate"]
 
 
-def init_experiment(exp_dir, candidate):
-    """Write EXPERIMENT_DIR/experiment.json (write-once) naming a three-arm candidate and its reference, only when the
-    parent's artifact-manifest.json carries exactly that reference chain (baseline plus one well-formed chain map)."""
+def governing_view(doc, exp_dir, candidate):
+    """doc (artifact-manifest.json) with, for a candidate whose reference was fitted separately (pairfeat6), the reference
+    map from experiment.json under REFERENCE_CHAIN_KEY, so arm_chain() reads every arm from one document; else doc."""
+    if not reference_chain_in_experiment(candidate):
+        return doc
+    e = read_experiment(exp_dir)
+    if e is None or e["candidate"] != candidate:
+        raise PreflightError("the %s experiment needs experiment.json naming it" % candidate)
+    return dict(doc, **{REFERENCE_CHAIN_KEY: e[REFERENCE_CHAIN_KEY]})
+
+
+def init_experiment(exp_dir, candidate, reference_dir=None, repo=REPO):
+    """Write EXPERIMENT_DIR/experiment.json (write-once) naming a three-arm candidate and its reference.
+    r1review: the parent's artifact-manifest.json carries exactly the reference (pairfeat5) chain; no reference_dir.
+    pairfeat6: the parent's artifact-manifest.json carries the pairfeat6 chain; reference_dir is the separate
+    fit_pairfeat1.py --modelset pairfeat5 output, whose artifact-manifest.json must carry exactly the pairfeat5 chain at the
+    same git_head with the same baseline chain, equal to the models/ files now; its map and SHA256 are recorded."""
     if not isinstance(candidate, str) or candidate not in CANDIDATES or not reference(candidate):
         raise PreflightError("init-experiment needs a three-arm candidate (%s), got %r"
                              % ("|".join(sorted(c for c in CANDIDATES if reference(c))), candidate))
@@ -366,17 +443,47 @@ def init_experiment(exp_dir, candidate):
             raise PreflightError("%s already exists: experiment.json must name the candidate before any decision" % n)
     am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
     found = infer_candidate(am, ARTIFACT_MANIFEST)
-    if found != chain_of(candidate) or found != reference(candidate):
-        raise PreflightError("artifact-manifest.json carries the %s chain, %s needs %s" % (found, candidate, chain_of(candidate)))
-    _check_maps(am, candidate, ARTIFACT_MANIFEST)
-    e = {"candidate": candidate, "reference": reference(candidate)}
+    ref = reference(candidate)
+    if not reference_chain_in_experiment(candidate):
+        if reference_dir is not None:
+            raise PreflightError("init-experiment %s takes no reference fit directory" % candidate)
+        if found != chain_of(candidate) or found != ref:
+            raise PreflightError("artifact-manifest.json carries the %s chain, %s needs %s" % (found, candidate, chain_of(candidate)))
+        _check_maps(am, candidate, ARTIFACT_MANIFEST)
+        e = {"candidate": candidate, "reference": ref}
+        _write_once(ep, e)
+        return e
+    if reference_dir is None:
+        raise PreflightError("init-experiment %s needs the reference fit directory (fit_pairfeat1.py --modelset %s output)"
+                             % (candidate, ref))
+    if found != candidate:
+        raise PreflightError("artifact-manifest.json carries the %s chain, %s needs its own" % (found, candidate))
+    if not _is_hex(am.get("git_head"), 40):
+        raise PreflightError("artifact-manifest.json needs a full git_head")
+    for a in ("baseline", candidate):
+        _check_chain_map(am.get(CHAIN_KEY[a]), a, ARTIFACT_MANIFEST)
+    if os.path.realpath(reference_dir) == os.path.realpath(exp_dir):
+        raise PreflightError("the reference fit directory must be another fit's directory")
+    rp = os.path.join(reference_dir, ARTIFACT_MANIFEST)
+    what = "reference " + ARTIFACT_MANIFEST
+    ram = _read_json(rp, what)
+    if infer_candidate(ram, what) != ref:
+        raise PreflightError("the reference fit must carry exactly the %s chain" % ref)
+    if ram.get("git_head") != am["git_head"]:
+        raise PreflightError("the reference fit was made at another git HEAD than the %s fit" % candidate)
+    if ram.get(CHAIN_KEY["baseline"]) != am[CHAIN_KEY["baseline"]]:
+        raise PreflightError("the reference fit records another baseline chain")
+    _check_chain_map(ram.get(CHAIN_KEY[ref]), ref, what)
+    _check_files_match(repo, ref, ram[CHAIN_KEY[ref]], "the " + what)
+    e = {"candidate": candidate, "reference": ref, REFERENCE_CHAIN_KEY: dict(ram[CHAIN_KEY[ref]]),
+         "reference_artifact_manifest_sha256": sha256_file(rp)}
     _write_once(ep, e)
     return e
 
 
 def _check_maps(doc, candidate, what):
     for a in arms(candidate):
-        _check_chain_map(doc.get(CHAIN_KEY[a]), a, what)
+        _check_chain_map(arm_chain(doc, a, candidate), a, what)
 
 
 def _check_recorded_candidate(doc, candidate, what):
@@ -407,7 +514,7 @@ def check_artifact_manifest(am, head, exp_dir=None):
     if am["git_head"] != head:
         raise PreflightError("artifact-manifest.json git_head does not match current HEAD")
     candidate = resolve_candidate(am, "artifact-manifest.json", exp_dir)
-    _check_maps(am, candidate, "artifact-manifest.json")
+    _check_maps(governing_view(am, exp_dir, candidate), candidate, "artifact-manifest.json")
     return candidate
 
 
@@ -422,8 +529,8 @@ def check_selection(sel, am, head, candidate):
     if sel.get("git_head") != head:
         raise PreflightError("selection.json git_head does not match current HEAD")
     for a in arms(candidate):
-        if sel.get(CHAIN_KEY[a]) != am[CHAIN_KEY[a]]:
-            raise PreflightError("selection.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
+        if arm_chain(sel, a, candidate) != arm_chain(am, a, candidate):
+            raise PreflightError("selection.json %s differs from artifact-manifest.json" % chain_label(a, candidate))
 
 
 def check_stress(st, am, head, selection_sha, candidate):
@@ -437,8 +544,8 @@ def check_stress(st, am, head, selection_sha, candidate):
     if st.get("selection_sha256") != selection_sha:
         raise PreflightError("stress.json was not computed against this selection.json")
     for a in arms(candidate):
-        if st.get(CHAIN_KEY[a]) != am[CHAIN_KEY[a]]:
-            raise PreflightError("stress.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
+        if arm_chain(st, a, candidate) != arm_chain(am, a, candidate):
+            raise PreflightError("stress.json %s differs from artifact-manifest.json" % chain_label(a, candidate))
 
 
 def check_validation_manifest(vm, repo, head):
@@ -483,11 +590,12 @@ def check_frozen_validation(vm, exp_dir, repo, head):
         ep = os.path.join(exp_dir, EXPERIMENT)
         if not _is_hex(vm.get("experiment_sha256"), 64) or vm["experiment_sha256"] != sha256_file(ep):
             raise PreflightError("validation-manifest.json experiment_sha256 does not match experiment.json")
+    view = governing_view(am, exp_dir, candidate)
     for a in arms(candidate):
-        if vm[CHAIN_KEY[a]] != am[CHAIN_KEY[a]]:
-            raise PreflightError("validation-manifest.json %s differs from artifact-manifest.json" % CHAIN_KEY[a])
-    check_selection(_read_json(sp), am, head, candidate)
-    check_stress(_read_json(tp), am, head, sha256_file(sp), candidate)
+        if arm_chain(vm, a, candidate) != arm_chain(view, a, candidate):
+            raise PreflightError("validation-manifest.json %s differs from artifact-manifest.json" % chain_label(a, candidate))
+    check_selection(_read_json(sp), view, head, candidate)
+    check_stress(_read_json(tp), view, head, sha256_file(sp), candidate)
     return candidate
 
 
@@ -501,13 +609,14 @@ def preflight_identity(mode, arm, exp_dir, repo, head):
         vm = _read_json(os.path.join(exp_dir, VALIDATION_MANIFEST))
         candidate = check_frozen_validation(vm, exp_dir, repo, head)
         _check_arm(arm, candidate, VALIDATION_MANIFEST)
-        return candidate, _check_files_match(repo, arm, vm[CHAIN_KEY[arm]], "validation-manifest.json")
+        return candidate, _check_files_match(repo, arm, arm_chain(vm, arm, candidate), "validation-manifest.json")
     am = _read_json(os.path.join(exp_dir, ARTIFACT_MANIFEST))
     candidate = check_artifact_manifest(am, head, exp_dir)
     _check_arm(arm, candidate, ARTIFACT_MANIFEST)
+    view = governing_view(am, exp_dir, candidate)
     if mode == "dev-stress":
-        check_selection(_read_json(os.path.join(exp_dir, SELECTION)), am, head, candidate)
-    return candidate, _check_files_match(repo, arm, am[CHAIN_KEY[arm]], "artifact-manifest.json")
+        check_selection(_read_json(os.path.join(exp_dir, SELECTION)), view, head, candidate)
+    return candidate, _check_files_match(repo, arm, arm_chain(view, arm, candidate), "artifact-manifest.json")
 
 
 def preflight(mode, arm, exp_dir, repo, head):
@@ -524,10 +633,11 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
     ap, sp, tp = (os.path.join(exp_dir, n) for n in (ARTIFACT_MANIFEST, SELECTION, STRESS))
     am = _read_json(ap)
     candidate = check_artifact_manifest(am, head, exp_dir)
-    check_selection(_read_json(sp), am, head, candidate)
-    check_stress(_read_json(tp), am, head, sha256_file(sp), candidate)
+    view = governing_view(am, exp_dir, candidate)
+    check_selection(_read_json(sp), view, head, candidate)
+    check_stress(_read_json(tp), view, head, sha256_file(sp), candidate)
     for a in arms(candidate):
-        _check_files_match(repo, a, am[CHAIN_KEY[a]], "artifact-manifest.json")
+        _check_files_match(repo, a, arm_chain(view, a, candidate), "artifact-manifest.json")
     vm = {"git_head": head, "mode": "validation-clean", "seeds": mode_settings("validation-clean", candidate)["seeds"],
           "candidate": candidate, "selected_modelset": candidate,
           "baseline_chain_sha256": dict(am["baseline_chain_sha256"]), CHAIN_KEY[candidate]: dict(am[CHAIN_KEY[candidate]]),
@@ -538,6 +648,8 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
           "note": "frozen before any validation lane; eval/v2 seeds are not inspected before this file exists"}
     if reference(candidate):
         vm["experiment_sha256"] = sha256_file(os.path.join(exp_dir, EXPERIMENT))
+    if reference_chain_in_experiment(candidate):
+        vm[REFERENCE_CHAIN_KEY] = dict(view[REFERENCE_CHAIN_KEY])
     _write_once(vp, vm)
     return vm
 
@@ -884,7 +996,99 @@ def completion_review(queue, decisions):
     return out
 
 
-def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None, completion=None):
+def final_linked_pairs(lines):
+    """Distinct sorted (a, b) registration pairs linked at the end of a link_funnel.ndjson trace: a "linked" pair record
+    adds the pair, a later "unlinked" record removes it."""
+    keys = set()
+    for ln in lines:
+        if not ln.strip():
+            continue
+        r = json.loads(ln)
+        if not isinstance(r, dict) or r.get("kind") != "pair" or r.get("stage") not in ("linked", "unlinked"):
+            continue
+        a, b = r.get("a"), r.get("b")
+        if not isinstance(a, str) or not isinstance(b, str):
+            raise ValueError("linked pair record must name two registrations")
+        k = tuple(sorted((a, b)))
+        if r["stage"] == "linked":
+            keys.add(k)
+        else:
+            keys.discard(k)
+    return keys
+
+
+def cohort_registrations(cohort_dir):
+    """Registration key (provider|MRN) -> {"name", "dob"} from the lane's cohort/fhir_*.ndjson Patient resources (top-level
+    or contained; the first occurrence of a key is kept)."""
+    out = {}
+    for p in sorted(glob.glob(os.path.join(glob.escape(cohort_dir), "fhir_*.ndjson"))):
+        with open(p) as h:
+            for ln in h:
+                if not ln.strip():
+                    continue
+                r = json.loads(ln)
+                res = r.get("res") or {}
+                for c in [res] + list(res.get("contained") or []):
+                    if not isinstance(c, dict) or c.get("resourceType") != "Patient":
+                        continue
+                    names = c.get("name") or [{}]
+                    n0 = names[0] if isinstance(names[0], dict) else {}
+                    name = n0.get("text") or " ".join([n0.get("family") or ""] + list(n0.get("given") or [])).strip()
+                    for idf in c.get("identifier") or []:
+                        if isinstance(idf, dict) and str(idf.get("system", "")).endswith(":mrn") and idf.get("value"):
+                            out.setdefault("%s|%s" % (r.get("prov"), idf["value"]), {"name": name, "dob": c.get("birthDate") or ""})
+    return out
+
+
+def _arabic(s):
+    return any("؀" <= ch <= "ۿ" for ch in s)
+
+
+def _name_tokens(s):
+    return set(re.findall(r"[^\W\d_]+", s.lower()))
+
+
+def edge_class(ra, rb):
+    """Reported-only class of a remaining different-person linked pair (the pairfeat6 design's diagnosis), in order:
+    cross_script_lookalike (one Arabic-script name, one not); missing_dob_ambiguous (a birth date missing on one side);
+    shared_token (same script, at least one shared and one differing name token); other. unresolved: a registration that
+    the cohort does not describe."""
+    if ra is None or rb is None:
+        return "unresolved"
+    if _arabic(ra["name"]) != _arabic(rb["name"]):
+        return "cross_script_lookalike"
+    if not ra["dob"] or not rb["dob"]:
+        return "missing_dob_ambiguous"
+    ta, tb = _name_tokens(ra["name"]), _name_tokens(rb["name"])
+    if ta & tb and ta ^ tb:
+        return "shared_token"
+    return "other"
+
+
+def linked_pair_report(lines, pk_qid, regs=None):
+    """Reported only (pairfeat6 experiments, non-baseline arms): final linked pairs split by truth (same_person = true
+    merges); with regs (development lanes) the different-person pairs are also counted by edge_class. An unmapped
+    registration is an analysis error."""
+    same = diff = 0
+    classes = dict.fromkeys(EDGE_CLASSES, 0)
+    for a, b in sorted(final_linked_pairs(lines)):
+        pa, pb = pk_qid.get(a), pk_qid.get(b)
+        if not (isinstance(pa, str) and pa and isinstance(pb, str) and pb):
+            raise ValueError("linked pair registration is not mapped by cohort/truth.json pk_qid")
+        if pa == pb:
+            same += 1
+            continue
+        diff += 1
+        if regs is not None:
+            classes[edge_class(regs.get(a), regs.get(b))] += 1
+    out = {"same_person": same, "different_person": diff}
+    if regs is not None:
+        out["edge_classes"] = classes
+    return out
+
+
+def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None, completion=None,
+                 linked=None):
     crc = _req(report7, "programmes_live", "crc")
     truth = _req(crc, "truth_closed")
     tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
@@ -941,6 +1145,8 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidat
         m["xscript_cap"] = dict(xscript_cap)
     if completion is not None:  # three-arm analyses only; reported, never gated
         m["completion_undocumented"] = dict(completion)
+    if linked is not None:  # pairfeat6 non-baseline arms; reported, never gated
+        m["linked_pairs"] = json.loads(json.dumps(linked))
     return m
 
 
@@ -980,6 +1186,16 @@ def aggregate_arm(arm, lanes):
         if not all(cs):
             raise ValueError("completion_undocumented present in only some lanes of arm %s" % arm)
         a["completion_undocumented"] = {k: sum(l["completion_undocumented"][k] for l in lanes) for k in COMPLETION_KEYS}
+    lp = ["linked_pairs" in l for l in lanes]
+    if any(lp):
+        if not all(lp):
+            raise ValueError("linked_pairs present in only some lanes of arm %s" % arm)
+        a["linked_pairs"] = {k: sum(l["linked_pairs"][k] for l in lanes) for k in LINKED_KEYS}
+        ec = ["edge_classes" in l["linked_pairs"] for l in lanes]
+        if any(ec):
+            if not all(ec):
+                raise ValueError("edge_classes present in only some lanes of arm %s" % arm)
+            a["linked_pairs"]["edge_classes"] = {k: sum(l["linked_pairs"]["edge_classes"][k] for l in lanes) for k in EDGE_CLASSES}
     return a
 
 
@@ -1110,6 +1326,69 @@ def _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, tota
             "extra_hours_per_extra_closure": extra, "reasons": reasons}
 
 
+def _pairfeat6_gate(ref, cand, kind, base):
+    """Gate of pairfeat6 against its reference arm pairfeat5 (spec 2026-11-03-crc-pairfeat6-design.md, gates table):
+    recall gain >= 0; false_merge_pairs and cross_person_edges strictly below the reference in selection and validation,
+    not above in stress; uncapped wrong-pair link-review pairs <= max(1.10 x ref, ref + 1); reviewer hours <= 1.10 x ref;
+    the SAFETY set and wrong releases by origin zero in the baseline, reference and candidate arms. impure_clusters,
+    wrong final sign-offs, capped pairs and linked pairs are reported, not gated."""
+    if kind not in GATE_KINDS:
+        raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
+    if base is None or base.get("arm") != "baseline":
+        raise ValueError("the pairfeat6 gate needs the baseline arm (SAFETY is gated in every arm)")
+    rk, ck = ref.get("arm"), cand.get("arm")
+    reasons = []
+    if ck != "pairfeat6" or rk != reference("pairfeat6"):
+        reasons.append("arms must be pairfeat6 vs its reference arm pairfeat5")
+    if not base["truth_closed"] == ref["truth_closed"] == cand["truth_closed"]:
+        reasons.append("truth_closed differs between arms")
+    gain = None
+    if not ref["truth_closed"] or not cand["truth_closed"]:
+        reasons.append("truth_closed is zero")
+    else:
+        g = 100 * (Fraction(cand["tp"], cand["truth_closed"]) - Fraction(ref["tp"], ref["truth_closed"]))
+        gain = float(g)
+        if g < 0:
+            reasons.append("gain vs reference %.4fpp below 0.0pp" % gain)
+    for label, a in (("baseline ", base), ("reference ", ref), ("", cand)):
+        for k in SAFETY:
+            if a[k] != 0:
+                reasons.append(label + k + " nonzero")
+        if any(v != 0 for v in a["wrong_released_by_origin"].values()):
+            reasons.append(label + "wrong_released_by_origin nonzero")
+    strict = kind in PF6_STRICT_KINDS
+    contam = {}
+    for k in ("false_merge_pairs", "cross_person_edges"):
+        rv, cv = ref[k], cand[k]
+        contam[k] = {rk: rv, ck: cv, "rule": "strictly below" if strict else "not above"}
+        if strict and cv >= rv:
+            reasons.append("%s not strictly below reference (%d >= %d)" % (k, cv, rv))
+        elif not strict and cv > rv:
+            reasons.append("%s above reference (%d > %d)" % (k, cv, rv))
+    vals = []
+    for label, a in (("reference", ref), ("candidate", cand)):
+        v = a["reviewer"].get("uncapped_wrong_distinct_pairs")
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ValueError("pairfeat6 gate needs reviewer.uncapped_wrong_distinct_pairs in the %s arm" % label)
+        vals.append(v)
+    ru, cu = vals
+    ulimit = max(ru * PF6_GROWTH, Fraction(ru + PF6_WRONG_SLACK))
+    if cu > ulimit:
+        reasons.append("uncapped wrong-pair link-review pairs %d exceed %.2f (max(1.10 x %d, %d + 1))" % (cu, float(ulimit), ru, ru))
+    rh, chh = ref["reviewer"]["hours"], cand["reviewer"]["hours"]
+    hlimit = Fraction(rh) * PF6_GROWTH
+    if Fraction(chh) > hlimit:
+        reasons.append("reviewer hours %.2f exceed %.2f (reference %.2f +10%%)" % (chh, float(hlimit), rh))
+    reported = {"impure_clusters": {rk: ref["impure_clusters"], ck: cand["impure_clusters"]},
+                "wrong_final_signoffs": {rk: ref["reviewer"]["wrong_final_signoffs"], ck: cand["reviewer"]["wrong_final_signoffs"]},
+                "xscript_cap": {rk: ref.get("xscript_cap"), ck: cand.get("xscript_cap")},
+                "linked_pairs": {rk: ref.get("linked_pairs"), ck: cand.get("linked_pairs")}, "gating": False}
+    return {"pass": not reasons, "kind": kind, "reference": rk, "gain_pp": None if gain is None else round(gain, 4),
+            "min_gain_pp": PF6_MIN_GAIN_PP, "contamination": contam,
+            "uncapped_wrong_distinct_pairs": {rk: ru, ck: cu, "max_allowed": float(ulimit)},
+            "hours": {rk: rh, ck: chh, "max_allowed": float(hlimit)}, "reported": reported, "reasons": reasons}
+
+
 def reference_gate(ref, cand, kind, base=None):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
     recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
@@ -1118,7 +1397,10 @@ def reference_gate(ref, cand, kind, base=None):
     Reviewer wrong_final_signoffs are reported for both arms, not gated (amendment 1: stress lanes carry ~80 per arm by
     design from the 4% synthetic reviewer error). With base (the baseline arm), the same safety counts must also be zero
     there ("baseline ..." reasons): amendment 3 makes gate(base, cand) non-gating for r1review but keeps the SAFETY set
-    zero in every lane of every arm."""
+    zero in every lane of every arm. pairfeat6 has its own gate (_pairfeat6_gate)."""
+    ca0 = cand.get("arm")
+    if isinstance(ca0, str) and CANDIDATES.get(ca0, {}).get("reference_gate") == "pairfeat6":
+        return _pairfeat6_gate(ref, cand, kind, base)
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
@@ -1253,12 +1535,17 @@ def _load_lane(path, seed, arm, mode, candidate):
             if arm == "baseline" and (same or diff):  # the baseline arm must contain no xscript_cap record
                 raise ValueError("baseline lane trace contains xscript_cap records")
             capped = diff
-    cu = completion_review(q, dec) if reference(candidate) else None  # three-arm analyses only, every arm
+    cu = completion_review(q, dec) if "-r1review" in extra_flags(candidate) else None  # r1review experiments, every arm
     if cu is not None and arm != candidate and cu["items"] != 0:  # only the -r1review arm can raise these items
         raise ValueError("%s arm lane has %d completion_undocumented review items (only %s raises them)" % (arm, cu["items"], candidate))
+    linked = None
+    if CANDIDATES[candidate].get("report_linked_pairs") and arm != "baseline":  # pairfeat6: reported, never gated
+        regs = cohort_registrations(os.path.join(path, "cohort")) if MODES[mode]["split"] == "dev" else None
+        with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:
+            linked = linked_pair_report(h, pk, regs)
     if lane_image(candidate):
         check_lane_image(r, os.path.join(path, "run/main/out_log.ndjson"), arm, candidate)
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu)
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu, linked)
 
 
 # ---------------------------------------------------------------- CLI
@@ -1278,6 +1565,7 @@ def analyse(mode, out, roots, repo=REPO, head=None):
             gov = _read_json(os.path.join(exp, ARTIFACT_MANIFEST))
             gov_name = ARTIFACT_MANIFEST
             candidate = resolve_candidate(gov, gov_name, exp)
+            gov = governing_view(gov, exp, candidate)
         _check_maps(gov, candidate, gov_name)
     except PreflightError as e:
         raise OSError(str(e)) if "missing" in str(e) else ValueError(str(e))
@@ -1290,7 +1578,7 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     builds, arm_res = {}, {}
     for a in arms(candidate):
         b = read_build(roots[a], a, mode, candidate)
-        if b["model_chain_sha256"] != gov[CHAIN_KEY[a]]:
+        if b["model_chain_sha256"] != arm_chain(gov, a, candidate):
             raise ValueError("arm %s model_chain_sha256 disagrees with %s" % (a, gov_name))
         builds[a] = b
         arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode, candidate) for s in seeds])
@@ -1314,6 +1602,11 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     ident = {"mode": mode, "candidate": candidate, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
              "baseline_chain_sha256": gov["baseline_chain_sha256"], CHAIN_KEY[candidate]: gov[CHAIN_KEY[candidate]],
              "governing_manifest_sha256": sha256_file(os.path.join(exp, gov_name))}
+    if reference_chain_in_experiment(candidate):
+        ident[REFERENCE_CHAIN_KEY] = gov[REFERENCE_CHAIN_KEY]
+    rarity = [f for f in CHAIN_FILES[candidate] if f.startswith("name_idf_")]
+    if rarity:  # pairfeat6: the name-rarity table's SHA256 (reported; it is part of the candidate's chain map)
+        res["rarity_table_sha256"] = gov[CHAIN_KEY[candidate]][rarity[0]]
     if lane_image(candidate):
         res["image_verdicts_sha256"] = ident["image_verdicts_sha256"] = builds["baseline"]["image_verdicts_sha256"]
     if ref_arm:  # three-arm candidate: reference arm, paired gains over it, and the reference gate (pass needs both gates)
@@ -1366,11 +1659,11 @@ def main(argv):
                           "seeds": vm["seeds"]}, sort_keys=True))
         return 0
     if argv[:1] == ["init-experiment"]:
-        if len(argv) != 3:
-            print("usage: pairfeat_compare.py init-experiment EXPERIMENT_DIR CANDIDATE", file=sys.stderr)
+        if len(argv) not in (3, 4):
+            print("usage: pairfeat_compare.py init-experiment EXPERIMENT_DIR CANDIDATE [REFERENCE_FIT_DIR]", file=sys.stderr)
             return 2
         try:
-            e = init_experiment(os.path.abspath(argv[1]), argv[2])
+            e = init_experiment(os.path.abspath(argv[1]), argv[2], os.path.abspath(argv[3]) if len(argv) == 4 else None)
         except PreflightError as e:
             print("init-experiment refused: " + str(e), file=sys.stderr)
             return 2

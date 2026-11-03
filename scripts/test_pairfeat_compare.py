@@ -1004,10 +1004,11 @@ class Candidates(unittest.TestCase):
                                                       "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                                                       "chain": "pairfeat5", "reference": "pairfeat5",
                                                       "extra_flags": ["-r1review"], "lane_image": True,
-                                                      "baseline_gating": False}})
+                                                      "baseline_gating": False},
+                                         "pairfeat6": P6_ENTRY})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
-                                                  "pairfeat5", "r1review"))
+                                                  "pairfeat5", "r1review", "pairfeat6"))
         self.assertEqual(pfc.modes(P2), {
             "dev-clean": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0", "errungraded": "0"},
             "dev-stress": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0.04", "errungraded": "0.25"},
@@ -1018,8 +1019,9 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.CHAIN_KEY[P2], "pairfeat2_chain_sha256")
         self.assertEqual(pfc.MODELSET, {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2",
                                         "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
-                                        "pairfeat5": "pairfeat5", "r1review": "pairfeat5"})
-        for bad in ("baseline", "pairfeat6", "", None):
+                                        "pairfeat5": "pairfeat5", "r1review": "pairfeat5",
+                                        "pairfeat6": "pairfeat6"})
+        for bad in ("baseline", "pairfeat7", "", None):
             with self.assertRaises(ValueError):
                 pfc.mode_settings("dev-clean", bad)
             with self.assertRaises(ValueError):
@@ -1053,7 +1055,7 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.infer_candidate(dict(b=1, baseline_chain_sha256=b, pairfeat1_chain_sha256={}), "x"), P1)
         for bad in ({"baseline_chain_sha256": b},
                     dict(ok, pairfeat1_chain_sha256=chain(CAND_FILES, "c")),
-                    {"baseline_chain_sha256": b, "pairfeat6_chain_sha256": {}},
+                    {"baseline_chain_sha256": b, "pairfeat7_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "Pairfeat2_chain_sha256": {}}, [], None):
             with self.assertRaises(pfc.PreflightError, msg=str(bad)):
@@ -1123,7 +1125,7 @@ class GuardPairfeat2(unittest.TestCase):
             pfc.guard(p1["orchestrate"], "dev-clean", P1, self.BIN, P2)
         with self.assertRaises(pfc.GuardError):
             pfc.guard(self.cmds()[0][1], "dev-clean", P2, self.BIN, P1)
-        for bad in ("pairfeat6", "baseline", "", None):
+        for bad in ("pairfeat7", "baseline", "", None):
             with self.assertRaises(pfc.GuardError):
                 pfc.guard(self.cmds()[0][1], "dev-clean", "baseline", self.BIN, bad)
 
@@ -1132,7 +1134,7 @@ class GuardPairfeat2(unittest.TestCase):
         pfc.check_funnel_modelset({"config": {"modelset": ""}}, "baseline")
         for f, a in (({"config": {"modelset": "pairfeat1"}}, P2), ({"config": {"modelset": ""}}, P2),
                      ({"config": {"modelset": "pairfeat2"}}, "baseline"), ({"config": {"modelset": "pairfeat2"}}, P1),
-                     ({"config": {}}, P2), ({"config": {"modelset": "pairfeat2"}}, "pairfeat6")):
+                     ({"config": {}}, P2), ({"config": {"modelset": "pairfeat2"}}, "pairfeat7")):
             with self.assertRaises(ValueError):
                 pfc.check_funnel_modelset(f, a)
 
@@ -1143,7 +1145,7 @@ class GuardPairfeat2(unittest.TestCase):
         self.assertEqual(g["distinct_pairs"], {"baseline": 100, "pairfeat2": 110, "max_allowed": 110.0})
         self.assertFalse(pfc.gate(base, arm(P2, 511, 600), "selection")["pass"])
         self.assertFalse(pfc.gate(arm(P2, 500, 600), arm(P2, 530, 600), "selection")["pass"])
-        self.assertFalse(pfc.gate(base, arm("pairfeat6", 530, 600), "selection")["pass"])
+        self.assertFalse(pfc.gate(base, arm("pairfeat7", 530, 600), "selection")["pass"])
         s = pfc.select(pfc_arm, arm(P2, 512, 600))
         self.assertEqual((s["selected_modelset"], s["candidate"], s["pass"]), ("pairfeat2", "pairfeat2", True))
         self.assertIn("pairfeat2_recall", s)
@@ -1190,7 +1192,7 @@ class PreflightPairfeat2(unittest.TestCase):
         # zero, multiple or unknown candidate keys refuse every arm
         for m in ({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"},
                   dict(good, pairfeat1_chain_sha256=self.r.hashes(CAND_FILES)),
-                  dict({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"}, pairfeat6_chain_sha256={})):
+                  dict({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"}, pairfeat7_chain_sha256={})):
             _wj(self.ap, m)
             for a in pfc.ALLOWED_ARMS:
                 self.refused("dev-clean", a)
@@ -1305,7 +1307,7 @@ class CLIPairfeat2(CLIFixture, unittest.TestCase):
         out = os.path.join(self.exp, "s.json")
         self.assertEqual(pfc.main(["dev-clean", out, "pairfeat1=" + b, "pairfeat2=" + c]), 2)
         self.assertEqual(pfc.main(["dev-clean", out, "pairfeat2=" + c, "pairfeat2=" + c]), 2)
-        self.assertEqual(pfc.main(["dev-clean", out, "baseline=" + b, "pairfeat6=" + c]), 2)
+        self.assertEqual(pfc.main(["dev-clean", out, "baseline=" + b, "pairfeat7=" + c]), 2)
         am = _rj(os.path.join(self.exp, "artifact-manifest.json"))
         for m in (dict(am, pairfeat1_chain_sha256=chain(CAND_FILES, "c")),
                   {k: v for k, v in am.items() if k != "pairfeat2_chain_sha256"}):
@@ -1384,11 +1386,11 @@ class RunnerPairfeat2(RunnerFixture, unittest.TestCase):
         for m in ({"git_head": self.head, "baseline_chain_sha256": base},
                   {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat1_chain_sha256": chain(CAND_FILES, "c"),
                    "pairfeat2_chain_sha256": chain(CAND2_FILES, "c")},
-                  {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat6_chain_sha256": chain(CAND2_FILES, "c")}):
+                  {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat7_chain_sha256": chain(CAND2_FILES, "c")}):
             _wj(ap, m)
             for a in ("baseline", P1, P2):
                 self.assert_refused(self.run_sh(self.root, "dev-clean", a, preflight_only=True), "candidate")
-        self.assert_refused(self.run_sh(self.root, "dev-clean", "pairfeat6"))
+        self.assert_refused(self.run_sh(self.root, "dev-clean", "pairfeat7"))
 
     def test_pairfeat2_dev_stress_and_validation(self):
         self.real_artifact_manifest(cand=P2)
@@ -1562,7 +1564,7 @@ class Pairfeat4(unittest.TestCase):
             self.assertEqual(pfc.CANDIDATES[c]["review_gate"], "total")
             self.assertEqual(pfc.review_gate(c), "total")
         self.assertEqual(pfc.review_gate(P4), "wrong_pair")
-        for bad in ("baseline", "pairfeat6", "", None):
+        for bad in ("baseline", "pairfeat7", "", None):
             with self.assertRaises(ValueError):
                 pfc.review_gate(bad)
         self.assertEqual(pfc.arms(P4), ("baseline", P4))
@@ -1583,7 +1585,7 @@ class Pairfeat4(unittest.TestCase):
         ok = dict(P4_EXTRAS, git_head=HEAD, baseline_chain_sha256=b, pairfeat4_chain_sha256=chain(CAND4_FILES, "c"))
         self.assertEqual(pfc.infer_candidate(ok, "artifact-manifest.json"), P4)
         for bad in (dict(ok, pairfeat3_chain_sha256=chain(CAND3_FILES, "c")),
-                    dict(ok, pairfeat6_chain_sha256=chain(CAND4_FILES, "c")),
+                    dict(ok, pairfeat7_chain_sha256=chain(CAND4_FILES, "c")),
                     dict(P4_EXTRAS, baseline_chain_sha256=b)):
             with self.assertRaises(pfc.PreflightError):
                 pfc.infer_candidate(bad, "artifact-manifest.json")
@@ -1642,7 +1644,7 @@ class Pairfeat4(unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('pairfeat4) DEV_SEEDS="433 449 461";;', text)
-        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;;", text)
+        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;;", text)
         self.assertIn("pfc._load_lane(os.path.join(work, \"v2-s%d\" % seed), seed, arm, mode, cand)", text)
 
 
@@ -1965,7 +1967,7 @@ class Pairfeat5(unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('pairfeat5) DEV_SEEDS="521 541 547";;', text)
-        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;;", text)
+        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;;", text)
 
 
 class XscriptCount(unittest.TestCase):
@@ -2465,7 +2467,7 @@ class R1reviewPreflight(unittest.TestCase):
                 pfc.init_experiment(self.r.exp, R1)
             self.assertFalse(os.path.exists(self.ep))
         self.r.artifact_manifest()
-        for bad in (P5, "pairfeat6", "", None):
+        for bad in (P5, "pairfeat7", "", None):
             with self.assertRaises(pfc.PreflightError):
                 pfc.init_experiment(self.r.exp, bad)          # only a candidate with a reference arm has one
         self.assertFalse(os.path.exists(self.ep))
@@ -2500,7 +2502,7 @@ class R1reviewPreflight(unittest.TestCase):
             pfc.preflight_identity("dev-clean", P4, self.r.exp, self.r.root, HEAD)
         # a contradicting or malformed experiment.json is refused for every arm
         good = _rb(self.ep)
-        for bad in ({"candidate": R1, "reference": P4}, {"candidate": P5, "reference": P5}, {"candidate": "pairfeat6", "reference": P5},
+        for bad in ({"candidate": R1, "reference": P4}, {"candidate": P5, "reference": P5}, {"candidate": "pairfeat7", "reference": P5},
                     {"candidate": R1}, dict(EXPERIMENT_JSON, extra=1), [], "r1review"):
             _wj(self.ep, bad)
             for a in ("baseline", P5, R1):
@@ -3397,6 +3399,603 @@ class CLIR1reviewBaselineSafety(CLIR1review):
         res = pfc.analyse("validation-clean", os.path.join(r.exp, "validation-ok.json"), {"baseline": v[0], P5: v[1], R1: v[2]},
                           repo=r.root, head=HEAD)
         self.assertTrue(res["pass"])
+
+
+
+# ================================================================ candidate pairfeat6 (three arms: baseline, pairfeat5 reference fitted separately, pairfeat6)
+
+P6 = "pairfeat6"
+P6_DEV = [659, 661, 673]
+P6_VAL = [677, 683, 691, 701, 709]
+CAND6_FILES = ("encoder_pairfeat6.json", "lgb_stream_pairfeat6.json", "iso_pairfeat6.json", "iso_v7_pairfeat6.json",
+               "name_idf_pairfeat6.json")
+FILES[P6] = CAND6_FILES
+DEV_SEEDS[P6] = P6_DEV
+P6_ENTRY = {"dev_seeds": [659, 661, 673], "validation_seeds": [677, 683, 691, 701, 709], "review_gate": "wrong_pair_cap",
+            "report_xscript_cap": True, "reference": "pairfeat5", "reference_chain": "experiment",
+            "reference_gate": "pairfeat6", "baseline_gating": False, "report_linked_pairs": True}
+USED_DEV = [307, 311, 313, 317, 331, 337, 347, 353, 367, 433, 449, 461, 521, 541, 547, 557, 563, 569, 571, 577, 587]
+USED_VAL = [401, 409, 419, 421, 431, 601, 607, 613, 617, 619, 631, 641, 643, 647, 653]
+B8_SEEDS = [11, 23, 37, 41, 59, 17, 29]
+# r1review driver tables and dev-clean analysis outputs computed with the harness at 931a823 (before pairfeat6)
+R1_GOLDEN = {"driver": "67706e7258577a131cb022260d8e1222ec103a974c86601abfa0b8924c0a4609",
+             "dev-clean": "f17691f0fa469dc7c4efa1b164d4ade29fd75a03fbcea4f7bf8510f543d9d53c"}
+PF6_PATIENTS = [("m|1", "Mohammed Salem", "1980-05-17"), ("m|2", "Mohamed Salem", "1980-05-17"),
+                ("x|ar", "محمد سالم", "1975-01-01"), ("x|la", "Mohammed Karim", "1975-01-01"),
+                ("y|a", "Ahmed Ali", ""), ("y|b", "Ahmed Ali", "1990-02-02"),
+                ("z|a", "Mohammed Salem", "1985-03-03"), ("z|b", "Mohammed Nasser", "1985-03-04")]
+PF6_PK = {"m|1": "M1", "m|2": "M1", "x|ar": "X1", "x|la": "X2", "y|a": "Y1", "y|b": "Y2", "z|a": "Z1", "z|b": "Z2"}
+
+
+def link(a, b, **kw):
+    return dict({"kind": "pair", "a": a, "b": b, "p": 0.98, "stage": "linked"}, **kw)
+
+
+# one true merge (m), one pair per diagnosed class (x, y, z), a duplicate record and a pair unlinked later
+PF6_LINKED = [link("m|1", "m|2"), link("m|2", "m|1"), link("x|ar", "x|la"), link("y|a", "y|b"), link("z|a", "z|b"),
+              link("z|b", "m|1"), {"kind": "pair", "a": "m|1", "b": "z|b", "stage": "unlinked"}]
+
+
+def patient_line(key, name, dob):
+    prov, mrn = key.split("|")
+    pt = {"resourceType": "Patient", "name": [{"text": name}],
+          "identifier": [{"system": "urn:ae:%s:mrn" % prov, "value": mrn},
+                         {"system": "http://doh.gov.ae/fhir/sid/emirates-id", "value": "784"}]}
+    if dob:
+        pt["birthDate"] = dob
+    return {"arrival": 0.01, "prov": prov, "res": {"resourceType": "Encounter", "contained": [pt]}}
+
+
+def pf6_arm(name, tp, truth=600, fm=10, cpe=10, uncapped=5, hours=10.0, **kw):
+    a = cap_arm(name, tp, truth, uncapped, 0, fm, cross_person_edges=cpe, **kw)
+    a["reviewer"]["hours"] = hours
+    return a
+
+
+def runner_recheck(exp, head, *args, mode="dev-clean"):
+    """Run the runner's independent clean-HEAD manifest re-check (its inline Python) with these trailing arguments."""
+    with open(SCRIPT) as h:
+        lines = h.read().split("\n")
+    start = next(i for i, l in enumerate(lines) if l.startswith('python3 -I - "$PARENT" "$MODE" "$HEAD"'))
+    end = next(i for i in range(start + 1, len(lines)) if lines[i] == "PY")
+    code = "\n".join(lines[start + 2:end])
+    return subprocess.run(["python3", "-I", "-", exp, mode, head, SCRIPT, os.path.join(HERE, "pairfeat_compare.py")] + list(args),
+                          input=code, capture_output=True, text=True, timeout=60).returncode
+
+
+class Pairfeat6Candidate(unittest.TestCase):
+    def test_entry_and_tables(self):
+        self.assertEqual(pfc.CANDIDATES[P6], P6_ENTRY)
+        self.assertEqual(pfc.arms(P6), ("baseline", P5, P6))
+        self.assertEqual(pfc.modes(P6), {
+            "dev-clean": {"split": "dev", "seeds": P6_DEV, "rerr": "0", "errungraded": "0"},
+            "dev-stress": {"split": "dev", "seeds": P6_DEV, "rerr": "0.04", "errungraded": "0.25"},
+            "validation-clean": {"split": "eval", "seeds": P6_VAL, "rerr": "0", "errungraded": "0"}})
+        self.assertEqual(pfc.CHAIN_FILES[P6], CAND6_FILES)
+        self.assertEqual((pfc.MODELSET[P6], pfc.CHAIN_KEY[P6], pfc.chain_of(P6), pfc.reference(P6), pfc.review_gate(P6)),
+                         (P6, "pairfeat6_chain_sha256", P6, P5, "wrong_pair_cap"))
+        self.assertEqual(pfc.extra_flags(P6), [])
+        self.assertFalse(pfc.lane_image(P6))
+        self.assertFalse(pfc.baseline_gating(P6))
+        self.assertTrue(pfc.reference_chain_in_experiment(P6))
+        self.assertFalse(any(pfc.reference_chain_in_experiment(c) for c in pfc.CANDIDATES if c != P6))
+        self.assertIn(P6, pfc.CHAIN_CANDIDATES)
+        s = pfc.expected_settings("validation-clean", P6)
+        self.assertEqual((s["image"], s["reference"], s["candidate_extra_flags"], s["arms"], s["candidate_modelset"], s["seeds"]),
+                         ("off", P5, [], ["baseline", P5, P6], P6, P6_VAL))
+        self.assertNotIn("imgphotos", s)
+
+    def test_seeds_never_touched_before(self):
+        used = set(USED_DEV + USED_VAL + B8_SEEDS + list(pfc.RETIRED_SEEDS) + pfc.VALIDATION_SEEDS)
+        for c, spec in pfc.CANDIDATES.items():
+            if c != P6:
+                used |= set(spec["dev_seeds"] + spec.get("validation_seeds", []))
+        self.assertFalse(set(P6_DEV + P6_VAL) & used)
+        self.assertTrue(all(s > 587 for s in P6_DEV + P6_VAL))
+
+
+class Pairfeat6Guard(unittest.TestCase):
+    BIN = "/repo/bin/wsi7"
+
+    def cmds(self, mode, a, seed):
+        return pfc.lane_commands("/repo", self.BIN, "/data/exp/arm/v2-s%d" % seed, seed, mode, a, candidate=P6)
+
+    def test_lane_argv_per_arm(self):
+        for a, ms in (("baseline", None), (P5, "pairfeat5"), (P6, "pairfeat6")):
+            for name, argv, _ in self.cmds("dev-clean", a, 659):
+                if name in pfc.MODEL_CMDS:
+                    if ms:
+                        self.assertEqual(argv[argv.index("-modelset") + 1], ms)
+                    else:
+                        self.assertNotIn("-modelset", argv)
+                    self.assertEqual(argv[argv.index("-image") + 1], "off")
+                for f in ("-r1review", "-imgphotos", "-imgcache"):
+                    self.assertNotIn(f, argv)
+        # the reference arm's lanes are exactly pairfeat5 lanes
+        self.assertEqual(self.cmds("dev-clean", P5, 659),
+                         pfc.lane_commands("/repo", self.BIN, "/data/exp/arm/v2-s659", 659, "dev-clean", P5))
+
+    def test_every_lane_passes_the_guard(self):
+        for mode in pfc.MODES:
+            for s in pfc.mode_settings(mode, P6)["seeds"]:
+                for a in pfc.arms(P6):
+                    for _, argv, _ in self.cmds(mode, a, s):
+                        pfc.guard(argv, mode, a, self.BIN, P6)
+
+    def test_refusals(self):
+        orch = {n: v for n, v, _ in self.cmds("dev-clean", P5, 659)}["orchestrate"]
+        bad = list(orch)
+        bad[bad.index("-modelset") + 1] = "pairfeat6"
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(bad, "dev-clean", P5, self.BIN, P6)
+        for a in (R1, P4):
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard(orch, "dev-clean", a, self.BIN, P6)
+        for seed in (571, 401, 677, 557):          # another experiment's dev seed, old validation, validation in dev, retired
+            for name, argv, _ in self.cmds("dev-clean", P6, seed):
+                if name in ("gen", "orchestrate"):
+                    with self.assertRaises(pfc.GuardError, msg=(name, seed)):
+                        pfc.guard(argv, "dev-clean", P6, self.BIN, P6)
+        gen = {n: v for n, v, _ in self.cmds("dev-clean", P6, 659)}["gen"]
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(gen + ["-imgphotos"], "dev-clean", P6, self.BIN, P6)
+
+
+class Pairfeat6Preflight(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.r = Repo(self.td.name, cand=P6)
+        for f in CAND5_FILES + CAND6_FILES:
+            with open(os.path.join(self.r.root, "models", f), "w") as h:
+                h.write("model " + f)
+        self.ref = os.path.join(self.td.name, "ref")   # the separately fitted pairfeat5 reference
+        os.makedirs(self.ref)
+        self.ep = os.path.join(self.r.exp, "experiment.json")
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def ref_manifest(self, **kw):
+        m = {"git_head": HEAD, "baseline_chain_sha256": self.r.hashes(BASE_FILES), "pairfeat5_chain_sha256": self.r.hashes(CAND5_FILES)}
+        m.update(kw)
+        _wj(os.path.join(self.ref, "artifact-manifest.json"), m)
+        return m
+
+    def init(self):
+        return pfc.init_experiment(self.r.exp, P6, self.ref, repo=self.r.root)
+
+    def ident(self, **kw):
+        d = {"git_head": HEAD, "baseline_chain_sha256": self.r.hashes(BASE_FILES), "pairfeat6_chain_sha256": self.r.hashes(CAND6_FILES),
+             "reference_model_chain": self.r.hashes(CAND5_FILES), "candidate": P6}
+        d.update(kw)
+        return d
+
+    def pi(self, mode, a):
+        return pfc.preflight_identity(mode, a, self.r.exp, self.r.root, HEAD)
+
+    def test_init_experiment(self):
+        with self.assertRaises(pfc.PreflightError):
+            self.init()                                                   # no artifact manifest
+        self.r.artifact_manifest()
+        with self.assertRaises(pfc.PreflightError):
+            self.init()                                                   # no reference manifest
+        good = self.ref_manifest()
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, P6, repo=self.r.root)         # the reference fit directory is required
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R1, self.ref, repo=self.r.root)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, P6, self.r.exp, repo=self.r.root)   # a parent is not its own reference
+        for bad in (dict(good, git_head="c" * 40), dict(good, baseline_chain_sha256=chain(BASE_FILES, "x")),
+                    dict(good, pairfeat5_chain_sha256=chain(CAND5_FILES, "x")),       # not the models/ files
+                    {k: v for k, v in good.items() if k != "pairfeat5_chain_sha256"},
+                    dict(good, pairfeat4_chain_sha256=chain(CAND4_FILES, "c")),
+                    dict(good, pairfeat5_chain_sha256={"x": "1"})):
+            _wj(os.path.join(self.ref, "artifact-manifest.json"), bad)
+            with self.assertRaises(pfc.PreflightError, msg=str(bad)):
+                self.init()
+            self.assertFalse(os.path.exists(self.ep))
+        self.ref_manifest()
+        want = {"candidate": P6, "reference": P5, "reference_model_chain": self.r.hashes(CAND5_FILES),
+                "reference_artifact_manifest_sha256": _sha(os.path.join(self.ref, "artifact-manifest.json"))}
+        self.assertEqual(self.init(), want)
+        self.assertEqual(_rj(self.ep), want)
+        before = _rb(self.ep)
+        with self.assertRaises(pfc.PreflightError):
+            self.init()                                                   # write-once
+        self.assertEqual(_rb(self.ep), before)
+
+    def test_init_experiment_cli_arguments(self):
+        self.r.artifact_manifest()
+        self.ref_manifest()
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, P6]), 2)               # no reference fit directory
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, P6, self.ref, "x"]), 2)
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, R1, self.ref]), 2)
+        self.assertFalse(os.path.exists(self.ep))
+
+    def test_preflight_per_arm(self):
+        self.r.artifact_manifest()
+        for a in pfc.arms(P6):
+            with self.assertRaises(pfc.PreflightError):
+                self.pi("dev-clean", a)                                   # no experiment.json
+        self.ref_manifest()
+        self.init()
+        for a, files in (("baseline", BASE_FILES), (P5, CAND5_FILES), (P6, CAND6_FILES)):
+            self.assertEqual(self.pi("dev-clean", a), (P6, self.r.hashes(files)))
+        for a in (R1, P4):
+            with self.assertRaises(pfc.PreflightError):
+                self.pi("dev-clean", a)
+        good = _rb(self.ep)
+        e = _rj(self.ep)
+        for bad in ({k: v for k, v in e.items() if k != "reference_model_chain"}, dict(e, reference=P4),
+                    dict(e, reference_model_chain={"x": "1"}), dict(e, reference_artifact_manifest_sha256="z"),
+                    dict(e, candidate=R1), dict(e, extra=1)):
+            _wj(self.ep, bad)
+            for a in pfc.arms(P6):
+                with self.assertRaises(pfc.PreflightError, msg=str(bad)):
+                    self.pi("dev-clean", a)
+        with open(self.ep, "wb") as h:
+            h.write(good)
+        with open(os.path.join(self.r.root, "models", "iso_pairfeat5.json"), "a") as h:
+            h.write("x")                                                  # a changed reference model file
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("dev-clean", P5)
+        self.pi("dev-clean", P6)
+
+    def test_selection_stress_freeze_and_validation(self):
+        self.r.artifact_manifest()
+        self.ref_manifest()
+        self.init()
+        sp, tp = (os.path.join(self.r.exp, n) for n in ("selection.json", "stress.json"))
+        sel = self.ident(selected_modelset=P6, mode="dev-clean", seeds=P6_DEV, **{"pass": True})
+        for bad in ({k: v for k, v in sel.items() if k != "reference_model_chain"},
+                    dict(sel, reference_model_chain=chain(CAND5_FILES, "x")),
+                    dict(sel, pairfeat5_chain_sha256=self.r.hashes(CAND5_FILES))):
+            _wj(sp, bad)
+            with self.assertRaises(pfc.PreflightError, msg=str(bad)):
+                self.pi("dev-stress", "baseline")
+        _wj(sp, sel)
+        self.assertEqual(self.pi("dev-stress", P5)[0], P6)
+        _wj(tp, self.ident(mode="dev-stress", seeds=P6_DEV, selection_sha256=_sha(sp), **{"pass": True}))
+        vm = pfc.freeze_validation(self.r.exp, self.r.root, HEAD)
+        self.assertEqual((vm["candidate"], vm["seeds"]), (P6, P6_VAL))
+        self.assertEqual(vm["reference_model_chain"], self.r.hashes(CAND5_FILES))
+        self.assertEqual(vm["experiment_sha256"], _sha(self.ep))
+        self.assertNotIn("pairfeat5_chain_sha256", vm)
+        for a, files in (("baseline", BASE_FILES), (P5, CAND5_FILES), (P6, CAND6_FILES)):
+            self.assertEqual(self.pi("validation-clean", a), (P6, self.r.hashes(files)))
+        vp = os.path.join(self.r.exp, "validation-manifest.json")
+        frozen = _rb(vp)
+        _wj(vp, dict(vm, reference_model_chain=chain(CAND5_FILES, "x")))
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("validation-clean", "baseline")
+        with open(vp, "wb") as h:
+            h.write(frozen)
+        self.pi("validation-clean", "baseline")
+
+
+class Pairfeat6Gate(unittest.TestCase):
+    def g(self, cand, kind="selection", ref=None, base=None):
+        return pfc.reference_gate(ref or pf6_arm(P5, 530), cand, kind, base=base or pf6_arm("baseline", 500))
+
+    def test_pass_at_every_limit(self):
+        g = self.g(pf6_arm(P6, 530, fm=9, cpe=9, uncapped=6, hours=11.0))
+        self.assertEqual(json.dumps(g, sort_keys=True), json.dumps({
+            "pass": True, "kind": "selection", "reference": P5, "gain_pp": 0.0, "min_gain_pp": 0.0,
+            "contamination": {"false_merge_pairs": {P5: 10, P6: 9, "rule": "strictly below"},
+                              "cross_person_edges": {P5: 10, P6: 9, "rule": "strictly below"}},
+            "uncapped_wrong_distinct_pairs": {P5: 5, P6: 6, "max_allowed": 6.0},
+            "hours": {P5: 10.0, P6: 11.0, "max_allowed": 11.0},
+            "reported": {"impure_clusters": {P5: 0, P6: 0}, "wrong_final_signoffs": {P5: 0, P6: 0},
+                         "xscript_cap": {P5: None, P6: None}, "linked_pairs": {P5: None, P6: None}, "gating": False},
+            "reasons": []}, sort_keys=True))
+
+    def test_contamination_strictly_below_except_stress(self):
+        for kind in ("selection", "validation"):
+            self.assertEqual(self.g(pf6_arm(P6, 530, fm=10, cpe=9), kind)["reasons"],
+                             ["false_merge_pairs not strictly below reference (10 >= 10)"])
+            self.assertEqual(self.g(pf6_arm(P6, 530, fm=9, cpe=10), kind)["reasons"],
+                             ["cross_person_edges not strictly below reference (10 >= 10)"])
+        self.assertTrue(self.g(pf6_arm(P6, 530), "stress")["pass"])        # equal: not above
+        g = self.g(pf6_arm(P6, 530, fm=11, cpe=11), "stress")
+        self.assertEqual(g["reasons"], ["false_merge_pairs above reference (11 > 10)", "cross_person_edges above reference (11 > 10)"])
+        self.assertEqual(g["contamination"]["false_merge_pairs"]["rule"], "not above")
+
+    def test_recall_gain_at_least_zero(self):
+        for kind in pfc.GATE_KINDS:
+            self.assertTrue(self.g(pf6_arm(P6, 530, fm=9, cpe=9), kind)["pass"], kind)
+            self.assertEqual(self.g(pf6_arm(P6, 529, fm=9, cpe=9), kind)["reasons"], ["gain vs reference -0.1667pp below 0.0pp"])
+
+    def test_uncapped_wrong_pair_limit(self):
+        for ru, ok, bad, shown in ((5, 6, 7, "6.00"), (20, 22, 23, "22.00"), (0, 1, 2, "1.00")):
+            ref = pf6_arm(P5, 530, uncapped=ru)
+            self.assertTrue(self.g(pf6_arm(P6, 530, fm=9, cpe=9, uncapped=ok), ref=ref)["pass"], ru)
+            self.assertEqual(self.g(pf6_arm(P6, 530, fm=9, cpe=9, uncapped=bad), ref=ref)["reasons"],
+                             ["uncapped wrong-pair link-review pairs %d exceed %s (max(1.10 x %d, %d + 1))" % (bad, shown, ru, ru)])
+
+    def test_hours(self):
+        self.assertEqual(self.g(pf6_arm(P6, 530, fm=9, cpe=9, hours=11.01))["reasons"],
+                         ["reviewer hours 11.01 exceed 11.00 (reference 10.00 +10%)"])
+
+    def test_safety_in_every_arm(self):
+        for k in pfc.SAFETY:
+            for label, which in (("baseline ", "base"), ("reference ", "ref"), ("", "cand")):
+                a = {"base": pf6_arm("baseline", 500), "ref": pf6_arm(P5, 530), "cand": pf6_arm(P6, 530, fm=9, cpe=9)}
+                a[which][k] = 1
+                g = pfc.reference_gate(a["ref"], a["cand"], "stress", base=a["base"])
+                self.assertEqual(g["reasons"], [label + k + " nonzero"])
+        b = pf6_arm("baseline", 500, wrong_released_by_origin={"a": 1})
+        self.assertEqual(self.g(pf6_arm(P6, 530, fm=9, cpe=9), base=b)["reasons"], ["baseline wrong_released_by_origin nonzero"])
+
+    def test_reported_and_inputs(self):
+        g = self.g(pf6_arm(P6, 530, fm=9, cpe=9, impure_clusters=50))
+        self.assertTrue(g["pass"])
+        self.assertEqual(g["reported"]["impure_clusters"], {P5: 0, P6: 50})
+        with self.assertRaises(ValueError):
+            pfc.reference_gate(pf6_arm(P5, 530), pf6_arm(P6, 530), "selection")     # the baseline arm is required
+        with self.assertRaises(ValueError):
+            self.g(pf6_arm(P6, 530), "bogus")
+        with self.assertRaises(ValueError):
+            self.g(arm(P6, 530, 600))                                               # uncapped wrong pairs are required
+        self.assertFalse(self.g(pf6_arm(P6, 530, fm=9, cpe=9), ref=pf6_arm(P4, 530))["pass"])
+        self.assertIn("truth_closed differs between arms", self.g(pf6_arm(P6, 530, fm=9, cpe=9, truth=601))["reasons"])
+
+    def test_selection_ignores_the_baseline_gate(self):
+        base = pf6_arm("baseline", 500, fm=5)                                       # pairfeat6 prevents no false merge vs baseline
+        s = pfc.select(base, pf6_arm(P6, 530, fm=9, cpe=9), pf6_arm(P5, 530))
+        self.assertEqual((s["candidate"], s["reference"], s["selected_modelset"], s["pass"]), (P6, P5, P6, True))
+        self.assertFalse(s["gate"]["pass"])
+        self.assertIs(s["gate"]["gating"], False)
+        s = pfc.select(base, pf6_arm(P6, 530), pf6_arm(P5, 530))                     # false merges equal: reference gate fails
+        self.assertEqual((s["selected_modelset"], s["pass"]), (None, False))
+
+
+class LinkedPairs(unittest.TestCase):
+    def test_final_linked_pairs(self):
+        lines = trace_lines([link("a", "b"), link("b", "a"), link("c", "d"), cap_rec("e", "f"),
+                             {"kind": "pair", "a": "d", "b": "c", "stage": "unlinked"}, {"kind": "config"}]).splitlines(True)
+        self.assertEqual(pfc.final_linked_pairs(lines), {("a", "b")})
+        with self.assertRaises(ValueError):
+            pfc.final_linked_pairs([json.dumps({"kind": "pair", "a": "a", "stage": "linked"})])
+
+    def test_cohort_registrations(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, "fhir_p.ndjson"), "w") as h:
+                h.write(trace_lines([patient_line("p|1", "Ahmed Ali", "1990-02-02"), patient_line("p|1", "Changed", "2000-01-01"),
+                                     patient_line("q|2", "Sara", "")]))
+            self.assertEqual(pfc.cohort_registrations(d), {"p|1": {"name": "Ahmed Ali", "dob": "1990-02-02"},
+                                                           "q|2": {"name": "Sara", "dob": ""}})
+
+    def test_edge_class(self):
+        r = lambda n, d="1980-01-01": {"name": n, "dob": d}
+        self.assertEqual(pfc.edge_class(r("محمد سالم"), r("Mohammed Karim")), "cross_script_lookalike")
+        self.assertEqual(pfc.edge_class(r("Mohammed Karim", ""), r("محمد سالم")), "cross_script_lookalike")   # script first
+        self.assertEqual(pfc.edge_class(r("Ahmed Ali", ""), r("Ahmed Ali")), "missing_dob_ambiguous")
+        self.assertEqual(pfc.edge_class(r("Mohammed Salem"), r("Mohammed Nasser")), "shared_token")
+        self.assertEqual(pfc.edge_class(r("Ahmed Ali"), r("ahmed ali")), "other")         # identical token sets
+        self.assertEqual(pfc.edge_class(r("Ahmed Ali"), r("Sara Nasser")), "other")       # nothing shared
+        self.assertEqual(pfc.edge_class(None, r("Ahmed Ali")), "unresolved")
+
+    def test_linked_pair_report(self):
+        pk = {"a": "P1", "b": "P1", "c": "P2", "d": "P3"}
+        regs = {"a": {"name": "Ahmed Ali", "dob": "1990-02-02"}, "c": {"name": "محمد", "dob": "1975-01-01"},
+                "d": {"name": "Mohammed", "dob": "1975-01-01"}}
+        lines = trace_lines([link("a", "b"), link("c", "d")]).splitlines(True)
+        self.assertEqual(pfc.linked_pair_report(lines, pk), {"same_person": 1, "different_person": 1})
+        self.assertEqual(pfc.linked_pair_report(lines, pk, regs)["edge_classes"],
+                         {"cross_script_lookalike": 1, "missing_dob_ambiguous": 0, "shared_token": 0, "other": 0, "unresolved": 0})
+        with self.assertRaises(ValueError):
+            pfc.linked_pair_report(trace_lines([link("a", "z")]).splitlines(True), pk)
+
+    def test_lane_metrics_and_aggregate(self):
+        lp = {"same_person": 2, "different_person": 1, "edge_classes": dict.fromkeys(pfc.EDGE_CLASSES, 0)}
+        lp["edge_classes"]["shared_token"] = 1
+        lanes = [pfc.lane_metrics(s, report(), funnel(), {}, LOAD, linked=lp) for s in (1, 2, 3)]
+        self.assertEqual(lanes[0]["linked_pairs"], lp)
+        a = pfc.aggregate_arm(P6, lanes)
+        self.assertEqual(a["linked_pairs"], {"same_person": 6, "different_person": 3,
+                                             "edge_classes": dict(dict.fromkeys(pfc.EDGE_CLASSES, 0), shared_token=3)})
+        with self.assertRaises(ValueError):
+            pfc.aggregate_arm(P6, lanes[:2] + [pfc.lane_metrics(3, report(), funnel(), {}, LOAD)])
+        self.assertNotIn("linked_pairs", pfc.aggregate_arm(P5, [pfc.lane_metrics(1, report(), funnel(), {}, LOAD)]))
+
+
+class CLIPairfeat6(CLIFixture, unittest.TestCase):
+    CAND = P6
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.exp = os.path.join(self.td.name, "exp")
+        os.makedirs(self.exp)
+        self.maps = {"baseline": chain(BASE_FILES, "b"), P5: chain(CAND5_FILES, "r"), P6: chain(CAND6_FILES, "c")}
+        _wj(os.path.join(self.exp, "artifact-manifest.json"),
+            {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat6_chain_sha256": self.maps[P6]})
+        _wj(os.path.join(self.exp, "experiment.json"), {"candidate": P6, "reference": P5, "reference_model_chain": self.maps[P5],
+                                                       "reference_artifact_manifest_sha256": "d" * 64})
+
+    def make_arm(self, a, tp, *args, recs=None, fm=None, cpe=None, wrong=2, hours=None, **kw):
+        root = super().make_arm(a, tp, *args, **kw)
+        for d in sorted(os.listdir(root)):
+            if not d.startswith("v2-s"):
+                continue
+            lane = os.path.join(root, d)
+            q, pk = queue(same=1, wrong=wrong)
+            pk.update({"c1": "C1", "c2": "C1", "c3": "C3", "c4": "C4"})
+            pk.update(PF6_PK)
+            _wj(os.path.join(lane, "run/main/review_queue.json"), q)
+            os.makedirs(os.path.join(lane, "cohort"))
+            _wj(os.path.join(lane, "cohort/truth.json"), {"pk_qid": pk, "loops": {}})
+            with open(os.path.join(lane, "cohort/fhir_p.ndjson"), "w") as h:
+                h.write(trace_lines([patient_line(k, n, b) for k, n, b in PF6_PATIENTS]))
+            r = recs if recs is not None else ([] if a == "baseline" else [cap_rec("c1", "c2"), cap_rec("c3", "c4")])
+            with open(os.path.join(lane, "run/main/link_funnel.ndjson"), "w") as h:
+                h.write(trace_lines(r + PF6_LINKED))
+            rp = os.path.join(lane, "run/main/report7.json")
+            rj = _rj(rp)
+            if fm is not None:
+                rj["linkage"]["false_merge_pairs"] = fm
+            if cpe is not None:
+                rj["linkage"]["cross_person_edges_by_basis"] = {"wasl": cpe}
+            if hours is not None:
+                rj["reviewer"]["by_kind"]["all"]["sim_hours"] = hours
+            _wj(rp, rj)
+        return root
+
+    def three(self, mode="dev-clean", b=5, f=6, c=7, **ck):
+        cand = dict(fm=1, cpe=2)
+        cand.update(ck)
+        return (self.make_arm("baseline", b, mode=mode, fm=3), self.make_arm(P5, f, mode=mode, fm=3),
+                self.make_arm(P6, c, mode=mode, **cand))
+
+    def run3(self, mode, roots, out=None):
+        b, f, c = roots
+        return pfc.main([mode, out or os.path.join(self.exp, mode + "-summary.json"), "baseline=" + b, "pairfeat5=" + f,
+                         "pairfeat6=" + c])
+
+    def test_dev_clean_pass(self):
+        self.assertEqual(self.run3("dev-clean", self.three()), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual((sel["candidate"], sel["reference"], sel["selected_modelset"], sel["pass"], sel["seeds"]),
+                         (P6, P5, P6, True, P6_DEV))
+        self.assertEqual((sel["pairfeat6_chain_sha256"], sel["reference_model_chain"]), (self.maps[P6], self.maps[P5]))
+        self.assertNotIn("pairfeat5_chain_sha256", sel)
+        self.assertIs(sel["gate"]["gating"], False)
+        rg = sel["reference_gate"]
+        self.assertEqual(rg["contamination"], {"false_merge_pairs": {P5: 9, P6: 3, "rule": "strictly below"},
+                                               "cross_person_edges": {P5: 9, P6: 6, "rule": "strictly below"}})
+        self.assertEqual(rg["uncapped_wrong_distinct_pairs"], {P5: 6, P6: 6, "max_allowed": 7.0})
+        self.assertEqual(rg["hours"], {P5: 4.5, P6: 4.5, "max_allowed": 4.95})
+        self.assertEqual(rg["gain_pp"], 10.0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["rarity_table_sha256"], self.maps[P6]["name_idf_pairfeat6.json"])
+        for a in (P5, P6):
+            self.assertEqual(s["arms"][a]["linked_pairs"], {"same_person": 3, "different_person": 9, "edge_classes": {
+                "cross_script_lookalike": 3, "missing_dob_ambiguous": 3, "shared_token": 3, "other": 0, "unresolved": 0}})
+            self.assertEqual(s["arms"][a]["xscript_cap"], {"pairs": 6, "same_person": 3, "different_person": 3})
+            self.assertNotIn("completion_undocumented", s["arms"][a])
+        self.assertNotIn("linked_pairs", s["arms"]["baseline"])
+
+    def test_contamination_must_fall(self):
+        self.assertEqual(self.run3("dev-clean", self.three(fm=3)), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual(sel["reference_gate"]["reasons"], ["false_merge_pairs not strictly below reference (9 >= 9)"])
+        self.assertEqual((sel["selected_modelset"], sel["pass"]), (None, False))
+
+    def test_three_roots_and_experiment_json_required(self):
+        b, f, c = self.three()
+        out = os.path.join(self.exp, "s.json")
+        for roots in ({"baseline": b, P6: c}, {"baseline": b, P5: f}, {P5: f, P6: c}):
+            with self.assertRaises(ValueError, msg=str(roots)):
+                pfc.analyse("dev-clean", out, roots)
+        ep = os.path.join(self.exp, "experiment.json")
+        saved = _rb(ep)
+        os.remove(ep)
+        with self.assertRaises(ValueError):
+            self.run3("dev-clean", (b, f, c))
+        with open(ep, "wb") as h:
+            h.write(saved)
+        self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+
+    def test_arm_identity_rejected(self):
+        b, f, c = self.three()
+        for roots in ((b, self.make_arm(P5, 6, fm=3, chain_map=self.maps[P6], name="f-map"), c),
+                      (b, self.make_arm(P5, 6, fm=3, cfg_modelset=P6, name="f-ms"), c),
+                      (b, f, self.make_arm(P6, 7, fm=1, cpe=2, chain_map=self.maps[P5], name="c-map"))):
+            with self.assertRaises((ValueError, KeyError, OSError)):
+                self.run3("dev-clean", roots)
+            self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+        self.assertEqual(self.run3("dev-clean", (b, f, c)), 0)
+
+    def test_stress_freeze_and_validation_end_to_end(self):
+        r = Repo(os.path.join(self.td.name, "v"), cand=P6)
+        for fn in CAND5_FILES + CAND6_FILES:
+            with open(os.path.join(r.root, "models", fn), "w") as h:
+                h.write("model " + fn)
+        ref = os.path.join(self.td.name, "v", "ref")
+        os.makedirs(ref)
+        _wj(os.path.join(ref, "artifact-manifest.json"), {"git_head": HEAD, "baseline_chain_sha256": r.hashes(BASE_FILES),
+                                                          "pairfeat5_chain_sha256": r.hashes(CAND5_FILES)})
+        self.exp = r.exp
+        self.maps = {"baseline": r.hashes(BASE_FILES), P5: r.hashes(CAND5_FILES), P6: r.hashes(CAND6_FILES)}
+        r.artifact_manifest()
+        pfc.init_experiment(r.exp, P6, ref, repo=r.root)
+        st3 = self.three(mode="dev-stress", fm=3, cpe=3)                # equal contamination passes in stress
+        with self.assertRaises(ValueError):
+            self.run3("dev-stress", st3)                                # no selection yet
+        self.assertEqual(self.run3("dev-clean", self.three()), 0)
+        self.assertEqual(self.run3("dev-stress", st3), 0)
+        st = _rj(os.path.join(r.exp, "stress.json"))
+        self.assertEqual((st["pass"], st["candidate"], st["reference"], st["seeds"]), (True, P6, P5, P6_DEV))
+        self.assertEqual(st["reference_gate"]["contamination"]["false_merge_pairs"]["rule"], "not above")
+        self.assertEqual(st["reference_model_chain"], self.maps[P5])
+        vm = pfc.freeze_validation(r.exp, r.root, HEAD)
+        self.assertEqual((vm["candidate"], vm["seeds"], vm["reference_model_chain"]), (P6, P6_VAL, self.maps[P5]))
+        out = os.path.join(r.exp, "validation-clean-summary.json")
+        v3 = self.three(mode="validation-clean")
+        run = lambda: pfc.analyse("validation-clean", out, {"baseline": v3[0], P5: v3[1], P6: v3[2]}, repo=r.root, head=HEAD)
+        res = run()
+        self.assertTrue(res["pass"])
+        self.assertEqual((res["reference_gate"]["kind"], res["candidate"], res["seeds"]), ("validation", P6, P6_VAL))
+        self.assertEqual(res["arms"][P6]["linked_pairs"], {"same_person": 5, "different_person": 15})   # no classes outside development
+        with self.assertRaises(FileExistsError):
+            run()
+
+
+class RunnerPairfeat6(RunnerFixture, unittest.TestCase):
+    def write_experiment(self):
+        _wj(os.path.join(self.exp, "experiment.json"), {"candidate": P6, "reference": P5,
+                                                       "reference_model_chain": chain(CAND5_FILES, "r"),
+                                                       "reference_artifact_manifest_sha256": "d" * 64})
+
+    def test_parent_needs_experiment_json(self):
+        self.real_artifact_manifest(cand=P6)
+        self.assert_refused(self.run_sh(self.root, "dev-clean", "baseline", preflight_only=True))   # no experiment.json
+        self.write_experiment()
+        r = self.run_sh(self.root, "dev-clean", "baseline", preflight_only=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("candidate pairfeat6 seeds 659 661 673", r.stdout)
+        for a in (P5, P6):                      # fake model maps: refused by preflight, not by arm parsing
+            r = self.run_sh(self.root, "dev-clean", a, preflight_only=True)
+            self.assert_refused(r)
+            self.assertNotIn("invalid arm", r.stderr)
+        self.assert_refused(self.run_sh(self.root, "dev-clean", R1, preflight_only=True))
+
+    def test_runner_tables(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('pairfeat6) DEV_SEEDS="659 661 673"; VAL_SEEDS="677 683 691 701 709"; REF=pairfeat5; REFCHAIN=experiment;;', text)
+
+    def test_independent_recheck(self):
+        self.real_artifact_manifest(cand=P6)
+        self.assertNotEqual(runner_recheck(self.exp, self.head, P6, P6, P5, "experiment"), 0)   # no experiment.json
+        self.write_experiment()
+        self.assertEqual(runner_recheck(self.exp, self.head, P6, P6, P5, "experiment"), 0)
+        self.assertNotEqual(runner_recheck(self.exp, self.head, P6, P6), 0)                    # without REFCHAIN the file is refused
+        self.assertNotEqual(runner_recheck(self.exp, self.head, P6, P6, R1, "experiment"), 0)  # wrong reference
+        self.assertNotEqual(runner_recheck(self.exp, self.head, P5, P5), 0)                    # the manifest carries pairfeat6
+
+
+class R1reviewByteIdentity(unittest.TestCase):
+    """r1review driver tables and dev-clean analysis outputs equal the harness's at 931a823."""
+
+    def test_driver_tables_unchanged(self):
+        c, root, bin_, o = R1, "/repo", "/repo/bin/wsi7", "/data/exp/arm/v2-s0"
+        t = {"arms": list(pfc.arms(c)), "modes": pfc.modes(c), "review_gate": pfc.review_gate(c),
+             "settings": {m: pfc.expected_settings(m, c) for m in pfc.MODES},
+             "chain": {a: [pfc.CHAIN_KEY[a], list(pfc.CHAIN_FILES[a]), pfc.MODELSET[a]] for a in pfc.arms(c)},
+             "lanes": {m: {str(s): {a: pfc.lane_commands(root, bin_, o, s, m, a, candidate=c) for a in pfc.arms(c)}
+                           for s in pfc.modes(c)[m]["seeds"]} for m in pfc.MODES}}
+        self.assertEqual(_digest(t), R1_GOLDEN["driver"])
+
+    def test_dev_clean_outputs_unchanged(self):
+        t = CLIR1review()
+        t.setUp()
+        try:
+            self.assertEqual(t.run3("dev-clean", t.three()), 0)
+            got = {n: hashlib.sha256(_rb(os.path.join(t.exp, n))).hexdigest() for n in ("dev-clean-summary.json", "selection.json")}
+        finally:
+            t.tearDown()
+        self.assertEqual(_digest(got), R1_GOLDEN["dev-clean"])
 
 
 if __name__ == "__main__":
