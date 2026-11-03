@@ -349,6 +349,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
 	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
+	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{} // pilot: a post-closure audit that disagreed with the automatic verdict
 	pending := []string{}
 	pendSet := map[string]bool{}
@@ -440,6 +441,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if PrepQuery && h == "adequate" && r.d.Ev != nil && r.d.Ev.PrepUngraded {
 				label = r.d.Ev.GradedLabel
 			}
+			// completion review (r1review.go): the clinician decides completion only; tissue still waits for histology
+			if R1ReviewOn && h == "adequate" && r.d.Ev != nil && r.d.Ev.R1Review {
+				label = completionLabel(r.d.Ev)
+			}
 			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not
 			// reached, inadequate prep) needs a confirming review that sees the quote; until then the loop stays open
 			if h == "adequate" && explicitInadequate(r.d.Ev) {
@@ -493,6 +498,15 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 		if label == "" {
+			if R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review { // completion not documented: clinician review (r1review.go)
+				raiseFor(r, "evidence", CompletionPurpose)
+				if !completionPending {
+					completionPending = true
+					rr := r
+					completionRow = &rr
+				}
+				continue
+			}
 			raise(r, "evidence")
 			continue
 		}
@@ -581,6 +595,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": why, "programme": prog,
 				"report": holdRow.d.Provider + "/DiagnosticReport/" + holdRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
 				"policy": "no closure without two-reader adequate evidence or authorised human decision"})
+		} else if !(awaiting || inadequate) && completionPending && completionRow != nil { // r1review.go: held for the clinician
+			chain = appendBlock(nil, "link_decision", linkBlock(f, completionRow.d, completionRow.pc))
+			chain = appendBlock(chain, "evidence", evBlock(completionRow.d, ""))
+			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": "completion_review", "programme": prog,
+				"report": completionRow.d.Provider + "/DiagnosticReport/" + completionRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
+				"policy": "completion not documented: a clinician decides, no automatic verdict"})
 		}
 		if auditNote != nil { // the audit re-opened an automatic closure: record it in the chain
 			chain = appendBlock(chain, "auto_audit", auditNote)

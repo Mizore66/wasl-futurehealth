@@ -101,10 +101,10 @@ func prepStates(comms []CommFact, now float64) map[string]*prepState {
 	return m
 }
 
-// errFor: the day-15 ungraded-prep decision is made without a documented grade, so it carries ErrUngraded (assumed)
-// instead of the reviewer's usual per-read error.
+// errFor: the day-15 ungraded-prep decision is made without a documented grade, and the completion review (r1review.go)
+// without a documented caecum, so both carry ErrUngraded (assumed) instead of the reviewer's usual per-read error.
 func (c ReviewerCfg) errFor(it *ReviewItem) float64 {
-	if it.Reason == PrepDay15Purpose {
+	if it.Reason == PrepDay15Purpose || it.Reason == CompletionPurpose { // r1review.go: completion decided without documentation
 		return ErrUngraded
 	}
 	return c.Err
