@@ -173,3 +173,7 @@
   - completion items with verified photos and their answers;
   - converted reports reverted for lack of a verified photo;
   - the image reader summary (`caecal_photo` counts).
+
+## Amendment 3 (user-approved 3 Nov 2026): gate vs pairfeat5 only, fresh seeds
+
+See spec Amendment 3. Task B3 (harness): for candidate `r1review`, the vs-baseline gate is computed and reported but does not affect `pass`; `pass` = reference gate (vs pairfeat5) pass. `CANDIDATES["r1review"]` and the runner's seed table use development 571 577 587 and validation 631 641 643 647 653; 557 563 569 and 601 607 613 617 619 become protected (refused). pairfeat1-pairfeat5 unchanged. Task C then reruns with a new experiment directory `pairfeat5/r1review-run-2`.
