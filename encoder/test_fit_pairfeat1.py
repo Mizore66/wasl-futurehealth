@@ -823,16 +823,42 @@ class Pairfeat6(unittest.TestCase):
                           "-idfseeds", "1019,1021,1031,1033,1039", "-out", self.I])
 
     def test_name_idf_header(self):
-        good = {"version": 1, "split": "train", "persons": 5000, "noise": "v1t",
+        good = {"version": 2, "split": "train", "persons": 5000, "noise": "v1t",
                 "seeds": [1019, 1021, 1031, 1033, 1039], "registrations": 10, "counts": {"a": 1}}
         with tempfile.TemporaryDirectory() as d:
             p = os.path.join(d, "t.json")
             fp.write_json(p, good)
             fp.check_name_idf_header(p, "pairfeat6")
-            for k, v in (("split", "cal"), ("persons", 4000), ("noise", "v1"), ("seeds", [1019]), ("version", 2)):
+            for k, v in (("split", "cal"), ("persons", 4000), ("noise", "v1"), ("seeds", [1019]), ("version", 1)):
                 fp.write_json(p, dict(good, **{k: v}))
                 with self.assertRaises(ValueError):
                     fp.check_name_idf_header(p, "pairfeat6")
+
+    def test_unseen_share(self):
+        import math
+        n = 1000
+        top = math.log(n)
+        rows = [  # label, corr, f0..f33 (f33 at index 35)
+            (1, top), (1, top - 0.69), (1, float("nan")), (0, top - 1e-4), (0, top - 1e-4), (0, 1.0), (0, 2.0)]
+        with tempfile.TemporaryDirectory() as d:
+            p = os.path.join(d, "x.csv")
+            with open(p, "w") as f:
+                for lab, f33 in rows:
+                    f.write(",".join([str(lab), "0"] + ["0"] * 33 + [repr(f33)] + ["0"] * 5) + "\n")
+            s = fp.unseen_share(p, n)
+            self.assertEqual(s["same_person"], {"pairs": 2, "at_unseen_weight": 1, "share": 0.5})
+            self.assertEqual(s["different_person"], {"pairs": 4, "at_unseen_weight": 2, "share": 0.5})
+            out, models, chain = (os.path.join(d, x) for x in ("o", "m", "c"))
+            for x in (out, models, chain):
+                os.mkdir(x)
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            for n_ in fp.BASELINE_FILES:
+                open(os.path.join(models, n_), "wb").write(b"b")
+            for n_ in fp.chain_files("pairfeat6"):
+                open(os.path.join(chain, n_), "wb").write(b"c")
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat6", unseen_token_share={"x": s})
+            self.assertEqual(m["unseen_token_share"], {"x": s})
 
     def test_dump_argv(self):
         W, D, E, I = self.W, self.D, self.E, self.I

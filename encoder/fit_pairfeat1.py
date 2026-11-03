@@ -163,11 +163,32 @@ def check_name_idf_header(path, modelset):
     proto = PROTOCOLS[modelset]
     with open(path) as f:
         t = json.load(f)
-    want = {"version": 1, "split": "train", "persons": PERSONS, "noise": proto["noise"],
+    want = {"version": 2, "split": "train", "persons": PERSONS, "noise": proto["noise"],
             "seeds": list(proto["train_seeds"])}
     got = {k: t.get(k) for k in want}
     if got != want:
         raise ValueError(f"name-rarity table header {got} differs from protocol {want}")
+
+
+UNSEEN_TOLERANCE = 0.01  # a row's N' differs from N by a few registrations: log(N/N') < 2e-4, far below log 2
+
+
+def unseen_share(csv_path, registrations):
+    """Share of same-person (label 1) and different-person (label 0) pairs whose f33 (rarest unmatched token weight)
+    sits at the unseen-token weight log(N), among rows with f33 defined. Reported, not gated (Amendment 1)."""
+    top = math.log(registrations) - UNSEEN_TOLERANCE
+    n = {"1": 0, "0": 0}
+    hit = {"1": 0, "0": 0}
+    with open(csv_path, newline="") as f:
+        for row in csv.reader(f):
+            f33 = float(row[2 + 33])
+            if math.isnan(f33):
+                continue
+            k = "1" if float(row[0]) == 1 else "0"
+            n[k] += 1
+            hit[k] += f33 >= top
+    return {"same_person": {"pairs": n["1"], "at_unseen_weight": hit["1"], "share": hit["1"] / n["1"] if n["1"] else None},
+            "different_person": {"pairs": n["0"], "at_unseen_weight": hit["0"], "share": hit["0"] / n["0"] if n["0"] else None}}
 
 
 def train_argv(wsi, data, enc, modelset, seed, out, idf=None):
@@ -422,7 +443,7 @@ def write_json(path, obj):
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
                       family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None,
-                      xs_namesake_slice=None, name_idf_sha256=None):
+                      xs_namesake_slice=None, name_idf_sha256=None, unseen_token_share=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -445,6 +466,8 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         m["xs_namesake_slice"] = xs_namesake_slice
     if name_idf_sha256 is not None:
         m["name_idf_sha256"] = name_idf_sha256
+    if unseen_token_share is not None:
+        m["unseen_token_share"] = unseen_token_share
     return m
 
 
@@ -547,6 +570,12 @@ def main(argv):
             extra["ns_cal_sidecar_sha256"] = sha256(ns_path + ".namesakes.json")
         if proto.get("xs_namesakes"):
             extra["xs_namesake_slice"] = xs_namesake_slice(ns_path, ns_path + ".namesakes.json", width=width + 1)
+    if idf:
+        with open(idf) as fh:
+            n_reg = json.load(fh)["registrations"]
+        extra["unseen_token_share"] = {
+            f"train_{proto['train_seeds'][0]}": unseen_share(os.path.join(out, train_csv_names(modelset)[0]), n_reg),
+            f"cal_{cal_seed}": unseen_share(os.path.join(out, cal), n_reg)}
     head = check_head_unchanged(root, tm)
     write_json(os.path.join(out, "artifact-manifest.json"),
                artifact_manifest(head, out, csvs, models, chain, len(go), delta, modelset, max_abs_leaf=leaf,
