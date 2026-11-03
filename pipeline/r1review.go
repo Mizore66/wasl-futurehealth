@@ -17,10 +17,24 @@ var R1ReviewOn = false // flag -r1review (default off: byte-identical outputs)
 
 const CompletionPurpose = "completion_undocumented"
 
+// signedCompletion: a completion-review item for this report was signed (its sign-off carries CompletionPurpose). Such
+// items exist only where -r1review was on, so with the flag off everywhere this is always false.
+func signedCompletion(sos []Signoff, reportID string) bool {
+	for _, s := range sos {
+		if s.Purpose == CompletionPurpose && s.ReportID == reportID {
+			return true
+		}
+	}
+	return false
+}
+
 // completionLabel: the label a completion-review report gets once a clinician signs "adequate". If either reader says
 // tissue was taken and the two readers do not both find histology in the report, the loop waits for histology (the
 // safe direction: a disagreement costs a wait, never a closure).
 func completionLabel(v *TwoVerdict) string {
+	if v == nil { // no reader fields to check: wait (safe direction)
+		return "awaiting_histology"
+	}
 	tissue := v.Regex.Polyps == "yes" || v.Gemma.Polyps == "yes"
 	if tissue && !(v.Regex.Histology == "yes" && v.Gemma.Histology == "yes") {
 		return "awaiting_histology"

@@ -452,8 +452,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if PrepQuery && h == "adequate" && r.d.Ev != nil && r.d.Ev.PrepUngraded {
 				label = r.d.Ev.GradedLabel
 			}
-			// completion review (r1review.go): the clinician decides completion only; tissue still waits for histology
-			if R1ReviewOn && h == "adequate" && r.d.Ev != nil && r.d.Ev.R1Review {
+			// completion review (r1review.go): the clinician decides completion only; tissue still waits for histology.
+			// Keyed on the signed item's purpose as well as on the verdict, so it holds even if a re-judging process
+			// reverted the verdict (final review M3, defence in depth)
+			if h == "adequate" && (R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review || signedCompletion(f.Signoffs, r.d.ReportID)) {
 				label = completionLabel(r.d.Ev)
 			}
 			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not

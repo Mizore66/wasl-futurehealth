@@ -353,3 +353,36 @@ func TestR1PhotoGateReaderScore(t *testing.T) {
 		t.Fatalf("readerscore with -r1review: want the flag-off verdict\nwant %s\ngot  %s", off, r1JSON(t, v))
 	}
 }
+
+// Final review M3 (defence in depth): a signed completion-review "adequate" always waits for histology when tissue was
+// taken, keyed on the signed item's purpose, even if a re-judging process reverted the verdict (R1Review false; image
+// reader off or -r1review off).
+func TestR1ReviewSignedCompletionWaitsForHistologyAfterRevert(t *testing.T) {
+	for _, on := range []bool{true, false} {
+		r1Set(t, false)
+		gt := r1ValveG
+		gt.Polyps = "yes"
+		rep := r1Report(t, r1ValveTissue, gt) // flag-off verdict: agreed inadequate, R1Review false
+		if rep.Ev.R1Review || !rep.Ev.Agree || rep.Ev.Label != "inadequate" || rep.Ev.Regex.Polyps != "yes" {
+			t.Fatalf("fixture: want the reverted (flag-off) verdict with tissue taken, got %+v", rep.Ev)
+		}
+		R1ReviewOn = on
+		so := Signoff{ItemID: "rv-completion", LoopID: "L", Kinds: []string{"evidence"}, ReportID: "R1", Evidence: "adequate", Purpose: CompletionPurpose}
+		C := NewClosureCore(0, nil)
+		outs := C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", SRDay: 0, Down: []DownFact{rep},
+			EvOver: map[string]string{"R1": "adequate"}, Signoffs: []Signoff{so}}, InSeq: 1})
+		outs = append(outs, C.Apply(&FactsMsg{ID: "t", IsTick: true, TickDay: 12, InSeq: 2})...)
+		if d := lastDec(outs); d.State != "awaiting_histology" {
+			t.Fatalf("flag=%v: signed completion adequate on a reverted verdict with tissue taken: want awaiting_histology, got %s", on, d.State)
+		}
+		// an ordinary signed adequate (no completion purpose) is unchanged
+		so.Purpose = ""
+		C = NewClosureCore(0, nil)
+		outs = C.Apply(&FactsMsg{ID: "f", Facts: &LoopFacts{LoopID: "L", SRDay: 0, Down: []DownFact{rep},
+			EvOver: map[string]string{"R1": "adequate"}, Signoffs: []Signoff{so}}, InSeq: 1})
+		outs = append(outs, C.Apply(&FactsMsg{ID: "t", IsTick: true, TickDay: 12, InSeq: 2})...)
+		if d := lastDec(outs); d.State != "closed" {
+			t.Fatalf("flag=%v: ordinary signed adequate changed: %s", on, d.State)
+		}
+	}
+}
