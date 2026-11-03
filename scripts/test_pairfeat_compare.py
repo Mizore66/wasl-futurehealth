@@ -2572,6 +2572,7 @@ class ReferenceGate(unittest.TestCase):
         self.assertEqual(json.dumps(g, sort_keys=True), json.dumps({
             "pass": True, "kind": "selection", "reference": P5, "gain_pp": 1.0, "min_gain_pp": 1.0,
             "hours": {P5: 10.0, R1: 11.0, "max_allowed": 11.0},
+            "wrong_final_signoffs": {P5: 0, R1: 0, "gating": False},
             "not_above_reference": {"false_merge_pairs": {P5: 2, R1: 2}, "impure_clusters": {P5: 0, R1: 0},
                                     "cross_person_edges": {P5: 0, R1: 0}, "wrong_distinct_pairs": {P5: 10, R1: 10}},
             "reasons": []}, sort_keys=True))
@@ -2609,10 +2610,18 @@ class ReferenceGate(unittest.TestCase):
             self.assertEqual(g["reasons"], [k + " nonzero"])
         g = pfc.reference_gate(ref_arm(P5, 530, wrong_released_by_origin={"a": 1}), ref_arm(R1, 540), "selection")
         self.assertEqual(g["reasons"], ["reference wrong_released_by_origin nonzero"])
-        for label, which in (("reference ", 0), ("", 1)):
-            a = [ref_arm(P5, 530), ref_arm(R1, 540)]
-            a[which]["reviewer"]["wrong_final_signoffs"] = 1
-            self.assertEqual(pfc.reference_gate(a[0], a[1], "stress")["reasons"], [label + "wrong_final_signoffs nonzero"])
+
+    def test_wrong_final_signoffs_reported_not_gated(self):
+        # Amendment 1: stress lanes carry ~80 wrong final sign-offs per arm by design (4% reviewer error); with zero
+        # false closures and wrong releases the reference gate's safety check passes, and the counts are reported
+        ref, cand = ref_arm(P5, 530), ref_arm(R1, 540)
+        ref["reviewer"]["wrong_final_signoffs"], cand["reviewer"]["wrong_final_signoffs"] = 82, 85
+        for kind in pfc.GATE_KINDS:
+            g = pfc.reference_gate(ref, cand, kind)
+            self.assertTrue(g["pass"], (kind, g["reasons"]))
+            self.assertEqual(g["wrong_final_signoffs"], {P5: 82, R1: 85, "gating": False})
+        ref["false_closures"] = 1
+        self.assertEqual(pfc.reference_gate(ref, cand, "stress")["reasons"], ["reference false_closures nonzero"])
 
     def test_arms_and_inputs(self):
         self.assertFalse(pfc.reference_gate(ref_arm(P4, 530), ref_arm(R1, 540), "selection")["pass"])
