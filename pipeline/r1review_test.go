@@ -149,3 +149,29 @@ func TestR1ReviewFlagOffUnchanged(t *testing.T) {
 		t.Fatalf("flag off with an R1Review verdict: %d completion items, hold %q", len(pilotItems(outs, CompletionPurpose)), r1HoldState(d))
 	}
 }
+
+// (g) an explicit inadequacy from either reader (here: one reader grades prep inadequate) stays automatically
+// inadequate with the flag on, exactly as with it off; only a verdict decided by R1 alone goes to review.
+func TestR1ReviewExplicitInadequacyStaysAuto(t *testing.T) {
+	text := "Colonoscopy: the colonoscope was advanced to the ileocecal valve. Poor bowel preparation."
+	g := gemmaEntry{Caecum: "not_stated", Prep: "not_stated", Polyps: "no", Histology: "no"}
+	r1Set(t, false)
+	off := r1Judge(text, g)
+	if off.Regex.Prep != "inadequate" || off.Regex.Caecum != "not_stated" || !off.Agree || off.Label != "inadequate" {
+		t.Fatalf("fixture: want flag-off agreed inadequate with regex prep inadequate, got %+v", off)
+	}
+	R1ReviewOn = true
+	on := r1Judge(text, g)
+	if fmt.Sprintf("%+v", *on) != fmt.Sprintf("%+v", *off) {
+		t.Fatalf("explicit inadequacy changed by -r1review:\noff %+v\non  %+v", *off, *on)
+	}
+}
+
+// (h) the pure valve-only case (R1 is the only reason for inadequate) still routes to the completion review.
+func TestR1ReviewValveOnlyRoutesToReview(t *testing.T) {
+	r1Set(t, true)
+	v := r1Judge(r1ValveText, r1ValveG)
+	if v.Agree || v.Label != "disagree" || !v.R1Review || v.Rule != "R1_completion_review" {
+		t.Fatalf("valve-only: want completion review, got %+v", v)
+	}
+}
