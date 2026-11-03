@@ -998,7 +998,7 @@ class Candidates(unittest.TestCase):
                                          "pairfeat2": {"dev_seeds": [317, 331, 337], "review_gate": "total"},
                                          "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
                                          "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
-                                         "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair",
+                                         "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap",
                                                        "report_xscript_cap": True}})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
@@ -1918,11 +1918,13 @@ class Pairfeat5(unittest.TestCase):
         return pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_)
 
     def test_seeds_chain_and_gate(self):
-        self.assertEqual(pfc.CANDIDATES[P5], {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair",
+        self.assertEqual(pfc.CANDIDATES[P5], {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap",
                                               "report_xscript_cap": True})
         for c in (P1, P2, P3, P4):
             self.assertNotIn("report_xscript_cap", pfc.CANDIDATES[c])
-        self.assertEqual(pfc.review_gate(P5), "wrong_pair")
+        self.assertEqual(pfc.review_gate(P5), "wrong_pair_cap")
+        self.assertEqual(pfc.review_gate(P4), "wrong_pair")
+        self.assertEqual(pfc.CAP_WRONG_PER_PREVENTED, 2)
         self.assertEqual(pfc.arms(P5), ("baseline", P5))
         self.assertEqual(pfc.CHAIN_FILES[P5], CAND5_FILES)
         self.assertEqual(pfc.CHAIN_KEY[P5], "pairfeat5_chain_sha256")
@@ -2001,22 +2003,28 @@ class XscriptCount(unittest.TestCase):
 class CLIPairfeat5(CLIFixture, unittest.TestCase):
     CAND = P5
 
-    def make_arm(self, a, tp, *args, caps=None, truth=True, unmapped=False, **kw):
+    def make_arm(self, a, tp, *args, caps=None, truth=True, unmapped=False, recs=None, fm=None, wrong=1, **kw):
         root = super().make_arm(a, tp, *args, **kw)
         for d in sorted(os.listdir(root)):
             if not d.startswith("v2-s"):
                 continue
-            q, pk = queue(same=1, wrong=1)
+            q, pk = queue(same=1, wrong=wrong)
             pk.update({"c1": "C1", "c2": "C1", "c3": "C3", "c4": "C4"})
             _wj(os.path.join(root, d, "run/main/review_queue.json"), q)
             os.makedirs(os.path.join(root, d, "cohort"))
             _wj(os.path.join(root, d, "cohort/truth.json"), {"pk_qid": pk, "loops": {}})
-            if caps is not None:
-                recs = [cap_rec("c1", "c2"), cap_rec("c2", "c1"), cap_rec("c3", "c4"), cap_rec("c4", "c3", stage="x")]
+            if caps is not None or recs is not None:
+                r = recs if recs is not None else [cap_rec("c1", "c2"), cap_rec("c2", "c1"), cap_rec("c3", "c4"),
+                                                   cap_rec("c4", "c3", stage="x")]
                 if unmapped:
-                    recs.append(cap_rec("c1", "ghost"))
+                    r = r + [cap_rec("c1", "ghost")]
                 with open(os.path.join(root, d, "run/main/link_funnel.ndjson"), "w") as h:
-                    h.write(trace_lines(recs))
+                    h.write(trace_lines(r))
+            if fm is not None:
+                rp = os.path.join(root, d, "run/main/report7.json")
+                rj = _rj(rp)
+                rj["linkage"]["false_merge_pairs"] = fm
+                _wj(rp, rj)
         return root
 
     def setUp(self):
@@ -2025,7 +2033,7 @@ class CLIPairfeat5(CLIFixture, unittest.TestCase):
             {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat5_chain_sha256": self.maps[P5]})
 
     def test_candidate_reports_caps_baseline_does_not(self):
-        self.assertEqual(self.run_cli("dev-clean", self.make_arm("baseline", 5, caps=None),
+        self.assertEqual(self.run_cli("dev-clean", self.make_arm("baseline", 5, recs=[]),
                                       self.make_arm(P5, 6, caps=[])), 0)
         s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
         self.assertEqual(s["arms"][P5]["xscript_cap"], {"pairs": 6, "same_person": 3, "different_person": 3})
@@ -2034,14 +2042,139 @@ class CLIPairfeat5(CLIFixture, unittest.TestCase):
         self.assertNotIn("xscript_cap", s["arms"]["baseline"]["per_seed"]["521"])
         sel = _rj(os.path.join(self.exp, "selection.json"))
         self.assertNotIn("xscript_cap", json.dumps(sel["gate"]))
-        self.assertEqual(sel["gate"]["wrong_distinct_pairs"]["baseline"], 3)
+        self.assertEqual(sel["gate"]["review_gate"], "wrong_pair_cap")
+        self.assertEqual(sel["gate"]["uncapped_wrong_distinct_pairs"]["baseline"], 3)
+        self.assertEqual(s["arms"]["baseline"]["reviewer"]["capped_wrong_distinct_pairs"], 0)
+        # fixture: each lane has wrong pair w0 (uncapped) and capped different-person pair c3|c4 (not in the queue)
+        self.assertEqual(s["arms"][P5]["reviewer"]["capped_wrong_distinct_pairs"], 0)
+        self.assertEqual(s["arms"][P5]["reviewer"]["uncapped_wrong_distinct_pairs"], 3)
 
     def test_missing_trace_or_unmapped_aborts_before_writes(self):
-        b = self.make_arm("baseline", 5)
+        b = self.make_arm("baseline", 5, recs=[])
         self.assert_rejected(b, self.make_arm(P5, 6, name="m1"))                              # no trace
         self.assert_rejected(b, self.make_arm(P5, 6, caps=[], unmapped=True, name="m2"))      # unmapped capped reg
+        self.assert_rejected(self.make_arm("baseline", 5, name="b0"), self.make_arm(P5, 6, caps=[], name="m4"))  # baseline no trace
         self.assertFalse(os.path.exists(os.path.join(self.exp, "dev-clean-summary.json")))
         self.assertEqual(self.run_cli("dev-clean", b, self.make_arm(P5, 6, caps=[], name="m3")), 0)
+
+    def test_baseline_capped_record_aborts_before_writes(self):
+        for recs in ([cap_rec("c1", "c2")], [cap_rec("c3", "c4")]):  # same-person or different-person capped record
+            b = self.make_arm("baseline", 5, recs=recs, name="bad%d" % len(os.listdir(self.exp)))
+            self.assert_rejected(b, self.make_arm(P5, 6, caps=[], name="c%d" % len(os.listdir(self.exp))))
+            self.assertFalse(os.path.exists(os.path.join(self.exp, "dev-clean-summary.json")))
+
+    def test_cap_gate_end_to_end(self):
+        # queue pairs w0|a-w0|b ... ; cap the first two wrong pairs in the candidate arm
+        capw = [cap_rec("w0|a", "w0|b"), cap_rec("w1|b", "w1|a"), cap_rec("c1", "c2")]
+        b = self.make_arm("baseline", 5, recs=[], wrong=2, fm=3)
+        c = self.make_arm(P5, 6, recs=capw, wrong=4, fm=1, name="cand-ok")   # wrong 4/lane: 2 capped, 2 uncapped
+        self.assertEqual(self.run_cli("dev-clean", b, c), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        r = s["arms"][P5]["reviewer"]
+        self.assertEqual((r["capped_wrong_distinct_pairs"], r["uncapped_wrong_distinct_pairs"]), (6, 6))
+        self.assertEqual(s["arms"][P5]["xscript_cap"], {"pairs": 9, "same_person": 3, "different_person": 6})
+        g = _rj(os.path.join(self.exp, "selection.json"))["gate"]
+        self.assertEqual(g["prevented_false_merges"], 6)
+        self.assertEqual(g["capped_wrong_distinct_pairs"], {P5: 6, "max_allowed": 12})
+        self.assertEqual(g["uncapped_wrong_distinct_pairs"], {"baseline": 6, P5: 6, "max_allowed": 6.6})
+        self.assertEqual(g["capped_same_person_pairs"], 3)
+        self.assertEqual(g["reasons"], [])
+
+
+def cap_arm(name, tp, truth, uncapped, capped, fm, wrong=None, **kw):
+    a = arm(name, tp, truth, false_merge_pairs=fm, **kw)
+    a["reviewer"] = dict(a["reviewer"], uncapped_wrong_distinct_pairs=uncapped, capped_wrong_distinct_pairs=capped,
+                         wrong_distinct_pairs=uncapped + capped if wrong is None else wrong, hours=1.0)
+    return a
+
+
+class CapGate(unittest.TestCase):
+    def base(self, wrong=10, fm=5):
+        return cap_arm("baseline", 500, 600, wrong, 0, fm)
+
+    def test_cap_passes_exactly_at_two_per_prevented(self):
+        for kind in pfc.GATE_KINDS:
+            g = pfc.gate(self.base(), cap_arm(P5, 530, 600, 11, 6, 2), kind)  # prevented 3, capped 6 = 2 x 3
+            self.assertTrue(g["pass"], (kind, g["reasons"]))
+            self.assertEqual(g["review_gate"], "wrong_pair_cap")
+            self.assertEqual(g["prevented_false_merges"], 3)
+            self.assertEqual(g["capped_wrong_distinct_pairs"], {P5: 6, "max_allowed": 6})
+            self.assertEqual(g["uncapped_wrong_distinct_pairs"], {"baseline": 10, P5: 11, "max_allowed": 11.0})
+            self.assertIn("extra_hours_per_extra_closure", g)
+            self.assertEqual(g["distinct_pairs"]["gating"], False)
+            self.assertNotIn("wrong_distinct_pairs", g)
+
+    def test_fails_when_nothing_prevented(self):
+        for fm in (5, 6):
+            g = pfc.gate(self.base(), cap_arm(P5, 530, 600, 10, 0, fm), "selection")
+            self.assertFalse(g["pass"])
+            self.assertIn("false_merge_pairs not reduced (prevented %d)" % (5 - fm), g["reasons"])
+        # capped record with prevented 0 also trips the 2:1 ratio (max 0)
+        g = pfc.gate(self.base(), cap_arm(P5, 530, 600, 10, 1, 5), "selection")
+        self.assertEqual(g["reasons"], ["false_merge_pairs not reduced (prevented 0)",
+                                        "capped wrong-pair link-review pairs 1 exceed 0 (2 per prevented false merge)"])
+
+    def test_fails_on_two_to_one_ratio(self):
+        g = pfc.gate(self.base(), cap_arm(P5, 530, 600, 10, 7, 2), "selection")
+        self.assertEqual(g["reasons"], ["capped wrong-pair link-review pairs 7 exceed 6 (2 per prevented false merge)"])
+
+    def test_fails_on_uncapped_growth(self):
+        g = pfc.gate(self.base(), cap_arm(P5, 530, 600, 12, 0, 2), "selection")
+        self.assertEqual(g["reasons"], ["uncapped wrong-pair link-review pairs 12 exceed 11.00 (baseline 10 +10%)"])
+        b0 = self.base(wrong=0)
+        self.assertTrue(pfc.gate(b0, cap_arm(P5, 530, 600, 1, 0, 2), "selection")["pass"])
+        g = pfc.gate(b0, cap_arm(P5, 530, 600, 2, 0, 2), "selection")
+        self.assertEqual(g["reasons"], ["uncapped wrong-pair link-review pairs 2 exceed 1.00 (baseline 0 +10%)"])
+
+    def test_capped_pairs_do_not_count_as_uncapped_growth(self):
+        g = pfc.gate(self.base(wrong=7), cap_arm(P5, 530, 600, 7, 6, 2), "selection")  # total wrong 13 > 7.7, prevented 3
+        self.assertTrue(g["pass"], g["reasons"])
+
+    def test_other_gates_still_apply_and_missing_fields_error(self):
+        self.assertFalse(pfc.gate(self.base(), cap_arm(P5, 505, 600, 10, 0, 2), "selection")["pass"])
+        for b, c in ((arm("baseline", 500, 600), cap_arm(P5, 530, 600, 1, 0, 2)),
+                     (cap_arm("baseline", 500, 600, 1, 0, 2), arm(P5, 530, 600))):
+            with self.assertRaises(ValueError):
+                pfc.gate(b, c, "selection")
+
+    def test_pairfeat4_gate_json_unchanged(self):
+        b = warm("baseline", 500, 600, wrong=100, distinct_pairs=100, hours=2.0)
+        g = pfc.gate(b, warm(P4, 512, 600, wrong=105, distinct_pairs=120, hours=5.0), "selection")
+        self.assertEqual(json.dumps(g, sort_keys=True), json.dumps({
+            "pass": True, "kind": "selection", "gain_pp": 2.0, "min_gain_pp": 2.0, "review_gate": "wrong_pair",
+            "wrong_distinct_pairs": {"baseline": 100, P4: 105, "max_allowed": 110.0},
+            "distinct_pairs": {"baseline": 100, P4: 120, "ratio": 1.2, "old_gate_max_allowed": 110.0, "gating": False},
+            "extra_hours_per_extra_closure": 0.25, "reasons": []}, sort_keys=True))
+
+
+class CapLoad(unittest.TestCase):
+    def test_review_load_capped_split(self):
+        q, pk = queue(same=1, wrong=3)
+        capped = {("w0|a", "w0|b"), ("w2|b", "w2|a"[::1])}
+        capped = {tuple(sorted(k)) for k in capped} | {("s0|a", "s0|b"), ("zz", "yy")}  # extras outside wrong: ignored
+        out = pfc.review_load(q, [], pk, capped)
+        self.assertEqual((out["wrong_distinct_pairs"], out["capped_wrong_distinct_pairs"],
+                          out["uncapped_wrong_distinct_pairs"]), (3, 2, 1))
+        out = pfc.review_load(q, [], pk, set())
+        self.assertEqual((out["capped_wrong_distinct_pairs"], out["uncapped_wrong_distinct_pairs"]), (0, 3))
+        self.assertNotIn("capped_wrong_distinct_pairs", pfc.review_load(q, [], pk))
+        self.assertNotIn("capped_wrong_distinct_pairs", pfc.review_load(q, []))
+
+    def test_xscript_cap_pairs_sets(self):
+        pk = XscriptCount.PK
+        same, diff = pfc.xscript_cap_pairs(trace_lines([cap_rec("r2", "r1"), cap_rec("r4", "r3"), cap_rec("r3", "r4")]).splitlines(True), pk)
+        self.assertEqual((same, diff), ({("r1", "r2")}, {("r3", "r4")}))
+
+    def test_lane_metrics_and_aggregate_carry_cap_fields(self):
+        load = dict(LOAD, wrong_distinct_pairs=3, capped_wrong_distinct_pairs=1, uncapped_wrong_distinct_pairs=2)
+        m = pfc.lane_metrics(1, report(), funnel(5, 10), {}, load)
+        self.assertEqual((m["reviewer"]["capped_wrong_distinct_pairs"], m["reviewer"]["uncapped_wrong_distinct_pairs"]), (1, 2))
+        lanes = [pfc.lane_metrics(s, report(), funnel(5, 10), {}, load) for s in (521, 541, 547)]
+        r = pfc.aggregate_arm(P5, lanes)["reviewer"]
+        self.assertEqual((r["capped_wrong_distinct_pairs"], r["uncapped_wrong_distinct_pairs"]), (3, 6))
+        mixed = pfc.lane_metrics(547, report(), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=3))
+        with self.assertRaises(ValueError):
+            pfc.aggregate_arm(P5, lanes[:2] + [mixed])
 
 
 class CLIPairfeat4NoXscript(CLIPairfeat4):

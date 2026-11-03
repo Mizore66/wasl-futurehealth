@@ -35,11 +35,14 @@ Gates (fixed before any result). Gains are pooled CRC closure-recall percentage 
   in BOTH arms; no increase in false-merge pairs, impure clusters or summed cross-person edges; candidate distinct
   link-review pairs <= 1.10 x baseline (baseline 0 requires candidate 0).
 Review-load gate per candidate (CANDIDATES[c]["review_gate"], pre-registered): "total" (pairfeat1-pairfeat3) gates the
-  distinct link-review pairs above. "wrong_pair" (pairfeat4, pairfeat5) instead gates wrong_distinct_pairs, the distinct
+  distinct link-review pairs above. "wrong_pair" (pairfeat4) instead gates wrong_distinct_pairs, the distinct
   link-review pairs whose two registrations belong to different persons in each lane's cohort/truth.json pk_qid (an
   unmapped registration aborts the analysis): candidate <= 1.10 x baseline, or <= 1 when baseline is 0. Its gate also
   reports, not gating, the total distinct-pair ratio and extra reviewer hours per extra true closure
   ((cand_hours - base_hours) / (cand_tp - base_tp), null unless tp rises). Total-gate outputs carry no wrong-pair fields.
+  "wrong_pair_cap" (pairfeat5, amendment 1) additionally reads each lane's run/main/link_funnel.ndjson (the baseline's must hold
+  no xscript_cap record): uncapped different-person review pairs <= 1.10 x baseline (<= 1 if none), prevented
+  false_merge_pairs (baseline - candidate) >= 1, capped different-person review pairs <= 2 x prevented.
 CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_closed is a link attach rate, not recall).
 Residual categories and reviewer wrong_final_signoffs are reported outcomes, not gate substitutions.
 Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and descriptive only.
@@ -61,7 +64,9 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
               "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
               # report_xscript_cap: each candidate-arm lane also reports its distinct capped pairs (not gating)
-              "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair", "report_xscript_cap": True}}
+              "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap", "report_xscript_cap": True}}
+WRONG_GATES = ("wrong_pair", "wrong_pair_cap")  # review gates that read cohort/truth.json pk_qid
+CAP_WRONG_PER_PREVENTED = 2  # wrong_pair_cap gate: allowed capped different-person review pairs per prevented false merge
 WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
 VALIDATION_SEEDS = [401, 409, 419, 421, 431]
 MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candidate)
@@ -132,7 +137,7 @@ def _check_candidate(candidate):
 
 
 def review_gate(candidate):
-    """The pre-registered review-load gate of a candidate: "total" or "wrong_pair"."""
+    """The pre-registered review-load gate of a candidate: "total", "wrong_pair" or "wrong_pair_cap"."""
     return CANDIDATES[_check_candidate(candidate)]["review_gate"]
 
 
@@ -577,11 +582,13 @@ def read_build(root, arm, mode, candidate):
     return b
 
 
-def review_load(queue, decisions, pk_qid=None):
+def review_load(queue, decisions, pk_qid=None, capped=None):
     """Link-review burden from review_queue.json items and reviewer decision records (answered by item or by pair).
     With pk_qid (a wrong_pair experiment's cohort/truth.json registration -> person map) it also counts
     wrong_distinct_pairs, the distinct link-review pairs of two different persons; an unmapped registration on a
-    link-review item is an analysis error (ValueError). Without pk_qid the result is the total-gate load, unchanged."""
+    link-review item is an analysis error (ValueError). Without pk_qid the result is the total-gate load, unchanged.
+    With pk_qid and capped (the set of distinct different-person xscript_cap pair keys) it also counts
+    capped_wrong_distinct_pairs (wrong & capped) and uncapped_wrong_distinct_pairs (wrong - capped)."""
     items = [i for i in queue if "link" in (i.get("kinds") or []) and not i.get("reason")]
     key = lambda i: tuple(sorted(i["pair"]))
     answered_items = {d["item"] for d in decisions}
@@ -589,7 +596,11 @@ def review_load(queue, decisions, pk_qid=None):
     un = sum(1 for i in items if i["item"] not in answered_items and key(i) not in answered_pairs)
     out = {"items": len(items), "distinct_pairs": len({key(i) for i in items}), "unanswered": un}
     if pk_qid is not None:
-        out["wrong_distinct_pairs"] = len(_wrong_pairs(items, pk_qid))
+        wrong = _wrong_pairs(items, pk_qid)
+        out["wrong_distinct_pairs"] = len(wrong)
+        if capped is not None:
+            out["capped_wrong_distinct_pairs"] = len(wrong & capped)
+            out["uncapped_wrong_distinct_pairs"] = len(wrong - capped)
     return out
 
 
@@ -612,12 +623,14 @@ def _wrong_pairs(items, pk_qid):
     return wrong
 
 
+WRONG_KEYS = ("wrong_distinct_pairs", "capped_wrong_distinct_pairs", "uncapped_wrong_distinct_pairs")
 XSCRIPT_KEYS = ("pairs", "same_person", "different_person")
 
 
-def xscript_cap_counts(lines, pk_qid):
-    """Distinct sorted (a, b) pair keys of link_funnel.ndjson pair records with reason == "xscript_cap", split by truth
-    (cohort/truth.json pk_qid). A capped registration the map does not cover is an analysis error (ValueError)."""
+def xscript_cap_pairs(lines, pk_qid):
+    """(same_person, different_person) sets of distinct sorted (a, b) pair keys of link_funnel.ndjson pair records with
+    reason == "xscript_cap", split by truth (cohort/truth.json pk_qid). A capped registration the map does not cover is
+    an analysis error (ValueError)."""
     if not isinstance(pk_qid, dict):
         raise ValueError("cohort/truth.json pk_qid must map registrations to persons")
     keys = set()
@@ -630,13 +643,18 @@ def xscript_cap_counts(lines, pk_qid):
             if not isinstance(a, str) or not isinstance(b, str):
                 raise ValueError("capped pair record must name two registrations")
             keys.add(tuple(sorted((a, b))))
-    same = 0
+    same, diff = set(), set()
     for a, b in keys:
         pa, pb = pk_qid.get(a), pk_qid.get(b)
         if not (isinstance(pa, str) and pa and isinstance(pb, str) and pb):
             raise ValueError("capped pair registration is not mapped by cohort/truth.json pk_qid")
-        same += pa == pb
-    return {"pairs": len(keys), "same_person": same, "different_person": len(keys) - same}
+        (same if pa == pb else diff).add((a, b))
+    return same, diff
+
+
+def xscript_cap_counts(lines, pk_qid):
+    same, diff = xscript_cap_pairs(lines, pk_qid)
+    return {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
 
 
 def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
@@ -671,8 +689,9 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
                 "distinct_pairs": _req(load, "distinct_pairs"), "unanswered": _req(load, "unanswered"),
                 "link_items": _req(load, "items"),
                 "by_programme": _req(rv, "by_programme"), "by_origin": _req(rv, "by_origin")}
-    if "wrong_distinct_pairs" in load:  # wrong_pair experiments only
-        reviewer["wrong_distinct_pairs"] = load["wrong_distinct_pairs"]
+    for k in WRONG_KEYS:  # wrong_pair / wrong_pair_cap experiments only
+        if k in load:
+            reviewer[k] = load[k]
     m = {
         "seed": seed, "tp": tp, "truth_closed": truth, "recall": tp / truth if truth else None,
         "categories": {c: cats.get(c, 0) for c in FUNNEL_CATEGORIES},
@@ -712,11 +731,12 @@ def aggregate_arm(arm, lanes):
     a["categories"] = {c: sum(l["categories"][c] for l in lanes) for c in FUNNEL_CATEGORIES}
     a["residual"] = {c: sum(l["residual"][c] for l in lanes) for c in RESIDUAL}
     a["reviewer"] = {k: sum(l["reviewer"][k] for l in lanes) for k in REVIEWER_SUMS}
-    has = ["wrong_distinct_pairs" in l["reviewer"] for l in lanes]
-    if any(has):
-        if not all(has):
-            raise ValueError("wrong_distinct_pairs present in only some lanes of arm %s" % arm)
-        a["reviewer"]["wrong_distinct_pairs"] = sum(l["reviewer"]["wrong_distinct_pairs"] for l in lanes)
+    for k in WRONG_KEYS:
+        has = [k in l["reviewer"] for l in lanes]
+        if any(has):
+            if not all(has):
+                raise ValueError("%s present in only some lanes of arm %s" % (k, arm))
+            a["reviewer"][k] = sum(l["reviewer"][k] for l in lanes)
     xs = ["xscript_cap" in l for l in lanes]
     if any(xs):
         if not all(xs):
@@ -773,6 +793,8 @@ def gate(base, cand, kind):
     limit = bd * (1 + Fraction(str(MAX_REVIEW_GROWTH)))
     if cand.get("arm") in CANDIDATES and review_gate(cand["arm"]) == "wrong_pair":
         return _wrong_pair_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, limit)
+    if cand.get("arm") in CANDIDATES and review_gate(cand["arm"]) == "wrong_pair_cap":
+        return _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, limit)
     if (bd == 0 and cd != 0) or cd > limit:
         reasons.append("distinct link-review pairs %d exceed %.2f (baseline %d +%d%%)" % (cd, float(limit), bd, round(100 * MAX_REVIEW_GROWTH)))
     return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
@@ -798,6 +820,44 @@ def _wrong_pair_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, total_li
     return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
             "review_gate": "wrong_pair",
             "wrong_distinct_pairs": {"baseline": bw, ck: cw, "max_allowed": float(limit)},
+            "distinct_pairs": {"baseline": bd, ck: cd, "ratio": cd / bd if bd else None,
+                               "old_gate_max_allowed": float(total_limit), "gating": False},
+            "extra_hours_per_extra_closure": extra, "reasons": reasons}
+
+
+def _wrong_pair_cap_gate(base, cand, kind, ck, gain, need, reasons, bd, cd, total_limit):
+    """Review-load part of the gate for a "wrong_pair_cap" candidate (pairfeat5, amendment 1): uncapped different-person
+    review pairs <= 1.10 x baseline (<= 1 when the baseline has none); prevented false merges >= 1; capped
+    different-person review pairs <= CAP_WRONG_PER_PREVENTED x prevented. Total pairs, capped same-person pairs and
+    extra hours per extra closure are reported, not gated."""
+    vals = {}
+    for label, a in (("baseline", base), ("candidate", cand)):
+        for k in ("uncapped_wrong_distinct_pairs", "capped_wrong_distinct_pairs"):
+            v = a["reviewer"].get(k)
+            if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+                raise ValueError("wrong_pair_cap gate needs reviewer.%s in the %s arm" % (k, label))
+            vals[label, k] = v
+    bu, cu = vals["baseline", "uncapped_wrong_distinct_pairs"], vals["candidate", "uncapped_wrong_distinct_pairs"]
+    cc = vals["candidate", "capped_wrong_distinct_pairs"]
+    prevented = base["false_merge_pairs"] - cand["false_merge_pairs"]
+    growth = 1 + Fraction(str(MAX_REVIEW_GROWTH))
+    limit = Fraction(WRONG_PAIR_ZERO_BASELINE_MAX) if bu == 0 else bu * growth
+    cap_max = CAP_WRONG_PER_PREVENTED * max(prevented, 0)
+    if prevented < 1:
+        reasons.append("false_merge_pairs not reduced (prevented %d)" % prevented)
+    if cu > limit:
+        reasons.append("uncapped wrong-pair link-review pairs %d exceed %.2f (baseline %d +%d%%)" % (cu, float(limit), bu, round(100 * MAX_REVIEW_GROWTH)))
+    if cc > cap_max:
+        reasons.append("capped wrong-pair link-review pairs %d exceed %d (%d per prevented false merge)" % (cc, cap_max, CAP_WRONG_PER_PREVENTED))
+    dtp = cand["tp"] - base["tp"]
+    extra = (cand["reviewer"]["hours"] - base["reviewer"]["hours"]) / dtp if dtp > 0 else None
+    xs = cand.get("xscript_cap")
+    return {"pass": not reasons, "kind": kind, "gain_pp": None if gain is None else round(gain, 4), "min_gain_pp": need,
+            "review_gate": "wrong_pair_cap",
+            "uncapped_wrong_distinct_pairs": {"baseline": bu, ck: cu, "max_allowed": float(limit)},
+            "prevented_false_merges": prevented,
+            "capped_wrong_distinct_pairs": {ck: cc, "max_allowed": cap_max},
+            "capped_same_person_pairs": None if xs is None else xs["same_person"],
             "distinct_pairs": {"baseline": bd, ck: cd, "ratio": cd / bd if bd else None,
                                "old_gate_max_allowed": float(total_limit), "gating": False},
             "extra_hours_per_extra_closure": extra, "reasons": reasons}
@@ -832,12 +892,21 @@ def _load_lane(path, seed, arm, mode, candidate):
     if os.path.exists(dp):
         with open(dp) as h:
             dec = [json.loads(x) for x in h if x.strip()]
-    pk = _req(j("cohort/truth.json"), "pk_qid") if review_gate(candidate) == "wrong_pair" else None
+    gate_kind = review_gate(candidate)
+    pk = _req(j("cohort/truth.json"), "pk_qid") if gate_kind in WRONG_GATES else None
     xs = None
-    if CANDIDATES[candidate].get("report_xscript_cap") and arm == candidate:  # candidate arm only, never the baseline
+    capped = None
+    report_xs = CANDIDATES[candidate].get("report_xscript_cap") and arm == candidate  # candidate arm only for the report
+    if report_xs or gate_kind == "wrong_pair_cap":
         with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:  # required: a missing trace aborts analysis
-            xs = xscript_cap_counts(h, pk)
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk), xs)
+            same, diff = xscript_cap_pairs(h, pk)
+        if report_xs:
+            xs = {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
+        if gate_kind == "wrong_pair_cap":
+            if arm != candidate and (same or diff):  # the baseline arm must contain no xscript_cap record
+                raise ValueError("baseline lane trace contains xscript_cap records")
+            capped = diff
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs)
 
 
 # ---------------------------------------------------------------- CLI
