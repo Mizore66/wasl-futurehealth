@@ -2,11 +2,11 @@
 # One protected paired CRC pair-scorer lane set (all seeds of a mode) for one model arm. No paid model use.
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
 #   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
-#         | validation-clean (eval; 401 409 419 421 431, r1review 601 607 613 617 619; rerr 0/0)
+#         | validation-clean (eval; 401 409 419 421 431, r1review 631 641 643 647 653; rerr 0/0)
 #   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 (-modelset <candidate> on orchestrate/audit/report7 only)
 #         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
-# r1review 557 563 569. An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
+# r1review 571 577 587 (amendment 3; 557 563 569 / 601-619 retired, refused by the guard). An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
 # over a pairfeat5 artifact-manifest.json) serves three arms: baseline, pairfeat5 (reference; exactly a pairfeat5 lane) and
 # r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds. Every arm of an r1review experiment runs gen with
 # -imgphotos and orchestrate/audit/report7 with -image cached (both -imgcache models/image_verdicts.json); pairfeat1-pairfeat5
@@ -74,7 +74,7 @@ case "$CAND" in
   pairfeat3) DEV_SEEDS="347 353 367";;
   pairfeat4) DEV_SEEDS="433 449 461";;
   pairfeat5) DEV_SEEDS="521 541 547";;
-  r1review) DEV_SEEDS="557 563 569"; VAL_SEEDS="601 607 613 617 619"; CHAIN=pairfeat5; REF=pairfeat5;;
+  r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac

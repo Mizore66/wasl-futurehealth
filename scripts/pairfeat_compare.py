@@ -7,7 +7,8 @@ pairfeat4 (433 449 461), pairfeat5 (521 541 547); validation seeds 401 409 419 4
 baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
 candidate and are checked against it.
 
-Three-arm candidate r1review (development seeds 557 563 569, validation 601 607 613 617 619): the pairfeat5 chain (same model
+Three-arm candidate r1review (development seeds 571 577 587, validation 631 641 643 647 653; amendment 3 retired 557 563 569
+and 601 607 613 617 619, which the guard refuses everywhere): the pairfeat5 chain (same model
 files, manifest key pairfeat5_chain_sha256, -modelset pairfeat5) plus -r1review on orchestrate/audit/report7. Its parent holds
 a pairfeat5 artifact-manifest.json and a write-once experiment.json {"candidate": "r1review", "reference": "pairfeat5"}
 (init-experiment); it serves the arms baseline, pairfeat5 (the reference, run exactly as a pairfeat5 lane) and r1review, and
@@ -60,7 +61,9 @@ Three-arm reference gate (r1review, pre-registered): gate(baseline, r1review) ab
   reference_gate(pairfeat5, r1review): recall gain over pairfeat5 >= +1.0 selection, >= 0 stress, >= +0.5 validation; false
   closures, wrong releases (total and by origin), replay mismatches, analysis and trace-write errors zero in both arms
   (wrong final sign-offs are reported, not gated: amendment 1); false_merge_pairs, impure_clusters, cross_person_edges and reviewer.wrong_distinct_pairs not above
-  pairfeat5's; reviewer hours <= 1.10 x pairfeat5's. pass (and selected_modelset = r1review) needs both gates. Both
+  pairfeat5's; reviewer hours <= 1.10 x pairfeat5's. Amendment 3: gate(baseline, r1review) is computed and written
+  ("gating": false) but pass (and selected_modelset = r1review, stress and validation pass) needs only the reference gate.
+  Both
   non-baseline arms report capped pairs; every arm reports completion_undocumented review items and their answers
   (reported, not gating).
 CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_closed is a link attach rate, not recall).
@@ -87,11 +90,18 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair_cap", "report_xscript_cap": True},
               # three-arm candidate: the pairfeat5 chain (same model files and manifest key) plus -r1review on its model
               # commands, analysed against baseline and against its reference arm pairfeat5 (identity: experiment.json)
-              "r1review": {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619],
+              # amendment 3: fresh seeds (557 563 569 / 601-619 retired, RETIRED_SEEDS); gated against pairfeat5 only
+              "r1review": {"dev_seeds": [571, 577, 587], "validation_seeds": [631, 641, 643, 647, 653],
                            "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                            "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"],
                            # amendment 2: every arm of an r1review experiment runs gen -imgphotos and the cached image reader
-                           "lane_image": True}}
+                           "lane_image": True,
+                           # amendment 3: gate 1 (vs baseline) is computed and reported, not gating; gate 2 decides
+                           "baseline_gating": False}}
+# Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
+# amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
+RETIRED_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
+assert not any(set(c["dev_seeds"] + c.get("validation_seeds", [])) & set(RETIRED_SEEDS) for c in CANDIDATES.values())
 WRONG_GATES = ("wrong_pair", "wrong_pair_cap")  # review gates that read cohort/truth.json pk_qid
 CAP_WRONG_PER_PREVENTED = 2  # wrong_pair_cap gate: allowed capped different-person review pairs per prevented false merge
 WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
@@ -125,6 +135,11 @@ def extra_flags(arm):
 def reference(candidate):
     """The reference arm of a three-arm candidate, else None."""
     return CANDIDATES.get(candidate, {}).get("reference")
+
+
+def baseline_gating(candidate):
+    """Whether gate(baseline, candidate) decides pass; False only for r1review (amendment 3: reported, not gating)."""
+    return CANDIDATES.get(candidate, {}).get("baseline_gating", True)
 
 
 IMAGE_VERDICTS = "models/image_verdicts.json"  # cached image-reader verdicts and the gen photo pool (repo-relative)
@@ -604,6 +619,11 @@ def guard(argv, mode, arm, bin_, candidate):
             bad(flag + " without value")
         return argv[idx[0] + 1] if idx else None
 
+    for f in ("-seed", "-rseed"):
+        v = val(f)
+        if v is not None and v.isdigit() and int(v) in RETIRED_SEEDS:
+            bad("retired seed %s (amendment 3: never run again)" % v)
+
     if argv[0] == bin_:
         cmd = argv[1]
         if cmd not in WSI_CMDS:
@@ -981,6 +1001,15 @@ def paired_gain_interval(base, cand):
 
 
 def gate(base, cand, kind):
+    """gate(baseline, candidate); for a candidate whose baseline gate is reported only (r1review, amendment 3) the
+    result also carries "gating": false (the key is absent for every other candidate)."""
+    g = _gate(base, cand, kind)
+    if not baseline_gating(cand.get("arm")):
+        g["gating"] = False
+    return g
+
+
+def _gate(base, cand, kind):
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
@@ -1138,8 +1167,8 @@ def reference_gate(ref, cand, kind):
 
 
 def select(base, cand, ref=None):
-    """The dev-clean selection record. A three-arm candidate (ref = its reference arm) is selected only when both
-    gate(base, cand) and reference_gate(ref, cand) pass."""
+    """The dev-clean selection record. A three-arm candidate (ref = its reference arm) is selected when
+    reference_gate(ref, cand) passes and, unless its baseline gate is reported only (r1review, amendment 3), gate(base, cand)."""
     c = cand.get("arm")
     if c not in CANDIDATES:
         raise ValueError("selection needs a candidate arm, got %r" % (c,))
@@ -1148,7 +1177,7 @@ def select(base, cand, ref=None):
         return {"candidate": c, "selected_modelset": c if g["pass"] else None, "pass": g["pass"], "gate": g,
                 "baseline_recall": _recall(base), c + "_recall": _recall(cand)}
     rg = reference_gate(ref, cand, "selection")
-    ok = g["pass"] and rg["pass"]
+    ok = rg["pass"] and (g["pass"] or not baseline_gating(c))
     return {"candidate": c, "reference": ref.get("arm"), "selected_modelset": c if ok else None, "pass": ok, "gate": g,
             "reference_gate": rg, "baseline_recall": _recall(base), "%s_recall" % ref.get("arm"): _recall(ref),
             c + "_recall": _recall(cand)}
@@ -1306,14 +1335,14 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         res["stress"] = dict(ident, **{"pass": g["pass"], "gate": g, "selection_sha256": sha256_file(sp)})
         if ref_arm:
             rg = reference_gate(ref, cand, "stress")
-            res["reference_gate"], res["pass"] = rg, g["pass"] and rg["pass"]
+            res["reference_gate"], res["pass"] = rg, rg["pass"] and (g["pass"] or not baseline_gating(candidate))
             res["stress"].update({"reference_gate": rg, "pass": res["pass"]})
         _write_once(os.path.join(exp, STRESS), res["stress"])
     else:
         res["gate"] = gate(base, cand, "validation")
         if ref_arm:
             res["reference_gate"] = reference_gate(ref, cand, "validation")
-            res["pass"] = res["gate"]["pass"] and res["reference_gate"]["pass"]
+            res["pass"] = res["reference_gate"]["pass"] and (res["gate"]["pass"] or not baseline_gating(candidate))
         _write_once(out, res)  # the headline validation verdict is never overwritten
         return res
     with open(out, "w") as h:
