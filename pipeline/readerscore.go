@@ -19,6 +19,14 @@ type keyedReport struct {
 	Tags      []string          `json:"tags"`
 }
 
+// readerScoreVerdict: the colonoscopy verdict readerscore scores. readerscore has no image reader, so with -r1review
+// the photo gate (r1review.go) reverts every completion-review conversion, as the prep stage does with the reader off.
+func readerScoreVerdict(text string) *TwoVerdict {
+	v := Judge.Judge(text, "colonoscopy")
+	r1photoGate(v, nil)
+	return v
+}
+
 func readerScore(reportsPath string) map[string]interface{} {
 	var rf struct {
 		Reports []keyedReport `json:"reports"`
@@ -46,7 +54,7 @@ func readerScore(reportsPath string) map[string]interface{} {
 			r.KeyFields["polyps"] = t
 			r.KeyState, r.KeyReason = dohState(r.KeyFields["caecum"], r.KeyFields["prep"], t, r.KeyFields["histology"])
 		}
-		v := Judge.Judge(r.Text, "colonoscopy")
+		v := readerScoreVerdict(r.Text)
 		if v.GemmaHit {
 			hits++
 		}
