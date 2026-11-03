@@ -70,3 +70,15 @@ In every lane of every arm, including baseline: false closures, wrong releases, 
 - No push or merge.
 - After the result is documented, thin the raw lanes of non-record runs.
 - Disclose that the design comes from a post-hoc diagnosis of used development lanes, and that the hard negatives are built to the diagnosed pattern of our own synthetic generator, so a gain may partly reflect learning the generator rather than real naming.
+
+## Amendment 1 (user-approved 3 Nov 2026, before any pairfeat6 lane ran): leave-own-out rarity counts
+
+**Why.** The final branch review found a train/serve skew. The rarity table is counted on the same training registrations that become the training rows, so in training almost every token has a count of at least 1: only 0.7% of same-person and 0.8% of different-person training pairs (seed 1019) hit the unseen-token weight, against 7.1% and 13.4% on calibration seed 2011, which behaves like runtime. The model would learn rarity on easier data than it meets live.
+
+**Change.**
+- The rarity table also stores, for each person that contributed registrations, that person's own token counts and registration count (keyed by the person's index in the persons file; the table is a model file, never committed).
+- When featdump builds a row for a pair of persons a and b (training and calibration rows alike), it uses leave-own-out counts: c′(t) = c(t) − own_a(t) − own_b(t) and N′ = N − regs_a − regs_b. A person absent from the table contributes 0.
+- At runtime no cohort person is in the table, so the counts are used as they are; runtime behaviour is unchanged.
+- The fit step reports the share of same-person and different-person pairs at the unseen-token weight for one training seed and for the calibration seed, so the remaining skew is visible.
+
+Everything else in the spec is unchanged.
