@@ -6,8 +6,11 @@ package main
 // XScriptCapP, below the union threshold, so it cannot merge on the model alone and above the review floor becomes a
 // review candidate. A forced equal-EID link is unaffected (it is decided before the cap). Off for every other modelset.
 
-// XScriptCap: set in main.go after -modelset passes validateModelPolicy; true only for pairfeat5.
+// XScriptCap: set in main.go from xscriptCapFor(ModelSet) after -modelset passes validateModelPolicy.
 var XScriptCap bool
+
+// xscriptCapFor: the cap is on for pairfeat5 and pairfeat6 (pairfeat6 keeps every pairfeat5 setting), off otherwise.
+func xscriptCapFor(modelSet string) bool { return modelSet == "pairfeat5" || modelSet == "pairfeat6" }
 
 // XScriptCapP: the capped model score.
 const XScriptCapP = 0.69

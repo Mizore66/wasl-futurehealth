@@ -419,6 +419,9 @@ func pairFeats(a, b *Rec, cos, gap float64) []float64 {
 	f = append(f, dobFeats(a.Dob, b.Dob)...)
 	f = append(f, boolFloat(a.Sex == b.Sex), boolFloat(a.isAr == b.isAr), cos, gap)
 	f = append(f, pairExtraFeats(a, b)...)
+	if NameIDF != nil { // modelset pairfeat6 only (pairfeat6.go); every other modelset stays at NFEAT features
+		f = append(f, pairfeat6Feats(a, b, NameIDF)...)
+	}
 	return f
 }
 
