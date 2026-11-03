@@ -1,7 +1,9 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6]
-NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/.
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|...|pairfeat7] [--reference REFERENCE_FIT_DIR]
+NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/. --reference (pairfeat7 only, and
+required there) is the separately fitted reference (pairfeat5) at the same git HEAD; its plain-cal different-at-merge-0.7
+count is reported beside the candidate's (not gated).
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
 import csv
@@ -28,7 +30,13 @@ PROTOCOLS = {
                   "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0},
     "pairfeat6": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                   "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34},
+    # pairfeat7 (spec 2026-11-03-crc-pairfeat7-design.md): pairfeat6 plus missing-date and same-real-date hard negatives
+    "pairfeat7": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
+                  "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34,
+                  "md_namesakes": 0.10, "rd_namesakes": 0.10, "reference": "pairfeat5"},
 }
+# pairfeat7 hard-negative kinds: featdump flag and sidecar prefix, and the floor message label
+HARD_NEGATIVES7 = (("md", "missing-date"), ("rd", "same-date"))
 LEAF_LIMIT = 5.0
 NAMESAKE_FLOOR = 500
 DEFAULT_MODELSET = "pairfeat1"
@@ -40,6 +48,9 @@ TOLERANCE = 1e-9
 CODE_FILES = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
               "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
 PAIRFEAT6_CODE_FILES = ["pipeline/pairfeat6.go", "pipeline/namesake.go"]
+PAIRFEAT7_CODE_FILES = ["pipeline/pairfeat7.go"]
+USAGE = ("usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6|pairfeat7]"
+         " [--reference REFERENCE_FIT_DIR]")
 
 
 def nfeat(modelset):
@@ -47,7 +58,7 @@ def nfeat(modelset):
 
 
 def uses_name_idf(modelset):
-    """pairfeat6: 34 features, the name-rarity table built first and part of the chain."""
+    """pairfeat6, pairfeat7: 34 features, the name-rarity table built first and part of the chain."""
     return nfeat(modelset) == 34
 
 
@@ -139,6 +150,10 @@ def _namesake_args(modelset):
     xs = PROTOCOLS[modelset].get("xs_namesakes")
     if xs:
         args += ["-xsnamesakes", str(xs)]
+    for key, _ in HARD_NEGATIVES7:
+        rate = PROTOCOLS[modelset].get(key + "_namesakes")
+        if rate:
+            args += [f"-{key}namesakes", str(rate)]
     return args
 
 
@@ -241,7 +256,14 @@ def check_namesake_floor(sidecars, modelset=None):
             xtotal = _sidecar_rows_total(sidecars, "xs_base_namesake_rows")
             if xtotal < NAMESAKE_FLOOR:
                 raise NamesakeFloorError(f"namesake floor not met (cross-script): {xtotal} < {NAMESAKE_FLOOR}")
-            return total, ftotal, xtotal
+            more = []
+            for key, label in HARD_NEGATIVES7:
+                if PROTOCOLS[modelset].get(key + "_namesakes"):
+                    t = _sidecar_rows_total(sidecars, key + "_base_namesake_rows")
+                    if t < NAMESAKE_FLOOR:
+                        raise NamesakeFloorError(f"namesake floor not met ({label}): {t} < {NAMESAKE_FLOOR}")
+                    more.append(t)
+            return (total, ftotal, xtotal) + tuple(more)
         return total, ftotal
     if total < NAMESAKE_FLOOR:
         raise NamesakeFloorError(f"namesake floor not met: {total} < {NAMESAKE_FLOOR}")
@@ -290,12 +312,56 @@ def xs_namesake_slice(csv_path, sidecar_path, width=38):
     return _slice(csv_path, sidecar_path, "xs_rows", width)
 
 
+def hard_negative_slice(csv_path, sidecar_path, key, width=38):
+    """pairfeat7: the md (missing-date) or rd (same-real-date) rows of a namesake-cal dump."""
+    return _slice(csv_path, sidecar_path, key + "_rows", width)
+
+
 def plain_cal_diff_at_merge(parity_csv, width=38):
     return sum(1 for label, p in _read_gbm_rows(parity_csv, width) if label == 0 and p >= 0.7)
 
 
+def split_reference(argv):
+    """argv without "--reference DIR", and DIR (None when absent)."""
+    args = list(argv)
+    if "--reference" not in args:
+        return args, None
+    i = args.index("--reference")
+    if args.count("--reference") != 1 or i + 1 >= len(args):
+        sys.exit(USAGE)
+    ref = args[i + 1]
+    del args[i:i + 2]
+    return args, ref
+
+
+def read_reference(ref_dir, modelset, head):
+    """A modelset whose protocol names a "reference" (pairfeat7: pairfeat5) needs ref_dir, that reference's fit
+    directory: its artifact-manifest.json must carry exactly the reference chain, at git HEAD head, with a
+    plain_cal_diff_at_merge_0_7 count. Returns {"modelset", "plain_cal_diff_at_merge_0_7", "artifact_manifest_sha256"}
+    (reported beside the candidate's count, not gated). Every other modelset refuses a ref_dir and returns None."""
+    ref = PROTOCOLS[modelset].get("reference")
+    if ref is None:
+        if ref_dir is not None:
+            raise ValueError(f"{modelset} takes no --reference")
+        return None
+    if ref_dir is None:
+        raise ValueError(f"{modelset} needs --reference (the {ref} reference fit directory)")
+    path = os.path.join(ref_dir, "artifact-manifest.json")
+    with open(path) as f:
+        m = json.load(f)
+    chains = [k for k in m if k.endswith("_chain_sha256") and k != "baseline_chain_sha256"]
+    if chains != [f"{ref}_chain_sha256"]:
+        raise ValueError(f"the reference fit must carry exactly the {ref} chain (got {chains})")
+    if m.get("git_head") != head:
+        raise ValueError(f"the reference fit is at git HEAD {m.get('git_head')}, not {head}")
+    v = m.get("plain_cal_diff_at_merge_0_7")
+    if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+        raise ValueError("the reference fit has no plain_cal_diff_at_merge_0_7 count")
+    return {"modelset": ref, "plain_cal_diff_at_merge_0_7": v, "artifact_manifest_sha256": sha256(path)}
+
+
 def parse_args(argv):
-    usage = "usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6]"
+    usage = USAGE
     args = list(argv[1:])
     modelset = DEFAULT_MODELSET
     if "--modelset" in args:
@@ -337,7 +403,8 @@ def check_go_parity(go_scores, python_scores, tolerance=1e-9):
 
 def base_manifest(root, encoder, modelset=DEFAULT_MODELSET, name_idf=None):
     proto = PROTOCOLS[modelset]
-    files = CODE_FILES + (PAIRFEAT6_CODE_FILES if uses_name_idf(modelset) else [])
+    files = CODE_FILES + (PAIRFEAT6_CODE_FILES if uses_name_idf(modelset) else []) + \
+        (PAIRFEAT7_CODE_FILES if proto.get("md_namesakes") else [])
     m = {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
          "nfeat": nfeat(modelset), "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
          "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
@@ -384,6 +451,16 @@ def training_manifest(root, encoder, modelset, sidecars, base=None):
                 e["xs_namesakes_added"] = int(sc["xs_namesakes_added"])
                 e["xs_base_namesake_rows"] = int(sc["xs_base_namesake_rows"])
             m["xs_namesake_base_rows_total"] = sum(int(sc["xs_base_namesake_rows"]) for _, sc in sidecars.values())
+        for key, _ in HARD_NEGATIVES7:
+            rate7 = PROTOCOLS[modelset].get(key + "_namesakes")
+            if not rate7:
+                continue
+            m[key + "_namesakes"] = rate7
+            for seed, (_, sc) in sorted(sidecars.items()):
+                e = m["namesake_seeds"][str(seed)]
+                e[key + "_namesakes_added"] = int(sc[key + "_namesakes_added"])
+                e[key + "_base_namesake_rows"] = int(sc[key + "_base_namesake_rows"])
+            m[key + "_namesake_base_rows_total"] = sum(int(sc[key + "_base_namesake_rows"]) for _, sc in sidecars.values())
     return m
 
 
@@ -443,7 +520,8 @@ def write_json(path, obj):
 def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max_delta,
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
                       family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None,
-                      xs_namesake_slice=None, name_idf_sha256=None, unseen_token_share=None):
+                      xs_namesake_slice=None, name_idf_sha256=None, unseen_token_share=None,
+                      md_namesake_slice=None, rd_namesake_slice=None, plain_cal_diff_at_merge_0_7_reference=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -468,6 +546,12 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         m["name_idf_sha256"] = name_idf_sha256
     if unseen_token_share is not None:
         m["unseen_token_share"] = unseen_token_share
+    if md_namesake_slice is not None:
+        m["md_namesake_slice"] = md_namesake_slice
+    if rd_namesake_slice is not None:
+        m["rd_namesake_slice"] = rd_namesake_slice
+    if plain_cal_diff_at_merge_0_7_reference is not None:
+        m["plain_cal_diff_at_merge_0_7_reference"] = plain_cal_diff_at_merge_0_7_reference
     return m
 
 
@@ -492,6 +576,7 @@ def run(cmd, cwd):
 
 
 def main(argv):
+    argv, ref_dir = split_reference(argv)
     arg, modelset = parse_args(argv)
     proto = PROTOCOLS[modelset]
     root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
@@ -499,6 +584,11 @@ def main(argv):
     models = os.path.join(root, "models")
     check_models_free(models, modelset)
     check_clean_tree(root)
+    head0 = subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip()
+    try:
+        reference = read_reference(os.path.abspath(ref_dir) if ref_dir else None, modelset, head0)
+    except (OSError, ValueError) as e:
+        sys.exit(f"--reference: {e}")
     run(["go", "build", "-o", os.path.join(root, "bin", "wsi7"), "."], os.path.join(root, "pipeline"))
     os.mkdir(out)
     chain = os.path.join(out, "chain")
@@ -570,6 +660,16 @@ def main(argv):
             extra["ns_cal_sidecar_sha256"] = sha256(ns_path + ".namesakes.json")
         if proto.get("xs_namesakes"):
             extra["xs_namesake_slice"] = xs_namesake_slice(ns_path, ns_path + ".namesakes.json", width=width + 1)
+        for key, _ in HARD_NEGATIVES7:
+            if proto.get(key + "_namesakes"):
+                extra[key + "_namesake_slice"] = hard_negative_slice(ns_path, ns_path + ".namesakes.json", key,
+                                                                     width=width + 1)
+    if reference is not None:  # pairfeat7: reported beside the candidate's count, not gated
+        extra["plain_cal_diff_at_merge_0_7_reference"] = reference
+        print(f"plain cal different-at-merge-0.7 (reported, not gated): {modelset} "
+              f"{extra['plain_cal_diff_at_merge_0_7']} vs {reference['modelset']} {reference['plain_cal_diff_at_merge_0_7']}")
+        for key in ("xs", "md", "rd"):
+            print(f"{key} hard-negative slice (namesake cal dump): {json.dumps(extra[key + '_namesake_slice'], sort_keys=True)}")
     if idf:
         with open(idf) as fh:
             n_reg = json.load(fh)["registrations"]
