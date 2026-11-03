@@ -9,8 +9,9 @@ package main
 // XScriptCap: set in main.go from xscriptCapFor(ModelSet) after -modelset passes validateModelPolicy.
 var XScriptCap bool
 
-// xscriptCapFor: the cap is on for pairfeat5 and pairfeat6 (pairfeat6 keeps every pairfeat5 setting), off otherwise.
-func xscriptCapFor(modelSet string) bool { return modelSet == "pairfeat5" || modelSet == "pairfeat6" }
+// xscriptCapFor: the cap is on for pairfeat5 and for pairfeat6 and pairfeat7 (usesNameIDF; both keep every pairfeat5
+// setting), off otherwise.
+func xscriptCapFor(modelSet string) bool { return modelSet == "pairfeat5" || usesNameIDF(modelSet) }
 
 // XScriptCapP: the capped model score.
 const XScriptCapP = 0.69
