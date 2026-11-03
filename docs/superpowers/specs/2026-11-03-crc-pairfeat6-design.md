@@ -77,7 +77,7 @@ In every lane of every arm, including baseline: false closures, wrong releases, 
 
 **Change.**
 - The rarity table also stores, for each person that contributed registrations, that person's own token counts and registration count (keyed by the person's index in the persons file; the table is a model file, never committed).
-- When featdump builds a row for a pair of persons a and b (training and calibration rows alike), it uses leave-own-out counts: c′(t) = c(t) − own_a(t) − own_b(t) and N′ = N − regs_a − regs_b. A person absent from the table contributes 0.
+- When featdump builds a row for a pair of persons a and b (training and calibration rows alike), it uses leave-own-out counts: c′(t) = c(t) − own_a(t) − own_b(t) and N′ = N − regs_a − regs_b. A person absent from the table contributes 0. When a and b are the same person, that person's counts are subtracted once.
 - At runtime no cohort person is in the table, so the counts are used as they are; runtime behaviour is unchanged.
 - The fit step reports the share of same-person and different-person pairs at the unseen-token weight for one training seed and for the calibration seed, so the remaining skew is visible.
 
