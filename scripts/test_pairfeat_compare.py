@@ -997,9 +997,12 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.CANDIDATES, {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"},
                                          "pairfeat2": {"dev_seeds": [317, 331, 337], "review_gate": "total"},
                                          "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
-                                         "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"}})
+                                         "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
+                                         "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair",
+                                                       "report_xscript_cap": True}})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
-        self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4"))
+        self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
+                                                  "pairfeat5"))
         self.assertEqual(pfc.modes(P2), {
             "dev-clean": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0", "errungraded": "0"},
             "dev-stress": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0.04", "errungraded": "0.25"},
@@ -1009,8 +1012,9 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.CHAIN_FILES[P2], CAND2_FILES)
         self.assertEqual(pfc.CHAIN_KEY[P2], "pairfeat2_chain_sha256")
         self.assertEqual(pfc.MODELSET, {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2",
-                                        "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4"})
-        for bad in ("baseline", "pairfeat5", "", None):
+                                        "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
+                                        "pairfeat5": "pairfeat5"})
+        for bad in ("baseline", "pairfeat6", "", None):
             with self.assertRaises(ValueError):
                 pfc.mode_settings("dev-clean", bad)
             with self.assertRaises(ValueError):
@@ -1044,7 +1048,7 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.infer_candidate(dict(b=1, baseline_chain_sha256=b, pairfeat1_chain_sha256={}), "x"), P1)
         for bad in ({"baseline_chain_sha256": b},
                     dict(ok, pairfeat1_chain_sha256=chain(CAND_FILES, "c")),
-                    {"baseline_chain_sha256": b, "pairfeat5_chain_sha256": {}},
+                    {"baseline_chain_sha256": b, "pairfeat6_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "Pairfeat2_chain_sha256": {}}, [], None):
             with self.assertRaises(pfc.PreflightError, msg=str(bad)):
@@ -1114,7 +1118,7 @@ class GuardPairfeat2(unittest.TestCase):
             pfc.guard(p1["orchestrate"], "dev-clean", P1, self.BIN, P2)
         with self.assertRaises(pfc.GuardError):
             pfc.guard(self.cmds()[0][1], "dev-clean", P2, self.BIN, P1)
-        for bad in ("pairfeat5", "baseline", "", None):
+        for bad in ("pairfeat6", "baseline", "", None):
             with self.assertRaises(pfc.GuardError):
                 pfc.guard(self.cmds()[0][1], "dev-clean", "baseline", self.BIN, bad)
 
@@ -1123,7 +1127,7 @@ class GuardPairfeat2(unittest.TestCase):
         pfc.check_funnel_modelset({"config": {"modelset": ""}}, "baseline")
         for f, a in (({"config": {"modelset": "pairfeat1"}}, P2), ({"config": {"modelset": ""}}, P2),
                      ({"config": {"modelset": "pairfeat2"}}, "baseline"), ({"config": {"modelset": "pairfeat2"}}, P1),
-                     ({"config": {}}, P2), ({"config": {"modelset": "pairfeat2"}}, "pairfeat5")):
+                     ({"config": {}}, P2), ({"config": {"modelset": "pairfeat2"}}, "pairfeat6")):
             with self.assertRaises(ValueError):
                 pfc.check_funnel_modelset(f, a)
 
@@ -1134,7 +1138,7 @@ class GuardPairfeat2(unittest.TestCase):
         self.assertEqual(g["distinct_pairs"], {"baseline": 100, "pairfeat2": 110, "max_allowed": 110.0})
         self.assertFalse(pfc.gate(base, arm(P2, 511, 600), "selection")["pass"])
         self.assertFalse(pfc.gate(arm(P2, 500, 600), arm(P2, 530, 600), "selection")["pass"])
-        self.assertFalse(pfc.gate(base, arm("pairfeat5", 530, 600), "selection")["pass"])
+        self.assertFalse(pfc.gate(base, arm("pairfeat6", 530, 600), "selection")["pass"])
         s = pfc.select(pfc_arm, arm(P2, 512, 600))
         self.assertEqual((s["selected_modelset"], s["candidate"], s["pass"]), ("pairfeat2", "pairfeat2", True))
         self.assertIn("pairfeat2_recall", s)
@@ -1181,7 +1185,7 @@ class PreflightPairfeat2(unittest.TestCase):
         # zero, multiple or unknown candidate keys refuse every arm
         for m in ({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"},
                   dict(good, pairfeat1_chain_sha256=self.r.hashes(CAND_FILES)),
-                  dict({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"}, pairfeat5_chain_sha256={})):
+                  dict({k: v for k, v in good.items() if k != "pairfeat2_chain_sha256"}, pairfeat6_chain_sha256={})):
             _wj(self.ap, m)
             for a in pfc.ALLOWED_ARMS:
                 self.refused("dev-clean", a)
@@ -1296,7 +1300,7 @@ class CLIPairfeat2(CLIFixture, unittest.TestCase):
         out = os.path.join(self.exp, "s.json")
         self.assertEqual(pfc.main(["dev-clean", out, "pairfeat1=" + b, "pairfeat2=" + c]), 2)
         self.assertEqual(pfc.main(["dev-clean", out, "pairfeat2=" + c, "pairfeat2=" + c]), 2)
-        self.assertEqual(pfc.main(["dev-clean", out, "baseline=" + b, "pairfeat5=" + c]), 2)
+        self.assertEqual(pfc.main(["dev-clean", out, "baseline=" + b, "pairfeat6=" + c]), 2)
         am = _rj(os.path.join(self.exp, "artifact-manifest.json"))
         for m in (dict(am, pairfeat1_chain_sha256=chain(CAND_FILES, "c")),
                   {k: v for k, v in am.items() if k != "pairfeat2_chain_sha256"}):
@@ -1375,11 +1379,11 @@ class RunnerPairfeat2(RunnerFixture, unittest.TestCase):
         for m in ({"git_head": self.head, "baseline_chain_sha256": base},
                   {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat1_chain_sha256": chain(CAND_FILES, "c"),
                    "pairfeat2_chain_sha256": chain(CAND2_FILES, "c")},
-                  {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat5_chain_sha256": chain(CAND2_FILES, "c")}):
+                  {"git_head": self.head, "baseline_chain_sha256": base, "pairfeat6_chain_sha256": chain(CAND2_FILES, "c")}):
             _wj(ap, m)
             for a in ("baseline", P1, P2):
                 self.assert_refused(self.run_sh(self.root, "dev-clean", a, preflight_only=True), "candidate")
-        self.assert_refused(self.run_sh(self.root, "dev-clean", "pairfeat5"))
+        self.assert_refused(self.run_sh(self.root, "dev-clean", "pairfeat6"))
 
     def test_pairfeat2_dev_stress_and_validation(self):
         self.real_artifact_manifest(cand=P2)
@@ -1553,7 +1557,7 @@ class Pairfeat4(unittest.TestCase):
             self.assertEqual(pfc.CANDIDATES[c]["review_gate"], "total")
             self.assertEqual(pfc.review_gate(c), "total")
         self.assertEqual(pfc.review_gate(P4), "wrong_pair")
-        for bad in ("baseline", "pairfeat5", "", None):
+        for bad in ("baseline", "pairfeat6", "", None):
             with self.assertRaises(ValueError):
                 pfc.review_gate(bad)
         self.assertEqual(pfc.arms(P4), ("baseline", P4))
@@ -1574,7 +1578,7 @@ class Pairfeat4(unittest.TestCase):
         ok = dict(P4_EXTRAS, git_head=HEAD, baseline_chain_sha256=b, pairfeat4_chain_sha256=chain(CAND4_FILES, "c"))
         self.assertEqual(pfc.infer_candidate(ok, "artifact-manifest.json"), P4)
         for bad in (dict(ok, pairfeat3_chain_sha256=chain(CAND3_FILES, "c")),
-                    dict(ok, pairfeat5_chain_sha256=chain(CAND4_FILES, "c")),
+                    dict(ok, pairfeat6_chain_sha256=chain(CAND4_FILES, "c")),
                     dict(P4_EXTRAS, baseline_chain_sha256=b)):
             with self.assertRaises(pfc.PreflightError):
                 pfc.infer_candidate(bad, "artifact-manifest.json")
@@ -1633,7 +1637,7 @@ class Pairfeat4(unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('pairfeat4) DEV_SEEDS="433 449 461";;', text)
-        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4) ;;", text)
+        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;;", text)
         self.assertIn("pfc._load_lane(os.path.join(work, \"v2-s%d\" % seed), seed, arm, mode, cand)", text)
 
 
@@ -1887,6 +1891,166 @@ class RunnerPairfeat4(RunnerFixture, unittest.TestCase):
         self.assertFalse(os.path.exists(self.root))
         self.assert_refused(self.run_sh(self.root, "dev-clean", P4, preflight_only=True))  # fake candidate map
         self.assert_refused(self.run_sh(self.root, "dev-clean", P3, preflight_only=True), "pairfeat4")
+
+
+# ================================================================ candidate pairfeat5 (regularised model, capped-pair report)
+
+P5 = "pairfeat5"
+CAND5_FILES = ("encoder_pairfeat5.json", "lgb_stream_pairfeat5.json", "iso_pairfeat5.json", "iso_v7_pairfeat5.json")
+FILES[P5] = CAND5_FILES
+DEV_SEEDS[P5] = [521, 541, 547]
+
+
+def trace_lines(recs):
+    return "".join(json.dumps(r) + "\n" for r in recs)
+
+
+def cap_rec(a, b, **kw):
+    return dict({"kind": "pair", "a": a, "b": b, "stage": "model", "p": 0.69, "reason": "xscript_cap"}, **kw)
+
+
+class Pairfeat5(unittest.TestCase):
+    ROOT = "/repo"
+    BIN = "/repo/bin/wsi7"
+    O = "/data/exp/arm/v2-s521"
+
+    def cmds(self, mode="dev-clean", arm_="baseline", seed=521):
+        return pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_)
+
+    def test_seeds_chain_and_gate(self):
+        self.assertEqual(pfc.CANDIDATES[P5], {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair",
+                                              "report_xscript_cap": True})
+        for c in (P1, P2, P3, P4):
+            self.assertNotIn("report_xscript_cap", pfc.CANDIDATES[c])
+        self.assertEqual(pfc.review_gate(P5), "wrong_pair")
+        self.assertEqual(pfc.arms(P5), ("baseline", P5))
+        self.assertEqual(pfc.CHAIN_FILES[P5], CAND5_FILES)
+        self.assertEqual(pfc.CHAIN_KEY[P5], "pairfeat5_chain_sha256")
+        self.assertEqual(pfc.MODELSET[P5], P5)
+        for mode, seeds in (("dev-clean", [521, 541, 547]), ("dev-stress", [521, 541, 547]),
+                            ("validation-clean", [401, 409, 419, 421, 431])):
+            self.assertEqual(pfc.mode_settings(mode, P5)["seeds"], seeds)
+
+    def test_infer_candidate(self):
+        b = chain(BASE_FILES, "b")
+        ok = {"git_head": HEAD, "baseline_chain_sha256": b, "pairfeat5_chain_sha256": chain(CAND5_FILES, "c")}
+        self.assertEqual(pfc.infer_candidate(ok, "artifact-manifest.json"), P5)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.infer_candidate(dict(ok, pairfeat4_chain_sha256=chain(CAND4_FILES, "c")), "artifact-manifest.json")
+
+    def test_guard_argv(self):
+        for mode in pfc.MODES:
+            for seed in pfc.modes(P5)[mode]["seeds"]:
+                for a in pfc.arms(P5):
+                    for _, argv, _ in self.cmds(mode, a, seed):
+                        pfc.guard(argv, mode, a, self.BIN, P5)
+        c = {n: argv for n, argv, _ in self.cmds("dev-clean", P5)}
+        for n in ("orchestrate", "audit", "report7"):
+            self.assertEqual(c[n][c[n].index("-modelset") + 1], P5)
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(c["orchestrate"], "dev-clean", P5, self.BIN, P4)
+        for n, argv, _ in self.cmds("dev-clean", "baseline", 433):
+            if n in ("gen", "orchestrate"):
+                with self.assertRaises(pfc.GuardError):
+                    pfc.guard(argv, "dev-clean", "baseline", self.BIN, P5)
+
+    def test_runner_arm_and_seeds(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('pairfeat5) DEV_SEEDS="521 541 547";;', text)
+        self.assertIn("baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;;", text)
+
+
+class XscriptCount(unittest.TestCase):
+    PK = {"r1": "P1", "r2": "P1", "r3": "P3", "r4": "P4", "r5": "P5"}
+
+    def test_counts_distinct_sorted_pairs(self):
+        recs = [cap_rec("r1", "r2"), cap_rec("r2", "r1"),                      # same person, duplicate (reversed)
+                cap_rec("r3", "r4"), cap_rec("r3", "r4", stage="review"),       # different, duplicate
+                cap_rec("r4", "r5"),                                            # different
+                cap_rec("r1", "r3", reason="other"),                            # other reason
+                {"kind": "pair", "a": "r1", "b": "r5", "stage": "model", "p": 0.9},   # no reason
+                {"kind": "cluster", "a": "r1", "b": "r5", "reason": "xscript_cap"},    # not a pair record
+                {"kind": "pair", "a": "ghost", "b": "r5", "reason": "other"}]  # unmapped but not capped: ignored
+        self.assertEqual(pfc.xscript_cap_counts(trace_lines(recs).splitlines(True), self.PK),
+                         {"pairs": 3, "same_person": 1, "different_person": 2})
+        self.assertEqual(pfc.xscript_cap_counts([], self.PK), {"pairs": 0, "same_person": 0, "different_person": 0})
+
+    def test_unmapped_capped_registration_is_an_error(self):
+        for bad in (cap_rec("r1", "ghost"), cap_rec("ghost", "r1")):
+            with self.assertRaises(ValueError):
+                pfc.xscript_cap_counts(trace_lines([cap_rec("r1", "r2"), bad]).splitlines(True), self.PK)
+        with self.assertRaises(ValueError):
+            pfc.xscript_cap_counts(trace_lines([cap_rec("r1", "r2")]).splitlines(True), {"r1": "P1"})
+
+    def test_lane_metrics_and_aggregate(self):
+        xs = {"pairs": 3, "same_person": 1, "different_person": 2}
+        m = pfc.lane_metrics(1, report(), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=0), xs)
+        self.assertEqual(m["xscript_cap"], xs)
+        plain = pfc.lane_metrics(1, report(), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=0))
+        self.assertNotIn("xscript_cap", plain)
+        lanes = [pfc.lane_metrics(s, report(), funnel(5, 10), {}, dict(LOAD, wrong_distinct_pairs=0),
+                                  {"pairs": n, "same_person": 1, "different_person": n - 1})
+                 for s, n in ((521, 2), (541, 3), (547, 4))]
+        self.assertEqual(pfc.aggregate_arm(P5, lanes)["xscript_cap"], {"pairs": 9, "same_person": 3, "different_person": 6})
+        with self.assertRaises(ValueError):
+            pfc.aggregate_arm(P5, lanes[:2] + [pfc.lane_metrics(547, report(), funnel(5, 10), {},
+                                                               dict(LOAD, wrong_distinct_pairs=0))])
+
+
+class CLIPairfeat5(CLIFixture, unittest.TestCase):
+    CAND = P5
+
+    def make_arm(self, a, tp, *args, caps=None, truth=True, unmapped=False, **kw):
+        root = super().make_arm(a, tp, *args, **kw)
+        for d in sorted(os.listdir(root)):
+            if not d.startswith("v2-s"):
+                continue
+            q, pk = queue(same=1, wrong=1)
+            pk.update({"c1": "C1", "c2": "C1", "c3": "C3", "c4": "C4"})
+            _wj(os.path.join(root, d, "run/main/review_queue.json"), q)
+            os.makedirs(os.path.join(root, d, "cohort"))
+            _wj(os.path.join(root, d, "cohort/truth.json"), {"pk_qid": pk, "loops": {}})
+            if caps is not None:
+                recs = [cap_rec("c1", "c2"), cap_rec("c2", "c1"), cap_rec("c3", "c4"), cap_rec("c4", "c3", stage="x")]
+                if unmapped:
+                    recs.append(cap_rec("c1", "ghost"))
+                with open(os.path.join(root, d, "run/main/link_funnel.ndjson"), "w") as h:
+                    h.write(trace_lines(recs))
+        return root
+
+    def setUp(self):
+        super().setUp()
+        _wj(os.path.join(self.exp, "artifact-manifest.json"),
+            {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat5_chain_sha256": self.maps[P5]})
+
+    def test_candidate_reports_caps_baseline_does_not(self):
+        self.assertEqual(self.run_cli("dev-clean", self.make_arm("baseline", 5, caps=None),
+                                      self.make_arm(P5, 6, caps=[])), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["arms"][P5]["xscript_cap"], {"pairs": 6, "same_person": 3, "different_person": 3})
+        self.assertEqual(s["arms"][P5]["per_seed"]["521"]["xscript_cap"], {"pairs": 2, "same_person": 1, "different_person": 1})
+        self.assertNotIn("xscript_cap", s["arms"]["baseline"])
+        self.assertNotIn("xscript_cap", s["arms"]["baseline"]["per_seed"]["521"])
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertNotIn("xscript_cap", json.dumps(sel["gate"]))
+        self.assertEqual(sel["gate"]["wrong_distinct_pairs"]["baseline"], 3)
+
+    def test_missing_trace_or_unmapped_aborts_before_writes(self):
+        b = self.make_arm("baseline", 5)
+        self.assert_rejected(b, self.make_arm(P5, 6, name="m1"))                              # no trace
+        self.assert_rejected(b, self.make_arm(P5, 6, caps=[], unmapped=True, name="m2"))      # unmapped capped reg
+        self.assertFalse(os.path.exists(os.path.join(self.exp, "dev-clean-summary.json")))
+        self.assertEqual(self.run_cli("dev-clean", b, self.make_arm(P5, 6, caps=[], name="m3")), 0)
+
+
+class CLIPairfeat4NoXscript(CLIPairfeat4):
+    def test_no_xscript_field_for_pairfeat4(self):
+        self.assertEqual(self.run_cli("dev-clean", self.make_arm("baseline", 5), self.make_arm(P4, 6)), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        for a in ("baseline", P4):
+            self.assertNotIn("xscript_cap", s["arms"][a])
+            self.assertNotIn("xscript_cap", s["arms"][a]["per_seed"]["433"])
 
 
 if __name__ == "__main__":
