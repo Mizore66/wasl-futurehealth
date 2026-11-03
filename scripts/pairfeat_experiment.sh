@@ -3,9 +3,12 @@
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
 #   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
 #         | validation-clean (eval; 401 409 419 421 431, r1review 631 641 643 647 653; rerr 0/0)
-#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 (-modelset <candidate> on orchestrate/audit/report7 only)
+#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 | pairfeat6 (-modelset <candidate> on orchestrate/audit/report7 only)
 #         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
+# pairfeat6 659 661 673 (validation 677 683 691 701 709); a pairfeat6 parent (its own chain) needs experiment.json from
+# `init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR`, which records the separately fitted pairfeat5 reference; it
+# serves baseline, pairfeat5 and pairfeat6, image off;
 # r1review 571 577 587 (amendment 3; 557 563 569 / 601-619 retired, refused by the guard). An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
 # over a pairfeat5 artifact-manifest.json) serves three arms: baseline, pairfeat5 (reference; exactly a pairfeat5 lane) and
 # r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds. Every arm of an r1review experiment runs gen with
@@ -45,7 +48,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 r1review)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 r1review)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -67,7 +70,7 @@ CAND="$(printf '%s\n' "$PF" | python3 -I -c 'import json, sys; print(json.load(s
 # independent seed table (cross-checked against pairfeat_compare.CANDIDATES before any lane); CHAIN is the model chain
 # (manifest key) the candidate runs, REF a three-arm candidate's reference arm
 VAL_SEEDS="401 409 419 421 431"
-CHAIN="$CAND"; REF=""
+CHAIN="$CAND"; REF=""; REFCHAIN=""
 case "$CAND" in
   pairfeat1) DEV_SEEDS="307 311 313";;
   pairfeat2) DEV_SEEDS="317 331 337";;
@@ -75,6 +78,7 @@ case "$CAND" in
   pairfeat4) DEV_SEEDS="433 449 461";;
   pairfeat5) DEV_SEEDS="521 541 547";;
   r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;
+  pairfeat6) DEV_SEEDS="659 661 673"; VAL_SEEDS="677 683 691 701 709"; REF=pairfeat5; REFCHAIN=experiment;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
@@ -89,10 +93,11 @@ if [ -n "$DIRTY" ] || [ -n "$TRACKED" ]; then echo "working tree not clean (trac
 
 # independent re-check on the clean tree: the governing manifest is bound to this exact HEAD (and, for validation, these scripts)
 HEAD="$(git -C "$ROOT" rev-parse HEAD)"
-python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" "$CAND" "$CHAIN" <<'PY' \
+python3 -I - "$PARENT" "$MODE" "$HEAD" "$ROOT/scripts/pairfeat_experiment.sh" "$ROOT/scripts/pairfeat_compare.py" "$CAND" "$CHAIN" "$REF" "$REFCHAIN" <<'PY' \
   || { echo "manifest is not bound to the current clean HEAD and candidate; refusing to build" >&2; exit 2; }
 import hashlib, json, os, sys
 parent, mode, head, runner, analyzer, cand, chain = sys.argv[1:8]
+ref, refchain = (sys.argv[8:10] + ["", ""])[:2]
 sha = lambda p: hashlib.sha256(open(p, "rb").read()).hexdigest()
 name = "validation-manifest.json" if mode == "validation-clean" else "artifact-manifest.json"
 with open(os.path.join(parent, name)) as h:
@@ -108,6 +113,14 @@ if chain != cand:  # a candidate borrowing a chain is named only by experiment.j
     with open(ep) as h:
         e = json.load(h)
     if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != chain:
+        sys.exit(1)
+elif refchain == "experiment":  # its own chain plus a separately fitted reference (pairfeat6): experiment.json names both
+    if not os.path.isfile(ep) or os.path.islink(ep):
+        sys.exit(1)
+    with open(ep) as h:
+        e = json.load(h)
+    if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref \
+            or not isinstance(e.get("reference_model_chain"), dict):
         sys.exit(1)
 elif os.path.lexists(ep):
     sys.exit(1)  # a parent with experiment.json serves only the candidate it names
