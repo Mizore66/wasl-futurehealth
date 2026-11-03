@@ -1,8 +1,8 @@
 """Protected analyzer for the paired CRC pair-scorer experiment: baseline (default modelset) vs one candidate modelset
-(pairfeat1, pairfeat2, pairfeat3 or pairfeat4), both -linkfloor 0.01.
+(pairfeat1 ... pairfeat5), both -linkfloor 0.01.
 
 Candidates (CANDIDATES): pairfeat1 (development seeds 307 311 313), pairfeat2 (development seeds 317 331 337), pairfeat3 (347 353 367),
-pairfeat4 (433 449 461); validation seeds 401 409 419 421 431 for all. An experiment parent serves exactly one candidate, inferred from the single
+pairfeat4 (433 449 461), pairfeat5 (521 541 547); validation seeds 401 409 419 421 431 for all. An experiment parent serves exactly one candidate, inferred from the single
 <candidate>_chain_sha256 key of its artifact-manifest.json (zero, several or unknown candidate keys are refused). Its
 baseline lanes use the candidate's seeds, and selection.json, stress.json and validation-manifest.json record that
 candidate and are checked against it.
@@ -35,7 +35,7 @@ Gates (fixed before any result). Gains are pooled CRC closure-recall percentage 
   in BOTH arms; no increase in false-merge pairs, impure clusters or summed cross-person edges; candidate distinct
   link-review pairs <= 1.10 x baseline (baseline 0 requires candidate 0).
 Review-load gate per candidate (CANDIDATES[c]["review_gate"], pre-registered): "total" (pairfeat1-pairfeat3) gates the
-  distinct link-review pairs above. "wrong_pair" (pairfeat4 only) instead gates wrong_distinct_pairs, the distinct
+  distinct link-review pairs above. "wrong_pair" (pairfeat4, pairfeat5) instead gates wrong_distinct_pairs, the distinct
   link-review pairs whose two registrations belong to different persons in each lane's cohort/truth.json pk_qid (an
   unmapped registration aborts the analysis): candidate <= 1.10 x baseline, or <= 1 when baseline is 0. Its gate also
   reports, not gating, the total distinct-pair ratio and extra reviewer hours per extra true closure
@@ -59,7 +59,9 @@ from fractions import Fraction
 CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"},
               "pairfeat2": {"dev_seeds": [317, 331, 337], "review_gate": "total"},
               "pairfeat3": {"dev_seeds": [347, 353, 367], "review_gate": "total"},
-              "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"}}
+              "pairfeat4": {"dev_seeds": [433, 449, 461], "review_gate": "wrong_pair"},
+              # report_xscript_cap: each candidate-arm lane also reports its distinct capped pairs (not gating)
+              "pairfeat5": {"dev_seeds": [521, 541, 547], "review_gate": "wrong_pair", "report_xscript_cap": True}}
 WRONG_PAIR_ZERO_BASELINE_MAX = 1  # wrong_pair gate: allowed candidate wrong pairs when the baseline has none
 VALIDATION_SEEDS = [401, 409, 419, 421, 431]
 MODES = {  # per-mode lane settings; seeds come from mode_settings(mode, candidate)
@@ -73,13 +75,15 @@ MAX_REVIEW_GROWTH = 0.10
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
 POLICY = "v7strict"
-MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4"}
+MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
+            "pairfeat5": "pairfeat5"}
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
     "pairfeat1": ("encoder_pairfeat1.json", "lgb_stream_pairfeat1.json", "iso_pairfeat1.json", "iso_v7_pairfeat1.json"),
     "pairfeat2": ("encoder_pairfeat2.json", "lgb_stream_pairfeat2.json", "iso_pairfeat2.json", "iso_v7_pairfeat2.json"),
     "pairfeat3": ("encoder_pairfeat3.json", "lgb_stream_pairfeat3.json", "iso_pairfeat3.json", "iso_v7_pairfeat3.json"),
     "pairfeat4": ("encoder_pairfeat4.json", "lgb_stream_pairfeat4.json", "iso_pairfeat4.json", "iso_v7_pairfeat4.json"),
+    "pairfeat5": ("encoder_pairfeat5.json", "lgb_stream_pairfeat5.json", "iso_pairfeat5.json", "iso_v7_pairfeat5.json"),
 }
 CHAIN_SUFFIX = "_chain_sha256"
 CHAIN_KEY = {a: a + CHAIN_SUFFIX for a in ALLOWED_ARMS}
@@ -608,7 +612,34 @@ def _wrong_pairs(items, pk_qid):
     return wrong
 
 
-def lane_metrics(seed, report7, funnel, status, load):
+XSCRIPT_KEYS = ("pairs", "same_person", "different_person")
+
+
+def xscript_cap_counts(lines, pk_qid):
+    """Distinct sorted (a, b) pair keys of link_funnel.ndjson pair records with reason == "xscript_cap", split by truth
+    (cohort/truth.json pk_qid). A capped registration the map does not cover is an analysis error (ValueError)."""
+    if not isinstance(pk_qid, dict):
+        raise ValueError("cohort/truth.json pk_qid must map registrations to persons")
+    keys = set()
+    for ln in lines:
+        if not ln.strip():
+            continue
+        r = json.loads(ln)
+        if isinstance(r, dict) and r.get("kind") == "pair" and r.get("reason") == "xscript_cap":
+            a, b = r.get("a"), r.get("b")
+            if not isinstance(a, str) or not isinstance(b, str):
+                raise ValueError("capped pair record must name two registrations")
+            keys.add(tuple(sorted((a, b))))
+    same = 0
+    for a, b in keys:
+        pa, pb = pk_qid.get(a), pk_qid.get(b)
+        if not (isinstance(pa, str) and pa and isinstance(pb, str) and pb):
+            raise ValueError("capped pair registration is not mapped by cohort/truth.json pk_qid")
+        same += pa == pb
+    return {"pairs": len(keys), "same_person": same, "different_person": len(keys) - same}
+
+
+def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None):
     crc = _req(report7, "programmes_live", "crc")
     truth = _req(crc, "truth_closed")
     tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
@@ -642,7 +673,7 @@ def lane_metrics(seed, report7, funnel, status, load):
                 "by_programme": _req(rv, "by_programme"), "by_origin": _req(rv, "by_origin")}
     if "wrong_distinct_pairs" in load:  # wrong_pair experiments only
         reviewer["wrong_distinct_pairs"] = load["wrong_distinct_pairs"]
-    return {
+    m = {
         "seed": seed, "tp": tp, "truth_closed": truth, "recall": tp / truth if truth else None,
         "categories": {c: cats.get(c, 0) for c in FUNNEL_CATEGORIES},
         "residual": residual,
@@ -657,6 +688,9 @@ def lane_metrics(seed, report7, funnel, status, load):
         "cross_person_edges": sum(_req(lk, "cross_person_edges_by_basis").values()),
         "reviewer": reviewer,
     }
+    if xscript_cap is not None:  # report_xscript_cap candidate arm only; reported, never gated
+        m["xscript_cap"] = dict(xscript_cap)
+    return m
 
 
 def aggregate_arm(arm, lanes):
@@ -683,6 +717,11 @@ def aggregate_arm(arm, lanes):
         if not all(has):
             raise ValueError("wrong_distinct_pairs present in only some lanes of arm %s" % arm)
         a["reviewer"]["wrong_distinct_pairs"] = sum(l["reviewer"]["wrong_distinct_pairs"] for l in lanes)
+    xs = ["xscript_cap" in l for l in lanes]
+    if any(xs):
+        if not all(xs):
+            raise ValueError("xscript_cap present in only some lanes of arm %s" % arm)
+        a["xscript_cap"] = {k: sum(l["xscript_cap"][k] for l in lanes) for k in XSCRIPT_KEYS}
     return a
 
 
@@ -794,7 +833,11 @@ def _load_lane(path, seed, arm, mode, candidate):
         with open(dp) as h:
             dec = [json.loads(x) for x in h if x.strip()]
     pk = _req(j("cohort/truth.json"), "pk_qid") if review_gate(candidate) == "wrong_pair" else None
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk))
+    xs = None
+    if CANDIDATES[candidate].get("report_xscript_cap") and arm == candidate:  # candidate arm only, never the baseline
+        with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:  # required: a missing trace aborts analysis
+            xs = xscript_cap_counts(h, pk)
+    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk), xs)
 
 
 # ---------------------------------------------------------------- CLI
