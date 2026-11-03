@@ -1003,7 +1003,7 @@ class Candidates(unittest.TestCase):
                                          "r1review": {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619],
                                                       "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                                                       "chain": "pairfeat5", "reference": "pairfeat5",
-                                                      "extra_flags": ["-r1review"]}})
+                                                      "extra_flags": ["-r1review"], "lane_image": True}})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
                                                   "pairfeat5", "r1review"))
@@ -2309,7 +2309,8 @@ R1 = "r1review"
 R1_DEV = [557, 563, 569]
 R1_VAL = [601, 607, 613, 617, 619]
 R1_ENTRY = {"dev_seeds": [557, 563, 569], "validation_seeds": [601, 607, 613, 617, 619], "review_gate": "wrong_pair_cap",
-            "report_xscript_cap": True, "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"]}
+            "report_xscript_cap": True, "chain": "pairfeat5", "reference": "pairfeat5", "extra_flags": ["-r1review"],
+            "lane_image": True}
 CU = "completion_undocumented"
 EXPERIMENT_JSON = {"candidate": R1, "reference": P5}
 
@@ -2339,9 +2340,11 @@ class R1reviewCandidate(unittest.TestCase):
         self.assertEqual((v["seeds"], v["arms"], v["candidate_modelset"]), (R1_VAL, ["baseline", P5, R1], P5))
         self.assertEqual((v["reference"], v["candidate_extra_flags"]), (P5, ["-r1review"]))
         five = pfc.expected_settings("validation-clean", P5)
-        self.assertEqual({k: v[k] for k in five if k not in ("seeds", "arms", "candidate_modelset")},
-                         {k: five[k] for k in five if k not in ("seeds", "arms", "candidate_modelset")})
-        self.assertEqual(set(v) - set(five), {"reference", "candidate_extra_flags"})
+        self.assertEqual({k: v[k] for k in five if k not in ("seeds", "arms", "candidate_modelset", "image")},
+                         {k: five[k] for k in five if k not in ("seeds", "arms", "candidate_modelset", "image")})
+        self.assertEqual(set(v) - set(five), {"reference", "candidate_extra_flags", "imgphotos", "imgcache"})
+        self.assertEqual((v["image"], v["imgphotos"], v["imgcache"]), ("cached", True, "models/image_verdicts.json"))
+        self.assertEqual(five["image"], "off")
 
     def test_chain_key_inference_never_names_r1review(self):
         b = chain(BASE_FILES, "b")
@@ -2358,8 +2361,8 @@ class R1reviewGuard(unittest.TestCase):
     BIN = "/repo/bin/wsi7"
     O = "/data/exp/arm/v2-s557"
 
-    def cmds(self, mode="dev-clean", arm_=R1, seed=557):
-        return {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_)}
+    def cmds(self, mode="dev-clean", arm_=R1, seed=557, cand=R1):
+        return {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_, candidate=cand)}
 
     def rejects(self, argv, arm_=R1, cand=R1, mode="dev-clean"):
         with self.assertRaises(pfc.GuardError, msg=" ".join(argv)):
@@ -2384,7 +2387,7 @@ class R1reviewGuard(unittest.TestCase):
         for mode in pfc.MODES:
             for seed in pfc.modes(R1)[mode]["seeds"]:
                 for a in pfc.arms(R1):
-                    for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, a):
+                    for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, a, candidate=R1):
                         pfc.guard(argv, mode, a, self.BIN, R1)
 
     def test_flag_only_on_the_r1review_arm(self):
@@ -2412,13 +2415,13 @@ class R1reviewGuard(unittest.TestCase):
         self.rejects(r["orchestrate"], cand=P5)
         self.rejects(self.cmds(arm_=P5, seed=521)["gen"], arm_=P5)
         with self.assertRaises(pfc.GuardError):
-            pfc.guard(self.cmds(arm_=P5, seed=557)["gen"], "dev-clean", P5, self.BIN, P5)
-        pfc.guard(self.cmds(arm_=P5, seed=521)["gen"], "dev-clean", P5, self.BIN, P5)
+            pfc.guard(self.cmds(arm_=P5, seed=557, cand=P5)["gen"], "dev-clean", P5, self.BIN, P5)
+        pfc.guard(self.cmds(arm_=P5, seed=521, cand=P5)["gen"], "dev-clean", P5, self.BIN, P5)
 
     def test_output_paths_may_name_r1review(self):
         o = "/data/agents2/hardening/r1review/dev/r1review/v2-s557"
         for a in pfc.arms(R1):
-            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, o, 557, "dev-clean", a):
+            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, o, 557, "dev-clean", a, candidate=R1):
                 pfc.guard(argv, "dev-clean", a, self.BIN, R1)
 
 
@@ -2684,6 +2687,9 @@ class CompletionCount(unittest.TestCase):
             pfc.aggregate_arm(R1, lanes[:2] + [pfc.lane_metrics(569, report(), funnel(5, 10), {}, load, candidate=R1)])
 
 
+IMAGE_BUILD = {"image": "cached", "imgphotos": True, "image_verdicts_sha256": "e" * 64}
+
+
 class CLIR1review(CLIFixture, unittest.TestCase):
     CAND = R1
 
@@ -2697,14 +2703,17 @@ class CLIR1review(CLIFixture, unittest.TestCase):
             {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat5_chain_sha256": c5})
         pfc.init_experiment(self.exp, R1)
 
-    def make_arm(self, a, tp, *args, recs=None, fm=None, wrong=2, hours=None, cu=0, answers=(), flags="auto", **kw):
+    def make_arm(self, a, tp, *args, recs=None, fm=None, wrong=2, hours=None, cu=0, answers=(), flags="auto",
+                 image=IMAGE_BUILD, **kw):
         root = super().make_arm(a, tp, *args, **kw)
         bp = os.path.join(root, "build.json")
         if os.path.exists(bp):
             ba = kw.get("build_arm") or a
             fl = (["-r1review"] if ba == R1 else []) if flags == "auto" else flags
+            b = dict(_rj(bp), **image)
             if fl:
-                _wj(bp, dict(_rj(bp), extra_flags=fl))
+                b["extra_flags"] = fl
+            _wj(bp, b)
         for d in sorted(os.listdir(root)):
             if not d.startswith("v2-s"):
                 continue
@@ -2917,6 +2926,206 @@ class RunnerR1review(RunnerFixture, unittest.TestCase):
         self.assertEqual(self.recheck(R1, P5), 0)
         self.assertNotEqual(self.recheck(R1, R1), 0)
         self.assertNotEqual(self.recheck(P4, P4), 0)
+
+
+
+# ================================================================ r1review experiments: synthetic photos + cached image reader (Amendment 2)
+
+IMGCACHE = "/repo/models/image_verdicts.json"
+
+
+def strip_image(argv):
+    """argv with the r1review experiment's image settings turned back into the image-off lane."""
+    out, skip = [], False
+    for i, a in enumerate(argv):
+        if skip:
+            skip = False
+            continue
+        if a == "-imgphotos":
+            continue
+        if a == "-imgcache":
+            skip = True
+            continue
+        out.append("off" if i and argv[i - 1] == "-image" else a)
+    return out
+
+
+class R1reviewImageLanes(unittest.TestCase):
+    ROOT = "/repo"
+    BIN = "/repo/bin/wsi7"
+    O = "/data/exp/arm/v2-s557"
+
+    def cmds(self, arm_, cand, mode="dev-clean", seed=557):
+        return {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm_, candidate=cand)}
+
+    def rejects(self, argv, arm_, cand, mode="dev-clean"):
+        with self.assertRaises(pfc.GuardError, msg=" ".join(argv)):
+            pfc.guard(argv, mode, arm_, self.BIN, cand)
+
+    def test_lane_image_entry(self):
+        self.assertIs(pfc.CANDIDATES[R1]["lane_image"], True)
+        for c in (P1, P2, P3, P4, P5):
+            self.assertNotIn("lane_image", pfc.CANDIDATES[c])
+            self.assertFalse(pfc.lane_image(c))
+        self.assertTrue(pfc.lane_image(R1))
+        self.assertEqual(pfc.IMAGE_VERDICTS, "models/image_verdicts.json")
+
+    def test_every_arm_runs_photos_and_cached_image_reader(self):
+        arms_ = {a: self.cmds(a, R1) for a in pfc.arms(R1)}
+        for a, c in arms_.items():
+            g = c["gen"]
+            self.assertEqual(g.count("-imgphotos"), 1, a)
+            self.assertEqual(g[g.index("-imgcache") + 1], IMGCACHE)
+            self.assertNotIn("-image", g)
+            for n in ("orchestrate", "audit", "report7"):
+                self.assertEqual(c[n][c[n].index("-image") + 1], "cached", (a, n))
+                self.assertEqual(c[n][c[n].index("-imgcache") + 1], IMGCACHE, (a, n))
+                self.assertEqual(c[n].count("-image"), 1)
+                self.assertNotIn("-imgphotos", c[n])
+            for n in ("sim", "augment", "classifier"):
+                for f in ("-image", "-imgphotos", "-imgcache"):
+                    self.assertNotIn(f, c[n], (a, n))
+        for n in ("gen", "sim", "augment", "classifier"):  # identical cohort and truth in all three arms
+            self.assertEqual(arms_["baseline"][n], arms_[P5][n])
+            self.assertEqual(arms_[R1][n], arms_[P5][n])
+        for n in ("orchestrate", "audit", "report7"):
+            self.assertEqual(arms_[R1][n], arms_[P5][n] + ["-r1review"])
+            self.assertNotIn("-modelset", arms_["baseline"][n])
+
+    def test_reference_arm_is_a_pairfeat5_lane_with_the_image_reader(self):
+        inside, alone = self.cmds(P5, R1), self.cmds(P5, P5)
+        for n in inside:
+            self.assertEqual(strip_image(inside[n]), alone[n], n)
+        self.assertEqual(self.cmds("baseline", R1)["orchestrate"][-6:], ["-reader", "cached", "-image", "cached", "-imgcache", IMGCACHE])
+
+    def test_default_candidate_keeps_existing_argv(self):
+        for a in ("baseline", P1, P4, P5):
+            default = {n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 521, "dev-clean", a)}
+            self.assertEqual(default, self.cmds(a, a if a != "baseline" else P5, seed=521))
+            for argv in default.values():
+                self.assertNotIn("-imgphotos", argv)
+                self.assertNotIn("-imgcache", argv)
+        self.assertEqual({n: argv for n, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 557, "dev-clean", R1)},
+                         self.cmds(R1, R1))
+
+    def test_guard_requires_image_in_r1review_experiments(self):
+        for a in pfc.arms(R1):
+            c = self.cmds(a, R1)
+            for _, argv, _ in pfc.lane_commands(self.ROOT, self.BIN, self.O, 557, "dev-clean", a, candidate=R1):
+                pfc.guard(argv, "dev-clean", a, self.BIN, R1)
+            g = c["gen"]
+            self.rejects([x for x in g if x != "-imgphotos"], a, R1)                      # photos required
+            self.rejects(g + ["-imgphotos"], a, R1)                                       # once
+            self.rejects(g + ["false"], a, R1)                                            # bare flag (last token)
+            i = g.index("-imgcache")
+            self.rejects(g[:i] + g[i + 2:], a, R1)                                        # photo pool required
+            self.rejects(g[:i + 1] + ["/repo/data/image_verdicts.json"] + g[i + 2:], a, R1)
+            self.rejects(g + ["-image", "cached"], a, R1)                                 # reader flags not on gen
+            for n in ("orchestrate", "audit", "report7"):
+                m = c[n]
+                j = m.index("-image")
+                for v in ("off", "live", "replay"):
+                    self.rejects(m[:j + 1] + [v] + m[j + 2:], a, R1)
+                k = m.index("-imgcache")
+                self.rejects(m[:k] + m[k + 2:], a, R1)
+                self.rejects(m[:k + 1] + ["/elsewhere/image_verdicts.json"] + m[k + 2:], a, R1)
+                self.rejects(m + ["-imgphotos"], a, R1)
+                self.rejects(m + ["-ImgPhotos"], a, R1)
+            for n in ("sim", "augment", "classifier"):
+                self.rejects(c[n] + ["-imgcache", IMGCACHE], a, R1)
+                self.rejects(c[n] + ["-imgphotos"], a, R1)
+
+    def test_guard_refuses_image_everywhere_else(self):
+        for cand in (P1, P4, P5):
+            for a in pfc.arms(cand):
+                seed = pfc.modes(cand)["dev-clean"]["seeds"][0]
+                c = self.cmds(a, cand, seed=seed)
+                for argv in c.values():
+                    pfc.guard(argv, "dev-clean", a, self.BIN, cand)
+                self.rejects(c["gen"] + ["-imgphotos"], a, cand)
+                self.rejects(c["gen"] + ["-imgphotos", "-imgcache", IMGCACHE], a, cand)
+                for n in ("orchestrate", "audit", "report7"):
+                    m = c[n]
+                    j = m.index("-image")
+                    self.rejects(m[:j + 1] + ["cached"] + m[j + 2:], a, cand)
+                    self.rejects(m[:j + 1] + ["cached"] + m[j + 2:] + ["-imgcache", IMGCACHE], a, cand)
+                    self.rejects(m + ["-imgcache", IMGCACHE], a, cand)
+        # an image-on lane of an r1review experiment is not a lane of a pairfeat5 experiment, and the reverse
+        self.rejects(self.cmds(P5, R1, seed=521)["gen"], P5, P5)
+        self.rejects(self.cmds(P5, P5, seed=557)["orchestrate"], P5, R1)
+        self.rejects(self.cmds(P5, P5, seed=557)["gen"], P5, R1)
+
+
+class R1reviewImageBuild(unittest.TestCase):
+    def build(self, root, arm_, cand, **kw):
+        os.makedirs(root, exist_ok=True)
+        b = {"git_head": HEAD, "binary_sha256": BIN_SHA, "floor": 0.01, "mode": "dev-clean", "arm": arm_,
+             "modelset": pfc.MODELSET[arm_], "candidate": cand, "model_chain_sha256": chain(pfc.CHAIN_FILES[arm_], "c")}
+        if arm_ == R1:
+            b["extra_flags"] = ["-r1review"]
+        b.update(kw)
+        _wj(os.path.join(root, "build.json"), {k: v for k, v in b.items() if v is not None})
+        return root
+
+    def test_read_build_records_image_setting(self):
+        with tempfile.TemporaryDirectory() as td:
+            for a in pfc.arms(R1):
+                r = self.build(os.path.join(td, a), a, R1, **IMAGE_BUILD)
+                self.assertEqual(pfc.read_build(r, a, "dev-clean", R1)["image"], "cached")
+                for bad in ({"image": "off"}, {"image": None}, {"imgphotos": False}, {"imgphotos": None},
+                            {"image_verdicts_sha256": None}, {"image_verdicts_sha256": "x"}):
+                    self.build(r, a, R1, **dict(IMAGE_BUILD, **bad))
+                    with self.assertRaises(ValueError, msg=str(bad)):
+                        pfc.read_build(r, a, "dev-clean", R1)
+            for a in pfc.arms(P5):  # pairfeat5 experiments record no image setting
+                r = self.build(os.path.join(td, "p5" + a), a, P5)
+                self.assertNotIn("image", pfc.read_build(r, a, "dev-clean", P5))
+                self.build(r, a, P5, **IMAGE_BUILD)
+                with self.assertRaises(ValueError):
+                    pfc.read_build(r, a, "dev-clean", P5)
+
+
+class CLIR1reviewImage(CLIR1review):
+    """The three-arm analysis requires every arm built with the image setting, on one image_verdicts.json."""
+
+    def test_image_build_identity(self):
+        b, f, r = self.three()
+        for roots in ((b, f, self.make_arm(R1, 7, image={}, name="r-noimg")),
+                      (self.make_arm("baseline", 5, fm=3, image={}, name="b-noimg"), f, r),
+                      (b, self.make_arm(P5, 6, fm=1, image=dict(IMAGE_BUILD, image="off"), name="f-off"), r),
+                      (b, self.make_arm(P5, 6, fm=1, image=dict(IMAGE_BUILD, image_verdicts_sha256="f" * 64), name="f-sha"), r)):
+            with self.assertRaises(ValueError):
+                self.run3("dev-clean", roots)
+            self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+        self.assertEqual(self.run3("dev-clean", (b, f, r)), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["image_verdicts_sha256"], "e" * 64)
+
+
+class InitExperimentFreshParent(unittest.TestCase):
+    def test_refuses_a_parent_with_decisions(self):
+        for name in ("selection.json", "stress.json", "validation-manifest.json"):
+            with tempfile.TemporaryDirectory() as td:
+                r = Repo(td, cand=P5)
+                for fn in CAND5_FILES:
+                    with open(os.path.join(r.root, "models", fn), "w") as h:
+                        h.write("model " + fn)
+                r.artifact_manifest()
+                _wj(os.path.join(r.exp, name), {"pass": False})
+                with self.assertRaises(pfc.PreflightError, msg=name):
+                    pfc.init_experiment(r.exp, R1)
+                self.assertFalse(os.path.exists(os.path.join(r.exp, "experiment.json")))
+                os.remove(os.path.join(r.exp, name))
+                pfc.init_experiment(r.exp, R1)
+
+
+class RunnerR1reviewImage(unittest.TestCase):
+    def test_runner_passes_the_candidate_and_records_the_image_setting(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn("pfc.lane_commands(root, bin_, o, seed, mode, arm, candidate=cand)", text)
+        self.assertIn("pfc.image_build(root, cand)", text)
+        self.assertIn('"image": pfc.lane_image_mode(cand)', text)
 
 
 if __name__ == "__main__":
