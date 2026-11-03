@@ -1005,10 +1005,10 @@ class Candidates(unittest.TestCase):
                                                       "chain": "pairfeat5", "reference": "pairfeat5",
                                                       "extra_flags": ["-r1review"], "lane_image": True,
                                                       "baseline_gating": False},
-                                         "pairfeat6": P6_ENTRY, "pairfeat7": P7_ENTRY})
+                                         "pairfeat6": P6_ENTRY, "pairfeat7": P7_ENTRY, "r1photo7": RP_ENTRY})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
-                                                  "pairfeat5", "r1review", "pairfeat6", "pairfeat7"))
+                                                  "pairfeat5", "r1review", "pairfeat6", "pairfeat7", "r1photo7"))
         self.assertEqual(pfc.modes(P2), {
             "dev-clean": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0", "errungraded": "0"},
             "dev-stress": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0.04", "errungraded": "0.25"},
@@ -1020,7 +1020,7 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.MODELSET, {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2",
                                         "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
                                         "pairfeat5": "pairfeat5", "r1review": "pairfeat5",
-                                        "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7"})
+                                        "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7", "r1photo7": "pairfeat7"})
         for bad in ("baseline", "pairfeat8", "", None):
             with self.assertRaises(ValueError):
                 pfc.mode_settings("dev-clean", bad)
@@ -3478,7 +3478,7 @@ class Pairfeat6Candidate(unittest.TestCase):
         self.assertFalse(pfc.lane_image(P6))
         self.assertFalse(pfc.baseline_gating(P6))
         self.assertTrue(pfc.reference_chain_in_experiment(P6))
-        self.assertFalse(any(pfc.reference_chain_in_experiment(c) for c in pfc.CANDIDATES if c not in (P6, P7)))
+        self.assertFalse(any(pfc.reference_chain_in_experiment(c) for c in pfc.CANDIDATES if c not in (P6, P7, RP)))
         self.assertIn(P6, pfc.CHAIN_CANDIDATES)
         s = pfc.expected_settings("validation-clean", P6)
         self.assertEqual((s["image"], s["reference"], s["candidate_extra_flags"], s["arms"], s["candidate_modelset"], s["seeds"]),
@@ -4073,7 +4073,7 @@ class Pairfeat7Candidate(unittest.TestCase):
                          ("off", P5, [], ["baseline", P5, P7], P7, P7_VAL))
         self.assertEqual(pfc.edge_classifier(P7), (pfc.EDGE_CLASSES7, pfc.edge_class7))
         for c in pfc.CANDIDATES:
-            if c != P7:
+            if c not in (P7, RP):
                 self.assertEqual(pfc.edge_classifier(c), (pfc.EDGE_CLASSES, pfc.edge_class))
 
     def test_seeds_never_touched_before(self):
@@ -4365,6 +4365,176 @@ class RunnerPairfeat7(RunnerFixture, unittest.TestCase):
         self.assertEqual(runner_recheck(self.exp, self.head, P7, P7, P5, "experiment"), 0)
         self.assertNotEqual(runner_recheck(self.exp, self.head, P7, P7), 0)
         self.assertNotEqual(runner_recheck(self.exp, self.head, P6, P6, P5, "experiment"), 0)  # the manifest carries pairfeat7
+
+
+# ================================================================ candidate r1photo7 (pairfeat7 chain plus -r1review, image on)
+
+RP = "r1photo7"
+RP_DEV = [769, 773, 787]
+RP_VAL = [797, 809, 811, 821, 823]
+RP_ENTRY = {"dev_seeds": RP_DEV, "validation_seeds": RP_VAL, "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+            "chain": "pairfeat7", "reference": "pairfeat5", "reference_chain": "experiment", "reference_gate": "r1photo7",
+            "extra_flags": ["-r1review"], "lane_image": True, "baseline_gating": False, "report_linked_pairs": True,
+            "edge_classes": "pairfeat7"}
+
+
+class R1photo7Candidate(unittest.TestCase):
+    def test_entry_and_tables(self):
+        self.assertEqual(pfc.CANDIDATES[RP], RP_ENTRY)
+        self.assertEqual(pfc.arms(RP), ("baseline", P5, RP))
+        self.assertEqual(pfc.modes(RP)["validation-clean"]["seeds"], RP_VAL)
+        self.assertEqual(pfc.modes(RP)["dev-stress"]["seeds"], RP_DEV)
+        self.assertEqual((pfc.chain_of(RP), pfc.MODELSET[RP], pfc.CHAIN_KEY[RP], pfc.CHAIN_FILES[RP]),
+                         (P7, "pairfeat7", "pairfeat7_chain_sha256", CAND7_FILES))
+        self.assertEqual((pfc.extra_flags(RP), pfc.lane_image(RP), pfc.baseline_gating(RP), pfc.reference(RP)),
+                         (["-r1review"], True, False, P5))
+        self.assertTrue(pfc.reference_chain_in_experiment(RP))
+        self.assertNotIn(RP, pfc.CHAIN_CANDIDATES)
+        self.assertEqual(pfc.edge_classifier(RP), (pfc.EDGE_CLASSES7, pfc.edge_class7))
+        used = set()
+        for c, e in pfc.CANDIDATES.items():
+            if c != RP:
+                used |= set(e["dev_seeds"]) | set(e.get("validation_seeds", []))
+        self.assertFalse(set(RP_DEV + RP_VAL) & used)
+
+    def test_lane_argv_and_guard(self):
+        bin_ = "/repo/bin/wsi7"
+        for mode in pfc.MODES:
+            for s in pfc.mode_settings(mode, RP)["seeds"]:
+                for a in pfc.arms(RP):
+                    for name, argv, _ in pfc.lane_commands("/repo", bin_, "/data/exp/arm/v2-s%d" % s, s, mode, a, candidate=RP):
+                        pfc.guard(argv, mode, a, bin_, RP)
+                        if name in pfc.MODEL_CMDS:
+                            self.assertEqual(argv.count("-r1review"), 1 if a == RP else 0, (name, a))
+                            self.assertEqual(argv[argv.index("-image") + 1], "cached")
+                            self.assertEqual(argv[argv.index("-modelset") + 1] if "-modelset" in argv else "",
+                                             {"baseline": "", P5: "pairfeat5", RP: "pairfeat7"}[a])
+                        if name == "gen":
+                            self.assertIn("-imgphotos", argv)
+
+
+class R1photo7Preflight(Pairfeat7Preflight):
+    def test_init_preflight_freeze(self):
+        self.r.artifact_manifest()
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R1, self.ref, repo=self.r.root)   # r1review takes no reference fit
+        want = {"candidate": RP, "reference": P5, "reference_model_chain": self.r.hashes(CAND5_FILES),
+                "reference_artifact_manifest_sha256": _sha(os.path.join(self.ref, "artifact-manifest.json"))}
+        self.assertEqual(pfc.init_experiment(self.r.exp, RP, self.ref, repo=self.r.root), want)
+        for a, files in (("baseline", BASE_FILES), (P5, CAND5_FILES), (RP, CAND7_FILES)):
+            self.assertEqual(pfc.preflight_identity("dev-clean", a, self.r.exp, self.r.root, HEAD), (RP, self.r.hashes(files)))
+        ident = {"git_head": HEAD, "baseline_chain_sha256": self.r.hashes(BASE_FILES), "pairfeat7_chain_sha256": self.r.hashes(CAND7_FILES),
+                 "reference_model_chain": self.r.hashes(CAND5_FILES), "candidate": RP}
+        sp = os.path.join(self.r.exp, "selection.json")
+        _wj(sp, dict(ident, selected_modelset=RP, mode="dev-clean", seeds=RP_DEV, **{"pass": True}))
+        _wj(os.path.join(self.r.exp, "stress.json"), dict(ident, mode="dev-stress", seeds=RP_DEV, selection_sha256=_sha(sp), **{"pass": True}))
+        vm = pfc.freeze_validation(self.r.exp, self.r.root, HEAD)
+        self.assertEqual((vm["candidate"], vm["seeds"]), (RP, RP_VAL))
+        for a, files in (("baseline", BASE_FILES), (P5, CAND5_FILES), (RP, CAND7_FILES)):
+            self.assertEqual(pfc.preflight_identity("validation-clean", a, self.r.exp, self.r.root, HEAD), (RP, self.r.hashes(files)))
+
+    def test_pairfeat7_experiment_unchanged_and_cross_named_refused(self):
+        self.r.artifact_manifest()
+        pfc.init_experiment(self.r.exp, P7, self.ref, repo=self.r.root)
+        self.assertEqual(pfc.preflight_identity("dev-clean", P7, self.r.exp, self.r.root, HEAD)[0], P7)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, RP, self.ref, repo=self.r.root)   # write-once
+        os.remove(self.ep)
+        pfc.init_experiment(self.r.exp, RP, self.ref, repo=self.r.root)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.preflight_identity("dev-clean", P7, self.r.exp, self.r.root, HEAD)  # an r1photo7 parent serves r1photo7 only
+
+
+class R1photo7Gate(unittest.TestCase):
+    def g(self, cand, kind="selection", ref=None, base=None):
+        return pfc.reference_gate(ref or pf6_arm(P5, 530), cand, kind, base=base or pf6_arm("baseline", 500))
+
+    def c(self, tp=536, **kw):
+        kw = dict(dict(fm=9, cpe=9, uncapped=5, hours=10.0), **kw)
+        return pf6_arm(RP, tp, **kw)
+
+    def test_pass(self):
+        g = self.g(self.c(hours=11.0))
+        self.assertTrue(g["pass"], g["reasons"])
+        self.assertEqual((g["gain_pp"], g["min_gain_pp"], g["kind"], g["reference"]), (1.0, 1.0, "selection", P5))
+        self.assertEqual(g["hours"], {P5: 10.0, RP: 11.0, "max_allowed": 11.0})
+        self.assertEqual(g["contamination"]["false_merge_pairs"], {P5: 10, RP: 9, "rule": "strictly below"})
+        self.assertEqual(g["uncapped_wrong_distinct_pairs"], {P5: 5, RP: 5, "max_allowed": 5})
+        self.assertEqual(set(g["reported"]), {"impure_clusters", "wrong_final_signoffs", "completion_undocumented", "gating"})
+        self.assertFalse(g["reported"]["gating"])
+
+    def test_gain_per_kind(self):
+        for kind, ok, bad in (("selection", 536, 535), ("stress", 530, 529), ("validation", 533, 532)):
+            kw = dict(fm=10, cpe=10) if kind == "stress" else {}
+            self.assertTrue(self.g(self.c(ok, **kw), kind)["pass"], kind)
+            g = self.g(self.c(bad, **kw), kind)
+            self.assertFalse(g["pass"], kind)
+            self.assertEqual(len(g["reasons"]), 1)
+            self.assertIn("below %.1fpp" % pfc.REF_MIN_GAIN_PP[kind], g["reasons"][0])
+
+    def test_contamination(self):
+        for kind in ("selection", "validation"):
+            tp = 536 if kind == "selection" else 533
+            for k, kw in (("false_merge_pairs", dict(fm=10)), ("cross_person_edges", dict(cpe=10))):
+                g = self.g(self.c(tp, **kw), kind)
+                self.assertEqual(g["reasons"], ["%s not strictly below reference (10 >= 10)" % k])
+        self.assertTrue(self.g(self.c(530, fm=10, cpe=10), "stress")["pass"])
+        for k, kw in (("false_merge_pairs", dict(fm=11)), ("cross_person_edges", dict(cpe=11))):
+            self.assertEqual(self.g(self.c(530, **dict(dict(fm=10, cpe=10), **kw)), "stress")["reasons"],
+                             ["%s above reference (11 > 10)" % k])
+
+    def test_uncapped_and_hours(self):
+        g = self.g(self.c(uncapped=6))
+        self.assertEqual(len(g["reasons"]), 1)
+        self.assertTrue(g["reasons"][0].startswith("uncapped wrong-pair"))
+        self.assertTrue(self.g(self.c(uncapped=4))["pass"])
+        self.assertFalse(self.g(self.c(hours=11.01))["pass"])
+        self.assertTrue(self.g(self.c(hours=11.0))["pass"])
+
+    def test_safety_in_every_arm(self):
+        for k in pfc.SAFETY:
+            self.assertEqual(self.g(self.c(**{k: 1}))["reasons"], [k + " nonzero"])
+            self.assertEqual(self.g(self.c(), ref=pf6_arm(P5, 530, **{k: 1}))["reasons"], ["reference " + k + " nonzero"])
+            self.assertEqual(self.g(self.c(), base=pf6_arm("baseline", 500, **{k: 1}))["reasons"], ["baseline " + k + " nonzero"])
+        self.assertEqual(self.g(self.c(wrong_released_by_origin={"a": 1}))["reasons"], ["wrong_released_by_origin nonzero"])
+        self.assertEqual(self.g(self.c(), base=pf6_arm("baseline", 500, wrong_released_by_origin={"a": 1}))["reasons"],
+                         ["baseline wrong_released_by_origin nonzero"])
+
+    def test_truth_closed_equal_and_arms(self):
+        self.assertIn("truth_closed differs between arms", self.g(self.c(truth=601))["reasons"])
+        self.assertIn("truth_closed differs between arms", self.g(self.c(), base=pf6_arm("baseline", 500, truth=601))["reasons"])
+        self.assertEqual(self.g(self.c(), ref=pf6_arm(P4, 530))["reasons"],
+                         ["arms must be r1photo7 vs its reference arm pairfeat5"])
+        with self.assertRaises(ValueError):
+            pfc.reference_gate(pf6_arm(P5, 530), self.c(), "selection")        # the baseline arm is required
+        with self.assertRaises(ValueError):
+            self.g(self.c(), kind="bogus")
+
+    def test_other_gates_unchanged(self):
+        for kw in (dict(fm=9, cpe=9), dict(fm=10, cpe=9, uncapped=6)):
+            self.assertEqual(self.g(pf6_arm(P7, 530, **kw), "validation")["contamination"]["false_merge_pairs"]["rule"],
+                             "strictly below")
+        self.assertIn("min_gain_pp", self.g(pf6_arm(P7, 530, fm=9, cpe=9)))
+        self.assertEqual(self.g(pf6_arm(P7, 530, fm=9, cpe=9))["min_gain_pp"], 0.0)
+
+
+class R1photo7Runner(RunnerFixture, unittest.TestCase):
+    def test_runner_tables(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;', text)
+        self.assertIn("pairfeat7 r1review r1photo7)", text)
+        self.assertIn("r1review) ;; r1photo7) ;;", text)
+
+    def test_independent_recheck(self):
+        self.real_artifact_manifest(cand=P7)
+        self.assertNotEqual(runner_recheck(self.exp, self.head, RP, P7, P5, "experiment"), 0)   # no experiment.json
+        with open(os.path.join(self.exp, "experiment.json"), "w") as h:
+            json.dump({"candidate": RP, "reference": P5, "reference_model_chain": {"x": "0" * 64},
+                       "reference_artifact_manifest_sha256": "d" * 64}, h)
+        self.assertEqual(runner_recheck(self.exp, self.head, RP, P7, P5, "experiment"), 0)
+        self.assertNotEqual(runner_recheck(self.exp, self.head, P7, P7, P5, "experiment"), 0)   # names r1photo7, not pairfeat7
+        self.assertNotEqual(runner_recheck(self.exp, self.head, RP, P5, P5, "experiment"), 0)   # manifest carries pairfeat7
 
 
 if __name__ == "__main__":
