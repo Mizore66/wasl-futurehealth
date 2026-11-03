@@ -27,3 +27,23 @@ func completionLabel(v *TwoVerdict) string {
 	}
 	return "adequate"
 }
+
+// r1photoGate (spec Amendment 2, "r1photo"): a converted report goes to the clinician only when the hold-only image
+// reader verified a caecal photo (a photo filed at the caecum station that the landmark model scores at or above its
+// threshold). The item then carries the photo (v.Image) and hint caecal_photo_verified. Without a verified photo
+// (unverified, missing, or image reader off: iv == nil) the verdict reverts to exactly the flag-off verdict: the
+// automatic inadequate of DoH rule R1. Called in the prep stage (services.go prepMsg) after applyImage; a no-op unless
+// the flag is on and judgeV7 converted the verdict.
+func r1photoGate(v *TwoVerdict, iv *ImageVerdict) {
+	if !R1ReviewOn || v == nil || !v.R1Review {
+		return
+	}
+	if iv != nil && iv.Caecal == "verified" {
+		v.ReviewHint = "caecal_photo_verified" // raiseFor still sets the item's purpose to CompletionPurpose
+		return
+	}
+	v.Agree, v.Label, v.Rule, v.R1Review = true, "inadequate", "R1_completion_not_documented", false
+	if v.Image != nil { // applyImage recorded the converted label; the flag-off pre-image label is "inadequate"
+		v.PreImage = v.Label
+	}
+}
