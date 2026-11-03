@@ -99,7 +99,7 @@ func noSharedSkeleton(a hnName, aset map[string]bool, b hnName) bool {
 }
 
 // buildMDNamesakes: md[i] is the missing-date namesake of ps[base[i]]: prefix "md-", DOB "", the base person's sex, the
-// donor's names without aliases, a drawn Emirates ID with the donor's birth year. Donors: pool (the split, file order),
+// donor's names without aliases, a drawn Emirates ID with the donor's birth year. Donors: pool (the split, file order) minus the sampled persons,
 // same sex, givenOnly with the base name, a 10-character DOB; one is drawn uniformly. A base with no donor gets none.
 func buildMDNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, []int) {
 	if rate <= 0 {
@@ -112,6 +112,10 @@ func buildMDNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, 
 		if len(names[i].tok) > 1 {
 			idx[names[i].tok[0]] = append(idx[names[i].tok[0]], i)
 		}
+	}
+	sampled := map[string]bool{} // a sampled person is never a donor: their own registrations would pair with the namesake as exact-name, no-date label-0 rows
+	for i := range ps {
+		sampled[ps[i].Qid] = true
 	}
 	var md []Person
 	var base []int
@@ -127,7 +131,7 @@ func buildMDNamesakes(ps, pool []Person, rate float64, r *rand.Rand) ([]Person, 
 		var elig []int
 		for _, j := range idx[bn.tok[0]] {
 			d := &pool[j]
-			if d.Qid != b.Qid && d.Sex == b.Sex && len(d.Dob) == 10 && givenOnly(bn, names[j]) {
+			if !sampled[d.Qid] && d.Sex == b.Sex && len(d.Dob) == 10 && givenOnly(bn, names[j]) {
 				elig = append(elig, j)
 			}
 		}
