@@ -27,6 +27,11 @@ below in selection and validation, not above in stress; uncapped wrong-pair revi
 hours <= 1.10 x ref; SAFETY zero in all three arms. vs-baseline computed, not gating. Reported: linked pairs (same/different
 person; diagnosed classes on development), capped pairs, rarity-table SHA256.
 
+Three-arm candidate pairfeat7 (development 719 727 733, validation 739 743 751 757 761): exactly pairfeat6's machinery and
+gates (its own five-file chain with name_idf_pairfeat7.json, a separately fitted pairfeat5 reference recorded by
+`init-experiment EXPERIMENT_DIR pairfeat7 REFERENCE_FIT_DIR`), with development edge classes EDGE_CLASSES7: pairfeat6's
+classes plus missing_dob_given_only and same_real_dob_different_names (edge_class7, a refinement of edge_class).
+
 Usage
   pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT
       MODE dev-clean | dev-stress | validation-clean. OUT_JSON must sit in the experiment parent directory (the directory
@@ -34,7 +39,7 @@ Usage
       (both write-once, next to OUT_JSON). <candidate> must be the parent's candidate; a three-arm candidate also needs
       its reference root (r1review: baseline=, pairfeat5= and r1review=).
   pairfeat_compare.py init-experiment EXPERIMENT_DIR r1review
-  | init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR
+  | init-experiment EXPERIMENT_DIR pairfeat6|pairfeat7 REFERENCE_FIT_DIR
       Writes EXPERIMENT_DIR/experiment.json (write-once) when artifact-manifest.json carries exactly the pairfeat5 chain.
   pairfeat_compare.py freeze-validation EXPERIMENT_DIR
       Writes EXPERIMENT_DIR/validation-manifest.json (write-once) only when selection.json selected the parent's candidate
@@ -80,6 +85,7 @@ CRC tp = programmes_live.crc.pred_closed - false_closures (funnel attached_or_cl
 Residual categories and reviewer wrong_final_signoffs are reported outcomes, not gate substitutions.
 Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and descriptive only.
 """
+import datetime
 import glob
 import hashlib
 import json
@@ -116,7 +122,13 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
               "pairfeat6": {"dev_seeds": [659, 661, 673], "validation_seeds": [677, 683, 691, 701, 709],
                             "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
                             "reference": "pairfeat5", "reference_chain": "experiment", "reference_gate": "pairfeat6",
-                            "baseline_gating": False, "report_linked_pairs": True}}
+                            "baseline_gating": False, "report_linked_pairs": True},
+              # pairfeat7 (spec 2026-11-03-crc-pairfeat7-design.md): pairfeat6 plus missing-date and same-real-date hard
+              # negatives; pairfeat6's three arms, reference refit and gates; two more development edge classes
+              "pairfeat7": {"dev_seeds": [719, 727, 733], "validation_seeds": [739, 743, 751, 757, 761],
+                            "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                            "reference": "pairfeat5", "reference_chain": "experiment", "reference_gate": "pairfeat6",
+                            "baseline_gating": False, "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
 RETIRED_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
@@ -145,6 +157,10 @@ REFERENCE_CHAIN_KEY = "reference_model_chain"  # experiment.json / decision file
 EXPERIMENT_KEYS = frozenset({"candidate", "reference"})
 EXPERIMENT_REF_KEYS = EXPERIMENT_KEYS | {REFERENCE_CHAIN_KEY, "reference_artifact_manifest_sha256"}
 EDGE_CLASSES = ("cross_script_lookalike", "missing_dob_ambiguous", "shared_token", "other", "unresolved")
+# pairfeat7 (CANDIDATES[c]["edge_classes"] == "pairfeat7"): edge_class7 splits missing_dob_given_only out of
+# missing_dob_ambiguous and same_real_dob_different_names out of other
+EDGE_CLASSES7 = ("cross_script_lookalike", "missing_dob_given_only", "missing_dob_ambiguous",
+                 "same_real_dob_different_names", "shared_token", "other", "unresolved")
 LINKED_KEYS = ("same_person", "different_person")
 ALLOWED_ARMS = ("baseline",) + tuple(CANDIDATES)
 
@@ -205,7 +221,7 @@ CHAIN_CANDIDATES = tuple(c for c in CANDIDATES if chain_of(c) == c)  # candidate
 EXTRA_FLAGS = tuple(sorted({f for c in CANDIDATES for f in extra_flags(c)}))
 BARE_FLAGS = EXTRA_FLAGS + ("-imgphotos",)  # bare boolean flags the guard counts (and whose misspellings it refuses)
 MODELSET = {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2", "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
-            "pairfeat5": "pairfeat5", "pairfeat6": "pairfeat6"}
+            "pairfeat5": "pairfeat5", "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7"}
 MODELSET.update({c: MODELSET[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_FILES = {
     "baseline": ("encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"),
@@ -216,6 +232,8 @@ CHAIN_FILES = {
     "pairfeat5": ("encoder_pairfeat5.json", "lgb_stream_pairfeat5.json", "iso_pairfeat5.json", "iso_v7_pairfeat5.json"),
     "pairfeat6": ("encoder_pairfeat6.json", "lgb_stream_pairfeat6.json", "iso_pairfeat6.json", "iso_v7_pairfeat6.json",
                   "name_idf_pairfeat6.json"),
+    "pairfeat7": ("encoder_pairfeat7.json", "lgb_stream_pairfeat7.json", "iso_pairfeat7.json", "iso_v7_pairfeat7.json",
+                  "name_idf_pairfeat7.json"),
 }
 CHAIN_FILES.update({c: CHAIN_FILES[chain_of(c)] for c in CANDIDATES if chain_of(c) != c})
 CHAIN_SUFFIX = "_chain_sha256"
@@ -1065,12 +1083,63 @@ def edge_class(ra, rb):
     return "other"
 
 
-def linked_pair_report(lines, pk_qid, regs=None):
-    """Reported only (pairfeat6 experiments, non-baseline arms): final linked pairs split by truth (same_person = true
-    merges); with regs (development lanes) the different-person pairs are also counted by edge_class. An unmapped
-    registration is an analysis error."""
+def _ordered_tokens(s):
+    return re.findall(r"[^\W\d_]+", s.lower())
+
+
+def _real_dob(d):
+    """A real, non-placeholder birth date: YYYY-MM-DD, a valid calendar date in 1900-2100, not 1 January or 1 July
+    (a day-00 date is not a calendar date)."""
+    if not isinstance(d, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", d) or d[5:] in ("01-01", "07-01"):
+        return False
+    try:
+        y = datetime.date.fromisoformat(d).year
+    except ValueError:
+        return False
+    return 1900 <= y <= 2100
+
+
+def _given_only(na, nb):
+    """Names that share their first token and nothing else: two or more tokens each, equal first tokens, no other token
+    of either name in the other, and no later token of one a prefix of a later token of the other (initials and
+    truncated forms stay missing_dob_ambiguous)."""
+    ta, tb = _ordered_tokens(na), _ordered_tokens(nb)
+    if len(ta) < 2 or len(tb) < 2 or ta[0] != tb[0] or set(ta) & set(tb) != {ta[0]}:
+        return False
+    return not any(x.startswith(y) or y.startswith(x) for x in ta[1:] for y in tb[1:])
+
+
+def edge_class7(ra, rb):
+    """pairfeat7's reported-only class of a remaining different-person linked pair: edge_class, with two of its classes
+    split. A pair edge_class calls missing_dob_ambiguous is missing_dob_given_only when the names share their first
+    token and nothing else (_given_only); a pair it calls other is same_real_dob_different_names when both birth dates
+    are the same real, non-placeholder date (_real_dob) and the names share no token. Every other pair keeps its
+    edge_class."""
+    c = edge_class(ra, rb)
+    if c == "missing_dob_ambiguous" and _given_only(ra["name"], rb["name"]):
+        return "missing_dob_given_only"
+    if c == "other" and _real_dob(ra["dob"]) and ra["dob"] == rb["dob"] and \
+            not _name_tokens(ra["name"]) & _name_tokens(rb["name"]):
+        return "same_real_dob_different_names"
+    return c
+
+
+EDGE_CLASSIFIERS = {"pairfeat7": (EDGE_CLASSES7, edge_class7)}
+
+
+def edge_classifier(candidate):
+    """(class names, classifier) of a candidate's experiment: pairfeat6's unless CANDIDATES[c]["edge_classes"] names
+    another set."""
+    return EDGE_CLASSIFIERS.get(CANDIDATES.get(candidate, {}).get("edge_classes"), (EDGE_CLASSES, edge_class))
+
+
+def linked_pair_report(lines, pk_qid, regs=None, candidate=None):
+    """Reported only (pairfeat6 and pairfeat7 experiments, non-baseline arms): final linked pairs split by truth
+    (same_person = true merges); with regs (development lanes) the different-person pairs are also counted by the
+    experiment's edge classes (edge_classifier). An unmapped registration is an analysis error."""
     same = diff = 0
-    classes = dict.fromkeys(EDGE_CLASSES, 0)
+    names, classify = edge_classifier(candidate)
+    classes = dict.fromkeys(names, 0)
     for a, b in sorted(final_linked_pairs(lines)):
         pa, pb = pk_qid.get(a), pk_qid.get(b)
         if not (isinstance(pa, str) and pa and isinstance(pb, str) and pb):
@@ -1080,7 +1149,7 @@ def linked_pair_report(lines, pk_qid, regs=None):
             continue
         diff += 1
         if regs is not None:
-            classes[edge_class(regs.get(a), regs.get(b))] += 1
+            classes[classify(regs.get(a), regs.get(b))] += 1
     out = {"same_person": same, "different_person": diff}
     if regs is not None:
         out["edge_classes"] = classes
@@ -1195,7 +1264,10 @@ def aggregate_arm(arm, lanes):
         if any(ec):
             if not all(ec):
                 raise ValueError("edge_classes present in only some lanes of arm %s" % arm)
-            a["linked_pairs"]["edge_classes"] = {k: sum(l["linked_pairs"]["edge_classes"][k] for l in lanes) for k in EDGE_CLASSES}
+            keys = set(lanes[0]["linked_pairs"]["edge_classes"])
+            if any(set(l["linked_pairs"]["edge_classes"]) != keys for l in lanes):
+                raise ValueError("lanes of arm %s report different edge classes" % arm)
+            a["linked_pairs"]["edge_classes"] = {k: sum(l["linked_pairs"]["edge_classes"][k] for l in lanes) for k in sorted(keys)}
     return a
 
 
@@ -1338,8 +1410,9 @@ def _pairfeat6_gate(ref, cand, kind, base):
         raise ValueError("the pairfeat6 gate needs the baseline arm (SAFETY is gated in every arm)")
     rk, ck = ref.get("arm"), cand.get("arm")
     reasons = []
-    if ck != "pairfeat6" or rk != reference("pairfeat6"):
-        reasons.append("arms must be pairfeat6 vs its reference arm pairfeat5")
+    own = ck if CANDIDATES.get(ck, {}).get("reference_gate") == "pairfeat6" else "pairfeat6"  # pairfeat6, pairfeat7
+    if ck != own or rk != reference(own):
+        reasons.append("arms must be %s vs its reference arm %s" % (own, reference(own)))
     if not base["truth_closed"] == ref["truth_closed"] == cand["truth_closed"]:
         reasons.append("truth_closed differs between arms")
     gain = None
@@ -1542,7 +1615,7 @@ def _load_lane(path, seed, arm, mode, candidate):
     if CANDIDATES[candidate].get("report_linked_pairs") and arm != "baseline":  # pairfeat6: reported, never gated
         regs = cohort_registrations(os.path.join(path, "cohort")) if MODES[mode]["split"] == "dev" else None
         with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:
-            linked = linked_pair_report(h, pk, regs)
+            linked = linked_pair_report(h, pk, regs, candidate)
     if lane_image(candidate):
         check_lane_image(r, os.path.join(path, "run/main/out_log.ndjson"), arm, candidate)
     return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu, linked)

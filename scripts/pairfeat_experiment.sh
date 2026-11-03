@@ -3,12 +3,13 @@
 # Usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM
 #   MODE  dev-clean (dev; candidate dev seeds; rerr 0/0) | dev-stress (dev; candidate dev seeds; rerr 0.04, ungraded 0.25)
 #         | validation-clean (eval; 401 409 419 421 431, r1review 631 641 643 647 653; rerr 0/0)
-#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 | pairfeat6 (-modelset <candidate> on orchestrate/audit/report7 only)
+#   ARM   baseline (default modelset) | pairfeat1 | pairfeat2 | pairfeat3 | pairfeat4 | pairfeat5 | pairfeat6 | pairfeat7 (-modelset <candidate> on orchestrate/audit/report7 only)
 #         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
 # pairfeat6 659 661 673 (validation 677 683 691 701 709); a pairfeat6 parent (its own chain) needs experiment.json from
 # `init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR`, which records the separately fitted pairfeat5 reference; it
-# serves baseline, pairfeat5 and pairfeat6, image off;
+# serves baseline, pairfeat5 and pairfeat6, image off; pairfeat7 719 727 733 (validation 739 743 751 757 761), the same
+# shape (`init-experiment EXPERIMENT_DIR pairfeat7 REFERENCE_FIT_DIR`; baseline, pairfeat5 and pairfeat7, image off);
 # r1review 571 577 587 (amendment 3; 557 563 569 / 601-619 retired, refused by the guard). An r1review experiment (named by its write-once experiment.json, `pairfeat_compare.py init-experiment`,
 # over a pairfeat5 artifact-manifest.json) serves three arms: baseline, pairfeat5 (reference; exactly a pairfeat5 lane) and
 # r1review (the pairfeat5 chain plus -r1review), all on r1review's seeds. Every arm of an r1review experiment runs gen with
@@ -48,7 +49,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 r1review)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -79,6 +80,7 @@ case "$CAND" in
   pairfeat5) DEV_SEEDS="521 541 547";;
   r1review) DEV_SEEDS="571 577 587"; VAL_SEEDS="631 641 643 647 653"; CHAIN=pairfeat5; REF=pairfeat5;;
   pairfeat6) DEV_SEEDS="659 661 673"; VAL_SEEDS="677 683 691 701 709"; REF=pairfeat5; REFCHAIN=experiment;;
+  pairfeat7) DEV_SEEDS="719 727 733"; VAL_SEEDS="739 743 751 757 761"; REF=pairfeat5; REFCHAIN=experiment;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
