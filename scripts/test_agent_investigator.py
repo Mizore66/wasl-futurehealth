@@ -404,6 +404,7 @@ class Driver(DriverBase):
         self.assertEqual(summary["gemini"]["calls"], 1)
         self.assertEqual(summary["covered"], 1)
         self.assertEqual(summary["human_seconds_saved"], 0)
+        self.assertEqual(summary["provenance"], {"model": "gemini-test", "prompt_ver": ai.PROMPT_VER, "schema_ver": ae.TOOL_SCHEMA_VERSION})
 
     def test_terminal_uncertain_record_is_not_retried(self):
         fake = Fake(resp(text_msg("garbage")), resp(text_msg(self.good())))
@@ -411,14 +412,15 @@ class Driver(DriverBase):
         self.assertEqual(len(fake.requests), 1)
         self.assertEqual(json.loads(open(os.path.join(self.d, "recs.ndjson")).read())["label"], "uncertain")
 
-    def test_control_materializes_once_without_gemini(self):
+    def test_control_materializes_twice_without_gemini(self):
         out = ai.iterate(self.args(client=None, control=True))
         calls = self.calls()
-        self.assertEqual(len(calls), 1)
+        self.assertEqual(len(calls), 2)
         self.assertNotIn("-agentrecs", calls[0])
         self.assertTrue(out["control"])
+        self.assertTrue(out["determinism"]["ok"])
+        self.assertEqual(out["determinism"]["new_uncached_calls"], 0)
         self.assertFalse(os.path.exists(os.path.join(self.d, "recs.ndjson")))
-        self.assertFalse(os.path.exists(self.run_dir + "_check"))
 
     def test_provider_error_aborts_without_recording_a_record(self):
         with self.assertRaises(ai.ProviderError):
