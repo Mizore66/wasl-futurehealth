@@ -116,8 +116,8 @@ func (s looScope) weight(tok string) float64 {
 }
 
 // usesNameIDF: the modelsets whose chain carries a name-rarity table name_idf_<modelset>.json and pair features
-// f30..f33 (pairfeat7 reuses pairfeat6's features and table code under its own file names).
-func usesNameIDF(modelSet string) bool { return modelSet == "pairfeat6" || modelSet == "pairfeat7" }
+// f30..f33 (pairfeat7 and pairfeat8 reuse pairfeat6's features and table code under their own file names).
+func usesNameIDF(modelSet string) bool { return modelSet == "pairfeat6" || modelSet == "pairfeat7" || modelSet == "pairfeat8" }
 
 // nameIDFFor: the table a process uses. featdump takes it only from -nameidf (pairfeat6 and pairfeat7 training dumps);
 // every other command loads <wasl>/name_idf_<modelset>.json when usesNameIDF(-modelset) and uses none otherwise.

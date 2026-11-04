@@ -92,12 +92,12 @@ func TestPairfeat6DumpsUnchangedGolden(t *testing.T) {
 }
 
 func TestPairfeat7ModelsetTables(t *testing.T) {
-	for ms, want := range map[string]bool{"": false, "pairfeat1": false, "pairfeat5": false, "pairfeat6": true, "pairfeat7": true, "pairfeat8": false} {
+	for ms, want := range map[string]bool{"": false, "pairfeat1": false, "pairfeat5": false, "pairfeat6": true, "pairfeat7": true, "pairfeat8": true} {
 		if usesNameIDF(ms) != want {
 			t.Errorf("usesNameIDF(%q) = %v", ms, !want)
 		}
 	}
-	for ms, want := range map[string]bool{"": false, "pairfeat4": false, "pairfeat5": true, "pairfeat6": true, "pairfeat7": true, "pairfeat8": false} {
+	for ms, want := range map[string]bool{"": false, "pairfeat4": false, "pairfeat5": true, "pairfeat6": true, "pairfeat7": true, "pairfeat8": true} {
 		if xscriptCapFor(ms) != want {
 			t.Errorf("xscriptCapFor(%q) = %v", ms, !want)
 		}

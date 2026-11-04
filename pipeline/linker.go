@@ -224,11 +224,15 @@ func (L *LinkerCore) eidClash(ra, rb int) bool {
 }
 
 func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) (merged bool) {
+	guardReason := ""
 	if L.trace != nil {
 		defer func() {
 			e := LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: p, Stage: "linked"}
 			if L.Find(a) != L.Find(b) {
 				e.Stage, e.Reason = "rejected_demographic", "merge_constraint"
+				if guardReason != "" {
+					e.Reason = guardReason
+				}
 			}
 			L.emitLink(e)
 		}()
@@ -246,8 +250,25 @@ func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) (merged
 		L.Stats["eid_cluster_clash"]++
 		return false
 	}
+	humanMissing := false
+	if DemoGuard { // demoguard.go: reviewers bypass only the missing-data requirement, never a known conflict
+		d := demoClassify(L.recs[a], L.recs[b])
+		if basis != "human" && d != demoAutoOK {
+			return false
+		}
+		if L.demoClash(ra, rb) {
+			L.cannot2(a, b)
+			L.Stats["demoguard_cluster_conflict"]++
+			guardReason = "demographic_cluster_conflict"
+			return false
+		}
+		humanMissing = basis == "human" && d == demoNeedsReview
+	}
 	if !L.mergeAllowed(ra, rb, force) {
 		return false
+	}
+	if humanMissing {
+		L.Stats["demoguard_human_missing_merge"]++
 	}
 	L.addEdge(a, b, p, basis)
 	if ra > rb { // deterministic root = smaller index
@@ -492,18 +513,45 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 	}
 	for _, c := range cs {
 		o := L.recs[c.j]
-		if r.eidOK && o.eidOK {
-			if r.Eid != o.Eid {
+		if r.eidOK && o.eidOK && r.Eid != o.Eid {
+			L.cannot2(r.idx, c.j)
+			L.Stats["eid_conflicts"]++
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_conflict"})
+			continue
+		}
+		demoReview, equalEID := false, false // demoguard.go: the pair needs review before any automatic merge
+		if DemoGuard {
+			switch demoClassify(r, o) {
+			case demoDOBConflict, demoSexConflict:
 				L.cannot2(r.idx, c.j)
-				L.Stats["eid_conflicts"]++
-				L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_conflict"})
+				reason := "dob_conflict"
+				if demoClassify(r, o) == demoSexConflict {
+					reason = "sex_conflict"
+				}
+				L.Stats["demoguard_"+reason]++
+				if r.eidOK && o.eidOK {
+					L.Stats["demoguard_eid_rejected"]++
+				}
+				L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: reason})
 				continue
+			case demoNeedsReview:
+				demoReview = true
 			}
+		}
+		if r.eidOK && o.eidOK {
 			why := ""
 			if EIDContraGuard {
 				why = eidContradiction(r, o)
 			}
 			if why == "" {
+				if demoReview {
+					// demoguard.go: an equal valid number alone no longer forces the link; the pair goes to review with its
+					// own model score (never raised), even below Lo
+					L.Stats["demoguard_missing"]++
+					L.Stats["demoguard_eid_missing"]++
+					L.demoteNear(r, o, c.p, aff)
+					continue
+				}
 				L.Link(r.idx, c.j, 1.0, true, "eid")
 				L.Stats["eid_links"]++
 				continue
@@ -511,6 +559,7 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides. Below Lo
 			// the pair would be invisible, so it is kept as a near-miss candidate and the loop asks a reviewer.
 			L.Stats["eid_contradicted_"+why]++
+			equalEID = true
 			if min := 0.2; c.p < min { // fixed at 0.2 regardless of -linkfloor
 				c.p = min
 			}
@@ -531,7 +580,13 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 		if capped {
 			reason = "xscript_cap"
 		}
-		if c.p >= L.Thr {
+		if c.p >= L.Thr && demoReview {
+			L.Stats["demoguard_missing"]++
+			if equalEID {
+				L.Stats["demoguard_eid_missing"]++
+			}
+			L.demoteNear(r, o, c.p, aff)
+		} else if c.p >= L.Thr {
 			if V7Cal != nil {
 				L.pcal7[pk2(r.idx, c.j)] = V7Cal.Predict(c.p, corroborated(r, o, c.feat))
 			}

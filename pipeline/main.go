@@ -150,7 +150,7 @@ func main() {
 	fs.Float64Var(&XSNamesakeRate, "xsnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic cross-script namesake hard negative (pairfeat6 training only)")
 	fs.Float64Var(&FamilyNamesakeRate, "familynamesakes", 0, "featdump only: share of persons given a synthetic family-name namesake hard negative (training only)")
 	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
-	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
+	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only) | v3 (reliable real DOB: same-person registrations never carry different real birth dates; pairfeat8 training and evaluation)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
 	readerTimeout := fs.Duration("reader-timeout", 60*time.Second, "per-call reader timeout")
@@ -184,6 +184,7 @@ func main() {
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
 	linkConfirmDOB := fs.Bool("linkconfirmdob", false, "linker: with -linkconfirm, real birth dates more than a year apart also count as a contradiction (v7.go)")
 	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	demoGuard := fs.Bool("demoguard", false, "linker (default off): different real DOBs or different known sexes are hard conflicts (cannot-link); missing demographics block automatic merging and go to review; reviewers cannot override a conflict (demoguard.go)")
 	eidGuard := fs.Bool("eidguard", false, "linker+closure (B8 hardening, post hoc, default off): equal Emirates IDs on contradicting registrations do not force a link, and no closure rides an Emirates-ID path to a contradicting person (eidguard.go)")
 	secondIDConfirm := fs.Bool("secondidconfirm", true, "linker: with -linkconfirm, a second-identifier 'same' on a pair with contradicting sex or real birth dates needs a confirming review (second_identifier_confirm; v7.go)")
 	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
@@ -250,6 +251,7 @@ func main() {
 	LinkContradictionDOB = *linkConfirmDOB
 	SecondIDContradictionConfirm = *secondIDConfirm
 	EIDContraGuard = *eidGuard
+	DemoGuard = *demoGuard
 	LTTProg = *lttProg
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
@@ -393,6 +395,9 @@ func main() {
 	}
 	if EIDContraGuard { // B8 hardening (eidguard.go): every child, only when on
 		v7Args = append(v7Args, "-eidguard")
+	}
+	if DemoGuard { // strict demographic guard (demoguard.go): every child, only when on
+		v7Args = append(v7Args, "-demoguard")
 	}
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
