@@ -321,7 +321,8 @@ class Citations(Base):
     def test_citation_value_equality_is_canonical(self):
         ctx = self.aliases()
         v = ToolAPI(self.store, "rv-missing-dob", metered=False).get_pair_context(ctx["item"])
-        rec = self.rec({"label": "same", "citations": [{"tool": "get_pair_context", "arg": ctx["item"], "field": "pair", "value": v["pair"]}]})
+        sub = self.good()[:1]  # pair is alias-only, so a substantive citation accompanies it
+        rec = self.rec({"label": "same", "citations": sub + [{"tool": "get_pair_context", "arg": ctx["item"], "field": "pair", "value": v["pair"]}]})
         self.assertEqual(rec["label"], "same")
         rec = self.rec({"label": "same", "citations": [{"tool": "get_pair_context", "arg": ctx["item"], "field": "pair", "value": v["pair"][::-1]}]})
         self.assertEqual(rec["reason"], "value_mismatch")
@@ -340,15 +341,54 @@ class Citations(Base):
             self.assertEqual(rec["item"], "rv-missing-dob")
 
     def test_controller_forced_reasons(self):
-        for r in ("per_item_budget", "provider_timeout_abstain"):
+        for r in ("per_item_budget", "controller_abstain"):
             rec = self.store.terminal_record("rv-missing-dob", {"label": "same", "citations": self.good()}, {"uncertain_reason": r})
             self.assertEqual((rec["label"], rec["reason"]), ("uncertain", r))
-        rec = self.store.terminal_record("rv-missing-dob", None, {"uncertain_reason": "not-a-stable-reason"})
-        self.assertEqual(rec["reason"], "invalid_output")
+        for r in ("provider_timeout_abstain", "not-a-stable-reason"):  # provider failure aborts in Task 2; it is never an abstention
+            rec = self.store.terminal_record("rv-missing-dob", {"label": "same", "citations": self.good()}, {"uncertain_reason": r})
+            self.assertEqual((rec["label"], rec["reason"], rec["meta"]), ("uncertain", "invalid_metadata", {}))
+        self.assertNotIn("provider_timeout_abstain", ae.STABLE_REASONS)
+
+    def test_metadata_allowlist_passes_planned_fields(self):
+        m = {"model": "gemini-2.5-flash", "prompt_ver": "p1", "schema_ver": "agent-evidence-tools-v1", "calls": 2,
+             "tokens": {"prompt": 10, "completion": 5, "total": 15}, "latency_s": 1.5,
+             "trace": [{"tool": "get_record", "arg": self.store.alias("reg", "p|A1")}]}
+        rec = self.rec_meta(m)
+        self.assertEqual((rec["label"], rec["meta"]), ("same", m))
+
+    def rec_meta(self, m):
+        return self.store.terminal_record("rv-missing-dob", {"label": "same", "citations": self.good()}, m)
+
+    def test_metadata_rejects_unknown_secret_url_and_bad_types(self):
+        bad = [{"api_key": "x"}, {"authorization": "Bearer abc"}, {"url": "https://h"}, {"Model": "m"}, {"extra": 1},
+               {"model": "https://host/v1"}, {"model": "sk-abcdef"}, {"model": "Bearer abc"}, {"model": "a" * 40},
+               {"model": "AIzaSyDfoo"}, {"model": "m", "prompt_ver": "api_key=zzz"}, {"model": 5}, {"model": "x\n"},
+               {"calls": "2"}, {"calls": True}, {"calls": -1}, {"tokens": {"secret": 1}}, {"tokens": "9"}, {"latency_s": "1"},
+               {"trace": [{"tool": "get_record", "arg": "p|A1"}]}, {"trace": [{"tool": "get_record", "arg": "reg_" + "a" * 32, "x": 1}]},
+               {"trace": [{"tool": "rm", "arg": "?"}]}, {"trace": "x"}, "string", ["model"]]
+        for m in bad:
+            rec = self.rec_meta(m)
+            self.assertEqual((rec["label"], rec["reason"], rec["meta"]), ("uncertain", "invalid_metadata", {}), m)
+            self.assertNotIn("sk-abcdef", json.dumps(rec))
 
     def test_unserialisable_metadata_is_contained(self):
-        rec = self.store.terminal_record("rv-missing-dob", None, {"x": object()})
-        self.assertEqual(rec["meta"], {"meta_error": True})
+        rec = self.store.terminal_record("rv-missing-dob", None, {"model": object()})
+        self.assertEqual((rec["reason"], rec["meta"]), ("invalid_metadata", {}))
+
+    def test_alias_echo_citations_are_not_evidence(self):
+        ctx = self.aliases()
+        reg = self.store.alias("reg", "p|A1")
+        echoes = [{"tool": "get_record", "arg": reg, "field": "reg", "value": reg},
+                  {"tool": "get_pair_context", "arg": ctx["item"], "field": "item", "value": ctx["item"]},
+                  {"tool": "get_pair_context", "arg": ctx["item"], "field": "pair", "value": ctx["pair"]},
+                  {"tool": "get_pair_context", "arg": ctx["item"], "field": "p", "value": ctx["p"]},
+                  {"tool": "get_report_fields", "arg": ctx["report"], "field": "report", "value": ctx["report"]},
+                  {"tool": "get_photo_verdict", "arg": ctx["photos"][0], "field": "photo", "value": ctx["photos"][0]}]
+        for lab in ("same", "different"):
+            rec = self.rec({"label": lab, "citations": echoes})
+            self.assertEqual((rec["label"], rec["reason"], rec["citations"]), ("uncertain", "no_substantive_citation", []))
+        rec = self.rec({"label": "same", "citations": echoes + [{"tool": "get_record", "arg": reg, "field": "dob", "value": ""}]})
+        self.assertEqual(rec["label"], "same")
 
     def test_citation_reexecution_does_not_consume_tool_budget(self):
         self.rec({"label": "same", "citations": self.good()})
