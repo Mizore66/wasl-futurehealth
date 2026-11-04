@@ -159,6 +159,14 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
                            "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
                            "reference_gate": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
                            "lane_image": True, "noise": "v3", "baseline_gating": False,
+                           "report_linked_pairs": True, "edge_classes": "pairfeat7"},
+              # r1agent8 (spec 2026-11-04-crc-r1agent8-evidence-design.md): the r1photo8 flags plus deterministic agent-recommendation
+              # replay; arms are the explicit comparators r1photo8 (base_arm, no default-model arm), r1photo8ref and itself
+              "r1agent8": {"dev_seeds": [881, 883, 887], "validation_seeds": [907, 911, 919, 929, 937],
+                           "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                           "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
+                           "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
+                           "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
                            "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
@@ -240,6 +248,16 @@ def reference(candidate):
     return CANDIDATES.get(candidate, {}).get("reference")
 
 
+def base_arm(candidate):
+    """The comparator-baseline arm of an experiment: the default-model "baseline" except r1agent8 (guarded r1photo8)."""
+    return CANDIDATES.get(candidate, {}).get("base_arm", "baseline")
+
+
+def agent_replay(candidate):
+    """True when the candidate's offline replay consumes agent recommendations (r1agent8 only)."""
+    return bool(CANDIDATES.get(candidate, {}).get("agent_replay"))
+
+
 def baseline_gating(candidate):
     """Whether gate(baseline, candidate) decides pass; False only for r1review (amendment 3: reported, not gating)."""
     return CANDIDATES.get(candidate, {}).get("baseline_gating", True)
@@ -258,7 +276,7 @@ def reference_chain_shared(candidate):
 
 def shared_arm_chain(candidate):
     """experiment.json's arm -> chain mapping of a shared-chain experiment."""
-    return {a: ("baseline" if a == "baseline" else chain_of(candidate)) for a in arms(candidate)}
+    return {a: ("baseline" if a == "baseline" else chain_of(candidate)) for a in arms(candidate)}  # r1agent8: no baseline arm
 
 
 def lane_noise(candidate):
@@ -379,7 +397,8 @@ def arms(candidate):
     """The arms of an experiment parent serving this candidate: baseline and the candidate, with the reference arm
     between them for a three-arm candidate (r1review: baseline, pairfeat5, r1review)."""
     ref = reference(_check_candidate(candidate))
-    return ("baseline", ref, candidate) if ref else ("baseline", candidate)
+    base = base_arm(candidate)  # "baseline" except r1agent8, whose first arm is the guarded comparator r1photo8
+    return (base, ref, candidate) if ref else (base, candidate)
 
 
 def mode_settings(mode, candidate):
@@ -1769,6 +1788,88 @@ def _r1photo8_gate(ref, cand, kind, base):
             "hours": {rk: rh, ck: chh, "max_allowed": float(hlimit)}, "reported": reported, "reasons": reasons}
 
 
+AGENT_MIN_COVERAGE = Fraction(4, 5)
+
+
+def _r1agent8_gate(unguarded, guarded, cand, kind):
+    """Gate of r1agent8 against two comparators (spec 2026-11-04-crc-r1agent8-evidence-design.md, gates table): CRC recall
+    >= both; false_merge_pairs, cross_person_edges and uncapped wrong-pair review pairs <= guarded (r1photo8) in every kind and
+    strictly below unguarded (r1photo8ref) in selection/validation, not above in stress; reviewer hours <= guarded and
+    <= 1.10 x unguarded; SAFETY and wrong releases by origin zero in all three arms; deterministic replay; eligible-item agent
+    coverage >= 0.80; accepted citations 100% valid. impure_clusters, wrong final sign-offs and live divergence are reported
+    only. cand["agent"] carries replay_deterministic, eligible, covered, accepted, accepted_valid (and live_divergence)."""
+    if kind not in GATE_KINDS:
+        raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
+    ag = cand.get("agent")
+    if not isinstance(ag, dict) or not isinstance(ag.get("replay_deterministic"), bool):
+        raise ValueError("the r1agent8 gate needs candidate agent.replay_deterministic")
+    for k in ("eligible", "covered", "accepted", "accepted_valid"):
+        if isinstance(ag.get(k), bool) or not isinstance(ag.get(k), int) or ag[k] < 0:
+            raise ValueError("the r1agent8 gate needs candidate agent.%s as a non-negative integer" % k)
+    uk, gk, ck = unguarded.get("arm"), guarded.get("arm"), cand.get("arm")
+    reasons = []
+    if ck != "r1agent8" or uk != reference(ck) or gk != base_arm(ck):
+        reasons.append("arms must be %s vs comparators %s (unguarded) and %s (guarded)" % ("r1agent8", reference("r1agent8"), base_arm("r1agent8")))
+    if not unguarded["truth_closed"] == guarded["truth_closed"] == cand["truth_closed"]:
+        reasons.append("truth_closed differs between arms")
+    if not cand["truth_closed"]:
+        reasons.append("truth_closed is zero")
+    else:
+        for label, c in (("unguarded", unguarded), ("guarded", guarded)):
+            if Fraction(cand["tp"], cand["truth_closed"]) < Fraction(c["tp"], c["truth_closed"]) if c["truth_closed"] else False:
+                reasons.append("recall below %s %s" % (label, c.get("arm")))
+    for label, a in (("unguarded ", unguarded), ("guarded ", guarded), ("", cand)):
+        for k in SAFETY:
+            if a[k] != 0:
+                reasons.append(label + k + " nonzero")
+        if any(v != 0 for v in a["wrong_released_by_origin"].values()):
+            reasons.append(label + "wrong_released_by_origin nonzero")
+    strict = kind in PF6_STRICT_KINDS
+    rule = "strictly below" if strict else "not above"
+
+    def compare(name, uv, gv, cv):
+        if cv > gv:
+            reasons.append("%s above guarded (%d > %d)" % (name, cv, gv))
+        if strict and cv >= uv:
+            reasons.append("%s not strictly below unguarded (%d >= %d)" % (name, cv, uv))
+        elif not strict and cv > uv:
+            reasons.append("%s above unguarded (%d > %d)" % (name, cv, uv))
+    contam = {}
+    for k in ("false_merge_pairs", "cross_person_edges"):
+        compare(k, unguarded[k], guarded[k], cand[k])
+        contam[k] = {uk: unguarded[k], gk: guarded[k], ck: cand[k], "vs_guarded": "not above", "vs_unguarded": rule}
+    vals = []
+    for label, a in (("unguarded", unguarded), ("guarded", guarded), ("candidate", cand)):
+        v = a["reviewer"].get("uncapped_wrong_distinct_pairs")
+        if isinstance(v, bool) or not isinstance(v, int) or v < 0:
+            raise ValueError("r1agent8 gate needs reviewer.uncapped_wrong_distinct_pairs in the %s arm" % label)
+        vals.append(v)
+    uu, gu, cu = vals
+    compare("uncapped wrong-pair link-review pairs", uu, gu, cu)
+    uh, gh, ch = unguarded["reviewer"]["hours"], guarded["reviewer"]["hours"], cand["reviewer"]["hours"]
+    hlimit = Fraction(uh) * PF6_GROWTH
+    if Fraction(ch) > Fraction(gh):
+        reasons.append("reviewer hours %.2f exceed guarded %.2f" % (ch, gh))
+    if Fraction(ch) > hlimit:
+        reasons.append("reviewer hours %.2f exceed %.2f (unguarded %.2f +10%%, 1.10x)" % (ch, float(hlimit), uh))
+    if not ag["replay_deterministic"]:
+        reasons.append("agent replay is not deterministic")
+    cov = Fraction(ag["covered"], ag["eligible"]) if ag["eligible"] else None
+    if cov is None or cov < AGENT_MIN_COVERAGE:
+        reasons.append("agent coverage %s below 0.80" % ("undefined (no eligible items)" if cov is None else "%.4f" % float(cov)))
+    if ag["accepted_valid"] != ag["accepted"]:
+        reasons.append("accepted citations not 100%% valid (%d of %d)" % (ag["accepted_valid"], ag["accepted"]))
+    reported = {"impure_clusters": {uk: unguarded["impure_clusters"], gk: guarded["impure_clusters"], ck: cand["impure_clusters"]},
+                "wrong_final_signoffs": {a.get("arm"): a["reviewer"]["wrong_final_signoffs"] for a in (unguarded, guarded, cand)},
+                "live_divergence": ag.get("live_divergence"), "gating": False}
+    return {"pass": not reasons, "kind": kind, "comparators": [uk, gk], "contamination": contam,
+            "uncapped_wrong_distinct_pairs": {uk: uu, gk: gu, ck: cu, "rule": rule},
+            "hours": {uk: uh, gk: gh, ck: ch, "max_allowed": float(min(Fraction(gh), hlimit))},
+            "agent": {"replay_deterministic": ag["replay_deterministic"], "coverage": None if cov is None else float(cov),
+                      "min_coverage": float(AGENT_MIN_COVERAGE), "accepted": ag["accepted"], "accepted_valid": ag["accepted_valid"]},
+            "reported": reported, "reasons": reasons}
+
+
 def reference_gate(ref, cand, kind, base=None):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
     recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
@@ -1785,6 +1886,10 @@ def reference_gate(ref, cand, kind, base=None):
         return _r1photo7_gate(ref, cand, kind, base)
     if isinstance(ca0, str) and CANDIDATES.get(ca0, {}).get("reference_gate") == "r1photo8":
         return _r1photo8_gate(ref, cand, kind, base)
+    if isinstance(ca0, str) and CANDIDATES.get(ca0, {}).get("reference_gate") == "r1agent8":
+        if base is None:
+            raise ValueError("the r1agent8 gate needs the guarded comparator arm as base")
+        return _r1agent8_gate(ref, base, cand, kind)
     if kind not in GATE_KINDS:
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
