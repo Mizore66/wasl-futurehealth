@@ -1431,7 +1431,7 @@ class RunnerPairfeat2(RunnerFixture, unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         for c, spec in pfc.CANDIDATES.items():
-            if pfc.reference_only(c) or c == "r1agent8":    # reference-only: no runner row; r1agent8's row is Task 5b (runner)
+            if pfc.reference_only(c):
                 continue
             self.assertIn('%s) DEV_SEEDS="%s"' % (c, " ".join(map(str, spec["dev_seeds"]))), text)
         self.assertIn('VAL_SEEDS="%s"' % " ".join(map(str, pfc.VALIDATION_SEEDS)), text)
@@ -5402,6 +5402,92 @@ class CLIR1photo8(CLIFixture, unittest.TestCase):
             run()
 
 
+class R1agent8Stages(unittest.TestCase):
+    ROOT = "/repo"
+    BIN = "/repo/bin/wsi7"
+    O = "/data/exp/arm/v2-s881"
+
+    def cmds(self, arm, mode="dev-clean"):
+        seed = 907 if mode == "validation-clean" else 881
+        return pfc.lane_commands(self.ROOT, self.BIN, self.O, seed, mode, arm, candidate="r1agent8")
+
+    def argv(self, arm, name="agentreplay", mode="dev-clean"):
+        return next(argv for stage, argv, log in self.cmds(arm, mode) if stage == name)
+
+    def test_stage_order_and_materialized_consumers(self):
+        names = [x[0] for x in self.cmds("r1agent8")]
+        self.assertEqual(names, ["gen", "sim", "augment", "orchestrate", "agentreplay", "audit", "report7", "classifier"])
+        for name in ("audit", "report7"):
+            a = self.argv("r1agent8", name)
+            self.assertEqual(a[a.index("-run") + 1], self.O + "/run/agent/main")
+        orch = self.argv("r1agent8", "orchestrate")
+        self.assertEqual(orch[orch.index("-run") + 1], self.O + "/run/main")
+
+    def test_candidate_driver_and_guard(self):
+        a = self.argv("r1agent8")
+        self.assertEqual(a[:4], ["python3", "-I", self.ROOT + "/scripts/agent_investigator.py", "iterate"])
+        self.assertEqual(a[a.index("--data") + 1], self.O + "/cohort")
+        self.assertEqual(a[a.index("--wasl") + 1], self.ROOT + "/models")
+        self.assertEqual(a[a.index("--run") + 1], self.O + "/run/agent")
+        self.assertEqual(a[a.index("--recs") + 1], self.O + "/run/agent_recs.ndjson")
+        self.assertEqual(a[a.index("--cache") + 1], "/data/exp/agent_cache")
+        self.assertEqual(a[a.index("--stage") + 1], "selection")
+        self.assertEqual(a[a.index("--wsi7") + 1], self.BIN)
+        self.assertEqual(a[a.index("--image-cache") + 1], self.ROOT + "/models/image_verdicts.json")
+        self.assertNotIn("--control", a)
+        flags = a[a.index("--replay-flags") + 1]
+        for want in ("-noise v3", "-modelset pairfeat8", "-r1review", "-demoguard", "-rseed 881"):
+            self.assertIn(want, flags)
+        pfc.guard(a, "dev-clean", "r1agent8", self.BIN, "r1agent8")
+
+    def test_comparator_controls_and_validation_stage(self):
+        for arm in ("r1photo8", "r1photo8ref"):
+            a = self.argv(arm)
+            self.assertIn("--control", a)
+            pfc.guard(a, "dev-clean", arm, self.BIN, "r1agent8")
+        guarded = self.argv("r1photo8") [self.argv("r1photo8").index("--replay-flags") + 1]
+        unguarded = self.argv("r1photo8ref") [self.argv("r1photo8ref").index("--replay-flags") + 1]
+        self.assertIn("-demoguard", guarded)
+        self.assertNotIn("-demoguard", unguarded)
+        a = self.argv("r1agent8", mode="validation-clean")
+        self.assertEqual(a[a.index("--stage") + 1], "validation")
+        pfc.guard(a, "validation-clean", "r1agent8", self.BIN, "r1agent8")
+
+    def test_guard_refuses_stage_tampering(self):
+        a = self.argv("r1agent8")
+        a[a.index("--stage") + 1] = "validation"
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(a, "dev-clean", "r1agent8", self.BIN, "r1agent8")
+        a = self.argv("r1agent8") + ["--control"]
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(a, "dev-clean", "r1agent8", self.BIN, "r1agent8")
+        a = self.argv("r1agent8")
+        a[a.index("--replay-flags") + 1] = "-noise v2"
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(a, "dev-clean", "r1agent8", self.BIN, "r1agent8")
+
+    def test_guard_rejects_malformed_replay_flags_as_guard_error(self):
+        for flags in ("-seed", "'unbalanced"):
+            a = self.argv("r1agent8")
+            a[a.index("--replay-flags") + 1] = flags
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard(a, "dev-clean", "r1agent8", self.BIN, "r1agent8")
+
+    def test_llm_env_survives_scrub_only_for_candidate_sidecar(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('AGENT_LLM_URL="${WASL_LLM_URL:-}"', text)
+        self.assertNotIn("WASL_AGENT_LLM", text)
+        self.assertIn('os.path.basename(argv[2]) == "agent_investigator.py" and arm == cand', text)
+        self.assertIn('value = os.environ.get("AGENT_" + key)', text)
+        self.assertIn('env.pop(key, None)', text)
+
+    def test_earlier_candidate_has_no_agent_stage(self):
+        a = pfc.lane_commands(self.ROOT, self.BIN, self.O, 827, "dev-clean", "r1photo8")
+        self.assertNotIn("agentreplay", [x[0] for x in a])
+        self.assertEqual(a[-2][1][a[-2][1].index("-run") + 1], self.O + "/run/main")
+
+
 class R1photo8Build(unittest.TestCase):
     def test_noise_build_only_for_the_new_arms(self):
         for c in pfc.CANDIDATES:
@@ -5435,7 +5521,7 @@ class R1photo8Runner(RunnerFixture, unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;', text)
-        self.assertIn("r1photo7 r1photo8ref r1photo8)", text)
+        self.assertIn("r1photo7 r1photo8ref r1photo8 r1agent8)", text)
         self.assertIn("r1photo8ref|r1photo8) ;;", text)
         self.assertIn("pfc.noise_build(cand)", text)
         self.assertNotIn('r1photo8ref) DEV_SEEDS', text)               # the reference-only arm has no candidate row
