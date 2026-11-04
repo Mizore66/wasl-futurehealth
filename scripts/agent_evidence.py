@@ -20,8 +20,51 @@ REPORT_READER_FIELDS = ("state", "caecum", "prep", "polyps", "histology")
 STABLE_REASONS = frozenset({
     "model_uncertain", "invalid_json", "invalid_output", "unsupported_label", "no_citations", "too_many_citations",
     "malformed_citation", "unknown_tool", "fabricated_citation", "value_mismatch", "tool_budget", "per_item_budget",
-    "provider_timeout_abstain", "controller_abstain", "ineligible_item",
+    "controller_abstain", "ineligible_item", "no_substantive_citation", "invalid_metadata",
 })
+# citation fields that only echo an alias or the model score: never evidence on their own
+NON_EVIDENCE_FIELDS = frozenset({"reg", "item", "report", "photo", "photos", "pair", "p"})
+META_KEYS = ("model", "prompt_ver", "schema_ver", "calls", "tokens", "latency_s", "trace", "uncertain_reason")
+_SECRETISH = re.compile(r"(://|www\.|bearer|authorization|api[_ -]?key|secret|passw|token=|sk-|AIza|ghp_|xox[a-z]-)", re.I)
+_LONG_RUN = re.compile(r"[A-Za-z0-9+/_=-]{32,}")
+_SAFE_STR = re.compile(r"[A-Za-z0-9._:@+ -]{1,80}")
+
+
+def _safe_str(v):
+    return isinstance(v, str) and _SAFE_STR.fullmatch(v) is not None and not _SECRETISH.search(v) and not _LONG_RUN.search(v)
+
+
+def _num(v, integer=False):
+    return isinstance(v, int) and not isinstance(v, bool) and v >= 0 if integer else \
+        isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v < 1e9
+
+
+def sanitize_metadata(m):
+    """Strict allowlist of operational fields; returns a clean dict or None when anything else (or secret/URL-shaped data) appears."""
+    if m is None:
+        return {}
+    if not isinstance(m, dict) or set(m) - set(META_KEYS):
+        return None
+    out = {}
+    for k, v in m.items():
+        if k in ("model", "prompt_ver", "schema_ver"):
+            ok = _safe_str(v)
+        elif k == "calls":
+            ok = _num(v, True)
+        elif k == "latency_s":
+            ok = _num(v)
+        elif k == "tokens":
+            ok = _num(v, True) or (isinstance(v, dict) and set(v) <= {"prompt", "completion", "total"} and all(_num(x, True) for x in v.values()))
+        elif k == "uncertain_reason":
+            ok = v in STABLE_REASONS
+        else:  # trace
+            ok = isinstance(v, list) and len(v) <= 2 * MAX_TOOL_CALLS and all(
+                isinstance(t, dict) and set(t) == {"tool", "arg"} and t["tool"] in TOOLS
+                and isinstance(t["arg"], str) and (t["arg"] == "?" or ALIAS_RE.fullmatch(t["arg"])) for t in v)
+        if not ok:
+            return None
+        out[k] = v
+    return out
 TOOL_SCHEMA_VERSION = "agent-evidence-tools-v1"
 
 
@@ -335,10 +378,12 @@ class EvidenceStore:
         if item_id not in self.targets:
             raise ToolError("item_not_eligible")
         t = self.targets[item_id]
-        meta = _json_safe(metadata)
+        meta = sanitize_metadata(metadata)
         label, reason, cites = "uncertain", "", []
-        forced = meta.get("uncertain_reason") if isinstance(meta, dict) else None
-        if not self._eligible(item_id):
+        forced = (meta or {}).get("uncertain_reason")
+        if meta is None:
+            meta, reason = {}, "invalid_metadata"
+        elif not self._eligible(item_id):
             reason = "ineligible_item"
         elif item_id in self._over:
             reason = "tool_budget"
@@ -375,7 +420,7 @@ class EvidenceStore:
         if len(cites) > MAX_CITATIONS:
             return "uncertain", "too_many_citations", []
         api = ToolAPI(self, item, metered=False)
-        good = []
+        good, substantive = [], False
         for c in cites:
             if not (isinstance(c, dict) and all(k in c for k in ("tool", "arg", "field", "value")) and isinstance(c["field"], str)):
                 return "uncertain", "malformed_citation", []
@@ -392,17 +437,12 @@ class EvidenceStore:
                 cur = cur[part]
             if canon(cur) != canon(c["value"]):
                 return "uncertain", "value_mismatch", []
+            if c["field"].split(".")[0] not in NON_EVIDENCE_FIELDS:
+                substantive = True
             good.append({"tool": c["tool"], "arg": c["arg"], "field": c["field"], "value": cur})
+        if not substantive:
+            return "uncertain", "no_substantive_citation", []
         return label, "", good
-
-
-def _json_safe(meta):
-    if meta is None:
-        return {}
-    try:
-        return json.loads(json.dumps(meta, sort_keys=True))
-    except (TypeError, ValueError):
-        return {"meta_error": True}
 
 
 def _clean_report(v):
