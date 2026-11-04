@@ -5115,6 +5115,16 @@ class R1agent8Gate(unittest.TestCase):
             gd = r9_arm(R8, 530, fm=12, cpe=12, uncapped=4, hours=11.0)
             self.assertFalse(self.g(self.c(**{kw: 11}), "stress", guarded=gd)["pass"])
 
+    def test_zero_floor_contamination_comparisons(self):
+        for kw in ("fm", "cpe"):
+            un = r9_arm(R8REF_NAME, 530, **{kw: 0})
+            gd = r9_arm(R8, 530, fm=0, cpe=0, uncapped=0, hours=11.0)
+            cand = dict(fm=0, cpe=0, uncapped=0, hours=10.0)
+            for kind in ("selection", "validation", "stress"):
+                self.assertTrue(self.g(self.c(**cand), kind, unguarded=un, guarded=gd)["pass"], (kw, kind))
+                if kind != "stress":
+                    self.assertFalse(self.g(self.c(**dict(cand, **{kw: 1})), kind, unguarded=un, guarded=gd)["pass"], (kw, kind))
+
     def test_uncapped_wrong_pairs(self):
         for kind in pfc.GATE_KINDS:
             self.assertFalse(self.g(self.c(uncapped=5), kind)["pass"], kind)                # above guarded 4
@@ -5125,6 +5135,12 @@ class R1agent8Gate(unittest.TestCase):
         self.assertFalse(self.g(self.c(uncapped=5), "validation", unguarded=un, guarded=gd)["pass"])
         self.assertTrue(self.g(self.c(uncapped=5), "stress", unguarded=un, guarded=gd)["pass"])
         self.assertFalse(self.g(self.c(uncapped=6), "stress", unguarded=un, guarded=gd)["pass"])
+        un = r9_arm(R8REF_NAME, 530, uncapped=0)
+        gd = r9_arm(R8, 530, fm=9, cpe=9, uncapped=0, hours=11.0)
+        for kind in ("selection", "validation", "stress"):
+            self.assertTrue(self.g(self.c(uncapped=0), kind, unguarded=un, guarded=gd)["pass"], kind)
+            if kind != "stress":
+                self.assertFalse(self.g(self.c(uncapped=1), kind, unguarded=un, guarded=gd)["pass"], kind)
 
     def test_hours_vs_guarded_and_unguarded(self):
         for kind in pfc.GATE_KINDS:
@@ -5481,7 +5497,7 @@ class R1agent8Stages(unittest.TestCase):
         self.assertIn('AGENT_LLM_URL="${WASL_LLM_URL:-}"', text)
         self.assertNotIn("WASL_AGENT_LLM", text)
         self.assertIn('os.path.basename(argv[2]) == "agent_investigator.py" and arm == cand', text)
-        self.assertIn('value = os.environ.get("AGENT_" + key)', text)
+        self.assertIn('value = os.environ.get("AGENT_" + key.removeprefix("WASL_"))', text)
         self.assertIn('env.pop(key, None)', text)
 
     def test_earlier_candidate_has_no_agent_stage(self):

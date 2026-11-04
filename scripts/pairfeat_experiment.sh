@@ -212,7 +212,7 @@ def run(argv, log):
             env.pop(key, None)
         if len(argv) > 2 and os.path.basename(argv[2]) == "agent_investigator.py" and arm == cand:
             for key in ("WASL_LLM_URL", "WASL_LLM_KEY", "WASL_LLM_MODEL"):
-                value = os.environ.get("AGENT_" + key)
+                value = os.environ.get("AGENT_" + key.removeprefix("WASL_"))
                 if value:
                     env[key] = value
         p = subprocess.run(argv, stdout=h, stderr=subprocess.STDOUT, env=env)
