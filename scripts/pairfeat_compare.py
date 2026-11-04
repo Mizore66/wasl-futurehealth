@@ -100,6 +100,7 @@ Small-n caveat: t intervals over 3 (dev) or 5 (validation) seeds are wide and de
 import datetime
 import glob
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -109,6 +110,13 @@ import statistics
 import subprocess
 import sys
 from fractions import Fraction
+
+_AE_SPEC = importlib.util.spec_from_file_location("agent_evidence", os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_evidence.py"))
+ae = importlib.util.module_from_spec(_AE_SPEC)
+_AE_SPEC.loader.exec_module(ae)
+_LF_SPEC = importlib.util.spec_from_file_location("link_funnel", os.path.join(os.path.dirname(os.path.abspath(__file__)), "link_funnel.py"))
+lf = importlib.util.module_from_spec(_LF_SPEC)
+_LF_SPEC.loader.exec_module(lf)
 
 # The allowed candidate set. Each candidate has its own development seeds (also used by the baseline arm of that
 # candidate's experiment parent); validation seeds are shared.
@@ -833,6 +841,11 @@ def materialized_run_dir(o, candidate):
     return o + "/run/agent/main" if agent_replay(candidate) else o + "/run/main"
 
 
+def agent_control_dir(o, candidate):
+    """The directory holding agent_replay/stats/recs, distinct from the materialized main/ run artifacts."""
+    return o + "/run/agent" if agent_replay(candidate) else o + "/run/main"
+
+
 def agent_replay_stage(mode):
     return "validation" if mode == "validation-clean" else "selection"
 
@@ -1429,7 +1442,7 @@ def linked_pair_report(lines, pk_qid, regs=None, candidate=None):
 
 
 def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidate=None, completion=None,
-                 linked=None, demographic=None):
+                 linked=None, demographic=None, agent=None, offline_deterministic=None):
     crc = _req(report7, "programmes_live", "crc")
     truth = _req(crc, "truth_closed")
     tp = _req(crc, "pred_closed") - _req(crc, "false_closures")
@@ -1490,6 +1503,10 @@ def lane_metrics(seed, report7, funnel, status, load, xscript_cap=None, candidat
         m["linked_pairs"] = json.loads(json.dumps(linked))
     if demographic is not None:  # r1photo8 experiments, every arm; reported, never gated
         m["demographic"] = json.loads(json.dumps(demographic))
+    if agent is not None:
+        m["agent"] = json.loads(json.dumps(agent))
+    if offline_deterministic is not None:
+        m["offline_replay_deterministic"] = offline_deterministic
     return m
 
 
@@ -1548,6 +1565,15 @@ def aggregate_arm(arm, lanes):
             if any(set(l["linked_pairs"]["edge_classes"]) != keys for l in lanes):
                 raise ValueError("lanes of arm %s report different edge classes" % arm)
             a["linked_pairs"]["edge_classes"] = {k: sum(l["linked_pairs"]["edge_classes"][k] for l in lanes) for k in sorted(keys)}
+    ag = ["agent" in l for l in lanes]
+    if any(ag):
+        if not all(ag):
+            raise ValueError("agent present in only some lanes of arm %s" % arm)
+        a["agent"] = aggregate_agent([l["agent"] for l in lanes])
+    if any("offline_replay_deterministic" in l for l in lanes):
+        if not all("offline_replay_deterministic" in l for l in lanes):
+            raise ValueError("offline replay determinism present in only some lanes of arm %s" % arm)
+        a["offline_replay_deterministic"] = all(l["offline_replay_deterministic"] for l in lanes)
     return a
 
 
@@ -1582,8 +1608,8 @@ def _gate(base, cand, kind):
         raise ValueError("gate kind must be one of %s" % (GATE_KINDS,))
     reasons = []
     ck = cand.get("arm") if cand.get("arm") in CANDIDATES else "candidate"
-    if base.get("arm") != "baseline" or cand.get("arm") not in CANDIDATES:
-        reasons.append("arms must be baseline vs a candidate (%s)" % "/".join(sorted(CANDIDATES)))
+    if base.get("arm") != base_arm(cand.get("arm")) or cand.get("arm") not in CANDIDATES:
+        reasons.append("arms must be %s vs a candidate (%s)" % (base_arm(cand.get("arm")), "/".join(sorted(CANDIDATES))))
     if base["truth_closed"] != cand["truth_closed"]:
         reasons.append("truth_closed differs between arms")
     need = MIN_GAIN_PP.get(kind, 0.0)
@@ -1910,6 +1936,8 @@ def _r1agent8_gate(unguarded, guarded, cand, kind):
                 reasons.append(label + k + " nonzero")
         if any(v != 0 for v in a["wrong_released_by_origin"].values()):
             reasons.append(label + "wrong_released_by_origin nonzero")
+        if a is not cand and a.get("offline_replay_deterministic") is not True:
+            reasons.append(label + "offline replay is not deterministic")
     strict = kind in PF6_STRICT_KINDS
     rule = "strictly below" if strict else "not above"
 
@@ -2035,7 +2063,7 @@ def _valid_citations(r):
                 and isinstance(x["field"], str) and x["field"] for x in c))
 
 
-def agent_lane(path):
+def agent_lane(path, live_divergence=None):
     """One materialized lane's cand["agent"] block. accepted = terminal same/different records; accepted_valid = those with valid
     supporting citations; abstentions (uncertain) are covered but never accepted. No truth is read here."""
     rp, st, rows = _agent_json(os.path.join(path, "agent_replay.json")), _agent_stats(path), _agent_recs(path)
@@ -2053,7 +2081,11 @@ def agent_lane(path):
     bad = sum(r["label"] != "uncertain" and not _valid_citations(r) for r in rows.values())
     out = {"replay_deterministic": det["ok"], "eligible": st["eligible"], "covered": st["covered"], "accepted": accepted,
            "accepted_valid": max(0, accepted - bad)}
-    if "live_divergence" in rp:
+    if live_divergence is not None:
+        if not _is_count(live_divergence):
+            raise ValueError("live_divergence must be a non-negative integer")
+        out["live_divergence"] = live_divergence
+    elif "live_divergence" in rp:
         if not _is_count(rp["live_divergence"]):
             raise ValueError("agent_replay.json live_divergence must be a non-negative integer")
         out["live_divergence"] = rp["live_divergence"]
@@ -2097,6 +2129,37 @@ def agent_confusion(recs, truth, eligible_pairs):
             raise ValueError("no truth label for pair %s" % (k,))
         m[r["label"]][t] += 1
     return m
+
+
+def offline_replay_deterministic(path):
+    rp = _agent_json(os.path.join(path, "agent_replay.json"))
+    det = rp.get("determinism")
+    if not isinstance(det, dict) or not isinstance(det.get("ok"), bool):
+        raise ValueError("agent_replay.json needs determinism.ok as a boolean")
+    return det["ok"]
+
+
+def live_final_divergence(path, candidate):
+    """Count loops whose final decision signature differs between the original live run and the materialized replay."""
+    live = lf.load(os.path.join(path, "run/main"), os.path.join(path, "cohort"))["fin"]
+    offline = lf.load(materialized_run_dir(path, candidate), os.path.join(path, "cohort"))["fin"]
+    return sum(live.get(lp, (0, {}))[1].get("sig") != offline.get(lp, (0, {}))[1].get("sig")
+               for lp in set(live) | set(offline))
+
+
+def agent_eligible_pairs(path, candidate):
+    """Final eligible unordered pairs, using the sidecar's own queue/trace join and hard-conflict exclusion."""
+    store = ae.EvidenceStore.from_lane(path, salt=b"analysis-only", cohort_dir=os.path.join(path, "cohort"),
+                                      run_dir=materialized_run_dir(path, candidate))
+    return {tuple(sorted(t["pair"])) for item, t in store.targets.items() if store._eligible(item)}
+
+
+def agent_provenance(path):
+    rp = _agent_json(os.path.join(path, "agent_replay.json"))
+    p = rp.get("provenance")
+    if not isinstance(p, dict) or any(not isinstance(p.get(k), str) or not p[k] for k in ("model", "prompt_ver", "schema_ver")):
+        raise ValueError("agent_replay.json needs model, prompt_ver and schema_ver provenance")
+    return p
 
 
 def reference_gate(ref, cand, kind, base=None):
@@ -2224,17 +2287,21 @@ def check_lane_image(report7, out_log_path, arm, candidate):
 
 def _load_lane(path, seed, arm, mode, candidate):
     """One lane's metrics. A wrong_pair experiment's lanes (both arms) also read cohort/truth.json pk_qid."""
+    path = os.path.abspath(path)
+    run = materialized_run_dir(path, candidate)
+
     def j(p):
         with open(os.path.join(path, p)) as h:
             return json.load(h)
-    r = j("run/main/report7.json")
-    q = j("run/main/review_queue.json")
+
+    r = j(run + "/report7.json")
+    q = j(run + "/review_queue.json")
     f = j("funnel.json")
     check_funnel_floor(f)
     check_funnel_modelset(f, arm)
     check_funnel_scope(f, mode)
     dec = []
-    dp = os.path.join(path, "run/main/reviewer_decisions.ndjson")
+    dp = os.path.join(run, "reviewer_decisions.ndjson")
     if os.path.exists(dp):
         with open(dp) as h:
             dec = [json.loads(x) for x in h if x.strip()]
@@ -2245,7 +2312,7 @@ def _load_lane(path, seed, arm, mode, candidate):
     # non-baseline arms (the candidate, and a three-arm candidate's reference arm) report their capped pairs
     report_xs = CANDIDATES[candidate].get("report_xscript_cap") and arm != "baseline"
     if report_xs or gate_kind == "wrong_pair_cap":
-        with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:  # required: a missing trace aborts analysis
+        with open(os.path.join(run, "link_funnel.ndjson")) as h:  # required: a missing trace aborts analysis
             same, diff = xscript_cap_pairs(h, pk)
         if report_xs:
             xs = {"pairs": len(same) + len(diff), "same_person": len(same), "different_person": len(diff)}
@@ -2259,25 +2326,35 @@ def _load_lane(path, seed, arm, mode, candidate):
     linked = None
     if CANDIDATES[candidate].get("report_linked_pairs") and arm != "baseline":  # pairfeat6: reported, never gated
         regs = cohort_registrations(os.path.join(path, "cohort")) if MODES[mode]["split"] == "dev" else None
-        with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:
+        with open(os.path.join(run, "link_funnel.ndjson")) as h:
             linked = linked_pair_report(h, pk, regs, candidate)
     dg = None
     if demoguard_reported(candidate):  # r1photo8: demographic counters and trace reasons in every arm, reported only
-        with open(os.path.join(path, "run/main/link_funnel.ndjson")) as h:
+        with open(os.path.join(run, "link_funnel.ndjson")) as h:
             dg = demographic_report(r, h)
     if lane_image(candidate):
-        check_lane_image(r, os.path.join(path, "run/main/out_log.ndjson"), arm, candidate)
-    return lane_metrics(seed, r, f, j("run/main/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu, linked, dg)
+        check_lane_image(r, os.path.join(run, "out_log.ndjson"), arm, candidate)
+    ag = None
+    offline = None
+    if agent_replay(candidate):
+        control = agent_control_dir(path, candidate)
+        offline = offline_replay_deterministic(control)
+        if arm == candidate:
+            divergence = live_final_divergence(path, candidate)
+            ag = agent_lane(control, live_divergence=divergence)
+    return lane_metrics(seed, r, f, j(run + "/status-linker.json"), review_load(q, dec, pk, capped), xs, candidate, cu, linked, dg,
+                        agent=ag, offline_deterministic=offline)
 
 
 # ---------------------------------------------------------------- CLI
 
 def analyse(mode, out, roots, repo=REPO, head=None):
     exp = os.path.dirname(os.path.abspath(out))
-    named = sorted(set(roots) - {"baseline"})
-    three = len(roots) == 3 and len(named) == 2 and any(reference(n) in named for n in named)  # baseline, reference, candidate
-    if "baseline" not in roots or not (three or len(roots) == 2) or not named or any(n not in CANDIDATES for n in named):
-        raise ValueError("analysis needs exactly baseline and one candidate arm (%s), got %s" % (sorted(CANDIDATES), sorted(roots)))
+    base_name = base_arm("r1agent8") if "r1agent8" in roots else "baseline"
+    named = sorted(set(roots) - {base_name})
+    three = len(roots) == 3 and len(named) == 2 and any(reference(n) in named for n in named)  # comparator, reference, candidate
+    if base_name not in roots or not (three or len(roots) == 2) or not named or any(n not in CANDIDATES for n in named):
+        raise ValueError("analysis needs exactly the comparator and candidate arms (%s), got %s" % (sorted(CANDIDATES), sorted(roots)))
     try:
         if mode == "validation-clean":
             gov = _read_json(os.path.join(exp, VALIDATION_MANIFEST))
@@ -2306,19 +2383,19 @@ def analyse(mode, out, roots, repo=REPO, head=None):
         arm_res[a] = aggregate_arm(a, [_load_lane(os.path.join(roots[a], "v2-s%d" % s), s, a, mode, candidate) for s in seeds])
         arm_res[a]["build"] = b
     for a in arms(candidate)[1:]:
-        if builds["baseline"]["git_head"] != builds[a]["git_head"]:
+        if builds[base_name]["git_head"] != builds[a]["git_head"]:
             raise ValueError("arms were built at different git heads")
-        if builds["baseline"]["binary_sha256"] != builds[a]["binary_sha256"]:
+        if builds[base_name]["binary_sha256"] != builds[a]["binary_sha256"]:
             raise ValueError("arms used different binaries")
     if lane_image(candidate) and len({builds[a]["image_verdicts_sha256"] for a in arms(candidate)}) != 1:
         raise ValueError("arms used different image_verdicts.json")
-    head = builds["baseline"]["git_head"]
+    head = builds[base_name]["git_head"]
     if gov.get("git_head") != head:
         raise ValueError("arm builds are not at the %s git_head" % gov_name)
-    base, cand = arm_res["baseline"], arm_res[candidate]
+    base, cand = arm_res[base_name], arm_res[candidate]
     ref = arm_res[ref_arm] if ref_arm else None
     res = {"mode": mode, "candidate": candidate, "seeds": seeds, "arms": arm_res, "git_head": head,
-           "binary_sha256": builds["baseline"]["binary_sha256"],
+           "binary_sha256": builds[base_name]["binary_sha256"],
            "paired_gain_t95": paired_gain_interval(base, cand),
            "note": "simulated; t intervals use n=%d seeds: small-n, descriptive only" % len(seeds)}
     ident = {"mode": mode, "candidate": candidate, "seeds": seeds, "git_head": head, "binary_sha256": res["binary_sha256"],
@@ -2330,10 +2407,31 @@ def analyse(mode, out, roots, repo=REPO, head=None):
     if rarity:  # pairfeat6: the name-rarity table's SHA256 (reported; it is part of the candidate's chain map)
         res["rarity_table_sha256"] = gov[CHAIN_KEY[candidate]][rarity[0]]
     if lane_image(candidate):
-        res["image_verdicts_sha256"] = ident["image_verdicts_sha256"] = builds["baseline"]["image_verdicts_sha256"]
+        res["image_verdicts_sha256"] = ident["image_verdicts_sha256"] = builds[base_name]["image_verdicts_sha256"]
     if ref_arm:  # three-arm candidate: reference arm, paired gains over it, and the reference gate (pass needs both gates)
         res["reference"] = ident["reference"] = ref_arm
         res["paired_gain_vs_reference_t95"] = paired_gain_interval(ref, cand)
+    if agent_replay(candidate):
+        lane_roots = [os.path.join(roots[candidate], "v2-s%d" % s) for s in seeds]
+        mat_dirs = [agent_control_dir(p, candidate) for p in lane_roots]
+        res["agent_time"] = agent_time(mat_dirs)
+        provs = [agent_provenance(p) for p in mat_dirs]
+        if any(p != provs[0] for p in provs[1:]):
+            raise ValueError("agent model/prompt/schema changed across seeds")
+        res["agent_provenance"] = ident["agent_provenance"] = provs[0]
+        confusion = {k: {"same": 0, "different": 0} for k in ("same", "different", "uncertain")}
+        for s, p, mdir in zip(seeds, lane_roots, mat_dirs):
+            pk = _req(_read_json(os.path.join(p, "cohort", "truth.json")), "pk_qid")
+            eligible = agent_eligible_pairs(p, candidate)
+            expected = arm_res[candidate]["per_seed"][str(s)]["agent"]["eligible"]
+            if len(eligible) != expected:
+                raise ValueError("agent eligible-pair set has %d pairs, agent_stats.json says %d" % (len(eligible), expected))
+            truth = {k: ("same" if pk[k[0]] == pk[k[1]] else "different") for k in eligible}
+            cm = agent_confusion(_agent_recs(mdir), truth, eligible)
+            for label, counts in cm.items():
+                for t, n in counts.items():
+                    confusion[label][t] += n
+        res["agent_confusion"] = confusion
     if mode == "dev-clean":
         sel = select(base, cand, ref)
         res["gate"] = sel["gate"]
@@ -2404,6 +2502,7 @@ def main(argv):
                           "model_chain_sha256": chain}, sort_keys=True))
         return 0
     usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT (candidate %s) "
+             "| r1agent8: MODE OUT_JSON r1photo8=ROOT r1photo8ref=ROOT r1agent8=ROOT "
              "| init-experiment EXPERIMENT_DIR CANDIDATE | freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR"
              % "|".join(sorted(experiment_candidates())))
     if len(argv) not in (4, 5) or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
@@ -2416,7 +2515,7 @@ def main(argv):
             print("bad or repeated arm " + name, file=sys.stderr)
             return 2
         roots[name] = root
-    if "baseline" not in roots:
+    if "baseline" not in roots and "r1agent8" not in roots:
         print("a baseline arm is required: " + usage, file=sys.stderr)
         return 2
     res = analyse(argv[0], argv[1], roots)
