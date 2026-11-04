@@ -324,14 +324,23 @@ tag = "agent" if have else "plain"
 if os.environ.get("FAKE_NONDET") and run.endswith("_check"):
     tag += "-different"
 for n in ("fhir_log.ndjson", "out_log.ndjson", "reviewer_decisions.ndjson"):
-    open(os.path.join(main, n), "w").write(tag + n + "\n")
+    open(os.path.join(main, n), "w").write(json.dumps({{"tag": tag, "n": n}}) + "\n")
+for n in os.environ.get("FAKE_DROP", "").split(","):
+    if n and os.path.exists(os.path.join(main, n)) and (run.endswith("_check") or os.environ.get("FAKE_DROP_ALL")):
+        os.remove(os.path.join(main, n))
+if os.environ.get("FAKE_EMPTY") and run.endswith("_check"):
+    open(os.path.join(main, os.environ["FAKE_EMPTY"]), "w").close()
 need = [] if os.environ.get("FAKE_NO_NEED") else [i for i in os.environ.get("FAKE_NEED", "").split(",") if i and i not in have]
 pairs = json.load(open(os.path.join(fx, "pairs.json")))
 with open(os.path.join(run, "agent_need.ndjson"), "w") as f:
     for i in need:
         f.write(json.dumps({{"item": i, "pair": pairs.get(i, ["x|1", "x|2"]), "p": 0.5}}) + "\n")
-json.dump({{"eligible": 1, "covered": len(have), "abstain": 0, "invalid": 0, "calls": 0, "tokens": 0, "latency_s": 0, "human_seconds_saved": 0}},
-          open(os.path.join(run, "agent_stats.json"), "w"))
+st = {{"eligible": 1, "covered": len(have), "abstain": 0, "invalid": 0, "calls": 0, "tokens": 0, "latency_s": 0, "human_seconds_saved": 0}}
+if os.environ.get("FAKE_STATS_RENAME"):
+    st["human_s_saved"] = st.pop("human_seconds_saved")
+if os.environ.get("FAKE_STATS_BAD"):
+    st["tokens"] = "many"
+json.dump(st, open(os.path.join(run, "agent_stats.json"), "w"))
 '''
 
 
@@ -416,11 +425,12 @@ class Driver(DriverBase):
         self.assertEqual(open(p).read() if os.path.exists(p) else "", "")
         self.assertFalse(os.path.exists(os.path.join(self.run_dir, "agent_replay.json")))
 
-    def test_earlier_records_survive_a_later_provider_error(self):
+    def test_earlier_records_survive_an_unresolved_item_abort(self):
         with mock.patch.dict(os.environ, {"FAKE_NEED": "rv-missing-dob,rv-dob-conflict"}):
-            # second need item is store-ineligible so it is skipped; only one provider call happens and then succeeds
-            ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))))))
-        self.assertEqual(len(open(os.path.join(self.d, "recs.ndjson")).read().splitlines()), 1)
+            with self.assertRaises(ai.AgentAbort):  # second need item is sandbox-ineligible: unresolved, run fails
+                ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))))))
+        with open(os.path.join(self.d, "recs.ndjson")) as f:
+            self.assertEqual(len(f.read().splitlines()), 1)
 
     def test_nondeterministic_check_replay_raises(self):
         with mock.patch.dict(os.environ, {"FAKE_NONDET": "1"}):
@@ -436,11 +446,37 @@ class Driver(DriverBase):
         self.assertEqual(fake.requests, [])
         self.assertEqual(len(self.calls()), 2)
 
-    def test_stalled_need_stops_instead_of_looping(self):
+    def test_stalled_need_aborts_with_failed_status(self):
         with mock.patch.dict(os.environ, {"FAKE_NEED": "rv-dob-conflict"}):  # eligible per Go (fake), ineligible in the sandbox
-            out = ai.iterate(self.args(self.client(Fake())))
-        self.assertEqual(out["stalled_items"], 1)
-        self.assertEqual(len(self.calls()), 2)
+            with self.assertRaises(ai.AgentAbort):
+                ai.iterate(self.args(self.client(Fake())))
+        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        self.assertEqual((summary["status"], summary["stalled_items"]), ("failed_unresolved_need", 1))
+        self.assertEqual(len(self.calls()), 1)
+        self.assertFalse(os.path.exists(self.run_dir + "_check"))
+
+    def test_iteration_cap_aborts_and_counts_leftovers(self):
+        with mock.patch.dict(os.environ, {"FAKE_NEED": ITEM}), mock.patch.object(ai, "MAX_ITERATIONS", 1):
+            with self.assertRaises(ai.AgentAbort):
+                ai.iterate(self.args(self.client(Fake())))
+        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        self.assertEqual((summary["status"], summary["stalled_items"]), ("failed_unresolved_need", 1))
+
+    def test_missing_or_empty_artifact_fails_determinism(self):
+        for env in ({"FAKE_DROP": "out_log.ndjson"}, {"FAKE_DROP": "out_log.ndjson", "FAKE_DROP_ALL": "1"},
+                    {"FAKE_EMPTY": "link_funnel.ndjson"}):
+            with mock.patch.dict(os.environ, env):
+                shutil.rmtree(self.run_dir, ignore_errors=True)
+                shutil.rmtree(self.run_dir + "_check", ignore_errors=True)
+                open(os.path.join(self.d, "recs.ndjson"), "w").close()
+                with self.assertRaises(ai.AgentAbort, msg=env):
+                    ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))), model="m-" + "".join(env.values()))))
+
+    def test_stats_keys_must_be_exact_and_valid(self):
+        for env in ({"FAKE_STATS_RENAME": "1"}, {"FAKE_STATS_BAD": "1"}):
+            with mock.patch.dict(os.environ, env):
+                with self.assertRaises(ai.AgentAbort, msg=env):
+                    ai.iterate(self.args(client=None, control=True))
 
     def test_replay_failure_surfaces(self):
         with mock.patch.dict(os.environ, {"FAKE_FAIL": "1"}):
