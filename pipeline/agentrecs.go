@@ -30,7 +30,7 @@ type AgentRec struct {
 // AgentRecs holds terminal records keyed by unordered registration pair (not by loop-specific item id).
 type AgentRecs struct {
 	recs map[[2]string]*AgentRec
-	rec  func(pk string) *Rec // registration lookup for eligibility; refreshed from each replay's linker
+	L    *LinkerCore // current replay linker, refreshed on each iteration for trace/cannot-link eligibility
 }
 
 // LoadAgentRecs reads agent_recs.ndjson. An empty path or an empty file returns nil (identical to no agent).
@@ -80,29 +80,33 @@ func LoadAgentRecs(path string) (*AgentRecs, error) {
 	return ar, nil
 }
 
-// bind points eligibility at the registrations of the latest replay.
+// bind points eligibility at the latest replay's registrations and trace/cannot-link state.
 func (a *AgentRecs) bind(L *LinkerCore) {
 	if a == nil || L == nil {
 		return
 	}
-	a.rec = func(pk string) *Rec {
-		if i, ok := L.byPk[pk]; ok {
-			return L.recs[i]
-		}
-		return nil
-	}
+	a.L = L
 }
 
-// agentEligiblePair: a missing-demographic pair with no known conflict and no valid-EID conflict.
-func agentEligiblePair(recOf func(string) *Rec, a, b string) bool {
-	if !DemoGuard || recOf == nil {
+// agentEligiblePair requires the exact demographic_missing trace and no cannot-link, in addition to demographic/EID checks.
+// This deliberately excludes xscript_cap and ordinary near pairs, and pairs later unlinked by a reviewer.
+func agentEligiblePair(L *LinkerCore, a, b string) bool {
+	if !DemoGuard || L == nil || !L.demoMissing[pairKey(a, b)] {
 		return false
 	}
-	x, y := recOf(a), recOf(b)
-	if x == nil || y == nil || demoClassify(x, y) != demoNeedsReview {
+	ia, oka := L.byPk[a]
+	ib, okb := L.byPk[b]
+	if !oka || !okb {
+		return false
+	}
+	x, y := L.recs[ia], L.recs[ib]
+	if demoClassify(x, y) != demoNeedsReview {
 		return false
 	}
 	if x.Eid != "" && y.Eid != "" && ((x.eidOK && y.eidOK && x.Eid != y.Eid) || eidContradict(x.Eid, y.Eid)) {
+		return false
+	}
+	if L.cannot[ia] != nil && L.cannot[ia][ib] {
 		return false
 	}
 	return true
@@ -110,7 +114,7 @@ func agentEligiblePair(recOf func(string) *Rec, a, b string) bool {
 
 // read returns the terminal record for an eligible link question, else nil (ordinary human double-read).
 func (a *AgentRecs) read(it *ReviewItem) *AgentRec {
-	if a == nil || !isLinkQuestion(it) || !agentEligiblePair(a.rec, it.Pair[0], it.Pair[1]) {
+	if a == nil || !isLinkQuestion(it) || !agentEligiblePair(a.L, it.Pair[0], it.Pair[1]) {
 		return nil
 	}
 	return a.recs[pairKey(it.Pair[0], it.Pair[1])]
@@ -123,7 +127,7 @@ func (a *AgentRecs) Ineligible() int {
 	}
 	n := 0
 	for k := range a.recs {
-		if !agentEligiblePair(a.rec, k[0], k[1]) {
+		if !agentEligiblePair(a.L, k[0], k[1]) {
 			n++
 		}
 	}
@@ -139,14 +143,12 @@ func WriteAgentNeed(path string, rp *replayOut, recs ...*AgentRecs) error {
 	if len(recs) > 0 {
 		ar = recs[0]
 	}
-	recOf := func(string) *Rec { return nil }
+	var L *LinkerCore
 	switch {
-	case ar != nil && ar.rec != nil:
-		recOf = ar.rec
+	case ar != nil && ar.L != nil:
+		L = ar.L
 	case rp.L != nil:
-		tmp := &AgentRecs{}
-		tmp.bind(rp.L)
-		recOf = tmp.rec
+		L = rp.L
 	}
 	ids := make([]string, 0, len(rp.items))
 	for id := range rp.items {
@@ -161,7 +163,7 @@ func WriteAgentNeed(path string, rp *replayOut, recs ...*AgentRecs) error {
 			continue
 		}
 		k := pairKey(it.Pair[0], it.Pair[1])
-		if seen[k] || !agentEligiblePair(recOf, k[0], k[1]) {
+		if seen[k] || !agentEligiblePair(L, k[0], k[1]) {
 			continue
 		}
 		seen[k] = true
