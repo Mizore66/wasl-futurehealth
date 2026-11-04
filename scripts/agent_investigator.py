@@ -434,10 +434,9 @@ def _read_stats(run):
 
 
 def _summary_stats(s):
-    """Exactly the eight mandatory counters, each a finite non-negative number; anything else (rename, missing) aborts."""
-    if not isinstance(s, dict) or set(s) != set(STAT_KEYS):
-        raise AgentAbort("agent_stats.json keys mismatch: missing %s, unknown %s" % (
-            sorted(set(STAT_KEYS) - set(s or {})), sorted(set(s or {}) - set(STAT_KEYS))))
+    """The eight mandatory counters must be present, each a finite non-negative number; extra keys are allowed and kept."""
+    if not isinstance(s, dict) or set(STAT_KEYS) - set(s):
+        raise AgentAbort("agent_stats.json missing mandatory keys: %s" % sorted(set(STAT_KEYS) - set(s if isinstance(s, dict) else {})))
     for k in STAT_KEYS:
         v = s[k]
         if isinstance(v, bool) or not isinstance(v, (int, float)) or not (0 <= v < 1e12):
