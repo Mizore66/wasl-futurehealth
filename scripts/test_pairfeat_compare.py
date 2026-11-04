@@ -5466,5 +5466,123 @@ class R1photo8Runner(RunnerFixture, unittest.TestCase):
         self.assert_refused(self.run_sh(self.root, "dev-clean", "r1photo9", preflight_only=True), "invalid arm")
 
 
+class R1agent8Metrics(unittest.TestCase):
+    """Task 5b1: strict offline aggregation of agent_replay.json / agent_stats.json / agent recs into cand["agent"]."""
+    STATS = {"eligible": 4, "covered": 3, "abstain": 1, "invalid": 0, "calls": 6, "tokens": 900, "latency_s": 1.5, "human_seconds_saved": 120}
+
+    def rec(self, item, label, cites=("e1",), valid=True):
+        return {"item": item, "pair": [item + "a", item + "b"], "label": label, "citations": list(cites), "valid": valid}
+
+    def lane(self, stats=None, replay=None, recs=None, drop=(), extra=None):
+        d = tempfile.mkdtemp()
+        self.addCleanup(__import__("shutil").rmtree, d, True)
+        st = dict(self.STATS if stats is None else stats)
+        st.update(extra or {})
+        rp = {"control": False, "status": "ok", "determinism": {"ok": True, "mismatched": [], "new_uncached_calls": 0}}
+        rp.update(replay or {})
+        rows = [self.rec("i1", "same"), self.rec("i2", "different"), self.rec("i3", "uncertain", ())] if recs is None else recs
+        for name, obj in (("agent_stats.json", st), ("agent_replay.json", rp)):
+            if name not in drop:
+                _wj(os.path.join(d, name), obj)
+        with open(os.path.join(d, "agent_recs.ndjson"), "w") as h:
+            h.write("".join(json.dumps(r) + "\n" for r in rows))
+        return d
+
+    def test_success_exact_keys(self):
+        a = pfc.agent_lane(self.lane())
+        self.assertEqual(a, {"replay_deterministic": True, "eligible": 4, "covered": 3, "accepted": 2, "accepted_valid": 2})
+
+    def test_extra_stats_keys_allowed(self):
+        self.assertEqual(pfc.agent_lane(self.lane(extra={"future": "x"}))["eligible"], 4)
+
+    def test_missing_files_and_keys_fail(self):
+        for drop in (("agent_stats.json",), ("agent_replay.json",)):
+            with self.assertRaises(ValueError):
+                pfc.agent_lane(self.lane(drop=drop))
+        for k in self.STATS:
+            st = {x: v for x, v in self.STATS.items() if x != k}
+            with self.assertRaises(ValueError, msg=k):
+                pfc.agent_lane(self.lane(stats=st))
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(self.lane(replay={"determinism": None}))
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(os.path.join(self.lane(), "nope"))
+
+    def test_wrong_types_and_values_fail(self):
+        for k, v in (("eligible", "4"), ("eligible", True), ("covered", 2.5), ("covered", -1), ("tokens", None), ("latency_s", -0.1),
+                     ("calls", float("nan")), ("covered", 9)):
+            st = dict(self.STATS, **{k: v})
+            with self.assertRaises(ValueError, msg=(k, v)):
+                pfc.agent_lane(self.lane(stats=st))
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(self.lane(replay={"determinism": {"ok": "yes"}}))
+
+    def test_zero_eligible_fails(self):
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(self.lane(stats=dict(self.STATS, eligible=0, covered=0, abstain=0), recs=[]))
+
+    def test_invalid_citation_counts_accepted_not_valid(self):
+        recs = [self.rec("i1", "same", ()), self.rec("i2", "different", valid=False), self.rec("i3", "same", ("e1", 7)), self.rec("i4", "same")]
+        a = pfc.agent_lane(self.lane(stats=dict(self.STATS, covered=4), recs=recs))
+        self.assertEqual((a["accepted"], a["accepted_valid"]), (4, 1))
+
+    def test_abstention_covered_not_accepted(self):
+        recs = [self.rec("i%d" % n, "uncertain", ()) for n in range(3)]
+        a = pfc.agent_lane(self.lane(recs=recs))
+        self.assertEqual((a["covered"], a["accepted"], a["accepted_valid"]), (3, 0, 0))
+
+    def test_bad_recs_fail(self):
+        for recs in ([self.rec("i1", "maybe")], [self.rec("i1", "same")] * 2,
+                     [self.rec("i%d" % n, "same") for n in range(4)]):  # unknown label; duplicate item; accepted > covered
+            with self.assertRaises(ValueError):
+                pfc.agent_lane(self.lane(recs=recs))
+
+    def test_nondeterministic_replay(self):
+        a = pfc.agent_lane(self.lane(replay={"determinism": {"ok": False, "mismatched": ["x"], "new_uncached_calls": 0}}))
+        self.assertFalse(a["replay_deterministic"])
+
+    def test_live_divergence_optional(self):
+        self.assertNotIn("live_divergence", pfc.agent_lane(self.lane()))
+        self.assertEqual(pfc.agent_lane(self.lane(replay={"live_divergence": 3}))["live_divergence"], 3)
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(self.lane(replay={"live_divergence": -1}))
+        with self.assertRaises(ValueError):
+            pfc.agent_lane(self.lane(replay={"live_divergence": True}))
+
+    def test_multi_lane_aggregation(self):
+        l1, l2 = self.lane(replay={"live_divergence": 1}), self.lane(replay={"live_divergence": 2},
+              recs=[self.rec("j1", "same"), self.rec("j2", "uncertain", ())])
+        agg = pfc.aggregate_agent([pfc.agent_lane(l1), pfc.agent_lane(l2)])
+        self.assertEqual(agg, {"replay_deterministic": True, "eligible": 8, "covered": 6, "accepted": 3, "accepted_valid": 3, "live_divergence": 3})
+        bad = pfc.agent_lane(self.lane(replay={"determinism": {"ok": False}, "live_divergence": 0}))
+        self.assertFalse(pfc.aggregate_agent([pfc.agent_lane(l1), bad])["replay_deterministic"])
+        self.assertNotIn("live_divergence", pfc.aggregate_agent([pfc.agent_lane(self.lane())]))
+        with self.assertRaises(ValueError):
+            pfc.aggregate_agent([pfc.agent_lane(l1), pfc.agent_lane(self.lane())])  # live divergence on only some lanes
+        with self.assertRaises(ValueError):
+            pfc.aggregate_agent([])
+
+    def test_gate_accepts_aggregate(self):
+        a = pfc.agent_lane(self.lane())
+        self.assertEqual(set(a), {"replay_deterministic", "eligible", "covered", "accepted", "accepted_valid"})
+
+    def test_time_kept_separate(self):
+        t = pfc.agent_time([self.lane(), self.lane(extra={"calls": 4, "latency_s": 0.5})])
+        self.assertEqual(t["agent"], {"calls": 10, "tokens": 1800, "latency_s": 2.0})
+        self.assertEqual(t["human_seconds_saved"], 240)
+        self.assertEqual(t["abstain"], 2)
+        self.assertEqual(t["invalid"], 0)
+
+    def test_confusion_against_truth_in_analysis_only(self):
+        recs = [self.rec("i1", "same"), self.rec("i2", "different"), self.rec("i3", "uncertain", ()), self.rec("i4", "same")]
+        truth = {"i1": "same", "i2": "same", "i3": "different", "i4": "different"}
+        m = pfc.agent_confusion(recs, truth)
+        self.assertEqual(m, {"same": {"same": 1, "different": 1}, "different": {"same": 1, "different": 0}, "uncertain": {"same": 0, "different": 1}})
+        with self.assertRaises(ValueError):
+            pfc.agent_confusion(recs, {"i1": "same"})
+        a = pfc.agent_lane(self.lane(stats=dict(self.STATS, covered=4), recs=recs))
+        self.assertNotIn("confusion", a)
+
+
 if __name__ == "__main__":
     unittest.main()
