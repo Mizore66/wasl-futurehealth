@@ -100,6 +100,9 @@ type Signoff struct {
 	DurationS float64  `json:"dur_s,omitempty"`     // simulated reviewer seconds spent on this item (all reads)
 	Purpose   string   `json:"purpose,omitempty"`   // v7: second_identifier = messaging confirmation only (never cuts a cluster)
 	Hold      string   `json:"hold,omitempty"`      // linker: a "same" held for a confirming review (sex|dob contradiction)
+	// Agent read (agentrecs.go): the agent's label and its seconds. DurationS stays human-only.
+	AgentRead string  `json:"agent_read,omitempty"`
+	AgentS    float64 `json:"agent_s,omitempty"`
 
 	audit *auditRec // H7 senior audit (governance.go); unexported, so never serialised
 }
