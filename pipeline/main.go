@@ -143,6 +143,7 @@ func main() {
 	lttProg := fs.Bool("lttprog", false, "ltt: per-programme resolution and counts, second_identifier_confirm tally (ltt.go; off = rows as before)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
 	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
+	agentRecsPath := fs.String("agentrecs", "", "agentreplay only: cached evidence-investigator records (agent_recs.ndjson); never forwarded to live child processes")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	fs.Float64Var(&MDNamesakeRate, "mdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic missing-date namesake hard negative (pairfeat7 training only)")
@@ -221,6 +222,10 @@ func main() {
 			fmt.Fprintln(os.Stderr, "configuration error:", err)
 			os.Exit(2)
 		}
+	}
+	if *agentRecsPath != "" && cmd != "agentreplay" {
+		fmt.Fprintln(os.Stderr, "configuration error: -agentrecs is only valid with the agentreplay command")
+		os.Exit(2)
 	}
 	if err := validateLinkFloor(*linkFloor); err != nil {
 		fmt.Fprintln(os.Stderr, "configuration error:", err)
@@ -552,6 +557,8 @@ func main() {
 			simRun = absRun
 		}
 		simOffline(*data, *wasl, *P, !*noReview, simRun)
+	case "agentreplay":
+		agentReplayMain(*data, *wasl, absRun, *P, rcfg, *agentRecsPath)
 	case "audit":
 		audit(*data, *wasl, absRun, *P)
 	case "report7":

@@ -48,8 +48,15 @@ type replayOut struct {
 	items map[string]*ReviewItem
 }
 
+// ReplayTrace, when non-nil, receives the linker's candidate-funnel records from every replay. It is nil by default
+// and is set only around one final, single-threaded replay (agentreplay.go); never from parallel sweep jobs.
+var ReplayTrace func(LinkTrace)
+
 func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview bool) *replayOut {
 	L := NewLinkerCoreANN(gbm, P)
+	if ReplayTrace != nil {
+		L.trace = ReplayTrace
+	}
 	cores := make([]*ClosureCore, P)
 	for k := range cores {
 		cores[k] = NewClosureCore(k, iso)
@@ -167,7 +174,18 @@ func audit(data, wasl, run string, P int) {
 			prepDup += c - 1
 		}
 	}
-	// 2. offline linker + closure replay
+	// 2. offline linker + closure replay (an agentreplay run stamps its decisions "+agent"; replay under the same policy)
+	if !strings.HasSuffix(PolicyName, "+agent") {
+		for _, m := range outLog {
+			var oe OutEnvelope
+			if json.Unmarshal(m.Data, &oe) == nil && oe.Dec != nil {
+				if strings.HasSuffix(oe.Dec.Policy, "+agent") {
+					PolicyName += "+agent"
+				}
+				break
+			}
+		}
+	}
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	expected := map[string]int{}
 	for _, id := range rp.ids {
