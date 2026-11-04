@@ -342,8 +342,15 @@ def iterate(args):
     run, recs = args.run, args.recs
     if args.control:
         _replay(args, run, None)
-        out = {"control": True, "determinism": None, **_summary_stats(_read_stats(run)), "gemini": {"calls": 0, "tokens": 0, "latency_s": 0}}
+        check = run + "_check"
+        _replay(args, check, None)
+        diffs = [n for n in DETERMINISM_FILES if _artifact(run, n) != _artifact(check, n)]
+        out = {"control": True, **_summary_stats(_read_stats(run)), "gemini": {"calls": 0, "tokens": 0, "latency_s": 0},
+               "determinism": {"ok": not diffs, "mismatched": diffs, "new_uncached_calls": 0},
+               "stalled_items": 0, "status": "ok" if not diffs else "failed_determinism"}
         _write_summary(run, out)
+        if diffs:
+            raise AgentAbort("control replay determinism check failed: %s" % diffs)
         return out
     client = args.client
     salt = load_salt(args.cache)
@@ -388,10 +395,14 @@ def iterate(args):
         if a != b:
             diffs.append(n)
     rows = read_recs(recs)
+    dest_recs = os.path.join(run, "agent_recs.ndjson")
+    if os.path.isfile(recs) and os.path.abspath(recs) != os.path.abspath(dest_recs):
+        shutil.copyfile(recs, dest_recs)
     out = {"control": False, **_summary_stats(_read_stats(run)),
            "gemini": {"calls": sum(r.get("calls", 0) for r in rows), "tokens": sum(r.get("tokens", 0) for r in rows),
                       "latency_s": round(sum(r.get("latency_s", 0) for r in rows), 3)},
            "determinism": {"ok": not diffs, "mismatched": diffs, "new_uncached_calls": client.sent - before},
+           "provenance": {"model": client.model, "prompt_ver": client.prompt_ver, "schema_ver": client.schema_ver},
            "stalled_items": 0, "iterations": iterations, "status": "ok" if not diffs and client.sent == before else "failed_determinism"}
     _write_summary(run, out)
     if diffs or client.sent != before:
@@ -474,6 +485,7 @@ def smoke(args):
         if r["label"] == "uncertain":
             reasons[r["reason"]] = reasons.get(r["reason"], 0) + 1
     out = {"investigated": len(done), "valid": sum(r["label"] != "uncertain" for r in done), "reasons": reasons,
+           "provenance": {"model": client.model, "prompt_ver": client.prompt_ver, "schema_ver": client.schema_ver},
            "gemini_calls": sum(r["meta"].get("calls", 0) for r in done), "uncached_calls": client.sent,
            "tokens": sum((r["meta"].get("tokens") or {}).get("total", 0) for r in done),
            "latency_s": round(sum(r["meta"].get("latency_s", 0) for r in done), 3)}

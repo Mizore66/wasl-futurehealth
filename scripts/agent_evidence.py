@@ -237,14 +237,20 @@ class EvidenceStore:
 
     # --- construction ---------------------------------------------------------------------------------------------
     @classmethod
-    def from_lane(cls, lane_dir, salt=None, image_cache=None):
+    def from_lane(cls, lane_dir, salt=None, image_cache=None, cohort_dir=None, run_dir=None):
         lane = os.path.realpath(lane_dir)
-        run = lane
-        for rel in ("run/main", "run"):
-            if os.path.isfile(os.path.join(lane, rel, "review_queue.json")):
-                run = os.path.join(lane, rel)
-                break
-        cohort = os.path.join(lane, "cohort") if os.path.isdir(os.path.join(lane, "cohort")) else lane
+        if run_dir is not None:
+            run = os.path.realpath(run_dir)
+        else:
+            run = lane
+            for rel in ("run/main", "run"):
+                if os.path.isfile(os.path.join(lane, rel, "review_queue.json")):
+                    run = os.path.join(lane, rel)
+                    break
+        if cohort_dir is not None:
+            cohort = os.path.realpath(cohort_dir)
+        else:
+            cohort = os.path.join(lane, "cohort") if os.path.isdir(os.path.join(lane, "cohort")) else lane
 
         def rd(root, name):
             return _safe_file(root, name)

@@ -2,6 +2,7 @@ import copy
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -5004,6 +5005,7 @@ def r9_agent(**kw):
 
 def r9_arm(name, tp, truth=600, fm=10, cpe=10, uncapped=5, hours=10.0, **kw):
     a = pf6_arm(name, tp, truth, fm, cpe, uncapped, hours, **kw)
+    a["offline_replay_deterministic"] = True
     if name == R9:
         a["agent"] = r9_agent()
     return a
@@ -5486,6 +5488,213 @@ class R1agent8Stages(unittest.TestCase):
         a = pfc.lane_commands(self.ROOT, self.BIN, self.O, 827, "dev-clean", "r1photo8")
         self.assertNotIn("agentreplay", [x[0] for x in a])
         self.assertEqual(a[-2][1][a[-2][1].index("-run") + 1], self.O + "/run/main")
+
+
+class CLIR1agent8(CLIFixture, unittest.TestCase):
+    """No-default three-arm analysis on materialized replay lanes."""
+    CAND = R9
+
+    def setUp(self):
+        CLIR1photo8.setUp(self)
+        self.maps[R9] = self.maps[R8]
+        ep = os.path.join(self.exp, "experiment.json")
+        e = _rj(ep)
+        e["candidate"] = R9
+        e["arm_chain"] = {R8: P8, R8REF_NAME: P8, R9: P8}
+        _wj(ep, e)
+
+    def make_arm(self, a, tp, mode="dev-clean", **kw):
+        root = CLIR1photo8.make_arm(self, a, tp, mode, **kw)
+        for d in sorted(os.listdir(root)):
+            if not d.startswith("v2-s"):
+                continue
+            lane = os.path.join(root, d)
+            live = os.path.join(lane, "run/main")
+            if not os.path.exists(os.path.join(live, "prep_log.ndjson")):
+                with open(os.path.join(live, "prep_log.ndjson"), "w"):
+                    pass
+            with open(os.path.join(live, "link_funnel.ndjson"), "a") as h:
+                h.write(json.dumps({"kind": "pair", "stage": "near", "reason": "demographic_missing", "a": "s0|a", "b": "s0|b"}) + "\n")
+            with open(os.path.join(lane, "cohort", "fhir_eligible.ndjson"), "w") as h:
+                for mrn, dob in (("a", ""), ("b", "1980-02-22")):
+                    h.write(json.dumps({"prov": "s0", "res": {"resourceType": "Patient", "name": [{"text": "Eligible Person"}],
+                                        "birthDate": dob, "gender": "female", "identifier": [{"system": "urn:mrn", "value": mrn}]}}) + "\n")
+            mat = os.path.join(lane, "run/agent/main")
+            os.makedirs(os.path.dirname(mat), exist_ok=True)
+            shutil.copytree(live, mat, dirs_exist_ok=True)
+            prov = {"model": "gemini-test", "prompt_ver": "agent-investigator-prompt-v1", "schema_ver": "agent-evidence-tools-v1"}
+            _wj(os.path.join(lane, "run/agent/agent_replay.json"),
+                {"determinism": {"ok": True, "mismatched": [], "new_uncached_calls": 0}, "provenance": prov})
+            eligible = 1 if a == R9 else 0
+            covered = 1 if a == R9 else 0
+            _wj(os.path.join(lane, "run/agent/agent_stats.json"),
+                {"eligible": eligible, "covered": covered, "abstain": 0, "invalid": 0,
+                 "calls": 10 if a == R9 else 0, "tokens": 100 if a == R9 else 0,
+                 "latency_s": 1.5 if a == R9 else 0.0, "human_seconds_saved": 2.5 if a == R9 else 0.0})
+            if a == R9:
+                rec = {"item": "s0", "pair": ["s0|a", "s0|b"], "label": "same", "valid": True, "reason": "",
+                       "citations": [{"tool": "get_record", "arg": "reg-test", "field": "dob", "value": "1980-02-22"}]}
+                with open(os.path.join(lane, "run/agent/agent_recs.ndjson"), "w") as h:
+                    h.write(json.dumps(rec) + "\n")
+            else:
+                with open(os.path.join(lane, "run/agent/agent_recs.ndjson"), "w"):
+                    pass
+        return root
+
+    def three(self, mode="dev-clean", b=5, f=6, c=6, ref_wrong=3, **ck):
+        cand = dict(fm=1, cpe=2)
+        cand.update(ck)
+        return (self.make_arm(R8, b, mode, fm=3, cpe=3), self.make_arm(R8REF_NAME, f, mode, fm=3, cpe=3, wrong=ref_wrong),
+                self.make_arm(R9, c, mode, **cand))
+
+    def run3(self, mode, roots, out=None):
+        b, f, c = roots
+        return pfc.main([mode, out or os.path.join(self.exp, mode + "-summary.json"),
+                         R8 + "=" + b, R8REF_NAME + "=" + f, R9 + "=" + c])
+
+    def test_no_default_analysis_and_provenance(self):
+        self.assertEqual(self.run3("dev-clean", self.three()), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual((s["candidate"], s["reference"], s["pass"]), (R9, R8REF_NAME, True))
+        self.assertEqual(sorted(s["arms"]), sorted([R8, R8REF_NAME, R9]))
+        self.assertEqual(s["arms"][R9]["agent"], {"replay_deterministic": True, "eligible": 3, "covered": 3,
+                                                  "accepted": 3, "accepted_valid": 3, "live_divergence": 0})
+        self.assertTrue(s["arms"][R8]["offline_replay_deterministic"])
+        self.assertTrue(s["arms"][R8REF_NAME]["offline_replay_deterministic"])
+        self.assertEqual(s["agent_time"]["agent"], {"calls": 30, "tokens": 300, "latency_s": 4.5})
+        self.assertEqual(s["agent_time"]["human_seconds_saved"], 7.5)
+        self.assertEqual(s["agent_provenance"],
+                         {"model": "gemini-test", "prompt_ver": "agent-investigator-prompt-v1", "schema_ver": "agent-evidence-tools-v1"})
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual(sel["agent_provenance"], s["agent_provenance"])
+        self.assertEqual(s["agent_confusion"]["same"], {"same": 3, "different": 0})
+        self.assertEqual(s["agent_confusion"]["different"], {"same": 0, "different": 0})
+        self.assertEqual(s["agent_confusion"]["uncertain"], {"same": 0, "different": 0})
+
+    def test_candidate_determinism_is_gated(self):
+        roots = self.three()
+        for d in sorted(os.listdir(roots[2])):
+            if d.startswith("v2-s"):
+                p = os.path.join(roots[2], d, "run/agent/agent_replay.json")
+                _wj(p, dict(_rj(p), determinism={"ok": False, "mismatched": ["fhir_log.ndjson"]}))
+        self.assertEqual(self.run3("dev-clean", roots), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertFalse(sel["pass"])
+        self.assertIn("agent replay is not deterministic", sel["reference_gate"]["reasons"])
+
+
+    def test_live_divergence_uses_final_state_signatures(self):
+        roots = self.three()
+        for d in sorted(os.listdir(roots[2])):
+            if d.startswith("v2-s"):
+                p = os.path.join(roots[2], d, "run/agent/main/out_log.ndjson")
+                rows = [json.loads(x) for x in open(p)]
+                rows[0]["data"]["dec"]["loop"] = "loop-x"
+                rows[0]["data"]["dec"]["sig"] = "different-final-state"
+                with open(p, "w") as h:
+                    for row in rows:
+                        h.write(json.dumps(row) + "\n")
+                live_p = os.path.join(roots[2], d, "run/main/out_log.ndjson")
+                live_rows = [json.loads(x) for x in open(live_p)]
+                live_rows[0]["data"]["dec"]["loop"] = "loop-x"
+                live_rows[0]["data"]["dec"]["sig"] = "live-final-state"
+                with open(live_p, "w") as h:
+                    for row in live_rows:
+                        h.write(json.dumps(row) + "\n")
+        self.assertEqual(self.run3("dev-clean", roots), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["arms"][R9]["agent"]["live_divergence"], 3)
+        self.assertEqual(s["reference_gate"]["reported"]["live_divergence"], 3)
+
+    def test_eligible_pair_count_must_match_stats(self):
+        roots = self.three()
+        for d in sorted(os.listdir(roots[2])):
+            if d.startswith("v2-s"):
+                p = os.path.join(roots[2], d, "run/agent/agent_stats.json")
+                _wj(p, dict(_rj(p), eligible=2))
+        with self.assertRaisesRegex(ValueError, "eligible-pair set"):
+            self.run3("dev-clean", roots)
+
+    def test_control_determinism_is_gated(self):
+        roots = self.three()
+        for d in sorted(os.listdir(roots[0])):
+            if d.startswith("v2-s"):
+                p = os.path.join(roots[0], d, "run/agent/agent_replay.json")
+                _wj(p, dict(_rj(p), determinism={"ok": False, "mismatched": ["out_log.ndjson"]}))
+        self.assertEqual(self.run3("dev-clean", roots), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertFalse(sel["pass"])
+        self.assertIn("guarded offline replay is not deterministic", sel["reference_gate"]["reasons"])
+
+    def test_init_preflight_and_freeze_without_baseline(self):
+        with tempfile.TemporaryDirectory() as td:
+            r = Repo(os.path.join(td, "v"), cand=P8)
+            for fn in CAND8_FILES:
+                with open(os.path.join(r.root, "models", fn), "w") as h:
+                    h.write("model " + fn)
+            self.exp = r.exp
+            self.maps = {"baseline": r.hashes(BASE_FILES), R8REF_NAME: r.hashes(CAND8_FILES), R9: r.hashes(CAND8_FILES)}
+            self.maps[R8] = self.maps[R9]
+            _wj(os.path.join(r.exp, "artifact-manifest.json"),
+                {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat8_chain_sha256": self.maps[R9]})
+            e = pfc.init_experiment(r.exp, R9, repo=r.root)
+            self.assertEqual(e["arm_chain"], {R8: P8, R8REF_NAME: P8, R9: P8})
+            for a in pfc.arms(R9):
+                got, chain_map = pfc.preflight_identity("dev-clean", a, r.exp, r.root, HEAD)
+                self.assertEqual(got, R9)
+                self.assertEqual(chain_map, self.maps[R9])
+            self.assertEqual(self.run3("dev-clean", self.three()), 0)
+            self.assertEqual(self.run3("dev-stress", self.three("dev-stress")), 0)
+            vm = pfc.freeze_validation(r.exp, r.root, HEAD)
+            self.assertEqual((vm["candidate"], vm["seeds"]), (R9, R9_VAL))
+            self.assertEqual(vm["settings"]["arms"], [R8, R8REF_NAME, R9])
+
+
+
+
+    def test_relative_arm_roots_work(self):
+        roots = self.three()
+        old = os.getcwd()
+        try:
+            os.chdir(self.exp)
+            rel = [os.path.relpath(r, os.getcwd()) for r in roots]
+            self.assertEqual(self.run3("dev-clean", rel), 0)
+        finally:
+            os.chdir(old)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual((s["candidate"], s["pass"]), (R9, True))
+
+
+class R1agent8Eligibility(unittest.TestCase):
+    def test_final_eligible_pairs_exclude_stale_and_conflict(self):
+        with tempfile.TemporaryDirectory() as td:
+            run = os.path.join(td, "run/agent/main")
+            os.makedirs(run)
+            cohort = os.path.join(td, "cohort")
+            os.makedirs(cohort)
+            queue = [
+                {"item": "rv-missing", "kinds": ["link"], "pair": ["p|A1", "q|A2"], "p": 0.9},
+                {"item": "rv-conflict", "kinds": ["link"], "pair": ["p|A1", "q|B1"], "p": 0.8},
+                {"item": "rv-stale", "kinds": ["link"], "pair": ["p|A1", "q|C1"], "p": 0.7},
+            ]
+            _wj(os.path.join(run, "review_queue.json"), queue)
+            with open(os.path.join(run, "link_funnel.ndjson"), "w") as h:
+                for a, b in (("p|A1", "q|A2"), ("p|A1", "q|B1")):
+                    h.write(json.dumps({"kind": "pair", "stage": "near", "reason": "demographic_missing", "a": a, "b": b}) + "\n")
+            with open(os.path.join(run, "prep_log.ndjson"), "w"):
+                pass
+            patients = [("p", "A1", "1980-02-22"), ("q", "A2", ""), ("q", "B1", "1981-02-22"), ("q", "C1", "1980-02-22")]
+            with open(os.path.join(cohort, "fhir_test.ndjson"), "w") as h:
+                for prov, mrn, dob in patients:
+                    res = {"resourceType": "Patient", "name": [{"text": "Test Person"}], "birthDate": dob, "gender": "female",
+                           "identifier": [{"system": "urn:mrn", "value": mrn}]}
+                    h.write(json.dumps({"prov": prov, "res": res}) + "\n")
+            eligible = pfc.agent_eligible_pairs(td, "r1agent8")
+            self.assertEqual(eligible, {("p|A1", "q|A2")})
+            recs = {("p|A1", "q|A2"): {"label": "same"}, ("p|A1", "q|B1"): {"label": "same"},
+                    ("p|A1", "q|C1"): {"label": "different"}}
+            truth = {("p|A1", "q|A2"): "same"}
+            self.assertEqual(pfc.agent_confusion(recs, truth, eligible)["same"], {"same": 1, "different": 0})
 
 
 class R1photo8Build(unittest.TestCase):
