@@ -1005,10 +1005,12 @@ class Candidates(unittest.TestCase):
                                                       "chain": "pairfeat5", "reference": "pairfeat5",
                                                       "extra_flags": ["-r1review"], "lane_image": True,
                                                       "baseline_gating": False},
-                                         "pairfeat6": P6_ENTRY, "pairfeat7": P7_ENTRY, "r1photo7": RP_ENTRY})
+                                         "pairfeat6": P6_ENTRY, "pairfeat7": P7_ENTRY, "r1photo7": RP_ENTRY,
+                                         "r1photo8ref": R8REF, "r1photo8": R8_ENTRY})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
-                                                  "pairfeat5", "r1review", "pairfeat6", "pairfeat7", "r1photo7"))
+                                                  "pairfeat5", "r1review", "pairfeat6", "pairfeat7", "r1photo7",
+                                                  "r1photo8ref", "r1photo8"))
         self.assertEqual(pfc.modes(P2), {
             "dev-clean": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0", "errungraded": "0"},
             "dev-stress": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0.04", "errungraded": "0.25"},
@@ -1020,8 +1022,9 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.MODELSET, {"baseline": "", "pairfeat1": "pairfeat1", "pairfeat2": "pairfeat2",
                                         "pairfeat3": "pairfeat3", "pairfeat4": "pairfeat4",
                                         "pairfeat5": "pairfeat5", "r1review": "pairfeat5",
-                                        "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7", "r1photo7": "pairfeat7"})
-        for bad in ("baseline", "pairfeat8", "", None):
+                                        "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7", "r1photo7": "pairfeat7",
+                                        "r1photo8ref": "pairfeat8", "r1photo8": "pairfeat8"})
+        for bad in ("baseline", "pairfeat8", "r1photo8ref", "", None):
             with self.assertRaises(ValueError):
                 pfc.mode_settings("dev-clean", bad)
             with self.assertRaises(ValueError):
@@ -1055,7 +1058,7 @@ class Candidates(unittest.TestCase):
         self.assertEqual(pfc.infer_candidate(dict(b=1, baseline_chain_sha256=b, pairfeat1_chain_sha256={}), "x"), P1)
         for bad in ({"baseline_chain_sha256": b},
                     dict(ok, pairfeat1_chain_sha256=chain(CAND_FILES, "c")),
-                    {"baseline_chain_sha256": b, "pairfeat8_chain_sha256": {}},
+                    {"baseline_chain_sha256": b, "pairfeat9_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "_chain_sha256": {}},
                     {"baseline_chain_sha256": b, "Pairfeat2_chain_sha256": {}}, [], None):
             with self.assertRaises(pfc.PreflightError, msg=str(bad)):
@@ -1427,6 +1430,8 @@ class RunnerPairfeat2(RunnerFixture, unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         for c, spec in pfc.CANDIDATES.items():
+            if pfc.reference_only(c):    # a reference-only arm is never an experiment candidate: no runner row
+                continue
             self.assertIn('%s) DEV_SEEDS="%s"' % (c, " ".join(map(str, spec["dev_seeds"]))), text)
         self.assertIn('VAL_SEEDS="%s"' % " ".join(map(str, pfc.VALIDATION_SEEDS)), text)
         self.assertIn("pfc.guard(argv, mode, arm, bin_, cand)", text)
@@ -4073,7 +4078,7 @@ class Pairfeat7Candidate(unittest.TestCase):
                          ("off", P5, [], ["baseline", P5, P7], P7, P7_VAL))
         self.assertEqual(pfc.edge_classifier(P7), (pfc.EDGE_CLASSES7, pfc.edge_class7))
         for c in pfc.CANDIDATES:
-            if c not in (P7, RP):
+            if c not in (P7, RP, "r1photo8ref", "r1photo8"):
                 self.assertEqual(pfc.edge_classifier(c), (pfc.EDGE_CLASSES, pfc.edge_class))
 
     def test_seeds_never_touched_before(self):
@@ -4523,7 +4528,7 @@ class R1photo7Runner(RunnerFixture, unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;', text)
-        self.assertIn("pairfeat7 r1review r1photo7)", text)
+        self.assertIn("pairfeat7 r1review r1photo7", text)
         self.assertIn("r1review) ;; r1photo7) ;;", text)
 
     def test_independent_recheck(self):
@@ -4535,6 +4540,720 @@ class R1photo7Runner(RunnerFixture, unittest.TestCase):
         self.assertEqual(runner_recheck(self.exp, self.head, RP, P7, P5, "experiment"), 0)
         self.assertNotEqual(runner_recheck(self.exp, self.head, P7, P7, P5, "experiment"), 0)   # names r1photo7, not pairfeat7
         self.assertNotEqual(runner_recheck(self.exp, self.head, RP, P5, P5, "experiment"), 0)   # manifest carries pairfeat7
+
+
+# ================================================================ characterization of pairfeat7 and r1photo7 (pinned at 86f434e, before r1photo8)
+
+def lane_tables(c):
+    root, bin_, o = "/repo", "/repo/bin/wsi7", "/data/exp/arm/v2-s0"
+    return {"arms": list(pfc.arms(c)), "modes": pfc.modes(c), "review_gate": pfc.review_gate(c),
+            "settings": {m: pfc.expected_settings(m, c) for m in pfc.MODES},
+            "chain": {a: [pfc.CHAIN_KEY[a], list(pfc.CHAIN_FILES[a]), pfc.MODELSET[a]] for a in pfc.arms(c)},
+            "lanes": {m: {str(s): {a: pfc.lane_commands(root, bin_, o, s, m, a, candidate=c) for a in pfc.arms(c)}
+                          for s in pfc.modes(c)[m]["seeds"]} for m in pfc.MODES}}
+
+
+def gate_samples(c):
+    """reference_gate outputs of candidate c over pass and single-metric-failure arms in every kind."""
+    out = []
+    for kind in pfc.GATE_KINDS:
+        base, ref = pf6_arm("baseline", 500), pf6_arm(P5, 530)
+        for tp, kw in ((536, {}), (530, {}), (529, {}), (536, dict(fm=10)), (536, dict(cpe=10)), (536, dict(uncapped=6)),
+                       (536, dict(uncapped=4)), (536, dict(hours=11.01)), (536, dict(false_closures=1)), (536, dict(truth=601)),
+                       (537, dict(fm=9, cpe=9, hours=11.0))):
+            kw = dict(dict(fm=9, cpe=9, uncapped=5, hours=10.0), **kw)
+            out.append(pfc.reference_gate(ref, pf6_arm(c, tp, **kw), kind, base=base))
+    return out
+
+
+P7_GOLDEN = {"driver": "1ef6683562a8df9824315c8b1acf6cb422085943723418d291edf6e753c75b79",
+             "dev-clean": "b78d16875b444815eb8d1e92fec1a50d32d4f096f4afa822421eb8affe729ce1"}
+RP_GOLDEN = {"driver": "64e91705711ea9e51a71f4df98980e53e53d5f469b8fc59e8178e366569ec0da",
+             "gates": "cc9bb96769afc52cec25df0c114f4cc13f7f745f0497403537ce3af8ff2598c8",
+             "p7-gates": "c1694cc3f32a96111ea046ae912cc2364c4300c8c1c635b179c69ef2dd20933d"}
+
+
+class Pairfeat7ByteIdentity(unittest.TestCase):
+    """pairfeat7 driver tables and dev-clean analysis outputs equal the harness's at 86f434e."""
+
+    def test_driver_tables_unchanged(self):
+        self.assertEqual(_digest(lane_tables(P7)), P7_GOLDEN["driver"])
+
+    def test_dev_clean_outputs_unchanged(self):
+        t = CLIPairfeat7()
+        t.setUp()
+        try:
+            self.assertEqual(t.run3("dev-clean", t.three()), 0)
+            got = {n: hashlib.sha256(_rb(os.path.join(t.exp, n))).hexdigest() for n in ("dev-clean-summary.json", "selection.json")}
+        finally:
+            t.tearDown()
+        self.assertEqual(_digest(got), P7_GOLDEN["dev-clean"])
+
+
+class R1photo7ByteIdentity(unittest.TestCase):
+    """r1photo7 driver tables and gate outputs equal the harness's at 86f434e."""
+
+    def test_driver_tables_unchanged(self):
+        self.assertEqual(_digest(lane_tables(RP)), RP_GOLDEN["driver"])
+
+    def test_gate_outputs_unchanged(self):
+        self.assertEqual(_digest(gate_samples(RP)), RP_GOLDEN["gates"])
+        self.assertEqual(_digest(gate_samples(P7)), RP_GOLDEN["p7-gates"])
+
+
+# ================================================================ candidate r1photo8 (shared pairfeat8 chain: reference-only r1photo8ref and r1photo8 with -demoguard)
+
+R8REF_NAME = "r1photo8ref"
+R8 = "r1photo8"
+P8 = "pairfeat8"
+R8_DEV = [827, 829, 839]
+R8_VAL = [853, 857, 859, 863, 877]
+CAND8_FILES = ("encoder_pairfeat8.json", "lgb_stream_pairfeat8.json", "iso_pairfeat8.json", "iso_v7_pairfeat8.json",
+               "name_idf_pairfeat8.json")
+FILES[P8] = CAND8_FILES
+DEV_SEEDS[P8] = R8_DEV
+R8REF = {"dev_seeds": R8_DEV, "validation_seeds": R8_VAL, "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+         "chain": "pairfeat8", "reference_only": True, "extra_flags": ["-r1review"], "lane_image": True, "noise": "v3",
+         "report_linked_pairs": True, "edge_classes": "pairfeat7"}
+R8_ENTRY = {"dev_seeds": R8_DEV, "validation_seeds": R8_VAL, "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+            "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared", "reference_gate": "r1photo8",
+            "extra_flags": ["-r1review", "-demoguard"], "lane_image": True, "noise": "v3", "baseline_gating": False,
+            "report_linked_pairs": True, "edge_classes": "pairfeat7"}
+DEMO_STATS = ("demoguard_dob_conflict", "demoguard_sex_conflict", "demoguard_missing", "demoguard_eid_missing",
+              "demoguard_cluster_conflict", "demoguard_human_missing_merge")
+
+
+def shared_experiment(maps, am_sha):
+    return {"candidate": R8, "reference": R8REF_NAME, "chain": P8, "pairfeat8_chain_sha256": maps,
+            "arm_chain": {"baseline": "baseline", R8REF_NAME: P8, R8: P8}, "artifact_manifest_sha256": am_sha}
+
+
+class R1photo8Candidate(unittest.TestCase):
+    def test_entries_and_tables(self):
+        self.assertEqual(pfc.CANDIDATES[R8REF_NAME], R8REF)
+        self.assertEqual(pfc.CANDIDATES[R8], R8_ENTRY)
+        self.assertEqual(pfc.arms(R8), ("baseline", R8REF_NAME, R8))
+        self.assertEqual(pfc.CHAIN_FILES[P8], CAND8_FILES)
+        for a in (R8REF_NAME, R8):
+            self.assertEqual((pfc.chain_of(a), pfc.MODELSET[a], pfc.CHAIN_KEY[a], pfc.CHAIN_FILES[a]),
+                             (P8, "pairfeat8", "pairfeat8_chain_sha256", CAND8_FILES))
+            self.assertEqual((pfc.lane_noise(a), pfc.lane_image(a)), ("v3", True))
+        self.assertEqual((pfc.extra_flags(R8REF_NAME), pfc.extra_flags(R8)), (["-r1review"], ["-r1review", "-demoguard"]))
+        self.assertEqual((pfc.reference(R8), pfc.baseline_gating(R8), pfc.reference_chain_shared(R8)), (R8REF_NAME, False, True))
+        self.assertFalse(pfc.reference_chain_in_experiment(R8))
+        self.assertTrue(pfc.reference_only(R8REF_NAME))
+        self.assertFalse(pfc.reference_only(R8))
+        self.assertIn(P8, pfc.CHAIN_CANDIDATES)
+        self.assertNotIn(R8, pfc.CHAIN_CANDIDATES)
+        self.assertEqual(pfc.edge_classifier(R8), (pfc.EDGE_CLASSES7, pfc.edge_class7))
+        self.assertEqual(pfc.modes(R8)["validation-clean"]["seeds"], R8_VAL)
+        self.assertEqual(pfc.modes(R8)["dev-stress"]["seeds"], R8_DEV)
+
+    def test_lane_noise_is_v3_only_for_the_new_arms(self):
+        for c in pfc.CANDIDATES:
+            self.assertEqual(pfc.lane_noise(c), "v3" if c in (R8REF_NAME, R8) else "v2", c)
+        self.assertEqual(pfc.lane_noise(None), "v2")
+        s = pfc.expected_settings("validation-clean", R8)
+        self.assertEqual((s["noise"], s["candidate_extra_flags"], s["reference_extra_flags"], s["arms"], s["candidate_modelset"]),
+                         ("v3", ["-r1review", "-demoguard"], ["-r1review"], ["baseline", R8REF_NAME, R8], "pairfeat8"))
+        self.assertEqual(pfc.expected_settings("validation-clean", RP)["noise"], "v2")
+        self.assertNotIn("reference_extra_flags", pfc.expected_settings("validation-clean", RP))
+
+    def test_reference_only_is_never_an_experiment_candidate(self):
+        for f in (lambda: pfc.arms(R8REF_NAME), lambda: pfc.mode_settings("dev-clean", R8REF_NAME),
+                  lambda: pfc.review_gate(R8REF_NAME), lambda: pfc.expected_settings("dev-clean", R8REF_NAME)):
+            with self.assertRaises(pfc.PreflightError):
+                f()
+        with tempfile.TemporaryDirectory() as td:
+            with self.assertRaises(pfc.PreflightError):
+                pfc.init_experiment(td, R8REF_NAME)
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(["/repo/bin/wsi7", "gen", "x"], "dev-clean", R8REF_NAME, "/repo/bin/wsi7", R8REF_NAME)
+        self.assertNotIn(R8REF_NAME, pfc.experiment_candidates())
+
+    def test_seed_collisions_ignore_the_reference_only_duplicate(self):
+        uses = pfc.seed_uses()
+        for sd in R8_DEV + R8_VAL:
+            self.assertEqual(uses[sd], [R8], sd)
+        self.assertTrue(all(len(v) == 1 for v in uses.values()))
+        self.assertEqual(pfc.CANDIDATES[R8REF_NAME]["dev_seeds"], pfc.CANDIDATES[R8]["dev_seeds"])
+        used = set(USED_DEV + USED_VAL + B8_SEEDS + list(pfc.RETIRED_SEEDS) + pfc.VALIDATION_SEEDS)
+        for c, spec in pfc.CANDIDATES.items():
+            if c not in (R8REF_NAME, R8):
+                used |= set(spec["dev_seeds"] + spec.get("validation_seeds", []))
+        self.assertFalse(set(R8_DEV + R8_VAL) & used)
+        self.assertTrue(all(sd > 823 for sd in R8_DEV + R8_VAL))
+
+
+class R1photo8Guard(unittest.TestCase):
+    BIN = "/repo/bin/wsi7"
+
+    def cmds(self, mode, a, seed, c=R8):
+        return pfc.lane_commands("/repo", self.BIN, "/data/exp/arm/v2-s%d" % seed, seed, mode, a, candidate=c)
+
+    def test_argv_per_arm_and_every_lane_passes_the_guard(self):
+        want = {"baseline": [], R8REF_NAME: ["-r1review"], R8: ["-r1review", "-demoguard"]}
+        for mode in pfc.MODES:
+            for s in pfc.mode_settings(mode, R8)["seeds"]:
+                for a in pfc.arms(R8):
+                    for name, argv, _ in self.cmds(mode, a, s):
+                        pfc.guard(argv, mode, a, self.BIN, R8)
+                        if name == "gen":
+                            self.assertEqual(argv[argv.index("-noise") + 1], "v3")
+                            self.assertIn("-imgphotos", argv)
+                            self.assertNotIn("-demoguard", argv)
+                        if name in pfc.MODEL_CMDS:
+                            self.assertEqual(argv[len(argv) - len(want[a]):] if want[a] else [], want[a], (name, a))
+                            self.assertEqual(argv.count("-demoguard"), 1 if a == R8 else 0)
+                            self.assertEqual(argv.count("-r1review"), 0 if a == "baseline" else 1)
+                            self.assertEqual(argv[argv.index("-image") + 1], "cached")
+                            self.assertEqual(argv[argv.index("-modelset") + 1] if "-modelset" in argv else "",
+                                             "" if a == "baseline" else "pairfeat8")
+
+    def test_reference_and_candidate_lanes_differ_only_in_the_flag(self):
+        ref = {n: a for n, a, _ in self.cmds("dev-clean", R8REF_NAME, 827)}
+        cand = {n: a for n, a, _ in self.cmds("dev-clean", R8, 827)}
+        for n in ("gen", "sim", "augment", "classifier"):
+            self.assertEqual(ref[n], cand[n], n)
+        for n in pfc.MODEL_CMDS:
+            self.assertEqual(ref[n] + ["-demoguard"], cand[n], n)
+
+    def test_demoguard_count_and_noise_refusals(self):
+        cmds = {n: a for n, a, _ in self.cmds("dev-clean", R8, 827)}
+        for name in pfc.MODEL_CMDS:
+            argv = cmds[name]
+            pfc.guard(argv, "dev-clean", R8, self.BIN, R8)
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard([x for x in argv if x != "-demoguard"], "dev-clean", R8, self.BIN, R8)      # candidate needs one
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard(argv + ["-demoguard"], "dev-clean", R8, self.BIN, R8)                       # exactly one
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard(argv, "dev-clean", R8REF_NAME, self.BIN, R8)                                # reference carries none
+            with self.assertRaises(pfc.GuardError):
+                pfc.guard(argv, "dev-clean", "baseline", self.BIN, R8)
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(cmds["gen"] + ["-demoguard"], "dev-clean", R8, self.BIN, R8)                    # never on gen
+        gen = list(cmds["gen"])
+        for noise in ("v2", "v1", "v1t", "v4"):
+            gen[gen.index("-noise") + 1] = noise
+            for a in (R8, R8REF_NAME):
+                with self.assertRaises(pfc.GuardError, msg=(noise, a)):
+                    pfc.guard(gen, "dev-clean", a, self.BIN, R8)
+        # an older experiment's v2 lane is unchanged and refuses v3
+        old = list(self.cmds("dev-clean", "baseline", 719, c=P7)[0][1])
+        pfc.guard(old, "dev-clean", "baseline", self.BIN, P7)
+        old[old.index("-noise") + 1] = "v3"
+        with self.assertRaises(pfc.GuardError):
+            pfc.guard(old, "dev-clean", "baseline", self.BIN, P7)
+
+    def test_seed_refusals(self):
+        for seed in (769, 401, 853, 557):       # r1photo7 dev, old validation, validation in dev, retired
+            for name, argv, _ in self.cmds("dev-clean", R8, seed):
+                if name in ("gen", "orchestrate"):
+                    with self.assertRaises(pfc.GuardError, msg=(name, seed)):
+                        pfc.guard(argv, "dev-clean", R8, self.BIN, R8)
+
+
+class R1photo8Preflight(unittest.TestCase):
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.r = Repo(self.td.name, cand=P8)
+        for f in CAND5_FILES + CAND8_FILES:
+            with open(os.path.join(self.r.root, "models", f), "w") as h:
+                h.write("model " + f)
+        self.ep = os.path.join(self.r.exp, "experiment.json")
+        self.ap = os.path.join(self.r.exp, "artifact-manifest.json")
+
+    def tearDown(self):
+        self.td.cleanup()
+
+    def want(self):
+        return shared_experiment(self.r.hashes(CAND8_FILES), _sha(self.ap))
+
+    def pi(self, mode, a):
+        return pfc.preflight_identity(mode, a, self.r.exp, self.r.root, HEAD)
+
+    def test_init_writes_one_shared_identity(self):
+        self.r.artifact_manifest()
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R8, os.path.join(self.td.name, "ref"), repo=self.r.root)   # no second fit directory
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R8REF_NAME, repo=self.r.root)
+        self.assertFalse(os.path.exists(self.ep))
+        self.assertEqual(pfc.init_experiment(self.r.exp, R8, repo=self.r.root), self.want())
+        self.assertEqual(_rj(self.ep), self.want())
+        before = _rb(self.ep)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R8, repo=self.r.root)                                        # write-once
+        self.assertEqual(_rb(self.ep), before)
+        self.assertEqual(pfc.read_experiment(self.r.exp), self.want())
+
+    def test_init_refuses_wrong_manifests_and_cli_arguments(self):
+        for bad in ({"git_head": "c" * 5}, {"pairfeat8_chain_sha256": {"x": "1"}}):
+            self.r.artifact_manifest(**bad)
+            with self.assertRaises(pfc.PreflightError, msg=str(bad)):
+                pfc.init_experiment(self.r.exp, R8, repo=self.r.root)
+        os.remove(self.ap)
+        _wj(self.ap, {"git_head": HEAD, "baseline_chain_sha256": self.r.hashes(BASE_FILES),
+                      "pairfeat5_chain_sha256": self.r.hashes(CAND5_FILES)})
+        with self.assertRaises(pfc.PreflightError):
+            pfc.init_experiment(self.r.exp, R8, repo=self.r.root)                                        # another chain
+        os.remove(self.ap)
+        self.r.artifact_manifest()
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, R8, self.r.exp, "x"]), 2)
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, R8REF_NAME]), 2)
+        self.assertEqual(pfc.main(["init-experiment", self.r.exp, R8, self.td.name]), 2)                 # no reference fit directory
+        self.assertFalse(os.path.exists(self.ep))
+
+    def test_preflight_governing_view_and_resolve(self):
+        self.r.artifact_manifest()
+        for a in pfc.arms(R8):
+            with self.assertRaises(pfc.PreflightError):
+                self.pi("dev-clean", a)                                    # no experiment.json
+        pfc.init_experiment(self.r.exp, R8, repo=self.r.root)
+        for a, files in (("baseline", BASE_FILES), (R8REF_NAME, CAND8_FILES), (R8, CAND8_FILES)):
+            self.assertEqual(self.pi("dev-clean", a), (R8, self.r.hashes(files)))
+        am = _rj(self.ap)
+        self.assertEqual(pfc.resolve_candidate(am, "artifact-manifest.json", self.r.exp), R8)
+        self.assertIs(pfc.governing_view(am, self.r.exp, R8), am)
+        for a in (P5, P7, RP):
+            with self.assertRaises(pfc.PreflightError):
+                self.pi("dev-clean", a)
+        with self.assertRaises(pfc.PreflightError):
+            pfc.resolve_candidate(am, "artifact-manifest.json")            # the chain alone does not name a candidate
+
+    def test_changed_chain_hash_or_identity_is_refused(self):
+        self.r.artifact_manifest()
+        pfc.init_experiment(self.r.exp, R8, repo=self.r.root)
+        good_am, good_ep = _rb(self.ap), _rb(self.ep)
+        e = _rj(self.ep)
+        for bad in (dict(e, arm_chain={"baseline": "baseline", R8REF_NAME: "baseline", R8: P8}), dict(e, chain="pairfeat7"),
+                    dict(e, reference="pairfeat5"), dict(e, extra=1), dict(e, artifact_manifest_sha256="1" * 64),
+                    dict(e, pairfeat8_chain_sha256=chain(CAND8_FILES, "x")), dict(e, candidate=RP),
+                    {k: v for k, v in e.items() if k != "arm_chain"}):
+            _wj(self.ep, bad)
+            for a in pfc.arms(R8):
+                with self.assertRaises(pfc.PreflightError, msg=str(bad)):
+                    self.pi("dev-clean", a)
+        with open(self.ep, "wb") as h:
+            h.write(good_ep)
+        self.pi("dev-clean", R8)
+        self.r.artifact_manifest(pairfeat8_chain_sha256=chain(CAND8_FILES, "x"))   # the fit manifest's chain changed
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("dev-clean", R8)
+        with open(self.ap, "wb") as h:
+            h.write(good_am)
+        with open(os.path.join(self.r.root, "models", "iso_pairfeat8.json"), "a") as h:
+            h.write("x")                                                      # a changed model file
+        for a in (R8, R8REF_NAME):
+            with self.assertRaises(pfc.PreflightError):
+                self.pi("dev-clean", a)
+        self.pi("dev-clean", "baseline")
+
+    def test_selection_stress_freeze_and_validation(self):
+        self.r.artifact_manifest()
+        pfc.init_experiment(self.r.exp, R8, repo=self.r.root)
+        ident = {"git_head": HEAD, "baseline_chain_sha256": self.r.hashes(BASE_FILES),
+                 "pairfeat8_chain_sha256": self.r.hashes(CAND8_FILES), "candidate": R8}
+        sp, tp = (os.path.join(self.r.exp, n) for n in ("selection.json", "stress.json"))
+        sel = dict(ident, selected_modelset=R8, mode="dev-clean", seeds=R8_DEV, **{"pass": True})
+        _wj(sp, dict(sel, pairfeat8_chain_sha256=chain(CAND8_FILES, "x")))
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("dev-stress", "baseline")
+        _wj(sp, sel)
+        self.assertEqual(self.pi("dev-stress", R8REF_NAME)[0], R8)
+        _wj(tp, dict(ident, mode="dev-stress", seeds=R8_DEV, selection_sha256=_sha(sp), **{"pass": True}))
+        vm = pfc.freeze_validation(self.r.exp, self.r.root, HEAD)
+        self.assertEqual((vm["candidate"], vm["seeds"], vm["experiment_sha256"]), (R8, R8_VAL, _sha(self.ep)))
+        self.assertNotIn("reference_model_chain", vm)
+        self.assertEqual(vm["settings"], pfc.expected_settings("validation-clean", R8))
+        for a, files in (("baseline", BASE_FILES), (R8REF_NAME, CAND8_FILES), (R8, CAND8_FILES)):
+            self.assertEqual(self.pi("validation-clean", a), (R8, self.r.hashes(files)))
+        vp = os.path.join(self.r.exp, "validation-manifest.json")
+        frozen = _rb(vp)
+        _wj(vp, dict(vm, pairfeat8_chain_sha256=chain(CAND8_FILES, "x")))
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("validation-clean", "baseline")
+        with open(vp, "wb") as h:
+            h.write(frozen)
+        self.pi("validation-clean", "baseline")
+        with open(self.ep, "a") as h:
+            h.write(" ")                                                      # experiment.json no longer what was frozen
+        with self.assertRaises(pfc.PreflightError):
+            self.pi("validation-clean", "baseline")
+
+
+def r8_arm(name, tp, truth=600, fm=10, cpe=10, uncapped=5, hours=10.0, **kw):
+    return pf6_arm(name, tp, truth, fm, cpe, uncapped, hours, **kw)
+
+
+class R1photo8Gate(unittest.TestCase):
+    def g(self, cand, kind="selection", ref=None, base=None):
+        return pfc.reference_gate(ref or r8_arm(R8REF_NAME, 530), cand, kind, base=base or r8_arm("baseline", 500))
+
+    def c(self, tp=530, **kw):
+        return r8_arm(R8, tp, **dict(dict(fm=9, cpe=9, uncapped=4, hours=11.0), **kw))
+
+    def test_pass_in_every_kind(self):
+        for kind in pfc.GATE_KINDS:
+            g = self.g(self.c(), kind)
+            self.assertTrue(g["pass"], (kind, g["reasons"]))
+            self.assertEqual((g["gain_pp"], g["min_gain_pp"], g["kind"], g["reference"]), (0.0, 0.0, kind, R8REF_NAME))
+        g = self.g(self.c())
+        self.assertEqual(g["hours"], {R8REF_NAME: 10.0, R8: 11.0, "max_allowed": 11.0})
+        self.assertEqual(g["contamination"]["false_merge_pairs"], {R8REF_NAME: 10, R8: 9, "rule": "strictly below"})
+        self.assertEqual(g["contamination"]["cross_person_edges"], {R8REF_NAME: 10, R8: 9, "rule": "strictly below"})
+        self.assertEqual(g["uncapped_wrong_distinct_pairs"], {R8REF_NAME: 5, R8: 4, "rule": "strictly below", "max_allowed": 4})
+        self.assertEqual(set(g["reported"]), {"impure_clusters", "wrong_final_signoffs", "completion_undocumented", "demographic", "gating"})
+        self.assertFalse(g["reported"]["gating"])
+        self.assertEqual(self.g(self.c(), "stress")["contamination"]["false_merge_pairs"]["rule"], "not above")
+
+    def test_recall_gain_each_kind(self):
+        for kind in pfc.GATE_KINDS:
+            self.assertTrue(self.g(self.c(531), kind)["pass"], kind)
+            g = self.g(self.c(529), kind)                  # -0.1667pp
+            self.assertFalse(g["pass"], kind)
+            self.assertEqual(g["reasons"], ["gain vs reference -0.1667pp below 0.0pp"])
+        for kind in pfc.GATE_KINDS:                        # recall -0.01pp fails
+            g = self.g(r8_arm(R8, 5299, truth=10000, fm=9, cpe=9, uncapped=4, hours=11.0), kind,
+                       ref=r8_arm(R8REF_NAME, 5300, truth=10000), base=r8_arm("baseline", 5000, truth=10000))
+            self.assertEqual((g["gain_pp"], g["reasons"]), (-0.01, ["gain vs reference -0.0100pp below 0.0pp"]), kind)
+
+    def test_each_contamination_metric_fails_independently(self):
+        for kind in ("selection", "validation"):
+            for k, arg in (("false_merge_pairs", "fm"), ("cross_person_edges", "cpe")):
+                for v in (10, 11):
+                    self.assertEqual(self.g(self.c(**{arg: v}), kind)["reasons"],
+                                     ["%s not strictly below reference (%d >= 10)" % (k, v)])
+            for v in (5, 6):
+                self.assertEqual(self.g(self.c(uncapped=v), kind)["reasons"],
+                                 ["uncapped wrong-pair link-review pairs not strictly below reference (%d >= 5)" % v])
+        # stress: equal passes, above fails
+        self.assertTrue(self.g(self.c(fm=10, cpe=10, uncapped=5), "stress")["pass"])
+        for k, arg in (("false_merge_pairs", "fm"), ("cross_person_edges", "cpe")):
+            self.assertEqual(self.g(self.c(**dict(dict(fm=10, cpe=10, uncapped=5), **{arg: 11})), "stress")["reasons"],
+                             ["%s above reference (11 > 10)" % k])
+        self.assertEqual(self.g(self.c(fm=10, cpe=10, uncapped=6), "stress")["reasons"],
+                         ["uncapped wrong-pair link-review pairs above reference (6 > 5)"])
+
+    def test_hours(self):
+        self.assertTrue(self.g(self.c(hours=11.0))["pass"])
+        g = self.g(self.c(hours=11.01))
+        self.assertEqual(len(g["reasons"]), 1)
+        self.assertTrue(g["reasons"][0].startswith("reviewer hours"))
+        self.assertFalse(self.g(self.c(hours=11.01), "stress")["pass"])
+
+    def test_safety_in_every_arm_including_baseline(self):
+        for k in pfc.SAFETY:
+            self.assertEqual(self.g(self.c(**{k: 1}))["reasons"], [k + " nonzero"])
+            self.assertEqual(self.g(self.c(), ref=r8_arm(R8REF_NAME, 530, **{k: 1}))["reasons"], ["reference " + k + " nonzero"])
+            self.assertEqual(self.g(self.c(), base=r8_arm("baseline", 500, **{k: 1}))["reasons"], ["baseline " + k + " nonzero"])
+        self.assertEqual(self.g(self.c(wrong_released_by_origin={"a": 1}))["reasons"], ["wrong_released_by_origin nonzero"])
+        self.assertEqual(self.g(self.c(), base=r8_arm("baseline", 500, wrong_released_by_origin={"a": 1}))["reasons"],
+                         ["baseline wrong_released_by_origin nonzero"])
+        for kind in pfc.GATE_KINDS:
+            self.assertFalse(self.g(self.c(), kind, base=r8_arm("baseline", 500, false_closures=1))["pass"])
+
+    def test_reported_metrics_do_not_decide_pass(self):
+        g = self.g(self.c(impure_clusters=99))
+        self.assertTrue(g["pass"], g["reasons"])
+        c = self.c()
+        c["reviewer"]["wrong_final_signoffs"] = 50
+        c["demographic"] = {"stats": dict.fromkeys(DEMO_STATS, 7), "trace_reasons": {"dob_conflict": 3}}
+        g = self.g(c)
+        self.assertTrue(g["pass"], g["reasons"])
+        self.assertEqual(g["reported"]["wrong_final_signoffs"], {R8REF_NAME: 0, R8: 50})
+        self.assertEqual(g["reported"]["demographic"], {R8REF_NAME: None, R8: c["demographic"]})
+        self.assertEqual(g["reported"]["impure_clusters"][R8], 0)
+        # a candidate far below the baseline's recall does not decide either (the baseline comparison is reported only)
+        self.assertTrue(self.g(self.c(530), base=r8_arm("baseline", 590))["pass"])
+
+    def test_truth_arms_and_inputs(self):
+        self.assertIn("truth_closed differs between arms", self.g(self.c(truth=601))["reasons"])
+        self.assertIn("truth_closed differs between arms", self.g(self.c(), base=r8_arm("baseline", 500, truth=601))["reasons"])
+        self.assertEqual(self.g(self.c(), ref=r8_arm(P5, 530))["reasons"], ["arms must be r1photo8 vs its reference arm r1photo8ref"])
+        with self.assertRaises(ValueError):
+            pfc.reference_gate(r8_arm(R8REF_NAME, 530), self.c(), "selection")      # baseline arm required
+        with self.assertRaises(ValueError):
+            self.g(self.c(), kind="bogus")
+        bad = self.c()
+        del bad["reviewer"]["uncapped_wrong_distinct_pairs"]
+        with self.assertRaises(ValueError):
+            self.g(bad)
+
+    def test_earlier_gates_unchanged(self):
+        self.assertEqual(self.g(pf6_arm(P7, 530, fm=9, cpe=9), "validation")["min_gain_pp"], 0.0)
+        self.assertEqual(pfc.reference_gate(pf6_arm(P5, 530), pf6_arm(RP, 536, fm=9, cpe=9), "selection",
+                                            base=pf6_arm("baseline", 500))["min_gain_pp"], 1.0)
+
+
+class CLIR1photo8(CLIFixture, unittest.TestCase):
+    """Three-arm shared-chain analysis on synthetic lanes."""
+    CAND = R8
+
+    def setUp(self):
+        self.td = tempfile.TemporaryDirectory()
+        self.exp = os.path.join(self.td.name, "exp")
+        os.makedirs(self.exp)
+        self.maps = {"baseline": chain(BASE_FILES, "b"), R8REF_NAME: chain(CAND8_FILES, "c"), R8: chain(CAND8_FILES, "c")}
+        _wj(os.path.join(self.exp, "artifact-manifest.json"),
+            {"git_head": HEAD, "baseline_chain_sha256": self.maps["baseline"], "pairfeat8_chain_sha256": self.maps[R8]})
+        am = os.path.join(self.exp, "artifact-manifest.json")   # the identity init-experiment writes (no model files in this fixture)
+        _wj(os.path.join(self.exp, "experiment.json"), shared_experiment(self.maps[R8], _sha(am)))
+
+    def make_arm(self, a, tp, mode="dev-clean", fm=None, cpe=None, wrong=2, hours=None, cu=0, stats=None, trace=(), noise="v3",
+                 flags="auto", policies="auto", **kw):
+        root = CLIFixture.make_arm(self, a, tp, mode, **kw)
+        bp = os.path.join(root, "build.json")
+        ba = kw.get("build_arm") or a
+        b = dict(_rj(bp), **IMAGE_BUILD)
+        if noise:
+            b["noise"] = noise
+        fl = pfc.extra_flags(ba) if flags == "auto" else flags
+        if fl:
+            b["extra_flags"] = fl
+        _wj(bp, b)
+        for d in sorted(os.listdir(root)):
+            if not d.startswith("v2-s"):
+                continue
+            lane = os.path.join(root, d)
+            q, pk = queue(same=1, wrong=wrong)
+            pk.update({"c1": "C1", "c2": "C1", "c3": "C3", "c4": "C4"})
+            q += cu_items(cu)
+            _wj(os.path.join(lane, "run/main/review_queue.json"), q)
+            with open(os.path.join(lane, "run/main/reviewer_decisions.ndjson"), "w") as h:
+                for i in range(cu):
+                    h.write(json.dumps({"item": "cu%d" % i, "evidence": "adequate", "wrong": False}) + "\n")
+            os.makedirs(os.path.join(lane, "cohort"))
+            _wj(os.path.join(lane, "cohort/truth.json"), {"pk_qid": pk, "loops": {}})
+            r = [] if a == "baseline" else [cap_rec("c1", "c2"), cap_rec("c3", "c4")]
+            tr = [{"kind": "pair", "a": x, "b": y, "stage": "rejected_demographic", "reason": why} for x, y, why in trace]
+            with open(os.path.join(lane, "run/main/link_funnel.ndjson"), "w") as h:
+                h.write(trace_lines(r + tr))
+            rp = os.path.join(lane, "run/main/report7.json")
+            rj = _rj(rp)
+            if fm is not None:
+                rj["linkage"]["false_merge_pairs"] = fm
+            if cpe is not None:
+                rj["linkage"]["cross_person_edges_by_basis"] = {"wasl": cpe}
+            if hours is not None:
+                rj["reviewer"]["by_kind"]["all"]["sim_hours"] = hours
+            if stats is not None:
+                rj["linkage"]["stats"] = dict(stats)
+            rj["image_reader"] = {"mode": "cached", "model": "landmark-cnn", "colonoscopy_reports_read": 4}
+            _wj(rp, rj)
+            pol = ([lane_policy(ba)] * 2) if policies == "auto" else policies
+            with open(os.path.join(lane, "run/main/out_log.ndjson"), "w") as h:
+                for i, pv in enumerate(pol):
+                    h.write(json.dumps({"seq": i + 1, "data": {"kind": "decision", "dec": {"id": "d%d" % i, "policy": pv}}}) + "\n")
+        return root
+
+    def three(self, mode="dev-clean", b=5, f=6, c=6, ref_wrong=3, **ck):
+        cand = dict(fm=1, cpe=2)
+        cand.update(ck)
+        return (self.make_arm("baseline", b, mode, fm=3), self.make_arm(R8REF_NAME, f, mode, fm=3, wrong=ref_wrong),
+                self.make_arm(R8, c, mode, **cand))
+
+    def run3(self, mode, roots, out=None):
+        b, f, c = roots
+        return pfc.main([mode, out or os.path.join(self.exp, mode + "-summary.json"), "baseline=" + b,
+                         R8REF_NAME + "=" + f, R8 + "=" + c])
+
+    def refused(self, roots, mode="dev-clean"):
+        with self.assertRaises((ValueError, KeyError, OSError)):
+            self.run3(mode, roots)
+        self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+
+    def test_dev_clean_pass_and_outputs(self):
+        self.assertEqual(self.run3("dev-clean", self.three()), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual((sel["candidate"], sel["reference"], sel["selected_modelset"], sel["pass"], sel["seeds"]),
+                         (R8, R8REF_NAME, R8, True, R8_DEV))
+        self.assertEqual(sel["pairfeat8_chain_sha256"], self.maps[R8])
+        self.assertNotIn("reference_model_chain", sel)
+        self.assertIs(sel["gate"]["gating"], False)
+        rg = sel["reference_gate"]
+        self.assertEqual(rg["contamination"], {"false_merge_pairs": {R8REF_NAME: 9, R8: 3, "rule": "strictly below"},
+                                               "cross_person_edges": {R8REF_NAME: 9, R8: 6, "rule": "strictly below"}})
+        self.assertEqual(rg["uncapped_wrong_distinct_pairs"], {R8REF_NAME: 9, R8: 6, "rule": "strictly below", "max_allowed": 8})
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(sorted(s["arms"]), sorted(["baseline", R8REF_NAME, R8]))
+        self.assertEqual((s["candidate"], s["reference"], s["pass"]), (R8, R8REF_NAME, True))
+        self.assertEqual(s["arms"][R8]["build"]["noise"], "v3")
+        self.assertEqual(s["arms"][R8]["build"]["extra_flags"], ["-r1review", "-demoguard"])
+        self.assertEqual(s["arms"][R8REF_NAME]["build"]["extra_flags"], ["-r1review"])
+        self.assertNotIn("extra_flags", s["arms"]["baseline"]["build"])
+        self.assertEqual(s["rarity_table_sha256"], self.maps[R8]["name_idf_pairfeat8.json"])
+
+    def test_equal_wrong_pairs_do_not_pass(self):
+        self.assertEqual(self.run3("dev-clean", self.three(ref_wrong=2)), 0)
+        sel = _rj(os.path.join(self.exp, "selection.json"))
+        self.assertEqual(sel["reference_gate"]["reasons"],
+                         ["uncapped wrong-pair link-review pairs not strictly below reference (6 >= 6)"])
+        self.assertEqual((sel["selected_modelset"], sel["pass"]), (None, False))
+
+    def test_demographic_counts_are_reported_not_gated(self):
+        stats = {"demoguard_dob_conflict": 4, "demoguard_sex_conflict": 2, "demoguard_missing": 5, "demoguard_eid_missing": 1,
+                 "demoguard_cluster_conflict": 3, "demoguard_human_missing_merge": 2}
+        trace = (("m1", "m2", "dob_conflict"), ("m2", "m1", "dob_conflict"), ("m3", "m4", "sex_conflict"),
+                 ("m5", "m6", "demographic_missing"), ("m7", "m8", "demographic_cluster_conflict"),
+                 ("m1", "m9", "eid_conflict"))
+        b = self.make_arm("baseline", 5, fm=3)
+        f = self.make_arm(R8REF_NAME, 6, fm=3, wrong=3)
+        c = self.make_arm(R8, 6, fm=1, cpe=2, wrong=2, stats=stats, trace=trace)
+        self.assertEqual(self.run3("dev-clean", (b, f, c)), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["pass"], True)
+        want = {"stats": {k: 3 * v for k, v in stats.items()},
+                "trace_reasons": {"dob_conflict": 3, "sex_conflict": 3, "demographic_missing": 3, "demographic_cluster_conflict": 3}}
+        self.assertEqual(s["arms"][R8]["demographic"], want)
+        zero = {"stats": dict.fromkeys(DEMO_STATS, 0), "trace_reasons": dict.fromkeys(pfc.DEMO_REASONS, 0)}
+        for a in ("baseline", R8REF_NAME):
+            self.assertEqual(s["arms"][a]["demographic"], zero)
+        self.assertEqual(s["reference_gate"]["reported"]["demographic"], {R8REF_NAME: zero, R8: want})
+        self.assertEqual(s["reference_gate"]["reasons"], [])
+
+    def test_completion_items_reported_for_both_review_arms(self):
+        b = self.make_arm("baseline", 5, fm=3)
+        f = self.make_arm(R8REF_NAME, 6, fm=3, wrong=3, cu=2)
+        c = self.make_arm(R8, 6, fm=1, cpe=2, cu=1)
+        self.assertEqual(self.run3("dev-clean", (b, f, c)), 0)
+        s = _rj(os.path.join(self.exp, "dev-clean-summary.json"))
+        self.assertEqual(s["arms"][R8REF_NAME]["completion_undocumented"]["items"], 6)
+        self.assertEqual(s["arms"][R8]["completion_undocumented"]["items"], 3)
+        self.assertEqual(s["arms"]["baseline"]["completion_undocumented"]["items"], 0)
+        os.remove(os.path.join(self.exp, "selection.json"))
+        self.refused((self.make_arm("baseline", 5, fm=3, cu=1, name="b-cu"), f, c))      # the baseline cannot raise them
+
+    def test_arm_identity_and_shared_chain_enforced(self):
+        b, f, c = self.three()
+        for roots in ((b, self.make_arm(R8REF_NAME, 6, fm=3, wrong=3, chain_map=chain(CAND8_FILES, "x"), name="f-map"), c),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, chain_map=chain(CAND8_FILES, "x"), name="c-map")),
+                      (b, self.make_arm(R8REF_NAME, 6, fm=3, wrong=3, noise=None, name="f-nonoise"), c),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, noise="v2", name="c-v2")),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, flags=["-r1review"], name="c-noguard")),
+                      (b, self.make_arm(R8REF_NAME, 6, fm=3, wrong=3, flags=["-r1review", "-demoguard"], name="f-guard"), c),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, head="c" * 40, name="c-head")),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, binary="c" * 64, name="c-bin")),
+                      (self.make_arm("baseline", 5, fm=3, noise="v2", name="b-v2"), f, c),
+                      (b, f, self.make_arm(R8, 6, fm=1, cpe=2, policies=[lane_policy("baseline")], name="c-pol"))):
+            self.refused(roots)
+        self.assertEqual(self.run3("dev-clean", (b, f, c)), 0)
+
+    def test_roots_and_experiment_identity_required(self):
+        b, f, c = self.three()
+        out = os.path.join(self.exp, "s.json")
+        for roots in ({"baseline": b, R8: c}, {"baseline": b, R8REF_NAME: f}, {R8REF_NAME: f, R8: c}):
+            with self.assertRaises(ValueError, msg=str(roots)):
+                pfc.analyse("dev-clean", out, roots)
+        ep = os.path.join(self.exp, "experiment.json")
+        saved = _rb(ep)
+        os.remove(ep)
+        with self.assertRaises(ValueError):
+            self.run3("dev-clean", (b, f, c))
+        with open(ep, "wb") as h:
+            h.write(saved)
+        am = os.path.join(self.exp, "artifact-manifest.json")
+        saved_am = _rb(am)
+        _wj(am, dict(_rj(am), pairfeat8_chain_sha256=chain(CAND8_FILES, "x")))    # the fit changed after init-experiment
+        with self.assertRaises(ValueError):
+            self.run3("dev-clean", (b, f, c))
+        with open(am, "wb") as h:
+            h.write(saved_am)
+        self.assertFalse(os.path.exists(os.path.join(self.exp, "selection.json")))
+        self.assertEqual(self.run3("dev-clean", (b, f, c)), 0)
+
+    def test_stress_freeze_and_validation_end_to_end(self):
+        r = Repo(os.path.join(self.td.name, "v"), cand=P8)
+        for fn in CAND8_FILES:
+            with open(os.path.join(r.root, "models", fn), "w") as h:
+                h.write("model " + fn)
+        self.exp = r.exp
+        self.maps = {"baseline": r.hashes(BASE_FILES), R8REF_NAME: r.hashes(CAND8_FILES), R8: r.hashes(CAND8_FILES)}
+        r.artifact_manifest()
+        pfc.init_experiment(r.exp, R8, repo=r.root)
+        st3 = self.three("dev-stress", ref_wrong=2, fm=3, cpe=3)
+        with self.assertRaises(ValueError):
+            self.run3("dev-stress", st3)                                                # no selection yet
+        self.assertEqual(self.run3("dev-clean", self.three()), 0)
+        self.assertEqual(self.run3("dev-stress", st3), 0)                               # equal counts pass in stress
+        st = _rj(os.path.join(r.exp, "stress.json"))
+        self.assertEqual((st["pass"], st["candidate"], st["reference"], st["seeds"]), (True, R8, R8REF_NAME, R8_DEV))
+        self.assertEqual(st["reference_gate"]["contamination"]["false_merge_pairs"]["rule"], "not above")
+        vm = pfc.freeze_validation(r.exp, r.root, HEAD)
+        self.assertEqual((vm["candidate"], vm["seeds"]), (R8, R8_VAL))
+        v3 = self.three("validation-clean")
+        out = os.path.join(r.exp, "validation-clean-summary.json")
+        run = lambda: pfc.analyse("validation-clean", out, {"baseline": v3[0], R8REF_NAME: v3[1], R8: v3[2]}, repo=r.root, head=HEAD)
+        res = run()
+        self.assertTrue(res["pass"], res["reference_gate"]["reasons"])
+        self.assertEqual((res["reference_gate"]["kind"], res["candidate"], res["seeds"]), ("validation", R8, R8_VAL))
+        with self.assertRaises(FileExistsError):
+            run()
+
+
+class R1photo8Build(unittest.TestCase):
+    def test_noise_build_only_for_the_new_arms(self):
+        for c in pfc.CANDIDATES:
+            self.assertEqual(pfc.noise_build(c), {"noise": "v3"} if c in (R8REF_NAME, R8) else {}, c)
+
+    def test_read_build_requires_exactly_the_experiment_noise(self):
+        with tempfile.TemporaryDirectory() as td:
+            def build(a, c, **kw):
+                b = {"git_head": HEAD, "binary_sha256": BIN_SHA, "floor": 0.01, "mode": "dev-clean", "arm": a,
+                     "modelset": pfc.MODELSET[a], "candidate": c, "model_chain_sha256": chain(pfc.CHAIN_FILES[a], "c")}
+                b.update(IMAGE_BUILD)
+                if pfc.extra_flags(a):
+                    b["extra_flags"] = pfc.extra_flags(a)
+                b.update(kw)
+                _wj(os.path.join(td, "build.json"), b)
+            build(R8, R8, noise="v3")
+            self.assertEqual(pfc.read_build(td, R8, "dev-clean", R8)["noise"], "v3")
+            for kw in ({"noise": "v2"}, {}):
+                build(R8, R8, **kw)
+                with self.assertRaises(ValueError, msg=str(kw)):
+                    pfc.read_build(td, R8, "dev-clean", R8)
+            build(RP, RP, noise="v3")
+            with self.assertRaises(ValueError):
+                pfc.read_build(td, RP, "dev-clean", RP)               # earlier experiments record no noise
+            build(RP, RP)
+            self.assertNotIn("noise", pfc.read_build(td, RP, "dev-clean", RP))
+
+
+class R1photo8Runner(RunnerFixture, unittest.TestCase):
+    def test_runner_tables(self):
+        with open(SCRIPT) as h:
+            text = h.read()
+        self.assertIn('r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;', text)
+        self.assertIn("r1photo7 r1photo8ref r1photo8)", text)
+        self.assertIn("r1photo8ref|r1photo8) ;;", text)
+        self.assertIn("pfc.noise_build(cand)", text)
+        self.assertNotIn('r1photo8ref) DEV_SEEDS', text)               # the reference-only arm has no candidate row
+
+    def write_experiment(self, **kw):
+        am = os.path.join(self.exp, "artifact-manifest.json")
+        e = shared_experiment(_rj(am)["pairfeat8_chain_sha256"], _sha(am))
+        e.update(kw)
+        _wj(os.path.join(self.exp, "experiment.json"), e)
+
+    def test_independent_recheck(self):
+        self.real_artifact_manifest(cand=P8)
+        args = (R8, P8, R8REF_NAME, "shared")
+        self.assertNotEqual(runner_recheck(self.exp, self.head, *args), 0)                    # no experiment.json
+        self.write_experiment()
+        self.assertEqual(runner_recheck(self.exp, self.head, *args), 0)
+        self.assertNotEqual(runner_recheck(self.exp, self.head, R8, P8), 0)                    # not declared shared
+        self.assertNotEqual(runner_recheck(self.exp, self.head, R8, P7, R8REF_NAME, "shared"), 0)
+        for bad in (dict(arm_chain={"baseline": "baseline", R8REF_NAME: "baseline", R8: P8}), dict(chain="pairfeat7"),
+                    dict(candidate=RP), dict(reference=P5), dict(artifact_manifest_sha256="1" * 64),
+                    dict(pairfeat8_chain_sha256=chain(CAND8_FILES, "x"))):
+            self.write_experiment(**bad)
+            self.assertNotEqual(runner_recheck(self.exp, self.head, *args), 0, str(bad))
+
+    def test_preflight_refusals_before_any_build(self):
+        self.real_artifact_manifest(cand=P8)
+        self.assert_refused(self.run_sh(self.root, "dev-clean", R8, preflight_only=True))     # no experiment.json
+        self.assert_refused(self.run_sh(self.root, "dev-clean", "r1photo9", preflight_only=True), "invalid arm")
 
 
 if __name__ == "__main__":
