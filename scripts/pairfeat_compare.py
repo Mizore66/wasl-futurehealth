@@ -104,6 +104,7 @@ import json
 import math
 import os
 import re
+import shlex
 import statistics
 import subprocess
 import sys
@@ -368,7 +369,9 @@ LANE = {"reader": "cached", "image": "off", "source": "fhir", "chaos": "0", "sub
         "loops": "600", "distract": "200", "rdouble": "merge+close", "preps": "3", "threads": "8"}
 WSI_CMDS = ("gen", "sim", "orchestrate", "audit", "report7")
 MODEL_CMDS = ("orchestrate", "audit", "report7")  # the only commands that may (candidate) or must not (baseline) carry -modelset
-PY_SCRIPTS = {"augment_cohort.py": "pipeline", "link_funnel.py": "scripts"}
+PY_SCRIPTS = {"augment_cohort.py": "pipeline", "link_funnel.py": "scripts", "agent_investigator.py": "scripts"}
+AGENT_VALUE_FLAGS = {"--data", "--wasl", "--run", "--recs", "--cache", "--stage", "--wsi7", "--replay-flags", "--image-cache", "--retries"}
+AGENT_BARE_FLAGS = {"--control"}
 GEN_ZERO = ("-lung", "-dr", "-breast", "-ldct", "-ifhas", "-cerv")
 
 
@@ -825,6 +828,42 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
 
 # ---------------------------------------------------------------- lane commands and guard
 
+def materialized_run_dir(o, candidate):
+    """The run directory consumed after replay: materialized only for r1agent8, live for every earlier candidate."""
+    return o + "/run/agent/main" if agent_replay(candidate) else o + "/run/main"
+
+
+def agent_replay_stage(mode):
+    return "validation" if mode == "validation-clean" else "selection"
+
+
+def agent_replay_flags(root, seed, mode, arm, candidate):
+    """Single canonical replay-flags string, also checked verbatim by guard()."""
+    m = MODES[mode]
+    a = ["-noise", lane_noise(candidate), "-rerr", m["rerr"], "-errungraded", m["errungraded"],
+         "-rdouble", LANE["rdouble"], "-dual", "-ann", LANE["ann"], "-rseed", str(seed), "-seed", str(seed),
+         "-policy", POLICY, "-linkfloor", FLOOR, "-modelset", MODELSET[arm],
+         "-reader", LANE["reader"], "-image", lane_image_mode(candidate)]
+    if lane_image(candidate):
+        a += ["-imgcache", root + "/" + IMAGE_VERDICTS]
+    a += extra_flags(arm)
+    return shlex.join(a)
+
+
+def agent_iterate_argv(root, bin_, o, seed, mode, arm, candidate):
+    run = o + "/run/agent"
+    a = ["python3", "-I", root + "/scripts/agent_investigator.py", "iterate",
+         "--data", o + "/cohort", "--wasl", root + "/models", "--run", run,
+         "--recs", o + "/run/agent_recs.ndjson", "--cache", os.path.dirname(os.path.dirname(o)) + "/agent_cache",
+         "--stage", agent_replay_stage(mode), "--wsi7", bin_,
+         "--replay-flags", agent_replay_flags(root, seed, mode, arm, candidate)]
+    if lane_image(candidate):
+        a += ["--image-cache", root + "/" + IMAGE_VERDICTS]
+    if arm != candidate:
+        a += ["--control"]
+    return a
+
+
 def lane_commands(root, bin_, o, seed, mode, arm, candidate=None):
     """(name, argv, log) for one lane. gen/sim/augment are identical in both arms (identical cohort and truth denominator);
     only the candidate's orchestrate/audit/report7 carry -modelset <candidate>. Both arms use -linkfloor 0.01 and v7strict.
@@ -841,7 +880,8 @@ def lane_commands(root, bin_, o, seed, mode, arm, candidate=None):
     ic = ["-imgcache", root + "/" + IMAGE_VERDICTS] if img else []
     m = MODES[mode]
     split, rerr, erru = m["split"], m["rerr"], m["errungraded"]
-    r = o + "/run/main"
+    live_r = o + "/run/main"
+    r = materialized_run_dir(o, candidate)
     rd = ["-reader", LANE["reader"], "-image", lane_image_mode(candidate)] + ic
     lf = ["-linkfloor", FLOOR]
     ms = ["-modelset", MODELSET[arm]] if MODELSET[arm] else []
@@ -855,16 +895,20 @@ def lane_commands(root, bin_, o, seed, mode, arm, candidate=None):
         gen += ic + ["-imgphotos"]
     sim = [bin_, "sim", "-data", o + "/base", "-wasl", root + "/models", "-run", o + "/run/base"]
     aug = ["python3", "-I", root + "/pipeline/augment_cohort.py", o + "/base", o + "/run/base", o + "/cohort"]
-    orch = [bin_, "orchestrate", "-data", o + "/cohort", "-wasl", root + "/models", "-run", r, "-preps", LANE["preps"],
+    orch = [bin_, "orchestrate", "-data", o + "/cohort", "-wasl", root + "/models", "-run", live_r, "-preps", LANE["preps"],
             "-threads", LANE["threads"], "-source", LANE["source"], "-subkill", LANE["subkill"], "-chaos", LANE["chaos"],
             "-ann", LANE["ann"], "-rerr", rerr, "-errungraded", erru, "-rdouble", LANE["rdouble"], "-dual",
-            "-rseed", str(seed), "-seed", str(seed), "-policy", POLICY, "-linkfunnel", r + "/link_funnel.ndjson"] + ms + lf + rd + ex
+            "-rseed", str(seed), "-seed", str(seed), "-policy", POLICY, "-linkfunnel", live_r + "/link_funnel.ndjson"] + ms + lf + rd + ex
     tail = ["-data", o + "/cohort", "-wasl", root + "/models", "-run", r, "-ann", LANE["ann"], "-dual", "-policy", POLICY,
             "-rerr", rerr, "-errungraded", erru] + ms + lf + rd + ex
     cls = ["python3", "-I", root + "/scripts/link_funnel.py", r, o + "/cohort", o + "/funnel.json", split, rerr, erru]
-    return [("gen", gen, "gen.log"), ("sim", sim, "sim.log"), ("augment", aug, "augment.log"),
-            ("orchestrate", orch, "orchestrate.log"), ("audit", [bin_, "audit"] + tail, "audit.log"),
-            ("report7", [bin_, "report7"] + tail, "report7.log"), ("classifier", cls, "classifier.log")]
+    steps = [("gen", gen, "gen.log"), ("sim", sim, "sim.log"), ("augment", aug, "augment.log"),
+             ("orchestrate", orch, "orchestrate.log")]
+    if agent_replay(candidate):
+        steps.append(("agentreplay", agent_iterate_argv(root, bin_, o, seed, mode, arm, candidate), "agentreplay.log"))
+    steps += [("audit", [bin_, "audit"] + tail, "audit.log"),
+              ("report7", [bin_, "report7"] + tail, "report7.log"), ("classifier", cls, "classifier.log")]
+    return steps
 
 
 def guard(argv, mode, arm, bin_, candidate):
@@ -881,13 +925,18 @@ def guard(argv, mode, arm, bin_, candidate):
         raise GuardError("malformed argv")
     m = mode_settings(mode, candidate)
     img = lane_image(candidate)
-    for a in argv:
+    agent_value_positions = {i + 1 for i, a in enumerate(argv) if a in AGENT_VALUE_FLAGS}
+    for i, a in enumerate(argv):
         low = a.lower()
         if "frozen" in low or "b8" in low or "heldout" in low:
             bad("protected setting " + a)
         if "v7ltt" in low:
             bad("v7ltt is not permitted (pairfeat candidates support v7strict only)")
-        if a.startswith("--") or (a.startswith("-") and "=" in a):
+        if i in agent_value_positions:
+            continue  # option values, including the single --replay-flags string, are not flags themselves
+        if a.startswith("--") and a not in AGENT_VALUE_FLAGS and a not in AGENT_BARE_FLAGS:
+            bad("only single-dash separate-value flags are allowed: " + a)
+        if a.startswith("-") and not a.startswith("--") and "=" in a:
             bad("only single-dash separate-value flags are allowed: " + a)
         if a.startswith("-") and a not in BARE_FLAGS and any(f[1:].lower() in low for f in BARE_FLAGS):
             bad("flag spelling " + a)
@@ -914,6 +963,43 @@ def guard(argv, mode, arm, bin_, candidate):
         cmd = os.path.basename(argv[2])
     else:
         bad("unauthorised command")
+
+    agent_flags = [a for a in argv if a in AGENT_VALUE_FLAGS or a in AGENT_BARE_FLAGS]
+    if agent_flags and cmd != "agent_investigator.py":
+        bad("agent replay flags are only allowed on agent_investigator.py")
+    if cmd == "agent_investigator.py":
+        if not agent_replay(candidate):
+            bad("agent replay stage is only authorised for r1agent8")
+        repo = os.path.dirname(os.path.dirname(bin_))
+        run = val("--run")
+        if not run or not run.endswith("/run/agent"):
+            bad("agent replay --run must be the materialized lane directory")
+        lane_o = os.path.dirname(os.path.dirname(run))
+        try:
+            replay_parts = shlex.split(val("--replay-flags") or "")
+        except ValueError as e:
+            bad("agent replay --replay-flags is not balanced: %s" % e)
+        if "-seed" not in replay_parts or replay_parts.index("-seed") + 1 >= len(replay_parts):
+            bad("agent replay --replay-flags needs -seed with a value")
+        seed_text = replay_parts[replay_parts.index("-seed") + 1]
+        if not seed_text.isdigit() or int(seed_text) not in m["seeds"]:
+            bad("agent replay seed outside the authorised set")
+        expected = {
+            "--data": lane_o + "/cohort", "--wasl": repo + "/models", "--run": run,
+            "--recs": os.path.dirname(run) + "/agent_recs.ndjson",
+            "--cache": os.path.dirname(os.path.dirname(lane_o)) + "/agent_cache",
+            "--stage": agent_replay_stage(mode), "--wsi7": bin_,
+            "--replay-flags": agent_replay_flags(repo, int(seed_text), mode, arm, candidate),
+        }
+        if lane_image(candidate):
+            expected["--image-cache"] = repo + "/" + IMAGE_VERDICTS
+        for f, want in expected.items():
+            if val(f) != want:
+                bad("agent replay %s must be %r" % (f, want))
+        if ("--control" in argv) != (arm != candidate):
+            bad("--control must be present exactly on the two comparator arms")
+        if val("--seed") is not None:
+            bad("agent replay seed belongs only inside --replay-flags")
 
     ms = val("-modelset")
     if cmd in MODEL_CMDS:
