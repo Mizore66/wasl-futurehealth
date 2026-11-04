@@ -330,6 +330,7 @@ func main() {
 	if EIDContraGuard {
 		PolicyName += "+eidguard" // post-hoc B8 hardening, default off: stamped on every decision so lanes are never mixed
 	}
+	PolicyName += demoGuardPolicySuffix() // demoguard.go: "+demoguard" only when on
 	if ModelSet != "" {
 		PolicyName += "+models=" + ModelSet
 	}
@@ -396,9 +397,7 @@ func main() {
 	if EIDContraGuard { // B8 hardening (eidguard.go): every child, only when on
 		v7Args = append(v7Args, "-eidguard")
 	}
-	if DemoGuard { // strict demographic guard (demoguard.go): every child, only when on
-		v7Args = append(v7Args, "-demoguard")
-	}
+	v7Args = append(v7Args, demoGuardArgs()...) // strict demographic guard (demoguard.go): every child, only when on
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
 	}
