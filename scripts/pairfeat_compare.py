@@ -1871,7 +1871,7 @@ def _r1agent8_gate(unguarded, guarded, cand, kind):
 
 
 AGENT_STAT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens", "latency_s", "human_seconds_saved")  # = agent_investigator.STAT_KEYS
-AGENT_COUNT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens", "human_seconds_saved")
+AGENT_COUNT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens")  # integers; latency_s and human_seconds_saved are finite floats
 
 
 def _is_count(v):
@@ -1906,11 +1906,20 @@ def _agent_json(p):
     return d
 
 
+def _pair_key(r):
+    pr = r.get("pair")
+    if not (isinstance(pr, list) and len(pr) == 2 and all(isinstance(x, str) and x for x in pr)) or pr[0] == pr[1]:
+        raise ValueError("agent_recs.ndjson record needs pair as two distinct strings")
+    return tuple(sorted(pr))
+
+
 def _agent_recs(path):
+    """Raw recs keyed by unordered pair (the materializer's identity). Duplicate pairs must agree on the label; a conflict fails.
+    The rows can include stale/ineligible pairs, so they are never a source of gate counts (see agent_lane)."""
     p = os.path.join(path, "agent_recs.ndjson")
     if os.path.islink(p) or not os.path.isfile(p):
         raise ValueError("agent_recs.ndjson missing")
-    rows, seen = [], set()
+    rows = {}
     with open(p) as h:
         for x in h:
             if not x.strip():
@@ -1921,16 +1930,23 @@ def _agent_recs(path):
                 raise ValueError("agent_recs.ndjson has an unparsable line") from None
             if not isinstance(r, dict) or not isinstance(r.get("item"), str) or r.get("label") not in ("same", "different", "uncertain"):
                 raise ValueError("agent_recs.ndjson has a malformed record")
-            if r["item"] in seen:
-                raise ValueError("agent_recs.ndjson repeats item %s" % r["item"])
-            seen.add(r["item"])
-            rows.append(r)
+            k = _pair_key(r)
+            if k in rows and rows[k]["label"] != r["label"]:
+                raise ValueError("agent_recs.ndjson has conflicting records for pair %s" % (k,))
+            if k not in rows or not _valid_citations(rows[k]):
+                rows[k] = r  # a duplicate pair counts once; keep the weakest-evidence view so a bad row is never hidden
+            elif not _valid_citations(r):
+                rows[k] = r
     return rows
 
 
 def _valid_citations(r):
+    """Sidecar citation check only (the schema agent_evidence emits: dicts with tool, arg, str field, value); it is not independent
+    clinical validation of the recommendation."""
     c = r.get("citations")
-    return r.get("valid") is True and isinstance(c, list) and bool(c) and all(isinstance(x, str) and x for x in c)
+    return (r.get("valid") is True and isinstance(c, list) and bool(c) and
+            all(isinstance(x, dict) and all(k in x for k in ("tool", "arg", "field", "value")) and isinstance(x["tool"], str) and x["tool"]
+                and isinstance(x["field"], str) and x["field"] for x in c))
 
 
 def agent_lane(path):
@@ -1942,11 +1958,15 @@ def agent_lane(path):
         raise ValueError("agent_replay.json needs determinism.ok as a boolean")
     if st["eligible"] <= 0:
         raise ValueError("agent lane has zero eligible items")
-    acc = [r for r in rows if r["label"] != "uncertain"]
-    if len(acc) > st["covered"]:
-        raise ValueError("accepted recommendations exceed covered items")
-    out = {"replay_deterministic": det["ok"], "eligible": st["eligible"], "covered": st["covered"], "accepted": len(acc),
-           "accepted_valid": sum(_valid_citations(r) for r in acc)}
+    # Gate counts come from the materializer's stats, which are computed on the final eligible unordered-pair set:
+    # accepted = covered - abstain - invalid. Raw rec rows may be stale/ineligible/duplicated, so they can only LOWER accepted_valid
+    # (each non-uncertain rec pair with a bad citation is subtracted), never raise any count.
+    accepted = st["covered"] - st["abstain"] - st["invalid"]
+    if accepted < 0:
+        raise ValueError("agent_stats.json abstain+invalid exceed covered")
+    bad = sum(r["label"] != "uncertain" and not _valid_citations(r) for r in rows.values())
+    out = {"replay_deterministic": det["ok"], "eligible": st["eligible"], "covered": st["covered"], "accepted": accepted,
+           "accepted_valid": max(0, accepted - bad)}
     if "live_divergence" in rp:
         if not _is_count(rp["live_divergence"]):
             raise ValueError("agent_replay.json live_divergence must be a non-negative integer")
@@ -1978,13 +1998,17 @@ def agent_time(paths):
             "abstain": sum(s["abstain"] for s in sts), "invalid": sum(s["invalid"] for s in sts)}
 
 
-def agent_confusion(recs, truth):
-    """Analysis only: agent label (rows) against ground-truth same/different (columns), never written to the sidecar."""
+def agent_confusion(recs, truth, eligible_pairs):
+    """Analysis only: agent label (rows) against ground-truth same/different (columns), over the final eligible unordered pairs
+    only (stale/ineligible rec rows are ignored); recs is the dict from _agent_recs, truth maps sorted pair tuples to a label."""
     m = {k: {"same": 0, "different": 0} for k in ("same", "different", "uncertain")}
-    for r in recs:
-        t = truth.get(r["item"])
+    for k in sorted(eligible_pairs):
+        r = recs.get(tuple(sorted(k)))
+        if r is None:
+            continue
+        t = truth.get(tuple(sorted(k)))
         if t not in ("same", "different"):
-            raise ValueError("no truth label for item %s" % r["item"])
+            raise ValueError("no truth label for pair %s" % (k,))
         m[r["label"]][t] += 1
     return m
 
