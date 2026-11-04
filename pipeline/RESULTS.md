@@ -2747,3 +2747,107 @@ The recall gain is positive in every seed and the interval excludes 0. All 48 co
 7. Edge classes, true-merge counts and horizon-excluded recall are not reported here.
 
 **Scope:** the run is CRC-only, all arms image-on; no non-CRC safety or recall claim is made and no clinical effectiveness is proven. Nothing was promoted to default and `r1photo7` is not selected as-is. Whether to amend the wrong-pair gate (for example to allow a stated number of near-floor wrong-pair reviews that are answered correctly), re-run on fresh seeds or drop the combination is left to the user; no further seeds, thresholds or gates are authorized for this arm until then. Validation seeds 797, 809, 811, 821 and 823 are now used.
+
+### CRC strict demographic guard under reliable birth dates (`r1photo8`) at `93c7fd9` (development passed; development stress failed the recall gate; validation not run; not selected as-is; not promoted to default)
+
+**Outcome:** `r1photo8` is the `pairfeat8` scorer (the `pairfeat7` recipe refit on a new noise profile) plus the `-r1review` photo-gated completion review plus a new opt-in strict demographic guard (`-demoguard`), all arms image-on. It **passed development clean and failed development stress on the pre-registered recall gate**, so the run stopped under the stop-at-first-failure rule. **Validation was not run and the configuration was not frozen. `r1photo8` is not selected as-is.** In the stress cohorts (seeds 827/829/839) the candidate closed 553 of 643 true loops against 555 for the same chain without the guard (recall 0.8600 against 0.8631, -0.311pp; gate: not below 0). Everything else passed in both modes: false-merge pairs 3 to 1, cross-person edges 3 to 1, uncapped wrong-pair link reviews 2 to 1, reviewer hours lower, and safety counts zero in every lane of every arm, baseline included. The loss is two closures. No gate, seed or threshold was changed after the result, and nothing was promoted to default (default model, reader policy, noise and review floor 0.2 unchanged). All results are simulated and prove no clinical effectiveness.
+
+**Not comparable with earlier sections (noise v3):** the user chose to treat a wrong real birth date in a true patient's registration as near-infinitesimal, so a new generator profile, `-noise v3`, was added (v1, v1t and v2 are untouched and byte-identical). Under v3 two registrations of the same person never carry different real birth dates (the old typo, month/day swap, day-of-month and year-shift corruptions are removed); 4.5% of registrations have a blank birth date (v2's existing blank rate); sex is unchanged apart from the existing 2% unknown rate; name, script and other noise are as in the matching earlier profile. v3 is used wherever the experiment generates registrations (training, calibration and evaluation cohorts) so train and serve semantics match. **This removes a difficulty that earlier cohorts had, so numbers here must not be read as improvements on the old data distribution, and old results are not directly comparable.**
+
+**What the guard does (strict table):** known sex is `M` or `F` (`U` or missing is unknown); a placeholder-looking date counts as missing.
+
+| Situation | Rule under `-demoguard` |
+|---|---|
+| Both real birth dates differ, or both known sexes differ | Hard conflict: pair rejected as `dob_conflict` or `sex_conflict`, becomes a cannot-link, never a wrong-pair review item |
+| Same real birth date and same known sex | Automatically mergeable |
+| Anything else (missing, invalid or placeholder date; unknown sex) | Needs review: a high-scoring pair is demoted to the near/review path as `demographic_missing`; score not raised; pairs already below the floor create no new review item |
+| Equal Emirates ID | Conflict check runs first and rejects; a forced link also needs mergeable demographics, otherwise it is demoted (counted as `eid_missing`), with no score inflation |
+| Human "same" on a needs-review pair | Allowed (a missing-data merge) |
+| Human "same" on a known conflict | Refused; the cannot-link is kept |
+| Cluster invariant | Before any merge (automatic, equal-ID or human) every cross-cluster registration pair is checked; any conflict rejects the merge as `demographic_cluster_conflict`, so a record with missing data cannot bridge two conflicting clusters |
+
+Candidate generation, scoring, calibration and non-demographic review rules are unchanged; with the flag off, behaviour is unchanged.
+
+**Arms and seeds:** three paired arms on the same cohorts, `-linkfloor 0.01`, `v7strict`, CRC-only, cached readers, chaos 0, `-imgphotos` at generation and `-image cached`, one binary (`fe669c3d`) at `93c7fd9`: `baseline` (default chain, no guard); `r1photo8ref` (reference: `pairfeat8` chain plus `-r1review`, no guard); `r1photo8` (candidate: the same chain plus `-r1review` plus `-demoguard`). Reference and candidate share **one** `pairfeat8` fit, pinned in the experiment file (chain hashes: `lgb_stream` `758229dc`, `iso` `e672d346`, `iso_v7` `4907e0ac`, `name_idf` `a2758bfb`, encoder `5e6284f8` equal to the baseline encoder; artifact manifest `217781eb`), so the only difference between the two arms is the guard. Fit training seeds 1019, 1021, 1031, 1033 and 1039 (5,000 persons) and calibration seed 2011. Development seeds 827, 829 and 839; planned validation seeds 853, 857, 859, 863 and 877 (never used, still unused); smoke seed 101 (not evidence).
+
+**Gates (pre-registered in the spec before any lane; stop at the first failure), candidate against `r1photo8ref`:**
+
+| | dev-clean (selection) | dev-stress | validation |
+|---|---|---|---|
+| CRC recall gain | >= 0 | >= 0 | >= 0 |
+| `false_merge_pairs` | strictly below | not above | strictly below |
+| `cross_person_edges` | strictly below | not above | strictly below |
+| Uncapped wrong-pair link-review pairs | strictly below | not above | strictly below |
+| Total reviewer hours | <= 1.10 x reference | same | same |
+
+Safety (false closures, wrong releases, replay mismatches, analysis errors, trace errors) must be 0 in every lane of every arm, baseline included. Impure clusters, wrong final sign-offs and the comparison with the baseline are reported, not gating.
+
+**Gate results:**
+
+| Gate | Dev clean ref / cand | Dev stress ref / cand | Result |
+|---|---|---|---|
+| Recall (TP/truth) | 609/643 / 609/643 (+0.00pp) | 555/643 / 553/643 (**-0.311pp**) | pass; **FAIL** |
+| False-merge pairs | 3 / 1 | 3 / 1 | pass; pass |
+| Cross-person edges | 3 / 1 | 3 / 1 | pass; pass |
+| Uncapped wrong-pair reviews | 2 / 1 | 2 / 1 | pass; pass |
+| Reviewer hours (limit) | 27.047 / 26.136 (29.752) | 28.286 / 27.080 (31.115) | pass; pass |
+| Safety, all arms | 0 | 0 | pass; pass |
+| Impure clusters (reported) | 3 / 1 | 3 / 1 | |
+| Wrong final sign-offs (reported) | 0 / 0 | 78 / 81 | |
+
+Validation: not run, not frozen. The wrong final sign-offs in stress went from 78 to 81 and are reported only; they come from the assumed reviewer error (below), and wrong releases stayed 0.
+
+**Development clean (seeds 827, 829, 839), pooled, with the baseline for context:**
+
+| Development clean | Baseline | `r1photo8ref` | `r1photo8` |
+|---|---:|---:|---:|
+| TP / truth | 599/643 | 609/643 | 609/643 |
+| Recall | 0.9316 | 0.9471 | 0.9471 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 30 | 3 | 1 |
+| Cross-person edges | 28 | 3 | 1 |
+| Impure clusters | 24 | 3 | 1 |
+| Uncapped wrong-pair reviews | 7 | 2 | 1 |
+| Reviewer hours | 27.516 | 27.047 | 26.136 |
+| Distinct link pairs reviewed | 409 | 384 | 441 |
+| Linked true / wrong pairs | not recorded | 2,650 / 4 | 2,135 / 1 |
+
+Per-seed recall: baseline 0.9497, 0.9234, 0.9234; `r1photo8ref` 0.9648, 0.9279, 0.9505; `r1photo8` 0.9698, 0.9279, 0.9459. Candidate against reference per seed +0.50, 0.00, -0.45pp (mean +0.02pp, 95% t interval -1.17 to +1.20pp, n=3, descriptive). The candidate is +1.56pp over the baseline; the vs-baseline comparison is reported, not gating. The 14 completion items were all answered safely in both arms (0 wrong). **Development passed.**
+
+**Development stress (same seeds; 4% ordinary and 25% day-15 ungraded-prep synthetic reviewer error, assumed values, not measured clinician rates):**
+
+| Development stress | Baseline | `r1photo8ref` | `r1photo8` |
+|---|---:|---:|---:|
+| TP / truth | 546/643 | 555/643 | 553/643 |
+| Recall | 0.8491 | 0.8631 | 0.8600 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 30 | 3 | 1 |
+| Cross-person edges | 28 | 3 | 1 |
+| Impure clusters | 24 | 3 | 1 |
+| Uncapped wrong-pair reviews | 8 | 2 | 1 |
+| Reviewer hours | 28.772 | 28.286 | 27.080 |
+| Wrong final sign-offs | 77 | 78 | 81 |
+| Linked true / wrong pairs | not recorded | 2,628 / 4 | 2,108 / 1 |
+
+Per-seed recall: baseline 0.8492, 0.8514, 0.8468; `r1photo8ref` 0.8643, 0.8559, 0.8694; `r1photo8` 0.8643, 0.8514, 0.8649. Candidate against reference per seed 0.00, -0.45, -0.45pp (pooled -0.311pp; mean -0.30pp, 95% t interval -0.95 to +0.35pp, n=3, descriptive). Of 13 completion items, 12 were answered safely and one was answered "inadequate" on a report whose truth was something else (the assumed 25% error) in both arms, which held the loop and led to no false closure. **Development stress failed the recall gate by two closures.**
+
+**Demographic counters (candidate; the reference counts are all 0).** Dev clean / stress: birth-date conflicts rejected 85,821 / 85,832, sex conflicts rejected 28,589 / 28,588, missing-data demotions 729 / 729, equal-ID demotions 331 / 331, cluster-conflict rejections 0 / 0, reviewer-approved missing-data merge decisions 257 / 244 (approved merges; truth was not checked per decision). Smoke (seed 101) showed the same pattern at smaller scale. The large conflict counts are candidate pairs the scorer would otherwise have produced and the guard rejected before they could reach a reviewer; they are not review workload.
+
+**Diagnosis (read-only, after the gate result):** wrong answers on link questions whose truth is the same person (true pairs wrongly rejected) rose from 19 (reference) to 23 (candidate), +4, and two closures were lost (555 to 553). The guard turns same-person pairs with a missing birth date or unknown sex from automatic merges into review items, so reviewers made 257 missing-data merge decisions in clean and 244 in stress. That adds exposure to the assumed reviewer error and is consistent with, but not measured as causal for, the lost closures; the 19 reference errors were not attributed to missing data, so no causal split is claimed. The clean and stress counts (257 and 244) are different lanes, not a candidate-against-reference comparison, and are not evidence for the loss. In clean (no injected error) the same demotions cost nothing in recall. Contamination and reviewer hours still improved in stress (wrong linked pairs 4 to 1, hours 28.286 to 27.080), while distinct reviewed link pairs rose (384 to 441 clean, 385 to 440 stress) as hours fell (items also fell, 814 to 784 clean); no cause was isolated. Counts are small (n=3, two closures) so no finer reading is claimed.
+
+**Fit facts:** the `pairfeat8` fit used the `pairfeat7` recipe (34 features, leave-own-out rarity table, cross-script, missing-date and same-real-date hard negatives, 0.69 cross-script cap) with noise v3 for training and calibration, and no separate reference fit. Go/Python scoring parity max |delta| 2.2e-16; max |leaf| 3.75; namesake base rows 6,784 (family 4,284, cross-script 5,966, missing-date 1,110, same-real-date 2,996), all above the 500 floor. At raw score >= 0.7 the plain calibration cohort (seed 2011) had 1 different-person pair (same-surname) and 0 in the near-EID, decade-date, placeholder-date and cross-script slices. The diagnostic namesake calibration slices had 2 of 514 (cross-script), 6 of 332 (same-real-date), 0 of 293 (family) and no rows at all for missing-date under v3. These are information only, nothing gated, and the namesake donors are built by embedding similarity.
+
+**Smoke (seed 101, exact harness command):** all steps exited 0, safety 0, recall 0.9328, false-merge pairs and cross-person edges 0, and demographic counters present (per the task log; the argument trace is not re-derivable from the smoke files).
+
+**Review history:** four task reviews and a final whole-branch review found no open Critical or Important issue (the linker task needed one fix round, including a clamp that violated the no-score-inflation rule for equal-ID pairs needing review). The harness passed 407 Python tests, the fit protocol 80 and the scorer 26, with the full Go suite passing.
+
+**Disclosures:**
+1. **Reliable real birth date is a user-chosen modelling assumption**, not a locally measured rate; public sources show demographic errors occur but give no Abu Dhabi rate. If real clinics have wrong real birth dates, the hard birth-date rule would wrongly separate true patients.
+2. **v3 removes a difficulty from earlier cohorts**, so gains under v3 are not gains on the old distribution.
+3. Synthetic data, synthetic photos at assumed rates and a reviewer that answers from the true label with assumed stress error; the missing-data reviewer workload is therefore as optimistic or pessimistic as those assumptions.
+4. `pairfeat7`'s nearest-embedding hard-negative donor bias still applies to the `pairfeat8` fit; part of any contamination lead is by construction.
+5. Final-review minors: a strict "below" gate cannot pass if the reference count is already 0 (a floor effect, not a regression; the reference counts here were 3, 3 and 2, so it did not bind); a direct human "same" on a conflicting pair is counted under the cluster-conflict counter (the trace reason is accurate); guard-off parity tests compare outcomes rather than full trace bytes.
+6. The deterministic guard is not itself an agent. A future evidence agent may only address needs-review cases, must cite its evidence, cannot override a hard conflict and leaves human sign-off in place. **That agent was not built or tested in this experiment.**
+7. n=3 development seeds; intervals are descriptive.
+
+**Scope:** CRC-only, image-on, simulated. Nothing was promoted to default and `r1photo8` is not selected as-is. Whether to amend the recall gate, change how missing-data pairs are handled (for example to leave some of them automatic) or drop the guard is left to the user; no further seeds, thresholds or gates are authorized for this arm until then. Development seeds 827, 829 and 839 are now used; validation seeds 853, 857, 859, 863 and 877 remain unused.
