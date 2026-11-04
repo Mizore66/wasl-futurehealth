@@ -332,13 +332,6 @@ def _stage_lane(args, run, dest):
     return dest
 
 
-def _stat(stats, *names):
-    for n in names:
-        if n in stats:
-            return stats[n]
-    return 0
-
-
 def _read_json(p):
     with open(p, encoding="utf-8") as f:
         return json.load(f)
@@ -373,49 +366,83 @@ def iterate(args):
             store = ae.EvidenceStore.from_lane(lane, salt=salt, image_cache=args.image_cache)
             known = {_pair_id(r) for r in read_recs(recs)}
             todo = [n for n in store.need_items(need_path) if tuple(sorted(n["pair"])) not in known]
-            stalled = raw - len(todo)
             if not todo or iterations >= MAX_ITERATIONS:
+                stalled = raw  # every item still in the final need file is unresolved (ineligible, already recorded, or past the cap)
                 break
+            stalled = 0
             for n in todo:  # each record lands on disk before the next call so a later abort keeps earlier work
                 write_recs(recs, [investigate(store, n["item"], client)])
     finally:
         shutil.rmtree(stage_dir, ignore_errors=True)
+    if stalled:
+        out = {"control": False, **_summary_stats(_read_stats(run)), "determinism": None, "stalled_items": stalled,
+               "iterations": iterations, "status": "failed_unresolved_need"}
+        _write_summary(run, out)
+        raise AgentAbort("%d need item(s) unresolved after %d replay(s); coverage would shrink silently" % (stalled, iterations))
     before = client.sent
     check = run + "_check"
     _replay(args, check, recs)
-    diffs = [n for n in DETERMINISM_FILES if _bytes(run, n) != _bytes(check, n)]
+    diffs = []
+    for n in DETERMINISM_FILES:
+        a, b = _artifact(run, n), _artifact(check, n)
+        if a != b:
+            diffs.append(n)
     rows = read_recs(recs)
     out = {"control": False, **_summary_stats(_read_stats(run)),
            "gemini": {"calls": sum(r.get("calls", 0) for r in rows), "tokens": sum(r.get("tokens", 0) for r in rows),
                       "latency_s": round(sum(r.get("latency_s", 0) for r in rows), 3)},
            "determinism": {"ok": not diffs, "mismatched": diffs, "new_uncached_calls": client.sent - before},
-           "stalled_items": stalled, "iterations": iterations}
+           "stalled_items": 0, "iterations": iterations, "status": "ok" if not diffs and client.sent == before else "failed_determinism"}
     _write_summary(run, out)
     if diffs or client.sent != before:
         raise AgentAbort("replay determinism check failed: %s" % (diffs or "new uncached calls"))
     return out
 
 
-def _bytes(run, name):
+def _artifact(run, name):
+    """Bytes of a required materialized artifact; missing, empty or unparsable content aborts (never counts as equal)."""
     p = os.path.join(run, "main", name)
     if not os.path.isfile(p):
-        return None
+        raise AgentAbort("required artifact missing: %s" % name)
     with open(p, "rb") as f:
-        return f.read()
+        data = f.read()
+    if not data.strip():
+        raise AgentAbort("required artifact empty: %s" % name)
+    try:
+        if name.endswith(".ndjson"):
+            for line in data.decode("utf-8").splitlines():
+                if line.strip():
+                    json.loads(line)
+        else:
+            json.loads(data.decode("utf-8"))
+    except ValueError:
+        raise AgentAbort("required artifact is not valid JSON: %s" % name) from None
+    return data
+
+
+STAT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens", "latency_s", "human_seconds_saved")
 
 
 def _read_stats(run):
     p = os.path.join(run, "agent_stats.json")
-    return _read_json(p) if os.path.isfile(p) else {}
+    if not os.path.isfile(p):
+        raise AgentAbort("agent_stats.json missing")
+    try:
+        return _read_json(p)
+    except ValueError:
+        raise AgentAbort("agent_stats.json is not valid JSON") from None
 
 
 def _summary_stats(s):
-    out = dict(s)
-    for k, names in (("eligible", ("eligible",)), ("covered", ("covered",)), ("abstain", ("abstain", "abstained")),
-                     ("invalid", ("invalid",)), ("calls", ("calls",)), ("tokens", ("tokens",)),
-                     ("latency_s", ("latency_s", "latency")), ("human_seconds_saved", ("human_seconds_saved", "human_s_saved", "human_seconds"))):
-        out[k] = _stat(s, *names)
-    return out
+    """Exactly the eight mandatory counters, each a finite non-negative number; anything else (rename, missing) aborts."""
+    if not isinstance(s, dict) or set(s) != set(STAT_KEYS):
+        raise AgentAbort("agent_stats.json keys mismatch: missing %s, unknown %s" % (
+            sorted(set(STAT_KEYS) - set(s or {})), sorted(set(s or {}) - set(STAT_KEYS))))
+    for k in STAT_KEYS:
+        v = s[k]
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not (0 <= v < 1e12):
+            raise AgentAbort("agent_stats.json invalid value for %s" % k)
+    return dict(s)
 
 
 def _write_summary(run, out):
