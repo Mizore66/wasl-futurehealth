@@ -2640,3 +2640,110 @@ The interval against `pairfeat5` includes 0 and two of the five seeds are 0.0, s
 7. Synthetic data only; n=3 (development, stress) and n=5 (validation), so intervals are descriptive.
 
 **Scope:** the model and cap apply globally but these cohorts are CRC-only. No non-CRC safety or recall claim is made, and simulated results establish no clinical effectiveness. The default model, default noise and default floor 0.2 are unchanged and `pairfeat7` was not promoted. `pairfeat7` and `r1review` have not been run together; that is a separate experiment and was not done. No further seeds, thresholds, features, hyperparameters or noise variants are authorized for this arm.
+
+### CRC `pairfeat7` scorer with photo-gated completion review (`r1photo7`) at `66cc5fa` (validation failed one pre-registered count; not selected as-is; not promoted to default)
+
+**Outcome:** `r1photo7` is the `pairfeat7` scorer run together with the `-r1review` photo-gated completion review, all arms image-on, with no pipeline code change. It **passed development and development stress, and failed validation on one pre-registered count**, so the run stopped there and `r1photo7` is **not selected as-is**. In paired simulated CRC validation cohorts (seeds 797/809/811/821/823) against the `pairfeat5` arm, pooled recall rose from 0.9135 to 0.9449 (+3.15pp pooled; mean paired per-seed +3.13pp, 95% t interval +1.54 to +4.72pp, n=5), false-merge pairs fell 81 to 31, cross-person edges 76 to 31 and impure clusters 73 to 30, reviewer hours rose 63.30 to 64.16 (1.014 times the reference, limit 1.10), and safety counts were zero in every lane of every arm, baseline included. All 48 completion items were answered safely (0 wrong). The gate that failed is "uncapped wrong-pair link-review pairs not above the reference": 7 against 6. **This is a review-workload failure, not an error.** All 7 wrong-pair reviews were answered "different" correctly (0 wrong), they were near-floor cross-person pairs (mostly a missing birth date or a near birth year), and contamination improved sharply. Whether that gate should be amended is a decision for the user, as `r1review`'s Amendment 3 was; **it was not made here** and no gate, threshold or seed was changed after the result. The default model, default reader policy, default noise and default review floor of 0.2 are unchanged and nothing was promoted to default. All results are simulated and prove no clinical effectiveness.
+
+**Why this experiment:** `pairfeat7` (against `pairfeat5`, image off: false-merge pairs 77 to 41, recall +0.44pp) and `r1review` (against `pairfeat5`, image on: recall +1.64pp, zero false closures) each passed their own experiment but had never been run together. They touch different stages (the pair scorer and evidence routing), so the gains were expected to be roughly additive. **That additive expectation is measured here for the first time.**
+
+**What `r1photo7` is:** the opt-in `-modelset pairfeat7` (features f30 to f33, leave-own-out rarity table, cross-script hard negatives, missing-date and same-real-date hard negatives, 0.69 cross-script cap) plus `-r1review` (a colonoscopy report that both readers would mark `inadequate` only for "no caecum statement" goes to a clinician only when the image reader has verified a caecal photo; the valve alone never closes a loop). The two flags already compose, so there was no pipeline or encoder change; only the experiment harness (`scripts/pairfeat_compare.py`, `scripts/pairfeat_experiment.sh`, tests) gained a candidate and a combined gate at `66cc5fa` (370 Python tests OK; an independent review found no critical or important issue and confirmed by mutation that the new gate tests depend on the gate and that the other candidates' gates and digests are unchanged).
+
+**Arms, seeds and photos:** three paired arms on the same cohorts, all at `-linkfloor 0.01`, `v7strict`, CRC-only v2, cached readers, chaos 0 and all **image-on** (`-imgphotos` at generation, `-image cached`): `baseline` (default model), `pairfeat5` (reference: its chain refit at this HEAD) and `r1photo7` (`pairfeat7` chain with the cap on, plus `-r1review`). All arms used one binary (`6c48ec7c`) at `66cc5fa`. Development seeds 769, 773 and 787 and validation seeds 797, 809, 811, 821 and 823 had never been used; a one-lane smoke used seed 101 (not a protected seed, not evidence). Photos are simulated at assumed rates (85% of caecum-documenting reports get a true caecum photo, 10% of the others a mis-filed one), so **none of these numbers is comparable with the image-off `pairfeat5` or `pairfeat7` sections**, or with `r1review`'s (other seeds, other scorer).
+
+**Gates (pre-registered in the spec before any lane; stop at the first failure), `r1photo7` against the `pairfeat5` arm:**
+
+| | dev-clean (selection) | dev-stress | validation |
+|---|---|---|---|
+| CRC recall gain (`r1review`'s margin) | >= +1.0pp | >= 0 | >= +0.5pp |
+| `false_merge_pairs` (`pairfeat7`'s rule) | strictly below | not above | strictly below |
+| `cross_person_edges` (`pairfeat7`'s rule) | strictly below | not above | strictly below |
+| Uncapped wrong-pair link-review pairs | not above reference | same | same |
+| Total reviewer hours | <= 1.10 x reference | same | same |
+
+In every lane of every arm, baseline included, false closures, wrong releases, replay mismatches, analysis errors and trace errors must be 0. Impure clusters, wrong final sign-offs and the completion-item counts are reported, not gating. The vs-baseline gate is reported, not gating (see below).
+
+**Gate results:**
+
+| Gate | Dev clean `pairfeat5` / `r1photo7` | Dev stress | Validation | Result |
+|---|---|---|---|---|
+| Recall gain (pp) | +2.29 (>= 1.0) | +2.29 (>= 0) | +3.15 (>= 0.5) | pass, pass, pass |
+| False-merge pairs | 16 / 6 | 16 / 6 | 81 / 31 | pass, pass, pass |
+| Cross-person edges | 14 / 6 | 14 / 6 | 76 / 31 | pass, pass, pass |
+| Uncapped wrong-pair reviews | 5 / 5 (5) | 5 / 5 (5) | 6 / **7** (6) | pass, pass, **FAIL** |
+| Reviewer hours | 36.29 / 36.61 (39.92) | 37.05 / 37.61 (40.75) | 63.30 / 64.16 (69.63) | pass, pass, pass |
+| Impure clusters (reported) | 14 / 6 | 14 / 6 | 73 / 30 | |
+| Wrong final sign-offs (reported) | 0 / 0 | 103 / 103 | 0 / 0 | |
+
+Safety was zero in every arm and every mode. The limit for wrong-pair reviews is the reference count itself (not above), which at counts this small allows no net new wrong pair.
+
+**Paired development clean (seeds 769, 773, 787), pooled:**
+
+| Development clean | Baseline | `pairfeat5` | `r1photo7` |
+|---|---:|---:|---:|
+| TP / truth | 553/655 | 602/655 | 617/655 |
+| Recall | 0.8443 | 0.9191 | 0.9420 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 35 | 16 | 6 |
+| Cross-person edges | 33 | 14 | 6 |
+| Impure clusters | 33 | 14 | 6 |
+| Uncapped wrong-pair reviews | 3 | 5 | 5 |
+| Reviewer hours | 35.29 | 36.29 | 36.61 |
+
+Per-seed TP/truth: baseline 182/222, 191/214, 180/219; `pairfeat5` 204/222, 203/214, 195/219; `r1photo7` 208/222, 206/214, 203/219. Gain over `pairfeat5` +2.29pp pooled (per seed +1.80, +1.40, +3.65pp; mean +2.29pp, 95% t interval -0.70 to +5.27pp, n=3, descriptive only); over the baseline +9.77pp pooled. **Development passed.** The 18 completion items were all answered safely (all awaiting histology, 0 wrong).
+
+**Development stress (same seeds; 4% ordinary and 25% day-15 ungraded-prep synthetic reviewer error, assumed stress values, not measured clinician rates):**
+
+| Development stress | Baseline | `pairfeat5` | `r1photo7` |
+|---|---:|---:|---:|
+| TP / truth | 484/655 | 529/655 | 544/655 |
+| Recall | 0.7389 | 0.8076 | 0.8305 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 35 | 16 | 6 |
+| Cross-person edges | 33 | 14 | 6 |
+| Uncapped wrong-pair reviews | 3 | 5 | 5 |
+| Reviewer hours | 36.00 | 37.05 | 37.61 |
+| Wrong final sign-offs | 99 | 103 | 103 |
+
+Gain over `pairfeat5` +2.29pp, over the baseline +9.16pp pooled. **Stress passed.** Of 18 completion items, 17 were answered safely and one was answered "inadequate" on a report whose truth was "awaiting histology" (the assumed 25% error), which held the loop rather than closing it; it is counted as wrong and led to no false closure. The injected errors cost recall and did not become wrong-patient releases; zero false closures here rests on that safe-direction outcome and the assumed reviewer error.
+
+**Validation clean (seeds 797, 809, 811, 821, 823; configuration frozen before any validation lane):**
+
+| Validation clean | Baseline | `pairfeat5` | `r1photo7` |
+|---|---:|---:|---:|
+| TP / truth | 972/1,144 | 1,045/1,144 | 1,081/1,144 |
+| Recall | 0.8497 | 0.9135 | 0.9449 |
+| False closures | 0 | 0 | 0 |
+| False-merge pairs | 139 | 81 | 31 |
+| Cross-person edges | 126 | 76 | 31 |
+| Impure clusters | 119 | 73 | 30 |
+| Uncapped wrong-pair reviews | 4 | 6 | **7** |
+| Reviewer hours | 60.96 | 63.30 | 64.16 |
+
+Per-seed TP/truth: baseline 193/233, 197/232, 195/231, 194/225, 193/223; `pairfeat5` 212/233, 209/232, 214/231, 206/225, 204/223; `r1photo7` 220/233, 221/232, 220/231, 212/225, 208/223.
+
+| Validation gain | Pooled | Mean paired per-seed | 95% t interval (n=5) | Per-seed gains (pp) |
+|---|---|---|---|---|
+| `r1photo7` against `pairfeat5` | +3.15pp | +3.13pp | +1.54 to +4.72pp | +3.43, +5.17, +2.60, +2.67, +1.79 |
+| `r1photo7` against baseline | +9.53pp | +9.50pp | +6.95 to +12.04pp | +11.59, +10.34, +10.82, +8.00, +6.73 |
+
+The recall gain is positive in every seed and the interval excludes 0. All 48 completion items were answered and none was wrong (0 unanswered). Capped wrong-pair reviews were 0. **Validation failed one count:** uncapped wrong-pair link-review pairs 7 against a limit of 6 (the reference's own count). Every other gate passed, so the run stopped under the stop-at-first-failure rule; validation was the last stage, so nothing further was skipped.
+
+**Reported vs-baseline check (not gating):** it also fails in every mode (development and stress 5 against 3.3, validation 7 against 4.4), as it did for `pairfeat5` and `r1review` on image-on seeds; baseline-gating was switched off for this experiment in the pre-registered spec.
+
+**Wrong-pair diagnosis (read-only, validation, after the gate result):** `r1photo7` had 7 uncapped different-person link-review pairs against 6 for `pairfeat5` (one more pair). All were near the review floor (calibrated scores 0.028 to 0.32), all were answered "different" by the reviewer, so 0 wrong decisions and 0 wrong merges came from them, and most were cross-person pairs with a missing birth date on one side or a birth year one or two apart. The failure is therefore workload (one more pair for a clinician to look at) and not a wrong outcome, while false merges fell 81 to 31 and cross-person edges 76 to 31 in the same cohorts. Counts this small (7 against 6, n=5) do not support a finer reading of why one pair more reached the queue, and no cause was isolated.
+
+**Fit facts:** the `pairfeat7` chain was refit at `66cc5fa` with the same protocol as `pairfeat7` run-1. Go/Python scoring parity max |delta| 2.2e-16; the `pairfeat5` reference chain was equal to `pairfeat5` run-2's; plain-cal different-person pairs at raw score >= 0.7: 13 for `pairfeat7` against 21 for `pairfeat5` (information only, same as in the `pairfeat7` section). Chain files: `lgb_stream_pairfeat7` `312fe50c`, `iso_pairfeat7` `fcdb5e99`, `iso_v7_pairfeat7` `ba1062b4`, `name_idf_pairfeat7` `0ab7e592`; `encoder_pairfeat7` `5e6284f8` is the baseline encoder. Governing manifest `cc5bf9a1`.
+
+**Smoke (seed 101, exact harness command):** all steps exited 0, safety counts were 0, recall 0.926, and 4 completion items were all answered safely (0 wrong).
+
+**Disclosures:**
+1. **Additive expectation measured for the first time.** The two parts were expected to add; the recall gain (+3.15pp) is larger than `r1review`'s alone (+1.64pp) and the contamination fall is in `pairfeat7`'s direction, but the arms differ in seeds and image mode, so no clean per-part decomposition is claimed.
+2. **Simulated photos with assumed rates** (85% and 10%), and the landmark CNN was trained on HyperKvasir (Norwegian video frames) and needs local recalibration before any pilot.
+3. **Reviewer answers come from the true label**, which assumes a clinician can resolve completion from the photo or the endoscopist; `ErrUngraded` is 0.25 in stress (assumed, not a measured clinician rate).
+4. **`pairfeat7`'s nearest-embedding donor bias** (disclosed in the `pairfeat7` section) still applies: part of the contamination lead over `pairfeat5` is by construction, and the recall gate is weak against the loss of a few real pairs. Capped pairs and true merges were not re-measured here.
+5. **Synthetic data only; n=3 (development, stress) and n=5 (validation)**, so intervals are descriptive. The development interval against `pairfeat5` includes 0.
+6. This stacks the third post-hoc-tuned scorer step (`pairfeat7`) on a post-hoc reader change, so the fresh validation seeds are the only unbiased evidence; they passed every gate but one.
+7. Edge classes, true-merge counts and horizon-excluded recall are not reported here.
+
+**Scope:** the run is CRC-only, all arms image-on; no non-CRC safety or recall claim is made and no clinical effectiveness is proven. Nothing was promoted to default and `r1photo7` is not selected as-is. Whether to amend the wrong-pair gate (for example to allow a stated number of near-floor wrong-pair reviews that are answered correctly), re-run on fresh seeds or drop the combination is left to the user; no further seeds, thresholds or gates are authorized for this arm until then. Validation seeds 797, 809, 811, 821 and 823 are now used.
