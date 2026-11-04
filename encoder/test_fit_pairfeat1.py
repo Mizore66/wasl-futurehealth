@@ -248,7 +248,7 @@ class Protocols(unittest.TestCase):
                          {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                           "namesakes": 0.10, "family_namesakes": 0.10})
         self.assertEqual(sorted(fp.PROTOCOLS), ["pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4", "pairfeat5", "pairfeat6",
-                                                "pairfeat7"])
+                                                "pairfeat7", "pairfeat8"])
         self.assertEqual(fp.NAMESAKE_FLOOR, 500)
 
     def test_chain_files(self):
@@ -1193,6 +1193,98 @@ class Pairfeat7(unittest.TestCase):
             fp.copy_chain_to_models(chain, models, "pairfeat7")
             with self.assertRaises(ValueError):
                 fp.check_models_free(models, "pairfeat7")
+
+
+# ================================================================ pairfeat8: the pairfeat7 recipe under noise v3, no reference
+
+PF8_FILES = ["pipeline/noise3.go"]
+
+
+class Pairfeat8(unittest.TestCase):
+    W, D, E, I = "/w/bin/wsi8", "/w/data", "/o/enc.json", "/o/chain/name_idf_pairfeat8.json"
+
+    def test_protocol(self):
+        want = {k: v for k, v in fp.PROTOCOLS["pairfeat7"].items() if k != "reference"}
+        want["noise"] = "v3"
+        self.assertEqual(fp.PROTOCOLS["pairfeat8"], want)
+        self.assertNotIn("reference", fp.PROTOCOLS["pairfeat8"])
+        p = fp.PROTOCOLS["pairfeat8"]
+        self.assertEqual((p["train_seeds"], p["cal_seed"], p["lambda_l2"], p["nfeat"]),
+                         ([1019, 1021, 1031, 1033, 1039], 2011, 1.0, 34))
+        self.assertEqual([p[k] for k in ("namesakes", "family_namesakes", "xs_namesakes", "md_namesakes", "rd_namesakes")],
+                         [0.10] * 5)
+        self.assertEqual((fp.nfeat("pairfeat8"), fp.csv_width("pairfeat8", False), fp.csv_width("pairfeat8", True)), (34, 41, 42))
+        self.assertTrue(fp.uses_name_idf("pairfeat8"))
+        self.assertEqual(fp.parse_args(["x", "o", "--modelset", "pairfeat8"]), ("o", "pairfeat8"))
+        self.assertIn("pairfeat8", fp.USAGE)
+
+    def test_chain_reference_gitignore(self):
+        self.assertEqual(fp.chain_files("pairfeat8"), ["encoder_pairfeat8.json", "lgb_stream_pairfeat8.json",
+                                                       "iso_pairfeat8.json", "iso_v7_pairfeat8.json", "name_idf_pairfeat8.json"])
+        self.assertIsNone(fp.read_reference(None, "pairfeat8", "a" * 40))
+        with self.assertRaises(ValueError):
+            fp.read_reference("/some/dir", "pairfeat8", "a" * 40)
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        with open(os.path.join(root, ".gitignore")) as f:
+            self.assertIn("models/*_pairfeat8.json", f.read().splitlines())
+
+    def test_argv_noise_v3(self):
+        W, D, E, I = self.W, self.D, self.E, self.I
+        argvs = [fp.nameidf_argv(W, D, "pairfeat8", I), fp.train_argv(W, D, E, "pairfeat8", 1019, "/o/t.csv", idf=I),
+                 fp.cal_argv(W, D, E, "pairfeat8", "/o/c.csv", idf=I),
+                 fp.parity_argv(W, D, E, "pairfeat8", "/c/g.json", "/o/p.csv", idf=I),
+                 fp.namesake_cal_argv(W, D, E, "pairfeat8", "/c/g.json", "/o/n.csv", idf=I)]
+        for a in argvs:
+            i = a.index("-noise")
+            self.assertEqual(a[i + 1], "v3")
+            self.assertEqual(a.count("-noise"), 1)
+        for a7, a8 in zip([fp.nameidf_argv(W, D, "pairfeat7", I), fp.train_argv(W, D, E, "pairfeat7", 1019, "/o/t.csv", idf=I),
+                           fp.cal_argv(W, D, E, "pairfeat7", "/o/c.csv", idf=I),
+                           fp.parity_argv(W, D, E, "pairfeat7", "/c/g.json", "/o/p.csv", idf=I),
+                           fp.namesake_cal_argv(W, D, E, "pairfeat7", "/c/g.json", "/o/n.csv", idf=I)], argvs):
+            self.assertEqual(a8, [x.replace("v1t", "v3") for x in a7])
+        with self.assertRaises(ValueError):
+            fp.train_argv(W, D, E, "pairfeat8", 1019, "/o/t.csv")
+        a8, a7 = fp.fit_argv("/r", "/o", "/o/chain", "pairfeat8"), fp.fit_argv("/r", "/o", "/o/chain", "pairfeat7")
+        self.assertEqual(a8, [x.replace("pairfeat7", "pairfeat8") for x in a7])
+        for a in argvs + [a8]:
+            for x in a:
+                if x.endswith(".json") and "pairfeat" in x:
+                    self.assertTrue(x.endswith("_pairfeat8.json"), x)
+
+    def test_manifest_source_pinning(self):
+        with tempfile.TemporaryDirectory() as d:
+            make_repo(d, FILES + PF6_FILES + PF7_FILES + PF8_FILES)
+            enc, idf = os.path.join(d, "enc.json"), os.path.join(d, "name_idf_pairfeat8.json")
+            for p, b in ((enc, b"enc"), (idf, b"idf")):
+                with open(p, "wb") as f:
+                    f.write(b)
+            b8 = fp.base_manifest(d, enc, "pairfeat8", name_idf=idf)
+            self.assertEqual(b8["code_sha256"], {n: sh(n.encode()) for n in FILES + PF6_FILES + PF7_FILES + PF8_FILES})
+            self.assertEqual((b8["noise"], b8["modelset"], b8["nfeat"]), ("v3", "pairfeat8", 34))
+            for k in EARLIER + ("pairfeat6", "pairfeat7"):
+                u = fp.uses_name_idf(k)
+                self.assertNotIn("pipeline/noise3.go", fp.base_manifest(d, enc, k, name_idf=idf if u else None)["code_sha256"])
+
+    def test_artifact_manifest_key(self):
+        with tempfile.TemporaryDirectory() as d:
+            models, chain, out = (os.path.join(d, n) for n in ("models", "chain", "out"))
+            for p in (models, chain, out):
+                os.makedirs(p)
+            for n in fp.BASELINE_FILES:
+                with open(os.path.join(models, n), "wb") as f:
+                    f.write(b"b")
+            for n in fp.chain_files("pairfeat8"):
+                with open(os.path.join(chain, n), "wb") as f:
+                    f.write(b"c" + n.encode())
+            with open(os.path.join(out, "training-manifest.json"), "wb") as f:
+                f.write(b"{}")
+            m = fp.artifact_manifest("a" * 40, out, [], models, chain, 3, 0.0, "pairfeat8")
+            self.assertEqual(m["pairfeat8_chain_sha256"], {n: sh(b"c" + n.encode()) for n in fp.chain_files("pairfeat8")})
+            self.assertNotIn("plain_cal_diff_at_merge_0_7_reference", m)
+            fp.copy_chain_to_models(chain, models, "pairfeat8")
+            with self.assertRaises(ValueError):
+                fp.check_models_free(models, "pairfeat8")
 
 
 if __name__ == "__main__":

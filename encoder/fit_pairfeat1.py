@@ -1,8 +1,8 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|...|pairfeat7] [--reference REFERENCE_FIT_DIR]
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|...|pairfeat8] [--reference REFERENCE_FIT_DIR]
 NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/. --reference (pairfeat7 only, and
-required there) is the separately fitted reference (pairfeat5) at the same git HEAD; its plain-cal different-at-merge-0.7
+required there; pairfeat8 takes none) is the separately fitted reference (pairfeat5) at the same git HEAD; its plain-cal different-at-merge-0.7
 count is reported beside the candidate's (not gated).
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
@@ -34,6 +34,10 @@ PROTOCOLS = {
     "pairfeat7": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v1t",
                   "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34,
                   "md_namesakes": 0.10, "rd_namesakes": 0.10, "reference": "pairfeat5"},
+    # pairfeat8 (spec 2026-11-04-crc-r1photo8-demoguard-design.md): the pairfeat7 recipe under noise v3, no cross-noise reference
+    "pairfeat8": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v3",
+                  "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34,
+                  "md_namesakes": 0.10, "rd_namesakes": 0.10},
 }
 # pairfeat7 hard-negative kinds: featdump flag and sidecar prefix, and the floor message label
 HARD_NEGATIVES7 = (("md", "missing-date"), ("rd", "same-date"))
@@ -49,7 +53,8 @@ CODE_FILES = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
               "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
 PAIRFEAT6_CODE_FILES = ["pipeline/pairfeat6.go", "pipeline/namesake.go"]
 PAIRFEAT7_CODE_FILES = ["pipeline/pairfeat7.go"]
-USAGE = ("usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6|pairfeat7]"
+NOISE3_CODE_FILES = ["pipeline/noise3.go"]  # noise v3 source, pinned for pairfeat8 only
+USAGE = ("usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6|pairfeat7|pairfeat8]"
          " [--reference REFERENCE_FIT_DIR]")
 
 
@@ -58,7 +63,7 @@ def nfeat(modelset):
 
 
 def uses_name_idf(modelset):
-    """pairfeat6, pairfeat7: 34 features, the name-rarity table built first and part of the chain."""
+    """pairfeat6, pairfeat7, pairfeat8: 34 features, the name-rarity table built first and part of the chain."""
     return nfeat(modelset) == 34
 
 
@@ -404,7 +409,8 @@ def check_go_parity(go_scores, python_scores, tolerance=1e-9):
 def base_manifest(root, encoder, modelset=DEFAULT_MODELSET, name_idf=None):
     proto = PROTOCOLS[modelset]
     files = CODE_FILES + (PAIRFEAT6_CODE_FILES if uses_name_idf(modelset) else []) + \
-        (PAIRFEAT7_CODE_FILES if proto.get("md_namesakes") else [])
+        (PAIRFEAT7_CODE_FILES if proto.get("md_namesakes") else []) + \
+        (NOISE3_CODE_FILES if proto["noise"] == "v3" else [])
     m = {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
          "nfeat": nfeat(modelset), "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
          "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
