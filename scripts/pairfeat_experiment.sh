@@ -45,6 +45,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 export PATH="/opt/anaconda3/bin:$PATH"
+AGENT_LLM_URL="${WASL_LLM_URL:-}"
+AGENT_LLM_KEY="${WASL_LLM_KEY:-}"
+AGENT_LLM_MODEL="${WASL_LLM_MODEL:-}"
+export AGENT_LLM_URL AGENT_LLM_KEY AGENT_LLM_MODEL
 while read -r v; do [ -n "$v" ] && unset "$v"; done < <(compgen -e | grep '^WASL_' || true)  # no env-driven settings
 
 [ "$#" -eq 3 ] && [ -n "$1" ] || { echo "usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM" >&2; exit 2; }
@@ -55,7 +59,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; r1agent8) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8 r1agent8)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -77,7 +81,7 @@ CAND="$(printf '%s\n' "$PF" | python3 -I -c 'import json, sys; print(json.load(s
 # independent seed table (cross-checked against pairfeat_compare.CANDIDATES before any lane); CHAIN is the model chain
 # (manifest key) the candidate runs, REF a three-arm candidate's reference arm
 VAL_SEEDS="401 409 419 421 431"
-CHAIN="$CAND"; REF=""; REFCHAIN=""
+CHAIN="$CAND"; REF=""; REFCHAIN=""; BASEARM=baseline
 case "$CAND" in
   pairfeat1) DEV_SEEDS="307 311 313";;
   pairfeat2) DEV_SEEDS="317 331 337";;
@@ -89,9 +93,10 @@ case "$CAND" in
   pairfeat7) DEV_SEEDS="719 727 733"; VAL_SEEDS="739 743 751 757 761"; REF=pairfeat5; REFCHAIN=experiment;;
   r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;
   r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;
+  r1agent8) DEV_SEEDS="881 883 887"; VAL_SEEDS="907 911 919 929 937"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared; BASEARM=r1photo8;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
-case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
+case "$ARM" in "$BASEARM"|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
 if [ "$MODE" = validation-clean ]; then SEEDS="$VAL_SEEDS"; else SEEDS="$DEV_SEEDS"; fi
 if [ "${PAIRFEAT_PREFLIGHT_ONLY:-}" = 1 ]; then
   echo "preflight ok ($MODE $ARM; candidate $CAND seeds $SEEDS); PAIRFEAT_PREFLIGHT_ONLY set, nothing built"; exit 0
@@ -130,9 +135,11 @@ elif refchain == "shared":  # one fit serves reference and candidate (r1photo8):
         sys.exit(1)
     with open(ep) as h:
         e = json.load(h)
+    want_arms = ({"r1photo8": chain, "r1photo8ref": chain, "r1agent8": chain} if cand == "r1agent8"
+                 else {"baseline": "baseline", ref: chain, cand: chain})
     if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref or e.get("chain") != chain \
             or not isinstance(e.get(chain + "_chain_sha256"), dict) or m.get(chain + "_chain_sha256") != e[chain + "_chain_sha256"] \
-            or e.get("arm_chain") != {"baseline": "baseline", ref: chain, cand: chain} \
+            or e.get("arm_chain") != want_arms \
             or e.get("artifact_manifest_sha256") != sha(os.path.join(parent, "artifact-manifest.json")):
         sys.exit(1)
 elif chain != cand:  # a candidate borrowing a chain (r1review) is named only by experiment.json
@@ -200,7 +207,15 @@ def run(argv, log):
         sys.stderr.write("REFUSED by guard: %s\n" % e)
         sys.exit(2)
     with open(log, "wb") as h:
-        p = subprocess.run(argv, stdout=h, stderr=subprocess.STDOUT)
+        env = os.environ.copy()
+        for key in ("AGENT_LLM_URL", "AGENT_LLM_KEY", "AGENT_LLM_MODEL"):
+            env.pop(key, None)
+        if len(argv) > 2 and os.path.basename(argv[2]) == "agent_investigator.py" and arm == cand:
+            for key in ("WASL_LLM_URL", "WASL_LLM_KEY", "WASL_LLM_MODEL"):
+                value = os.environ.get("AGENT_" + key)
+                if value:
+                    env[key] = value
+        p = subprocess.run(argv, stdout=h, stderr=subprocess.STDOUT, env=env)
     if p.returncode != 0:
         sys.stderr.write("FAILED (%d): %s\n  log: %s\n" % (p.returncode, " ".join(argv[:2]), log))
         sys.exit(p.returncode)
@@ -208,7 +223,7 @@ def run(argv, log):
 for seed in seeds:
     o = os.path.join(work, "v2-s%d" % seed)
     os.mkdir(o); os.mkdir(os.path.join(o, "run"))
-    r = os.path.join(o, "run", "main")
+    r = pfc.materialized_run_dir(o, cand)
     for name, argv, log in pfc.lane_commands(root, bin_, o, seed, mode, arm, candidate=cand):
         if name == "classifier":
             with open(os.path.join(r, "status-linker.json")) as h:
