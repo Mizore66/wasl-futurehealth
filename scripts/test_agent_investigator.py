@@ -77,10 +77,12 @@ class Investigation(Base):
         self.assertEqual(len(rec["citations"]), 2)
         self.assertEqual(fake.requests[0]["temperature"], 0)
         self.assertEqual(fake.requests[0]["response_format"], ai.RESPONSE_FORMAT)
+        self.assertTrue(fake.requests[0]["messages"][1]["content"].startswith("Return only JSON in the required schema."))
         self.assertEqual({t["function"]["name"] for t in fake.requests[0]["tools"]}, set(ae.TOOLS))
         # the second request carries the whole history incl. tool results
         roles = [m["role"] for m in fake.requests[1]["messages"]]
-        self.assertEqual(roles, ["system", "user", "assistant", "tool", "tool"])
+        self.assertEqual(roles, ["system", "user", "assistant", "tool", "tool", "user"])
+        self.assertIn("Do not call any more tools", fake.requests[1]["messages"][-1]["content"])
 
     def test_direct_final_answer_is_one_call(self):
         fake = Fake(resp(text_msg(self.good("different"))))
@@ -112,7 +114,7 @@ class Investigation(Base):
         fake = Fake(resp(tool_msg(("get_record", other))), resp(text_msg(self.good())))
         rec = ai.investigate(self.store, ITEM, self.client(fake))
         self.assertEqual(rec["label"], "same")
-        tool_result = json.loads(fake.requests[1]["messages"][-1]["content"])
+        tool_result = json.loads(fake.requests[1]["messages"][-2]["content"])
         self.assertEqual(tool_result, {"error": "out_of_scope"})
 
     def test_invalid_outputs_get_distinct_reasons(self):

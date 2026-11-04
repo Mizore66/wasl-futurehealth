@@ -18,7 +18,7 @@ import argparse, glob, hashlib, json, os, re, shlex, shutil, socket, subprocess,
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import agent_evidence as ae  # noqa: E402
 
-PROMPT_VER = "agent-v2-json"
+PROMPT_VER = "agent-v4-json"
 RESPONSE_FORMAT = {"type": "json_object"}
 CAPS = {"selection": 1500, "validation": 2500}
 SMOKE_CAP = 40
@@ -215,7 +215,7 @@ def investigate(store, item_id, client):
                                                       "schema_ver": client.schema_ver, "calls": 0})
     ctx = ae.ToolAPI(store, item_id, metered=False).get_pair_context(store.alias("item", item_id))
     messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": "Investigate this item and answer.\n" + canon(ctx)}]
+                {"role": "user", "content": "Return only JSON in the required schema.\n" + canon(ctx)}]
     usage, latency, calls, forced, final = {"prompt": 0, "completion": 0, "total": 0}, 0.0, 0, "", None
 
     def ask():
@@ -237,6 +237,7 @@ def investigate(store, item_id, client):
         norm, results = _run_tools(api, tcs)
         messages.append({"role": "assistant", "content": msg.get("content"), "tool_calls": norm})
         messages.extend(results)
+        messages.append({"role": "user", "content": "Do not call any more tools. Return only the final JSON now."})
         msg = ask()
         if _tool_calls(msg):
             forced = "per_item_budget"
