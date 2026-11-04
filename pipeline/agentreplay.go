@@ -119,7 +119,7 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 		PolicyName += "+agent"
 	}
 	cfg.Agent = ar
-	_, sos, _, list := reviewLoopFull(o, P, cfg)
+	_, sos, _, list, source := reviewLoopFull(o, P, cfg)
 	if ar != nil { // reviewer identity names the arm; the pointers are shared with the list's sign-off preps
 		for _, so := range sos {
 			if !strings.HasSuffix(so.Reviewer, "+agent") {
@@ -144,21 +144,20 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 	}
 	ar.bind(rp.L)
 
-	// fhir_log / prep_log: one contiguous sequence; sign-offs sit where the loop inserted them.
+	// fhir_log / prep_log: one contiguous sequence. Copy original messages by source index (including forged sign-offs
+	// and EOF controls); only inserted reviewer sign-offs are synthesized on fhir.review.
 	fhir := make([]LogMsg, 0, len(list))
 	prepLog := make([]LogMsg, 0, len(list))
 	soSeq := map[string]uint64{}
-	base := 0
 	for i, p := range list {
 		seq := uint64(i + 1)
 		var m LogMsg
-		if p.Kind == "signoff" {
+		if source[i] < 0 {
 			m = LogMsg{Seq: seq, Subject: "fhir.review", Hdr: map[string]string{"Nats-Msg-Id": "signoff/" + p.So.ItemID}, Data: signoffResource(p.So)}
 			soSeq[p.So.ItemID] = seq
 		} else {
-			m = o.fhir[base]
+			m = o.fhir[source[i]]
 			m.Seq = seq
-			base++
 		}
 		fhir = append(fhir, m)
 		b, err := json.Marshal(p)
