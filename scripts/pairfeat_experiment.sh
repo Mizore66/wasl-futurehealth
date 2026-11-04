@@ -7,6 +7,10 @@
 #         | r1review (-modelset pairfeat5 plus -r1review on orchestrate/audit/report7 only)
 #         | r1photo7 (-modelset pairfeat7 plus -r1review, all arms image on; seeds 769 773 787, validation 797 809 811 821 823;
 #           `init-experiment EXPERIMENT_DIR r1photo7 REFERENCE_FIT_DIR`, reference pairfeat5 refit)
+#         | r1photo8ref | r1photo8 (noise v3, the pairfeat8 chain via -modelset pairfeat8 plus -r1review on r1photo8ref and
+#           -r1review -demoguard on r1photo8, all arms image on and gen -noise v3; seeds 827 829 839, validation 853 857 859
+#           863 877; ONE shared pairfeat8 fit serves both arms, pinned by `init-experiment EXPERIMENT_DIR r1photo8` (no
+#           reference fit directory); r1photo8ref is the reference-only arm and never an experiment candidate)
 # Candidate dev seeds: pairfeat1 307 311 313; pairfeat2 317 331 337; pairfeat3 347 353 367; pairfeat4 433 449 461; pairfeat5 521 541 547;
 # pairfeat6 659 661 673 (validation 677 683 691 701 709); a pairfeat6 parent (its own chain) needs experiment.json from
 # `init-experiment EXPERIMENT_DIR pairfeat6 REFERENCE_FIT_DIR`, which records the separately fitted pairfeat5 reference; it
@@ -51,7 +55,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -84,6 +88,7 @@ case "$CAND" in
   pairfeat6) DEV_SEEDS="659 661 673"; VAL_SEEDS="677 683 691 701 709"; REF=pairfeat5; REFCHAIN=experiment;;
   pairfeat7) DEV_SEEDS="719 727 733"; VAL_SEEDS="739 743 751 757 761"; REF=pairfeat5; REFCHAIN=experiment;;
   r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;
+  r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in baseline|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
@@ -119,6 +124,16 @@ if refchain == "experiment":  # a separately fitted reference (pairfeat6, pairfe
         e = json.load(h)
     if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref \
             or not isinstance(e.get("reference_model_chain"), dict):
+        sys.exit(1)
+elif refchain == "shared":  # one fit serves reference and candidate (r1photo8): experiment.json pins the chain and the arm mapping
+    if not os.path.isfile(ep) or os.path.islink(ep):
+        sys.exit(1)
+    with open(ep) as h:
+        e = json.load(h)
+    if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref or e.get("chain") != chain \
+            or not isinstance(e.get(chain + "_chain_sha256"), dict) or m.get(chain + "_chain_sha256") != e[chain + "_chain_sha256"] \
+            or e.get("arm_chain") != {"baseline": "baseline", ref: chain, cand: chain} \
+            or e.get("artifact_manifest_sha256") != sha(os.path.join(parent, "artifact-manifest.json")):
         sys.exit(1)
 elif chain != cand:  # a candidate borrowing a chain (r1review) is named only by experiment.json
     if not os.path.isfile(ep) or os.path.islink(ep):
@@ -162,6 +177,7 @@ with open(os.path.join(work, "build.json"), "w") as h:
          "floor": float(pfc.FLOOR), "policy": pfc.POLICY, "model_chain_sha256": chain}
     if pfc.extra_flags(arm):  # r1review arm only: recorded so the analysis can tell its lanes from pairfeat5 lanes
         b["extra_flags"] = pfc.extra_flags(arm)
+    b.update(pfc.noise_build(cand))  # r1photo8 experiments (every arm): noise v3
     b.update(pfc.image_build(root, cand))  # r1review experiments (every arm): image cached, imgphotos, verdict-cache SHA256
     json.dump(b, h, indent=1, sort_keys=True)
 PY
