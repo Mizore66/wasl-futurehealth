@@ -338,6 +338,8 @@ with open(os.path.join(run, "agent_need.ndjson"), "w") as f:
 st = {{"eligible": 1, "covered": len(have), "abstain": 0, "invalid": 0, "calls": 0, "tokens": 0, "latency_s": 0, "human_seconds_saved": 0}}
 if os.environ.get("FAKE_STATS_RENAME"):
     st["human_s_saved"] = st.pop("human_seconds_saved")
+if os.environ.get("FAKE_STATS_EXTRA"):
+    st["task4_extra"] = {{"x": 1}}
 if os.environ.get("FAKE_STATS_BAD"):
     st["tokens"] = "many"
 json.dump(st, open(os.path.join(run, "agent_stats.json"), "w"))
@@ -471,6 +473,14 @@ class Driver(DriverBase):
                 open(os.path.join(self.d, "recs.ndjson"), "w").close()
                 with self.assertRaises(ai.AgentAbort, msg=env):
                     ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))), model="m-" + "".join(env.values()))))
+
+    def test_extra_stats_field_accepted_missing_mandatory_aborts(self):
+        with mock.patch.dict(os.environ, {"FAKE_STATS_EXTRA": "1"}):
+            out = ai.iterate(self.args(client=None, control=True))
+        self.assertEqual(out["task4_extra"], {"x": 1})
+        with mock.patch.dict(os.environ, {"FAKE_STATS_RENAME": "1", "FAKE_STATS_EXTRA": "1"}):
+            with self.assertRaises(ai.AgentAbort):
+                ai.iterate(self.args(client=None, control=True))
 
     def test_stats_keys_must_be_exact_and_valid(self):
         for env in ({"FAKE_STATS_RENAME": "1"}, {"FAKE_STATS_BAD": "1"}):
