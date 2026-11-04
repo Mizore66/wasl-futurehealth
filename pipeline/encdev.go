@@ -121,7 +121,7 @@ func runEncNoise(wasl, split, outPath string, seed int64) {
 		opts := append([]string{p.En}, p.Als...)
 		src := opts[r.Intn(len(opts))]
 		var a, l string
-		if NoiseModel == "v2" {
+		if NoiseModel == "v2" || NoiseModel == "v3" {
 			a, l = noisyArabic2(p.Ar, r), noisyLatin2(src, r)
 		} else {
 			a, l = noisyArabic(p.Ar, r), noisyLatin(src, r)
@@ -207,7 +207,9 @@ func fdRegister(regs []fdReg, pid int, p *Person, r *rand.Rand) []fdReg {
 		prov := Providers[pi]
 		name := fdName(p, r.Float64() < prov.PAr, r)
 		var dob string
-		if NoiseModel == "v2" {
+		if NoiseModel == "v3" {
+			dob = noisyDob3(p.Dob, r, .3)
+		} else if NoiseModel == "v2" {
 			dob = noisyDob2(p.Dob, r, .3)
 		} else if NoiseModel == "v1t" {
 			dob = noisyDobV1T(p.Dob, r, .3)

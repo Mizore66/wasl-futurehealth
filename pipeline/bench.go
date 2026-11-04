@@ -94,7 +94,7 @@ func synthRegs(pool []Person, nRegs int, seed int64) []SynReg {
 				src := opts[r.Intn(len(opts))]
 				name = noisyLatin(src, r)
 			}
-			regs = append(regs, SynReg{Pid: pid, Name: name, Dob: noisyDob(p.Dob, r, .3), Org: p.Origin})
+			regs = append(regs, SynReg{Pid: pid, Name: name, Dob: benchDob(p.Dob, r), Org: p.Origin})
 		}
 		if len(regs) >= nRegs {
 			break
@@ -400,4 +400,12 @@ func (h *hasher) sum() string {
 		all = append(all, x...)
 	}
 	return shaB(all)
+}
+
+// benchDob: registration DOB under the selected noise profile (v3 = reliable real DOB, else v1).
+func benchDob(dob string, r *rand.Rand) string {
+	if NoiseModel == "v3" {
+		return noisyDob3(dob, r, .3)
+	}
+	return noisyDob(dob, r, .3)
 }

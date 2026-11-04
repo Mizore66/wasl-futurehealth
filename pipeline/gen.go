@@ -414,7 +414,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		g := &reg{mrn: fmt.Sprintf("%s-MRN%06d", strings.ToUpper(prov.ID[:3]), mrnN[prov.ID])}
 		g.pk = prov.ID + "|" + g.mrn
 		if r.Float64() < prov.PAr {
-			if NoiseModel == "v2" {
+			if NoiseModel == "v2" || NoiseModel == "v3" {
 				g.name, g.script = noisyArabic2(p.Ar, r), "ar"
 			} else {
 				g.name, g.script = noisyArabic(p.Ar, r), "ar"
@@ -425,13 +425,15 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			if r.Float64() < .5 {
 				src = opts[r.Intn(len(opts))]
 			}
-			if NoiseModel == "v2" {
+			if NoiseModel == "v2" || NoiseModel == "v3" {
 				g.name, g.script = noisyLatin2(src, r), "lat"
 			} else {
 				g.name, g.script = noisyLatin(src, r), "lat"
 			}
 		}
-		if NoiseModel == "v2" {
+		if NoiseModel == "v3" {
+			g.dob = noisyDob3(p.Dob, r, .3)
+		} else if NoiseModel == "v2" {
 			g.dob = noisyDob2(p.Dob, r, .3)
 		} else {
 			g.dob = noisyDob(p.Dob, r, .3)
