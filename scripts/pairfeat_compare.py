@@ -1906,7 +1906,9 @@ AGENT_MIN_COVERAGE = Fraction(4, 5)
 def _r1agent8_gate(unguarded, guarded, cand, kind):
     """Gate of r1agent8 against two comparators (spec 2026-11-04-crc-r1agent8-evidence-design.md, gates table): CRC recall
     >= both; false_merge_pairs, cross_person_edges and uncapped wrong-pair review pairs <= guarded (r1photo8) in every kind and
-    strictly below unguarded (r1photo8ref) in selection/validation, not above in stress; reviewer hours <= guarded and
+    strictly below unguarded (r1photo8ref) in selection/validation, not above in stress. Post-hoc zero-floor amendment:
+    when unguarded is zero the candidate must also be zero (a strict decrease is impossible); otherwise the strict decrease
+    is unchanged. Reviewer hours <= guarded and
     <= 1.10 x unguarded; SAFETY and wrong releases by origin zero in all three arms; deterministic replay; eligible-item agent
     coverage >= 0.80; accepted citations 100% valid. impure_clusters, wrong final sign-offs and live divergence are reported
     only. cand["agent"] carries replay_deterministic, eligible, covered, accepted, accepted_valid (and live_divergence)."""
@@ -1944,9 +1946,13 @@ def _r1agent8_gate(unguarded, guarded, cand, kind):
     def compare(name, uv, gv, cv):
         if cv > gv:
             reasons.append("%s above guarded (%d > %d)" % (name, cv, gv))
-        if strict and cv >= uv:
-            reasons.append("%s not strictly below unguarded (%d >= %d)" % (name, cv, uv))
-        elif not strict and cv > uv:
+        if strict:
+            if uv == 0:
+                if cv != 0:
+                    reasons.append("%s above zero-floor unguarded (%d > 0)" % (name, cv))
+            elif cv >= uv:
+                reasons.append("%s not strictly below unguarded (%d >= %d)" % (name, cv, uv))
+        elif cv > uv:
             reasons.append("%s above unguarded (%d > %d)" % (name, cv, uv))
     contam = {}
     for k in ("false_merge_pairs", "cross_person_edges"):

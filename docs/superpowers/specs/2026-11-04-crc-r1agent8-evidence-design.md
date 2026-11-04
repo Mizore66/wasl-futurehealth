@@ -93,6 +93,8 @@ Selection and validation seeds were checked absent from the harness and fit conf
 | eligible-item agent coverage | ≥ 80% in each mode |
 | citation validity | 100% of accepted recommendations have valid supporting citations |
 
+**Post-hoc zero-floor amendment (5 Nov 2026, before any candidate verdict):** the completed selection comparators had zero uncapped wrong-pair link-review pairs in the unguarded arm, making the original “strictly below” rule impossible for every candidate. For false merges, cross-person edges and uncapped wrong-pair reviews, a strict comparison now means candidate < unguarded when unguarded > 0, and candidate = 0 when unguarded = 0. The guarded-arm ceilings, stress rules, other gates, models, prompts and seeds are unchanged. This amendment was made before inspecting a candidate metric or verdict and will be disclosed in the results.
+
 Impure clusters, wrong final sign-offs and default-model comparisons are reported, not gated. Report the agent's confusion matrix, abstentions, uncovered items, invalid-output count, calls, tokens, latency and human seconds saved. Agent time must not be hidden in human reviewer hours.
 
 ## Verification and error handling
