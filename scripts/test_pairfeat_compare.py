@@ -5622,6 +5622,18 @@ class CLIR1agent8(CLIFixture, unittest.TestCase):
         self.assertEqual(s["arms"][R9]["agent"]["live_divergence"], 3)
         self.assertEqual(s["reference_gate"]["reported"]["live_divergence"], 3)
 
+    def test_live_divergence_needs_only_out_logs(self):
+        with tempfile.TemporaryDirectory() as td:
+            def write_run(rel, rows):
+                run = os.path.join(td, rel)
+                os.makedirs(run)
+                with open(os.path.join(run, "out_log.ndjson"), "w") as h:
+                    for oseq, loop, sig in rows:
+                        h.write(json.dumps({"data": {"kind": "decision", "oseq": oseq, "dec": {"loop": loop, "sig": sig}}}) + "\n")
+            write_run("run/main", [(1, "a", "old"), (2, "a", "same"), (1, "b", "live"), (1, "live-only", "x")])
+            write_run("run/agent/main", [(1, "a", "same"), (1, "b", "offline"), (1, "offline-only", "x")])
+            self.assertEqual(pfc.live_final_divergence(td, R9), 3)
+
     def test_eligible_pair_count_must_match_stats(self):
         roots = self.three()
         for d in sorted(os.listdir(roots[2])):
