@@ -101,7 +101,7 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 	x.pk = prov.ID + "|" + x.mrn
 	if r.Float64() < prov.PAr {
 		x.script = "ar"
-		if NoiseModel == "v2" {
+		if NoiseModel == "v2" || NoiseModel == "v3" {
 			x.name = noisyArabic2(p.Ar, r)
 		} else {
 			x.name = noisyArabic(p.Ar, r)
@@ -113,13 +113,15 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 			src = opts[r.Intn(len(opts))]
 		}
 		x.script = "lat"
-		if NoiseModel == "v2" {
+		if NoiseModel == "v2" || NoiseModel == "v3" {
 			x.name = noisyLatin2(src, r)
 		} else {
 			x.name = noisyLatin(src, r)
 		}
 	}
-	if NoiseModel == "v2" {
+	if NoiseModel == "v3" {
+		x.dob = noisyDob3(p.Dob, r, .3)
+	} else if NoiseModel == "v2" {
 		x.dob = noisyDob2(p.Dob, r, .3)
 	} else {
 		x.dob = noisyDob(p.Dob, r, .3)
