@@ -76,6 +76,7 @@ class Investigation(Base):
         self.assertEqual(rec["calls"], 2)  # tool calls
         self.assertEqual(len(rec["citations"]), 2)
         self.assertEqual(fake.requests[0]["temperature"], 0)
+        self.assertEqual(fake.requests[0]["response_format"], ai.RESPONSE_FORMAT)
         self.assertEqual({t["function"]["name"] for t in fake.requests[0]["tools"]}, set(ae.TOOLS))
         # the second request carries the whole history incl. tool results
         roles = [m["role"] for m in fake.requests[1]["messages"]]

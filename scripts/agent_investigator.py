@@ -18,7 +18,8 @@ import argparse, glob, hashlib, json, os, re, shlex, shutil, socket, subprocess,
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import agent_evidence as ae  # noqa: E402
 
-PROMPT_VER = "agent-investigator-prompt-v1"
+PROMPT_VER = "agent-v2-json"
+RESPONSE_FORMAT = {"type": "json_object"}
 CAPS = {"selection": 1500, "validation": 2500}
 SMOKE_CAP = 40
 CAPS["smoke"] = SMOKE_CAP
@@ -129,7 +130,8 @@ class GeminiClient:
             with open(p, encoding="utf-8") as f:
                 e = json.load(f)
             return {"message": e["message"], "usage": e["usage"], "latency_s": e["latency_s"], "cached": True}
-        body = {"model": self.model, "messages": messages, "tools": TOOL_DEFS, "temperature": 0, "max_tokens": 1200}
+        body = {"model": self.model, "messages": messages, "tools": TOOL_DEFS, "temperature": 0, "max_tokens": 1200,
+                "response_format": RESPONSE_FORMAT}
         last = None
         for attempt in range(1 + self.retries):
             if self.sent >= self.cap:
