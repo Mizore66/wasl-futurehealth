@@ -2146,11 +2146,21 @@ def offline_replay_deterministic(path):
 
 
 def live_final_divergence(path, candidate):
-    """Count loops whose final decision signature differs between the original live run and the materialized replay."""
-    live = lf.load(os.path.join(path, "run/main"), os.path.join(path, "cohort"))["fin"]
-    offline = lf.load(materialized_run_dir(path, candidate), os.path.join(path, "cohort"))["fin"]
-    return sum(live.get(lp, (0, {}))[1].get("sig") != offline.get(lp, (0, {}))[1].get("sig")
-               for lp in set(live) | set(offline))
+    """Count loops whose highest-OSeq decision signature differs between live and materialized OUT logs."""
+    def signatures(run):
+        fin = {}
+        for rec in lf.read_ndjson(os.path.join(run, "out_log.ndjson")):
+            data = rec.get("data") or {}
+            if data.get("kind") != "decision":
+                continue
+            dec = data.get("dec") or {}
+            loop = dec.get("loop")
+            if loop is not None and (loop not in fin or data.get("oseq", 0) >= fin[loop][0]):
+                fin[loop] = (data.get("oseq", 0), dec.get("sig"))
+        return {loop: sig for loop, (_, sig) in fin.items()}
+    live = signatures(os.path.join(path, "run/main"))
+    offline = signatures(materialized_run_dir(path, candidate))
+    return sum(live.get(lp) != offline.get(lp) for lp in set(live) | set(offline))
 
 
 def agent_eligible_pairs(path, candidate):
