@@ -60,3 +60,19 @@ func (L *LinkerCore) demoteNear(r, o *Rec, p float64, aff map[int]bool) {
 	L.near[r.idx][o.idx], L.near[o.idx][r.idx] = p, p
 	aff[L.Find(o.idx)] = true
 }
+
+// demoGuardPolicySuffix: stamped on PolicyName so guarded and unguarded lanes are never mixed ("" when off).
+func demoGuardPolicySuffix() string {
+	if DemoGuard {
+		return "+demoguard"
+	}
+	return ""
+}
+
+// demoGuardArgs: the child-process argv, only when on (default argv is unchanged).
+func demoGuardArgs() []string {
+	if DemoGuard {
+		return []string{"-demoguard"}
+	}
+	return nil
+}
