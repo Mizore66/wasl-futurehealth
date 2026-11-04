@@ -5,10 +5,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -298,5 +300,105 @@ func TestAgentReplayFlagNotForwarded(t *testing.T) {
 		if strings.Contains(a, "agent") || strings.Contains(strings.ToLower(a), "gemini") {
 			t.Fatalf("live child argv leaks %q", a)
 		}
+	}
+}
+
+// writeTinyCohort writes a three-resource CRC cohort (a referral, a booked appointment and a closing colonoscopy
+// report at a second provider, the second registration missing its DOB) plus truth.json, and returns the cohort dir.
+func writeTinyCohort(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	pt := func(prov, mrn, dob string) []interface{} {
+		p := map[string]interface{}{"resourceType": "Patient", "id": "pt", "gender": "female",
+			"identifier": []interface{}{map[string]string{"system": "urn:ae:" + prov + ":mrn", "value": mrn}},
+			"name":       []interface{}{map[string]string{"text": "Lamia Eddinari"}}}
+		if dob != "" {
+			p["birthDate"] = dob
+		}
+		return []interface{}{p}
+	}
+	subj := map[string]string{"reference": "#pt"}
+	repDay := 20.0
+	events := map[string][]GenEvent{
+		"ahs-mushrif": {{Arrival: 1, Prov: "ahs-mushrif", MsgID: "ahs-mushrif/ServiceRequest/SR1/v1", Res: map[string]interface{}{
+			"resourceType": "ServiceRequest", "id": "SR1", "status": "active", "intent": "order", "authoredOn": dayTS(1),
+			"code": map[string]string{"text": "Colonoscopy"}, "contained": pt("ahs-mushrif", "A1", "1999-07-19"), "subject": subj}}},
+		"skmc-endo": {
+			{Arrival: 5, Prov: "skmc-endo", MsgID: "skmc-endo/Appointment/AP1/v1", Res: map[string]interface{}{
+				"resourceType": "Appointment", "id": "AP1", "status": "booked", "start": dayTS(5),
+				"serviceType": []interface{}{map[string]string{"text": "Colonoscopy"}}, "contained": pt("skmc-endo", "H1", ""), "subject": subj}},
+			{Arrival: repDay, Prov: "skmc-endo", MsgID: "skmc-endo/DiagnosticReport/DR1/v1", Res: map[string]interface{}{
+				"resourceType": "DiagnosticReport", "id": "DR1", "status": "final", "effectiveDateTime": dayTS(repDay),
+				"conclusion": "Complete colonoscopy to the caecum, adequate bowel preparation.", "contained": pt("skmc-endo", "H1", ""), "subject": subj}},
+		},
+	}
+	for _, pc := range Providers {
+		var sb strings.Builder
+		for _, g := range events[pc.ID] {
+			b, _ := json.Marshal(g)
+			sb.Write(b)
+			sb.WriteByte('\n')
+		}
+		if err := os.WriteFile(filepath.Join(dir, "fhir_"+pc.ID+".ndjson"), []byte(sb.String()), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tr := Truth{Loops: map[string]*LoopTruth{"ahs-mushrif/ServiceRequest/SR1": {Loop: "ahs-mushrif/ServiceRequest/SR1", Qid: "Q1", Prog: "crc", State: "closed", ClosedDay: repDay, Origin: "x", NotifDay: -1, AckDay: -1}},
+		PKQid: map[string]string{arPkA: "Q1", arPkB: "Q1"}, Reports: map[string]string{"DR1": "adequate"}}
+	b, _ := json.Marshal(tr)
+	os.WriteFile(filepath.Join(dir, "truth.json"), b, 0o644)
+	return dir
+}
+
+func dayTS(d float64) string {
+	return baseTime.Add(time.Duration(d * 86400 * float64(time.Second))).Format(time.RFC3339)
+}
+
+// The materialized directory is accepted by audit() (ingest, prep, replay and final-state checks all clean) and by
+// scripts/link_funnel.py.
+func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
+	if testing.Short() {
+		t.Skip("loads the real models")
+	}
+	withDemoGuard(t, true)
+	defer func(g *Judge2, p *Parser) { Judge, Parse = g, p }(Judge, Parse)
+	data, wasl, run := writeTinyCohort(t), "../models", t.TempDir()
+	o := loadOffline(data, wasl)
+	if err := stampOfflineMsgIDs(o, data); err != nil {
+		t.Fatal(err)
+	}
+	if err := materializeAgentRun(o, 1, agentCfgFor(3), nil, run); err != nil {
+		t.Fatal(err)
+	}
+	main := filepath.Join(run, "main")
+	audit(data, wasl, main, 1)
+	var res map[string]interface{}
+	b, err := os.ReadFile(filepath.Join(main, "audit.json"))
+	if err != nil || json.Unmarshal(b, &res) != nil {
+		t.Fatalf("audit.json: %v", err)
+	}
+	cr := res["crash_recovery"].(map[string]interface{})
+	for _, k := range []string{"ingest_lost", "ingest_duplicates", "duplicate_outputs", "lost_outputs", "unexpected_outputs",
+		"logical_duplicate_decisions", "final_state_mismatch_loops", "prep_duplicates", "prep_lost", "prep_content_mismatch"} {
+		if v, ok := cr[k].(float64); !ok || v != 0 {
+			t.Errorf("audit crash_recovery.%s = %v, want 0", k, cr[k])
+		}
+	}
+	if cr["fhir_msgs"].(float64) != cr["prep_live_msgs"].(float64) || cr["generated_resources"].(float64) != 3 {
+		t.Errorf("audit counts %v", cr)
+	}
+	py, err := exec.LookPath("python3")
+	if err != nil {
+		t.Skip("python3 not available")
+	}
+	out := filepath.Join(t.TempDir(), "funnel.json")
+	cmd := exec.Command(py, "-I", "../scripts/link_funnel.py", main, data, out)
+	if msg, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("link_funnel.py: %v\n%s", err, msg)
+	}
+	var sum map[string]interface{}
+	fb, _ := os.ReadFile(out)
+	if err := json.Unmarshal(fb, &sum); err != nil || sum["analysis_errors"].(float64) != 0 {
+		t.Fatalf("funnel summary %v err %v", sum, err)
 	}
 }
