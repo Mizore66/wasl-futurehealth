@@ -198,6 +198,44 @@ func TestMaterializeAgentRunLanes(t *testing.T) {
 
 }
 
+func TestMaterializeAgentRunPreservesOriginalSignoffsAndEOF(t *testing.T) {
+	o := agentOffline(t)
+	for i, pc := range Providers {
+		m := &o.fhir[len(o.fhir)-len(Providers)+i]
+		m.Subject = "fhir." + pc.ID + ".ctl"
+		m.Data = json.RawMessage(`{"eof":true}`)
+	}
+	forged := &Signoff{ItemID: "forged-original", LoopID: "ahs-mushrif/ServiceRequest/SR1", Kinds: []string{"link"},
+		Pair: [2]string{arPkA, arPkB}, Link: "same", Role: RoleAuditor, Reads: []string{"forged"}}
+	o.preps = append(o.preps, nil)
+	copy(o.preps[2:], o.preps[1:])
+	o.preps[1] = &Prep{Kind: "signoff", So: forged}
+	o.fhir = append(o.fhir, LogMsg{})
+	copy(o.fhir[2:], o.fhir[1:])
+	o.fhir[1] = LogMsg{Subject: "fhir.medlab.res", Hdr: map[string]string{"Nats-Msg-Id": "medlab/Provenance/forged"}, Data: signoffResource(forged)}
+	for i, p := range o.preps {
+		p.Seq = uint64(i + 1)
+		o.fhir[i].Seq = uint64(i + 1)
+	}
+	run := t.TempDir()
+	if err := materializeAgentRun(o, 1, agentCfgFor(3), nil, run); err != nil {
+		t.Fatal(err)
+	}
+	fhir := readLog(filepath.Join(run, "main/fhir_log.ndjson"))
+	if m := fhir[1]; m.Subject != "fhir.medlab.res" || m.Hdr["Nats-Msg-Id"] != "medlab/Provenance/forged" {
+		t.Fatalf("original forged sign-off was not preserved: %+v", m)
+	}
+	controls := 0
+	for _, m := range fhir {
+		if strings.HasSuffix(m.Subject, ".ctl") {
+			controls++
+		}
+	}
+	if controls != len(Providers) {
+		t.Fatalf("materialized %d EOF controls, want %d", controls, len(Providers))
+	}
+}
+
 func TestAgentReplayDeterministicAndControl(t *testing.T) {
 	o := agentOffline(t)
 	a, b := t.TempDir(), t.TempDir()

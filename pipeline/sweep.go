@@ -119,13 +119,14 @@ func loadConsentTruth(data string) map[string]bool {
 
 // reviewLoop runs the closed loop with the given reviewer to a fixed point.
 func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int) {
-	rp, sos, iters, _ := reviewLoopFull(o, P, cfg)
+	rp, sos, iters, _, _ := reviewLoopFull(o, P, cfg)
 	return rp, sos, iters
 }
 
-// reviewLoopFull is reviewLoop that also returns the final replay's prep list. Agent eligibility is refreshed from
-// each replay's linker before that replay's items are answered.
-func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int, []*Prep) {
+// reviewLoopFull is reviewLoop that also returns the final replay's prep list and each item's original FHIR index
+// (-1 for an inserted reviewer sign-off). Agent eligibility is refreshed from each replay's linker before that
+// replay's items are answered.
+func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int, []*Prep, []int) {
 	anchors := map[string]int{}
 	sos := map[string]*Signoff{}
 	q := newReviewQueue()
@@ -135,15 +136,18 @@ func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]
 			byAnchor[a] = append(byAnchor[a], id)
 		}
 		list := make([]*Prep, 0, len(o.preps)+len(sos))
+		source := make([]int, 0, len(o.preps)+len(sos))
 		posToBase := make([]int, 0, len(o.preps)+len(sos))
 		for i, p := range o.preps {
 			q := *p
 			q.Seq = uint64(len(list) + 1)
 			list, posToBase = append(list, &q), append(posToBase, i)
+			source = append(source, i)
 			ids := byAnchor[i]
 			sort.Strings(ids)
 			for _, id := range ids {
 				list = append(list, &Prep{Seq: uint64(len(list) + 1), Kind: "signoff", So: sos[id]})
+				source = append(source, -1)
 				posToBase = append(posToBase, i)
 			}
 		}
@@ -152,7 +156,7 @@ func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]
 		if ReplayWorklist { // the live reviewer's order and worklists (services.go runReviewer)
 			ids := q.answer(rp, cfg, o.tr, sos)
 			if len(ids) == 0 {
-				return rp, sos, iter, list
+				return rp, sos, iter, list, source
 			}
 			for _, id := range ids {
 				anchors[id] = posToBase[rp.items[id].InSeq-1]
@@ -166,7 +170,7 @@ func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]
 			}
 		}
 		if len(ids) == 0 {
-			return rp, sos, iter, list
+			return rp, sos, iter, list, source
 		}
 		sort.Strings(ids)
 		for _, id := range ids {
