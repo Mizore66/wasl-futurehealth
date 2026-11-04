@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -275,4 +276,64 @@ func TestDemoGuardOffParity(t *testing.T) {
 			t.Fatalf("%+v", pairs)
 		}
 	})
+}
+
+func TestDemoGuardArgvAndPolicy(t *testing.T) {
+	withDemoGuard(t, false)
+	if len(demoGuardArgs()) != 0 || demoGuardPolicySuffix() != "" {
+		t.Fatal("guard off must add no argv and no policy stamp")
+	}
+	base := []string{"-x"}
+	if got := append(append([]string{}, base...), demoGuardArgs()...); !reflect.DeepEqual(got, base) {
+		t.Fatalf("argv changed with guard off: %v", got)
+	}
+	DemoGuard = true
+	if !reflect.DeepEqual(demoGuardArgs(), []string{"-demoguard"}) || demoGuardPolicySuffix() != "+demoguard" {
+		t.Fatal("guard on must forward -demoguard and stamp +demoguard")
+	}
+}
+
+// main.go must use the helpers (source-level pin for the wiring that cannot be unit-run).
+func TestDemoGuardMainWiring(t *testing.T) {
+	src, err := os.ReadFile("main.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"PolicyName += demoGuardPolicySuffix()", "v7Args = append(v7Args, demoGuardArgs()...)", "DemoGuard = *demoGuard"} {
+		if !strings.Contains(string(src), want) {
+			t.Errorf("main.go missing %q", want)
+		}
+	}
+}
+
+// With -eidguard also on, an equal-EID pair that needs review keeps its own score (no 0.2 clamp); eidguard-only is unchanged.
+func TestDemoEqualEIDWithEIDGuardNoInflation(t *testing.T) {
+	eid := luhnComplete("78419802077524")
+	// placeholder DOBs of different years and different names: needs review for the demo guard, contradiction for eidguard
+	mk := func() []*Prep {
+		x := demoEv("a", "ahs-mushrif", "A1", "1980-01-01", "F", eid)
+		y := demoEv("b", "noor-endo", "N1", "1985-07-01", "F", eid)
+		y.Ev.Name = "Qamar Zubaydi"
+		return []*Prep{x, y}
+	}
+	withDemoGuard(t, true)
+	EIDContraGuard = true
+	L, pairs := demoRun(scoredGBM(-20), mk()...)
+	if len(pairs) != 1 || pairs[0].Stage != "below_review" || pairs[0].P >= 0.2 || pairs[0].P != L.pscore[pk2(0, 1)] || sameCluster(L, "ahs-mushrif|A1", "noor-endo|N1") {
+		t.Fatalf("score inflated or merged: %+v", pairs)
+	}
+	withDemoGuard(t, false)
+	EIDContraGuard = true
+	_, pairs = demoRun(scoredGBM(-20), mk()...)
+	if len(pairs) != 1 || pairs[0].Stage != "near" || pairs[0].P != 0.2 {
+		t.Fatalf("eidguard-only clamp changed: %+v", pairs)
+	}
+	// eidguard-only, contradicting sex: clamp to 0.2 as before
+	withDemoGuard(t, false)
+	EIDContraGuard = true
+	b := demoEv("b", "noor-endo", "N1", "1980-02-22", "M", eid)
+	_, pairs = demoRun(scoredGBM(-20), demoEv("a", "ahs-mushrif", "A1", "1980-02-22", "F", eid), b)
+	if len(pairs) != 1 || pairs[0].Stage != "near" || pairs[0].P != 0.2 {
+		t.Fatalf("eidguard-only behavior changed: %+v", pairs)
+	}
 }

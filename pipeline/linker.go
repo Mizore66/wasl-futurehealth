@@ -560,7 +560,8 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			// the pair would be invisible, so it is kept as a near-miss candidate and the loop asks a reviewer.
 			L.Stats["eid_contradicted_"+why]++
 			equalEID = true
-			if min := 0.2; c.p < min { // fixed at 0.2 regardless of -linkfloor
+			// demoguard.go: a pair that needs review is never raised; the clamp stays for guard-off and exact-demographic pairs
+			if min := 0.2; c.p < min && !demoReview { // fixed at 0.2 regardless of -linkfloor
 				c.p = min
 			}
 		}
