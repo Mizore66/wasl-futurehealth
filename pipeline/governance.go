@@ -271,6 +271,8 @@ type ReviewerCfg struct {
 	// and has error rate SeniorErrRel*Err. If it disagrees, the signed answer becomes the senior answer.
 	SeniorAudit  float64
 	SeniorErrRel float64 // senior per-read error rate relative to Err (assumption 0.5, range 0.25-0.8)
+	// Agent: optional cached evidence-investigator reads (agentrecs.go). nil = byte-identical existing behaviour.
+	Agent *AgentRecs `json:"-"`
 }
 
 var DefaultReviewer = ReviewerCfg{Err: 0, Double: "none", Seed: 1, LinkMedS: 45, EvMedS: 90, Sigma: 0.6,
@@ -390,6 +392,21 @@ func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
 	return false
 }
 
+// humanDouble is the existing double-read: a second independent read for high-risk answers and a senior third read
+// only if the first two disagree.
+func (c ReviewerCfg) humanDouble(it, draw *ReviewItem, tr *Truth, r1 read) (read, []string, float64) {
+	final, reads, secs := r1, []string{"r1"}, r1.secs
+	if c.highRisk(it, r1) {
+		r2 := c.oneRead(draw, tr, "r2")
+		reads, secs = append(reads, "r2"), secs+r2.secs
+		if r2.link != r1.link || r2.ev != r1.ev {
+			r3 := c.oneRead(draw, tr, "r3")
+			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
+		}
+	}
+	return final, reads, secs
+}
+
 // Review produces the sign-off for one item: one read, a second independent read for high-risk answers, and a
 // third (senior) read only if the first two disagree. Role follows the item kind (RBAC).
 func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
@@ -408,14 +425,24 @@ func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
 		draw = &x
 	}
 	r1 := c.oneRead(draw, tr, "r1")
-	final, reads, secs := r1, []string{"r1"}, r1.secs
-	if c.highRisk(it, r1) {
-		r2 := c.oneRead(draw, tr, "r2")
-		reads, secs = append(reads, "r2"), secs+r2.secs
-		if r2.link != r1.link || r2.ev != r1.ev {
-			r3 := c.oneRead(draw, tr, "r3")
-			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
+	var final read
+	var reads []string
+	var secs float64
+	if ag := c.Agent.read(draw); ag != nil {
+		// The agent is one read, never a sign-off, and its seconds are not human seconds. Draws for r1/r3 are the
+		// control's: the agent only decides which human reads happen.
+		so.AgentRead, so.AgentS = ag.Label, ag.LatencyS
+		switch {
+		case ag.Label == "same" && r1.link == "same":
+			final, reads, secs = r1, []string{"r1", "agent"}, r1.secs // the agent replaces the second human read
+		case ag.Label == "same":
+			r3 := c.oneRead(draw, tr, "r3") // senior human breaks the agent/human tie
+			final, reads, secs = r3, []string{"r1", "agent", "r3"}, r1.secs+r3.secs
+		default:
+			final, reads, secs = c.humanDouble(it, draw, tr, r1)
 		}
+	} else {
+		final, reads, secs = c.humanDouble(it, draw, tr, r1)
 	}
 	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, draw.ItemID, "audit") < c.SeniorAudit {
 		// Senior audit of a signed closing answer. Overriding the answer (rather than re-opening the item) keeps the
