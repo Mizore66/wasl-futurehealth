@@ -1870,6 +1870,125 @@ def _r1agent8_gate(unguarded, guarded, cand, kind):
             "reported": reported, "reasons": reasons}
 
 
+AGENT_STAT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens", "latency_s", "human_seconds_saved")  # = agent_investigator.STAT_KEYS
+AGENT_COUNT_KEYS = ("eligible", "covered", "abstain", "invalid", "calls", "tokens", "human_seconds_saved")
+
+
+def _is_count(v):
+    return isinstance(v, int) and not isinstance(v, bool) and 0 <= v < 10 ** 12
+
+
+def _agent_stats(path):
+    st = _agent_json(os.path.join(path, "agent_stats.json"))
+    miss = [k for k in AGENT_STAT_KEYS if k not in st]
+    if miss:
+        raise ValueError("agent_stats.json missing mandatory keys %s" % miss)  # extra keys are allowed and ignored
+    for k in AGENT_STAT_KEYS:
+        v = st[k]
+        ok = _is_count(v) if k in AGENT_COUNT_KEYS else (isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and 0 <= v < 1e12)
+        if not ok:
+            raise ValueError("agent_stats.json invalid value for %s: %r" % (k, v))
+    if st["covered"] > st["eligible"]:
+        raise ValueError("agent_stats.json covered exceeds eligible")
+    return st
+
+
+def _agent_json(p):
+    if os.path.islink(p) or not os.path.isfile(p):
+        raise ValueError("%s missing" % os.path.basename(p))
+    try:
+        with open(p) as h:
+            d = json.load(h)
+    except ValueError:
+        raise ValueError("%s is not valid JSON" % os.path.basename(p)) from None
+    if not isinstance(d, dict):
+        raise ValueError("%s must be a JSON object" % os.path.basename(p))
+    return d
+
+
+def _agent_recs(path):
+    p = os.path.join(path, "agent_recs.ndjson")
+    if os.path.islink(p) or not os.path.isfile(p):
+        raise ValueError("agent_recs.ndjson missing")
+    rows, seen = [], set()
+    with open(p) as h:
+        for x in h:
+            if not x.strip():
+                continue
+            try:
+                r = json.loads(x)
+            except ValueError:
+                raise ValueError("agent_recs.ndjson has an unparsable line") from None
+            if not isinstance(r, dict) or not isinstance(r.get("item"), str) or r.get("label") not in ("same", "different", "uncertain"):
+                raise ValueError("agent_recs.ndjson has a malformed record")
+            if r["item"] in seen:
+                raise ValueError("agent_recs.ndjson repeats item %s" % r["item"])
+            seen.add(r["item"])
+            rows.append(r)
+    return rows
+
+
+def _valid_citations(r):
+    c = r.get("citations")
+    return r.get("valid") is True and isinstance(c, list) and bool(c) and all(isinstance(x, str) and x for x in c)
+
+
+def agent_lane(path):
+    """One materialized lane's cand["agent"] block. accepted = terminal same/different records; accepted_valid = those with valid
+    supporting citations; abstentions (uncertain) are covered but never accepted. No truth is read here."""
+    rp, st, rows = _agent_json(os.path.join(path, "agent_replay.json")), _agent_stats(path), _agent_recs(path)
+    det = rp.get("determinism")
+    if not isinstance(det, dict) or not isinstance(det.get("ok"), bool):
+        raise ValueError("agent_replay.json needs determinism.ok as a boolean")
+    if st["eligible"] <= 0:
+        raise ValueError("agent lane has zero eligible items")
+    acc = [r for r in rows if r["label"] != "uncertain"]
+    if len(acc) > st["covered"]:
+        raise ValueError("accepted recommendations exceed covered items")
+    out = {"replay_deterministic": det["ok"], "eligible": st["eligible"], "covered": st["covered"], "accepted": len(acc),
+           "accepted_valid": sum(_valid_citations(r) for r in acc)}
+    if "live_divergence" in rp:
+        if not _is_count(rp["live_divergence"]):
+            raise ValueError("agent_replay.json live_divergence must be a non-negative integer")
+        out["live_divergence"] = rp["live_divergence"]
+    return out
+
+
+def aggregate_agent(lanes):
+    """Exact integer sums, boolean AND on determinism; live_divergence is summed and must be present on all lanes or none."""
+    if not lanes:
+        raise ValueError("no agent lanes to aggregate")
+    out = {"replay_deterministic": all(a["replay_deterministic"] for a in lanes)}
+    for k in ("eligible", "covered", "accepted", "accepted_valid"):
+        out[k] = sum(a[k] for a in lanes)
+    live = ["live_divergence" in a for a in lanes]
+    if any(live):
+        if not all(live):
+            raise ValueError("live_divergence present on only some lanes")
+        out["live_divergence"] = sum(a["live_divergence"] for a in lanes)
+    return out
+
+
+def agent_time(paths):
+    """Agent cost kept apart from human reviewer time: agent calls/tokens/latency, plus reported abstain/invalid/saved-seconds."""
+    sts = [_agent_stats(p) for p in paths]
+    return {"agent": {"calls": sum(s["calls"] for s in sts), "tokens": sum(s["tokens"] for s in sts),
+                      "latency_s": round(sum(s["latency_s"] for s in sts), 6)},
+            "human_seconds_saved": sum(s["human_seconds_saved"] for s in sts),
+            "abstain": sum(s["abstain"] for s in sts), "invalid": sum(s["invalid"] for s in sts)}
+
+
+def agent_confusion(recs, truth):
+    """Analysis only: agent label (rows) against ground-truth same/different (columns), never written to the sidecar."""
+    m = {k: {"same": 0, "different": 0} for k in ("same", "different", "uncertain")}
+    for r in recs:
+        t = truth.get(r["item"])
+        if t not in ("same", "different"):
+            raise ValueError("no truth label for item %s" % r["item"])
+        m[r["label"]][t] += 1
+    return m
+
+
 def reference_gate(ref, cand, kind, base=None):
     """Second gate of a three-arm candidate (r1review vs its reference arm pairfeat5), applied after gate(base, cand):
     recall gain over the reference >= REF_MIN_GAIN_PP[kind]; every safety count (SAFETY and wrong releases by origin, as
