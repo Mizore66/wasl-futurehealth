@@ -119,6 +119,13 @@ func loadConsentTruth(data string) map[string]bool {
 
 // reviewLoop runs the closed loop with the given reviewer to a fixed point.
 func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int) {
+	rp, sos, iters, _ := reviewLoopFull(o, P, cfg)
+	return rp, sos, iters
+}
+
+// reviewLoopFull is reviewLoop that also returns the final replay's prep list. Agent eligibility is refreshed from
+// each replay's linker before that replay's items are answered.
+func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int, []*Prep) {
 	anchors := map[string]int{}
 	sos := map[string]*Signoff{}
 	q := newReviewQueue()
@@ -141,10 +148,11 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 			}
 		}
 		rp := replay(nil, list, o.gbm, o.iso, P, false)
+		cfg.Agent.bind(rp.L)
 		if ReplayWorklist { // the live reviewer's order and worklists (services.go runReviewer)
 			ids := q.answer(rp, cfg, o.tr, sos)
 			if len(ids) == 0 {
-				return rp, sos, iter
+				return rp, sos, iter, list
 			}
 			for _, id := range ids {
 				anchors[id] = posToBase[rp.items[id].InSeq-1]
@@ -158,7 +166,7 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 			}
 		}
 		if len(ids) == 0 {
-			return rp, sos, iter
+			return rp, sos, iter, list
 		}
 		sort.Strings(ids)
 		for _, id := range ids {
@@ -424,6 +432,7 @@ func sweep(data, wasl string, P int, out string) {
 		cfg := DefaultReviewer
 		cfg.Err, cfg.Rho, cfg.Double, cfg.Seed = j.err, j.rho, j.double, j.seed
 		cfg = withMitigation(cfg, SweepMitBase, j.mit)
+		cfg.Agent = nil // the agent hook is never invoked from parallel sweep jobs
 		rp, sos, iters := reviewLoop(o, P, cfg)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		secs, reads, linkS, evS, guardS, guardN := 0.0, 0, 0.0, 0.0, 0.0, 0
