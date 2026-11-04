@@ -48,6 +48,7 @@ type LinkerCore struct {
 	cannot       map[int]map[int]bool
 	pscore       map[[2]int]float64
 	near         map[int]map[int]float64 // lo <= p < thr
+	demoMissing  map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
 	loops        map[string]*LoopFacts   // static part (sr info)
 	loopRec      map[string]int
 	tasks        map[string][]TaskFact // loop -> tasks
@@ -87,7 +88,7 @@ func (L *LinkerCore) attachANN() {
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
 	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
-		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
+		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}

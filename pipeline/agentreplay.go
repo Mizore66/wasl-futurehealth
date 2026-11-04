@@ -235,7 +235,7 @@ func writeAgentStats(path string, o *offline, cfg ReviewerCfg, ar *AgentRecs, rp
 	st := map[string]interface{}{"eligible": 0, "covered": 0, "abstain": 0, "invalid": 0, "calls": 0, "tokens": 0, "latency_s": 0.0,
 		"human_seconds_saved": 0.0, "human_seconds_delta": 0.0, "ineligible_recs": 0, "agent_reads": 0}
 	if ar != nil {
-		recOf := ar.rec
+		L := ar.L
 		ids := make([]string, 0, len(rp.items))
 		for id := range rp.items {
 			ids = append(ids, id)
@@ -249,7 +249,7 @@ func writeAgentStats(path string, o *offline, cfg ReviewerCfg, ar *AgentRecs, rp
 				continue
 			}
 			k := pairKey(it.Pair[0], it.Pair[1])
-			if seen[k] || !agentEligiblePair(recOf, k[0], k[1]) {
+			if seen[k] || !agentEligiblePair(L, k[0], k[1]) {
 				continue
 			}
 			seen[k] = true
