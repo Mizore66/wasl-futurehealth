@@ -37,7 +37,13 @@ func agentRecsWith(t *testing.T, recs map[string]*Rec, lines ...string) *AgentRe
 	if err != nil || ar == nil {
 		t.Fatalf("load: %v %v", ar, err)
 	}
-	ar.rec = func(pk string) *Rec { return recs[pk] }
+	L := &LinkerCore{byPk: map[string]int{}, recs: []*Rec{}, demoMissing: map[[2]string]bool{}, cannot: map[int]map[int]bool{}}
+	for pk, r := range recs {
+		L.byPk[pk] = len(L.recs)
+		L.recs = append(L.recs, r)
+	}
+	L.demoMissing[pairKey("a", "b")] = true
+	ar.L = L
 	return ar
 }
 
@@ -122,6 +128,24 @@ func TestAgentRecEligibility(t *testing.T) {
 	withDemoGuard(t, true)
 	if got := ar.Ineligible(); got != 5 {
 		t.Errorf("ineligible recs=%d want 5", got)
+	}
+}
+
+func TestAgentEligibilityRequiresTraceAndNoUnlink(t *testing.T) {
+	withDemoGuard(t, true)
+	recs := map[string]*Rec{"a": {Pk: "a", Sex: "F"}, "b": {Pk: "b", Dob: "1980-02-22", Sex: "F"}}
+	ar := agentRecsWith(t, recs, agentLine("r1", "a", "b", "same"))
+	if ar.read(linkItem("i", "a", "b")) == nil {
+		t.Fatal("baseline demographic_missing pair must be eligible")
+	}
+	delete(ar.L.demoMissing, pairKey("a", "b")) // xscript_cap or ordinary near: not the agent population
+	if ar.read(linkItem("i", "a", "b")) != nil {
+		t.Fatal("pair without a demographic_missing trace must be ineligible")
+	}
+	ar.L.demoMissing[pairKey("a", "b")] = true
+	ar.L.cannot[ar.L.byPk["a"]] = map[int]bool{ar.L.byPk["b"]: true} // reviewer later answered different
+	if ar.read(linkItem("i", "a", "b")) != nil {
+		t.Fatal("later unlinked pair must be ineligible")
 	}
 }
 
@@ -303,7 +327,8 @@ func TestAgentReadControlIdentity(t *testing.T) {
 
 func TestAgentRecsBindUsesLinkerRegistrations(t *testing.T) {
 	withDemoGuard(t, true)
-	L := &LinkerCore{byPk: map[string]int{"a": 0, "b": 1}, recs: []*Rec{{Pk: "a", Sex: "F"}, {Pk: "b", Dob: "1980-02-22", Sex: "F"}}}
+	L := &LinkerCore{byPk: map[string]int{"a": 0, "b": 1}, recs: []*Rec{{Pk: "a", Sex: "F"}, {Pk: "b", Dob: "1980-02-22", Sex: "F"}},
+		demoMissing: map[[2]string]bool{pairKey("a", "b"): true}}
 	ar, err := LoadAgentRecs(agentWrite(t, agentLine("r", "a", "b", "same")))
 	if err != nil {
 		t.Fatal(err)

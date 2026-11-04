@@ -50,6 +50,10 @@ func (L *LinkerCore) demoClash(ra, rb int) bool {
 
 // demoteNear routes a needs-review pair to the near/review path with its own model score (never raised).
 func (L *LinkerCore) demoteNear(r, o *Rec, p float64, aff map[int]bool) {
+	if L.demoMissing == nil {
+		L.demoMissing = map[[2]string]bool{}
+	}
+	L.demoMissing[pairKey(r.Pk, o.Pk)] = true
 	L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: p, Stage: "near", Reason: "demographic_missing"})
 	if L.near[r.idx] == nil {
 		L.near[r.idx] = map[int]float64{}
