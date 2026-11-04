@@ -166,13 +166,18 @@ func TestValidateNoise(t *testing.T) {
 		if err := validateNoise(cmd, "v1t"); err == nil {
 			t.Errorf("%q accepted v1t", cmd)
 		}
-		for _, n := range []string{"v1", "v2", ""} {
+		for _, n := range []string{"v1", "v2", "v3", ""} {
 			if err := validateNoise(cmd, n); err != nil {
 				t.Errorf("%q %q: %v", cmd, n, err)
 			}
 		}
 	}
-	for _, n := range []string{"v1", "v2", "v1t"} {
+	for _, cmd := range []string{"gen", "featdump", "nameidf", "orchestrate", "bench"} {
+		if err := validateNoise(cmd, "v3"); err != nil {
+			t.Errorf("%s rejected v3: %v", cmd, err)
+		}
+	}
+	for _, n := range []string{"v1", "v2", "v3", "v1t"} {
 		if err := validateNoise("featdump", n); err != nil {
 			t.Errorf("featdump %q: %v", n, err)
 		}
