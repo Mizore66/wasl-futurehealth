@@ -38,11 +38,16 @@ PROTOCOLS = {
     "pairfeat8": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v3",
                   "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34,
                   "md_namesakes": 0.10, "rd_namesakes": 0.10},
+    # pairfeat9 (spec 2026-11-05-crc-pairfeat9-middle-initial-design.md): pairfeat8 plus narrow middle-initial hard negatives
+    "pairfeat9": {"train_seeds": [1019, 1021, 1031, 1033, 1039], "cal_seed": 2011, "noise": "v3",
+                  "namesakes": 0.10, "family_namesakes": 0.10, "lambda_l2": 1.0, "xs_namesakes": 0.10, "nfeat": 34,
+                  "md_namesakes": 0.10, "rd_namesakes": 0.10, "mi_namesakes": 0.002},
 }
-# pairfeat7 hard-negative kinds: featdump flag and sidecar prefix, and the floor message label
-HARD_NEGATIVES7 = (("md", "missing-date"), ("rd", "same-date"))
+# pairfeat7/9 hard-negative kinds: featdump flag and sidecar prefix, and the floor message label
+HARD_NEGATIVES7 = (("md", "missing-date"), ("rd", "same-date"), ("mi", "middle-initial"))
 LEAF_LIMIT = 5.0
 NAMESAKE_FLOOR = 500
+MI_NAMESAKE_FLOOR = 10  # pairfeat9 middle-initial kind only: rate 0.002 yields ~10 base namesakes per 5,000-person dump
 DEFAULT_MODELSET = "pairfeat1"
 PERSONS = 5000
 BASELINE_FILES = ["encoder_weights.json", "lgb_stream.json", "iso.json", "iso_v7.json"]
@@ -53,8 +58,9 @@ CODE_FILES = ["pipeline/text.go", "pipeline/encdev.go", "pipeline/gen.go",
               "encoder/fit_scorer.py", "encoder/fit_pairfeat1.py"]
 PAIRFEAT6_CODE_FILES = ["pipeline/pairfeat6.go", "pipeline/namesake.go"]
 PAIRFEAT7_CODE_FILES = ["pipeline/pairfeat7.go"]
-NOISE3_CODE_FILES = ["pipeline/noise3.go"]  # noise v3 source, pinned for pairfeat8 only
-USAGE = ("usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6|pairfeat7|pairfeat8]"
+NOISE3_CODE_FILES = ["pipeline/noise3.go"]  # noise v3 source, pinned for pairfeat8 and later
+PAIRFEAT9_CODE_FILES = ["pipeline/pairfeat9.go"]  # middle-initial generator, pinned only where mi_namesakes is set
+USAGE = ("usage: fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6|pairfeat7|pairfeat8|pairfeat9]"
          " [--reference REFERENCE_FIT_DIR]")
 
 
@@ -265,8 +271,9 @@ def check_namesake_floor(sidecars, modelset=None):
             for key, label in HARD_NEGATIVES7:
                 if PROTOCOLS[modelset].get(key + "_namesakes"):
                     t = _sidecar_rows_total(sidecars, key + "_base_namesake_rows")
-                    if t < NAMESAKE_FLOOR:
-                        raise NamesakeFloorError(f"namesake floor not met ({label}): {t} < {NAMESAKE_FLOOR}")
+                    floor = MI_NAMESAKE_FLOOR if key == "mi" else NAMESAKE_FLOOR
+                    if t < floor:
+                        raise NamesakeFloorError(f"namesake floor not met ({label}): {t} < {floor}")
                     more.append(t)
             return (total, ftotal, xtotal) + tuple(more)
         return total, ftotal
@@ -318,7 +325,7 @@ def xs_namesake_slice(csv_path, sidecar_path, width=38):
 
 
 def hard_negative_slice(csv_path, sidecar_path, key, width=38):
-    """pairfeat7: the md (missing-date) or rd (same-real-date) rows of a namesake-cal dump."""
+    """pairfeat7/9: the md (missing-date), rd (same-real-date) or mi (middle-initial) rows of a namesake-cal dump."""
     return _slice(csv_path, sidecar_path, key + "_rows", width)
 
 
@@ -410,7 +417,8 @@ def base_manifest(root, encoder, modelset=DEFAULT_MODELSET, name_idf=None):
     proto = PROTOCOLS[modelset]
     files = CODE_FILES + (PAIRFEAT6_CODE_FILES if uses_name_idf(modelset) else []) + \
         (PAIRFEAT7_CODE_FILES if proto.get("md_namesakes") else []) + \
-        (NOISE3_CODE_FILES if proto["noise"] == "v3" else [])
+        (NOISE3_CODE_FILES if proto["noise"] == "v3" else []) + \
+        (PAIRFEAT9_CODE_FILES if proto.get("mi_namesakes") else [])
     m = {"git_head": subprocess.check_output(["git", "-C", root, "rev-parse", "HEAD"], text=True).strip(),
          "nfeat": nfeat(modelset), "train": {"split": "train", "seeds": list(proto["train_seeds"]), "persons": PERSONS},
          "cal": {"split": "cal", "seeds": [proto["cal_seed"]], "persons": 0},
@@ -467,6 +475,8 @@ def training_manifest(root, encoder, modelset, sidecars, base=None):
                 e[key + "_namesakes_added"] = int(sc[key + "_namesakes_added"])
                 e[key + "_base_namesake_rows"] = int(sc[key + "_base_namesake_rows"])
             m[key + "_namesake_base_rows_total"] = sum(int(sc[key + "_base_namesake_rows"]) for _, sc in sidecars.values())
+            if key == "mi":
+                m["mi_namesake_floor"] = MI_NAMESAKE_FLOOR
     return m
 
 
@@ -527,7 +537,8 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
                       modelset=DEFAULT_MODELSET, namesake_slice=None, plain_cal_diff_at_merge_0_7=None,
                       family_namesake_slice=None, ns_cal_sidecar_sha256=None, max_abs_leaf=None, lambda_l2=None,
                       xs_namesake_slice=None, name_idf_sha256=None, unseen_token_share=None,
-                      md_namesake_slice=None, rd_namesake_slice=None, plain_cal_diff_at_merge_0_7_reference=None):
+                      md_namesake_slice=None, rd_namesake_slice=None, plain_cal_diff_at_merge_0_7_reference=None,
+                      mi_namesake_slice=None):
     m = {
         "git_head": git_head,
         "training_manifest_sha256": sha256(os.path.join(out, "training-manifest.json")),
@@ -556,6 +567,8 @@ def artifact_manifest(git_head, out, csv_names, models_dir, chain_dir, rows, max
         m["md_namesake_slice"] = md_namesake_slice
     if rd_namesake_slice is not None:
         m["rd_namesake_slice"] = rd_namesake_slice
+    if mi_namesake_slice is not None:
+        m["mi_namesake_slice"] = mi_namesake_slice
     if plain_cal_diff_at_merge_0_7_reference is not None:
         m["plain_cal_diff_at_merge_0_7_reference"] = plain_cal_diff_at_merge_0_7_reference
     return m
@@ -674,7 +687,7 @@ def main(argv):
         extra["plain_cal_diff_at_merge_0_7_reference"] = reference
         print(f"plain cal different-at-merge-0.7 (reported, not gated): {modelset} "
               f"{extra['plain_cal_diff_at_merge_0_7']} vs {reference['modelset']} {reference['plain_cal_diff_at_merge_0_7']}")
-        for key in ("xs", "md", "rd"):
+        for key in ("xs", "md", "rd", "mi"):
             print(f"{key} hard-negative slice (namesake cal dump): {json.dumps(extra[key + '_namesake_slice'], sort_keys=True)}")
     if idf:
         with open(idf) as fh:
