@@ -59,7 +59,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; r1agent8) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8 r1agent8)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; r1agent8|r1agent9) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8 r1agent8 r1agent9)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -94,6 +94,7 @@ case "$CAND" in
   r1photo7) DEV_SEEDS="769 773 787"; VAL_SEEDS="797 809 811 821 823"; CHAIN=pairfeat7; REF=pairfeat5; REFCHAIN=experiment;;
   r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;
   r1agent8) DEV_SEEDS="881 883 887"; VAL_SEEDS="907 911 919 929 937"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared; BASEARM=r1photo8;;
+  r1agent9) DEV_SEEDS="941 943 947"; VAL_SEEDS="953 967 977 979 983"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared; BASEARM=r1photo8;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in "$BASEARM"|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
@@ -135,7 +136,7 @@ elif refchain == "shared":  # one fit serves reference and candidate (r1photo8):
         sys.exit(1)
     with open(ep) as h:
         e = json.load(h)
-    want_arms = ({"r1photo8": chain, "r1photo8ref": chain, "r1agent8": chain} if cand == "r1agent8"
+    want_arms = ({"r1photo8": chain, "r1photo8ref": chain, cand: chain} if cand in ("r1agent8", "r1agent9")
                  else {"baseline": "baseline", ref: chain, cand: chain})
     if not isinstance(e, dict) or e.get("candidate") != cand or e.get("reference") != ref or e.get("chain") != chain \
             or not isinstance(e.get(chain + "_chain_sha256"), dict) or m.get(chain + "_chain_sha256") != e[chain + "_chain_sha256"] \

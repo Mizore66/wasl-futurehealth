@@ -1007,11 +1007,13 @@ class Candidates(unittest.TestCase):
                                                       "extra_flags": ["-r1review"], "lane_image": True,
                                                       "baseline_gating": False},
                                          "pairfeat6": P6_ENTRY, "pairfeat7": P7_ENTRY, "r1photo7": RP_ENTRY,
-                                         "r1photo8ref": R8REF, "r1photo8": R8_ENTRY, "r1agent8": R9_ENTRY})
+                                         "r1photo8ref": R8REF, "r1photo8": R8_ENTRY, "r1agent8": R9_ENTRY,
+                                         "r1agent9": dict(R9_ENTRY, dev_seeds=[941, 943, 947],
+                                                          validation_seeds=[953, 967, 977, 979, 983])})
         self.assertEqual(pfc.VALIDATION_SEEDS, [401, 409, 419, 421, 431])
         self.assertEqual(pfc.ALLOWED_ARMS, ("baseline", "pairfeat1", "pairfeat2", "pairfeat3", "pairfeat4",
                                                   "pairfeat5", "r1review", "pairfeat6", "pairfeat7", "r1photo7",
-                                                  "r1photo8ref", "r1photo8", "r1agent8"))
+                                                  "r1photo8ref", "r1photo8", "r1agent8", "r1agent9"))
         self.assertEqual(pfc.modes(P2), {
             "dev-clean": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0", "errungraded": "0"},
             "dev-stress": {"split": "dev", "seeds": [317, 331, 337], "rerr": "0.04", "errungraded": "0.25"},
@@ -1025,7 +1027,7 @@ class Candidates(unittest.TestCase):
                                         "pairfeat5": "pairfeat5", "r1review": "pairfeat5",
                                         "pairfeat6": "pairfeat6", "pairfeat7": "pairfeat7", "r1photo7": "pairfeat7",
                                         "r1photo8ref": "pairfeat8", "r1photo8": "pairfeat8",
-                                        "r1agent8": "pairfeat8"})
+                                        "r1agent8": "pairfeat8", "r1agent9": "pairfeat8"})
         for bad in ("baseline", "pairfeat8", "r1photo8ref", "", None):
             with self.assertRaises(ValueError):
                 pfc.mode_settings("dev-clean", bad)
@@ -4080,7 +4082,7 @@ class Pairfeat7Candidate(unittest.TestCase):
                          ("off", P5, [], ["baseline", P5, P7], P7, P7_VAL))
         self.assertEqual(pfc.edge_classifier(P7), (pfc.EDGE_CLASSES7, pfc.edge_class7))
         for c in pfc.CANDIDATES:
-            if c not in (P7, RP, "r1photo8ref", "r1photo8", "r1agent8"):
+            if c not in (P7, RP, "r1photo8ref", "r1photo8", "r1agent8", "r1agent9"):
                 self.assertEqual(pfc.edge_classifier(c), (pfc.EDGE_CLASSES, pfc.edge_class))
 
     def test_seeds_never_touched_before(self):
@@ -4653,7 +4655,7 @@ class R1photo8Candidate(unittest.TestCase):
 
     def test_lane_noise_is_v3_only_for_the_new_arms(self):
         for c in pfc.CANDIDATES:
-            self.assertEqual(pfc.lane_noise(c), "v3" if c in (R8REF_NAME, R8, "r1agent8") else "v2", c)
+            self.assertEqual(pfc.lane_noise(c), "v3" if c in (R8REF_NAME, R8, "r1agent8", "r1agent9") else "v2", c)
         self.assertEqual(pfc.lane_noise(None), "v2")
         s = pfc.expected_settings("validation-clean", R8)
         self.assertEqual((s["noise"], s["candidate_extra_flags"], s["reference_extra_flags"], s["arms"], s["candidate_modelset"]),
@@ -5019,10 +5021,10 @@ class R1agent8Config(unittest.TestCase):
         self.assertEqual(pfc.arms(R8), ("baseline", R8REF_NAME, R8))
         self.assertEqual(pfc.base_arm(R9), R8)
         for c in pfc.CANDIDATES:
-            if c != R9:
+            if c not in (R9, "r1agent9"):
                 self.assertEqual(pfc.base_arm(c), "baseline", c)
         self.assertTrue(pfc.agent_replay(R9))
-        self.assertFalse(any(pfc.agent_replay(c) for c in pfc.CANDIDATES if c != R9))
+        self.assertFalse(any(pfc.agent_replay(c) for c in pfc.CANDIDATES if c not in (R9, "r1agent9")))
         self.assertEqual(pfc.modes(R9)["dev-clean"]["seeds"], R9_DEV)
         self.assertEqual(pfc.modes(R9)["validation-clean"]["seeds"], R9_VAL)
 
@@ -5062,6 +5064,26 @@ class R1agent8Config(unittest.TestCase):
             _wj(os.path.join(td, "experiment.json"), e)
             with self.assertRaises(pfc.PreflightError):
                 pfc.read_experiment(td)
+
+
+class R1agent9Config(unittest.TestCase):
+    def test_config_and_fresh_seeds(self):
+        c = pfc.CANDIDATES["r1agent9"]
+        self.assertEqual((c["dev_seeds"], c["validation_seeds"]), ([941, 943, 947], [953, 967, 977, 979, 983]))
+        self.assertEqual((pfc.reference("r1agent9"), pfc.base_arm("r1agent9"), pfc.chain_of("r1agent9")),
+                         (R8REF_NAME, R8, P8))
+        self.assertTrue(pfc.agent_replay("r1agent9"))
+        uses = pfc.seed_uses()
+        for sd in c["dev_seeds"] + c["validation_seeds"]:
+            self.assertEqual(uses[sd], ["r1agent9"], sd)
+        self.assertEqual(pfc.mode_settings("validation-clean", "r1agent9")["seeds"], c["validation_seeds"])
+
+    def test_gate_accepts_multihop_candidate(self):
+        cand = r9_arm("r1agent9", 530, fm=8, cpe=8, uncapped=3, hours=10.0)
+        cand["agent"] = r9_agent(covered=80)
+        g = pfc._r1agent8_gate(r9_arm(R8REF_NAME, 530, fm=10, cpe=10, uncapped=5, hours=10.0),
+                               r9_arm(R8, 530, fm=9, cpe=9, uncapped=4, hours=11.0), cand, "selection")
+        self.assertTrue(g["pass"], g["reasons"])
 
 
 class R1agent8Gate(unittest.TestCase):
@@ -5728,7 +5750,7 @@ class R1agent8Eligibility(unittest.TestCase):
 class R1photo8Build(unittest.TestCase):
     def test_noise_build_only_for_the_new_arms(self):
         for c in pfc.CANDIDATES:
-            self.assertEqual(pfc.noise_build(c), {"noise": "v3"} if c in (R8REF_NAME, R8, "r1agent8") else {}, c)
+            self.assertEqual(pfc.noise_build(c), {"noise": "v3"} if c in (R8REF_NAME, R8, "r1agent8", "r1agent9") else {}, c)
 
     def test_read_build_requires_exactly_the_experiment_noise(self):
         with tempfile.TemporaryDirectory() as td:
@@ -5758,7 +5780,8 @@ class R1photo8Runner(RunnerFixture, unittest.TestCase):
         with open(SCRIPT) as h:
             text = h.read()
         self.assertIn('r1photo8) DEV_SEEDS="827 829 839"; VAL_SEEDS="853 857 859 863 877"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared;;', text)
-        self.assertIn("r1photo7 r1photo8ref r1photo8 r1agent8)", text)
+        self.assertIn("r1photo7 r1photo8ref r1photo8 r1agent8 r1agent9)", text)
+        self.assertIn('r1agent9) DEV_SEEDS="941 943 947"; VAL_SEEDS="953 967 977 979 983";', text)
         self.assertIn("r1photo8ref|r1photo8) ;;", text)
         self.assertIn("pfc.noise_build(cand)", text)
         self.assertNotIn('r1photo8ref) DEV_SEEDS', text)               # the reference-only arm has no candidate row

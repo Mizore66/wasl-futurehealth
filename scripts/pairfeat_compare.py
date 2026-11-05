@@ -176,6 +176,14 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
                            "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
                            "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
                            "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
+                           "report_linked_pairs": True, "edge_classes": "pairfeat7"},
+              # r1agent9 (spec 2026-11-05-crc-r1agent9-multihop-evidence-design.md): the r1agent8 stack plus bounded
+              # two-hop demographic near-path review; fresh seeds after r1agent8's read-only selection failure
+              "r1agent9": {"dev_seeds": [941, 943, 947], "validation_seeds": [953, 967, 977, 979, 983],
+                           "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                           "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
+                           "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
+                           "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
                            "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
@@ -263,7 +271,7 @@ def base_arm(candidate):
 
 
 def agent_replay(candidate):
-    """True when the candidate's offline replay consumes agent recommendations (r1agent8 only)."""
+    """True for candidates whose offline replay consumes agent recommendations (r1agent8/r1agent9)."""
     return bool(CANDIDATES.get(candidate, {}).get("agent_replay"))
 
 
@@ -837,7 +845,7 @@ def freeze_validation(exp_dir, repo=REPO, head=None):
 # ---------------------------------------------------------------- lane commands and guard
 
 def materialized_run_dir(o, candidate):
-    """The run directory consumed after replay: materialized only for r1agent8, live for every earlier candidate."""
+    """The run directory consumed after replay: materialized for offline agent candidates, live for earlier candidates."""
     return o + "/run/agent/main" if agent_replay(candidate) else o + "/run/main"
 
 
@@ -982,7 +990,7 @@ def guard(argv, mode, arm, bin_, candidate):
         bad("agent replay flags are only allowed on agent_investigator.py")
     if cmd == "agent_investigator.py":
         if not agent_replay(candidate):
-            bad("agent replay stage is only authorised for r1agent8")
+            bad("agent replay stage is only authorised for r1agent8/r1agent9")
         repo = os.path.dirname(os.path.dirname(bin_))
         run = val("--run")
         if not run or not run.endswith("/run/agent"):
@@ -1922,8 +1930,8 @@ def _r1agent8_gate(unguarded, guarded, cand, kind):
             raise ValueError("the r1agent8 gate needs candidate agent.%s as a non-negative integer" % k)
     uk, gk, ck = unguarded.get("arm"), guarded.get("arm"), cand.get("arm")
     reasons = []
-    if ck != "r1agent8" or uk != reference(ck) or gk != base_arm(ck):
-        reasons.append("arms must be %s vs comparators %s (unguarded) and %s (guarded)" % ("r1agent8", reference("r1agent8"), base_arm("r1agent8")))
+    if not agent_replay(ck) or uk != reference(ck) or gk != base_arm(ck):
+        reasons.append("arms must be %s vs comparators %s (unguarded) and %s (guarded)" % (ck, reference(ck), base_arm(ck)))
     if not unguarded["truth_closed"] == guarded["truth_closed"] == cand["truth_closed"]:
         reasons.append("truth_closed differs between arms")
     if not cand["truth_closed"]:
@@ -2366,7 +2374,7 @@ def _load_lane(path, seed, arm, mode, candidate):
 
 def analyse(mode, out, roots, repo=REPO, head=None):
     exp = os.path.dirname(os.path.abspath(out))
-    base_name = base_arm("r1agent8") if "r1agent8" in roots else "baseline"
+    base_name = next((base_arm(c) for c in roots if agent_replay(c)), "baseline")
     named = sorted(set(roots) - {base_name})
     three = len(roots) == 3 and len(named) == 2 and any(reference(n) in named for n in named)  # comparator, reference, candidate
     if base_name not in roots or not (three or len(roots) == 2) or not named or any(n not in CANDIDATES for n in named):
@@ -2518,7 +2526,7 @@ def main(argv):
                           "model_chain_sha256": chain}, sort_keys=True))
         return 0
     usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT (candidate %s) "
-             "| r1agent8: MODE OUT_JSON r1photo8=ROOT r1photo8ref=ROOT r1agent8=ROOT "
+             "| r1agent8/r1agent9: MODE OUT_JSON r1photo8=ROOT r1photo8ref=ROOT CANDIDATE=ROOT "
              "| init-experiment EXPERIMENT_DIR CANDIDATE | freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR"
              % "|".join(sorted(experiment_candidates())))
     if len(argv) not in (4, 5) or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
@@ -2531,7 +2539,7 @@ def main(argv):
             print("bad or repeated arm " + name, file=sys.stderr)
             return 2
         roots[name] = root
-    if "baseline" not in roots and "r1agent8" not in roots:
+    if "baseline" not in roots and not any(agent_replay(c) for c in roots):
         print("a baseline arm is required: " + usage, file=sys.stderr)
         return 2
     res = analyse(argv[0], argv[1], roots)
