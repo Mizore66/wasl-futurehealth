@@ -131,11 +131,56 @@ func TestPairfeat9FeatDump(t *testing.T) {
 		}
 	}
 	regs := []fdReg{{0, "a b", "", "M", "", 0}}
-	out, kinds := pairfeat7Negatives(regs, nil, nil, 1, 1, "")
+	out, kinds := pairfeat7Negatives(regs, nil, nil, 1, 1, "", nil)
 	if len(kinds) != 0 || len(out) != 1 || out[0] != regs[0] {
 		t.Fatal("rate 0 changed registrations")
 	}
 	if string(c0) == string(c1) {
 		t.Error("mi rate 0.1 left the dump unchanged")
+	}
+}
+
+func TestMIDobEligibility(t *testing.T) {
+	ps := []Person{
+		{Qid: "e", En: "Kate O'Brien", Dob: "", Sex: "F"},
+		{Qid: "p", En: "Kate O'Brien", Dob: "1963-01-01", Sex: "F"},
+	}
+	xs, base := buildMINamesakes(ps, 0.999999, rand.New(rand.NewSource(1)))
+	if len(xs) != 1 || base[0] != 1 || xs[0].Qid != "mi-p" {
+		t.Fatalf("xs=%+v base=%v", xs, base)
+	}
+}
+
+func TestPairfeat7NegativesMIFirstOffsetsAndOverlap(t *testing.T) {
+	old := MINamesakeRate
+	defer func() { MINamesakeRate = old }()
+	MINamesakeRate = 0.999999
+	ps := []Person{
+		{Qid: "a", En: "Kate O'Brien", Dob: "1963-01-01", Sex: "F", Idx: 1, Eid: "784-1963-1234567-1"},
+		{Qid: "b", En: "John Smith", Dob: "1970-02-02", Sex: "M", Idx: 2, Eid: "784-1970-1234567-1"},
+		{Qid: "c", En: "Mary Jones", Dob: "1980-03-03", Sex: "F", Idx: 3, Eid: "784-1980-1234567-1"},
+	}
+	var regs []fdReg
+	for i := range ps {
+		regs = append(regs, fdReg{i, ps[i].En, ps[i].Dob, ps[i].Sex, "", ps[i].Idx})
+	}
+	out, kinds := pairfeat7Negatives(regs, ps, nil, 5, 10, "", map[int]bool{1: true})
+	if len(kinds) != 1 || kinds[0].key != "mi" || kinds[0].added != 2 {
+		t.Fatalf("kinds %+v", kinds)
+	}
+	if !reflect.DeepEqual(kinds[0].base, map[int]int{10: 0, 11: 2}) {
+		t.Fatalf("first offsets/bases %v", kinds[0].base)
+	}
+	n := map[int]int{}
+	for _, g := range out {
+		n[g.pid]++
+	}
+	if len(out) != 5 || n[0] != 1 || n[1] != 1 || n[2] != 1 || n[10] != 1 || n[11] != 1 {
+		t.Fatalf("registrations %+v", out)
+	}
+	for _, g := range out {
+		if g.pid == 1 && g != regs[1] {
+			t.Fatalf("overlapping base registration changed: %+v", g)
+		}
 	}
 }

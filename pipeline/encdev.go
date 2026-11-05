@@ -334,7 +334,13 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 		}
 		xsAdded = len(xs)
 	}
-	regs, hn := pairfeat7Negatives(regs, ps, pool, seed, len(ps)+nsAdded+nfAdded+xsAdded, encPath) // pairfeat7.go
+	usedBases := map[int]bool{}
+	for _, m := range []map[int]int{nsBase, nfBase, xsBase} {
+		for _, bp := range m {
+			usedBases[bp] = true
+		}
+	}
+	regs, hn := pairfeat7Negatives(regs, ps, pool, seed, len(ps)+nsAdded+nfAdded+xsAdded, encPath, usedBases) // pairfeat7.go
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
 	L := NewLinkerCore(nil, 1)

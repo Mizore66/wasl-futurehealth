@@ -29,6 +29,8 @@ func miName(en string, bi int) (string, bool) {
 	return strings.Join(out, " "), true
 }
 
+// buildMINamesakes: one namesake per sampled base with a known sex, a non-empty DOB (placeholder dates such as Jan 01
+// are allowed) and an eligible name.
 func buildMINamesakes(ps []Person, rate float64, r *rand.Rand) ([]Person, []int) {
 	if rate <= 0 {
 		return nil, nil
@@ -37,7 +39,7 @@ func buildMINamesakes(ps []Person, rate float64, r *rand.Rand) ([]Person, []int)
 	var base []int
 	for bi := range ps {
 		b := &ps[bi]
-		if r.Float64() >= rate || (b.Sex != "M" && b.Sex != "F") {
+		if r.Float64() >= rate || (b.Sex != "M" && b.Sex != "F") || b.Dob == "" {
 			continue
 		}
 		name, ok := miName(b.En, bi)
