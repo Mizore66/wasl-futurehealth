@@ -148,6 +148,7 @@ func main() {
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	fs.Float64Var(&MDNamesakeRate, "mdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic missing-date namesake hard negative (pairfeat7 training only)")
 	fs.Float64Var(&RDNamesakeRate, "rdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic same-real-date stranger hard negative (pairfeat7 training only)")
+	fs.Float64Var(&MINamesakeRate, "minamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic middle-initial namesake hard negative (pairfeat9 training only)")
 	fs.Float64Var(&XSNamesakeRate, "xsnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic cross-script namesake hard negative (pairfeat6 training only)")
 	fs.Float64Var(&FamilyNamesakeRate, "familynamesakes", 0, "featdump only: share of persons given a synthetic family-name namesake hard negative (training only)")
 	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
@@ -217,7 +218,7 @@ func main() {
 	for _, v := range []struct {
 		flag string
 		rate float64
-	}{{"-mdnamesakes", MDNamesakeRate}, {"-rdnamesakes", RDNamesakeRate}} {
+	}{{"-mdnamesakes", MDNamesakeRate}, {"-rdnamesakes", RDNamesakeRate}, {"-minamesakes", MINamesakeRate}} {
 		if err := validateIDFNamesakes(v.flag, cmd, v.rate, *nameIDFPath); err != nil {
 			fmt.Fprintln(os.Stderr, "configuration error:", err)
 			os.Exit(2)
