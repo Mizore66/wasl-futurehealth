@@ -1,4 +1,4 @@
-import contextlib, io, json, os, shutil, socket, stat, sys, tempfile, unittest, urllib.error
+import contextlib, io, json, os, shutil, socket, stat, sys, tempfile, threading, time, unittest, urllib.error
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -226,6 +226,35 @@ class GlobalCaps(Base):
         c.chat({"b": 1}, [{"role": "user", "content": "a"}])
         c.chat({"b": 1}, [{"role": "user", "content": "b"}])
         self.assertEqual(self.client(Fake()).sent, 2)
+
+    def test_failed_attempt_is_shared_across_clients(self):
+        cache = os.path.join(self.d, "shared-cap")
+        bad = ai.GeminiClient(Fake(urllib.error.URLError("x")), model="m", cache_dir=cache, stage="selection")
+        bad.cap = 1
+        with self.assertRaises(ai.ProviderError):
+            bad.chat({"b": 1}, [{"role": "user", "content": "a"}])
+        other = ai.GeminiClient(Fake(resp(text_msg("{}"))), model="m", cache_dir=cache, stage="selection")
+        other.cap = 1
+        with self.assertRaises(ai.CapExceeded):
+            other.chat({"b": 2}, [{"role": "user", "content": "b"}])
+
+    def test_concurrent_same_key_calls_provider_once(self):
+        class Slow:
+            def __init__(self):
+                self.requests = 0
+            def __call__(self, body, timeout):
+                self.requests += 1
+                time.sleep(0.05)
+                return resp(text_msg("{}"))
+        fake = Slow()
+        clients = [self.client(fake), self.client(fake)]
+        msgs = [{"role": "user", "content": "same"}]
+        threads = [threading.Thread(target=c.chat, args=({"b": 1}, msgs)) for c in clients]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(fake.requests, 1)
 
     def test_smoke_stage_uses_forty_call_cap(self):
         c = self.client(Fake(), stage="smoke")

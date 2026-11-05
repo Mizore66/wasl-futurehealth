@@ -1029,7 +1029,7 @@ def guard(argv, mode, arm, bin_, candidate):
     if cmd == "agent_investigator.py":
         if not agent_replay(candidate):
             bad("agent replay stage is only authorised for r1agent8/r1agent9/r1agent10/r1agent11/r1agent12")
-        repo = os.path.dirname(os.path.dirname(bin_))
+        repo = os.environ.get("PAIRFEAT_REPO", os.path.dirname(os.path.dirname(bin_)))
         run = val("--run")
         if not run or not run.endswith("/run/agent"):
             bad("agent replay --run must be the materialized lane directory")
@@ -1109,7 +1109,7 @@ def guard(argv, mode, arm, bin_, candidate):
         bad("classifier scope")
     cache = val("-imgcache")
     if img and cmd in ("gen",) + MODEL_CMDS:  # image experiments: the repo's models/image_verdicts.json, nothing else
-        if cache != os.path.join(os.path.dirname(os.path.dirname(bin_)), IMAGE_VERDICTS):
+        if cache != os.path.join(os.environ.get("PAIRFEAT_REPO", os.path.dirname(os.path.dirname(bin_))), IMAGE_VERDICTS):
             bad("-imgcache must be the repository " + IMAGE_VERDICTS)
     elif cache is not None or "-imgcache" in argv:
         bad("-imgcache is only allowed in image experiments on gen/orchestrate/audit/report7")

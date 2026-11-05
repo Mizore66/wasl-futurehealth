@@ -48,7 +48,9 @@ export PATH="/opt/anaconda3/bin:$PATH"
 AGENT_LLM_URL="${WASL_LLM_URL:-}"
 AGENT_LLM_KEY="${WASL_LLM_KEY:-}"
 AGENT_LLM_MODEL="${WASL_LLM_MODEL:-}"
-export AGENT_LLM_URL AGENT_LLM_KEY AGENT_LLM_MODEL
+PAIRFEAT_BIN_DIR="${WASL_BIN:-$ROOT/bin}"
+PAIRFEAT_REPO="$ROOT"
+export AGENT_LLM_URL AGENT_LLM_KEY AGENT_LLM_MODEL PAIRFEAT_BIN_DIR PAIRFEAT_REPO
 while read -r v; do [ -n "$v" ] && unset "$v"; done < <(compgen -e | grep '^WASL_' || true)  # no env-driven settings
 
 [ "$#" -eq 3 ] && [ -n "$1" ] || { echo "usage: scripts/pairfeat_experiment.sh NEW_ROOT MODE ARM" >&2; exit 2; }
@@ -102,6 +104,12 @@ case "$CAND" in
 esac
 case "$ARM" in "$BASEARM"|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
 if [ "$MODE" = validation-clean ]; then SEEDS="$VAL_SEEDS"; else SEEDS="$DEV_SEEDS"; fi
+if [ -n "${PAIRFEAT_SEED:-}" ]; then
+  case " $SEEDS " in
+    *" $PAIRFEAT_SEED "*) SEEDS="$PAIRFEAT_SEED";;
+    *) echo "seed $PAIRFEAT_SEED is not authorised for $CAND in $MODE" >&2; exit 2;;
+  esac
+fi
 if [ "${PAIRFEAT_PREFLIGHT_ONLY:-}" = 1 ]; then
   echo "preflight ok ($MODE $ARM; candidate $CAND seeds $SEEDS); PAIRFEAT_PREFLIGHT_ONLY set, nothing built"; exit 0
 fi
@@ -167,13 +175,17 @@ PY
 
 WORK="$PARENT/$(basename "$REQ")"
 mkdir "$WORK"
+BIN_DIR="${PAIRFEAT_BIN_DIR:-$ROOT/bin}"
+export WASL_BIN="$BIN_DIR"
+export PAIRFEAT_PORT_OFFSET="${PAIRFEAT_PORT_OFFSET:-0}"
+export WASL_PORT_OFFSET="$PAIRFEAT_PORT_OFFSET"
 
 "$ROOT/scripts/demo.sh" check
 "$ROOT/scripts/demo.sh" build
-trap 'rm -f "$ROOT/bin/wsi7"' EXIT
+trap 'rm -f "$BIN_DIR/wsi7"' EXIT
 
 # per-arm identity before any lane: full git head + SHA256 of the freshly built binary + the arm's verified model chain
-python3 -I - "$ROOT" "$WORK" "$PARENT" "$HEAD" "$ROOT/bin/wsi7" "$MODE" "$ARM" "$CAND" <<'PY'
+python3 -I - "$ROOT" "$WORK" "$PARENT" "$HEAD" "$BIN_DIR/wsi7" "$MODE" "$ARM" "$CAND" <<'PY'
 import hashlib, json, os, sys
 root, work, parent, head, binp, mode, arm, cand = sys.argv[1:9]
 sys.path.insert(0, os.path.join(root, "scripts"))
@@ -200,9 +212,12 @@ seeds = [int(x) for x in sys.argv[9:]]
 sys.path.insert(0, os.path.join(root, "scripts"))
 import pairfeat_compare as pfc
 m = pfc.mode_settings(mode, cand)
-if (m["split"], m["seeds"], m["rerr"], m["errungraded"]) != (split, seeds, rerr, erru) or arm not in pfc.arms(cand):
+single = os.environ.get("PAIRFEAT_SEED")
+if m["split"] != split or m["rerr"] != rerr or m["errungraded"] != erru or arm not in pfc.arms(cand) \
+        or (single and (len(seeds) != 1 or seeds[0] not in m["seeds"])) or (not single and m["seeds"] != seeds):
     sys.exit("mode settings mismatch")
-bin_ = os.path.join(root, "bin", "wsi7")
+bin_dir = os.environ.get("WASL_BIN", os.path.join(root, "bin"))
+bin_ = os.path.join(bin_dir, "wsi7")
 
 def run(argv, log):
     try:
@@ -212,6 +227,7 @@ def run(argv, log):
         sys.exit(2)
     with open(log, "wb") as h:
         env = os.environ.copy()
+        env["WASL_PORT_OFFSET"] = os.environ["PAIRFEAT_PORT_OFFSET"]
         for key in ("AGENT_LLM_URL", "AGENT_LLM_KEY", "AGENT_LLM_MODEL"):
             env.pop(key, None)
         if len(argv) > 2 and os.path.basename(argv[2]) == "agent_investigator.py" and arm == cand:
@@ -243,7 +259,9 @@ root, work, mode, arm, cand = sys.argv[1:6]
 seeds = [int(x) for x in sys.argv[6:]]
 sys.path.insert(0, os.path.join(root, "scripts"))
 import pairfeat_compare as pfc
-if pfc.mode_settings(mode, cand)["seeds"] != seeds or arm not in pfc.arms(cand):
+single = os.environ.get("PAIRFEAT_SEED")
+if arm not in pfc.arms(cand) or (single and (len(seeds) != 1 or seeds[0] not in pfc.mode_settings(mode, cand)["seeds"])) \
+        or (not single and pfc.mode_settings(mode, cand)["seeds"] != seeds):
     sys.exit("seed mismatch")
 lanes = []
 for seed in seeds:
