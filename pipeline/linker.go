@@ -760,6 +760,54 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 	return out
 }
 
+type nearPath struct {
+	p            float64
+	mid          int
+	weakA, weakB int
+	hops         int
+}
+
+// nearHospitalPaths returns the strongest one-hop near path to each hospital record. With demoguard on, it also
+// considers a two-hop path through any intermediate registration: demoted missing-demographic links must not make an
+// otherwise reviewable patient path invisible. The weakest pair is the one reviewers need to resolve first.
+func (L *LinkerCore) nearHospitalPaths(ms []int, inC map[int]bool) map[int]nearPath {
+	nm := map[int]nearPath{}
+	better := func(z int, c nearPath) {
+		old, ok := nm[z]
+		if !ok || c.p > old.p || (c.p == old.p && (c.hops < old.hops ||
+			(c.hops == old.hops && (c.mid < old.mid || (c.mid == old.mid && (c.weakA < old.weakA ||
+				(c.weakA == old.weakA && c.weakB < old.weakB))))))) {
+			nm[z] = c
+		}
+	}
+	for _, x := range ms {
+		for _, mid := range sortedKeys(L.near[x]) {
+			if inC[mid] || L.isCannot(L.Find(x), L.Find(mid)) {
+				continue
+			}
+			p1 := L.near[x][mid]
+			if L.recs[mid].Kind == "hospital" {
+				better(mid, nearPath{p: p1, mid: x, weakA: x, weakB: mid, hops: 1})
+			}
+			if !DemoGuard {
+				continue
+			}
+			for _, z := range sortedKeys(L.near[mid]) {
+				if z == x || inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
+					continue
+				}
+				p2, p := L.near[mid][z], p1
+				weakA, weakB := x, mid
+				if p2 < p {
+					p, weakA, weakB = p2, mid, z
+				}
+				better(z, nearPath{p: p, mid: mid, weakA: weakA, weakB: weakB, hops: 2})
+			}
+		}
+	}
+	return nm
+}
+
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 	base := L.loops[loop]
 	f := &LoopFacts{LoopID: loop, Provider: base.Provider, SRDay: base.SRDay, SRRec: base.SRRec, SRLang: base.SRLang, Tasks: L.tasks[loop], Comms: L.comms[loop], Down: []DownFact{},
@@ -829,31 +877,20 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		f.Down = append(f.Down, L.xrefFacts(loop, s, inC)...)
 	}
 	// near-miss hospital records (scored lo<=p<thr against any cluster member): candidates for a missed link
-	nm := map[int][2]float64{}
-	for _, x := range ms {
-		for _, z := range sortedKeys(L.near[x]) {
-			if inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
-				continue
-			}
-			p := L.near[x][z]
-			if cur, ok := nm[z]; !ok || p > cur[0] {
-				nm[z] = [2]float64{p, float64(x)}
-			}
-		}
-	}
+	nm := L.nearHospitalPaths(ms, inC)
 	zs := []int{}
 	for z := range nm {
 		zs = append(zs, z)
 	}
 	sort.Ints(zs)
 	for _, z := range zs {
-		x := int(nm[z][1])
-		e := Edge{A: L.recs[x].Pk, B: L.recs[z].Pk, P: round4(nm[z][0]), Basis: "wasl-subthreshold"}
-		ds := L.downOf(L.recs[z], nm[z][0], e, 1, true)
+		np := nm[z]
+		e := Edge{A: L.recs[np.weakA].Pk, B: L.recs[np.weakB].Pk, P: round4(np.p), Basis: "wasl-subthreshold"}
+		ds := L.downOf(L.recs[z], np.p, e, np.hops, true)
 		if V7Cal != nil || V7Guard {
 			for i := range ds {
 				if V7Cal != nil {
-					ds[i].PCal = round4(V7Cal.Predict(nm[z][0], false))
+					ds[i].PCal = round4(V7Cal.Predict(np.p, false))
 				}
 				ds[i].RecPk, ds[i].RecDob = L.recs[z].Pk, L.recs[z].Dob
 			}
