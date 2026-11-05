@@ -2,7 +2,7 @@ package main
 
 // Modelset pairfeat7 training-only hard negatives for featdump (with -nameidf: pairfeat7 training dumps; spec
 // 2026-11-03-crc-pairfeat7-design.md). pairfeat7 reuses pairfeat6's features f30..f33 and leave-own-out rarity table
-// (pairfeat6.go; its own file name_idf_pairfeat7.json) and adds two kinds of synthetic different persons. Each kind
+// (pairfeat6.go; its own file name_idf_pairfeat7.json) and adds two kinds of synthetic different persons (pairfeat9 adds a third, mi: pairfeat9.go, with its own registration). md and rd
 // adds, for a share of the sampled persons, one namesake (no persons-file index: never in the rarity table, never left
 // out of it) and two registrations without DOB or sex noise: the base person with their true birth date in a drawn
 // script, and the namesake in the same script with probability 1/2, else the opposite (hnRegister).
@@ -219,7 +219,7 @@ type hnKind struct {
 }
 
 // pairfeat7Negatives: the md, rd then mi hard negatives, each only when its rate is > 0 and with its own generator
-// (mdSeed, rdSeed); their registrations are appended to regs with person indices from first on. With both rates 0 it
+// (mdSeed, rdSeed, miSeed); their registrations are appended to regs with person indices from first on. With all rates 0 it
 // returns regs unchanged and no kind (no draw, no encoder load).
 func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, encPath string) ([]fdReg, []*hnKind) {
 	var kinds []*hnKind
@@ -242,10 +242,25 @@ func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, 
 		default:
 			xs, base = buildRDNamesakes(ps, pool, k.rate, r, LoadEncoder(encPath).Embed)
 		}
+		if k.key == "mi" { // mi replaces its base's ordinary registrations: skip bases already used by md or rd
+			used := map[int]bool{}
+			for _, pk := range kinds {
+				for _, bp := range pk.base {
+					used[bp] = true
+				}
+			}
+			kx, kb := xs[:0:0], base[:0:0]
+			for i := range xs {
+				if !used[base[i]] {
+					kx, kb = append(kx, xs[i]), append(kb, base[i])
+				}
+			}
+			xs, base = kx, kb
+		}
 		hk := &hnKind{key: k.key, rate: k.rate, base: map[int]int{}, added: len(xs), rows: []int{}}
 		for i := range xs {
 			if k.key == "mi" {
-				regs = miRegister(regs, first+i, &xs[i])
+				regs = miRegister(regs, base[i], &ps[base[i]], first+i, &xs[i], r)
 			} else {
 				regs = hnRegister(regs, base[i], &ps[base[i]], first+i, &xs[i], r)
 			}
