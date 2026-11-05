@@ -184,7 +184,15 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
                            "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
                            "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
                            "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
-                           "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
+                           "report_linked_pairs": True, "edge_classes": "pairfeat7"},
+              # r1agent10 (spec 2026-11-05-crc-r1agent10-resolved-nearpath-design.md): r1agent9 plus resolved-edge
+              # handling in two-hop review; fresh seeds after r1agent9's read-only selection failure
+              "r1agent10": {"dev_seeds": [987, 991, 993], "validation_seeds": [997, 1027, 1037, 1043, 1049],
+                            "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                            "chain": "pairfeat8", "reference": "r1photo8ref", "reference_chain": "shared",
+                            "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
+                            "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
+                            "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
 # amendment 3 (development 557 563 569 used once; validation 601 607 613 617 619 retired unused).
 RETIRED_SEEDS = (557, 563, 569, 601, 607, 613, 617, 619)
@@ -271,7 +279,7 @@ def base_arm(candidate):
 
 
 def agent_replay(candidate):
-    """True for candidates whose offline replay consumes agent recommendations (r1agent8/r1agent9)."""
+    """True for candidates whose offline replay consumes agent recommendations (r1agent8/r1agent9/r1agent10)."""
     return bool(CANDIDATES.get(candidate, {}).get("agent_replay"))
 
 
@@ -990,7 +998,7 @@ def guard(argv, mode, arm, bin_, candidate):
         bad("agent replay flags are only allowed on agent_investigator.py")
     if cmd == "agent_investigator.py":
         if not agent_replay(candidate):
-            bad("agent replay stage is only authorised for r1agent8/r1agent9")
+            bad("agent replay stage is only authorised for r1agent8/r1agent9/r1agent10")
         repo = os.path.dirname(os.path.dirname(bin_))
         run = val("--run")
         if not run or not run.endswith("/run/agent"):
@@ -2526,7 +2534,7 @@ def main(argv):
                           "model_chain_sha256": chain}, sort_keys=True))
         return 0
     usage = ("usage: pairfeat_compare.py MODE OUT_JSON baseline=ROOT [<reference>=ROOT] <candidate>=ROOT (candidate %s) "
-             "| r1agent8/r1agent9: MODE OUT_JSON r1photo8=ROOT r1photo8ref=ROOT CANDIDATE=ROOT "
+             "| r1agent8/r1agent9/r1agent10: MODE OUT_JSON r1photo8=ROOT r1photo8ref=ROOT CANDIDATE=ROOT "
              "| init-experiment EXPERIMENT_DIR CANDIDATE | freeze-validation EXPERIMENT_DIR | preflight MODE ARM EXPERIMENT_DIR"
              % "|".join(sorted(experiment_candidates())))
     if len(argv) not in (4, 5) or argv[0] not in MODES or os.path.basename(argv[1]) in RESERVED:
