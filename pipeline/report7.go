@@ -225,6 +225,7 @@ func report7(data, wasl, run string, P int) {
 			liveFinal[oe.Dec.LoopID], liveO[oe.Dec.LoopID] = oe.Dec, oe.OSeq
 		}
 	}
+	restoreAgentPolicy(outLog)
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	noRev := replay(fhir, preps, gbm, iso, P, true)
 	o := &offline{fhir: fhir, preps: preps, gbm: gbm, iso: iso, tr: &tr, evPK: evPKMap(preps), optT: loadConsentTruth(data), dob: map[string]string{}}
