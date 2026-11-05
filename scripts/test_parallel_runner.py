@@ -44,6 +44,8 @@ printf '{"binary_sha256":"same","git_head":"abc"}\n' > "$1/build.json"
                 calls = [line.split() for line in h]
             self.assertEqual(sorted(int(x[0]) for x in calls), [4000, 4100, 4200])
             self.assertEqual(len({x[1] for x in calls}), 3)
+            for _, bin_dir in calls:
+                self.assertTrue(os.path.islink(os.path.join(bin_dir, "nats-server")))
             self.assertTrue(os.path.isfile(os.path.join(exp, "dev-clean-r1agent12", "build.json")))
             for seed in (1061, 1063, 1069):
                 self.assertTrue(os.path.isdir(os.path.join(exp, "dev-clean-r1agent12", "v2-s%d" % seed)))
