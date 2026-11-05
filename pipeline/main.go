@@ -743,6 +743,10 @@ cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 	return p
 }
 
+func natsBinaryPath(executable string) string {
+	return filepath.Join(filepath.Dir(executable), "nats-server")
+}
+
 func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, chaos int, natsKill bool, replicas int, noReview bool, seed int64) {
 	keepFiles := map[string][]byte{} // keep the live-reader ledgers across reruns (model answers are reused, not re-asked)
 	for _, n := range []string{"reader_ledger.jsonl", "image_ledger.jsonl"} {
@@ -774,7 +778,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if c := os.Getenv("WASL_JS_KEY")[0]; !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
 		panic("WASL_JS_KEY must start with a letter (nats-server parses a leading digit as a number)")
 	}
-	natsBin := filepath.Join(filepath.Dir(self), "..", "bin", "nats-server")
+	natsBin := natsBinaryPath(self)
 	if NatsExternal { // deployment: the cluster runs outside the orchestrator (docker-compose nats-0..2)
 		fmt.Printf("NATS: external cluster %s (not started or killed by the orchestrator)\n", NatsURL)
 	} else {
