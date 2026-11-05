@@ -2,8 +2,8 @@ package main
 
 // Modelset pairfeat7 training-only hard negatives for featdump (with -nameidf: pairfeat7 training dumps; spec
 // 2026-11-03-crc-pairfeat7-design.md). pairfeat7 reuses pairfeat6's features f30..f33 and leave-own-out rarity table
-// (pairfeat6.go; its own file name_idf_pairfeat7.json) and adds two kinds of synthetic different persons (pairfeat9 adds a third, mi: pairfeat9.go, with its own registration). md and rd
-// adds, for a share of the sampled persons, one namesake (no persons-file index: never in the rarity table, never left
+// (pairfeat6.go; its own file name_idf_pairfeat7.json) and adds two kinds of synthetic different persons (pairfeat9
+// adds a third, mi: pairfeat9.go, with its own registration). md and rd each add, for a share of the sampled persons, one namesake (no persons-file index: never in the rarity table, never left
 // out of it) and two registrations without DOB or sex noise: the base person with their true birth date in a drawn
 // script, and the namesake in the same script with probability 1/2, else the opposite (hnRegister).
 //   -mdnamesakes  missing-date namesake: same sex as the base person, their given name and no other skeleton token, no
@@ -219,9 +219,9 @@ type hnKind struct {
 }
 
 // pairfeat7Negatives: the md, rd then mi hard negatives, each only when its rate is > 0 and with its own generator
-// (mdSeed, rdSeed, miSeed); their registrations are appended to regs with person indices from first on. With all rates 0 it
+// (mdSeed, rdSeed, miSeed); usedBases are base pids of earlier kinds (namesake, family, cross-script), which mi must skip; their registrations are appended to regs with person indices from first on. With all rates 0 it
 // returns regs unchanged and no kind (no draw, no encoder load).
-func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, encPath string) ([]fdReg, []*hnKind) {
+func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, encPath string, usedBases map[int]bool) ([]fdReg, []*hnKind) {
 	var kinds []*hnKind
 	for _, k := range []struct {
 		key  string
@@ -242,8 +242,11 @@ func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, 
 		default:
 			xs, base = buildRDNamesakes(ps, pool, k.rate, r, LoadEncoder(encPath).Embed)
 		}
-		if k.key == "mi" { // mi replaces its base's ordinary registrations: skip bases already used by md or rd
+		if k.key == "mi" { // mi replaces its base's ordinary registrations: skip bases already used by any other kind
 			used := map[int]bool{}
+			for bp := range usedBases {
+				used[bp] = true
+			}
 			for _, pk := range kinds {
 				for _, bp := range pk.base {
 					used[bp] = true
