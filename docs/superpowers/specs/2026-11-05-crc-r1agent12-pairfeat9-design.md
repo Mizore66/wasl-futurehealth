@@ -10,7 +10,8 @@ r1agent11 failed selection with recall tied at 610/648 but one wrong-pair review
 
 - The deferred first investigation before a human rejection can become cannot-link, and the resolved-edge fix, carry over from r1agent11 unchanged.
 - The chain changes from pairfeat8 to **pairfeat9**: `CHAIN_FILES["pairfeat9"]` = encoder, lgb_stream, iso, iso_v7 and name_idf files (`*_pairfeat9.json`); `-modelset pairfeat9`; manifest key `pairfeat9_chain_sha256`.
-- Everything else is the r1agent11 configuration: reference arm `r1photo8ref` and base arm `r1photo8` (both on the shared pairfeat9 fit, one `init-experiment` pins it), `reference_gate="r1agent8"`, `agent_replay=True`, noise v3, flags `-r1review -demoguard`, edge classes pairfeat7, image cached.
+- Comparator arms move to the pairfeat9 chain: reference-only `r1photo9ref` (`-r1review`, unguarded) and `r1photo9` (`-r1review -demoguard`, guarded), both chain pairfeat9, noise v3, image on, never experiment candidates (r1photo8/r1photo8ref require the pairfeat8 fit, so `init-experiment` could not pin one shared pairfeat9 fit with them). r1agent12 has `reference=r1photo9ref`, `base_arm=r1photo9`; one shared pairfeat9 fit serves all three arms and `init-experiment EXPERIMENT_DIR r1agent12` pins it. The runner takes the arm mapping from its REF/BASEARM table rows.
+- Everything else is the r1agent11 configuration: `reference_gate="r1agent8"`, `agent_replay=True`, noise v3, flags `-r1review -demoguard`, edge classes pairfeat7, image cached.
 
 ## Unchanged agent semantics
 
