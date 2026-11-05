@@ -74,6 +74,8 @@ Seven sequential unseen synthetic report corpora exposed unsafe phrasing classes
 
 The frozen evaluation must not be confused with the separate **live-reader integrated run**. That single simulated run used the local Gemma 3 4B and recorded CRC precision 1.000, recall 0.955 and **0/567 false closures**; its live answers were ledgered for deterministic replay. Likewise, the separate HL7 stress run delivered **30,668/30,668 resources exactly once**, absorbed **888 duplicate re-sends** through connection drops, and recorded **0/574 CRC false closures**. These are distinct module and integration results, not one cumulative experiment.
 
+The 43 public report transcripts have **clinically verified model-assisted labels** after two independent model passes and clinician adjudication (κ = 1.000 on all five scored clinical fields). One unsafe automatic `adequate` remained before the preparation-rule correction; after `fair` preparation was classified as `inadequate_prep`, the cached-reader evaluation had **20 automatic decisions, 19 correct and 0 unsafe**. This small verified set does not establish independent human-labelled or clinical effectiveness evidence.
+
 ## Capacity and queue impact
 
 Measurement alone does not create an endoscopy slot. Wasl therefore exposes backlog and unit-level shortfalls while keeping queue interventions explicitly **simulated decision support**.
@@ -102,7 +104,7 @@ A subsequent **designed live-outreach phase** would use a stepped-wedge across 6
 
 ## Honest limitations
 
-- Patients, reviewers, identity noise, capacity and most report text are synthetic. Real Wikidata names and 43 public US report transcripts do not make the cohorts clinical validation. Those transcripts have an LLM-produced key and are reused across loops; no clinician-labelled or human-double-labelled evaluation is claimed.
+- Patients, reviewers, identity noise, capacity and most report text are synthetic. Real Wikidata names and 43 public US report transcripts do not make the cohorts clinical validation. Those transcripts have clinically verified model-assisted labels (κ = 1.000 after adjudication), not independent human double-labelling, and are reused across loops.
 - Zero observed false closures is not zero risk, especially in small subgroups. Sequential corpus testing already found shared two-reader failure classes, and later zero counts are bounded observations, not proof.
 - The final seven-programme evaluation used cached readers. Live local-reader, HL7, image, booking, pooling and Learn-then-Test results belong to separate experiments and are not combined into an end-to-end effectiveness claim.
 - The image reader was trained on Norwegian video frames and needs recalibration on UAE stills. Its specificity is insufficient for autonomous adequacy decisions, which is why it is hold-only.
