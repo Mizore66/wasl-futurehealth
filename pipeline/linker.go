@@ -766,7 +766,7 @@ func (L *LinkerCore) nearHospitalPaths(ms []int, inC map[int]bool) map[int]nearP
 	}
 	for _, x := range ms {
 		for _, mid := range sortedKeys(L.near[x]) {
-			if inC[mid] || L.isCannot(L.Find(x), L.Find(mid)) {
+			if inC[mid] || L.Find(x) == L.Find(mid) || L.isCannot(L.Find(x), L.Find(mid)) {
 				continue
 			}
 			p1 := L.near[x][mid]
@@ -778,6 +778,11 @@ func (L *LinkerCore) nearHospitalPaths(ms []int, inC map[int]bool) map[int]nearP
 			}
 			for _, z := range sortedKeys(L.near[mid]) {
 				if z == x || inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
+					continue
+				}
+				if L.Find(mid) == L.Find(z) {
+					// The final edge is already linked, so the unresolved first edge is the reviewable one.
+					better(z, nearPath{p: p1, mid: mid, weakA: x, weakB: mid, hops: 2})
 					continue
 				}
 				p2, p := L.near[mid][z], p1
