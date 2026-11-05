@@ -808,9 +808,30 @@ func (L *LinkerCore) nearHospitalPaths(ms []int, inC map[int]bool) map[int]nearP
 				}
 				better(z, nearPath{p: p, mid: mid, weakA: weakA, weakB: weakB, hops: 2})
 			}
+			for _, z := range sortedKeys(L.adj[mid]) {
+				if z == x || inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
+					continue
+				}
+				// An already-linked final edge is traversable even when it was never in the near map.
+				better(z, nearPath{p: p1, mid: mid, weakA: x, weakB: mid, hops: 2})
+			}
 		}
 	}
 	return nm
+}
+
+// markNearDependents invalidates loops with a near edge into the newly changed cluster. Forward near propagation alone
+// misses a clinic whose lab registration just merged with a hospital registration.
+func (L *LinkerCore) markNearDependents(i int, aff map[int]bool) {
+	members := L.members[L.Find(i)]
+	for x, ns := range L.near {
+		for _, m := range members {
+			if _, ok := ns[m]; ok {
+				aff[L.Find(x)] = true
+				break
+			}
+		}
+	}
 }
 
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
@@ -1111,6 +1132,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		affRoots[L.Find(i)] = true
+		L.markNearDependents(i, affRoots)
 		for z := range L.near[i] {
 			affRoots[L.Find(z)] = true
 		}
