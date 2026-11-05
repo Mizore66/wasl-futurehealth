@@ -392,8 +392,20 @@ func dayTS(d float64) string {
 	return baseTime.Add(time.Duration(d * 86400 * float64(time.Second))).Format(time.RFC3339)
 }
 
-// The materialized directory is accepted by audit() (ingest, prep, replay and final-state checks all clean) and by
-// scripts/link_funnel.py.
+// The materialized agent directory is accepted by audit() and report7() (ingest, prep, replay and final-state checks
+// all clean) and by scripts/link_funnel.py.
+func TestRestoreAgentPolicyFromOut(t *testing.T) {
+	old := PolicyName
+	defer func() { PolicyName = old }()
+	PolicyName = "v7strict"
+	body, _ := json.Marshal(OutEnvelope{Kind: "decision", Dec: &Decision{Policy: "v7strict+agent"}})
+	restoreAgentPolicy([]LogMsg{{Data: body}})
+	restoreAgentPolicy([]LogMsg{{Data: body}})
+	if PolicyName != "v7strict+agent" {
+		t.Fatalf("policy = %q", PolicyName)
+	}
+}
+
 func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
 	if testing.Short() {
 		t.Skip("loads the real models")
@@ -405,7 +417,7 @@ func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
 	if err := stampOfflineMsgIDs(o, data); err != nil {
 		t.Fatal(err)
 	}
-	if err := materializeAgentRun(o, 1, agentCfgFor(3), nil, run); err != nil {
+	if err := materializeAgentRun(o, 1, agentCfgFor(3), agentRecsFile(t, "same"), run); err != nil {
 		t.Fatal(err)
 	}
 	main := filepath.Join(run, "main")
@@ -424,6 +436,15 @@ func TestMaterializedRunAcceptedByAuditAndLinkFunnel(t *testing.T) {
 	}
 	if cr["fhir_msgs"].(float64) != cr["prep_live_msgs"].(float64) || cr["generated_resources"].(float64) != 3 {
 		t.Errorf("audit counts %v", cr)
+	}
+	report7(data, wasl, main, 1)
+	var report map[string]interface{}
+	b, err = os.ReadFile(filepath.Join(main, "report7.json"))
+	if err != nil || json.Unmarshal(b, &report) != nil {
+		t.Fatalf("report7.json: %v", err)
+	}
+	if v := report["live_vs_replay_final_mismatch"].(float64); v != 0 {
+		t.Fatalf("report7 final mismatch = %v", v)
 	}
 	py, err := exec.LookPath("python3")
 	if err != nil {

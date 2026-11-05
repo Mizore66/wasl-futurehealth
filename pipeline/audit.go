@@ -94,6 +94,21 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 	return r
 }
 
+// restoreAgentPolicy makes audit and report7 replay a materialized agent run under the policy stamped in its decisions.
+// It is idempotent and a no-op for live runs and materialized control arms.
+func restoreAgentPolicy(outLog []LogMsg) {
+	if strings.HasSuffix(PolicyName, "+agent") {
+		return
+	}
+	for _, m := range outLog {
+		var oe OutEnvelope
+		if json.Unmarshal(m.Data, &oe) == nil && oe.Dec != nil && strings.HasSuffix(oe.Dec.Policy, "+agent") {
+			PolicyName += "+agent"
+			return
+		}
+	}
+}
+
 func pctl(xs []float64, p float64) float64 {
 	if len(xs) == 0 {
 		return math.NaN()
@@ -175,17 +190,7 @@ func audit(data, wasl, run string, P int) {
 		}
 	}
 	// 2. offline linker + closure replay (an agentreplay run stamps its decisions "+agent"; replay under the same policy)
-	if !strings.HasSuffix(PolicyName, "+agent") {
-		for _, m := range outLog {
-			var oe OutEnvelope
-			if json.Unmarshal(m.Data, &oe) == nil && oe.Dec != nil {
-				if strings.HasSuffix(oe.Dec.Policy, "+agent") {
-					PolicyName += "+agent"
-				}
-				break
-			}
-		}
-	}
+	restoreAgentPolicy(outLog)
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	expected := map[string]int{}
 	for _, id := range rp.ids {
