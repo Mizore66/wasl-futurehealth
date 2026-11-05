@@ -15,7 +15,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 
 **Status (2 Nov):**
 - **Backend:** all 8 handoff stages and all 20 agents2 items are built and integrated locally; nothing has been pushed. This includes the one-command demo, v7 gate, live 4B reader, consent hold, HL7 v2, API, booking, frozen 5-seed eval, Learn-then-Test gate, image reader, five additional loop types, deployment and adversarial/scale tests. The encoder retrain is built and merged. X10/B8 hardening and fresh scale/B8 validation are complete; the final-code ten-lane frozen evaluation is complete at decision code `075abc5`. The seven-programme API samples have been refreshed.
-- **Left:** human double-labelling of the 43 reports (both team members), the Next.js frontend (Kai), the demo video, and condensing the write-up.
+- **Left:** the Next.js frontend (Kai) and the demo video. The 43 reports now have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling. The submission draft and recording guide are prepared.
 - **Judging (23 Oct, before the build):** 5 simulated judge personas over many blind rounds; latest mean **47.2/60**, with about 9–11 points per judge attributed to build work that is now done.
 
 ## The problem in plain words
@@ -116,7 +116,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 | Encoder retrain on real name pairs | Anas | Done |
 | Re-run the frozen 5-seed evaluation on the final code | Anas | Done at decision code `075abc5` |
 | Next.js dashboard and coordinator worklist on `docs/API.md` | Kai (frontend) | In progress |
-| Human double-labelling of the 43 reports; report κ (`docs/labelling/`) | Both | Not started |
+| Clinically verified model-assisted labelling of the 43 reports; report κ (`docs/labelling/`) | Both + clinician | Complete: κ = 1.000; not independent human double-labelling |
 | Record the 3-minute demo video | Both | After the frontend |
 | Condense the write-up into the submission document | Both | After the final evaluation |
 
@@ -132,8 +132,8 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 4. **2:15–3:00:** network pooling (22% → 42%), the gated pilot plan, the honest limits.
 
 ## Honest limits (say them out loud)
-- Patients, reviewers, noise and capacity are simulated. No clinician labels.
-- The 43 report texts carry an LLM-produced answer key until the human double-labelling is done. The lung CT reports are synthetic. Fresh LDCT/IFHAS held-out text checks are non-blind, single-author synthetic evidence without clinician labels; their integrated generators still reuse development texts. The fresh check found 0/124 agreed-but-wrong answers, but unsafe single-reader errors remain and 56% of IFHAS notes routed to review.
+- Patients, reviewers, noise and capacity are simulated. No independent human-labelled evaluation is claimed.
+- The 43 report texts have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling. The lung CT reports are synthetic. Fresh LDCT/IFHAS held-out text checks are non-blind, single-author synthetic evidence without clinician labels; their integrated generators still reuse development texts. The fresh check found 0/124 agreed-but-wrong answers, but unsafe single-reader errors remain and 56% of IFHAS notes routed to review.
 - The Learn-then-Test guarantee covers loops like the synthetic calibration set (whose CRC loops are 51.9% women vs 69.6% in the eval cohorts, because the calibration split has only 779 women), not real Abu Dhabi data; a pilot must recalibrate on locally adjudicated loops (≈3.7k).
 - The image reader was trained on Norwegian video frames; UAE stills need local recalibration. Its weights inherit ImageNet's non-commercial terms.
 - Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.

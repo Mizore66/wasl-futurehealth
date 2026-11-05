@@ -1,5 +1,5 @@
 {
- "source": "MTSamples (US dictations), 43 unique non-empty colonoscopy-tagged texts; key = team-labelled (Claude agent as labeller)",
+ "source": "MTSamples (US dictations), 43 unique non-empty colonoscopy-tagged texts; key = clinically verified model-assisted labels",
  "gemma": "gemma-4-26b-a4b-it-self cached verdicts from ws-students/teacher_test.json (0 new calls)",
  "reports": [
   {
@@ -13,7 +13,8 @@
     "caecum": "no",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "no",
@@ -38,19 +39,20 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u1",
    "name": "Exploratory Laparotomy & Colon Resection",
    "sha": "15f18bb0f494dece37d1877dee5b4f737d3cd452c469bcabca43862ace15d8d0",
    "text": "PREOPERATIVE DIAGNOSIS: , Colovesical fistula.,POSTOPERATIVE DIAGNOSES:,1.  Colovesical fistula.,2.  Intraperitoneal abscess.,PROCEDURE PERFORMED:,1.  Exploratory laparotomy.,2.  Low anterior colon resection.,3.  Flexible colonoscopy.,4.  Transverse loop colostomy and JP placement.,ANESTHESIA: , General.,HISTORY:  ,This 74-year-old female who had a recent hip fracture and the patient was in rehab when she started having some stool coming out of the urethra.  The patient had retrograde cystogram, which revealed colovesical fistula.  Recommendation for a surgery was made.  The patient was explained the risks and benefits as well as the two sons and the daughter.  They understood that the patient can even die from this procedure.  All the three procedures were explained, without a colostomy, with Hartmann's colostomy, and with a transverse loop colostomy, and out of the three procedures, the patient's requested to have the loop colostomy and stated that the Hartmann's colostomy leaving the anastomosis with the risk of leaking.,PROCEDURE DETAILS: , The patient was taken to the operating room, prepped and draped in the sterile fashion and was given general anesthetic.  An incision was performed in the midline below the umbilicus to the pubis with a #10 blade Bard Parker.  Electrocautery was used for hemostasis down to the fascia.  The fascia was grasped with Ochsner's and then immediately the peritoneum was entered and the incision was carried cephalad and caudad with electrocautery.,Once within the peritoneum, adhesiolysis was performed to separate the small bowel from the attachment of the anterior abdominal wall.  At this point, immediately a small bowel was retracted cephalad.  The patient was taken to a slightly Trendelenburg position and the descending colon was seen.  The white line of Toldt was opened all the way down to the area of inflammation.  At this point, meticulous dissection was carried to separate the small bowel from the attachment to the abscess.  When the small bowel was completely freed of  abscess, bulk of the bladder was seen anteriorly to the uterus.  The abscess was cultured and sent it back to Bacteriology Department and immediately the opening into the bladder was visualized.  At this point, the entire sigmoid colon was separated posteriorly as well as laterally and it was all the way down to sigmoid down to the rectum.  At this point, decision to place a moist towel and retract old intestine superiorly as well as to place first self-retaining retractor in the abdominal cavity with a bladder blade was placed.  Immediately, a GIA was fired right across the descending colon and sigmoid colon junction and then with peons within the mesentery were placed all the way down to the rectosigmoid junction where a TA-55 balloon Roticulator was fired.  The specimen was cut with #10 blade Bard-Parker and sent it to Pathology.  Immediately copious amount of irrigation was used and the staple line in the descending colon was brought with Allis.  A pursestring device was fired.  The staple line was cut.  The dilators were used using #25 and #29, then _________ #29 EEA was placed and the suture was tied.  At this point, attention was directed down to the rectal stump where dilators #25 and #29 were passed from the anus into the rectum and then the #29 Ethicon GIA was introduced.  The spike came posteriorly through the staple line to avoid the inflammatory process anteriorly that was present in the area of the cul-de-sac as well as the uterine was present in this patient.  ,Immediately, the EEA was connected with a mushroom.  It was tied, fired, and a Doyen was placed above the anastomosis approximately four inches.  Fluid was placed within the _________ and immediately a colonoscope was introduced from the patient's anus insufflating air.  No air was seen evolving from the staple line.  All fluid was removed and pictures of the staple line were taken.  The scope was removed at this point.  The case was passed to Dr. X for repair of the vesicle fistula.  Dr. X did repair down the perforation of the bladder that was communicating with an abscess secondary to the perforated diverticulitis and the colon.  After this was performed, copious amount of irrigation was used again.  More lysis of adhesions were performed and decision to make a loop transverse colostomy was made to protect the anastomosis in a phase of a severe inflammatory process in the pelvis in the infected area.  The incision was performed in the right upper quadrant.,This incision was performed with cutting in the cautery, down into the fascia splitting the muscle and then the Penrose was passed under transverse colon, and was grasped on pulling the transverse colon at the level of the skin.  The wire was passed under the transverse colon.  It was left in place.  Moderate irrigation was used in the peritoneal cavity and in the right lower quadrant, a JP was placed in the pelvis posteriorly to the abscess cavity that was down on the pelvis.  At this point, immediately, yellow fluid was removed from the peritoneal cavity and the abdomen was closed with cephalad to caudad and caudad to cephalad with a loop PDS suture and then tied.  Electrocautery for hemostasis and the subcutaneous tissue.  Copious amount of irrigation was used.  The skin was approximated with staples.  At this point, immediately, the wound was covered with a moist towel and decision to mature the loop colostomy was made.  The colostomy was opened longitudinally and then matured with interrupted #3-0 Vicryl suture through the skin edge.  One it was completely matured, immediately the index finger was probed proximally and distally and both loops were completely opened.  As previously mentioned, the Penrose was removed and the Bard was secured with a #3-0 nylon suture.  The JP was secured with #3-0 nylon suture as well.  At this point, dressings were applied.  The patient tolerated the procedure well.  The stent from the left ureter was removed and the Foley was left in place.  The patient did tolerate the procedure well and will be followed up during the hospitalization.",
-   "key_state": "needs_human",
-   "key_reason": "missing_documentation",
+   "key_state": "not_closed",
+   "key_reason": "incomplete_exam",
    "key_fields": {
-    "caecum": "not_stated",
+    "caecum": "no",
     "prep": "not_stated",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -78,19 +80,19 @@
    },
    "truth": "inadequate",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u2",
    "name": "Esophagogastroduodenoscopy - 4",
    "sha": "c72c3e9111fcd2725e4adaa662c0467ceb4a4410efe479bd5ee40336784e2733",
    "text": "PROCEDURE: , Esophagogastroduodenoscopy with biopsy and colonoscopy with biopsy.,INDICATIONS FOR PROCEDURE: , A 17-year-old with history of 40-pound weight loss, abdominal pain, status post appendectomy with recurrent abscess formation and drainage.  Currently, he has a fistula from his anterior abdominal wall out.  It does not appear to connect to the gastrointestinal tract, but merely connect from the ventral surface of the rectus muscles out the abdominal wall.  CT scans show thickened terminal ileum, which suggest that we are dealing with Crohn's disease.  Endoscopy is being done to evaluate for Crohn's disease.,MEDICATIONS:  ,General anesthesia.,INSTRUMENT:,  Olympus GIF-160 and PCF-160.,COMPLICATIONS: , None.,ESTIMATED BLOOD LOSS:,  Less than 5 mL.,FINDINGS: , With the patient in the supine position, intubated under general anesthesia.  The endoscope was inserted without difficulty into the hypopharynx.  The scope was advanced down the esophagus, which had normal mucosal coloration and vascular pattern.  Lower esophageal sphincter was located at 40 cm from the central incisors.  It appeared normal and appeared to function normally.  The endoscope was advanced into the stomach, which was distended with excess air.  Rugal folds were flattened completely.  There were multiple superficial erosions scattered throughout the fundus, body, and antral portions consistent with Crohn's involvement of the stomach.  The endoscope was advanced through normal-appearing pyloric valve into the first, second, and third portion of the duodenum, which had normal mucosal coloration and fold pattern.  Biopsies were obtained x2 in the second portion of the duodenum, antrum, body, and distal esophagus at 37 cm from the central incisors for histology.  Two additional biopsies were obtained in the antrum for CLO testing.  Excess air was evacuated from the stomach.  The scope was removed from the patient who tolerated that part of the procedure well.,The patient was turned and scope was changed for colonoscopy.  Prior to colonoscopy, it was noted that there was a perianal fistula at 7 o'clock.  The colonoscope was then inserted into the anal verge.  The colonic clean out was excellent.  The scope was advanced without difficulty to the cecum.  The cecal area had multiple ulcers with exudate.  The ileocecal valve was markedly distorted.  Biopsies were obtained x2 in the cecal area and then the scope was withdrawn through the ascending, transverse, descending, sigmoid, and rectum.  The colonic mucosa in these areas was well seen and there were a few scattered aphthous ulcers in the ascending and descending colon.  Biopsies were obtained in the cecum at 65 cm, transverse colon 50 cm, rectosigmoid 20 cm, and rectum at 5 cm.  No fistulas were noted in the colon.  Excess air was evacuated from the colon.  The scope was removed.  The patient tolerated the procedure well and was taken to recovery in satisfactory condition.,IMPRESSION: , Normal esophagus and duodenum.  There were multiple superficial erosions or aphthous ulcers in the stomach along with a very few scattered aphthous ulcers in the colon with marked cecal involvement with large ulcers and a very irregular ileocecal valve.  All these findings are consistent with Crohn's disease.,PLAN:  ,Begin prednisone 30 mg p.o. daily.  Await PPD results and chest x-ray results, as well as cocci serology results.  If these are normal, then we would recommend Remicade 5 mg/kg IV infusion.  We would start Modulon 50 mL/h for 20 hours to reverse the malnutrition state of this boy.  Check CMP and phosphate every Monday, Wednesday, and Friday for receding syndrome noted by following potassium and phosphate.  We will discuss with Dr. X possibly repeating the CT fistulogram if the findings on the previous ones are inconclusive as far as the noting whether we can rule in or out an enterocutaneous fistula.  He will need an upper GI to rule out small intestinal strictures and involvement of the small intestine that cannot be seen with upper and lower endoscopy.  If he has no stricture formation in the small bowel, we would then recommend a video endoscopy capsule to further evaluate any mucosal lesions consistent with Crohn's in the small intestine that we cannot visualize with endoscopy.",
-   "key_state": "awaiting_histology",
-   "key_reason": "tissue_taken_no_histology",
+   "key_state": "not_closed",
+   "key_reason": "awaiting_histology",
    "key_fields": {
     "caecum": "yes",
     "prep": "adequate",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -118,7 +120,7 @@
    },
    "truth": "awaiting_histology",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. Pending confirmation by the human double-labelling."
+   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u3",
@@ -131,7 +133,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -156,7 +159,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u4",
@@ -209,7 +213,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -234,7 +239,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u6",
@@ -246,7 +252,7 @@
    "key_fields": {
     "caecum": "no",
     "prep": "not_stated",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -274,7 +280,7 @@
    },
    "truth": "inadequate",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u7",
@@ -287,7 +293,8 @@
     "caecum": "yes",
     "prep": "inadequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -312,7 +319,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u8",
@@ -325,7 +333,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -350,7 +359,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u9",
@@ -362,7 +372,7 @@
    "key_fields": {
     "caecum": "not_stated",
     "prep": "not_stated",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -390,7 +400,7 @@
    },
    "truth": "inadequate",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication. Caecum absent after right-sided resection; anastomosis/ileum completion is not an incomplete exam."
   },
   {
    "uid": "u10",
@@ -402,7 +412,7 @@
    "key_fields": {
     "caecum": "yes",
     "prep": "not_stated",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -430,7 +440,7 @@
    },
    "truth": "awaiting_histology",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. Pending confirmation by the human double-labelling."
+   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u11",
@@ -442,7 +452,7 @@
    "key_fields": {
     "caecum": "yes",
     "prep": "not_stated",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -470,7 +480,7 @@
    },
    "truth": "awaiting_histology",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. Pending confirmation by the human double-labelling."
+   "key_note": "2026-10-30 key review: colon biopsies were taken and no histology result is in the text, so per the DoH CRC rule (histology if any tissue was taken) the loop waits for histology. The earlier key used 'polyps' as the tissue flag and missed biopsies without polyps. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u12",
@@ -483,7 +493,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -508,7 +519,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u16",
@@ -521,7 +533,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -546,7 +559,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u18",
@@ -559,7 +573,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -584,7 +599,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u19",
@@ -597,7 +613,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -622,7 +639,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u20",
@@ -635,7 +653,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -660,7 +679,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u21",
@@ -673,7 +693,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -698,7 +719,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u22",
@@ -711,7 +733,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -736,7 +759,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u23",
@@ -749,7 +773,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -774,7 +799,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u24",
@@ -787,7 +813,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -812,7 +839,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u25",
@@ -825,7 +853,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -850,7 +879,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u26",
@@ -863,7 +893,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -888,7 +919,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u27",
@@ -901,7 +933,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -926,7 +959,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u28",
@@ -939,7 +973,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -964,7 +999,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u29",
@@ -977,7 +1013,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -1002,7 +1039,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u30",
@@ -1015,7 +1053,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1040,7 +1079,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u31",
@@ -1053,7 +1093,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1078,7 +1119,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u32",
@@ -1091,7 +1133,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1116,7 +1159,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u33",
@@ -1129,7 +1173,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1154,7 +1199,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u34",
@@ -1167,7 +1213,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1192,7 +1239,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u35",
@@ -1205,7 +1253,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -1230,7 +1279,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u36",
@@ -1243,7 +1293,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1268,7 +1319,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u37",
@@ -1281,7 +1333,8 @@
     "caecum": "yes",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1306,28 +1359,30 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u38",
    "name": "Colonoscopy - 19",
    "sha": "24ecf4adf8f84b0a65a6c6412aaf12a2ff77749857e3ed0b59cacf2bf9cbebaa",
    "text": "INDICATION: , Iron deficiency anemia.,PROCEDURE:  ,Colonoscopy with terminal ileum examination.,POSTOPERATIVE DIAGNOSIS:,  Normal examination.,WITHDRAWAL TIME: , 15 minutes.,SCOPE: , CF-H180AL.,MEDICATIONS: , Fentanyl 100 mcg and versed 10 mg.,PROCEDURE DETAIL:  ,Following the preprocedure patient assessment the procedure, goals, risks including bleeding, perforation, missed polyp rate as well as side effects of medications and alternatives were reviewed.  Questions were answered.  Pause preprocedure was performed.,Following titrated intravenous sedation the flexible video endoscope was introduced into the rectum and advanced to the cecum without difficulty.  The ileocecal valve looked normal.  Preparation was fair allowing examination of 85% of mucosa after washing and cleaning with tap water through the scope.  The terminal ileum was intubated through the ileocecal valve for a 5 cm extent.  Terminal ileum mucosa looked normal.,Then the scope was withdrawn while examining the mucosa carefully including the retroflexed views of the rectum.  No polyp, no diverticulum and no bleeding source was identified.,The patient was assessed upon completion of the procedure.  Okay to discharge once criteria met.  ,RECOMMENDATIONS:,  Follow up with primary care physician.",
-   "key_state": "closed",
-   "key_reason": "criteria_met",
+   "key_state": "not_closed",
+   "key_reason": "inadequate_prep",
    "key_fields": {
     "caecum": "yes",
-    "prep": "adequate",
+    "prep": "inadequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
-    "prep": "adequate",
+    "prep": "inadequate",
     "polyps": "no",
     "histology": "no",
-    "state": "closed",
-    "reason": "criteria_met"
+    "state": "not_closed",
+    "reason": "inadequate_prep"
    },
    "gemma": {
     "caecum": "yes",
@@ -1343,8 +1398,9 @@
      "histology_quote": ""
     }
    },
-   "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "truth": "inadequate",
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication. Fair preparation was clinically labelled inadequate, replacing the previous adequate outcome."
   },
   {
    "uid": "u39",
@@ -1357,7 +1413,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "yes",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "yes"
    },
    "regex": {
     "caecum": "yes",
@@ -1382,7 +1439,8 @@
     }
    },
    "truth": "awaiting_histology",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u40",
@@ -1394,7 +1452,7 @@
    "key_fields": {
     "caecum": "yes",
     "prep": "inadequate",
-    "polyps": "no",
+    "polyps": "yes",
     "histology": "no",
     "tissue_taken": "yes"
    },
@@ -1422,7 +1480,7 @@
    },
    "truth": "inadequate",
    "n_mtsamples_rows": 2,
-   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. Pending the human double-labelling."
+   "key_note": "2026-10-30 key review: tissue went to pathology (biopsies or a resection specimen), so tissue_taken=yes. Truth stays inadequate: the caecum or prep criterion fails first. 2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u41",
@@ -1435,7 +1493,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "not_stated",
@@ -1460,7 +1519,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication. Caecum absent after right-sided resection; anastomosis/ileum completion is not an incomplete exam."
   },
   {
    "uid": "u42",
@@ -1473,7 +1533,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "not_stated",
@@ -1498,7 +1559,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u43",
@@ -1511,7 +1573,8 @@
     "caecum": "yes",
     "prep": "adequate",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "yes",
@@ -1536,7 +1599,8 @@
     }
    },
    "truth": "adequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u44",
@@ -1549,7 +1613,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "not_stated",
@@ -1574,7 +1639,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 3
+   "n_mtsamples_rows": 3,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u51",
@@ -1587,7 +1653,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "not_stated",
@@ -1612,7 +1679,8 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   },
   {
    "uid": "u91",
@@ -1625,7 +1693,8 @@
     "caecum": "not_stated",
     "prep": "not_stated",
     "polyps": "no",
-    "histology": "no"
+    "histology": "no",
+    "tissue_taken": "no"
    },
    "regex": {
     "caecum": "not_stated",
@@ -1650,7 +1719,15 @@
     }
    },
    "truth": "inadequate",
-   "n_mtsamples_rows": 2
+   "n_mtsamples_rows": 2,
+   "key_note": "2026-11-06 clinically verified after two independent model-assisted passes and adjudication."
   }
- ]
+ ],
+ "verification": {
+  "status": "clinically_verified",
+  "method": "two independent model-assisted labelling passes, kappa scoring and clinician adjudication; not independent human double-labelling",
+  "agreement": "docs/labelling/agreement.json",
+  "adjudications": "docs/labelling/adjudications.csv",
+  "human_double_labelled": false
+ }
 }

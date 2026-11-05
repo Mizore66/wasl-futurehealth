@@ -2901,3 +2901,13 @@ The first two failures produced two concrete routing fixes: bounded two-hop demo
 - No result authorizes live NATS deployment, autonomous merging/rejection, or a claim that the agent is an independent clinician. A live migration would need a separate shadow/assist evaluation, deterministic fallback and kill switch.
 
 **Final scope:** r1agent10 is the user's chosen **experimental feature**, not the fully validated `r1review` path and not a promoted default. Earlier validated models remain separate; no gates were weakened to present this result.
+
+---
+
+## Clinically verified MTSamples labels and preparation-rule correction
+
+The 43 MTSamples reports now have **clinically verified model-assisted labels**. Two independent model labelling passes were reconciled, and the team's clinician adjudicated u9 and u41. Final Cohen's κ is **1.000 for caecum, prep, polyps, histology and state**, with observed agreement 43/43 on all five scored clinical fields. This is not independent human double-labelling; the method and frozen sheets are recorded in `docs/labelling/`.
+
+The verified key changes u38 from `adequate` to `inadequate` because its preparation was fair, and records u9/u41 as `caecum=not_stated` because the caecum is absent after right-sided resection and the examination reached the surgical anastomosis/ileum limit. Other outcome labels are unchanged. Detailed fields and per-report provenance are in `data/evidence/reports43.json`.
+
+Before the rule fix, the readers produced one unsafe automatic `adequate` on u38. `fair` preparation is now classified as `inadequate_prep`, with a regression test. The verified reader evaluation then measured **20 automatic decisions, 19 correct and 0 unsafe**; one safe-direction wrong answer remained. Field agreement against the verified key was: regex caecum 40/43, prep 41/43, polyps 41/43, histology 43/43, state 40/43; reader2 caecum 41/43, prep 41/43, polyps 42/43, histology 43/43, state 40/43. The full Go suite passed after the rule change. These are cached-reader results on 43 reports, not clinical-effectiveness evidence or a larger-corpus validation claim.

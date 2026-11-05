@@ -58,8 +58,8 @@ var (
 	reCaecNo   = regexp.MustCompile(`(?i)(?:unable to|could not|failed to|not able to) (?:reach|advance|intubate|pass)|aborted|incomplete (?:exam|colonoscopy|study)|(?:passed|advanced|inserted)[^.]{0,40}to the ` + seg)
 	reCaecYes  = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)|ileoc(?:a)?ecal|terminal ileum|appendiceal orifice`)
 	reScope    = regexp.MustCompile(`(?i)colonoscop|scope`)
-	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory)`)
-	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|fair|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|fair|satisfactory)|well[- ]prep`)
+	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory|fair)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory|fair)`)
+	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|satisfactory)|well[- ]prep`)
 	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved|recovered)|(?:removed|resected|excised|excision|snared|snare)[^.]{0,60}polyp`)
 	// v7.2 adds "biopsied" (unless negated earlier in its sentence), "excision/snare … polyp" and "polyp … recovered": colon tissue that v7.1 only caught by
 	// accident when a gastric biopsy in the same report matched (corpus 4 q275, corpus 8 v054).
@@ -78,7 +78,7 @@ var (
 	// v6: this procedure's result is still pending (or only received, not reported). A tissue diagnosis elsewhere in such
 	// a text is not this procedure's result, so the report is not auto-closed.
 	reHistPending = regexp.MustCompile(`(?i)(?:histolog\w*|patholog\w*|result|specimen|accession)[^.\n]{0,50}\b(?:awaited|pending|to follow|not (?:yet )?(?:available|back|reported))|\b(?:awaiting|pending)\b[^.\n]{0,20}(?:histolog|patholog|result)|\bno (?:\w+ )?diagnosis (?:is )?(?:yet )?available|(?:laboratory|lab|patholog\w*)[^.\n]{0,40}\breceived\b|\breceived\b[^.\n]{0,20}(?:in|by) (?:the )?(?:lab|laboratory|pathology)|gross description`)
-	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
+	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
 
