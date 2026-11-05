@@ -176,7 +176,9 @@ func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]
 		for _, id := range ids {
 			it := rp.items[id]
 			anchors[id] = posToBase[it.InSeq-1]
-			sos[id] = cfg.Review(it, o.tr)
+			if so := cfg.Review(it, o.tr); so != nil {
+				sos[id] = so
+			}
 		}
 	}
 	panic("review loop did not converge")
@@ -210,7 +212,6 @@ func (q *reviewQueue) answer(rp *replayOut, cfg ReviewerCfg, tr *Truth, sos map[
 		if out.Kind != "review" || it == nil || q.seen[it.ItemID] {
 			continue
 		}
-		q.seen[it.ItemID] = true
 		if _, ok := sos[it.ItemID]; ok {
 			continue
 		}
@@ -223,6 +224,10 @@ func (q *reviewQueue) answer(rp *replayOut, cfg ReviewerCfg, tr *Truth, sos map[
 			continue
 		}
 		so := cfg.Review(it, tr)
+		if so == nil { // eligible pair is waiting for its first agent recommendation
+			continue
+		}
+		q.seen[it.ItemID] = true
 		q.wl.record(it, so)
 		q.lw.record(it, so)
 		sos[it.ItemID] = so

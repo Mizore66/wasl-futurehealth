@@ -276,7 +276,14 @@ func writeAgentStats(path string, o *offline, cfg ReviewerCfg, ar *AgentRecs, rp
 				continue
 			}
 			reads++
-			delta += ctl.Review(rp.items[so.ItemID], o.tr).DurationS - so.DurationS
+			it := rp.items[so.ItemID]
+			if it == nil {
+				// A sign-off inserted immediately after the event can close the item before the final replay emits it.
+				// The sign-off retains everything the deterministic control reviewer needs to re-price the human reads.
+				it = &ReviewItem{ItemID: so.ItemID, LoopID: so.LoopID, Kinds: so.Kinds, Pair: so.Pair,
+					ReportID: so.ReportID, Verdict: so.Hold, Reason: so.Purpose, Head: so.SignedHead}
+			}
+			delta += ctl.Review(it, o.tr).DurationS - so.DurationS
 		}
 		saved := delta
 		if saved < 0 {
