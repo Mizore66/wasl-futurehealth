@@ -58,13 +58,13 @@ Rehearse these four views before recording:
 
 **Show:** final dashboard with `simulated` visible and the pilot-gate slide.
 
-**Say:** “These are synthetic cohorts with real public name and report-text sources, not clinical outcomes from Abu Dhabi patients. The current 43-report answer key is LLM-produced until both team members finish independent labelling. Our next step is an unpaid shadow pilot: zero false closures and at least 95% recall against the coordinator's list before any live outreach. Wasl keeps the evidence, the safety gate and the human decision in one auditable loop.”
+**Say:** “These are synthetic cohorts with real public name and report-text sources, not clinical outcomes from Abu Dhabi patients. The 43 reports have clinically verified model-assisted labels, with κ of 1 after adjudication—not independent human double-labelling. Our next step is an unpaid shadow pilot: zero false closures and at least 95% recall against the coordinator's list before any live outreach. Wasl keeps the evidence, the safety gate and the human decision in one auditable loop.”
 
 ## Recording checks
 
 - Keep the run/policy/model version visible in at least one shot.
 - Say “simulated” for capacity, patient and reviewer results; never imply a clinical pilot has happened.
-- Do not claim clinician labels, buyer commitments, live Malaffi integration or live cloud-LLM inference.
+- Say **clinically verified model-assisted labels**, not independent human double-labelling or clinical ground truth. Do not claim buyer commitments, live Malaffi integration or live cloud-LLM inference.
 - The 26B reader is cached in the canonical demo; the local 4B reader is live only when explicitly started in that mode.
 - Record a clean backup take without the evidence-agent sentence. The r1agent10 take must include its exact experimental trade-off and must not imply that validation passed.
 - Target 145–155 words per minute; trim pauses rather than speeding past the safety and limitation statements.

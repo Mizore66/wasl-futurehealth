@@ -1,0 +1,43 @@
+{
+ "n_reports": 43,
+ "fields": {
+  "caecum": {
+   "kappa_ab": 1.0,
+   "agree_ab": 1.0,
+   "kappa_a_key": 1.0,
+   "kappa_b_key": 1.0,
+   "disagreements": []
+  },
+  "prep": {
+   "kappa_ab": 1.0,
+   "agree_ab": 1.0,
+   "kappa_a_key": 1.0,
+   "kappa_b_key": 1.0,
+   "disagreements": []
+  },
+  "polyps": {
+   "kappa_ab": 1.0,
+   "agree_ab": 1.0,
+   "kappa_a_key": 1.0,
+   "kappa_b_key": 1.0,
+   "disagreements": []
+  },
+  "histology": {
+   "kappa_ab": 1.0,
+   "agree_ab": 1.0,
+   "kappa_a_key": 0.0,
+   "kappa_b_key": 0.0,
+   "disagreements": []
+  },
+  "state": {
+   "kappa_ab": 1.0,
+   "agree_ab": 1.0,
+   "kappa_a_key": 0.183,
+   "kappa_b_key": 0.183,
+   "disagreements": []
+  }
+ },
+ "method": "two independent model-assisted labelling passes, reconciled and clinically verified; not independent human double-labelling",
+ "state_key_comparison": "raw key_state categories, not a binary closed/not_closed mapping",
+ "reason_normalization": "free-text reason cells use the verified key_reason except clinician-provided u9/u41 explanations; reason is not a \u03ba-scored field"
+}
