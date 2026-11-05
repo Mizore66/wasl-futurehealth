@@ -7,7 +7,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 [ "$#" -ge 4 ] || { echo "usage: scripts/pairfeat_parallel.sh MODE ARM EXPERIMENT_DIR SEED..." >&2; exit 2; }
 MODE="$1"; ARM="$2"; EXP="$3"; shift 3
 RUNNER="${PAIRFEAT_RUNNER:-$ROOT/scripts/pairfeat_experiment.sh}"
-OUT="$EXP/$MODE-$ARM"
+RUN_ID="${PAIRFEAT_RUN_ID:-}"
+TAG="${RUN_ID:+-$RUN_ID}"
+OUT="$EXP/$MODE-$ARM$TAG"
 [ ! -e "$OUT" ] && [ ! -L "$OUT" ] || { echo "composite arm already exists: $OUT" >&2; exit 2; }
 MAX_JOBS="${PAIRFEAT_MAX_JOBS:-3}"
 BASE_OFFSET="${PAIRFEAT_PORT_OFFSET:-0}"
@@ -22,8 +24,10 @@ for seed in "${seeds[@]}"; do
     if ! wait "${pids[0]}"; then failed=1; fi
     pids=("${pids[@]:1}")
   fi
-  work="$EXP/parallel-$MODE-$ARM-s$seed"
-  bin_dir="$ROOT/bin/parallel-$MODE-$ARM-s$seed"
+  work="$EXP/parallel$TAG-$MODE-$ARM-s$seed"
+  bin_dir="$ROOT/bin/parallel$TAG-$MODE-$ARM-s$seed"
+  mkdir -p "$bin_dir"
+  ln -sf "$ROOT/bin/nats-server" "$bin_dir/nats-server"
   offset=$((BASE_OFFSET + i * 100))
   PAIRFEAT_SEED="$seed" WASL_BIN="$bin_dir" PAIRFEAT_PORT_OFFSET="$offset" WASL_PORT_OFFSET="$offset" \
     "$RUNNER" "$work" "$MODE" "$ARM" > "$LOGS/$MODE-$ARM-s$seed.log" 2>&1 &
@@ -35,19 +39,21 @@ for pid in "${pids[@]}"; do
 done
 [ "$failed" -eq 0 ] || { echo "one or more parallel lanes failed; see $LOGS" >&2; exit 1; }
 mkdir "$OUT"
-first="$EXP/parallel-$MODE-$ARM-s${seeds[0]}"
+first="$EXP/parallel$TAG-$MODE-$ARM-s${seeds[0]}"
 cp "$first/build.json" "$OUT/build.json"
 python3 -I - "$OUT" "$EXP" "$MODE" "$ARM" "${seeds[@]}" <<'PY'
 import json, os, sys
 out, exp, mode, arm = sys.argv[1:5]
 seeds = sys.argv[5:]
+run_id = os.environ.get("PAIRFEAT_RUN_ID", "")
+prefix = "parallel" + (("-" + run_id) if run_id else "")
 for seed in seeds:
-    with open(os.path.join(exp, "parallel-%s-%s-s%s" % (mode, arm, seed), "build.json")) as h:
+    with open(os.path.join(exp, "%s-%s-%s-s%s" % (prefix, mode, arm, seed), "build.json")) as h:
         b = json.load(h)
     with open(os.path.join(out, "build.json")) as h:
         first = json.load(h)
     if (b.get("git_head"), b.get("binary_sha256")) != (first.get("git_head"), first.get("binary_sha256")):
         raise SystemExit("seed %s used a different git HEAD or binary" % seed)
-    os.symlink(os.path.join(exp, "parallel-%s-%s-s%s" % (mode, arm, seed)), os.path.join(out, "v2-s%s" % seed))
+    os.symlink(os.path.join(exp, "%s-%s-%s-s%s" % (prefix, mode, arm, seed)), os.path.join(out, "v2-s%s" % seed))
 PY
 printf 'created %s with %d parallel seed lanes\n' "$OUT" "${#seeds[@]}"
