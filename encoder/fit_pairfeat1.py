@@ -1,8 +1,8 @@
 """Frozen driver: dump features, fit the pair scorer chain, hash everything.
 
-Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|...|pairfeat8] [--reference REFERENCE_FIT_DIR]
+Usage: python3 -I encoder/fit_pairfeat1.py NEW_OUTPUT_DIR [--modelset pairfeat1|...|pairfeat9] [--reference REFERENCE_FIT_DIR]
 NEW_OUTPUT_DIR must be a new directory under ~/wasl-ml-data/agents2/hardening/<modelset>/. --reference (pairfeat7 only, and
-required there; pairfeat8 takes none) is the separately fitted reference (pairfeat5) at the same git HEAD; its plain-cal different-at-merge-0.7
+required there; pairfeat8 and pairfeat9 take none) is the separately fitted reference (pairfeat5) at the same git HEAD; its plain-cal different-at-merge-0.7
 count is reported beside the candidate's (not gated).
 Orchestration is stdlib only (numpy is imported solely to read cal_p_<modelset>.npy).
 """
@@ -327,6 +327,13 @@ def xs_namesake_slice(csv_path, sidecar_path, width=38):
 def hard_negative_slice(csv_path, sidecar_path, key, width=38):
     """pairfeat7/9: the md (missing-date), rd (same-real-date) or mi (middle-initial) rows of a namesake-cal dump."""
     return _slice(csv_path, sidecar_path, key + "_rows", width)
+
+
+def slice_print_keys(modelset):
+    """Hard-negative slices a modelset's protocol enables, in print order: xs, then md, rd, mi (only when enabled)."""
+    proto = PROTOCOLS[modelset]
+    keys = ["xs"] if proto.get("xs_namesakes") else []
+    return keys + [k for k, _ in HARD_NEGATIVES7 if proto.get(k + "_namesakes")]
 
 
 def plain_cal_diff_at_merge(parity_csv, width=38):
@@ -687,8 +694,8 @@ def main(argv):
         extra["plain_cal_diff_at_merge_0_7_reference"] = reference
         print(f"plain cal different-at-merge-0.7 (reported, not gated): {modelset} "
               f"{extra['plain_cal_diff_at_merge_0_7']} vs {reference['modelset']} {reference['plain_cal_diff_at_merge_0_7']}")
-        for key in ("xs", "md", "rd", "mi"):
-            print(f"{key} hard-negative slice (namesake cal dump): {json.dumps(extra[key + '_namesake_slice'], sort_keys=True)}")
+    for key in slice_print_keys(modelset):  # protocol-enabled slices only, printed whether or not a reference exists
+        print(f"{key} hard-negative slice (namesake cal dump): {json.dumps(extra[key + '_namesake_slice'], sort_keys=True)}")
     if idf:
         with open(idf) as fh:
             n_reg = json.load(fh)["registrations"]
