@@ -14,6 +14,7 @@ to the cache, the recs file, the summaries or the child-process environment.
     agent_investigator.py smoke --lane USED_LANE --n 20 --out DIR --cache CACHE
 """
 import argparse, glob, hashlib, json, os, re, shlex, shutil, socket, subprocess, sys, tempfile, time, urllib.error, urllib.request
+import fcntl
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import agent_evidence as ae  # noqa: E402
@@ -111,8 +112,9 @@ class GeminiClient:
                  schema_ver=ae.TOOL_SCHEMA_VERSION):
         self._tx, self.model, self.cache_dir, self.timeout, self.retries = transport, model, cache_dir, timeout, retries
         self.prompt_ver, self.schema_ver = prompt_ver, schema_ver
+        self.counter_path = os.path.join(cache_dir, ".uncached_calls")
         self.set_stage(stage)
-        self.sent = len(glob.glob(os.path.join(cache_dir, "*.json"))) if os.path.isdir(cache_dir) else 0
+        self.sent = self._read_counter()
 
     def set_stage(self, stage):
         if stage not in CAPS:
@@ -121,6 +123,19 @@ class GeminiClient:
 
     def _path(self, key):
         return os.path.join(self.cache_dir, key + ".json")
+
+    def _read_counter(self):
+        try:
+            with open(self.counter_path) as f:
+                return int(f.read())
+        except (FileNotFoundError, ValueError):
+            return len(glob.glob(os.path.join(self.cache_dir, "*.json"))) if os.path.isdir(self.cache_dir) else 0
+
+    def _write_counter(self, value):
+        tmp = self.counter_path + ".tmp%d" % os.getpid()
+        with open(tmp, "w") as f:
+            f.write(str(value))
+        os.replace(tmp, self.counter_path)
 
     def chat(self, bundle, messages):
         """Returns {message, usage{prompt,completion,total}, latency_s, cached}."""
@@ -132,25 +147,35 @@ class GeminiClient:
             return {"message": e["message"], "usage": e["usage"], "latency_s": e["latency_s"], "cached": True}
         body = {"model": self.model, "messages": messages, "tools": TOOL_DEFS, "temperature": 0, "max_tokens": 1200,
                 "response_format": RESPONSE_FORMAT}
-        last = None
-        for attempt in range(1 + self.retries):
-            if self.sent >= self.cap:
-                raise CapExceeded("%s cap of %d uncached Gemini calls reached" % (self.stage, self.cap))
-            self.sent += 1
-            t0 = time.time()
-            try:
-                raw = self._tx(body, self.timeout)
-            except ProviderError as e:
-                last = e
-            except Exception as e:  # noqa: BLE001
-                last = ProviderError("provider call failed: %s" % (("http %d" % e.code) if isinstance(e, urllib.error.HTTPError) else type(e).__name__))
-            else:
-                out = self._parse(raw, time.time() - t0)
-                self._store(p, key, out)
-                return dict(out, cached=False)
-            if attempt < self.retries:
-                time.sleep(min(2 ** attempt, 30))
-        raise ProviderError(str(last)) from None
+        os.makedirs(self.cache_dir, exist_ok=True)
+        with open(self.counter_path + ".lock", "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            # Another process may have answered this key while this process waited.
+            if os.path.isfile(p):
+                with open(p, encoding="utf-8") as f:
+                    e = json.load(f)
+                return {"message": e["message"], "usage": e["usage"], "latency_s": e["latency_s"], "cached": True}
+            self.sent = max(self.sent, self._read_counter())
+            last = None
+            for attempt in range(1 + self.retries):
+                if self.sent >= self.cap:
+                    raise CapExceeded("%s cap of %d uncached Gemini calls reached" % (self.stage, self.cap))
+                self.sent += 1
+                self._write_counter(self.sent)
+                t0 = time.time()
+                try:
+                    raw = self._tx(body, self.timeout)
+                except ProviderError as e:
+                    last = e
+                except Exception as e:  # noqa: BLE001
+                    last = ProviderError("provider call failed: %s" % (("http %d" % e.code) if isinstance(e, urllib.error.HTTPError) else type(e).__name__))
+                else:
+                    out = self._parse(raw, time.time() - t0)
+                    self._store(p, key, out)
+                    return dict(out, cached=False)
+                if attempt < self.retries:
+                    time.sleep(min(2 ** attempt, 30))
+            raise ProviderError(str(last)) from None
 
     @staticmethod
     def _parse(raw, latency):
