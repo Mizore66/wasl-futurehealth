@@ -120,6 +120,15 @@ func (a *AgentRecs) read(it *ReviewItem) *AgentRec {
 	return a.recs[pairKey(it.Pair[0], it.Pair[1])]
 }
 
+// deferRead keeps an eligible, uninvestigated pair unsigned for this replay iteration. Otherwise an erroneous human
+// "different" can become cannot-link before the sidecar gets its first recommendation, permanently hiding the item.
+func (a *AgentRecs) deferRead(it *ReviewItem) bool {
+	if a == nil || !isLinkQuestion(it) || !agentEligiblePair(a.L, it.Pair[0], it.Pair[1]) {
+		return false
+	}
+	return a.recs[pairKey(it.Pair[0], it.Pair[1])] == nil
+}
+
 // Ineligible counts recommendations whose pair is not eligible under the current registrations (ignored by read).
 func (a *AgentRecs) Ineligible() int {
 	if a == nil {
