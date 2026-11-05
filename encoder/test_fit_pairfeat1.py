@@ -1359,6 +1359,15 @@ class Pairfeat9Protocol(unittest.TestCase):
         self.assertEqual(str(cm.exception), "namesake floor not met (same-date): 0 < 500")
         self.assertEqual(fp.check_namesake_floor([sc(mi=0), sc(mi=0)], "pairfeat8"), (500, 500, 500, 500, 500))
 
+    def test_slice_print_keys(self):
+        self.assertEqual(fp.slice_print_keys("pairfeat9"), ["xs", "md", "rd", "mi"])
+        self.assertEqual(fp.slice_print_keys("pairfeat8"), ["xs", "md", "rd"])
+        self.assertEqual(fp.slice_print_keys("pairfeat7"), ["xs", "md", "rd"])
+        self.assertEqual(fp.slice_print_keys("pairfeat6"), ["xs"])
+        for k in EARLIER:
+            self.assertEqual(fp.slice_print_keys(k), [])
+        self.assertNotIn("mi", fp.slice_print_keys("pairfeat7"))
+
     def test_training_manifest_mi(self):
         with tempfile.TemporaryDirectory() as d:
             make_repo(d, FILES + PF6_FILES + PF7_FILES + PF8_FILES + PF9_FILES)
