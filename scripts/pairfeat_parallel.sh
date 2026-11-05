@@ -54,6 +54,6 @@ for seed in seeds:
         first = json.load(h)
     if (b.get("git_head"), b.get("binary_sha256")) != (first.get("git_head"), first.get("binary_sha256")):
         raise SystemExit("seed %s used a different git HEAD or binary" % seed)
-    os.symlink(os.path.join(exp, "%s-%s-%s-s%s" % (prefix, mode, arm, seed)), os.path.join(out, "v2-s%s" % seed))
+    os.symlink(os.path.join(exp, "%s-%s-%s-s%s" % (prefix, mode, arm, seed), "v2-s%s" % seed), os.path.join(out, "v2-s%s" % seed))
 PY
 printf 'created %s with %d parallel seed lanes\n' "$OUT" "${#seeds[@]}"
