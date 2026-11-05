@@ -61,7 +61,7 @@ case "$MODE" in
   validation-clean) SPLIT=eval; RERR=0;    ERRU=0;;
   *) echo "invalid mode: $MODE" >&2; exit 2;;
 esac
-case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; r1agent8|r1agent9|r1agent10|r1agent11|r1agent12) ;; r1photo9ref|r1photo9) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8 r1agent8 r1agent9 r1agent10 r1agent11 r1agent12 r1photo9ref r1photo9)" >&2; exit 2;; esac
+case "$ARM" in baseline|pairfeat1|pairfeat2|pairfeat3|pairfeat4|pairfeat5|pairfeat6) ;; pairfeat7) ;; r1review) ;; r1photo7) ;; r1photo8ref|r1photo8) ;; r1agent8|r1agent9|r1agent10|r1agent11|r1agent12|r1agent13) ;; r1photo9ref|r1photo9) ;; *) echo "invalid arm: $ARM (allowed baseline pairfeat1 pairfeat2 pairfeat3 pairfeat4 pairfeat5 pairfeat6 pairfeat7 r1review r1photo7 r1photo8ref r1photo8 r1agent8 r1agent9 r1agent10 r1agent11 r1agent12 r1agent13 r1photo9ref r1photo9)" >&2; exit 2;; esac
 [ -n "${HOME:-}" ] || { echo "HOME is not set" >&2; exit 2; }
 DATA_BASE="$HOME/wasl-ml-data"
 [ -d "$DATA_BASE" ] || { echo "missing $DATA_BASE" >&2; exit 2; }
@@ -100,6 +100,7 @@ case "$CAND" in
   r1agent10) DEV_SEEDS="987 991 993"; VAL_SEEDS="997 1027 1037 1043 1049"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared; BASEARM=r1photo8;;
   r1agent11) DEV_SEEDS="1011 1017 1023"; VAL_SEEDS="1035 1041 1047 1051 1057"; CHAIN=pairfeat8; REF=r1photo8ref; REFCHAIN=shared; BASEARM=r1photo8;;
   r1agent12) DEV_SEEDS="1061 1063 1069"; VAL_SEEDS="1073 1079 1081 1087 1091"; CHAIN=pairfeat9; REF=r1photo9ref; REFCHAIN=shared; BASEARM=r1photo9;;
+  r1agent13) DEV_SEEDS="1093 1097 1099"; VAL_SEEDS="1103 1109 1117 1121 1123"; CHAIN=pairfeat9; REF=r1photo9ref; REFCHAIN=shared; BASEARM=r1photo9;;
   *) echo "preflight refused: unknown experiment candidate: $CAND" >&2; exit 2;;
 esac
 case "$ARM" in "$BASEARM"|"$CAND") ;; *) [ -n "$REF" ] && [ "$ARM" = "$REF" ] || { echo "arm $ARM is not served by the $CAND experiment in $PARENT" >&2; exit 2; };; esac
