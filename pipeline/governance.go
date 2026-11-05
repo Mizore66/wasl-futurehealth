@@ -410,6 +410,9 @@ func (c ReviewerCfg) humanDouble(it, draw *ReviewItem, tr *Truth, r1 read) (read
 // Review produces the sign-off for one item: one read, a second independent read for high-risk answers, and a
 // third (senior) read only if the first two disagree. Role follows the item kind (RBAC).
 func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
+	if c.Agent.deferRead(it) {
+		return nil
+	}
 	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, SignedHead: it.Head, Purpose: it.Reason}
 	so.Role = RoleReviewer
 	if it.Kinds[0] == "evidence" {
