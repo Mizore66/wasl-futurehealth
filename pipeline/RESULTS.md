@@ -2854,7 +2854,7 @@ Per-seed recall: baseline 0.8492, 0.8514, 0.8468; `r1photo8ref` 0.8643, 0.8559, 
 
 ---
 
-## Evidence-investigator experiments (`r1agent8`–`r1agent12`; user selected experimental r1agent10 for the showcase)
+## Evidence-investigator experiments (`r1agent8`–`r1agent13`; user selected experimental r1agent10 for the showcase)
 
 **Outcome:** after a series of bounded experiments, the user stopped model training and chose **r1agent10 as the experimental evidence-investigator feature for the project showcase**. It is not a validated default-model upgrade and must not be presented as one. Development passed; stress preserved guarded-human recall and reduced human review time, but lost five closures against the unguarded comparator, so validation did not run. The user explicitly chose the agentic feature and its time saving with that limitation disclosed.
 
@@ -2886,10 +2886,28 @@ Development had 223/223 eligible coverage and 215/215 valid accepted citations. 
 | r1agent10 | Development passed; stress 595 vs 600 | Selected only as the user's experimental showcase, with the stress trade-off disclosed |
 | r1agent11 | Recall tied at 610/648; wrong-pair reviews 1 vs 0 | A Kate O'Brien/Kate L. O'Brien namesake review could not be removed by an agent answer |
 | r1agent12 (pairfeat9) | 659 vs 660 closures; wrong-pair reviews 1 vs 1 | Development recall and strict review gates both failed |
+| r1agent13 (pairfeat9) | Recall tied at 614/652; wrong-pair reviews 1 vs 1 | Development strict review gate failed; stress and validation did not run |
 
 The first two failures produced two concrete routing fixes: bounded two-hop demographic review (`e0c28e3`) and resolved-edge handling (`14f07d6`). r1agent10's stress diagnosis showed that a wrong human rejection became cannot-link before investigation; `00a5e3c` now defers eligible unsigned pairs to the sidecar first and preserves closed-item human-time accounting. These are diagnostics, not fresh validation evidence.
 
 `pairfeat9` was a narrow 0.002 middle-initial hard-negative experiment. Its accepted fit (`run-2` at `977d7c7`) had exact chain hashes, 39 valid training `mi_rows`, 41-column dumps and an eight-row calibration slice. r1agent12 used matched `r1photo9ref`/`r1photo9` comparator arms at `fb017ee`; the older pairfeat8 arms could not initialize against pairfeat9. It still failed development, so the fit is not selected.
+
+### r1agent13 development result
+
+r1agent13 added reverse-near invalidation to the pairfeat9 evidence-investigator stack. The old seed-1063 replay closed its diagnostic loop with zero replay mismatches, but that was not fresh selection evidence. The recorded development run is **run12 at `d3bd88c`**, using fresh seeds 1093, 1097 and 1099 and all three matched arms.
+
+| Development metric | r1photo9 guarded human | r1photo9ref unguarded | r1agent13 |
+|---|---:|---:|---:|
+| True closures | 614/652 | 614/652 | **614/652** |
+| Recall | 0.9417 | 0.9417 | **0.9417** |
+| False-merge pairs | 1 | 4 | **1** |
+| Cross-person edges | 1 | 4 | **1** |
+| Uncapped wrong-pair reviews | 1 | 1 | **1** |
+| Human hours | 26.022 | 27.615 | **22.430** |
+
+**Development failed the effective reference gate:** the candidate's one uncapped wrong-pair review was not strictly below the unguarded reference's one. Recall did not improve on either comparator. Stress and frozen validation were not started; validation seeds 1103, 1109, 1117, 1121 and 1123 remain unused. r1agent13 is not selected, and no gate was amended.
+
+Every arm had zero false closures, wrong-patient releases, wrong final sign-offs, replay mismatches, analysis errors and trace errors, with deterministic offline replay. Candidate coverage was 216/216; all 212 accepted recommendations had valid citations, with four abstentions and no invalid records. The agent made 444 calls using 517,927 tokens and 1,363.678 seconds of latency, reported separately from human time. Human time fell by 3.592 hours (13.8%) against guarded human and 5.185 hours (18.8%) against unguarded. Agent confusion was 211 true-same recommendations accepted as `same`, one true-different pair recommended `same`, and four true-same abstentions; the ordinary human review and senior-resolution paths remained in place.
 
 ### Infrastructure and disclosure
 
@@ -2897,6 +2915,7 @@ The first two failures produced two concrete routing fixes: bounded two-hop demo
 - `2789662` fixes provider environment restoration and adds the disclosed zero-floor rule: when an unguarded count is zero the candidate must match zero, because strict improvement is impossible. This amendment was registered before any candidate verdict and never relaxed recall.
 - `e58f551` compares live/materialized final signatures from OUT logs only; `6d7618b` restores the agent policy in report7. Both fixed analysis-only mismatches without changing model outcomes.
 - The full Go suite passed after each runtime fix; the final harness registration passed 372 tests. Pairfeat9 fit protocol passed 89 tests.
+- For r1agent13, `d3bd88c` fixed isolated NATS binary lookup and passed the full Go suite plus 374 comparison and two parallel-runner tests. Run9 had four orchestration failures from overlapping local port offsets and wrote no selection; run12 used disjoint offsets. Its generated composite symlinks were corrected to the actual seed directories before analysis without changing raw lane outputs. `34ea896` fixes that composite-link helper for future runs; it is not the run12 result commit.
 - Results use synthetic patients and reviewers, cached clinical verdicts and an external model's judgment, not clinician labels or clinical ground truth. The 20-item smoke had 19 actionable recommendations and one schema-valid abstention with no provider error.
 - No result authorizes live NATS deployment, autonomous merging/rejection, or a claim that the agent is an independent clinician. A live migration would need a separate shadow/assist evaluation, deterministic fallback and kill switch.
 
