@@ -2851,3 +2851,53 @@ Per-seed recall: baseline 0.8492, 0.8514, 0.8468; `r1photo8ref` 0.8643, 0.8559, 
 7. n=3 development seeds; intervals are descriptive.
 
 **Scope:** CRC-only, image-on, simulated. Nothing was promoted to default and `r1photo8` is not selected as-is. Whether to amend the recall gate, change how missing-data pairs are handled (for example to leave some of them automatic) or drop the guard is left to the user; no further seeds, thresholds or gates are authorized for this arm until then. Development seeds 827, 829 and 839 are now used; validation seeds 853, 857, 859, 863 and 877 remain unused.
+
+---
+
+## Evidence-investigator experiments (`r1agent8`–`r1agent12`; user selected experimental r1agent10 for the showcase)
+
+**Outcome:** after a series of bounded experiments, the user stopped model training and chose **r1agent10 as the experimental evidence-investigator feature for the project showcase**. It is not a validated default-model upgrade and must not be presented as one. Development passed; stress preserved guarded-human recall and reduced human review time, but lost five closures against the unguarded comparator, so validation did not run. The user explicitly chose the agentic feature and its time saving with that limitation disclosed.
+
+**Built boundary:** a sanitized Python sidecar lets `gpt-5.6-luna` investigate only missing-demographic link questions through allow-listed record/identifier/report/photo tools. It receives aliases, not truth files, reviewer answers, raw report text or donor maps. Recommendations are cached with model/prompt/schema provenance and replayed deterministically in Go. Agent `same` plus human `same` can replace the second human read; disagreement uses senior human r3; `different`, `uncertain`, malformed and uncovered output use ordinary human double review. The agent never writes `fhir.review`, signs a decision or overrides a hard conflict. Human time excludes agent calls/latency. There is no live-NATS agent deployment and no clinical-effectiveness claim.
+
+### Selected experiment: r1agent10
+
+| Metric | Guarded human | Unguarded | r1agent10 |
+|---|---:|---:|---:|
+| Development true closures (987/991/993) | 658/688 | 658/688 | **658/688** |
+| Development false merges | 2 | 5 | **2** |
+| Development cross-person edges | 1 | 4 | **1** |
+| Development uncapped wrong-pair reviews | 3 | 4 | **3** |
+| Development human hours | 27.687 | 29.207 | **24.486** |
+| Stress true closures (same seeds) | 595/688 | 600/688 | **595/688** |
+| Stress false merges | 2 | 5 | **2** |
+| Stress cross-person edges | 1 | 4 | **1** |
+| Stress uncapped wrong-pair reviews | 3 | 4 | **3** |
+| Stress human hours | 27.854 | 29.562 | **24.837** |
+
+Development had 223/223 eligible coverage and 215/215 valid accepted citations. Stress had 214/214 coverage and 206/206 valid accepted citations, seven abstentions and one invalid/abstaining record. Agent latency, calls and tokens are reported separately from human hours. The stress time saving was **3.017 hours (10.8%) against guarded human** and **4.725 hours (16.0%) against unguarded**. The trade-off was **five fewer closures than unguarded (-0.73pp)**, not a recall improvement; recall was identical to guarded human. All three arms had zero false closures, wrong-patient releases, offline replay mismatches, analysis errors and trace errors in both modes. Stress wrong final sign-offs were 76 guarded, 81 unguarded and 76 candidate (reported, not gated). The separate live-versus-materialized signature comparison reported 1,800 divergences across three seeds, reflecting the agent policy/review path rather than offline replay nondeterminism. Every lane used cached clinical verdicts, simulated reviewers and synthetic identity truth.
+
+### Experiment history and why later arms were not selected
+
+| Candidate | Result | Reason not selected |
+|---|---|---|
+| r1agent8 | 653 candidate/guarded vs 654 unguarded closures | Development recall gate failed by one; a two-hop demographic near path was invisible to review |
+| r1agent9 | 629 vs 630 closures | Same recall gate; the selector reused an already-merged historical near edge |
+| r1agent10 | Development passed; stress 595 vs 600 | Selected only as the user's experimental showcase, with the stress trade-off disclosed |
+| r1agent11 | Recall tied at 610/648; wrong-pair reviews 1 vs 0 | A Kate O'Brien/Kate L. O'Brien namesake review could not be removed by an agent answer |
+| r1agent12 (pairfeat9) | 659 vs 660 closures; wrong-pair reviews 1 vs 1 | Development recall and strict review gates both failed |
+
+The first two failures produced two concrete routing fixes: bounded two-hop demographic review (`e0c28e3`) and resolved-edge handling (`14f07d6`). r1agent10's stress diagnosis showed that a wrong human rejection became cannot-link before investigation; `00a5e3c` now defers eligible unsigned pairs to the sidecar first and preserves closed-item human-time accounting. These are diagnostics, not fresh validation evidence.
+
+`pairfeat9` was a narrow 0.002 middle-initial hard-negative experiment. Its accepted fit (`run-2` at `977d7c7`) had exact chain hashes, 39 valid training `mi_rows`, 41-column dumps and an eight-row calibration slice. r1agent12 used matched `r1photo9ref`/`r1photo9` comparator arms at `fb017ee`; the older pairfeat8 arms could not initialize against pairfeat9. It still failed development, so the fit is not selected.
+
+### Infrastructure and disclosure
+
+- `0a0f8c9` preserves original forged sign-offs and EOF controls in materialized replay; the seed-881 diagnostic has zero final/prep/output mismatches.
+- `2789662` fixes provider environment restoration and adds the disclosed zero-floor rule: when an unguarded count is zero the candidate must match zero, because strict improvement is impossible. This amendment was registered before any candidate verdict and never relaxed recall.
+- `e58f551` compares live/materialized final signatures from OUT logs only; `6d7618b` restores the agent policy in report7. Both fixed analysis-only mismatches without changing model outcomes.
+- The full Go suite passed after each runtime fix; the final harness registration passed 372 tests. Pairfeat9 fit protocol passed 89 tests.
+- Results use synthetic patients and reviewers, cached clinical verdicts and an external model's judgment, not clinician labels or clinical ground truth. The 20-item smoke had 19 actionable recommendations and one schema-valid abstention with no provider error.
+- No result authorizes live NATS deployment, autonomous merging/rejection, or a claim that the agent is an independent clinician. A live migration would need a separate shadow/assist evaluation, deterministic fallback and kill switch.
+
+**Final scope:** r1agent10 is the user's chosen **experimental feature**, not the fully validated `r1review` path and not a promoted default. Earlier validated models remain separate; no gates were weakened to present this result.
