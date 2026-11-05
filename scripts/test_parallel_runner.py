@@ -30,7 +30,7 @@ class ParallelRunnerTests(unittest.TestCase):
             with open(stub, "w") as h:
                 h.write("""#!/usr/bin/env bash
 set -euo pipefail
-mkdir -p "$1/v2-s$PAIRFEAT_SEED"
+mkdir -p "$1/v2-s$PAIRFEAT_SEED/run"
 printf '%s\n' "$WASL_PORT_OFFSET $WASL_BIN" >> "$PAIRFEAT_TEST_LOG"
 printf '{"binary_sha256":"same","git_head":"abc"}\n' > "$1/build.json"
 """)
@@ -49,6 +49,7 @@ printf '{"binary_sha256":"same","git_head":"abc"}\n' > "$1/build.json"
             self.assertTrue(os.path.isfile(os.path.join(exp, "dev-clean-r1agent12", "build.json")))
             for seed in (1061, 1063, 1069):
                 self.assertTrue(os.path.isdir(os.path.join(exp, "dev-clean-r1agent12", "v2-s%d" % seed)))
+                self.assertTrue(os.path.isdir(os.path.join(exp, "dev-clean-r1agent12", "v2-s%d" % seed, "run")))
 
 
 if __name__ == "__main__":
