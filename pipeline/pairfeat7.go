@@ -218,7 +218,7 @@ type hnKind struct {
 	rows  []int
 }
 
-// pairfeat7Negatives: the md then rd hard negatives, each only when its rate is > 0 and with its own generator
+// pairfeat7Negatives: the md, rd then mi hard negatives, each only when its rate is > 0 and with its own generator
 // (mdSeed, rdSeed); their registrations are appended to regs with person indices from first on. With both rates 0 it
 // returns regs unchanged and no kind (no draw, no encoder load).
 func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, encPath string) ([]fdReg, []*hnKind) {
@@ -227,21 +227,28 @@ func pairfeat7Negatives(regs []fdReg, ps, pool []Person, seed int64, first int, 
 		key  string
 		rate float64
 		seed int64
-	}{{"md", MDNamesakeRate, mdSeed(seed)}, {"rd", RDNamesakeRate, rdSeed(seed)}} {
+	}{{"md", MDNamesakeRate, mdSeed(seed)}, {"rd", RDNamesakeRate, rdSeed(seed)}, {"mi", MINamesakeRate, miSeed(seed)}} {
 		if k.rate <= 0 {
 			continue
 		}
 		r := rand.New(rand.NewSource(k.seed))
 		var xs []Person
 		var base []int
-		if k.key == "md" {
+		switch k.key {
+		case "md":
 			xs, base = buildMDNamesakes(ps, pool, k.rate, r)
-		} else {
+		case "mi":
+			xs, base = buildMINamesakes(ps, k.rate, r)
+		default:
 			xs, base = buildRDNamesakes(ps, pool, k.rate, r, LoadEncoder(encPath).Embed)
 		}
 		hk := &hnKind{key: k.key, rate: k.rate, base: map[int]int{}, added: len(xs), rows: []int{}}
 		for i := range xs {
-			regs = hnRegister(regs, base[i], &ps[base[i]], first+i, &xs[i], r)
+			if k.key == "mi" {
+				regs = miRegister(regs, first+i, &xs[i])
+			} else {
+				regs = hnRegister(regs, base[i], &ps[base[i]], first+i, &xs[i], r)
+			}
 			hk.base[first+i] = base[i]
 		}
 		first += len(xs)
