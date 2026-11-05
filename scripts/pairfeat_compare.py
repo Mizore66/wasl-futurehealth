@@ -203,10 +203,22 @@ CANDIDATES = {"pairfeat1": {"dev_seeds": [307, 311, 313], "review_gate": "total"
                             "report_linked_pairs": True, "edge_classes": "pairfeat7"},
               # r1agent12 (spec 2026-11-05-crc-r1agent12-pairfeat9-design.md): r1agent11 semantics on the pairfeat9 chain
               # (narrow middle-initial hard negatives); fresh seeds
+              # r1photo9ref / r1photo9: the r1photo8ref / r1photo8 arms on the pairfeat9 chain (reference-only; r1agent12's
+              # unguarded and guarded comparators, one shared pairfeat9 fit); they repeat r1agent12's seeds
+              "r1photo9ref": {"dev_seeds": [1061, 1063, 1069], "validation_seeds": [1073, 1079, 1081, 1087, 1091],
+                              "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                              "chain": "pairfeat9", "reference_only": True, "extra_flags": ["-r1review"],
+                              "lane_image": True, "noise": "v3", "report_linked_pairs": True, "edge_classes": "pairfeat7"},
+              "r1photo9": {"dev_seeds": [1061, 1063, 1069], "validation_seeds": [1073, 1079, 1081, 1087, 1091],
+                           "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
+                           "chain": "pairfeat9", "reference": "r1photo9ref", "reference_chain": "shared",
+                           "reference_only": True, "extra_flags": ["-r1review", "-demoguard"],
+                           "lane_image": True, "noise": "v3", "baseline_gating": False,
+                           "report_linked_pairs": True, "edge_classes": "pairfeat7"},
               "r1agent12": {"dev_seeds": [1061, 1063, 1069], "validation_seeds": [1073, 1079, 1081, 1087, 1091],
                             "review_gate": "wrong_pair_cap", "report_xscript_cap": True,
-                            "chain": "pairfeat9", "reference": "r1photo8ref", "reference_chain": "shared",
-                            "reference_gate": "r1agent8", "base_arm": "r1photo8", "extra_flags": ["-r1review", "-demoguard"],
+                            "chain": "pairfeat9", "reference": "r1photo9ref", "reference_chain": "shared",
+                            "reference_gate": "r1agent8", "base_arm": "r1photo9", "extra_flags": ["-r1review", "-demoguard"],
                             "lane_image": True, "noise": "v3", "agent_replay": True, "baseline_gating": False,
                             "report_linked_pairs": True, "edge_classes": "pairfeat7"}}
 # Seeds that no lane may ever run again (guard refuses them in every experiment): r1review's first seeds, retired by
