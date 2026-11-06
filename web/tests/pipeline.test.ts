@@ -21,6 +21,32 @@ function run(actions: PlaybackAction<ReplayState>[]): Playback<ReplayState>[] {
   return states;
 }
 
+describe("pipeline plain language", () => {
+  const RAW = /closure_decision|needs_human|not_closed|link_decision|evidence_closure|false_closure_trap|review_hold/;
+
+  it("shows no backend identifier in a stage label or note, and keeps the raw term for the disclosure", () => {
+    for (const r of ROWS) {
+      expect(`${r.label} ${r.note}`).not.toMatch(RAW);
+      expect(r.tech).toBeTruthy();
+    }
+    expect(ROWS.find((r) => r.id === "review")).toMatchObject({ label: "Waiting for two reviewers", tech: "needs_human" });
+  });
+
+  it("gives every decision line a plain note apart from its technical label", () => {
+    const v = flowView(replay, track.rest);
+    for (const f of v.feed) {
+      expect(f.note).not.toMatch(RAW);
+      expect(f.note).not.toMatch(/_/);
+    }
+  });
+
+  it("pauses on request without moving the frame", () => {
+    const [start, paused] = run([{ type: "pause" }]);
+    expect(paused).toEqual({ frame: start.frame, paused: true });
+    expect(run([{ type: "pause" }, { type: "tick" }])[2].frame).toBe(start.frame);
+  });
+});
+
 describe("pipeline playback", () => {
   it("rests on a frame that fills most stage rows and already has decisions on the feed", () => {
     const v = flowView(replay, track.rest);
@@ -162,7 +188,7 @@ describe("pipeline person profile", () => {
     expect(p.record).toBe(`/app/patients/${encodeURIComponent(personForLoop("ahs-mushrif/ServiceRequest/AHS-sr-1037")!.loop)}`);
     expect(p.rulesOnRecord).toBe(true);
     expect(p.fields.find((f) => f.key === "caecum_reached")).toMatchObject({ value: "yes", rules: "yes" });
-    expect(p.decision).toEqual({ word: "Closed with evidence", label: "closed · criteria_met", gatePassed: true });
+    expect(p.decision).toEqual({ word: "Closed with evidence", label: "closed · criteria_met", note: "Criteria met", gatePassed: true });
   });
 
   it("gives a generated person no record and only the AI reader's answer", () => {

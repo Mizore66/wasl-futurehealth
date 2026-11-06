@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
+import { TechnicalDetail } from "./technical";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import type { Mark } from "./flow";
 import { usePlayback, type Track } from "./playback";
@@ -53,6 +54,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
   const [track] = useState<Track<number>>(() => ({ rest: DECIDED, advance: (f) => (f + 1) % total }));
   const play = usePlayback(track, TICK_MS);
   const [howOpen, setHowOpen] = useState(false);
+  const reduceMotion = !!useReducedMotion();
 
   const ci = Math.floor(play.frame / FRAMES);
   const f = play.frame % FRAMES;
@@ -86,6 +88,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
           paused={play.paused}
           onToggle={play.toggle}
           onStep={play.step}
+          reduceMotion={play.reduceMotion}
           position={`Report ${ci + 1} of ${cases.length} · step ${f + 1} of ${FRAMES}`}
           speed="Slowed down to watch: the linker decides in well under a second."
         >
@@ -98,16 +101,16 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
         </PlaybackControls>
       </header>
 
-      <section aria-label="Engine steps" className="mt-4 rounded-card border border-line bg-surface px-6 py-4">
-        <ol className="m-0 grid list-none grid-cols-6 gap-x-3 p-0">
+      <section aria-label="Engine steps" className="mt-4 rounded-card border border-line bg-surface px-4 py-4 sm:px-6">
+        <ol className="m-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0 sm:grid-cols-3 lg:grid-cols-6">
           {stages.map((g, i) => (
             <li key={g.label} className="relative min-w-0 pt-5" data-mark={g.mark}>
               {i < stages.length - 1 && (
-                <span aria-hidden className={cn("absolute left-3.5 -right-2 top-1 h-0.5", stages[i + 1].mark === "queued" ? "bg-control" : "bg-ink")} />
+                <span aria-hidden className={cn("absolute -right-2 left-3.5 top-1 hidden h-0.5 lg:block", stages[i + 1].mark === "queued" ? "bg-control" : "bg-ink")} />
               )}
               <MarkShape mark={g.mark} hue={g.mark === "working" || (i === 5 && decided && !C.outcome.held)} className="absolute left-0 top-0 size-2.5" />
-              <div className="truncate text-body font-medium">{g.label}</div>
-              <div className="truncate text-small text-muted">
+              <div className="text-body font-medium">{g.label}</div>
+              <div className="text-small text-muted">
                 {WORD[g.mark]}
                 {g.mark !== "queued" && g.detail ? ` · ${g.detail}` : ""}
               </div>
@@ -118,7 +121,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
 
       <div className="mt-3 flex flex-wrap items-start gap-3">
         <div className="flex min-w-0 max-w-[400px] flex-[1_1_340px] flex-col gap-3">
-          <section aria-labelledby="search-h" className="rounded-card border border-line bg-surface px-6 py-5">
+          <section aria-labelledby="search-h" className="rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
             <h2 id="search-h" className="m-0 text-section font-medium">
               Nearest referrals
             </h2>
@@ -136,7 +139,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                 return (
                   <li key={`${ci}-${i}`} className={cn("-mx-2 h-[68px] rounded-control border-t border-rule p-2", best && "bg-active")}>
                     {i < shown ? (
-                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                      <motion.div initial={reduceMotion ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduceMotion ? 0 : 0.3 }}>
                         <div className="flex items-center justify-between gap-3">
                           <span className="flex items-center gap-2">
                             <Avatar person={k.seed} size={22} label="" />
@@ -176,7 +179,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
               type="button"
               aria-expanded={howOpen}
               onClick={() => setHowOpen((v) => !v)}
-              className="flex h-9 w-full cursor-pointer items-center justify-between rounded-control bg-transparent px-2 text-body font-medium text-ink"
+              className="flex h-11 w-full cursor-pointer items-center justify-between rounded-control bg-transparent px-2 text-body font-medium text-ink"
             >
               How it decides
               <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className={cn(howOpen && "rotate-180")}>
@@ -204,7 +207,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
           </section>
         </div>
 
-        <section aria-labelledby="bridge-h" className="min-w-0 flex-[999_1_560px] rounded-card border border-line bg-surface px-6 py-5">
+        <section aria-labelledby="bridge-h" className="min-w-0 flex-[999_1_560px] rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
           <div className="flex items-baseline justify-between gap-3">
             <h2 id="bridge-h" className="m-0 text-section font-medium">
               Incoming report {C.report} against the best referral
@@ -214,11 +217,12 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
             </span>
           </div>
 
-          <div className="mt-3 grid grid-cols-[minmax(0,1fr)_172px_minmax(0,1fr)] gap-3">
+          <div className="@container mt-3">
+          <div className="grid grid-cols-1 gap-3 @xl:grid-cols-[minmax(0,1fr)_172px_minmax(0,1fr)]">
             <div className={cn("rounded-control px-4", scored ? "border border-line" : "border border-dashed border-control")}>
               <div className="flex h-16 items-center gap-3">
                 {scored ? (
-                  <Link href={C.record} className="flex min-w-0 items-center gap-3 rounded-control text-ink no-underline hover:text-ink [&:hover_[data-name]]:underline">
+                  <Link href={C.record} className="flex min-h-11 min-w-0 items-center gap-3 rounded-control text-ink no-underline hover:text-ink [&:hover_[data-name]]:underline">
                     <Avatar person={C.referralSeed} size={40} label="The referral" />
                     <div className="flex min-w-0 flex-col justify-center">
                       <div data-name lang="ar" dir="rtl" className="truncate text-left text-[20px] font-medium leading-7">
@@ -238,14 +242,19 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                 )}
               </div>
               {C.fields.map((fd) => (
-                <div key={fd.name} className={cn("flex h-9 items-center truncate border-t border-rule text-body", !scored && "text-muted")}>
-                  {scored ? fd.referral : "—"}
+                <div key={fd.name} className={cn("flex min-h-9 items-center gap-2 border-t border-rule py-1 text-body", !scored && "text-muted")}>
+                  <span className="w-24 flex-none text-small text-muted @xl:hidden">{fd.name}</span>
+                  <span className="min-w-0 break-words">{scored ? fd.referral : "—"}</span>
                 </div>
               ))}
             </div>
 
             <div>
-              <div aria-hidden className="relative h-16">
+              <div className="flex items-center gap-2 py-1 text-small text-muted @xl:hidden">
+                <MarkShape mark={decided ? (C.outcome.held ? "held" : "done") : "queued"} hue={decided && !C.outcome.held} className="size-2.5" />
+                {decided ? (C.outcome.held ? C.outcome.pill.toLowerCase() : `linked · ${C.basis}`) : scored ? "proposed link" : "no candidate yet"}
+              </div>
+              <div aria-hidden className="relative hidden h-16 @xl:block">
                 <div className={cn("absolute -left-3 -right-3 top-[31px] h-0.5", scored ? "bg-ink" : "bg-control")} />
                 <div className="absolute left-1/2 top-[27px] -ml-[5px]">
                   <MarkShape mark={decided ? (C.outcome.held ? "held" : "done") : "queued"} hue={decided && !C.outcome.held} className="size-2.5" />
@@ -257,7 +266,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
               {C.fields.map((fd) => {
                 const v = VERDICT_SHAPE[fd.verdict];
                 return (
-                  <div key={fd.name} className="flex h-9 items-center gap-1.5 border-t border-rule px-1">
+                  <div key={fd.name} className="flex min-h-9 items-center gap-1.5 border-t border-rule px-1 py-1">
                     <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={cn("flex-none", scored ? v.className : "text-control")}>
                       <path d={scored ? v.d : "M4 8h8"} />
                     </svg>
@@ -282,15 +291,17 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                 </div>
               </div>
               {C.fields.map((fd) => (
-                <div key={fd.name} className={cn("flex h-9 items-center truncate border-t border-rule text-body", fd.verdict === "missing" && "text-muted")}>
-                  {fd.report}
+                <div key={fd.name} className={cn("flex min-h-9 items-center gap-2 border-t border-rule py-1 text-body", fd.verdict === "missing" && "text-muted")}>
+                  <span className="w-24 flex-none text-small text-muted @xl:hidden">{fd.name}</span>
+                  <span className="min-w-0 break-words">{fd.report}</span>
                 </div>
               ))}
             </div>
           </div>
+          </div>
 
           <div className="mt-5">
-            <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline justify-between gap-3">
               <span className="text-body font-medium">Calibrated probability it is the same woman</span>
               <span className="text-body" data-testid="match-p">
                 {calibrated ? C.p.toFixed(3) : "—"}
@@ -307,14 +318,14 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
             >
               <div className="absolute inset-x-0 top-6 h-1 rounded-sm bg-control" />
               <div className="absolute top-3.5 -ml-px h-6 w-0.5 bg-ink" style={{ left: `${lineAt}%` }} />
-              <div className="absolute -top-0.5 ml-1.5 whitespace-nowrap text-small" style={{ left: `${lineAt}%` }}>
+              <div className="absolute -top-0.5 mr-1.5 whitespace-nowrap text-small" style={{ right: `${100 - lineAt}%` }}>
                 auto-close line {C.tau}
               </div>
               {calibrated && (
                 <motion.div
-                  initial={{ left: "0%", opacity: 0 }}
+                  initial={reduceMotion ? false : { left: "0%", opacity: 0 }}
                   animate={{ left: `${left}%`, opacity: 1 }}
-                  transition={{ duration: 0.6, ease: [0.2, 0.7, 0.2, 1] }}
+                  transition={{ duration: reduceMotion ? 0 : 0.6, ease: [0.2, 0.7, 0.2, 1] }}
                   className="absolute top-[21px] -ml-[5px] size-2.5 rounded-full bg-hue"
                 />
               )}
@@ -344,7 +355,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
               {decided ? C.outcome.text : calibrated ? "Checking for a second identifier…" : scored ? "Calibrating the best candidate…" : "Waiting for the nearest names…"}
             </span>
           </div>
-          <p className="m-0 mt-1 font-mono text-small text-muted">{decided ? C.outcome.tech : `linker ${C.linker}`}</p>
+          <TechnicalDetail>{decided ? C.outcome.tech : `linker ${C.linker}`}</TechnicalDetail>
         </section>
       </div>
     </>

@@ -34,7 +34,7 @@ async function position(page: Page) {
   return asNumber((await page.getByTestId("replay-position").innerText()).split(" of ")[0]);
 }
 
-test("pipeline: pause, step, play, switch off a server and tamper, totals within the run", async ({ page }) => {
+test("pipeline: pause, step, play and tamper, totals within the run", async ({ page }) => {
   await freezeClock(page);
   await page.goto("/app/pipeline");
   await expect(page.locator("h1")).toHaveText("Pipeline");
@@ -81,9 +81,11 @@ test("pipeline: pause, step, play, switch off a server and tamper, totals within
   await page.clock.runFor(2500);
   await expect.poll(() => position(page)).toBe(resolved + 14);
 
-  await page.getByRole("button", { name: "Switch off a server" }).click();
-  await expect(page.getByRole("img", { name: /server 2 off/ })).toBeVisible();
-  await expect(page.getByTestId("server-result")).toContainText("still 0 lost, 0 duplicated");
+  // The server switch-off is designed, not built: no control, a visible label, and the recorded run's figures.
+  await expect(page.getByRole("button", { name: /switch .*server/i })).toHaveCount(0);
+  await expect(page.getByTestId("server-result")).toContainText("live failover is not built");
+  await expect(page.getByTestId("server-result")).toContainText("0 of");
+  await expect(page.locator('[data-honesty="designed"]')).toHaveText("Designed, not built");
   const moving = await position(page);
   await page.clock.runFor(2000);
   await expect.poll(() => position(page)).toBe(moving + 2);
@@ -107,8 +109,6 @@ test("pipeline: pause, step, play, switch off a server and tamper, totals within
 
   await page.getByRole("button", { name: "Undo the change" }).click();
   await expect(page.getByText("Records intact")).toBeVisible();
-  await page.getByRole("button", { name: "Switch it back on" }).click();
-  await expect(page.getByRole("img", { name: "Three servers, all on." })).toBeVisible();
   await page.getByRole("button", { name: "Pause" }).click();
   await page.clock.runFor(1000);
   await expectNoSeriousAxe(page);
@@ -260,3 +260,92 @@ test("matching and reading: the demo patient opens her record", async ({ page })
   await page.getByRole("link", { name: "Fatima Al Zaabi's report SKM-dr-226" }).click();
   await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
 });
+
+const RAW = /closure_decision|needs_human|not_closed|link_decision|review_hold|evidence_closure|false_closure_trap|model_version|path_p_cal/;
+const PIPELINE_ROUTES = ["/app/pipeline", "/app/pipeline/matching", "/app/pipeline/reading"] as const;
+
+test("raw backend ids are hidden by default and revealed by a Technical detail disclosure", async ({ page }) => {
+  for (const route of PIPELINE_ROUTES) {
+    await freezeClock(page);
+    await page.goto(route);
+    await page.clock.runFor(800);
+    await page.getByRole("button", { name: "Pause" }).click();
+    const main = page.locator("main");
+    expect(await main.innerText(), `${route}: no raw id in the visible text`).not.toMatch(RAW);
+    const details = page.getByTestId("technical-detail");
+    expect(await details.count(), `${route}: at least one disclosure`).toBeGreaterThan(0);
+    for (const d of await details.all()) await d.locator("summary").click();
+    expect(await main.innerText(), `${route}: the disclosure reveals the system's labels`).toMatch(/closure_decision|needs_human|link_decision|model_version|path_p_cal|caecum_reached/);
+  }
+});
+
+test("pipeline: the flow's plain sublabels replace the system names", async ({ page }) => {
+  await page.goto("/app/pipeline");
+  await expect(page.locator('[data-stage="closed"]')).toContainText("Closed with evidence");
+  await expect(page.locator('[data-stage="review"]')).toContainText("Waiting for two reviewers");
+  await expect(page.locator('[data-stage="open"]')).toContainText("Kept open");
+  await expect(page.locator('[data-stage="closed"] summary, [data-stage="closed"] code')).toHaveCount(0);
+});
+
+test("every control is a replay control, a real toggle or labelled; none is an unlabelled simulation", async ({ page }) => {
+  await freezeClock(page);
+  await page.goto("/app/pipeline");
+  const names = (await page.locator("main button:visible").evaluateAll((els) => els.map((e) => (e.textContent ?? "").trim()))).filter(Boolean);
+  expect(new Set(names.filter((n) => !/^[A-Z]/.test(n) || /^(Play|Pause|Step|Tamper with a step|Undo the change)$/.test(n)))).toEqual(
+    new Set(["Pause", "Step", "Tamper with a step"]),
+  );
+  await expect(page.getByRole("group", { name: "Replay controls" })).toBeVisible();
+  await expect(page.locator('main [data-honesty="simulated"]')).toHaveText("Simulated edit");
+});
+
+for (const route of PIPELINE_ROUTES) {
+  test(`${route}: replay controls are at least 44px and show a visible focus ring`, async ({ page }) => {
+    await page.goto(route);
+    const controls = page.getByRole("group", { name: "Replay controls" }).getByRole("button");
+    for (const b of await controls.all()) {
+      const box = (await b.boundingBox())!;
+      expect(box.height, await b.innerText()).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
+    await page.getByRole("button", { name: /^(Play|Pause)$/ }).focus();
+    await page.keyboard.press("Shift+Tab");
+    await page.keyboard.press("Tab");
+    const ring = await page.evaluate(() => {
+      const cs = getComputedStyle(document.activeElement!);
+      return { style: cs.outlineStyle, width: cs.outlineWidth };
+    });
+    expect(ring.style).not.toBe("none");
+    expect(parseFloat(ring.width)).toBeGreaterThanOrEqual(2);
+  });
+
+  test(`${route}: with reduced motion nothing autoplays`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await freezeClock(page);
+    await page.goto(route);
+    await expect(page.getByTestId("reduced-motion-note")).toBeVisible();
+    await expect(page.getByTestId("replay-position")).toContainText("paused");
+    const before = await page.getByTestId("replay-position").innerText();
+    await page.clock.runFor(5000);
+    expect(await page.getByTestId("replay-position").innerText(), "no ticks without a press").toBe(before);
+    await page.getByRole("button", { name: "Step", exact: true }).click();
+    expect(await page.getByTestId("replay-position").innerText(), "Step still moves it").not.toBe(before);
+    // Nothing animates on its own: no running looping animation anywhere on the page.
+    await page.clock.resume();
+    const looping = await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getTiming().iterations === Infinity).length);
+    expect(looping).toBe(0);
+  });
+
+  test(`${route}: fits a 390px phone and has no serious axe findings`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await freezeClock(page);
+    await page.goto(route);
+    await page.clock.runFor(800);
+    await page.getByRole("button", { name: "Pause" }).click();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: `${SHOTS}-${route.split("/").at(-1)}-390.png`, fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({ path: `${SHOTS}-${route.split("/").at(-1)}-1440.png`, fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectNoSeriousAxe(page);
+  });
+}
