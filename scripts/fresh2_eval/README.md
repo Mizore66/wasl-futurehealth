@@ -8,7 +8,7 @@ Design: a text-only corpus (60 LDCT + 60 IFHAS items) is frozen first; two indep
 
 - `fresh2.py`: CLI and library (`validate-corpus`, `template`, `ingest`, `export-inputs`, `manifest`, `check-freeze`, `score`).
 - `LABELLING-GUIDE.md`: blind guide with exact schema, allowed labels and rules. Its sha256 is recorded in every label file and checked.
-- `test_fresh2.py`: 71 tests, fixture texts only (`python3 -m unittest discover -s scripts/fresh2_eval -p 'test_*.py'`).
+- `test_fresh2.py`: 71 tests (plus `test_fresh3_config.py`, `test_analyze_fresh2.py`), fixture texts only (`python3 -m unittest discover -s scripts/fresh2_eval -p 'test_*.py'`).
 - `../../pipeline/fresh2_reader_test.go`: `TestFresh2Reader`, skipped unless `FRESH2_CORPUS` is set. Calls the existing `LDCTJudge`, `IfhasNoteJudge` and `IfhasScreenJudge` unchanged; reads no key; replays reader-B caches only (no model call).
 
 ## Data layout (created in later phases, all under `data/fresh2/`)
@@ -30,3 +30,13 @@ Agreed subset: reader A correct, reader B correct, B unavailable, readers agree,
 ## Freeze order
 
 `reader_code_commit` < `corpus_commit` < `labels_commit` < `reader_cache_commit` < HEAD, each a strict ancestor of the next. `check-freeze` additionally requires: protected reader code and production caches unchanged since `reader_code_commit` (list in `fresh2.DEFAULT_PROTECTED`); corpus absent at the reader commit; label files and key absent at the corpus commit; fresh caches absent at the labels commit; no file frozen at its commit has changed since; the key equals what the committed label files regenerate; no uncommitted or untracked file under `data/fresh2/`, `scripts/fresh2_eval/` or a protected path; and no `results/` directory exists before scoring. `score` runs the check first and refuses to run the reader if it fails, creates `results/` with an exclusive mkdir, and so cannot be run twice.
+
+## Configuring a later round (fresh3)
+
+The evaluation root and item count are read from the environment; the defaults reproduce fresh2 exactly.
+
+- `FRESH_EVAL_DIR` (default `data/fresh2`): repo-relative root for `corpus.json`, `labels/labeller_a.json`, `labels/labeller_b.json`, `key.json`, `agreement.json`, `reader-cache/*_gemma_cache.json`, `FREEZE.json` and `results/`. Absolute paths and `..` are rejected. The root is also the watched directory in `check-freeze`.
+- `FRESH_EVAL_PER_PROGRAMME` (default `60`; fresh3 uses `50`; minimum 20): exact items per programme in `validate-corpus` and `ingest`.
+- Items whose text already appears in any other `data/fresh*/corpus.json` (for example fresh2 when building fresh3) are rejected as reuse.
+
+Not yet generalised: the Go adapter `pipeline/fresh2_reader_test.go` (it takes the corpus and cache directory from the environment, which `score` passes from the configured root, but it is protected reader code and was not touched), `analyze_fresh2.py` (fresh2-only, pinned to fresh2 paths and score commit 8a883fc) and `LABELLING-GUIDE.md`.
