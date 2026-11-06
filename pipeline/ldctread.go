@@ -270,22 +270,111 @@ func regexLDCTWorkup(t string) *LDCTFields {
 	return ldctReconcile(f, t)
 }
 
-// ldctReconcile applies two text-level consistency rules to the fields either reader extracted, then labels them.
-//  1. An explicit surveillance outcome in a document titled as an MDT outcome/decision wins over workup=not_done
-//     (a mis-extraction), unless the text records a real non-performance (declined, cancelled, postponed), tissue is
-//     malignant or pending, or the extracted outcome is a different decision.
-//  2. A document with no genuine work-up context (MDT, tissue, PET/CT, surgery/oncology, direct screening
-//     reference) is the wrong document: it can never be wk_incomplete -> indeterminate (human review).
-//     A passing nodule mention is not context.
+// Surveillance-plan guards for the MDT-title override. All are heuristics over a clause, never clinical judgement.
+var (
+	lwCondition = regexp.MustCompile(`(?i)\b(?:if|unless|once|until|depending|dependent|contingent|subject to|provided|whether|then)\b`)
+	lwContrast  = regexp.MustCompile(`(?i)\brather than\b|\binstead of\b|\bin preference to\b|\bas opposed to\b|\bversus\b|\bbut not\b`)
+	// negation after the phrase: "surveillance CT is not required / declined by patient / no longer needed"
+	lwFwdNeg = regexp.MustCompile(`(?i)^[^;]{0,40}?(?:\bnot\b|\bno longer\b|\bnever\b|\bno need\b|declin|refus|reject|defer|cancel|withdr|unnecessary|inappropriate|n't\b)`)
+	// refusal / inability / non-consent, either word order, anywhere in the text
+	lwRefusal = regexp.MustCompile(`(?i)declin|refus|\bunfit\b|not fit for|\bunable\b|not able to|cannot tolerate|could not tolerate|not tolerate|did not consent|not consent|no consent|without consent|withh?eld consent|chose not|choose not|opted not|decided against|not (?:to )?proceed|contraindicat|did not complete`)
+	// outstanding tissue or PET work-up in the same sentence
+	lwTissuePET = regexp.MustCompile(`(?i)biops|histolog|\bEBUS|TBNA|cytolog|patholog|\bPET\b|PET[/-]?CT|bronchoscop|\bFNA\b|\btissue\b`)
+	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b`)
+	// LDCT work-up context: a lung / thoracic anchor AND a work-up term. Another organ's MDT, biopsy, oncology referral
+	// or screening programme is not enough, and neither is a bare "nodule".
+	lwLungAnchor = regexp.MustCompile(`(?i)\blung\b|pulmonary|thoracic|respiratory|bronch|\bEBUS|TBNA|\bLDCT\b|low-dose CT|Lung-?RADS`)
+)
+
+// ldctCurrentSentences: the sentences of this episode (a sentence naming a prior year / previous exam is history).
+func ldctCurrentSentences(t string) []string {
+	var cur []string
+	for _, s := range drSentences(t) {
+		if !lcHistory.MatchString(s) {
+			cur = append(cur, s)
+		}
+	}
+	return cur
+}
+
+// ldctClauseClean: this clause states a surveillance CT as the actual plan, not as a contingency, the rejected side of
+// a contrast, or something negated before or after the phrase.
+func ldctClauseClean(c string) bool {
+	ms := lwSurv.FindAllStringIndex(c, -1)
+	if len(ms) == 0 {
+		return true
+	}
+	if lwCondition.MatchString(c) || lwRefusal.MatchString(c) {
+		return false
+	}
+	for _, m := range ms {
+		if lcNegNear.MatchString(c[:m[0]]) || lwFwdNeg.MatchString(c[m[1]:]) {
+			return false
+		}
+		if loc := lwContrast.FindStringIndex(c); loc != nil && loc[1] <= m[0] { // "biopsy rather than CT surveillance"
+			return false
+		}
+	}
+	return true
+}
+
+// ldctSurveillancePlan: the current-episode (history-filtered) clauses record at least one surveillance plan, every
+// clause that mentions surveillance is an unconditional affirmative plan, and nothing in the text records refusal,
+// non-consent, malignant tissue or an outstanding biopsy / PET. The refusal, outstanding and malignant checks use the
+// whole text on purpose: a history sentence can only make the result stricter, never looser.
+func ldctSurveillancePlan(text string) bool {
+	plan := false
+	for _, s := range ldctCurrentSentences(text) {
+		for _, c := range strings.Split(s, ";") {
+			if !lwSurv.MatchString(c) {
+				continue
+			}
+			if !ldctClauseClean(c) {
+				return false
+			}
+			plan = true
+		}
+	}
+	if !plan {
+		return false
+	}
+	for _, s := range drSentences(text) {
+		switch {
+		case lwNotDone.MatchString(s), lwRefusal.MatchString(s):
+			return false
+		case lwTissuePET.MatchString(s) && lwOutstand.MatchString(s):
+			return false
+		case !lwScreen.MatchString(s) && ldctAffirmed(lwMalig, s) && !lwNoMalig.MatchString(s):
+			return false
+		}
+	}
+	return true
+}
+
+// ldctWorkupContext: a lung/thoracic anchor and a work-up term (MDT, tissue, PET, surgery/oncology, direct screening
+// reference, a stated annual/surveillance outcome).
+func ldctWorkupContext(text string) bool {
+	return lwLungAnchor.MatchString(text) && (lwCtx.MatchString(text) || lwAnnual.MatchString(text) || lwSurv.MatchString(text))
+}
+
+// ldctReconcile applies two text-level consistency rules to the fields an extractor produced, then labels them.
+// Both readers' field paths call it, but rule 1 can fire only for reader B: reader A sets workup=not_done only when
+// lwNotDone matches, and lwNotDone blocks the rule. It repairs a cached local-model mis-extraction; closing still
+// needs two-reader agreement. It is not claimed to run in both readers.
+//  1. An unconditional surveillance plan on the current-episode text (ldctSurveillancePlan) in a document titled as
+//     an MDT outcome/decision wins over workup=not_done, unless tissue is malignant or pending or the extracted
+//     outcome is a different decision. The title regex is anchored at the start of the text: a header after a
+//     preamble does not match (safe: no override).
+//  2. A document with no genuine LDCT work-up context (ldctWorkupContext) is the wrong document: it can never be
+//     wk_incomplete -> indeterminate (human review).
 func ldctReconcile(f *LDCTFields, text string) *LDCTFields {
 	if f.Attended == "yes" && f.Workup == "not_done" && lwMDTTitle.MatchString(text) &&
 		(f.Outcome == "pending" || f.Outcome == "surveillance") &&
-		f.Tissue != "malignant" && f.Tissue != "pending" &&
-		!lwNotDone.MatchString(text) && ldctAffirmed(lwSurv, text) {
+		f.Tissue != "malignant" && f.Tissue != "pending" && ldctSurveillancePlan(text) {
 		f.Workup, f.Outcome = "done", "surveillance"
 	}
 	f.Label = ldctWorkupLabel(f)
-	if f.Label == "wk_incomplete" && !lwCtx.MatchString(text) && !lwAnnual.MatchString(text) && !lwSurv.MatchString(text) {
+	if f.Label == "wk_incomplete" && !ldctWorkupContext(text) {
 		f.Label = "indeterminate"
 	}
 	return f
