@@ -34,7 +34,7 @@ test.describe("review, fixtures mode", () => {
   test("the queue is rebuilt from the review_hold case and says so", async ({ page }) => {
     await page.goto("/app/review");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
-    await expect(page.getByText("Simulated queue: rebuilt from the review_hold case")).toBeVisible();
+    await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
     await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
     const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
     await expect(row).toContainText("Identity · Bowel prep");
