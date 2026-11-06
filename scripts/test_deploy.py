@@ -100,11 +100,13 @@ exit 2
         with tempfile.TemporaryDirectory() as tmp:
             data = Path(tmp) / "data"
             data.mkdir()
-            # a leading-digit key makes nats-server fail before JetStream is up: its exit code must pass through
-            r, started = self.run_nats_entrypoint(tmp, "1badkey", data, ready=False, exit_code=3)
+            # an all-digit key that nats-server parses as an out-of-range number makes it fail before JetStream is up:
+            # its exit code must pass through
+            bad_key = "9" * 30
+            r, started = self.run_nats_entrypoint(tmp, bad_key, data, ready=False, exit_code=3)
             self.assertEqual(r.returncode, 3, r.stdout)
             self.assertFalse((data / ".wasl-key-check").exists(), "a failed first start must not record the key")
-            self.assertNotIn("1badkey", r.stdout)
+            self.assertNotIn(bad_key, r.stdout)
             started.unlink()
             r, started = self.run_nats_entrypoint(tmp, "kgood1111", data)
             self.assertEqual(r.returncode, 0, r.stdout)
