@@ -167,29 +167,79 @@ var (
 	ifhStrongPlan = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|(?:medication|medicine|treatment|prescription|referral) given|arranged)\b`)
 )
 
-// ifhActionNow: an action actually started/arranged now, after discounting negated and future ones.
-func ifhActionNow(j string) bool { return ifhPlan.MatchString(ifhNegAct.ReplaceAllString(j, " ")) }
+var (
+	ifhNegLead       = regexp.MustCompile(`(?i)^(?:no|not|nor|without|never|nothing)\b`)
+	ifhSubordin      = regexp.MustCompile(`(?i)\b(?:after|since|when|once|because|following|while|despite|although|though|as|whereas)\b`)
+	ifhApptCue       = regexp.MustCompile(`(?i)follow[- ]?up|appointment|\breview\b|discuss|consultation|\bvisit\b|\bcall\b|telephone|recall|\bslot\b|\bcheck[- ]?up\b`)
+	ifhApptVerb      = regexp.MustCompile(`(?i)\b(?:booked|arranged)\b`)
+	ifhApptKeep      = regexp.MustCompile(`(?i)referr|dietitian|specialist|programme|physio`)
+	ifhDeferMinor    = regexp.MustCompile(`(?i)\b(?:review|follow-?up|education|advice|counselling|lifestyle|diet|dietary|appointment|discussion)\b`)
+	ifhDeferDecision = regexp.MustCompile(`(?i)decision|\bplan\b`)
+	ifhPieceSplit    = regexp.MustCompile(`[,;.\n]`)
+)
 
-// ifhPendingNow: is domain d held open by a deferral or a monitoring request in j? Precedence is per domain and per
-// clause (split at ';' and sentence ends). A clause that names only other domains is ignored for d. If a treatment
-// was actually started in a clause for d (not negated, not future), it outranks a monitoring request and a deferral of
-// something else ("Amlodipine commenced; home BP monitoring requested", "Statin started; diet review deferred"), but
-// not a deferred treatment decision or a negated start. With no started action any deferral cue holds the domain.
+// ifhStripNeg removes negated and future actions (ifhNegAct) but keeps a "no|not ... verb" span whose negation does
+// not govern the verb ("BP not at target after amlodipine started").
+func ifhStripNeg(s string) string {
+	return ifhNegAct.ReplaceAllStringFunc(s, func(m string) string {
+		if ifhNegLead.MatchString(m) && ifhSubordin.MatchString(m) {
+			return m
+		}
+		return " "
+	})
+}
+
+// ifhNegStartIn: a negated start whose negation governs the verb (comma-bounded, no subordinator between).
+func ifhNegStartIn(s string) bool {
+	for _, m := range ifhNegStart.FindAllString(s, -1) {
+		if !ifhSubordin.MatchString(m) {
+			return true
+		}
+	}
+	return false
+}
+
+// ifhStripAppt: "arranged"/"booked" for a follow-up, appointment or discussion is not a started treatment; a
+// referral, dietitian or specialist booking in the same piece still is.
+func ifhStripAppt(s string) string {
+	parts := ifhPieceSplit.Split(s, -1)
+	for i, p := range parts {
+		if ifhApptCue.MatchString(p) && !ifhApptKeep.MatchString(p) {
+			parts[i] = ifhApptVerb.ReplaceAllString(p, " ")
+		}
+	}
+	return strings.Join(parts, ",")
+}
+
+// ifhActionNow: an action actually started/arranged now, after discounting negated, future and appointment ones.
+func ifhActionNow(j string) bool { return ifhPlan.MatchString(ifhStripNeg(ifhStripAppt(j))) }
+
+// ifhPendingNow: is domain d held open by a deferral or a monitoring request in j? Clauses split at ';' and sentence
+// ends, then at commas, so a deferral is judged around its own cue and not by a start verb elsewhere in the clause.
+// A piece that names only other domains is ignored for d. If a treatment was actually started in a piece for d (not
+// negated, not future, not an appointment) it outranks a monitoring request and a deferral of a review/education item
+// ("Metformin started, lifestyle review postponed"), but not a deferred treatment decision or a negated start. With no
+// started action any deferral cue holds the domain.
 func ifhPendingNow(j, d string) bool {
 	acted, hold, holdTreatment := false, false, false
 	for _, c := range strings.FieldsFunc(j, func(r rune) bool { return r == ';' || r == '.' || r == '\n' }) {
 		if ds := ifhDomainsOf(c); len(ds) > 0 && !ifhHasDomain(ds, d) {
 			continue
 		}
-		neg := ifhNegStart.MatchString(c)
-		if ifhStrongPlan.MatchString(ifhNegAct.ReplaceAllString(c, " ")) && !neg {
-			acted = true
-		}
-		hd := ifhHardDefer.MatchString(c)
-		if hd || neg || ifhMonReq.MatchString(c) {
-			hold = true
-			if neg || hd && ifhDeferScope.MatchString(c) {
-				holdTreatment = true
+		for _, p := range strings.Split(c, ",") {
+			if ds := ifhDomainsOf(p); len(ds) > 0 && !ifhHasDomain(ds, d) {
+				continue
+			}
+			neg := ifhNegStartIn(p)
+			if ifhStrongPlan.MatchString(ifhStripNeg(ifhStripAppt(p))) && !neg {
+				acted = true
+			}
+			hd := ifhHardDefer.MatchString(p)
+			if hd || neg || ifhMonReq.MatchString(p) {
+				hold = true
+				if neg || hd && ifhDeferScope.MatchString(p) && (ifhDeferDecision.MatchString(p) || !ifhDeferMinor.MatchString(p)) {
+					holdTreatment = true
+				}
 			}
 		}
 	}
