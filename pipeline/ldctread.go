@@ -128,9 +128,9 @@ var (
 	// consistency rules (ldctReconcile): MDT-outcome title, and genuine work-up context
 	lwMDTTitle = regexp.MustCompile(`(?i)^\s*(?:thoracic |lung |respiratory )?(?:MDT|multidisciplinary(?: team)?)\b[^\n]{0,30}\b(?:outcome|decision)\b`)
 	lwCtx      = regexp.MustCompile(`(?i)\bMDT\b|multidisciplinary|biops|histolog|\bEBUS|TBNA|cytolog|patholog|PET[/-]?CT|\bPET\b|thoracic surg|oncolog|radiotherap|lobectomy|\bSABR\b|Lung-?RADS|lung cancer screening|screening (?:CT|LDCT|referral|programme|program)|\bLDCT\b|diagnostic CT|suspicious (?:lung )?nodule|(?:following|after|referred from) (?:lung )?screening`)
-	lwScreen  = regexp.MustCompile(`(?i)cancer screening|Lung-?RADS`)
-	lwNoMalig = regexp.MustCompile(`(?i)no malignan`)
-	lwPendOut = regexp.MustCompile(`(?i)for (?:MDT )?discussion|MDT pending|before (?:a decision|referral)|to return|rebook|booked`)
+	lwScreen   = regexp.MustCompile(`(?i)cancer screening|Lung-?RADS`)
+	lwNoMalig  = regexp.MustCompile(`(?i)no malignan`)
+	lwPendOut  = regexp.MustCompile(`(?i)for (?:MDT )?discussion|MDT pending|before (?:a decision|referral)|to return|rebook|booked`)
 )
 
 // ldctAffirmed: re matches somewhere in s with no negation word just before it in the same clause.
@@ -273,19 +273,22 @@ func regexLDCTWorkup(t string) *LDCTFields {
 // Surveillance-plan guards for the MDT-title override. All are heuristics over a clause, never clinical judgement.
 var (
 	lwCondition = regexp.MustCompile(`(?i)\b(?:if|unless|once|until|depending|dependent|contingent|subject to|provided|whether|then|after|should|consider|followed by|in the event)\b`)
-	lwContrast  = regexp.MustCompile(`(?i)\brather than\b|\binstead of\b|\bin preference to\b|\bas opposed to\b|\bversus\b|\bbut\b|\bpreferred to\b|\bover\b`)
+	lwContrast  = regexp.MustCompile(`(?i)\brather than\b|\binstead of\b|\bin preference to\b|\bas opposed to\b|\bversus\b|\bbut\b|\bhowever\b|\balthough\b|\bthough\b|\bwhereas\b|\byet\b|\bpreferred to\b|\bover\b`)
+	// The only contrast that may follow the phrase: "CT surveillance rather than / instead of immediate biopsy" states the
+	// plan and names the rejected alternative. Any other contrast word after the phrase ("but biopsy preferred") blocks.
+	lwContrastOK = regexp.MustCompile(`(?i)^(?:rather than|instead of|in preference to|as opposed to)$`)
 	// negation after the phrase: "surveillance CT is not required / declined by patient / no longer needed"
 	lwFwdNeg = regexp.MustCompile(`(?i)^[^;]{0,40}?(?:\bnot\b|\bno longer\b|\bnever\b|\bno need\b|declin|refus|reject|defer|cancel|withdr|unnecessary|inappropriate|n't\b)`)
 	// refusal / inability / non-consent, either word order, anywhere in the text
 	lwRefusal = regexp.MustCompile(`(?i)declin|refus|\bunfit\b|not fit for|\bunable\b|not able to|cannot tolerate|could not tolerate|not tolerate|did not consent|not consent|no consent|without consent|withh?eld consent|chose not|choose not|opted not|decided against|not (?:to )?proceed|contraindicat|did not complete`)
 	// outstanding tissue or PET work-up in the same sentence
 	lwTissuePET = regexp.MustCompile(`(?i)biops|histolog|\bEBUS|TBNA|cytolog|patholog|\bPET\b|PET[/-]?CT|bronchoscop|\bFNA\b|\btissue\b`)
-	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b|recommend|request|advis|offer|\bneeded\b|\brequired\b|\breferred for\b`)
+	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b|recommend|request|advis|offer|\bneed(?:s|ed)?\b|\brequire[sd]?\b|\bto be considered\b|\breferred for\b`)
 	// LDCT work-up context: a lung / thoracic anchor AND a work-up term. Another organ's MDT, biopsy, oncology referral
 	// or screening programme is not enough, and neither is a bare "nodule".
 	// Non-lung pulmonary / thoracic phrases are removed before the anchor test (ldctWorkupContext).
 	lwFalseAnchor = regexp.MustCompile(`(?i)pulmonary (?:embol\w*|hypertension|oedema|edema|fibrosis)|thoracic aort\w*|aortic`)
-	lwLungAnchor = regexp.MustCompile(`(?i)\blung\b|pulmonary|thoracic|respiratory|bronch|\bEBUS|TBNA|\bLDCT\b|low-dose CT|Lung-?RADS`)
+	lwLungAnchor  = regexp.MustCompile(`(?i)\blung\b|pulmonary|thoracic|respiratory|bronch|\bEBUS|TBNA|\bLDCT\b|low-dose CT|Lung-?RADS`)
 )
 
 // ldctCurrentSentences: the sentences of this episode (a sentence naming a prior year / previous exam is history).
@@ -313,8 +316,11 @@ func ldctClauseClean(c string) bool {
 		if lcNegNear.MatchString(c[:m[0]]) || lwFwdNeg.MatchString(c[m[1]:]) {
 			return false
 		}
-		for _, loc := range lwContrast.FindAllStringIndex(c, -1) { // "biopsy rather than / preferred to / over CT surveillance"
-			if loc[1] <= m[0] {
+		// Contrast anywhere in the clause blocks: before the phrase ("biopsy rather than / preferred to / over CT
+		// surveillance") or after it ("CT surveillance but biopsy preferred"). Only a "rather than / instead of"
+		// after the phrase is allowed. Safe over-blocks: "over 3 months", "surveillance preferred to biopsy".
+		for _, loc := range lwContrast.FindAllStringIndex(c, -1) {
+			if loc[1] <= m[0] || !lwContrastOK.MatchString(c[loc[0]:loc[1]]) {
 				return false
 			}
 		}
