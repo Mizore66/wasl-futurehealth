@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -108,6 +109,47 @@ exit 2
             env["WASL_BIN"] = str(root / "bin")
             r = subprocess.run([str(script), "report"], cwd=root, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.assertNotIn("stale binary", r.stdout)
+
+    def check_compose(self, mutate):
+        """Run check_deploy.py against a mutated copy of docker-compose.yml; returns (returncode, output)."""
+        import yaml
+        compose = yaml.safe_load((ROOT / "docker-compose.yml").read_text())
+        mutate(compose)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "docker-compose.yml"
+            path.write_text(yaml.safe_dump(compose))
+            env = dict(os.environ, WASL_COMPOSE_FILE=str(path))
+            r = subprocess.run([sys.executable, str(ROOT / "scripts/check_deploy.py")], cwd=ROOT, env=env,
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return r.returncode, r.stdout
+
+    def test_static_check_passes_on_committed_compose(self):
+        code, out = self.check_compose(lambda c: None)
+        self.assertEqual(code, 0, out)
+
+    def test_static_check_rejects_short_syntax_nats_bind(self):
+        code, out = self.check_compose(lambda c: c["services"]["nats-0"]["volumes"].append("./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind-mounts host path", out)
+
+    def test_static_check_rejects_long_syntax_nats_bind(self):
+        bind = {"type": "bind", "source": "./deploy/nats/nats.conf", "target": "/etc/nats/wasl.conf", "read_only": True}
+        code, out = self.check_compose(lambda c: c["services"]["nats-1"]["volumes"].append(bind))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind-mounts host path", out)
+
+    def test_static_check_long_syntax_bind_source_checked_like_short(self):
+        bind = {"type": "bind", "source": "./does/not/exist", "target": "/x"}
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append(bind))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind source ./does/not/exist missing", out)
+
+    def test_static_check_accepts_long_syntax_named_volume(self):
+        vol = {"type": "volume", "source": "nats-2", "target": "/data"}
+        def mutate(c):
+            c["services"]["nats-2"]["volumes"] = [vol]
+        code, out = self.check_compose(mutate)
+        self.assertEqual(code, 0, out)
 
 
 if __name__ == "__main__":

@@ -13,12 +13,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 errs = []
 
 
+def vol_parts(v):
+    """(source, is_bind) for a compose volume entry in short ('src:dst[:mode]') or long ({type, source, target}) syntax."""
+    if isinstance(v, dict):
+        src = str(v.get("source") or "")
+        return src, v.get("type") == "bind" or src.startswith(("./", "/", "../", "~"))
+    src = str(v).split(":")[0]
+    return src, src.startswith(("./", "/", "../", "~"))
+
+
 def err(m):
     errs.append(m)
 
 
 # ---------- docker-compose.yml ----------
-raw = open(os.path.join(ROOT, "docker-compose.yml")).read()
+raw = open(os.environ.get("WASL_COMPOSE_FILE") or os.path.join(ROOT, "docker-compose.yml")).read()
 c = yaml.safe_load(raw)
 svcs, vols = c.get("services", {}), c.get("volumes", {}) or {}
 for name in ("nats-0", "nats-1", "nats-2", "pipeline", "api"):
@@ -35,9 +44,9 @@ for name, s in svcs.items():
         if cond.get("condition") == "service_healthy" and "healthcheck" not in svcs.get(dep, {}):
             err("compose: %s waits for %s to be healthy but it has no healthcheck" % (name, dep))
     for v in s.get("volumes", []):
-        src = v.split(":")[0]
-        if src.startswith("./"):
-            if not os.path.exists(os.path.join(ROOT, src)):
+        src, is_bind = vol_parts(v)
+        if is_bind:
+            if src.startswith("./") and not os.path.exists(os.path.join(ROOT, src)):
                 err("compose: %s bind source %s missing" % (name, src))
         elif src not in vols:
             err("compose: %s uses undeclared volume %s" % (name, src))
@@ -59,7 +68,7 @@ for n in ("nats-0", "nats-1", "nats-2"):
     if (b.get("context") if isinstance(b, dict) else b) != "./deploy/nats":
         err("compose: %s must build from ./deploy/nats" % n)
     for v in s.get("volumes", []):
-        if str(v).split(":")[0].startswith(("./", "/", "../", "~")):
+        if vol_parts(v)[1]:
             err("compose: %s bind-mounts host path %s (config must be COPY'd into wasl-nats:local)" % (n, v))
 ndf_path = os.path.join(ROOT, "deploy/nats/Dockerfile")
 if not os.path.exists(ndf_path):
