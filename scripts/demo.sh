@@ -208,14 +208,18 @@ smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 
   return "$rc"
 }
 snapshot() {  # static API responses for frontend development (no backend needed): docs/api-samples/ (WASL_SNAPSHOT_DIR overrides)
-  # Written into a clean staging directory first; all seven programme pages must be nonempty; only then are the tracked
+  # Written into a clean staging directory first; all seven (or the WASL_SNAPSHOT_PROGRAMMES) programme pages must be nonempty; only then are the tracked
   # samples replaced (README.md kept), so no stale fixture files remain and a failed snapshot leaves them untouched.
+  # WASL_SNAPSHOT_PROGRAMMES=<comma list> scopes the required programme pages (default: all seven); each listed one must be nonempty.
   local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="${WASL_SNAPSHOT_DIR:-$ROOT/docs/api-samples}" S tag id prog
+  local progs="${WASL_SNAPSHOT_PROGRAMMES:-crc,cervical,lung_nodule,diabetic_retinopathy,breast,lung_ldct,ifhas}"
+  for prog in ${progs//,/ }; do case "$prog" in crc|cervical|lung_nodule|diabetic_retinopathy|breast|lung_ldct|ifhas) ;;
+    *) echo "snapshot: unknown programme '$prog' in WASL_SNAPSHOT_PROGRAMMES" >&2; return 1;; esac; done
   S="$(mktemp -d "${D%/}.staging.XXXXXX")"
   curl -sf "http://$A/healthz" > "$S/healthz.json" || { rm -rf "$S"; echo "snapshot: healthz failed" >&2; return 1; }
   curl -sf "http://$A/api/dashboard" > "$S/dashboard.json" || { rm -rf "$S"; echo "snapshot: dashboard failed" >&2; return 1; }
   curl -sf "http://$A/api/fixtures" > "$S/fixtures.json" || { rm -rf "$S"; echo "snapshot: fixtures failed" >&2; return 1; }
-  for prog in crc cervical lung_nodule diabetic_retinopathy breast lung_ldct ifhas; do
+  for prog in ${progs//,/ }; do
     if ! { curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
       rm -rf "$S"; echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
