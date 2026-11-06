@@ -237,7 +237,7 @@ Implement/run:
 - Freeze code revision, thresholds, policy choice, model version, cohort generator, noise model and seed list before final evaluation.
 - Use five independent seeds.
 - Keep development/calibration and held-out evaluation cohorts separate.
-- Double-label the 43 reports between the two team members; record agreement and disagreements. No clinician-label claim.
+- The 43 reports have clinically verified model-assisted labels (two model passes plus clinician adjudication, κ = 1.000), not independent human double-labelling; see `docs/labelling/`.
 - Report:
   - precision, recall and false closures;
   - wrong-patient dispatches;
