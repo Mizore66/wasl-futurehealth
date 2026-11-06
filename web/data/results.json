@@ -5,7 +5,8 @@
   "docs/BRIEF.md",
   "docs/PITCH.md",
   "docs/api-samples/dashboard.json",
-  "pipeline/results/showcase/summary.txt"
+  "pipeline/results/showcase/summary.txt",
+  "booking/sim/pool_test.json"
  ],
  "entries": {
   "v1.crc_precision": {
@@ -2797,6 +2798,70 @@
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "CRC 31-day completion, frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "pool.1_0.balanced_30": {
+   "id": "pool.1_0.balanced_30",
+   "value": 0.069,
+   "display": "6.9%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.0 slots per FIT+, balanced network, 30% willing to travel; booking simulation, 30 draws, median"
+  },
+  "pool.1_0.skewed_no_travel": {
+   "id": "pool.1_0.skewed_no_travel",
+   "value": 0.18600000000000003,
+   "display": "18.6%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.0 slots per FIT+, capacity in the wrong regions, no cross-site booking; booking simulation, 30 draws, median"
+  },
+  "pool.1_0.skewed_30": {
+   "id": "pool.1_0.skewed_30",
+   "value": 0.073,
+   "display": "7.3%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.0 slots per FIT+, capacity in the wrong regions, 30% willing to travel; booking simulation, 30 draws, median"
+  },
+  "pool.1_0.skewed_pool_60": {
+   "id": "pool.1_0.skewed_pool_60",
+   "value": 0.078,
+   "display": "7.8%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.0 slots per FIT+, capacity in the wrong regions, network pooling, 60% willing to travel; booking simulation, 30 draws, median"
+  },
+  "pool.1_2.balanced_30": {
+   "id": "pool.1_2.balanced_30",
+   "value": 0.40399999999999997,
+   "display": "40.4%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.2 slots per FIT+, balanced network, 30% willing to travel; booking simulation, 30 draws, median"
+  },
+  "pool.1_2.skewed_no_travel": {
+   "id": "pool.1_2.skewed_no_travel",
+   "value": 0.222,
+   "display": "22.2%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.2 slots per FIT+, capacity in the wrong regions, no cross-site booking; booking simulation, 30 draws, median"
+  },
+  "pool.1_2.skewed_30": {
+   "id": "pool.1_2.skewed_30",
+   "value": 0.37200000000000005,
+   "display": "37.2%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.2 slots per FIT+, capacity in the wrong regions, 30% willing to travel; booking simulation, 30 draws, median"
+  },
+  "pool.1_2.skewed_pool_60": {
+   "id": "pool.1_2.skewed_pool_60",
+   "value": 0.42100000000000004,
+   "display": "42.1%",
+   "label": "simulated",
+   "source": "booking/sim/pool_test.json",
+   "context": "within 31 days of referral, all FIT+, 1.2 slots per FIT+, capacity in the wrong regions, network pooling, 60% willing to travel; booking simulation, 30 draws, median"
   },
   "showcase.decisions": {
    "id": "showcase.decisions",

@@ -22,7 +22,7 @@ describe("results.json pins the honest numbers", () => {
 
   it("names a source file and a label for every number", () => {
     for (const e of Object.values(results.entries)) {
-      expect(e.source).toMatch(/^(docs|pipeline)\//);
+      expect(e.source).toMatch(/^(docs|pipeline|booking)\//);
       expect(e.label as string).toBe(e.id.startsWith("published.") ? "published" : "simulated");
     }
   });
