@@ -144,6 +144,15 @@ func main() {
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
 	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
 	agentRecsPath := fs.String("agentrecs", "", "agentreplay only: cached evidence-investigator records (agent_recs.ndjson); never forwarded to live child processes")
+	agentMode := fs.String("agentmode", "cached", "agentshadow only: cached (never calls a provider) | live (explicit opt-in: also needs WASL_AGENTSHADOW_LIVE=1 and WASL_LLM_*)")
+	agentItems := fs.Int("agentitems", AgentShadowMaxItems, "agentshadow only: max items investigated (<= 20)")
+	agentCalls := fs.Int("agentcalls", AgentShadowMaxCalls, "agentshadow only: max uncached provider requests, persisted across restarts (<= 40)")
+	agentDeadline := fs.Duration("agentdeadline", 15*time.Minute, "agentshadow only: overall deadline for new uncached requests")
+	agentProvider := fs.Duration("agentprovider", 45*time.Second, "agentshadow only: per provider request deadline")
+	agentIdle := fs.Duration("agentidle", 20*time.Second, "agentshadow only: exit after every provider ended and this long without events")
+	agentCache := fs.String("agentcache", "", "agentshadow only: provider response cache dir (default <run>/agent_shadow/cache)")
+	agentWorker := fs.String("agentworker", "../scripts/agent_shadow_worker.py", "agentshadow only: investigator sidecar script")
+	agentPython := fs.String("agentpython", "python3", "agentshadow only: python interpreter for the sidecar")
 	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
 	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
 	fs.Float64Var(&MDNamesakeRate, "mdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic missing-date namesake hard negative (pairfeat7 training only)")
@@ -558,6 +567,9 @@ func main() {
 			simRun = absRun
 		}
 		simOffline(*data, *wasl, *P, !*noReview, simRun)
+	case "agentshadow": // standalone read-only shadow spike (agentshadow.go); never started by orchestrate
+		os.Exit(agentShadowMain(*wasl, *data, absRun, *P, AgentShadowFlags{Mode: *agentMode, Items: *agentItems, Calls: *agentCalls,
+			Deadline: *agentDeadline, Provider: *agentProvider, Idle: *agentIdle, Cache: *agentCache, Worker: *agentWorker, Python: *agentPython}))
 	case "agentreplay":
 		agentReplayMain(*data, *wasl, absRun, *P, rcfg, *agentRecsPath)
 	case "audit":
