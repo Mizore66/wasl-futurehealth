@@ -201,7 +201,7 @@ func TestLDCTFix2PhraseVariantsNeverClose(t *testing.T) {
 		{"over", "Biopsy over CT surveillance.", "CT surveillance"},
 		{"but", "Biopsy discussed but CT surveillance chosen.", "CT surveillance"},
 		{"safe over-block: surveillance, not biopsy", "CT surveillance, not biopsy.", "CT surveillance"},
-		{"second contrast after an earlier plan", "Surveillance CT is planned rather than PET; biopsy over CT surveillance.", "CT surveillance"},
+		{"second contrast before the phrase", "Surveillance CT is planned rather than PET; biopsy over CT surveillance.", "CT surveillance"},
 		// prior-date wording: history, not a current plan
 		{"last year", "Surveillance CT last year showed no change.", "Surveillance CT"},
 		{"years ago", "Surveillance CT done two years ago.", "Surveillance CT"},
@@ -266,5 +266,88 @@ func TestLDCTFix2FalseAnchorsNarrowed(t *testing.T) {
 	text := "Thoracic clinic review. Known pulmonary embolism. Lung nodule biopsy taken; histology awaited."
 	if f := regexLDCTWorkup(text); f.Label != "wk_incomplete" {
 		t.Errorf("real workup lost: %+v", f)
+	}
+}
+
+// LDCT safety fix round 3: need/require wording, and contrast anywhere in the surveillance clause.
+
+func TestLDCTFix3NeedRequireNeverClose(t *testing.T) {
+	const hdr = "Thoracic MDT outcome\n"
+	for _, c := range []struct{ name, body, quote string }{
+		{"patient needs biopsy", "Patient needs biopsy. Surveillance CT in 3 months.", "Surveillance CT"},
+		{"requires biopsy", "Requires biopsy. Surveillance CT in 3 months.", "Surveillance CT"},
+		{"need biopsy", "Need biopsy. Surveillance CT in 3 months.", "Surveillance CT"},
+		{"require PET", "Require PET-CT. Surveillance CT in 3 months.", "Surveillance CT"},
+		{"needs PET", "Needs PET. Repeat CT in 3 months.", "Repeat CT"},
+		{"biopsy to be considered", "Biopsy to be considered. Surveillance CT in 3 months.", "Surveillance CT"},
+		{"PET to be considered", "PET-CT to be considered. Surveillance CT in 3 months.", "Surveillance CT"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			text := hdr + c.body
+			f, ok := bAnswer(text, c.quote).fields("ldct-workup", text)
+			if !ok {
+				t.Fatalf("answer should ground: %q", c.quote)
+			}
+			if ldctClosingWorkup(f.Label) || f.Workup != "not_done" {
+				t.Fatalf("must not close or flip workup: %+v", f)
+			}
+		})
+	}
+}
+
+func TestLDCTFix3ContrastAfterPhraseNeverCloses(t *testing.T) {
+	const hdr = "Thoracic MDT outcome\n"
+	for _, c := range []struct{ name, body, quote string }{
+		{"but biopsy preferred", "Surveillance CT in 3 months but biopsy preferred.", "Surveillance CT"},
+		{"suggested, but patient wants biopsy", "CT surveillance suggested, but patient wants biopsy", "CT surveillance"},
+		{"however", "Surveillance CT in 3 months, however biopsy preferred.", "Surveillance CT"},
+		{"although", "Surveillance CT in 3 months although biopsy is favoured.", "Surveillance CT"},
+		{"over after", "Surveillance CT over biopsy.", "Surveillance CT"},
+		{"versus after", "Surveillance CT versus biopsy.", "Surveillance CT"},
+		{"preferred to after", "Surveillance CT preferred to biopsy.", "Surveillance CT"},
+		// the first contrast after the phrase is an allowed "rather than"; the second must still block
+		{"second contrast after the phrase", "CT surveillance rather than PET, but biopsy preferred.", "CT surveillance"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			text := hdr + c.body
+			f, ok := bAnswer(text, c.quote).fields("ldct-workup", text)
+			if !ok {
+				t.Fatalf("answer should ground: %q", c.quote)
+			}
+			if ldctClosingWorkup(f.Label) || f.Workup != "not_done" {
+				t.Fatalf("must not close or flip workup: %+v", f)
+			}
+		})
+	}
+}
+
+func TestLDCTFix3ClauseCleanDirect(t *testing.T) {
+	for c, want := range map[string]bool{
+		"Surveillance CT in 3 months but biopsy preferred.":      false,
+		"CT surveillance suggested, but patient wants biopsy":    false,
+		"Biopsy over CT surveillance.":                           false,
+		"CT surveillance rather than PET, but biopsy preferred.": false,
+		"CT surveillance rather than immediate biopsy.":          true,
+		"CT surveillance instead of biopsy.":                     true,
+		// documented safe over-block: a second surveillance phrase after "instead of" reads as the rejected side
+		"CT surveillance instead of biopsy, repeat CT in three months.": false,
+		"Surveillance CT in 3 months.":                                  true,
+	} {
+		if got := ldctClauseClean(c); got != want {
+			t.Errorf("ldctClauseClean(%q) = %v, want %v", c, got, want)
+		}
+	}
+}
+
+func TestLDCTFix3GenuinePositivesStillClose(t *testing.T) {
+	for _, text := range []string{
+		"Thoracic MDT outcome\nCT surveillance rather than immediate biopsy; repeat low-dose chest CT in three months.",
+		"Thoracic MDT outcome\nNo tissue diagnosis. Surveillance CT in 3 months instead of biopsy.",
+		"Thoracic MDT outcome\nBiopsy was benign. Surveillance CT in 3 months.",
+	} {
+		f, ok := bAnswer(text, "CT").fields("ldct-workup", text)
+		if !ok || f.Label != "wk_surveillance" || f.Workup != "done" {
+			t.Errorf("genuine positive should close via reader B: %+v ok=%v | %s", f, ok, text)
+		}
 	}
 }
