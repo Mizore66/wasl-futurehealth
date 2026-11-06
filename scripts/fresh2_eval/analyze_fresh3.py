@@ -200,6 +200,10 @@ def _build(repo):
     unav = unavailable_section(raw["items"], key["items"], corpus["items"], cache)
     wrong = wrong_section(by_kind, key["items"], raw["items"])
     screen = A.screen_section(raw["items"], key["items"], corpus["items"])
+    # The shared fresh2 helper's note still says "28/28" (its fresh2 denominator); override it with the fresh3 figure.
+    screen["note_b"] = (f"{screen['reader_b_coded_matches_key']}/{screen['agreed_n']} with {screen['key_coded_label_unavailable']} items whose "
+                        "key coded_label is unavailable; the coded-match count includes those items only because B literally returned "
+                        "`unavailable`. It measures coded-result parsing against the key, not a language-model reader.")
     f2 = A.load("data/fresh2/results/score.json", repo)["agreed"]["by_kind"]
     f2_base = {"ifhas_followup_b_unavailable_agreed": f2["ifhas-followup"]["reader_b_unavailable"],
                "ifhas_followup_agreed_but_wrong": f2["ifhas-followup"]["agreed_but_wrong"],
@@ -244,12 +248,13 @@ def _build(repo):
     }
 
 
-# Replay of the CURRENT readers over the FRESH2 items, run once with a throwaway Go test (not committed) calling
-# regexLDCTWorkup and ldctGemma.fields on data/fresh2 with the fresh2 cache. Post-hoc and tuned: the safeguards were written
+# Replay of the CURRENT readers over the FRESH2 items, via the committed Go regression test
+# pipeline/fresh3_safeguard_test.go (TestFresh3SafeguardReplayFresh2). Post-hoc and tuned: the safeguards were written
 # after seeing these items, so this is a regression check, not evidence of generalisation.
 REPLAY = {
-    "method": "throwaway Go test (deleted, not committed) calling regexLDCTWorkup and ldctGemma.fields at 9f2d020 over data/fresh2 "
-              "with the fresh2 reader cache; fresh2 original results are unchanged",
+    "method": "committed Go test pipeline/fresh3_safeguard_test.go (TestFresh3SafeguardReplayFresh2) calling LDCTJudge over "
+              "data/fresh2/corpus.json with the fresh2 reader cache (no model call); fresh2 original results are unchanged",
+    "test": "pipeline/fresh3_safeguard_test.go",
     "fresh2_f2l-002": {"original": "both wk_incomplete", "current_code": "A indeterminate, B indeterminate (routed to review)"},
     "fresh2_f2l-021": {"original": "both wk_incomplete", "current_code": "A indeterminate, B indeterminate (routed to review)"},
     "fresh2_f2l-029": {"original": "both wk_incomplete", "current_code": "A wk_surveillance (regex), B wk_surveillance (the MDT-title surveillance override turned Gemma's workup=not_done into done)"},
