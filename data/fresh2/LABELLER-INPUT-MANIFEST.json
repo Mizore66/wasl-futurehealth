@@ -1,0 +1,55 @@
+{
+ "allowed_item_fields": [
+  "coded",
+  "id",
+  "kind",
+  "programme",
+  "text"
+ ],
+ "allowed_top_level_fields": [
+  "items",
+  "schema"
+ ],
+ "batching": "10 items per call, 12 calls per labeller, items in corpus order",
+ "canonical_corpus_file": "data/fresh2/corpus.json",
+ "canonical_corpus_sha256": "165367128f97b9bceecfd146ee70515d1319e55acedfedbc852e36af48bbf0f7",
+ "declaration_exact_input_supplied": true,
+ "guide_file": "scripts/fresh2_eval/LABELLING-GUIDE.md",
+ "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+ "item_count": 120,
+ "labeller_input_file": "data/fresh2/labeller-input.json",
+ "labeller_input_file_sha256": "0b98766da99ce972e582d2843c982280ec17bc58748075d90f85e9471e966a84",
+ "labellers": [
+  {
+   "id": "gemini-a",
+   "label_file": "data/fresh2/labels/labeller_a.json",
+   "model": "gemini-3.5-flash",
+   "model_family": "Google/Gemini",
+   "output_instruction_suffix": "\n\n---\nTask: apply the guide above to the items the user sends. Reply with ONLY a JSON array, one object per item, in the given order: {\"id\":..., \"label\":...} plus \"coded_label\" for ifhas-screen items. Use exact label strings from section 2 for the item's kind. No commentary, no code fences.",
+   "prompt_sha256": "166f80b7f64660241dbd7dc714f3862119b8e9b396d66902f0d4a9e5e51bf95f",
+   "sampling": "provider default (no temperature set)",
+   "system_prompt_construction": "system = <guide text> + output_instruction_suffix",
+   "user_message": "json.dumps(batch_of_10_items, ensure_ascii=False, indent=1), items exactly as in the labeller input file"
+  },
+  {
+   "id": "kimi-b",
+   "label_file": "data/fresh2/labels/labeller_b.json",
+   "model": "kimi-k3.1-pro",
+   "model_family": "Moonshot AI/Kimi",
+   "output_instruction_suffix": "\n\nOutput format: reply with ONLY a JSON array, no prose, no code fences. One object per item given, in order: {\"id\":...,\"label\":...} and, for ifhas-screen items only, also \"coded_label\". Use exact label strings from the guide.",
+   "prefix": "You are a blind labeller. Follow the labelling guide below exactly.\n\n",
+   "prompt_sha256": "7b4395fe047fa32f37e2f6af03d8787f01b64da5acfa881648c3e2176910ae28",
+   "sampling": "temperature 0",
+   "system_prompt_construction": "system = prefix + <guide text> + output_instruction_suffix",
+   "user_message": "'Label these items:\\n' + json.dumps(batch_of_10_items restricted to id, kind, programme, text, coded, ensure_ascii=False)"
+  }
+ ],
+ "limitations": [
+  "The prompt hashes are reproducible from the committed guide plus the stored prefix/suffix text (tested), but the transcripts of the model calls were not archived.",
+  "The labelling ran in a sibling-branch workspace; the committed copy is evidence of what the input contained, not a recording of the API requests.",
+  "Both labellers were reached through the same LiteLLM gateway."
+ ],
+ "relation_to_canonical_corpus": "The 120 items (id, programme, kind, text, coded) are identical to data/fresh2/corpus.json items; the canonical corpus additionally carries item_metadata and provenance, which the labellers did not see. The file sha256 differs from the canonical corpus sha256 because of the removed blocks and different JSON formatting; the label files bind to the canonical sha256.",
+ "schema": "fresh2-labeller-input-manifest/v1",
+ "statement": "data/fresh2/labeller-input.json is the exact file that was supplied to both labellers as the item source. It was created before any label existed (file mtime 2026-11-07 04:07:23 +08:00; labels were committed from 04:12). It contains only the 120 items with the fields id, programme, kind, text and (ifhas-screen only) coded, plus the top-level schema field. It has no item_metadata, no provenance block, no author key and no label. This file is a byte-for-byte copy of out/fresh2-blind/corpus.json from the sibling branch workspace where the labelling was run; that original was not committed on this branch."
+}
