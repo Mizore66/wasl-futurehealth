@@ -1,0 +1,572 @@
+{
+ "09e7ddfbb52e4b9282d01dacca5b7a7661e52ebe0cfedacf4a91c62143e6b919": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "He remains independently mobile, ECOG 0. FEV1 86% predicted and DLCO 79% predicted.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4438
+ },
+ "0addf0e90365d4ee3944d087e12ea6d2130f3770831f4708f0d59db395d1566a": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Final assessment: Lung-RADS 2",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2979
+ },
+ "0fc80cdd1afe267fe3b6ae87fe1363c38013ebf8c558e23eeb8177d31275640a": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Further contact to be arranged.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3688
+ },
+ "174990cdeb882ed7eeef1d28f8b5c5031b912ae67724d79c55325ab5b415fc90": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "3",
+  "worst_finding_lungrads": "3",
+  "quote": "Assessment: Lung-RADS category three, probably benign.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2989
+ },
+ "1bf49296db184aaa840f5876d9b0be6ddd4ddcbbb742392c72709fa288299d82": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "today's consultation focused on smoking cessation.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3707
+ },
+ "259b3b49d3ab8786239c1b59680c6a1295687fb0531484426e0f966274b430fe": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Stable previously category 3 nodule, now Lung-RADS 2 by stepped management under Lung-RADS v2022.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3962
+ },
+ "28efed379e07bdbf86aec3e661cdd067a5466c462398350fd680703d16482b6a": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "No pulm nodules.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2775
+ },
+ "294becebcff689eadb996180dbf89a35e443d5bd47345f6eccab835b1ae16941": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "Appearances favour an infective or inflammatory process.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3011
+ },
+ "2984042fb7036fa3ce3165bbe116fe0e3a71230a66d04bb916ab2659fbafa6f5": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "1",
+  "worst_finding_lungrads": "1",
+  "quote": "Lung-RADS 1. Continue annual low-dose CT screening in 12 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3374
+ },
+ "2a9b26b32392c007cf350d42d5fd35c4e295d9eabf8d044c5d88aac659b47539": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Patient declines both investigations at present and wishes to think further and discuss with her family.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3938
+ },
+ "302ce5e12e8ccd8086f8e5f09ecaa23407ac8ec82d91b370dd05b38f698f2cfa": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "3",
+  "quote": "Probably benign 6 mm solid pulmonary nodule.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3032
+ },
+ "33e14d008f1730d6e1802e4248095d6ead16c235cd17aae3e643a7ff35e3709b": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Return urgently for worsening breathlessness, persistent fever or haemoptysis.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4769
+ },
+ "35bc71b8171e3b913dcb615c74e6302ba09904af90b31e52e53ef12c1a2df52a": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "3",
+  "worst_finding_lungrads": "3",
+  "quote": "Impression: Probably benign solid pulmonary nodule. Lung-RADS 3.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3402
+ },
+ "3a1ec3b663da02ede0bba727fa776a2c66065b9e14632ed6282c2f545c8b5630": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Findings explained to the patient. Plan: to be discussed at thoracic MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3870
+ },
+ "3c3c514e1dd929ef3f1d63e87eecc6b24b41de5289d2a3a707d65ca25c88caa0": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "Assessment: Lung-RADS 4A, suspicious.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3293
+ },
+ "3ca130666df64b65fc9e0a840827e77500ee6f7f01c051541edaf052364f6324": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "Resolution of the previously observed nodule; benign calcified granuloma only.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3256
+ },
+ "3f563a65471e222c255682d97fe5b21d3fd2b886e9fdb62683b233973215c7ec": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Overall Lung-RADS 2",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3126
+ },
+ "4a81de75ad74a613816c0ab03244889dad51c892cb0238ad9d437f5cc9b35a7e": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "annual",
+  "quote": "She may return to annual low-dose screening, next due February 2027. The outcome was discussed with her today.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3004
+ },
+ "4d0140544cb80234c942fedfa071bab70cca135450866a5a9e6acdf32e27577f": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "1",
+  "worst_finding_lungrads": "1",
+  "quote": "Negative lung cancer screening examination.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2835
+ },
+ "4dcc93b4b528b7ae8db913b187d39980eead3ff74b4d3fb969f07cecf05295fb": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "0",
+  "worst_finding_lungrads": "1",
+  "quote": "Assessment: Incomplete examination, Lung-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3042
+ },
+ "56bc7ea60456d6b8a29a96fe5777eb646968c49992d1942ba1be29fb0f8b6979": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "Incidental 6 mm pulmonary nodule.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3262
+ },
+ "600223dc3a4925d0655f3a927821fbdef409388dd0320523c945626dbf7ebfc4": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Did not attend CT-guided biopsy of the right upper lobe nodule booked for 15 May following screening CT dated 21 April.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4911
+ },
+ "67bea28f6905cff742ad8d76aff88656995728c4f8e480ec74a9cae5f4d32872": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Plan: offer right upper lobectomy with systematic nodal dissection.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4040
+ },
+ "6996cb507a08b023c877351ae1ab56e03f46919f28e8c4f42d580225e8bc281d": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "surveillance",
+  "quote": "Consensus: CT surveillance rather than immediate biopsy; repeat low-dose chest CT three months from the screening examination, then return to MDT if interval growth.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4635
+ },
+ "69d8d6db4a286f462d660102d340ce074c31d57815ca1e1429f811318a3dfbfe": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "pending",
+  "outcome": "pending",
+  "quote": "Histology remains awaited. Case listed for lung MDT discussion next week once pathology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4064
+ },
+ "6d28864646750f67580d5f8d1baa44be6b1e15d60e76269e3dec2d136f7c548f": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Case has not yet been discussed at thoracic MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3813
+ },
+ "6ef60a8e9130cf173709b2cbdba101936bc3a01b383e5d808fc6180ebea9fb36": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Lung-RADS 2: benign appearance or behaviour.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3737
+ },
+ "73452eea1ad1d38a6e0ffb9eb47025ee8b7091ccf0ed046001e03d3c51a12762": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "surveillance",
+  "quote": "Consensus: surveillance with interval noncontrast chest CT in 3 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4094
+ },
+ "780d104baec93a4a53582831a9046b5c149738a69315e71939e565958730af99": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "benign",
+  "outcome": "pending",
+  "quote": "Choice of repeat biopsy versus surveillance remains unresolved pending discussion with the patient and interventional radiology.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3890
+ },
+ "79b99b350c61aa5b60918a2e05480c1633c9276527634c75d351a26c86aeee72": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4B",
+  "worst_finding_lungrads": "4B",
+  "quote": "Very suspicious left upper lobe nodule. Lung-RADS 4B.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3318
+ },
+ "7cb37be3261cfad7a6ad6a61e7b2aeabf8c38d8e6906b4f51706b44ac5cfabf6": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Consensus: breast-conserving surgery with sentinel lymph node biopsy, subject to surgical consultation.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3997
+ },
+ "7e4dc7be7efbdcc60c41df18e496dd1e2dcc7ed75e7a8295df5a419178841db1": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Lung-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2945
+ },
+ "7e6bc46e293c11004574d7432c87249579f64906c87fa52821009bcab25369f8": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Discussed the need to complete assessment. Patient agrees to proceed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3876
+ },
+ "7ffb7b96235a7082e176c5878012e1a8ffb6be51548384fd035ae6e820acb386": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "Negative screening examination. No suspicious pulmonary nodules.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3101
+ },
+ "817cb9d9a9639273a0789eaf9ef39955f2543be0ab7f01b079c826d4e42aeb64": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "This patient must be seen urgently. Please prioritise the earliest available assessment for staging and tissue diagnosis.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4034
+ },
+ "8ffe3a6e973468887be81eec53bf08e15e78b0713367b440fbc3d750a8c001f8": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "MDT outcome pending; no management decision has yet been made.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3765
+ },
+ "93923e7f56865e3495f6bbfb9d21e8d0ee2b2ae646377713ec8b176e65c16077": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Referred to thoracic surgery for resection assessment; lung function and anaesthetic review requested.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3890
+ },
+ "95b1cdc905356bd6d39b630b1ec528ef20f2b0a488b073d56da1cb2dc368af2b": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Plan: obtain interval CT and review in clinic with imaging.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3908
+ },
+ "97dfe984afb18c6aa074d36f298c0d575fdb51ddf8470a129a7c63ed12c75027": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "0",
+  "worst_finding_lungrads": "1",
+  "quote": "Assessment: Lung-RADS 0, incomplete; comparison pending.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3213
+ },
+ "b77fb1043cf41e65f4c37c55a82cb514213ca888f752c624b92acd6b5877cffe": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "treatment",
+  "quote": "The thoracic MDT reviewed the screening CT dated 2026-09-02 and subsequent staging on 2026-09-14. The recorded recommendation was surgical resection of the suspicious left upper lobe lesion, subject to satisfactory cardiopulmonary assessment and informed consent.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5990
+ },
+ "b9906fd64b21406aebb13593678b27b82354d1c384bb4b203281f6d56303fa6c": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "Right upper-zone nodular opacity. CT chest recommended for further characterization.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3258
+ },
+ "ba705b1941b686b3577106254b34980e299b066cb4e2657e0e8639746fc39719": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Contacted by scheduling team; appointment rebooked for 02 November 2026 at 09:40. Patient confirmed attendance.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4471
+ },
+ "bfc98cba277efc1cdb9350f565c9ed1889287b2444b0f586ae1caafc18b47720": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "Revised assessment: Lung-RADS 4A",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3336
+ },
+ "c2909948d86d19ef9d400ec074c8943d39a17d9b08c86dde391d7c8ffa269520": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "Lung-RADS 4A.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2993
+ },
+ "c66a192f3b1b8e3a1d75d09049c14367fa476e338a11d4061535410fc63d67bd": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "benign",
+  "outcome": "annual",
+  "quote": "Return to annual low-dose CT screening in March 2027.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3931
+ },
+ "cacdf897ced47dd5ba5d296525af7caa4ca0582d5b7205c9532b4d123806abef": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "LUNG-RADS 2 — benign appearance or behaviour",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3237
+ },
+ "ced053ca39763ef7c334b905fb6f3779d2cc61a7b8e97353af33e593fbe13abc": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "BI-RADS 2: Benign findings.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2968
+ },
+ "d0ad9604ec8a977ad3a6988b5fbb967dd8f40f739c17080a6871657b1e1f5ad4": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "Lung-RADS v2022: Category 4A, segmental airway nodule at baseline.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3658
+ },
+ "d54cee18160dc094d322239af124400a8959125f4380d2f3e7111d5586cf471a": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4B",
+  "worst_finding_lungrads": "4B",
+  "quote": "Impression: Interval growth, now very suspicious. Lung-RADS 4B.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3327
+ },
+ "dd050d6499615acb40baf64917501eba4c0fe3c7ddb90b5ef5a47fc1f28083c1": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT outcome is not recorded in the pathology record.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3963
+ },
+ "def80fc8903584363c4bf04b8559d060fe78c8c363210ec50d4206b527bc49d5": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4X",
+  "worst_finding_lungrads": "4X",
+  "quote": "Lung-RADS 4X. Suspicious pulmonary nodule with additional concerning morphology and hilar lymphadenopathy.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4312
+ },
+ "dfd254e9964d84ace148c6e0384cc4aeab11530447d21e6745b2c1b7206d5308": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "benign",
+  "outcome": "annual",
+  "quote": "MDT consensus: discharge from nodule clinic and return to annual LDCT screening, next due March 2027.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4260
+ },
+ "e37a222c34c4397c4cdcc6302caf9e9b32a2d5b61a5a7aa19115ea85ee43f6a3": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Recommend 3-month low-dose CT follow-up; PET/CT may be considered given the solid nodule size.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4300
+ },
+ "e6fe3f62ed214b28c7d8721e8a889ee97a976e368b2d8106c4020aec4b393c0e": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Patient asked to obtain the procedure note and histology report for review.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3078
+ },
+ "e812c485143791c3a4b4ec4786433e7f3e25776377a4fe76c8b1c589c402a878": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Lung-RADS 2",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3058
+ },
+ "eb8637ad0862422d21f2c2ed5de293226efb15a7276140ff0951b605246077a1": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "overall assessment 4A",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2980
+ },
+ "f5a1b45518a758654a58a720ae5a75ecf2b12d908f5959d365c4cfb4d3bc3adf": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Further management remains pending the PET/CT findings",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3810
+ },
+ "f83ac543c5dea62a580355b1fd243289f876f0d2e273ef21c4e39313c7ddbf8c": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT recommends definitive SABR, subject to planning assessment. Diagnosis, non-operative management and referral discussed with the patient; he agrees to attend.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4656
+ },
+ "fa77c071f6bc1943f26ecfd2beffdfa984607b251bdd50a951fc1e93a6a2321e": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "Mixed nodular and linear pulmonary changes of uncertain significance; an inflammatory component is possible, although a focal lesion cannot be excluded.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3588
+ },
+ "fe8eb0c550f554687a99164a92892a1e0c41663b747d59e79a1a2df7c0826b3c": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "benign",
+  "outcome": "pending",
+  "quote": "The result was explained to the patient. She reports no new respiratory symptoms. Follow up soon.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3895
+ }
+}

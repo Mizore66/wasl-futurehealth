@@ -1,0 +1,755 @@
+{
+  "items": [
+    {
+      "id": "f2l-001",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "BILATERAL SCREENING MAMMOGRAPHY\nPatient: Hessa Marwan Al Rameqi | DOB: 1964-03-17\nStandard bilateral CC and MLO views obtained.\nScattered areas of fibroglandular density. No suspicious mass, architectural distortion or grouped calcifications.\nNo significant interval change from the previous mammogram.\nBI-RADS 2: Benign findings.\nRoutine screening mammography in one year."
+    },
+    {
+      "id": "f2l-002",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "DISCHARGE SUMMARY — Internal Medicine, Saffron Quay Hospital, Abu Dhabi\nPatient: Khalid Nasser Al Mazhuri; DOB 1958-08-22\nAdmission 19/03/2026; discharge 23/03/2026.\nPrincipal diagnosis: community-acquired right lower lobe pneumonia with hypoxaemia.\nTreated with intravenous ceftriaxone and azithromycin, fluids and supplemental oxygen. Blood cultures showed no growth.\nAfebrile for 48 hours; oxygen saturation 95% on room air at discharge.\nComplete oral amoxicillin/clavulanate for three further days. Repeat chest radiograph in six weeks through primary care.\nReturn urgently for worsening breathlessness, persistent fever or haemoptysis."
+    },
+    {
+      "id": "f2l-003",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory follow-up telephone entry — 18 May 2026\nSaeed Hamdan Al Qumrani, DOB 09/11/1961.\nDid not attend CT-guided biopsy of the right upper lobe nodule booked for 15 May following screening CT dated 21 April.\nCalls to the registered telephone number on 15 and 18 May were unanswered; unable to leave a message.\nLetter sent today requesting urgent contact with the respiratory clinic to discuss and rearrange biopsy. Referring clinician notified.\nNo tissue sample obtained."
+    },
+    {
+      "id": "f2l-004",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "LOW-DOSE CT LUNG SCREENING — BASELINE\nMariam Rashid Al Dahmari | DOB 1956-07-04\nNon-contrast low-dose volumetric acquisition. DLP 64 mGy·cm. No prior chest CT available.\nThere is a solid noncalcified left upper lobe nodule measuring 7 mm in mean diameter. Mild centrilobular emphysema. No enlarged mediastinal nodes or pleural effusion.\nAssessment: Lung-RADS category three, probably benign.\nRecommend repeat low-dose chest CT in six months.\nSecond reader concurs."
+    },
+    {
+      "id": "f2l-005",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "To Radiation Oncology, Amber Dhow Hospital, Abu Dhabi\nRe: Yousif Salem Al Barqani, DOB 13/02/1954\nPlease assess for stereotactic ablative radiotherapy following thoracic MDT discussion on 14 October 2026.\nScreening LDCT of 2 September identified a peripheral right upper lobe lesion. CT-guided core biopsy confirms invasive squamous cell carcinoma.\nPET-CT demonstrates uptake confined to the 22 mm primary, without nodal or distant disease; clinical stage cT1cN0M0.\nThoracic surgical review concluded that he is medically inoperable because of severe COPD and markedly reduced gas transfer.\nMDT recommends definitive SABR, subject to planning assessment. Diagnosis, non-operative management and referral discussed with the patient; he agrees to attend.\nHistology, pulmonary function results and staging imaging are available for review."
+    },
+    {
+      "id": "f2l-006",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Qamar Dune Screening Pavilion, Abu Dhabi\nPatient: Hadi Munir Zafran | DOB: 1961-03-12 | Male\nExamination: Baseline low-dose CT chest, 2026-03-18.\nTechnique: Noncontrast volumetric acquisition; DLP 74 mGy·cm. Independent second read completed.\nFindings: Solid 9 mm right upper lobe nodule with irregular spiculated margins. Enlarged right hilar lymph node measures 15 mm in short axis. Mild centrilobular emphysema.\nNo pleural effusion or destructive osseous lesion.\nImpression: Lung-RADS 4X. Suspicious pulmonary nodule with additional concerning morphology and hilar lymphadenopathy.\nRecommend prompt thoracic assessment, diagnostic contrast-enhanced CT chest and PET/CT, with tissue sampling as clinically appropriate."
+    },
+    {
+      "id": "f2l-007",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Sahil Lantern Hospital — Thoracic Oncology Clinic, Abu Dhabi\nDarwani Nadir Qasim | DOB 1963-02-09 | 63-year-old man\nReviewed following screening CT dated 2026-04-06 and subsequent investigations.\nCore biopsy of the right upper lobe lesion confirms invasive adenocarcinoma. PET/CT shows uptake confined to the primary lesion; EBUS nodal samples are negative for malignancy.\nMDT discussion completed 2026-04-27: clinical stage cT1cN0M0. Pulmonary function and cardiac assessment support operative management.\nPlan: offer right upper lobectomy with systematic nodal dissection. Discussed operative risks, alternatives and the possibility of further treatment depending on resection histology.\nPatient wishes to proceed; surgical consultation arranged. Smoking cessation support continued."
+    },
+    {
+      "id": "f2l-008",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "LOW-DOSE CT CHEST — 2026-07-14\nPatient: Rima Salim Vardani; female; DOB 1958-08-23.\nBaseline screening examination. Noncontrast thin-section acquisition, DLP 81 mGy·cm.\nAn 18 mm solid spiculated nodule is present in the left upper lobe, with associated pleural retraction. No enlarged mediastinal lymph nodes. No pleural effusion.\nIMPRESSION: Very suspicious left upper lobe nodule. Lung-RADS 4B.\nRecommend diagnostic CT chest, PET/CT and referral to the thoracic service for tissue sampling. Findings communicated to the referring clinician today."
+    },
+    {
+      "id": "f2l-009",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Marjan Vale Screening Centre | Abu Dhabi\nPatient: Bashir Talal Nuwari | DOB 1966-01-17 | Male\nBaseline LDCT chest performed 2026-09-02. No prior imaging available.\nNodule inventory: N1, right lower lobe, solid, mean diameter 6.6 mm, smooth margins — Lung-RADS 3. N2, left upper lobe, densely calcified granuloma, 4 mm — Lung-RADS 1.\nNo consolidation, effusion or enlarged intrathoracic nodes.\nFinal impression: Overall Lung-RADS 2. Continue annual low-dose CT screening in 12 months.\nReport authorised following second reader review."
+    },
+    {
+      "id": "f2l-010",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "ANNUAL LUNG SCREENING CT\nDalia Farid Mazrani | DOB 1955-06-21 | Female\nExam date: 2026-10-08. Low-dose noncontrast chest CT; DLP 77 mGy·cm.\nThere is a 7 mm noncalcified solid nodule in the right middle lobe. The patient reports that this was described on her CT of 2025-10-03.\nPrior CT images have been requested from the outside imaging service but have not yet been received. Stability cannot currently be assessed.\nAssessment: Lung-RADS 0, incomplete; comparison pending.\nAn addendum will be issued after review of the prior examination. Screening recall interval deferred pending comparison."
+    },
+    {
+      "id": "f2l-011",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "SAHFARA CHEST CENTRE — RADIOLOGY\nPatient: Marwan Nabil Al Rafi | DOB: 1962-03-17\nExamination: Chest radiograph, PA and lateral, 2026-02-09.\nSmall nodular opacity projects over the right upper lung, approximately 11 mm. No focal air-space consolidation or pleural effusion. Cardiomediastinal silhouette is not enlarged.\nImpression: Right upper-zone nodular opacity. CT chest recommended for further characterization."
+    },
+    {
+      "id": "f2l-012",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Baseline lung screening CT — 2026-04-14\nPatient: Samira Khaled Al Wadi, DOB 1967-08-22.\nLow-dose noncontrast acquisition with thin-section reconstructions. DLP 74 mGy·cm. No prior CT available.\nLeft upper lobe 10 mm solid nodule, with the dense solid component measuring 9 mm on lung windows; mildly lobulated margins. No enlarged mediastinal nodes. Mild centrilobular emphysema.\nAssessment: Lung-RADS 4A, suspicious.\nRecommend repeat LDCT in 3 months. PET/CT may be considered given the solid component measuring at least 8 mm.\nResults and follow-up recommendation communicated to the screening coordinator."
+    },
+    {
+      "id": "f2l-013",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "HISTOPATHOLOGY ADDENDUM | Accession AP26-68142\nPatient: Yousif Hamdan Al Mazroui | DOB: 1959-06-11 | Male\nRight upper lobe core biopsy obtained 2026-06-23 following screening CT dated 2026-06-03.\nAddendum to report issued 2026-06-25: immunohistochemical studies are now complete.\nTumour cells show diffuse p40 expression and are negative for TTF-1 and Napsin A.\nFinal diagnosis: Invasive squamous cell carcinoma, moderately differentiated.\nThis addendum replaces the provisional designation of non-small cell carcinoma, not otherwise specified. MDT outcome is not recorded in the pathology record."
+    },
+    {
+      "id": "f2l-014",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Thoracic clinic follow-up, 2026-08-19\nPatient: Hessa Rashid Al Darimi | DOB 1956-12-05\nReviewed investigations following the screening examination of 2026-07-08.\nContrast-enhanced diagnostic CT demonstrates a 34 mm left lower lobe mass and an enlarged left hilar node. PET/CT shows intense FDG uptake in the mass and uptake in the hilar node; no distant FDG-avid lesion reported.\nCT-guided core biopsy performed 2026-08-12: malignant, invasive adenocarcinoma of pulmonary origin.\nFindings explained to the patient. Plan: to be discussed at thoracic MDT."
+    },
+    {
+      "id": "f2l-015",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "ADDENDUM — screening LDCT performed 2026-09-21\nPatient: Farid Salim Al Nawri | DOB: 1960-01-29\nReference: original report issued 2026-09-21, which assigned Lung-RADS 3 and advised 6-month LDCT.\nSecond-radiologist review completed 2026-09-23. The right lower lobe solid nodule measures 9 × 8 mm, mean diameter 8.5 mm, on thin-section images; the original measurement underestimated its size.\nRevised assessment: Lung-RADS 4A. This replaces the category and follow-up recommendation in the original report.\nRecommend LDCT in 3 months; PET/CT may be considered. Remaining findings are unchanged.\nAmended result sent to the referring clinician and screening follow-up team."
+    },
+    {
+      "id": "f2l-016",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory clinic follow-up — 18 March 2026\nPatient: Nadir Salim Al Ruwahi | DOB: 14 September 1961\nAttended following screening LDCT dated 4 March 2026 showing a suspicious right upper lobe nodule.\nCT-guided core biopsy performed yesterday. Mild local discomfort only; no haemoptysis or breathlessness.\nHistology remains awaited. Case listed for lung MDT discussion next week once pathology is available.\nWe will telephone the patient with the outcome and arrange the next appointment."
+    },
+    {
+      "id": "f2l-017",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "LOW-DOSE CT CHEST — ANNUAL SCREENING\nPatient: Hessa Marwan Al Nufaili | DOB: 22 January 1958\nTechnique: Non-contrast low-dose volumetric acquisition. DLP 68 mGy·cm. Independently reviewed by two radiologists.\nComparison: 12 February 2025, reported as Lung-RADS 3 for a 6 mm solid left lower lobe nodule.\nFindings: The previously described left lower lobe nodule has completely resolved. Unchanged densely calcified right upper lobe granuloma. No new or enlarging pulmonary nodule. Mild centrilobular emphysema.\nImpression: Resolution of the previously observed nodule; benign calcified granuloma only. Continue routine annual low-dose CT screening in 12 months."
+    },
+    {
+      "id": "f2l-018",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Thoracic Unit — outpatient review, Abu Dhabi\nFaris Adnan Al Mazrouqi, DOB 6 June 1956, attended with his daughter.\nScreening LDCT of 8 May 2026: Lung-RADS 4B, spiculated peripheral right upper lobe lesion.\nCT-guided core biopsy confirms pulmonary adenocarcinoma. Staging imaging shows no nodal or distant metastatic disease.\nDiscussed at lung MDT on 27 May 2026; surgical management recommended, subject to physiological assessment.\nFindings and treatment options explained today. Referred to thoracic surgery for resection assessment; lung function and anaesthetic review requested."
+    },
+    {
+      "id": "f2l-019",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Mariam Khaled Al Harthani | DOB 19 November 1963\nAttended respiratory review today following screening LDCT on 3 August 2026. Images reviewed with the patient, including the irregular left apical opacity.\nMDT outcome pending; no management decision has yet been made. Imaging forwarded for discussion at the next lung meeting. Patient aware that we will contact her after the meeting."
+    },
+    {
+      "id": "f2l-020",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "BASELINE LUNG SCREENING: LOW-DOSE CT CHEST\nPatient: Rashid Nabil Al Safwani | DOB: 3 April 1967\nExamination date: 21 September 2026\nNon-contrast low-dose CT chest. DLP: 74 mGy·cm. No previous imaging available.\nThere is an 8 mm solid non-calcified nodule in the right lower lobe. No enlarged mediastinal nodes or pleural effusion.\nImpression: Lung-RADS 4A. Recommend 3-month low-dose CT follow-up; PET/CT may be considered given the solid nodule size."
+    },
+    {
+      "id": "f2l-021",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Smoking cessation review — 18 June 2026\nPatient: Samir Nabil Al Mared | DOB: 14 February 1962 | Male\nAttended for tobacco dependence support; currently smoking 12 cigarettes daily, reduced from 25.\nReports morning cravings. Discussed nicotine replacement options and agreed on a quit date next month.\nMentions a lung nodule identified at screening; today's consultation focused on smoking cessation.\nArrange cessation follow-up in four weeks."
+    },
+    {
+      "id": "f2l-022",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "BREAST MULTIDISCIPLINARY MEETING — 09 September 2026\nMaha Rafiq Al Waseel | DOB 22 November 1967 | Female\nLeft breast upper outer quadrant distortion detected on screening mammography dated 26 August 2026.\nUltrasound: 14 mm irregular lesion at 2 o'clock; axillary nodes retain normal morphology.\nCore biopsy: invasive carcinoma of no special type, grade 2; ER positive, PR positive, HER2 negative.\nConsensus: breast-conserving surgery with sentinel lymph node biopsy, subject to surgical consultation.\nBreast care nurse to coordinate appointment and discuss the proposed treatment."
+    },
+    {
+      "id": "f2l-023",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Faris Adil Al Rameed | M | DOB 08 May 1955\nAnnual LDCT chest, noncontrast. DLP 61 mGy·cm. Compared with 12/03/2025.\nNo pulm nodules. No focal airspace opacity or effusion. No enlarged thoracic nodes.\nAnnual LDCT in 12 mo.\nLR1"
+    },
+    {
+      "id": "f2l-024",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Baseline lung screening CT — Huda Mazin Al Nafeel, DOB 19 July 1965, female.\nLow-dose CT of the chest performed without intravenous contrast. No prior examination available.\nThe lungs are clear with no pulmonary nodules. No pleural effusion or thoracic lymphadenopathy.\nLung-RADS 1. Continue annual low-dose CT screening in 12 months."
+    },
+    {
+      "id": "f2l-025",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory clinic review | 14 October 2026\nYousif Kamal Al Dareef | DOB 03 March 1958 | Male\nReviewed screening CT of 28 September 2026: 11 mm spiculated right upper lobe solid nodule.\nThere are no suspicious findings in the contralateral left lung.\nThe right upper lobe nodule remains indeterminate. PET-CT has been requested but has not yet been performed; no tissue diagnosis is available.\nDiscussed the need to complete assessment. Patient agrees to proceed.\nClinic coordinator to confirm PET-CT booking, with thoracic MDT review after imaging."
+    },
+    {
+      "id": "f2l-026",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Naylora Hospital, Abu Dhabi — Bronchoscopy report\nPatient: Hamdan Nabil Al Ruwahi; DOB 1962-04-17\nIndication: Right upper lobe lesion identified on screening LDCT dated 2026-03-09.\nFlexible bronchoscopy performed under sedation. No visible endobronchial lesion. Navigational sampling of the peripheral target was limited by airway angulation.\nBrushings, lavage and forceps samples submitted. Cytology shows scant benign bronchial cells; biopsy contains bronchial mucosa only. Sampling is non-diagnostic for the target lesion.\nNo immediate complication. Findings and limitations explained to the patient.\nPlan: Repeat navigational bronchoscopy with additional tissue acquisition. Case has not yet been discussed at thoracic MDT."
+    },
+    {
+      "id": "f2l-027",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "• LDCT ANNUAL SCREEN / 2026-05-14 / Abu Dhabi\n• LUNG-RADS 2 — benign appearance or behaviour\n• PATIENT: Salma Rashid Al Mazyani / DOB 1958-09-23\n• SCANNER: Helion CT-64; noncontrast low-dose volumetric chest; thin-section reconstructions\n• DOSE: DLP 68 mGy·cm / CTDIvol 1.7 mGy\n• COMPARE: 2025-05-12 LDCT\n• FINDINGS: Unchanged 4 mm solid left lower lobe nodule. Mild centrilobular emphysema. No new suspicious nodule or enlarged thoracic nodes.\n• ACTION: Annual screening LDCT in 12 months.\n• DOUBLE READ: Dr Nareen Vashiq / Dr Talib Mehran; concordant."
+    },
+    {
+      "id": "f2l-028",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "BASELINE LUNG SCREENING CT\nYousif Marwan Al Duremi | DOB 1968-02-06 | Examination: 2026-07-08\nTechnique: Low-dose noncontrast CT chest. DLP 74 mGy·cm. No previous chest CT available for comparison.\nThere is a noncalcified solid nodule in the right lower lobe measuring 8 × 6 mm, mean diameter 7 mm. No spiculation. No additional suspicious pulmonary finding or mediastinal lymphadenopathy.\nImpression: Probably benign solid pulmonary nodule. Lung-RADS 3.\nRecommend repeat low-dose chest CT in 6 months."
+    },
+    {
+      "id": "f2l-029",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Thoracic MDT outcome — 2026-08-20\nMohammed Hasan, male, approximately 64 years; Abu Dhabi screening referral.\nScreening CT of 2026-08-05 reviewed: small indeterminate right apical solid nodule without enlarged nodes. No tissue diagnosis.\nConsensus: CT surveillance rather than immediate biopsy; repeat low-dose chest CT three months from the screening examination, then return to MDT if interval growth.\nRespiratory clinic to arrange imaging and discuss the surveillance plan with the patient."
+    },
+    {
+      "id": "f2l-030",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "ADDENDUM — thoracic clinic letter dated 2026-09-16\nPatient: Mariam Fawzi Al Nuhairi, DOB 1955-12-03\nThe statement in my earlier letter that this case had not been discussed at MDT is incorrect and is withdrawn.\nThe thoracic MDT reviewed the screening CT dated 2026-09-02 and subsequent staging on 2026-09-14. The recorded recommendation was surgical resection of the suspicious left upper lobe lesion, subject to satisfactory cardiopulmonary assessment and informed consent.\nThoracic surgical referral has been placed. The patient was contacted today and the recommendation explained; operative assessment is being arranged.\nThis addendum supersedes the MDT and management paragraphs of the earlier letter."
+    },
+    {
+      "id": "f2l-031",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Telephone contact — 18 June 2026\nPatient: Marwan Hadi Al Rafeqi | DOB: 14 February 1961\nRegarding screening LDCT dated 28 May 2026: patient reports that a lung biopsy was performed at another hospital last week.\nHe does not have the pathology report and could not confirm the sampling method. Results are not available in our clinic record.\nPatient asked to obtain the procedure note and histology report for review. Reception will contact him again in seven days."
+    },
+    {
+      "id": "f2l-032",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "THORACIC OUTPATIENT REVIEW\nNoura Sami Al Dureimi, female, DOB 09 September 1963\nScreening LDCT of 03 August 2026 reviewed with patient; suspicious right upper lobe nodule discussed.\nRecommended PET-CT and tissue biopsy, including the purpose, potential complications and risk of delayed diagnosis.\nPatient declines both investigations at present and wishes to think further and discuss with her family.\nReview in four weeks, on 07 September 2026. She may contact the clinic sooner if she decides to proceed."
+    },
+    {
+      "id": "f2l-033",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory clinic | 21 April 2026\nPatient: Yousuf Kareem Al Mazrouqi | Male | DOB 22 November 1957\nReviewed following screening LDCT dated 30 March 2026.\nDiagnostic CT chest demonstrates a densely and centrally calcified left lower lobe nodule, consistent with a benign granuloma. No suspicious pulmonary lesion or thoracic lymphadenopathy.\nFindings explained; no further nodule investigation required. Return to annual low-dose CT screening in March 2027."
+    },
+    {
+      "id": "f2l-034",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "THORACIC MDT DISCUSSION — 16 July 2026\nPatient: Salim Fawzi Al Nabri | DOB 05 January 1955 | Male\nIndex screening: 12 June 2026; irregular peripheral right upper lobe lesion.\nCT-guided biopsy: fibrosis and scant alveolated lung; “no malignant cells identified.”\nImaging remains concerning. MDT recommends repeat sampling because the biopsy may not represent the lesion.\nRespiratory review records the biopsy as benign, with CT surveillance also discussed. Choice of repeat biopsy versus surveillance remains unresolved pending discussion with the patient and interventional radiology."
+    },
+    {
+      "id": "f2l-035",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Lina Adil Al Harithi | DOB 18 July 1966 | Female\nDid not attend initial respiratory clinic appointment on 19 October 2026 following screening LDCT of 05 October 2026. No clinical assessment performed.\nContacted by scheduling team; appointment rebooked for 02 November 2026 at 09:40. Patient confirmed attendance."
+    },
+    {
+      "id": "f2l-036",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Mizharan Chest Hospital, Abu Dhabi — Thoracic MDT record\nPatient: Rashid Nabil Al Safri | DOB: 1960-03-18 | Emirates ID: 784-1960-5827149-3\nMeeting date: 2026-04-21. Screening LDCT dated 2026-04-08 reviewed with thoracic radiology.\nThe 8 mm right upper lobe solid nodule remains indeterminate; no enlarged mediastinal nodes.\nConsensus: surveillance with interval noncontrast chest CT in 3 months. No biopsy at present.\nRespiratory clinic to arrange imaging and review the result with the patient."
+    },
+    {
+      "id": "f2l-037",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Suhailan Screening Centre — LDCT chest, 2026-08-19\nMariam Farid Al Nawri | Female | DOB 1964-11-09 | ID 784-1964-3918265-7\nIndication: Six-month follow-up of Lung-RADS 3 nodule on screening dated 2026-02-18.\nTechnique: Low-dose noncontrast volumetric chest CT with thin-section reconstructions. DLP 61 mGy·cm.\nThe smoothly marginated 6 mm solid left lower lobe nodule is unchanged. No new or enlarging pulmonary nodule. No adenopathy.\nImpression: Stable previously category 3 nodule, now Lung-RADS 2 by stepped management under Lung-RADS v2022.\nResume annual screening LDCT in 12 months. Independently reviewed by a second radiologist; agreement recorded."
+    },
+    {
+      "id": "f2l-038",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "To: Thoracic Surgery Service, Nahrain Crescent Hospital, Abu Dhabi\nRe: Yousif Kamal Al Rami, DOB 1957-06-24, Emirates ID 784-1957-7264931-5\nPlease assess for definitive surgical treatment of biopsy-confirmed right upper lobe adenocarcinoma detected following screening LDCT on 2026-05-07.\nCore biopsy dated 2026-05-26 demonstrates invasive pulmonary adenocarcinoma, TTF-1 positive. PET-CT shows uptake confined to the 19 mm primary lesion, without nodal or distant uptake; clinical stage cT1bN0M0.\nHe remains independently mobile, ECOG 0. FEV1 86% predicted and DLCO 79% predicted.\nDiagnosis and proposed surgical assessment discussed with the patient, who wishes to proceed. Please arrange an early appointment."
+    },
+    {
+      "id": "f2l-039",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory follow-up entry — 2026-09-16\nHessa Munir Al Hadi | DOB 1962-02-13 | ID 784-1962-8451726-2\nPrevious clinic entry dated 2026-08-12 carried forward:\nAttended respiratory clinic with daughter following screening LDCT of 2026-07-29. Scan findings explained. No haemoptysis or weight loss. Chest clear on auscultation.\nPlan: obtain interval CT and review in clinic with imaging."
+    },
+    {
+      "id": "f2l-040",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Rimalan Preventive Imaging Centre, Abu Dhabi\nBASELINE LOW-DOSE CT CHEST — 2026-10-06\nAdel Sami Al Barqi; DOB 1955-12-02; male; Emirates ID 784-1955-6382947-1.\nNoncontrast low-dose acquisition with 1 mm axial and multiplanar reconstructions. DLP: 74 mGy·cm. No previous chest CT available.\nA 6 mm nondependent endobronchial soft-tissue nodule is present in the right upper lobe anterior segmental bronchus. No internal air or fluid attenuation. No associated collapse.\nMild centrilobular emphysema. No suspicious parenchymal nodule or enlarged thoracic lymph node.\nLung-RADS v2022: Category 4A, segmental airway nodule at baseline.\nRecommend LDCT in 3 months. If the airway nodule persists, referral for clinical evaluation and consideration of bronchoscopy is advised.\nSecond reader concurs."
+    },
+    {
+      "id": "f2l-041",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "LOW-DOSE CT LUNG SCREENING\nPatient: Nadir Qasim Al Ruwaini | DOB: 1963-04-17 | EID: 784-1963-5821946-3\nExamination: 2026-02-11. Baseline noncontrast low-dose acquisition.\nA 14 mm part-solid nodule in the right upper lobe has spiculated margins and a 7 mm solid component. No enlarged mediastinal nodes.\nImpression: Likely benign finding, not concerning. Lung-RADS 4A.\nNo action required; continue routine annual screening."
+    },
+    {
+      "id": "f2l-042",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "THORACIC MDT OUTCOME — 2026-05-21\nMariam Jaber Al Nuhaili, DOB 1958-09-23; EID 784-1958-3618072-6.\nScreening LDCT dated 2026-03-09 and subsequent CT-guided right lower lobe core biopsy reviewed.\nHistology: organizing pneumonia; no malignancy identified. Samples considered adequate.\nRadiology and pathology are concordant. Interval imaging shows substantial resolution of the focal opacity.\nMDT consensus: discharge from nodule clinic and return to annual LDCT screening, next due March 2027.\nOutcome discussed with the patient by telephone; she understands the plan."
+    },
+    {
+      "id": "f2l-043",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Patient: Hatem Rashid Al Waseeli | 1955-12-08 | 784-1955-9046281-2\nAnnual screening LDCT, 18 June 2026. Compared with 18 June 2025.\nNew clustered tree-in-bud nodules in the posterior right upper lobe and patchy peribronchial consolidation in the right middle lobe. Mild bronchial wall thickening. No pleural effusion.\nAppearances favour an infective or inflammatory process. Clinical assessment advised.\nRepeat low-dose CT in 6–8 weeks to document resolution and reassess the obscured underlying parenchyma."
+    },
+    {
+      "id": "f2l-044",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "BASELINE LDCT CHEST — 2026-08-04\nSalma Farid Al Mazruni; DOB 1968-01-29; EID 784-1968-7251938-4.\nNo suspicious nodule, no spiculation, no lymphadenopathy. No consolidation, no pleural effusion and no pneumothorax.\nThere is a solitary smooth, noncalcified solid nodule in the left lower lobe, mean diameter 6 mm. No additional pulmonary nodules.\nIMPRESSION: Probably benign 6 mm solid pulmonary nodule. Repeat low-dose chest CT in six months."
+    },
+    {
+      "id": "f2l-045",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "URGENT — Thoracic clinic referral\nRe: Yousif Munir Al Duwairi, DOB 1959-07-12, EID 784-1959-4185063-8\nDear Thoracic Team,\nThe screening LDCT of 22 September 2026 demonstrates a 24 mm irregular left upper lobe mass with an enlarged ipsilateral hilar node.\nThis patient must be seen urgently. Please prioritise the earliest available assessment for staging and tissue diagnosis.\nReferral forwarded to the booking team today. Appointment confirmation is requested."
+    },
+    {
+      "id": "f2l-046",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "LOW-DOSE CT CHEST — 14 March 2026\nPatient: Hamdan Rafiq Al Nuwair | DOB: 19 July 1961 | Male\nTechnique: Non-contrast low-dose volumetric acquisition. Mild respiratory motion at the bases.\nNo previous chest CT is available for comparison.\nAn irregular 11 mm subpleural opacity in the posterior right upper lobe has adjacent linear strands. Several smaller bilateral nodular opacities are present, some associated with mucus plugging.\nNo pleural effusion or enlarged mediastinal nodes by size criteria.\nImpression: Mixed nodular and linear pulmonary changes of uncertain significance; an inflammatory component is possible, although a focal lesion cannot be excluded.\nRecommend urgent review by the referring respiratory team and correlation with previous imaging if obtainable."
+    },
+    {
+      "id": "f2l-047",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory clinic review — 9 June 2026\nMariam Fadel Al Rumaithi, DOB 3 February 1967, attended to discuss the right upper lobe nodule identified on screening CT dated 28 May 2026.\nNo haemoptysis or recent weight loss. Oxygen saturation 97% on room air; chest clear on auscultation.\nPET/CT is booked for 17 June 2026 and has not yet been performed.\nDiscussed the purpose and limitations of metabolic imaging. Further management remains pending the PET/CT findings; no biopsy arranged today.\nClinic review requested after the imaging report becomes available."
+    },
+    {
+      "id": "f2l-048",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Baseline LDCT chest | 22 August 2026\nYousif Nabil Al Mahri | Male | DOB 11 November 1956\nNon-contrast low-dose acquisition; satisfactory inspiration. No prior study available. Independently reviewed by two radiologists.\nNodule inventory:\n• Right middle lobe: 3 mm solid nodule with smooth margins — Lung-RADS 2.\n• Left lower lobe: 6 mm solid noncalcified nodule — Lung-RADS 3.\n• Right upper lobe: 9 mm solid noncalcified nodule with mildly lobulated margins — Lung-RADS 4A.\nMild centrilobular emphysema. No enlarged thoracic lymph nodes or pleural fluid.\nImpression: Multiple pulmonary nodules, led by the right upper lobe finding; overall assessment 4A.\nRecommend low-dose CT in 3 months. PET/CT may be considered for the dominant solid nodule."
+    },
+    {
+      "id": "f2l-049",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Thoracic clinic letter, 21 September 2026\nRe: Salma Jaber Al Harithi, DOB 8 April 1963\nReviewed following biopsy of the left lower lobe nodule identified on screening CT of 2 September 2026. Core biopsy reports benign lung tissue with fibrosis and chronic inflammation; no malignancy identified in the submitted material.\nThe result was explained to the patient. She reports no new respiratory symptoms. Follow up soon."
+    },
+    {
+      "id": "f2l-050",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "ANNUAL LUNG SCREENING CT — 7 October 2026\nPatient: Khalid Samir Al Wathri | DOB: 25 January 1958 | Male\nTechnique: Low-dose non-contrast chest CT with thin-section axial and multiplanar reconstructions. DLP 58.6 mGy·cm.\nComparison: Screening CT dated 6 October 2025.\nFindings: No pulmonary nodules or suspicious pulmonary mass. No focal consolidation. Central airways are patent. No enlarged thoracic lymph nodes or pleural effusion.\nImpression: Negative lung cancer screening examination. Lung-RADS 1.\nContinue annual screening with low-dose chest CT in 12 months."
+    },
+    {
+      "id": "f2l-051",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "SAHRAN IMAGING PAVILION — Abu Dhabi\nPatient: Marwan Nabil Al Rafi | DOB: 1962-04-18\nExamination: Baseline low-dose CT chest, 2026-02-11. DLP 68 mGy·cm.\nSevere respiratory motion throughout both lower lobes, with additional motion across the right middle lobe. These regions cannot be adequately evaluated for pulmonary nodules.\nNo focal suspicious lesion in the adequately visualised upper lobes.\nAssessment: Incomplete examination, Lung-RADS 0.\nRepeat low-dose CT with coached breath-holding is recommended within 4 weeks."
+    },
+    {
+      "id": "f2l-052",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Annual lung screening CT | 2026-03-24\nHessa Karim Al Wadi, female, DOB 1957-08-09.\nNoncontrast low-dose acquisition; DLP 74 mGy·cm. Compared with 2025-03-20.\nUnchanged 5 mm densely calcified right upper lobe granuloma. Mild upper-lobe centrilobular emphysema. No suspicious pulmonary nodule or enlarged thoracic nodes.\nLung-RADS 2. Continue annual screening LDCT in 12 months.\nSecond reader concurs."
+    },
+    {
+      "id": "f2l-053",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "DARVANA HOSPITAL — Radiology Department, Abu Dhabi\nOmar Bashir Al Nouri | DOB 1955-11-27 | CT dated 2026-05-07\nINDICATION: Baseline lung cancer screening.\nTECHNIQUE: Low-dose noncontrast CT chest. DLP 83 mGy·cm. No prior study available.\nFINDINGS: A 42 × 35 mm irregular mass-like lesion occupies the posterior right upper lobe, with spiculated margins and pleural retraction. Right hilar lymph node measures 16 mm in short axis. No pleural effusion.\nIMPRESSION: Negative screening examination. No suspicious pulmonary nodules.\nLung-RADS 1. Routine annual low-dose CT screening in 12 months."
+    },
+    {
+      "id": "f2l-054",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "CT CHEST, ABDOMEN AND PELVIS WITH IV CONTRAST\nPatient: Salma Farid Al Hatem; DOB 1966-02-13. Examination date: 2026-07-16.\nClinical information: Persistent abdominal pain, reduced appetite and unintentional weight loss.\nTechnique: Diagnostic contrast-enhanced acquisition through the chest, abdomen and pelvis. Total DLP 684 mGy·cm.\nChest: Incidental solitary 6 mm solid nodule in the lateral left lower lobe. No consolidation or thoracic lymphadenopathy.\nAbdomen/pelvis: Uncomplicated sigmoid diverticulosis. No acute inflammatory process or obstructing lesion.\nImpression: No acute cause for abdominal pain identified. Incidental 6 mm pulmonary nodule.\nFor the pulmonary nodule, CT chest at 6–12 months is advised under Fleischner guidance, with consideration of a further CT at 18–24 months according to clinical risk."
+    },
+    {
+      "id": "f2l-055",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Nayrava Screening Centre, Abu Dhabi — LDCT report\nYousef Adil Al Safwan | Male | DOB 1960-06-22 | Exam: 2026-09-08\nBaseline noncontrast low-dose chest CT, DLP 79 mGy·cm.\nSmooth 11 mm right middle lobe nodule containing macroscopic fat and coarse calcification, consistent with a hamartoma. Separate 4 mm triangular perifissural nodule along the left major fissure, typical of an intrapulmonary lymph node.\nNo suspicious pulmonary lesion. Lung-RADS 2; annual screening LDCT in 12 months.\nIncidental 31 mm left adrenal lesion measuring 28 HU on the unenhanced images, incompletely characterised. No prior imaging for comparison.\nRecommend adrenal-protocol CT or MRI and clinical endocrine assessment. Referring clinician notified of the adrenal finding on 2026-09-09."
+    },
+    {
+      "id": "f2l-056",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "Qamirat Chest Imaging Centre, Abu Dhabi\nPatient: Hamdan Nafez Al Ruwahi | DOB: 1962-04-19\nFOLLOW-UP LOW-DOSE CT CHEST — 2026-07-23\nNoncontrast low-dose acquisition; DLP 76 mGy·cm. Independently reviewed by two radiologists.\nCompared with 2026-04-21: the previously described Lung-RADS 4A right upper lobe solid nodule has increased from 9 mm to 16 mm, with new spiculated margins. No enlarged mediastinal nodes.\nImpression: Interval growth, now very suspicious. Lung-RADS 4B.\nRecommend expedited thoracic assessment, diagnostic chest CT and consideration of PET/CT and tissue sampling."
+    },
+    {
+      "id": "f2l-057",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "ADDENDUM — 2026-09-18\nMariam Safwan Al Dhahri, DOB 1958-11-07. LDCT performed 2026-09-12.\nThe outside CT dated 2024-08-30 is now available for comparison. The original assessment was Lung-RADS 0 pending these images.\nThe 5 mm left lower lobe solid nodule is unchanged over more than two years. No new or enlarging nodules.\nComparison is complete. Final assessment: Lung-RADS 2. Continue annual LDCT in 12 months."
+    },
+    {
+      "id": "f2l-058",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Respiratory review, 2026-06-16 — Rashid Mazen Al Samri, DOB 1967-02-23.\nAttended with his sister following screening on 2026-06-03. Findings and possible next steps discussed at some length. He remains unsure how he wishes to proceed; family will consider matters further. No investigation selected or booked today. Further contact to be arranged."
+    },
+    {
+      "id": "f2l-059",
+      "kind": "ldct-workup",
+      "programme": "ldct",
+      "text": "Dear Colleague,\nRe: Salma Nadir Al Kharifi, DOB 1955-09-14\nHer screening LDCT of 2026-02-10 was reported as Lung-RADS 4B because of a mass-like right middle lobe opacity during a respiratory illness.\nFollowing treatment, diagnostic chest CT on 2026-03-26 demonstrates complete resolution of the opacity and associated inflammatory nodules. No residual suspicious pulmonary lesion or thoracic lymphadenopathy is identified.\nThe thoracic MDT reviewed both examinations on 2026-04-02 and agreed that these findings represented resolved infection. No biopsy or further short-interval imaging is planned.\nShe may return to annual low-dose screening, next due February 2027. The outcome was discussed with her today.\nYours sincerely,\nConsultant in Respiratory Medicine"
+    },
+    {
+      "id": "f2l-060",
+      "kind": "ldct-screen",
+      "programme": "ldct",
+      "text": "ANNUAL LDCT CHEST | 2026-10-08\nYousef Talal Al Marzi — DOB 1960-06-28\nTechnique: Noncontrast low-dose chest CT; DLP 71 mGy·cm.\nComparison: 2025-10-06.\nStable 4 mm solid right lower lobe nodule. No new or enlarging pulmonary nodules. Moderate coronary artery calcification.\nLung-RADS 2: benign appearance or behaviour. Annual screening LDCT in 12 months. Recommend primary care review of cardiovascular risk factors."
+    },
+    {
+      "id": "f2i-001",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Nadira Qamil Sarwan | DOB 1974-03-18\nPrimary care review, 16 March 2026 — IFHAS screening of 02 March reviewed.\nScreening BP 158/96 mmHg. Today, after seated rest: 156/94 and 152/92 mmHg. No headache, chest pain or breathlessness.\nHypertension confirmed on repeated office measurements.\nStart amlodipine 5 mg orally once daily. Discussed ankle swelling, salt reduction and regular walking.\nRecord home BP twice daily; review in four weeks with renal profile."
+    },
+    {
+      "id": "f2i-002",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Telephone review: Ramez Dhalim Nouri, DOB 1967-09-24.\nIFHAS encounter 11 May 2026: HbA1c 6.7%; no polyuria, thirst or weight loss reported.\nRepeat HbA1c collected yesterday remains pending; no confirmatory result available during this call.\nPlan: all well. Continue usual activity and dietary advice. Call again when the repeat result is released."
+    },
+    {
+      "coded": "4548-4|5.4|%;2345-7|91|mg/dL;13457-7|94|mg/dL;2571-8|118|mg/dL;8480-6|118|mm[Hg];8462-4|76|mm[Hg];39156-5|24.2|kg/m2",
+      "id": "f2i-003",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "DARWENYA SCREENING CENTRE — Abu Dhabi | Periodic IFHAS panel\nPatient: Salima Ruhan Daqir | Female | DOB 1981-06-12 | Fasting: Yes\nAnalyte | CURRENT 2026-07-08 | PREVIOUS 2025-07-09 | Reference interval | Current / previous flag\nHbA1c | 5.4 % | 6.1 % | 4.0–5.6 % | — / H\nFasting glucose | 91 mg/dL | 112 mg/dL | 70–99 mg/dL | — / H\nLDL cholesterol | 94 mg/dL | 168 mg/dL | <100 mg/dL | — / H\nTriglycerides | 118 mg/dL | 226 mg/dL | <150 mg/dL | — / H\nBlood pressure | 118/76 mmHg | 146/92 mmHg | <130/<80 mmHg | — / H\nBMI | 24.2 kg/m2 | 28.6 kg/m2 | 18.5–24.9 kg/m2 | — / H\nH = above the displayed reference interval. Previous results are historical."
+    },
+    {
+      "id": "f2i-004",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Mazin Talwan Qadri | DOB 1970-11-05 | Internal medicine note, 22 August 2026\nCarried forward from the encounter dated 04 August 2026:\n“IFHAS screening dated 28 July reviewed. Raised glucose noted. Repeat fasting glucose requested; return with results. Dietary advice given.”"
+    },
+    {
+      "id": "f2i-005",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "ADDENDUM — 14 October 2026, to review dated 08 October 2026\nPatient: Hadiya Ramel Sufran, DOB 1963-02-16.\nThe fasting lipid panel pending at the earlier review is now available: LDL-C 181 mg/dL, triglycerides 176 mg/dL. Persistent elevation following IFHAS screening on 29 September confirms hyperlipidaemia.\nResults discussed with patient by telephone. Reduce saturated fat, increase soluble fibre and continue regular walking. Start atorvastatin 20 mg nightly; baseline ALT within reference interval.\nRepeat lipid panel and ALT in eight weeks. Counselled regarding muscle pain and when to seek review."
+    },
+    {
+      "id": "f2i-006",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "MARJAN VALE PHARMACY — DISPENSING RECORD\nPatient: Hessa Nabil Al Mazrouqi | DOB: 1978-04-19 | Female\nEmirates ID: 784-1978-6301842-7\nDispensed 2026-02-14: atorvastatin 20 mg tablets, quantity 30.\nDirections: Take one tablet orally at night. Refills remaining: 2.\nPrescription reference: RX-264731. Collected by patient.\nDispensing pharmacist: Rawan Majeed Al Harthi."
+    },
+    {
+      "id": "f2i-007",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "IFHAS results review — 09 March 2026\nPatient: Khaled Rafiq Al Nuaimi; DOB 1971-08-23; male.\nReviewed screening dated 02 March 2026. Last year's record showed HbA1c 6.1% and fasting glucose 112 mg/dL.\nThis year's repeat values are normal: HbA1c 5.4%, fasting glucose 94 mg/dL. No glucose-lowering medication.\nDiscussed the difference between the historical and current results. Continue usual activity and balanced diet; routine annual review."
+    },
+    {
+      "id": "f2i-008",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "IFHAS follow-up | 22 May 2026\nMariam Fawzi Al Shamsi, female, DOB 1982-11-07.\nScreening 08 May: BP 158/94 mmHg, HbA1c 5.9%, BMI 33.6 kg/m².\nBP today 154/92 and 152/90 after rest; home readings also elevated. Start amlodipine 5 mg daily. Home BP diary and review in 2 weeks; adverse effects discussed.\nRepeat laboratory HbA1c on 20 May was 5.5%, within the normal range. No glucose-lowering treatment indicated.\nObesity: agreed to replace sweetened drinks with water and walk 20 minutes on five days weekly, increasing as tolerated. Dietitian referral accepted.\nWeight review in 8 weeks; patient agrees with the plan."
+    },
+    {
+      "id": "f2i-009",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Telephone review, 16 July 2026. Identity confirmed: Saif Munir Al Dhaheri, DOB 1990-02-16, male.\nDiscussed IFHAS findings from 09 July: BMI 36.2 kg/m², consistent with obesity, and associated health risks.\nOffered dietitian referral, structured weight-management clinic, dietary changes, activity goals and discussion of medication options.\nPatient declined all referrals and does not wish to agree to any weight-management plan or scheduled weight review at present.\nUnderstands the discussion and may contact the clinic if he wishes to reconsider. No weight-management intervention initiated."
+    },
+    {
+      "id": "f2i-010",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Internal Medicine — IFHAS lipid follow-up\nPatient: Adel Sami Al Kindi | DOB 1964-06-28 | Male\nScreening dated 03 September 2026: LDL-C 205 mg/dL. Repeat fasting lipid profile on 14 September confirms LDL-C 205 mg/dL; triglycerides 136 mg/dL.\nNo chest pain or exertional dyspnoea. Baseline ALT within reference range; TSH normal. No evident secondary cause identified on current review.\nStarted atorvastatin 40 mg orally nightly; counselled regarding muscle symptoms and medication precautions.\nCardiology referral placed for severe hypercholesterolaemia and assessment for familial hypercholesterolaemia.\nRepeat lipid profile and clinical review in 6 weeks. Patient accepts treatment and referral."
+    },
+    {
+      "coded": "4548-4|5.4|%;2345-7|92|mg/dL;18262-6|204|mg/dL;2093-3|198|mg/dL;2085-9|56|mg/dL;2571-8|105|mg/dL;8480-6|116|mm[Hg];8462-4|74|mm[Hg];39156-5|23.6|kg/m2",
+      "id": "f2i-011",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Namaris Preventive Centre, Abu Dhabi — IFHAS periodic screening\nPatient: Rayan Mazin Al Duwairi | DOB: 1971-04-18 | Sex: M\nEmirates ID: 784-1971-5830926-4 | Collection: 2026-02-12 | Fasting: Yes\nHbA1c: 5.4% | Reference: 4.0–5.6 | Normal\nFasting plasma glucose: 92 mg/dL | Reference: 70–99 | Normal\nLDL cholesterol: 204 mg/dL | Desirable: <100 | HIGH\nTotal cholesterol: 198 mg/dL | Desirable: <200 | Normal\nHDL cholesterol: 56 mg/dL | Desirable: ≥40 | Normal\nTriglycerides: 105 mg/dL | Reference: <150 | Normal\nBlood pressure: 116/74 mmHg | Reference: <120/<80 | Normal\nBMI: 23.6 kg/m² | Reference: 18.5–24.9 | Normal\nResults authorised: 2026-02-12."
+    },
+    {
+      "id": "f2i-012",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "RESULT REVIEW ADDENDUM — 2026-03-09\nPatient: Hessa Nabil Al Rawhani, DOB 1982-08-23, F; Emirates ID 784-1982-6921840-7.\nIFHAS screening dated 2026-03-07: markedly elevated glucose result noted.\nThis result needs immediate attention."
+    },
+    {
+      "id": "f2i-013",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Veyrana Medical Clinic — Internal Medicine, Abu Dhabi\n2026-05-21 | Samir Fawzi Al Nayrani | DOB 1964-11-06 | M\nEmirates ID: 784-1964-4718305-2\nSeen today to review IFHAS screening of 2026-05-05, when HbA1c was 7.1%.\nRepeat HbA1c collected 2026-05-19 is 7.3%. Type 2 diabetes confirmed on the second elevated HbA1c.\nNo polyuria, vomiting or weight loss. Renal function reviewed: eGFR 88 mL/min/1.73 m².\nStart metformin 500 mg orally with the evening meal for one week, then 500 mg twice daily with meals if tolerated.\nDietitian referral placed for carbohydrate portions and meal planning; discussed activity and medication adverse effects.\nReview in four weeks; repeat HbA1c in three months."
+    },
+    {
+      "coded": "2345-7|238|mg/dL;2093-3|172|mg/dL;13457-7|89|mg/dL;2085-9|61|mg/dL;2571-8|110|mg/dL;8480-6|112|mm[Hg];8462-4|72|mm[Hg];39156-5|22.8|kg/m2",
+      "id": "f2i-014",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Sahmora Wellness Centre — IFHAS periodic screening panel\nPatient: Lina Rafiq Al Qadiri | DOB 1988-01-29 | F | Emirates ID 784-1988-3085716-9\nScreening and specimen date: 2026-08-14 | Nonfasting collection\nRandom plasma glucose: 238 mg/dL | Reference: 70–139 | HIGH\nHbA1c: Not performed\nTotal cholesterol: 172 mg/dL | Desirable: <200 | Normal\nLDL cholesterol: 89 mg/dL | Desirable: <100 | Normal\nHDL cholesterol: 61 mg/dL | Desirable: ≥50 | Normal\nTriglycerides: 110 mg/dL | Reference: <150 | Normal\nBlood pressure: 112/72 mmHg | Reference: <120/<80 | Normal\nBMI: 22.8 kg/m² | Reference: 18.5–24.9 | Normal"
+    },
+    {
+      "coded": "no-coded-results|0|none",
+      "id": "f2i-015",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Orvessa Community Clinic, Abu Dhabi — Dental Screening Form\nPatient: Majid Yasir Al Barwani | DOB: 1996-06-11 | M\nEmirates ID: 784-1996-8256041-3 | Examination date: 2026-09-22\nOral mucosa: No visible lesion. Gingivae: Mild marginal inflammation.\nDentition: Localised calculus lower incisors; occlusal caries noted on tooth 36.\nPain or swelling today: Denied. Oral hygiene: Fair.\nAdvice: Brushing with fluoride toothpaste and interdental cleaning discussed.\nRoutine dental appointment for scaling and restoration of tooth 36."
+    },
+    {
+      "id": "f2i-016",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Maysara Grove Clinic, Abu Dhabi — Family Medicine\nPatient: Hanan Rafiq Al Nuwari | DOB: 1974-03-18 | Female\nReview date: 2026-03-24; IFHAS screening reviewed from 2026-03-10.\nRepeat sample after a confirmed 10-hour fast: plasma glucose 92 mg/dL (70–99); HbA1c 5.4% (4.0–5.6).\nRepeat glycaemic results are normal. No diagnosis of diabetes; glucose-lowering medication is not indicated.\nDiscussed balanced meals, limiting sweetened drinks and at least 150 minutes of moderate activity weekly.\nLifestyle advice only. Continue routine periodic screening."
+    },
+    {
+      "coded": "4548-4|53|%;2345-7|96|mg/dL;13457-7|88|mg/dL;2571-8|112|mg/dL;2093-3|169|mg/dL;2085-9|59|mg/dL;8480-6|118|mm[Hg];8462-4|76|mm[Hg];39156-5|23.8|kg/m2",
+      "id": "f2i-017",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Sahlan Crescent Screening Centre — Abu Dhabi\nIFHAS periodic screening panel | Collected/reported: 2026-04-15 | Fasting: Yes\nPatient: Mazin Harith Al Duwaili | DOB: 1968-08-22 | Male\nHbA1c (IFCC): 53 mmol/mol H [reference 20–41]\nFasting plasma glucose: 96 mg/dL [70–99]\nLDL cholesterol: 88 mg/dL [<100]; triglycerides: 112 mg/dL [<150]\nTotal cholesterol: 169 mg/dL [<200]; HDL cholesterol: 59 mg/dL [≥40]\nBlood pressure: 118/76 mmHg [<120/80]; BMI: 23.8 kg/m² [18.5–24.9]\nH denotes a result above the reference interval."
+    },
+    {
+      "coded": "4548-4|6|%;2345-7|94|mg/dL;2093-3|173|mg/dL;2085-9|62|mg/dL;2089-1|91|mg/dL;2571-8|100|mg/dL;8480-6|116|mm[Hg];8462-4|74|mm[Hg];39156-5|22.6|kg/m2",
+      "id": "f2i-018",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — Nareef Palm Clinic, Abu Dhabi\nSalma Jaber Al Rawithi | Female | DOB 1987-11-04\n2026-05-19 | Fasting specimen\nHbA1c 6.0% H (normal 4.0–5.6; increased risk 5.7–6.4)\nGlucose 94 mg/dL (70–99)\nTotal cholesterol 173 mg/dL (<200); HDL 62 mg/dL (≥50)\nLDL 91 mg/dL (<100); triglycerides 100 mg/dL (<150)\nBP 116/74 mmHg (<120/80); BMI 22.6 kg/m² (18.5–24.9)\nIsolated HbA1c elevation in the prediabetes range. Other measured parameters within reference limits."
+    },
+    {
+      "coded": "4548-4|8.4|%;2345-7|97|mg/dL;18262-6|84|mg/dL;2085-9|55|mg/dL;2571-8|105|mg/dL;2093-3|160|mg/dL;8480-6|114|mm[Hg];8462-4|72|mm[Hg];39156-5|24.1|kg/m2",
+      "id": "f2i-019",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Rimalan Bay Screening Centre | Abu Dhabi | IFHAS periodic screening\nPatient: Tareq Nabil Al Sufrani | DOB 1979-06-12 | Male\nEncounter and collection: 2026-07-08; fasting confirmed.\nHbA1c: 8.4% H | Reference: 4.0–5.6%\nFasting glucose: 97 mg/dL | Reference: 70–99\nLDL: 84 mg/dL (<100); HDL: 55 mg/dL (≥40)\nTriglycerides: 105 mg/dL (<150); total cholesterol: 160 mg/dL (<200)\nBP: 114/72 mmHg (<120/80); BMI: 24.1 kg/m² (18.5–24.9)\nScreening summary: NORMAL - no action"
+    },
+    {
+      "coded": "8480-6|146|mm[Hg];8462-4|92|mm[Hg];4548-4|6.8|%;39156-5|31.5|kg/m2;13457-7|130|mg/dL;2345-7|98|mg/dL;2571-8|125|mg/dL",
+      "id": "f2i-020",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS health assessment | Darwina Fields Hospital, Abu Dhabi\nPatient: Mariam Fawzi Al Qamiri | DOB: 1963-09-27 | Female\nDate: 2026-09-16 | Fasting: Yes\nMeasurement                     Result         Reference\nBlood pressure                  146/92 H       <120/80 mmHg\nHbA1c                           6.8% H         4.0–5.6%\nBMI                             31.5 H         18.5–24.9 kg/m²\nLDL cholesterol                 130 mg/dL H    <100 mg/dL\nFasting glucose                 98 mg/dL       70–99 mg/dL\nTriglycerides                   125 mg/dL      <150 mg/dL\nResults reviewed: arrange family medicine assessment for elevated blood pressure, glycaemia, weight and LDL; repeat BP and confirm glycaemic findings."
+    },
+    {
+      "id": "f2i-021",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Mazin Rafiq Al Nuhair | DOB 1978-03-19\nFamily medicine review, 18 February 2026. IFHAS screening dated 10 February 2026 noted in the chart.\nPresenting complaint: right shoulder pain after lifting boxes; full range of movement, mild trapezius tenderness.\nFamily history: no hypertension and no diabetes. Father had knee osteoarthritis.\nPlan: activity modification, warm compresses and simple analgesia as required. Return if persistent."
+    },
+    {
+      "coded": "2345-7|12.4|mg/dL;2093-3|178|mg/dL;2085-9|56|mg/dL;8480-6|122|mm[Hg];8462-4|76|mm[Hg];39156-5|24.6|kg/m2",
+      "id": "f2i-022",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — FASTING PANEL\nPatient: Salma Nadir Al Huzani | Female | DOB 1985-07-12\nCollection: 2026-04-06; fasting duration 10 hours.\nPlasma glucose: 12.4 mmol/L [reference 3.9–5.5] H\nTotal cholesterol: 178 mg/dL [reference <200]\nHDL cholesterol: 56 mg/dL [reference ≥50]\nBlood pressure: 122/76 mmHg; BMI: 24.6 kg/m² [reference 18.5–24.9]\nAuthorised electronically by clinical biochemistry."
+    },
+    {
+      "coded": "4548-4|11.2|%;2345-7|278|mg/dL;8480-6|128|mm[Hg];8462-4|78|mm[Hg];39156-5|27.3|kg/m2",
+      "id": "f2i-023",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Dima Faris Al Qamri, DOB 1967-11-23 — IFHAS periodic screening\nSpecimens collected 21 May 2026; fasting confirmed.\nHbA1c: 11.2% H (reference 4.0–5.6%)\nFasting plasma glucose: 278 mg/dL H (reference 70–99 mg/dL)\nBP 128/78 mmHg; BMI 27.3 kg/m² H (reference 18.5–24.9).\nMarked hyperglycaemia. Screening physician notified at 11:35; same-day clinical assessment arranged."
+    },
+    {
+      "id": "f2i-024",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Internal Medicine — follow-up of IFHAS screening dated 8 July 2026\nYousef Abdulla Al Shuwair | DOB 14/02/1963 | Male, 63 years\nScreening BP 164/96 mmHg. Home readings over seven days average 153/91; today 156/94, repeat 154/92.\nNo headache, chest pain, breathlessness or focal neurological symptoms. Examination unremarkable.\nDiscussed hypertension and cardiovascular risk. Start amlodipine 5 mg once daily; counselled regarding ankle swelling.\nReduce dietary salt, continue home BP diary. Renal profile requested; review in two weeks."
+    },
+    {
+      "coded": "2345-7|94|mg/dL;4548-4|5.4|%;8480-6|118|mm[Hg];8462-4|74|mm[Hg];39156-5|26.1|kg/m2",
+      "id": "f2i-025",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING / FINAL PANEL\nRania Munir Al Dawsari | DOB 1981-09-08 | Female\nCollected 2026-09-22, fasting.\nGlucose 94 mg/dL (70–99); HbA1c 5.4% (4.0–5.6).\nTotal cholesterol 282 mg/dL H (desirable <200).\nLDL cholesterol, direct 196 mg/dL H (desirable <100).\nHDL cholesterol 48 mg/dL L (desirable ≥50); triglycerides 190 mg/dL H (reference <150).\nBP 118/74 mmHg; BMI 26.1 kg/m² H (reference 18.5–24.9).\nLipid results released following analytical verification."
+    },
+    {
+      "coded": "4548-4|5.6|%;2345-7|94|mg/dL;13457-7|116|mg/dL;2571-8|138|mg/dL;8480-6|126|mm[Hg];8462-4|78|mm[Hg];39156-5|26.4|kg/m2",
+      "id": "f2i-026",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Dune Lantern Screening Centre — IFHAS corrected laboratory report\nPatient: Mariam Salim Al Nuwairi | DOB: 1972-04-16 | Female\nScreening and specimen date: 2026-03-12 | Report issued: 2026-03-14\nADDENDUM: LDL-C corrected from 216 to 116 mg/dL following review of a transcription discrepancy. This report supersedes the LDL-C result issued on 2026-03-12; all other results are unchanged.\nHbA1c: 5.6% [reference 4.0–5.6]\nFasting plasma glucose: 94 mg/dL [reference 70–99]\nLDL-C, corrected: 116 mg/dL [desirable <100] H\nTriglycerides: 138 mg/dL [reference <150]\nBlood pressure: 126/78 mmHg [clinic reference <140/90]\nBMI: 26.4 kg/m² [reference 18.5–24.9] H\nAuthorized by clinical biochemistry."
+    },
+    {
+      "id": "f2i-027",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Crescent Acacia Hospital, Abu Dhabi — Internal Medicine admission note, 2026-05-19\nHamdan Rashid Al Mazrouqi | DOB 1965-09-23 | Male\nReferred directly from today's IFHAS screening after BP 190/118 mmHg; repeat after seated rest 188/116 mmHg.\nNo chest pain, dyspnoea, visual disturbance or focal neurological symptoms. Alert; neurological examination non-focal, chest clear.\nECG without acute ischaemic changes; creatinine and troponin within laboratory reference intervals. No acute target-organ injury identified on initial assessment.\nAdmitted for observation, serial BP measurements and reassessment.\nAmlodipine 5 mg orally commenced today. Avoid rapid BP reduction; review response and renal profile during observation.\nDiscussed findings and admission plan with patient, who agrees."
+    },
+    {
+      "id": "f2i-028",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Pearl Canopy Family Clinic — Telephone review, 2026-07-22\nReem Khalifa Al Daheri, female, DOB 1980-11-08.\nIFHAS screening of 2026-07-08 reviewed; clinic BP at that visit was 148/92 mmHg.\nCompleted seven days of home BP recording using a validated upper-arm monitor, two readings morning and evening. First day excluded from average.\nRemaining home readings average 121/76 mmHg; no antihypertensive medication taken.\nHome BP is normal. No hypertension diagnosed; office elevation consistent with a white-coat effect.\nNo medication indicated. Continue healthy diet and activity; repeat BP review in six months."
+    },
+    {
+      "coded": "4548-4|5.4|%;2345-7|91|mg/dL;13457-7|97|mg/dL;2571-8|124|mg/dL;8480-6|122|mm[Hg];8462-4|76|mm[Hg]",
+      "id": "f2i-029",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Amber Sail Screening Centre | Abu Dhabi | IFHAS periodic screening\nPatient: Nasser Yousif Al Rumaithi | DOB: 1988-02-21 | Male\nVisit/specimen: 2026-08-06; fasting confirmed.\nHbA1c 5.4% (reference 4.0–5.6)\nPlasma glucose 91 mg/dL (reference 70–99)\nLDL-C 97 mg/dL (desirable <100)\nTriglycerides 124 mg/dL (reference <150)\nBlood pressure 122/76 mmHg (clinic reference <140/90)\nHeight: not measured. Weight: not measured. BMI: not available.\nReleased 2026-08-06."
+    },
+    {
+      "coded": "8480-6|139|mm[Hg];8462-4|89|mm[Hg];39156-5|29.9|kg/m2;4548-4|6.4|%;2345-7|195|mg/dL;18262-6|189|mg/dL;2571-8|499|mg/dL",
+      "id": "f2i-030",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Palm Mosaic Preventive Clinic — IFHAS periodic screening results\nSalma Majid Al Harthi | Female | DOB 1969-06-14\nVisit and collection date: 2026-10-12 | Non-fasting specimen\nBlood pressure: 139/89 mmHg [clinic reference <140/90]\nBMI: 29.9 kg/m² [reference 18.5–24.9] H\nHbA1c: 6.4% [reference 4.0–5.6] H\nRandom plasma glucose: 195 mg/dL [reference 70–139] H\nLDL-C, direct: 189 mg/dL [desirable <100] H\nTriglycerides: 499 mg/dL [reference <150] H\nResults released for clinician review."
+    },
+    {
+      "id": "f2i-031",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Suhail Nadir Al Ramehi | DOB 1962-04-17\nFamily medicine review, 2026-03-12\nIFHAS screening dated 2026-03-04 reviewed. Clinic BP today 146/88 mmHg; no headache, chest pain or breathlessness.\nHome BP monitoring requested: two seated readings morning and evening for seven days, after five minutes' rest. Technique discussed.\nBring readings and home monitor to review in two weeks. No medication commenced today; decision deferred pending home readings."
+    },
+    {
+      "id": "f2i-032",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "PEARL HORIZON EYE CLINIC — RETINAL SCREENING REPORT\nPatient: Maysara Hadi Al Naweri | DOB: 1970-09-23\nExamination date: 2026-05-19 | Known type 2 diabetes.\nVisual acuity with correction: right 6/6, left 6/9. Bilateral retinal photographs adequate for grading.\nRight eye: no diabetic retinopathy. Left eye: no diabetic retinopathy. No photographic evidence of maculopathy in either eye.\nRoutine retinal recall in 12 months. Seek earlier assessment for new visual symptoms."
+    },
+    {
+      "id": "f2i-033",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Nutrition and weight management review — 2026-07-21\nRania Mazen Al Sarefi, DOB 1983-02-11. Referred following IFHAS screening on 2026-07-09.\nWeight 94.8 kg; height 162 cm; BMI 36.1 kg/m². Obesity discussed without judgement; patient wishes to begin structured support.\nReferral placed to the multidisciplinary weight clinic.\nDietitian plan commenced today: replace sweetened drinks with water, use a portioned plate at main meals, and record intake for one week.\nAgreed gradual walking programme, initially 15 minutes on five days weekly as tolerated. Dietitian review in four weeks."
+    },
+    {
+      "id": "f2i-034",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Appointment outcome: 2026-09-16\nKareem Fawzi Al Daheri | DOB 1968-12-03\nDid not attend booked IFHAS results follow-up for screening performed 2026-09-02.\nTwo telephone attempts today; no answer. Unable to leave a message. No clinical review completed.\nRecall task returned to booking team for further contact."
+    },
+    {
+      "coded": "4548-4|5.3|%;2345-7|89|mg/dL;2093-3|166|mg/dL;13457-7|90|mg/dL;2085-9|56|mg/dL;2571-8|100|mg/dL;8480-6|116|mm[Hg];8462-4|74|mm[Hg];39156-5|23|kg/m2",
+      "id": "f2i-035",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — ABNORMAL\nPatient: Lamees Sami Al Ruwahi | DOB: 1987-06-14 | Female\nCollected: 2026-10-08, fasting | Flag key: N = within reference interval\nAnalyte / measurement | Result | Reference interval | Flag\nHbA1c | 5.3 % | 4.0–5.6 | N\nFasting plasma glucose | 89 mg/dL | 70–99 | N\nTotal cholesterol | 166 mg/dL | <200 | N\nLDL cholesterol | 90 mg/dL | <100 | N\nHDL cholesterol | 56 mg/dL | ≥50 | N\nTriglycerides | 100 mg/dL | <150 | N\nBlood pressure | 116/74 mmHg | Systolic 90–119; diastolic 60–79 | N\nBMI | 23.0 kg/m² | 18.5–24.9 | N"
+    },
+    {
+      "coded": "no-coded-results|0|none",
+      "id": "f2i-036",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "INPATIENT LABORATORY REPORT — Ward C4\nPatient: Nawal Rami Al Maziri | DOB: 1979-04-18 | Female\nCollected: 2026-03-12 06:20 | Finalised: 2026-03-12 08:05\nHaemoglobin 10.8 g/dL [12.0–15.5] L\nWBC 8.4 ×10^9/L [4.0–11.0]\nPlatelets 263 ×10^9/L [150–400]\nCreatinine 78 µmol/L [45–84]\nSpecimen: EDTA whole blood / serum. Results authorised."
+    },
+    {
+      "id": "f2i-037",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — RESULTS PANEL\nPatient: Samir Fadil Al Nawri | DOB: 1968-09-23 | Male\nScreening date: 2026-05-07 | Fasting specimen\nHbA1c: 6.2% [4.0–5.6] H\nFasting glucose: 112 mg/dL [70–99] H\nLDL cholesterol: 148 mg/dL [<100] H\nTriglycerides: 176 mg/dL [<150] H\nBlood pressure: 136/84 mmHg | BMI: 29.1 kg/m²\nFinal results released electronically."
+    },
+    {
+      "id": "f2i-038",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Family medicine review, 2026-07-21\nHuda Salim Al Ruwaini, DOB 1973-02-11.\nIFHAS results from 08 July reviewed: HbA1c 7.2%. Repeat HbA1c on 19 July 7.1%.\nNo polyuria, vomiting or weight loss reported. Type 2 diabetes mellitus confirmed.\nResults discussed with patient. Plan to follow."
+    },
+    {
+      "id": "f2i-039",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "ADDENDUM — 2026-09-18, 14:35\nPatient: Marwan Nabil Al Dahiri | DOB 1962-12-06\nCorrection to my review dated 16 September concerning IFHAS screening of 02 September.\nThe repeat fasting plasma glucose collected on 14 September was 94 mg/dL (reference 70–99), not 194 mg/dL as transcribed in the earlier note.\nThe repeat glucose was normal. The earlier statement that repeat glucose confirmed diabetes is withdrawn.\nPatient informed by telephone; corrected result read back and acknowledged."
+    },
+    {
+      "id": "f2i-040",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Maha Zaid Al Haruni | DOB 1987-06-29\nDid not attend today's IFHAS results review following screening on 06 October 2026.\nReached by telephone; patient reports unable to leave work. Rebooked with family medicine for 28 October 2026 at 10:40. Patient confirmed attendance. No clinical review completed today."
+    },
+    {
+      "id": "f2i-041",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Family Medicine Review — 18 February 2026\nPatient: Nawal Rami Al Safri | DOB: 1972-06-14 | Female\nReviewed IFHAS findings from 04 February 2026: elevated blood pressure and HbA1c 6.3%.\nHypertension: taking amlodipine 5 mg daily; clinic BP today 148/92 mmHg. Increase to 10 mg daily; discussed ankle swelling and home BP recording.\nGlycaemia: no polyuria or polydipsia. Repeat fasting glucose and HbA1c requested; samples not yet collected.\nDiscussed reduced salt intake, carbohydrate portions and regular walking.\nReview BP in two weeks; review glycaemia when repeat results are available."
+    },
+    {
+      "coded": "4548-4|5.5|%;2345-7|94|mg/dL;13457-7|118|mg/dL;2571-8|126|mg/dL;39156-5|27.4|kg/m2",
+      "id": "f2i-042",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — CARDIOMETABOLIC PANEL\nPatient: Faris Munir Al Hadri | DOB 1981-09-22 | Male\nCollection: 11 March 2026; fasting confirmed. H = above reference interval.\nHbA1c: 5.5% [4.0–5.6]\nFasting glucose: 94 mg/dL [70–99]\nLDL cholesterol: 118 mg/dL [<100] H\nTriglycerides: 126 mg/dL [<150]\nBMI: 27.4 kg/m2 [18.5–24.9] H\nBlood pressure: not obtained; patient declined cuff measurement after explanation. No systolic or diastolic result recorded."
+    },
+    {
+      "coded": "14749-6|6.2|mmol/L;4548-4|6|%;22748-8|3.7|mmol/L;14927-8|2.1|mmol/L;8480-6|128|mm[Hg];8462-4|78|mm[Hg];39156-5|24.1|kg/m2",
+      "id": "f2i-043",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS / Final screening results / 07 May 2026\nMaha Ziyad Al Rawni — Female — DOB 1968-12-03\nFasting specimen. H denotes a result above the stated interval.\nGlucose, fasting: 6.2 mmol/L | Reference 3.9–5.5 | H\nHbA1c: 6.0% | Reference 4.0–5.6 | H\nLDL cholesterol: 3.7 mmol/L | Reference <2.6 | H\nTriglycerides: 2.1 mmol/L | Reference <1.7 | H\nBlood pressure: systolic 128 mmHg [90–129]; diastolic 78 mmHg [60–84]\nBMI: 24.1 kg/m2 | Reference 18.5–24.9\nResults released for primary care review."
+    },
+    {
+      "coded": "8480-6|186|mm[Hg];8462-4|112|mm[Hg];4548-4|5.3|%;2345-7|91|mg/dL;13457-7|88|mg/dL;2571-8|104|mg/dL;39156-5|23.6|kg/m2",
+      "id": "f2i-044",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS SCREENING RESULTS — 19 August 2026\nPatient: Hamdan Sami Al Qadri; DOB: 1964-04-17; Male\nFasting: yes. H = high.\nBlood pressure, seated: 186/112 mmHg; systolic reference 90–129 H; diastolic reference 60–84 H.\nHbA1c 5.3% [4.0–5.6]; fasting glucose 91 mg/dL [70–99].\nLDL cholesterol 88 mg/dL [<100]; triglycerides 104 mg/dL [<150].\nBMI 23.6 kg/m2 [18.5–24.9].\nPatient denies chest pain, breathlessness, severe headache or visual change. Screening physician notified immediately; escorted for same-day urgent clinical assessment."
+    },
+    {
+      "coded": "no-coded-results|0|none",
+      "id": "f2i-045",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS — VISION AND HEARING SCREENING RESULT SHEET\nDate: 02 October 2026 | Patient: Reem Mazin Al Bahri | DOB: 1989-01-26 | Female\nDistance visual acuity with habitual spectacles: right 6/6, left 6/9; screening threshold 6/12 or better in each eye. Pass bilaterally.\nHearing screen at 25 dB HL, 1, 2 and 4 kHz: responses present at all frequencies in both ears. Pass bilaterally.\nNo visual or hearing concerns reported. Continue routine optometry review."
+    },
+    {
+      "id": "f2i-046",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Telephone review — 14 July 2026\nPatient: Hessa Nabil Al Ruwaini | DOB: 1979-03-18\nDiscussed raised glucose reported at IFHAS screening on 8 July 2026. Patient reports no polyuria, thirst or recent weight loss.\nAdvice provided on reducing sweetened drinks, portion sizes and regular walking.\nTelephone consultation only; no physical examination or observations obtained.\nRepeat fasting plasma glucose to be arranged through the clinic. Booking remains pending.\nAdvised in-person review after the result, or earlier if symptoms develop."
+    },
+    {
+      "coded": "8480-6|152|mm[Hg];8462-4|94|mm[Hg];39156-5|24.1|kg/m2;4548-4|5.3|%;2345-7|91|mg/dL;13457-7|94|mg/dL;2571-8|106|mg/dL",
+      "id": "f2i-047",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING | 22 February 2026\nMazin Farid Al Qamri | Male | DOB 1972-09-11\nFasting: Yes\nBlood pressure: 152/94 mmHg H [reference <140/90]; one seated reading recorded, no repeat measurement.\nBMI: 24.1 kg/m² [18.5–24.9]\nHbA1c: 5.3% [4.0–5.6]\nFasting plasma glucose: 91 mg/dL [70–99]\nLDL cholesterol: 94 mg/dL [<100]\nTriglycerides: 106 mg/dL [<150]\nElevated blood pressure discussed; advised clinic appointment for repeat measurements."
+    },
+    {
+      "coded": "2571-8|640|mg/dL;18262-6|92|mg/dL;4548-4|5.4|%;2345-7|108|mg/dL;8480-6|122|mm[Hg];8462-4|78|mm[Hg];39156-5|23.8|kg/m2",
+      "id": "f2i-048",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Periodic screening chemistry and observations — 9 May 2026\nPatient: Salma Rafiq Al Maysari; DOB 1984-12-03; Female\nSpecimen: random, nonfasting serum. Patient ate approximately two hours before collection.\nTriglycerides 640 mg/dL H (desirable fasting value <150)\nLDL cholesterol, direct 92 mg/dL (desirable <100); calculated LDL not issued.\nHbA1c 5.4% (4.0–5.6); random glucose 108 mg/dL (70–139)\nBP 122/78 mmHg (reference <140/90); BMI 23.8 kg/m² (18.5–24.9)\nMarked triglyceride elevation communicated to the screening physician. Prompt clinical review and a fasting lipid panel requested."
+    },
+    {
+      "coded": "8480-6|118|mm[Hg];8462-4|76|mm[Hg];39156-5|23.4|kg/m2;4548-4|5.2|%;13457-7|98|mg/dL;2571-8|110|mg/dL",
+      "id": "f2i-049",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS screening summary | 17 August 2026 | Fasting sample\nJaber Sami Al Nahli, DOB 1968-04-26, Male\nBlood pressure 118/76 mmHg — within reference (<140/90)\nBMI 23.4 kg/m² — within reference (18.5–24.9)\nHbA1c 5.2% — within reference (4.0–5.6)\nLDL cholesterol 98 mg/dL — within reference (<100)\nTriglycerides 110 mg/dL — within reference (<150)\nResults reviewed. Continue healthy diet and regular physical activity."
+    },
+    {
+      "coded": "8480-6|182|mm[Hg];8462-4|82|mm[Hg];39156-5|24.0|kg/m2;4548-4|5.3|%;2345-7|93|mg/dL;13457-7|96|mg/dL;2571-8|119|mg/dL",
+      "id": "f2i-050",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS | PERIODIC SCREENING PANEL | 6 October 2026\nName: Noura Khalil Al Barwani | DOB: 1987-06-14 | Sex: F\nFasting status: confirmed\nObservation                         Result          Reference\nBlood pressure                      128/82 mmHg     <140/90\nBody mass index                     24.0 kg/m²      18.5–24.9\nHbA1c                               5.3%            4.0–5.6\nFasting glucose                     93 mg/dL        70–99\nLDL cholesterol                     96 mg/dL        <100\nTriglycerides                       119 mg/dL       <150\nNo abnormal flags on this panel."
+    },
+    {
+      "coded": "4548-4|5.3|%;2345-7|91|mg/dL;2093-3|176|mg/dL;2085-9|56|mg/dL;13457-7|98|mg/dL;2571-8|110|mg/dL;8480-6|118|mm[Hg];8462-4|76|mm[Hg];39156-5|34.2|kg/m2",
+      "id": "f2i-051",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Maha Rashed Al Nuwair | DOB 1978-03-19 | Female\nIFHAS periodic screening — 12 February 2026; fasting specimen\nHbA1c 5.3% [4.0–5.6]; fasting glucose 91 mg/dL [70–99]\nTotal cholesterol 176 mg/dL [<200]; HDL 56 mg/dL [≥50]\nLDL-C 98 mg/dL [<130]; triglycerides 110 mg/dL [<150]\nBlood pressure 118/76 mmHg [<130/85]\nBMI 34.2 kg/m² H [18.5–24.9]\nReviewed: elevated BMI; nutrition and activity counselling offered."
+    },
+    {
+      "coded": "2345-7|88|mg/dL;4548-4|5.2|%;2093-3|224|mg/dL;2085-9|92|mg/dL;13457-7|110|mg/dL;2571-8|110|mg/dL;8480-6|122|mm[Hg];8462-4|78|mm[Hg];39156-5|23.8|kg/m2",
+      "id": "f2i-052",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Dune Lantern Medical Clinic, Abu Dhabi\nPeriodic screening results | 24 March 2026\nPatient: Salim Nasser Al Rameel; male; born 1982-08-07\nFasting glucose: 88 mg/dL (70–99); HbA1c: 5.2% (4.0–5.6)\nTotal cholesterol: 224 mg/dL H (desirable <200)\nHDL cholesterol: 92 mg/dL H (laboratory interval 40–80)\nCalculated LDL cholesterol: 110 mg/dL (desirable <130)\nTriglycerides: 110 mg/dL (desirable <150)\nBP: 122/78 mmHg (<130/85); BMI: 23.8 kg/m² (18.5–24.9)"
+    },
+    {
+      "coded": "2345-7|94|mg/dL;4548-4|5.4|%;8480-6|116|mm[Hg];8462-4|72|mm[Hg];39156-5|22.6|kg/m2",
+      "id": "f2i-053",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS SCREENING — INTERIM RESULTS\nHessa Jaber Al Waseel | Female | DOB 1991-11-26\nCollection: 08 June 2026, fasting\nGlucose 94 mg/dL [70–99]; HbA1c 5.4% [4.0–5.6]\nBP 116/72 mmHg [<130/85]; BMI 22.6 kg/m² [18.5–24.9]\nTotal cholesterol / HDL-C / LDL-C / triglycerides: PENDING\nLipid specimen dispatched to Marjan Vale Reference Laboratory; no lipid results available at release.\nSupplementary report will follow receipt of the external laboratory results."
+    },
+    {
+      "id": "f2i-054",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Family medicine follow-up, 17 August 2026\nYousif Hamad Al Sadeef, DOB 1969-02-14, male.\nDiscussed IFHAS results from 10 August 2026. Triglycerides elevated on a nonfasting specimen.\nRequested repeat fasting triglycerides; advised water only during the 10-hour fast before collection.\nPatient to return after blood sampling and availability of the result for review and management planning."
+    },
+    {
+      "coded": "2345-7|200|mg/dL;2093-3|172|mg/dL;2085-9|58|mg/dL;13457-7|94|mg/dL;2571-8|100|mg/dL;8480-6|120|mm[Hg];8462-4|74|mm[Hg];39156-5|24.1|kg/m2",
+      "id": "f2i-055",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "Amber Sail Screening Centre — IFHAS periodic panel\nPatient: Reem Khaled Al Muraif | DOB 1987-05-22 | F\nCollected 21 October 2026; nonfasting\nAnalyte                         Result        Reference interval\nRandom plasma glucose           200 H mg/dL    70–139\nTotal cholesterol               172 mg/dL      <200\nHDL cholesterol                 58 mg/dL       ≥50\nLDL cholesterol                 94 mg/dL       <130\nTriglycerides                   100 mg/dL      <150\nBlood pressure                  120/74 mmHg    <130/85\nBMI                             24.1 kg/m²     18.5–24.9"
+    },
+    {
+      "id": "f2i-056",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Mareen Sabil Qadri | DOB 1981-03-18 | Female\nIFHAS follow-up, 19 February 2026\nScreening results dated 12 February reviewed with patient. No polyuria, polydipsia or recent weight loss.\nRepeat laboratory HbA1c ordered; specimen collected today and result awaited.\nNo diagnosis of diabetes established at this visit. Further assessment after the repeat result is available.\nPatient will be contacted to arrange review."
+    },
+    {
+      "coded": "4548-4|7.1|%;2345-7|96|mg/dL;2093-3|168|mg/dL;13457-7|92|mg/dL;2085-9|54|mg/dL;2571-8|110|mg/dL;8480-6|118|mm[Hg];8462-4|74|mm[Hg];39156-5|23.6|kg/m2",
+      "id": "f2i-057",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS PERIODIC SCREENING — FASTING PANEL\nPatient: Ramez Nadir Talwan | DOB: 1970-08-24 | Male\nCollection/assessment: 08 April 2026\nHbA1c: 7.1% H [reference 4.0–5.6%; diabetes decision limit ≥6.5%]\nFasting plasma glucose: 96 mg/dL [70–99]\nTotal cholesterol: 168 mg/dL [<200]; LDL-C: 92 mg/dL [<100]\nHDL-C: 54 mg/dL [≥40]; triglycerides: 110 mg/dL [<150]\nBlood pressure: 118/74 mmHg [reference <120/<80]\nBMI: 23.6 kg/m² [18.5–24.9]\nAbnormal HbA1c released for clinician review."
+    },
+    {
+      "id": "f2i-058",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Dear screening team,\nRe: Saliha Merwan Nafeel, DOB 1964-11-09, female.\nReviewed following raised blood pressure at IFHAS screening on 06 May 2026. Repeat seated readings today after rest were 122/76 and 120/74 mmHg. Seven-day home average 119/73 mmHg.\nFindings are consistent with a white-coat effect; no sustained hypertension demonstrated. No antihypertensive treatment indicated.\nContinue usual healthy lifestyle measures and routine rescreening."
+    },
+    {
+      "coded": "4548-4|6.1|%;2345-7|94|mg/dL;2093-3|172|mg/dL;13457-7|94|mg/dL;2085-9|56|mg/dL;2571-8|108|mg/dL;8480-6|190|mm[Hg];8462-4|120|mm[Hg];39156-5|24.2|kg/m2",
+      "id": "f2i-059",
+      "kind": "ifhas-screen",
+      "programme": "ifhas",
+      "text": "IFHAS / PERIODIC HEALTH SCREEN — 17 August 2026\nNawfel Basim Darwani | Male | DOB 1987-02-13 | Fasting: Yes\nAnalyte / Result / Reference interval\nHbA1c / 6.1% H / 4.0–5.6%; prediabetes interval 5.7–6.4%\nFasting glucose / 94 mg/dL / 70–99\nTotal cholesterol / 172 mg/dL / <200\nLDL-C / 94 mg/dL / <100; HDL-C / 56 mg/dL / ≥40\nTriglycerides / 108 mg/dL / <150\nBlood pressure / 190/120 mmHg HH / <120/<80\nBMI / 24.2 kg/m² / 18.5–24.9\nSeverely elevated blood pressure communicated immediately to the attending physician for urgent assessment."
+    },
+    {
+      "id": "f2i-060",
+      "kind": "ifhas-followup",
+      "programme": "ifhas",
+      "text": "Willow Crescent Endocrine Clinic — consultation note, 13 October 2026\nPatient: Lamira | Contact: 050 000 6824\nAttended our clinic after IFHAS screening at Copper Palm Preventive Centre on 05 October. Outside report reviewed; repeat HbA1c here 11.8%, confirming diabetes. Random glucose 328 mg/dL, with thirst and polyuria; blood ketones negative.\nStarted insulin glargine 10 units subcutaneously nightly. Injection technique, glucose monitoring and hypoglycaemia management reviewed with teach-back.\nTelephone glucose review in 48 hours and clinic appointment in one week."
+    }
+  ],
+  "schema": "fresh2-corpus/v1"
+}
