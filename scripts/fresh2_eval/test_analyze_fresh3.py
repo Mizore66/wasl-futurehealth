@@ -41,6 +41,21 @@ class Fresh3Analysis(unittest.TestCase):
         self.assertEqual(cs["flag_unavailable"], ["f3i-013"])
         self.assertEqual(cs["placeholder_no_coded_results"], ["f3i-014", "f3i-032", "f3i-046"])
 
+    def test_unavailable_key_items_have_exact_roles(self):
+        # Three agreed items have key coded_label 'unavailable'. Only f3i-013 is a match, because B literally returned
+        # 'unavailable'. f3i-032 and f3i-046 return an all-X label with b_available=true, so they are misses.
+        raw = {r["id"]: r for r in rj("data/fresh3/results/reader_raw.json")["items"]}
+        self.assertEqual(raw["f3i-013"]["b"], "unavailable")
+        self.assertFalse(raw["f3i-013"]["b_available"])
+        for i in ("f3i-032", "f3i-046"):
+            self.assertNotEqual(raw[i]["b"], "unavailable")
+            self.assertTrue(raw[i]["b_available"])
+            self.assertEqual(raw[i]["b"], "bp=X;glyc=X;lipid=X;weight=X")
+        note = self.a["ifhas_screening_coded_not_gemma"]["note_b"]
+        self.assertIn("22/24; of the 3 items whose key coded_label is unavailable, only f3i-013 counts as a match "
+                      "(B returned `unavailable`); f3i-032 and f3i-046 are misses.", note)
+        self.assertIn("not a language-model reader", note)
+
     def test_comparison_headline_only(self):
         c = self.a["comparison_fresh2_to_fresh3"]
         self.assertTrue(c["headline_matches"])

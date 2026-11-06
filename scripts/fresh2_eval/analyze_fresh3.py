@@ -201,9 +201,9 @@ def _build(repo):
     wrong = wrong_section(by_kind, key["items"], raw["items"])
     screen = A.screen_section(raw["items"], key["items"], corpus["items"])
     # The shared fresh2 helper's note still says "28/28" (its fresh2 denominator); override it with the fresh3 figure.
-    screen["note_b"] = (f"{screen['reader_b_coded_matches_key']}/{screen['agreed_n']} with {screen['key_coded_label_unavailable']} items whose "
-                        "key coded_label is unavailable; the coded-match count includes those items only because B literally returned "
-                        "`unavailable`. It measures coded-result parsing against the key, not a language-model reader.")
+    screen["note_b"] = (f"{screen['reader_b_coded_matches_key']}/{screen['agreed_n']}; of the {screen['key_coded_label_unavailable']} items whose key "
+                        "coded_label is unavailable, only f3i-013 counts as a match (B returned `unavailable`); f3i-032 and f3i-046 are misses. "
+                        "It measures coded-result parsing against the key, not a language-model reader.")
     f2 = A.load("data/fresh2/results/score.json", repo)["agreed"]["by_kind"]
     f2_base = {"ifhas_followup_b_unavailable_agreed": f2["ifhas-followup"]["reader_b_unavailable"],
                "ifhas_followup_agreed_but_wrong": f2["ifhas-followup"]["agreed_but_wrong"],
@@ -313,7 +313,7 @@ def render(a):
           "Disputed subset (no key, unscored for accuracy): " + "; ".join(f"{k} n={x['n']}, readers agreed {x['reader_agreed']}, routed to review {x['reader_routed_to_review']}" for k, x in sorted(a["disputed_subset_unscored"]["by_kind"].items())) +
           f". The one agreed disputed item ({', '.join(a['disputed_subset_unscored']['by_kind']['ldct-screen']['ids_reader_agreed'])}) matches one labeller; this is behaviour, not accuracy.", "",
           "## 3. IFHAS coded screening is not a Gemma reader", "",
-          f"Reader B for `ifhas-screen` is the deterministic coded LOINC/UCUM string (`coded_lab`); reader A is a regex over the printed panel. No language model reads these items. Agreed panels {s['agreed_n']} of {s['panels_total']}: reader A matched the key on **{s['reader_a_correct']}/{s['agreed_n']}**; coded reader B matched the key's `coded_label` on **{s['reader_b_coded_matches_key']}/{s['agreed_n']}** (this counts f3i-013, whose key coded_label is itself `unavailable`, as a match because B literally returned `unavailable`).",
+          f"Reader B for `ifhas-screen` is the deterministic coded LOINC/UCUM string (`coded_lab`); reader A is a regex over the printed panel. No language model reads these items. Agreed panels {s['agreed_n']} of {s['panels_total']}: reader A matched the key on **{s['reader_a_correct']}/{s['agreed_n']}**; coded reader B matched the key's `coded_label` on **{s['reader_b_coded_matches_key']}/{s['agreed_n']}**; of the {s['key_coded_label_unavailable']} items whose key coded_label is unavailable, only f3i-013 counts as a match (B returned `unavailable`); f3i-032 and f3i-046 are misses.",
           f"- Guide/panel mismatch persists: the guide wants a random glucose but **{s['panels_mentioning_fasting']}/{s['panels_total']}** panels say fasting. Reader A returned `glyc=X` on **{s['reader_a_glyc_x_total']}/{s['agreed_n']}** agreed panels, on **{s['reader_a_glyc_x_where_key_has_value']}** of them where the key holds a real value. The guide and key are frozen; this is a limitation of the test and of reader A, not a reader fix. Reader A is the weaker reader here: only 1 agreed panel had both readers agree.",
           f"- Coded unavailability, exact: flagged `b_available=false`: {cs['flag_unavailable']}; placeholder `no-coded-results|0|none` (B returns an all-X label with `b_available=true`): {cs['placeholder_no_coded_results']}; key coded_label `unavailable` (agreed): {cs['key_coded_unavailable']}; agreed items where B differs from the key coded_label: {cs['b_wrong_vs_key']}.",
           f"- {cs['note']}", "",
