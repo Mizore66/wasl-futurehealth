@@ -1,28 +1,23 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { BookingCard, ConsentCard, IdentitiesCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { STANDARD_DAYS } from "@/components/worklist/days";
-import { closedInDays, closureChecks, linkScore, ownerLabel, providerLabel, readerLabels, recordNodes, statusWords } from "@/components/worklist/model";
+import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { getAudit, getCase } from "@/lib/api/source";
-import { caseIdFromParam, shortId } from "@/lib/domain/ids";
+import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
-import { personFor, personForLoop } from "@/lib/people";
-import { recordFace, referralSeed } from "@/lib/people/identity";
+import { personForLoop } from "@/lib/people";
+import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
+import { entryLabel } from "@/components/case/words";
 
 export async function generateMetadata({ params }: PageProps<"/app/patients/[id]">) {
   const id = caseIdFromParam((await params).id);
   return { title: personForLoop(id)?.display_name ?? shortId(id) };
 }
-
-const CHAIN_WORDS: Record<string, string> = {
-  link_decision: "Report matched",
-  evidence: "Readers' result",
-  hold_decision: "Held by the gate",
-  human_signoff: "Signed by a person",
-  closure_decision: "Closed",
-};
 
 function Pill({ tone, children }: { tone: "positive" | "neutral" | "negative"; children: React.ReactNode }) {
   return (
@@ -39,6 +34,17 @@ function Pill({ tone, children }: { tone: "positive" | "neutral" | "negative"; c
   );
 }
 
+const BUTTON = "inline-flex min-h-11 items-center justify-center rounded-control px-4 font-medium no-underline";
+const SECTIONS = [
+  ["why", "Why"],
+  ["people", "Records"],
+  ["readers", "Readers"],
+  ["consent", "Consent"],
+  ["signoffs", "Sign-offs"],
+  ["timeline", "Timeline"],
+  ["booking", "Booking"],
+] as const;
+
 export default async function Page({ params }: PageProps<"/app/patients/[id]">) {
   const id = caseIdFromParam((await params).id);
   const [detail, audit] = await Promise.all([getCase(id), getAudit(id)]);
@@ -47,14 +53,12 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const person = personForLoop(c.id);
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
-  const ev = detail.evidence.at(-1);
-  /** CRC and cervical evidence carries the four checklist fields; the other programmes carry one label per reader. */
-  const read = ev && (ev.fields ? { checks: closureChecks(ev), quote: ev.quote } : readerLabels(ev));
-  const link = detail.links[0];
   const closedIn = c.closed ? closedInDays(c) : null;
   /** CRC runs to the DoH 31-day standard; the other programmes' rules carry their own deadline in days. */
   const due = c.programme === "crc" ? STANDARD_DAYS : c.deadline_day || STANDARD_DAYS;
   const dueWords = c.programme === "crc" ? `${due}-day standard` : `${due}-day deadline`;
+  const waiting = c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item));
+  const [latest, ...earlier] = [...detail.evidence].reverse();
 
   return (
     <>
@@ -62,7 +66,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         <div className="flex min-w-0 items-center gap-4">
           <Avatar person={referralSeed(c.id)} size={56} label="" />
           <div className="min-w-0">
-            <div className="flex flex-wrap items-baseline gap-3">
+            <div className="flex flex-wrap items-baseline gap-x-3">
               <h1 className="m-0 text-title font-semibold">{person?.display_name ?? shortId(c.id)}</h1>
               {person && (
                 <span lang="ar" dir="rtl" className="text-section text-muted">
@@ -89,8 +93,53 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         <HonestyLabel kind="simulated">Simulated names</HonestyLabel>
       </header>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3" data-testid="case-actions">
+        {detail.review_items.length > 0 && (
+          <Link
+            href={caseHref("/app/review", c.id)}
+            className={cn(
+              BUTTON,
+              waiting ? "bg-cta text-white hover:bg-ink hover:text-white" : "border border-control bg-surface text-ink hover:bg-active hover:text-ink",
+            )}
+          >
+            {waiting ? "Open in Review" : "Review history"}
+          </Link>
+        )}
+        <Link
+          href={`${caseHref("/app/patients", c.id)}/audit`}
+          className={cn(
+            BUTTON,
+            detail.review_items.length > 0
+              ? "border border-control bg-surface text-ink hover:bg-active hover:text-ink"
+              : "bg-cta text-white hover:bg-ink hover:text-white",
+          )}
+        >
+          Audit trail
+        </Link>
+        {audit && (
+          <span className="text-muted" data-testid="audit-teaser">
+            {audit.chain_verified ? "Chain verified by the server" : "Chain broken"}
+          </span>
+        )}
+      </div>
+
+      <nav aria-label="On this page" className="mt-3">
+        <ul className="m-0 flex list-none flex-wrap gap-2 p-0">
+          {SECTIONS.map(([anchor, label]) => (
+            <li key={anchor}>
+              <a
+                href={`#${anchor}`}
+                className="inline-flex min-h-11 items-center rounded-control border border-line bg-surface px-3 text-ink no-underline hover:bg-active hover:text-ink"
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       <div className="mt-6 flex flex-wrap items-stretch gap-gap">
-        <section aria-labelledby="chain-h" className="min-w-0 flex-[999_1_560px] self-start rounded-card border border-line bg-surface p-pad">
+        <section aria-labelledby="chain-h" className="min-w-0 flex-[999_1_560px] self-start rounded-card border border-line bg-surface p-4 md:p-pad">
           <div className="flex flex-wrap items-baseline justify-between gap-gap">
             <h2 id="chain-h" className="m-0 text-section font-medium">
               {first ? "Her case, step by step" : "The case, step by step"}
@@ -121,72 +170,14 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
         </section>
 
         <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-gap">
-          <section aria-labelledby="id-h" className="rounded-card border border-line bg-surface p-pad">
-            <h2 id="id-h" className="m-0 text-section font-medium">
-              One patient, two records
-            </h2>
-            <ul className="m-0 mt-3 list-none p-0">
-              {detail.identities.map((idn) => {
-                const p = personFor(idn.registration);
-                const face = recordFace(detail, idn.registration);
-                return (
-                  <li key={idn.registration} className="flex items-center gap-3 border-t border-rule py-2.5 first:border-t-0">
-                    <Avatar {...face} size={32} label={face.state === "unknown" ? "Not yet confirmed as this patient" : ""} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-small text-muted">{providerLabel(idn.provider)}</span>
-                      {p ? (
-                        <span lang={p.recorded_script === "arabic" ? "ar" : undefined} dir={p.recorded_script === "arabic" ? "rtl" : undefined} className="font-medium">
-                          {p.recorded_name}
-                        </span>
-                      ) : (
-                        <span className="text-muted">Name not on file</span>
-                      )}
-                    </span>
-                    <span className="flex-none font-mono text-small text-muted">{idn.registration.split("|")[1]}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            {link && (
-              <p className="m-0 mt-2 text-small text-muted">
-                {link.weakest_edge.basis === "eid"
-                  ? "Joined by Emirates ID."
-                  : `Joined by name and details, no Emirates ID. Match probability ${linkScore(detail, link).toFixed(3)}, auto-close line ${link.tau}${link.weakest_edge.basis === "human" ? ", confirmed in review" : ""}.`}
-              </p>
-            )}
-          </section>
-
-          {ev && read && (
-            <section aria-labelledby="doh-h" className="rounded-card border border-line bg-surface p-pad">
-              <h2 id="doh-h" className="m-0 text-section font-medium">
-                {ev.fields ? "DoH closure checklist" : "Readers' result"}
-              </h2>
-              <p className="m-0 mt-0.5 text-small text-muted">Two readers read report {shortId(ev.report)}: {ev.agree ? "they agree" : "they disagree"}.</p>
-              <ul className="m-0 mt-3 list-none p-0">
-                {read.checks.map((k) => (
-                  <li key={k.name} className="flex items-center justify-between gap-3 border-t border-rule py-2.5">
-                    <span>{k.name}</span>
-                    <span className="text-right text-muted">
-                      {k.result}
-                      {k.differ && <span className="block text-small text-warning">Readers differ</span>}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              {ev.human_override && <p className="m-0 mt-2 text-small text-muted">A clinician signed the evidence {ev.human_override}.</p>}
-              <blockquote className="m-0 mt-2 rounded-control bg-raised px-4 py-3">
-                <p className="m-0">{read.quote ? `“${read.quote}”` : "The report states none of these in words."}</p>
-                <p className="m-0 mt-1 text-small text-muted">
-                  {providerLabel(detail.identities.find((i) => i.role === "downstream")?.provider ?? "")} report <span className="font-mono">{shortId(ev.report)}</span>
-                </p>
-              </blockquote>
-            </section>
-          )}
+          <ReasonCard detail={detail} />
+          <IdentitiesCard detail={detail} />
+          {latest && <ReadersCard detail={detail} ev={latest} id="readers" />}
 
           {audit && (
-            <section aria-labelledby="audit-h" className="rounded-card border border-line bg-surface px-pad py-2">
+            <section aria-labelledby="audit-h" className="rounded-card border border-line bg-surface px-4 py-2 md:px-pad">
               <details>
-                <summary className="flex h-12 cursor-pointer list-none items-center gap-2.5">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2.5">
                   <h2 id="audit-h" className="m-0 flex-1 text-section font-medium">
                     Audit
                   </h2>
@@ -194,9 +185,9 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 </summary>
                 <ol aria-label="Entry hashes" className="m-0 list-none p-0 pb-2">
                   {audit.chain.map((e, i) => (
-                    <li key={e.hash} className="flex h-7 items-center gap-2 text-small">
+                    <li key={e.hash} className="flex min-h-7 items-center gap-2 text-small">
                       <span className="w-4 text-right text-muted">{i + 1}</span>
-                      <span className="min-w-0 flex-1 truncate">{CHAIN_WORDS[e.type] ?? e.type}</span>
+                      <span className="min-w-0 flex-1 truncate">{entryLabel(e.type)}</span>
                       <span className="font-mono text-muted">{e.hash.slice(0, 8)}</span>
                     </li>
                   ))}
@@ -212,8 +203,27 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 )}
                 <span className="text-small text-muted">The server recomputed each hash from its contents and the entry before it.</span>
               </p>
+              <p className="m-0 pb-3">
+                <Link href={`${caseHref("/app/patients", c.id)}/audit`} className="inline-flex min-h-11 items-center">
+                  Open the full audit trail
+                </Link>
+              </p>
             </section>
           )}
+        </div>
+      </div>
+
+      <div className="mt-gap grid items-start gap-gap lg:grid-cols-2">
+        <div className="flex min-w-0 flex-col gap-gap">
+          {earlier.map((ev) => (
+            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
+          ))}
+          <ConsentCard detail={detail} />
+          <SignoffsCard detail={detail} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-gap">
+          <BookingCard detail={detail} />
+          <TimelineCard detail={detail} />
         </div>
       </div>
     </>
