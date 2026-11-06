@@ -1,0 +1,444 @@
+{
+ "corpus_sha256": "c974de9fe32264a5edde7c4be214433876e970014329ea4657c5aabe534c0a1e",
+ "labeller": {
+  "clinician_verified": false,
+  "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+  "id": "gemini-a",
+  "kind": "model",
+  "model": "gemini-3.5-flash",
+  "model_family": "Google/Gemini",
+  "prompt_sha256": "a6a3746f5752eebd4e2b4895740af8e602ad8f3cfd7ba282d08562977243a32a",
+  "run_date": "2026-11-07",
+  "saw_other_labels": false,
+  "saw_reader_implementation": false,
+  "session_isolated": true
+ },
+ "labels": [
+  {
+   "id": "f3l-001",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f3l-002",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-003",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-004",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-005",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f3l-006",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-007",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-008",
+   "label": "wk_surveillance"
+  },
+  {
+   "id": "f3l-009",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-010",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-011",
+   "label": "LR3"
+  },
+  {
+   "id": "f3l-012",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f3l-013",
+   "label": "LR0"
+  },
+  {
+   "id": "f3l-014",
+   "label": "LR4X"
+  },
+  {
+   "id": "f3l-015",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-016",
+   "label": "LR1"
+  },
+  {
+   "id": "f3l-017",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-018",
+   "label": "LR4B"
+  },
+  {
+   "id": "f3l-019",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-020",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-021",
+   "label": "wk_surveillance"
+  },
+  {
+   "id": "f3l-022",
+   "label": "LR2"
+  },
+  {
+   "id": "f3l-023",
+   "label": "LR1"
+  },
+  {
+   "id": "f3l-024",
+   "label": "LR4B"
+  },
+  {
+   "id": "f3l-025",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f3l-026",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f3l-027",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-028",
+   "label": "LR2"
+  },
+  {
+   "id": "f3l-029",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-030",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-031",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-032",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-033",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-034",
+   "label": "LR3"
+  },
+  {
+   "id": "f3l-035",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f3l-036",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-037",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-038",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-039",
+   "label": "LR0"
+  },
+  {
+   "id": "f3l-040",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-041",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-042",
+   "label": "LR3"
+  },
+  {
+   "id": "f3l-043",
+   "label": "LR4A"
+  },
+  {
+   "id": "f3l-044",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-045",
+   "label": "LR2"
+  },
+  {
+   "id": "f3l-046",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f3l-047",
+   "label": "LR3"
+  },
+  {
+   "id": "f3l-048",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3l-049",
+   "label": "LR2"
+  },
+  {
+   "id": "f3l-050",
+   "label": "LR2"
+  },
+  {
+   "id": "f3i-001",
+   "label": "glyc=managed"
+  },
+  {
+   "id": "f3i-002",
+   "label": "bp=pending"
+  },
+  {
+   "id": "f3i-003",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3i-004",
+   "label": "glyc=not_confirmed"
+  },
+  {
+   "id": "f3i-005",
+   "label": "dna"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+   "id": "f3i-006",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=X;lipid=X;weight=X",
+   "id": "f3i-007",
+   "label": "bp=H;glyc=P;lipid=N;weight=O"
+  },
+  {
+   "id": "f3i-008",
+   "label": "bp=pending;weight=pending"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=X;weight=N",
+   "id": "f3i-009",
+   "label": "bp=N;glyc=N;lipid=X;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+   "id": "f3i-010",
+   "label": "bp=N;glyc=D;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=P;lipid=N;weight=N",
+   "id": "f3i-011",
+   "label": "bp=H;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-012",
+   "label": "bp=managed"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f3i-013",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=X;glyc=X;lipid=X;weight=X",
+   "id": "f3i-014",
+   "label": "bp=X;glyc=X;lipid=X;weight=X"
+  },
+  {
+   "coded_label": "bp=N;glyc=S;lipid=N;weight=N",
+   "id": "f3i-015",
+   "label": "bp=N;glyc=S;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=X;lipid=N;weight=N",
+   "id": "f3i-016",
+   "label": "bp=N;glyc=X;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=H;weight=N",
+   "id": "f3i-017",
+   "label": "bp=N;glyc=N;lipid=H;weight=N"
+  },
+  {
+   "id": "f3i-018",
+   "label": "bp=pending;lipid=managed"
+  },
+  {
+   "coded_label": "bp=H;glyc=D;lipid=H;weight=O",
+   "id": "f3i-019",
+   "label": "bp=H;glyc=D;lipid=H;weight=O"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=H;weight=N",
+   "id": "f3i-020",
+   "label": "bp=N;glyc=N;lipid=H;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+   "id": "f3i-021",
+   "label": "bp=H;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-022",
+   "label": "bp=managed;glyc=not_confirmed;lipid=pending"
+  },
+  {
+   "id": "f3i-023",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3i-024",
+   "label": "bp=pending;lipid=pending"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f3i-025",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-026",
+   "label": "glyc=managed"
+  },
+  {
+   "id": "f3i-027",
+   "label": "bp=pending"
+  },
+  {
+   "id": "f3i-028",
+   "label": "bp=pending;lipid=pending"
+  },
+  {
+   "id": "f3i-029",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3i-030",
+   "label": "bp=managed"
+  },
+  {
+   "id": "f3i-031",
+   "label": "bp=not_confirmed;glyc=not_confirmed;lipid=not_confirmed"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f3i-032",
+   "label": "bp=X;glyc=X;lipid=X;weight=X"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+   "id": "f3i-033",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-034",
+   "label": "weight=managed"
+  },
+  {
+   "id": "f3i-035",
+   "label": "lipid=managed"
+  },
+  {
+   "id": "f3i-036",
+   "label": "bp=not_confirmed"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+   "id": "f3i-037",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f3i-038",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-039",
+   "label": "lipid=pending"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+   "id": "f3i-040",
+   "label": "bp=N;glyc=N;lipid=N;weight=O"
+  },
+  {
+   "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+   "id": "f3i-041",
+   "label": "bp=N;glyc=D;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+   "id": "f3i-042",
+   "label": "bp=H;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f3i-043",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=S;glyc=X;lipid=N;weight=N",
+   "id": "f3i-044",
+   "label": "bp=S;glyc=X;lipid=N;weight=N"
+  },
+  {
+   "id": "f3i-045",
+   "label": "bp=not_confirmed;glyc=not_confirmed;lipid=not_confirmed"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f3i-046",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=D;lipid=N;weight=O",
+   "id": "f3i-047",
+   "label": "bp=H;glyc=D;lipid=N;weight=O"
+  },
+  {
+   "id": "f3i-048",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f3i-049",
+   "label": "glyc=pending"
+  },
+  {
+   "id": "f3i-050",
+   "label": "glyc=pending"
+  }
+ ],
+ "schema": "fresh2-labels/v1"
+}
