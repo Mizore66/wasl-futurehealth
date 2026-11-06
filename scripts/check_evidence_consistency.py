@@ -24,10 +24,15 @@ DOCS = ["README.md"] + ["docs/" + n for n in (
 RESULTS = "pipeline/RESULTS.md"
 FINAL_HEADING = "### Frozen seven-programme evaluation at `075abc5`"
 
-# Older five-programme run (5496563) figures, superseded by the 075abc5 run.
-STALE = ["0.782", "3,025", "14,451", "9,602", "12.9 h"]
+# Older-run (5496563 and intermediate) figures, superseded by the 075abc5 run.
+# Matched with numeric boundaries, so "13,025" or "0.7821" do not count.
+STALE = ["0.782", "0.842", "0.843", "3,025", "3,147", "3,156", "14,451", "9,602",
+         "1,903", "5,625", "1,403", "1,404", "2,025", "2,032", "5,621", "5,636", "12.9 h"]
 SUPERSEDE_MARK = re.compile(r"supersed|historical", re.I)
-NEGATION = re.compile(r"\b(not|no|never|without|nor|neither|cannot)\b|n't", re.I)
+# Exempt from current-claim checks: other experiments or explicitly historical text.
+OTHER_RUN = re.compile(r"supersed|historical|sensitivity|clean-review|post-hoc|baseline|"
+                       r"earlier|intermediate|dev(elopment)? (noise|v1)|no review", re.I)
+NEGATION = re.compile(r"\b(not|no|never|without|nor|neither|cannot|none)\b|n't", re.I)
 OVERCLAIM = re.compile(
     r"clinically validated|clinician[- ]validated|human[- ]validated|"
     r"independent(ly)? human[- ]label|fully validated|"
@@ -36,7 +41,23 @@ OVERCLAIM = re.compile(
     r"live Malaffi integration|deployed (in|at) ", re.I)
 NOT_INDEPENDENT = re.compile(r"not independent human[- ](double[- ]label|label)", re.I)
 ZERO_124 = re.compile(r"0/124(?![,\d])")
-KAPPA_ONE =re.compile(r"(κ|kappa)[^.\n]{0,20}?\b1(\.0+)?\b", re.I)
+KAPPA_ONE = re.compile(r"(κ|kappa)[^.\n]{0,20}?\b1(\.0+)?\b", re.I)
+FAIR_PREP = re.compile(r"\bfair\b[^.]{0,80}inadequate_prep")
+STALE_LAB = re.compile(
+    r"until our human double-labelling|Double-label the 43|LLM-produced key|"
+    r"labelling (is )?(pending|in progress|not yet)|human double-labelling is (pending|done)|"
+    r"double-label\w*[^.]{0,60}\b(pending|in progress|not yet|still to)|"
+    r"no clinician labels", re.I)
+HELDOUT_CTX = re.compile(r"held-?out|fresh|LDCT|IFHAS|cohorts?", re.I)
+SENTENCE = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9`*(\[])")
+NEG_WINDOW = 40  # characters of same-clause text before/after a match searched for negation
+FIG_FILES = ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/BRIEF.md", "docs/PITCH.md")
+WRITEUP = "docs/WRITEUP.md"
+
+
+def _num(tok):
+    """Regex for a number token with numeric boundaries."""
+    return r"(?<![\d,.])" + re.escape(tok) + r"(?![\d]|,\d|\.\d)"
 
 
 def _read(root, rel):
@@ -61,13 +82,77 @@ def final_figures(root):
     out = {}
     m = re.search(r"^\| CRC \| [\d.]+ \| ([\d.]+) \|", sec, re.M)
     out["recall"] = m and m.group(1)
-    m = re.search(r"CRC / cervical / lung / DR / breast false closures \|[^|]*\| 0/([\d,]+);", sec)
-    out["crc_fc"] = m and m.group(1)
+    m = re.search(r"CRC / cervical / lung / DR / breast false closures \|[^|]*\| "
+                  r"0/([\d,]+); 0/([\d,]+); 0/([\d,]+); 0/([\d,]+); 0/([\d,]+) \|", sec)
+    for k, i in zip(("crc_fc", "cervical_fc", "lung_fc", "dr_fc", "breast_fc"), range(1, 6)):
+        out[k] = m and m.group(i)
     m = re.search(r"Wrong-patient messages / without granted consent \|[^|]*\| 0/([\d,]+); 0/([\d,]+) \|", sec)
     out["wrong_patient"], out["no_consent"] = (m.group(1), m.group(2)) if m else (None, None)
     m = re.search(r"reviewer time was [\d.]+ and ([\d.]+) h/1k", sec)
     out["hours"] = m and m.group(1)
     return out
+
+
+CLAUSE_BREAK = re.compile(r"[.;:]|\b(but|however|although|whereas|yet)\b", re.I)
+
+
+def negated(line, pos):
+    """Heuristic: a negation word earlier in the same clause (up to 120 chars back, not past
+    a sentence end, semicolon, colon or contrast word). Commas do not break a clause so that
+    "Do not claim A, B or C" is covered; it cannot understand arbitrary grammar."""
+    before = line[max(0, pos - 120):pos]
+    last = None
+    for m in CLAUSE_BREAK.finditer(before):
+        last = m
+    if last:
+        before = before[last.end():]
+    return NEGATION.search(before) is not None
+
+
+def has_num(text, tok):
+    return re.search(_num(tok), text) is not None
+
+
+def sentences(line):
+    return SENTENCE.split(line)
+
+
+def historic_row(line):
+    """A table row whose label (first 250 chars) marks it superseded or historical."""
+    return line.lstrip().startswith("|") and SUPERSEDE_MARK.search(line[:250]) is not None
+
+
+def claim_patterns(fig):
+    """(key, regex, expected) for headline claims; a captured value must equal expected."""
+    return [
+        ("recall", r"CRC (?:P|precision) 1\.000, (?:R|recall) ([\d.]*\d)", fig["recall"]),
+        ("crc_fc", r"0/([\d,]*\d)\s+(?:CRC )?false closures", fig["crc_fc"]),
+        ("wrong_patient", r"0/([\d,]*\d)\s+wrong-patient messages|[Ww]rong-patient messages\s+0/([\d,]*\d)", fig["wrong_patient"]),
+        ("no_consent", r"0/([\d,]*\d)\s+(?:messages )?(?:sent )?(?:releases )?without (?:granted )?consent", fig["no_consent"]),
+        ("hours", r"([\d.]*\d) h (?:per|/) ?1(?:,000|k)", fig["hours"]),
+    ]
+
+
+def check_claims(root, rel, fig, add):
+    """Every headline claim must carry the current value, unless it is explicitly another run."""
+    for n, line in enumerate(_lines(root, rel), 1):
+        if re.search(r"sensitivity|clean-review|post-hoc|baseline|no review|separate|live-reader|stress run", line, re.I) or historic_row(line):
+            continue
+        if not re.search(r"frozen|075abc5|held-out (v2|noise)", line, re.I):
+            continue  # only headline lines about the frozen final evaluation
+        for key, pat, want in claim_patterns(fig):
+            for m in re.finditer(pat, line):
+                got = next(g for g in m.groups() if g)
+                if key == "crc_fc":  # only counts attached to the CRC programme
+                    pre = line[max(0, m.start() - 80):m.start()]
+                    k = pre.rfind("CRC")
+                    if k < 0 and "CRC" not in m.group(0):
+                        continue
+                    if k >= 0 and re.search(r"lung|cervical|\bDR\b|breast|retinopathy|LDCT|IFHAS", pre[k:]):
+                        continue
+                local = line[max(0, m.start() - 100):m.end() + 60]
+                if got != want and not SUPERSEDE_MARK.search(local):
+                    add("current-figures", rel, n, f"{key} claim {got} != current {want}")
 
 
 def check(root):
@@ -76,26 +161,43 @@ def check(root):
     def add(rule, file, line, msg):
         f.append(Finding(rule, file, line, msg))
 
+    # --- required files ----------------------------------------------------
+    for rel in DOCS + [RESULTS]:
+        if _read(root, rel) is None:
+            add("missing-file", rel, 0, "required file missing")
+
     # --- current final figures ---------------------------------------------
     fig = final_figures(root)
     if not fig or not all(fig.values()):
         add("current-figures", RESULTS, 0, f"cannot parse final seven-programme figures: {fig}")
     else:
-        for rel in ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/BRIEF.md", "docs/PITCH.md"):
+        for rel in FIG_FILES:
             t = _read(root, rel)
             if t is None:
-                add("current-figures", rel, 0, "file missing")
                 continue
             for k, tok in fig.items():
-                if tok not in t:
+                if k == "cervical_fc" and rel == "docs/PITCH.md":
+                    continue  # PITCH does not quote cervical
+                if not has_num(t, tok):
                     add("current-figures", rel, 0, f"missing final {k} = {tok}")
+        for rel in DOCS:
+            check_claims(root, rel, fig, add)
+        # WRITEUP needs a current (non-superseded) 075abc5 row carrying the final figures.
+        rows = [l for l in _lines(root, WRITEUP) if "075abc5" in l and not historic_row(l)
+                and l.lstrip().startswith("|")]
+        need = (fig["crc_fc"], fig["wrong_patient"], fig["no_consent"], fig["hours"], fig["recall"])
+        if not any(all(has_num(l, x) for x in need) for l in rows):
+            add("current-figures", WRITEUP, 0, "no current 075abc5 row with the final figures")
 
     # --- stale final-looking figures ---------------------------------------
     for rel in DOCS:
         for n, line in enumerate(_lines(root, rel), 1):
-            hit = [s for s in STALE if s in line]
-            if hit and not SUPERSEDE_MARK.search(line):
-                add("stale-figure", rel, n, f"older-run figure(s) {hit} not marked superseded")
+            if historic_row(line):
+                continue
+            for s in sentences(line):
+                hit = [x for x in STALE if has_num(s, x)]
+                if hit and not SUPERSEDE_MARK.search(s):
+                    add("stale-figure", rel, n, f"older-run figure(s) {hit} not marked superseded")
 
     # --- kappa data and wording --------------------------------------------
     try:
@@ -132,7 +234,7 @@ def check(root):
         t = (_read(root, rel) or "").replace("*", "")
         if "20 automatic decisions, 19 correct and 0 unsafe" not in t:
             add("accuracy-claim", rel, 0, "missing '20 automatic decisions, 19 correct and 0 unsafe'")
-        if "inadequate_prep" not in t or "fair" not in t:
+        if not FAIR_PREP.search(t):
             add("accuracy-claim", rel, 0, "missing fair -> inadequate_prep fix")
     for rel in DOCS:
         for n, line in enumerate(_lines(root, rel), 1):
@@ -140,15 +242,11 @@ def check(root):
                 add("accuracy-claim", rel, n, "automatic-decision count is not 19 correct of 20")
 
     # --- stale pending-labelling statements --------------------------------
-    stale_lab = re.compile(
-        r"until our human double-labelling|Double-label the 43|LLM-produced key|"
-        r"labelling (is )?(pending|in progress|not yet)|human double-labelling is (pending|done)|"
-        r"no clinician labels", re.I)
     for rel in DOCS:
         for n, line in enumerate(_lines(root, rel), 1):
-            low = line.lower()
-            if stale_lab.search(line) and "held-out" not in low and "heldout" not in low:
-                add("stale-labelling", rel, n, "pending/absent-labelling statement is stale for the 43 reports")
+            for s in sentences(line):
+                if STALE_LAB.search(s) and not (HELDOUT_CTX.search(s) and not re.search(r"\b43\b|MTSamples", s)):
+                    add("stale-labelling", rel, n, "pending/absent-labelling statement is stale for the 43 reports")
 
     # --- LDCT/IFHAS and 0/124 caveats ----------------------------------------
     for rel in DOCS + [RESULTS]:
@@ -186,8 +284,9 @@ def check(root):
         add("status-labels", "docs/SUBMISSION-DRAFT.md", 0, "missing no-clinical-deployment disclaimer")
     for rel in DOCS:
         for n, line in enumerate(_lines(root, rel), 1):
-            if OVERCLAIM.search(line) and not NEGATION.search(line):
-                add("overclaim", rel, n, "clinical/validated/deployed claim without negation")
+            for m in OVERCLAIM.finditer(line):
+                if not negated(line, m.start()):
+                    add("overclaim", rel, n, "clinical/validated/deployed claim without negation")
     return f
 
 
