@@ -18,10 +18,9 @@ x-wasl-env: &wasl-env
   WASL_BREAST: ${WASL_BREAST:-0}
 
 x-nats: &nats
-  image: nats:2.12.1-alpine
+  build: ./deploy/nats
+  image: wasl-nats:local
   command: ["nats-server", "-c", "/etc/nats/wasl.conf"]
-  volumes:
-    - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
   healthcheck:
     test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
     interval: 5s
@@ -37,7 +36,6 @@ services:
       NATS_SERVER_NAME: n0
       WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
     volumes:
-      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
       - nats-0:/data
   nats-1:
     <<: *nats
@@ -46,7 +44,6 @@ services:
       NATS_SERVER_NAME: n1
       WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
     volumes:
-      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
       - nats-1:/data
   nats-2:
     <<: *nats
@@ -55,7 +52,6 @@ services:
       NATS_SERVER_NAME: n2
       WASL_JS_KEY: ${WASL_JS_KEY:?set WASL_JS_KEY (see scripts/deploy_up.sh)}
     volumes:
-      - ./deploy/nats/nats.conf:/etc/nats/wasl.conf:ro
       - nats-2:/data
 
   # One-shot: generate the demo cohort, run every pipeline service against the cluster (with kill/restart chaos),

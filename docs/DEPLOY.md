@@ -17,13 +17,13 @@ chaos) and then serves the read API on `http://127.0.0.1:8088` ([`API.md`](API.m
 `pipeline` container (`docker compose logs pipeline`).
 
 `scripts/check_deploy.py` checks the package statically without Docker (compose references, non-root image, key
-handling, every `COPY` source present and not excluded by `.dockerignore`).
+handling, NATS config baked into `wasl-nats:local` with no host bind mount, every `COPY` source present and not excluded by `.dockerignore`).
 
 ## What runs
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `nats:2.12.1-alpine` | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes) | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: `nats:2.12.1-alpine` with `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes) | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -83,8 +83,31 @@ cohort directory, and there is no production entrypoint. They are listed under "
 
 ## Validation done for this package
 
-Docker was **not installed** on the build machine, so neither `docker build` nor `docker compose up` has been run.
-What was checked instead:
+**Observed, 6 Nov 2026 (Podman 5.8.2 machine, rootful service, Docker Compose v5.1.4 as the `podman compose`
+provider; not Docker Engine, which remains unverified).** An isolated project with its own named volumes and a generated
+valid `WASL_JS_KEY` was built and brought up with `podman compose -p <unique> --env-file <file> up -d`, API on a
+non-default loopback port:
+
+- `wasl:local` and `wasl-nats:local` built. NATS config is copied into the image (`deploy/nats/Dockerfile`) because a
+  bind mount of `nats.conf` failed to read under the Podman VM, which did not share the checkout directory.
+- `nats-0/1/2` reached healthy; `pipeline` exited 0; `api` reached healthy and ran as UID 10001.
+- `/healthz` returned `status: ok` with `dependencies.nats: up`, `materialised_run: loaded`, 2100 cases,
+  `data_mode: simulated`. The API was the only published port, bound to `127.0.0.1`.
+- The pipeline log showed the audit, tamper/forgery checks (forged events with effect 0/18), simulated booking and the
+  summary (CRC with review P 1.000, R 0.837, 0/474 false closures; one seeded run, simulated, not a new headline).
+- Final run on the combined source (API, smoke and deployment work merged), fresh project, port 18817: both images built, the
+  three `nats` services healthy, `pipeline` exit 0, `api` healthy as UID 10001, `/healthz` with `dependencies.nats: up`,
+  and `python3 scripts/api_smoke.py --base-url http://127.0.0.1:18817` passed against the container over real HTTP
+  (2100 cases, 3 fixtures). The pipeline log again showed audit, FHIR tamper lines (forged events with effect 0/18,
+  provenance 912/912), simulated booking, and summary (CRC with review R 0.837, 0/474 false closures; exactly-once
+  duplicates 0 / 25188). The isolated project was removed with `down -v`; only that project was touched.
+- `scripts/check_deploy.py` now also rejects long-syntax (`type: bind`) host mounts, covered by `scripts/test_deploy.py`.
+- Podman retains container environment configuration on the VM host, so the JetStream key is not kept out of the host.
+
+Direct Podman path: `podman compose --env-file <file with WASL_JS_KEY=k<64 hex>> -p <project> up -d --build`.
+`scripts/deploy_up.sh` remains Docker-only. Cleanup of the isolated project is `podman compose -p <project> down -v`.
+
+Before that, Docker had **not** been run on the build machine. Static and emulated checks:
 
 - The Go build stage compiles statically for `linux/amd64` and `linux/arm64` (`CGO_ENABLED=0 go build -trimpath`),
   and `GOOS=linux go vet` passes.
@@ -127,7 +150,7 @@ storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/sc
 
 ## Not production-ready
 
-- **Not executed under Docker.** Image build, compose networking, healthchecks and volume permissions are untested.
+- **Verified under Podman + Docker Compose provider only.** Docker Engine, other hosts and a restarted/retained-volume deployment are untested.
 - **Demo entrypoint only.** There is no mode that ingests real feeds without the generator (see above), and the
   provider table and code mappings are the demo's.
 - **One container for all pipeline services.** They talk only through NATS and their run directory, but the
