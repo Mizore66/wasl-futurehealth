@@ -49,8 +49,8 @@
   --text-lead--line-height: 44px;
   --text-body: 14px;
   --text-body--line-height: 20px;
-  --text-small: 12px;
-  --text-small--line-height: 16px;
+  --text-small: 13px;
+  --text-small--line-height: 18px;
 
   /* Geist first by name: its next/font fallback is Arial, whose Arabic glyphs would otherwise beat Plex Arabic. */
   --font-sans: "Geist", var(--font-plex-arabic), var(--font-geist), system-ui, sans-serif;
