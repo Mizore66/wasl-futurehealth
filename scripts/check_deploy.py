@@ -79,6 +79,18 @@ else:
         err("deploy/nats/Dockerfile: must derive FROM nats:<tag>")
     if not any(re.match(r"COPY (--chmod=\d+ )?nats\.conf /etc/nats/wasl\.conf$", l) for l in ndf):
         err("deploy/nats/Dockerfile: must COPY nats.conf /etc/nats/wasl.conf")
+    if not any(l == 'ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]' for l in ndf):
+        err("deploy/nats/Dockerfile: must set the key-check ENTRYPOINT")
+    if not any(re.match(r"COPY (--chmod=\d+ )?entrypoint\.sh /usr/local/bin/wasl-nats-entrypoint\.sh$", l) for l in ndf):
+        err("deploy/nats/Dockerfile: must COPY entrypoint.sh to /usr/local/bin/wasl-nats-entrypoint.sh")
+    ep_path = os.path.join(ROOT, "deploy/nats/entrypoint.sh")
+    if not os.path.exists(ep_path):
+        err("deploy/nats/entrypoint.sh missing")
+    else:
+        ep = open(ep_path).read()
+        for need in ("umask 077", 'mv "$tmp" "$marker"', "healthz?js-enabled-only=true", "refusing to start"):
+            if need not in ep:
+                err("deploy/nats/entrypoint.sh: missing %r" % need)
 for n in ("nats-0", "nats-1", "nats-2"):
     if "WASL_JS_KEY" not in (svcs.get(n, {}).get("environment") or {}):
         err("compose: %s gets no JetStream key" % n)

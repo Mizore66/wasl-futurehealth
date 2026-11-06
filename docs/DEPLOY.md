@@ -104,6 +104,39 @@ non-default loopback port:
 - `scripts/check_deploy.py` now also rejects long-syntax (`type: bind`) host mounts, covered by `scripts/test_deploy.py`.
 - Podman retains container environment configuration on the VM host, so the JetStream key is not kept out of the host.
 
+**Observed, 7 Nov 2026: retained-volume restart (same Podman 5.8.2 / Compose v5.1.4 setup, isolated projects `waslrestart7`
+and `waslrestart8`, loopback port 18931, generated valid key).**
+
+- First run, unmodified source (`waslrestart7`): `up -d --build` gave healthy NATS, `pipeline` exit 0, healthy API,
+  `api_smoke.py` passed (2100 cases, 3 fixtures); `report7.json` had 0 duplicate outputs, 0 lost, 0 false closures in
+  every wasl lane (CRC with review R 0.837, 0/474; cervical R 0.967, 0/204). `podman compose down` (no `-v`) kept all four
+  volumes. **Defect observed:** a following `up` with a different valid-looking key started all three NATS nodes with
+  `Error decrypting our stream metafile: unable to recover keys`, then `Resetting stream cluster state` and
+  `detected duplicate assignment` for FHIR/PREP/FACTS/OUT/KV_*: nats-server does not refuse, so a wrong key lets the
+  cluster discard the retained streams. (A missing key was already refused by Compose interpolation.)
+- Fix: `deploy/nats/entrypoint.sh` (the `wasl-nats:local` entrypoint) refuses to start (exit 1, key never printed) on an
+  empty key, an unhashable key, or a key whose domain-prefixed SHA-256 differs from `/data/.wasl-key-check`. On a fresh
+  volume the marker is written (umask 077, temp file then `mv`) only after JetStream reports healthy, so a failed first
+  start, for example an all-digit key that nats-server parses as an out-of-range number, leaves no marker and the corrected
+  key starts normally. The script waits on the same nats-server process, forwards TERM/INT and keeps its exit code and
+  logs. Volumes created before this check have no marker; they start with a message and no marker is written, since the key
+  cannot be verified. Covered by tests in `scripts/test_deploy.py` (failed first start, empty hash, marker mode and
+  atomicity, signal forwarding) and static checks in `scripts/check_deploy.py`. No key safeguard was weakened; the key is
+  still not in the repository or image.
+- Legacy caveat: the marker is written by a poller that checks JetStream health about once per second. A crash between
+  JetStream becoming healthy and the marker write (including the gap before the next poll) can leave a volume with retained
+  data and no marker. The next start treats that volume as legacy/unverified: it starts with the "no key marker" message and
+  does not get wrong-key refusal. The key check is therefore not guaranteed for such a volume; it is not shown to be
+  exercised on a real crash.
+- Fix-round verification: a malformed all-digit first start left no marker; the corrected key then
+  became healthy and wrote a 0600 marker; a wrong key after a valid marker was refused with no decryption or reset warnings;
+  and a same-key down/up passed API smoke (2100 cases) with 0 false closures.
+- Scope of the restart: what is shown is that a restart with the correct key recovers the retained stores without
+  decryption warnings, and that a wrong key is refused. It does not show that retained messages were read back. The
+  `pipeline` service is one-shot and, by design, resets and re-runs the cohort on every `up` (see Configuration), so
+  the second run's 2100 cases are a fresh cohort rerun on the retained stores, not a resumed one. Run outputs in
+  `wasl-run` are overwritten.
+
 Direct Podman path: `podman compose --env-file <file with WASL_JS_KEY=k<64 hex>> -p <project> up -d --build`.
 `scripts/deploy_up.sh` remains Docker-only. Cleanup of the isolated project is `podman compose -p <project> down -v`.
 
@@ -150,7 +183,7 @@ storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/sc
 
 ## Not production-ready
 
-- **Verified under Podman + Docker Compose provider only.** Docker Engine, other hosts and a restarted/retained-volume deployment are untested.
+- **Verified under Podman + Docker Compose provider only.** Docker Engine and other hosts are untested. A retained-volume restart is checked under Podman only (7 Nov, above): a correct-key restart recovers the stores without decryption warnings and a wrong key is refused; retained messages are not shown to be read back, and the pipeline reruns a fresh cohort. The key marker script is not exercised on Docker Engine.
 - **Demo entrypoint only.** There is no mode that ingests real feeds without the generator (see above), and the
   provider table and code mappings are the demo's.
 - **One container for all pipeline services.** They talk only through NATS and their run directory, but the
