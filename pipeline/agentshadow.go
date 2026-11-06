@@ -13,6 +13,10 @@ package main
 // It does not read WASL_SHADOW / -shadow (pilot mode) and does not use -agentrecs (agentreplay's input).
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,6 +26,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -58,6 +63,11 @@ type InvestigateReq struct {
 	Live bool   // an uncached request may be made for this item
 	// Deadline bounds new uncached requests (zero = none).
 	Deadline time.Time
+	// CallsUsed is the lifetime uncached-request count before this item (persisted usage). The worker seeds its own
+	// counter with it, so a fresh or different response cache can never reset the cap.
+	CallsUsed int
+	// KillFile exists once the shadow was killed or degraded: the worker refuses every uncached request after that.
+	KillFile string
 }
 
 // InvestigateRes is the worker's one-line JSON result, validated by the engine.
@@ -112,7 +122,7 @@ type liveOut struct {
 // shadowOutcome is one observation line; the last line per item wins.
 type shadowOutcome struct {
 	Item      string    `json:"item"`
-	Pair      [2]string `json:"pair"`
+	Pair      [2]string `json:"pair"`    // salted aliases (pair_<hex>), never registration keys
 	Outcome   string    `json:"outcome"` // recommendation | fallback | ineligible | skipped
 	Reason    string    `json:"reason"`
 	Label     string    `json:"label,omitempty"`
@@ -153,22 +163,33 @@ type AgentShadow struct {
 	attempted map[string]bool
 	usage     shadowUsage
 
+	sig         interface{ Signal(os.Signal) } // the investigator, when it can be told to stop its in-flight worker
+	pairSalt    []byte
+	deadlineAt  time.Time // first start + Deadline (persisted): a restart does not reset the overall window
+	usageErr    error
+	incomplete  bool
+	laneRoot    string
+	running     bool
+	queued      map[string]bool
+	consumedSeq map[string]uint64
 	killed      bool
 	degraded    bool
 	degradedWhy string
 	lastEvent   time.Time
 	counts      map[string]int
 	reasons     map[string]int
-	lanes       int
 }
 
 type shadowUsage struct {
-	UncachedCalls int      `json:"uncached_calls"`
-	Items         []string `json:"items_attempted"`
-	Tokens        int      `json:"tokens_uncached"`
-	LatencyS      float64  `json:"latency_s_uncached"`
-	Cached        int      `json:"responses_cached"`
-	Uncached      int      `json:"responses_uncached"`
+	FirstStart    string            `json:"first_start,omitempty"`
+	Cache         string            `json:"cache,omitempty"`
+	Streams       map[string]string `json:"streams,omitempty"`
+	UncachedCalls int               `json:"uncached_calls"`
+	Items         []string          `json:"items_attempted"`
+	Tokens        int               `json:"tokens_uncached"`
+	LatencyS      float64           `json:"latency_s_uncached"`
+	Cached        int               `json:"responses_cached"`
+	Uncached      int               `json:"responses_uncached"`
 }
 
 // NewAgentShadow builds a fresh engine and loads persisted usage/outcomes from cfg.Dir.
@@ -194,7 +215,7 @@ func NewAgentShadow(cfg AgentShadowCfg, gbm *GBM, iso *Iso, P int, inv Investiga
 	s := &AgentShadow{cfg: cfg, inv: inv, P: P, start: cfg.Now(), next: 1, pend: map[uint64]*Prep{},
 		cands: map[string]*shadowCand{}, seenOut: map[[2]uint64]bool{},
 		answers: map[[2]string]string{}, pairRec: map[[2]string]string{}, outcomes: map[string]shadowOutcome{},
-		attempted: map[string]bool{}, counts: map[string]int{}, reasons: map[string]int{}, lastEvent: cfg.Now()}
+		attempted: map[string]bool{}, queued: map[string]bool{}, consumedSeq: map[string]uint64{}, counts: map[string]int{}, reasons: map[string]int{}, lastEvent: cfg.Now()}
 	s.L = NewLinkerCoreANN(gbm, P)
 	s.cores = make([]*ClosureCore, P)
 	s.derived = make([]map[uint64]derivedOut, P)
@@ -202,10 +223,127 @@ func NewAgentShadow(cfg AgentShadowCfg, gbm *GBM, iso *Iso, P int, inv Investiga
 		s.cores[k] = NewClosureCore(k, iso)
 		s.derived[k] = map[uint64]derivedOut{}
 	}
+	if sg, ok := inv.(interface{ Signal(os.Signal) }); ok {
+		s.sig = sg
+	}
 	if err := s.loadPersisted(); err != nil {
 		return nil, err
 	}
+	salt, err := loadPairSalt(filepath.Join(cfg.Dir, "pair_salt.bin"))
+	if err != nil {
+		return nil, err
+	}
+	s.pairSalt = salt
+	s.laneRoot = laneRootFor(cfg.Dir)
+	s.sweepLanes()
+	s.deadlineAt = s.start
+	if t, err := time.Parse(time.RFC3339Nano, s.usage.FirstStart); err == nil && t.Before(s.start) {
+		s.deadlineAt = t
+	} else {
+		s.usage.FirstStart = s.start.UTC().Format(time.RFC3339Nano)
+	}
+	cacheID := sha([]byte(cfg.Cache))[:12] // a hash, not the path
+	if s.usage.Cache != "" && s.usage.Cache != cacheID {
+		s.counts["cache_changed"]++ // allowed: the persisted call count is seeded into every worker
+	}
+	s.usage.Cache = cacheID
+	s.saveUsage()
 	return s, nil
+}
+
+func loadPairSalt(path string) ([]byte, error) {
+	if b, err := os.ReadFile(path); err == nil && len(b) >= 16 {
+		return b, nil
+	}
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return nil, err
+	}
+	if err := os.WriteFile(path, b, 0o600); err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+// pairAlias is the only form of a registration pair that reaches a persistent artifact.
+func (s *AgentShadow) pairAlias(pk [2]string) [2]string {
+	var out [2]string
+	for i, k := range pk {
+		m := hmac.New(sha256.New, s.pairSalt)
+		m.Write([]byte(k))
+		out[i] = "pair_" + hex.EncodeToString(m.Sum(nil))[:20]
+	}
+	return out
+}
+
+// laneRootFor is a private (0700) directory OUTSIDE the run directory, one per shadow dir.
+func laneRootFor(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		abs = dir
+	}
+	return filepath.Join(os.TempDir(), fmt.Sprintf("wasl-agentshadow-%d-%s", os.Getuid(), sha([]byte(abs))[:12]))
+}
+
+// sweepLanes removes whatever a crashed or double-signalled earlier process left behind, in the private root and in
+// the old in-run location, and recreates the private root empty.
+func (s *AgentShadow) sweepLanes() {
+	os.RemoveAll(filepath.Join(s.cfg.Dir, "lanes"))
+	os.RemoveAll(s.laneRoot)
+	os.MkdirAll(s.laneRoot, 0o700)
+	os.Chmod(s.laneRoot, 0o700)
+}
+
+// CleanLanes deletes every staged snapshot (end of run, signal exit).
+func (s *AgentShadow) CleanLanes() {
+	os.RemoveAll(filepath.Join(s.cfg.Dir, "lanes"))
+	os.RemoveAll(s.laneRoot)
+}
+
+// MarkIncomplete is called once consumption has stopped: a live output still waiting for its PREP, a PREP gap or a
+// queued investigation means the shadow did not see everything, so it says so instead of reporting a clean run.
+func (s *AgentShadow) MarkIncomplete() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.waiting) > 0 || len(s.pend) > 0 || len(s.todo) > 0 {
+		s.incomplete = true
+		s.degrade(fmt.Sprintf("incomplete:waiting=%d,pend=%d,queued=%d", len(s.waiting), len(s.pend), len(s.todo)))
+	}
+}
+
+// NoteStream records the highest stream sequence consumed from "PREP" or "OUT" (duplicates and bad messages included).
+func (s *AgentShadow) NoteStream(stream string, seq uint64) {
+	s.mu.Lock()
+	if seq > s.consumedSeq[stream] {
+		s.consumedSeq[stream] = seq
+	}
+	s.mu.Unlock()
+}
+
+// CheckStreamIdentity compares a stream's creation time with the one recorded by an earlier process. A different
+// stream under the same run directory is a different run: persisted outcomes and usage no longer describe it.
+func (s *AgentShadow) CheckStreamIdentity(stream, created string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.usage.Streams == nil {
+		s.usage.Streams = map[string]string{}
+	}
+	if old, ok := s.usage.Streams[stream]; ok && old != created {
+		s.degrade("stream_identity_changed:" + stream)
+		return
+	}
+	s.usage.Streams[stream] = created
+	s.saveUsage()
+}
+
+// Wake is a hint for the drain goroutine; the engine itself never blocks a consumer.
+func (s *AgentShadow) stopWorkers() {
+	if s.laneRoot != "" {
+		os.WriteFile(filepath.Join(s.laneRoot, "KILL"), nil, 0o600)
+	}
+	if s.sig != nil {
+		s.sig.Signal(syscall.SIGTERM) // the in-flight worker may finish its current request but starts no other
+	}
 }
 
 func (s *AgentShadow) usagePath() string { return filepath.Join(s.cfg.Dir, "usage.json") }
@@ -254,6 +392,7 @@ func readCacheCounter(cache string) int {
 func (s *AgentShadow) Kill() {
 	s.mu.Lock()
 	s.killed = true
+	s.stopWorkers()
 	s.mu.Unlock()
 }
 
@@ -267,6 +406,7 @@ func (s *AgentShadow) Degraded() (bool, string) {
 func (s *AgentShadow) degrade(why string) {
 	if !s.degraded {
 		s.degraded, s.degradedWhy = true, why
+		s.stopWorkers() // divergence also ends any in-flight uncached sequence
 	}
 }
 
@@ -340,7 +480,7 @@ func (s *AgentShadow) onDerivedItem(it *ReviewItem) {
 		c.Why = "not_link_question"
 	}
 	if _, dup := s.cands[c.ID]; dup {
-		return // closure may re-emit an unchanged item after a restart of the live service; the first snapshot stands
+		return // closure may re-emit an item (new head, same question); the first snapshot stands
 	}
 	s.cands[c.ID] = c
 }
@@ -429,7 +569,7 @@ func (s *AgentShadow) resolveWaiting() {
 
 // match is reached only when a live item and a derived item share an id; pair and head must agree too.
 func (s *AgentShadow) match(c *shadowCand, li *liveItem) {
-	if c.Pair != li.Pair || c.Head != li.Head {
+	if c.Pair != li.Pair { // id, pair and head of this very output were compared with the derived output in checkOut
 		s.degrade("item_mismatch:" + c.ID)
 		return
 	}
@@ -456,7 +596,9 @@ func (s *AgentShadow) liveAllowed() (bool, string) {
 		return false, "degraded"
 	case s.cfg.StopFile != "" && fileExists(s.cfg.StopFile):
 		return false, "stop_file"
-	case s.cfg.Deadline > 0 && s.cfg.Now().After(s.start.Add(s.cfg.Deadline)):
+	case s.usageErr != nil:
+		return false, "usage_not_persisted"
+	case s.cfg.Deadline > 0 && s.cfg.Now().After(s.deadlineAt.Add(s.cfg.Deadline)):
 		return false, "deadline"
 	case s.usage.UncachedCalls >= s.cfg.MaxCalls:
 		return false, "cap_calls"
@@ -465,6 +607,7 @@ func (s *AgentShadow) liveAllowed() (bool, string) {
 }
 
 func (s *AgentShadow) record(o shadowOutcome) {
+	o.Pair = s.pairAlias(o.Pair) // raw registration keys never reach observations.ndjson
 	s.outcomes[o.Item] = o
 	b, _ := json.Marshal(o)
 	if f, err := os.OpenFile(s.obsPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err == nil {
@@ -477,13 +620,32 @@ func (s *AgentShadow) record(o shadowOutcome) {
 	}
 }
 
-func (s *AgentShadow) saveUsage() {
+// saveUsage writes usage.json atomically and durably (write, fsync, rename). A failure is remembered: while usage
+// cannot be persisted no uncached request may be made (the cap would not survive a restart).
+func (s *AgentShadow) saveUsage() error {
 	sort.Strings(s.usage.Items)
 	b, _ := json.MarshalIndent(s.usage, "", " ")
 	tmp := s.usagePath() + ".tmp"
-	if os.WriteFile(tmp, append(b, '\n'), 0o644) == nil {
-		os.Rename(tmp, s.usagePath())
-	}
+	err := func() error {
+		f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+		if err != nil {
+			return err
+		}
+		if _, err := f.Write(append(b, '\n')); err != nil {
+			f.Close()
+			return err
+		}
+		if err := f.Sync(); err != nil {
+			f.Close()
+			return err
+		}
+		if err := f.Close(); err != nil {
+			return err
+		}
+		return os.Rename(tmp, s.usagePath())
+	}()
+	s.usageErr = err
+	return err
 }
 
 // prepared is one queued candidate whose bounds were decided under the lock.
@@ -494,10 +656,17 @@ type shadowJob struct {
 	live     bool
 	why      string
 	dir      string
+	base     int // lifetime uncached calls before this job
+	reserved int // what was persisted before the worker started (upper bound for this job)
+	kill     string
 }
 
 // investigate queues a matched, eligible candidate. Nothing is run here: Drain runs workers outside the lock.
 func (s *AgentShadow) investigate(c *shadowCand) {
+	if s.queued[c.ID] {
+		return // the same question re-emitted: one investigation per item per process
+	}
+	s.queued[c.ID] = true
 	s.todo = append(s.todo, c)
 }
 
@@ -516,7 +685,7 @@ func (s *AgentShadow) Drain() {
 }
 
 func (j *shadowJob) req() InvestigateReq {
-	return InvestigateReq{Item: j.c.ID, Pair: j.pk, Lane: j.dir, Live: j.live, Deadline: j.deadline}
+	return InvestigateReq{Item: j.c.ID, Pair: j.pk, Lane: j.dir, Live: j.live, Deadline: j.deadline, CallsUsed: j.base, KillFile: j.kill}
 }
 
 func (s *AgentShadow) nextJob() (*shadowJob, bool) {
@@ -528,6 +697,10 @@ func (s *AgentShadow) nextJob() (*shadowJob, bool) {
 		pk := agentPair(c.Pair[0], c.Pair[1])
 		if s.degraded {
 			s.record(shadowOutcome{Item: c.ID, Pair: pk, Outcome: "skipped", Reason: "degraded"})
+			continue
+		}
+		if s.answers[pk] != "" {
+			s.record(shadowOutcome{Item: c.ID, Pair: pk, Outcome: "skipped", Reason: "human_answered"}) // answered while queued: no call, no stale comparison
 			continue
 		}
 		if prev, ok := s.pairRec[pk]; ok && prev != c.ID {
@@ -546,17 +719,35 @@ func (s *AgentShadow) nextJob() (*shadowJob, bool) {
 		s.attempted[c.ID] = true
 		s.usage.Items = keysOfBool(s.attempted)
 		s.pairRec[pk] = c.ID
-		dir := filepath.Join(s.cfg.Dir, "lanes", sha([]byte(c.ID))[:12])
+		dir := filepath.Join(s.laneRoot, sha([]byte(c.ID))[:12])
 		if err := stageLane(dir, c); err != nil {
 			s.record(shadowOutcome{Item: c.ID, Pair: pk, Outcome: "fallback", Reason: "staging_failed"})
 			s.saveUsage()
 			continue
 		}
-		j := &shadowJob{c: c, pk: pk, live: live, why: why, dir: dir}
+		j := &shadowJob{c: c, pk: pk, live: live, why: why, dir: dir, base: s.usage.UncachedCalls, kill: filepath.Join(s.laneRoot, "KILL")}
 		if s.cfg.Deadline > 0 {
-			j.deadline = s.start.Add(s.cfg.Deadline)
+			j.deadline = s.deadlineAt.Add(s.cfg.Deadline)
 		}
-		s.saveUsage() // the attempt is persisted before the first request can leave the process
+		j.reserved = j.base
+		if live { // reserve this item's worst case (two requests) durably before the first one can leave the process
+			j.reserved = j.base + AgentShadowMaxResponses
+			if j.reserved > s.cfg.MaxCalls {
+				j.reserved = s.cfg.MaxCalls
+			}
+			if j.reserved < j.base {
+				j.reserved = j.base
+			}
+			s.usage.UncachedCalls = j.reserved
+		}
+		if err := s.saveUsage(); err != nil {
+			if live {
+				s.usage.UncachedCalls = j.base
+			}
+			j.live, j.why = false, "usage_not_persisted"
+			s.degrade("usage_not_persisted:" + err.Error())
+		}
+		s.running = true
 		return j, true
 	}
 	return nil, false
@@ -566,6 +757,8 @@ func (s *AgentShadow) finishJob(j *shadowJob, res InvestigateRes, err error) {
 	defer os.RemoveAll(j.dir) // staged snapshots are private and short-lived
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.running = false
+	s.lastEvent = s.cfg.Now()
 	out := shadowOutcome{Item: j.c.ID, Pair: j.pk, Live: j.live}
 	switch {
 	case err != nil:
@@ -588,6 +781,9 @@ func (s *AgentShadow) finishJob(j *shadowJob, res InvestigateRes, err error) {
 		out.Outcome, out.Reason, out.Label = "fallback", "bounds_violation", ""
 		s.degrade("worker_bounds_violation:" + j.c.ID)
 	}
+	if err == nil && res.Outcome == "fallback" && res.Reason == "bounds_violation" {
+		s.degrade("worker_bounds_violation:" + j.c.ID) // the worker caught it before writing any record
+	}
 	if err == nil {
 		out.Responses, out.Cached, out.Uncached = res.Responses, res.Cached, res.Uncached
 		out.LatencyS = res.LatencyS
@@ -597,9 +793,27 @@ func (s *AgentShadow) finishJob(j *shadowJob, res InvestigateRes, err error) {
 		s.usage.Tokens += res.TokensRaw["total"]
 		s.usage.LatencyS += res.LatencyS
 	}
-	if n := readCacheCounter(s.cfg.Cache); n > s.usage.UncachedCalls {
-		s.usage.UncachedCalls = n
+	// lifetime uncached calls: what the worker's seeded counter says, what actually completed, the cache's own counter
+	// and, when the worker died without a result, the durable reservation made before it started
+	n := s.usage.UncachedCalls
+	if j.live {
+		n = j.reserved
+	} else {
+		n = j.base
 	}
+	if err == nil {
+		n = j.base + res.Uncached
+		if res.CounterAfter > n {
+			n = res.CounterAfter
+		}
+	}
+	if c := readCacheCounter(s.cfg.Cache); c > n {
+		n = c
+	}
+	if n < j.base {
+		n = j.base
+	}
+	s.usage.UncachedCalls = n
 	s.record(out)
 	s.saveUsage()
 }
@@ -624,10 +838,17 @@ func cleanReason(r string) string {
 func (s *AgentShadow) Idle() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.cfg.Idle <= 0 || len(s.L.provDone) < len(Providers) || len(s.pend) > 0 {
+	if s.cfg.Idle <= 0 || len(s.L.provDone) < len(Providers) || len(s.pend) > 0 || len(s.todo) > 0 || s.running {
 		return false
 	}
 	return s.cfg.Now().Sub(s.lastEvent) >= s.cfg.Idle
+}
+
+// Quiescent: nothing queued and no worker running.
+func (s *AgentShadow) Quiescent() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.todo) == 0 && !s.running
 }
 
 // Status is the machine-readable state written to status-agentshadow.json and health.json.
@@ -650,7 +871,7 @@ func (s *AgentShadow) Status() map[string]interface{} {
 		"degraded": s.degraded, "degraded_reason": s.degradedWhy, "killed": s.killed, "counts": counts, "fallback_reasons": reasons,
 		"items_attempted": len(s.attempted), "max_items": s.cfg.MaxItems, "uncached_calls": s.usage.UncachedCalls, "max_calls": s.cfg.MaxCalls,
 		"tokens_uncached": s.usage.Tokens, "uptime_s": s.cfg.Now().Sub(s.start).Seconds(), "providers_done": len(s.L.provDone),
-		"read_only": true, "publishes": 0}
+		"incomplete": s.incomplete, "read_only": true, "publishes": 0}
 }
 
 // Report summarises coverage, agreement with the human sign-off (for the reader of the report only), fallback, latency
@@ -676,7 +897,7 @@ func (s *AgentShadow) Report() map[string]interface{} {
 			labels[o.Label]++
 			if o.Label == "uncertain" {
 				uncertain++
-			} else if h := s.answers[o.Pair]; h != "" {
+			} else if h := s.answers[s.rawPair(id)]; h != "" {
 				comparable++
 				if h == o.Label {
 					agree++
@@ -716,8 +937,23 @@ func (s *AgentShadow) Report() map[string]interface{} {
 		"agreement_with_human_signoff": map[string]interface{}{"comparable": comparable, "agree": agree, "uncertain_labels": uncertain, "no_human_answer_yet": noHuman},
 		"uncached_calls":               s.usage.UncachedCalls, "responses_cached": s.usage.Cached, "responses_uncached": s.usage.Uncached,
 		"tokens_uncached": s.usage.Tokens, "latency_s_uncached_p50": pct(.5), "latency_s_uncached_max": pct(1),
-		"degraded": s.degraded, "degraded_reason": s.degradedWhy,
+		"degraded": s.degraded, "degraded_reason": s.degradedWhy, "incomplete": s.incomplete,
 	}
+}
+
+// rawPair is the in-memory registration pair of an item (artifacts only carry aliases).
+func (s *AgentShadow) rawPair(item string) [2]string {
+	if c := s.cands[item]; c != nil {
+		return agentPair(c.Pair[0], c.Pair[1])
+	}
+	return [2]string{}
+}
+
+// consumed is the number of OUT messages seen so far, duplicates included (tests, progress).
+func (s *AgentShadow) consumed() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.counts["out_seen"] + s.counts["out_duplicates"]
 }
 
 // WriteStatus writes the status file beside the other status-*.json files and the health file in the shadow dir.
