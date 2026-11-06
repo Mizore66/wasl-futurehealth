@@ -18,6 +18,12 @@ class RegenRecipe(unittest.TestCase):
         for field in ("loaded_at", "in_seq", "throughput_ev_s"):
             self.assertIn(field, README)
 
+    def test_does_not_claim_every_safety_counter_is_same(self):
+        # Only the smoke-checked safety invariants hold; released_total and intents_ever_held_for_consent differ.
+        normalised = " ".join(README.split()).lower()
+        self.assertNotIn("every safety counter is the same", normalised)
+        self.assertIn("safety invariants checked by the smoke test hold", normalised)
+
     def test_names_nats_binary_requirement(self):
         self.assertRegex(README, re.compile(r"nats-server", re.I))
 
