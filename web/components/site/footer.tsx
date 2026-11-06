@@ -23,11 +23,11 @@ export function SiteFooter({
 }) {
   const print = (
     <p className={cn(small, "max-w-[90ch] leading-[1.5]")}>
-      <HonestyLabel kind={honesty} className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] text-(--muted)">
+      <HonestyLabel kind={honesty} className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] font-normal text-(--muted) [&>[data-dot]]:hidden">
         {qualifier}
       </HonestyLabel>{" "}
       {rest}{" "}
-      <Link href="/experts" className="text-(--teal) underline underline-offset-[0.18em] hover:text-(--ink)">
+      <Link href="/experts" className="inline-flex min-h-11 items-center text-(--teal) underline underline-offset-[0.18em] hover:text-(--ink)">
         The evidence, for experts
       </Link>
       .
@@ -47,7 +47,7 @@ export function SiteFooter({
 
   return (
     <footer className={cn(wrap, "flex flex-wrap items-center justify-between gap-6 py-12")}>
-      <Wordmark size="sm" />
+      <Wordmark size="sm" className="min-h-11" />
       <div className="max-w-[70ch]">{print}</div>
     </footer>
   );
