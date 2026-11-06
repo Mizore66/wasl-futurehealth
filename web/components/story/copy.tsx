@@ -24,7 +24,7 @@ const mute = "text-(--muted) italic font-normal";
 /** The honesty word, inline beside its number: italic, muted, no pill. */
 function Honest({ kind, children }: { kind: HonestyKind; children: string }) {
   return (
-    <HonestyLabel kind={kind} className={cn("inline h-auto whitespace-normal bg-transparent px-0 text-[0.8em] leading-[inherit]", mute)}>
+    <HonestyLabel kind={kind} className={cn("inline h-auto whitespace-normal bg-transparent px-0 text-[0.8em] font-normal leading-[inherit] [&>[data-dot]]:hidden", mute)}>
       {children}
     </HonestyLabel>
   );

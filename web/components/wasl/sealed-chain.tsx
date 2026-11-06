@@ -64,7 +64,7 @@ export function SealedChain({ nodes, className }: { nodes: ChainNode[]; classNam
               </p>
               {n.hash && (
                 <details className="mt-1 text-small text-muted">
-                  <summary className="cursor-pointer">Hash</summary>
+                  <summary className="inline-flex min-h-6 cursor-pointer items-center">Hash</summary>
                   <code className="break-all font-mono text-small">{n.hash}</code>
                 </details>
               )}

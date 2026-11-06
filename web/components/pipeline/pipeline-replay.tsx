@@ -5,11 +5,13 @@ import NumberFlow from "@number-flow/react";
 import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import replayJson from "@/data/replay.json";
 import { Avatar } from "@/components/avatar/avatar";
+import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import type { Replay } from "@/lib/replay/types";
 import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls } from "./controls";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
+import { TechnicalDetail } from "./technical";
 import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
 import { profileOf, type RulesBySha } from "./profile";
@@ -27,6 +29,8 @@ export type TamperDemo = {
   /** 1-based index of the changed step. */
   step: number;
   changed: string;
+  /** The backend's own entry types and hashes, for the Technical detail disclosure. */
+  technical: string[];
 };
 
 type LaneMark = "closed" | "review" | "open";
@@ -39,7 +43,7 @@ const LANE: Partial<Record<RowId, { mark: LaneMark; bg: string; ink: string; edg
 };
 
 const CHIP_MOVE = { duration: 0.5, ease: [0.2, 0.7, 0.2, 1] } as const;
-const FEED_PITCH = 52;
+const FEED_PITCH = 72;
 
 type Open = (caseId: string) => void;
 
@@ -49,7 +53,6 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
   const shown = useMemo(() => (profile.id ? profileOf(replay, play.frame, profile.id, rules) : null), [profile.id, play.frame, rules]);
   const reduceMotion = !!useReducedMotion();
   const view = useMemo(() => flowView(replay, play.frame), [play.frame]);
-  const [serverOff, setServerOff] = useState(false);
   const [tampered, setTampered] = useState(false);
   const { facts, totals } = replay;
   const stages = view.rows.filter((r) => !LANE[r.id] && r.id !== "ledger");
@@ -64,6 +67,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
           paused={play.paused}
           onToggle={play.toggle}
           onStep={play.step}
+          reduceMotion={play.reduceMotion}
           position={`Step ${view.step} of ${view.steps}`}
           speed={`One step a second. The recorded run handled ${facts.throughputEvS} events a second.`}
         />
@@ -97,13 +101,22 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
             </ol>
             <div data-stage="ledger" className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-rule px-5 py-3">
               <span className="text-body font-medium">{ledger.label}</span>
-              <span className="text-small text-muted">{ledger.tech}</span>
+              <span className="text-small text-muted">{ledger.note}</span>
               <span className="min-w-0 flex-1 truncate text-small text-muted">
                 {view.latestRecorded
                   ? `Latest: ${view.latestRecorded.who.name} · ${view.latestRecorded.closed ? "chain verified" : "decision sealed"}`
                   : "Nothing recorded yet in this loop"}
               </span>
               <span className="text-body tabular-nums">{ledger.count}</span>
+            </div>
+            <div className="border-t border-rule px-5">
+              <TechnicalDetail label="Technical detail: the system's names for these stages">
+                {stages.concat(lanes, [ledger]).map((r) => (
+                  <div key={r.id}>
+                    {r.label} = {r.tech}
+                  </div>
+                ))}
+              </TechnicalDetail>
             </div>
           </div>
         </LayoutGroup>
@@ -114,7 +127,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
           <h2 id="feed-h" className="m-0 text-body font-medium">
             Decisions
           </h2>
-          <p className="m-0 text-small text-muted">Newest first. Plain words, then the system&apos;s own label.</p>
+          <p className="m-0 text-small text-muted">Newest first. Plain words; the system&apos;s own labels are under Technical detail.</p>
           <ol aria-label="Decisions, newest first" className="relative m-0 mt-3 list-none overflow-hidden p-0" style={{ height: FEED_ROWS * FEED_PITCH }}>
             {view.feed.map((f, i) => {
               const latest = f.key === view.step - 1;
@@ -130,12 +143,12 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
                     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-small text-muted">
                       <a
                         {...profileLink(f.caseId, profile.open)}
-                        className="flex min-w-0 flex-none items-center gap-1.5 rounded-chip no-underline hover:underline"
+                        className="flex min-h-11 min-w-0 flex-none items-center gap-1.5 rounded-chip no-underline hover:underline"
                       >
                         <Avatar person={f.who.seed} state={f.who.face === "unknown" ? "unknown" : "known"} size={20} label="" />
                         <span className={cn("truncate", latest ? "font-medium text-hue" : "text-ink-soft")}>{f.who.name}</span>
                       </a>
-                      <span className="min-w-0 truncate">· {f.tech}</span>
+                      <span className="min-w-0 truncate">· {f.note}</span>
                     </div>
                   </div>
                   <span className="text-small text-muted">step {f.step}</span>
@@ -143,9 +156,16 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
               );
             })}
           </ol>
+          <TechnicalDetail label="Technical detail: the system's labels for these lines">
+            {view.feed.map((f) => (
+              <div key={f.key}>
+                step {f.step} · {f.tech}
+              </div>
+            ))}
+          </TechnicalDetail>
         </section>
 
-        <section aria-label="Run totals and a server switched off" className="min-w-0 border-t border-line pt-5">
+        <section aria-label="Run totals and server safety" className="min-w-0 border-t border-line pt-5">
           <div className="grid grid-cols-3 gap-4">
             <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
               <span data-testid="total-decisions" data-value={view.decisions}>
@@ -163,29 +183,12 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <div
-                role="img"
-                aria-label={serverOff ? "Three servers: server 2 off, servers 1 and 3 carry every event." : "Three servers, all on."}
-                className="flex items-center gap-1.5"
-              >
-                {[0, 1, 2].map((i) => (
-                  <MarkShape key={i} mark={serverOff && i === 1 ? "failed" : "done"} className="size-2.5" />
-                ))}
-                <span className="ml-1 text-small text-muted">{serverOff ? "Server 2 of 3 off" : "3 servers on"}</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setServerOff((v) => !v)}
-                className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink hover:bg-control"
-              >
-                {serverOff ? "Switch it back on" : "Switch off a server"}
-              </button>
-            </div>
-            <p aria-live="polite" className="m-0 text-small text-muted" data-testid="server-result">
-              {serverOff
-                ? `Server 2 off: still ${facts.lost} lost, ${facts.duplicates} duplicated. The switch is simulated here; the figures are the recorded run's.`
-                : `In the recorded run, ${facts.lost} of ${fmt(totals.outputs)} decisions were lost and ${facts.duplicates} duplicated.`}
+            <p className="m-0 flex flex-wrap items-center gap-2 text-body font-medium">
+              Switching a server off during a run <HonestyLabel kind="designed" />
+            </p>
+            <p className="m-0 text-small text-muted" data-testid="server-result">
+              There is no switch on this screen because live failover is not built. What the recorded run shows: {facts.lost} of {fmt(totals.outputs)} decisions
+              lost and {facts.duplicates} duplicated.
             </p>
           </div>
         </section>
@@ -196,10 +199,13 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
               <h2 id="tamper-h" className="m-0 text-body font-medium">
                 {tamper.title}
               </h2>
+              <HonestyLabel kind="simulated" className="mt-1">
+                Simulated edit
+              </HonestyLabel>
               <span
                 role="status"
                 className={cn(
-                  "mt-1 inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-chip px-2 text-small font-medium",
+                  "ml-2 mt-1 inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-chip px-2 text-small font-medium",
                   tampered ? "bg-pill-negative-bg text-pill-negative-ink" : "bg-pill-positive-bg text-pill-positive-ink",
                 )}
               >
@@ -212,7 +218,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
             <button
               type="button"
               onClick={() => setTampered((v) => !v)}
-              className="h-9 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink hover:bg-control"
+              className="h-11 flex-none cursor-pointer whitespace-nowrap rounded-control bg-active px-3.5 text-body font-medium text-ink hover:bg-control"
             >
               {tampered ? "Undo the change" : "Tamper with a step"}
             </button>
@@ -223,6 +229,11 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
               ? `${tamper.changed} Simulated here; in the recorded run ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught.`
               : `In the recorded run, ${facts.tamperDetected} of ${facts.tamperAttacks} tamper attacks were caught: deleted, reordered, truncated and rewritten records.`}
           </p>
+          <TechnicalDetail label="Technical detail: the system's record types">
+            {tamper.technical.map((t) => (
+              <div key={t}>{t}</div>
+            ))}
+          </TechnicalDetail>
         </section>
       </div>
       <PersonSheet profile={shown} onClose={profile.close} />
@@ -296,7 +307,7 @@ function CaseChip({ chip, row, reduceMotion, onOpen, tint = "bg-ground" }: { chi
       data-case={chip.id}
       {...profileLink(chip.id, onOpen)}
       className={cn(
-        "inline-flex max-w-full cursor-pointer items-center gap-2 rounded-[26px] py-1 pl-1 pr-3 text-small leading-[15px] no-underline hover:text-ink hover:shadow-[inset_0_0_0_1px_var(--color-control)]",
+        "inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 rounded-[26px] py-1 pl-1 pr-3 text-small leading-[15px] no-underline hover:text-ink hover:shadow-[inset_0_0_0_1px_var(--color-control)]",
         tint,
         chip.active ? "font-medium text-ink ring-2 ring-hue" : "text-ink-soft",
       )}
@@ -319,11 +330,11 @@ function StageColumn({ row, reduceMotion, onOpen }: { row: FlowRow; reduceMotion
         <path d="M2 2l6 6-6 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="truncate text-body font-medium">{row.label}</span>
+        <span className="text-body font-medium">{row.label}</span>
         <span className={cn("text-title tabular-nums", row.count ? "text-ink" : "text-muted")}>{row.count}</span>
       </div>
-      <span className="truncate text-small text-muted">{row.tech}</span>
-      <div className="mt-4 flex min-h-[196px] flex-col items-start gap-2">
+      <span className="text-small text-muted">{row.note}</span>
+      <div className="mt-4 flex min-h-24 flex-row flex-wrap items-start gap-2 lg:min-h-[196px] lg:flex-col">
         {row.chips.map((c) => (
           <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} onOpen={onOpen} />
         ))}
@@ -341,10 +352,10 @@ function OutcomeLane({ row, reduceMotion, onOpen }: { row: FlowRow; reduceMotion
         <span className={lane.ink}>
           <OutcomeMark mark={lane.mark} />
         </span>
-        <span className="min-w-0 flex-1 truncate text-body font-medium">{row.label}</span>
+        <span className="min-w-0 flex-1 text-body font-medium">{row.label}</span>
         <span className="text-body tabular-nums">{row.count}</span>
       </div>
-      <span className="block truncate pl-[22px] text-small text-muted">{row.tech}</span>
+      <span className="block pl-[22px] text-small text-muted">{row.note}</span>
       <div className="mt-2 grid min-h-10 grid-cols-2 items-center justify-items-start gap-1.5 pl-[22px]">
         {row.chips.map((c) => (
           <CaseChip key={c.id} chip={c} row={row.id} reduceMotion={reduceMotion} onOpen={onOpen} tint={lane.bg} />

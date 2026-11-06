@@ -144,7 +144,7 @@ export function NameJoiner() {
         </div>
         <div className="mt-2 text-[18px] leading-normal">{p.hospitalDetail}</div>
       </div>
-      <HonestyLabel kind="illustrative" className="mt-5 block h-auto bg-transparent px-0 text-[14px] leading-[1.45] text-(--muted)">
+      <HonestyLabel kind="illustrative" className="mt-5 block h-auto bg-transparent px-0 text-[14px] font-normal leading-[1.45] text-(--muted) [&>[data-dot]]:hidden">
         Made-up people, for illustration.
       </HonestyLabel>
     </section>

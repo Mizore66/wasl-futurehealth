@@ -262,3 +262,166 @@ test.describe("Referrals", () => {
     await expect(page.getByRole("region", { name: "Open referral" }).getByRole("heading", { level: 2 })).toHaveText("Aisha Al Mansoori");
   });
 });
+
+/* ---------- Phone width (issue #4) ---------- */
+
+const PHONE = { width: 390, height: 844 };
+
+async function noSideScroll(page: Page) {
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(PHONE.width);
+}
+
+/**
+ * Every visible link, button, summary and input in `main` is at least 44px tall.
+ * No exemptions: inline text links inside paragraphs were moved onto their own line.
+ */
+async function targetsAre44(page: Page) {
+  const small = await page.locator("main").evaluate((main) =>
+    [...main.querySelectorAll<HTMLElement>("a[href], button, summary, input:not([type=hidden])")]
+      .map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .filter(({ el, r }) => r.width > 1 && r.height > 1 && getComputedStyle(el).visibility !== "hidden")
+      .filter(({ r }) => r.height < 43.5)
+      .map(({ el, r }) => `${el.tagName.toLowerCase()} "${(el.getAttribute("aria-label") ?? el.textContent ?? "").trim().slice(0, 40)}" ${Math.round(r.height)}px`),
+  );
+  expect(small).toEqual([]);
+}
+
+test.describe("Phone width, 390px", () => {
+  test.use({ viewport: PHONE });
+
+  test("Patients: cards, no side scroll, 44px targets", async ({ page }) => {
+    await page.goto("/app/patients");
+    await noSideScroll(page);
+    await targetsAre44(page);
+    await expect(page.locator("tbody tr")).toHaveCount(25);
+    await page.goto("/app/patients?q=1009");
+    const card = page.locator("tbody tr").first();
+    await expect(card).toContainText("Aisha Al Mansoori");
+    await expect(card).toContainText("Referred");
+    await expect(card).toContainText("Due");
+    await expect(card).toContainText("Owner");
+    for (const word of ["Referred", "Due", "Owner"]) {
+      const box = (await card.getByText(word).first().boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(PHONE.width);
+    }
+    await shot(page, "patients-card-390");
+    await page.goto("/app/patients");
+    await shot(page, "patients-390");
+    await noSeriousAxe(page);
+  });
+
+  test("Today: Call is in the first screen; the list takes its turn", async ({ page }) => {
+    await page.goto("/app/today");
+    await noSideScroll(page);
+    const call = page.getByRole("button", { name: "Call AHS-sr-1004" });
+    const box = (await call.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
+    await targetsAre44(page);
+    await shot(page, "today-390");
+    await noSeriousAxe(page);
+
+    await page.getByRole("button", { name: /Your list/ }).click();
+    await expect(page.getByRole("region", { name: "Your list" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Open patient" })).toBeHidden();
+    await noSideScroll(page);
+    await targetsAre44(page);
+    await shot(page, "today-list-390");
+    await noSeriousAxe(page);
+
+    await page.getByRole("button", { name: /AHS-sr-1011/ }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "AHS-sr-1011" })).toBeFocused();
+    await expect(page.getByRole("button", { name: "Call AHS-sr-1011" })).toBeVisible();
+  });
+
+  test("Today: after the call, the outcome buttons stay beside Call", async ({ page }) => {
+    await page.goto("/app/today");
+    await page.getByRole("button", { name: "Call AHS-sr-1004" }).click();
+    await page.getByRole("button", { name: "Reached" }).click();
+    await page.getByRole("button", { name: "Call back on…" }).click();
+    await noSideScroll(page);
+    await targetsAre44(page);
+    await page.getByRole("button", { name: "Sun 30 Aug" }).click();
+    await targetsAre44(page);
+    await shot(page, "today-logged-390");
+  });
+
+  test("Referrals: stacked, Accept near the top, 44px targets", async ({ page }) => {
+    await page.goto("/app/referrals");
+    await noSideScroll(page);
+    await targetsAre44(page);
+    const accept = page.getByRole("region", { name: "Open referral" }).getByRole("button", { name: "Accept referral" });
+    const box = (await accept.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
+    await shot(page, "referrals-390");
+    await noSeriousAxe(page);
+
+    await page.getByRole("button", { name: /All referrals/ }).click();
+    await expect(page.getByRole("region", { name: "Referral list" })).toBeVisible();
+    await noSideScroll(page);
+    await targetsAre44(page);
+    await shot(page, "referrals-list-390");
+    await noSeriousAxe(page);
+
+    await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "Aisha Al Mansoori" })).toBeFocused();
+    await noSideScroll(page);
+    await targetsAre44(page);
+    await shot(page, "referrals-grade-390");
+  });
+
+  test("keyboard focus is visible and nothing animates under reduced motion", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/app/today");
+    const moving = await page.locator("main").evaluate((main) =>
+      [...main.querySelectorAll<HTMLElement>("*")].filter((el) => getComputedStyle(el).animationName !== "none" && parseFloat(getComputedStyle(el).animationDuration) > 0).length,
+    );
+    expect(moving).toBe(0);
+    await page.getByRole("button", { name: "Call AHS-sr-1004" }).focus();
+    const outline = await page.evaluate(() => {
+      const s = getComputedStyle(document.activeElement!);
+      return { w: s.outlineWidth, style: s.outlineStyle };
+    });
+    expect(outline).toEqual({ w: "2px", style: "solid" });
+  });
+});
+
+test.describe("Patients: paging and filters", () => {
+  test("25 per page; Next and Previous keep the filters", async ({ page }) => {
+    await page.goto("/app/patients");
+    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 128");
+    await expect(page.locator("tbody tr")).toHaveCount(25);
+    await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
+    await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
+    await expect(page).toHaveURL(/page=2/);
+    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 128");
+
+    await page.goto("/app/patients?programme=crc&page=2");
+    await expect(page.getByTestId("showing")).toContainText("colorectal screening");
+    await page.getByRole("link", { name: "Previous" }).click();
+    await expect(page).toHaveURL(/programme=crc/);
+    await expect(page).not.toHaveURL(/page=/);
+  });
+
+  test("a page past the end lands on the last page", async ({ page }) => {
+    await page.goto("/app/patients?page=99");
+    await expect(page).toHaveURL(/page=6$/);
+    await expect(page.getByTestId("range")).toHaveText("Showing 126–128 of 128");
+  });
+
+  test("programme filter is its own param and survives the chips", async ({ page }) => {
+    await page.goto("/app/patients?programme=crc");
+    await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Overdue" }).click();
+    await expect(page).toHaveURL(/programme=crc/);
+    await expect(page).toHaveURL(/overdue=true/);
+  });
+});
+
+test.describe("Wide screens", () => {
+  for (const route of ["/app/patients", "/app/today", "/app/referrals"]) {
+    test(`${route} has no serious accessibility violations at 1440px`, async ({ page }) => {
+      await page.goto(route);
+      await noSeriousAxe(page);
+      await shot(page, `${route.split("/").pop()}-1440`);
+    });
+  }
+});
