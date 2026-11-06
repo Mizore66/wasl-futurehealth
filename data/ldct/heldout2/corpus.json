@@ -1,0 +1,1897 @@
+{
+ "disclosure": "model-authored synthetic text; no author key; not clinician-verified",
+ "reports": [
+  {
+   "id": "f2l-001",
+   "metadata": {
+    "author_role": "Consultant breast radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": null,
+     "double_read": true,
+     "exam_type": "other_exam",
+     "prior_exam_date": "2025-02-10",
+     "technique": "Bilateral digital screening mammography, CC and MLO views"
+    },
+    "document_date": "2026-02-12",
+    "document_role": "screening",
+    "document_title": "Bilateral screening mammography report",
+    "facility_name": "Dune Lantern Screening Centre, Abu Dhabi",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-12",
+    "patient_on_document": {
+     "dob": "1964-03-17",
+     "emirates_id": "784-1964-5827341-6",
+     "name": "Hessa Marwan Al Rameqi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1964-03-17",
+     "name": "Hessa Marwan Al Rameqi",
+     "sex": "F"
+    }
+   },
+   "text": "BILATERAL SCREENING MAMMOGRAPHY\nPatient: Hessa Marwan Al Rameqi | DOB: 1964-03-17\nStandard bilateral CC and MLO views obtained.\nScattered areas of fibroglandular density. No suspicious mass, architectural distortion or grouped calcifications.\nNo significant interval change from the previous mammogram.\nBI-RADS 2: Benign findings.\nRoutine screening mammography in one year."
+  },
+  {
+   "id": "f2l-002",
+   "metadata": {
+    "author_role": "Specialist internal medicine",
+    "details": {
+     "encounter_type": "other",
+     "referenced_screening_date": null,
+     "setting": "other"
+    },
+    "document_date": "2026-03-23",
+    "document_role": "downstream",
+    "document_title": "Medical inpatient discharge summary",
+    "facility_name": "Saffron Quay Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-03-19",
+    "patient_on_document": {
+     "dob": "1958-08-22",
+     "emirates_id": "784-1958-6318924-3",
+     "name": "Khalid Nasser Al Mazhuri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-08-22",
+     "name": "Khalid Nasser Al Mazhuri",
+     "sex": "M"
+    }
+   },
+   "text": "DISCHARGE SUMMARY — Internal Medicine, Saffron Quay Hospital, Abu Dhabi\nPatient: Khalid Nasser Al Mazhuri; DOB 1958-08-22\nAdmission 19/03/2026; discharge 23/03/2026.\nPrincipal diagnosis: community-acquired right lower lobe pneumonia with hypoxaemia.\nTreated with intravenous ceftriaxone and azithromycin, fluids and supplemental oxygen. Blood cultures showed no growth.\nAfebrile for 48 hours; oxygen saturation 95% on room air at discharge.\nComplete oral amoxicillin/clavulanate for three further days. Repeat chest radiograph in six weeks through primary care.\nReturn urgently for worsening breathlessness, persistent fever or haemoptysis."
+  },
+  {
+   "id": "f2l-003",
+   "metadata": {
+    "author_role": "Respiratory clinical nurse specialist",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-04-21",
+     "setting": "telephone"
+    },
+    "document_date": "2026-05-18",
+    "document_role": "downstream",
+    "document_title": "Biopsy attendance follow-up",
+    "facility_name": "Copper Crescent Thoracic Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-04-21",
+    "patient_on_document": {
+     "dob": "1961-11-09",
+     "emirates_id": "784-1961-4928167-5",
+     "name": "Saeed Hamdan Al Qumrani",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1961-11-09",
+     "name": "Saeed Hamdan Al Qumrani",
+     "sex": "M"
+    }
+   },
+   "text": "Respiratory follow-up telephone entry — 18 May 2026\nSaeed Hamdan Al Qumrani, DOB 09/11/1961.\nDid not attend CT-guided biopsy of the right upper lobe nodule booked for 15 May following screening CT dated 21 April.\nCalls to the registered telephone number on 15 and 18 May were unanswered; unable to leave a message.\nLetter sent today requesting urgent contact with the respiratory clinic to discuss and rearrange biopsy. Referring clinician notified.\nNo tissue sample obtained."
+  },
+  {
+   "id": "f2l-004",
+   "metadata": {
+    "author_role": "Consultant thoracic radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 64,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Non-contrast low-dose volumetric chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-06-09",
+    "document_role": "screening",
+    "document_title": "Baseline low-dose CT chest report",
+    "facility_name": "Pearl Acacia Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-06-08",
+    "patient_on_document": {
+     "dob": "1956-07-04",
+     "emirates_id": "784-1956-7284193-2",
+     "name": "Mariam Rashid Al Dahmari",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1956-07-04",
+     "name": "Mariam Rashid Al Dahmari",
+     "sex": "F"
+    }
+   },
+   "text": "LOW-DOSE CT LUNG SCREENING — BASELINE\nMariam Rashid Al Dahmari | DOB 1956-07-04\nNon-contrast low-dose volumetric acquisition. DLP 64 mGy·cm. No prior chest CT available.\nThere is a solid noncalcified left upper lobe nodule measuring 7 mm in mean diameter. Mild centrilobular emphysema. No enlarged mediastinal nodes or pleural effusion.\nAssessment: Lung-RADS category three, probably benign.\nRecommend repeat low-dose chest CT in six months.\nSecond reader concurs."
+  },
+  {
+   "id": "f2l-005",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-09-02",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-10-15",
+    "document_role": "downstream",
+    "document_title": "Referral for definitive lung radiotherapy",
+    "facility_name": "Amber Dhow Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1954-02-13",
+     "emirates_id": "784-1954-3169572-8",
+     "name": "Yousif Salem Al Barqani",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1954-02-13",
+     "name": "Yousif Salem Al Barqani",
+     "sex": "M"
+    }
+   },
+   "text": "To Radiation Oncology, Amber Dhow Hospital, Abu Dhabi\nRe: Yousif Salem Al Barqani, DOB 13/02/1954\nPlease assess for stereotactic ablative radiotherapy following thoracic MDT discussion on 14 October 2026.\nScreening LDCT of 2 September identified a peripheral right upper lobe lesion. CT-guided core biopsy confirms invasive squamous cell carcinoma.\nPET-CT demonstrates uptake confined to the 22 mm primary, without nodal or distant disease; clinical stage cT1cN0M0.\nThoracic surgical review concluded that he is medically inoperable because of severe COPD and markedly reduced gas transfer.\nMDT recommends definitive SABR, subject to planning assessment. Diagnosis, non-operative management and referral discussed with the patient; he agrees to attend.\nHistology, pulmonary function results and staging imaging are available for review."
+  },
+  {
+   "id": "f2l-006",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 74,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose volumetric chest CT"
+    },
+    "document_date": "2026-03-18",
+    "document_role": "screening",
+    "document_title": "Baseline low-dose CT chest report",
+    "facility_name": "Qamar Dune Screening Pavilion",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-18",
+    "patient_on_document": {
+     "dob": "1961-03-12",
+     "emirates_id": "784-1961-5837294-2",
+     "name": "Hadi Munir Zafran",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1961-03-12",
+     "name": "Hadi Munir Zafran",
+     "sex": "M"
+    }
+   },
+   "text": "Qamar Dune Screening Pavilion, Abu Dhabi\nPatient: Hadi Munir Zafran | DOB: 1961-03-12 | Male\nExamination: Baseline low-dose CT chest, 2026-03-18.\nTechnique: Noncontrast volumetric acquisition; DLP 74 mGy·cm. Independent second read completed.\nFindings: Solid 9 mm right upper lobe nodule with irregular spiculated margins. Enlarged right hilar lymph node measures 15 mm in short axis. Mild centrilobular emphysema.\nNo pleural effusion or destructive osseous lesion.\nImpression: Lung-RADS 4X. Suspicious pulmonary nodule with additional concerning morphology and hilar lymphadenopathy.\nRecommend prompt thoracic assessment, diagnostic contrast-enhanced CT chest and PET/CT, with tissue sampling as clinically appropriate."
+  },
+  {
+   "id": "f2l-007",
+   "metadata": {
+    "author_role": "Consultant thoracic surgeon",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-04-06",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-04-29",
+    "document_role": "downstream",
+    "document_title": "Thoracic oncology treatment planning note",
+    "facility_name": "Sahil Lantern Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-04-06",
+    "patient_on_document": {
+     "dob": "1963-02-09",
+     "emirates_id": null,
+     "name": "Darwani Nadir Qasim",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-02-09",
+     "name": "Nadir Qasim Darwani",
+     "sex": "M"
+    }
+   },
+   "text": "Sahil Lantern Hospital — Thoracic Oncology Clinic, Abu Dhabi\nDarwani Nadir Qasim | DOB 1963-02-09 | 63-year-old man\nReviewed following screening CT dated 2026-04-06 and subsequent investigations.\nCore biopsy of the right upper lobe lesion confirms invasive adenocarcinoma. PET/CT shows uptake confined to the primary lesion; EBUS nodal samples are negative for malignancy.\nMDT discussion completed 2026-04-27: clinical stage cT1cN0M0. Pulmonary function and cardiac assessment support operative management.\nPlan: offer right upper lobectomy with systematic nodal dissection. Discussed operative risks, alternatives and the possibility of further treatment depending on resection histology.\nPatient wishes to proceed; surgical consultation arranged. Smoking cessation support continued."
+  },
+  {
+   "id": "f2l-008",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 81,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose thin-section chest CT"
+    },
+    "document_date": "2026-07-14",
+    "document_role": "screening",
+    "document_title": "Low-dose CT chest",
+    "facility_name": "Mizhar Crescent Imaging Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-07-14",
+    "patient_on_document": {
+     "dob": "1958-08-23",
+     "emirates_id": "784-1958-9263815-4",
+     "name": "Rima Salim Vardani",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-08-23",
+     "name": "Rima Salim Vardani",
+     "sex": "F"
+    }
+   },
+   "text": "LOW-DOSE CT CHEST — 2026-07-14\nPatient: Rima Salim Vardani; female; DOB 1958-08-23.\nBaseline screening examination. Noncontrast thin-section acquisition, DLP 81 mGy·cm.\nAn 18 mm solid spiculated nodule is present in the left upper lobe, with associated pleural retraction. No enlarged mediastinal lymph nodes. No pleural effusion.\nIMPRESSION: Very suspicious left upper lobe nodule. Lung-RADS 4B.\nRecommend diagnostic CT chest, PET/CT and referral to the thoracic service for tissue sampling. Findings communicated to the referring clinician today."
+  },
+  {
+   "id": "f2l-009",
+   "metadata": {
+    "author_role": "Screening radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose chest CT with multiplanar reconstructions"
+    },
+    "document_date": "2026-09-03",
+    "document_role": "screening",
+    "document_title": "Lung screening CT report",
+    "facility_name": "Marjan Vale Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1966-01-17",
+     "emirates_id": "784-1966-4175928-6",
+     "name": "Bashir Talal Nuwari",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1966-01-17",
+     "name": "Bashir Talal Nuwari",
+     "sex": "M"
+    }
+   },
+   "text": "Marjan Vale Screening Centre | Abu Dhabi\nPatient: Bashir Talal Nuwari | DOB 1966-01-17 | Male\nBaseline LDCT chest performed 2026-09-02. No prior imaging available.\nNodule inventory: N1, right lower lobe, solid, mean diameter 6.6 mm, smooth margins — Lung-RADS 3. N2, left upper lobe, densely calcified granuloma, 4 mm — Lung-RADS 1.\nNo consolidation, effusion or enlarged intrathoracic nodes.\nFinal impression: Overall Lung-RADS 2. Continue annual low-dose CT screening in 12 months.\nReport authorised following second reader review."
+  },
+  {
+   "id": "f2l-010",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 77,
+     "double_read": null,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-10-03",
+     "technique": "Noncontrast low-dose volumetric chest CT"
+    },
+    "document_date": "2026-10-09",
+    "document_role": "screening",
+    "document_title": "Annual LDCT report pending comparison",
+    "facility_name": "Nacre Horizon Medical Pavilion",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-08",
+    "patient_on_document": {
+     "dob": "1955-06-21",
+     "emirates_id": "784-1955-6829437-1",
+     "name": "Dalia Farid Mazrani",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-06-21",
+     "name": "Dalia Farid Mazrani",
+     "sex": "F"
+    }
+   },
+   "text": "ANNUAL LUNG SCREENING CT\nDalia Farid Mazrani | DOB 1955-06-21 | Female\nExam date: 2026-10-08. Low-dose noncontrast chest CT; DLP 77 mGy·cm.\nThere is a 7 mm noncalcified solid nodule in the right middle lobe. The patient reports that this was described on her CT of 2025-10-03.\nPrior CT images have been requested from the outside imaging service but have not yet been received. Stability cannot currently be assessed.\nAssessment: Lung-RADS 0, incomplete; comparison pending.\nAn addendum will be issued after review of the prior examination. Screening recall interval deferred pending comparison."
+  },
+  {
+   "id": "f2l-011",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": null,
+     "double_read": null,
+     "exam_type": "other_exam",
+     "prior_exam_date": null,
+     "technique": "PA and lateral chest radiographs"
+    },
+    "document_date": "2026-02-09",
+    "document_role": "screening",
+    "document_title": "Chest radiograph report",
+    "facility_name": "Sahfara Chest Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-09",
+    "patient_on_document": {
+     "dob": "1962-03-17",
+     "emirates_id": "784-1962-5831906-4",
+     "name": "Marwan Nabil Al Rafi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-03-17",
+     "name": "Marwan Nabil Al Rafi",
+     "sex": "M"
+    }
+   },
+   "text": "SAHFARA CHEST CENTRE — RADIOLOGY\nPatient: Marwan Nabil Al Rafi | DOB: 1962-03-17\nExamination: Chest radiograph, PA and lateral, 2026-02-09.\nSmall nodular opacity projects over the right upper lung, approximately 11 mm. No focal air-space consolidation or pleural effusion. Cardiomediastinal silhouette is not enlarged.\nImpression: Right upper-zone nodular opacity. CT chest recommended for further characterization."
+  },
+  {
+   "id": "f2l-012",
+   "metadata": {
+    "author_role": "Specialist radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 74,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Low-dose noncontrast chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-04-14",
+    "document_role": "screening",
+    "document_title": "Baseline low-dose CT lung screening report",
+    "facility_name": "Qamraya Preventive Imaging Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-04-14",
+    "patient_on_document": {
+     "dob": "1967-08-22",
+     "emirates_id": "784-1967-2946183-7",
+     "name": "Samira Khaled Al Wadi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1967-08-22",
+     "name": "Samira Khaled Al Wadi",
+     "sex": "F"
+    }
+   },
+   "text": "Baseline lung screening CT — 2026-04-14\nPatient: Samira Khaled Al Wadi, DOB 1967-08-22.\nLow-dose noncontrast acquisition with thin-section reconstructions. DLP 74 mGy·cm. No prior CT available.\nLeft upper lobe 10 mm solid nodule, with the dense solid component measuring 9 mm on lung windows; mildly lobulated margins. No enlarged mediastinal nodes. Mild centrilobular emphysema.\nAssessment: Lung-RADS 4A, suspicious.\nRecommend repeat LDCT in 3 months. PET/CT may be considered given the solid component measuring at least 8 mm.\nResults and follow-up recommendation communicated to the screening coordinator."
+  },
+  {
+   "id": "f2l-013",
+   "metadata": {
+    "author_role": "Consultant histopathologist",
+    "details": {
+     "encounter_type": "addendum",
+     "referenced_screening_date": "2026-06-03",
+     "setting": "pathology"
+    },
+    "document_date": "2026-06-29",
+    "document_role": "downstream",
+    "document_title": "Lung core biopsy immunohistochemistry addendum",
+    "facility_name": "Nahrava Diagnostic Laboratory",
+    "facility_type": "laboratory",
+    "index_date": "2026-06-03",
+    "patient_on_document": {
+     "dob": "1959-06-11",
+     "emirates_id": null,
+     "name": "Yousif Hamdan Al Mazroui",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1959-06-11",
+     "name": "Yousef Hamdan Al Mazrouei",
+     "sex": "M"
+    }
+   },
+   "text": "HISTOPATHOLOGY ADDENDUM | Accession AP26-68142\nPatient: Yousif Hamdan Al Mazroui | DOB: 1959-06-11 | Male\nRight upper lobe core biopsy obtained 2026-06-23 following screening CT dated 2026-06-03.\nAddendum to report issued 2026-06-25: immunohistochemical studies are now complete.\nTumour cells show diffuse p40 expression and are negative for TTF-1 and Napsin A.\nFinal diagnosis: Invasive squamous cell carcinoma, moderately differentiated.\nThis addendum replaces the provisional designation of non-small cell carcinoma, not otherwise specified. MDT outcome is not recorded in the pathology record."
+  },
+  {
+   "id": "f2l-014",
+   "metadata": {
+    "author_role": "Consultant thoracic surgeon",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-07-08",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-08-19",
+    "document_role": "downstream",
+    "document_title": "Thoracic clinic investigation review",
+    "facility_name": "Daryava Specialist Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1956-12-05",
+     "emirates_id": "784-1956-8614279-2",
+     "name": "Hessa Rashid Al Darimi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1956-12-05",
+     "name": "Hessa Rashid Al Darimi",
+     "sex": "F"
+    }
+   },
+   "text": "Thoracic clinic follow-up, 2026-08-19\nPatient: Hessa Rashid Al Darimi | DOB 1956-12-05\nReviewed investigations following the screening examination of 2026-07-08.\nContrast-enhanced diagnostic CT demonstrates a 34 mm left lower lobe mass and an enlarged left hilar node. PET/CT shows intense FDG uptake in the mass and uptake in the hilar node; no distant FDG-avid lesion reported.\nCT-guided core biopsy performed 2026-08-12: malignant, invasive adenocarcinoma of pulmonary origin.\nFindings explained to the patient. Plan: to be discussed at thoracic MDT."
+  },
+  {
+   "id": "f2l-015",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": true,
+     "exam_type": "addendum",
+     "prior_exam_date": null,
+     "technique": "Review of baseline low-dose noncontrast chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-09-23",
+    "document_role": "screening",
+    "document_title": "LDCT screening report addendum after double-read",
+    "facility_name": "Ramlaya Lung Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-09-21",
+    "patient_on_document": {
+     "dob": "1960-01-29",
+     "emirates_id": "784-1960-4378251-6",
+     "name": "Farid Salim Al Nawri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1960-01-29",
+     "name": "Farid Salim Al Nawri",
+     "sex": "M"
+    }
+   },
+   "text": "ADDENDUM — screening LDCT performed 2026-09-21\nPatient: Farid Salim Al Nawri | DOB: 1960-01-29\nReference: original report issued 2026-09-21, which assigned Lung-RADS 3 and advised 6-month LDCT.\nSecond-radiologist review completed 2026-09-23. The right lower lobe solid nodule measures 9 × 8 mm, mean diameter 8.5 mm, on thin-section images; the original measurement underestimated its size.\nRevised assessment: Lung-RADS 4A. This replaces the category and follow-up recommendation in the original report.\nRecommend LDCT in 3 months; PET/CT may be considered. Remaining findings are unchanged.\nAmended result sent to the referring clinician and screening follow-up team."
+  },
+  {
+   "id": "f2l-016",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-04",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-03-18",
+    "document_role": "downstream",
+    "document_title": "Respiratory clinic follow-up",
+    "facility_name": "Mizhar Dunes Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-03-04",
+    "patient_on_document": {
+     "dob": "1961-09-14",
+     "emirates_id": "784-1961-5821946-3",
+     "name": "Nadir Salim Al Ruwahi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1961-09-14",
+     "name": "Nadir Salim Al Ruwahi",
+     "sex": "M"
+    }
+   },
+   "text": "Respiratory clinic follow-up — 18 March 2026\nPatient: Nadir Salim Al Ruwahi | DOB: 14 September 1961\nAttended following screening LDCT dated 4 March 2026 showing a suspicious right upper lobe nodule.\nCT-guided core biopsy performed yesterday. Mild local discomfort only; no haemoptysis or breathlessness.\nHistology remains awaited. Case listed for lung MDT discussion next week once pathology is available.\nWe will telephone the patient with the outcome and arrange the next appointment."
+  },
+  {
+   "id": "f2l-017",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": true,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-02-12",
+     "technique": "Non-contrast low-dose volumetric CT chest with thin-section reconstructions"
+    },
+    "document_date": "2026-02-16",
+    "document_role": "screening",
+    "document_title": "Annual low-dose CT chest report",
+    "facility_name": "Suhail Grove Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-16",
+    "patient_on_document": {
+     "dob": "1958-01-22",
+     "emirates_id": "784-1958-4368205-7",
+     "name": "Hessa Marwan Al Nufaili",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-01-22",
+     "name": "Hessa Marwan Al Nufaili",
+     "sex": "F"
+    }
+   },
+   "text": "LOW-DOSE CT CHEST — ANNUAL SCREENING\nPatient: Hessa Marwan Al Nufaili | DOB: 22 January 1958\nTechnique: Non-contrast low-dose volumetric acquisition. DLP 68 mGy·cm. Independently reviewed by two radiologists.\nComparison: 12 February 2025, reported as Lung-RADS 3 for a 6 mm solid left lower lobe nodule.\nFindings: The previously described left lower lobe nodule has completely resolved. Unchanged densely calcified right upper lobe granuloma. No new or enlarging pulmonary nodule. Mild centrilobular emphysema.\nImpression: Resolution of the previously observed nodule; benign calcified granuloma only. Continue routine annual low-dose CT screening in 12 months."
+  },
+  {
+   "id": "f2l-018",
+   "metadata": {
+    "author_role": "Consultant thoracic physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-08",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-05-29",
+    "document_role": "downstream",
+    "document_title": "Thoracic unit review and surgical referral",
+    "facility_name": "Rimal Crescent Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-05-08",
+    "patient_on_document": {
+     "dob": "1956-06-06",
+     "emirates_id": "784-1956-7193842-1",
+     "name": "Faris Adnan Al Mazrouqi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1956-06-06",
+     "name": "Faris Adnan Al Mazrouqi",
+     "sex": "M"
+    }
+   },
+   "text": "Thoracic Unit — outpatient review, Abu Dhabi\nFaris Adnan Al Mazrouqi, DOB 6 June 1956, attended with his daughter.\nScreening LDCT of 8 May 2026: Lung-RADS 4B, spiculated peripheral right upper lobe lesion.\nCT-guided core biopsy confirms pulmonary adenocarcinoma. Staging imaging shows no nodal or distant metastatic disease.\nDiscussed at lung MDT on 27 May 2026; surgical management recommended, subject to physiological assessment.\nFindings and treatment options explained today. Referred to thoracic surgery for resection assessment; lung function and anaesthetic review requested."
+  },
+  {
+   "id": "f2l-019",
+   "metadata": {
+    "author_role": "Respiratory medicine specialist",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-08-03",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-08-10",
+    "document_role": "downstream",
+    "document_title": "Respiratory review pending MDT discussion",
+    "facility_name": "Naseem Vale Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-08-03",
+    "patient_on_document": {
+     "dob": "1963-11-19",
+     "emirates_id": "784-1963-2659084-6",
+     "name": "Mariam Khaled Al Harthani",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1963-11-19",
+     "name": "Mariam Khaled Al Harthani",
+     "sex": "F"
+    }
+   },
+   "text": "Mariam Khaled Al Harthani | DOB 19 November 1963\nAttended respiratory review today following screening LDCT on 3 August 2026. Images reviewed with the patient, including the irregular left apical opacity.\nMDT outcome pending; no management decision has yet been made. Imaging forwarded for discussion at the next lung meeting. Patient aware that we will contact her after the meeting."
+  },
+  {
+   "id": "f2l-020",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-09-21",
+     "setting": "imaging_unit"
+    },
+    "document_date": "2026-09-22",
+    "document_role": "downstream",
+    "document_title": "Baseline lung screening CT report",
+    "facility_name": "Barq Oasis Imaging Centre",
+    "facility_type": "other",
+    "index_date": "2026-09-21",
+    "patient_on_document": {
+     "dob": "1967-04-03",
+     "emirates_id": "784-1967-8431760-2",
+     "name": "Rashid Nabil Al Safwani",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1967-04-03",
+     "name": "Rashid Nabil Al Safwani",
+     "sex": "M"
+    }
+   },
+   "text": "BASELINE LUNG SCREENING: LOW-DOSE CT CHEST\nPatient: Rashid Nabil Al Safwani | DOB: 3 April 1967\nExamination date: 21 September 2026\nNon-contrast low-dose CT chest. DLP: 74 mGy·cm. No previous imaging available.\nThere is an 8 mm solid non-calcified nodule in the right lower lobe. No enlarged mediastinal nodes or pleural effusion.\nImpression: Lung-RADS 4A. Recommend 3-month low-dose CT follow-up; PET/CT may be considered given the solid nodule size."
+  },
+  {
+   "id": "f2l-021",
+   "metadata": {
+    "author_role": "Smoking cessation physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-27",
+     "setting": "other"
+    },
+    "document_date": "2026-06-18",
+    "document_role": "downstream",
+    "document_title": "Smoking cessation follow-up",
+    "facility_name": "Wahat Al Sahl Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-27",
+    "patient_on_document": {
+     "dob": "1962-02-14",
+     "emirates_id": "784-1962-5827146-3",
+     "name": "Samir Nabil Al Mared",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-02-14",
+     "name": "Samir Nabil Al Mared",
+     "sex": "M"
+    }
+   },
+   "text": "Smoking cessation review — 18 June 2026\nPatient: Samir Nabil Al Mared | DOB: 14 February 1962 | Male\nAttended for tobacco dependence support; currently smoking 12 cigarettes daily, reduced from 25.\nReports morning cravings. Discussed nicotine replacement options and agreed on a quit date next month.\nMentions a lung nodule identified at screening; today's consultation focused on smoking cessation.\nArrange cessation follow-up in four weeks."
+  },
+  {
+   "id": "f2l-022",
+   "metadata": {
+    "author_role": "Consultant breast surgeon",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": null,
+     "setting": "mdt_record"
+    },
+    "document_date": "2026-09-09",
+    "document_role": "downstream",
+    "document_title": "Breast MDT decision record",
+    "facility_name": "Marjan Fields Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-08-26",
+    "patient_on_document": {
+     "dob": "1967-11-22",
+     "emirates_id": "784-1967-3918265-8",
+     "name": "Maha Rafiq Al Waseel",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1967-11-22",
+     "name": "Maha Rafiq Al Waseel",
+     "sex": "F"
+    }
+   },
+   "text": "BREAST MULTIDISCIPLINARY MEETING — 09 September 2026\nMaha Rafiq Al Waseel | DOB 22 November 1967 | Female\nLeft breast upper outer quadrant distortion detected on screening mammography dated 26 August 2026.\nUltrasound: 14 mm irregular lesion at 2 o'clock; axillary nodes retain normal morphology.\nCore biopsy: invasive carcinoma of no special type, grade 2; ER positive, PR positive, HER2 negative.\nConsensus: breast-conserving surgery with sentinel lymph node biopsy, subject to surgical consultation.\nBreast care nurse to coordinate appointment and discuss the proposed treatment."
+  },
+  {
+   "id": "f2l-023",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 61,
+     "double_read": null,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-03-12",
+     "technique": "Low-dose noncontrast volumetric chest CT with thin-section reconstructions."
+    },
+    "document_date": "2026-03-16",
+    "document_role": "screening",
+    "document_title": "Annual low-dose CT chest report",
+    "facility_name": "Qamar Dunes Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-16",
+    "patient_on_document": {
+     "dob": "1955-05-08",
+     "emirates_id": "784-1955-7461938-2",
+     "name": "Faris Adil Al Rameed",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-05-08",
+     "name": "Faris Adil Al Rameed",
+     "sex": "M"
+    }
+   },
+   "text": "Faris Adil Al Rameed | M | DOB 08 May 1955\nAnnual LDCT chest, noncontrast. DLP 61 mGy·cm. Compared with 12/03/2025.\nNo pulm nodules. No focal airspace opacity or effusion. No enlarged thoracic nodes.\nAnnual LDCT in 12 mo.\nLR1"
+  },
+  {
+   "id": "f2l-024",
+   "metadata": {
+    "author_role": "Specialist radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 54,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Low-dose noncontrast chest CT with axial and multiplanar reconstructions."
+    },
+    "document_date": "2026-07-22",
+    "document_role": "screening",
+    "document_title": "Baseline lung screening CT",
+    "facility_name": "Sahil Lantern Medical Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-07-21",
+    "patient_on_document": {
+     "dob": "1965-07-19",
+     "emirates_id": "784-1965-6284591-6",
+     "name": "Huda Mazin Al Nafeel",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1965-07-19",
+     "name": "Huda Mazin Al Nafeel",
+     "sex": "F"
+    }
+   },
+   "text": "Baseline lung screening CT — Huda Mazin Al Nafeel, DOB 19 July 1965, female.\nLow-dose CT of the chest performed without intravenous contrast. No prior examination available.\nThe lungs are clear with no pulmonary nodules. No pleural effusion or thoracic lymphadenopathy.\nLung-RADS 1. Continue annual low-dose CT screening in 12 months."
+  },
+  {
+   "id": "f2l-025",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-09-28",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-10-14",
+    "document_role": "downstream",
+    "document_title": "Respiratory nodule clinic review",
+    "facility_name": "Naseem Vale Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-28",
+    "patient_on_document": {
+     "dob": "1958-03-03",
+     "emirates_id": "784-1958-9153724-1",
+     "name": "Yousif Kamal Al Dareef",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-03-03",
+     "name": "Yousif Kamal Al Dareef",
+     "sex": "M"
+    }
+   },
+   "text": "Respiratory clinic review | 14 October 2026\nYousif Kamal Al Dareef | DOB 03 March 1958 | Male\nReviewed screening CT of 28 September 2026: 11 mm spiculated right upper lobe solid nodule.\nThere are no suspicious findings in the contralateral left lung.\nThe right upper lobe nodule remains indeterminate. PET-CT has been requested but has not yet been performed; no tissue diagnosis is available.\nDiscussed the need to complete assessment. Patient agrees to proceed.\nClinic coordinator to confirm PET-CT booking, with thoracic MDT review after imaging."
+  },
+  {
+   "id": "f2l-026",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-03-09",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-03-24",
+    "document_role": "downstream",
+    "document_title": "Bronchoscopy procedure and sampling report",
+    "facility_name": "Naylora Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-03-09",
+    "patient_on_document": {
+     "dob": "1962-04-17",
+     "emirates_id": "784-1962-5938174-6",
+     "name": "Hamdan Nabil Al Ruwahi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-04-17",
+     "name": "Hamdan Nabil Al Ruwahi",
+     "sex": "M"
+    }
+   },
+   "text": "Naylora Hospital, Abu Dhabi — Bronchoscopy report\nPatient: Hamdan Nabil Al Ruwahi; DOB 1962-04-17\nIndication: Right upper lobe lesion identified on screening LDCT dated 2026-03-09.\nFlexible bronchoscopy performed under sedation. No visible endobronchial lesion. Navigational sampling of the peripheral target was limited by airway angulation.\nBrushings, lavage and forceps samples submitted. Cytology shows scant benign bronchial cells; biopsy contains bronchial mucosa only. Sampling is non-diagnostic for the target lesion.\nNo immediate complication. Findings and limitations explained to the patient.\nPlan: Repeat navigational bronchoscopy with additional tissue acquisition. Case has not yet been discussed at thoracic MDT."
+  },
+  {
+   "id": "f2l-027",
+   "metadata": {
+    "author_role": "Consultant radiologists",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": true,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-05-12",
+     "technique": "Noncontrast low-dose volumetric chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-05-14",
+    "document_role": "screening",
+    "document_title": "Annual low-dose chest CT report",
+    "facility_name": "Velmara Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-05-14",
+    "patient_on_document": {
+     "dob": "1958-09-23",
+     "emirates_id": "784-1958-7264913-2",
+     "name": "Salma Rashid Al Mazyani",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-09-23",
+     "name": "Salma Rashid Al Mazyani",
+     "sex": "F"
+    }
+   },
+   "text": "• LDCT ANNUAL SCREEN / 2026-05-14 / Abu Dhabi\n• LUNG-RADS 2 — benign appearance or behaviour\n• PATIENT: Salma Rashid Al Mazyani / DOB 1958-09-23\n• SCANNER: Helion CT-64; noncontrast low-dose volumetric chest; thin-section reconstructions\n• DOSE: DLP 68 mGy·cm / CTDIvol 1.7 mGy\n• COMPARE: 2025-05-12 LDCT\n• FINDINGS: Unchanged 4 mm solid left lower lobe nodule. Mild centrilobular emphysema. No new suspicious nodule or enlarged thoracic nodes.\n• ACTION: Annual screening LDCT in 12 months.\n• DOUBLE READ: Dr Nareen Vashiq / Dr Talib Mehran; concordant."
+  },
+  {
+   "id": "f2l-028",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 74,
+     "double_read": null,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Low-dose noncontrast chest CT"
+    },
+    "document_date": "2026-07-08",
+    "document_role": "screening",
+    "document_title": "Baseline lung screening CT",
+    "facility_name": "Orivane Diagnostic Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1968-02-06",
+     "emirates_id": "784-1968-3816259-4",
+     "name": "Yousif Marwan Al Duremi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1968-02-06",
+     "name": "Yousif Marwan Al Duremi",
+     "sex": "M"
+    }
+   },
+   "text": "BASELINE LUNG SCREENING CT\nYousif Marwan Al Duremi | DOB 1968-02-06 | Examination: 2026-07-08\nTechnique: Low-dose noncontrast CT chest. DLP 74 mGy·cm. No previous chest CT available for comparison.\nThere is a noncalcified solid nodule in the right lower lobe measuring 8 × 6 mm, mean diameter 7 mm. No spiculation. No additional suspicious pulmonary finding or mediastinal lymphadenopathy.\nImpression: Probably benign solid pulmonary nodule. Lung-RADS 3.\nRecommend repeat low-dose chest CT in 6 months."
+  },
+  {
+   "id": "f2l-029",
+   "metadata": {
+    "author_role": "Thoracic MDT coordinator",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-08-05",
+     "setting": "mdt_record"
+    },
+    "document_date": "2026-08-20",
+    "document_role": "downstream",
+    "document_title": "Thoracic MDT outcome note",
+    "facility_name": "Serevan Chest Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-08-05",
+    "patient_on_document": {
+     "dob": null,
+     "emirates_id": null,
+     "name": "Mohammed Hasan",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-01-19",
+     "name": "Muhammad Hassan Al Rafeqi",
+     "sex": "M"
+    }
+   },
+   "text": "Thoracic MDT outcome — 2026-08-20\nMohammed Hasan, male, approximately 64 years; Abu Dhabi screening referral.\nScreening CT of 2026-08-05 reviewed: small indeterminate right apical solid nodule without enlarged nodes. No tissue diagnosis.\nConsensus: CT surveillance rather than immediate biopsy; repeat low-dose chest CT three months from the screening examination, then return to MDT if interval growth.\nRespiratory clinic to arrange imaging and discuss the surveillance plan with the patient."
+  },
+  {
+   "id": "f2l-030",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "addendum",
+     "referenced_screening_date": "2026-09-02",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-09-18",
+    "document_role": "downstream",
+    "document_title": "Addendum to thoracic clinic letter",
+    "facility_name": "Qelvara Thoracic Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1955-12-03",
+     "emirates_id": "784-1955-6492738-1",
+     "name": "Mariam Fawzi Al Nuhairi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-12-03",
+     "name": "Mariam Fawzi Al Nuhairi",
+     "sex": "F"
+    }
+   },
+   "text": "ADDENDUM — thoracic clinic letter dated 2026-09-16\nPatient: Mariam Fawzi Al Nuhairi, DOB 1955-12-03\nThe statement in my earlier letter that this case had not been discussed at MDT is incorrect and is withdrawn.\nThe thoracic MDT reviewed the screening CT dated 2026-09-02 and subsequent staging on 2026-09-14. The recorded recommendation was surgical resection of the suspicious left upper lobe lesion, subject to satisfactory cardiopulmonary assessment and informed consent.\nThoracic surgical referral has been placed. The patient was contacted today and the recommendation explained; operative assessment is being arranged.\nThis addendum supersedes the MDT and management paragraphs of the earlier letter."
+  },
+  {
+   "id": "f2l-031",
+   "metadata": {
+    "author_role": "Respiratory nurse",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-05-28",
+     "setting": "telephone"
+    },
+    "document_date": "2026-06-18",
+    "document_role": "downstream",
+    "document_title": "Lung screening follow-up telephone record",
+    "facility_name": "Sahil Lantern Respiratory Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-28",
+    "patient_on_document": {
+     "dob": "1961-02-14",
+     "emirates_id": "784-1961-5832046-7",
+     "name": "Marwan Hadi Al Rafeqi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1961-02-14",
+     "name": "Marwan Hadi Al Rafeqi",
+     "sex": "M"
+    }
+   },
+   "text": "Telephone contact — 18 June 2026\nPatient: Marwan Hadi Al Rafeqi | DOB: 14 February 1961\nRegarding screening LDCT dated 28 May 2026: patient reports that a lung biopsy was performed at another hospital last week.\nHe does not have the pathology report and could not confirm the sampling method. Results are not available in our clinic record.\nPatient asked to obtain the procedure note and histology report for review. Reception will contact him again in seven days."
+  },
+  {
+   "id": "f2l-032",
+   "metadata": {
+    "author_role": "Consultant thoracic surgeon",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-08-03",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-08-10",
+    "document_role": "downstream",
+    "document_title": "Thoracic clinic consultation",
+    "facility_name": "Miral Dunes Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-08-03",
+    "patient_on_document": {
+     "dob": "1963-09-09",
+     "emirates_id": "784-1963-7294610-3",
+     "name": "Noura Sami Al Dureimi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1963-09-09",
+     "name": "Noura Sami Al Dureimi",
+     "sex": "F"
+    }
+   },
+   "text": "THORACIC OUTPATIENT REVIEW\nNoura Sami Al Dureimi, female, DOB 09 September 1963\nScreening LDCT of 03 August 2026 reviewed with patient; suspicious right upper lobe nodule discussed.\nRecommended PET-CT and tissue biopsy, including the purpose, potential complications and risk of delayed diagnosis.\nPatient declines both investigations at present and wishes to think further and discuss with her family.\nReview in four weeks, on 07 September 2026. She may contact the clinic sooner if she decides to proceed."
+  },
+  {
+   "id": "f2l-033",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-30",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-04-21",
+    "document_role": "downstream",
+    "document_title": "Respiratory follow-up after diagnostic CT",
+    "facility_name": "Rimal Crescent Medical Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-03-30",
+    "patient_on_document": {
+     "dob": "1957-11-22",
+     "emirates_id": null,
+     "name": "Yousuf Kareem Al Mazrouqi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1957-11-22",
+     "name": "Yusuf Karim Al Mazrouqi",
+     "sex": "M"
+    }
+   },
+   "text": "Respiratory clinic | 21 April 2026\nPatient: Yousuf Kareem Al Mazrouqi | Male | DOB 22 November 1957\nReviewed following screening LDCT dated 30 March 2026.\nDiagnostic CT chest demonstrates a densely and centrally calcified left lower lobe nodule, consistent with a benign granuloma. No suspicious pulmonary lesion or thoracic lymphadenopathy.\nFindings explained; no further nodule investigation required. Return to annual low-dose CT screening in March 2027."
+  },
+  {
+   "id": "f2l-034",
+   "metadata": {
+    "author_role": "Thoracic MDT coordinator",
+    "details": {
+     "encounter_type": "other",
+     "referenced_screening_date": "2026-06-12",
+     "setting": "mdt_record"
+    },
+    "document_date": "2026-07-16",
+    "document_role": "downstream",
+    "document_title": "Thoracic multidisciplinary discussion record",
+    "facility_name": "Wadi Pearl Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-06-12",
+    "patient_on_document": {
+     "dob": "1955-01-05",
+     "emirates_id": "784-1955-4168032-9",
+     "name": "Salim Fawzi Al Nabri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-01-05",
+     "name": "Salim Fawzi Al Nabri",
+     "sex": "M"
+    }
+   },
+   "text": "THORACIC MDT DISCUSSION — 16 July 2026\nPatient: Salim Fawzi Al Nabri | DOB 05 January 1955 | Male\nIndex screening: 12 June 2026; irregular peripheral right upper lobe lesion.\nCT-guided biopsy: fibrosis and scant alveolated lung; “no malignant cells identified.”\nImaging remains concerning. MDT recommends repeat sampling because the biopsy may not represent the lesion.\nRespiratory review records the biopsy as benign, with CT surveillance also discussed. Choice of repeat biopsy versus surveillance remains unresolved pending discussion with the patient and interventional radiology."
+  },
+  {
+   "id": "f2l-035",
+   "metadata": {
+    "author_role": "Clinic nurse",
+    "details": {
+     "encounter_type": "other",
+     "referenced_screening_date": "2026-10-05",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-10-20",
+    "document_role": "downstream",
+    "document_title": "Respiratory clinic non-attendance entry",
+    "facility_name": "Naseem Harbour Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-05",
+    "patient_on_document": {
+     "dob": "1966-07-18",
+     "emirates_id": "784-1966-8927051-4",
+     "name": "Lina Adil Al Harithi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1966-07-18",
+     "name": "Lina Adil Al Harithi",
+     "sex": "F"
+    }
+   },
+   "text": "Lina Adil Al Harithi | DOB 18 July 1966 | Female\nDid not attend initial respiratory clinic appointment on 19 October 2026 following screening LDCT of 05 October 2026. No clinical assessment performed.\nContacted by scheduling team; appointment rebooked for 02 November 2026 at 09:40. Patient confirmed attendance."
+  },
+  {
+   "id": "f2l-036",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-04-08",
+     "setting": "mdt_record"
+    },
+    "document_date": "2026-04-21",
+    "document_role": "downstream",
+    "document_title": "Thoracic MDT management record",
+    "facility_name": "Mizharan Chest Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-04-08",
+    "patient_on_document": {
+     "dob": "1960-03-18",
+     "emirates_id": "784-1960-5827149-3",
+     "name": "Rashid Nabil Al Safri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1960-03-18",
+     "name": "Rashid Nabil Al Safri",
+     "sex": "M"
+    }
+   },
+   "text": "Mizharan Chest Hospital, Abu Dhabi — Thoracic MDT record\nPatient: Rashid Nabil Al Safri | DOB: 1960-03-18 | Emirates ID: 784-1960-5827149-3\nMeeting date: 2026-04-21. Screening LDCT dated 2026-04-08 reviewed with thoracic radiology.\nThe 8 mm right upper lobe solid nodule remains indeterminate; no enlarged mediastinal nodes.\nConsensus: surveillance with interval noncontrast chest CT in 3 months. No biopsy at present.\nRespiratory clinic to arrange imaging and review the result with the patient."
+  },
+  {
+   "id": "f2l-037",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 61,
+     "double_read": true,
+     "exam_type": "follow_up",
+     "prior_exam_date": "2026-02-18",
+     "technique": "Low-dose noncontrast volumetric chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-08-19",
+    "document_role": "screening",
+    "document_title": "Follow-up low-dose CT chest",
+    "facility_name": "Suhailan Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-19",
+    "patient_on_document": {
+     "dob": "1964-11-09",
+     "emirates_id": "784-1964-3918265-7",
+     "name": "Mariam Farid Al Nawri",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1964-11-09",
+     "name": "Mariam Farid Al Nawri",
+     "sex": "F"
+    }
+   },
+   "text": "Suhailan Screening Centre — LDCT chest, 2026-08-19\nMariam Farid Al Nawri | Female | DOB 1964-11-09 | ID 784-1964-3918265-7\nIndication: Six-month follow-up of Lung-RADS 3 nodule on screening dated 2026-02-18.\nTechnique: Low-dose noncontrast volumetric chest CT with thin-section reconstructions. DLP 61 mGy·cm.\nThe smoothly marginated 6 mm solid left lower lobe nodule is unchanged. No new or enlarging pulmonary nodule. No adenopathy.\nImpression: Stable previously category 3 nodule, now Lung-RADS 2 by stepped management under Lung-RADS v2022.\nResume annual screening LDCT in 12 months. Independently reviewed by a second radiologist; agreement recorded."
+  },
+  {
+   "id": "f2l-038",
+   "metadata": {
+    "author_role": "Consultant pulmonologist",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-05-07",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-06-09",
+    "document_role": "downstream",
+    "document_title": "Referral for surgical treatment of lung adenocarcinoma",
+    "facility_name": "Daryan Respiratory Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-07",
+    "patient_on_document": {
+     "dob": "1957-06-24",
+     "emirates_id": "784-1957-7264931-5",
+     "name": "Yousif Kamal Al Rami",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1957-06-24",
+     "name": "Yousif Kamal Al Rami",
+     "sex": "M"
+    }
+   },
+   "text": "To: Thoracic Surgery Service, Nahrain Crescent Hospital, Abu Dhabi\nRe: Yousif Kamal Al Rami, DOB 1957-06-24, Emirates ID 784-1957-7264931-5\nPlease assess for definitive surgical treatment of biopsy-confirmed right upper lobe adenocarcinoma detected following screening LDCT on 2026-05-07.\nCore biopsy dated 2026-05-26 demonstrates invasive pulmonary adenocarcinoma, TTF-1 positive. PET-CT shows uptake confined to the 19 mm primary lesion, without nodal or distant uptake; clinical stage cT1bN0M0.\nHe remains independently mobile, ECOG 0. FEV1 86% predicted and DLCO 79% predicted.\nDiagnosis and proposed surgical assessment discussed with the patient, who wishes to proceed. Please arrange an early appointment."
+  },
+  {
+   "id": "f2l-039",
+   "metadata": {
+    "author_role": "Respiratory clinic physician",
+    "details": {
+     "encounter_type": "other",
+     "referenced_screening_date": "2026-07-29",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-09-16",
+    "document_role": "downstream",
+    "document_title": "Respiratory follow-up progress note",
+    "facility_name": "Wadi Sufran Medical Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-29",
+    "patient_on_document": {
+     "dob": "1962-02-13",
+     "emirates_id": "784-1962-8451726-2",
+     "name": "Hessa Munir Al Hadi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-02-13",
+     "name": "Hessa Munir Al Hadi",
+     "sex": "F"
+    }
+   },
+   "text": "Respiratory follow-up entry — 2026-09-16\nHessa Munir Al Hadi | DOB 1962-02-13 | ID 784-1962-8451726-2\nPrevious clinic entry dated 2026-08-12 carried forward:\nAttended respiratory clinic with daughter following screening LDCT of 2026-07-29. Scan findings explained. No haemoptysis or weight loss. Chest clear on auscultation.\nPlan: obtain interval CT and review in clinic with imaging."
+  },
+  {
+   "id": "f2l-040",
+   "metadata": {
+    "author_role": "Thoracic radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 74,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose chest CT with 1 mm axial and multiplanar reconstructions"
+    },
+    "document_date": "2026-10-06",
+    "document_role": "screening",
+    "document_title": "Baseline lung screening CT report",
+    "facility_name": "Rimalan Preventive Imaging Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-06",
+    "patient_on_document": {
+     "dob": "1955-12-02",
+     "emirates_id": "784-1955-6382947-1",
+     "name": "Adel Sami Al Barqi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-12-02",
+     "name": "Adel Sami Al Barqi",
+     "sex": "M"
+    }
+   },
+   "text": "Rimalan Preventive Imaging Centre, Abu Dhabi\nBASELINE LOW-DOSE CT CHEST — 2026-10-06\nAdel Sami Al Barqi; DOB 1955-12-02; male; Emirates ID 784-1955-6382947-1.\nNoncontrast low-dose acquisition with 1 mm axial and multiplanar reconstructions. DLP: 74 mGy·cm. No previous chest CT available.\nA 6 mm nondependent endobronchial soft-tissue nodule is present in the right upper lobe anterior segmental bronchus. No internal air or fluid attenuation. No associated collapse.\nMild centrilobular emphysema. No suspicious parenchymal nodule or enlarged thoracic lymph node.\nLung-RADS v2022: Category 4A, segmental airway nodule at baseline.\nRecommend LDCT in 3 months. If the airway nodule persists, referral for clinical evaluation and consideration of bronchoscopy is advised.\nSecond reader concurs."
+  },
+  {
+   "id": "f2l-041",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 74.8,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose volumetric CT chest with thin-section reconstruction"
+    },
+    "document_date": "2026-02-11",
+    "document_role": "screening",
+    "document_title": "Baseline low-dose CT chest report",
+    "facility_name": "Dune Lantern Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-11",
+    "patient_on_document": {
+     "dob": "1963-04-17",
+     "emirates_id": "784-1963-5821946-3",
+     "name": "Nadir Qasim Al Ruwaini",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1963-04-17",
+     "name": "Nadir Qasim Al Ruwaini",
+     "sex": "M"
+    }
+   },
+   "text": "LOW-DOSE CT LUNG SCREENING\nPatient: Nadir Qasim Al Ruwaini | DOB: 1963-04-17 | EID: 784-1963-5821946-3\nExamination: 2026-02-11. Baseline noncontrast low-dose acquisition.\nA 14 mm part-solid nodule in the right upper lobe has spiculated margins and a 7 mm solid component. No enlarged mediastinal nodes.\nImpression: Likely benign finding, not concerning. Lung-RADS 4A.\nNo action required; continue routine annual screening."
+  },
+  {
+   "id": "f2l-042",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-03-09",
+     "setting": "mdt_record"
+    },
+    "document_date": "2026-05-21",
+    "document_role": "downstream",
+    "document_title": "Thoracic multidisciplinary review outcome",
+    "facility_name": "Saffron Crescent Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-03-09",
+    "patient_on_document": {
+     "dob": "1958-09-23",
+     "emirates_id": "784-1958-3618072-6",
+     "name": "Mariam Jaber Al Nuhaili",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-09-23",
+     "name": "Mariam Jaber Al Nuhaili",
+     "sex": "F"
+    }
+   },
+   "text": "THORACIC MDT OUTCOME — 2026-05-21\nMariam Jaber Al Nuhaili, DOB 1958-09-23; EID 784-1958-3618072-6.\nScreening LDCT dated 2026-03-09 and subsequent CT-guided right lower lobe core biopsy reviewed.\nHistology: organizing pneumonia; no malignancy identified. Samples considered adequate.\nRadiology and pathology are concordant. Interval imaging shows substantial resolution of the focal opacity.\nMDT consensus: discharge from nodule clinic and return to annual LDCT screening, next due March 2027.\nOutcome discussed with the patient by telephone; she understands the plan."
+  },
+  {
+   "id": "f2l-043",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 68.3,
+     "double_read": true,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-06-18",
+     "technique": "Low-dose noncontrast helical CT chest with axial and multiplanar reconstructions"
+    },
+    "document_date": "2026-06-19",
+    "document_role": "screening",
+    "document_title": "Annual lung screening CT",
+    "facility_name": "Amber Horizon Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-06-18",
+    "patient_on_document": {
+     "dob": "1955-12-08",
+     "emirates_id": "784-1955-9046281-2",
+     "name": "Hatem Rashid Al Waseeli",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-12-08",
+     "name": "Hatem Rashid Al Waseeli",
+     "sex": "M"
+    }
+   },
+   "text": "Patient: Hatem Rashid Al Waseeli | 1955-12-08 | 784-1955-9046281-2\nAnnual screening LDCT, 18 June 2026. Compared with 18 June 2025.\nNew clustered tree-in-bud nodules in the posterior right upper lobe and patchy peribronchial consolidation in the right middle lobe. Mild bronchial wall thickening. No pleural effusion.\nAppearances favour an infective or inflammatory process. Clinical assessment advised.\nRepeat low-dose CT in 6–8 weeks to document resolution and reassess the obscured underlying parenchyma."
+  },
+  {
+   "id": "f2l-044",
+   "metadata": {
+    "author_role": "Specialist radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 59.6,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose CT chest, 1 mm lung reconstructions"
+    },
+    "document_date": "2026-08-04",
+    "document_role": "screening",
+    "document_title": "Baseline lung screening interpretation",
+    "facility_name": "Pearl Acacia Imaging Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-08-04",
+    "patient_on_document": {
+     "dob": "1968-01-29",
+     "emirates_id": "784-1968-7251938-4",
+     "name": "Salma Farid Al Mazruni",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1968-01-29",
+     "name": "Salma Farid Al Mazruni",
+     "sex": "F"
+    }
+   },
+   "text": "BASELINE LDCT CHEST — 2026-08-04\nSalma Farid Al Mazruni; DOB 1968-01-29; EID 784-1968-7251938-4.\nNo suspicious nodule, no spiculation, no lymphadenopathy. No consolidation, no pleural effusion and no pneumothorax.\nThere is a solitary smooth, noncalcified solid nodule in the left lower lobe, mean diameter 6 mm. No additional pulmonary nodules.\nIMPRESSION: Probably benign 6 mm solid pulmonary nodule. Repeat low-dose chest CT in six months."
+  },
+  {
+   "id": "f2l-045",
+   "metadata": {
+    "author_role": "Screening programme physician",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-09-22",
+     "setting": "other"
+    },
+    "document_date": "2026-09-23",
+    "document_role": "downstream",
+    "document_title": "Urgent thoracic assessment request",
+    "facility_name": "Copper Palm Respiratory Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-09-22",
+    "patient_on_document": {
+     "dob": "1959-07-12",
+     "emirates_id": "784-1959-4185063-8",
+     "name": "Yousif Munir Al Duwairi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1959-07-12",
+     "name": "Yousif Munir Al Duwairi",
+     "sex": "M"
+    }
+   },
+   "text": "URGENT — Thoracic clinic referral\nRe: Yousif Munir Al Duwairi, DOB 1959-07-12, EID 784-1959-4185063-8\nDear Thoracic Team,\nThe screening LDCT of 22 September 2026 demonstrates a 24 mm irregular left upper lobe mass with an enlarged ipsilateral hilar node.\nThis patient must be seen urgently. Please prioritise the earliest available assessment for staging and tissue diagnosis.\nReferral forwarded to the booking team today. Appointment confirmation is requested."
+  },
+  {
+   "id": "f2l-046",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 72.4,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Non-contrast low-dose volumetric chest CT; mild basal respiratory motion."
+    },
+    "document_date": "2026-03-14",
+    "document_role": "screening",
+    "document_title": "Low-dose CT chest report",
+    "facility_name": "Qamar Dunes Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-14",
+    "patient_on_document": {
+     "dob": "1961-07-19",
+     "emirates_id": "784-1961-5829146-3",
+     "name": "Hamdan Rafiq Al Nuwair",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1961-07-19",
+     "name": "Hamdan Rafiq Al Nuwair",
+     "sex": "M"
+    }
+   },
+   "text": "LOW-DOSE CT CHEST — 14 March 2026\nPatient: Hamdan Rafiq Al Nuwair | DOB: 19 July 1961 | Male\nTechnique: Non-contrast low-dose volumetric acquisition. Mild respiratory motion at the bases.\nNo previous chest CT is available for comparison.\nAn irregular 11 mm subpleural opacity in the posterior right upper lobe has adjacent linear strands. Several smaller bilateral nodular opacities are present, some associated with mucus plugging.\nNo pleural effusion or enlarged mediastinal nodes by size criteria.\nImpression: Mixed nodular and linear pulmonary changes of uncertain significance; an inflammatory component is possible, although a focal lesion cannot be excluded.\nRecommend urgent review by the referring respiratory team and correlation with previous imaging if obtainable."
+  },
+  {
+   "id": "f2l-047",
+   "metadata": {
+    "author_role": "Consultant respiratory physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-28",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-06-09",
+    "document_role": "downstream",
+    "document_title": "Respiratory clinic review",
+    "facility_name": "Sahm Horizon Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-05-28",
+    "patient_on_document": {
+     "dob": "1967-02-03",
+     "emirates_id": "784-1967-3918265-8",
+     "name": "Mariam Fadel Al Rumaithi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1967-02-03",
+     "name": "Mariam Fadel Al Rumaithi",
+     "sex": "F"
+    }
+   },
+   "text": "Respiratory clinic review — 9 June 2026\nMariam Fadel Al Rumaithi, DOB 3 February 1967, attended to discuss the right upper lobe nodule identified on screening CT dated 28 May 2026.\nNo haemoptysis or recent weight loss. Oxygen saturation 97% on room air; chest clear on auscultation.\nPET/CT is booked for 17 June 2026 and has not yet been performed.\nDiscussed the purpose and limitations of metabolic imaging. Further management remains pending the PET/CT findings; no biopsy arranged today.\nClinic review requested after the imaging report becomes available."
+  },
+  {
+   "id": "f2l-048",
+   "metadata": {
+    "author_role": "Consultant thoracic radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 64.8,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Non-contrast low-dose volumetric chest CT with thin-section reconstructions."
+    },
+    "document_date": "2026-08-23",
+    "document_role": "screening",
+    "document_title": "Baseline lung screening CT",
+    "facility_name": "Rimal Lantern Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-22",
+    "patient_on_document": {
+     "dob": "1956-11-11",
+     "emirates_id": "784-1956-7461832-5",
+     "name": "Yousif Nabil Al Mahri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1956-11-11",
+     "name": "Yousif Nabil Al Mahri",
+     "sex": "M"
+    }
+   },
+   "text": "Baseline LDCT chest | 22 August 2026\nYousif Nabil Al Mahri | Male | DOB 11 November 1956\nNon-contrast low-dose acquisition; satisfactory inspiration. No prior study available. Independently reviewed by two radiologists.\nNodule inventory:\n• Right middle lobe: 3 mm solid nodule with smooth margins — Lung-RADS 2.\n• Left lower lobe: 6 mm solid noncalcified nodule — Lung-RADS 3.\n• Right upper lobe: 9 mm solid noncalcified nodule with mildly lobulated margins — Lung-RADS 4A.\nMild centrilobular emphysema. No enlarged thoracic lymph nodes or pleural fluid.\nImpression: Multiple pulmonary nodules, led by the right upper lobe finding; overall assessment 4A.\nRecommend low-dose CT in 3 months. PET/CT may be considered for the dominant solid nodule."
+  },
+  {
+   "id": "f2l-049",
+   "metadata": {
+    "author_role": "Thoracic surgeon",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-09-02",
+     "setting": "thoracic_clinic"
+    },
+    "document_date": "2026-09-21",
+    "document_role": "downstream",
+    "document_title": "Post-biopsy thoracic clinic letter",
+    "facility_name": "Marjan Crest Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1963-04-08",
+     "emirates_id": "784-1963-6284591-7",
+     "name": "Salma Jaber Al Harithi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1963-04-08",
+     "name": "Salma Jaber Al Harithi",
+     "sex": "F"
+    }
+   },
+   "text": "Thoracic clinic letter, 21 September 2026\nRe: Salma Jaber Al Harithi, DOB 8 April 1963\nReviewed following biopsy of the left lower lobe nodule identified on screening CT of 2 September 2026. Core biopsy reports benign lung tissue with fibrosis and chronic inflammation; no malignancy identified in the submitted material.\nThe result was explained to the patient. She reports no new respiratory symptoms. Follow up soon."
+  },
+  {
+   "id": "f2l-050",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 58.6,
+     "double_read": true,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-10-06",
+     "technique": "Low-dose non-contrast chest CT with thin-section axial and multiplanar reconstructions."
+    },
+    "document_date": "2026-10-07",
+    "document_role": "screening",
+    "document_title": "Annual low-dose CT lung screening report",
+    "facility_name": "Naseem Pearl Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-07",
+    "patient_on_document": {
+     "dob": "1958-01-25",
+     "emirates_id": "784-1958-8531726-4",
+     "name": "Khalid Samir Al Wathri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-01-25",
+     "name": "Khalid Samir Al Wathri",
+     "sex": "M"
+    }
+   },
+   "text": "ANNUAL LUNG SCREENING CT — 7 October 2026\nPatient: Khalid Samir Al Wathri | DOB: 25 January 1958 | Male\nTechnique: Low-dose non-contrast chest CT with thin-section axial and multiplanar reconstructions. DLP 58.6 mGy·cm.\nComparison: Screening CT dated 6 October 2025.\nFindings: No pulmonary nodules or suspicious pulmonary mass. No focal consolidation. Central airways are patent. No enlarged thoracic lymph nodes or pleural effusion.\nImpression: Negative lung cancer screening examination. Lung-RADS 1.\nContinue annual screening with low-dose chest CT in 12 months."
+  },
+  {
+   "id": "f2l-051",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose helical chest CT; severe respiratory motion limits assessment."
+    },
+    "document_date": "2026-02-11",
+    "document_role": "screening",
+    "document_title": "Baseline LDCT chest report",
+    "facility_name": "Sahran Imaging Pavilion",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-11",
+    "patient_on_document": {
+     "dob": "1962-04-18",
+     "emirates_id": "784-1962-5831046-7",
+     "name": "Marwan Nabil Al Rafi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-04-18",
+     "name": "Marwan Nabil Al Rafi",
+     "sex": "M"
+    }
+   },
+   "text": "SAHRAN IMAGING PAVILION — Abu Dhabi\nPatient: Marwan Nabil Al Rafi | DOB: 1962-04-18\nExamination: Baseline low-dose CT chest, 2026-02-11. DLP 68 mGy·cm.\nSevere respiratory motion throughout both lower lobes, with additional motion across the right middle lobe. These regions cannot be adequately evaluated for pulmonary nodules.\nNo focal suspicious lesion in the adequately visualised upper lobes.\nAssessment: Incomplete examination, Lung-RADS 0.\nRepeat low-dose CT with coached breath-holding is recommended within 4 weeks."
+  },
+  {
+   "id": "f2l-052",
+   "metadata": {
+    "author_role": "Consultant thoracic radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 74,
+     "double_read": true,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-03-20",
+     "technique": "Noncontrast low-dose volumetric chest CT with thin-section reconstructions."
+    },
+    "document_date": "2026-03-25",
+    "document_role": "screening",
+    "document_title": "Annual lung screening CT",
+    "facility_name": "Mizharan Preventive Imaging Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-24",
+    "patient_on_document": {
+     "dob": "1957-08-09",
+     "emirates_id": "784-1957-9204618-3",
+     "name": "Hessa Karim Al Wadi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1957-08-09",
+     "name": "Hessa Karim Al Wadi",
+     "sex": "F"
+    }
+   },
+   "text": "Annual lung screening CT | 2026-03-24\nHessa Karim Al Wadi, female, DOB 1957-08-09.\nNoncontrast low-dose acquisition; DLP 74 mGy·cm. Compared with 2025-03-20.\nUnchanged 5 mm densely calcified right upper lobe granuloma. Mild upper-lobe centrilobular emphysema. No suspicious pulmonary nodule or enlarged thoracic nodes.\nLung-RADS 2. Continue annual screening LDCT in 12 months.\nSecond reader concurs."
+  },
+  {
+   "id": "f2l-053",
+   "metadata": {
+    "author_role": "Specialist radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 83,
+     "double_read": false,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Low-dose noncontrast volumetric CT chest with multiplanar reformats."
+    },
+    "document_date": "2026-05-07",
+    "document_role": "screening",
+    "document_title": "CT chest low-dose screening",
+    "facility_name": "Darvana Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-05-07",
+    "patient_on_document": {
+     "dob": "1955-11-27",
+     "emirates_id": "784-1955-3618924-6",
+     "name": "Omar Bashir Al Nouri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-11-27",
+     "name": "Omar Bashir Al Nouri",
+     "sex": "M"
+    }
+   },
+   "text": "DARVANA HOSPITAL — Radiology Department, Abu Dhabi\nOmar Bashir Al Nouri | DOB 1955-11-27 | CT dated 2026-05-07\nINDICATION: Baseline lung cancer screening.\nTECHNIQUE: Low-dose noncontrast CT chest. DLP 83 mGy·cm. No prior study available.\nFINDINGS: A 42 × 35 mm irregular mass-like lesion occupies the posterior right upper lobe, with spiculated margins and pleural retraction. Right hilar lymph node measures 16 mm in short axis. No pleural effusion.\nIMPRESSION: Negative screening examination. No suspicious pulmonary nodules.\nLung-RADS 1. Routine annual low-dose CT screening in 12 months."
+  },
+  {
+   "id": "f2l-054",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 684,
+     "double_read": null,
+     "exam_type": "other_exam",
+     "prior_exam_date": null,
+     "technique": "Diagnostic CT chest, abdomen and pelvis following intravenous contrast administration."
+    },
+    "document_date": "2026-07-16",
+    "document_role": "screening",
+    "document_title": "Contrast-enhanced CT chest abdomen and pelvis",
+    "facility_name": "Rimalis General Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-07-16",
+    "patient_on_document": {
+     "dob": "1966-02-13",
+     "emirates_id": "784-1966-7482051-9",
+     "name": "Salma Farid Al Hatem",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1966-02-13",
+     "name": "Salma Farid Al Hatem",
+     "sex": "F"
+    }
+   },
+   "text": "CT CHEST, ABDOMEN AND PELVIS WITH IV CONTRAST\nPatient: Salma Farid Al Hatem; DOB 1966-02-13. Examination date: 2026-07-16.\nClinical information: Persistent abdominal pain, reduced appetite and unintentional weight loss.\nTechnique: Diagnostic contrast-enhanced acquisition through the chest, abdomen and pelvis. Total DLP 684 mGy·cm.\nChest: Incidental solitary 6 mm solid nodule in the lateral left lower lobe. No consolidation or thoracic lymphadenopathy.\nAbdomen/pelvis: Uncomplicated sigmoid diverticulosis. No acute inflammatory process or obstructing lesion.\nImpression: No acute cause for abdominal pain identified. Incidental 6 mm pulmonary nodule.\nFor the pulmonary nodule, CT chest at 6–12 months is advised under Fleischner guidance, with consideration of a further CT at 18–24 months according to clinical risk."
+  },
+  {
+   "id": "f2l-055",
+   "metadata": {
+    "author_role": "Consultant thoracic radiologist",
+    "details": {
+     "comparison_available": false,
+     "dose_dlp_mgy_cm": 79,
+     "double_read": true,
+     "exam_type": "baseline",
+     "prior_exam_date": null,
+     "technique": "Noncontrast low-dose chest CT with thin-section axial and multiplanar reconstructions."
+    },
+    "document_date": "2026-09-09",
+    "document_role": "screening",
+    "document_title": "LDCT lung screening with incidental adrenal finding",
+    "facility_name": "Nayrava Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-09-08",
+    "patient_on_document": {
+     "dob": "1960-06-22",
+     "emirates_id": "784-1960-1956372-4",
+     "name": "Yousef Adil Al Safwan",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1960-06-22",
+     "name": "Yousef Adil Al Safwan",
+     "sex": "M"
+    }
+   },
+   "text": "Nayrava Screening Centre, Abu Dhabi — LDCT report\nYousef Adil Al Safwan | Male | DOB 1960-06-22 | Exam: 2026-09-08\nBaseline noncontrast low-dose chest CT, DLP 79 mGy·cm.\nSmooth 11 mm right middle lobe nodule containing macroscopic fat and coarse calcification, consistent with a hamartoma. Separate 4 mm triangular perifissural nodule along the left major fissure, typical of an intrapulmonary lymph node.\nNo suspicious pulmonary lesion. Lung-RADS 2; annual screening LDCT in 12 months.\nIncidental 31 mm left adrenal lesion measuring 28 HU on the unenhanced images, incompletely characterised. No prior imaging for comparison.\nRecommend adrenal-protocol CT or MRI and clinical endocrine assessment. Referring clinician notified of the adrenal finding on 2026-09-09."
+  },
+  {
+   "id": "f2l-056",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 76,
+     "double_read": true,
+     "exam_type": "follow_up",
+     "prior_exam_date": "2026-04-21",
+     "technique": "Noncontrast low-dose volumetric chest CT with thin-section reconstructions"
+    },
+    "document_date": "2026-07-23",
+    "document_role": "screening",
+    "document_title": "Follow-up low-dose CT chest",
+    "facility_name": "Qamirat Chest Imaging Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-07-23",
+    "patient_on_document": {
+     "dob": "1962-04-19",
+     "emirates_id": "784-1962-5831064-7",
+     "name": "Hamdan Nafez Al Ruwahi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1962-04-19",
+     "name": "Hamdan Nafez Al Ruwahi",
+     "sex": "M"
+    }
+   },
+   "text": "Qamirat Chest Imaging Centre, Abu Dhabi\nPatient: Hamdan Nafez Al Ruwahi | DOB: 1962-04-19\nFOLLOW-UP LOW-DOSE CT CHEST — 2026-07-23\nNoncontrast low-dose acquisition; DLP 76 mGy·cm. Independently reviewed by two radiologists.\nCompared with 2026-04-21: the previously described Lung-RADS 4A right upper lobe solid nodule has increased from 9 mm to 16 mm, with new spiculated margins. No enlarged mediastinal nodes.\nImpression: Interval growth, now very suspicious. Lung-RADS 4B.\nRecommend expedited thoracic assessment, diagnostic chest CT and consideration of PET/CT and tissue sampling."
+  },
+  {
+   "id": "f2l-057",
+   "metadata": {
+    "author_role": "Consultant radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 68,
+     "double_read": null,
+     "exam_type": "addendum",
+     "prior_exam_date": "2024-08-30",
+     "technique": "Comparison review of noncontrast low-dose chest CT and retrieved prior CT"
+    },
+    "document_date": "2026-09-18",
+    "document_role": "screening",
+    "document_title": "LDCT comparison addendum",
+    "facility_name": "Talveen Diagnostic Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-12",
+    "patient_on_document": {
+     "dob": "1958-11-07",
+     "emirates_id": "784-1958-7264091-3",
+     "name": "Mariam Safwan Al Dhahri",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1958-11-07",
+     "name": "Mariam Safwan Al Dhahri",
+     "sex": "F"
+    }
+   },
+   "text": "ADDENDUM — 2026-09-18\nMariam Safwan Al Dhahri, DOB 1958-11-07. LDCT performed 2026-09-12.\nThe outside CT dated 2024-08-30 is now available for comparison. The original assessment was Lung-RADS 0 pending these images.\nThe 5 mm left lower lobe solid nodule is unchanged over more than two years. No new or enlarging nodules.\nComparison is complete. Final assessment: Lung-RADS 2. Continue annual LDCT in 12 months."
+  },
+  {
+   "id": "f2l-058",
+   "metadata": {
+    "author_role": "Respiratory medicine specialist",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-06-03",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-06-16",
+    "document_role": "downstream",
+    "document_title": "Respiratory clinic progress note",
+    "facility_name": "Nahrayan Respiratory Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-06-03",
+    "patient_on_document": {
+     "dob": "1967-02-23",
+     "emirates_id": "784-1967-3917852-6",
+     "name": "Rashid Mazen Al Samri",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1967-02-23",
+     "name": "Rashid Mazen Al Samri",
+     "sex": "M"
+    }
+   },
+   "text": "Respiratory review, 2026-06-16 — Rashid Mazen Al Samri, DOB 1967-02-23.\nAttended with his sister following screening on 2026-06-03. Findings and possible next steps discussed at some length. He remains unsure how he wishes to proceed; family will consider matters further. No investigation selected or booked today. Further contact to be arranged."
+  },
+  {
+   "id": "f2l-059",
+   "metadata": {
+    "author_role": "Consultant in respiratory medicine",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-02-10",
+     "setting": "respiratory_clinic"
+    },
+    "document_date": "2026-04-06",
+    "document_role": "downstream",
+    "document_title": "Respiratory follow-up letter after MDT review",
+    "facility_name": "Sahmara General Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-02-10",
+    "patient_on_document": {
+     "dob": "1955-09-14",
+     "emirates_id": "784-1955-8642037-1",
+     "name": "Salma Nadir Al Kharifi",
+     "sex": "F"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1955-09-14",
+     "name": "Salma Nadir Al Kharifi",
+     "sex": "F"
+    }
+   },
+   "text": "Dear Colleague,\nRe: Salma Nadir Al Kharifi, DOB 1955-09-14\nHer screening LDCT of 2026-02-10 was reported as Lung-RADS 4B because of a mass-like right middle lobe opacity during a respiratory illness.\nFollowing treatment, diagnostic chest CT on 2026-03-26 demonstrates complete resolution of the opacity and associated inflammatory nodules. No residual suspicious pulmonary lesion or thoracic lymphadenopathy is identified.\nThe thoracic MDT reviewed both examinations on 2026-04-02 and agreed that these findings represented resolved infection. No biopsy or further short-interval imaging is planned.\nShe may return to annual low-dose screening, next due February 2027. The outcome was discussed with her today.\nYours sincerely,\nConsultant in Respiratory Medicine"
+  },
+  {
+   "id": "f2l-060",
+   "metadata": {
+    "author_role": "Reporting radiologist",
+    "details": {
+     "comparison_available": true,
+     "dose_dlp_mgy_cm": 71,
+     "double_read": false,
+     "exam_type": "annual",
+     "prior_exam_date": "2025-10-06",
+     "technique": "Noncontrast low-dose chest CT with thin-section lung reconstructions"
+    },
+    "document_date": "2026-10-08",
+    "document_role": "screening",
+    "document_title": "Annual lung screening CT report",
+    "facility_name": "Dareemat Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-08",
+    "patient_on_document": {
+     "dob": "1960-06-28",
+     "emirates_id": "784-1960-2479138-5",
+     "name": "Yousef Talal Al Marzi",
+     "sex": "M"
+    },
+    "programme": "lung_ldct",
+    "registered_patient": {
+     "dob": "1960-06-28",
+     "name": "Yousef Talal Al Marzi",
+     "sex": "M"
+    }
+   },
+   "text": "ANNUAL LDCT CHEST | 2026-10-08\nYousef Talal Al Marzi — DOB 1960-06-28\nTechnique: Noncontrast low-dose chest CT; DLP 71 mGy·cm.\nComparison: 2025-10-06.\nStable 4 mm solid right lower lobe nodule. No new or enlarging pulmonary nodules. Moderate coronary artery calcification.\nLung-RADS 2: benign appearance or behaviour. Annual screening LDCT in 12 months. Recommend primary care review of cardiovascular risk factors."
+  }
+ ],
+ "schema_version": "fresh2-corpus-schema-v1",
+ "source": "Fresh2 LDCT corpus; model-authored synthetic text; no author key; not clinician-verified"
+}
