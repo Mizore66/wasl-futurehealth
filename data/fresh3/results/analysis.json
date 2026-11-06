@@ -191,7 +191,7 @@
    "S": 1,
    "X": 3
   },
-  "note_b": "22/24 with 3 items whose key coded_label is unavailable; the coded-match count includes those items only because B literally returned `unavailable`. It measures coded-result parsing against the key, not a language-model reader.",
+  "note_b": "22/24; of the 3 items whose key coded_label is unavailable, only f3i-013 counts as a match (B returned `unavailable`); f3i-032 and f3i-046 are misses. It measures coded-result parsing against the key, not a language-model reader.",
   "panels_mentioning_fasting": 23,
   "panels_mentioning_random": 3,
   "panels_stating_fasting_status_or_duration": 6,
