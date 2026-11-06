@@ -163,7 +163,7 @@ test.describe("Programme charts", () => {
     await expect(summary).toContainText("17 days");
     await expect(summary).toContainText("72");
     await expect(summary).toContainText("94");
-    await expect(card.getByText("Pooling only moves existing slots between regions, so it does nothing when the whole network is short.")).toBeVisible();
+    await expect(card.getByText("Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.")).toBeVisible();
     await expect(page.getByTestId("pooling-result")).toContainText("22.2% within 31 days without cross-site booking, 42.1% with network pooling");
     await expect(card.getByRole("figure")).toHaveCount(2);
     await page.screenshot({ path: "test-results/screens/programme-capacity.png", fullPage: true });

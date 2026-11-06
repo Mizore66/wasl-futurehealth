@@ -141,7 +141,7 @@ export function ReferralInbox({
 
       <div className="flex flex-wrap items-stretch gap-gap">
         <section aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
-          <div role="tablist" aria-label="Saved views" className="flex gap-4 overflow-x-auto border-b border-line px-4">
+          <div role="tablist" aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
             {TABS.map(([id, label, t]) => (
               <button
                 key={id}
@@ -153,7 +153,7 @@ export function ReferralInbox({
                   setMode(null);
                   setPicked([]);
                 }}
-                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-body", tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
+                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
               >
                 {label} <span className="text-small text-muted">{all.filter(t).length}</span>
               </button>
