@@ -124,7 +124,10 @@ var (
 	lwMDT     = regexp.MustCompile(`(?i)discussed at (?:the )?(?:lung |thoracic )?(?:MDT|multidisciplinary)|\b(?:lung )?MDT(?: decision| plan| outcome)?:|MDT decision|multidisciplinary team meeting`)
 	lwTreat   = regexp.MustCompile(`(?i)referr(?:ed|al) (?:to|for) (?:the )?(?:thoracic surg|clinical oncolog|medical oncolog|oncolog|radiotherap)|referral to the thoracic surgical|lobectomy|stereotactic (?:body )?radiotherapy|\bSABR\b`)
 	lwAnnual  = regexp.MustCompile(`(?i)return(?:ed)? to (?:the )?annual|back to (?:the )?annual|return to (?:the )?screening|annual (?:LDCT )?screening`)
-	lwSurv    = regexp.MustCompile(`(?i)surveillance CT|interval CT|repeat CT in|CT in (?:3|three|6|six) months`)
+	lwSurv    = regexp.MustCompile(`(?i)surveillance CT|\bCT surveillance|interval CT|repeat (?:low-dose )?(?:chest )?CT in|CT in (?:3|three|6|six) months`)
+	// consistency rules (ldctReconcile): MDT-outcome title, and genuine work-up context
+	lwMDTTitle = regexp.MustCompile(`(?i)^\s*(?:thoracic |lung |respiratory )?(?:MDT|multidisciplinary(?: team)?)\b[^\n]{0,30}\b(?:outcome|decision)\b`)
+	lwCtx      = regexp.MustCompile(`(?i)\bMDT\b|multidisciplinary|biops|histolog|\bEBUS|TBNA|cytolog|patholog|PET[/-]?CT|\bPET\b|thoracic surg|oncolog|radiotherap|lobectomy|\bSABR\b|Lung-?RADS|lung cancer screening|screening (?:CT|LDCT|referral|programme|program)|\bLDCT\b|diagnostic CT|suspicious (?:lung )?nodule|(?:following|after|referred from) (?:lung )?screening`)
 	lwScreen  = regexp.MustCompile(`(?i)cancer screening|Lung-?RADS`)
 	lwNoMalig = regexp.MustCompile(`(?i)no malignan`)
 	lwPendOut = regexp.MustCompile(`(?i)for (?:MDT )?discussion|MDT pending|before (?:a decision|referral)|to return|rebook|booked`)
@@ -264,7 +267,27 @@ func regexLDCTWorkup(t string) *LDCTFields {
 	if f.Quote == "" && len(cur) > 0 {
 		f.Quote = cur[len(cur)-1]
 	}
+	return ldctReconcile(f, t)
+}
+
+// ldctReconcile applies two text-level consistency rules to the fields either reader extracted, then labels them.
+//  1. An explicit surveillance outcome in a document titled as an MDT outcome/decision wins over workup=not_done
+//     (a mis-extraction), unless the text records a real non-performance (declined, cancelled, postponed), tissue is
+//     malignant or pending, or the extracted outcome is a different decision.
+//  2. A document with no genuine work-up context (MDT, tissue, PET/CT, surgery/oncology, direct screening
+//     reference) is the wrong document: it can never be wk_incomplete -> indeterminate (human review).
+//     A passing nodule mention is not context.
+func ldctReconcile(f *LDCTFields, text string) *LDCTFields {
+	if f.Attended == "yes" && f.Workup == "not_done" && lwMDTTitle.MatchString(text) &&
+		(f.Outcome == "pending" || f.Outcome == "surveillance") &&
+		f.Tissue != "malignant" && f.Tissue != "pending" &&
+		!lwNotDone.MatchString(text) && ldctAffirmed(lwSurv, text) {
+		f.Workup, f.Outcome = "done", "surveillance"
+	}
 	f.Label = ldctWorkupLabel(f)
+	if f.Label == "wk_incomplete" && !lwCtx.MatchString(text) && !lwAnnual.MatchString(text) && !lwSurv.MatchString(text) {
+		f.Label = "indeterminate"
+	}
 	return f
 }
 
@@ -321,8 +344,7 @@ func (g ldctGemma) fields(kind, text string) (*LDCTFields, bool) {
 	}
 	f.Attended = map[string]string{"attended": "yes", "did_not_attend": "no"}[g.Attended]
 	f.Workup, f.MDT, f.Tissue, f.Outcome = g.Workup, g.MDT, g.Tissue, g.Outcome
-	f.Label = ldctWorkupLabel(f)
-	return f, true
+	return ldctReconcile(f, text), true
 }
 
 func ldctVerdict(kind string, a *LDCTFields) *TwoVerdict {
