@@ -8,7 +8,7 @@ Design: a text-only corpus (60 LDCT + 60 IFHAS items) is frozen first; two indep
 
 - `fresh2.py`: CLI and library (`validate-corpus`, `template`, `ingest`, `export-inputs`, `manifest`, `check-freeze`, `score`).
 - `LABELLING-GUIDE.md`: blind guide with exact schema, allowed labels and rules. Its sha256 is recorded in every label file and checked.
-- `test_fresh2.py`: 71 tests (plus `test_fresh3_config.py`, `test_analyze_fresh2.py`), fixture texts only (`python3 -m unittest discover -s scripts/fresh2_eval -p 'test_*.py'`).
+- `test_fresh2.py`: 71 tests (95 across the directory with `test_fresh3_config.py` and `test_analyze_fresh2.py`), fixture texts only (`python3 -m unittest discover -s scripts/fresh2_eval -p 'test_*.py'`).
 - `../../pipeline/fresh2_reader_test.go`: `TestFresh2Reader`, skipped unless `FRESH2_CORPUS` is set. Calls the existing `LDCTJudge`, `IfhasNoteJudge` and `IfhasScreenJudge` unchanged; reads no key; replays reader-B caches only (no model call).
 
 ## Data layout (under `data/fresh2/`; `data/fresh3/` has the same layout)
