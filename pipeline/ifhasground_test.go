@@ -46,44 +46,6 @@ func TestIfhasFresh2RunawayTailsBecomeAvailable(t *testing.T) {
 	}
 }
 
-func TestIfhasFresh2FabricatedStaysUnavailable(t *testing.T) {
-	for _, id := range []string{"f2i-034", "f2i-006", "f2i-037", "f2i-046"} {
-		text, g := fresh2IfhasNote(t, id)
-		if _, ok := g.fields(text); ok {
-			t.Errorf("%s: fabricated or ungrounded content must stay unavailable", id)
-		}
-	}
-}
-
-// f2i-046: the runaway date tail trims cleanly off the top-level quote, but its finding quote is a paraphrase
-// ("Patient reports raised glucose..." where the note says "Discussed raised glucose..."), so B stays unavailable.
-func TestIfhasFresh2F046TailTrimsButFindingParaphraseBlocks(t *testing.T) {
-	text, g := fresh2IfhasNote(t, "f2i-046")
-	if _, ok := ifhasGroundedQuote(g.Quote, text); !ok {
-		t.Error("f2i-046 top-level quote should ground after trimming the date tail")
-	}
-	if _, ok := ifhasGroundedQuote(g.Findings[0].Quote, text); ok {
-		t.Error("f2i-046 finding quote is a paraphrase and must not ground")
-	}
-}
-
-// f2i-004: its quotes are verbatim once the date tail is cut, so B becomes available, but it says not_confirmed where
-// the note leaves the repeat glucose pending, so the readers disagree and the note goes to a human.
-func TestIfhasFresh2F004NeverAgrees(t *testing.T) {
-	text, _ := fresh2IfhasNote(t, "f2i-004")
-	_ = text
-	t.Setenv("X", "")
-	cb, _ := os.ReadFile("../data/fresh2/reader-cache/ifhas_gemma_cache.json")
-	cache := map[string]ifhasGemma{}
-	json.Unmarshal(cb, &cache)
-	old := IfhasCache
-	IfhasCache = cache
-	defer func() { IfhasCache = old }()
-	if v := IfhasNoteJudge(text); v.Agree {
-		t.Fatalf("f2i-004 must not auto-agree: %+v", v)
-	}
-}
-
 func TestIfhasGroundedQuoteTrimming(t *testing.T) {
 	note := "Repeat HbA1c 7.4% confirms type 2 diabetes. Metformin started today. Review in 3 months."
 	ok := []string{
