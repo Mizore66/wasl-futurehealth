@@ -117,11 +117,20 @@ and `waslrestart8`, loopback port 18931, generated valid key).**
 - Fix: `deploy/nats/entrypoint.sh` (the `wasl-nats:local` entrypoint) refuses to start (exit 1, key never printed) on an
   empty key, an unhashable key, or a key whose domain-prefixed SHA-256 differs from `/data/.wasl-key-check`. On a fresh
   volume the marker is written (umask 077, temp file then `mv`) only after JetStream reports healthy, so a failed first
-  start, for example a leading-digit key, leaves no marker and the corrected key starts normally. The script waits on the
-  same nats-server process, forwards TERM/INT and keeps its exit code and logs. Volumes created before this check have no
-  marker; they start with a message and no marker is written, since the key cannot be verified. Covered by tests in
-  `scripts/test_deploy.py` (failed first start, empty hash, marker mode and atomicity, signal forwarding) and static
-  checks in `scripts/check_deploy.py`. No key safeguard was weakened; the key is still not in the repository or image.
+  start, for example an all-digit key that nats-server parses as an out-of-range number, leaves no marker and the corrected
+  key starts normally. The script waits on the same nats-server process, forwards TERM/INT and keeps its exit code and
+  logs. Volumes created before this check have no marker; they start with a message and no marker is written, since the key
+  cannot be verified. Covered by tests in `scripts/test_deploy.py` (failed first start, empty hash, marker mode and
+  atomicity, signal forwarding) and static checks in `scripts/check_deploy.py`. No key safeguard was weakened; the key is
+  still not in the repository or image.
+- Legacy caveat: the marker is written by a poller that checks JetStream health about once per second. A crash between
+  JetStream becoming healthy and the marker write (including the gap before the next poll) can leave a volume with retained
+  data and no marker. The next start treats that volume as legacy/unverified: it starts with the "no key marker" message and
+  does not get wrong-key refusal. The key check is therefore not guaranteed for such a volume; it is not shown to be
+  exercised on a real crash.
+- Fix-round verification: a malformed all-digit first start left no marker; the corrected key then
+  became healthy and wrote a 0600 marker; a wrong key after a valid marker was refused with no decryption or reset warnings;
+  and a same-key down/up passed API smoke (2100 cases) with 0 false closures.
 - Scope of the restart: what is shown is that a restart with the correct key recovers the retained stores without
   decryption warnings, and that a wrong key is refused. It does not show that retained messages were read back. The
   `pipeline` service is one-shot and, by design, resets and re-runs the cohort on every `up` (see Configuration), so
