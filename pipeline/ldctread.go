@@ -283,7 +283,7 @@ var (
 	lwRefusal = regexp.MustCompile(`(?i)declin|refus|\bunfit\b|not fit for|\bunable\b|not able to|cannot tolerate|could not tolerate|not tolerate|did not consent|not consent|no consent|without consent|withh?eld consent|chose not|choose not|opted not|decided against|not (?:to )?proceed|contraindicat|did not complete`)
 	// outstanding tissue or PET work-up in the same sentence
 	lwTissuePET = regexp.MustCompile(`(?i)biops|histolog|\bEBUS|TBNA|cytolog|patholog|\bPET\b|PET[/-]?CT|bronchoscop|\bFNA\b|\btissue\b`)
-	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b|recommend|request|advis|offer|\bneed(?:s|ed)?\b|\brequire[sd]?\b|\bto be considered\b|\breferred for\b`)
+	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b|recommend|request|advis|offer|\bneed(?:s|ed)?\b|\brequire[sd]?\b|\bto be considered\b|\breferred for\b|\bprefer(?:s|red|ring)?\b|\bwant(?:s|ed|ing)?\b|\bfavou?r(?:s|ed|ing)?\b|\bfavou?rite\b|\bwould like\b|\bkeen\b|\bopt(?:s|ed|ing)? for\b`)
 	// LDCT work-up context: a lung / thoracic anchor AND a work-up term. Another organ's MDT, biopsy, oncology referral
 	// or screening programme is not enough, and neither is a bare "nodule".
 	// Non-lung pulmonary / thoracic phrases are removed before the anchor test (ldctWorkupContext).
