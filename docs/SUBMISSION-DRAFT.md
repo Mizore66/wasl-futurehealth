@@ -74,7 +74,7 @@ Seven sequential unseen synthetic report corpora exposed unsafe phrasing classes
 
 The frozen evaluation must not be confused with the separate **live-reader integrated run**. That single simulated run used the local Gemma 3 4B and recorded CRC precision 1.000, recall 0.955 and **0/567 false closures**; its live answers were ledgered for deterministic replay. Likewise, the separate HL7 stress run delivered **30,668/30,668 resources exactly once**, absorbed **888 duplicate re-sends** through connection drops, and recorded **0/574 CRC false closures**. These are distinct module and integration results, not one cumulative experiment.
 
-The 43 public report transcripts have **clinically verified model-assisted labels** after two independent model passes and clinician adjudication (κ = 1.000 on all five scored clinical fields). One unsafe automatic `adequate` remained before the preparation-rule correction; after `fair` preparation was classified as `inadequate_prep`, the cached-reader evaluation had **20 automatic decisions, 19 correct and 0 unsafe**. This small verified set does not establish independent human-labelled or clinical effectiveness evidence.
+The 43 public report transcripts have **clinically verified model-assisted labels** after two independent model passes and clinician adjudication (κ = 1.000 on all five scored clinical fields; not independent human double-labelling). One unsafe automatic `adequate` remained before the preparation-rule correction; after `fair` preparation was classified as `inadequate_prep`, the cached-reader evaluation had **20 automatic decisions, 19 correct and 0 unsafe**. This small verified set does not establish independent human-labelled or clinical effectiveness evidence.
 
 ## Capacity and queue impact
 
