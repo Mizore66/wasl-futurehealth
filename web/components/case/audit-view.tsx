@@ -1,6 +1,7 @@
 import { Mark, Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
+import { apiMode } from "@/lib/api/source";
 import type { Audit } from "@/lib/api/schema";
 import { Card } from "./sections";
 import { atWords, bodySummary, entryLabel, reviewWords, roleWords, shortHash } from "./words";
@@ -47,8 +48,10 @@ export function VerifiedCard({ audit }: { audit: Audit }) {
           : "The server recomputed the hashes and at least one did not match. Treat this case's record as altered until it is checked."}
       </p>
       <p className="m-0 mt-2 max-w-[72ch] text-small text-muted">
-        This proves the record is unaltered. It does not prove the decisions were clinically right. The check ran on the server when this page loaded; this page
-        does not re-run it in your browser.
+        This proves the record is unaltered. It does not prove the decisions were clinically right.{" "}
+        {apiMode() === "live"
+          ? "The Wasl API ran the check when this page loaded; your browser does not re-run it."
+          : "The Wasl API ran the check when this snapshot was published (the run metadata above says when); this page shows that result and does not re-run it."}
       </p>
     </section>
   );
