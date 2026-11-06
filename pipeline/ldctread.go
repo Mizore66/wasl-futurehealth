@@ -101,7 +101,7 @@ func ldctWorkupDocumentLabel(l string) bool {
 
 // ---------------- reader A: regex ----------------
 var (
-	lcHistory = regexp.MustCompile(`(?i)\bprior\b|\bprevious\b|for comparison only|(?:^|[^vV\d])(?:19|20)\d\d\b`) // "v2022" is not a year
+	lcHistory = regexp.MustCompile(`(?i)\bprior\b|\bprevious(?:ly)?\b|\bformerly\b|for comparison only|\blast (?:year|month|week)\b|\bago\b|\bearlier (?:this|in the) (?:year|month)\b|\bin the past\b|(?:^|[^vV\d])(?:19|20)\d\d\b`) // "v2022" is not a year
 	lcCatRe   = `Lung-?RADS\s*(?:v?2022\s*)?(?:category\s*)?[:=]?\s*(0|1|2|3|4\s?[ABXabx])S?\b`
 	lcHasCat  = regexp.MustCompile(`(?i)Lung-?RADS\s*(?:v?2022\s*)?(?:category\s*)?[:=]?\s*(?:0|1|2|3|4\s?[ABX])`)
 	lcOverall = regexp.MustCompile(`(?i)\b(?:final assessment|overall(?: assessment| category)?|impression|conclusion|lung-?rads assessment)\b[^.:\n]{0,25}:?\s*` + lcCatRe)
@@ -272,17 +272,19 @@ func regexLDCTWorkup(t string) *LDCTFields {
 
 // Surveillance-plan guards for the MDT-title override. All are heuristics over a clause, never clinical judgement.
 var (
-	lwCondition = regexp.MustCompile(`(?i)\b(?:if|unless|once|until|depending|dependent|contingent|subject to|provided|whether|then)\b`)
-	lwContrast  = regexp.MustCompile(`(?i)\brather than\b|\binstead of\b|\bin preference to\b|\bas opposed to\b|\bversus\b|\bbut not\b`)
+	lwCondition = regexp.MustCompile(`(?i)\b(?:if|unless|once|until|depending|dependent|contingent|subject to|provided|whether|then|after|should|consider|followed by|in the event)\b`)
+	lwContrast  = regexp.MustCompile(`(?i)\brather than\b|\binstead of\b|\bin preference to\b|\bas opposed to\b|\bversus\b|\bbut\b|\bpreferred to\b|\bover\b`)
 	// negation after the phrase: "surveillance CT is not required / declined by patient / no longer needed"
 	lwFwdNeg = regexp.MustCompile(`(?i)^[^;]{0,40}?(?:\bnot\b|\bno longer\b|\bnever\b|\bno need\b|declin|refus|reject|defer|cancel|withdr|unnecessary|inappropriate|n't\b)`)
 	// refusal / inability / non-consent, either word order, anywhere in the text
 	lwRefusal = regexp.MustCompile(`(?i)declin|refus|\bunfit\b|not fit for|\bunable\b|not able to|cannot tolerate|could not tolerate|not tolerate|did not consent|not consent|no consent|without consent|withh?eld consent|chose not|choose not|opted not|decided against|not (?:to )?proceed|contraindicat|did not complete`)
 	// outstanding tissue or PET work-up in the same sentence
 	lwTissuePET = regexp.MustCompile(`(?i)biops|histolog|\bEBUS|TBNA|cytolog|patholog|\bPET\b|PET[/-]?CT|bronchoscop|\bFNA\b|\btissue\b`)
-	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b`)
+	lwOutstand  = regexp.MustCompile(`(?i)await|\bpending\b|\bplanned\b|\bto be (?:done|performed|arranged)|\barranged\b|\bbooked\b|\bscheduled\b|\bto follow\b|\bfirst\b|\bwill (?:undergo|have|be)\b|\bnot yet\b|\bnext week\b|recommend|request|advis|offer|\bneeded\b|\brequired\b|\breferred for\b`)
 	// LDCT work-up context: a lung / thoracic anchor AND a work-up term. Another organ's MDT, biopsy, oncology referral
 	// or screening programme is not enough, and neither is a bare "nodule".
+	// Non-lung pulmonary / thoracic phrases are removed before the anchor test (ldctWorkupContext).
+	lwFalseAnchor = regexp.MustCompile(`(?i)pulmonary (?:embol\w*|hypertension|oedema|edema|fibrosis)|thoracic aort\w*|aortic`)
 	lwLungAnchor = regexp.MustCompile(`(?i)\blung\b|pulmonary|thoracic|respiratory|bronch|\bEBUS|TBNA|\bLDCT\b|low-dose CT|Lung-?RADS`)
 )
 
@@ -311,8 +313,10 @@ func ldctClauseClean(c string) bool {
 		if lcNegNear.MatchString(c[:m[0]]) || lwFwdNeg.MatchString(c[m[1]:]) {
 			return false
 		}
-		if loc := lwContrast.FindStringIndex(c); loc != nil && loc[1] <= m[0] { // "biopsy rather than CT surveillance"
-			return false
+		for _, loc := range lwContrast.FindAllStringIndex(c, -1) { // "biopsy rather than / preferred to / over CT surveillance"
+			if loc[1] <= m[0] {
+				return false
+			}
 		}
 	}
 	return true
@@ -354,7 +358,7 @@ func ldctSurveillancePlan(text string) bool {
 // ldctWorkupContext: a lung/thoracic anchor and a work-up term (MDT, tissue, PET, surgery/oncology, direct screening
 // reference, a stated annual/surveillance outcome).
 func ldctWorkupContext(text string) bool {
-	return lwLungAnchor.MatchString(text) && (lwCtx.MatchString(text) || lwAnnual.MatchString(text) || lwSurv.MatchString(text))
+	return lwLungAnchor.MatchString(lwFalseAnchor.ReplaceAllString(text, " ")) && (lwCtx.MatchString(text) || lwAnnual.MatchString(text) || lwSurv.MatchString(text))
 }
 
 // ldctReconcile applies two text-level consistency rules to the fields an extractor produced, then labels them.
