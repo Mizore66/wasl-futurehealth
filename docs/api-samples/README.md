@@ -35,3 +35,7 @@ WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh snapshot  # writes docs/api-
 `scripts/demo.sh snapshot` does the gating itself: it writes into a fresh staging directory beside `docs/api-samples/`, requires all seven programme pages (`crc`, `cervical`, `lung_nodule`, `diabetic_retinopathy`, `breast`, `lung_ldct`, `ifhas`) to be nonempty, fetches detail and audit for every fixture the API returns, then deletes every tracked file except `README.md` and moves the staged files in, so no stale fixture files remain. If any step fails the tracked samples are left untouched. `WASL_SNAPSHOT_DIR` overrides the target (used by the tests). Finally rerun the Go API tests with `WASL_TEST_RUN=<run dir>` set so the run-dependent tests do not skip.
 
 Note: with `WASL_IFHAS=800` the generator panics after the other six programmes (background pool exhausted, 882 adults for 800 loops plus 100 distractors); the samples were regenerated with `WASL_IFHAS=700`, as in `pipeline/RESULTS.md`.
+
+## Agent samples (separate lane)
+
+The seven-programme samples above come from a run with no agent sidecar artifacts, so they contain no `agent_review` fixture and no real agent investigations. A truthful, separate CRC-only set built from the r1agent10 seed-987 lane (real cached agent output) is in [`agent/`](agent/README.md). `WASL_SNAPSHOT_PROGRAMMES=crc` scopes the required programme pages (comma list; default is all seven). IFHAS generator capacity is 700, not 800, for that lane too. The two sets are not merged and do not share fixture ids.

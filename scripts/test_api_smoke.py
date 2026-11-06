@@ -296,12 +296,14 @@ class DemoShellTests(unittest.TestCase):
 class SnapshotTests(unittest.TestCase):
     PROGS = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]
 
-    def snap(self, fake, target):
+    def snap(self, fake, target, programmes=None):
         srv = HTTPServer(("127.0.0.1", 0), make_handler(fake))
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
             env = dict(os.environ, WASL_OUT=str(Path(target).parent / "out"), WASL_SNAPSHOT_DIR=str(target),
                        WASL_API_ADDR=f"127.0.0.1:{srv.server_port}", WASL_BIN=str(Path(target).parent / "bin"))
+            if programmes:
+                env["WASL_SNAPSHOT_PROGRAMMES"] = programmes
             return subprocess.run(["bash", str(DEMO), "snapshot"], capture_output=True, text=True, env=env, timeout=90)
         finally:
             srv.shutdown()
@@ -334,6 +336,42 @@ class SnapshotTests(unittest.TestCase):
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("ifhas", r.stdout + r.stderr)
             self.assertTrue((target / "case_old.json").exists())
+
+    def test_default_stages_all_seven_programmes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            r = self.snap(Fake(), target)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            got = sorted(p.name for p in target.glob("cases_*_page1.json"))
+            self.assertEqual(got, sorted(f"cases_{p}_page1.json" for p in self.PROGS))
+
+    def test_scoped_programmes_stage_only_those_pages(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            def m(f):
+                f.dash["by_programme"]["ifhas"]["cases"] = 0  # other programmes may be absent in a scoped lane
+            r = self.snap(Fake(m), target, programmes="crc")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertEqual([p.name for p in target.glob("cases_*_page1.json")], ["cases_crc_page1.json"])
+            for tag in Fake().fix["fixtures"]:
+                self.assertTrue((target / f"case_{tag}_audit.json").exists())
+
+    def test_scoped_programme_must_be_nonempty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            target.mkdir()
+            (target / "case_old.json").write_text("{}")
+            def m(f):
+                f.dash["by_programme"]["crc"]["cases"] = 0
+            r = self.snap(Fake(m), target, programmes="crc")
+            self.assertNotEqual(r.returncode, 0)
+            self.assertTrue((target / "case_old.json").exists())
+
+    def test_unknown_programme_is_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            r = self.snap(Fake(), Path(tmp) / "samples", programmes="crc,bogus")
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("bogus", r.stdout + r.stderr)
 
 
 if __name__ == "__main__":
