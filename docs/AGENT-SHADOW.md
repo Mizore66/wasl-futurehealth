@@ -113,7 +113,9 @@ are caught up, and prints the report. Scope check: `-data` must hold a generated
 - Off-vs-on comparison: `scripts/agent_shadow_parity.sh`, `scripts/agent_shadow_parity.py`. Strict means exact record
   order with only the documented timing fields removed (stream sequence numbers and timestamps, `Wsi-Ots`, `pub_ts`,
   `proc`, `lat_ms`, prep `ots`). Sorted comparisons are reported separately as secondary and never counted.
-  The result is in the Task D report, with the limits stated there.
+  Result, one synthetic cohort (seed 9101): the base, `off`, `off2` and `on` runs are strictly equal, with 5,226 FHIR,
+  5,226 PREP and 2,798 OUT messages and 0 reviewer decisions. This is a parity result only: no recall, reviewer-time,
+  clinical or assist-readiness claim. Its scope is in the Limits section below.
 - Live smoke: `scripts/agent_shadow_smoke.sh`, 3 items and 6 uncached requests at most, synthetic cohort only; free
   loopback port, waits for the broker instead of a fixed sleep.
 
