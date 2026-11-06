@@ -25,7 +25,8 @@ KEY_SCHEMA = "fresh2-key/v1"
 RAW_SCHEMA = "fresh2-reader-raw/v1"
 SCORE_SCHEMA = "fresh2-score/v1"
 
-PER_PROGRAMME = 60
+DEFAULT_EVAL_DIR = "data/fresh2"
+DEFAULT_PER_PROGRAMME = 60
 MIN_PER_KIND = 10
 KINDS = {
     "ldct-screen": {"programme": "ldct", "fields": ("label",)},
@@ -52,22 +53,53 @@ LOINC = {
     "39156-5": ("BMI", "kg/m2"),
 }
 
-DEFAULT_PATHS = {
-    "corpus": "data/fresh2/corpus.json",
-    "labels": ["data/fresh2/labels/labeller_a.json", "data/fresh2/labels/labeller_b.json"],
-    "key": "data/fresh2/key.json",
-    "agreement": "data/fresh2/agreement.json",
-    "reader_caches": ["data/fresh2/reader-cache/ldct_gemma_cache.json", "data/fresh2/reader-cache/ifhas_gemma_cache.json"],
-    "manifest": "data/fresh2/FREEZE.json",
-    "results_dir": "data/fresh2/results",
-}
+def eval_dir(value=None):
+    """Repo-relative evaluation root: $FRESH_EVAL_DIR, default data/fresh2. Must stay inside the repository."""
+    raw = os.environ.get("FRESH_EVAL_DIR") if value is None else value
+    d = os.path.normpath(raw.strip()) if raw and raw.strip() else DEFAULT_EVAL_DIR
+    if os.path.isabs(d) or d == ".." or d.startswith("../") or d == ".":
+        raise HarnessError(f"FRESH_EVAL_DIR must be a repo-relative directory inside the repository, got {raw!r}")
+    return d.replace(os.sep, "/")
+
+
+def per_programme():
+    """Items required per programme: $FRESH_EVAL_PER_PROGRAMME, default 60 (fresh3 uses 50). Read at call time."""
+    raw = os.environ.get("FRESH_EVAL_PER_PROGRAMME")
+    if raw is None or not raw.strip():
+        return DEFAULT_PER_PROGRAMME
+    try:
+        n = int(raw.strip())
+    except ValueError:
+        raise HarnessError(f"FRESH_EVAL_PER_PROGRAMME must be an integer, got {raw!r}")
+    if n < 2 * MIN_PER_KIND:
+        raise HarnessError(f"FRESH_EVAL_PER_PROGRAMME must be at least {2 * MIN_PER_KIND}, got {n}")
+    return n
+
+
+def make_paths(root):
+    return {
+        "corpus": f"{root}/corpus.json",
+        "labels": [f"{root}/labels/labeller_a.json", f"{root}/labels/labeller_b.json"],
+        "key": f"{root}/key.json",
+        "agreement": f"{root}/agreement.json",
+        "reader_caches": [f"{root}/reader-cache/ldct_gemma_cache.json", f"{root}/reader-cache/ifhas_gemma_cache.json"],
+        "manifest": f"{root}/FREEZE.json",
+        "results_dir": f"{root}/results",
+    }
+
+
+def default_paths():
+    return make_paths(eval_dir())
+
+
+DEFAULT_PATHS = default_paths()  # fixed at import from $FRESH_EVAL_DIR (default data/fresh2)
 # files whose content must be identical at reader_code_commit and at scoring time
 DEFAULT_PROTECTED = [
     "pipeline/ldctread.go", "pipeline/ldctrule.go", "pipeline/ifhasread.go", "pipeline/ifhasrule.go",
     "pipeline/evidence.go", "pipeline/lungread.go", "pipeline/reader.go", "pipeline/fresh2_reader_test.go",
     "models/ldct_gemma_cache.json", "models/ifhas_gemma_cache.json",
 ]
-WATCH_PREFIXES = ["data/fresh2/", "scripts/fresh2_eval/"]
+WATCH_PREFIXES = ["scripts/fresh2_eval/"]  # the evaluation root is added from the configured paths
 MANIFEST_KEYS = ["reader_code_commit", "corpus_commit", "labels_commit", "reader_cache_commit"]
 GUIDE_PATH = os.path.join(HERE, "LABELLING-GUIDE.md")
 SEMANTICS = ("These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the "
@@ -208,9 +240,10 @@ def validate_corpus(corpus, known_texts=None):
             texts.setdefault(nt, where)
             if known_texts and nt in known_texts:
                 errs.append(f"item {where}: text is already in an existing corpus")
+    need = per_programme()
     for prog in ("ldct", "ifhas"):
-        if by_prog[prog] != PER_PROGRAMME:
-            errs.append(f"programme {prog} has {by_prog[prog]} items, need exactly {PER_PROGRAMME}")
+        if by_prog[prog] != need:
+            errs.append(f"programme {prog} has {by_prog[prog]} items, need exactly {need}")
     for kind in KIND_ORDER:
         if by_kind[kind] < MIN_PER_KIND:
             errs.append(f"kind {kind} has {by_kind[kind]} items, need at least {MIN_PER_KIND}")
@@ -231,7 +264,7 @@ def _coded_errors(where, coded):
     return []
 
 
-def load_known_texts(repo):
+def load_known_texts(repo, paths=None):
     """Normalised texts of every existing corpus (dev and earlier held-out) so a fresh item cannot be a reuse."""
     out = set()
     for rel in ("data/ldct", "data/ifhas"):
@@ -245,6 +278,19 @@ def load_known_texts(repo):
                     for r in doc.get("reports", []) if isinstance(doc, dict) else []:
                         if isinstance(r, dict) and isinstance(r.get("text"), str):
                             out.add(norm_text(r["text"]))
+    # earlier fresh corpora (e.g. data/fresh2 when building fresh3), never the corpus being validated
+    own = os.path.normpath(os.path.join(repo, (paths or default_paths())["corpus"]))
+    dd = os.path.join(repo, "data")
+    for name in sorted(os.listdir(dd)) if os.path.isdir(dd) else []:
+        cp = os.path.join(dd, name, "corpus.json")
+        if name.startswith("fresh") and os.path.normpath(cp) != own and os.path.isfile(cp):
+            try:
+                doc, _ = read_json(cp)
+            except (ValueError, OSError):
+                continue
+            for r in doc.get("items", []) if isinstance(doc, dict) else []:
+                if isinstance(r, dict) and isinstance(r.get("text"), str):
+                    out.add(norm_text(r["text"]))
     return out
 
 
@@ -468,7 +514,7 @@ def check_freeze(repo, manifest, paths=None, protected=None, pre_score=True):
     errs += _key_regen_errors(repo, P)
     # cleanliness: no uncommitted change or untracked file under watched paths
     st = _git(repo, "status", "--porcelain", "--untracked-files=all")
-    watched = [x for x in WATCH_PREFIXES] + list(prot)
+    watched = [os.path.dirname(P["corpus"]) + "/"] + [x for x in WATCH_PREFIXES] + list(prot)
     for line in (st or "").splitlines():
         path = line[3:].strip().strip('"')
         if not pre_score and (path + "/").startswith(P["results_dir"] + "/"):
@@ -705,9 +751,10 @@ def main(argv=None):
     p = sub.add_parser("check-freeze"); p.add_argument("--manifest"); p.add_argument("--after-score", action="store_true")
     p = sub.add_parser("score"); p.add_argument("--manifest")
     a = ap.parse_args(argv)
-    repo, P = a.repo, DEFAULT_PATHS
+    repo = a.repo
     path = lambda rel: os.path.join(repo, rel)
     try:
+        P = default_paths()
         if a.cmd == "validate-corpus":
             c = _load_corpus(a.corpus or path(P["corpus"]))
             errs = validate_corpus(c, load_known_texts(repo))
