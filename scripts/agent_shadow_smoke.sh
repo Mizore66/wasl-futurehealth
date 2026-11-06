@@ -18,19 +18,21 @@ if [ "$MODE" = live ]; then
   [ "${WASL_AGENTSHADOW_LIVE:-}" = 1 ] || { echo "live smoke needs WASL_AGENTSHADOW_LIVE=1" >&2; exit 2; }
 fi
 [ ! -e "$RUN" ] || { echo "run dir exists: $RUN" >&2; exit 2; }
-PORT="${WASL_SMOKE_NATS_PORT:-14999}"
+# a free loopback port unless the caller pinned one
+PORT="${WASL_SMOKE_NATS_PORT:-$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')}"
 mkdir -p "$RUN.nats"
 "$BIN/nats-server" -js -sd "$RUN.nats" -p "$PORT" -a 127.0.0.1 > "$RUN.nats.log" 2>&1 &
 NATS=$!
 trap 'kill $NATS 2>/dev/null || true' EXIT
-sleep 1.5
+# wait for the server to accept connections (no fixed sleep)
+for _ in $(seq 1 100); do python3 -c "import socket,sys; socket.create_connection(('127.0.0.1',$PORT),0.2).close()" 2>/dev/null && break; sleep 0.1; done
 NATS_ENV=(WASL_NATS_URL="nats://127.0.0.1:$PORT" WASL_NATS_EXTERNAL=1)
 ARGS=(-data "$COHORT" -wasl "$ROOT/models" -preps 3 -threads 4 -source file -chaos 0 -ann hnsw
       -rerr 0 -rdouble none -rseed 1 -seed "${WASL_SEED:-9101}" -policy v7strict -modelset v3 -linkfloor 0.01 -r1review -demoguard -P 1 -noreview -replicas 1)
 ( cd "$BIN" && env -u WASL_LLM_URL -u WASL_LLM_KEY -u WASL_LLM_MODEL -u WASL_AGENTSHADOW_LIVE "${NATS_ENV[@]}" ./wsi7 orchestrate -run "$RUN" "${ARGS[@]}" > "$RUN.orch.stdout" 2>&1 ) &
 ORCH=$!
-( sleep 4; cd "$BIN" && exec env "${NATS_ENV[@]}" ./wsi7 agentshadow -run "$RUN" "${ARGS[@]}" -agentmode "$MODE" -agentitems 3 -agentcalls 6 \
-    -agentdeadline 3m -agentprovider 45s -agentidle 10s -agentworker "$ROOT/scripts/agent_shadow_worker.py" > "$RUN.shadow.stdout" 2> "$RUN.shadow.stderr" ) &
+( for _ in $(seq 1 150); do [ -e "$RUN/status-ingest.json" ] || ls "$RUN"/status-*.json >/dev/null 2>&1 && break; sleep 0.2; done; cd "$BIN" && exec env "${NATS_ENV[@]}" ./wsi7 agentshadow -run "$RUN" "${ARGS[@]}" -agentmode "$MODE" -agentitems 3 -agentcalls "${WASL_SMOKE_CALLS:-6}" \
+    -agentdeadline 3m -agentprovider 45s -agentidle 10s ${WASL_SMOKE_CACHE:+-agentcache "$WASL_SMOKE_CACHE"} -agentworker "$ROOT/scripts/agent_shadow_worker.py" > "$RUN.shadow.stdout" 2> "$RUN.shadow.stderr" ) &
 SHADOW=$!
 wait "$ORCH" || true
 wait "$SHADOW" || true

@@ -112,11 +112,18 @@ func (e *natsEnv) snap(t *testing.T) map[string]streamSnap {
 }
 
 func runOneShadow(t *testing.T, o *offline, dir string, inv Investigator) *AgentShadow {
+	return runOneShadowRef(t, o, dir, inv, nil)
+}
+
+func runOneShadowRef(t *testing.T, o *offline, dir string, inv Investigator, ref func(*AgentShadow)) *AgentShadow {
 	t.Helper()
 	cfg := AgentShadowCfg{Dir: dir, Live: true, MaxItems: 20, MaxCalls: 40, Provider: time.Second, Idle: 700 * time.Millisecond}
 	sh, err := NewAgentShadow(cfg, o.gbm, o.iso, 1, inv)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if ref != nil {
+		ref(sh)
 	}
 	_, js := connect("agentshadow-test")
 	done := make(chan struct{})

@@ -46,12 +46,27 @@ records, `write_recs` format), `cache/` (provider response cache and alias salt)
 - Before every **uncached** request the worker checks, in order: live mode, SIGTERM/SIGINT, the stop file
   (`<run>/agent_shadow/STOP`), the overall deadline, and the persisted call cap. Any failure is an operational
   fallback.
-- Bounds (flags may lower, never raise): 20 items, 40 uncached provider requests, 2 responses and 6 tool calls per item,
-  45 s per provider request, 15 minutes overall by default. The counter is persisted in `usage.json` and in the cache's
-  `.uncached_calls` file, so a restart or deleting one file cannot reset it.
-- Signals: the first SIGINT/SIGTERM disables new uncached requests and forwards SIGTERM to the running worker. Cached
-  replay of what was already consumed can finish. A second signal exits. Nothing restarts the process: it is not an
-  orchestrator child and has no supervisor.
+- Bounds (flags may lower, never raise; zero, negative or too-large values are rejected, not clamped): 20 items, 40
+  uncached provider requests, 2 responses and 6 tool calls per item, 45 s per provider request, 15 minutes overall by
+  default (the overall window starts at the first process start and is persisted, so a restart does not reset it).
+  The lifetime call count lives in `usage.json` and is **seeded into every worker** (`--calls-used`), so a different or
+  empty response cache cannot reset it; the worker's own cache counter can only raise it. Before a live item starts, its
+  worst case (two requests) is reserved and fsynced; if `usage.json` cannot be written, no uncached request is made and
+  the shadow is marked degraded.
+- Cached replay of a live-populated cache: the non-secret model name is part of the cache key, so cached and live runs
+  name the same model (`WASL_LLM_MODEL`, else the `model.txt` a live worker leaves beside the cache). Cached mode still
+  has no transport object. A killed, stopped or capped shadow therefore replays what live run recorded, identically.
+- Signals: the first SIGINT/SIGTERM disables new uncached requests and forwards SIGTERM to the running worker. A signal
+  that lands between the decision to start a worker and the process existing is held and delivered right after start
+  (and the worker installs its handlers before its heavy imports). Degrading (divergence) does the same, and both also
+  create a kill file the worker checks before every uncached request. Cached replay of what was already consumed can
+  finish. A second signal exits. Nothing restarts the process: it is not an orchestrator child and has no supervisor.
+- Consumption: the stream consumers only read; a separate goroutine runs the workers, so a long investigation never
+  stops the reading. The process exits only when everything stored was consumed, nothing is queued and no worker runs.
+  If anything is still waiting at exit (live outputs without their PREP, a PREP gap, queued items) the shadow is marked
+  `degraded` with reason `incomplete:...` and `incomplete: true` in the status and report. Consumer errors back off and
+  re-create the ordered consumer. A PREP/OUT stream that was recreated under the same run directory is detected and
+  degrades the shadow. `NATS` must be local (127.0.0.1, localhost, ::1).
 - The worker's environment is `PATH`, `HOME`, locale and TLS variables only; the provider variables are added in live
   mode only. The orchestrator and its children never receive them.
 
@@ -61,7 +76,13 @@ Only the sanitized tool outputs of `ToolAPI`: HMAC aliases, names, scripts, prov
 identifier presence and agreement. The staged lane per item (`run/main/review_queue.json`, `link_funnel.ndjson`,
 `prep_log.ndjson`, `agent_need.ndjson`, empty `cohort/`) is built from the two registrations in the shadow's own linker
 state at raise time. It never contains live review quotes, chain blocks, heads, report text, raw report ids, truth,
-reviewer answers, donor maps or secrets, and is deleted as soon as the item finishes.
+reviewer answers, donor maps or secrets. The worker needs the two registrations' names, DOBs and identifier, so the lane
+is the one place those exist: it is staged in a private (0700) directory outside the run directory
+(`$TMPDIR/wasl-agentshadow-<uid>-<hash>`), deleted when the item finishes, swept at start-up and at exit. Persistent
+artifacts (`observations.ndjson`, `agent_shadow_recs.ndjson`, `usage.json`, status) carry only salted aliases of the
+pair (`pair_...`, `reg_...`), a hash of the cache path, and no names, DOBs, identifiers, keys or paths. The model's
+cited field values (a name or DOB the tool returned) do appear in `agent_shadow_recs.ndjson` by design: that file is
+the investigator's own record format (`write_recs`).
 
 ## Fallback is not an answer
 
@@ -85,15 +106,24 @@ are caught up, and prints the report. Scope check: `-data` must hold a generated
 
 ## Evidence in this repository
 
-- Go: `pipeline/agentshadow_test.go`, `agentshadow_nats_test.go` (real `nats-server`, skipped if `bin/nats-server` is
-  absent). Python: `scripts/test_agent_shadow_worker.py`. No test makes an external call.
+- Go: `pipeline/agentshadow_test.go`, `agentshadow_fix1_test.go` (the real `python3` worker against a loopback fake
+  provider: cache replay after live, restart with a different cache, kill/degrade races, raw-artifact scan, long drain),
+  `agentshadow_nats_test.go` (real `nats-server`, skipped if `bin/nats-server` is absent). Python:
+  `scripts/test_agent_shadow_worker.py`. No test makes an external call (the "provider" is 127.0.0.1).
 - Off-vs-on comparison: `scripts/agent_shadow_parity.sh`, `scripts/agent_shadow_parity.py`. Strict means exact record
   order with only the documented timing fields removed (stream sequence numbers and timestamps, `Wsi-Ots`, `pub_ts`,
   `proc`, `lat_ms`, prep `ots`). Sorted comparisons are reported separately as secondary and never counted.
   The result is in the Task D report, with the limits stated there.
-- Live smoke: `scripts/agent_shadow_smoke.sh`, 3 items and 6 uncached requests at most, synthetic cohort only.
+- Live smoke: `scripts/agent_shadow_smoke.sh`, 3 items and 6 uncached requests at most, synthetic cohort only; free
+  loopback port, waits for the broker instead of a fixed sleep.
 
 ## Limits
+
+The parity claim covers only the deterministic no-fault, single-partition HL7, `-noreview` configuration (no reviewer
+decisions exist in it). `-source file`, default fault injection and the simulated reviewer are not byte-comparable even
+without a shadow, so nothing is claimed for them. Workers run one process per item; a restart after a hard crash loses
+at most the in-flight item's outcome (usage was reserved first, so the cap still holds); there is no mid-run checkpoint of
+the consumer position (a restart replays both streams from sequence 1).
 
 A spike on a synthetic cohort with simulated records. The report gives coverage, agreement with the simulated human
 answer, fallback reasons, latency and token counts. Agreement on a few items says nothing about accuracy, and nothing

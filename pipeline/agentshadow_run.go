@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -35,10 +36,65 @@ type AgentShadowFlags struct {
 	Python   string
 }
 
+// validateAgentShadowBounds rejects (never clamps) nonsensical limits. Flags may only lower the hard bounds.
+func validateAgentShadowBounds(f AgentShadowFlags) error {
+	switch {
+	case f.Items < 1 || f.Items > AgentShadowMaxItems:
+		return fmt.Errorf("-agentitems must be 1..%d, got %d", AgentShadowMaxItems, f.Items)
+	case f.Calls < 1 || f.Calls > AgentShadowMaxCalls:
+		return fmt.Errorf("-agentcalls must be 1..%d, got %d", AgentShadowMaxCalls, f.Calls)
+	case f.Deadline <= 0:
+		return fmt.Errorf("-agentdeadline must be positive, got %v", f.Deadline)
+	case f.Provider <= 0:
+		return fmt.Errorf("-agentprovider must be positive, got %v", f.Provider)
+	case f.Idle < 0:
+		return fmt.Errorf("-agentidle must not be negative, got %v", f.Idle)
+	}
+	return nil
+}
+
+// checkNatsLocal: the shadow only ever reads from a local broker.
+func checkNatsLocal() error {
+	for _, raw := range strings.Split(NatsURL, ",") {
+		u, err := url.Parse(strings.TrimSpace(raw))
+		if err != nil || u.Hostname() == "" {
+			return fmt.Errorf("agentshadow: unparsable NATS url %q", raw)
+		}
+		switch h := u.Hostname(); h {
+		case "127.0.0.1", "localhost", "::1":
+		default:
+			return fmt.Errorf("agentshadow reads only from a local NATS server, got host %q", h)
+		}
+	}
+	return nil
+}
+
+// resolveAgentModel is the non-secret model identity used in BOTH modes: the model is part of the response-cache
+// key, so a cached replay can hit live-populated entries only by naming the same model. Order: explicit flag value,
+// WASL_LLM_MODEL, then the identity recorded beside the cache by an earlier live run.
+func resolveAgentModel(flagVal, cache string) string {
+	if flagVal != "" {
+		return flagVal
+	}
+	if m := os.Getenv("WASL_LLM_MODEL"); m != "" {
+		return m
+	}
+	if b, err := os.ReadFile(filepath.Join(cache, "model.txt")); err == nil {
+		return strings.TrimSpace(string(b))
+	}
+	return ""
+}
+
 // validateAgentShadowScope refuses anything that is not a generated synthetic -demoguard demo cohort.
 func validateAgentShadowScope(data, run string, f AgentShadowFlags) error {
 	if f.Mode != "cached" && f.Mode != "live" {
 		return fmt.Errorf("-agentmode must be cached or live, got %q", f.Mode)
+	}
+	if err := validateAgentShadowBounds(f); err != nil {
+		return err
+	}
+	if err := checkNatsLocal(); err != nil {
+		return err
 	}
 	if !DemoGuard || !strings.Contains(PolicyName, "+demoguard") {
 		return errors.New("agentshadow is scoped to -demoguard demo cohorts: pass -demoguard (the live run's policy flags must match)")
@@ -65,13 +121,17 @@ func validateAgentShadowScope(data, run string, f AgentShadowFlags) error {
 // execInvestigator launches scripts/agent_shadow_worker.py once per item.
 type execInvestigator struct {
 	python, worker, cache, recs string
+	model                       string // non-secret identity passed to the worker in both modes
 	cfg                         AgentShadowCfg
 	mu                          sync.Mutex
 	cur                         *exec.Cmd
+	pendingSig                  os.Signal // a signal that arrived while no worker was running: delivered at the next start
+	beforeStart                 func()    // test seam: runs between the decision to start and the process start
 }
 
 func newExecInvestigator(f AgentShadowFlags, cfg AgentShadowCfg) *execInvestigator {
-	return &execInvestigator{python: f.Python, worker: f.Worker, cache: cfg.Cache, recs: filepath.Join(cfg.Dir, "agent_shadow_recs.ndjson"), cfg: cfg}
+	return &execInvestigator{python: f.Python, worker: f.Worker, cache: cfg.Cache, recs: filepath.Join(cfg.Dir, "agent_shadow_recs.ndjson"), cfg: cfg,
+		model: resolveAgentModel("", cfg.Cache)}
 }
 
 // Signal forwards a termination signal to the running worker so it cannot start another uncached request.
@@ -80,7 +140,9 @@ func (e *execInvestigator) Signal(sig os.Signal) {
 	defer e.mu.Unlock()
 	if e.cur != nil && e.cur.Process != nil {
 		e.cur.Process.Signal(sig)
+		return
 	}
+	e.pendingSig = sig // no worker yet (between nextJob and Start): not lost, delivered right after Start
 }
 
 func (e *execInvestigator) Investigate(req InvestigateReq) (InvestigateRes, error) {
@@ -91,7 +153,14 @@ func (e *execInvestigator) Investigate(req InvestigateReq) (InvestigateRes, erro
 	}
 	args := []string{"-I", e.worker, "--lane", req.Lane, "--item", req.Item, "--cache", e.cache, "--recs", e.recs, "--mode", mode,
 		"--allow-live", map[bool]string{true: "1", false: "0"}[req.Live], "--stop-file", e.cfg.StopFile,
-		"--provider-timeout", fmt.Sprint(e.cfg.Provider.Seconds()), "--max-calls", fmt.Sprint(e.cfg.MaxCalls)}
+		"--provider-timeout", fmt.Sprint(e.cfg.Provider.Seconds()), "--max-calls", fmt.Sprint(e.cfg.MaxCalls),
+		"--calls-used", fmt.Sprint(req.CallsUsed)}
+	if m := e.modelName(); m != "" {
+		args = append(args, "--model", m)
+	}
+	if req.KillFile != "" {
+		args = append(args, "--kill-file", req.KillFile)
+	}
 	if !req.Deadline.IsZero() {
 		args = append(args, "--deadline-epoch", fmt.Sprint(float64(req.Deadline.UnixNano())/1e9))
 	}
@@ -101,11 +170,18 @@ func (e *execInvestigator) Investigate(req InvestigateReq) (InvestigateRes, erro
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	// a worker makes at most two provider requests; one extra provider window covers staging and process start
 	limit := 3*e.cfg.Provider + 30*time.Second
-	if err := cmd.Start(); err != nil {
-		return res, err
+	if e.beforeStart != nil {
+		e.beforeStart()
 	}
 	e.mu.Lock()
+	if err := cmd.Start(); err != nil {
+		e.mu.Unlock()
+		return res, err
+	}
 	e.cur = cmd
+	if e.pendingSig != nil && req.Live { // a kill or degrade raced the start: a worker that may send hears it at once
+		cmd.Process.Signal(e.pendingSig) // (a cached worker needs no signal: it has no transport)
+	}
 	e.mu.Unlock()
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
@@ -162,9 +238,6 @@ func agentShadowMain(wasl, data, run string, P int, f AgentShadowFlags) int {
 	}
 	cfg := AgentShadowCfg{Dir: dir, Run: run, Cache: cache, Live: f.Mode == "live", MaxItems: f.Items, MaxCalls: f.Calls,
 		Deadline: f.Deadline, Provider: f.Provider, Idle: f.Idle, StopFile: filepath.Join(dir, "STOP")}
-	if cfg.Provider <= 0 {
-		cfg.Provider = 45 * time.Second
-	}
 	gbm := LoadGBM(filepath.Join(wasl, mf("lgb_stream.json")))
 	iso := LoadIso(filepath.Join(wasl, mf("iso.json")))
 	inv := newExecInvestigator(f, cfg)
@@ -201,33 +274,73 @@ func runShadowLoop(js jetstream.JetStream, sh *AgentShadow, inv interface{ Signa
 			n := stopping
 			stopMu.Unlock()
 			if n >= 2 {
+				sh.CleanLanes()
 				sh.WriteStatus(run, true)
 				os.Exit(130)
 			}
 		}
 	}()
 	isStopping := func() bool { stopMu.Lock(); defer stopMu.Unlock(); return stopping > 0 }
+	// the consumers only read: a long worker never blocks them (I5). One drain goroutine runs the queued items.
+	kick := make(chan struct{}, 1)
+	wake := func() {
+		select {
+		case kick <- struct{}{}:
+		default:
+		}
+	}
+	drained := make(chan struct{})
+	go func() {
+		defer close(drained)
+		for {
+			select {
+			case <-kick:
+				sh.Drain()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	for _, name := range []string{"PREP", "OUT"} { // a stream recreated under the same run dir is a different run
+		if st, err := js.Stream(ctx, name); err == nil {
+			if info, err := st.Info(ctx); err == nil {
+				sh.CheckStreamIdentity(name, info.Created.UTC().Format(time.RFC3339Nano))
+			}
+		}
+	}
 	consume := func(stream string, handle func(m jetstream.Msg)) {
-		var it jetstream.MessagesContext
-		retry("agentshadow "+stream, func() error {
+		open := func() (jetstream.MessagesContext, error) {
 			cons, err := js.OrderedConsumer(ctx, stream, jetstream.OrderedConsumerConfig{})
 			if err != nil {
-				return err
+				return nil, err
 			}
-			it, err = cons.Messages(jetstream.PullMaxMessages(500))
-			return err
-		})
-		defer it.Stop()
+			return cons.Messages(jetstream.PullMaxMessages(500))
+		}
+		var it jetstream.MessagesContext
+		retry("agentshadow "+stream, func() (err error) { it, err = open(); return })
+		defer func() { it.Stop() }()
+		bad := 0
 		for {
 			m, err := it.Next()
 			if err != nil {
 				if ctx.Err() != nil {
 					return
 				}
+				// M1: back off instead of spinning; after repeated errors start a fresh ordered consumer
+				bad++
+				time.Sleep(time.Duration(min(bad, 10)) * 100 * time.Millisecond)
+				if bad%5 == 0 {
+					it.Stop()
+					retry("agentshadow "+stream, func() (err error) { it, err = open(); return })
+				}
 				continue
 			}
+			bad = 0
 			handle(m)
-			sh.Drain()
+			if md, err := m.Metadata(); err == nil {
+				sh.NoteStream(stream, md.Sequence.Stream)
+			}
+			wake()
 		}
 	}
 	go consume("PREP", func(m jetstream.Msg) {
@@ -242,14 +355,18 @@ func runShadowLoop(js jetstream.JetStream, sh *AgentShadow, inv interface{ Signa
 	tick := time.NewTicker(500 * time.Millisecond)
 	defer tick.Stop()
 	for range tick.C {
-		sh.Drain()
+		wake()
 		sh.WriteStatus(run, false)
-		if sh.Idle() || (isStopping() && streamsCaughtUp(ctx, js, sh)) {
+		// done only when everything stored was consumed, nothing is queued and no worker runs (I5)
+		if (sh.Idle() || isStopping()) && streamsCaughtUp(ctx, js, sh) && sh.Quiescent() {
 			break
 		}
 	}
 	cancel()
-	sh.Drain()
+	<-drained
+	sh.Drain() // queued items finish (cached replay only after a kill; the live gates still apply)
+	sh.MarkIncomplete()
+	sh.CleanLanes()
 	sh.WriteStatus(run, true)
 	if err := sh.WriteReport(); err != nil {
 		fmt.Fprintln(os.Stderr, "agentshadow: report:", err)
@@ -271,4 +388,11 @@ func streamsCaughtUp(ctx context.Context, js jetstream.JetStream, sh *AgentShado
 	sh.mu.Lock()
 	defer sh.mu.Unlock()
 	return sh.next-1 >= pi.State.Msgs && uint64(sh.counts["out_seen"]+sh.counts["out_duplicates"]) >= oi.State.Msgs
+}
+
+func (e *execInvestigator) modelName() string {
+	if e.model != "" {
+		return e.model
+	}
+	return resolveAgentModel("", e.cache)
 }
