@@ -156,11 +156,57 @@ var (
 	// pending, even when technique or education was discussed.
 	ifhPlanVerb = `(?:started|commenced|initiated|prescribed|referred|referral|enrolled|booked|given|arranged|agreed|diagnosed|start|commence|begin|begun)`
 	ifhNegAct   = regexp.MustCompile(`(?i)\b(?:no|not|nor|without|never|nothing)\b[^.;,\n]{0,40}?\b` + ifhPlanVerb + `\b|\b(?:to be|will be|will|would be|would|may be|could be|can be|plan to|planned|not yet|yet to be|if needed|consider(?:ed|ing)?)\s+(?:\w+\s+){0,2}?` + ifhPlanVerb + `\b|\bbooking (?:remains |is )?pending\b|\bnot yet (?:booked|arranged|started)\b`)
-	ifhDeferred = regexp.MustCompile(`(?i)\b(?:deferred|defer|postponed|on hold)\b|\b(?:no|not)\b[^.;\n]{0,40}?\b(?:commenced|started|initiated|prescribed)\b|(?:home|ambulatory|self)[- ]?(?:BP |blood pressure |glucose )?(?:monitoring|readings?|diary|recording)[^.;\n]{0,40}\brequested\b|\brequested\b[^.;\n]{0,40}(?:home|ambulatory)[- ]?(?:BP |blood pressure )?(?:monitoring|readings?)`)
+	// Deferral cues, judged one clause at a time per domain (ifhPendingNow). A negated start is "no|not ... commenced"
+	// inside ONE clause: a comma ends it, so "No known drug allergies, amlodipine started" is not a negated start.
+	ifhHardDefer = regexp.MustCompile(`(?i)\b(?:deferred|defer|postponed|on hold)\b`)
+	// what a deferral concerns: the treatment decision itself (not a review or education item)
+	ifhDeferScope = regexp.MustCompile(`(?i)decision|treatment|therapy|medication|\bplan\b|management|\bstart|commenc|initiat|prescri`)
+	ifhNegStart   = regexp.MustCompile(`(?i)\b(?:no|not)\b[^.;,\n]{0,40}?\b(?:commenced|started|initiated|prescribed)\b`)
+	ifhMonReq     = regexp.MustCompile(`(?i)(?:home|ambulatory|self)[- ]?(?:BP |blood pressure |glucose )?(?:monitoring|readings?|diary|recording)[^.;\n]{0,40}\brequested\b|\brequested\b[^.;\n]{0,40}(?:home|ambulatory)[- ]?(?:BP |blood pressure )?(?:monitoring|readings?)`)
+	// a treatment or referral actually started or arranged (a diagnosis or an agreed-but-unstarted plan does not count)
+	ifhStrongPlan = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|(?:medication|medicine|treatment|prescription|referral) given|arranged)\b`)
 )
 
 // ifhActionNow: an action actually started/arranged now, after discounting negated and future ones.
 func ifhActionNow(j string) bool { return ifhPlan.MatchString(ifhNegAct.ReplaceAllString(j, " ")) }
+
+// ifhPendingNow: is domain d held open by a deferral or a monitoring request in j? Precedence is per domain and per
+// clause (split at ';' and sentence ends). A clause that names only other domains is ignored for d. If a treatment
+// was actually started in a clause for d (not negated, not future), it outranks a monitoring request and a deferral of
+// something else ("Amlodipine commenced; home BP monitoring requested", "Statin started; diet review deferred"), but
+// not a deferred treatment decision or a negated start. With no started action any deferral cue holds the domain.
+func ifhPendingNow(j, d string) bool {
+	acted, hold, holdTreatment := false, false, false
+	for _, c := range strings.FieldsFunc(j, func(r rune) bool { return r == ';' || r == '.' || r == '\n' }) {
+		if ds := ifhDomainsOf(c); len(ds) > 0 && !ifhHasDomain(ds, d) {
+			continue
+		}
+		neg := ifhNegStart.MatchString(c)
+		if ifhStrongPlan.MatchString(ifhNegAct.ReplaceAllString(c, " ")) && !neg {
+			acted = true
+		}
+		hd := ifhHardDefer.MatchString(c)
+		if hd || neg || ifhMonReq.MatchString(c) {
+			hold = true
+			if neg || hd && ifhDeferScope.MatchString(c) {
+				holdTreatment = true
+			}
+		}
+	}
+	if acted {
+		return holdTreatment
+	}
+	return hold
+}
+
+func ifhHasDomain(ds []string, d string) bool {
+	for _, x := range ds {
+		if x == d {
+			return true
+		}
+	}
+	return false
+}
 
 func ifhDomainsOf(s string) []string {
 	var out []string
@@ -220,7 +266,7 @@ func regexIfhasNote(t string) *IfhasFields {
 		switch {
 		case ifhNotConf.MatchString(j) && !ifhPend.MatchString(j) && !ifhPendCue.MatchString(j):
 			f.Status[d] = IfhasNotConfirmed
-		case ifhPend.MatchString(j) || ifhDeferred.MatchString(j):
+		case ifhPend.MatchString(j) || ifhPendingNow(j, d):
 			f.Status[d] = IfhasPending
 		case ifhActionNow(j):
 			f.Status[d] = IfhasManaged
