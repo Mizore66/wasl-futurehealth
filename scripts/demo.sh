@@ -4,6 +4,8 @@
 #   container: check, cohort, run, audit, tamper, booking, report with a prebuilt binary (Dockerfile / docker-compose.yml; docs/DEPLOY.md)
 #   ltt [seeds...]: Learn-then-Test calibration of the closure tier on cal-split cohorts -> pipeline/results/ltt/ (~40 min); WASL_POLICY=v7ltt uses it
 #     WASL_LTT_ALL=1 also calibrates on lung, DR and breast loops -> pipeline/results/ltt-all/ (per-programme counts; scripts/ltt_cohorts.sh)
+#   smoke: serve on loopback (WASL_SMOKE_PORT, WASL_SMOKE_WAIT s), run scripts/api_smoke.py over real HTTP, stop the server; part of `all`, not `container`
+#     WASL_SERVE_RUN=<lane dir> / WASL_SERVE_DATA=<cohort dir> make serve and smoke use an existing materialised lane
 #   final [seeds...]: stage 7 frozen evaluation, 5 seeds x {v1, v2 noise} -> pipeline/results/final/ (~45 min)
 # Outputs: out/cohort/ (synthetic data), out/run/<policy>/ (logs, report7.json, dashboard.json, review_queue.json).
 # Env: WASL_POLICY=v7strict|v6, WASL_READER=cached|live, WASL_SOURCE=fhir|hl7 (defaults: v7strict, cached, fhir), WASL_SEED, WASL_OUT.
@@ -184,9 +186,26 @@ report() {
   (cd "$BIN" && ./wsi7 report7 -data "$COHORT" -wasl "$ROOT/models" -run "$RUN" -ann hnsw -dual -policy "$POLICY" "${AARGS[@]}" > /dev/null)
   python3 "$ROOT/scripts/summary.py" "$RUN/report7.json"
 }
-serve() {
-  echo "Wasl API on http://${WASL_API_ADDR:-127.0.0.1:8088} (run: $RUN)"
-  (cd "$BIN" && exec ./wsi7 serve -run "$RUN" -data "$COHORT" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "${WASL_API_ADDR:-127.0.0.1:8088}")
+serve() {  # WASL_SERVE_RUN / WASL_SERVE_DATA serve an already materialised lane and cohort (no regeneration, no model calls)
+  local addr="${1:-${WASL_API_ADDR:-127.0.0.1:8088}}" run="${WASL_SERVE_RUN:-$RUN}" data="${WASL_SERVE_DATA:-$COHORT}"
+  echo "Wasl API on http://$addr (run: $run)"
+  cd "$BIN" && exec ./wsi7 serve -run "$run" -data "$data" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "$addr"
+}
+smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 + WASL_PORT_OFFSET), poll /healthz, run scripts/api_smoke.py
+  local port="${WASL_SMOKE_PORT:-$((18088 + ${WASL_PORT_OFFSET:-0}))}" wait="${WASL_SMOKE_WAIT:-60}" addr rc=0 i=0 ok=0
+  addr="127.0.0.1:$port"
+  SMOKE_PID=""; trap '[ -z "$SMOKE_PID" ] || kill "$SMOKE_PID" 2>/dev/null || true' EXIT
+  serve "$addr" > "$OUT/smoke-serve.log" 2>&1 &
+  SMOKE_PID=$!; local pid=$SMOKE_PID
+  while [ "$i" -lt "$((wait * 2))" ]; do
+    kill -0 "$pid" 2>/dev/null || break
+    if curl -sf --max-time 2 "http://$addr/healthz" >/dev/null 2>&1; then ok=1; break; fi
+    sleep 0.5; i=$((i + 1))
+  done
+  if [ "$ok" != 1 ]; then echo "smoke: server did not become healthy on $addr (see $OUT/smoke-serve.log)" >&2; tail -5 "$OUT/smoke-serve.log" >&2 || true; rc=1
+  else python3 "$ROOT/scripts/api_smoke.py" --base-url "http://$addr" || rc=$?; fi
+  kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; SMOKE_PID=""
+  return "$rc"
 }
 snapshot() {  # write static API responses for frontend development (no backend needed): docs/api-samples/
   local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="$ROOT/docs/api-samples"
@@ -215,16 +234,16 @@ stale_bin() {
   [ -z "$newer" ] || { echo "stale binary: $BIN/wsi7 is older than ${newer#$ROOT/}; run: scripts/demo.sh build" >&2; exit 2; }
 }
 validate_nats_config
-case "${1:-all}" in cohort|run|audit|tamper|report|serve|snapshot|final) stale_bin;; esac
+case "${1:-all}" in cohort|run|audit|tamper|report|serve|smoke|snapshot|final) stale_bin;; esac
 mkdir -p "$OUT/run"
 case "${1:-all}" in
   check) check;; build) build;; test) test_;; cohort) cohort;; run) run_;; audit) audit;; tamper) tamper;; report) report;;
-  serve) serve;; snapshot) snapshot;;
-  all) check; build; test_; cohort; run_; audit; tamper; booking; report;;
+  serve) serve;; smoke) smoke;; snapshot) snapshot;;
+  all) check; build; test_; cohort; run_; audit; tamper; booking; report; smoke;;
   container) check; cohort; run_; audit; tamper; booking; report;;   # prebuilt binary (WASL_BIN), no Go toolchain or tests
   booking) booking;;
   ltt) shift; LD="$ROOT/pipeline/results/ltt"; [ "${WASL_LTT_ALL:-0}" = 0 ] || LD="$ROOT/pipeline/results/ltt-all"
        "$ROOT/scripts/ltt_cohorts.sh" "$@" && python3 "$ROOT/scripts/ltt_select.py" "${WASL_LTT_DIR:-$LD}";;
   final) shift; exec "$ROOT/scripts/final_eval.sh" "$@";;
-  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|snapshot|final|container]"; exit 2;;
+  *) echo "usage: $0 [all|check|build|test|cohort|run|audit|tamper|booking|report|serve|smoke|snapshot|final|container]"; exit 2;;
 esac
