@@ -209,7 +209,7 @@ def unavailable_section(raw_rows, key_items, corpus_items, ifhas_cache):
 
 # ------------------------------------------------------------------ verification
 def verify_manifest(repo):
-    m = load(F.DEFAULT_PATHS["manifest"], repo)
+    m = load(F.make_paths(F.DEFAULT_EVAL_DIR)["manifest"], repo)
     derived = F.build_manifest(repo, m["reader_code_commit"])
     return {"manifest_file": m, "rederived": derived, "equal": derived == m,
             "check_freeze_after_score_errors": [e for e in F.check_freeze(repo, m, pre_score=False)
@@ -222,8 +222,8 @@ def verify_protected(repo):
     """Every frozen/original file must be byte-identical to the scoring commit and to its freeze commit."""
     if git(repo, "cat-file", "-e", SCORE_COMMIT + "^{commit}") is None:
         return {"skipped": f"scoring commit {SCORE_COMMIT} not in this repository", "changed": [], "checked": []}
-    m = load(F.DEFAULT_PATHS["manifest"], repo)
-    P = F.DEFAULT_PATHS
+    m = load(F.make_paths(F.DEFAULT_EVAL_DIR)["manifest"], repo)
+    P = F.make_paths(F.DEFAULT_EVAL_DIR)
     paths = (list(F.DEFAULT_PROTECTED) + [P["corpus"], P["key"], P["agreement"], P["manifest"]] + list(P["labels"]) +
              list(P["reader_caches"]) + ORIGINAL_RESULTS + ["scripts/fresh2_eval/fresh2.py", "scripts/fresh2_eval/LABELLING-GUIDE.md"])
     paths = [p for p in paths if git(repo, "cat-file", "-e", f"{SCORE_COMMIT}:{p}") is not None]
@@ -235,7 +235,7 @@ def verify_protected(repo):
 
 
 def recompute_original_scores(repo):
-    key, raw = load(F.DEFAULT_PATHS["key"], repo), load("data/fresh2/results/reader_raw.json", repo)
+    key, raw = load(F.make_paths(F.DEFAULT_EVAL_DIR)["key"], repo), load("data/fresh2/results/reader_raw.json", repo)
     res = F.compute_scores(key, raw)
     stored = load("data/fresh2/results/score.json", repo)
     stored_core = {k: v for k, v in stored.items() if k != "frozen"}  # "frozen" is run metadata (head, key hash), not a score
@@ -244,8 +244,8 @@ def recompute_original_scores(repo):
 
 # ------------------------------------------------------------------ build
 def build(repo=REPO):
-    key, raw = load(F.DEFAULT_PATHS["key"], repo), load("data/fresh2/results/reader_raw.json", repo)
-    corpus = load(F.DEFAULT_PATHS["corpus"], repo)
+    key, raw = load(F.make_paths(F.DEFAULT_EVAL_DIR)["key"], repo), load("data/fresh2/results/reader_raw.json", repo)
+    corpus = load(F.make_paths(F.DEFAULT_EVAL_DIR)["corpus"], repo)
     cache = load("data/fresh2/reader-cache/ifhas_gemma_cache.json", repo)
     res, rec = recompute_original_scores(repo)
     by_kind = res["agreed"]["by_kind"]
