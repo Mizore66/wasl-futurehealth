@@ -339,6 +339,49 @@ func TestLDCTFix3ClauseCleanDirect(t *testing.T) {
 	}
 }
 
+// LDCT safety fix round 4: preference / wish wording about tissue or PET work-up is outstanding work-up.
+
+func TestLDCTFix4PreferenceNeverCloses(t *testing.T) {
+	const hdr = "Thoracic MDT outcome\n"
+	for _, c := range []struct{ name, body, quote string }{
+		{"patient wants biopsy", "Surveillance CT in 3 months, patient wants biopsy", "Surveillance CT"},
+		{"patient prefers biopsy", "Surveillance CT in 3 months. Patient prefers biopsy.", "Surveillance CT"},
+		{"biopsy preferred", "Surveillance CT in 3 months, biopsy preferred.", "Surveillance CT"},
+		{"would like PET-CT", "Surveillance CT in 3 months. Patient would like PET-CT.", "Surveillance CT"},
+		{"cross-sentence however", "Surveillance CT in 3 months. However biopsy preferred.", "Surveillance CT"},
+		{"wanted", "Surveillance CT in 3 months. Patient wanted a biopsy.", "Surveillance CT"},
+		{"favoured", "Surveillance CT in 3 months. Biopsy is favoured.", "Surveillance CT"},
+		{"favorite", "Surveillance CT in 3 months. PET-CT is the favorite option.", "Surveillance CT"},
+		{"keen", "Surveillance CT in 3 months. Patient keen on tissue sampling.", "Surveillance CT"},
+		{"opts for", "Surveillance CT in 3 months. Patient opts for EBUS.", "Surveillance CT"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			text := hdr + c.body
+			f, ok := bAnswer(text, c.quote).fields("ldct-workup", text)
+			if !ok {
+				t.Fatalf("answer should ground: %q", c.quote)
+			}
+			if ldctClosingWorkup(f.Label) || f.Workup != "not_done" {
+				t.Fatalf("must not close or flip workup: %+v", f)
+			}
+		})
+	}
+}
+
+func TestLDCTFix4GenuinePositivesStillClose(t *testing.T) {
+	for _, text := range []string{
+		"Thoracic MDT outcome\nPatient prefers CT surveillance. Biopsy was benign. Surveillance CT in 3 months.",
+		"Thoracic MDT outcome\nPatient would like to stay under surveillance. Surveillance CT in 3 months.",
+		"Thoracic MDT outcome\nPatient wants a copy of the report. Surveillance CT in 3 months.",
+		"Thoracic MDT outcome\nNo tissue diagnosis. Surveillance CT in 3 months instead of biopsy.",
+	} {
+		f, ok := bAnswer(text, "Surveillance CT").fields("ldct-workup", text)
+		if !ok || f.Label != "wk_surveillance" || f.Workup != "done" {
+			t.Errorf("genuine positive should close via reader B: %+v ok=%v | %s", f, ok, text)
+		}
+	}
+}
+
 func TestLDCTFix3GenuinePositivesStillClose(t *testing.T) {
 	for _, text := range []string{
 		"Thoracic MDT outcome\nCT surveillance rather than immediate biopsy; repeat low-dose chest CT in three months.",
