@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 const IfhasReaderModel = "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)" // v1 (one enum per domain) -> v2 (list of addressed topics) on the dev corpus
@@ -149,8 +150,113 @@ var (
 	ifhNotConf = regexp.MustCompile(`(?i)not confirmed|ruled out|\bno (?:diabetes|hypertension)\b|not (?:hypertensive|obese|diabetic)|white[- ]coat|within normal|(?:is|are|test|readings?) normal|[,:] normal\b|below the (?:diagnostic )?threshold|does not meet|measurement error|entered wrongly|no (?:statin|treatment|weight programme) (?:is )?needed`)
 	ifhPend    = regexp.MustCompile(`(?i)awaited|(?:repeat|fasting|test|HbA1c|glucose|lipids?|sample)[^.;]{0,30}requested|\bordered\b|to follow|not yet (?:available|reported)|will return|before (?:any diagnosis|deciding)|to be repeated|repeat (?:fasting|lipids)|declined|not ready|reconsider|will think|will be (?:agreed|decided)|decide (?:later|about)|try diet first|when the result is back|blood taken today`)
 	ifhPendCue = regexp.MustCompile(`(?i)suspected|\brequested\b|to be confirmed|monitoring (?:is )?(?:pending|awaited|required|planned)`)
-	ifhPlan    = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|given|arranged|agreed|management plan|treatment started|diagnosed)\b`)
+	ifhPlan    = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|(?:medication|medicine|treatment|prescription|referral) given|arranged|agreed|management plan|treatment started|diagnosed)\b`)
+	// pending semantics: managed needs an action actually started or arranged now. A negated or future action
+	// ("no medication commenced", "to be arranged"), a deferred decision, or home/ambulatory monitoring requested is
+	// pending, even when technique or education was discussed.
+	ifhPlanVerb = `(?:started|commenced|initiated|prescribed|referred|referral|enrolled|booked|given|arranged|agreed|diagnosed|start|commence|begin|begun)`
+	ifhNegAct   = regexp.MustCompile(`(?i)\b(?:no|not|nor|without|never|nothing)\b[^.;,\n]{0,40}?\b` + ifhPlanVerb + `\b|\b(?:to be|will be|will|would be|would|may be|could be|can be|plan to|planned|not yet|yet to be|if needed|consider(?:ed|ing)?)\s+(?:\w+\s+){0,2}?` + ifhPlanVerb + `\b|\bbooking (?:remains |is )?pending\b|\bnot yet (?:booked|arranged|started)\b`)
+	// Deferral cues, judged one clause at a time per domain (ifhPendingNow). A negated start is "no|not ... commenced"
+	// inside ONE clause: a comma ends it, so "No known drug allergies, amlodipine started" is not a negated start.
+	ifhHardDefer = regexp.MustCompile(`(?i)\b(?:deferred|defer|postponed|on hold)\b`)
+	// what a deferral concerns: the treatment decision itself (not a review or education item)
+	ifhDeferScope = regexp.MustCompile(`(?i)decision|treatment|therapy|medication|\bplan\b|management|\bstart|commenc|initiat|prescri`)
+	ifhNegStart   = regexp.MustCompile(`(?i)\b(?:no|not)\b[^.;,\n]{0,40}?\b(?:commenced|started|initiated|prescribed)\b`)
+	ifhMonReq     = regexp.MustCompile(`(?i)(?:home|ambulatory|self)[- ]?(?:BP |blood pressure |glucose )?(?:monitoring|readings?|diary|recording)[^.;\n]{0,40}\brequested\b|\brequested\b[^.;\n]{0,40}(?:home|ambulatory)[- ]?(?:BP |blood pressure )?(?:monitoring|readings?)`)
+	// a treatment or referral actually started or arranged (a diagnosis or an agreed-but-unstarted plan does not count)
+	ifhStrongPlan = regexp.MustCompile(`(?i)\b(?:started|commenced|initiated|prescribed|referred to|referral (?:to|sent)|enrolled|booked|(?:medication|medicine|treatment|prescription|referral) given|arranged)\b`)
 )
+
+var (
+	ifhNegLead       = regexp.MustCompile(`(?i)^(?:no|not|nor|without|never|nothing)\b`)
+	ifhSubordin      = regexp.MustCompile(`(?i)\b(?:after|since|when|once|because|following|while|despite|although|though|as|whereas)\b`)
+	ifhApptCue       = regexp.MustCompile(`(?i)follow[- ]?up|appointment|\breview\b|discuss|consultation|\bvisit\b|\bcall\b|telephone|recall|\bslot\b|\bcheck[- ]?up\b`)
+	ifhApptVerb      = regexp.MustCompile(`(?i)\b(?:booked|arranged)\b`)
+	ifhApptKeep      = regexp.MustCompile(`(?i)referr|dietitian|specialist|programme|physio`)
+	ifhDeferMinor    = regexp.MustCompile(`(?i)\b(?:review|follow-?up|education|advice|counselling|lifestyle|diet|dietary|appointment|discussion)\b`)
+	ifhDeferDecision = regexp.MustCompile(`(?i)decision|\bplan\b`)
+	ifhPieceSplit    = regexp.MustCompile(`[,;.\n]`)
+)
+
+// ifhStripNeg removes negated and future actions (ifhNegAct) but keeps a "no|not ... verb" span whose negation does
+// not govern the verb ("BP not at target after amlodipine started").
+func ifhStripNeg(s string) string {
+	return ifhNegAct.ReplaceAllStringFunc(s, func(m string) string {
+		if ifhNegLead.MatchString(m) && ifhSubordin.MatchString(m) {
+			return m
+		}
+		return " "
+	})
+}
+
+// ifhNegStartIn: a negated start whose negation governs the verb (comma-bounded, no subordinator between).
+func ifhNegStartIn(s string) bool {
+	for _, m := range ifhNegStart.FindAllString(s, -1) {
+		if !ifhSubordin.MatchString(m) {
+			return true
+		}
+	}
+	return false
+}
+
+// ifhStripAppt: "arranged"/"booked" for a follow-up, appointment or discussion is not a started treatment; a
+// referral, dietitian or specialist booking in the same piece still is.
+func ifhStripAppt(s string) string {
+	parts := ifhPieceSplit.Split(s, -1)
+	for i, p := range parts {
+		if ifhApptCue.MatchString(p) && !ifhApptKeep.MatchString(p) {
+			parts[i] = ifhApptVerb.ReplaceAllString(p, " ")
+		}
+	}
+	return strings.Join(parts, ",")
+}
+
+// ifhActionNow: an action actually started/arranged now, after discounting negated, future and appointment ones.
+func ifhActionNow(j string) bool { return ifhPlan.MatchString(ifhStripNeg(ifhStripAppt(j))) }
+
+// ifhPendingNow: is domain d held open by a deferral or a monitoring request in j? Clauses split at ';' and sentence
+// ends, then at commas, so a deferral is judged around its own cue and not by a start verb elsewhere in the clause.
+// A piece that names only other domains is ignored for d. If a treatment was actually started in a piece for d (not
+// negated, not future, not an appointment) it outranks a monitoring request and a deferral of a review/education item
+// ("Metformin started, lifestyle review postponed"), but not a deferred treatment decision or a negated start. With no
+// started action any deferral cue holds the domain.
+func ifhPendingNow(j, d string) bool {
+	acted, hold, holdTreatment := false, false, false
+	for _, c := range strings.FieldsFunc(j, func(r rune) bool { return r == ';' || r == '.' || r == '\n' }) {
+		if ds := ifhDomainsOf(c); len(ds) > 0 && !ifhHasDomain(ds, d) {
+			continue
+		}
+		for _, p := range strings.Split(c, ",") {
+			if ds := ifhDomainsOf(p); len(ds) > 0 && !ifhHasDomain(ds, d) {
+				continue
+			}
+			neg := ifhNegStartIn(p)
+			if ifhStrongPlan.MatchString(ifhStripNeg(ifhStripAppt(p))) && !neg {
+				acted = true
+			}
+			hd := ifhHardDefer.MatchString(p)
+			if hd || neg || ifhMonReq.MatchString(p) {
+				hold = true
+				if neg || hd && ifhDeferScope.MatchString(p) && (ifhDeferDecision.MatchString(p) || !ifhDeferMinor.MatchString(p)) {
+					holdTreatment = true
+				}
+			}
+		}
+	}
+	if acted {
+		return holdTreatment
+	}
+	return hold
+}
+
+func ifhHasDomain(ds []string, d string) bool {
+	for _, x := range ds {
+		if x == d {
+			return true
+		}
+	}
+	return false
+}
 
 func ifhDomainsOf(s string) []string {
 	var out []string
@@ -210,9 +316,9 @@ func regexIfhasNote(t string) *IfhasFields {
 		switch {
 		case ifhNotConf.MatchString(j) && !ifhPend.MatchString(j) && !ifhPendCue.MatchString(j):
 			f.Status[d] = IfhasNotConfirmed
-		case ifhPend.MatchString(j):
+		case ifhPend.MatchString(j) || ifhPendingNow(j, d):
 			f.Status[d] = IfhasPending
-		case ifhPlan.MatchString(j):
+		case ifhActionNow(j):
 			f.Status[d] = IfhasManaged
 		default:
 			f.Status[d] = IfhasPending // mentioned, no decision documented: stays open
@@ -240,7 +346,11 @@ type ifhasGemma struct {
 	Model      string         `json:"model"`
 	LatencyMs  int64          `json:"latency_ms"`
 	Error      string         `json:"error,omitempty"`
+	Rev        string         `json:"rev,omitempty"` // request revision that produced it (ifhasRequestRev)
 }
+
+// ifhasRequestRev: bump when the prompt, schema or stop/length handling changes; cache entries from another revision are re-asked.
+const ifhasRequestRev = "grounding-1"
 
 var (
 	IfhasCache   map[string]ifhasGemma
@@ -261,14 +371,99 @@ func loadIfhasCache(dir string) {
 	}
 }
 
+// ---- quote grounding with mechanical-tail trimming ----
+//
+// A quote that is wholly verbatim is accepted as is. A 4B model sometimes runs on after a correct sentence, emitting
+// quote delimiters and repeated dates or fragments of the note. Such a quote is accepted ONLY if cutting it at a
+// sentence end leaves at least one complete sentence that is verbatim in the note AND everything cut off is
+// mechanical junk: it starts with a delimiter or comma, and every piece is a quote-delimited date/number artefact or a
+// verbatim fragment of the note. Any natural-language suffix that is not in the note (an invented plan or decision)
+// makes the quote ungrounded.
+var (
+	ifhQuoteDelim = regexp.MustCompile("[\u201c\u201d\"]")
+	ifhDateJunk   = regexp.MustCompile(`(?i)^(?:[\d\s\-/:.]|jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|dob)*$`)
+)
+
+var ifhDateLead = regexp.MustCompile(`(?i)^(?:[\d\s\-/:.,]|\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\b)+`)
+
+func ifhasSentenceSet(text string) map[string]bool {
+	m := map[string]bool{}
+	for _, s := range drSentences(text) {
+		m[normQuote(s)] = true
+	}
+	return m
+}
+
+// ifhasCompleteSentences: q ends at a sentence end and every sentence in it is a whole sentence of the note.
+func ifhasCompleteSentences(q, text string) bool {
+	q = strings.TrimSpace(q)
+	if q == "" || !strings.ContainsAny(q[len(q)-1:], ".!?") || !lungGrounded(q, text) {
+		return false
+	}
+	set := ifhasSentenceSet(text)
+	n := 0
+	for _, s := range drSentences(q) {
+		if normQuote(s) == "" {
+			continue
+		}
+		if !set[normQuote(s)] {
+			return false
+		}
+		n++
+	}
+	return n > 0
+}
+
+func ifhasMechanicalTail(tail, text string) bool {
+	t := strings.TrimSpace(tail)
+	if t == "" {
+		return true
+	}
+	if r, _ := utf8.DecodeRuneInString(t); !ifhQuoteDelim.MatchString(string(r)) && r != ',' && !(r >= '0' && r <= '9') {
+		return false // natural-language continuation, not a delimiter or date artefact
+	}
+	for _, piece := range ifhQuoteDelim.Split(t, -1) {
+		piece = strings.Trim(strings.TrimSpace(piece), ",;:. ")
+		if piece == "" || ifhDateJunk.MatchString(piece) || lungGrounded(piece, text) {
+			continue
+		}
+		// a date artefact glued to a verbatim fragment ("2026. Patient confirmed attendance.")
+		if rest := strings.Trim(ifhDateLead.ReplaceAllString(piece, ""), ",;:. "); rest != piece && (rest == "" || lungGrounded(rest, text)) {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// ifhasGroundedQuote returns the quote to keep (trimmed if needed) and whether it grounds in the note.
+func ifhasGroundedQuote(q, text string) (string, bool) {
+	if lungGrounded(q, text) {
+		return q, true
+	}
+	for i := len(q); i > 0; i-- {
+		if !strings.ContainsAny(q[i-1:i], ".!?") {
+			continue
+		}
+		if ifhasCompleteSentences(q[:i], text) && ifhasMechanicalTail(q[i:], text) {
+			return strings.TrimSpace(q[:i]), true
+		}
+	}
+	return "", false
+}
+
 func (g ifhasGemma) fields(text string) (*IfhasFields, bool) {
-	if g.Error != "" || !lungGrounded(g.Quote, text) {
+	if g.Error != "" {
 		return nil, false
 	}
-	f := &IfhasFields{Attended: map[string]string{"attended": "yes", "did_not_attend": "no"}[g.Attendance], Quote: g.Quote, Status: map[string]string{}}
+	topQuote, ok := ifhasGroundedQuote(g.Quote, text)
+	if !ok {
+		return nil, false
+	}
+	f := &IfhasFields{Attended: map[string]string{"attended": "yes", "did_not_attend": "no"}[g.Attendance], Quote: topQuote, Status: map[string]string{}}
 	topic := map[string]string{"glycaemia": "glyc", "blood_pressure": "bp", "lipids": "lipid", "weight": "weight"}
 	for _, x := range g.Findings {
-		if !lungGrounded(x.Quote, text) {
+		if _, ok := ifhasGroundedQuote(x.Quote, text); !ok {
 			return nil, false // every finding must quote the note
 		}
 		d := topic[x.Topic]
@@ -330,7 +525,8 @@ Note:
 Return ONLY JSON.`
 
 func ifhasSchema() map[string]interface{} {
-	q := map[string]interface{}{"type": "string", "maxLength": 300}
+	// quotes: one note sentence at most, no curly/straight quote characters (the runaway tails are made of them)
+	q := map[string]interface{}{"type": "string", "maxLength": 240, "pattern": "^[^\u201c\u201d\"]*$"}
 	item := map[string]interface{}{"type": "object", "properties": map[string]interface{}{
 		"topic":  map[string]interface{}{"type": "string", "enum": []string{"glycaemia", "blood_pressure", "lipids", "weight"}},
 		"status": map[string]interface{}{"type": "string", "enum": []string{"managed", "not_confirmed", "pending"}},
@@ -345,7 +541,7 @@ func ifhasSchema() map[string]interface{} {
 func askIfhas(url, text string) ifhasGemma {
 	body, _ := json.Marshal(map[string]interface{}{
 		"messages":    []map[string]string{{"role": "user", "content": fmt.Sprintf(ifhasNotePrompt, text)}},
-		"temperature": 0, "seed": 1, "max_tokens": 400,
+		"temperature": 0, "seed": 1, "max_tokens": 360,
 		"response_format": map[string]interface{}{"type": "json_schema", "json_schema": map[string]interface{}{"name": "ifhas", "schema": ifhasSchema()}},
 	})
 	cl := &http.Client{Timeout: 120 * time.Second}
@@ -356,17 +552,22 @@ func askIfhas(url, text string) ifhasGemma {
 		if err == nil {
 			var cr struct {
 				Choices []struct {
-					Message struct {
+					FinishReason string `json:"finish_reason"`
+					Message      struct {
 						Content string `json:"content"`
 					} `json:"message"`
 				} `json:"choices"`
 			}
 			err = json.NewDecoder(resp.Body).Decode(&cr)
 			resp.Body.Close()
+			if err == nil && len(cr.Choices) > 0 && cr.Choices[0].FinishReason == "length" {
+				// ran out of tokens (runaway quote): the JSON is cut off; never replay a truncated answer
+				return ifhasGemma{Model: IfhasReaderModel, Rev: ifhasRequestRev, Error: "truncated: finish_reason=length"}
+			}
 			if err == nil && len(cr.Choices) > 0 {
 				g := ifhasGemma{}
 				if err = json.Unmarshal([]byte(cr.Choices[0].Message.Content), &g); err == nil {
-					g.Model, g.LatencyMs = IfhasReaderModel, time.Since(t0).Milliseconds()
+					g.Model, g.Rev, g.LatencyMs = IfhasReaderModel, ifhasRequestRev, time.Since(t0).Milliseconds()
 					return g
 				}
 			} else if err == nil {
@@ -410,7 +611,7 @@ func runIfhasCache(dirs, url, out string) {
 		}()
 	}
 	for _, t := range jobs {
-		if g, ok := cache[textSha(t)]; ok && g.Error == "" && g.Model == IfhasReaderModel {
+		if g, ok := cache[textSha(t)]; ok && g.Error == "" && g.Model == IfhasReaderModel && g.Rev == ifhasRequestRev {
 			continue
 		}
 		ch <- t
