@@ -191,7 +191,7 @@
    "S": 1,
    "X": 3
   },
-  "note_b": "28/28 counts the 2 items whose key coded_label is itself 'unavailable' as matching; it measures coded-result parsing against the key, not a language-model reader.",
+  "note_b": "22/24 with 3 items whose key coded_label is unavailable; the coded-match count includes those items only because B literally returned `unavailable`. It measures coded-result parsing against the key, not a language-model reader.",
   "panels_mentioning_fasting": 23,
   "panels_mentioning_random": 3,
   "panels_stating_fasting_status_or_duration": 6,
@@ -358,7 +358,8 @@
    "original": "both wk_incomplete"
   },
   "fresh3_rule_firings_on_ldct_workup": "in the same replay over all 25 fresh3 work-up items (agreed and disputed), neither the wrong-document rule (for reader A or B) nor the MDT-title surveillance override changed any label, so neither safeguard fired once on fresh3",
-  "method": "throwaway Go test (deleted, not committed) calling regexLDCTWorkup and ldctGemma.fields at 9f2d020 over data/fresh2 with the fresh2 reader cache; fresh2 original results are unchanged"
+  "method": "committed Go test pipeline/fresh3_safeguard_test.go (TestFresh3SafeguardReplayFresh2) calling LDCTJudge over data/fresh2/corpus.json with the fresh2 reader cache (no model call); fresh2 original results are unchanged",
+  "test": "pipeline/fresh3_safeguard_test.go"
  },
  "schema": "fresh3-analysis/v1",
  "scores_by_kind_agreed": {
