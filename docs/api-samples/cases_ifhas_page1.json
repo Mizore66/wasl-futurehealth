@@ -2,15 +2,46 @@
  "cases": [
   {
    "closed": true,
-   "closed_day": 79.6897,
+   "closed_day": -99.313,
    "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 6,
+   "deadline_day": 1095,
+   "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "ifh-screen/ServiceRequest/IFH-sr-1",
    "ifhas": {
     "screen_report": "IFH-dr-1",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -99.31305555555555,
+    "deadline_day": 995.6869444444444,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -99.313,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 59,
+   "decisions": 5,
+   "dropoff": "no_followup_documented",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-10",
+   "ifhas": {
+    "screen_report": "IFH-dr-10",
     "screen_label": "bp=N;glyc=N;lipid=N;weight=O",
     "coded_results_agree": true,
     "rec": {
@@ -25,67 +56,27 @@
       "weight": 59
      }
     },
-    "screen_day": 63.297534722222224,
-    "deadline_day": 122.29753472222222,
+    "screen_day": 43.88238425925926,
+    "deadline_day": 102.88238425925925,
     "domain_status": {
-     "weight": "managed"
-    },
-    "resolved_day": {
-     "weight": 79.68965277777778
-    },
-    "followup_documents": [
-     "IFU-dr-1"
-    ],
-    "outcome": "weight=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
+     "weight": ""
+    }
    },
-   "overdue": false,
+   "overdue": true,
    "owner": "",
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": 63.2975,
-   "review": "signed",
-   "state": "closed"
-  },
-  {
-   "closed": true,
-   "closed_day": -82.5506,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-10",
-   "ifhas": {
-    "screen_report": "IFH-dr-10",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -82.55065972222222,
-    "deadline_day": 1012.4493402777778,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -82.5506,
+   "referral_day": 43.8824,
    "review": "none",
-   "state": "no_followup_needed"
+   "state": "open"
   },
   {
    "closed": true,
-   "closed_day": 15.6902,
+   "closed_day": 40.4036,
    "consent": "granted",
    "deadline_day": 59,
-   "decisions": 3,
+   "decisions": 4,
    "dropoff": "",
    "fixture": "",
    "id": "ifh-screen/ServiceRequest/IFH-sr-100",
@@ -105,13 +96,13 @@
       "bp": 59
      }
     },
-    "screen_day": -10.339444444444444,
-    "deadline_day": 48.660555555555554,
+    "screen_day": 12.425023148148147,
+    "deadline_day": 71.42502314814814,
     "domain_status": {
      "bp": "managed"
     },
     "resolved_day": {
-     "bp": 15.690150462962963
+     "bp": 40.40355324074074
     },
     "followup_documents": [
      "IFU-dr-45"
@@ -125,21 +116,557 @@
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": -10.3393,
+   "referral_day": 12.425,
    "review": "none",
    "state": "closed"
   },
   {
    "closed": false,
    "closed_day": 0,
-   "consent": "granted",
+   "consent": "denied",
    "deadline_day": 59,
-   "decisions": 3,
+   "decisions": 7,
    "dropoff": "no_followup_documented",
    "fixture": "",
    "id": "ifh-screen/ServiceRequest/IFH-sr-101",
    "ifhas": {
     "screen_report": "IFH-dr-101",
+    "screen_label": "bp=H;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "follow_up",
+     "deadline_days": 59,
+     "urgency": "routine",
+     "cell": "bp=H;glyc=N;lipid=N;weight=N",
+     "abnormal_domains": [
+      "bp"
+     ],
+     "domain_deadline_days": {
+      "bp": 59
+     }
+    },
+    "screen_day": 31.589988425925927,
+    "deadline_day": 90.58998842592592,
+    "domain_status": {
+     "bp": ""
+    }
+   },
+   "overdue": true,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 31.59,
+   "review": "none",
+   "state": "open"
+  },
+  {
+   "closed": true,
+   "closed_day": 35.999,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-102",
+   "ifhas": {
+    "screen_report": "IFH-dr-102",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 35.99896990740741,
+    "deadline_day": 1130.9989699074074,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 35.999,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -78.3387,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-103",
+   "ifhas": {
+    "screen_report": "IFH-dr-103",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -78.33875,
+    "deadline_day": 1016.66125,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -78.3387,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -84.66,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-104",
+   "ifhas": {
+    "screen_report": "IFH-dr-104",
+    "screen_label": "bp=N;glyc=P;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=P;lipid=N;weight=N",
+     "prediabetes": true
+    },
+    "screen_day": -84.66012731481482,
+    "deadline_day": 1010.3398726851851,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7); prediabetes: lifestyle advice and a yearly HbA1c"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -84.66,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 59.88,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-105",
+   "ifhas": {
+    "screen_report": "IFH-dr-105",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 59.87996527777778,
+    "deadline_day": 1154.8799652777777,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 59.88,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 10,
+   "decisions": 4,
+   "dropoff": "no_followup_documented",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-106",
+   "ifhas": {
+    "screen_report": "IFH-dr-106",
+    "screen_label": "bp=N;glyc=S;lipid=N;weight=O",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "follow_up",
+     "deadline_days": 10,
+     "urgency": "urgent",
+     "cell": "bp=N;glyc=S;lipid=N;weight=O",
+     "abnormal_domains": [
+      "glyc",
+      "weight"
+     ],
+     "domain_deadline_days": {
+      "glyc": 10,
+      "weight": 59
+     }
+    },
+    "screen_day": 2.238564814814815,
+    "deadline_day": 12.238564814814815,
+    "domain_status": {
+     "glyc": "",
+     "weight": ""
+    }
+   },
+   "overdue": true,
+   "owner": "",
+   "priority": "urgent",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 2.2386,
+   "review": "none",
+   "state": "open"
+  },
+  {
+   "closed": true,
+   "closed_day": 4.2657,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-107",
+   "ifhas": {
+    "screen_report": "IFH-dr-107",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 4.265717592592592,
+    "deadline_day": 1099.2657175925926,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 4.2657,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 52.838,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-108",
+   "ifhas": {
+    "screen_report": "IFH-dr-108",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 52.83804398148148,
+    "deadline_day": 1147.8380439814814,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 52.838,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 83.1992,
+   "consent": "granted",
+   "deadline_day": 59,
+   "decisions": 6,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-109",
+   "ifhas": {
+    "screen_report": "IFH-dr-109",
+    "screen_label": "bp=H;glyc=P;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "follow_up",
+     "deadline_days": 59,
+     "urgency": "routine",
+     "cell": "bp=H;glyc=P;lipid=N;weight=N",
+     "abnormal_domains": [
+      "bp"
+     ],
+     "domain_deadline_days": {
+      "bp": 59
+     },
+     "prediabetes": true
+    },
+    "screen_day": -39.94967592592592,
+    "deadline_day": 19.050324074074076,
+    "domain_status": {
+     "bp": "not_confirmed"
+    },
+    "resolved_day": {
+     "bp": 83.1992013888889
+    },
+    "followup_documents": [
+     "IFU-dr-48"
+    ],
+    "outcome": "bp=not_confirmed",
+    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -39.9496,
+   "review": "signed",
+   "state": "closed"
+  },
+  {
+   "closed": true,
+   "closed_day": -27.8691,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-11",
+   "ifhas": {
+    "screen_report": "IFH-dr-11",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -27.86916666666667,
+    "deadline_day": 1067.1308333333334,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -27.8691,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -58.7585,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-110",
+   "ifhas": {
+    "screen_report": "IFH-dr-110",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -58.75864583333333,
+    "deadline_day": 1036.2413541666667,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -58.7585,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 18.999,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-111",
+   "ifhas": {
+    "screen_report": "IFH-dr-111",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 18.99900462962963,
+    "deadline_day": 1113.9990046296296,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 18.999,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -98.1314,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-112",
+   "ifhas": {
+    "screen_report": "IFH-dr-112",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -98.13150462962963,
+    "deadline_day": 996.8684953703704,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -98.1314,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -3.121,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-113",
+   "ifhas": {
+    "screen_report": "IFH-dr-113",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -3.121087962962963,
+    "deadline_day": 1091.878912037037,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -3.121,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -27.6822,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-114",
+   "ifhas": {
+    "screen_report": "IFH-dr-114",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -27.682280092592592,
+    "deadline_day": 1067.3177199074073,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -27.6822,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 40.6456,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 3,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-115",
+   "ifhas": {
+    "screen_report": "IFH-dr-115",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": 40.64555555555555,
+    "deadline_day": 1135.6455555555556,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": 40.6456,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": 59.7819,
+   "consent": "granted",
+   "deadline_day": 59,
+   "decisions": 6,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-116",
+   "ifhas": {
+    "screen_report": "IFH-dr-116",
     "screen_label": "bp=N;glyc=D;lipid=N;weight=N",
     "coded_results_agree": true,
     "rec": {
@@ -154,32 +681,40 @@
       "glyc": 59
      }
     },
-    "screen_day": 70.61333333333333,
-    "deadline_day": 129.61333333333334,
+    "screen_day": -47.59940972222222,
+    "deadline_day": 11.40059027777778,
     "domain_status": {
-     "glyc": ""
-    }
+     "glyc": "managed"
+    },
+    "resolved_day": {
+     "glyc": 59.78189814814815
+    },
+    "followup_documents": [
+     "IFU-dr-49"
+    ],
+    "outcome": "glyc=managed",
+    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": 70.6133,
-   "review": "none",
-   "state": "open"
+   "referral_day": -47.5993,
+   "review": "signed",
+   "state": "closed"
   },
   {
-   "closed": true,
-   "closed_day": 102.5897,
+   "closed": false,
+   "closed_day": 0,
    "consent": "granted",
    "deadline_day": 59,
    "decisions": 5,
-   "dropoff": "",
+   "dropoff": "no_followup_documented",
    "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-102",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-117",
    "ifhas": {
-    "screen_report": "IFH-dr-102",
+    "screen_report": "IFH-dr-117",
     "screen_label": "bp=H;glyc=N;lipid=N;weight=O",
     "coded_results_agree": true,
     "rec": {
@@ -196,468 +731,10 @@
       "weight": 59
      }
     },
-    "screen_day": 80.71461805555556,
-    "deadline_day": 139.71461805555555,
+    "screen_day": 3.461076388888889,
+    "deadline_day": 62.46107638888889,
     "domain_status": {
-     "bp": "managed",
-     "weight": "managed"
-    },
-    "resolved_day": {
-     "bp": 102.5897337962963,
-     "weight": 102.5897337962963
-    },
-    "followup_documents": [
-     "IFU-dr-47"
-    ],
-    "outcome": "bp=managed;weight=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 80.7146,
-   "review": "signed",
-   "state": "closed"
-  },
-  {
-   "closed": true,
-   "closed_day": 25.7886,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-103",
-   "ifhas": {
-    "screen_report": "IFH-dr-103",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": 25.788645833333334,
-    "deadline_day": 1120.7886458333332,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 25.7886,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 49.8223,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-104",
-   "ifhas": {
-    "screen_report": "IFH-dr-104",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": 49.82228009259259,
-    "deadline_day": 1144.8222800925926,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 49.8223,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 4.3494,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-105",
-   "ifhas": {
-    "screen_report": "IFH-dr-105",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": 4.349398148148148,
-    "deadline_day": 1099.349398148148,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 4.3494,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -34.0494,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-106",
-   "ifhas": {
-    "screen_report": "IFH-dr-106",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -34.049490740740744,
-    "deadline_day": 1060.9505092592592,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -34.0494,
-   "review": "signed",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 13.2491,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-107",
-   "ifhas": {
-    "screen_report": "IFH-dr-107",
-    "screen_label": "bp=N;glyc=P;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=P;lipid=N;weight=N",
-     "prediabetes": true
-    },
-    "screen_day": 13.249050925925927,
-    "deadline_day": 1108.249050925926,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7); prediabetes: lifestyle advice and a yearly HbA1c"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 13.2491,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -99.5918,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-108",
-   "ifhas": {
-    "screen_report": "IFH-dr-108",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -99.591875,
-    "deadline_day": 995.408125,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -99.5918,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -94.3649,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-109",
-   "ifhas": {
-    "screen_report": "IFH-dr-109",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -94.36502314814815,
-    "deadline_day": 1000.6349768518519,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -94.3649,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": -86.8157,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 2,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-11",
-   "ifhas": {
-    "screen_report": "IFH-dr-11",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -86.81583333333333,
-    "deadline_day": 1008.1841666666667,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -86.8157,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 59.7004,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-110",
-   "ifhas": {
-    "screen_report": "IFH-dr-110",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": 59.70037037037037,
-    "deadline_day": 1154.7003703703704,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 59.7004,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 27.2274,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-111",
-   "ifhas": {
-    "screen_report": "IFH-dr-111",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": 27.22738425925926,
-    "deadline_day": 1122.2273842592592,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 27.2274,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": true,
-   "closed_day": 16.015,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 4,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-112",
-   "ifhas": {
-    "screen_report": "IFH-dr-112",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=O",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=N;lipid=N;weight=O",
-     "abnormal_domains": [
-      "weight"
-     ],
-     "domain_deadline_days": {
-      "weight": 59
-     }
-    },
-    "screen_day": -87.49375,
-    "deadline_day": -28.493750000000006,
-    "domain_status": {
-     "weight": "managed"
-    },
-    "resolved_day": {
-     "weight": 16.014953703703704
-    },
-    "followup_documents": [
-     "IFU-dr-48"
-    ],
-    "outcome": "weight=managed",
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -87.4937,
-   "review": "signed",
-   "state": "closed"
-  },
-  {
-   "closed": true,
-   "closed_day": -5.1221,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 7,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-113",
-   "ifhas": {
-    "screen_report": "IFH-dr-113",
-    "screen_label": "bp=N;glyc=P;lipid=H;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=P;lipid=H;weight=N",
-     "abnormal_domains": [
-      "lipid"
-     ],
-     "domain_deadline_days": {
-      "lipid": 59
-     },
-     "prediabetes": true
-    },
-    "screen_day": -33.96422453703704,
-    "deadline_day": 25.03577546296296,
-    "domain_status": {
-     "lipid": "managed"
-    },
-    "resolved_day": {
-     "lipid": -5.122222222222222
-    },
-    "followup_documents": [
-     "IFU-dr-49"
-    ],
-    "outcome": "lipid=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -33.9641,
-   "review": "signed",
-   "state": "closed"
-  },
-  {
-   "closed": false,
-   "closed_day": 0,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 5,
-   "dropoff": "no_followup_documented",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-114",
-   "ifhas": {
-    "screen_report": "IFH-dr-114",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=O",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=N;lipid=N;weight=O",
-     "abnormal_domains": [
-      "weight"
-     ],
-     "domain_deadline_days": {
-      "weight": 59
-     }
-    },
-    "screen_day": -58.54146990740741,
-    "deadline_day": 0.45853009259258926,
-    "domain_status": {
+     "bp": "",
      "weight": ""
     }
    },
@@ -666,191 +743,21 @@
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": -58.5414,
-   "review": "signed",
+   "referral_day": 3.4611,
+   "review": "none",
    "state": "open"
   },
   {
    "closed": true,
-   "closed_day": -61.2026,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-115",
-   "ifhas": {
-    "screen_report": "IFH-dr-115",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=O",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=N;lipid=N;weight=O",
-     "abnormal_domains": [
-      "weight"
-     ],
-     "domain_deadline_days": {
-      "weight": 59
-     }
-    },
-    "screen_day": -86.74991898148149,
-    "deadline_day": -27.749918981481486,
-    "domain_status": {
-     "weight": "managed"
-    },
-    "resolved_day": {
-     "weight": -61.20269675925926
-    },
-    "followup_documents": [
-     "IFU-dr-51"
-    ],
-    "outcome": "weight=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -86.7498,
-   "review": "none",
-   "state": "closed"
-  },
-  {
-   "closed": true,
-   "closed_day": 29.6703,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 7,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-116",
-   "ifhas": {
-    "screen_report": "IFH-dr-116",
-    "screen_label": "bp=H;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=H;glyc=N;lipid=N;weight=N",
-     "abnormal_domains": [
-      "bp"
-     ],
-     "domain_deadline_days": {
-      "bp": 59
-     }
-    },
-    "screen_day": -2.925451388888889,
-    "deadline_day": 56.07454861111111,
-    "domain_status": {
-     "bp": "managed"
-    },
-    "resolved_day": {
-     "bp": 29.670347222222222
-    },
-    "followup_documents": [
-     "IFU-dr-52"
-    ],
-    "outcome": "bp=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -2.9254,
-   "review": "signed",
-   "state": "closed"
-  },
-  {
-   "closed": true,
-   "closed_day": -3.6815,
+   "closed_day": -91.9201,
    "consent": "granted",
    "deadline_day": 1095,
    "decisions": 2,
    "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-117",
-   "ifhas": {
-    "screen_report": "IFH-dr-117",
-    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "routine",
-     "deadline_days": 1095,
-     "cell": "bp=N;glyc=N;lipid=N;weight=N"
-    },
-    "screen_day": -3.6815972222222224,
-    "deadline_day": 1091.3184027777777,
-    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": -3.6815,
-   "review": "none",
-   "state": "no_followup_needed"
-  },
-  {
-   "closed": false,
-   "closed_day": 0,
-   "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 4,
-   "dropoff": "no_followup_documented",
    "fixture": "",
    "id": "ifh-screen/ServiceRequest/IFH-sr-118",
    "ifhas": {
     "screen_report": "IFH-dr-118",
-    "screen_label": "bp=N;glyc=P;lipid=N;weight=O",
-    "coded_results_agree": true,
-    "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=P;lipid=N;weight=O",
-     "abnormal_domains": [
-      "weight"
-     ],
-     "domain_deadline_days": {
-      "weight": 59
-     },
-     "prediabetes": true
-    },
-    "screen_day": 63.8771875,
-    "deadline_day": 122.87718749999999,
-    "domain_status": {
-     "weight": ""
-    }
-   },
-   "overdue": false,
-   "owner": "",
-   "priority": "",
-   "programme": "ifhas",
-   "provider": "ifh-screen",
-   "referral_day": 63.8772,
-   "review": "none",
-   "state": "open"
-  },
-  {
-   "closed": true,
-   "closed_day": 86.7298,
-   "consent": "granted",
-   "deadline_day": 1095,
-   "decisions": 3,
-   "dropoff": "",
-   "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-119",
-   "ifhas": {
-    "screen_report": "IFH-dr-119",
     "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
     "coded_results_agree": true,
     "rec": {
@@ -858,8 +765,8 @@
      "deadline_days": 1095,
      "cell": "bp=N;glyc=N;lipid=N;weight=N"
     },
-    "screen_day": 86.72976851851851,
-    "deadline_day": 1181.7297685185185,
+    "screen_day": -91.92020833333333,
+    "deadline_day": 1003.0797916666667,
     "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
    },
    "overdue": false,
@@ -867,7 +774,7 @@
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": 86.7298,
+   "referral_day": -91.9201,
    "review": "none",
    "state": "no_followup_needed"
   },
@@ -879,27 +786,27 @@
    "decisions": 5,
    "dropoff": "no_followup_documented",
    "fixture": "",
-   "id": "ifh-screen/ServiceRequest/IFH-sr-12",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-119",
    "ifhas": {
-    "screen_report": "IFH-dr-12",
-    "screen_label": "bp=H;glyc=N;lipid=N;weight=N",
+    "screen_report": "IFH-dr-119",
+    "screen_label": "bp=N;glyc=D;lipid=N;weight=N",
     "coded_results_agree": true,
     "rec": {
      "action": "follow_up",
      "deadline_days": 59,
      "urgency": "routine",
-     "cell": "bp=H;glyc=N;lipid=N;weight=N",
+     "cell": "bp=N;glyc=D;lipid=N;weight=N",
      "abnormal_domains": [
-      "bp"
+      "glyc"
      ],
      "domain_deadline_days": {
-      "bp": 59
+      "glyc": 59
      }
     },
-    "screen_day": 17.955925925925925,
-    "deadline_day": 76.95592592592592,
+    "screen_day": 7.119675925925926,
+    "deadline_day": 66.11967592592593,
     "domain_status": {
-     "bp": ""
+     "glyc": ""
     }
    },
    "overdue": true,
@@ -907,71 +814,83 @@
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": 17.9559,
+   "referral_day": 7.1197,
    "review": "none",
    "state": "open"
   },
   {
    "closed": true,
-   "closed_day": -57.868,
+   "closed_day": -91.3328,
    "consent": "granted",
-   "deadline_day": 59,
-   "decisions": 3,
+   "deadline_day": 1095,
+   "decisions": 2,
+   "dropoff": "",
+   "fixture": "",
+   "id": "ifh-screen/ServiceRequest/IFH-sr-12",
+   "ifhas": {
+    "screen_report": "IFH-dr-12",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "coded_results_agree": true,
+    "rec": {
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "screen_day": -91.33293981481482,
+    "deadline_day": 1003.6670601851852,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
+   },
+   "overdue": false,
+   "owner": "",
+   "priority": "",
+   "programme": "ifhas",
+   "provider": "ifh-screen",
+   "referral_day": -91.3328,
+   "review": "none",
+   "state": "no_followup_needed"
+  },
+  {
+   "closed": true,
+   "closed_day": -98.335,
+   "consent": "granted",
+   "deadline_day": 1095,
+   "decisions": 2,
    "dropoff": "",
    "fixture": "",
    "id": "ifh-screen/ServiceRequest/IFH-sr-120",
    "ifhas": {
     "screen_report": "IFH-dr-120",
-    "screen_label": "bp=N;glyc=P;lipid=N;weight=O",
+    "screen_label": "bp=N;glyc=N;lipid=N;weight=N",
     "coded_results_agree": true,
     "rec": {
-     "action": "follow_up",
-     "deadline_days": 59,
-     "urgency": "routine",
-     "cell": "bp=N;glyc=P;lipid=N;weight=O",
-     "abnormal_domains": [
-      "weight"
-     ],
-     "domain_deadline_days": {
-      "weight": 59
-     },
-     "prediabetes": true
+     "action": "routine",
+     "deadline_days": 1095,
+     "cell": "bp=N;glyc=N;lipid=N;weight=N"
     },
-    "screen_day": -64.77219907407408,
-    "deadline_day": -5.772199074074081,
-    "domain_status": {
-     "weight": "managed"
-    },
-    "resolved_day": {
-     "weight": -57.86814814814815
-    },
-    "followup_documents": [
-     "IFU-dr-53"
-    ],
-    "outcome": "weight=managed",
-    "within_deadline": true,
-    "next_step": "managed domains continue with the receiving clinic; not-confirmed domains return to routine IFHAS screening in 3 years"
+    "screen_day": -98.33510416666667,
+    "deadline_day": 996.6648958333333,
+    "next_step": "routine IFHAS rescreen in 3 years (Appendix 7)"
    },
    "overdue": false,
    "owner": "",
    "priority": "",
    "programme": "ifhas",
    "provider": "ifh-screen",
-   "referral_day": -64.7721,
+   "referral_day": -98.335,
    "review": "none",
-   "state": "closed"
+   "state": "no_followup_needed"
   }
  ],
  "limit": 25,
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-02T04:59:26Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
   "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "offset": 0,
- "total": 800
+ "total": 700
 }

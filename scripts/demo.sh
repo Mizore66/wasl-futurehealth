@@ -207,22 +207,28 @@ smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 
   kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; SMOKE_PID=""
   return "$rc"
 }
-snapshot() {  # write static API responses for frontend development (no backend needed): docs/api-samples/
-  local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="$ROOT/docs/api-samples"
+snapshot() {  # static API responses for frontend development (no backend needed): docs/api-samples/ (WASL_SNAPSHOT_DIR overrides)
+  # Written into a clean staging directory first; all seven programme pages must be nonempty; only then are the tracked
+  # samples replaced (README.md kept), so no stale fixture files remain and a failed snapshot leaves them untouched.
+  local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="${WASL_SNAPSHOT_DIR:-$ROOT/docs/api-samples}" S tag id prog
+  S="$(mktemp -d "${D%/}.staging.XXXXXX")"
+  curl -sf "http://$A/healthz" > "$S/healthz.json" || { rm -rf "$S"; echo "snapshot: healthz failed" >&2; return 1; }
+  curl -sf "http://$A/api/dashboard" > "$S/dashboard.json" || { rm -rf "$S"; echo "snapshot: dashboard failed" >&2; return 1; }
+  curl -sf "http://$A/api/fixtures" > "$S/fixtures.json" || { rm -rf "$S"; echo "snapshot: fixtures failed" >&2; return 1; }
+  for prog in crc cervical lung_nodule diabetic_retinopathy breast lung_ldct ifhas; do
+    if ! { curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
+      python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
+      rm -rf "$S"; echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
+    fi
+  done
+  for tag in $(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['fixtures'])))" "$S/fixtures.json"); do
+    id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures'][sys.argv[2]]['id'])" "$S/fixtures.json" "$tag")
+    curl -sf "http://$A/api/cases/$id" > "$S/case_$tag.json" && curl -sf "http://$A/api/cases/$id/audit" > "$S/case_${tag}_audit.json" ||
+      { rm -rf "$S"; echo "snapshot: fixture $tag detail/audit failed" >&2; return 1; }
+  done
   mkdir -p "$D"
-  curl -sf "http://$A/healthz" > "$D/healthz.json"
-  curl -sf "http://$A/api/dashboard" > "$D/dashboard.json"
-  curl -sf "http://$A/api/fixtures" > "$D/fixtures.json"
-  for prog in crc cervical lung_nodule diabetic_retinopathy breast lung_ldct ifhas; do   # first page per programme present in the run
-    curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$D/cases_${prog}_page1.json.tmp" &&
-      python3 -c "import json,sys;sys.exit(0 if json.load(open('$D/cases_${prog}_page1.json.tmp')).get('cases') else 1)" &&
-      mv "$D/cases_${prog}_page1.json.tmp" "$D/cases_${prog}_page1.json" || rm -f "$D/cases_${prog}_page1.json.tmp"
-  done
-  for tag in $(python3 -c "import json;print(' '.join(sorted(json.load(open('$D/fixtures.json'))['fixtures'])))"); do
-    id=$(python3 -c "import json;print(json.load(open('$D/fixtures.json'))['fixtures']['$tag']['id'])")
-    curl -sf "http://$A/api/cases/$id" > "$D/case_$tag.json"
-    curl -sf "http://$A/api/cases/$id/audit" > "$D/case_${tag}_audit.json"
-  done
+  find "$D" -maxdepth 1 -type f ! -name README.md -delete
+  mv "$S"/*.json "$D"/; rmdir "$S"
   echo "API samples → $D"
 }
 # A run must use a binary built from the current sources. The 2 Nov X10 rerun used a bin/wsi7 older than its fixes and
