@@ -1,0 +1,362 @@
+{
+ "agreed_but_wrong": {
+  "closing": 1,
+  "holding": 3,
+  "items": [
+   {
+    "agreed_label": "bp=managed",
+    "direction": "closing",
+    "explanation": "CLOSING direction. Key bp=pending (home BP monitoring requested, 'No medication commenced today; decision deferred pending home readings'); both readers said bp=managed, so the loop would be closed while the key says it is still pending. This is the one agreed-but-wrong answer that could close a loop that should stay open.",
+    "id": "f2i-031",
+    "key": "bp=pending",
+    "kind": "ifhas-followup",
+    "reader_a": "bp=managed",
+    "reader_b": "bp=managed"
+   },
+   {
+    "agreed_label": "wk_incomplete",
+    "direction": "holding",
+    "explanation": "HOLDING direction, wrong kind. A pneumonia discharge summary with no lung-cancer work-up content; key indeterminate (a human should see it). Both readers confidently said wk_incomplete, which keeps the loop open but does not route it to review and mislabels an unrelated document as an incomplete work-up.",
+    "id": "f2l-002",
+    "key": "indeterminate",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   },
+   {
+    "agreed_label": "wk_incomplete",
+    "direction": "holding",
+    "explanation": "HOLDING direction, wrong kind. A smoking-cessation review that only mentions the nodule in passing; key indeterminate. Both readers said wk_incomplete: the loop stays open, but the document was not recognised as the wrong kind of note.",
+    "id": "f2l-021",
+    "key": "indeterminate",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   },
+   {
+    "agreed_label": "wk_incomplete",
+    "direction": "holding",
+    "explanation": "HOLDING direction. MDT outcome with a stated CT surveillance plan (a decision, not 'pending'); key wk_surveillance. Both readers said wk_incomplete, so a surveillance plan is held as an incomplete work-up. The loop stays open but the wrong follow-up path would be started.",
+    "id": "f2l-029",
+    "key": "wk_surveillance",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   }
+  ],
+  "total": 4
+ },
+ "counts": {
+  "agreed": 113,
+  "items": 120,
+  "unadjudicated": 7
+ },
+ "gemma_reader_kinds_agreed_subset": {
+  "by_kind": {
+   "ifhas-followup": {
+    "agree": 6,
+    "agreed_and_right": 5,
+    "agreed_but_wrong": 1,
+    "agreed_but_wrong_ids": [
+     "f2i-031"
+    ],
+    "n": 29,
+    "reader_a_correct": 13,
+    "reader_b_correct": 12,
+    "reader_b_unavailable": 10,
+    "routed_to_review_key_decisive": 20,
+    "routed_to_review_key_expects_review": 3
+   },
+   "ldct-screen": {
+    "agree": 22,
+    "agreed_and_right": 22,
+    "agreed_but_wrong": 0,
+    "agreed_but_wrong_ids": [],
+    "n": 30,
+    "reader_a_correct": 26,
+    "reader_b_correct": 24,
+    "reader_b_unavailable": 0,
+    "routed_to_review_key_decisive": 4,
+    "routed_to_review_key_expects_review": 4
+   },
+   "ldct-workup": {
+    "agree": 14,
+    "agreed_and_right": 11,
+    "agreed_but_wrong": 3,
+    "agreed_but_wrong_ids": [
+     "f2l-002",
+     "f2l-021",
+     "f2l-029"
+    ],
+    "n": 26,
+    "reader_a_correct": 15,
+    "reader_b_correct": 17,
+    "reader_b_unavailable": 0,
+    "routed_to_review_key_decisive": 9,
+    "routed_to_review_key_expects_review": 3
+   }
+  },
+  "kinds": [
+   "ifhas-followup",
+   "ldct-screen",
+   "ldct-workup"
+  ],
+  "note": "Reader B is local Gemma 3 4B (cached) for these three kinds only. ifhas-screen is excluded.",
+  "totals": {
+   "agreed_but_wrong": 4,
+   "n": 85,
+   "reader_a_correct": 54,
+   "reader_b_gemma_correct": 53,
+   "reader_b_unavailable": 10,
+   "readers_agree": 42
+  }
+ },
+ "ifhas_screening_coded_not_gemma": {
+  "agreed_n": 28,
+  "fasting_vs_random_disclosure": "The guide requires a random glucose, but 27/30 panels say fasting. The reader-A panel regex reads only random-glucose wording, so it returns glyc=X on those panels; the key (model-labelled from the same guide) holds values for many of them. The guide and key were frozen and are not changed here.",
+  "guide_glucose_requirement": "random glucose (LABELLING-GUIDE.md section on glyc; LOINC 2345-7 and 14749-6 are labelled 'random glucose')",
+  "key_coded_label_unavailable": 2,
+  "keyed_glyc_distribution": {
+   "D": 4,
+   "N": 14,
+   "P": 4,
+   "S": 1,
+   "X": 5
+  },
+  "note_b": "28/28 counts the 2 items whose key coded_label is itself 'unavailable' as matching; it measures coded-result parsing against the key, not a language-model reader.",
+  "panels_mentioning_fasting": 27,
+  "panels_mentioning_random": 4,
+  "panels_stating_fasting_status_or_duration": 9,
+  "panels_total": 30,
+  "reader_a_correct": 6,
+  "reader_a_glyc_x_ids": [
+   "f2i-003",
+   "f2i-011",
+   "f2i-017",
+   "f2i-018",
+   "f2i-019",
+   "f2i-020",
+   "f2i-023",
+   "f2i-025",
+   "f2i-026",
+   "f2i-029",
+   "f2i-035",
+   "f2i-042",
+   "f2i-043",
+   "f2i-044",
+   "f2i-047",
+   "f2i-050",
+   "f2i-051",
+   "f2i-052",
+   "f2i-053",
+   "f2i-057",
+   "f2i-059"
+  ],
+  "reader_a_glyc_x_total": 26,
+  "reader_a_glyc_x_where_key_has_value": 21,
+  "reader_b_coded_matches_key": 28,
+  "reader_b_is": "deterministic coded LOINC/UCUM results (kind ifhas-screen, model field 'coded_lab'); NOT a Gemma reader",
+  "reader_b_unavailable": 2
+ },
+ "reader_b_unavailable": {
+  "by_kind_agreed": {
+   "ifhas-followup": 10,
+   "ifhas-screen": 2
+  },
+  "by_kind_total": {
+   "ifhas-followup": 11,
+   "ifhas-screen": 2
+  },
+  "by_kind_unadjudicated": {
+   "ifhas-followup": 1
+  },
+  "ifhas_followup": {
+   "cache_error": 0,
+   "cache_miss": 0,
+   "main_and_finding_quote_not_grounded": 2,
+   "main_quote_not_grounded": 11,
+   "main_quote_not_grounded_only": 9,
+   "reason_combinations": {
+    "main_quote_not_grounded": 9,
+    "main_quote_not_grounded + finding_quote_not_grounded:glycaemia": 1,
+    "main_quote_not_grounded + finding_quote_not_grounded:glycaemia,glycaemia,lipids,lipids": 1
+   },
+   "unavailable_total": 11,
+   "with_cache_entry": 11
+  },
+  "ldct": 0,
+  "rows": [
+   {
+    "id": "f2i-001",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-004",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-006",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-017",
+    "implausible_coded_values": [
+     "4548-4|53|%"
+    ],
+    "key_coded_label": "unavailable",
+    "key_status": "agreed",
+    "kind": "ifhas-screen",
+    "reasons": [
+     "coded_results_missing_or_implausible"
+    ]
+   },
+   {
+    "id": "f2i-022",
+    "implausible_coded_values": [
+     "2345-7|12.4|mg/dL"
+    ],
+    "key_coded_label": "unavailable",
+    "key_status": "agreed",
+    "kind": "ifhas-screen",
+    "reasons": [
+     "coded_results_missing_or_implausible"
+    ]
+   },
+   {
+    "id": "f2i-024",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-027",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-028",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-034",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-037",
+    "key_status": "unadjudicated",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded",
+     "finding_quote_not_grounded:glycaemia,glycaemia,lipids,lipids"
+    ]
+   },
+   {
+    "id": "f2i-040",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   },
+   {
+    "id": "f2i-046",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded",
+     "finding_quote_not_grounded:glycaemia"
+    ]
+   },
+   {
+    "id": "f2i-060",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "main_quote_not_grounded"
+    ]
+   }
+  ],
+  "unavailable_is_not_correct": "Unavailable is not a correct answer. SCORE.md 'B correct' counts only answers equal to the key; 'B unavailable' is counted separately and routes the item to a human. The one exception is ifhas-screen, where the key's own coded_label is 'unavailable' for 2 items (see screen section)."
+ },
+ "schema": "fresh2-analysis/v1",
+ "semantics": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.",
+ "verification": {
+  "manifest": {
+   "check_freeze_after_score_errors": [],
+   "equal": true,
+   "manifest_file": {
+    "corpus_commit": "94504af4876c4ce622f109e55c4e413e9d498860",
+    "labels_commit": "14469f386ac58e662da51f5a9b27152c78c023b5",
+    "reader_cache_commit": "19e8da41f38ab8df6766e9f3192bed576873dcff",
+    "reader_code_commit": "2fe3a75bf3a041c37d990b48c99db3507eb82e28"
+   },
+   "note": "uncommitted-file warnings are excluded from this record so the committed analysis is reproducible; run `fresh2.py check-freeze --after-score` for the live cleanliness check",
+   "rederived": {
+    "corpus_commit": "94504af4876c4ce622f109e55c4e413e9d498860",
+    "labels_commit": "14469f386ac58e662da51f5a9b27152c78c023b5",
+    "reader_cache_commit": "19e8da41f38ab8df6766e9f3192bed576873dcff",
+    "reader_code_commit": "2fe3a75bf3a041c37d990b48c99db3507eb82e28"
+   }
+  },
+  "original_scores": {
+   "score_json_matches_recomputation": true
+  },
+  "protected_files": {
+   "changed": [],
+   "changed_since_scoring_commit": [],
+   "checked": [
+    "pipeline/ldctread.go",
+    "pipeline/ldctrule.go",
+    "pipeline/ifhasread.go",
+    "pipeline/ifhasrule.go",
+    "pipeline/evidence.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go",
+    "pipeline/fresh2_reader_test.go",
+    "models/ldct_gemma_cache.json",
+    "models/ifhas_gemma_cache.json",
+    "data/fresh2/corpus.json",
+    "data/fresh2/key.json",
+    "data/fresh2/agreement.json",
+    "data/fresh2/FREEZE.json",
+    "data/fresh2/labels/labeller_a.json",
+    "data/fresh2/labels/labeller_b.json",
+    "data/fresh2/reader-cache/ldct_gemma_cache.json",
+    "data/fresh2/reader-cache/ifhas_gemma_cache.json",
+    "data/fresh2/results/SCORE.md",
+    "data/fresh2/results/score.json",
+    "data/fresh2/results/reader_raw.json",
+    "scripts/fresh2_eval/fresh2.py",
+    "scripts/fresh2_eval/LABELLING-GUIDE.md"
+   ],
+   "protected_changed_since_reader_code_commit": [],
+   "scoring_commit": "8a883fc",
+   "uncommitted": []
+  }
+ }
+}
