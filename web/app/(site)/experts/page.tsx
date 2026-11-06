@@ -280,7 +280,7 @@ export default async function Page() {
               </a>
             </div>
             <p className={cn("m-0 mt-10 max-w-[36em] text-[14px] leading-[1.55]", muted)}>
-              <HonestyLabel kind="simulated" className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] text-(--muted)">
+              <HonestyLabel kind="simulated" className="inline h-auto whitespace-normal bg-transparent px-0 text-[14px] font-normal text-(--muted) [&>[data-dot]]:hidden">
                 Status words used on this page.
               </HonestyLabel>{" "}
               <strong className="font-semibold text-(--ink)">Built</strong>: ran in the integrated pipeline, on synthetic cohorts.{" "}

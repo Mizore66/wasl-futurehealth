@@ -118,7 +118,7 @@ export default async function ProgrammePage() {
             <div className="mt-6 border-t border-rule pt-5">
               <h3 className="m-0 text-body font-medium">What pooling changes</h3>
               <p className="m-0 mt-1 text-body text-ink-soft">
-                Pooling only moves existing slots between regions, so it does nothing when the whole network is short.
+                Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.
               </p>
               {noPooling && pooled && (
                 <p data-testid="pooling-result" className="m-0 mt-2 text-body">
