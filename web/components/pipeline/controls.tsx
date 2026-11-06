@@ -20,13 +20,17 @@ export function MarkShape({ mark, hue = false, className }: { mark: Mark; hue?: 
 const PAUSE = "M2.5 1.5h2.5v9H2.5zM7 1.5h2.5v9H7z";
 const PLAY = "M3 1.5v9l7.5-4.5z";
 
-/** Pause / Play, Step and a one-line note on where the replay is and how fast it plays. */
+/**
+ * Pause / Play, Step and a one-line note on where the replay is and how fast it plays.
+ * These drive the recorded replay only; they are labelled as replay controls and are 44px tall for touch.
+ */
 export function PlaybackControls({
   paused,
   onToggle,
   onStep,
   position,
   speed,
+  reduceMotion = false,
   children,
 }: {
   paused: boolean;
@@ -34,36 +38,44 @@ export function PlaybackControls({
   onStep: () => void;
   position: string;
   speed: string;
+  reduceMotion?: boolean;
   children?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-end gap-2">
-      <div className="flex items-center gap-3">
-        <span className="flex flex-col items-end">
+    <div role="group" aria-label="Replay controls" className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
+      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+        <span className="flex min-w-0 flex-col sm:items-end">
           <span className="text-body font-medium" data-testid="replay-position">
             {position}
             {paused ? " · paused" : ""}
           </span>
           <span className="text-small text-muted">{speed}</span>
         </span>
-        <button
-          type="button"
-          onClick={onToggle}
-          className="inline-flex h-9 w-[92px] flex-none cursor-pointer items-center justify-center gap-2 rounded-control bg-cta px-4 text-body font-medium text-white"
-        >
-          <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-            <path d={paused ? PLAY : PAUSE} />
-          </svg>
-          {paused ? "Play" : "Pause"}
-        </button>
-        <button
-          type="button"
-          onClick={onStep}
-          className="h-9 flex-none cursor-pointer rounded-control bg-active px-3.5 text-body font-medium text-ink"
-        >
-          Step
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onToggle}
+            className="inline-flex h-11 min-w-[104px] flex-none cursor-pointer items-center justify-center gap-2 rounded-control bg-cta px-4 text-body font-medium text-white"
+          >
+            <svg aria-hidden width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              <path d={paused ? PLAY : PAUSE} />
+            </svg>
+            {paused ? "Play" : "Pause"}
+          </button>
+          <button
+            type="button"
+            onClick={onStep}
+            className="h-11 min-w-[72px] flex-none cursor-pointer rounded-control bg-active px-4 text-body font-medium text-ink"
+          >
+            Step
+          </button>
+        </div>
       </div>
+      {reduceMotion && (
+        <p data-testid="reduced-motion-note" className="m-0 text-small text-muted sm:text-right">
+          Reduced motion is on, so the replay waits at a settled frame. Press Play or Step to move it.
+        </p>
+      )}
       {children}
     </div>
   );
@@ -82,7 +94,7 @@ export function Picker<T extends string | number>({
   onPick: (v: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex gap-1">
+    <div role="group" aria-label={label} className="flex flex-wrap gap-1">
       {options.map((o) => (
         <button
           key={o.value}
@@ -90,7 +102,7 @@ export function Picker<T extends string | number>({
           aria-pressed={o.value === value}
           onClick={() => onPick(o.value)}
           className={cn(
-            "h-7 cursor-pointer whitespace-nowrap rounded-chip px-2.5 text-small",
+            "min-h-11 min-w-11 cursor-pointer whitespace-nowrap rounded-chip px-3 text-small",
             o.value === value ? "bg-active font-medium text-ink" : "bg-transparent text-muted",
           )}
         >

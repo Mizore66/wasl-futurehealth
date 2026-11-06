@@ -7,6 +7,7 @@ import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { getAudit, getFixtures } from "@/lib/api/source";
 import type { ChainEntry } from "@/lib/api/schema";
+import { plain } from "@/lib/domain/terms";
 import { formatDay } from "@/lib/domain/day";
 import { personForLoop } from "@/lib/people";
 
@@ -14,10 +15,10 @@ export const metadata = { title: "Pipeline" };
 
 const short = (hash: string) => hash.slice(0, 12);
 
-/** One audit entry in plain words; `body` is the backend's own record. */
+/** One audit entry in plain words; `body` is the backend's own record. The raw entry type goes behind the screen's Technical detail, not in the step line. */
 function node(e: ChainEntry, i: number): ChainNode {
   const b = e.body as Record<string, unknown>;
-  const step = `step ${i + 1} · ${e.type}`;
+  const step = `step ${i + 1}`;
   switch (e.type) {
     case "link_decision":
       return {
@@ -40,11 +41,11 @@ function node(e: ChainEntry, i: number): ChainNode {
         id: e.hash,
         kind: "system",
         who: "Safety gate",
-        what: `${b.state === "closed" ? "closed with evidence" : String(b.state)} · ${formatDay(Number(b.closed_day))}`,
+        what: `${b.state === "closed" ? "closed with evidence" : plain(String(b.state))} · ${formatDay(Number(b.closed_day))}`,
         when: `${step} · ${short(e.hash)}`,
       };
     default:
-      return { id: e.hash, kind: "system", who: "System", what: e.type, when: `${step} · ${short(e.hash)}` };
+      return { id: e.hash, kind: "system", who: "System", what: plain(e.type), when: `${step} · ${short(e.hash)}` };
   }
 }
 
@@ -67,6 +68,7 @@ function tamperDemo(loop: string, chain: ChainEntry[]): TamperDemo {
     intact,
     tampered,
     step: at + 1,
+    technical: chain.map((e, i) => `step ${i + 1} · ${e.type} · ${short(e.hash)}`),
     changed: `The readers' step was set to "inadequate". Its hash no longer matches ${short(evidence.hash)}, so it and the closure after it are flagged.`,
   };
 }

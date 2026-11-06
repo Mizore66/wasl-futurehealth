@@ -1,11 +1,13 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import readerJson from "@/data/reader.json";
 import { Avatar } from "@/components/avatar/avatar";
 import type { PersonSeed } from "@/lib/people/types";
 import { cn } from "@/lib/utils";
+import { TechnicalDetail } from "./technical";
+import { plain } from "@/lib/domain/terms";
 import { MarkShape, PlaybackControls, Picker } from "./controls";
 import type { Mark } from "./flow";
 import { usePlayback } from "./playback";
@@ -51,7 +53,7 @@ function verdict(c: ReaderCase, disagree: ReaderField[]): { kind: "pass" | "held
   return {
     kind: "held",
     pill: "Held",
-    text: `Both readers agree: ${REASON_WORDS[c.ai.reason] ?? c.ai.reason}.`,
+    text: `Both readers agree: ${REASON_WORDS[c.ai.reason] ?? plain(c.ai.reason).toLowerCase()}.`,
     tech: `${c.ai.state} · ${c.ai.reason}`,
   };
 }
@@ -67,6 +69,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
   const { c, f } = v;
   const t = frames.perCase[v.index];
   const result = verdict(c, v.disagree);
+  const reduceMotion = !!useReducedMotion();
 
   const stageState = (done: boolean, started: boolean): Mark => (done ? "done" : started ? "working" : "queued");
   const gateMark: Mark = v.gated ? (result.kind === "pass" ? "done" : "held") : v.agreed ? "working" : "queued";
@@ -87,6 +90,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
           paused={play.paused}
           onToggle={play.toggle}
           onStep={play.step}
+          reduceMotion={play.reduceMotion}
           position={`Report ${v.index + 1} of ${reader.cases.length} · step ${f + 1} of ${t.frames}`}
           speed={`AI reading times are the recorded ones, played ${READER_SPEEDUP}× faster.`}
         >
@@ -99,16 +103,16 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
         </PlaybackControls>
       </header>
 
-      <section aria-label="Engine steps" className="mt-4 rounded-card border border-line bg-surface px-6 py-4">
-        <ol className="m-0 grid list-none grid-cols-5 gap-x-3 p-0">
+      <section aria-label="Engine steps" className="mt-4 rounded-card border border-line bg-surface px-4 py-4 sm:px-6">
+        <ol className="m-0 grid list-none grid-cols-2 gap-x-3 gap-y-2 p-0 sm:grid-cols-3 lg:grid-cols-5">
           {stages.map((g, i) => (
             <li key={g.label} className="relative min-w-0 pt-5" data-mark={g.mark}>
               {i < stages.length - 1 && (
-                <span aria-hidden className={cn("absolute left-3.5 -right-2 top-1 h-0.5", stages[i + 1].mark === "queued" ? "bg-control" : "bg-ink")} />
+                <span aria-hidden className={cn("absolute -right-2 left-3.5 top-1 hidden h-0.5 lg:block", stages[i + 1].mark === "queued" ? "bg-control" : "bg-ink")} />
               )}
               <MarkShape mark={g.mark} hue={g.mark === "working"} className="absolute left-0 top-0 size-2.5" />
-              <div className="truncate text-body font-medium">{g.label}</div>
-              <div className="truncate text-small text-muted">
+              <div className="text-body font-medium">{g.label}</div>
+              <div className="text-small text-muted">
                 {WORD[g.mark]}
                 {g.mark !== "queued" && g.detail ? ` · ${g.detail}` : ""}
               </div>
@@ -118,14 +122,14 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
       </section>
 
       <div className="mt-3 flex flex-wrap items-start gap-3">
-        <section aria-labelledby="report-h" className="min-w-0 flex-[0_1_420px] rounded-card border border-line bg-surface px-6 py-5">
+        <section aria-labelledby="report-h" className="min-w-0 flex-[0_1_420px] rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
           <h2 id="report-h" className="m-0 text-section font-medium">
             Colonoscopy report {c.uid}
           </h2>
           {standsFor[c.uid] ? (
             <Link
               href={standsFor[c.uid].record}
-              className="mt-1 flex min-w-0 items-center gap-2 self-start rounded-chip text-small text-ink-soft no-underline hover:text-ink hover:underline"
+              className="mt-1 flex min-h-11 min-w-0 items-center gap-2 self-start rounded-chip text-small text-ink-soft no-underline hover:text-ink hover:underline"
             >
               <Avatar person={standsFor[c.uid].seed} size={20} label="" />
               <span className="truncate">{standsFor[c.uid].line}</span>
@@ -168,7 +172,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
           </p>
         </section>
 
-        <section aria-labelledby="checks-h" className="min-w-0 flex-[999_1_560px] rounded-card border border-line bg-surface px-6 py-5">
+        <section aria-labelledby="checks-h" className="min-w-0 flex-[999_1_560px] rounded-card border border-line bg-surface px-4 py-5 sm:px-6">
           <div className="flex items-baseline justify-between gap-3">
             <h2 id="checks-h" className="m-0 text-section font-medium">
               The four checks for a complete colonoscopy
@@ -178,7 +182,8 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
             </span>
           </div>
 
-          <div className="mt-3 grid grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-end gap-x-3 pb-2">
+          <div className="@container">
+          <div className="mt-3 hidden grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-end gap-x-3 pb-2 @2xl:grid">
             <span className="text-small text-muted">Check</span>
             <span className="flex flex-col">
               <span className="text-body font-medium">Rules reader</span>
@@ -205,18 +210,23 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
             const downgraded = c.ai.downgraded.includes(fd.k);
             const quoted = c.segments.some((s) => s.field === fd.k);
             return (
-              <div key={fd.k} data-field={fd.k} className="grid h-16 grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] items-center gap-x-3 border-t border-rule">
-                <span className="flex min-w-0 flex-col">
+              <div key={fd.k} data-field={fd.k} className="mt-0 grid grid-cols-1 items-center gap-x-3 gap-y-1 border-t border-rule py-2 @lg:grid-cols-2 @2xl:h-16 @2xl:grid-cols-[minmax(0,24fr)_minmax(0,22fr)_minmax(0,34fr)_minmax(0,20fr)] @2xl:py-0">
+                <span className="flex min-w-0 flex-col @lg:col-span-2 @2xl:col-span-1">
                   <span className="text-body font-medium">{fd.name}</span>
-                  <span className="font-mono text-small text-muted">{fd.key}</span>
                 </span>
-                <Cell mark={stageState(v.rulesDone, f >= 1)} word={v.rulesDone ? valueWord(c.rules, fd.k) : f >= 1 ? "reading" : "queued"} />
                 <Cell
+                  who="Rules reader"
+                  mark={stageState(v.rulesDone, f >= 1)}
+                  word={v.rulesDone ? valueWord(c.rules, fd.k) : f >= 1 ? "reading" : "queued"}
+                />
+                <Cell
+                  who="AI reader"
                   mark={stageState(v.aiDone, f >= 1)}
                   word={v.aiDone ? valueWord(c.ai, fd.k) : f >= 1 ? "reading" : "queued"}
                   sub={v.aiDone ? (downgraded ? "downgraded by the reader's own check" : quoted ? "quote found in report" : "") : ""}
                 />
-                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap @lg:col-span-2 @2xl:col-span-1">
+                  <span className="w-24 text-small text-muted @2xl:hidden">Agreement</span>
                   <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className={cn("flex-none", !settled ? "text-control" : same ? "text-positive" : "text-warning")}>
                     <path d={!settled ? "M4 8h8" : same ? "M3 8.5l3 3 7-7" : "M4 4l8 8M12 4l-8 8"} />
                   </svg>
@@ -227,6 +237,8 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
               </div>
             );
           })}
+
+          </div>
 
           <div role="status" className="mt-2 min-h-[104px] rounded-control bg-ground p-4">
             <div className="flex items-center gap-3">
@@ -242,21 +254,25 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
                 {v.gated ? result.pill : "Waiting"}
               </span>
             </div>
-            <motion.p key={`${c.uid}-${v.gated}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="m-0 mt-2 text-body">
+            <motion.p key={`${c.uid}-${v.gated}`} initial={reduceMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="m-0 mt-2 text-body">
               {v.gated ? result.text : v.agreed ? "Comparing the two readers field by field…" : "Nothing closes until both readers have answered and agree on every check."}
             </motion.p>
-            <p className="m-0 mt-1 font-mono text-small text-muted">{v.gated ? result.tech : "policy · two-reader agreement per field"}</p>
+            <TechnicalDetail>{v.gated ? result.tech : "policy · two-reader agreement per field"}</TechnicalDetail>
           </div>
-          <p className="m-0 mt-2 font-mono text-small text-muted">model_version {c.ai.modelVersion}</p>
+          <TechnicalDetail label="Technical detail: field names and model version">
+            <div>fields: {FIELDS.map((x) => x.key).join(", ")}</div>
+            <div>model_version {c.ai.modelVersion}</div>
+          </TechnicalDetail>
         </section>
       </div>
     </>
   );
 }
 
-function Cell({ mark, word, sub }: { mark: Mark; word: string; sub?: string }) {
+function Cell({ who, mark, word, sub }: { who: string; mark: Mark; word: string; sub?: string }) {
   return (
     <span className="flex min-w-0 items-center gap-2">
+      <span className="w-24 flex-none text-small text-muted @2xl:hidden">{who}</span>
       <MarkShape mark={mark} hue={mark === "working"} className="size-2.5" />
       <span className="flex min-w-0 flex-col">
         <span className={cn("truncate text-body", mark === "done" ? "text-ink" : "text-muted")}>{word}</span>

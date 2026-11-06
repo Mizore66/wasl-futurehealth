@@ -42,14 +42,14 @@ function FalseClosures() {
         <div
           role="img"
           aria-label={`Observed false-closure rate 0%. 95% upper bound ${upper.toFixed(2)}%, on a scale from 0% to ${SCALE}%.`}
-          className="relative mt-1.5 h-10"
+          className="relative mt-1.5 h-[60px]"
         >
           <div className="absolute inset-x-0 top-[9px] h-0.5 bg-rule" />
           <div className="absolute left-0 top-2 h-1 bg-ink" style={{ width: ubAt }} />
           <div className="absolute top-[3px] -ml-px h-3.5 w-0.5 bg-ink" style={{ left: ubAt }} />
           <span className="absolute left-0 top-1 box-border size-3 rounded-full border-2 border-surface bg-ink" />
           <span className="absolute left-0 top-[22px] text-small text-muted">0% observed</span>
-          <span className="absolute top-[22px] -ml-px whitespace-nowrap text-small font-medium" style={{ left: ubAt }}>
+          <span className="absolute top-[42px] -ml-px whitespace-nowrap text-small font-medium" style={{ left: ubAt }}>
             {upper.toFixed(2)}% upper bound
           </span>
           <span className="absolute right-0 top-[22px] text-small text-muted">{SCALE}%</span>
@@ -89,7 +89,10 @@ function Kpi() {
   return (
     <section aria-labelledby="kpi-h" className={card}>
       <CardHead id="kpi-h" title="The 31-day number" sub="Share of referrals with a colonoscopy within 31 days. The cohort is synthetic, so the truth is known." />
-      <div className="mt-3 flex flex-wrap items-baseline gap-3">
+      <h3 data-testid="kpi-heldout-h" className="m-0 mt-4 text-body font-medium">
+        Five-seed held-out mean
+      </h3>
+      <div className="mt-1 flex flex-wrap items-baseline gap-3">
         <span data-testid="kpi-error" className="whitespace-nowrap text-[30px] font-medium leading-10">
           {errWasl} points off
         </span>
@@ -125,9 +128,17 @@ function Kpi() {
           </div>
         ))}
       </div>
-      <p data-testid="demo-cohort" className="m-0 mt-5 text-small text-muted">
-        <span className="font-medium text-ink-soft">Demo cohort</span>, one run on training-time noise: Emirates ID only {demo.eid.display}, Wasl{" "}
-        {demo.wasl.display}, truth {demo.truth.display}.
+      <div className="mt-5 border-t border-rule pt-4">
+        <h3 className="m-0 text-body font-medium">This demo run</h3>
+        <p className="m-0 text-small text-muted">One seed, on the noise the system was tuned on. This is the run the dashboard shows.</p>
+        <p data-testid="demo-cohort" className="m-0 mt-2 text-body">
+          <span className="font-medium text-ink-soft">Demo cohort</span>, one run on training-time noise: Emirates ID only {demo.eid.display}, Wasl{" "}
+          {demo.wasl.display}, truth {demo.truth.display}.
+        </p>
+      </div>
+      <p data-testid="kpi-why" className="m-0 mt-4 rounded-control bg-ground px-3 py-2 text-body">
+        <span className="font-medium">Why two sets of figures?</span> The demo run is a single seed on noise the system was tuned on, so Wasl reads {demo.wasl.display} there
+        and {wasl.display} on the five-seed held-out mean. The held-out mean is the number to quote.
       </p>
     </section>
   );

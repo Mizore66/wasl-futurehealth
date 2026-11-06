@@ -5,6 +5,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { Avatar } from "@/components/avatar/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { TechnicalDetail } from "./technical";
 import { cn } from "@/lib/utils";
 import type { Profile } from "./profile";
 
@@ -104,8 +105,9 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
             <Section title="Decision">
               <p className="m-0 text-body font-medium">{p.decision.word}</p>
               <p className="m-0 text-small text-muted">
-                {p.decision.label} · safety gate {p.decision.gatePassed ? "passed" : "held"}
+                {p.decision.note} · safety gate {p.decision.gatePassed ? "passed" : "held"}
               </p>
+              <TechnicalDetail>{p.decision.label}</TechnicalDetail>
             </Section>
 
             <Section title="The readers" note={`Gemma 3 4B answered in ${p.latencyS}, as recorded. Model ${p.model}.`}>
@@ -122,7 +124,6 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
                     <tr key={f.key} className="border-t border-rule align-top">
                       <th scope="row" className="py-2 pr-2 font-normal">
                         <div className="text-body">{f.name}</div>
-                        <div className="text-muted">{f.key}</div>
                       </th>
                       {p.rulesOnRecord && <td className="py-2 pr-2 text-body">{f.rules ? word(f.rules) : "—"}</td>}
                       <td className="py-2">
@@ -149,17 +150,27 @@ export function PersonSheet({ profile, onClose }: { profile: Profile | null; onC
                     <span className="text-small tabular-nums text-muted">step {h.step}</span>
                     <span className="min-w-0">
                       <span className="block text-body">{h.text}</span>
-                      <span className="block truncate text-small text-muted">{h.played ? h.tech : "not reached yet in this loop"}</span>
+                      <span className="block text-small text-muted">{h.played ? h.note : "not reached yet in this loop"}</span>
                     </span>
                   </li>
                 ))}
               </ol>
+              <TechnicalDetail>
+                {p.history
+                  .filter((h) => h.played)
+                  .map((h) => (
+                    <div key={h.step}>
+                      step {h.step} · {h.tech}
+                    </div>
+                  ))}
+                <div>fields: {p.fields.map((f) => f.key).join(", ")}</div>
+              </TechnicalDetail>
             </Section>
 
             {p.record ? (
               <Link
                 href={p.record}
-                className="inline-flex h-9 items-center self-start rounded-control bg-cta px-4 text-body font-medium text-white no-underline hover:text-white"
+                className="inline-flex h-11 items-center self-start rounded-control bg-cta px-4 text-body font-medium text-white no-underline hover:text-white"
               >
                 Open full record
               </Link>

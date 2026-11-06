@@ -17,6 +17,8 @@ export default defineConfig({
     baseURL: external ?? `http://localhost:${port}`,
     viewport: { width: 1440, height: 900 },
     trace: "retain-on-failure",
+    // Sandboxes that preinstall a different Chromium build point at it here instead of running `playwright install`.
+    launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
   },
   projects: [
     { name: "chromium", testIgnore: "site.spec.ts", use: chrome },
