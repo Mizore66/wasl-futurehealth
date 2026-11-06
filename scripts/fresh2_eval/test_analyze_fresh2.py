@@ -64,10 +64,27 @@ class LabellerInput(unittest.TestCase):
         self.assertNotEqual(a["model_family"], b["model_family"])
 
 
+# Reader code was hardened on purpose after fresh2 was scored (fresh3 reader_code_commit 8c675c1), and fresh2.py gained the
+# FRESH_EVAL_* configuration. Those post-scoring edits are expected; fresh2's protocol is that protected reader files are
+# unchanged from its reader_code_commit to its scoring commit (A.SCORE_COMMIT), which is checked separately and strictly.
+HARDENED_AFTER_SCORING = {"pipeline/ifhasread.go", "pipeline/ldctread.go"}
+CONFIGURED_AFTER_SCORING = {"scripts/fresh2_eval/fresh2.py"}
+
+
 class Analysis(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.a = A.build()
+        v = cls.a["verification"]
+        cls.live_errors = list(v["manifest"]["check_freeze_after_score_errors"])
+        cls.live_changed = list(v["protected_files"]["changed_since_scoring_commit"])
+        # the committed analysis predates the post-scoring edits; mask only those HEAD-dependent fields
+        hardened_errors = {f"{p} changed since reader_code_commit" for p in HARDENED_AFTER_SCORING}
+        v["manifest"]["check_freeze_after_score_errors"] = [e for e in cls.live_errors if e not in hardened_errors]
+        pf = v["protected_files"]
+        pf["changed_since_scoring_commit"] = [
+            p for p in cls.live_changed if p not in HARDENED_AFTER_SCORING | CONFIGURED_AFTER_SCORING]
+        pf["changed"] = pf["changed_since_scoring_commit"] + pf["protected_changed_since_reader_code_commit"] + pf["uncommitted"]
 
     def test_directions(self):
         w = {x["id"]: x for x in self.a["agreed_but_wrong"]["items"]}
@@ -117,6 +134,14 @@ class Analysis(unittest.TestCase):
         self.assertTrue(v["manifest"]["equal"])
         self.assertEqual(v["manifest"]["check_freeze_after_score_errors"], [])
         self.assertEqual(v["protected_files"]["changed"], [])
+        # the real protocol: protected reader files and production caches are identical from reader_code_commit to scoring commit
+        self.assertEqual(v["protected_files"]["protected_changed_since_reader_code_commit"], [])
+        self.assertEqual(
+            A.git(REPO, "diff", "--name-only", v["manifest"]["manifest_file"]["reader_code_commit"], A.SCORE_COMMIT,
+                  "--", *F.DEFAULT_PROTECTED).strip(), "")
+        # post-scoring differences are limited to the known hardening and configuration edits
+        self.assertLessEqual(set(self.live_changed), HARDENED_AFTER_SCORING | CONFIGURED_AFTER_SCORING)
+        self.assertLessEqual({e.split(" changed since")[0] for e in self.live_errors}, HARDENED_AFTER_SCORING)
 
     def test_committed_files_match_regeneration(self):
         self.assertEqual(open(os.path.join(REPO, A.OUT_JSON), encoding="utf-8").read(), F.dumps(self.a))
