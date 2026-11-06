@@ -1,0 +1,143 @@
+{
+ "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+ "anchors": null,
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-100",
+ "chain": [
+  {
+   "type": "link_decision",
+   "body": {
+    "downstream_event": "noor-endo/DiagnosticReport/NOO-dr-39",
+    "hops": 1,
+    "linker": "wasl-v3-retrained+iso+eid",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-100",
+    "near_miss": false,
+    "path_p_cal": 1,
+    "path_strength": 1,
+    "referral_patient": "ahs-mushrif|AHS-MRN000109",
+    "tau": 0.99,
+    "weakest_edge": {
+     "a": "ahs-mushrif|AHS-MRN000109",
+     "b": "noor-endo|NOO-MRN000062",
+     "basis": "human",
+     "p": 1
+    }
+   },
+   "prev": "genesis",
+   "hash": "28a40f8802c6780512d67d8b6fc2069e2fdc6d69180710faa2452fe4f7aab0c8"
+  },
+  {
+   "type": "evidence",
+   "body": {
+    "agree": true,
+    "fields": {
+     "reader": "yes/adequate/no/no",
+     "regex": "yes/adequate/no/no"
+    },
+    "gemma": "closed/criteria_met",
+    "human_override": "",
+    "image_reader": {
+     "caecal_photo": "verified",
+     "hint": "",
+     "label_before_image": "adequate",
+     "landmark_p": 1,
+     "model": "hk-mnv3s-v1/cached",
+     "photo_shas": [
+      "1c5646f9eb7168535efdfd360ae6347ca7ffdc5064f6f0e665d65f0c1ff8c302",
+      "b2ece7be7e749ced64a3e25599844ca2c80b6560fde4c7da03689b75109f3888",
+      "d26795bb3fdf8c7233bb9885aaf4df2358ab371321d5c7d7f4310745be057a41"
+     ],
+     "photos": 3,
+     "prep": "adequate",
+     "prep_p": 0.9958,
+     "unavailable": 0
+    },
+    "label": "adequate",
+    "quote": "The instrument was advanced to the cecum",
+    "reader_model": "gemma-4-26b-a4b-it-self/cached",
+    "regex": "closed/criteria_met",
+    "report": "noor-endo/DiagnosticReport/NOO-dr-39",
+    "rule": "per_field_consensus"
+   },
+   "prev": "28a40f8802c6780512d67d8b6fc2069e2fdc6d69180710faa2452fe4f7aab0c8",
+   "hash": "811a7fcbc716252671a01b8ec7757cd17ea053303a0815442d44501a2741c3ad"
+  },
+  {
+   "type": "closure_decision",
+   "body": {
+    "closed_day": 43.1304,
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-100",
+    "policy": "p_cal\u003e=0.99|eid|human AND two-reader agreement|human",
+    "priority": "",
+    "programme": "crc",
+    "rule": "doh:crc",
+    "sla_days": 31,
+    "state": "closed",
+    "within_sla": true
+   },
+   "prev": "811a7fcbc716252671a01b8ec7757cd17ea053303a0815442d44501a2741c3ad",
+   "hash": "64918a438aeae59cce17ac506f18b82660b0786866bb2e8c6ab71f70e506f77b"
+  }
+ ],
+ "chain_length": 3,
+ "chain_verified": true,
+ "decision_signatures": [
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@ahs-mushrif/ServiceRequest/AHS-sr-100@1819",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "c420d5db0e16eef466656bb673e69766060052744dd715f80d67e952d35bf77e",
+   "sig": "c420d5db0e16eef466656bb673e69766060052744dd715f80d67e952d35bf77e"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@ahs-mushrif/ServiceRequest/AHS-sr-100@1821",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "074ea27452c30c8e72e4c5fa06b8eceaa62b8e974128923638defc9a475e36a8",
+   "sig": "074ea27452c30c8e72e4c5fa06b8eceaa62b8e974128923638defc9a475e36a8"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@ahs-mushrif/ServiceRequest/AHS-sr-100@1859",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "f947876c454e9b4372131cd8abf323b7cdac76bf39e6dce3b6dc444be4198cd4",
+   "sig": "f947876c454e9b4372131cd8abf323b7cdac76bf39e6dce3b6dc444be4198cd4"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@ahs-mushrif/ServiceRequest/AHS-sr-100@5526",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "2c293f1bb35000e56efbf30e1b829a14860b1a8666044685ae92b9b66ac8105b",
+   "sig": "2c293f1bb35000e56efbf30e1b829a14860b1a8666044685ae92b9b66ac8105b"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@ahs-mushrif/ServiceRequest/AHS-sr-100@5527",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "ed85de521f69ab94e58c3b584f89bc50bf10bfddab0839dc0efcd07883115923",
+   "sig": "ed85de521f69ab94e58c3b584f89bc50bf10bfddab0839dc0efcd07883115923"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@tick-d17-p2",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "93dc568c03f4ca08b57afbdedc558ed6c1672ac035b00424346a1d8714479ce9",
+   "sig": "93dc568c03f4ca08b57afbdedc558ed6c1672ac035b00424346a1d8714479ce9"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@tick-d18-p2",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "ce09a91275d3eaf85fab4d3c36f3994bb28d04df478e3eb970386cb89d3df0b2",
+   "sig": "ce09a91275d3eaf85fab4d3c36f3994bb28d04df478e3eb970386cb89d3df0b2"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-100@tick-d44-p2",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "dfcfaa844d219da24968299dae8d1e8f365ca42894e2d158314223bf81227b92",
+   "sig": "dfcfaa844d219da24968299dae8d1e8f365ca42894e2d158314223bf81227b92"
+  }
+ ],
+ "history": [],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-06T14:02:40Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "reader_model": "gemma-4-26b-a4b-it-self/cached",
+  "run": "main"
+ }
+}

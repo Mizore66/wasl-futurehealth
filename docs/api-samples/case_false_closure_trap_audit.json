@@ -1,163 +1,174 @@
 {
  "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
  "anchors": {
-  "fhir": "0523b3a0b843e51424b99b9642cd59bd19f28230b13a77d561b0afd88bb2bac6",
-  "out.p0": "e27f9114c0c15e9e3ffe21df4d3c4d885e44311b318127359b5a44c19b1643cd",
-  "out.p1": "5f16f9fe9ef6185eda7aabd05ff17a0904582ee5a2f6aa36a317af897b25798b",
-  "out.p2": "f09bb5428fa60f9961e95e496cc2f21decee1a920c9e0cc143a98daed41b620d",
-  "out.p3": "c4251944d2c6f213dd29e3c7ffe16bc53bb751422eeb7f122909fbac2e119750"
+  "fhir": "509861f5a554a0be3844a0015d97eb3ef5611ed6159c916b7ea1d14b38f3234f",
+  "out.p0": "e8426eb3eeaa0ffa75b36d986e2d47e9f150a3b3aa492abfcb7152022bee0bc9",
+  "out.p1": "418c1349eab0c7624e5c1964d67544dde0773292f78adfa0b7ead3af24abbd6f",
+  "out.p2": "49abc6d1bf925c8f8fcbfd46c5b847750679a4196ce11ed753061c7cd25d38ad",
+  "out.p3": "7f7ded427a4492341dd5ff0a7f2b1ba30eaa20b2e84c4cee497e82d66533a290"
  },
- "case": "ahs-mushrif/ServiceRequest/AHS-sr-1000",
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-1011",
  "chain": [
   {
    "type": "link_decision",
    "body": {
-    "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-231",
+    "downstream_event": "noor-endo/DiagnosticReport/NOO-dr-316",
     "hops": 1,
     "linker": "wasl-v3-retrained+iso+eid",
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1000",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1011",
     "near_miss": false,
     "path_p_cal": 1,
     "path_strength": 1,
-    "referral_patient": "ahs-mushrif|AHS-MRN000951",
+    "referral_patient": "ahs-mushrif|AHS-MRN000114",
     "tau": 0.99,
     "weakest_edge": {
-     "a": "ahs-mushrif|AHS-MRN000951",
-     "b": "skmc-endo|SKM-MRN000370",
+     "a": "ahs-mushrif|AHS-MRN000114",
+     "b": "noor-endo|NOO-MRN000476",
      "basis": "eid",
      "p": 1
     }
    },
    "prev": "genesis",
-   "hash": "5a9641cc99fe45494e164d4a2d2c4a7c14d820f3af06f71aa84d94449c1d7ce1"
+   "hash": "3b897e282e0abc7c700c3c75b2f480ea8534d2016c3b53dbd179f07088e427b2"
   },
   {
    "type": "evidence",
    "body": {
-    "agree": true,
+    "agree": false,
     "fields": {
-     "reader": "yes/inadequate/no/no",
-     "regex": "yes/inadequate/no/no"
+     "reader": "yes/not_stated/no/no",
+     "regex": "yes/not_stated/no/no"
     },
-    "gemma": "not_closed/inadequate_prep",
+    "gemma": "needs_human/missing_documentation",
     "human_override": "",
-    "label": "inadequate",
-    "quote": "The scope was then passed through the transverse colon and ascending colon to the cecum.",
+    "label": "disagree",
+    "quote": "until it reached the cecum",
     "reader_model": "gemma-4-26b-a4b-it-self/cached",
-    "regex": "not_closed/inadequate_prep",
-    "report": "skmc-endo/DiagnosticReport/SKM-dr-231",
-    "rule": "per_field_consensus"
+    "regex": "needs_human/missing_documentation",
+    "report": "noor-endo/DiagnosticReport/NOO-dr-316"
    },
-   "prev": "5a9641cc99fe45494e164d4a2d2c4a7c14d820f3af06f71aa84d94449c1d7ce1",
-   "hash": "42150c6501062e7ec369cd952710dd3f75918bff4d38897fdfd1b75a89fbbc08"
+   "prev": "3b897e282e0abc7c700c3c75b2f480ea8534d2016c3b53dbd179f07088e427b2",
+   "hash": "1f92d1d298b200c9646dac86cd50a11995496db8b2d6f92830a7b82f0dd16750"
   },
   {
    "type": "hold_decision",
    "body": {
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1000",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1011",
     "policy": "no closure without two-reader adequate evidence or authorised human decision",
     "programme": "crc",
-    "report": "skmc-endo/DiagnosticReport/SKM-dr-231",
+    "report": "noor-endo/DiagnosticReport/NOO-dr-316",
     "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
     "state": "inadequate_evidence"
    },
-   "prev": "42150c6501062e7ec369cd952710dd3f75918bff4d38897fdfd1b75a89fbbc08",
-   "hash": "3463e40b45b49c1eb5ff903232f375e6f112967be2771e74ec6a4545c043ff9d"
+   "prev": "1f92d1d298b200c9646dac86cd50a11995496db8b2d6f92830a7b82f0dd16750",
+   "hash": "50977bbe75972566766b70b50516719cffd8d15dc3cc9550176b9c0e0caadd06"
   }
  ],
  "chain_length": 3,
  "chain_verified": true,
  "decision_signatures": [
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@31273",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@14039",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "e96e9df98d622452c2a3d749a4f984769a151adad4b3bbeb6374e44a8000d911",
-   "sig": "e96e9df98d622452c2a3d749a4f984769a151adad4b3bbeb6374e44a8000d911"
+   "recomputed": "d597632288f39ac8d22e4637d4acaf2d1452cacc68f104064ed85f2d925cef2e",
+   "sig": "d597632288f39ac8d22e4637d4acaf2d1452cacc68f104064ed85f2d925cef2e"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@31282",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@14043",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "f77bb537b976e792471b00311da29aa52f677035bffb22b9a22b01a2fd7f3f2b",
-   "sig": "f77bb537b976e792471b00311da29aa52f677035bffb22b9a22b01a2fd7f3f2b"
+   "recomputed": "8623dfd40fcc242dd41112f931fcd0095cf776b7dba6855bf16162c0386da5ee",
+   "sig": "8623dfd40fcc242dd41112f931fcd0095cf776b7dba6855bf16162c0386da5ee"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@31391",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@14157",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "2a872bb847bbcccd43d050814994cf043b1b42dc74d77b524f3d5d1acddb48a2",
-   "sig": "2a872bb847bbcccd43d050814994cf043b1b42dc74d77b524f3d5d1acddb48a2"
+   "recomputed": "32ae1e0b2fa4f2928bafb37f4bc9c2d58e9f7907cb8f90e1375a7374033f7290",
+   "sig": "32ae1e0b2fa4f2928bafb37f4bc9c2d58e9f7907cb8f90e1375a7374033f7290"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@32693",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@17751",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "fbb9677b8f6383ef120fbed58b89b2fb4107030b0c8fb8d622acc81cfe7ed049",
-   "sig": "fbb9677b8f6383ef120fbed58b89b2fb4107030b0c8fb8d622acc81cfe7ed049"
+   "recomputed": "68af89d55e2e3e537a058fa08306cf0a25799f3c6af934c5f76c401d580d0313",
+   "sig": "68af89d55e2e3e537a058fa08306cf0a25799f3c6af934c5f76c401d580d0313"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@35218",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@19541",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "dcbb00fdd671dec79ee066b11035c6239b26223232fcc098a770e27c91ec4ec1",
-   "sig": "dcbb00fdd671dec79ee066b11035c6239b26223232fcc098a770e27c91ec4ec1"
+   "recomputed": "88bf7e97a1cd3cb1ce4f1f4b59fe16b7df1cb2d86296a7d1a4ee1eb1dccd561e",
+   "sig": "88bf7e97a1cd3cb1ce4f1f4b59fe16b7df1cb2d86296a7d1a4ee1eb1dccd561e"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@43938",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d33-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "65c96e787ae6843a836d4326bf82a89576dd6c12a8bb2284fc62d52b0eea94f1",
-   "sig": "65c96e787ae6843a836d4326bf82a89576dd6c12a8bb2284fc62d52b0eea94f1"
+   "recomputed": "af03c02e53cbd4d266a06bb7da74a04f6098da63ec85b72162bf05963c23bcf8",
+   "sig": "af03c02e53cbd4d266a06bb7da74a04f6098da63ec85b72162bf05963c23bcf8"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@43953",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d36-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "811a28070a015ff681f039c5b3fb8b74ccd13e426524c8d810681f1f8335d9a4",
-   "sig": "811a28070a015ff681f039c5b3fb8b74ccd13e426524c8d810681f1f8335d9a4"
+   "recomputed": "12d0453159f2fb78df011416e7c108158621439205e9aa4662c59e8cd6ff3497",
+   "sig": "12d0453159f2fb78df011416e7c108158621439205e9aa4662c59e8cd6ff3497"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@ahs-mushrif/ServiceRequest/AHS-sr-1000@45486",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d37-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "af9f660f4420e4dc514f6d8f357eedad079aad03da9925d017bdabaeb0cfe1e3",
-   "sig": "af9f660f4420e4dc514f6d8f357eedad079aad03da9925d017bdabaeb0cfe1e3"
+   "recomputed": "cf62d7682d7c31d2a8067bf133cfb7bad9b535ab55f5ba61c0e956b88f68b0ec",
+   "sig": "cf62d7682d7c31d2a8067bf133cfb7bad9b535ab55f5ba61c0e956b88f68b0ec"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d77-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d58-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "0937af31bbf209b1d3393720e5f7b3907fd82168f5869b5215b321c15d599646",
-   "sig": "0937af31bbf209b1d3393720e5f7b3907fd82168f5869b5215b321c15d599646"
+   "recomputed": "3d1ec4a57e806196a3de987b30a066a3112916997cb55e6e51425a719b30ff28",
+   "sig": "3d1ec4a57e806196a3de987b30a066a3112916997cb55e6e51425a719b30ff28"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d79-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@29088",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "c4d3a804d81581500c47470c23ae169026a81eb2776107e75ed36f530226c60a",
-   "sig": "c4d3a804d81581500c47470c23ae169026a81eb2776107e75ed36f530226c60a"
+   "recomputed": "b48f291af04213a1228848b62594e371d0155e6d4da46d66ccd4b6cb8285ffc0",
+   "sig": "b48f291af04213a1228848b62594e371d0155e6d4da46d66ccd4b6cb8285ffc0"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d102-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@29639",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "2e656e7a0f238048ae7f8e00f9dddd1623c11477fad018ae67e6566fe598aada",
-   "sig": "2e656e7a0f238048ae7f8e00f9dddd1623c11477fad018ae67e6566fe598aada"
+   "recomputed": "09110facf5f6c584977b577b68c8c9b1b00b83397d6db596850d660d02955e20",
+   "sig": "09110facf5f6c584977b577b68c8c9b1b00b83397d6db596850d660d02955e20"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d105-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d71-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "5990bf58fa640ecc7f33deb3fbe8f977da469c5dd7c9c82f61ae01cc9c08dcd1",
-   "sig": "5990bf58fa640ecc7f33deb3fbe8f977da469c5dd7c9c82f61ae01cc9c08dcd1"
+   "recomputed": "3083cbf10982bb7623c2ae4b1648a9ef4fca53dbafce14ef8f5c18f744cf02ce",
+   "sig": "3083cbf10982bb7623c2ae4b1648a9ef4fca53dbafce14ef8f5c18f744cf02ce"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d108-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d73-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "cd6e0e1c62b7703849faca6c5d2be5cd7f45350899af88be00503e6a6159a993",
-   "sig": "cd6e0e1c62b7703849faca6c5d2be5cd7f45350899af88be00503e6a6159a993"
+   "recomputed": "158112dc180c53596434c2c8a8e843c02acb63fb7fe7866e8ea657d5f8593c6b",
+   "sig": "158112dc180c53596434c2c8a8e843c02acb63fb7fe7866e8ea657d5f8593c6b"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1000@tick-d110-p2",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d80-p0",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "97430f7088f574af080ffd602e1a1975ec2281fdea026be88626221ba4e1b06c",
-   "sig": "97430f7088f574af080ffd602e1a1975ec2281fdea026be88626221ba4e1b06c"
+   "recomputed": "25ee7ebc5812e7116feb1e4c33dbae9d51db9a8ec84de206335da9c07921ee51",
+   "sig": "25ee7ebc5812e7116feb1e4c33dbae9d51db9a8ec84de206335da9c07921ee51"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@tick-d88-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "1ac90a8e49e5343c60e73b614c59057e228dd1da5621fe1b56ea9f8c9cd4edcc",
+   "sig": "1ac90a8e49e5343c60e73b614c59057e228dd1da5621fe1b56ea9f8c9cd4edcc"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1011@ahs-mushrif/ServiceRequest/AHS-sr-1011@43995",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "2c1ffeb43cfe0f364a2b3de4a1697bfb2c7d62b8ad25c419f62cbb813b388067",
+   "sig": "2c1ffeb43cfe0f364a2b3de4a1697bfb2c7d62b8ad25c419f62cbb813b388067"
   }
  ],
  "history": [],
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-11-02T04:59:26Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
