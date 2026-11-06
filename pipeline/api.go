@@ -62,6 +62,8 @@ type apiServer struct {
 	anchors   map[string]string
 	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
 	fixtures  map[string]string
+	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu        sync.Mutex
 	reviews   []map[string]interface{}
 }
@@ -151,6 +153,8 @@ func loadAPI(run, data string) *apiServer {
 	}
 	s.loadTimelines()
 	s.pickFixtures()
+	s.loadAgent()
+	s.pickAgentFixture()
 	s.loadReviews()
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
 		"policy": PolicyName, "reader_model": s.readerModel(), "loaded_at": time.Now().UTC().Format(time.RFC3339),
@@ -593,6 +597,7 @@ func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
 		"api_reviews": s.reviewsFor(c.ID), "current": c.last, "booking": s.bookingFor(c.ID),
+		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}))
 }
 
@@ -727,4 +732,187 @@ func (s *apiServer) bookingFor(id string) map[string]interface{} {
 		out["capacity_condition"], out["pooling_relevant"], out["pooling_note"] = cap["condition"], cap["pooling_relevant"], cap["pooling_note"]
 	}
 	return out
+}
+
+// agentInvestigation is one cached evidence-investigator recommendation that a human sign-off actually consumed
+// (agent-assisted double review). The agent never signs; the human context is the existing sign-off, unchanged.
+type agentInvestigation struct {
+	view   map[string]interface{}
+	label  string
+	nCites int
+	link   string
+	wrong  bool
+}
+
+// agentPaths: the served `main` run keeps the agent files one level up; any other run dir (focused tests) keeps them flat.
+// Both files must exist, otherwise the run is ordinary.
+func agentPaths(run string) (recs, replay string) {
+	d := run
+	if filepath.Base(filepath.Clean(run)) == "main" {
+		d = filepath.Dir(filepath.Clean(run))
+	}
+	r, p := filepath.Join(d, "agent_recs.ndjson"), filepath.Join(d, "agent_replay.json")
+	if _, e1 := os.Stat(r); e1 == nil {
+		if _, e2 := os.Stat(p); e2 == nil {
+			return r, p
+		}
+	}
+	return "", ""
+}
+
+// readAgentProvenance accepts only the nested replay provenance (model, prompt_ver, schema_ver), all non-empty strings.
+func readAgentProvenance(path string) (map[string]interface{}, bool) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false
+	}
+	var raw struct {
+		Provenance map[string]interface{} `json:"provenance"`
+	}
+	if json.Unmarshal(b, &raw) != nil {
+		return nil, false
+	}
+	out := map[string]interface{}{"cached": true, "experimental": true}
+	for _, k := range []string{"model", "prompt_ver", "schema_ver"} {
+		v, ok := raw.Provenance[k].(string)
+		if !ok || v == "" {
+			return nil, false
+		}
+		out[k] = v
+	}
+	return out, true
+}
+
+// cleanCitations keeps only tool/arg/field/value of each citation; anything malformed rejects the record.
+func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
+	out := []map[string]interface{}{}
+	if len(raw) == 0 || string(raw) == "null" {
+		return out, true
+	}
+	var in []map[string]interface{}
+	if json.Unmarshal(raw, &in) != nil {
+		return nil, false
+	}
+	for _, c := range in {
+		m := map[string]interface{}{}
+		for _, k := range []string{"tool", "arg", "field", "value"} {
+			if v, ok := c[k]; ok {
+				switch v.(type) {
+				case string, float64, bool:
+					m[k] = v
+				default:
+					return nil, false
+				}
+			}
+		}
+		out = append(out, m)
+	}
+	return out, true
+}
+
+// loadAgent projects cached agent recommendations onto the loops whose sign-off consumed them. Any malformed or
+// mismatched input yields no projection at all (ordinary run).
+func (s *apiServer) loadAgent() {
+	s.agentInv = map[string][]agentInvestigation{}
+	s.agentProv = map[string]interface{}{"cached": false, "experimental": false}
+	recsPath, replayPath := agentPaths(s.run)
+	if recsPath == "" {
+		return
+	}
+	prov, ok := readAgentProvenance(replayPath)
+	if !ok {
+		return
+	}
+	ar, err := LoadAgentRecs(recsPath)
+	if err != nil || ar == nil {
+		return
+	}
+	byItem := map[string]*AgentRec{}
+	cites := map[string][]map[string]interface{}{}
+	for _, r := range ar.recs {
+		cs, ok := cleanCitations(r.Citations)
+		if !ok || r.Item == "" || byItem[r.Item] != nil {
+			return
+		}
+		byItem[r.Item], cites[r.Item] = r, cs
+	}
+	raised := map[string]*ReviewItem{}
+	for _, items := range s.queue {
+		for _, it := range items {
+			raised[it.ItemID] = it
+		}
+	}
+	got := map[string][]agentInvestigation{}
+	for loop, sos := range s.signoffs {
+		for _, so := range sos {
+			label := fmt.Sprint(so["agent_read"])
+			reads, _ := so["reads"].([]interface{})
+			consumed := false
+			for _, r := range reads {
+				consumed = consumed || r == "agent"
+			}
+			if label == "" || label == "<nil>" || !consumed {
+				continue
+			}
+			item := fmt.Sprint(so["item"])
+			rec, it := byItem[item], raised[item]
+			if rec == nil || it == nil || it.LoopID != loop || fmt.Sprint(so["loop"]) != loop || !isLinkQuestion(it) ||
+				pairKey(rec.Pair[0], rec.Pair[1]) != pairKey(it.Pair[0], it.Pair[1]) || rec.Label != label {
+				return
+			}
+			link := fmt.Sprint(so["link"])
+			human := map[string]interface{}{"link": link, "reads": reads, "role": so["role"]}
+			wrong, _ := so["wrong"].(bool)
+			got[loop] = append(got[loop], agentInvestigation{label: label, nCites: len(cites[item]), link: link, wrong: wrong,
+				view: map[string]interface{}{"item": item, "pair": []string{rec.Pair[0], rec.Pair[1]}, "label": rec.Label,
+					"citations": cites[item], "human": human}})
+		}
+	}
+	for loop := range got {
+		l := got[loop]
+		sort.Slice(l, func(i, j int) bool { return fmt.Sprint(l[i].view["item"]) < fmt.Sprint(l[j].view["item"]) })
+	}
+	s.agentInv, s.agentProv = got, prov
+}
+
+func (s *apiServer) agentFor(loop string) []map[string]interface{} {
+	out := []map[string]interface{}{}
+	for _, x := range s.agentInv[loop] {
+		out = append(out, x.view)
+	}
+	return out
+}
+
+func (s *apiServer) agentProvenance() map[string]interface{} {
+	if s.agentProv == nil {
+		return map[string]interface{}{"cached": false, "experimental": false}
+	}
+	return s.agentProv
+}
+
+// pickAgentFixture adds `agent_review`: the first CRC loop by id that is closed with consent granted and whose agent
+// `same` recommendation (with citations) was consumed by a human sign-off that finally said `same`, not wrong. It never
+// takes a case that already carries another fixture tag, so existing fixture ids and single tags stay stable.
+func (s *apiServer) pickAgentFixture() {
+	if s.fixtures == nil {
+		s.fixtures = map[string]string{}
+	}
+	delete(s.fixtures, "agent_review")
+	ids := []string{}
+	for id := range s.agentInv {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		c := s.cases[id]
+		if c == nil || (c.Fixture != "" && c.Fixture != "agent_review") || c.Programme != "crc" || !c.Closed || c.Consent != "granted" {
+			continue
+		}
+		for _, x := range s.agentInv[id] {
+			if x.label == "same" && x.nCites > 0 && x.link == "same" && !x.wrong {
+				s.fixtures["agent_review"], c.Fixture = id, "agent_review"
+				return
+			}
+		}
+	}
 }
