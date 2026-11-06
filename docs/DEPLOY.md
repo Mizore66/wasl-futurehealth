@@ -95,7 +95,13 @@ non-default loopback port:
   `data_mode: simulated`. The API was the only published port, bound to `127.0.0.1`.
 - The pipeline log showed the audit, tamper/forgery checks (forged events with effect 0/18), simulated booking and the
   summary (CRC with review P 1.000, R 0.837, 0/474 false closures; one seeded run, simulated, not a new headline).
-- The shared API smoke (`scripts/api_smoke.py`) was not run here; it depends on the separate API work.
+- Final run on the combined source (API, smoke and deployment work merged), fresh project, port 18817: both images built, the
+  three `nats` services healthy, `pipeline` exit 0, `api` healthy as UID 10001, `/healthz` with `dependencies.nats: up`,
+  and `python3 scripts/api_smoke.py --base-url http://127.0.0.1:18817` passed against the container over real HTTP
+  (2100 cases, 3 fixtures). The pipeline log again showed audit, FHIR tamper lines (forged events with effect 0/18,
+  provenance 912/912), simulated booking, and summary (CRC with review R 0.837, 0/474 false closures; exactly-once
+  duplicates 0 / 25188). The isolated project was removed with `down -v`; only that project was touched.
+- `scripts/check_deploy.py` now also rejects long-syntax (`type: bind`) host mounts, covered by `scripts/test_deploy.py`.
 - Podman retains container environment configuration on the VM host, so the JetStream key is not kept out of the host.
 
 Direct Podman path: `podman compose --env-file <file with WASL_JS_KEY=k<64 hex>> -p <project> up -d --build`.
