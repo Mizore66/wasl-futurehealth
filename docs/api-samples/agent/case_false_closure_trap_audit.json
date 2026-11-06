@@ -1,0 +1,163 @@
+{
+ "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+ "anchors": null,
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+ "chain": [
+  {
+   "type": "link_decision",
+   "body": {
+    "downstream_event": "noor-endo/DiagnosticReport/NOO-dr-41",
+    "hops": 1,
+    "linker": "wasl-v3-retrained+iso+eid",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+    "near_miss": false,
+    "path_p_cal": 1,
+    "path_strength": 1,
+    "referral_patient": "ahs-mushrif|AHS-MRN000111",
+    "tau": 0.99,
+    "weakest_edge": {
+     "a": "ahs-mushrif|AHS-MRN000111",
+     "b": "noor-endo|NOO-MRN000064",
+     "basis": "eid",
+     "p": 1
+    }
+   },
+   "prev": "genesis",
+   "hash": "d06d33a8e68cc05e86b67e183ed00d3ae061948dd08bfeba829324ef31492db7"
+  },
+  {
+   "type": "evidence",
+   "body": {
+    "agree": true,
+    "fields": {
+     "reader": "not_stated/not_stated/no/no",
+     "regex": "not_stated/not_stated/no/no"
+    },
+    "gemma": "needs_human/missing_documentation",
+    "human_override": "",
+    "image_reader": {
+     "caecal_photo": "missing",
+     "hint": "",
+     "label_before_image": "inadequate",
+     "landmark_p": 0,
+     "model": "hk-mnv3s-v1/cached",
+     "photo_shas": [
+      "1751f5b594a56af11f10fc724a26456c10adb3a5495571f2b5e03dad9680da8c",
+      "c9095edbbda0b074936dc0bdf5c0dde0fefaff44faa5f205529be2f02818d745"
+     ],
+     "photos": 2,
+     "prep": "adequate",
+     "prep_p": 0.9992,
+     "unavailable": 0
+    },
+    "label": "inadequate",
+    "quote": "",
+    "reader_model": "gemma-4-26b-a4b-it-self/cached",
+    "regex": "needs_human/missing_documentation",
+    "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+    "rule": "R1_completion_not_documented"
+   },
+   "prev": "d06d33a8e68cc05e86b67e183ed00d3ae061948dd08bfeba829324ef31492db7",
+   "hash": "d331f2aedb705369375b361f6c8d629434208fbe7c65826eeebb2f6d0fef60d3"
+  },
+  {
+   "type": "hold_decision",
+   "body": {
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+    "policy": "no closure without two-reader adequate evidence or authorised human decision",
+    "programme": "crc",
+    "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+    "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
+    "state": "inadequate_evidence"
+   },
+   "prev": "d331f2aedb705369375b361f6c8d629434208fbe7c65826eeebb2f6d0fef60d3",
+   "hash": "d69e36af5afe371448f62f0c957ee3d2af4c7a678c087dc94e343a51c7009f44"
+  }
+ ],
+ "chain_length": 3,
+ "chain_verified": true,
+ "decision_signatures": [
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12234",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "65b69976fca1288adb9e0d916e1b99f2f40358c7c45ea2a8f0abe167f3f11be7",
+   "sig": "65b69976fca1288adb9e0d916e1b99f2f40358c7c45ea2a8f0abe167f3f11be7"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12236",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "c453a92094d6918716dd61900d8ce6503702140999f98bc4117b8b0bc9ee0b4c",
+   "sig": "c453a92094d6918716dd61900d8ce6503702140999f98bc4117b8b0bc9ee0b4c"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12239",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "55feb963dc5199af50f267aca39e1154269a7b06406f72cf9eebf0e0294a4178",
+   "sig": "55feb963dc5199af50f267aca39e1154269a7b06406f72cf9eebf0e0294a4178"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12709",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "14d642008ff563520e7f02f84eaa70a1f933a1f9a5734529e8899913716bee29",
+   "sig": "14d642008ff563520e7f02f84eaa70a1f933a1f9a5734529e8899913716bee29"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@13048",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "c6793fc2b2cc0bbee63335f19bfdc201b09e8a19a40eadb18baa883c40c69f41",
+   "sig": "c6793fc2b2cc0bbee63335f19bfdc201b09e8a19a40eadb18baa883c40c69f41"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@14460",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "3f9baff6bef2eedf168af7bf4328220eacaf0578e020cfadb4eaed268f141185",
+   "sig": "3f9baff6bef2eedf168af7bf4328220eacaf0578e020cfadb4eaed268f141185"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@14580",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "c0fd2e7f55ec02ca775cae1910f8ee3a8967a7c564bb67e374062ebfe8251291",
+   "sig": "c0fd2e7f55ec02ca775cae1910f8ee3a8967a7c564bb67e374062ebfe8251291"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d99-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "3e1e431ee01752c04ec0b860eb117609b4b8c1df24ff4755d59e39474b40fb9c",
+   "sig": "3e1e431ee01752c04ec0b860eb117609b4b8c1df24ff4755d59e39474b40fb9c"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d100-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "6e1524013b6a5012e5d65cb47cc905d12d06c455b03c9035b28cdbc8b4531b29",
+   "sig": "6e1524013b6a5012e5d65cb47cc905d12d06c455b03c9035b28cdbc8b4531b29"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d117-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "b3ed7a07bc5a2571aa8c337895e5cd457b4f7941881b14a1f7b36bca0f9981eb",
+   "sig": "b3ed7a07bc5a2571aa8c337895e5cd457b4f7941881b14a1f7b36bca0f9981eb"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d119-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "5c98491716555cc6489ebb734340810f2ce704a635141aeefee7112b2608cc49",
+   "sig": "5c98491716555cc6489ebb734340810f2ce704a635141aeefee7112b2608cc49"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d120-p0",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "recomputed": "022a344360f4ba13ea5169fc61cf8a44fdcbb4ab725c187cfc7581e396af05ee",
+   "sig": "022a344360f4ba13ea5169fc61cf8a44fdcbb4ab725c187cfc7581e396af05ee"
+  }
+ ],
+ "history": [],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-06T14:02:40Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "reader_model": "gemma-4-26b-a4b-it-self/cached",
+  "run": "main"
+ }
+}
