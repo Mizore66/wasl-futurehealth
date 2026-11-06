@@ -1,6 +1,6 @@
 # Fresh LDCT / IFHAS evaluation and annotation harness
 
-Standard-library Python plus one read-only Go test adapter. **Built** (harness only). No corpus, labels or scores exist yet; no model is called by this code.
+Standard-library Python plus one read-only Go test adapter. **Complete for two rounds.** fresh2 (60 items per programme) and fresh3 (50 per programme) have each been frozen, labelled blind and scored once; their corpora, labels, keys, reader caches and results are committed under `data/fresh2/` and `data/fresh3/`. No model is called by this code.
 
 Design: a text-only corpus (60 LDCT + 60 IFHAS items) is frozen first; two independent labellers then label it blind from `LABELLING-GUIDE.md`; items they agree on get a key and every disagreement stays `unadjudicated` (never guessed); the reader caches for the fresh texts are built; then the existing, unmodified readers are scored once, with agreed and disputed items reported separately.
 
@@ -11,9 +11,9 @@ Design: a text-only corpus (60 LDCT + 60 IFHAS items) is frozen first; two indep
 - `test_fresh2.py`: 71 tests (plus `test_fresh3_config.py`, `test_analyze_fresh2.py`), fixture texts only (`python3 -m unittest discover -s scripts/fresh2_eval -p 'test_*.py'`).
 - `../../pipeline/fresh2_reader_test.go`: `TestFresh2Reader`, skipped unless `FRESH2_CORPUS` is set. Calls the existing `LDCTJudge`, `IfhasNoteJudge` and `IfhasScreenJudge` unchanged; reads no key; replays reader-B caches only (no model call).
 
-## Data layout (created in later phases, all under `data/fresh2/`)
+## Data layout (under `data/fresh2/`; `data/fresh3/` has the same layout)
 
-`corpus.json`, `labels/labeller_a.json`, `labels/labeller_b.json`, `key.json`, `agreement.json`, `reader-cache/ldct_gemma_cache.json`, `reader-cache/ifhas_gemma_cache.json`, `FREEZE.json`, `results/` (created exactly once by `score`).
+`corpus.json`, `labels/labeller_a.json`, `labels/labeller_b.json`, `key.json`, `agreement.json`, `reader-cache/ldct_gemma_cache.json`, `reader-cache/ifhas_gemma_cache.json`, `FREEZE.json`, `results/` (created exactly once by `score`). Both rounds also keep `labeller-input.json`, `LABELLER-INPUT-MANIFEST.json` and `author/`; fresh2 `results/` additionally holds `analysis.json` and `ANALYSIS.md` from `analyze_fresh2.py`.
 
 Corpus items: `{id, programme, kind, text}` plus `coded` for `ifhas-screen`. Kinds: `ldct-screen`, `ldct-workup`, `ifhas-followup`, `ifhas-screen`; 60 items per programme, at least 10 per kind. Any `key`, `label`, `tags` or other extra field is rejected, so the corpus cannot leak answers. Items whose normalised text already appears in `data/ldct/**` or `data/ifhas/**` are rejected. The corpus must be saved in canonical form (`fresh2.dumps`): label files bind to its sha256.
 
@@ -39,4 +39,8 @@ The evaluation root and item count are read from the environment; the defaults r
 - `FRESH_EVAL_PER_PROGRAMME` (default `60`; fresh3 uses `50`; minimum 20): exact items per programme in `validate-corpus` and `ingest`.
 - Items whose text already appears in any other `data/fresh*/corpus.json` (for example fresh2 when building fresh3) are rejected as reuse.
 
-Not yet generalised: the Go adapter `pipeline/fresh2_reader_test.go` (it takes the corpus and cache directory from the environment, which `score` passes from the configured root, but it is protected reader code and was not touched), `analyze_fresh2.py` (fresh2-only, pinned to fresh2 paths and score commit 8a883fc) and `LABELLING-GUIDE.md`.
+Running fresh3: `FRESH_EVAL_DIR=data/fresh3 FRESH_EVAL_PER_PROGRAMME=50 python3 scripts/fresh2_eval/fresh2.py check-freeze --after-score`. Its `reader_code_commit` is `8c675c1`, the commit after LDCT/IFHAS reader hardening, so the hardened readers are the protected code for fresh3.
+
+Expected fresh2 behaviour after hardening: `check-freeze --after-score` with the default root (fresh2) now fails with `pipeline/ldctread.go changed since reader_code_commit` and `pipeline/ifhasread.go changed since reader_code_commit`, because it compares protected files to HEAD and the readers were deliberately hardened after fresh2 was scored. This is expected and is not a fresh2 freeze breach. fresh2's protocol is that protected reader files and production caches are unchanged from its `reader_code_commit` to its scoring commit `8a883fc`; `test_analyze_fresh2.py` checks exactly that (an empty `git diff` over the protected list between those two commits) and tolerates only the known post-scoring edits to those two readers and to `fresh2.py`.
+
+Not generalised: the Go adapter `pipeline/fresh2_reader_test.go` (it takes the corpus and cache directory from the environment, which `score` passes from the configured root, but it is protected reader code and was not touched), `analyze_fresh2.py` (fresh2-only, pinned to fresh2 paths and score commit 8a883fc) and `LABELLING-GUIDE.md`.
