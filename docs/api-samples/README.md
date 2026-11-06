@@ -36,7 +36,7 @@ WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh snapshot  # writes docs/api-
 
 Note: with `WASL_IFHAS=800` the generator panics after the other six programmes (background pool exhausted, 882 adults for 800 loops plus 100 distractors); the recipe above therefore uses `WASL_IFHAS=700`, as in `pipeline/RESULTS.md`.
 
-A clean-clone regeneration is not byte-identical to the committed files. Case, programme, fixture ids and fixture tags match, and every safety counter is the same, but run-dependent fields differ: `loaded_at`, event sequence numbers (`in_seq` and the ids built from them), `throughput_ev_s` and some NATS-timing-dependent counters (`released_total`, `intents_ever_held_for_consent`). Compare structure and safety counters, not bytes.
+A clean-clone regeneration is not byte-identical to the committed files. Case, programme, fixture ids and fixture tags match, and the safety invariants checked by the smoke test hold. Run-dependent fields differ: `loaded_at`, event sequence numbers (`in_seq` and the ids built from them), `throughput_ev_s`, and two consent counters (`released_total`, `intents_ever_held_for_consent`). Their differences are likely timing-dependent; this is not proven to be caused by NATS timing. Compare structure and safety invariants, not bytes.
 
 ## Agent samples (separate lane)
 
