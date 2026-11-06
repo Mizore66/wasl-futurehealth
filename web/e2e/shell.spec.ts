@@ -1,0 +1,195 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import AxeBuilder from "@axe-core/playwright";
+import { expect, test, type Page } from "@playwright/test";
+
+const meta = JSON.parse(
+  readFileSync(path.join(process.cwd(), "data/api/dashboard.json"), "utf8"),
+).meta as { run: string };
+
+const sidebar = (page: Page) => page.locator("aside#app-sidebar");
+const toggle = (page: Page) =>
+  page
+    .locator("aside#app-sidebar")
+    .getByRole("button", { name: /(Collapse|Expand) sidebar/ });
+
+test.describe("sidebar (desktop)", () => {
+  test.beforeEach(async ({ context }) => {
+    await context.clearCookies();
+  });
+
+  test("collapses and expands by mouse and keyboard, and persists across reload", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/app");
+    const aside = sidebar(page);
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
+    await expect(toggle(page)).toHaveAttribute("aria-controls", "app-sidebar");
+    expect((await aside.boundingBox())?.width).toBe(240);
+
+    await toggle(page).click();
+    await expect(toggle(page)).toHaveAccessibleName("Expand sidebar");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
+    await expect.poll(async () => (await aside.boundingBox())?.width).toBe(64);
+
+    // Keyboard: focus the button, press Enter, then Space.
+    await toggle(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("Space");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
+
+    await page.reload();
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
+    expect((await aside.boundingBox())?.width).toBe(64);
+
+    await toggle(page).click();
+    await page.reload();
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("the [ shortcut toggles, except while typing", async ({ page }) => {
+    await page.goto("/app/patients");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "true");
+    await page.keyboard.press("[");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
+    await page.evaluate(() => {
+      const input = document.createElement("input");
+      input.id = "probe";
+      document.body.append(input);
+      input.focus();
+    });
+    await page.keyboard.press("[");
+    await expect(toggle(page)).toHaveAttribute("aria-expanded", "false");
+  });
+
+  test("collapsed links keep their names, show a tooltip on focus, and pass axe", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/app");
+    await toggle(page).click();
+    const nav = sidebar(page).getByRole("navigation", { name: "Main" });
+    for (const name of [
+      "Programme",
+      "Today",
+      "Review",
+      "Patients",
+      "Referrals",
+      "Pipeline",
+      "Results",
+    ]) {
+      await expect(nav.getByRole("link", { name })).toBeVisible();
+    }
+
+    await nav.getByRole("link", { name: "Review" }).focus();
+    await page.keyboard.press("Tab");
+    await expect(nav.getByRole("link", { name: "Patients" })).toBeFocused();
+    await expect(
+      page
+        .locator('[data-slot="tooltip-content"]:not([data-state="closed"])')
+        .first(),
+    ).toContainText("Patients");
+
+    const axe = await new AxeBuilder({ page }).analyze();
+    const serious = axe.violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+    expect(
+      serious.map(
+        (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`,
+      ),
+    ).toEqual([]);
+  });
+
+  test("the skip link is the first tab stop and focuses main", async ({
+    page,
+  }) => {
+    await page.goto("/app");
+    await page.keyboard.press("Tab");
+    const skip = page.getByRole("link", { name: "Skip to content" });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("main#main")).toBeFocused();
+  });
+
+  test("the metadata strip shows the run, data mode and source, and adds no h1", async ({
+    page,
+  }) => {
+    await page.goto("/app/pipeline");
+    const strip = page.getByRole("region", { name: "Run metadata" });
+    await expect(strip).toContainText(meta.run);
+    await expect(strip).toContainText("data_mode: simulated");
+    await strip.getByText("Details").click();
+    await expect(strip).toContainText("Published snapshot of the API");
+    await expect(strip).toContainText("Reader model");
+    await expect(page.locator("h1")).toHaveCount(1);
+  });
+});
+
+test.describe("mobile (390px)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+  test("the menu opens, Escape closes it and returns focus, targets are 44px", async ({
+    page,
+  }) => {
+    await page.goto("/app");
+    const trigger = page.getByRole("button", { name: /Menu/ });
+    await expect(trigger).toHaveAttribute("aria-expanded", "false");
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("button", { name: /Close/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await expect(nav).toBeVisible();
+    await expect(nav.getByRole("link").first()).toBeFocused();
+    await expect(
+      page.locator("#mobile-menu").getByText("Synthetic data · demo"),
+    ).toBeVisible();
+    await expect(
+      page.locator("#mobile-menu").getByText("Dr Salama Al Tamimi"),
+    ).toBeVisible();
+
+    for (const l of await nav.getByRole("link").all()) {
+      expect((await l.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(
+      (await page.getByRole("button", { name: /Close/ }).boundingBox())!.height,
+    ).toBeGreaterThanOrEqual(44);
+
+    await page.keyboard.press("Escape");
+    await expect(nav).toBeHidden();
+    await expect(page.getByRole("button", { name: /Menu/ })).toBeFocused();
+    await expect(page.getByRole("button", { name: /Menu/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+  });
+
+  test("tapping outside closes it, and navigating closes it", async ({
+    page,
+  }) => {
+    await page.goto("/app");
+    const nav = page.getByRole("navigation", { name: "Main" });
+    await page.getByRole("button", { name: /Menu/ }).click();
+    await expect(nav).toBeVisible();
+    await page.mouse.click(200, 800);
+    await expect(nav).toBeHidden();
+
+    await page.getByRole("button", { name: /Menu/ }).click();
+    await nav.getByRole("link", { name: "Pipeline" }).click();
+    await expect(page).toHaveURL(/\/app\/pipeline$/);
+    await expect(nav).toBeHidden();
+  });
+
+  test("/app has no horizontal overflow", async ({ page }) => {
+    await page.goto("/app");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(390);
+  });
+});

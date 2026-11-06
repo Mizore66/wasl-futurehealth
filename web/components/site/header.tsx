@@ -29,7 +29,7 @@ export function SiteHeader() {
       aria-label="Primary"
       className={cn(expert ? wrapExpert : wrap, "flex flex-wrap items-center justify-between gap-x-4 gap-y-4 py-5 md:gap-x-8 md:py-7")}
     >
-      <Wordmark />
+      <Wordmark className="min-h-11" />
       <div className="flex items-center gap-8 max-md:contents">
       <div className={cn("flex items-center gap-8", expert ? "text-[16px]" : "text-[18px]", "max-md:order-last max-md:w-full max-md:gap-6", expert && "max-lg:hidden")}>
         {links.map((l) => {
@@ -40,7 +40,7 @@ export function SiteHeader() {
               href={l.href}
               aria-current={current ? "page" : undefined}
               className={cn(
-                "hover:text-(--teal)",
+                "inline-flex min-h-11 items-center hover:text-(--teal)",
                 current ? "font-bold text-(--teal) underline underline-offset-[0.18em]" : "text-(--ink) no-underline",
               )}
             >
@@ -52,7 +52,7 @@ export function SiteHeader() {
       <Link
         href="/app"
         className={cn(
-          "bg-(--ink) font-semibold text-(--paper) no-underline hover:bg-(--teal) hover:text-(--paper)",
+          "inline-flex min-h-11 items-center bg-(--ink) font-semibold text-(--paper) no-underline hover:bg-(--teal) hover:text-(--paper)",
           expert ? "rounded px-[18px] py-[11px] text-[16px]" : "px-[22px] py-[13px] text-[18px]",
           "max-md:px-4 max-md:py-2.5 max-md:text-[16px]",
         )}
