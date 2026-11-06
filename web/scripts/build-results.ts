@@ -16,6 +16,7 @@ const BRIEF = "docs/BRIEF.md";
 const PITCH = "docs/PITCH.md";
 const DASHBOARD = "docs/api-samples/dashboard.json";
 const SHOWCASE = "pipeline/results/showcase/summary.txt";
+const POOL = "booking/sim/pool_test.json";
 
 const entries: Record<string, Entry> = {};
 function put(id: string, e: Omit<Entry, "id">) {
@@ -116,6 +117,30 @@ for (const [arm, key] of [["eid_only", "kpi_eid_only"], ["wasl", "kpi_wasl"], ["
   put(`kpi31.heldout.${arm}`, { value: e.value, ci95: e.ci95, display: `${(e.value * 100).toFixed(1)}%`, label: e.label, source: e.source, context: `CRC 31-day completion, ${e.context}` });
 }
 
+// Network pooling test (booking/sim/pool_test.py, 30 draws, median): share of all FIT+ referred patients with a colonoscopy within
+// 31 days, with capacity skewed to 40/50/10 by region while patients stay 55/35/10. The first number of each pair is that share
+// for all FIT+ (docs/WRITEUP.md, "Network pooling"); the second is a different measure and is not used.
+const pool = JSON.parse(read(POOL)) as Record<string, [number, number]>;
+const POOL_SCENARIOS = [
+  ["balanced_30", "balanced network, 30% willing to travel"],
+  ["skewed_no_travel", "capacity in the wrong regions, no cross-site booking"],
+  ["skewed_30", "capacity in the wrong regions, 30% willing to travel"],
+  ["skewed_pool_60", "capacity in the wrong regions, network pooling, 60% willing to travel"],
+] as const;
+for (const slots of ["1.0", "1.2"]) {
+  for (const [key, what] of POOL_SCENARIOS) {
+    const pair = pool[`${key}@${slots}`];
+    if (!pair) throw new Error(`${POOL}: no ${key}@${slots}`);
+    put(`pool.${slots.replace(".", "_")}.${key}`, {
+      value: pair[0] / 100,
+      display: `${pair[0].toFixed(1)}%`,
+      label: "simulated",
+      source: POOL,
+      context: `within 31 days of referral, all FIT+, ${slots} slots per FIT+, ${what}; booking simulation, 30 draws, median`,
+    });
+  }
+}
+
 // Showcase (integrated) run totals that the pipeline replay ticks toward.
 const showcase = read(SHOWCASE);
 const decisions = showcase.match(/duplicates (\d+) \/ (\d+) outputs/);
@@ -147,7 +172,7 @@ const conflicts = [
 
 const results: Omit<Results, "entries"> & { entries: Record<string, Entry> } = {
   frozen_revision: revision,
-  sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE],
+  sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE, POOL],
   entries,
   evidence,
   conflicts,
