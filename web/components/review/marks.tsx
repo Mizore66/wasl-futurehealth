@@ -16,7 +16,18 @@ const TONE: Record<Tone, string> = {
 export function Mark({ shape, tone, children, className }: { shape: Shape; tone: Tone; children: React.ReactNode; className?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", className)}>
-      <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("flex-none", TONE[tone])}>
+      <svg
+        aria-hidden
+        width="14"
+        height="14"
+        viewBox="0 0 16 16"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={cn("flex-none", TONE[tone])}
+      >
         <path d={PATH[shape]} />
       </svg>
       <span>{children}</span>
@@ -35,7 +46,18 @@ export function Pill({ tone, shape, children }: { tone: Tone; shape?: Shape; chi
   return (
     <span className={cn("inline-flex h-[22px] items-center gap-1.5 whitespace-nowrap rounded-chip px-2 text-small font-medium", PILL[tone])}>
       {shape && (
-        <svg aria-hidden width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
+        <svg
+          aria-hidden
+          width="12"
+          height="12"
+          viewBox="0 0 16 16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="flex-none"
+        >
           <path d={PATH[shape]} />
         </svg>
       )}

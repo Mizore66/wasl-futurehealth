@@ -5,6 +5,6 @@ export function QueueLabel({ source }: { source: ReviewQueue["source"] }) {
   return source === "open" ? (
     <HonestyLabel kind="built">Open review items from the API</HonestyLabel>
   ) : (
-    <HonestyLabel kind="simulated">Simulated queue: rebuilt from the review_hold case</HonestyLabel>
+    <HonestyLabel kind="simulated">Simulated queue: rebuilt from a held demo case</HonestyLabel>
   );
 }
