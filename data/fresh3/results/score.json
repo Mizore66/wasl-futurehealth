@@ -1,0 +1,133 @@
+{
+ "agreed": {
+  "by_kind": {
+   "ifhas-followup": {
+    "agree": 4,
+    "agreed_and_right": 4,
+    "agreed_but_wrong": 0,
+    "agreed_but_wrong_ids": [],
+    "n": 23,
+    "reader_a_correct": 12,
+    "reader_b_correct": 12,
+    "reader_b_unavailable": 1,
+    "routed_to_review_key_decisive": 16,
+    "routed_to_review_key_expects_review": 3
+   },
+   "ifhas-screen": {
+    "agree": 1,
+    "agreed_and_right": 1,
+    "agreed_but_wrong": 0,
+    "agreed_but_wrong_ids": [],
+    "n": 24,
+    "reader_a_correct": 3,
+    "reader_b_correct": 22,
+    "reader_b_unavailable": 1,
+    "routed_to_review_key_decisive": 16,
+    "routed_to_review_key_expects_review": 7
+   },
+   "ldct-screen": {
+    "agree": 17,
+    "agreed_and_right": 17,
+    "agreed_but_wrong": 0,
+    "agreed_but_wrong_ids": [],
+    "n": 24,
+    "reader_a_correct": 20,
+    "reader_b_correct": 20,
+    "reader_b_unavailable": 0,
+    "routed_to_review_key_decisive": 4,
+    "routed_to_review_key_expects_review": 3
+   },
+   "ldct-workup": {
+    "agree": 13,
+    "agreed_and_right": 10,
+    "agreed_but_wrong": 3,
+    "agreed_but_wrong_ids": [
+     "f3l-008",
+     "f3l-019",
+     "f3l-048"
+    ],
+    "n": 22,
+    "reader_a_correct": 12,
+    "reader_b_correct": 16,
+    "reader_b_unavailable": 0,
+    "routed_to_review_key_decisive": 6,
+    "routed_to_review_key_expects_review": 3
+   }
+  },
+  "note": "Scored against the agreed key. An agreed reader answer is wrong if it differs from the key or if the key expects review (indeterminate, a missing screening domain, or a coded/panel mismatch).",
+  "totals": {
+   "agree": 35,
+   "agreed_and_right": 32,
+   "agreed_but_wrong": 3,
+   "n": 93,
+   "reader_a_correct": 47,
+   "reader_b_correct": 70,
+   "reader_b_unavailable": 2,
+   "routed_to_review_key_decisive": 42,
+   "routed_to_review_key_expects_review": 16
+  }
+ },
+ "disputed": {
+  "by_kind": {
+   "ifhas-followup": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 2,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 2
+   },
+   "ifhas-screen": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 1,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 1
+   },
+   "ldct-screen": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 1,
+    "ids_reader_agreed": [
+     "f3l-050"
+    ],
+    "n": 1,
+    "reader_agreed": 1,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 0
+   },
+   "ldct-workup": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 3,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 3
+   }
+  },
+  "note": "Items the two labellers disagreed on have no key and are unscored for accuracy; only reader behaviour is counted here. Nothing in this block is evidence that the reader is right or wrong.",
+  "totals": {
+   "n": 7,
+   "reader_agreed": 1,
+   "reader_routed_to_review": 6
+  }
+ },
+ "frozen": {
+  "corpus_commit": "93c5bef8fbcb3e01b802ee8bb72d4063945ba256",
+  "head": "c656b200cce3a0640eb78d89a45f27d8a2d2160e",
+  "key_sha256": "571ea2bbd3f1330a5e5baedfaa7694435b09c80ececc07d77bf05ba66dcb8e7f",
+  "labels_commit": "23ff6f6cd077dc676757ae3eb277df438bceebf7",
+  "reader_cache_commit": "e5a9e8a8cc4dc997b7aeaaac6bb4501ec7fd8fba",
+  "reader_code_commit": "8c675c121938dfccb0a13155f60df40bce7a0e8c"
+ },
+ "models": {
+  "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "ifhas-screen": "coded_lab",
+  "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+ },
+ "schema": "fresh2-score/v1"
+}
