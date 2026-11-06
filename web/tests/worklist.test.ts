@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Audit, CaseDetail, CaseList } from "@/lib/api/schema";
-import { parseCaseFilters, filtersHref } from "@/components/worklist/filters";
+import { parseCaseFilters, parsePage, filtersHref } from "@/components/worklist/filters";
 import { closureChecks, elapsedDays, recordNodes, workItem } from "@/components/worklist/model";
 import { referralFrom } from "@/components/worklist/referrals";
 import { loadSample } from "./samples";
@@ -69,6 +69,16 @@ describe("patients filters from the query string", () => {
       q: "1021",
     });
     expect(parseCaseFilters({ overdue: "yes", dropoff: "" })).toEqual({});
+  });
+
+  it("takes programme and page, and leaves page 1 out of links", () => {
+    expect(parseCaseFilters({ programme: "crc" })).toEqual({ programme: "crc" });
+    expect(parseCaseFilters({ programme: "nonsense" })).toEqual({});
+    expect(parsePage({ page: "3" })).toBe(3);
+    expect(parsePage({ page: "0" })).toBe(1);
+    expect(parsePage({ page: "x" })).toBe(1);
+    expect(filtersHref("/app/patients", { programme: "crc", overdue: true }, 2)).toBe("/app/patients?programme=crc&overdue=true&page=2");
+    expect(filtersHref("/app/patients", { programme: "crc" }, 1)).toBe("/app/patients?programme=crc");
   });
 
   it("round-trips through a link", () => {
