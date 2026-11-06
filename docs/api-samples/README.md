@@ -32,4 +32,6 @@ WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh serve &   # then, with the s
 WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh snapshot  # writes docs/api-samples/
 ```
 
-Before replacing the tracked files, write the snapshot to an empty staging directory, require all seven programme pages (`crc`, `cervical`, `lung_nodule`, `diabetic_retinopathy`, `breast`, `lung_ldct`, `ifhas`) to be nonempty, then replace `docs/api-samples/` so no stale fixture files remain. Finally rerun the Go API tests with `WASL_TEST_RUN=<run dir>` set so the run-dependent tests do not skip.
+`scripts/demo.sh snapshot` does the gating itself: it writes into a fresh staging directory beside `docs/api-samples/`, requires all seven programme pages (`crc`, `cervical`, `lung_nodule`, `diabetic_retinopathy`, `breast`, `lung_ldct`, `ifhas`) to be nonempty, fetches detail and audit for every fixture the API returns, then deletes every tracked file except `README.md` and moves the staged files in, so no stale fixture files remain. If any step fails the tracked samples are left untouched. `WASL_SNAPSHOT_DIR` overrides the target (used by the tests). Finally rerun the Go API tests with `WASL_TEST_RUN=<run dir>` set so the run-dependent tests do not skip.
+
+Note: with `WASL_IFHAS=800` the generator panics after the other six programmes (background pool exhausted, 882 adults for 800 loops plus 100 distractors); the samples were regenerated with `WASL_IFHAS=700`, as in `pipeline/RESULTS.md`.
