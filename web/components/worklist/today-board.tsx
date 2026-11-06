@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import NumberFlow from "@number-flow/react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
@@ -24,6 +24,8 @@ type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
   tab: View;
+  /** Below lg the list and the open patient take turns; from lg up both show. */
+  mobile: "list" | "detail";
   sel: string | null;
   q: string;
   calling: string | null;
@@ -44,7 +46,18 @@ const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numer
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
 export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: number; aside: React.ReactNode }) {
-  const [s, setS] = useState<State>({ tab: "call", sel: null, q: "", calling: null, stage: null, last: null, over: {} });
+  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {} });
+
+  const reduce = useReducedMotion();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const prevPane = useRef(s.mobile);
+  useEffect(() => {
+    if (prevPane.current === s.mobile) return;
+    prevPane.current = s.mobile;
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    (s.mobile === "detail" ? headingRef : rowRef).current?.focus();
+  }, [s.mobile]);
 
   const all: Row[] = items.map((it) => {
     const o = s.over[it.id];
@@ -135,16 +148,18 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
       ]
     : [];
 
+  const showList = s.mobile === "list";
+
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-6">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Today</h1>
           <p className="m-0 mt-1 text-muted" data-testid="finding">
             <span className="font-medium text-ink">{finding.name}</span> {finding.rest}
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1.5">
+        <div className="flex flex-col gap-1.5 sm:items-end">
           <span className="text-small text-muted">
             Al Mushrif Healthcare Centre · run day {Math.floor(now)}, {formatDay(now)}
           </span>
@@ -153,8 +168,11 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
       </header>
 
       <div className="flex flex-wrap items-stretch gap-gap">
-        <section aria-label="Your list" className="flex min-w-[300px] flex-[0_1_384px] flex-col rounded-card border border-line bg-surface">
-          <div role="tablist" aria-label="Saved views" className="flex gap-5 border-b border-line px-4">
+        <section
+          aria-label="Your list"
+          className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_384px]", showList ? "flex" : "hidden")}
+        >
+          <div role="tablist" aria-label="Saved views" className="flex gap-4 overflow-x-auto border-b border-line px-4">
             {TABS.map(([id, label]) => {
               const on = s.tab === id;
               return (
@@ -164,7 +182,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   aria-selected={on}
                   onClick={() => setS((prev) => ({ ...prev, tab: id, sel: null, ...fresh }))}
                   className={cn(
-                    "-mb-px h-11 cursor-pointer border-b-2 bg-transparent text-body",
+                    "-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-body",
                     on ? "border-ink font-medium text-ink" : "border-transparent text-muted",
                   )}
                 >
@@ -174,7 +192,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             })}
           </div>
           <div className="px-4 pb-2 pt-3">
-            <label className="flex h-control items-center gap-2 rounded-control border border-control bg-surface px-2.5">
+            <label className="flex items-center gap-2 rounded-control border border-control bg-surface px-2.5">
               <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-muted">
                 <circle cx="7" cy="7" r="4.5" />
                 <path d="M10.5 10.5l3 3" />
@@ -185,7 +203,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 placeholder="Name or case id"
                 value={s.q}
                 onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value }))}
-                className="min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-none"
+                className="min-w-0 flex-1 h-11 border-0 bg-transparent text-body text-ink outline-none"
               />
             </label>
           </div>
@@ -194,27 +212,30 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
               const on = p?.id === r.id;
               const over = r.days > STANDARD_DAYS;
               return (
-                <div key={r.id} className={cn("relative flex h-[68px] items-start gap-2 rounded-control px-2.5 py-3", on ? "bg-active" : "hover:bg-ground")}>
-                  <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord} className="relative z-10">
-                    <Avatar person={r.seed} size={24} label="" />
-                  </RecordAvatar>
+                <div key={r.id} className={cn("relative flex min-h-[68px] items-start gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
+                  <div className="flex size-11 flex-none items-center justify-center">
+                    <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord} className="relative z-10 size-11 items-center justify-center">
+                      <Avatar person={r.seed} size={24} label="" />
+                    </RecordAvatar>
+                  </div>
                   <button
+                    ref={on ? rowRef : undefined}
                     aria-pressed={on}
-                    onClick={() => setS((prev) => ({ ...prev, sel: r.id, ...fresh }))}
-                    className="min-w-0 flex-1 cursor-pointer bg-transparent p-0 text-left after:absolute after:inset-0 after:rounded-control"
+                    onClick={() => setS((prev) => ({ ...prev, sel: r.id, mobile: "detail", ...fresh }))}
+                    className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 pr-2 text-left after:absolute after:inset-0 after:rounded-control"
                   >
-                    <span className="flex min-h-6 min-w-0 items-center gap-2">
-                      <span className="whitespace-nowrap font-semibold">{r.name}</span>
+                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                      <span className="font-semibold">{r.name}</span>
                       {r.nameAr && (
-                        <span lang="ar" dir="rtl" className="truncate text-muted">
+                        <span lang="ar" dir="rtl" className="text-muted">
                           {r.nameAr}
                         </span>
                       )}
-                      <span className={cn("ml-auto flex-none whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
+                      <span className={cn("ml-auto whitespace-nowrap text-small", over ? "font-medium text-negative" : "text-muted")}>
                         {r.days} days · {over ? `${r.days - STANDARD_DAYS} over` : `${STANDARD_DAYS - r.days} left`}
                       </span>
                     </span>
-                    <span className="mt-1 block truncate text-muted">{r.status}</span>
+                    <span className="mt-0.5 block text-muted">{r.status}</span>
                   </button>
                 </div>
               );
@@ -231,75 +252,77 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
         </section>
 
         {p ? (
-          <section aria-label="Open patient" className="flex min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-pad">
-            <div className="flex items-start justify-between gap-6">
+          <section
+            aria-label="Open patient"
+            className={cn("min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-4 sm:p-pad lg:flex", showList ? "hidden" : "flex")}
+          >
+            <button
+              onClick={() => setS((prev) => ({ ...prev, mobile: "list" }))}
+              className="-mt-1 mb-3 flex min-h-11 cursor-pointer items-center gap-2 self-start rounded-control bg-transparent pr-3 text-body text-ink lg:hidden"
+            >
+              <span aria-hidden>‹</span>
+              Your list · {list.length}
+            </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div className="flex min-w-0 items-start gap-4">
                 <RecordAvatar id={p.id} name={p.name} linked={p.hasRecord}>
                   <Avatar person={p.seed} size={56} label="" />
                 </RecordAvatar>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-3">
-                    <h2 className="m-0 text-title font-semibold">{p.name}</h2>
+                  <div className="flex flex-wrap items-baseline gap-x-3">
+                    <h2 ref={headingRef} tabIndex={-1} className="m-0 text-title font-semibold outline-none">
+                      {p.name}
+                    </h2>
                     {p.nameAr && (
                       <span lang="ar" dir="rtl" className="text-section text-muted">
                         {p.nameAr}
                       </span>
                     )}
                   </div>
-                  <p className="m-0 mt-1 text-muted">
-                    {[p.age, p.named ? p.short : null, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}
-                    {p.hasRecord && (
-                      <>
-                        {" · "}
-                        <Link href={caseHref("/app/patients", p.id)} className="underline">
-                          Open record
-                        </Link>
-                      </>
-                    )}
-                  </p>
+                  <p className="m-0 mt-1 text-muted">{[p.age, p.named ? p.short : null, `referred ${formatDay(p.referralDay)}`].filter(Boolean).join(" · ")}</p>
+                  {p.hasRecord && (
+                    <Link href={caseHref("/app/patients", p.id)} className="inline-flex min-h-11 items-center underline">
+                      Open record
+                    </Link>
+                  )}
                 </div>
               </div>
-              <div className="flex-none text-right">
-                <div className="flex items-baseline justify-end gap-1.5">
+              <div className="sm:flex-none sm:text-right">
+                <div className="flex items-baseline gap-1.5 sm:justify-end">
                   <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
                     <NumberFlow value={p.days} />
                   </span>
                   <span className="text-muted">days since referral</span>
                 </div>
-                <div className={cn("mt-0.5 text-small", p.days > STANDARD_DAYS ? "text-negative" : "text-muted")}>
+                <div className={cn("mt-0.5 text-body sm:text-small", p.days > STANDARD_DAYS ? "text-negative" : "text-muted")}>
                   {p.days > STANDARD_DAYS ? `${p.days - STANDARD_DAYS} days over ${STANDARD_DAYS}` : `${STANDARD_DAYS - p.days} days left of ${STANDARD_DAYS}`}
                 </div>
               </div>
             </div>
 
-            <Track days={p.days} referralDay={p.referralDay} />
-
-            <dl className="m-0 mt-6 grid grid-cols-3 gap-gap">
-              <Field label="Texts" value={p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
-              <Field label="Owner" value={p.owner} />
-              <Field label="Next" value={p.next} />
-            </dl>
-
-            <div className="mt-6 flex flex-wrap items-center gap-gap">
+            <div className="mt-4 flex flex-wrap items-center gap-gap">
               <button
                 onClick={() => setS((prev) => ({ ...prev, calling: p.id, stage: null, last: null }))}
-                className={cn("flex h-11 cursor-pointer items-center gap-2 rounded-control px-4 text-section font-medium text-white", callingNow ? "bg-ink-soft" : "bg-cta")}
+                className={cn(
+                  "flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-control px-5 text-section font-medium text-white sm:h-11 sm:w-auto",
+                  callingNow ? "bg-ink-soft" : "bg-cta",
+                )}
               >
                 <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5.5 2.5l1.5 3-1.5 1c.8 1.6 2 2.8 3.5 3.5l1-1.5 3 1.5-.5 2c-.2.6-.8 1-1.4.9C6.6 12.4 3.6 9.4 3.1 4.9c-.1-.6.3-1.2.9-1.4z" />
                 </svg>
                 <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
               </button>
-              <span className="flex-1" />
-              <Secondary onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
+              <span className="hidden flex-1 sm:block" />
+              <Secondary className="max-sm:flex-1" onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
                 Snooze to tomorrow
               </Secondary>
               {p.view === "none" ? (
-                <Secondary onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
+                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
                   Take this patient
                 </Secondary>
               ) : (
-                <Secondary onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
+                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
                   Hand to Dr Al Kaabi
                 </Secondary>
               )}
@@ -310,20 +333,23 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 <motion.div
                   key="logged"
                   role="status"
-                  initial={{ opacity: 0, y: -4 }}
+                  initial={reduce ? false : { opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.15 }}
-                  className="mt-6 flex min-h-control flex-wrap items-center gap-gap"
+                  transition={{ duration: reduce ? 0 : 0.15 }}
+                  className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
                 >
                   <span>
                     <span className="font-medium">{last.head}</span> · {last.move} ·{" "}
-                    <button onClick={() => setS((prev) => ({ ...prev, sel: last.id, calling: null, ...last.undo }))} className="cursor-pointer bg-transparent p-0 text-body text-hue hover:text-ink">
+                    <button
+                      onClick={() => setS((prev) => ({ ...prev, sel: last.id, calling: null, ...last.undo }))}
+                      className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
+                    >
                       Undo
                     </button>
                   </span>
                   {!stage && nextUp && (
-                    <Secondary className="ml-auto" onClick={() => setS((prev) => ({ ...prev, sel: nextUp.id, ...fresh }))}>
+                    <Secondary className="sm:ml-auto" onClick={() => setS((prev) => ({ ...prev, sel: nextUp.id, ...fresh }))}>
                       Next patient: {nextUp.name}
                     </Secondary>
                   )}
@@ -332,14 +358,14 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             </AnimatePresence>
 
             {chips.length > 0 && (
-              <div className="mt-6">
+              <div className="mt-4">
                 <h3 className="m-0 text-section font-medium">{chipsTitle}</h3>
                 <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
                   {chips.map(([label, pick]) => (
                     <button
                       key={label}
                       onClick={pick}
-                      className={cn("h-control cursor-pointer rounded-chip border bg-surface px-3 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
+                      className={cn("h-11 cursor-pointer rounded-chip border bg-surface px-4 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
                     >
                       {label}
                     </button>
@@ -347,6 +373,14 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 </div>
               </div>
             )}
+
+            <Track days={p.days} referralDay={p.referralDay} />
+
+            <dl className="m-0 mt-6 grid grid-cols-1 gap-gap sm:grid-cols-3">
+              <Field label="Texts" value={p.textsAllowed ? "Allowed" : "Not allowed yet"} warn={!p.textsAllowed} />
+              <Field label="Owner" value={p.owner} />
+              <Field label="Next" value={p.next} />
+            </dl>
 
             <div className="mt-7">
               <h3 className="m-0 mb-3 text-section font-medium">Contacts</h3>
@@ -356,7 +390,11 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             </div>
           </section>
         ) : (
-          <section aria-label="Open patient" className="min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-pad">
+          <section aria-label="Open patient" className={cn("min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-4 sm:p-pad lg:block", showList ? "hidden" : "block")}>
+            <button onClick={() => setS((prev) => ({ ...prev, mobile: "list" }))} className="mb-3 flex min-h-11 cursor-pointer items-center gap-2 bg-transparent text-body text-ink lg:hidden">
+              <span aria-hidden>‹</span>
+              Your list
+            </button>
             <h2 className="m-0 text-section font-medium">Nobody to open</h2>
             <p className="m-0 mt-2 text-muted">This view is empty. Choose another tab.</p>
           </section>
@@ -399,5 +437,5 @@ function Field({ label, value, warn = false }: { label: string; value: string; w
 }
 
 function Secondary({ className, ...props }: React.ComponentProps<"button">) {
-  return <button {...props} className={cn("h-control cursor-pointer rounded-control bg-active px-3.5 text-body text-ink hover:bg-control", className)} />;
+  return <button {...props} className={cn("h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control", className)} />;
 }
