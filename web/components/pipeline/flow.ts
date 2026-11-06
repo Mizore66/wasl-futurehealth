@@ -1,5 +1,6 @@
 import { initialState, next, type CaseProgress, type ReplayState } from "@/lib/replay/reducer";
 import type { Outcome, ReaderRead, Replay, ReplayEvent, ScriptedCase } from "@/lib/replay/types";
+import { plain } from "@/lib/domain/terms";
 import type { PersonSeed } from "@/lib/people/types";
 import type { Track } from "./playback";
 
@@ -7,16 +8,19 @@ export type Mark = "queued" | "working" | "done" | "held" | "failed";
 
 export type RowId = "received" | "matching" | "reading" | "gate" | "closed" | "review" | "open" | "ledger";
 
-/** The eight stage rows of the case flow (pipeline-brief "The state vocabulary"), with the backend term small and muted. */
-export const ROWS: { id: RowId; label: string; tech: string; branch?: boolean }[] = [
-  { id: "received", label: "Received", tech: "HL7 v2 · FHIR R4" },
-  { id: "matching", label: "Matching identity", tech: "Arabic and Latin names" },
-  { id: "reading", label: "Reading the report", tech: "rules reader + Gemma 3 4B" },
-  { id: "gate", label: "Safety gate", tech: "readers agree, p ≥ 0.99" },
-  { id: "closed", label: "Closed with evidence", tech: "closure_decision", branch: true },
-  { id: "review", label: "Waiting for two reviewers", tech: "needs_human", branch: true },
-  { id: "open", label: "Kept open", tech: "not_closed", branch: true },
-  { id: "ledger", label: "Recorded in the ledger", tech: "hash-chained" },
+/**
+ * The eight stage rows of the case flow (pipeline-brief "The state vocabulary"). `note` is the plain sublabel the screen shows;
+ * `tech` is the backend term or technical line, shown only behind a "Technical detail" disclosure (issue #5).
+ */
+export const ROWS: { id: RowId; label: string; note: string; tech: string; branch?: boolean }[] = [
+  { id: "received", label: "Received", note: "Hospital messages come in", tech: "HL7 v2 · FHIR R4" },
+  { id: "matching", label: "Matching identity", note: "Arabic and Latin names", tech: "Arabic and Latin names" },
+  { id: "reading", label: "Reading the report", note: "Two readers check it", tech: "rules reader + Gemma 3 4B" },
+  { id: "gate", label: "Safety gate", note: "Both readers must agree", tech: "readers agree, p ≥ 0.99" },
+  { id: "closed", label: plain("closure_decision"), note: "Evidence on file", tech: "closure_decision", branch: true },
+  { id: "review", label: plain("needs_human"), note: "The gate does not guess", tech: "needs_human", branch: true },
+  { id: "open", label: plain("not_closed"), note: "Not complete yet", tech: "not_closed", branch: true },
+  { id: "ledger", label: "Recorded in the ledger", note: "Every decision is sealed", tech: "hash-chained" },
 ];
 
 const OUTCOME_ROW: Record<Outcome, RowId> = {
@@ -74,7 +78,7 @@ export type Who = { name: string; seed: PersonSeed; face: ChipFace };
 
 export type LedgerLine = { who: Who; closed: boolean } | null;
 
-export type FeedLine = { key: number; caseId: string; who: Who; text: string; tech: string; mark: Mark; step: number };
+export type FeedLine = { key: number; caseId: string; who: Who; text: string; note: string; tech: string; mark: Mark; step: number };
 
 export type FlowView = {
   rows: FlowRow[];
@@ -110,28 +114,36 @@ export const OUTCOME_LINE: Record<Outcome, { text: string; mark: Mark }> = {
   kept_open: { text: "Kept open · not complete yet", mark: "held" },
 };
 
-/** A decision feed line for the events that report a result. Start-of-work events stay off the feed. */
+/** A decision feed line for the events that report a result. Start-of-work events stay off the feed. `note` is plain; `tech` is the system's own label. */
 export function line(e: ReplayEvent, c: ScriptedCase): Omit<FeedLine, "key" | "caseId" | "who" | "step"> | null {
   const verdict = `${c.read.state} · ${c.read.reason}`;
+  const why = plain(c.read.reason);
   switch (e.type) {
     case "received":
-      return { text: "Received · colonoscopy report", tech: c.source === "hl7" ? "HL7 v2" : "FHIR R4", mark: "queued" };
+      return { text: "Received · colonoscopy report", note: "Hospital message", tech: c.source === "hl7" ? "HL7 v2" : "FHIR R4", mark: "queued" };
     case "matched":
-      return { text: "Matched to a referral", tech: "link_decision", mark: "done" };
-    case "read":
-      return { text: `Read · ${readWords(c.read)}`, tech: `${verdict} · ${(c.read.latencyMs / 1000).toFixed(1)} s`, mark: "done" };
+      return { text: "Matched to a referral", note: "Linker's decision", tech: "link_decision", mark: "done" };
+    case "read": {
+      const t = `${(c.read.latencyMs / 1000).toFixed(1)} s`;
+      return { text: `Read · ${readWords(c.read)}`, note: `${why} · ${t}`, tech: `${verdict} · ${t}`, mark: "done" };
+    }
     case "gate":
       return e.passed
-        ? { text: "Safety gate passed", tech: verdict, mark: "done" }
-        : { text: "Safety gate held · it will not guess", tech: verdict, mark: "held" };
-    case "outcome":
-      return { ...OUTCOME_LINE[e.outcome], tech: e.outcome === "closed_with_evidence" ? "closure_decision" : verdict };
-    case "recorded":
+        ? { text: "Safety gate passed", note: why, tech: verdict, mark: "done" }
+        : { text: "Safety gate held · it will not guess", note: why, tech: verdict, mark: "held" };
+    case "outcome": {
+      const closed = e.outcome === "closed_with_evidence";
+      return { ...OUTCOME_LINE[e.outcome], note: closed ? "Evidence on file" : why, tech: closed ? "closure_decision" : verdict };
+    }
+    case "recorded": {
+      const closed = c.outcome === "closed_with_evidence";
       return {
         text: "Recorded in the ledger",
-        tech: c.outcome === "closed_with_evidence" ? "link_decision → evidence → closure_decision" : "decision recorded",
+        note: closed ? "Match, readers and closure sealed" : "Decision sealed",
+        tech: closed ? "link_decision → evidence → closure_decision" : "decision recorded",
         mark: "done",
       };
+    }
     default:
       return null;
   }
