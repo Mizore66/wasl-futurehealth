@@ -16,13 +16,23 @@ Differences from the r1agent8 driver, all on the failure side:
 """
 import argparse, json, os, signal, sys, time
 
+_KILLED = {"flag": False}
+
+
+def _on_signal(signum, frame):  # noqa: ARG001
+    _KILLED["flag"] = True
+
+
+if __name__ == "__main__":  # before the heavy imports: a signal that arrives during start-up is recorded, not lost
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import agent_evidence as ae  # noqa: E402
 import agent_investigator as ai  # noqa: E402
 
 HARD_MAX_CALLS = ai.SMOKE_CAP  # 40
 STAGE = "smoke"
-_KILLED = {"flag": False}
 
 
 class Fallback(Exception):
@@ -31,10 +41,6 @@ class Fallback(Exception):
     def __init__(self, reason):
         super().__init__(reason)
         self.reason = reason
-
-
-def _on_signal(signum, frame):  # noqa: ARG001
-    _KILLED["flag"] = True
 
 
 def _refuse(body, timeout):  # noqa: ARG001  (cached mode: no transport exists)
@@ -86,11 +92,21 @@ def _provider_reason(msg):
     return "provider_error"
 
 
+def _record_model(cache, model):
+    """Non-secret model identity beside the cache, so a later cached run can name the model that populated it."""
+    try:
+        os.makedirs(cache, exist_ok=True)
+        with open(os.path.join(cache, "model.txt"), "w") as f:
+            f.write(model + "\n")
+    except OSError:
+        pass
+
+
 def build_gate(args):
     def gate():
         if args.mode != "live" or not args.allow_live:
             raise Fallback("cache_miss")
-        if _KILLED["flag"]:
+        if _KILLED["flag"] or (args.kill_file and os.path.exists(args.kill_file)):
             raise Fallback("killed")
         if args.stop_file and os.path.exists(args.stop_file):
             raise Fallback("stop_file")
@@ -103,10 +119,15 @@ def run(args):
     gate = build_gate(args)
     if args.mode == "live":
         tx, model = ai.UrlTransport.from_env()
+        model = args.model or model
+        _record_model(args.cache, model)
     else:
-        tx, model = _refuse, os.environ.get("WASL_LLM_MODEL_NAME", "cache-only")
+        # same non-secret model identity as the live run: the model is part of the cache key, so a cached replay can
+        # only hit live-populated entries if it names the model that populated them
+        tx, model = _refuse, (args.model or "cache-only")
     os.makedirs(args.cache, exist_ok=True)
     client = ShadowClient(tx, model, os.path.join(args.cache, STAGE), gate, args.max_calls, args.provider_timeout)
+    client.sent = max(client.sent, min(max(args.calls_used, 0), HARD_MAX_CALLS))  # budget already used in earlier processes
     out = {"outcome": "fallback", "reason": "", "label": "", "model": ai._safe_model(model), "prompt_ver": client.prompt_ver,
            "schema_ver": client.schema_ver}
 
@@ -130,13 +151,18 @@ def run(args):
         if rec["reason"] in ("ineligible_item", "invalid_metadata"):  # controller refusal, never a recommendation
             out.update(outcome="ineligible", reason=rec["reason"])
             return finish()
+        trace_n = len((rec.get("meta") or {}).get("trace") or [])
+        if client.responses > ai.MAX_RESPONSES or trace_n > ae.MAX_TOOL_CALLS:  # checked before anything is persisted
+            out.update(outcome="fallback", reason="bounds_violation")
+            return finish()
+        rec["pair"] = [store.alias("reg", pk) for pk in rec["pair"]]  # artifacts carry aliases, never registration keys
         try:
             ai.write_recs(args.recs, [rec])
         except ValueError:
             out.update(outcome="fallback", reason="record_conflict")
             return finish()
         out.update(outcome="recommendation", label=rec["label"], reason=rec["reason"], citations=len(rec["citations"]),
-                   calls=rec["calls"], tool_calls=len((rec.get("meta") or {}).get("trace") or []), pair=list(rec["pair"]))
+                   calls=rec["calls"], tool_calls=trace_n, pair=list(rec["pair"]))
         return finish()
     except Fallback as f:
         out.update(outcome="fallback", reason=f.reason)
@@ -160,11 +186,12 @@ def main(argv=None):
     ap.add_argument("--stop-file", default="")
     ap.add_argument("--deadline-epoch", type=float, default=0.0)
     ap.add_argument("--provider-timeout", type=float, default=45.0)
+    ap.add_argument("--model", default="")
+    ap.add_argument("--kill-file", default="")
+    ap.add_argument("--calls-used", type=int, default=0)
     ap.add_argument("--max-calls", type=int, default=HARD_MAX_CALLS)
     ap.add_argument("--image-cache")
     a = ap.parse_args(argv)
-    signal.signal(signal.SIGTERM, _on_signal)
-    signal.signal(signal.SIGINT, _on_signal)
     try:
         res = run(a)
     except KeyError:  # live mode without WASL_LLM_* in the environment

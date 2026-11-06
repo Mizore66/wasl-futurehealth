@@ -682,40 +682,44 @@ func TestShadowNotStartedByOrchestratorAndFlagsNotForwarded(t *testing.T) {
 	}
 }
 
+func okFlags(mode string) AgentShadowFlags {
+	return AgentShadowFlags{Mode: mode, Items: 20, Calls: 40, Deadline: time.Minute, Provider: time.Second, Idle: time.Second}
+}
+
 func TestShadowScopeRequiresDemoguardCohortAndExplicitLive(t *testing.T) {
 	data := t.TempDir()
 	run := t.TempDir()
 	withDemoGuard(t, false)
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "cached"}); err == nil {
+	if err := validateAgentShadowScope(data, run, okFlags("cached")); err == nil {
 		t.Fatal("accepted a run without -demoguard")
 	}
 	withDemoGuard(t, true)
 	old := PolicyName
 	PolicyName = "v7strict+demoguard"
 	t.Cleanup(func() { PolicyName = old })
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "cached"}); err == nil {
+	if err := validateAgentShadowScope(data, run, okFlags("cached")); err == nil {
 		t.Fatal("accepted a directory that is not a generated cohort")
 	}
 	os.WriteFile(filepath.Join(data, "cohort_summary.json"), []byte("{}"), 0o644)
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "cached"}); err != nil {
+	if err := validateAgentShadowScope(data, run, okFlags("cached")); err != nil {
 		t.Fatal(err)
 	}
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "bogus"}); err == nil {
+	if err := validateAgentShadowScope(data, run, okFlags("bogus")); err == nil {
 		t.Fatal("accepted an unknown mode")
 	}
 	t.Setenv("WASL_LLM_URL", "")
 	t.Setenv("WASL_AGENTSHADOW_LIVE", "")
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "live"}); err == nil {
+	if err := validateAgentShadowScope(data, run, okFlags("live")); err == nil {
 		t.Fatal("live mode accepted without provider configuration")
 	}
 	t.Setenv("WASL_LLM_URL", "https://x.invalid")
 	t.Setenv("WASL_LLM_KEY", "k")
 	t.Setenv("WASL_LLM_MODEL", "m")
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "live"}); err == nil {
+	if err := validateAgentShadowScope(data, run, okFlags("live")); err == nil {
 		t.Fatal("live mode accepted without the explicit WASL_AGENTSHADOW_LIVE opt-in")
 	}
 	t.Setenv("WASL_AGENTSHADOW_LIVE", "1")
-	if err := validateAgentShadowScope(data, run, AgentShadowFlags{Mode: "live"}); err != nil {
+	if err := validateAgentShadowScope(data, run, okFlags("live")); err != nil {
 		t.Fatal(err)
 	}
 }

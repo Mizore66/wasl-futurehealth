@@ -35,7 +35,7 @@ class Script:
 class Args:
     def __init__(self, **kw):
         self.__dict__.update(dict(mode="live", allow_live=1, stop_file="", deadline_epoch=0.0, provider_timeout=5.0, max_calls=40,
-                                  image_cache=None, item=ITEM), **kw)
+                                  image_cache=None, item=ITEM, model="", calls_used=0, kill_file=""), **kw)
 
 
 class Base(unittest.TestCase):
@@ -89,6 +89,89 @@ class CacheFirst(Base):
         self.assertEqual((out2["outcome"], out2["label"]), ("recommendation", "same"))
         self.assertEqual((out2["uncached_responses"], out2["cached_responses"]), (0, 2))
         self.assertEqual(refuse.bodies, [])
+
+
+class ComposedFix1(Base):
+    """Fix round 1 (I1 model identity, I2 seeded budget, I3 early signal handlers, I4 aliased pair, M4 bounds)."""
+
+    def test_cached_replay_hits_a_live_populated_cache_only_with_the_same_model_identity(self):
+        tx, _ = self.good_script()
+        self.run_worker(tx)  # live, model "test-model"
+        os.remove(self.recs)
+        ok = w.run(self.args(mode="cached", allow_live=0, model="test-model"))
+        self.assertEqual((ok["outcome"], ok["label"], ok["uncached_responses"], ok["cached_responses"]), ("recommendation", "same", 0, 2))
+        self.assertEqual(ok["model"], "test-model")
+        miss = w.run(self.args(mode="cached", allow_live=0))  # no identity: the old behaviour, a miss
+        self.assertEqual((miss["outcome"], miss["reason"]), ("fallback", "cache_miss"))
+
+    def test_seeded_calls_used_caps_a_fresh_cache(self):
+        tx, _ = self.good_script()
+        out = self.run_worker(tx, calls_used=39)
+        self.assertEqual((out["outcome"], out["reason"]), ("fallback", "cap_calls"))
+        self.assertEqual(len(tx.bodies), 1, "second request must not leave: 39 used + 1 = 40")
+        self.assertEqual(out["counter_after"], 40)
+        self.assertFalse(os.path.exists(self.recs))
+
+    def test_kill_file_blocks_the_first_request_but_not_a_cache_hit(self):
+        kf = os.path.join(self.d, "KILL")
+        open(kf, "w").close()
+        tx = Script()
+        out = self.run_worker(tx, kill_file=kf)
+        self.assertEqual((out["outcome"], out["reason"]), ("fallback", "killed"))
+        self.assertEqual(tx.bodies, [])
+        tx2, _ = self.good_script()
+        os.remove(kf)
+        self.run_worker(tx2)
+        open(kf, "w").close()
+        os.remove(self.recs)
+        out2 = self.run_worker(Script(), kill_file=kf)
+        self.assertEqual((out2["outcome"], out2["cached_responses"]), ("recommendation", 2))
+
+    def test_live_run_records_the_model_identity_beside_the_cache(self):
+        tx, _ = self.good_script()
+        self.run_worker(tx)
+        with open(os.path.join(self.cache, "model.txt")) as f:
+            self.assertEqual(f.read().strip(), "test-model")
+
+    def test_calls_used_at_cap_sends_nothing(self):
+        tx = Script()
+        out = self.run_worker(tx, calls_used=40)
+        self.assertEqual((out["outcome"], out["reason"]), ("fallback", "cap_calls"))
+        self.assertEqual(tx.bodies, [])
+
+    def test_recs_carry_aliased_pairs_not_registration_keys(self):
+        tx, _ = self.good_script()
+        self.run_worker(tx)
+        with open(self.recs) as f:
+            rows = [json.loads(x) for x in f if x.strip()]
+        self.assertEqual(len(rows), 1)
+        raw = json.dumps(rows)
+        for bad in ("p|A1", "p|A2"):
+            self.assertNotIn(bad, raw)
+        self.assertTrue(all(a.startswith("reg_") for a in rows[0]["pair"]))
+
+    def test_a_valid_two_response_run_is_not_a_bounds_violation(self):
+        tx, _ = self.good_script()
+        out = self.run_worker(tx)
+        self.assertEqual((out["outcome"], out["responses"]), ("recommendation", 2))
+
+    def test_bounds_violation_is_detected_before_anything_is_written(self):
+        real = ai.investigate
+
+        def over(store, item, client):
+            r = real(store, item, client)
+            client.responses = 3  # a third model response
+            return r
+
+        tx, _ = self.good_script()
+        with mock.patch.object(ai, "investigate", over):
+            out = self.run_worker(tx)
+        self.assertEqual((out["outcome"], out["reason"], out.get("label", "")), ("fallback", "bounds_violation", ""))
+        self.assertFalse(os.path.exists(self.recs))
+
+    def test_signal_handlers_are_installed_before_the_heavy_imports(self):
+        src = open(w.__file__.replace(".pyc", ".py")).read()
+        self.assertLess(src.index("signal.signal(signal.SIGTERM"), src.index("import agent_evidence"))
 
 
 class Gates(Base):

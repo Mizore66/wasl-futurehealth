@@ -7,7 +7,8 @@ package main
 // registrations of one eligible link question, captured at the moment the item was raised (point in time):
 // demographics already in the linker, nothing else. It never contains live review quotes, report text, chain blocks,
 // truth, reviewer answers, donor maps, or anything from the live run directory. The lane dir is shadow-private and is
-// removed as soon as the investigation ends.
+// removed as soon as the investigation ends. It lives in a private (0700) directory outside the run directory and
+// is swept at start-up and exit; the only persistent artifacts carry salted aliases.
 
 import (
 	"encoding/json"
@@ -45,7 +46,7 @@ func writeJSONFile(path string, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, b, 0o644)
+	return os.WriteFile(path, b, 0o600)
 }
 
 func writeNDJSONRows(path string, rows []interface{}) error {
@@ -57,7 +58,7 @@ func writeNDJSONRows(path string, rows []interface{}) error {
 		}
 		out = append(append(out, b...), '\n')
 	}
-	return os.WriteFile(path, out, 0o644)
+	return os.WriteFile(path, out, 0o600)
 }
 
 // stageLane writes the lane for one candidate into dir (created fresh).
@@ -68,10 +69,10 @@ func stageLane(dir string, c *shadowCand) error {
 	}
 	os.RemoveAll(dir)
 	main := filepath.Join(dir, "run", "main")
-	if err := os.MkdirAll(main, 0o755); err != nil {
+	if err := os.MkdirAll(main, 0o700); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(dir, "cohort"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "cohort"), 0o700); err != nil {
 		return err
 	}
 	// kinds/pair/p only: no quote, no chain, no head, no verdict, no report id
