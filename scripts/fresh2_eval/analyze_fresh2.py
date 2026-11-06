@@ -286,10 +286,9 @@ def render(a):
          f"{s['key_coded_label_unavailable']} items whose key coded_label is itself `unavailable` (coded parsing is deterministic code, not a model).",
          f"- Guide/panel mismatch: the labelling guide requires a **random** glucose, but **{s['panels_mentioning_fasting']}/{s['panels_total']}** panels say fasting. "
          f"Reader A's regex reads only random-glucose wording, so it returned `glyc=X` on **{s['reader_a_glyc_x_total']}/{s['agreed_n']}** agreed panels; on "
-         f"**{s['reader_a_glyc_x_where_key_has_value']}** of them the key holds a glyc value (keyed glyc distribution: {s['keyed_glyc_distribution']}). "
-         "The guide and key were frozen and are not changed; this is a disclosed limitation of the test, not a reader fix. The review's figure of 24 such "
-         f"cells is not reproduced: over the {s['agreed_n']} agreed panels the exact count is {s['reader_a_glyc_x_where_key_has_value']} "
-         "(reader A also returned glyc=X on both unadjudicated panels, which have no key).",
+         f"**{s['reader_a_glyc_x_where_key_has_value']}** of them the key holds a real glyc value, not X (keyed glyc distribution: {s['keyed_glyc_distribution']}). "
+         "The guide and key were frozen and are not changed; this is a disclosed limitation of the test, not a reader fix. "
+         "(Reader A also returned glyc=X on both unadjudicated panels, which have no key.)",
          f"- Reader-B unavailable on screening: {u['by_kind_total'].get('ifhas-screen', 0)} (implausible coded value under its unit; see section 4).", "",
          "## 2. Gemma-reader results (LDCT screen, LDCT work-up, IFHAS follow-up; agreed subset)", "",
          "| kind | n | A correct | B (Gemma) correct | B unavailable | readers agree | agreed but wrong |", "|---|---|---|---|---|---|---|"]
