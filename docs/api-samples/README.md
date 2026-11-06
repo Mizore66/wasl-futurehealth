@@ -23,9 +23,9 @@ WASL_SERVE_RUN=<run dir> WASL_SERVE_DATA=<cohort dir> WASL_SMOKE_PORT=<free port
 Run the seven-programme demo in an isolated output directory and port offset, then serve it and snapshot into a clean staging directory:
 
 ```bash
-export PATH=/opt/anaconda3/bin:$PATH
+export PATH=/opt/anaconda3/bin:$PATH      # NumPy/SciPy for the booking step; nats-server v2.10+ must also be on PATH (or bin/nats-server)
 export WASL_OUT=<isolated out dir> WASL_PORT_OFFSET=<offset>
-export WASL_LUNG=800 WASL_DR=1200 WASL_BREAST=70 WASL_LDCT=300 WASL_IFHAS=800 \
+export WASL_LUNG=800 WASL_DR=1200 WASL_BREAST=70 WASL_LDCT=300 WASL_IFHAS=700 \
        WASL_DRNEXT=1 WASL_LUNGSURV=1 WASL_XREFLINK=1 WASL_REFREJECT=true
 scripts/demo.sh all                       # includes the smoke step
 WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh serve &   # then, with the server up:
@@ -34,7 +34,9 @@ WASL_API_ADDR=127.0.0.1:<free port> scripts/demo.sh snapshot  # writes docs/api-
 
 `scripts/demo.sh snapshot` does the gating itself: it writes into a fresh staging directory beside `docs/api-samples/`, requires all seven programme pages (`crc`, `cervical`, `lung_nodule`, `diabetic_retinopathy`, `breast`, `lung_ldct`, `ifhas`) to be nonempty, fetches detail and audit for every fixture the API returns, then deletes every tracked file except `README.md` and moves the staged files in, so no stale fixture files remain. If any step fails the tracked samples are left untouched. `WASL_SNAPSHOT_DIR` overrides the target (used by the tests). Finally rerun the Go API tests with `WASL_TEST_RUN=<run dir>` set so the run-dependent tests do not skip.
 
-Note: with `WASL_IFHAS=800` the generator panics after the other six programmes (background pool exhausted, 882 adults for 800 loops plus 100 distractors); the samples were regenerated with `WASL_IFHAS=700`, as in `pipeline/RESULTS.md`.
+Note: with `WASL_IFHAS=800` the generator panics after the other six programmes (background pool exhausted, 882 adults for 800 loops plus 100 distractors); the recipe above therefore uses `WASL_IFHAS=700`, as in `pipeline/RESULTS.md`.
+
+A clean-clone regeneration is not byte-identical to the committed files. Case, programme, fixture ids and fixture tags match, and the safety invariants checked by the smoke test hold. Run-dependent fields differ: `loaded_at`, event sequence numbers (`in_seq` and the ids built from them), `throughput_ev_s`, and two consent counters (`released_total`, `intents_ever_held_for_consent`). Their differences are likely timing-dependent; this is not proven to be caused by NATS timing. Compare structure and safety invariants, not bytes.
 
 ## Agent samples (separate lane)
 
