@@ -2,6 +2,7 @@ import type { CaseDetail, CaseSummary, Dropoff, Programme } from "@/lib/api/sche
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
+import { plain } from "@/lib/domain/terms";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import type { PersonSeed } from "@/lib/people/types";
@@ -43,7 +44,7 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
 export function statusWords(c: CaseSummary): { status: string; next: string } {
   if (c.closed) return { status: "Closed", next: "Nothing to do" };
   if (c.state === "procedure_done") return { status: "Procedure done, report pending", next: "Wait for the report" };
-  if (c.dropoff === "") return { status: c.state.replaceAll("_", " "), next: "Check the record" };
+  if (c.dropoff === "") return { status: plain(c.state), next: "Check the record" };
   return DROPOFF_WORDS[c.dropoff];
 }
 
@@ -72,6 +73,15 @@ const PROVIDERS: Record<string, string> = {
 export function providerLabel(provider: string): string {
   return PROVIDERS[provider] ?? provider;
 }
+
+/** Programme names for filters and headings. */
+export const PROGRAMME_NAMES: Record<Programme, string> = {
+  crc: "Colorectal screening",
+  cervical: "Cervical screening",
+  lung_nodule: "Lung nodule follow-up",
+  diabetic_retinopathy: "Diabetic eye screening",
+  breast: "Breast screening",
+};
 
 export const PROCEDURE: Record<Programme, string> = {
   crc: "colonoscopy",

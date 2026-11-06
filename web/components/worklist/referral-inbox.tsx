@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
@@ -53,6 +53,18 @@ export function ReferralInbox({
   const [mode, setMode] = useState<Mode>(null);
   const [picked, setPicked] = useState<string[]>([]);
   const [over, setOver] = useState<Record<string, Override>>({});
+  /** Below lg the list and the open referral take turns; from lg up both show. */
+  const [pane, setPane] = useState<"list" | "detail">("detail");
+  const reduce = useReducedMotion();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const rowRef = useRef<HTMLButtonElement>(null);
+  const prevPane = useRef(pane);
+  useEffect(() => {
+    if (prevPane.current === pane) return;
+    prevPane.current = pane;
+    if (globalThis.matchMedia("(min-width: 1024px)").matches) return;
+    (pane === "detail" ? headingRef : rowRef).current?.focus();
+  }, [pane]);
 
   const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state }));
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
@@ -72,6 +84,7 @@ export function ReferralInbox({
 
   const open = (id: string) => {
     setSel(id);
+    setPane("detail");
     setMode(null);
     setPicked([]);
   };
@@ -110,13 +123,13 @@ export function ReferralInbox({
     : [];
 
   const chip = (on: boolean) =>
-    cn("h-control cursor-pointer rounded-chip border px-3 text-body text-ink", on ? "border-ink bg-active" : "border-control bg-surface hover:bg-ground");
+    cn("h-11 cursor-pointer rounded-chip border px-4 text-body text-ink", on ? "border-ink bg-active" : "border-control bg-surface hover:bg-ground");
   const lateOpen = !!r && r.state === "new" && r.waiting > window;
   const outcome = r && over[r.id]?.outcome;
 
   return (
     <>
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-6">
+      <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Referrals</h1>
           <p className="m-0 mt-1 text-muted" data-testid="finding">
@@ -127,8 +140,8 @@ export function ReferralInbox({
       </header>
 
       <div className="flex flex-wrap items-stretch gap-gap">
-        <section aria-label="Referral list" className="flex min-w-[300px] flex-[0_1_420px] flex-col rounded-card border border-line bg-surface">
-          <div role="tablist" aria-label="Saved views" className="flex gap-5 border-b border-line px-4">
+        <section aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
+          <div role="tablist" aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
             {TABS.map(([id, label, t]) => (
               <button
                 key={id}
@@ -140,20 +153,20 @@ export function ReferralInbox({
                   setMode(null);
                   setPicked([]);
                 }}
-                className={cn("-mb-px h-11 cursor-pointer border-b-2 bg-transparent text-body", tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
+                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
               >
                 {label} <span className="text-small text-muted">{all.filter(t).length}</span>
               </button>
             ))}
           </div>
           <form action="/app/referrals" className="px-4 pb-2 pt-3">
-            <label className="flex h-control items-center gap-2 rounded-control border border-control bg-surface px-2.5">
+            <label className="flex items-center gap-2 rounded-control border border-control bg-surface px-2.5">
               <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-muted">
                 <circle cx="7" cy="7" r="4.5" />
                 <path d="M10.5 10.5l3 3" />
               </svg>
               <span className="sr-only">Search case id</span>
-              <input type="search" name="q" defaultValue={q} placeholder="Case id, then Enter" className="min-w-0 flex-1 border-0 bg-transparent text-body text-ink outline-none" />
+              <input type="search" name="q" defaultValue={q} placeholder="Case id, then Enter" className="min-w-0 flex-1 h-11 border-0 bg-transparent text-body text-ink outline-none" />
             </label>
           </form>
           <div className="flex flex-1 flex-col gap-0.5 px-2">
@@ -163,38 +176,43 @@ export function ReferralInbox({
               const inline = x.state === "new" && x.flags.length === 0;
               const review = (x.state === "new" && x.flags.length > 0) || x.state === "grade";
               return (
-                <div key={x.id} className={cn("relative flex min-h-[68px] items-center rounded-control", on ? "bg-active" : "hover:bg-ground")}>
-                  <span className="flex min-w-0 flex-1 items-start gap-2 px-2.5 py-3">
-                    <RecordAvatar id={x.id} name={x.name} linked={x.hasRecord} className="relative z-10">
+                <div key={x.id} className={cn("relative flex min-h-[68px] items-center gap-1 rounded-control px-1", on ? "bg-active" : "hover:bg-ground")}>
+                  <div className="flex size-11 flex-none items-center justify-center self-start">
+                    <RecordAvatar id={x.id} name={x.name} linked={x.hasRecord} className="relative z-10 size-11 items-center justify-center">
                       <Avatar person={x.seed} size={24} label="" />
                     </RecordAvatar>
-                    <button aria-pressed={on} onClick={() => open(x.id)} className="min-w-0 flex-1 cursor-pointer bg-transparent p-0 text-left after:absolute after:inset-0 after:rounded-control">
-                      <span className="flex min-h-6 min-w-0 items-center gap-2">
-                        <span className="whitespace-nowrap font-semibold">{x.name}</span>
-                        {x.nameAr && (
-                          <span lang="ar" dir="rtl" className="truncate text-muted">
-                            {x.nameAr}
-                          </span>
-                        )}
-                        {(x.state === "new" || x.state === "grade") && (
-                          <span className={cn("ml-auto flex-none whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
-                        )}
-                      </span>
-                      <span className="mt-1 block truncate text-muted">{lineFor(x, over[x.id])}</span>
-                    </button>
-                  </span>
-                  <span className="flex-none pr-2.5">
+                  </div>
+                  <button
+                    ref={on ? rowRef : undefined}
+                    aria-pressed={on}
+                    onClick={() => open(x.id)}
+                    className="min-w-0 flex-1 cursor-pointer bg-transparent py-2.5 text-left after:absolute after:inset-0 after:rounded-control"
+                  >
+                    <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                      <span className="font-semibold">{x.name}</span>
+                      {x.nameAr && (
+                        <span lang="ar" dir="rtl" className="text-muted">
+                          {x.nameAr}
+                        </span>
+                      )}
+                      {(x.state === "new" || x.state === "grade") && (
+                        <span className={cn("whitespace-nowrap text-small", isLate ? "font-medium text-negative" : "text-muted")}>{x.waiting} days</span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 block text-muted">{lineFor(x, over[x.id])}</span>
+                  </button>
+                  <span className="flex-none pr-1">
                     {inline && (
-                      <button onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10 h-8 cursor-pointer rounded-control bg-cta px-3 text-body font-medium text-white">
+                      <button onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10 h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
                         Accept
                       </button>
                     )}
                     {review && (
-                      <button onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10 h-8 cursor-pointer rounded-control bg-active px-3 text-body text-ink hover:bg-control">
+                      <button onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10 h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">
                         Review
                       </button>
                     )}
-                    {!inline && !review && <span className="text-small text-muted">{{ returned: "Returned", accepted: "Accepted", done: "Closed", new: "", grade: "" }[x.state]}</span>}
+                    {!inline && !review && <span className="pr-2 text-small text-muted">{{ returned: "Returned", accepted: "Accepted", done: "Closed", new: "", grade: "" }[x.state]}</span>}
                   </span>
                 </div>
               );
@@ -207,57 +225,58 @@ export function ReferralInbox({
         </section>
 
         {r ? (
-          <section aria-label="Open referral" className="min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-pad">
-            <div className="flex items-start justify-between gap-6">
+          <section aria-label="Open referral" className={cn("min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-4 sm:p-pad lg:flex", pane === "list" ? "hidden" : "flex")}>
+            <button onClick={() => setPane("list")} className="-mt-1 mb-3 flex min-h-11 cursor-pointer items-center gap-2 self-start rounded-control bg-transparent pr-3 text-body text-ink lg:hidden">
+              <span aria-hidden>‹</span>
+              All referrals · {list.length}
+            </button>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
               <div className="flex min-w-0 items-start gap-4">
                 <RecordAvatar id={r.id} name={r.name} linked={r.hasRecord}>
                   <Avatar person={r.seed} size={56} label="" />
                 </RecordAvatar>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-3">
-                    <h2 className="m-0 text-title font-semibold">{r.name}</h2>
+                  <div className="flex flex-wrap items-baseline gap-x-3">
+                    <h2 ref={headingRef} tabIndex={-1} className="m-0 text-title font-semibold outline-none">
+                      {r.name}
+                    </h2>
                     {r.nameAr && (
                       <span lang="ar" dir="rtl" className="text-section text-muted">
                         {r.nameAr}
                       </span>
                     )}
                   </div>
-                  <p className="m-0 mt-1 text-muted">
-                    {[r.age, `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}
-                    {r.hasRecord && (
-                      <>
-                        {" · "}
-                        <Link href={caseHref("/app/patients", r.id)} className="underline">
-                          Open record
-                        </Link>
-                      </>
-                    )}
-                  </p>
+                  <p className="m-0 mt-1 text-muted">{[r.age, `from ${r.clinic} Healthcare Centre`].filter(Boolean).join(" · ")}</p>
+                  {r.hasRecord && (
+                    <Link href={caseHref("/app/patients", r.id)} className="inline-flex min-h-11 items-center underline">
+                      Open record
+                    </Link>
+                  )}
                 </div>
               </div>
-              <div className="flex-none text-right">
-                <div className="flex items-baseline justify-end gap-1.5">
+              <div className="sm:flex-none sm:text-right">
+                <div className="flex items-baseline gap-1.5 sm:justify-end">
                   <span data-testid="lead-days" className={cn("text-lead font-bold", lateOpen ? "text-negative" : "text-ink")}>
                     {r.waiting}
                   </span>
                   <span className="text-muted">{r.state === "new" ? "days waiting" : "days since referral"}</span>
                 </div>
-                <div className={cn("mt-0.5 text-small", lateOpen ? "text-negative" : "text-muted")}>
+                <div className={cn("mt-0.5 text-body sm:text-small", lateOpen ? "text-negative" : "text-muted")}>
                   {r.state === "new" ? (lateOpen ? `${r.waiting - window} past the unit's ${window}` : `unit answers within ${window}`) : `sent ${r.sent}`}
                 </div>
               </div>
             </div>
 
             {r.flags.length > 0 && r.state !== "done" && (
-              <p className="m-0 mt-4 text-body" data-testid="flags">
+              <p className="m-0 mt-3 text-body" data-testid="flags">
                 <span className="font-medium">Check first:</span> <span className="text-muted">{r.flags.join(" · ")}</span>
               </p>
             )}
 
-            <div className="mt-5">
+            <div className="mt-4">
               {r.state === "new" && mode === null && (
                 <div className="flex flex-wrap gap-gap">
-                  <button onClick={() => accept(r)} className="h-control cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
+                  <button onClick={() => accept(r)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
                     Accept referral
                   </button>
                   <Secondary onClick={() => setMode("cond")}>Accept with conditions</Secondary>
@@ -275,7 +294,7 @@ export function ReferralInbox({
                     ))}
                   </div>
                   <div className="mt-3 flex gap-gap">
-                    <button onClick={() => accept(r, picked)} className="h-control cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
+                    <button onClick={() => accept(r, picked)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
                       {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
                     </button>
                     <Secondary onClick={() => open(r.id)}>Cancel</Secondary>
@@ -297,7 +316,7 @@ export function ReferralInbox({
                     {picked[0] ? (
                       <button
                         onClick={() => act(r.id, "returned", `Returned to the ${r.clinic} GP. Reason: ${picked[0].toLowerCase()}. Act by ${actBy}.`, `Returned to the GP: ${picked[0].toLowerCase()}`)}
-                        className="h-control cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white"
+                        className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white"
                       >
                         Return to GP
                       </button>
@@ -316,7 +335,7 @@ export function ReferralInbox({
                       <button
                         key={n}
                         onClick={() => act(r.id, "accepted", `Graded ${n}, ${w.toLowerCase()}. The case stays held until the report is complete.`, `Graded the prep ${n}`)}
-                        className="flex h-12 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
+                        className="flex h-14 min-w-16 cursor-pointer flex-col items-center justify-center rounded-chip border border-control bg-surface px-3 hover:bg-ground"
                       >
                         <span className="font-medium">{n}</span>
                         <span className="text-small text-muted">{w}</span>
@@ -328,7 +347,7 @@ export function ReferralInbox({
               )}
               <AnimatePresence initial={false}>
                 {outcome && (
-                  <motion.div key="outcome" role="status" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="flex flex-wrap items-center gap-gap">
+                  <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="flex flex-wrap items-center gap-gap">
                     <p className="m-0 flex-1">{outcome}</p>
                     <Secondary onClick={() => undo(r.id)}>Undo</Secondary>
                   </motion.div>
@@ -347,7 +366,7 @@ export function ReferralInbox({
             </div>
 
             <h3 className="m-0 mt-6 text-section font-medium">Referral details</h3>
-            <dl className="m-0 mt-2 grid grid-cols-2 gap-x-6 gap-y-3">
+            <dl className="m-0 mt-2 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
               {r.details.map(([k, v]) => (
                 <div key={k}>
                   <dt className="text-small text-muted">{k}</dt>
@@ -357,7 +376,11 @@ export function ReferralInbox({
             </dl>
           </section>
         ) : (
-          <section aria-label="Open referral" className="min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-pad">
+          <section aria-label="Open referral" className={cn("min-w-0 flex-[1_1_520px] rounded-card border border-line bg-surface p-4 sm:p-pad lg:block", pane === "list" ? "hidden" : "block")}>
+            <button onClick={() => setPane("list")} className="mb-3 flex min-h-11 cursor-pointer items-center gap-2 bg-transparent text-body text-ink lg:hidden">
+              <span aria-hidden>‹</span>
+              All referrals
+            </button>
             <h2 className="m-0 text-section font-medium">Nothing to open</h2>
             <p className="m-0 mt-2 text-muted">This view is empty. Choose another tab or clear the search.</p>
           </section>
@@ -384,5 +407,5 @@ function lineFor(x: Referral, o: Override | undefined): string {
 }
 
 function Secondary(props: React.ComponentProps<"button">) {
-  return <button {...props} className="h-control cursor-pointer rounded-control bg-active px-3.5 text-body text-ink hover:bg-control" />;
+  return <button {...props} className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control" />;
 }

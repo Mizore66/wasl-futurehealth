@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { Card, SignoffsCard } from "@/components/case/sections";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
@@ -47,19 +49,47 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
             </span>
           </div>
           <p className="m-0 mt-1 text-muted">
-            {view.held} Referred {view.referredOn}, report {view.report.on}.
+            {view.held} Referred {view.referredOn}
+            {view.report.on && `, report ${view.report.on}`}.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col gap-1 sm:items-end">
           {at >= 0 && (
-            <span className="text-small leading-8 text-muted">
+            <span className="text-small text-muted">
               Case {at + 1} of {total} waiting
             </span>
           )}
           <QueueLabel source={queue.source} />
         </div>
       </header>
-      <ReviewDesk view={view} mode={apiMode()} next={next} />
+      {at >= 0 ? (
+        <ReviewDesk view={view} mode={apiMode()} next={next} />
+      ) : (
+        <div className="mt-6 flex flex-col gap-3">
+          <Card id="not-waiting" title="This case is not waiting for a signature">
+            <p className="m-0 mt-3 max-w-[72ch]">
+              {detail.review_items.length === 0
+                ? "No review item was raised for this case: the matching and the two readers agreed on their own, so no person was needed."
+                : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3">
+              <Link
+                href={caseHref("/app/patients", view.caseId)}
+                className="inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
+              >
+                Open the case
+              </Link>
+              <Link
+                href="/app/review"
+                className="inline-flex min-h-11 items-center rounded-control border border-control bg-surface px-4 text-ink no-underline hover:bg-active hover:text-ink"
+              >
+                Back to Review
+              </Link>
+            </div>
+          </Card>
+          <SignoffsCard detail={detail} />
+        </div>
+      )}
     </>
   );
 }

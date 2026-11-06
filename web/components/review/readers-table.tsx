@@ -19,19 +19,40 @@ const AGREED: Record<Exclude<CheckDecision, "disputed">, string> = {
 const SHAPE_FOR: Record<Tone, Shape> = { positive: "tick", negative: "cross", warning: "dash", muted: "dash" };
 
 function Decision({ check, signed }: { check: Check; signed?: Outcome["prepCell"] }) {
-  if (check.decision !== "disputed") return <Mark shape="tick" tone="positive">{AGREED[check.decision]}</Mark>;
-  if (!signed) return <Pill tone="warning" shape="dash">reviewers decide</Pill>;
-  if (signed.tone === "muted") return <Mark shape="dash" tone="muted" className="text-muted">{signed.word}</Mark>;
-  return <Pill tone={signed.tone} shape={SHAPE_FOR[signed.tone]}>{signed.word}</Pill>;
+  if (check.decision !== "disputed")
+    return (
+      <Mark shape="tick" tone="positive">
+        {AGREED[check.decision]}
+      </Mark>
+    );
+  if (!signed)
+    return (
+      <Pill tone="warning" shape="dash">
+        reviewers decide
+      </Pill>
+    );
+  if (signed.tone === "muted")
+    return (
+      <Mark shape="dash" tone="muted" className="text-muted">
+        {signed.word}
+      </Mark>
+    );
+  return (
+    <Pill tone={signed.tone} shape={SHAPE_FOR[signed.tone]}>
+      {signed.word}
+    </Pill>
+  );
 }
 
-const ROW = "grid grid-cols-[minmax(0,34fr)_minmax(0,22fr)_minmax(0,22fr)_minmax(0,22fr)] items-center";
+const ROW = "grid grid-cols-1 gap-y-1 @xl:grid-cols-[minmax(0,34fr)_minmax(0,22fr)_minmax(0,22fr)_minmax(0,22fr)] @xl:items-center";
+/** The column name, shown on each value only when the columns have folded into a card. */
+const Label = ({ children }: { children: string }) => <span className="mr-2 inline-block w-28 flex-none text-small text-muted @xl:hidden">{children}</span>;
 
 /** Two readers side by side, one row per closure check, with the report quote below. */
 export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outcome["prepCell"] }) {
   return (
-    <section aria-labelledby="readers-h" className="rounded-card border border-line bg-surface p-6">
-      <div className="flex items-baseline justify-between gap-3">
+    <section aria-labelledby="readers-h" className="@container rounded-card border border-line bg-surface p-4 md:p-6">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 id="readers-h" className="m-0 text-section font-medium">
           Is the report enough to close her case?
         </h2>
@@ -40,18 +61,25 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
         </span>
       </div>
       <div className="mt-2" data-testid="readers">
-        <div className={`${ROW} h-8 text-small text-muted`}>
+        <div className="hidden h-8 grid-cols-[minmax(0,34fr)_minmax(0,22fr)_minmax(0,22fr)_minmax(0,22fr)] items-center text-small text-muted @xl:grid">
           <span>Check</span>
           <span>Rules reader</span>
           <span>Second reader</span>
           <span>Decision</span>
         </div>
         {view.checks.map((c) => (
-          <div key={c.field} data-check={c.field} className={`${ROW} min-h-10 border-t border-rule`}>
-            <span>{c.field}</span>
-            <Mark {...READ[c.rules]}>{READ[c.rules].word}</Mark>
-            <Mark {...READ[c.second]}>{READ[c.second].word}</Mark>
-            <span>
+          <div key={c.field} data-check={c.field} className={`${ROW} min-h-10 border-t border-rule py-2 @xl:py-0`}>
+            <span className="font-medium @xl:font-normal">{c.field}</span>
+            <span className="flex items-center">
+              <Label>Rules reader</Label>
+              <Mark {...READ[c.rules]}>{READ[c.rules].word}</Mark>
+            </span>
+            <span className="flex items-center">
+              <Label>Second reader</Label>
+              <Mark {...READ[c.second]}>{READ[c.second].word}</Mark>
+            </span>
+            <span className="flex items-center">
+              <Label>Decision</Label>
               <Decision check={c} signed={signed} />
             </span>
           </div>
