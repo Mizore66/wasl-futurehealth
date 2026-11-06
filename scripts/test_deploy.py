@@ -69,6 +69,55 @@ exit 2
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertTrue(log.exists())
 
+    def run_nats_entrypoint(self, tmp, key, data):
+        """Run deploy/nats/entrypoint.sh with a fake docker-entrypoint.sh that records that nats-server would start."""
+        tmp = Path(tmp)
+        bindir = tmp / "bin"
+        bindir.mkdir(exist_ok=True)
+        fake = bindir / "docker-entrypoint.sh"
+        fake.write_text('#!/bin/sh\necho started >> "$FAKE_STARTED"\n')
+        fake.chmod(0o755)
+        env = dict(os.environ, PATH=str(bindir) + os.pathsep + os.environ["PATH"], WASL_NATS_DATA=str(data),
+                   FAKE_STARTED=str(tmp / "started"))
+        env.pop("WASL_JS_KEY", None)
+        if key is not None:
+            env["WASL_JS_KEY"] = key
+        r = subprocess.run(["sh", str(ROOT / "deploy/nats/entrypoint.sh"), "nats-server"], env=env, text=True,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return r, tmp / "started"
+
+    def test_nats_entrypoint_refuses_wrong_or_missing_key_on_retained_data(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "data"
+            data.mkdir()
+            r, started = self.run_nats_entrypoint(tmp, "kaaaa1111", data)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertTrue(started.exists())
+            (data / "jetstream").mkdir()
+            (data / "jetstream" / "store").write_text("retained")
+            started.unlink()
+            for key in ("kbbbb2222", None, ""):
+                with self.subTest(key=key):
+                    r, started = self.run_nats_entrypoint(tmp, key, data)
+                    self.assertEqual(r.returncode, 1, r.stdout)
+                    self.assertFalse(started.exists(), "nats-server must not start with a wrong key")
+                    self.assertNotIn("kbbbb2222", r.stdout)
+                    self.assertEqual((data / "jetstream" / "store").read_text(), "retained")
+            r, started = self.run_nats_entrypoint(tmp, "kaaaa1111", data)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertTrue(started.exists())
+            self.assertNotIn("kaaaa1111", (data / ".wasl-key-check").read_text())
+
+    def test_nats_entrypoint_leaves_unmarked_retained_data_alone(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            data = Path(tmp) / "data"
+            (data / "jetstream").mkdir(parents=True)
+            (data / "jetstream" / "store").write_text("retained")
+            r, started = self.run_nats_entrypoint(tmp, "kaaaa1111", data)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertIn("no key marker", r.stdout)
+            self.assertFalse((data / ".wasl-key-check").exists(), "an unverified key must not be recorded")
+
     def test_demo_rejects_half_configured_external_nats(self):
         cases = [
             ({"WASL_NATS_URL": "nats://nats-0:4222"}, "WASL_NATS_URL requires WASL_NATS_EXTERNAL=1"),

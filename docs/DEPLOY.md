@@ -104,6 +104,33 @@ non-default loopback port:
 - `scripts/check_deploy.py` now also rejects long-syntax (`type: bind`) host mounts, covered by `scripts/test_deploy.py`.
 - Podman retains container environment configuration on the VM host, so the JetStream key is not kept out of the host.
 
+**Observed, 7 Nov 2026: retained-volume restart (same Podman 5.8.2 / Compose v5.1.4 setup, isolated projects `waslrestart7`
+and `waslrestart8`, loopback port 18931, generated valid key).**
+
+- First run, unmodified source (`waslrestart7`): `up -d --build` gave healthy NATS, `pipeline` exit 0, healthy API,
+  `api_smoke.py` passed (2100 cases, 3 fixtures); `report7.json` had 0 duplicate outputs, 0 lost, 0 false closures in
+  every wasl lane (CRC with review R 0.837, 0/474; cervical R 0.967, 0/204). `podman compose down` (no `-v`) kept all four
+  volumes. **Defect observed:** a following `up` with a different valid-looking key started all three NATS nodes with
+  `Error decrypting our stream metafile: unable to recover keys`, then `Resetting stream cluster state` and
+  `detected duplicate assignment` for FHIR/PREP/FACTS/OUT/KV_*: nats-server does not refuse, so a wrong key lets the
+  cluster discard the retained streams. (A missing key was already refused by Compose interpolation.)
+- Fix: `deploy/nats/entrypoint.sh` (the `wasl-nats:local` entrypoint) stores a domain-prefixed SHA-256 of the key in
+  `/data/.wasl-key-check` on first start and refuses to start (exit 1, key never printed) on a mismatch or an empty key.
+  Volumes created before this check have no marker; they start with a message and no marker is written, since the key
+  cannot be verified. Covered by new tests in `scripts/test_deploy.py` (written first; they failed before the script
+  existed). No key safeguard was weakened; the key is still not in the repository or image.
+- Fixed run (`waslrestart8`): first `up -d --build` healthy, pipeline exit 0, smoke passed, 2100 cases, marker present.
+  `down` without `-v`. `up` with a wrong key: all three nats containers exited 1 with "does not match ... refusing to
+  start", no `unable to recover keys`, all four volumes kept. `up` with no key: Compose refused ("required variable
+  WASL_JS_KEY is missing"), nothing created. `up -d` again with the original key: NATS healthy with 0 decryption
+  warnings, `streams ready, replicas 3`, `pipeline` exit 0, API healthy, `api_smoke.py` passed (2100 cases, 3 fixtures),
+  CRC with review P 1.000 R 0.837 0/474 false closures, cervical R 0.967 0/204, `exactly-once: duplicates 0 / 25169
+  outputs`, `crash_recovery` duplicates 0, lost 0, final-state mismatches 0. Both isolated projects were removed with
+  `down -v`; no other project, volume or global state was touched.
+- Scope of the restart: retained NATS stores are verified to survive and to be protected from a wrong key. The `pipeline`
+  service is one-shot and, by design, resets and re-runs the cohort on every `up` (see Configuration), so the second
+  run's 2100 cases are a fresh run on the retained cluster, not a resumed one. Run outputs in `wasl-run` are overwritten.
+
 Direct Podman path: `podman compose --env-file <file with WASL_JS_KEY=k<64 hex>> -p <project> up -d --build`.
 `scripts/deploy_up.sh` remains Docker-only. Cleanup of the isolated project is `podman compose -p <project> down -v`.
 
@@ -150,7 +177,7 @@ storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/sc
 
 ## Not production-ready
 
-- **Verified under Podman + Docker Compose provider only.** Docker Engine, other hosts and a restarted/retained-volume deployment are untested.
+- **Verified under Podman + Docker Compose provider only.** Docker Engine and other hosts are untested. A retained-volume restart is verified under Podman only (7 Nov, above); the key marker script is not exercised on Docker Engine.
 - **Demo entrypoint only.** There is no mode that ingests real feeds without the generator (see above), and the
   provider table and code mappings are the demo's.
 - **One container for all pipeline services.** They talk only through NATS and their run directory, but the
