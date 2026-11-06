@@ -49,6 +49,27 @@ for name, s in svcs.items():
     for p in s.get("ports", []):
         if not str(p).startswith("127.0.0.1:"):
             err("compose: %s publishes %s beyond loopback" % (name, p))
+# the NATS config must be baked into a derived image: a host bind mount is unreadable when the container VM
+# (Podman machine) does not share the checkout's directory
+for n in ("nats-0", "nats-1", "nats-2"):
+    s = svcs.get(n, {})
+    if s.get("image") != "wasl-nats:local":
+        err("compose: %s must use the derived image wasl-nats:local" % n)
+    b = s.get("build")
+    if (b.get("context") if isinstance(b, dict) else b) != "./deploy/nats":
+        err("compose: %s must build from ./deploy/nats" % n)
+    for v in s.get("volumes", []):
+        if str(v).split(":")[0].startswith(("./", "/", "../", "~")):
+            err("compose: %s bind-mounts host path %s (config must be COPY'd into wasl-nats:local)" % (n, v))
+ndf_path = os.path.join(ROOT, "deploy/nats/Dockerfile")
+if not os.path.exists(ndf_path):
+    err("deploy/nats/Dockerfile missing")
+else:
+    ndf = open(ndf_path).read().splitlines()
+    if not any(re.match(r"FROM nats:\S+", l) for l in ndf):
+        err("deploy/nats/Dockerfile: must derive FROM nats:<tag>")
+    if not any(re.match(r"COPY (--chmod=\d+ )?nats\.conf /etc/nats/wasl\.conf$", l) for l in ndf):
+        err("deploy/nats/Dockerfile: must COPY nats.conf /etc/nats/wasl.conf")
 for n in ("nats-0", "nats-1", "nats-2"):
     if "WASL_JS_KEY" not in (svcs.get(n, {}).get("environment") or {}):
         err("compose: %s gets no JetStream key" % n)
