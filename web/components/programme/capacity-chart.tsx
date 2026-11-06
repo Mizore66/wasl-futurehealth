@@ -4,7 +4,7 @@ import { ChartFigure, FILL, Legend, Mark } from "./chart-kit";
 import type { CapacityRegion, PoolRun } from "./model";
 
 const n = (v: number) => v.toLocaleString("en-US");
-const w = (v: number, max: number) => ({ width: `${(v / max) * 100}%`, minWidth: v > 0 ? 4 : 0 });
+const w = (v: number, max: number) => ({ width: `${(v / max) * 88}%`, minWidth: v > 0 ? 4 : 0 });
 
 /** Slots against open cases that need one, in each region: a grouped bar chart. */
 export function RegionCapacityChart({ regions }: { regions: CapacityRegion[] }) {
@@ -32,7 +32,7 @@ export function RegionCapacityChart({ regions }: { regions: CapacityRegion[] }) 
                 <span className="text-small leading-4 text-ink-soft">{name}</span>
                 <span className="relative mt-0.5 block h-4">
                   <span className="absolute left-0 top-0 block h-4 rounded-[4px]" style={{ ...FILL[fill], ...w(v, max) }} />
-                  <span className="absolute top-0 text-small font-medium leading-4" style={{ left: `calc(${(v / max) * 100}% + 6px)` }}>
+                  <span className="absolute top-0 text-small font-medium leading-4" style={{ left: `calc(${(v / max) * 88}% + 6px)` }}>
                     {n(v)}
                   </span>
                 </span>
@@ -82,7 +82,7 @@ export function PoolingChart({ runs }: { runs: PoolRun[] }) {
                     <span className={pooled ? "text-small font-medium leading-4" : "text-small leading-4 text-ink-soft"}>{r.label}</span>
                     <span className="relative mt-0.5 block h-3.5">
                       <span className="absolute left-0 top-0 block h-3.5 rounded-[4px]" style={{ ...FILL[pooled ? "solid" : "muted"], ...w(r.share, max) }} />
-                      <span className="absolute top-0 text-small font-medium leading-3.5" style={{ left: `calc(${(r.share / max) * 100}% + 6px)` }}>
+                      <span className="absolute top-0 text-small font-medium leading-3.5" style={{ left: `calc(${(r.share / max) * 88}% + 6px)` }}>
                         {r.display}
                       </span>
                     </span>
