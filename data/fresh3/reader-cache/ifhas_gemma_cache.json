@@ -1,0 +1,427 @@
+{
+ "08c7351618f841237897bf6fa9a741ecaac8b359568c4332aa5c7a8ce07d9643": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Repeat values confirm type 2 diabetes mellitus."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Begin metformin 500 mg with the evening meal for one week, then 500 mg twice daily with meals if tolerated."
+   }
+  ],
+  "quote": "Findings and ongoing care discussed with patient.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10370,
+  "rev": "grounding-1"
+ },
+ "09173cb7f5bee1a58982c1f1a65c5f09e5f891a6c46e73c328546291af5a43b2": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "weight 98.6 kg, height 1.62 m, BMI 37.6 kg/m²"
+   }
+  ],
+  "quote": "Patient would like structured support; referrals sent to our weight-management clinic and dietitian. First weight-management appointment booked for 25 August 2026 at 09:00 with Dr Latifa Al Marri; dietitian appointment booked for 27 August at 14:00 with Ms Dana Al Hosani. Patient repeated both appointment dates correctly. Booking details sent by SMS; asked to bring her medication list and a three-day food record.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 11215,
+  "rev": "grounding-1"
+ },
+ "1b03aacb50782d383d68bb1425467f087b01a75c83a99a91576ad8a578c72eb7": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "He reported sensitivity to food in the lower right"
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "46: fractured distal composite margin"
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Bitewing shows recurrent distal caries without pulpal involvement"
+   }
+  ],
+  "quote": "Contacts and occlusion checked. Post-operative care explained. Return if pain persists; routine dental review in six months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 12530,
+  "rev": "grounding-1"
+ },
+ "1b1c24aa4126da7b659b03a83e654ffa876068dbf8bd1d5841d4eef41f12e924": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Screening TSH was 18.6 mIU/L; repeat TSH is 19.2 with free T4 7.8 pmol/L (reference 12–22)."
+   }
+  ],
+  "quote": "I have started levothyroxine 50 micrograms each morning, taken on an empty stomach; separate calcium or iron by at least four hours. We will repeat TSH and free T4 in six weeks and adjust the dose at review. She understands the dosing instructions.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9227,
+  "rev": "grounding-1"
+ },
+ "272b666487d5608049e32eea6ce2dd2b8e703c2eed730c5d9b8fcbe2f61e8e76": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Hypertension is suspected but is not diagnosed at this stage."
+   }
+  ],
+  "quote": "We have arranged a validated upper-arm monitor and a two-week home BP diary: two readings each morning and evening, one minute apart, after five minutes seated rest. He will return with the diary and device on 12 October 2026. A diagnostic decision will be made only after reviewing the home measurements.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8865,
+  "rev": "grounding-1"
+ },
+ "3d197f67933f97649bdf7c785e8fc717c3ec4deebc3f92cb64ee638091133421": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Office BP remains 148/88 mmHg."
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Seven-day home average is 117/73 using a validated upper-arm device."
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "24-hour ambulatory recording: overall 116/71, awake 120/74, asleep 105/63 mmHg; adequate recording with preserved nocturnal dip."
+   }
+  ],
+  "quote": "Findings support a white-coat effect; hypertension is not confirmed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 12064,
+  "rev": "grounding-1"
+ },
+ "421c46e21cc21cae39e167f94e963027553bfef01f82a2ace886be90c21e68d8": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP 158/94 mmHg, LDL-C 4.3 mmol/L, HbA1c 5.6%"
+   }
+  ],
+  "quote": "Advised lower salt intake, less saturated fat and a home BP record morning/evening after five minutes seated. Clinic slot booked for 12 June 2026 at 09:30 with Dr Laila Mubarak Al Shamsi; bring readings and home monitor. Seek urgent care for chest pain, new neurological symptoms, or persistently very high BP with symptoms. Patient repeated the advice back.  ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 11969,
+  "rev": "grounding-1"
+ },
+ "49a9619e94149d16c71f23007c8517171b29e752995913288acd9b2a2ee893e8": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "LDL-C 5.2 mmol/L, triglycerides 1.8 mmol/L"
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "BP 132/82"
+   }
+  ],
+  "quote": "Discussed cardiovascular risk and agreed to commence atorvastatin 40 mg nightly. Prescription issued today. Reduce saturated fat, increase soluble fibre and build towards 150 minutes of walking weekly. Repeat lipid profile and ALT in 8 weeks, then review in this clinic; earlier contact for muscle pain or intolerance. Reception to obtain demographic documentation before the next appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 11368,
+  "rev": "grounding-1"
+ },
+ "4d481ee0c04dce09cd7199707e6cc28dc6addaee27a61aa5796523cac67cc296": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP today 162/96, repeat after rest 158/94 mmHg."
+   },
+   {
+    "topic": "lipids",
+    "status": "not_confirmed",
+    "quote": "Screening LDL-C 4.8 mmol/L."
+   }
+  ],
+  "quote": "Mr Al Rumaithi declined medication and all further investigations today despite counselling.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8035,
+  "rev": "grounding-1"
+ },
+ "539bc7737052565589da08f546700fb1f253d42943fa630b4b77c23e3ff0c8bb": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "prediabetes, not diabetes."
+   }
+  ],
+  "quote": "Explained the distinction to the patient.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6500,
+  "rev": "grounding-1"
+ },
+ "67a70c548586d25504801fb39e6291699c81a2101fa64d26ba039ee47b3f1905": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Clinic BP 158/96; home log averages 153/93 mmHg."
+   }
+  ],
+  "quote": "I have started amlodipine 5 mg daily and discussed salt reduction and daily walking. He will record morning and evening BP for two weeks and return in four weeks for dose review.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7012,
+  "rev": "grounding-1"
+ },
+ "7fb086923c79bc951b7dd03bfa8030d8e5134d46a7ef54e7a78a6bcb9ca9b87a": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "HbA1c was 6.6%."
+   }
+  ],
+  "quote": "results awaited, with no diabetes diagnosis made at this stage.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 4608,
+  "rev": "grounding-1"
+ },
+ "86da7a60cf1c127cc640af07a2a97006809b9db9ae87015f494e4f0a66aa74c7": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Patient read out today's home monitor values: 192/116 initially, 190/115 after sitting for ten minutes."
+   }
+  ],
+  "quote": "Reassured. Advised less salt and regular walking; no medication prescribed and no further assessment arranged. Routine review in one year. Patient agreeable.  ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9170,
+  "rev": "grounding-1"
+ },
+ "91a7ff82a7480766d20ac1a1a905562ab5f9b9210086143b63d3f923d5aa4c51": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "pending",
+    "quote": "Following our call today, your appointment has been rebooked for 7 October 2026 at 09:40 with Dr Reem Adel Al Mansoori."
+   }
+  ],
+  "quote": "Following our call today, your appointment has been rebooked for 7 October 2026 at 09:40 with Dr Reem Adel Al Mansoori.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8526,
+  "rev": "grounding-1"
+ },
+ "9b9e184ea12d5e7d2e0ce74a477d29ca6cef16317da54f0b6da3d223d264ab54": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP: screening 156/94; today 150/92 and 148/90 mmHg. Seven-day home average 146/91."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "repeat fasting glucose 5.3 mmol/L and HbA1c 5.4%. No current evidence of diabetes or prediabetes."
+   },
+   {
+    "topic": "lipids",
+    "status": "pending",
+    "quote": "LDL remains elevated; cardiovascular risk assessment and medication discussion deferred until full family history is available."
+   }
+  ],
+  "quote": "Discussed salt reduction, regular walking and replacing saturated fats. Patient agrees to keep a BP record.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 14636,
+  "rev": "grounding-1"
+ },
+ "9c5c60df30e2059c24c403b31ea49c5395cb89e48b2feca7585f1cdbc43828e4": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Reviewed subsequent clinic readings of 118/72 and 116/74 mmHg and seven-day home BP average 117/73: no hypertension."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Repeat fasting glucose 4.9 mmol/L and HbA1c 5.2%: no diabetes; no prediabetes."
+   },
+   {
+    "topic": "lipids",
+    "status": "not_confirmed",
+    "quote": "Repeat lipids: total cholesterol 4.4, LDL-C 2.3, HDL-C 1.6, triglycerides 1.1 mmol/L. No cardiovascular disease, CKD or premature family cardiovascular history reported; nonsmoker."
+   }
+  ],
+  "quote": "Patient understood the results. Continue usual healthy diet and activity; no disease-specific follow-up arranged.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 12554,
+  "rev": "grounding-1"
+ },
+ "a3462fa9a3dfcebe617e310beabea09582cb093a29d178a60fa4b7bb70228a24": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Screening HbA1c 7.2%; repeat HbA1c on 16 February 7.1%."
+   }
+  ],
+  "quote": "plan to follow at next visit",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5214,
+  "rev": "grounding-1"
+ },
+ "b759881c66721ec5a53d91058792d914a1d58dbc99b1a6635693c62095a843a7": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "BP today 136/84 mmHg."
+   },
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "Wt 106 kg, ht 1.73 m, BMI 35.4."
+   }
+  ],
+  "quote": "Patient wishes to think about the options; will discuss a plan next visit.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9441,
+  "rev": "grounding-1"
+ },
+ "baa43b91b1da5b09730826402534474eda7fd30883593078ff1dacd67cac922b": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Prior images reviewed; focused ultrasound shows a 9 mm simple cyst corresponding to the area described."
+   }
+  ],
+  "quote": "No aspiration indicated; return to routine breast imaging schedule.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5162,
+  "rev": "grounding-1"
+ },
+ "c3a58c00a2ccc96c6036f88eca16244ab4cd107301044522d4baba201229e87e": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Hypertension confirmed on repeated office measurements."
+   }
+  ],
+  "quote": "Start amlodipine 5 mg orally once daily; discussed ankle swelling and dizziness. Reduce dietary salt, walk regularly and keep a home BP diary. Review in 4 weeks; seek urgent care for chest pain or focal neurological symptoms.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6176,
+  "rev": "grounding-1"
+ },
+ "c81e95236e6ef763db18cad0fbffbd0aa9d11ccf94dff17bc49f5a165e283a7b": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "His father sustained an MI aged 43. He reports no exertional chest discomfort."
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "Atorvastatin 40 mg nightly started today following discussion of benefits and adverse effects."
+   }
+  ],
+  "quote": "Atorvastatin 40 mg nightly started today following discussion of benefits and adverse effects.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8006,
+  "rev": "grounding-1"
+ },
+ "c8a131aeca5cfeeda5d65652a42b9f874621286ebf89df3323bd94c416ddcf1b": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "HbA1c 11.1%; fasting plasma glucose 15.2 mmol/L."
+   },
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "BMI 31.4 kg/m²."
+   }
+  ],
+  "quote": "Assessment: diabetes not confirmed at this visit.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8462,
+  "rev": "grounding-1"
+ },
+ "cd9d4731953cc612a6b12c073e530e3627ae2cb987d60d9a0ef25427bf6bd680": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Current measurements are within normal limits."
+   },
+   {
+    "topic": "lipids",
+    "status": "not_confirmed",
+    "quote": "glucose 5.1 mmol/L, HbA1c 5.3%, LDL-C 2.4 mmol/L, triglycerides 1.0 mmol/L."
+   }
+  ],
+  "quote": "No sustained hypertension demonstrated; continue present lifestyle measures and routine primary-care follow-up.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9566,
+  "rev": "grounding-1"
+ },
+ "d5b71c1449a691580537c6475eca8e4b967f3b85a61a491233c10d751ea1f02d": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "pending",
+    "quote": "Fasting lipid profile ordered today;"
+   }
+  ],
+  "quote": "Reception to arrange clinician review when the report is received. Advised to reduce sweetened drinks and refined carbohydrates in the meantime.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5994,
+  "rev": "grounding-1"
+ },
+ "deaab09710ab6c09013a5da10f401ad088fbba00b15f62530b5c35eba5b71dc1": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "This confirms type 2 diabetes."
+   }
+  ],
+  "quote": "Start metformin 500 mg with the evening meal; discussed gastrointestinal effects. Arrange review in four weeks.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6216,
+  "rev": "grounding-1"
+ }
+}
