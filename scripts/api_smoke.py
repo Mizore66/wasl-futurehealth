@@ -14,6 +14,7 @@ import urllib.request
 
 REQUIRED_FIXTURES = ("evidence_closure", "false_closure_trap", "review_hold")
 MAX_LIMIT = 500
+DEFAULT_LIMIT = 100
 
 
 class SmokeFailure(Exception):
@@ -69,8 +70,12 @@ def smoke(c):
         check(0 <= p["closed"] <= p["cases"] and 0 <= p["overdue"] <= p["cases"], f"dashboard by_programme {name} counts out of range")
 
     for name, p in progs.items():
-        for asked, bound in ((5, 5), (MAX_LIMIT * 2, MAX_LIMIT)):
+        for asked, bound in ((5, 5), (MAX_LIMIT * 2, None)):
             page = c.ok(f"/api/cases?programme={urllib.parse.quote(name)}&limit={asked}")
+            applied = page.get("limit")
+            if bound is None:  # over-max limit: the API falls back to its default page size (documented 100), never above the max
+                check(applied == DEFAULT_LIMIT, f"cases programme={name}: over-max limit applied {applied!r}, expected default {DEFAULT_LIMIT}")
+                bound = applied
             check(page.get("total") == p["cases"], f"cases programme={name}: total {page.get('total')} != dashboard {p['cases']}")
             check(len(page["cases"]) <= bound, f"cases programme={name}: {len(page['cases'])} rows exceed limit {bound}")
             check(len(page["cases"]) == min(bound, p["cases"]), f"cases programme={name}: unexpected page size {len(page['cases'])}")
@@ -92,6 +97,22 @@ def smoke(c):
         check(isinstance(summary, dict) and summary.get("id") == cid, f"fixture {tag}: detail case id differs from fixture id")
         cur = d.get("current", {})
         check(cur.get("state") == f.get("state"), f"fixture {tag}: detail state {cur.get('state')!r} != fixture {f.get('state')!r}")
+        inv = d.get("agent_investigations")
+        check(isinstance(inv, list), f"fixture {tag}: agent_investigations is not a list")
+        prov = d.get("agent_provenance")
+        check(isinstance(prov, dict) and isinstance(prov.get("cached"), bool), f"fixture {tag}: agent_provenance missing or malformed")
+        if tag == "agent_review":
+            check(len(inv) >= 1, "fixture agent_review: no agent_investigations")
+            for r in inv:
+                check(r.get("label") == "same", "fixture agent_review: investigation label is not same")
+                check(bool(r.get("citations")), "fixture agent_review: investigation has no citations")
+                check(isinstance(r.get("human"), dict) and r["human"].get("link") == "same" and "agent" in r["human"].get("reads", []),
+                      "fixture agent_review: human sign-off context lacks agent read / same link")
+            check(prov.get("cached") is True and prov.get("experimental") is True, "fixture agent_review: agent_provenance is not cached/experimental")
+            check(set(prov) <= {"cached", "experimental", "model", "prompt_ver", "schema_ver"}, f"fixture agent_review: agent_provenance exposes extra keys {sorted(prov)}")
+            check(f.get("closed") is True and d.get("case", {}).get("closed") is True, "fixture agent_review: case is not closed")
+        else:
+            check(len(inv) == 0 or prov.get("cached") is True, f"fixture {tag}: investigations without cached agent_provenance")
         check(isinstance(d.get("decisions"), list) and len(d["decisions"]) == f.get("decisions"), f"fixture {tag}: decision count differs from fixture")
         code, a = c.get(case_path(cid, "/audit"))
         check(code == 200, f"fixture {tag}: audit returned {code}")

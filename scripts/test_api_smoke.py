@@ -34,6 +34,8 @@ class Fake:
         for tag, f in self.fix["fixtures"].items():
             self.detail[f["id"]] = load(f"case_{tag}.json")
             self.audit[f["id"]] = load(f"case_{tag}_audit.json")
+            self.detail[f["id"]].setdefault("agent_investigations", [])  # samples taken before the agent fields existed
+            self.detail[f["id"]].setdefault("agent_provenance", {"cached": False, "experimental": False})
         self.pages = {}
         for prog in self.dash["by_programme"]:
             p = SAMPLES / f"cases_{prog}_page1.json"
@@ -57,7 +59,8 @@ class Fake:
             limit = int(query.get("limit", ["100"])[0] or 100)
             if limit <= 0:
                 limit = 100
-            limit = min(limit, 500)
+            if limit > 500:
+                limit = 100  # real API: an over-max limit falls back to the default
             row = page["cases"][0]
             page["cases"] = [dict(row, programme=prog)] * min(limit, total) + [dict(row, programme=prog)] * self.extra_cases
             page["total"], page["limit"] = total, limit
@@ -166,6 +169,51 @@ class SmokeValidatorTests(unittest.TestCase):
             f.route = lambda p, q: (200, {"ok": 1}) if p.startswith("/api/cases/") and "unknown" in p else orig(p, q)
         self.assertFails(m, "404")
 
+    def with_agent(self, f):
+        base = next(iter(f.fix["fixtures"]))
+        src = f.fix["fixtures"]["evidence_closure"]
+        cid = "ahs-mushrif/ServiceRequest/AGENT-sr-1"
+        f.fix["fixtures"]["agent_review"] = dict(src, id=cid)
+        d = copy.deepcopy(f.detail[src["id"]])
+        d["case"]["id"] = cid
+        d["agent_investigations"] = [{"item": "r1", "pair": ["a", "b"], "label": "same",
+                                      "citations": [{"tool": "t", "arg": "a", "field": "f", "value": "v"}],
+                                      "human": {"link": "same", "reads": ["r1", "agent"], "role": "reviewer"}}]
+        d["agent_provenance"] = {"cached": True, "experimental": True, "model": "m", "prompt_ver": "1", "schema_ver": "1"}
+        f.detail[cid] = d
+        a = copy.deepcopy(f.audit[src["id"]])
+        a["case"] = cid
+        f.audit[cid] = a
+        f.agent = d
+
+    def test_agent_review_fixture_passes_when_consistent(self):
+        r = run_smoke(Fake(self.with_agent))
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_agent_review_needs_a_cited_same_investigation(self):
+        def m(f):
+            self.with_agent(f)
+            f.agent["agent_investigations"] = []
+        self.assertFails(m, "agent_review")
+
+    def test_agent_review_needs_cached_provenance(self):
+        def m(f):
+            self.with_agent(f)
+            f.agent["agent_provenance"]["cached"] = False
+        self.assertFails(m, "agent_provenance")
+
+    def test_agent_review_must_not_expose_paths_or_reasoning(self):
+        def m(f):
+            self.with_agent(f)
+            f.agent["agent_provenance"]["cache_path"] = "/x"
+        self.assertFails(m, "agent_provenance")
+
+    def test_ordinary_fixture_agent_investigations_must_be_a_list(self):
+        def m(f):
+            self.with_agent(f)
+            f.detail[f.fix["fixtures"]["evidence_closure"]["id"]]["agent_investigations"] = None
+        self.assertFails(m, "agent_investigations")
+
 
 FAKE_BIN = """#!/usr/bin/env python3
 import json, os, sys
@@ -243,6 +291,49 @@ class DemoShellTests(unittest.TestCase):
         cont = [l for l in lines if l.strip().startswith("container)")]
         self.assertIn("report; smoke;;", alls[0])
         self.assertNotIn("smoke", cont[0])
+
+
+class SnapshotTests(unittest.TestCase):
+    PROGS = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]
+
+    def snap(self, fake, target):
+        srv = HTTPServer(("127.0.0.1", 0), make_handler(fake))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        try:
+            env = dict(os.environ, WASL_OUT=str(Path(target).parent / "out"), WASL_SNAPSHOT_DIR=str(target),
+                       WASL_API_ADDR=f"127.0.0.1:{srv.server_port}", WASL_BIN=str(Path(target).parent / "bin"))
+            return subprocess.run(["bash", str(DEMO), "snapshot"], capture_output=True, text=True, env=env, timeout=90)
+        finally:
+            srv.shutdown()
+            srv.server_close()
+
+    def test_snapshot_replaces_target_without_stale_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            target.mkdir()
+            (target / "case_stale_fixture.json").write_text("{}")
+            (target / "README.md").write_text("keep")
+            r = self.snap(Fake(), target)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertFalse((target / "case_stale_fixture.json").exists())
+            self.assertEqual((target / "README.md").read_text(), "keep")
+            for prog in self.PROGS:
+                self.assertTrue(json.loads((target / f"cases_{prog}_page1.json").read_text())["cases"], prog)
+            for tag in Fake().fix["fixtures"]:
+                self.assertTrue((target / f"case_{tag}.json").exists())
+                self.assertTrue((target / f"case_{tag}_audit.json").exists())
+
+    def test_snapshot_fails_and_keeps_target_when_a_programme_page_is_empty(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            target.mkdir()
+            (target / "case_old.json").write_text("{}")
+            def m(f):
+                f.dash["by_programme"]["ifhas"]["cases"] = 0
+            r = self.snap(Fake(m), target)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertIn("ifhas", r.stdout + r.stderr)
+            self.assertTrue((target / "case_old.json").exists())
 
 
 if __name__ == "__main__":
