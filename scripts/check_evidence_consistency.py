@@ -307,17 +307,26 @@ def check_kpi_evidence(root, add):
             for m in KPI_WITHIN_ONE.finditer(line):
                 if not KPI_QUALIFIER.search(line[max(0, m.start() - 150):m.end() + 150]):
                     add("kpi-evidence", rel, n, "unqualified 'within one point' claim; name seed 2026 or the v1/v2 five-seed result")
-    for rel in ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/PITCH.md", "docs/WRITEUP.md", "docs/BRIEF.md"):
+    for rel in KPI_DOCS:
         t = _read(root, rel) or ""
         for v in KPI_VALUES:
             if v not in t:
                 add("kpi-evidence", rel, 0, f"missing seed-2026 KPI value {v}")
-        if not re.search(r"seed[- ]2026", t, re.I) or not re.search(r"3\.1 points", t):
-            add("kpi-evidence", rel, 0, "missing seed-2026 qualifier or five-seed v2 3.1-point gap")
-    g = _read(root, "docs/DEMO-RECORDING-GUIDE.md") or ""
-    for v in KPI_VALUES + ("seed 2026", "3.1", "v1", "v2"):
-        if v not in g:
-            add("kpi-evidence", "docs/DEMO-RECORDING-GUIDE.md", 0, f"narration caveat missing {v!r}")
+        if not KPI_SEED_GAP_NEAR.search(t):
+            add("kpi-evidence", rel, 0, "missing seed-2026 1.1-point gap (seed 2026 with '1.1 points' within 300 characters)")
+        if not KPI_V1_GAP.search(t):
+            add("kpi-evidence", rel, 0, "missing five-seed v1 'about 1 point under v1' wording")
+        if not KPI_V2_GAP.search(t):
+            add("kpi-evidence", rel, 0, "missing five-seed v2 '3.1 points under independent v2' wording")
+
+
+KPI_DOCS = ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/PITCH.md", "docs/WRITEUP.md",
+            "docs/BRIEF.md", "docs/DEMO-RECORDING-GUIDE.md")
+# A seed-2026 mention must sit within 300 characters of the 1.1-point gap (either order).
+KPI_SEED_GAP_NEAR = re.compile(r"seed[- ]2026(?:(?!\n).){0,300}?(?<![\d.])1\.1[- ]points?\b"
+                               r"|(?<![\d.])1\.1[- ]points?\b(?:(?!\n).){0,300}?seed[- ]2026", re.I)
+KPI_V1_GAP = re.compile(r"about 1 point under v1\b")
+KPI_V2_GAP = re.compile(r"(?<![\d.])3\.1 (?:points )?under (?:independent )?v2\b")
 
 
 def main(argv):
