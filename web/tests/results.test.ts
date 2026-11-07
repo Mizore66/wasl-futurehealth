@@ -23,8 +23,16 @@ describe("results.json pins the honest numbers", () => {
   it("names a source file and a label for every number", () => {
     for (const e of Object.values(results.entries)) {
       expect(e.source).toMatch(/^(docs|pipeline|booking)\//);
-      expect(e.label as string).toBe(e.id.startsWith("published.") ? "published" : "simulated");
+      expect(e.label as string).toBe(e.id.startsWith("published.") ? "published" : e.id.startsWith("labelling.") ? "built" : "simulated");
     }
+  });
+
+  it("reads the labelling agreement from docs/labelling/agreement.json", () => {
+    for (const f of ["caecum", "prep", "polyps", "histology", "state"]) {
+      expect(result(`labelling.kappa.${f}`).display).toBe("1.000");
+      expect(result(`labelling.kappa.${f}`).source).toBe("docs/labelling/agreement.json");
+    }
+    expect(result("labelling.reports").value).toBe(43);
   });
 
   it("flags the exactly-once conflict instead of choosing", () => {

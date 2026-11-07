@@ -17,7 +17,7 @@ export type ReviewItems = { link?: string; evidence?: string };
 /** One appended review event: what the API receives. */
 export type Signature = { item: string; decision: "same" | "different" | "adequate" | "inadequate" };
 
-export const SIGNER = { name: "Dr Omar Al Kaabi", initials: "OK" } as const;
+export const SIGNER = { name: "Dr Omar Al Kaabi", title: "Medical director", initials: "OK" } as const;
 
 export function roleFor(decision: Signature["decision"]): Role {
   return decision === "same" || decision === "different" ? "reviewer" : "clinician";
@@ -45,6 +45,8 @@ export type Outcome = {
   tone: "positive" | "negative" | "warning";
   text: (name: string, unit: string) => string;
   next: (unit: string) => { who: string; what: string };
+  /** What the same answer reads as in the demo, where nothing is appended. */
+  preview: string;
   /** The bowel prep row of the readers table once signed. */
   prepCell: { word: string; tone: "positive" | "negative" | "warning" | "muted" };
 };
@@ -60,15 +62,17 @@ export const SIGNS: Record<Signature["decision"], string> = {
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   close: {
     commit: "Close the case",
-    pill: "Closed with two signatures",
+    pill: "Closed: both answers recorded",
+    preview: "Would close the case",
     tone: "positive",
-    text: (name) => `Same patient, prep adequate. ${name}’s case closes with both signatures and the report quote in her record.`,
-    next: () => ({ who: "Closed", what: "with two signatures" }),
+    text: (name) => `Same patient, prep adequate. ${name}’s case closes with both answers and the report quote in her record.`,
+    next: () => ({ who: "Closed", what: "with both answers recorded" }),
     prepCell: { word: "adequate, signed", tone: "positive" },
   },
   inadequate: {
     commit: "Sign: prep not adequate",
     pill: "Not closed: repeat colonoscopy",
+    preview: "Would not close: repeat colonoscopy",
     tone: "negative",
     text: (name) => `Same patient, but the prep was not adequate, so this colonoscopy does not count. ${name} goes back to Today for a repeat booking.`,
     next: () => ({ who: "Her coordinator", what: "to book a repeat colonoscopy" }),
@@ -77,6 +81,7 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   ask: {
     commit: "Sign and ask the unit to grade the prep",
     pill: "Asked the unit",
+    preview: "Would ask the unit",
     tone: "warning",
     text: (_name, unit) => `Same patient is signed. The case stays held until ${unit} grades the prep.`,
     next: (unit) => ({ who: unit, what: "to grade the bowel prep" }),
@@ -85,6 +90,7 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   notSame: {
     commit: "Sign: not the same patient",
     pill: "Link rejected",
+    preview: "Would reject the link",
     tone: "negative",
     text: (name, unit) => `The report is not ${name}’s. She stays open, and ${unit} is told the report matches no patient on our list.`,
     next: () => ({ who: "Link undone", what: "report returned unmatched" }),

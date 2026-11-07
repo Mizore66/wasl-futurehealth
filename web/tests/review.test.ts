@@ -41,6 +41,15 @@ describe("review decision", () => {
   });
 });
 
+describe("fixtures mode cannot append", () => {
+  it("postReview refuses to fabricate an event when there is no live API", async () => {
+    const { postReview } = await import("@/lib/api/source");
+    await expect(postReview("any", { item: "rv-x", decision: "same", note: "" }, { role: "reviewer", actor: "Dr Omar Al Kaabi" })).rejects.toThrow(
+      /needs WASL_API_URL/,
+    );
+  });
+});
+
 describe("review view of the review_hold fixture", () => {
   it("takes the two review items and the report from the API", () => {
     expect(view.items).toEqual({ link: "rv-2853a89572f0bc86", evidence: "rv-02bd10f694ad3d6e" });

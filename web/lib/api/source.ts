@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { z } from "zod";
@@ -9,6 +8,7 @@ import {
   CaseList,
   Dashboard,
   Fixtures,
+  Healthz,
   ReviewRequest,
   ReviewResponse,
   type CaseSummary,
@@ -61,6 +61,8 @@ export type CaseQuery = Partial<{
   state: CaseSummary["state"];
   dropoff: CaseSummary["dropoff"];
   owner: string;
+  /** Cases with no owner. The API's `owner` filter cannot ask for an empty owner, so this is applied here. */
+  unowned: boolean;
   provider: string;
   consent: CaseSummary["consent"];
   review: CaseSummary["review"];
@@ -74,19 +76,20 @@ export type CaseQuery = Partial<{
 function toSearch(q: CaseQuery): string {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(q)) {
-    if (v === undefined) continue;
+    if (v === undefined || k === "unowned") continue;
     params.set(k, k === "fixture" ? (v ? "1" : "") : String(v));
   }
   const s = params.toString();
   return s ? `?${s}` : "";
 }
 
-function matches(c: CaseSummary, q: CaseQuery): boolean {
+export function matches(c: CaseSummary, q: CaseQuery): boolean {
   return (
     (q.programme === undefined || c.programme === q.programme) &&
     (q.state === undefined || c.state === q.state) &&
     (q.dropoff === undefined || c.dropoff === q.dropoff) &&
     (q.owner === undefined || c.owner === q.owner) &&
+    (!q.unowned || c.owner === "") &&
     (q.provider === undefined || c.provider === q.provider) &&
     (q.consent === undefined || c.consent === q.consent) &&
     (q.review === undefined || c.review === q.review) &&
@@ -98,7 +101,21 @@ function matches(c: CaseSummary, q: CaseQuery): boolean {
 
 /** Fixtures mode filters each programme's 25-case sample page plus the fixtures; the live API filters all cases. */
 export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
-  if (apiMode() === "live") return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
+  if (apiMode() === "live") {
+    if (!query.unowned) return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
+    // The API cannot filter on an empty owner: fetch every other match (500 a page) and keep the unowned ones.
+    const { limit: want = 100, offset: skip = 0, ...rest } = query;
+    const cases: CaseSummary[] = [];
+    let first: CaseList | undefined;
+    for (let offset = 0; ; offset += 500) {
+      const page = (await live(CaseList, `/api/cases${toSearch({ ...rest, limit: 500, offset })}`))!;
+      first ??= page;
+      cases.push(...page.cases.filter((c) => c.owner === ""));
+      if (offset + page.cases.length >= page.total || page.cases.length === 0) break;
+    }
+    const limit = Math.min(want, 500);
+    return { ...first, cases: cases.slice(skip, skip + limit), total: cases.length, limit, offset: skip };
+  }
   const pageFiles = (await readdir(FIXTURE_DIR)).filter((f) => /^cases_[a-z_]+_page1\.json$/.test(f)).sort();
   const [pages, fx] = await Promise.all([Promise.all(pageFiles.map((f) => fixture(CaseList, f))), getFixtures()]);
   const page = pages.find((p) => p.cases[0]?.programme === "crc") ?? pages[0];
@@ -132,22 +149,6 @@ export type ReviewResult =
   | { ok: true; status: 201; response: ReviewResponse }
   | { ok: false; status: 400 | 403 | 404; error: string };
 
-const ACTION_BY_DECISION: Record<string, string> = {
-  same: "signoff_link",
-  different: "signoff_link",
-  adequate: "signoff_evidence",
-  inadequate: "signoff_evidence",
-  confirm_contact: "record_consent",
-};
-
-/** Mirror of pipeline/governance.go `rbac`, used only in fixtures mode. */
-const RBAC: Record<Role, readonly string[]> = {
-  coordinator: ["record_consent"],
-  clinician: ["signoff_evidence", "record_consent"],
-  reviewer: ["signoff_link"],
-  auditor: [],
-};
-
 export async function postReview(
   id: string,
   body: ReviewRequest,
@@ -172,32 +173,19 @@ export async function postReview(
     throw new Error(`POST review: HTTP ${res.status}`);
   }
 
-  const detail = await getCase(id);
-  if (!detail) return { ok: false, status: 404, error: "case not found" };
-  const lungEvidence = detail.case.programme === "lung_nodule" && !(request.data.decision in ACTION_BY_DECISION);
-  const action = ACTION_BY_DECISION[request.data.decision] ?? (lungEvidence ? "signoff_evidence" : undefined);
-  if (!action) return { ok: false, status: 400, error: "decision must be same|different|adequate|inadequate|confirm_contact" };
-  if (!RBAC[who.role].includes(action)) return { ok: false, status: 403, error: `rbac: role "${who.role}" may not ${action}` };
-  if (!who.actor) return { ok: false, status: 400, error: "X-Wasl-Actor header required (who is signing)" };
-  if (request.data.item && !detail.review_items.some((r) => r.item === request.data.item)) {
-    return { ok: false, status: 404, error: "review item not raised for this case" };
+  // Fixtures mode has no log to append to. Fabricating an event with a made-up hash would present a click as a saved review.
+  throw new Error("postReview needs WASL_API_URL: fixtures mode cannot append review events");
+}
+
+/**
+ * The backend's `/healthz`. Live mode fetches it (short timeout, never cached); fixtures mode reads the published snapshot.
+ * Throws on any fetch, status or parse failure: callers show an unavailable state, never a guessed value.
+ */
+export async function getHealthz(): Promise<Healthz> {
+  if (apiMode() === "live") {
+    const health = await live(Healthz, "/healthz", { signal: AbortSignal.timeout(3000) });
+    if (!health) throw new Error("/healthz: not found");
+    return health;
   }
-  const event = {
-    case: id,
-    item: request.data.item,
-    decision: request.data.decision,
-    note: request.data.note,
-    role: who.role,
-    actor: who.actor,
-    action,
-    at: new Date().toISOString(),
-    mode: "fixtures",
-    prev: "genesis",
-  };
-  const hash = createHash("sha256").update(JSON.stringify(event)).digest("hex");
-  return {
-    ok: true,
-    status: 201,
-    response: { meta: detail.meta, review: { ...event, hash }, note: "fixtures mode: not persisted" },
-  };
+  return fixture(Healthz, "healthz.json");
 }
