@@ -9,7 +9,7 @@ A woman has a positive stool test (FIT+) at her clinic. Her colonoscopy, if it h
 
 In Abu Dhabi only **30.5%** of FIT+ patients had a colonoscopy, after a median **72 days**, against a 31-day standard (SEHA, BMC Cancer 2021).
 
-In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reaching colonoscopy within 31 days. The true figure is **33.0%**; Wasl measures **32.0%**. With EID-only tracking, about 1 in 4 patients on the "chase" list have already had their colonoscopy.
+In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reaching colonoscopy within 31 days. The true figure is **33.0%**; Wasl measures **31.9%** (a 1.1-point gap). This is one simulated run (seed 2026); the frozen five-seed evaluation shows a Wasl gap of about 1 point under v1 noise and 3.1 points under independent v2 noise (`pipeline/results/final/SUMMARY.md`). With EID-only tracking, about 1 in 4 patients on the "chase" list have already had their colonoscopy.
 
 ## What Wasl does
 - **Links** a patient's records across providers and scripts (Arabic ↔ Latin), using a self-trained name encoder, HNSW matching and a calibrated scorer.

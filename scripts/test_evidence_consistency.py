@@ -44,6 +44,19 @@ class RealRepo(unittest.TestCase):
 
 
 class Mutations(Fixture):
+    def test_kpi_32_0_flagged(self):
+        self.mutate("docs/PITCH.md", "| Wasl | 31.9% |", "| Wasl | 32.0% |")
+        self.assertIn("kpi-evidence", self.rules())
+
+    def test_unqualified_within_one_point_flagged(self):
+        p = self.root / "docs/PITCH.md"
+        p.write_text(p.read_text(encoding="utf-8") + "\nWasl is within one percentage point of truth.\n", encoding="utf-8")
+        self.assertIn("kpi-evidence", self.rules())
+
+    def test_demo_caveat_required(self):
+        self.mutate("docs/DEMO-RECORDING-GUIDE.md", "3.1 under v2", "3 under v2")
+        self.assertIn("kpi-evidence", self.rules())
+
     def test_clean_copy_passes(self):
         self.assertEqual(set(), self.rules())
 

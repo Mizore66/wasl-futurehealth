@@ -26,7 +26,7 @@ Rehearse these four views before recording:
 
 **Show:** dashboard KPI comparison, then the worklist.
 
-**Say:** “A positive FIT test starts a 31-day clock, but the colonoscopy often happens at another provider, under another spelling of the patient's name. In the published Abu Dhabi baseline, only 30.5% had a colonoscopy, after a median 72 days. In our merged simulation, an EID-only tracker sees 12.4% within 31 days; truth is 33.0%. Wasl is built to show who actually needs follow-up.”
+**Say:** “A positive FIT test starts a 31-day clock, but the colonoscopy often happens at another provider, under another spelling of the patient's name. In the published Abu Dhabi baseline, only 30.5% had a colonoscopy, after a median 72 days. In our merged simulation, an EID-only tracker sees 12.4% within 31 days; truth is 33.0%; Wasl measures 31.9%. That is one simulated run (seed 2026); in the frozen five-seed results the Wasl gap varies by noise model, about 1 point under v1 and 3.1 under v2, so we do not claim every run matches. Wasl is built to show who actually needs follow-up.”
 
 ### 0:25–1:05 — one patient, across providers
 
