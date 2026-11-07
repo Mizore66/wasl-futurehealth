@@ -373,7 +373,12 @@ def main(argv=None):
     js, md = F.dumps(res), render(res) + "\n"
     jp, mp = os.path.join(a.repo, OUT_JSON), os.path.join(a.repo, OUT_MD)
     if a.check:
-        same = os.path.exists(jp) and open(jp).read() == js and os.path.exists(mp) and open(mp).read() == md
+        same = False
+        if os.path.exists(jp) and os.path.exists(mp):
+            with open(jp) as f:
+                jsame = f.read() == js
+            with open(mp) as f:
+                same = jsame and f.read() == md
         print("analysis files up to date" if same else "analysis files differ")
         return 0 if same else 1
     for path, text in ((jp, js), (mp, md)):
