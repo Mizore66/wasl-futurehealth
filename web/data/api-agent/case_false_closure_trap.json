@@ -1,0 +1,498 @@
+{
+ "agent_investigations": [],
+ "agent_provenance": {
+  "cached": true,
+  "experimental": true,
+  "model": "gpt-5.6-luna",
+  "prompt_ver": "agent-v4-json",
+  "schema_ver": "agent-evidence-tools-v1"
+ },
+ "api_reviews": [],
+ "booking": {
+  "status": "not_generated"
+ },
+ "case": {
+  "closed": false,
+  "closed_day": 0,
+  "consent": "granted",
+  "deadline_day": 31,
+  "decisions": 12,
+  "dropoff": "inadequate",
+  "fixture": "false_closure_trap",
+  "id": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+  "overdue": false,
+  "owner": "Practitioner/ahs-mushrif-nurse-5",
+  "priority": "",
+  "programme": "crc",
+  "provider": "ahs-mushrif",
+  "referral_day": 95.0187,
+  "review": "none",
+  "state": "inadequate"
+ },
+ "current": {
+  "id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d120-p0",
+  "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+  "in_seq": 14707,
+  "prov": "ahs-mushrif",
+  "sr_day": 95.01866898148148,
+  "now": 120,
+  "state": "inadequate",
+  "overdue": false,
+  "unowned": false,
+  "owner": "Practitioner/ahs-mushrif-nurse-5",
+  "esc": [
+   "rejected_inadequate",
+   "noncompliant_message"
+  ],
+  "reported_closed": false,
+  "notif_day": 98.66686342592592,
+  "ack_day": 98.89200231481482,
+  "ref_status": "accepted",
+  "ref_day": 98.4484375,
+  "comm_flags": [
+   "AHS-sr-102-comm-8:unapproved_template"
+  ],
+  "dropoff": "inadequate",
+  "prog": "crc",
+  "deadline": 31,
+  "proc_day": 116.40508101851852,
+  "ec_state": "awaiting_reply",
+  "tb_state": "prompted",
+  "chain": [
+   {
+    "type": "link_decision",
+    "body": {
+     "downstream_event": "noor-endo/DiagnosticReport/NOO-dr-41",
+     "hops": 1,
+     "linker": "wasl-v3-retrained+iso+eid",
+     "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+     "near_miss": false,
+     "path_p_cal": 1,
+     "path_strength": 1,
+     "referral_patient": "ahs-mushrif|AHS-MRN000111",
+     "tau": 0.99,
+     "weakest_edge": {
+      "a": "ahs-mushrif|AHS-MRN000111",
+      "b": "noor-endo|NOO-MRN000064",
+      "basis": "eid",
+      "p": 1
+     }
+    },
+    "prev": "genesis",
+    "hash": "d06d33a8e68cc05e86b67e183ed00d3ae061948dd08bfeba829324ef31492db7"
+   },
+   {
+    "type": "evidence",
+    "body": {
+     "agree": true,
+     "fields": {
+      "reader": "not_stated/not_stated/no/no",
+      "regex": "not_stated/not_stated/no/no"
+     },
+     "gemma": "needs_human/missing_documentation",
+     "human_override": "",
+     "image_reader": {
+      "caecal_photo": "missing",
+      "hint": "",
+      "label_before_image": "inadequate",
+      "landmark_p": 0,
+      "model": "hk-mnv3s-v1/cached",
+      "photo_shas": [
+       "1751f5b594a56af11f10fc724a26456c10adb3a5495571f2b5e03dad9680da8c",
+       "c9095edbbda0b074936dc0bdf5c0dde0fefaff44faa5f205529be2f02818d745"
+      ],
+      "photos": 2,
+      "prep": "adequate",
+      "prep_p": 0.9992,
+      "unavailable": 0
+     },
+     "label": "inadequate",
+     "quote": "",
+     "reader_model": "gemma-4-26b-a4b-it-self/cached",
+     "regex": "needs_human/missing_documentation",
+     "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+     "rule": "R1_completion_not_documented"
+    },
+    "prev": "d06d33a8e68cc05e86b67e183ed00d3ae061948dd08bfeba829324ef31492db7",
+    "hash": "d331f2aedb705369375b361f6c8d629434208fbe7c65826eeebb2f6d0fef60d3"
+   },
+   {
+    "type": "hold_decision",
+    "body": {
+     "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+     "policy": "no closure without two-reader adequate evidence or authorised human decision",
+     "programme": "crc",
+     "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+     "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
+     "state": "inadequate_evidence"
+    },
+    "prev": "d331f2aedb705369375b361f6c8d629434208fbe7c65826eeebb2f6d0fef60d3",
+    "hash": "d69e36af5afe371448f62f0c957ee3d2af4c7a678c087dc94e343a51c7009f44"
+   }
+  ],
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "contact": "granted",
+  "sig": "022a344360f4ba13ea5169fc61cf8a44fdcbb4ab725c187cfc7581e396af05ee"
+ },
+ "decisions": [
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12234",
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 12234,
+   "outreach": [],
+   "overdue": false,
+   "owner": "",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "65b69976fca1288adb9e0d916e1b99f2f40358c7c45ea2a8f0abe167f3f11be7",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12236",
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 12236,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "c453a92094d6918716dd61900d8ce6503702140999f98bc4117b8b0bc9ee0b4c",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12239",
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 12239,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "55feb963dc5199af50f267aca39e1154269a7b06406f72cf9eebf0e0294a4178",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@12709",
+   "dropoff": "never_notified",
+   "escalations": [],
+   "in_seq": 12709,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "14d642008ff563520e7f02f84eaa70a1f933a1f9a5734529e8899913716bee29",
+   "state": "open"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@13048",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 13048,
+   "outreach": [
+    {
+     "kind": "appointment_reminder",
+     "ev": "noor-endo/Appointment/NOO-appt-48",
+     "basis": "eid",
+     "p_cal": 1,
+     "released": true,
+     "guard": "dob_match",
+     "pair": [
+      "ahs-mushrif|AHS-MRN000111",
+      "noor-endo|NOO-MRN000064"
+     ]
+    }
+   ],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "c6793fc2b2cc0bbee63335f19bfdc201b09e8a19a40eadb18baa883c40c69f41",
+   "state": "booked"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@14460",
+   "dropoff": "in_progress",
+   "escalations": [],
+   "in_seq": 14460,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "3f9baff6bef2eedf168af7bf4328220eacaf0578e020cfadb4eaed268f141185",
+   "state": "procedure_done"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@ahs-mushrif/ServiceRequest/AHS-sr-102@14580",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "open_econsult"
+   ],
+   "in_seq": 14580,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "c0fd2e7f55ec02ca775cae1910f8ee3a8967a7c564bb67e374062ebfe8251291",
+   "state": "inadequate"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d99-p0",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "open_econsult"
+   ],
+   "in_seq": 14707,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "3e1e431ee01752c04ec0b860eb117609b4b8c1df24ff4755d59e39474b40fb9c",
+   "state": "inadequate"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d100-p0",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "open_econsult"
+   ],
+   "in_seq": 14707,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "6e1524013b6a5012e5d65cb47cc905d12d06c455b03c9035b28cdbc8b4531b29",
+   "state": "inadequate"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d117-p0",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "open_econsult"
+   ],
+   "in_seq": 14707,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "b3ed7a07bc5a2571aa8c337895e5cd457b4f7941881b14a1f7b36bca0f9981eb",
+   "state": "inadequate"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d119-p0",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "open_econsult",
+    "noncompliant_message"
+   ],
+   "in_seq": 14707,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "5c98491716555cc6489ebb734340810f2ce704a635141aeefee7112b2608cc49",
+   "state": "inadequate"
+  },
+  {
+   "consent_log": [],
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-102@tick-d120-p0",
+   "dropoff": "inadequate",
+   "escalations": [
+    "rejected_inadequate",
+    "noncompliant_message"
+   ],
+   "in_seq": 14707,
+   "outreach": [],
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+   "sig": "022a344360f4ba13ea5169fc61cf8a44fdcbb4ab725c187cfc7581e396af05ee",
+   "state": "inadequate"
+  }
+ ],
+ "evidence": [
+  {
+   "agree": true,
+   "fields": {
+    "reader": "not_stated/not_stated/no/no",
+    "regex": "not_stated/not_stated/no/no"
+   },
+   "gemma": "needs_human/missing_documentation",
+   "human_override": "",
+   "image_reader": {
+    "caecal_photo": "missing",
+    "hint": "",
+    "label_before_image": "inadequate",
+    "landmark_p": 0,
+    "model": "hk-mnv3s-v1/cached",
+    "photo_shas": [
+     "1751f5b594a56af11f10fc724a26456c10adb3a5495571f2b5e03dad9680da8c",
+     "c9095edbbda0b074936dc0bdf5c0dde0fefaff44faa5f205529be2f02818d745"
+    ],
+    "photos": 2,
+    "prep": "adequate",
+    "prep_p": 0.9992,
+    "unavailable": 0
+   },
+   "label": "inadequate",
+   "quote": "",
+   "reader_model": "gemma-4-26b-a4b-it-self/cached",
+   "regex": "needs_human/missing_documentation",
+   "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+   "rule": "R1_completion_not_documented"
+  }
+ ],
+ "holds": [
+  {
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+   "policy": "no closure without two-reader adequate evidence or authorised human decision",
+   "programme": "crc",
+   "report": "noor-endo/DiagnosticReport/NOO-dr-41",
+   "rule": "doh:crc closure requires caecum + graded prep + histology-if-tissue",
+   "state": "inadequate_evidence"
+  }
+ ],
+ "identities": [
+  {
+   "provider": "ahs-mushrif",
+   "registration": "ahs-mushrif|AHS-MRN000111",
+   "role": "referral"
+  },
+  {
+   "provider": "noor-endo",
+   "registration": "noor-endo|NOO-MRN000064",
+   "role": "downstream"
+  }
+ ],
+ "links": [
+  {
+   "downstream_event": "noor-endo/DiagnosticReport/NOO-dr-41",
+   "hops": 1,
+   "linker": "wasl-v3-retrained+iso+eid",
+   "loop": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+   "near_miss": false,
+   "path_p_cal": 1,
+   "path_strength": 1,
+   "referral_patient": "ahs-mushrif|AHS-MRN000111",
+   "tau": 0.99,
+   "weakest_edge": {
+    "a": "ahs-mushrif|AHS-MRN000111",
+    "b": "noor-endo|NOO-MRN000064",
+    "basis": "eid",
+    "p": 1
+   }
+  }
+ ],
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-06T14:02:40Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "reader_model": "gemma-4-26b-a4b-it-self/cached",
+  "run": "main"
+ },
+ "outreach": [],
+ "review_items": [],
+ "signoffs": [],
+ "timeline": [
+  {
+   "arrival_day": 85.2773,
+   "category": "",
+   "day": 85.2673,
+   "id": "ahs-mushrif/Encounter/AHS-enc-54",
+   "provider": "ahs-mushrif",
+   "raw_sha": "71edb01b5a53adfe",
+   "seq": 10934,
+   "source": "fhir",
+   "status": "finished",
+   "type": "Encounter"
+  },
+  {
+   "arrival_day": 95.0324,
+   "category": "",
+   "day": 95.0187,
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+   "provider": "ahs-mushrif",
+   "raw_sha": "d26f9bdb159f97ce",
+   "seq": 12234,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 95.0856,
+   "category": "",
+   "day": 95.0856,
+   "id": "ahs-mushrif/Consent/consent-471",
+   "provider": "ahs-mushrif",
+   "raw_sha": "d92284ffb6f413d6",
+   "seq": 12239,
+   "source": "fhir",
+   "status": "permit",
+   "type": "Consent"
+  },
+  {
+   "arrival_day": 98.4684,
+   "category": "referral-intake",
+   "day": 98.4484,
+   "id": "noor-endo/ServiceRequest/NOO-intake-68",
+   "provider": "noor-endo",
+   "raw_sha": "77cbaf852c80979e",
+   "seq": 12709,
+   "source": "fhir",
+   "status": "active",
+   "type": "ServiceRequest"
+  },
+  {
+   "arrival_day": 101.2892,
+   "category": "",
+   "day": 116.4051,
+   "id": "noor-endo/Appointment/NOO-appt-48",
+   "provider": "noor-endo",
+   "raw_sha": "259f5710fb5493b3",
+   "seq": 13048,
+   "source": "fhir",
+   "status": "booked",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 116.8934,
+   "category": "",
+   "day": 116.4051,
+   "id": "noor-endo/Appointment/NOO-appt-48",
+   "provider": "noor-endo",
+   "raw_sha": "40b82eb1875ac7c3",
+   "seq": 14460,
+   "source": "fhir",
+   "status": "fulfilled",
+   "type": "Appointment"
+  },
+  {
+   "arrival_day": 118.6518,
+   "category": "colonoscopy",
+   "day": 116.4051,
+   "id": "noor-endo/DiagnosticReport/NOO-dr-41",
+   "provider": "noor-endo",
+   "raw_sha": "bfd7d982fd6f5231",
+   "seq": 14580,
+   "source": "fhir",
+   "status": "final",
+   "type": "DiagnosticReport"
+  }
+ ]
+}
