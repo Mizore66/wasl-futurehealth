@@ -63,7 +63,8 @@ class Fresh3Analysis(unittest.TestCase):
 
     def test_committed_files_up_to_date_and_caveats(self):
         self.assertEqual(A3.main(["--check"]), 0)
-        md = open(os.path.join(REPO, A3.OUT_MD), encoding="utf-8").read()
+        with open(os.path.join(REPO, A3.OUT_MD), encoding="utf-8") as f:
+            md = f.read()
         for needle in ("model-labelled and not clinician-verified", "not evidence of clinical effectiveness", "93/100"):
             self.assertIn(needle, md)
         self.assertNotIn("0 unsafe", md.replace("no `0 unsafe` claim", ""))
