@@ -5,7 +5,9 @@ import type { RulesBySha } from "@/components/pipeline/profile";
 import { PipelineHeading } from "@/components/pipeline/heading";
 import { PipelineReplay, type TamperDemo } from "@/components/pipeline/pipeline-replay";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
-import { getAudit, getFixtures } from "@/lib/api/source";
+import { HealthPanel } from "@/components/pipeline/health-panel";
+import { loadHealth } from "@/components/pipeline/health";
+import { apiMode, getAudit, getFixtures, getHealthz } from "@/lib/api/source";
 import type { ChainEntry } from "@/lib/api/schema";
 import { plain } from "@/lib/domain/terms";
 import { formatDay } from "@/lib/domain/day";
@@ -81,9 +83,12 @@ export default async function Page() {
   const audit = await getAudit(loop);
   if (!audit) notFound();
 
+  const health = await loadHealth(getHealthz, apiMode());
+
   return (
     <PipelineReplay
       heading={<PipelineHeading title="Pipeline" current="/app/pipeline" />}
+      health={<HealthPanel state={health} />}
       tamper={tamperDemo(loop, audit.chain)}
       rules={rules}
     />
