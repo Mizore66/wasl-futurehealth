@@ -994,7 +994,7 @@ func (s *apiServer) caseHead(c *apiCase) string {
 }
 
 // cleanText validates a bounded, valid-UTF-8 string without surrounding whitespace, control characters or Unicode
-// format (Cf) characters (newline allowed if multiline).
+// format (Cf) characters other than ZWNJ/ZWJ after an Arabic-script letter (newline allowed if multiline).
 func cleanText(v interface{}, max int, required, multiline bool) (string, error) {
 	str, ok := v.(string)
 	if !ok {
@@ -1012,13 +1012,18 @@ func cleanText(v interface{}, max int, required, multiline bool) (string, error)
 	if !utf8.ValidString(str) || utf8.RuneCountInString(str) > max {
 		return "", fmt.Errorf("must be valid UTF-8 of at most %d characters", max)
 	}
+	var prev rune
 	for _, r := range str {
 		if unicode.IsControl(r) && !(multiline && r == '\n') {
 			return "", errors.New("must not contain control characters")
 		}
-		if unicode.Is(unicode.Cf, r) { // zero-width, bidi override and other invisible format characters
+		// ZWNJ and ZWJ are needed to write Arabic-script names (Persian, Urdu, Kurdish...): allowed only straight after an
+		// Arabic-script letter. Every other format character (bidi overrides, zero-width space, BOM, soft hyphen...) is refused.
+		joiner := (r == 0x200C || r == 0x200D) && unicode.Is(unicode.Arabic, prev)
+		if unicode.Is(unicode.Cf, r) && !joiner {
 			return "", errors.New("must not contain invisible format characters")
 		}
+		prev = r
 	}
 	return str, nil
 }
@@ -1123,7 +1128,11 @@ func (s *apiServer) overlayView(c *apiCase, full bool) map[string]interface{} {
 
 func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interface{} {
 	o := &c.ov
-	m := map[string]interface{}{"head": s.caseHead(c), "actions": o.n, "owner": o.owner, "last_action_at": o.lastAt}
+	status := "ok"
+	if s.ledgerErr != "" {
+		status = "invalid" // the overlay may be partial: say so in the list as well as the detail
+	}
+	m := map[string]interface{}{"head": s.caseHead(c), "actions": o.n, "owner": o.owner, "last_action_at": o.lastAt, "ledger_status": status}
 	if o.snooze != nil {
 		m["snooze"] = o.snooze
 	}

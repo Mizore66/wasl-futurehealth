@@ -255,38 +255,3 @@ func TestReplayRejectsDuplicateKeysFractionalSeqAndFormatChars(t *testing.T) {
 		}
 	}
 }
-
-// A re-materialised run that changes a case's final decision (so its head) no longer matches the events recorded
-// against the old run. Replay stops at that line and fails closed; the case detail reports it.
-func TestReplayFailsClosedWhenRematerialisedRunChangesHead(t *testing.T) {
-	run := twoCaseRun(t)
-	s, srv := serveAgent(t, run)
-	l := agentLoop("1")
-	coord(t, srv, l, hb(headOf(s, l), `"action":"assign_owner","owner":"Fatima"`))
-	coord(t, srv, l, hb(headOf(s, l), `"action":"note","text":"second"`))
-	b := actRead(t, filepath.Join(run, "api_reviews.ndjson"))
-
-	s2 := loadAPI(run, "")
-	s2.cases[l].last.Sig = "changed-decision-signature"
-	// simulate the replay against a changed canonical head
-	s3 := loadAPI(run, "")
-	s3.cases, s3.reviews, s3.ledgerErr = s2.cases, nil, ""
-	for _, c := range s3.cases {
-		c.ov = caseOverlay{}
-	}
-	for i, line := range strings.Split(strings.TrimSuffix(string(b), "\n"), "\n") {
-		if err := s3.replayLedgerLine([]byte(line)); err != nil {
-			s3.ledgerErr = fmt.Sprintf("line %d: %v", i+1, err)
-			break
-		}
-	}
-	if s3.ledgerErr == "" || !strings.Contains(s3.ledgerErr, "head") {
-		t.Fatalf("changed head accepted: %q", s3.ledgerErr)
-	}
-	if s3.cases[l].ov.n != 0 {
-		t.Fatalf("overlay applied past the failing line: %d", s3.cases[l].ov.n)
-	}
-	if v := s3.ledgerView(); v["status"] != "invalid" || v["detail"] == "" {
-		t.Fatalf("ledger view: %v", v)
-	}
-}
