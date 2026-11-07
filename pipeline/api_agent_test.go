@@ -407,3 +407,105 @@ func TestAgentReviewFixtureExcludesExistingFixtureIDs(t *testing.T) {
 		t.Fatalf("fixtures %v tags %q %q", s.fixtures, s.cases[l1].Fixture, s.cases[l2].Fixture)
 	}
 }
+
+// A citation missing tool/arg/field/value, or with an empty value, is malformed: the whole projection fails closed
+// and no agent_review fixture is tagged.
+func TestAgentIncompleteCitationsFailClosed(t *testing.T) {
+	full := map[string]interface{}{"tool": "get_record", "arg": "a|1", "field": "dob", "value": "1976-01-01"}
+	without := func(k string) map[string]interface{} {
+		m := map[string]interface{}{}
+		for kk, v := range full {
+			if kk != k {
+				m[kk] = v
+			}
+		}
+		return m
+	}
+	empty := map[string]interface{}{"tool": "get_record", "arg": "a|1", "field": "dob", "value": ""}
+	cases := map[string][]map[string]interface{}{
+		"empty object": {{}}, "no tool": {without("tool")}, "no arg": {without("arg")}, "no field": {without("field")},
+		"no value": {without("value")}, "empty value": {empty}, "good plus partial": {full, without("field")},
+	}
+	for name, cites := range cases {
+		t.Run(name, func(t *testing.T) {
+			run := t.TempDir()
+			l := agentLoop("1")
+			agentRun(t, run, []agentCaseSpec{{loop: l, item: "rv-1", pair: pairAB, signoff: agentSignoff("rv-1", l, "same", "same", []string{"r1", "agent"})}})
+			rec := agentRecRow("rv-1", pairAB, "same")
+			rec["citations"] = cites
+			writeAgentFiles(t, run, []interface{}{rec}, agentReplayOK)
+			s, srv := serveAgent(t, run)
+			if len(invs(agentDetail(t, srv, l))) != 0 {
+				t.Fatal("partial citation must yield no agent projection")
+			}
+			if _, ok := s.fixtures["agent_review"]; ok || s.cases[l].Fixture == "agent_review" {
+				t.Fatalf("no agent_review fixture expected: %v", s.fixtures)
+			}
+		})
+	}
+}
+
+// An exact repeat of one consumed sign-off projects once; a conflicting repeat (different link, wrong flag or reads)
+// would leave a superseded answer on display, so the whole projection fails closed.
+func TestAgentDuplicateSignoffsDeduped(t *testing.T) {
+	run := t.TempDir()
+	l := agentLoop("1")
+	first := agentSignoff("rv-1", l, "same", "same", []string{"r1", "agent"})
+	agentRun(t, run, []agentCaseSpec{{loop: l, item: "rv-1", pair: pairAB, signoff: first}})
+	writeAgentNDJSON(t, filepath.Join(run, "reviewer_decisions.ndjson"), []interface{}{first, first})
+	writeAgentFiles(t, run, []interface{}{agentRecRow("rv-1", pairAB, "same")}, agentReplayOK)
+	_, srv := serveAgent(t, run)
+	got := invs(agentDetail(t, srv, l))
+	if len(got) != 1 {
+		t.Fatalf("want 1 investigation, got %d: %v", len(got), got)
+	}
+}
+
+func TestAgentConflictingDuplicateSignoffsFailClosed(t *testing.T) {
+	l := agentLoop("1")
+	first := agentSignoff("rv-1", l, "same", "same", []string{"r1", "agent"})
+	for name, dup := range map[string]map[string]interface{}{
+		"different link":  agentSignoff("rv-1", l, "different", "same", []string{"r1", "agent"}),
+		"different reads": agentSignoff("rv-1", l, "same", "same", []string{"r2", "agent"}),
+		"not consumed":    agentSignoff("rv-1", l, "different", "same", []string{"r1"}),
+	} {
+		t.Run(name, func(t *testing.T) {
+			run := t.TempDir()
+			agentRun(t, run, []agentCaseSpec{{loop: l, item: "rv-1", pair: pairAB, signoff: first}})
+			writeAgentNDJSON(t, filepath.Join(run, "reviewer_decisions.ndjson"), []interface{}{first, dup})
+			writeAgentFiles(t, run, []interface{}{agentRecRow("rv-1", pairAB, "same")}, agentReplayOK)
+			s, srv := serveAgent(t, run)
+			if len(invs(agentDetail(t, srv, l))) != 0 {
+				t.Fatal("conflicting duplicate sign-offs must yield no agent projection")
+			}
+			if _, ok := s.fixtures["agent_review"]; ok {
+				t.Fatalf("no agent_review fixture expected: %v", s.fixtures)
+			}
+		})
+	}
+}
+
+// tool/arg/field must be non-empty, non-blank strings; only value may also be a number or bool.
+func TestAgentCitationKeysMustBeNonBlankStrings(t *testing.T) {
+	base := func() map[string]interface{} {
+		return map[string]interface{}{"tool": "get_record", "arg": "a|1", "field": "dob", "value": "1976-01-01"}
+	}
+	for _, k := range []string{"tool", "arg", "field"} {
+		for name, bad := range map[string]interface{}{"float": 1.5, "bool": true, "blank": "   ", "tab": "\t\n"} {
+			t.Run(k+" "+name, func(t *testing.T) {
+				c := base()
+				c[k] = bad
+				run := t.TempDir()
+				l := agentLoop("1")
+				agentRun(t, run, []agentCaseSpec{{loop: l, item: "rv-1", pair: pairAB, signoff: agentSignoff("rv-1", l, "same", "same", []string{"r1", "agent"})}})
+				rec := agentRecRow("rv-1", pairAB, "same")
+				rec["citations"] = []map[string]interface{}{c}
+				writeAgentFiles(t, run, []interface{}{rec}, agentReplayOK)
+				_, srv := serveAgent(t, run)
+				if len(invs(agentDetail(t, srv, l))) != 0 {
+					t.Fatalf("%s=%v must fail closed", k, bad)
+				}
+			})
+		}
+	}
+}

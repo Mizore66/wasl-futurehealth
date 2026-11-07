@@ -789,7 +789,8 @@ func readAgentProvenance(path string) (map[string]interface{}, bool) {
 	return out, true
 }
 
-// cleanCitations keeps only tool/arg/field/value of each citation; anything malformed rejects the record.
+// cleanCitations keeps only tool/arg/field/value of each citation; a citation missing any of them (or with an empty
+// string) and anything malformed rejects the record.
 func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
 	out := []map[string]interface{}{}
 	if len(raw) == 0 || string(raw) == "null" {
@@ -802,13 +803,23 @@ func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
 	for _, c := range in {
 		m := map[string]interface{}{}
 		for _, k := range []string{"tool", "arg", "field", "value"} {
-			if v, ok := c[k]; ok {
-				switch v.(type) {
-				case string, float64, bool:
-					m[k] = v
-				default:
+			v, ok := c[k]
+			if !ok {
+				return nil, false
+			}
+			switch x := v.(type) {
+			case string:
+				if strings.TrimSpace(x) == "" {
 					return nil, false
 				}
+				m[k] = v
+			case float64, bool:
+				if k != "value" {
+					return nil, false
+				}
+				m[k] = v
+			default:
+				return nil, false
 			}
 		}
 		out = append(out, m)
@@ -850,7 +861,17 @@ func (s *apiServer) loadAgent() {
 	}
 	got := map[string][]agentInvestigation{}
 	for loop, sos := range s.signoffs {
+		seen := map[string]string{} // item -> semantic key of its first sign-off; an identical repeat dedupes, a different one fails closed
 		for _, so := range sos {
+			item := fmt.Sprint(so["item"])
+			key := fmt.Sprintf("%v|%v|%v|%v|%v|%v", so["loop"], so["link"], so["wrong"], so["reads"], so["role"], so["agent_read"])
+			if prev, dup := seen[item]; dup {
+				if prev != key {
+					return // a superseded or conflicting sign-off for one item: no projection at all
+				}
+				continue
+			}
+			seen[item] = key
 			label := fmt.Sprint(so["agent_read"])
 			reads, _ := so["reads"].([]interface{})
 			consumed := false
@@ -860,7 +881,6 @@ func (s *apiServer) loadAgent() {
 			if label == "" || label == "<nil>" || !consumed {
 				continue
 			}
-			item := fmt.Sprint(so["item"])
 			rec, it := byItem[item], raised[item]
 			if rec == nil || it == nil || it.LoopID != loop || fmt.Sprint(so["loop"]) != loop || !isLinkQuestion(it) ||
 				pairKey(rec.Pair[0], rec.Pair[1]) != pairKey(it.Pair[0], it.Pair[1]) || rec.Label != label {
