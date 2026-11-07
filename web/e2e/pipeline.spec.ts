@@ -349,3 +349,77 @@ for (const route of PIPELINE_ROUTES) {
     await expectNoSeriousAxe(page);
   });
 }
+
+test("pipeline: Step announces the new step and decision once per press; autoplay stays silent (#16)", async ({ page }) => {
+  await freezeClock(page);
+  await page.goto("/app/pipeline");
+  const announcer = page.getByTestId("step-announcer");
+  await expect(announcer).toHaveAttribute("role", "status");
+  await expect(announcer).toHaveAttribute("aria-live", "polite");
+  await page.clock.runFor(4000);
+  await expect(announcer, "autoplay does not announce").toHaveText("");
+
+  await page.getByRole("button", { name: "Pause" }).click();
+  await expect(announcer, "Pause does not announce").toHaveText("");
+  const before = await position(page);
+  const step = page.getByRole("button", { name: "Step", exact: true });
+  await step.click();
+  const after = await position(page);
+  expect(after).toBe(before + 1);
+  await expect(announcer).toContainText(`Step ${after} of`);
+  await expect(announcer).toContainText("Newest decision:");
+  const newest = await page.getByRole("list", { name: "Decisions, newest first" }).locator("li").first().locator("div.truncate").first().innerText();
+  await expect(announcer).toContainText(newest);
+  await expect(announcer.locator("span"), "one message, not the feed").toHaveCount(1);
+  const first = await announcer.innerText();
+  await expect(step, "focus stays on Step").toBeFocused();
+
+  await step.click();
+  await expect(announcer).not.toHaveText(first);
+  await expect(announcer).toContainText(`Step ${after + 1} of`);
+
+  await page.getByRole("button", { name: "Play" }).click();
+  const spoken = await announcer.innerText();
+  await page.clock.runFor(3000);
+  await expect(announcer, "playing again does not announce").toHaveText(spoken);
+});
+
+test("pipeline: backend health sits apart from the replay and says it is a snapshot (#11)", async ({ page }) => {
+  await freezeClock(page);
+  await page.goto("/app/pipeline");
+  const panel = page.getByTestId("health-panel");
+  await expect(panel.getByRole("heading", { name: "Backend health" })).toBeVisible();
+  await expect(panel.getByTestId("health-status")).toHaveText("ok");
+  await expect(panel.getByTestId("health-cases")).toHaveText("4,355");
+  await expect(panel.getByTestId("dep-materialised_run")).toHaveText("loaded");
+  await expect(panel.getByTestId("dep-nats")).toHaveText("not_required_for_read_api");
+  await expect(panel.getByTestId("dep-reader")).toHaveText("cached");
+  await expect(panel.getByTestId("dep-ingest_adapter")).toHaveText("fhir");
+  await expect(panel.getByTestId("health-source")).toContainText("published snapshot taken 31 Oct 2026, 23:47 UTC");
+  await expect(panel.getByTestId("health-source")).toContainText("not a live check");
+  await expect(panel).toContainText("not required to read a saved run");
+  await expect(panel.getByTestId("health-unavailable")).toHaveCount(0);
+  await expect(page.locator("main")).not.toContainText(/servers? on/i);
+  await expect(page.getByTestId("server-result")).toContainText("not the state of any server now");
+  await expect(page.locator('[data-honesty="replay"]').first()).toBeVisible();
+});
+
+test("pipeline: health panel fits 390px and keeps 44px targets", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await freezeClock(page);
+  await page.goto("/app/pipeline");
+  await page.getByRole("button", { name: "Pause" }).click();
+  const panel = page.getByTestId("health-panel");
+  await panel.scrollIntoViewIfNeeded();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  for (const el of await panel.locator("summary").all()) expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  for (const name of ["Play", "Step"]) {
+    const b = page.getByRole("button", { name, exact: true });
+    expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+  await page.screenshot({ path: "test-results/screens/pipe2-pipeline-390.png", fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({ path: "test-results/screens/pipe2-pipeline-1440.png", fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expectNoSeriousAxe(page);
+});

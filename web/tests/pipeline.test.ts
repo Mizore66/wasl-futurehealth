@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import replayJson from "@/data/replay.json";
 import readerJson from "@/data/reader.json";
 import { FEED_ROWS, ROWS, SLOTS, flowView, replayTrack } from "@/components/pipeline/flow";
-import { playback, type Playback, type PlaybackAction } from "@/components/pipeline/playback";
+import { DEPENDENCY_ORDER, loadHealth, stepAnnouncement } from "@/components/pipeline/health";
+import { Healthz } from "@/lib/api/schema";
+import { getHealthz } from "@/lib/api/source";
+import { playback,type Playback, type PlaybackAction } from "@/components/pipeline/playback";
 import { readerFrames, readerStart, readerTrack, readerView } from "@/components/pipeline/reader-timeline";
 import { NOT_ASKED, type ReaderData } from "@/components/pipeline/reader-types";
 import { profileOf } from "@/components/pipeline/profile";
@@ -215,5 +218,62 @@ describe("pipeline person profile", () => {
   it("drops quote fragments that hold no words", () => {
     const p = profileOf(replay, track.rest, "showcase-01", rules)!;
     expect(p.fields.find((f) => f.key === "prep")!.quote).toBe("");
+  });
+});
+
+describe("step announcement (issue #16)", () => {
+  it("names the step and the newest decision, and only that decision", () => {
+    const after = flowView(replay, track.advance(track.rest));
+    const text = stepAnnouncement(after);
+    expect(text).toContain(`Step ${after.step} of ${after.steps}.`);
+    expect(text).toContain(after.feed[0].who.name);
+    expect(text).toContain(after.feed[0].text);
+    expect(text.split("Newest decision").length).toBe(2);
+  });
+
+  it("says so when nothing is recorded yet", () => {
+    expect(stepAnnouncement({ step: 0, steps: 5, feed: [] })).toBe("Step 0 of 5. No decision recorded yet.");
+  });
+});
+
+describe("health state (issue #11)", () => {
+  const ok: Healthz = {
+    status: "ok",
+    cases: 7,
+    dependencies: { materialised_run: "loaded", nats: "not_required_for_read_api", reader: "cached", ingest_adapter: "fhir" },
+    meta: { api: "wasl-api/1", data_mode: "simulated", loaded_at: "2026-10-31T23:47:27Z", note: "", policy: "p", reader_model: "m", run: "r" },
+  };
+
+  it("is a published snapshot, dated by meta.loaded_at, in fixtures mode", async () => {
+    expect(await loadHealth(async () => ok, "fixtures")).toEqual({ kind: "snapshot", health: ok, takenAt: "2026-10-31T23:47:27Z" });
+  });
+
+  it("is a live check, dated by the fetch, in live mode", async () => {
+    const state = await loadHealth(async () => ok, "live", () => new Date("2026-11-07T10:00:00Z"));
+    expect(state).toEqual({ kind: "live", health: ok, fetchedAt: "2026-11-07T10:00:00.000Z" });
+  });
+
+  it("is explicitly unavailable when the health call fails", async () => {
+    const state = await loadHealth(() => Promise.reject(new Error("/healthz: HTTP 503")), "live");
+    expect(state).toEqual({ kind: "unavailable", reason: "/healthz: HTTP 503" });
+  });
+
+  it("is unavailable when the payload does not parse", async () => {
+    const state = await loadHealth(async () => Healthz.parse({ status: "ok" }), "fixtures");
+    expect(state.kind).toBe("unavailable");
+  });
+
+  it("getHealthz fails in live mode when the API is unreachable, and the state is unavailable", async () => {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:1");
+    try {
+      expect((await loadHealth(getHealthz, "live")).kind).toBe("unavailable");
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("getHealthz reads the published snapshot, which carries the four dependencies", async () => {
+    const h = await getHealthz();
+    for (const k of DEPENDENCY_ORDER) expect(h.dependencies[k]).toBeTruthy();
   });
 });

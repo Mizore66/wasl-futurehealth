@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import dashboard from "../data/api/dashboard.json";
 import { AXIS, axe, inSources, numbersOn } from "./numbers";
 
 test.describe("Results", () => {
@@ -29,6 +30,25 @@ test.describe("Results", () => {
     await axe(page);
   });
 
+  test("consent lifecycle shows the dashboard's counts as simulated message intents beside the zero counters (#9)", async ({ page }) => {
+    await page.goto("/app/results");
+    const section = page.getByTestId("consent-lifecycle");
+    await expect(section.getByRole("heading", { name: "Consent: held, released, cancelled" })).toBeVisible();
+    await expect(section.locator('[data-honesty="simulated"]')).toBeVisible();
+    await expect(section).toContainText("message intents, not of patients");
+    await expect(section).toContainText("No message was sent to anyone");
+    const t = dashboard.metrics.consent_timing;
+    const shown = async (key: string) => (await section.getByTestId(`consent-${key}`).innerText()).replace(/,/g, "");
+    for (const key of Object.keys(t)) expect(await shown(key), key).toContain(String(t[key as keyof typeof t]));
+    expect(t.intents_ever_held_for_consent).toBeGreaterThan(0);
+    await expect(section.getByTestId("consent-opted_out_loops")).toContainText("loops with an opt-out");
+    await expect(section).toContainText("counts loops");
+    // The table repeats the same figures for anyone not using the diagram.
+    const row = section.getByRole("row", { name: /^Held/ });
+    await expect(row).toContainText(t.intents_ever_held_for_consent.toLocaleString("en-US"));
+    await expect(section.getByRole("row", { name: /Loops with an opt-out/ })).toContainText("loops");
+  });
+
   test("every number on the screen is in results.json", async ({ page }) => {
     await page.goto("/app/results");
     expect((await numbersOn(page)).filter((n) => !AXIS.has(n) && !inSources(n))).toEqual([]);
@@ -42,6 +62,9 @@ test.describe("Results on a phone", () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
     await expect(page.getByTestId("kpi-why")).toBeVisible();
     await expect(page.locator("main button")).toHaveCount(0);
+    await expect(page.getByTestId("consent-lifecycle")).toBeVisible();
+    for (const el of await page.getByTestId("consent-lifecycle").locator("summary").all()) expect((await el.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await page.screenshot({ path: "test-results/screens/pipe2-results-390.png", fullPage: true });
     await expect(page.locator("main")).not.toContainText(/closure_decision|needs_human|not_closed|link_decision|review_hold/);
     await page.screenshot({ path: "test-results/screens/results-390.png", fullPage: true });
     await page.setViewportSize({ width: 1440, height: 900 });
