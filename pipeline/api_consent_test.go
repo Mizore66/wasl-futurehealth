@@ -109,7 +109,7 @@ func TestConsentEventTransitions(t *testing.T) {
 			t.Fatalf("%s: want 201, got %d %v", tc.event, c, m)
 		}
 		o := m["overlay"].(map[string]interface{})
-		if o["status"] != tc.status || o["pending_consent"] != tc.pending || o["contact_blocked"] != tc.blocked || o["events"].(float64) != float64(i+1) {
+		if o["status"] != tc.status || o["demo_pending_consent"] != tc.pending || o["contact_blocked"] != tc.blocked || o["events"].(float64) != float64(i+1) {
 			t.Fatalf("%s: overlay %v", tc.event, o)
 		}
 		if o["canonical_consent"] != "unknown" || o["canonical_unchanged"] != true || o["mode"] != "demo" {
@@ -186,7 +186,7 @@ func TestConsentEventHistoryReloadAndCanonicalUntouched(t *testing.T) {
 	if cs.Consent != "unknown" || len(cs.last.Outreach) != 1 || cs.last.Outreach[0].Released || cs.last.Outreach[0].Suppress != SupConsentHold {
 		t.Fatal("canonical consent/outreach changed")
 	}
-	// the case detail JSON keeps canonical consent; the overlay is only on the dedicated endpoint
+	// the case detail JSON keeps canonical consent; the overlay is on the dedicated endpoint and on case detail
 	_, d := doReq(t, "GET", srv2.URL+"/api/cases/"+consentCase, RoleAuditor, "a", "")
 	if d["api_contact"] == nil {
 		t.Fatalf("case detail should expose api_contact overlay: %v", d)
@@ -209,5 +209,128 @@ func TestConsentBlocksDemoContactConfirmation(t *testing.T) {
 	doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", ""))
 	if c, _ := doReq(t, "POST", u+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}`); c != 201 {
 		t.Fatalf("confirm_contact after grant passes through: got %d", c)
+	}
+}
+
+func TestConsentOverlayFieldNotAmbiguous(t *testing.T) {
+	_, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	_, m := doReq(t, "GET", srv.URL+"/api/cases/"+consentCase+"/consent", RoleAuditor, "a", "")
+	o := m["overlay"].(map[string]interface{})
+	if _, bad := o["pending_consent"]; bad {
+		t.Fatalf("ambiguous pending_consent field must not exist: %v", o)
+	}
+	if _, ok := o["demo_pending_consent"]; !ok {
+		t.Fatalf("demo_pending_consent missing: %v", o)
+	}
+}
+
+func TestConsentDetailOverlayStatus(t *testing.T) {
+	_, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	u := srv.URL + "/api/cases/" + consentCase
+	detail := func() map[string]interface{} {
+		_, d := doReq(t, "GET", u, RoleAuditor, "a", "")
+		ac, _ := d["api_contact"].(map[string]interface{})
+		o, _ := ac["overlay"].(map[string]interface{})
+		if o == nil {
+			t.Fatalf("detail lacks api_contact.overlay: %v", d)
+		}
+		return o
+	}
+	if o := detail(); o["status"] != "none" || o["contact_blocked"] != false || o["demo_pending_consent"] != "" {
+		t.Fatalf("initial detail overlay: %v", o)
+	}
+	for _, tc := range []struct {
+		event, status, pending string
+		blocked                bool
+	}{
+		{"consent_granted", "granted", "released", false},
+		{"consent_denied", "denied", "cancelled", true},
+		{"consent_opted_out", "opted_out", "cancelled", true},
+	} {
+		doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody(tc.event, "sig-head-1", ""))
+		o := detail()
+		if o["status"] != tc.status || o["demo_pending_consent"] != tc.pending || o["contact_blocked"] != tc.blocked || o["canonical_consent"] != "unknown" {
+			t.Fatalf("%s: detail overlay %v", tc.event, o)
+		}
+	}
+}
+
+func TestConsentRepeatedAndDenyThenOptOut(t *testing.T) {
+	s, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	u := srv.URL + "/api/cases/" + consentCase + "/consent"
+	post := func(ev string) (int, map[string]interface{}) {
+		return doReq(t, "POST", u, RoleCoordinator, "c1", consentBody(ev, "sig-head-1", ""))
+	}
+	if c, _ := post("consent_denied"); c != 201 {
+		t.Fatalf("deny: %d", c)
+	}
+	if c, m := post("consent_opted_out"); c != 201 || m["overlay"].(map[string]interface{})["status"] != "opted_out" {
+		t.Fatalf("deny then opt-out: %d %v", c, m)
+	}
+	// repeated opt-out is allowed, idempotent in status, and still appended
+	c, m := post("consent_opted_out")
+	o, _ := m["overlay"].(map[string]interface{})
+	if c != 201 || o["status"] != "opted_out" || o["contact_blocked"] != true || o["events"].(float64) != 3 {
+		t.Fatalf("repeated opt-out: %d %v", c, m)
+	}
+	if c, _ := post("consent_denied"); c != 409 {
+		t.Fatalf("deny after opt-out: want 409, got %d", c)
+	}
+	if len(s.reviews) != 3 {
+		t.Fatalf("want 3 ledger events, got %d", len(s.reviews))
+	}
+}
+
+// The detail wrapper must splice api_contact into the upstream bytes without a float64 round trip.
+func TestConsentDetailPreservesLargeIntegers(t *testing.T) {
+	s, _ := consentFixture(t, t.TempDir())
+	raw := `{"zeta":1,"in_seq":9007199254740993,"id":"a\u003cb","at":"2026-11-08T10:00:00.123456789Z","big":123456789012345678901234567890,"alpha":2}`
+	h := s.withConsent(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Length", "999")
+		io.WriteString(w, raw)
+	})
+	rq := httptest.NewRequest("GET", "/api/cases/"+consentCase, nil)
+	rec := httptest.NewRecorder()
+	h(rec, rq)
+	body := rec.Body.String()
+	if rec.Code != 200 {
+		t.Fatalf("code %d %s", rec.Code, body)
+	}
+	for _, want := range []string{`"in_seq":9007199254740993`, `"big":123456789012345678901234567890`, `"id":"a\u003cb"`,
+		`"at":"2026-11-08T10:00:00.123456789Z"`, `{"zeta":1,"in_seq":`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("lost %s in %s", want, body)
+		}
+	}
+	var chk map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &chk); err != nil || chk["api_contact"] == nil {
+		t.Fatalf("invalid json or no api_contact: %v %s", err, body)
+	}
+}
+
+func TestConsentEscapedCaseIDMatchesCaseRoutes(t *testing.T) {
+	s, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	// double-encoded slashes arrive as %2F in URL.Path; caseRoutes unescapes again, so withConsent must too
+	u := srv.URL + "/api/cases/" + strings.ReplaceAll(consentCase, "/", "%252F")
+	if c, m := doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody("consent_denied", "sig-head-1", "")); c != 201 {
+		t.Fatalf("escaped consent POST: %d %v", c, m)
+	}
+	_, d := doReq(t, "GET", u, RoleAuditor, "a", "")
+	ac, _ := d["api_contact"].(map[string]interface{})
+	if ac == nil || ac["overlay"].(map[string]interface{})["status"] != "denied" {
+		t.Fatalf("escaped detail lacks overlay: %v", d)
+	}
+	n := len(s.reviews)
+	if c, _ := doReq(t, "POST", u+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}`); c != 409 || len(s.reviews) != n {
+		t.Fatalf("escaped confirm_contact guard: got %d", c)
+	}
+	// plain slashes still work
+	if c, _ := doReq(t, "GET", srv.URL+"/api/cases/"+consentCase+"/consent", RoleAuditor, "a", ""); c != 200 {
+		t.Fatalf("plain: %d", c)
 	}
 }
