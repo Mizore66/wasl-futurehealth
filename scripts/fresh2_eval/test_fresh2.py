@@ -447,7 +447,8 @@ class Freeze(unittest.TestCase):
         self.assertTrue(any("uncommitted" in e for e in self.errs()))
 
     def test_key_must_match_label_files(self):
-        key = json.load(open(os.path.join(self.repo, self.paths["key"])))
+        with open(os.path.join(self.repo, self.paths["key"])) as f:
+            key = json.load(f)
         key["items"][0]["status"] = "agreed"
         key["items"][0]["key"] = {"label": "LR2"}
         self.write(self.paths["key"], F.dumps(key))
@@ -559,8 +560,10 @@ def perfect_raw(key):
 
 
 FAKE_READER = """import json, os
-key = json.load(open(os.environ['FAKE_KEY']))
-corpus = json.load(open(os.environ['FRESH2_CORPUS']))
+with open(os.environ['FAKE_KEY']) as f:
+    key = json.load(f)
+with open(os.environ['FRESH2_CORPUS']) as f:
+    corpus = json.load(f)
 assert all(set(i) <= {'id', 'programme', 'kind', 'text', 'coded'} for i in corpus['items'])
 out = []
 for it in key['items']:
@@ -570,7 +573,8 @@ for it in key['items']:
     ag = bool(k) and lab != 'indeterminate' and 'X' not in lab and coded == lab
     out.append({'id': it['id'], 'kind': it['kind'], 'a': lab, 'b': coded, 'b_available': coded != 'unavailable',
                 'agree': ag, 'label': lab if ag else 'disagree'})
-json.dump({'schema': 'fresh2-reader-raw/v1', 'items': out}, open(os.environ['FRESH2_OUT'], 'w'))
+with open(os.environ['FRESH2_OUT'], 'w') as f:
+    json.dump({'schema': 'fresh2-reader-raw/v1', 'items': out}, f)
 """
 
 
@@ -621,7 +625,8 @@ class ScoreRun(unittest.TestCase):
             for name in ("score.json", "reader_raw.json", "SCORE.md"):
                 self.assertTrue(os.path.exists(os.path.join(rd, name)), name)
             self.assertEqual(res1["agreed"]["totals"]["agreed_but_wrong"], 0)
-            sc = json.load(open(os.path.join(rd, "score.json")))
+            with open(os.path.join(rd, "score.json")) as f:
+                sc = json.load(f)
             self.assertEqual(sc["frozen"]["reader_code_commit"], r)
             self.assertIn("head", sc["frozen"])
             with self.assertRaises(F.HarnessError) as cm:
@@ -654,7 +659,8 @@ class ReaderInputs(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             F.export_reader_inputs(c, d)
             for rel in ("ldct/screen_reports.json", "ldct/workup_notes.json", "ifhas/followup_notes.json"):
-                doc = json.load(open(os.path.join(d, rel)))
+                with open(os.path.join(d, rel)) as f:
+                    doc = json.load(f)
                 self.assertEqual(len(doc["reports"]), 30)
                 for r in doc["reports"]:
                     self.assertEqual(set(r), {"id", "text"})
