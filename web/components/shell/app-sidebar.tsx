@@ -19,6 +19,8 @@ type NavItem = {
   icon: React.ReactNode;
   countKey?: "today" | "review" | "referrals";
   gapBefore?: boolean;
+  /** Shown as text next to the label, so it never relies on colour. */
+  badge?: string;
 };
 
 const icon = (children: React.ReactNode) => (
@@ -104,6 +106,17 @@ const NAV: NavItem[] = [
       </>,
     ),
   },
+  {
+    href: "/app/agent-review",
+    label: "Agent review",
+    badge: "Experimental",
+    icon: icon(
+      <>
+        <circle cx="8" cy="8" r="5.5" />
+        <path d="M8 5v3.2l2 1.3" />
+      </>,
+    ),
+  },
 ];
 
 /** Who is signed in depends on whose screen it is (design-brief-v2, canonical facts). */
@@ -173,7 +186,7 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
         )}
       >
         <span className="text-section font-semibold leading-5">Wasl</span>
-        <span className="text-small text-muted">ADPHC · CRC programme</span>
+        <span className="text-small text-muted">ADPHC · screening follow-up</span>
       </span>
     </Link>
   );
@@ -238,7 +251,17 @@ function NavLink({
       )}
     >
       {item.icon}
-      <span className={cn(collapsed && "sr-only")}>{item.label}</span>
+      <span className={cn("whitespace-nowrap", collapsed && "sr-only")}>{item.label}</span>
+      {item.badge && (
+        <span
+          className={cn(
+            "ml-auto whitespace-nowrap rounded-full border border-control px-1.5 -mr-1 text-[11px] font-medium leading-4 text-muted",
+            collapsed && "sr-only",
+          )}
+        >
+          {item.badge}
+        </span>
+      )}
       {item.countKey && (
         <Suspense fallback={null}>
           <Count counts={counts} k={item.countKey} collapsed={collapsed} />
@@ -252,6 +275,7 @@ function NavLink({
       <TooltipTrigger asChild>{link}</TooltipTrigger>
       <TooltipContent side="right" sideOffset={8}>
         {item.label}
+        {item.badge && <> · {item.badge}</>}
         {item.countKey && (
           <Suspense fallback={null}>
             <TipCount counts={counts} k={item.countKey} />

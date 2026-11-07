@@ -1,4 +1,5 @@
 import { Hanken_Grotesk } from "next/font/google";
+import { SkipLink } from "@/components/shell/skip-link";
 import { SiteHeader } from "@/components/site/header";
 
 const hanken = Hanken_Grotesk({ variable: "--font-hanken", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -28,8 +29,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       className={`${hanken.variable} min-h-dvh bg-(--paper) text-[18px] leading-[1.55] text-(--ink) [&_:focus-visible]:outline-3 [&_:focus-visible]:outline-offset-3 [&_:focus-visible]:outline-(--teal)`}
       style={PALETTE}
     >
+      <SkipLink />
       <SiteHeader />
-      <main>{children}</main>
+      <main id="main" tabIndex={-1} className="focus:outline-none">{children}</main>
     </div>
   );
 }

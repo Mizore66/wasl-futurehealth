@@ -656,3 +656,24 @@ test("figure lab: a figure wears its seed's look, and at known 0 it is the grey 
   expect(seen.known.hairVisible).toBe(seen.known.look.top !== "bald");
   expect(seen.unknown).toMatchObject({ hairVisible: false, faceVisible: false, askVisible: true });
 });
+
+test("experts: the clinical-labelling limit is current, and the obsolete claims are gone", async ({ page }) => {
+  await page.goto("/experts");
+  const limits = page.locator("#limits");
+  await expect(limits).toContainText("clinically verified model-assisted labels");
+  await expect(limits).toContainText("two model passes");
+  await expect(limits).toContainText("clinician adjudication");
+  await expect(limits).toContainText("κ = 1.000 on all five scored fields");
+  await expect(limits).toContainText("not independent human double-labelling or clinical ground truth");
+  await expect(limits).toContainText("small sample");
+  await expect(limits).toContainText("Gate: 0 false closures, recall ≥ 0.95");
+  const body = await page.locator("body").innerText();
+  for (const gone of [
+    "There are no clinician labels",
+    "LLM-produced answer key",
+    "Human double-labelling by both team members",
+    "Before 21 Nov; not started",
+  ]) {
+    expect(body).not.toContain(gone);
+  }
+});

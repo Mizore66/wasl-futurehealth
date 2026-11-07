@@ -6,7 +6,8 @@
   "docs/PITCH.md",
   "docs/api-samples/dashboard.json",
   "pipeline/results/showcase/summary.txt",
-  "booking/sim/pool_test.json"
+  "booking/sim/pool_test.json",
+  "docs/labelling/agreement.json"
  ],
  "entries": {
   "v1.crc_precision": {
@@ -2798,6 +2799,54 @@
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "CRC 31-day completion, frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "labelling.reports": {
+   "id": "labelling.reports",
+   "value": 43,
+   "display": "43",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "public report transcripts with clinically verified model-assisted labels"
+  },
+  "labelling.kappa.caecum": {
+   "id": "labelling.kappa.caecum",
+   "value": 1,
+   "display": "1.000",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), caecum; not independent human double-labelling"
+  },
+  "labelling.kappa.prep": {
+   "id": "labelling.kappa.prep",
+   "value": 1,
+   "display": "1.000",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), prep; not independent human double-labelling"
+  },
+  "labelling.kappa.polyps": {
+   "id": "labelling.kappa.polyps",
+   "value": 1,
+   "display": "1.000",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), polyps; not independent human double-labelling"
+  },
+  "labelling.kappa.histology": {
+   "id": "labelling.kappa.histology",
+   "value": 1,
+   "display": "1.000",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), histology; not independent human double-labelling"
+  },
+  "labelling.kappa.state": {
+   "id": "labelling.kappa.state",
+   "value": 1,
+   "display": "1.000",
+   "label": "built",
+   "source": "docs/labelling/agreement.json",
+   "context": "Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), state; not independent human double-labelling"
   },
   "pool.1_0.balanced_30": {
    "id": "pool.1_0.balanced_30",
