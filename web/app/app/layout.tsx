@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { AppSidebar, type NavCounts } from "@/components/shell/app-sidebar";
 import { SIDEBAR_COOKIE } from "@/components/shell/sidebar-cookie";
 import { SkipLink } from "@/components/shell/skip-link";
+import { RunMetaScope } from "@/components/shell/run-meta-scope";
 import { RunMeta, RunMetaFallback } from "@/components/shell/run-meta";
 import { getCases } from "@/lib/api/source";
 
@@ -21,9 +22,11 @@ export default async function AppLayout({ children }: LayoutProps<"/app">) {
       <SkipLink />
       <AppSidebar counts={navCounts()} defaultCollapsed={collapsed} />
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-6 py-8 focus:outline-none">
-        <Suspense fallback={<RunMetaFallback />}>
-          <RunMeta />
-        </Suspense>
+        <RunMetaScope>
+          <Suspense fallback={<RunMetaFallback />}>
+            <RunMeta />
+          </Suspense>
+        </RunMetaScope>
         {children}
       </main>
     </div>
