@@ -25,9 +25,9 @@ test("the shell marks the current page and carries the synthetic-data chip", asy
   await expect(nav.getByRole("link", { name: "Pipeline" })).toHaveAttribute("aria-current", "page");
   await expect(nav.locator("[aria-current]")).toHaveCount(1);
   await expect(page.getByText("Synthetic data · demo").first()).toBeVisible();
-  await nav.getByRole("link", { name: "Review" }).click();
+  await nav.getByRole("link", { name: "Review", exact: true }).click();
   await expect(page).toHaveURL(/\/app\/review$/);
-  await expect(nav.getByRole("link", { name: "Review" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Review", exact: true })).toHaveAttribute("aria-current", "page");
 });
 
 test("an unknown case is a 404, not a blank page", async ({ page }) => {

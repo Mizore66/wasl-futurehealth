@@ -210,9 +210,17 @@ export default async function Page() {
     { component: "DoH Responsible AI control map", measured: "Self-classified High risk; hazard log; model cards", status: "Documented" },
   ];
 
+  // One value per scored field, from docs/labelling/agreement.json via results.json; the claim is made only if they all agree.
+  const KAPPAS = [...new Set(["caecum", "prep", "polyps", "histology", "state"].map((f) => result(`labelling.kappa.${f}`).display))];
+  if (KAPPAS.length !== 1) throw new Error("labelling kappa differs between fields; reword the Experts limit");
+
   const LIMITS = [
-    { limit: "Patients, reviewers, noise and capacity are simulated. There are no clinician labels.", resolves: "Shadow pilot scored against the coordinator’s own list. Gate: 0 false closures, recall ≥ 0.95.", when: "Months 0–3" },
-    { limit: "The 43 report texts carry an LLM-produced answer key.", resolves: "Human double-labelling by both team members, with κ reported.", when: "Before 21 Nov; not started" },
+    { limit: "Patients, reviewers, noise and capacity are simulated. Wasl has no clinical effectiveness result from real patients.", resolves: "Shadow pilot scored against the coordinator’s own list. Gate: 0 false closures, recall ≥ 0.95.", when: "Months 0–3" },
+    {
+      limit: `The ${result("labelling.reports").display} public report transcripts have clinically verified model-assisted labels: two model passes, then clinician adjudication. κ = ${KAPPAS[0]} on all five scored fields (caecum, prep, polyps, histology, state) is agreement between those two passes after adjudication. It is not independent human double-labelling or clinical ground truth, and 43 reports is a small sample.`,
+      resolves: "Independent human labelling of a larger, locally sourced set, scored in the shadow pilot against the coordinator’s own list.",
+      when: "Months 0–3",
+    },
     { limit: "The Learn-then-Test certificate covers synthetic loops only.", resolves: "Recalibrate on about 3.7k locally adjudicated loops before any automatic closure.", when: "Months 0–3" },
     { limit: "Readers broke on 3 of 7 unseen corpora before the fixes.", resolves: "300 confirmed closures in a row, then a 10% audit; an error returns that class to shadow mode.", when: "Months 0–9" },
     { limit: "The image reader was trained on Norwegian video frames; its weights inherit ImageNet’s non-commercial terms.", resolves: "It stays hold-only. Local recalibration on UAE stills; the licence question stays open until then.", when: "Before production" },

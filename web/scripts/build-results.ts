@@ -17,6 +17,7 @@ const PITCH = "docs/PITCH.md";
 const DASHBOARD = "docs/api-samples/dashboard.json";
 const SHOWCASE = "pipeline/results/showcase/summary.txt";
 const POOL = "booking/sim/pool_test.json";
+const AGREEMENT = "docs/labelling/agreement.json";
 
 const entries: Record<string, Entry> = {};
 function put(id: string, e: Omit<Entry, "id">) {
@@ -117,6 +118,16 @@ for (const [arm, key] of [["eid_only", "kpi_eid_only"], ["wasl", "kpi_wasl"], ["
   put(`kpi31.heldout.${arm}`, { value: e.value, ci95: e.ci95, display: `${(e.value * 100).toFixed(1)}%`, label: e.label, source: e.source, context: `CRC 31-day completion, ${e.context}` });
 }
 
+// Labelling of the 43 public report texts: agreement between the two model-assisted passes after clinician adjudication.
+// Not agreement with the old key (agreement.json also holds that, because the key was corrected afterwards), and not human double-labelling.
+const agreement = JSON.parse(read(AGREEMENT)) as { n_reports: number; fields: Record<string, { kappa_ab: number }> };
+put("labelling.reports", { value: agreement.n_reports, display: String(agreement.n_reports), label: "built", source: AGREEMENT, context: "public report transcripts with clinically verified model-assisted labels" });
+for (const field of ["caecum", "prep", "polyps", "histology", "state"]) {
+  const k = agreement.fields[field]?.kappa_ab;
+  if (k === undefined) throw new Error(`${AGREEMENT}: no kappa_ab for ${field}`);
+  put(`labelling.kappa.${field}`, { value: k, display: k.toFixed(3), label: "built", source: AGREEMENT, context: `Cohen's kappa between the two model-assisted passes after clinician adjudication (u9, u41), ${field}; not independent human double-labelling` });
+}
+
 // Network pooling test (booking/sim/pool_test.py, 30 draws, median): share of all FIT+ referred patients with a colonoscopy within
 // 31 days, with capacity skewed to 40/50/10 by region while patients stay 55/35/10. The first number of each pair is that share
 // for all FIT+ (docs/WRITEUP.md, "Network pooling"); the second is a different measure and is not used.
@@ -172,7 +183,7 @@ const conflicts = [
 
 const results: Omit<Results, "entries"> & { entries: Record<string, Entry> } = {
   frozen_revision: revision,
-  sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE, POOL],
+  sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE, POOL, AGREEMENT],
   entries,
   evidence,
   conflicts,
