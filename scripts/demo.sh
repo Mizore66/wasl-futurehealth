@@ -207,33 +207,56 @@ smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 
   kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; SMOKE_PID=""
   return "$rc"
 }
+# Cleanup for snapshot: staging is always removed; if the swap into place was interrupted (SNAP_SWAP=1) the previous samples
+# are restored from SNAP_OLD first. A SIGKILL cannot run this: it may leave <dir>.staging.* / <dir>.old.* beside the samples
+# (and, mid-swap, the samples dir short of its old files, which are then in <dir>.old.*): move them back by hand.
+snapshot_cleanup() {
+  if [ -n "${SNAP_OLD:-}" ] && [ -d "$SNAP_OLD" ]; then
+    if [ "${SNAP_SWAP:-0}" = 1 ]; then
+      find "$SNAP_DIR" -maxdepth 1 -type f ! -name README.md -delete 2>/dev/null || true
+      find "$SNAP_OLD" -maxdepth 1 -type f -exec mv {} "$SNAP_DIR"/ \; 2>/dev/null || true
+    fi
+    rm -rf "$SNAP_OLD"
+  fi
+  [ -z "${SNAP_STAGE:-}" ] || rm -rf "$SNAP_STAGE"
+  SNAP_OLD=""; SNAP_STAGE=""; SNAP_SWAP=0
+}
 snapshot() {  # static API responses for frontend development (no backend needed): docs/api-samples/ (WASL_SNAPSHOT_DIR overrides)
-  # Written into a clean staging directory first; all seven (or the WASL_SNAPSHOT_PROGRAMMES) programme pages must be nonempty; only then are the tracked
-  # samples replaced (README.md kept), so no stale fixture files remain and a failed snapshot leaves them untouched.
+  # Written into a clean staging directory first; all seven (or the WASL_SNAPSHOT_PROGRAMMES) programme pages must be nonempty. Only then
+  # are the old samples (README.md kept) moved aside, the complete staging moved into place and the old ones deleted, so no stale
+  # fixture file remains and a failure or INT/TERM at any point puts the previous samples back. Every curl is bounded by
+  # WASL_SNAPSHOT_MAX_TIME seconds (default 30).
   # WASL_SNAPSHOT_PROGRAMMES=<comma list> scopes the required programme pages (default: all seven); each listed one must be nonempty.
-  local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="${WASL_SNAPSHOT_DIR:-$ROOT/docs/api-samples}" S tag id prog
+  local A="${WASL_API_ADDR:-127.0.0.1:8088}" D="${WASL_SNAPSHOT_DIR:-$ROOT/docs/api-samples}" S tag id prog f
+  local MT="${WASL_SNAPSHOT_MAX_TIME:-30}"
   local progs="${WASL_SNAPSHOT_PROGRAMMES:-crc,cervical,lung_nodule,diabetic_retinopathy,breast,lung_ldct,ifhas}"
   for prog in ${progs//,/ }; do case "$prog" in crc|cervical|lung_nodule|diabetic_retinopathy|breast|lung_ldct|ifhas) ;;
     *) echo "snapshot: unknown programme '$prog' in WASL_SNAPSHOT_PROGRAMMES" >&2; return 1;; esac; done
-  S="$(mktemp -d "${D%/}.staging.XXXXXX")"
-  SNAP_STAGE="$S"; trap 'rm -rf "$SNAP_STAGE"' EXIT; trap 'rm -rf "$SNAP_STAGE"; exit 130' INT TERM  # staging never outlives the run
-  curl -sf "http://$A/healthz" > "$S/healthz.json" || { rm -rf "$S"; echo "snapshot: healthz failed" >&2; return 1; }
-  curl -sf "http://$A/api/dashboard" > "$S/dashboard.json" || { rm -rf "$S"; echo "snapshot: dashboard failed" >&2; return 1; }
-  curl -sf "http://$A/api/fixtures" > "$S/fixtures.json" || { rm -rf "$S"; echo "snapshot: fixtures failed" >&2; return 1; }
+  SNAP_DIR="${D%/}"; SNAP_SWAP=0; SNAP_OLD=""
+  S="$(mktemp -d "$SNAP_DIR.staging.XXXXXX")"
+  SNAP_STAGE="$S"
+  trap 'snapshot_cleanup' EXIT; trap 'snapshot_cleanup; exit 130' INT; trap 'snapshot_cleanup; exit 143' TERM  # nothing outlives the run
+  curl -sf --max-time "$MT" "http://$A/healthz" > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
+  curl -sf --max-time "$MT" "http://$A/api/dashboard" > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
+  curl -sf --max-time "$MT" "http://$A/api/fixtures" > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
-    if ! { curl -sf "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
+    if ! { curl -sf --max-time "$MT" "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
-      rm -rf "$S"; echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
+      echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
     fi
   done
   for tag in $(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['fixtures'])))" "$S/fixtures.json"); do
     id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures'][sys.argv[2]]['id'])" "$S/fixtures.json" "$tag")
-    curl -sf "http://$A/api/cases/$id" > "$S/case_$tag.json" && curl -sf "http://$A/api/cases/$id/audit" > "$S/case_${tag}_audit.json" ||
-      { rm -rf "$S"; echo "snapshot: fixture $tag detail/audit failed" >&2; return 1; }
+    curl -sf --max-time "$MT" "http://$A/api/cases/$id" > "$S/case_$tag.json" && curl -sf --max-time "$MT" "http://$A/api/cases/$id/audit" > "$S/case_${tag}_audit.json" ||
+      { echo "snapshot: fixture $tag detail/audit failed" >&2; return 1; }
   done
-  mkdir -p "$D"
-  find "$D" -maxdepth 1 -type f ! -name README.md -delete
-  mv "$S"/*.json "$D"/; rmdir "$S"; trap - EXIT INT TERM
+  mkdir -p "$SNAP_DIR"
+  SNAP_OLD="$(mktemp -d "$SNAP_DIR.old.XXXXXX")"
+  SNAP_SWAP=1
+  find "$SNAP_DIR" -maxdepth 1 -type f ! -name README.md -exec mv {} "$SNAP_OLD"/ \; || return 1
+  for f in "$S"/*.json; do mv "$f" "$SNAP_DIR"/ || return 1; done
+  SNAP_SWAP=0                   # complete: the old samples are deleted only now
+  snapshot_cleanup; trap - EXIT INT TERM
   echo "API samples → $D"
 }
 # A run must use a binary built from the current sources. The 2 Nov X10 rerun used a bin/wsi7 older than its fixes and
