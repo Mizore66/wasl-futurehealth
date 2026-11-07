@@ -12,6 +12,8 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { byUrgency, STANDARD_DAYS } from "./days";
 import type { View, WorkItem } from "./model";
+import { SearchField } from "./search-field";
+import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 
 /*
  * Gap G6: the API has no write endpoint for call outcomes, so every outcome here is session state.
@@ -59,6 +61,20 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
     (s.mobile === "detail" ? headingRef : rowRef).current?.focus();
   }, [s.mobile]);
 
+  /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
+  const root = useRef<HTMLDivElement>(null);
+  const [want, setWant] = useState<{ k: string } | null>(null);
+  useEffect(() => {
+    if (want) root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
+  }, [want]);
+
+  const roving = useRovingTabs({
+    ids: TABS.map(([id]) => id),
+    selected: s.tab,
+    onSelect: (id) => setS((prev) => ({ ...prev, tab: id, sel: null, calling: null, stage: null, last: null })),
+    prefix: "today",
+  });
+
   const all: Row[] = items.map((it) => {
     const o = s.over[it.id];
     return { ...it, ...o, log: o?.log ?? [] };
@@ -67,7 +83,8 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const q = s.q.trim().toLowerCase();
   const list = inView(s.tab).filter((p) => !q || p.name.toLowerCase().includes(q) || p.short.toLowerCase().includes(q));
   const toCall = inView("call");
-  const p = list.find((x) => x.id === s.sel) ?? (s.sel ? all.find((x) => x.id === s.sel) : undefined) ?? list[0];
+  /* The open patient is always one of the visible results, so Call, Snooze and Hand-off never act on someone filtered or moved out. */
+  const p = list.find((x) => x.id === s.sel) ?? list[0];
   const fresh = { calling: null, stage: null, last: null };
 
   const top = toCall[0];
@@ -83,6 +100,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
       };
 
   const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null = null) => {
+    setWant({ k: stage ? "chips" : "undo" });
     setS((prev) => {
       const before = prev.over[row.id] ?? { log: [] };
       return {
@@ -102,6 +120,22 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   };
 
   const last = s.last && p && s.last.id === p.id ? s.last : null;
+  /* The last action moved its patient out of this result set: they are not shown, only the way back is. */
+  const removed = s.last && !list.some((x) => x.id === s.last!.id) ? s.last : null;
+  const undoLast = (l: Logged) => {
+    setWant({ k: "heading" });
+    setS((prev) => ({ ...prev, sel: l.id, calling: null, ...l.undo }));
+  };
+  const removedNotice = removed && (
+    <div role="status" className="mb-4 flex min-h-11 flex-wrap items-center gap-x-gap" data-testid="removed-notice">
+      <span>
+        <span className="font-medium">{removed.head}</span> · {removed.move} ·{" "}
+        <button data-focus="undo" onClick={() => undoLast(removed)} className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink">
+          Undo
+        </button>
+      </span>
+    </div>
+  );
   const stage = last ? s.stage : null;
   const first = p?.name.split(" ")[0] ?? "";
   const toEnd = `${first} moved to the end`;
@@ -126,7 +160,13 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
       chipsTitle = "What next?";
       chips = [
         ["Book", () => log(p, "Booked the procedure", { view: "waiting", status: "Booked · date to confirm", snoozed: false }, "Logged: Booked", `${first} moved to Waiting`)],
-        ["Call back on…", () => setS((prev) => ({ ...prev, stage: "callback" }))],
+        [
+          "Call back on…",
+          () => {
+            setWant({ k: "chips" });
+            setS((prev) => ({ ...prev, stage: "callback" }));
+          },
+        ],
         ["Declined", () => log(p, "Declined the procedure", { view: "waiting", status: "Declined · GP to sign", snoozed: false }, "Logged: Declined", `${first} moved to Waiting for the GP`)],
       ];
     } else if (stage === "callback") {
@@ -151,7 +191,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const showList = s.mobile === "list";
 
   return (
-    <>
+    <div ref={root}>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Today</h1>
@@ -172,17 +212,17 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
           aria-label="Your list"
           className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_384px]", showList ? "flex" : "hidden")}
         >
-          <div role="tablist" aria-label="Saved views" className="flex gap-4 overflow-x-auto border-b border-line px-4">
+          <div {...roving.listProps} aria-label="Saved views" className="flex gap-4 overflow-x-auto border-b border-line px-4">
             {TABS.map(([id, label]) => {
               const on = s.tab === id;
               return (
                 <button
                   key={id}
-                  role="tab"
-                  aria-selected={on}
+                  {...roving.tabProps(id)}
                   onClick={() => setS((prev) => ({ ...prev, tab: id, sel: null, ...fresh }))}
                   className={cn(
                     "-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-body",
+                    TAB_FOCUS,
                     on ? "border-ink font-medium text-ink" : "border-transparent text-muted",
                   )}
                 >
@@ -192,22 +232,9 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             })}
           </div>
           <div className="px-4 pb-2 pt-3">
-            <label className="flex items-center gap-2 rounded-control border border-control bg-surface px-2.5">
-              <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-muted">
-                <circle cx="7" cy="7" r="4.5" />
-                <path d="M10.5 10.5l3 3" />
-              </svg>
-              <span className="sr-only">Search</span>
-              <input
-                type="search"
-                placeholder="Name or case id"
-                value={s.q}
-                onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value }))}
-                className="min-w-0 flex-1 h-11 border-0 bg-transparent text-body text-ink outline-none"
-              />
-            </label>
+            <SearchField label="Search" placeholder="Name or case id" value={s.q} onChange={(e) => setS((prev) => ({ ...prev, q: e.target.value }))} />
           </div>
-          <div className="flex flex-1 flex-col gap-0.5 px-2">
+          <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(s.tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {list.map((r) => {
               const on = p?.id === r.id;
               const over = r.days > STANDARD_DAYS;
@@ -256,6 +283,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             aria-label="Open patient"
             className={cn("min-w-0 flex-[1_1_520px] flex-col rounded-card border border-line bg-surface p-4 sm:p-pad lg:flex", showList ? "hidden" : "flex")}
           >
+            {removedNotice}
             <button
               onClick={() => setS((prev) => ({ ...prev, mobile: "list" }))}
               className="-mt-1 mb-3 flex min-h-11 cursor-pointer items-center gap-2 self-start rounded-control bg-transparent pr-3 text-body text-ink lg:hidden"
@@ -270,7 +298,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 </RecordAvatar>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-x-3">
-                    <h2 ref={headingRef} tabIndex={-1} className="m-0 text-title font-semibold outline-none">
+                    <h2 ref={headingRef} data-focus="heading" tabIndex={-1} className="m-0 text-title font-semibold outline-none">
                       {p.name}
                     </h2>
                     {p.nameAr && (
@@ -335,21 +363,27 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   role="status"
                   initial={reduce ? false : { opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
                   transition={{ duration: reduce ? 0 : 0.15 }}
                   className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
                 >
                   <span>
                     <span className="font-medium">{last.head}</span> · {last.move} ·{" "}
                     <button
-                      onClick={() => setS((prev) => ({ ...prev, sel: last.id, calling: null, ...last.undo }))}
+                      data-focus="undo"
+                      onClick={() => undoLast(last)}
                       className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
                     >
                       Undo
                     </button>
                   </span>
                   {!stage && nextUp && (
-                    <Secondary className="sm:ml-auto" onClick={() => setS((prev) => ({ ...prev, sel: nextUp.id, ...fresh }))}>
+                    <Secondary
+                      className="sm:ml-auto"
+                      onClick={() => {
+                        setWant({ k: "heading" });
+                        setS((prev) => ({ ...prev, sel: nextUp.id, ...fresh }));
+                      }}
+                    >
                       Next patient: {nextUp.name}
                     </Secondary>
                   )}
@@ -359,7 +393,9 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
 
             {chips.length > 0 && (
               <div className="mt-4">
-                <h3 className="m-0 text-section font-medium">{chipsTitle}</h3>
+                <h3 data-focus="chips" tabIndex={-1} className="m-0 text-section font-medium">
+                  {chipsTitle}
+                </h3>
                 <div role="group" aria-label={chipsTitle} className="mt-2 flex flex-wrap gap-2">
                   {chips.map(([label, pick]) => (
                     <button
@@ -395,12 +431,13 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
               <span aria-hidden>‹</span>
               Your list
             </button>
+            {removedNotice}
             <h2 className="m-0 text-section font-medium">Nobody to open</h2>
             <p className="m-0 mt-2 text-muted">This view is empty. Choose another tab.</p>
           </section>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

@@ -9,6 +9,8 @@ import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import type { Referral, ReferralState } from "./referrals";
+import { rememberSearchFocus, SearchField } from "./search-field";
+import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 
 /* Every action here is session state: the API has no referral-inbox endpoint. */
 
@@ -66,6 +68,21 @@ export function ReferralInbox({
     (pane === "detail" ? headingRef : rowRef).current?.focus();
   }, [pane]);
 
+  /* Where focus goes after the control that had it is removed. Resolved after the render that removes it. */
+  const root = useRef<HTMLDivElement>(null);
+  const [want, setWant] = useState<{ k: string } | null>(null);
+  useEffect(() => {
+    if (want) root.current?.querySelector<HTMLElement>(`[data-focus="${want.k}"]`)?.focus();
+  }, [want]);
+
+  const selectTab = (id: Tab) => {
+    setTab(id);
+    setSel(null);
+    setMode(null);
+    setPicked([]);
+  };
+  const roving = useRovingTabs({ ids: TABS.map(([id]) => id), selected: tab, onSelect: selectTab, prefix: "referrals" });
+
   const all = referrals.map((r) => ({ ...r, state: over[r.id]?.state ?? r.state }));
   const sorted = [...all].sort((a, b) => RANK[a.state] - RANK[b.state] || b.waiting - a.waiting);
   const test = TABS.find(([id]) => id === tab)![2];
@@ -89,6 +106,7 @@ export function ReferralInbox({
     setPicked([]);
   };
   const act = (id: string, state: ReferralState, outcome: string, entry: string) => {
+    setWant({ k: "undo" });
     setOver((o) => ({ ...o, [id]: { state, outcome, log: [...(o[id]?.log ?? []), entry] } }));
     open(id);
   };
@@ -100,6 +118,7 @@ export function ReferralInbox({
       conds.length ? `Accepted with ${conds.length} ${conds.length === 1 ? "condition" : "conditions"}` : "Accepted the referral",
     );
   const undo = (id: string) => {
+    setWant({ k: "heading" });
     setOver((o) => Object.fromEntries(Object.entries(o).filter(([k]) => k !== id)));
     open(id);
   };
@@ -122,13 +141,23 @@ export function ReferralInbox({
       ]
     : [];
 
+  const choose = (m: Exclude<Mode, null>) => {
+    setWant({ k: "mode" });
+    setMode(m);
+    setPicked([]);
+  };
+  const cancel = (id: string, opener: string) => {
+    open(id);
+    setWant({ k: opener });
+  };
+
   const chip = (on: boolean) =>
     cn("h-11 cursor-pointer rounded-chip border px-4 text-body text-ink", on ? "border-ink bg-active" : "border-control bg-surface hover:bg-ground");
   const lateOpen = !!r && r.state === "new" && r.waiting > window;
   const outcome = r && over[r.id]?.outcome;
 
   return (
-    <>
+    <div ref={root}>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
         <div>
           <h1 className="m-0 text-title font-semibold">Referrals</h1>
@@ -141,35 +170,22 @@ export function ReferralInbox({
 
       <div className="flex flex-wrap items-stretch gap-gap">
         <section aria-label="Referral list" className={cn("min-w-0 flex-[1_1_300px] flex-col rounded-card border border-line bg-surface lg:flex lg:flex-[0_1_420px]", pane === "list" ? "flex" : "hidden")}>
-          <div role="tablist" aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
+          <div {...roving.listProps} aria-label="Saved views" className="grid grid-cols-2 gap-x-4 border-b border-line px-4 sm:flex sm:overflow-x-auto">
             {TABS.map(([id, label, t]) => (
               <button
                 key={id}
-                role="tab"
-                aria-selected={tab === id}
-                onClick={() => {
-                  setTab(id);
-                  setSel(null);
-                  setMode(null);
-                  setPicked([]);
-                }}
-                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
+                {...roving.tabProps(id)}
+                onClick={() => selectTab(id)}
+                className={cn("-mb-px h-11 flex-none cursor-pointer whitespace-nowrap border-b-2 bg-transparent text-start text-body", TAB_FOCUS, tab === id ? "border-ink font-medium text-ink" : "border-transparent text-muted")}
               >
                 {label} <span className="text-small text-muted">{all.filter(t).length}</span>
               </button>
             ))}
           </div>
-          <form action="/app/referrals" className="px-4 pb-2 pt-3">
-            <label className="flex items-center gap-2 rounded-control border border-control bg-surface px-2.5">
-              <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-muted">
-                <circle cx="7" cy="7" r="4.5" />
-                <path d="M10.5 10.5l3 3" />
-              </svg>
-              <span className="sr-only">Search case id</span>
-              <input type="search" name="q" defaultValue={q} placeholder="Case id, then Enter" className="min-w-0 flex-1 h-11 border-0 bg-transparent text-body text-ink outline-none" />
-            </label>
+          <form action="/app/referrals" onSubmit={() => rememberSearchFocus("referrals")} className="px-4 pb-2 pt-3">
+            <SearchField label="Search case id" name="q" defaultValue={q} placeholder="Case id, then Enter" restoreKey="referrals" />
           </form>
-          <div className="flex flex-1 flex-col gap-0.5 px-2">
+          <div role="tabpanel" id={roving.panelId} aria-labelledby={roving.tabId(tab)} tabIndex={list.length ? undefined : 0} className="flex flex-1 flex-col gap-0.5 px-2">
             {list.map((x) => {
               const on = r?.id === x.id;
               const isLate = x.state === "new" && x.waiting > window;
@@ -237,7 +253,7 @@ export function ReferralInbox({
                 </RecordAvatar>
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-baseline gap-x-3">
-                    <h2 ref={headingRef} tabIndex={-1} className="m-0 text-title font-semibold outline-none">
+                    <h2 ref={headingRef} data-focus="heading" tabIndex={-1} className="m-0 text-title font-semibold outline-none">
                       {r.name}
                     </h2>
                     {r.nameAr && (
@@ -279,13 +295,15 @@ export function ReferralInbox({
                   <button onClick={() => accept(r)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
                     Accept referral
                   </button>
-                  <Secondary onClick={() => setMode("cond")}>Accept with conditions</Secondary>
-                  <Secondary onClick={() => setMode("ret")}>Return to GP</Secondary>
+                  <Secondary data-focus="open-cond" onClick={() => choose("cond")}>Accept with conditions</Secondary>
+                  <Secondary data-focus="open-ret" onClick={() => choose("ret")}>Return to GP</Secondary>
                 </div>
               )}
               {r.state === "new" && mode === "cond" && (
                 <div>
-                  <h3 className="m-0 text-section font-medium">Accept on these conditions</h3>
+                  <h3 data-focus="mode" tabIndex={-1} className="m-0 text-section font-medium">
+                    Accept on these conditions
+                  </h3>
                   <div role="group" aria-label="Conditions" className="mt-2 flex flex-wrap gap-2">
                     {CONDITIONS.map((c) => (
                       <button key={c} aria-pressed={picked.includes(c)} className={chip(picked.includes(c))} onClick={() => setPicked((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]))}>
@@ -297,13 +315,15 @@ export function ReferralInbox({
                     <button onClick={() => accept(r, picked)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
                       {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
                     </button>
-                    <Secondary onClick={() => open(r.id)}>Cancel</Secondary>
+                    <Secondary onClick={() => cancel(r.id, "open-cond")}>Cancel</Secondary>
                   </div>
                 </div>
               )}
               {r.state === "new" && mode === "ret" && (
                 <div>
-                  <h3 className="m-0 text-section font-medium">Why return this referral?</h3>
+                  <h3 data-focus="mode" tabIndex={-1} className="m-0 text-section font-medium">
+                    Why return this referral?
+                  </h3>
                   <div role="group" aria-label="Reason" className="mt-2 flex flex-wrap gap-2">
                     {REASONS.map((c) => (
                       <button key={c} aria-pressed={picked[0] === c} className={chip(picked[0] === c)} onClick={() => setPicked([c])}>
@@ -323,7 +343,7 @@ export function ReferralInbox({
                     ) : (
                       <span className="text-muted">Choose a reason to return it.</span>
                     )}
-                    <Secondary onClick={() => open(r.id)}>Cancel</Secondary>
+                    <Secondary onClick={() => cancel(r.id, "open-ret")}>Cancel</Secondary>
                   </div>
                 </div>
               )}
@@ -349,7 +369,7 @@ export function ReferralInbox({
                 {outcome && (
                   <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="flex flex-wrap items-center gap-gap">
                     <p className="m-0 flex-1">{outcome}</p>
-                    <Secondary onClick={() => undo(r.id)}>Undo</Secondary>
+                    <Secondary data-focus="undo" onClick={() => undo(r.id)}>Undo</Secondary>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -386,7 +406,7 @@ export function ReferralInbox({
           </section>
         )}
       </div>
-    </>
+    </div>
   );
 }
 
