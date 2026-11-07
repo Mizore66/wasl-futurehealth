@@ -6,6 +6,7 @@ Exits 0 when every check passes, 1 on the first failed assertion or transport er
 Fixtures are iterated dynamically: the three original tags must be present, any others are validated too.
 """
 import argparse
+import contextlib
 import json
 import sys
 import urllib.error
@@ -36,7 +37,8 @@ class Client:
             with urllib.request.urlopen(self.base + path, timeout=self.timeout) as r:
                 code, raw = r.status, r.read()
         except urllib.error.HTTPError as e:
-            code, raw = e.code, e.read()
+            with contextlib.closing(e):
+                code, raw = e.code, e.read()
         except (urllib.error.URLError, OSError) as e:
             raise SmokeFailure(f"GET {path}: {e}")
         try:

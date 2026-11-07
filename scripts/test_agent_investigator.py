@@ -149,6 +149,9 @@ class ProviderErrors(Base):
         errs = [urllib.error.URLError("boom " + URL), socket.timeout("timed out"), TimeoutError(),
                 urllib.error.HTTPError(URL, 429, "Too Many " + KEY, {}, None),
                 urllib.error.HTTPError(URL, 500, "ISE", {}, None), ConnectionResetError("reset")]
+        for e in errs:
+            if isinstance(e, urllib.error.HTTPError):
+                self.addCleanup(e.close)
         for n, e in enumerate(errs):
             with self.assertRaises(ai.ProviderError) as cm:
                 ai.investigate(self.store, ITEM, self.client(Fake(e), model="m%d" % n))
@@ -166,6 +169,7 @@ class ProviderErrors(Base):
 
     def test_urllib_transport_never_leaks_url_or_key(self):
         err = urllib.error.HTTPError(URL, 429, "rate limited " + KEY, {}, None)
+        self.addCleanup(err.close)
         with mock.patch("urllib.request.urlopen", side_effect=err):
             c = self.client(ai.UrlTransport(URL, KEY))
             with self.assertRaises(ai.ProviderError) as cm:

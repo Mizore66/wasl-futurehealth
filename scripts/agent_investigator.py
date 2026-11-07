@@ -91,7 +91,9 @@ class UrlTransport:
             with urllib.request.urlopen(rq, timeout=timeout) as r:
                 return json.load(r)
         except urllib.error.HTTPError as e:
-            raise ProviderError("provider http %d" % e.code) from None
+            code = e.code
+            e.close()
+            raise ProviderError("provider http %d" % code) from None
         except (socket.timeout, TimeoutError):
             raise ProviderError("provider timeout") from None
         except Exception as e:  # noqa: BLE001  (URLError, ConnectionError, bad JSON ...)
