@@ -287,7 +287,37 @@ def check(root):
             for m in OVERCLAIM.finditer(line):
                 if not negated(line, m.start()):
                     add("overclaim", rel, n, "clinical/validated/deployed claim without negation")
+    check_kpi_evidence(root, add)
     return f
+
+
+KPI_BAD_WASL = re.compile(r"\b32\.0\s*%")
+KPI_WITHIN_ONE = re.compile(r"within (?:about |roughly |~)?(?:one|1)(?:\.0)? (?:percentage[- ])?(?:point|pp)\b", re.I)
+KPI_QUALIFIER = re.compile(r"seed[- ]2026|v1|noise|five[- ]seed|frozen", re.I)
+KPI_VALUES = ("12.4%", "33.0%", "31.9%")
+
+
+def check_kpi_evidence(root, add):
+    """Seed-2026 KPI values are 12.4 / 33.0 / 31.9 (1.1-point gap); the five-seed frozen gap is
+    about 1 point (v1) and 3.1 points (v2). 32.0% and unqualified 'within one point' must not return."""
+    for rel in DOCS:
+        for n, line in enumerate(_lines(root, rel), 1):
+            if KPI_BAD_WASL.search(line):
+                add("kpi-evidence", rel, n, "32.0% is not the seed-2026 Wasl value (31.9%)")
+            for m in KPI_WITHIN_ONE.finditer(line):
+                if not KPI_QUALIFIER.search(line[max(0, m.start() - 150):m.end() + 150]):
+                    add("kpi-evidence", rel, n, "unqualified 'within one point' claim; name seed 2026 or the v1/v2 five-seed result")
+    for rel in ("README.md", "docs/SUBMISSION-DRAFT.md", "docs/PITCH.md", "docs/WRITEUP.md", "docs/BRIEF.md"):
+        t = _read(root, rel) or ""
+        for v in KPI_VALUES:
+            if v not in t:
+                add("kpi-evidence", rel, 0, f"missing seed-2026 KPI value {v}")
+        if not re.search(r"seed[- ]2026", t, re.I) or not re.search(r"3\.1 points", t):
+            add("kpi-evidence", rel, 0, "missing seed-2026 qualifier or five-seed v2 3.1-point gap")
+    g = _read(root, "docs/DEMO-RECORDING-GUIDE.md") or ""
+    for v in KPI_VALUES + ("seed 2026", "3.1", "v1", "v2"):
+        if v not in g:
+            add("kpi-evidence", "docs/DEMO-RECORDING-GUIDE.md", 0, f"narration caveat missing {v!r}")
 
 
 def main(argv):

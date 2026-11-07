@@ -16,9 +16,9 @@ Wasl is built around one programme owner and one KPI: evidenced CRC follow-up fo
 |---|---:|
 | Emirates-ID-only tracking | **12.4%** |
 | Simulator's hidden truth | **33.0%** |
-| Wasl | **32.0%** |
+| Wasl | **31.9%** |
 
-This is a measurement simulation, not an observed Abu Dhabi KPI. Its operational point is targeting: under ID-only tracking, **20.6 of every 100 referrals** were completed on time but appeared lost—**62% of true completions**—and **23.5% of the apparent chase list** was already done. Wasl recovered the simulated rate to within one percentage point of truth and attached a reason to each open loop: not notified, not understood, referral rejected or unanswered, not booked, no-show, inadequate evidence, or unresolved identity. Standard reminders, navigation and referral workflows can then be directed at patients who genuinely need them.
+This is a measurement simulation, not an observed Abu Dhabi KPI, and the table is one simulated run (seed 2026, `pipeline/RESULTS.md`): Wasl is 1.1 points from truth there. In the frozen five-seed evaluation (`pipeline/results/final/SUMMARY.md`) the Wasl gap is about 1 point under v1 noise and 3.1 points under independent v2 noise, so exact values vary by run. Its operational point is targeting: under ID-only tracking, **20.6 of every 100 referrals** were completed on time but appeared lost—**62% of true completions**—and **23.5% of the apparent chase list** was already done. Wasl recovered the simulated rate to 1.1 points of truth in that run and attached a reason to each open loop: not notified, not understood, referral rejected or unanswered, not booked, no-show, inadequate evidence, or unresolved identity. Standard reminders, navigation and referral workflows can then be directed at patients who genuinely need them.
 
 ## Built solution
 

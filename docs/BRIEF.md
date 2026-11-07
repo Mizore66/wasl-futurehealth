@@ -30,7 +30,9 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
   |---|---|
   | EID-only tracking | **12.4%** |
   | Truth | **33.0%** |
-  | Wasl | **32.0%** |
+  | Wasl | **31.9%** |
+
+  Seed-2026 simulated run (Wasl 1.1 points from truth). Frozen five-seed evaluation (`pipeline/results/final/SUMMARY.md`): Wasl gap about 1 point under v1 noise, 3.1 points under independent v2 noise; exact values vary by run.
 
 - **Why it matters: targeting.** Under EID-only tracking:
   - 62% of real completions look lost;
