@@ -10,6 +10,21 @@ ITEM = "rv-missing-dob"
 URL, KEY = "https://llm.example.invalid/gateway-path", "sk-SUPERSECRETKEY0123456789abcdef"
 
 
+def read_text(path, errors="strict"):
+    with open(path, encoding="utf-8", errors=errors) as fh:
+        return fh.read()
+
+
+def read_json(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def read_rows(path):
+    with open(path, encoding="utf-8") as fh:
+        return [json.loads(x) for x in fh]
+
+
 def tool_msg(*calls):
     return {"role": "assistant", "content": None, "tool_calls": [
         {"id": "c%d" % n, "type": "function", "function": {"name": name, "arguments": json.dumps({"arg": arg})}}
@@ -195,7 +210,7 @@ class ProviderErrors(Base):
         self.assertEqual(seen["body"]["temperature"], 0)
         for root, _, files in os.walk(self.cache):
             for f in files:
-                data = open(os.path.join(root, f), encoding="utf-8").read()
+                data = read_text(os.path.join(root, f))
                 for bad in (KEY, "example.invalid", "Bearer", "Authorization", "https://"):
                     self.assertNotIn(bad, data)
 
@@ -317,7 +332,7 @@ class WriteRecs(Base):
         r = self.rec("same")
         ai.write_recs(p, [r])
         ai.write_recs(p, [r])  # identical retry: no-op
-        rows = [json.loads(x) for x in open(p)]
+        rows = read_rows(p)
         self.assertEqual(len(rows), 1)
         row = rows[0]
         self.assertEqual((row["item"], row["pair"], row["label"], row["valid"]), (ITEM, ["p|A1", "p|A2"], "same", True))
@@ -326,13 +341,13 @@ class WriteRecs(Base):
         flipped = dict(self.rec("different"), pair=["p|A2", "p|A1"])  # same unordered pair, different content
         with self.assertRaises(ValueError):
             ai.write_recs(p, [flipped])
-        self.assertEqual(len(open(p).read().splitlines()), 1)
+        self.assertEqual(len(read_text(p).splitlines()), 1)
 
     def test_terminal_uncertain_is_written_as_valid_record(self):
         c = ai.investigate(self.store, ITEM, self.client(Fake(resp(text_msg("garbage")))))
         p = os.path.join(self.d, "recs.ndjson")
         ai.write_recs(p, [c])
-        row = json.loads(open(p).read())
+        row = json.loads(read_text(p))
         self.assertEqual((row["label"], row["valid"], row["reason"]), ("uncertain", True, "invalid_json"))
 
 
@@ -353,9 +368,10 @@ for n in ("review_queue.json", "link_funnel.ndjson", "prep_log.ndjson"):
     shutil.copy(os.path.join(fx, n), os.path.join(main, n))
 have = set()
 if recs and os.path.exists(recs):
-    for l in open(recs):
-        if l.strip():
-            have.add(json.loads(l)["item"])
+    with open(recs) as fh:
+        for l in fh:
+            if l.strip():
+                have.add(json.loads(l)["item"])
 tag = "agent" if have else "plain"
 if os.environ.get("FAKE_NONDET") and run.endswith("_check"):
     tag += "-different"
@@ -367,7 +383,8 @@ for n in os.environ.get("FAKE_DROP", "").split(","):
 if os.environ.get("FAKE_EMPTY") and run.endswith("_check"):
     open(os.path.join(main, os.environ["FAKE_EMPTY"]), "w").close()
 need = [] if os.environ.get("FAKE_NO_NEED") else [i for i in os.environ.get("FAKE_NEED", "").split(",") if i and i not in have]
-pairs = json.load(open(os.path.join(fx, "pairs.json")))
+with open(os.path.join(fx, "pairs.json")) as fh:
+    pairs = json.load(fh)
 with open(os.path.join(run, "agent_need.ndjson"), "w") as f:
     for i in need:
         f.write(json.dumps({{"item": i, "pair": pairs.get(i, ["x|1", "x|2"]), "p": 0.5}}) + "\n")
@@ -389,7 +406,8 @@ class DriverBase(Base):
         os.makedirs(self.fx)
         for n in ("review_queue.json", "link_funnel.ndjson", "prep_log.ndjson"):
             shutil.copy(os.path.join(self.lane, "run", "main", n), os.path.join(self.fx, n))
-        json.dump({k: list(v) for k, v in tae.ITEMS.items()}, open(os.path.join(self.fx, "pairs.json"), "w"))
+        with open(os.path.join(self.fx, "pairs.json"), "w") as fh:
+            json.dump({k: list(v) for k, v in tae.ITEMS.items()}, fh)
         self.exe = os.path.join(self.d, "wsi7")
         with open(self.exe, "w") as f:
             f.write(FAKE_EXE.format(py=sys.executable))
@@ -413,7 +431,7 @@ class DriverBase(Base):
         return type("A", (), ns)()
 
     def calls(self):
-        return [json.loads(x) for x in open(self.log)] if os.path.exists(self.log) else []
+        return read_rows(self.log) if os.path.exists(self.log) else []
 
 
 
@@ -431,9 +449,9 @@ class Driver(DriverBase):
                 self.assertIn(f, c)
             self.assertIn("-agentrecs", c)
         self.assertEqual(calls[2][calls[2].index("-run") + 1], self.run_dir + "_check")
-        recs = [json.loads(x) for x in open(os.path.join(self.d, "recs.ndjson"))]
+        recs = read_rows(os.path.join(self.d, "recs.ndjson"))
         self.assertEqual([r["item"] for r in recs], [ITEM])
-        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        summary = read_json(os.path.join(self.run_dir, "agent_replay.json"))
         self.assertEqual(out, summary)
         self.assertTrue(summary["determinism"]["ok"])
         self.assertEqual(summary["determinism"]["new_uncached_calls"], 0)
@@ -446,7 +464,7 @@ class Driver(DriverBase):
         fake = Fake(resp(text_msg("garbage")), resp(text_msg(self.good())))
         ai.iterate(self.args(self.client(fake)))
         self.assertEqual(len(fake.requests), 1)
-        self.assertEqual(json.loads(open(os.path.join(self.d, "recs.ndjson")).read())["label"], "uncertain")
+        self.assertEqual(json.loads(read_text(os.path.join(self.d, "recs.ndjson")))["label"], "uncertain")
 
     def test_control_materializes_twice_without_gemini(self):
         out = ai.iterate(self.args(client=None, control=True))
@@ -462,21 +480,20 @@ class Driver(DriverBase):
         with self.assertRaises(ai.ProviderError):
             ai.iterate(self.args(self.client(Fake(urllib.error.URLError("x")))))
         p = os.path.join(self.d, "recs.ndjson")
-        self.assertEqual(open(p).read() if os.path.exists(p) else "", "")
+        self.assertEqual(read_text(p) if os.path.exists(p) else "", "")
         self.assertFalse(os.path.exists(os.path.join(self.run_dir, "agent_replay.json")))
 
     def test_earlier_records_survive_an_unresolved_item_abort(self):
         with mock.patch.dict(os.environ, {"FAKE_NEED": "rv-missing-dob,rv-dob-conflict"}):
             with self.assertRaises(ai.AgentAbort):  # second need item is sandbox-ineligible: unresolved, run fails
                 ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))))))
-        with open(os.path.join(self.d, "recs.ndjson")) as f:
-            self.assertEqual(len(f.read().splitlines()), 1)
+        self.assertEqual(len(read_text(os.path.join(self.d, "recs.ndjson")).splitlines()), 1)
 
     def test_nondeterministic_check_replay_raises(self):
         with mock.patch.dict(os.environ, {"FAKE_NONDET": "1"}):
             with self.assertRaises(ai.AgentAbort):
                 ai.iterate(self.args(self.client(Fake(resp(text_msg(self.good()))))))
-        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        summary = read_json(os.path.join(self.run_dir, "agent_replay.json"))
         self.assertFalse(summary["determinism"]["ok"])
 
     def test_empty_need_stops_after_check_without_gemini(self):
@@ -490,7 +507,7 @@ class Driver(DriverBase):
         with mock.patch.dict(os.environ, {"FAKE_NEED": "rv-dob-conflict"}):  # eligible per Go (fake), ineligible in the sandbox
             with self.assertRaises(ai.AgentAbort):
                 ai.iterate(self.args(self.client(Fake())))
-        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        summary = read_json(os.path.join(self.run_dir, "agent_replay.json"))
         self.assertEqual((summary["status"], summary["stalled_items"]), ("failed_unresolved_need", 1))
         self.assertEqual(len(self.calls()), 1)
         self.assertFalse(os.path.exists(self.run_dir + "_check"))
@@ -499,7 +516,7 @@ class Driver(DriverBase):
         with mock.patch.dict(os.environ, {"FAKE_NEED": ITEM}), mock.patch.object(ai, "MAX_ITERATIONS", 1):
             with self.assertRaises(ai.AgentAbort):
                 ai.iterate(self.args(self.client(Fake())))
-        summary = json.load(open(os.path.join(self.run_dir, "agent_replay.json")))
+        summary = read_json(os.path.join(self.run_dir, "agent_replay.json"))
         self.assertEqual((summary["status"], summary["stalled_items"]), ("failed_unresolved_need", 1))
 
     def test_missing_or_empty_artifact_fails_determinism(self):
@@ -554,7 +571,7 @@ class Driver(DriverBase):
             for f in files:
                 if f == "wsi7":
                     continue
-                blob += open(os.path.join(root, f), encoding="utf-8", errors="ignore").read()
+                blob += read_text(os.path.join(root, f), errors="ignore")
         for bad in (KEY, "example.invalid"):
             self.assertNotIn(bad, blob)
 
@@ -573,7 +590,7 @@ class Smoke(DriverBase):
         self.assertEqual(c.stage, "smoke")
         self.assertEqual(c.cap, 40)
         self.assertEqual((out["investigated"], out["valid"], out["gemini_calls"]), (1, 1, 1))
-        self.assertEqual(len(open(os.path.join(self.d, "smoke", "agent_recs.ndjson")).read().splitlines()), 1)
+        self.assertEqual(len(read_text(os.path.join(self.d, "smoke", "agent_recs.ndjson")).splitlines()), 1)
 
     def test_smoke_never_exceeds_twenty_items(self):
         with self.assertRaises(ValueError):
