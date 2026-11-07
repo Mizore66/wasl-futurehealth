@@ -35,45 +35,45 @@ import (
 const apiVersion = "wasl-api/1"
 
 type apiCase struct {
-	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string      `json:"state"`
-	Dropoff   string      `json:"dropoff"`
-	Owner     string      `json:"owner,omitempty"`
-	Provider  string      `json:"provider"`
-	SRDay     float64     `json:"referral_day"`
-	Deadline  float64     `json:"deadline_day,omitempty"`
-	Overdue   bool        `json:"overdue"`
-	Priority  string      `json:"priority,omitempty"`
-	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string      `json:"review"`  // none | open | signed
-	Closed    bool        `json:"closed"`
-	ClosedDay float64     `json:"closed_day,omitempty"`
-	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string    `json:"state"`
+	Dropoff   string    `json:"dropoff"`
+	Owner     string    `json:"owner,omitempty"`
+	Provider  string    `json:"provider"`
+	SRDay     float64   `json:"referral_day"`
+	Deadline  float64   `json:"deadline_day,omitempty"`
+	Overdue   bool      `json:"overdue"`
+	Priority  string    `json:"priority,omitempty"`
+	Consent   string    `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string    `json:"review"`  // none | open | signed
+	Closed    bool      `json:"closed"`
+	ClosedDay float64   `json:"closed_day,omitempty"`
+	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision   // full last decision (detail view)
+	last      *Decision // full last decision (detail view)
 	decisions []*Decision
 }
 
 type apiServer struct {
-	run, data  string
-	meta       map[string]interface{}
-	cases      map[string]*apiCase
-	order      []string
-	queue      map[string][]*ReviewItem // loop -> raised items
-	signoffs   map[string][]map[string]interface{}
-	facts      map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids        map[string][]map[string]string      // loop -> linked registrations
-	dashboard  map[string]interface{}
-	report     map[string]interface{}
-	anchors    map[string]string
-	booking    map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	fixtures   map[string]string
-	agentInv   map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu         sync.Mutex
-	reviews    []map[string]interface{}
-	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	run, data string
+	meta      map[string]interface{}
+	cases     map[string]*apiCase
+	order     []string
+	queue     map[string][]*ReviewItem // loop -> raised items
+	signoffs  map[string][]map[string]interface{}
+	facts     map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids       map[string][]map[string]string     // loop -> linked registrations
+	dashboard map[string]interface{}
+	report    map[string]interface{}
+	anchors   map[string]string
+	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	fixtures  map[string]string
+	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu        sync.Mutex
+	reviews   []map[string]interface{}
+	ledgerErr  string // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
@@ -259,9 +259,7 @@ func (s *apiServer) loadTimelines() {
 			rows = append(rows, byPK[pk]...)
 		}
 		sort.Slice(rows, func(i, j int) bool { return rows[i]["seq"].(uint64) < rows[j]["seq"].(uint64) })
-		sort.Slice(ids, func(i, j int) bool {
-			return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"])
-		})
+		sort.Slice(ids, func(i, j int) bool { return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"]) })
 		s.facts[id], s.ids[id] = rows, ids
 	}
 }
@@ -276,11 +274,10 @@ func firstNonEmpty(a ...string) string {
 }
 
 // pickFixtures selects the demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
-//
-//	evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
-//	false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
-//	review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
-//	dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
+//   evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
+//   false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
+//   review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
+//   dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
 func (s *apiServer) pickFixtures() {
 	s.fixtures = map[string]string{}
 	ids := append([]string{}, s.order...)
@@ -306,9 +303,7 @@ func (s *apiServer) pickFixtures() {
 		}
 		if s.fixtures["evidence_closure"] == "" && c.Closed && c.Consent == "granted" &&
 			has(c, "link_decision", func(b Block) bool { return fmt.Sprint(b.Body["hops"]) != "0" }) &&
-			has(c, "evidence", func(b Block) bool {
-				return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == ""
-			}) {
+			has(c, "evidence", func(b Block) bool { return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == "" }) {
 			s.fixtures["evidence_closure"] = id
 		}
 		if s.fixtures["false_closure_trap"] == "" && !c.Closed && c.State == "inadequate" &&
@@ -604,7 +599,7 @@ func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "api_overlay": s.overlayView(c, true), "current": c.last, "booking": s.bookingFor(c.ID),
+		"api_reviews": s.reviewsFor(c.ID), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}))
 }
@@ -687,30 +682,22 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
-	s.mu.Lock()
-	if s.ledgerErr != "" {
-		s.mu.Unlock()
-		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}))
-		return
-	}
-	prev := "genesis"
-	if n := len(s.reviews); n > 0 {
-		prev = fmt.Sprint(s.reviews[n-1]["hash"])
-	}
-	ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
-		"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": prev}
-	h := sha256.Sum256(canon(ev))
-	ev["hash"] = hex.EncodeToString(h[:])
-	s.reviews = append(s.reviews, ev)
-	f, err := os.OpenFile(filepath.Join(s.run, "api_reviews.ndjson"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err == nil {
-		b, _ := json.Marshal(ev)
-		f.Write(append(b, '\n'))
-		f.Close()
-	}
-	s.mu.Unlock()
-	writeJSONResp(w, 201, s.envelope(map[string]interface{}{"review": ev,
-		"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}))
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
+			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
+		}
+		return 201, map[string]interface{}{"review": stored,
+			"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}
+	}()
+	writeJSONResp(w, code, s.envelope(body)) // never write the response while holding s.mu
 }
 
 // nz turns a nil slice into an empty JSON array (frontends should never have to null-check lists).
@@ -1006,8 +993,8 @@ func (s *apiServer) caseHead(c *apiCase) string {
 	return "genesis"
 }
 
-// cleanText validates a bounded, valid-UTF-8 string without surrounding whitespace or control characters
-// (newline allowed if multiline).
+// cleanText validates a bounded, valid-UTF-8 string without surrounding whitespace, control characters or Unicode
+// format (Cf) characters (newline allowed if multiline).
 func cleanText(v interface{}, max int, required, multiline bool) (string, error) {
 	str, ok := v.(string)
 	if !ok {
@@ -1028,6 +1015,9 @@ func cleanText(v interface{}, max int, required, multiline bool) (string, error)
 	for _, r := range str {
 		if unicode.IsControl(r) && !(multiline && r == '\n') {
 			return "", errors.New("must not contain control characters")
+		}
+		if unicode.Is(unicode.Cf, r) { // zero-width, bidi override and other invisible format characters
+			return "", errors.New("must not contain invisible format characters")
 		}
 	}
 	return str, nil
@@ -1154,27 +1144,150 @@ func (s *apiServer) ledgerStatus() string {
 	return "ok"
 }
 
+// ledgerView is the ledger status shown on case detail: a failed replay leaves the overlay partial (events before the
+// failing line), so the reader must be told.
+func (s *apiServer) ledgerView() map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ledgerErr != "" {
+		return map[string]interface{}{"status": "invalid", "detail": s.ledgerErr, "events_applied": len(s.reviews),
+			"note": "api_overlay reflects only the ledger events before the failure; coordinator writes are refused"}
+	}
+	return map[string]interface{}{"status": "ok", "events_applied": len(s.reviews)}
+}
+
+func (s *apiServer) lastHashLocked() string {
+	if n := len(s.reviews); n > 0 {
+		return fmt.Sprint(s.reviews[n-1]["hash"])
+	}
+	return "genesis"
+}
+
+// appendEventLocked is the one durable append path for every ledger event (legacy review and coordinator action).
+// The caller holds s.mu. The event is hashed and marshalled completely, written, synced and closed; only then does
+// the in-memory chain move. A clean failure (nothing reached the file) leaves everything untouched. If the file's
+// state is unknown (errLedgerIndeterminate) the ledger is marked failed and all later writes are refused, because
+// the in-memory hash could otherwise fork from the file.
+func (s *apiServer) appendEventLocked(ev map[string]interface{}) (map[string]interface{}, error) {
+	ev["hash"] = apiEventHash(ev)
+	line, err := json.Marshal(ev)
+	if err != nil {
+		return nil, err
+	}
+	write := s.appendLine
+	if write == nil { // servers built without loadAPI
+		write = func(l []byte) error { return appendLedgerLine(filepath.Join(s.run, "api_reviews.ndjson"), l) }
+	}
+	if err := write(append(line, '\n')); err != nil {
+		if errors.Is(err, errLedgerIndeterminate) {
+			s.ledgerErr = "append failed and the ledger file state is unknown: " + err.Error()
+		}
+		return nil, err
+	}
+	var stored map[string]interface{}
+	if err := json.Unmarshal(line, &stored); err != nil {
+		s.ledgerErr = "event written but not readable back: " + err.Error()
+		return nil, err
+	}
+	s.reviews = append(s.reviews, stored)
+	return stored, nil
+}
+
+// errLedgerIndeterminate marks append failures after which the file may or may not hold the line.
+var errLedgerIndeterminate = errors.New("ledger state indeterminate")
+
+type ledgerFile interface {
+	Stat() (os.FileInfo, error)
+	Write([]byte) (int, error)
+	Sync() error
+	Truncate(int64) error
+	Close() error
+}
+
 func appendLedgerLine(path string, line []byte) error {
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
+	return appendToLedgerFile(f, line)
+}
+
+// appendToLedgerFile: write, sync and close the line. A write failure that was rolled back by a successful truncate
+// is a clean error. A sync, truncate or close failure leaves the file state unknown (errLedgerIndeterminate).
+func appendToLedgerFile(f ledgerFile, line []byte) error {
 	st, err := f.Stat()
 	if err != nil {
 		f.Close()
 		return err
 	}
-	_, werr := f.Write(line)
-	if werr == nil {
-		werr = f.Sync()
+	n, werr := f.Write(line)
+	if werr == nil && n != len(line) {
+		werr = io.ErrShortWrite
 	}
 	if werr != nil {
-		f.Truncate(st.Size()) // never leave a partial line behind
+		terr := f.Truncate(st.Size()) // never leave a partial line behind
+		cerr := f.Close()
+		if terr != nil || cerr != nil {
+			return fmt.Errorf("%w: write: %v; truncate: %v; close: %v", errLedgerIndeterminate, werr, terr, cerr)
+		}
+		return werr
 	}
-	if cerr := f.Close(); werr == nil {
-		werr = cerr
+	if serr := f.Sync(); serr != nil {
+		f.Truncate(st.Size())
+		f.Close()
+		return fmt.Errorf("%w: sync: %v", errLedgerIndeterminate, serr)
 	}
-	return werr
+	if cerr := f.Close(); cerr != nil {
+		return fmt.Errorf("%w: close: %v", errLedgerIndeterminate, cerr)
+	}
+	return nil
+}
+
+// rejectDuplicateKeys fails on any object that repeats a key: encoding/json keeps the last value silently, so
+// two readers could disagree about what was submitted.
+func rejectDuplicateKeys(raw []byte) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	var walk func() error
+	walk = func() error {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		d, ok := tok.(json.Delim)
+		if !ok {
+			return nil
+		}
+		if d == '[' {
+			for dec.More() {
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token()
+			return err
+		}
+		seen := map[string]bool{}
+		for dec.More() {
+			kt, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			k, _ := kt.(string)
+			if seen[k] {
+				return fmt.Errorf("duplicate JSON key %q", k)
+			}
+			seen[k] = true
+			if err := walk(); err != nil {
+				return err
+			}
+		}
+		_, err = dec.Token()
+		return err
+	}
+	if err := walk(); err != nil && strings.HasPrefix(err.Error(), "duplicate JSON key") {
+		return err
+	}
+	return nil // other syntax errors are reported by the normal decode
 }
 
 func apiEventHash(ev map[string]interface{}) string {
@@ -1209,6 +1322,10 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
 	if err != nil {
 		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
+		return
+	}
+	if err := rejectDuplicateKeys(raw); err != nil {
+		s.actionErr(w, 400, err.Error(), nil)
 		return
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -1248,39 +1365,30 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 		}
 	}
 
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.ledgerErr != "" {
-		s.actionErr(w, 500, "review ledger failed validation; writes refused", map[string]interface{}{"detail": s.ledgerErr})
-		return
-	}
-	if head := s.caseHead(c); expected != head {
-		s.actionErr(w, 409, "stale expected_head: the case changed since it was read", map[string]interface{}{"conflict": "head", "current_head": head})
-		return
-	}
-	if kind == "contact_outcome" && c.Consent != "granted" {
-		s.actionErr(w, 409, "contact outcomes need contact permission granted", map[string]interface{}{"conflict": "consent", "consent": c.Consent})
-		return
-	}
-	prev := "genesis"
-	if n := len(s.reviews); n > 0 {
-		prev = fmt.Sprint(s.reviews[n-1]["hash"])
-	}
-	ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
-		"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": prev}
-	ev["hash"] = apiEventHash(ev)
-	line, _ := json.Marshal(ev)
-	if err := s.appendLine(append(line, '\n')); err != nil {
-		s.actionErr(w, 500, "could not append to the review ledger; nothing was recorded", nil)
-		return
-	}
-	// the ledger now holds the event; only then does the in-memory state follow
-	var stored map[string]interface{}
-	json.Unmarshal(line, &stored)
-	s.reviews = append(s.reviews, stored)
-	c.applyOverlay(stored)
-	writeJSONResp(w, 201, s.envelope(map[string]interface{}{"event": stored, "api_overlay": s.overlayViewLocked(c, true),
-		"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}))
+	// decide and record under the lock, but write the response only after releasing it
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if head := s.caseHead(c); expected != head {
+			return 409, map[string]interface{}{"error": "stale expected_head: the case changed since it was read", "conflict": "head", "current_head": head}
+		}
+		if kind == "contact_outcome" && c.Consent != "granted" {
+			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
+		}
+		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
+			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
+		}
+		c.applyOverlay(stored)
+		return 201, map[string]interface{}{"event": stored, "api_overlay": s.overlayViewLocked(c, true),
+			"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}
+	}()
+	writeJSONResp(w, code, s.envelope(body))
 }
 
 // loadReviews replays the shared review ledger. Legacy review events and coordinator events share one hash chain.
@@ -1317,6 +1425,9 @@ func (s *apiServer) loadReviews() {
 
 func (s *apiServer) replayLedgerLine(line []byte) error {
 	var ev map[string]interface{}
+	if err := rejectDuplicateKeys(line); err != nil {
+		return err
+	}
 	dec := json.NewDecoder(bytes.NewReader(line))
 	if err := dec.Decode(&ev); err != nil || ev == nil {
 		return errors.New("not a JSON object")
@@ -1362,7 +1473,7 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if ev["head"] != s.caseHead(c) {
 		return errors.New("head does not follow the case's previous event")
 	}
-	if seq, _ := ev["seq"].(float64); int(seq) != c.ov.n+1 {
+	if seq, isNum := ev["seq"].(float64); !isNum || seq != float64(c.ov.n+1) { // an exact integer: 1.5 must not truncate to 1
 		return errors.New("bad per-case sequence")
 	}
 	if ev["mode"] != "demo" {

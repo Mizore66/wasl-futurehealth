@@ -267,6 +267,10 @@ Text must be valid UTF-8, without surrounding whitespace or control characters.
 
 **Ledger and restart:** coordinator events share `<run>/api_reviews.ndjson` and its hash chain with review events (`type: "coordinator_action"`, with `kind`, `data`, `head`, per-case `seq`). On start-up the whole ledger is replayed and validated: JSON, chain, hash, case, role permission, head and sequence continuity, action fields (the same validation as the write path), consent for contact outcomes, and a complete final line. The first failure stops the replay, sets `healthz` `dependencies.review_ledger` to `invalid`, and makes `/review` and `/actions` return 500. The read endpoints keep working. Nothing is repaired or skipped silently.
 
+**Fail-closed replay and re-materialised runs:** every coordinator event records the case head it followed. If the run is re-materialised so that a case's final decision (and so its head), its contact permission, or the case itself changes, the old events no longer fit: replay stops at the first such line, `review_ledger` becomes `invalid`, and all ledger writes (`/actions` and `/review`) return 500. Events before the failing line stay applied, so `api_overlay` can be partial; the case detail carries `review_ledger` (`status` ok or invalid, `detail`, `events_applied`) so a reader is never shown a partial overlay unannounced. Nothing is dropped or repaired automatically: an operator must archive or fix `api_reviews.ndjson` (or start a new run directory). A write whose outcome on disk is unknown (sync, truncate or close failed) also marks the ledger invalid until restart and replay; a clean write failure that was rolled back does not.
+
+**Input rules:** JSON objects with a repeated key are rejected (request bodies and ledger lines); owner, note, reason and actor text may not contain control characters or Unicode format (Cf) characters such as zero-width or bidi overrides; a ledger `seq` must be an exact integer.
+
 ## The demo cases
 
 | Fixture | What it shows | Key fields |
