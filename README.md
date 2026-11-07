@@ -53,6 +53,8 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 **Requirements:** Go ≥1.22, Python 3.10+, and `nats-server` v2.10+ (`brew install nats-server`).
 
+Python packages: NumPy and SciPy for the booking engine (pinned in the `Dockerfile` as numpy 2.3.5 and scipy 1.16.3), and PyYAML for `scripts/check_deploy.py` and `scripts/test_deploy.py` (`pip install numpy scipy pyyaml`). A missing PyYAML is never a pass: `check_deploy.py` exits non-zero with "did NOT run", and the `test_deploy.py` compose tests error on the missing import (no test skips when PyYAML is absent).
+
 ```bash
 scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
 ```
