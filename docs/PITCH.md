@@ -13,11 +13,13 @@
 |---|---|
 | Emirates-ID-only tracking | 12.4% |
 | Truth | 33.0% |
-| Wasl | 32.0% |
+| Wasl | 31.9% |
+
+Seed-2026 simulated run; frozen five-seed gaps differ by noise model (see below).
 
 Wasl shows the evidence behind the programme's number, case by case. It is a DoH public-health and quality-assurance use (HIE Policy 4.3.12.1).
 
-**Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. Wasl gets the measured rate within about 1 point of truth, so the levers land on the patients who are actually lost.
+**Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. In the seed-2026 simulated run Wasl is 1.1 points from truth; across the frozen five-seed evaluation the gap is about 1 point under v1 noise and 3.1 points under independent v2 noise (`pipeline/results/final/SUMMARY.md`). Either way the levers land on the patients who are actually lost.
 
 **What it is (built and run):**
 - **Streaming backbone:** Go + NATS JetStream. Ingests FHIR R4 and **HL7 v2 over MLLP**. Across 10 frozen-evaluation runs with process and broker kills: 0 of 201,285 outputs duplicated or lost.

@@ -11,7 +11,7 @@
 |---|---|
 | EID-only tracking | **12.4%** |
 | Truth | **33.0%** |
-| Wasl | **32.0%** |
+| Wasl | **31.9%** |
 
 - If you count only patients seen at colonoscopy, EID-only is close (65.5% vs 63.7%).
 - Either way the true rate is far below the >90% target (CRC spec, Appendix 2).
@@ -22,7 +22,7 @@
 - Reminders, navigation and automated referral are standard, proven levers. Their weak point is *targeting*: a clinic can only chase patients it believes haven't had their colonoscopy.
 - With EID-only tracking, 20.6 of every 100 referrals had their colonoscopy on time but look lost, because it happened at another provider under a Latin spelling with no Emirates ID. That is **62% of real completions invisible**, and **about 1 in 4 patients on the "chase" list (23.5%) already done**.
 - So nurse calls and reminders get spent on patients who are fine, and the genuinely lost patients get the same diluted attention.
-- Wasl's linkage gets the measured rate within about 1 point of truth (32.0% vs 33.0%), so the levers land on the patients who actually need them. It also says *why* each one is stuck (never notified, not understood, referral rejected, not booked), so each gets the right lever, not a generic reminder.
+- Wasl's linkage gets the measured rate close to truth: 31.9% vs 33.0% in the seed-2026 run (1.1 points), and in the frozen five-seed evaluation (`pipeline/results/final/SUMMARY.md`) about 1 point under v1 noise and 3.1 points under independent v2 noise. The exact gap varies by run and noise model. So the levers land on the patients who actually need them. It also says *why* each one is stuck (never notified, not understood, referral rejected, not booked), so each gets the right lever, not a generic reminder.
 - The levers are commodity; knowing exactly who to point them at, across providers, is what Wasl adds.
 
 **Constraints, stated up front (all numbers are sourced below):**
@@ -327,7 +327,7 @@
       - The DoH Mandatory Tariff gives a DRG base rate of AED 8,500 (Basic product), but the colectomy weights are only in the tariff spreadsheet.
       - No GCC navigation trial exists. PRECISE used bilingual (English/Spanish) navigators in a US safety-net population; Wasl's language-concordant notices follow that design, but the transfer is still an assumption.
       - So these are sensitivity ranges, not forecasts. The pilot measures the local uplift, and DoH can rebase stage and cost on registry and tariff data, which it holds. NordICC's 13-year per-protocol RR of 0.70 was not significant, which is why we don't use the colonoscopy-invitation trials for the base.
-- **One headline rate:** the ≤31-day-from-referral KPI (sim truth 33.0%; Wasl measures 32.0%). The other completion rates come from the projection model and use other denominators (Appendix B).
+- **One headline rate:** the ≤31-day-from-referral KPI (sim truth 33.0%; Wasl measures 31.9% in the seed-2026 run; frozen five-seed gaps are about 1 point under v1 and 3.1 under v2). The other completion rates come from the projection model and use other denominators (Appendix B).
 - **Volume:** 1.8k–12.6k FIT+/yr. This can't be narrowed from public data: there are no FIT counts, and the signals conflict ("<10% screened" vs a "+280%" rise in screenings in 2025). AHS alone had ~1,429 FIT+ in 2015–16, which is the floor. Plan on 5.7k; the pilot's first deliverable is one count query on the Malaffi Screenings registry.
 - **Contracting route:**
   1. A 90-day unpaid shadow pilot through the Future Health pathway, with ADPHC as programme owner and the DDGO assessment in parallel.
