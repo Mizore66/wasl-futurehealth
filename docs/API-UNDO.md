@@ -1,6 +1,6 @@
 # Undo and contest API (Workflow D)
 
-Status: **built** (demo mode, synthetic data). Code: `pipeline/api_undo.go`, tests: `pipeline/api_undo_test.go`.
+Status: **not wired** (demo mode, synthetic data). The handler and tests exist but `runServe` does not mount them yet, so no running server serves `/undo` until integration. Code: `pipeline/api_undo.go`, tests: `pipeline/api_undo_test.go`.
 
 Undo and contest append compensating events to the existing review ledger `<run>/api_reviews.ndjson`. Nothing is edited or deleted. The canonical `out_log`, `Decision.State` and decision signatures are never touched. Undo status is a separate projection over the ledger.
 
@@ -34,7 +34,7 @@ Headers as for `/review`: `X-Wasl-Role`, `X-Wasl-Actor` (both required).
 - `target` must be a review event of this case. Unknown and cross-case hashes both return 404.
 - Authorization uses the target event's original action (`signoff_link`, `signoff_evidence`, `record_consent`) through the same RBAC matrix as `/review`.
 - The actor must differ from the target's actor (compared trimmed and case-insensitive). For a resolution the actor must differ from both the contester and the original reviewer.
-- A target can be undone or contested only while `active`. Undoing an undo, contest or resolution is refused (409). A second undo or contest of the same target is refused (409). A contest must be resolved before anything else happens to its target.
+- A target can be undone or contested only while `active`. Undoing an undo, contest or resolution is refused (409). A second undo or contest of the same target is refused (409), including a new contest of a target whose earlier contest was rejected. A contest must be resolved before anything else happens to its target.
 - A contest never closes or reopens the case. Responses carry `canonical_reopened: false`, `auto_closure: false`; contests also carry `requires_resolution: true`.
 
 ## Event
@@ -49,9 +49,13 @@ Compensating events carry: `kind` (`undo|contest|contest_resolution`), `case`, `
 
 ## Ledger integrity
 
-`readVerifiedLedger` checks, line by line: single JSON object, `prev` links to the preceding hash (`genesis` first), hash equals the recomputed SHA-256 of the event, no duplicate hashes. `loadAPIVerified(run, data)` refuses a tampered ledger. Every POST re-verifies the file and requires it to agree with the in-memory ledger (length and head), otherwise it returns 503 and appends nothing.
+`readVerifiedLedger` checks, line by line: single JSON object, `prev` links to the preceding hash (`genesis` first), hash equals the recomputed SHA-256 of the event, no duplicate hashes. `validateLedgerSemantics` then replays the ledger and rejects chain-valid but impossible histories: unknown kind, empty/unknown/cross-case target, undo or contest of a non-review, self-undo, unauthorised or empty role, resolution without an open contest, double resolution, resolver equal to contester or original reviewer, and a contest of a target whose earlier contest was rejected. `loadAPIVerified(run, data)` refuses any such ledger.
 
-Wiring: the handler is `s.undoRoutes(s.caseRoutes)`, which serves `/undo` and delegates every other path. `pipeline/api.go` is not modified; mounting it in `runServe` and switching `runServe` to `loadAPIVerified` is a two-line follow-up for the api.go owner.
+Every POST re-verifies the file (chain and semantics) and requires it to equal the in-memory ledger hash for hash, in order; otherwise it returns 503 and appends nothing. The role is checked before the target is looked up, so an unauthorised or empty role gets the same 403 for existing, cross-case and unknown hashes.
+
+Append is durable and atomic: the full line is written, fsynced and closed, and each error is checked, before memory is updated. On failure the response is 500, memory is untouched, and the file is truncated back so no torn line stays (a leftover torn line would fail the next verification with 503).
+
+Wiring (not done): the handler is `s.undoRoutes(s.caseRoutes)`, which serves `/undo` and delegates every other path. `pipeline/api.go` is not modified; mounting it in `runServe` and switching `runServe` to `loadAPIVerified` is a two-line follow-up for the api.go owner.
 
 ## Limits
 
