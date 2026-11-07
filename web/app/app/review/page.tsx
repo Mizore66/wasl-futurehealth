@@ -18,7 +18,7 @@ export default async function Page() {
         <div>
           <h1 className="m-0 text-title font-semibold">Review</h1>
           <p className="m-0 mt-1 text-muted">
-            {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a second signature. Nothing closes on one.
+            {rows.length === 1 ? "1 case waits" : `${rows.length} cases wait`} for a person&rsquo;s answer. Nothing closes without it.
           </p>
         </div>
         <QueueLabel source={queue.source} />
