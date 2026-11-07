@@ -1,0 +1,446 @@
+{
+ "by_programme": {
+  "crc": {
+   "cases": 600,
+   "closed": 238,
+   "overdue": 310
+  }
+ },
+ "capacity": {
+  "data_mode": "simulated",
+  "how": "python booking/suggest.py \u003crun dir\u003e",
+  "status": "not_generated"
+ },
+ "cases": 600,
+ "closed": 238,
+ "dropoff": {
+  "": 238,
+  "awaiting_histology": 22,
+  "in_progress": 29,
+  "inadequate": 27,
+  "never_notified": 54,
+  "no_acknowledgement": 96,
+  "no_show": 32,
+  "not_booked": 57,
+  "referral_unanswered": 45
+ },
+ "fixtures": {
+  "agent_review": "ahs-mushrif/ServiceRequest/AHS-sr-113",
+  "evidence_closure": "ahs-mushrif/ServiceRequest/AHS-sr-100",
+  "false_closure_trap": "ahs-mushrif/ServiceRequest/AHS-sr-102"
+ },
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-06T14:02:40Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "reader_model": "gemma-4-26b-a4b-it-self/cached",
+  "run": "main"
+ },
+ "metrics": {
+  "closure": {
+   "cervical": {
+    "baseline_any_proc_120d": {
+     "closed_pred": 0,
+     "false_closure_rate_upper95": null,
+     "false_closures": 0,
+     "missed": 0,
+     "precision": null,
+     "recall": null,
+     "tp": 0
+    },
+    "baseline_eid_only": {
+     "closed_pred": 0,
+     "false_closure_rate_upper95": null,
+     "false_closures": 0,
+     "missed": 0,
+     "precision": null,
+     "recall": null,
+     "tp": 0
+    },
+    "loops": 0,
+    "wasl_live_with_review": {
+     "closed_pred": 0,
+     "false_closure_rate_upper95": null,
+     "false_closures": 0,
+     "missed": 0,
+     "precision": null,
+     "recall": null,
+     "tp": 0
+    },
+    "wasl_no_review": {
+     "closed_pred": 0,
+     "false_closure_rate_upper95": null,
+     "false_closures": 0,
+     "missed": 0,
+     "precision": null,
+     "recall": null,
+     "tp": 0
+    }
+   },
+   "crc": {
+    "baseline_any_proc_120d": {
+     "closed_pred": 187,
+     "false_closure_rate_upper95": 0.446,
+     "false_closures": 70,
+     "missed": 127,
+     "precision": 0.626,
+     "recall": 0.48,
+     "tp": 117
+    },
+    "baseline_eid_only": {
+     "closed_pred": 106,
+     "false_closure_rate_upper95": 0.188,
+     "false_closures": 12,
+     "missed": 150,
+     "precision": 0.887,
+     "recall": 0.385,
+     "tp": 94
+    },
+    "loops": 600,
+    "wasl_live_with_review": {
+     "closed_pred": 238,
+     "false_closure_rate_upper95": 0.016,
+     "false_closures": 0,
+     "missed": 6,
+     "precision": 1,
+     "recall": 0.975,
+     "tp": 238
+    },
+    "wasl_no_review": {
+     "closed_pred": 75,
+     "false_closure_rate_upper95": 0.049,
+     "false_closures": 0,
+     "missed": 169,
+     "precision": 1,
+     "recall": 0.307,
+     "tp": 75
+    }
+   }
+  },
+  "consent_timing": {
+   "intents_cancelled_by_consent": 17,
+   "intents_ever_held_for_consent": 0,
+   "opted_out_loops": 24,
+   "released_after_opt_out_on_file": 0,
+   "released_before_opt_out_recorded": 0,
+   "released_total": 363,
+   "released_without_granted_consent": 0
+  },
+  "crc_kpi_31d": {
+   "definition": "DoH CRC spec App. 2: referral after FIT+ -\u003e colonoscopy conducted within 31 days; acceptable \u003e90%, desirable \u003e95%. Denominator: all FIT+ referrals with \u003e=31 days of follow-up by day 120.",
+   "eid_only": {
+    "accepted_eligible": 539,
+    "eligible_referrals": 542,
+    "kpi_accepted_referrals_only": 0.13,
+    "kpi_all_referrals": 0.129,
+    "kpi_among_procedures_seen": 0.68,
+    "per_loop_agreement_with_truth": 0.786,
+    "procedures_seen": 103,
+    "within_31d": 70
+   },
+   "truth": {
+    "accepted_eligible": 539,
+    "eligible_referrals": 542,
+    "kpi_accepted_referrals_only": 0.345,
+    "kpi_all_referrals": 0.343,
+    "kpi_among_procedures_seen": 0.644,
+    "per_loop_agreement_with_truth": 1,
+    "procedures_seen": 289,
+    "within_31d": 186
+   },
+   "wasl_live": {
+    "accepted_eligible": 539,
+    "eligible_referrals": 542,
+    "kpi_accepted_referrals_only": 0.341,
+    "kpi_all_referrals": 0.339,
+    "kpi_among_procedures_seen": 0.65,
+    "per_loop_agreement_with_truth": 0.996,
+    "procedures_seen": 283,
+    "within_31d": 184
+   },
+   "wasl_no_review": {
+    "accepted_eligible": 539,
+    "eligible_referrals": 542,
+    "kpi_accepted_referrals_only": 0.2,
+    "kpi_all_referrals": 0.199,
+    "kpi_among_procedures_seen": 0.643,
+    "per_loop_agreement_with_truth": 0.856,
+    "procedures_seen": 168,
+    "within_31d": 108
+   }
+  },
+  "exactly_once": {
+   "duplicate_outputs": 0,
+   "ingest_duplicates": 35,
+   "ingest_lost": 0,
+   "lost_outputs": 0
+  },
+  "forged": {
+   "consent_records_accepted": 648,
+   "forged_consent_target_genuinely_opted_out": 0,
+   "forged_events": 21,
+   "forged_target_pair_falsely_merged_by_linker": 0,
+   "forged_with_any_effect": 0,
+   "rbac_denied_consent": 12,
+   "rbac_denied_signoff": 9
+  },
+  "provenance": {
+   "closed_chains": 287,
+   "hash_verified": 287,
+   "tamper_detected": true,
+   "with_human_signoff": 106
+  },
+  "throughput_ev_s": 0
+ },
+ "origins": [
+  {
+   "acknowledged": 203,
+   "closed_within_31d": 74,
+   "dropoff": {
+    "awaiting_histology": 15,
+    "in_progress": 10,
+    "inadequate": 16,
+    "never_notified": 28,
+    "no_acknowledgement": 43,
+    "no_show": 19,
+    "not_booked": 28,
+    "referral_unanswered": 27
+   },
+   "escalations": {
+    "econsult_re_refer": "\u003c5",
+    "econsult_rejected_clinician_review": 8,
+    "econsult_unanswered_3d": "\u003c5",
+    "no_ack_7d": 52,
+    "noncompliant_message": 118,
+    "not_notified_21d": 31,
+    "open_econsult": 53,
+    "overdue_crc_deadline": 160,
+    "referral_unanswered_7d": 62,
+    "rejected_inadequate": 16,
+    "rejected_no_show": 19,
+    "teachback_clarify": "\u003c5",
+    "teachback_misunderstood_callback": 7,
+    "teachback_needs_human_callback": "\u003c5",
+    "unowned": 44
+   },
+   "evidenced_closed": 129,
+   "loops": 315,
+   "noncompliant_message_flagged": 118,
+   "notified": 278,
+   "notified_within_21d": 277,
+   "origin": "arab",
+   "referral_accepted": 253,
+   "referral_rejected": 0
+  },
+  {
+   "acknowledged": 32,
+   "closed_within_31d": 11,
+   "dropoff": {
+    "in_progress": "\u003c5",
+    "inadequate": "\u003c5",
+    "never_notified": "\u003c5",
+    "no_acknowledgement": 10,
+    "no_show": 6,
+    "not_booked": 7,
+    "referral_unanswered": "\u003c5"
+   },
+   "escalations": {
+    "econsult_re_refer": "\u003c5",
+    "econsult_rejected_clinician_review": "\u003c5",
+    "no_ack_7d": 11,
+    "noncompliant_message": 16,
+    "not_notified_21d": "\u003c5",
+    "open_econsult": "\u003c5",
+    "overdue_crc_deadline": 28,
+    "referral_unanswered_7d": 5,
+    "rejected_inadequate": "\u003c5",
+    "rejected_no_show": 6,
+    "teachback_misunderstood_callback": "\u003c5",
+    "teachback_needs_human_callback": "\u003c5",
+    "unowned": 11
+   },
+   "evidenced_closed": 19,
+   "loops": 50,
+   "noncompliant_message_flagged": 16,
+   "notified": 49,
+   "notified_within_21d": 46,
+   "origin": "filipino",
+   "referral_accepted": 45,
+   "referral_rejected": 0
+  },
+  {
+   "acknowledged": 86,
+   "closed_within_31d": 35,
+   "dropoff": {
+    "awaiting_histology": "\u003c5",
+    "in_progress": 9,
+    "inadequate": 7,
+    "never_notified": 18,
+    "no_acknowledgement": 23,
+    "no_show": 7,
+    "not_booked": 13,
+    "referral_unanswered": 8
+   },
+   "escalations": {
+    "econsult_rejected_clinician_review": "\u003c5",
+    "no_ack_7d": 26,
+    "noncompliant_message": 52,
+    "not_notified_21d": 19,
+    "open_econsult": 11,
+    "overdue_crc_deadline": 73,
+    "referral_unanswered_7d": 14,
+    "rejected_inadequate": 7,
+    "rejected_no_show": 7,
+    "teachback_clarify": "\u003c5",
+    "teachback_needs_human_callback": "\u003c5",
+    "unowned": 19
+   },
+   "evidenced_closed": 54,
+   "loops": 142,
+   "noncompliant_message_flagged": 52,
+   "notified": 121,
+   "notified_within_21d": 119,
+   "origin": "south_asian",
+   "referral_accepted": 128,
+   "referral_rejected": 0
+  },
+  {
+   "acknowledged": 52,
+   "closed_within_31d": 24,
+   "dropoff": {
+    "awaiting_histology": "\u003c5",
+    "in_progress": 6,
+    "inadequate": "\u003c5",
+    "never_notified": 7,
+    "no_acknowledgement": 20,
+    "not_booked": 9,
+    "referral_unanswered": 9
+   },
+   "escalations": {
+    "econsult_re_refer": "\u003c5",
+    "econsult_rejected_clinician_review": "\u003c5",
+    "no_ack_7d": 21,
+    "noncompliant_message": 35,
+    "not_notified_21d": 7,
+    "open_econsult": 16,
+    "overdue_crc_deadline": 49,
+    "referral_unanswered_7d": 21,
+    "rejected_inadequate": "\u003c5",
+    "teachback_clarify": "\u003c5",
+    "teachback_misunderstood_callback": "\u003c5",
+    "unowned": 14
+   },
+   "evidenced_closed": 36,
+   "loops": 93,
+   "noncompliant_message_flagged": 35,
+   "notified": 86,
+   "notified_within_21d": 83,
+   "origin": "western",
+   "referral_accepted": 72,
+   "referral_rejected": 0
+  }
+ ],
+ "overdue": 310,
+ "providers": [
+  {
+   "acknowledged": 234,
+   "closed_within_31d": 89,
+   "dropoff": {
+    "awaiting_histology": 12,
+    "in_progress": 18,
+    "inadequate": 17,
+    "never_notified": 39,
+    "no_acknowledgement": 59,
+    "no_show": 20,
+    "not_booked": 36,
+    "referral_unanswered": 27
+   },
+   "escalations": {
+    "econsult_re_refer": "\u003c5",
+    "econsult_rejected_clinician_review": 11,
+    "econsult_unanswered_3d": "\u003c5",
+    "no_ack_7d": 69,
+    "noncompliant_message": 137,
+    "not_notified_21d": 41,
+    "open_econsult": 56,
+    "overdue_crc_deadline": 195,
+    "referral_unanswered_7d": 68,
+    "rejected_inadequate": 17,
+    "rejected_no_show": 20,
+    "teachback_clarify": "\u003c5",
+    "teachback_misunderstood_callback": 8,
+    "teachback_needs_human_callback": "\u003c5",
+    "unowned": 51
+   },
+   "evidenced_closed": 155,
+   "loops": 383,
+   "noncompliant_message_flagged": 137,
+   "notified": 336,
+   "notified_within_21d": 332,
+   "provider": "ahs-mushrif",
+   "referral_accepted": 315,
+   "referral_rejected": 0
+  },
+  {
+   "acknowledged": 139,
+   "closed_within_31d": 55,
+   "dropoff": {
+    "awaiting_histology": 10,
+    "in_progress": 11,
+    "inadequate": 10,
+    "never_notified": 15,
+    "no_acknowledgement": 37,
+    "no_show": 12,
+    "not_booked": 21,
+    "referral_unanswered": 18
+   },
+   "escalations": {
+    "econsult_re_refer": "\u003c5",
+    "econsult_rejected_clinician_review": "\u003c5",
+    "econsult_unanswered_3d": "\u003c5",
+    "no_ack_7d": 41,
+    "noncompliant_message": 84,
+    "not_notified_21d": 17,
+    "open_econsult": 28,
+    "overdue_crc_deadline": 115,
+    "referral_unanswered_7d": 34,
+    "rejected_inadequate": 10,
+    "rejected_no_show": 12,
+    "teachback_clarify": "\u003c5",
+    "teachback_misunderstood_callback": "\u003c5",
+    "teachback_needs_human_callback": "\u003c5",
+    "unowned": 37
+   },
+   "evidenced_closed": 83,
+   "loops": 217,
+   "noncompliant_message_flagged": 84,
+   "notified": 198,
+   "notified_within_21d": 193,
+   "provider": "medlab",
+   "referral_accepted": 183,
+   "referral_rejected": 0
+  }
+ ],
+ "review": {
+  "none": 377,
+  "signed": 223
+ },
+ "sla": {
+  "ack_days": 7,
+  "colonoscopy_days": 31,
+  "notification_days": 21,
+  "referral_response_days": 7
+ },
+ "small_cell_rule": "counts 1-4 shown as \u003c5",
+ "states": {
+  "awaiting_histology": 22,
+  "booked": 21,
+  "closed": 238,
+  "inadequate": 27,
+  "no_show": 32,
+  "open": 252,
+  "procedure_done": 8
+ }
+}
