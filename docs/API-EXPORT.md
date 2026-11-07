@@ -67,16 +67,28 @@ The export is a **redacted copy**; the document carries `"redacted": true`. `det
 (marshal/unmarshal) before redaction, so the live `GET /api/cases/{id}` and `/audit` bodies, the source maps and the
 original chain are never modified.
 
-Removed (key and value, at any depth, on every path: `detail.evidence`, `review_items` and their chains,
-`current.chain`, `audit.chain`, `signoffs`, `api_reviews`, `timeline`, `agent_investigations` including `citations`):
+Three layers apply, in this order:
 
-- keys named `quote`, `text`, `raw`, `raw_text`, `report_text`, `clinical_text`, `note`, `reason`, `message`, `messages`,
-  `prompt`, `prompt_text`, `reasoning`, `raw_report`, `raw_report_text`, `document_text`, plus `narrative`, `comment(s)`,
-  `excerpt`, `snippet`, `hint`, `free_text`, `citation(s)`;
-- any key starting `raw_` or `quote`, or ending `_quote`, `_text`, `_note(s)`, `_reason`, `_message(s)`, `_prompt`,
-  `_reasoning`, `_excerpt`, `_snippet`, `_narrative`, `_comment`;
-- any string value that reads as prose (three or more whitespace-separated tokens, at least two containing a letter),
-  whatever its key, so an unlisted future free-text field is dropped too.
+1. **Allowlisted projection** for evidence and timeline bodies: `detail.evidence`, every `evidence` block body in
+   `review_items[].chain`, `current.chain`, `audit.chain` and `decisions`, and `detail.timeline`. Only listed keys
+   survive (report id, labels, verdicts, agree flag, reader model, rule, flags, reader state strings, structured
+   reader fields such as DR grades, BI-RADS, Lung-RADS and nodule sizes, image-reader scores and hashes; timeline
+   seq/type/id/provider/status/day/category/raw_sha/source). Every other key is dropped whatever its value, so a one- or
+   two-word clinical phrase under an unknown key cannot leak from these paths. Reader `quote` is not on the list.
+2. **Citations** (`agent_investigations[].citations`) are recursed into, not dropped: each citation keeps `tool`,
+   `arg`, `field` and `value`; any other key (quote, excerpt, result) is dropped, and a string `value` is kept only if it is a single
+   identifier- or date-like token.
+3. **Denylist and prose guard** for everything else (signoffs, api_reviews, review items, booking, outreach,
+   consent_log, escalations, agent provenance, case, audit history):
+   - exact keys `quote(s)`, `text`, `raw`, `raw_text`, `report_text`, `clinical_text`, `note`, `message(s)`, `prompt`,
+     `prompt_text`, `reasoning`, `raw_report(_text)`, `document_text`, `narrative`, `comment(s)`, `summary_text`, `excerpt`,
+     `snippet`, `free_text`, and keys ending `_quote(s)`, `_text`, `_note(s)`, `_message(s)`, `_prompt`, `_reasoning`,
+     `_excerpt`, `_snippet`, `_narrative`, `_comment`. There is no `raw_`/`quote` prefix match, so `raw_id`, `raw_sha`
+     and `quoted_by` survive;
+   - operational `hint`, `reason`, `why` (and `*_hint`, `*_reason`) keep a string value only if it is a machine code
+     (lower-case tokens joined by underscores, e.g. `second_identifier`, `prep_grade_one_click`) or one of the server's own
+     static sentences; free text under them is dropped;
+   - any other string that reads as prose (three or more tokens, at least two containing a letter) is dropped.
 
 Quote keys are omitted entirely; no hash of a quote is served. Structured metadata, reader verdicts, labels, links,
 consent, ids and hashes are kept.
@@ -95,16 +107,33 @@ a parser that converts integers above 2^53 to doubles will not reproduce the has
 
 ## Remaining privacy limits
 
-The prose guard is heuristic: a short clinical phrase (fewer than three tokens) under an unlisted key, or free text
-packed into an identifier-like string, is not caught. Structured fields such as `label`, `flags`, `rule`, names in
-`identities`, and `meta.note` are served as is. See `.superpowers/sdd/export-redaction-report.md`.
+- Redaction is not a guarantee that no clinical content remains. Outside the evidence, timeline and citation
+  allowlists, protection is a denylist plus a prose heuristic: a one- or two-word clinical phrase under an unlisted
+  key in signoffs, api_reviews, review items, booking, outreach, consent_log, escalations, agent provenance or case
+  fields is **not** caught, and neither is free text packed into one identifier-like token. A machine-code-shaped
+  string under `hint`/`reason`/`why` is trusted. Not all possible prose can be identified.
+- Listed values in the allowlists (labels, `flags`, `rule`, reader state strings, citation `value`) are trusted
+  to be structured; they are not inspected beyond length, newline and prose checks.
+- Identifiers (patient registration keys, report ids, names in `identities`, `meta.note`) are served as is.
+- The redacted chain **cannot be recomputed**. `audit.chain_verified` and `chain_length` were computed by the server over the
+  original unredacted chain, and a third party cannot reproduce them from the export. They must trust the server-side
+  verification flag. `content_sha256` authenticates the served bytes only, not that the redaction was faithful, and
+  anyone who can alter the server can alter both.
+- Number preservation requires a number-preserving parser (see above); a float64 parse changes integers above 2^53
+  and the hash will not reproduce.
+- See `.superpowers/sdd/export-fix1-report.md` and `.superpowers/sdd/export-redaction-report.md`.
 
 ## What the tests check
 
 From `pipeline/`, run `go test -run TestExport -count=1 .`
 
-- `detail` and `audit` equal the live bodies after redaction; a canary sentence planted under many keys on every path
-  never appears, `chain_verified` stays true, and live bodies and the original chain are unchanged.
+- `detail` and `audit` equal the live bodies after redaction; `CANARY-RAW-CLINICAL-TEXT` is planted separately in every
+  path (evidence, review items and chains, current and audit chain, signoffs, api_reviews, timeline, citations, booking,
+  outreach, consent_log, escalations, agent provenance, case). The test first asserts each path carries it, then that it
+  never appears in the export; `chain_verified` stays true, the redacted chain does not verify, and live bodies and the
+  original chain are unchanged.
+- One- and two-word phrases under unknown keys in evidence, timeline and citations are dropped; hint/reason/why
+  machine codes and `raw_id`/`quoted_by`/`raw_sha` are preserved; integers above 2^53 and extreme floats keep their text.
 - The hash verifies on the served document, and mutations to a case field, a chain body, the audit verification
   flag, a dropped key, or an added key are each detected.
 - Repeated exports are byte-identical, and a new review changes the export.
