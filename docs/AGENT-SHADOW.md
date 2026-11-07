@@ -130,3 +130,21 @@ the consumer position (a restart replays both streams from sequence 1).
 A spike on a synthetic cohort with simulated records. The report gives coverage, agreement with the simulated human
 answer, fallback reasons, latency and token counts. Agreement on a few items says nothing about accuracy, and nothing
 here shows reviewers would save time or that recall would improve.
+
+## Status API
+
+`GET /api/agentshadow/status` (handler `getAgentShadowStatus` in `pipeline/api_shadow_status.go`; it must be registered in
+`api.go`) reads `status-agentshadow.json` and `agent_shadow/health.json` on every request, with no caching. Built; tested
+with Go unit tests only.
+
+- No status file: `200 {available:false, status:"not_run"}`.
+- Otherwise `available:true` plus the lifecycle flags (`done`, `degraded`, `killed`, `incomplete`), progress, cap and
+  counter fields from the status file, `health.ts` from the health file (omitted if that file is missing), a derived
+  `status` and `clean_success`.
+- It never returns observations, recommendations, aliases, raw ids, prompts, cache paths or the free-text
+  `degraded_reason`. Only GET is allowed; other methods return 405.
+
+`done` does not mean clean success. `done:true` only says the worker stopped. `status` is `finished` and
+`clean_success` is true only when `done` is true and `degraded`, `killed` and `incomplete` are all false; otherwise it is
+`finished_degraded`. Clients must inspect `degraded`, `incomplete` and `killed` before presenting a run as healthy, and
+should compare `health.ts` with the current time to spot a stalled worker that left `done:false`.
