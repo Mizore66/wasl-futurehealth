@@ -1,4 +1,6 @@
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { ConsentLifecycle } from "@/components/results/consent-lifecycle";
+import { getDashboard } from "@/lib/api/source";
 import { result, results } from "@/lib/results";
 
 export const metadata = { title: "Results" };
@@ -210,7 +212,8 @@ function Review() {
   );
 }
 
-export default function ResultsPage() {
+export default async function ResultsPage() {
+  const dashboard = await getDashboard();
   return (
     <>
       <header className="flex flex-wrap items-start justify-between gap-3">
@@ -228,6 +231,7 @@ export default function ResultsPage() {
         <Kpi />
         <Readers />
         <Review />
+        <ConsentLifecycle timing={dashboard.metrics.consent_timing} />
       </div>
     </>
   );
