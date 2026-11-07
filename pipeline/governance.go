@@ -37,10 +37,13 @@ const (
 	ActAnchor        = "anchor_audit"
 	ActEmitDecision  = "emit_decision"
 	ActAutoLink      = "auto_link"
+	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
+	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
+	ActCoordinateCase = "coordinate_case"
 )
 
 var rbac = map[string]map[string]bool{
-	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true},
+	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true},
 	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
@@ -101,9 +104,9 @@ func distinct(xs []string) int {
 // ---------------- consent + outreach ----------------
 
 const (
-	SupBelowTau = "link_below_tau_unconfirmed"
-	SupConsent  = "consent_withheld"
-	SupSecondID = "second_identifier_unconfirmed"
+	SupBelowTau    = "link_below_tau_unconfirmed"
+	SupConsent     = "consent_withheld"
+	SupSecondID    = "second_identifier_unconfirmed"
 	SupConsentHold = "consent_unknown_hold" // stage 3: queued until contact permission is granted
 )
 
