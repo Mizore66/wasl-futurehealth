@@ -50,7 +50,8 @@ class LabellerInput(unittest.TestCase):
         self.assertTrue(self.man["declaration_exact_input_supplied"])
 
     def test_prompt_hashes_reproduce_and_match_label_files(self):
-        guide = open(F.GUIDE_PATH, encoding="utf-8").read()
+        with open(F.GUIDE_PATH, encoding="utf-8") as f:
+            guide = f.read()
         by_id = {x["id"]: x for x in self.man["labellers"]}
         a, b = by_id["gemini-a"], by_id["kimi-b"]
         pa = (guide + a["output_instruction_suffix"]).encode()
@@ -144,8 +145,10 @@ class Analysis(unittest.TestCase):
         self.assertLessEqual({e.split(" changed since")[0] for e in self.live_errors}, HARDENED_AFTER_SCORING)
 
     def test_committed_files_match_regeneration(self):
-        self.assertEqual(open(os.path.join(REPO, A.OUT_JSON), encoding="utf-8").read(), F.dumps(self.a))
-        self.assertEqual(open(os.path.join(REPO, A.OUT_MD), encoding="utf-8").read(), A.render(self.a) + "\n")
+        with open(os.path.join(REPO, A.OUT_JSON), encoding="utf-8") as f:
+            self.assertEqual(f.read(), F.dumps(self.a))
+        with open(os.path.join(REPO, A.OUT_MD), encoding="utf-8") as f:
+            self.assertEqual(f.read(), A.render(self.a) + "\n")
 
     def test_grounding_rule_matches_go(self):
         self.assertTrue(A.grounded("HbA1c was 6.2%", "Today the hba1c was 6.2 % ok"))
