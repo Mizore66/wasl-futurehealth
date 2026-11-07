@@ -789,7 +789,8 @@ func readAgentProvenance(path string) (map[string]interface{}, bool) {
 	return out, true
 }
 
-// cleanCitations keeps only tool/arg/field/value of each citation; anything malformed rejects the record.
+// cleanCitations keeps only tool/arg/field/value of each citation; a citation missing any of them (or with an empty
+// string) and anything malformed rejects the record.
 func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
 	out := []map[string]interface{}{}
 	if len(raw) == 0 || string(raw) == "null" {
@@ -802,13 +803,20 @@ func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
 	for _, c := range in {
 		m := map[string]interface{}{}
 		for _, k := range []string{"tool", "arg", "field", "value"} {
-			if v, ok := c[k]; ok {
-				switch v.(type) {
-				case string, float64, bool:
-					m[k] = v
-				default:
+			v, ok := c[k]
+			if !ok {
+				return nil, false
+			}
+			switch x := v.(type) {
+			case string:
+				if x == "" {
 					return nil, false
 				}
+				m[k] = v
+			case float64, bool:
+				m[k] = v
+			default:
+				return nil, false
 			}
 		}
 		out = append(out, m)
@@ -850,6 +858,7 @@ func (s *apiServer) loadAgent() {
 	}
 	got := map[string][]agentInvestigation{}
 	for loop, sos := range s.signoffs {
+		seen := map[string]bool{} // a repeated consumed sign-off for one item keeps the first
 		for _, so := range sos {
 			label := fmt.Sprint(so["agent_read"])
 			reads, _ := so["reads"].([]interface{})
@@ -861,6 +870,10 @@ func (s *apiServer) loadAgent() {
 				continue
 			}
 			item := fmt.Sprint(so["item"])
+			if seen[item] {
+				continue
+			}
+			seen[item] = true
 			rec, it := byItem[item], raised[item]
 			if rec == nil || it == nil || it.LoopID != loop || fmt.Sprint(so["loop"]) != loop || !isLinkQuestion(it) ||
 				pairKey(rec.Pair[0], rec.Pair[1]) != pairKey(it.Pair[0], it.Pair[1]) || rec.Label != label {

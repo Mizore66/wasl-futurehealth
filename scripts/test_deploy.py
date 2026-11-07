@@ -242,6 +242,63 @@ exit 2
             r = subprocess.run([str(script), "report"], cwd=root, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.assertNotIn("stale binary", r.stdout)
 
+    def snapshot_env(self, tmp, curl_body):
+        bindir = Path(tmp) / "bin"
+        bindir.mkdir()
+        curl = bindir / "curl"
+        curl.write_text("#!/usr/bin/env bash\n" + curl_body)
+        curl.chmod(0o755)
+        samples = Path(tmp) / "api-samples"
+        samples.mkdir()
+        (samples / "README.md").write_text("keep\n")
+        (samples / "tracked.json").write_text("{}\n")
+        env = {k: v for k, v in os.environ.items() if not k.startswith("WASL_")}
+        env.update(PATH=str(bindir) + os.pathsep + env["PATH"], WASL_BIN=str(bindir), WASL_SNAPSHOT_DIR=str(samples),
+                   WASL_SNAPSHOT_PROGRAMMES="crc")
+        return env, samples
+
+    def staging_dirs(self, tmp):
+        return [p for p in Path(tmp).iterdir() if ".staging." in p.name]
+
+    def test_snapshot_sigint_removes_staging_and_keeps_samples(self):
+        import signal, time
+        with tempfile.TemporaryDirectory() as tmp:
+            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; esac\necho "{}"\n')
+            p = subprocess.Popen([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, start_new_session=True,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                for _ in range(100):
+                    if self.staging_dirs(tmp):
+                        break
+                    time.sleep(0.1)
+                self.assertTrue(self.staging_dirs(tmp), "staging directory never appeared")
+                time.sleep(0.5)
+                os.killpg(p.pid, signal.SIGINT)  # like Ctrl-C: the whole foreground group
+                p.communicate(timeout=20)
+            finally:
+                if p.poll() is None:
+                    os.killpg(p.pid, signal.SIGKILL)
+            self.assertEqual(self.staging_dirs(tmp), [])
+            self.assertEqual((samples / "tracked.json").read_text(), "{}\n")
+
+    def test_snapshot_failure_and_success_leave_no_staging(self):
+        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            env, samples = self.snapshot_env(tmp, "exit 22\n")
+            r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertNotEqual(r.returncode, 0)
+            self.assertEqual(self.staging_dirs(tmp), [])
+            self.assertEqual((samples / "tracked.json").read_text(), "{}\n")
+        with tempfile.TemporaryDirectory() as tmp:
+            env, samples = self.snapshot_env(tmp, ok)
+            r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertEqual(self.staging_dirs(tmp), [])
+            self.assertTrue((samples / "healthz.json").exists())
+            self.assertTrue((samples / "README.md").exists())
+
     def check_compose(self, mutate):
         """Run check_deploy.py against a mutated copy of docker-compose.yml; returns (returncode, output)."""
         import yaml
@@ -281,6 +338,20 @@ exit 2
         def mutate(c):
             c["services"]["nats-2"]["volumes"] = [vol]
         code, out = self.check_compose(mutate)
+        self.assertEqual(code, 0, out)
+
+    def test_static_check_rejects_missing_absolute_bind_source(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("/nonexistent-wasl-dir/x:/x"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind source /nonexistent-wasl-dir/x missing", out)
+
+    def test_static_check_rejects_missing_parent_relative_bind_source(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("../nonexistent-wasl-dir:/x"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind source ../nonexistent-wasl-dir missing", out)
+
+    def test_static_check_accepts_existing_absolute_bind_source(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append(str(ROOT / "scripts") + ":/x"))
         self.assertEqual(code, 0, out)
 
 
