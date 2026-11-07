@@ -281,6 +281,56 @@ exit 2
             self.assertEqual(self.staging_dirs(tmp), [])
             self.assertEqual((samples / "tracked.json").read_text(), "{}\n")
 
+    def test_snapshot_sigterm_exits_143_and_cleans_everything(self):
+        import signal, time
+        with tempfile.TemporaryDirectory() as tmp:
+            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; esac\necho "{}"\n')
+            p = subprocess.Popen([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, start_new_session=True,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                for _ in range(100):
+                    if self.staging_dirs(tmp):
+                        break
+                    time.sleep(0.1)
+                self.assertTrue(self.staging_dirs(tmp), "staging directory never appeared")
+                time.sleep(0.5)
+                os.killpg(p.pid, signal.SIGTERM)
+                p.communicate(timeout=20)
+            finally:
+                if p.poll() is None:
+                    os.killpg(p.pid, signal.SIGKILL)
+            self.assertEqual(p.returncode, 143)
+            self.assertEqual([x.name for x in Path(tmp).iterdir() if ".staging." in x.name or ".old." in x.name], [])
+            self.assertEqual((samples / "tracked.json").read_text(), "{}\n")
+            self.assertEqual((samples / "README.md").read_text(), "keep\n")
+
+    def test_snapshot_curls_are_time_bounded(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "curl.log"
+            body = 'echo "$*" >> %s\ncase "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n' % log
+            env, samples = self.snapshot_env(tmp, body)
+            r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            lines = log.read_text().splitlines()
+            self.assertTrue(lines)
+            for l in lines:
+                self.assertIn("--max-time", l)
+
+    def test_snapshot_success_removes_stale_files_keeps_readme(self):
+        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n'
+        with tempfile.TemporaryDirectory() as tmp:
+            env, samples = self.snapshot_env(tmp, ok)
+            (samples / "stale_case.json").write_text("old\n")
+            r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(r.returncode, 0, r.stdout)
+            self.assertFalse((samples / "stale_case.json").exists())
+            self.assertFalse((samples / "tracked.json").exists(), "old samples not in the new set are removed")
+            self.assertEqual((samples / "README.md").read_text(), "keep\n")
+            self.assertTrue((samples / "dashboard.json").exists())
+            self.assertEqual([x.name for x in Path(tmp).iterdir() if ".staging." in x.name or ".old." in x.name], [])
+
     def test_snapshot_failure_and_success_leave_no_staging(self):
         ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n'
         with tempfile.TemporaryDirectory() as tmp:
@@ -340,15 +390,38 @@ exit 2
         code, out = self.check_compose(mutate)
         self.assertEqual(code, 0, out)
 
-    def test_static_check_rejects_missing_absolute_bind_source(self):
-        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("/nonexistent-wasl-dir/x:/x"))
-        self.assertEqual(code, 1, out)
-        self.assertIn("bind source /nonexistent-wasl-dir/x missing", out)
-
     def test_static_check_rejects_missing_parent_relative_bind_source(self):
         code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("../nonexistent-wasl-dir:/x"))
         self.assertEqual(code, 1, out)
         self.assertIn("bind source ../nonexistent-wasl-dir missing", out)
+
+    def test_static_check_accepts_env_expression_and_anonymous_volume(self):
+        def mutate(c):
+            vols = c["services"]["api"].setdefault("volumes", [])
+            vols.append("${DATA:-./data}:/x")
+            vols.append("/var/lib/x")
+            vols.append({"type": "volume", "target": "/anon"})
+        code, out = self.check_compose(mutate)
+        self.assertEqual(code, 0, out)
+
+    def test_static_check_anonymous_absolute_volume_with_missing_path_is_skipped(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("/nonexistent-wasl-dir/x:/x"))
+        self.assertEqual(code, 0, out)
+
+    def test_static_check_rejects_missing_tilde_bind_source(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("~/nonexistent-wasl-dir-xyz:/x"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind source ~/nonexistent-wasl-dir-xyz missing", out)
+
+    def test_static_check_rejects_missing_bare_relative_bind_source(self):
+        code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append("nonexistent-wasl/dir:/x"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind source nonexistent-wasl/dir missing", out)
+
+    def test_static_check_rejects_env_expression_nats_bind(self):
+        code, out = self.check_compose(lambda c: c["services"]["nats-0"]["volumes"].append("${DATA:-./data}:/x"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("bind-mounts host path", out)
 
     def test_static_check_accepts_existing_absolute_bind_source(self):
         code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append(str(ROOT / "scripts") + ":/x"))
