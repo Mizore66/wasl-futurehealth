@@ -216,6 +216,7 @@ snapshot() {  # static API responses for frontend development (no backend needed
   for prog in ${progs//,/ }; do case "$prog" in crc|cervical|lung_nodule|diabetic_retinopathy|breast|lung_ldct|ifhas) ;;
     *) echo "snapshot: unknown programme '$prog' in WASL_SNAPSHOT_PROGRAMMES" >&2; return 1;; esac; done
   S="$(mktemp -d "${D%/}.staging.XXXXXX")"
+  SNAP_STAGE="$S"; trap 'rm -rf "$SNAP_STAGE"' EXIT; trap 'rm -rf "$SNAP_STAGE"; exit 130' INT TERM  # staging never outlives the run
   curl -sf "http://$A/healthz" > "$S/healthz.json" || { rm -rf "$S"; echo "snapshot: healthz failed" >&2; return 1; }
   curl -sf "http://$A/api/dashboard" > "$S/dashboard.json" || { rm -rf "$S"; echo "snapshot: dashboard failed" >&2; return 1; }
   curl -sf "http://$A/api/fixtures" > "$S/fixtures.json" || { rm -rf "$S"; echo "snapshot: fixtures failed" >&2; return 1; }
@@ -232,7 +233,7 @@ snapshot() {  # static API responses for frontend development (no backend needed
   done
   mkdir -p "$D"
   find "$D" -maxdepth 1 -type f ! -name README.md -delete
-  mv "$S"/*.json "$D"/; rmdir "$S"
+  mv "$S"/*.json "$D"/; rmdir "$S"; trap - EXIT INT TERM
   echo "API samples → $D"
 }
 # A run must use a binary built from the current sources. The 2 Nov X10 rerun used a bin/wsi7 older than its fixes and

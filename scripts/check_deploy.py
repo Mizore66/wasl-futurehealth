@@ -7,7 +7,10 @@ source exists and survives .dockerignore) and deploy/nats/nats.conf (encryption 
 It is not a substitute for `docker compose config` and `docker build`. Usage: scripts/check_deploy.py
 """
 import fnmatch, os, re, sys
-import yaml
+try:
+    import yaml
+except ImportError:
+    sys.exit("check_deploy.py needs PyYAML (pip install pyyaml); the static deployment checks did NOT run")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 errs = []
@@ -17,9 +20,9 @@ def vol_parts(v):
     """(source, is_bind) for a compose volume entry in short ('src:dst[:mode]') or long ({type, source, target}) syntax."""
     if isinstance(v, dict):
         src = str(v.get("source") or "")
-        return src, v.get("type") == "bind" or src.startswith(("./", "/", "../", "~"))
+        return src, v.get("type") == "bind" or src.startswith(("./", "/", "../", "~")) or "/" in src
     src = str(v).split(":")[0]
-    return src, src.startswith(("./", "/", "../", "~"))
+    return src, src.startswith(("./", "/", "../", "~")) or "/" in src  # a bare name is a named volume; a/b is a path
 
 
 def err(m):
@@ -46,7 +49,7 @@ for name, s in svcs.items():
     for v in s.get("volumes", []):
         src, is_bind = vol_parts(v)
         if is_bind:
-            if src.startswith("./") and not os.path.exists(os.path.join(ROOT, src)):
+            if not os.path.exists(os.path.join(ROOT, os.path.expanduser(src))):  # join keeps absolute and ~ paths as is
                 err("compose: %s bind source %s missing" % (name, src))
         elif src not in vols:
             err("compose: %s uses undeclared volume %s" % (name, src))

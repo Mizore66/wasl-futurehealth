@@ -17,7 +17,7 @@ chaos) and then serves the read API on `http://127.0.0.1:8088` ([`API.md`](API.m
 `pipeline` container (`docker compose logs pipeline`).
 
 `scripts/check_deploy.py` checks the package statically without Docker (compose references, non-root image, key
-handling, NATS config baked into `wasl-nats:local` with no host bind mount, every `COPY` source present and not excluded by `.dockerignore`).
+handling, NATS config baked into `wasl-nats:local` with no host bind mount, every `COPY` source present and not excluded by `.dockerignore`). It and the static tests in `scripts/test_deploy.py` need PyYAML; without it they exit or error with a clear message and never report a pass.
 
 ## What runs
 
