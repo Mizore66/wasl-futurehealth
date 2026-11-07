@@ -1,6 +1,6 @@
 # Consent event actions API (Workflow C, demo overlay)
 
-Status: **built** (demo mode, synthetic data). Nothing here sends a message or changes canonical consent.
+Status: **not wired** (handler and tests exist; the route is not registered in `api.go` until integration adds it). Demo mode, synthetic data. Nothing here sends a message or changes canonical consent.
 
 ## Endpoints
 
@@ -27,7 +27,7 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 
 - Each event is appended to the existing `api_reviews.ndjson` ledger (same hash chain as `/review`), with `action: record_consent`, `decision: <event>`, and `head_signed` preserved as the case's current head signature. A stale head never reaches the ledger.
 - The `api_contact` overlay is **derived from that ledger** on each read, so a server restart rebuilds it exactly. The ledger is written first.
-- Overlay fields: `status` (`none|granted|denied|opted_out`), `pending_consent` (`""|released|cancelled`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash`.
+- Overlay fields: `status` (`none|granted|denied|opted_out`), `demo_pending_consent` (`""|released|cancelled`; a demo-only view of what the hold would do, distinct from the canonical `case.consent`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash`.
 - Grant derives demo hold to `released`. Deny and opt-out derive `cancelled` and set `contact_blocked`. A later grant after a denial is allowed; after an opt-out it is refused (409).
 - While `contact_blocked`, `POST /review` with `decision: confirm_contact` returns 409 and writes nothing.
 
@@ -35,9 +35,11 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 
 `case.consent`, the decision's `outreach` and `consent_log`, `out_log.ndjson` and every canonical run file stay as the pipeline wrote them. `DispatchC` is never called. In a live deployment these events would be published as signed consent records and replayed through the linker; that path is **designed**, not built.
 
+Detail (`GET /api/cases/{id}`) keeps the upstream JSON bytes and splices `api_contact` in, so large integers, ids and timestamps are not re-encoded. Escaped case ids (`%2F`) are unescaped exactly as the case router does.
+
 ## Wiring
 
-The handler is `s.withConsent(s.caseRoutes)`. Register it where the case router is registered:
+Not yet registered. The handler is `s.withConsent(s.caseRoutes)`. Register it where the case router is registered:
 
 ```go
 mux.HandleFunc("/api/cases/", s.withConsent(s.caseRoutes))

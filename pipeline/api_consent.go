@@ -35,7 +35,7 @@ var consentEvents = map[string]string{ // event -> overlay status
 	"consent_opted_out": "opted_out",
 }
 
-// apiContactOverlay derives the separate api_contact / pending-consent overlay for one case from the review ledger.
+// apiContactOverlay derives the separate api_contact overlay (status plus demo_pending_consent, never canonical case.consent) for one case from the review ledger.
 func (s *apiServer) apiContactOverlay(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -62,14 +62,14 @@ func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[str
 	}
 	canon := consentFromDecision(c.last)
 	o := map[string]interface{}{
-		"status": status, "pending_consent": pending, "events": len(hist),
+		"status": status, "demo_pending_consent": pending, "events": len(hist),
 		"contact_blocked": status == "denied" || status == "opted_out",
 		"mode":            "demo", "canonical_consent": canon, "canonical_unchanged": true,
 		"last_event_hash": last,
 		"note":            "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
 	}
 	if pending == "" {
-		o["pending_consent"] = "" // no overlay event yet
+		o["demo_pending_consent"] = "" // no overlay event yet
 	}
 	return o, hist
 }
@@ -84,6 +84,9 @@ func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		id, sub := splitCasePath(rest)
+		if u, err := url.PathUnescape(id); err == nil { // same unescaping as caseRoutes
+			id = u
+		}
 		c := s.cases[id]
 		if c == nil {
 			next(w, r)
@@ -95,18 +98,54 @@ func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {
 		case sub == "" && r.Method == http.MethodGet:
 			rec := &bufRecorder{h: http.Header{}, code: 200}
 			next(rec, r)
-			var m map[string]interface{}
-			if rec.code != 200 || json.Unmarshal(rec.buf.Bytes(), &m) != nil {
+			out, ok := spliceAPIContact(rec.buf.Bytes(), s, c)
+			if rec.code != 200 || !ok {
 				rec.copyTo(w)
 				return
 			}
-			o, h := s.apiContactOverlay(c)
-			m["api_contact"] = map[string]interface{}{"overlay": o, "history": h}
-			writeJSONResp(w, 200, m)
+			for k, v := range rec.h {
+				if k != "Content-Length" {
+					w.Header()[k] = v
+				}
+			}
+			w.WriteHeader(200)
+			w.Write(out)
 		default:
 			next(w, r)
 		}
 	}
+}
+
+// spliceAPIContact appends "api_contact" to the upstream JSON object by byte splicing, so every upstream value
+// (large integers, ids, timestamps, escapes, key order) is kept exactly as the detail handler wrote it.
+func spliceAPIContact(body []byte, s *apiServer, c *apiCase) ([]byte, bool) {
+	t := bytes.TrimRight(body, " \t\r\n")
+	if !json.Valid(t) || len(t) < 2 || t[0] != '{' || t[len(t)-1] != '}' {
+		return nil, false
+	}
+	o, h := s.apiContactOverlay(c)
+	ac, err := json.Marshal(map[string]interface{}{"overlay": o, "history": h})
+	if err != nil {
+		return nil, false
+	}
+	inner := bytes.TrimRight(t[:len(t)-1], " \t\r\n")
+	var out bytes.Buffer
+	out.Write(inner)
+	if !bytes.HasSuffix(inner, []byte("{")) {
+		out.WriteByte(',')
+	}
+	out.WriteString(`"api_contact":`)
+	out.Write(ac)
+	out.WriteString("}")
+	res := out.Bytes()
+	if bytes.IndexByte(t, '\n') >= 0 { // upstream was indented: keep the response readable
+		var ind bytes.Buffer
+		if json.Indent(&ind, res, "", "  ") == nil {
+			ind.WriteByte('\n')
+			return ind.Bytes(), true
+		}
+	}
+	return append(res, '\n'), true
 }
 
 func splitCasePath(rest string) (string, string) {
