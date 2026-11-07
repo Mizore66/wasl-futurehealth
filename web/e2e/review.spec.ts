@@ -24,9 +24,10 @@ async function noSeriousAxe(page: Page) {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-const rail = (page: Page) => page.getByRole("complementary", { name: "Your signature" });
+const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
 const prepRow = (page: Page) => page.locator('[data-check="Prep graded"]');
 const signedNodes = (page: Page) => rail(page).locator('li[data-kind="human"]');
+const previewNodes = (page: Page) => rail(page).locator('li[data-kind="current"]');
 
 test.describe("review, fixtures mode", () => {
   test.skip(LIVE, "fixtures mode only");
@@ -76,33 +77,36 @@ test.describe("review, fixtures mode", () => {
     await noSeriousAxe(page);
   });
 
-  test("identity first, then prep; Close the case shows two signatures and is not saved", async ({ page }) => {
+  test("identity first, then prep; Close the case previews the outcome and says nothing was saved", async ({ page }) => {
     await page.goto(desk);
     const r = rail(page);
     await expect(r.getByText("Answer both questions to sign.")).toBeVisible();
-    await expect(r.getByRole("radiogroup", { name: /Bowel prep/ })).toHaveCount(0);
+    await expect(r.getByRole("group", { name: /Bowel prep/ })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
-    await expect(r.locator('li[data-kind="current"]')).toContainText("your signature");
+    await expect(r.locator('li[data-kind="current"]')).toContainText("your answers");
+    await expect(r).toContainText("nothing here is appended or saved");
     const bridge = page.getByRole("region", { name: "Is this the same person?" });
     await expect(bridge.getByRole("img", { name: "Not yet confirmed as this patient" })).toHaveAttribute("data-state", "unknown");
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await expect(bridge.getByRole("img", { name: "Same patient as Mariam Al Shamsi" })).toHaveAttribute("data-state", "resolving");
-    await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toHaveAttribute("aria-checked", "true");
+    await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toBeChecked();
     await expect(r.getByText("Answer the bowel prep question to sign.")).toBeVisible();
-    await expect(r.getByRole("button", { name: "Close the case" })).toHaveCount(0);
+    await expect(r.getByRole("button", { name: /Close the case/ })).toHaveCount(0);
 
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
-    await r.getByRole("button", { name: "Close the case" }).click();
+    await r.getByRole("button", { name: "Preview: Close the case" }).click();
 
     const result = r.getByRole("status");
-    await expect(result).toContainText("Closed with two signatures");
-    await expect(result.getByTestId("signature-squares").locator("span")).toHaveCount(2);
-    await expect(result.getByText("Demo: not saved")).toBeVisible();
-    await expect(signedNodes(page)).toHaveCount(2);
-    await expect(signedNodes(page).nth(0)).toContainText("same patient (as reviewer)");
-    await expect(signedNodes(page).nth(1)).toContainText("prep adequate (as clinician)");
-    await expect(prepRow(page)).toContainText("adequate, signed");
+    await expect(result).toContainText("Would close the case");
+    await expect(result).not.toContainText("Closed with");
+    await expect(result.getByTestId("signature-squares")).toHaveCount(0);
+    await expect(result.getByText("Reconstruction: nothing was saved")).toBeVisible();
+    await expect(result).toContainText("No event was appended and no hash exists");
+    await expect(signedNodes(page)).toHaveCount(0);
+    await expect(previewNodes(page).nth(0)).toContainText("preview, not saved: same patient (as reviewer)");
+    await expect(previewNodes(page).nth(1)).toContainText("preview, not saved: prep adequate (as clinician)");
+    await expect(prepRow(page)).toContainText("adequate (preview, not saved)");
     await expect(result.getByRole("link", { name: "Back to Review" })).toHaveAttribute("href", "/app/review");
     await expect(result.getByText("That was the last case waiting.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/review-closed.png", fullPage: true });
@@ -110,8 +114,51 @@ test.describe("review, fixtures mode", () => {
 
     await r.getByRole("button", { name: "Undo" }).click();
     await expect(r.getByText("Answer both questions to sign.")).toBeVisible();
-    await expect(signedNodes(page)).toHaveCount(0);
+    await expect(previewNodes(page)).toHaveCount(1);
     await expect(prepRow(page)).toContainText("reviewers decide");
+  });
+
+  test("keyboard only: arrows choose, the second question is announced, Close the case moves focus on", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    const active = () =>
+      page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        return { tag: el?.tagName, text: (el?.textContent ?? "").trim(), label: el?.closest("label")?.textContent?.trim() ?? "" };
+      });
+    // Each group is named by its visible question.
+    await expect(r.getByRole("group", { name: "1. Is it the same patient?" })).toBeVisible();
+
+    await r.getByRole("radio", { name: "Same patient", exact: true }).focus();
+    expect((await active()).label).toBe("Same patient");
+    await page.keyboard.press("ArrowDown");
+    expect((await active()).label).toBe("Not the same patient");
+    await expect(r.getByRole("radio", { name: "Not the same patient" })).toBeChecked();
+    await page.keyboard.press("ArrowUp");
+    await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toBeChecked();
+
+    // The second question is announced in a polite live region, and the next Tab lands in it.
+    await expect(r.locator("[aria-live=polite]")).toHaveText(/Question 2 of 2 is now showing/);
+    await expect(r.getByRole("group", { name: "2. Bowel prep: is it adequate?" })).toBeVisible();
+    await page.keyboard.press("Tab");
+    expect((await active()).tag).toBe("INPUT");
+    expect((await active()).label).toBe("Adequate");
+    await page.keyboard.press("Space");
+    await expect(r.getByRole("radio", { name: "Adequate", exact: true })).toBeChecked();
+    await page.keyboard.press("Tab");
+    expect((await active()).text).toBe("Preview: Close the case");
+
+    await page.keyboard.press("Enter");
+    const heading = r.getByRole("heading", { name: "Would close the case" });
+    await expect(heading).toBeVisible();
+    await expect(heading).toBeFocused();
+    await page.keyboard.press("Tab");
+    expect((await active()).text).toBe("Back to Review");
+    await page.keyboard.press("Tab");
+    expect((await active()).text).toBe("Undo");
+    await page.keyboard.press("Enter");
+    // Undo brings the questions back and focus goes to the first of them.
+    await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toBeFocused();
   });
 
   test("the other three answers name what they sign", async ({ page }) => {
@@ -120,27 +167,26 @@ test.describe("review, fixtures mode", () => {
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Not adequate" }).click();
-    await r.getByRole("button", { name: "Sign: prep not adequate" }).click();
-    await expect(r.getByRole("status")).toContainText("Not closed: repeat colonoscopy");
-    await expect(prepRow(page)).toContainText("not adequate, signed");
+    await r.getByRole("button", { name: "Preview: Sign: prep not adequate" }).click();
+    await expect(r.getByRole("status")).toContainText("Would not close: repeat colonoscopy");
+    await expect(prepRow(page)).toContainText("not adequate (preview, not saved)");
     await r.getByRole("button", { name: "Undo" }).click();
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Ask the unit" }).click();
-    await r.getByRole("button", { name: "Sign and ask the unit to grade the prep" }).click();
-    await expect(r.getByRole("status")).toContainText("Asked the unit");
-    await expect(r.getByRole("status").getByTestId("signature-squares").locator("span")).toHaveCount(1);
-    await expect(r.locator('li[data-kind="current"]')).toContainText("SKMC endoscopy");
+    await r.getByRole("button", { name: "Preview: Sign and ask the unit to grade the prep" }).click();
+    await expect(r.getByRole("status")).toContainText("Would ask the unit");
+    await expect(r.locator('li[data-kind="current"]').last()).toContainText("SKMC endoscopy");
     await r.getByRole("button", { name: "Undo" }).click();
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
     await r.getByRole("radio", { name: "Not the same patient" }).click();
-    await expect(r.getByRole("radiogroup", { name: /Bowel prep/ })).toHaveCount(0);
-    await r.getByRole("button", { name: "Sign: not the same patient" }).click();
-    await expect(r.getByRole("status")).toContainText("Link rejected");
+    await expect(r.getByRole("group", { name: /Bowel prep/ })).toHaveCount(0);
+    await r.getByRole("button", { name: "Preview: Sign: not the same patient" }).click();
+    await expect(r.getByRole("status")).toContainText("Would reject the link");
     await expect(prepRow(page)).toContainText("not applied");
-    await expect(signedNodes(page)).toHaveCount(1);
+    await expect(signedNodes(page)).toHaveCount(0);
   });
 });
 
@@ -158,6 +204,8 @@ test.describe("review, live mode against a mock API", () => {
   const meta = read("fixtures.json").meta;
 
   const posted: Posted[] = [];
+  /** What the mock API has appended: served back as the audit history, like the real log. */
+  const history: Record<string, unknown>[] = [];
   let refuse: string | undefined;
   let server: Server;
 
@@ -178,6 +226,7 @@ test.describe("review, live mode against a mock API", () => {
           const role = req.headers["x-wasl-role"];
           if (role === refuse) return send(403, { meta, error: `rbac: role "${role}" may not sign this` });
           const review = { case: holdId, item: body.item, decision: body.decision, note: body.note, role, actor: req.headers["x-wasl-actor"], action: "signoff", at: "2026-10-31T10:00:00Z", mode: "api", prev: "genesis", hash: `hash-${posted.length}-0123456789abcdef` };
+          history.push(review);
           send(201, { meta, review });
         });
         return;
@@ -188,6 +237,7 @@ test.describe("review, live mode against a mock API", () => {
       const audit = p.endsWith("/audit");
       const id = p.replace(/^\/api\/cases\//, "").replace(/\/audit$/, "");
       const hit = cases.find(({ f, json }) => f.endsWith("_audit.json") === audit && (audit ? json.case : json.case?.id) === id);
+      if (hit && audit) return send(200, { ...hit.json, history: [...hit.json.history, ...history] });
       return hit ? send(200, hit.json) : send(404, { meta, error: "not found" });
     });
     await new Promise<void>((resolve) => server.listen(MOCK_PORT, "127.0.0.1", resolve));
@@ -199,30 +249,56 @@ test.describe("review, live mode against a mock API", () => {
 
   test.beforeEach(() => {
     posted.length = 0;
+    history.length = 0;
     refuse = undefined;
   });
 
-  test("Close the case posts identity as reviewer, then prep as clinician, and both are saved", async ({ page }) => {
+  test("a 201 shows the returned hashes, names each actor and role, and refreshes the audit history", async ({ page }) => {
     await page.goto(desk);
     const r = rail(page);
+    const history = page.getByRole("list", { name: "Review history" });
+    await expect(page.getByText("Nobody has signed this case through the API yet.")).toBeVisible();
+    await expect(history).toHaveCount(0);
+    await expect(r).toContainText("not independent double review");
+
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
     await r.getByRole("button", { name: "Close the case" }).click();
 
     const result = r.getByRole("status");
-    await expect(result).toContainText("Closed with two signatures");
-    await expect(result).toContainText("Saved: 2 events appended to the review log");
-    await expect(result.getByText("Demo: not saved")).toHaveCount(0);
+    await expect(result).toContainText("Closed: both answers recorded");
+    await expect(result).toContainText("Saved: 2 events appended to the review log, last hash hash-2-01234");
+    await expect(result.getByRole("list", { name: "Appended events" }).getByRole("listitem")).toHaveText([
+      /Reviewer · Dr Omar Al Kaabi · hash-1-01234/,
+      /Clinician · Dr Omar Al Kaabi · hash-2-01234/,
+    ]);
+    await expect(result).toContainText("Both answers came from Dr Omar Al Kaabi");
+    await expect(result).toContainText("not two independent reviewers");
+    await expect(result).not.toContainText("two signatures");
+    await expect(result.getByText("Reconstruction: nothing was saved")).toHaveCount(0);
     await expect(r.getByRole("button", { name: "Undo" })).toHaveCount(0);
+    await expect(signedNodes(page)).toHaveCount(2);
+    await expect(signedNodes(page).nth(0)).toContainText("Dr Omar Al Kaabi · same patient (as reviewer)");
+    await expect(signedNodes(page).nth(1)).toContainText("Dr Omar Al Kaabi · prep adequate (as clinician)");
+
+    // The history on the page was read again from the log, with no reload.
+    await expect(history.getByRole("listitem")).toHaveCount(2);
+    await expect(history.getByRole("listitem").nth(0)).toContainText("Same patient");
+    await expect(history.getByRole("listitem").nth(0)).toContainText("Reviewer");
+    await expect(history.getByRole("listitem").nth(1)).toContainText("Clinician");
+
+    // Focus moved to the confirmation, not <body>.
+    await expect(r.getByRole("heading", { name: /Closed: both answers recorded/ })).toBeFocused();
 
     expect(posted.map((x) => [x.path, x.headers["x-wasl-role"], x.headers["x-wasl-actor"], x.body])).toEqual([
       [`/api/cases/${holdId}/review`, "reviewer", "Dr Omar Al Kaabi", { item: LINK_ITEM, decision: "same", note: "" }],
       [`/api/cases/${holdId}/review`, "clinician", "Dr Omar Al Kaabi", { item: EVIDENCE_ITEM, decision: "adequate", note: "" }],
     ]);
     await page.screenshot({ path: "test-results/screens/review-live-saved.png", fullPage: true });
+    await noSeriousAxe(page);
   });
 
-  test("a 403 for the clinician role reads as a sentence, and the retry sends only what was refused", async ({ page }) => {
+  test("a 403 for the clinician role is partial: one entry saved, no closure, the retry sends only what was refused", async ({ page }) => {
     refuse = "clinician";
     await page.goto(desk);
     const r = rail(page);
@@ -234,14 +310,49 @@ test.describe("review, live mode against a mock API", () => {
       "The identity answer was saved. Not saved: the clinician role is not allowed to sign the bowel prep answer.",
     );
     await expect(r.getByRole("status")).toHaveCount(0);
+    await expect(r).not.toContainText("Closed: both answers recorded");
     await expect(signedNodes(page)).toHaveCount(1);
+    await expect(page.getByRole("list", { name: "Review history" }).getByRole("listitem")).toHaveCount(1);
     expect(posted.map((x) => x.headers["x-wasl-role"])).toEqual(["reviewer", "clinician"]);
     await page.screenshot({ path: "test-results/screens/review-live-403.png", fullPage: true });
     await noSeriousAxe(page);
 
     refuse = undefined;
     await r.getByRole("button", { name: "Close the case" }).click();
-    await expect(r.getByRole("status")).toContainText("Closed with two signatures");
+    await expect(r.getByRole("status")).toContainText("Closed: both answers recorded");
     expect(posted.map((x) => x.body.item)).toEqual([LINK_ITEM, EVIDENCE_ITEM, EVIDENCE_ITEM]);
+    await expect(page.getByRole("list", { name: "Review history" }).getByRole("listitem")).toHaveCount(2);
+  });
+
+  test("a 403 for the reviewer role saves nothing and never reads as closed", async ({ page }) => {
+    refuse = "reviewer";
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Same patient", exact: true }).click();
+    await r.getByRole("radio", { name: "Adequate", exact: true }).click();
+    await r.getByRole("button", { name: "Close the case" }).click();
+
+    await expect(r.getByRole("alert")).toHaveText("Not saved: the reviewer role is not allowed to sign the identity answer.");
+    await expect(r.getByRole("status")).toHaveCount(0);
+    await expect(signedNodes(page)).toHaveCount(0);
+    expect(posted.map((x) => x.headers["x-wasl-role"])).toEqual(["reviewer"]);
+    // The failed save leaves focus on the button, not <body>.
+    await expect(r.getByRole("button", { name: "Close the case" })).toBeFocused();
+  });
+
+  test("keyboard only: Close the case moves focus to the confirmation and Tab reaches the next link", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Same patient", exact: true }).focus();
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Tab");
+    await page.keyboard.press("Space");
+    await page.keyboard.press("Tab");
+    await expect(r.getByRole("button", { name: "Close the case" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(r.getByRole("status")).toContainText("Closed: both answers recorded");
+    await expect(r.getByRole("heading", { name: /Closed: both answers recorded/ })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(r.getByRole("link", { name: "Back to Review" })).toBeFocused();
   });
 });

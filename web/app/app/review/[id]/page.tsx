@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { HistoryCard } from "@/components/case/audit-view";
 import { Card, SignoffsCard } from "@/components/case/sections";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
-import { apiMode, getCase } from "@/lib/api/source";
+import { apiMode, getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 
 export async function generateMetadata({ params }: PageProps<"/app/review/[id]">) {
@@ -21,6 +22,8 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
   const detail = queue.cases.find((c) => c.case.id === id) ?? (await getCase(id));
   if (!detail) notFound();
   const view = reviewView(detail);
+  /** The append-only history exists only against the live API; a snapshot has nothing the desk could have added. */
+  const audit = apiMode() === "live" ? await getAudit(id) : null;
 
   const total = queue.cases.length;
   const at = queue.cases.findIndex((c) => c.case.id === id);
@@ -62,9 +65,12 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           <QueueLabel source={queue.source} />
         </div>
       </header>
-      {at >= 0 ? (
-        <ReviewDesk view={view} mode={apiMode()} next={next} />
-      ) : (
+      <ReviewDesk
+        view={view}
+        mode={apiMode()}
+        next={next}
+        waiting={at >= 0}
+        settled={
         <div className="mt-6 flex flex-col gap-3">
           <Card id="not-waiting" title="This case is not waiting for a signature">
             <p className="m-0 mt-3 max-w-[72ch]">
@@ -88,6 +94,12 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
             </div>
           </Card>
           <SignoffsCard detail={detail} />
+        </div>
+        }
+      />
+      {audit && (
+        <div className="mt-3">
+          <HistoryCard audit={audit} />
         </div>
       )}
     </>
