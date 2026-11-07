@@ -248,3 +248,13 @@ test("the nav lists Agent review with a text Experimental marker, and the brand 
   await expect(sidebar(page)).toContainText("ADPHC · screening follow-up");
   await expect(sidebar(page)).not.toContainText("CRC programme");
 });
+
+test("the run strip says Agent review is a separate run, and is unchanged elsewhere", async ({ page }) => {
+  await page.goto("/app/agent-review");
+  const strip = page.getByRole("region", { name: "Run metadata" });
+  await expect(strip).toHaveCount(1);
+  await expect(strip).toContainText("separate experimental run");
+  await expect(strip).not.toContainText(meta.run);
+  await page.goto("/app/pipeline");
+  await expect(page.getByRole("region", { name: "Run metadata" })).toContainText(meta.run);
+});
