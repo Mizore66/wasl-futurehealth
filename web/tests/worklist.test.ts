@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { Audit, CaseDetail, CaseList } from "@/lib/api/schema";
-import { parseCaseFilters, parsePage, filtersHref } from "@/components/worklist/filters";
+import { facets, programmesInView } from "@/components/patients/facets";
+import { parseCaseFilters, parsePage, filtersHref, toCaseQuery } from "@/components/worklist/filters";
+import { matches } from "@/lib/api/source";
 import { closureChecks, elapsedDays, recordNodes, workItem } from "@/components/worklist/model";
 import { referralFrom } from "@/components/worklist/referrals";
 import { loadSample } from "./samples";
@@ -86,6 +88,43 @@ describe("patients filters from the query string", () => {
     const href = filtersHref("/app/patients", f);
     expect(href).toBe("/app/patients?state=open&overdue=false");
     expect(parseCaseFilters(Object.fromEntries(new URL(href, "http://x").searchParams))).toEqual(f);
+  });
+});
+
+describe("patients refine filters", () => {
+  const all = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"].flatMap((p) => CaseList.parse(loadSample(`cases_${p}_page1.json`)).cases);
+
+  it("parses, drops unknown enum values, and round-trips through a link", () => {
+    const f = { programme: "cervical" as const, provider: "ahs-mushrif", consent: "denied" as const, review: "signed" as const, owner: "none", overdue: true };
+    const href = filtersHref("/app/patients", f);
+    expect(href).toBe("/app/patients?programme=cervical&overdue=true&provider=ahs-mushrif&consent=denied&review=signed&owner=none");
+    expect(parseCaseFilters(Object.fromEntries(new URL(href, "http://x").searchParams))).toEqual(f);
+    expect(parseCaseFilters({ consent: "maybe", review: "later" })).toEqual({});
+  });
+
+  it("owner=none asks for unowned cases only", () => {
+    expect(toCaseQuery({ owner: "none" })).toEqual({ unowned: true });
+    expect(toCaseQuery({ owner: "Practitioner/x", q: "1" })).toEqual({ owner: "Practitioner/x", q: "1" });
+    const unowned = all.filter((c) => matches(c, toCaseQuery({ owner: "none" })));
+    expect(unowned.length).toBeGreaterThan(0);
+    expect(unowned.every((c) => c.owner === "")).toBe(true);
+  });
+
+  it("each control counts what choosing it would show, with the other filters applied", () => {
+    const f = { programme: "crc" as const };
+    const fx = facets(all, f);
+    const crc = all.filter((c) => c.programme === "crc");
+    // Owner options partition the programme's cases.
+    expect(fx.owner.reduce((n, o) => n + o.count, 0)).toBe(crc.length);
+    for (const o of fx.provider) expect(o.count).toBe(crc.filter((c) => c.provider === o.value).length);
+    // The programme control ignores its own filter, so the other programmes stay listed with their totals.
+    expect(fx.programme.find((o) => o.value === "breast")?.count).toBe(all.filter((c) => c.programme === "breast").length);
+    expect(programmesInView(all, f).map((p) => p.programme)).toEqual(["crc"]);
+    expect(programmesInView(all, {}).length).toBe(5);
+  });
+
+  it("keeps a chosen value listed at zero rather than dropping the filter", () => {
+    expect(facets(all, { provider: "no-such-unit" }).provider.find((o) => o.value === "no-such-unit")?.count).toBe(0);
   });
 });
 
