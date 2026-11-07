@@ -10,10 +10,12 @@ package main
 // contents. It does not identify the export across restarts (meta.loaded_at changes when the server reloads).
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
+	"unicode"
 )
 
 const exportSchema = "wasl-case-export/1"
@@ -73,20 +75,133 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 	}
 }
 
+// ---- redaction -------------------------------------------------------------------------------------------------
+
+// exportDenyKeys are removed entirely (key and value) wherever they appear. Matching is on the lower-cased key.
+var exportDenyKeys = map[string]bool{
+	"quote": true, "text": true, "raw": true, "raw_text": true, "report_text": true, "clinical_text": true, "note": true,
+	"reason": true, "message": true, "messages": true, "prompt": true, "prompt_text": true, "reasoning": true,
+	"raw_report": true, "raw_report_text": true, "document_text": true, "narrative": true, "comment": true,
+	"comments": true, "summary_text": true, "excerpt": true, "snippet": true, "hint": true, "free_text": true, "citations": true, "citation": true,
+}
+
+// exportDenySuffixes catch variants such as gemma_quote, reviewer_note, model_reasoning.
+var exportDenySuffixes = []string{"_quote", "_text", "_note", "_notes", "_reason", "_message", "_messages", "_prompt", "_reasoning", "_excerpt", "_snippet", "_narrative", "_comment"}
+
+func exportDenyKey(k string) bool {
+	k = strings.ToLower(k)
+	if exportDenyKeys[k] || strings.HasPrefix(k, "raw_") || strings.HasPrefix(k, "quote") {
+		return true
+	}
+	for _, suf := range exportDenySuffixes {
+		if strings.HasSuffix(k, suf) {
+			return true
+		}
+	}
+	return false
+}
+
+// exportLooksLikeProse is the value-side guard for keys nobody listed: three or more whitespace-separated tokens
+// of which at least two contain a letter reads as a sentence, not an identifier, hash, timestamp or code.
+func exportLooksLikeProse(v string) bool {
+	words := 0
+	for _, f := range strings.Fields(v) {
+		for _, r := range f {
+			if unicode.IsLetter(r) {
+				words++
+				break
+			}
+		}
+	}
+	return len(strings.Fields(v)) >= 3 && words >= 2
+}
+
+// redactExport returns a redacted copy of a generic-JSON value. It never mutates its input. Maps lose denylisted
+// keys; strings that look like prose are dropped from their map (or from their list). Numbers, bools, null, ids,
+// hashes and short structured strings survive.
+func redactExport(v interface{}) (interface{}, bool) {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(x))
+		for k, val := range x {
+			if exportDenyKey(k) {
+				continue
+			}
+			if r, keep := redactExport(val); keep {
+				out[k] = r
+			}
+		}
+		return out, true
+	case []interface{}:
+		out := make([]interface{}, 0, len(x))
+		for _, val := range x {
+			if r, keep := redactExport(val); keep {
+				out = append(out, r)
+			}
+		}
+		return out, true
+	case string:
+		if exportLooksLikeProse(x) {
+			return nil, false
+		}
+		return x, true
+	}
+	return v, true
+}
+
+// exportGeneric deep-copies any value into generic JSON via a marshal/unmarshal round trip (so nothing aliases the
+// live server state). Numbers are kept as json.Number so their literal text is not reformatted through float64.
+func exportGeneric(v interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.UseNumber()
+	var out map[string]interface{}
+	if err := dec.Decode(&out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+const exportChainNote = "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and " +
+	"cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted " +
+	"current chain and covers that chain only."
+
 // caseExportDoc builds the export document for one case. Two calls return identical bytes while the run and the
-// case/review history are unchanged.
+// case/review history are unchanged. detail and audit are deep copies; the live bodies and chains are never touched.
 func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
+	// computed from the original chain, before any redaction
+	verified, length := verifyChain(c.last.Chain), len(c.last.Chain)
+	liveAudit := s.caseAuditBody(c)
+	anchorNote := liveAudit["anchor_note"]
+	det, err := exportGeneric(s.caseDetailBody(c))
+	if err != nil {
+		return nil, err
+	}
+	aud, err := exportGeneric(liveAudit)
+	if err != nil {
+		return nil, err
+	}
+	rd, _ := redactExport(det)
+	ra, _ := redactExport(aud)
+	detail, audit := rd.(map[string]interface{}), ra.(map[string]interface{})
+	audit["chain_verified"], audit["chain_length"] = verified, length
+	audit["chain_scope"] = "current"
+	audit["anchor_note"] = anchorNote // static server text, not case data
+	audit["chain_note"] = exportChainNote
 	doc := map[string]interface{}{
-		"schema": exportSchema,
+		"schema": exportSchema, "redacted": true,
 		"meta":   s.meta,
-		"detail": s.caseDetailBody(c),
-		"audit":  s.caseAuditBody(c),
+		"detail": detail,
+		"audit":  audit,
 	}
 	// Hash the generic-JSON form, not the Go-struct form: struct fields (e.g. Block) would otherwise keep Go order,
-	// while a verifier parsing the served document sees sorted map keys. Normalising here makes the hash reproducible
-	// from the served bytes: parse, drop content_sha256, canon, sha.
-	var norm map[string]interface{}
-	if err := json.Unmarshal(canon(doc), &norm); err != nil {
+	// while a verifier parsing the served document sees sorted map keys. Numbers are json.Number so the hashed text
+	// is the served text. Normalising here makes the hash reproducible from the served bytes.
+	norm, err := exportGeneric(doc)
+	if err != nil {
 		return nil, err
 	}
 	doc["content_sha256"] = sha(canon(norm))
