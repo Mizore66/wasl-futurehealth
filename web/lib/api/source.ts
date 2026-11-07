@@ -9,6 +9,7 @@ import {
   CaseList,
   Dashboard,
   Fixtures,
+  Healthz,
   ReviewRequest,
   ReviewResponse,
   type CaseSummary,
@@ -200,4 +201,17 @@ export async function postReview(
     status: 201,
     response: { meta: detail.meta, review: { ...event, hash }, note: "fixtures mode: not persisted" },
   };
+}
+
+/**
+ * The backend's `/healthz`. Live mode fetches it (short timeout, never cached); fixtures mode reads the published snapshot.
+ * Throws on any fetch, status or parse failure: callers show an unavailable state, never a guessed value.
+ */
+export async function getHealthz(): Promise<Healthz> {
+  if (apiMode() === "live") {
+    const health = await live(Healthz, "/healthz", { signal: AbortSignal.timeout(3000) });
+    if (!health) throw new Error("/healthz: not found");
+    return health;
+  }
+  return fixture(Healthz, "healthz.json");
 }
