@@ -104,9 +104,9 @@ func distinct(xs []string) int {
 // ---------------- consent + outreach ----------------
 
 const (
-	SupBelowTau    = "link_below_tau_unconfirmed"
-	SupConsent     = "consent_withheld"
-	SupSecondID    = "second_identifier_unconfirmed"
+	SupBelowTau = "link_below_tau_unconfirmed"
+	SupConsent  = "consent_withheld"
+	SupSecondID = "second_identifier_unconfirmed"
 	SupConsentHold = "consent_unknown_hold" // stage 3: queued until contact permission is granted
 )
 
