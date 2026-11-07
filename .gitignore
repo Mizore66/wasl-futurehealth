@@ -22,3 +22,6 @@ models/*_pairfeat5.json
 models/*_pairfeat6.json
 models/*_pairfeat7.json
 models/*_pairfeat8.json
+
+# built binaries
+/pipeline/wsi

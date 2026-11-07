@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -77,20 +78,21 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 
 // ---- redaction -------------------------------------------------------------------------------------------------
 
-// exportDenyKeys are removed entirely (key and value) wherever they appear. Matching is on the lower-cased key.
+// exportDenyKeys are removed entirely (key and value) wherever they appear. Matching is on the lower-cased key and is
+// exact: there is no prefix matching, so harmless keys such as raw_id, raw_sha or quoted_by survive.
 var exportDenyKeys = map[string]bool{
-	"quote": true, "text": true, "raw": true, "raw_text": true, "report_text": true, "clinical_text": true, "note": true,
-	"reason": true, "message": true, "messages": true, "prompt": true, "prompt_text": true, "reasoning": true,
+	"quote": true, "quotes": true, "text": true, "raw": true, "raw_text": true, "report_text": true, "clinical_text": true, "note": true,
+	"message": true, "messages": true, "prompt": true, "prompt_text": true, "reasoning": true,
 	"raw_report": true, "raw_report_text": true, "document_text": true, "narrative": true, "comment": true,
-	"comments": true, "summary_text": true, "excerpt": true, "snippet": true, "hint": true, "free_text": true, "citations": true, "citation": true,
+	"comments": true, "summary_text": true, "excerpt": true, "snippet": true, "free_text": true,
 }
 
 // exportDenySuffixes catch variants such as gemma_quote, reviewer_note, model_reasoning.
-var exportDenySuffixes = []string{"_quote", "_text", "_note", "_notes", "_reason", "_message", "_messages", "_prompt", "_reasoning", "_excerpt", "_snippet", "_narrative", "_comment"}
+var exportDenySuffixes = []string{"_quote", "_quotes", "_text", "_note", "_notes", "_message", "_messages", "_prompt", "_reasoning", "_excerpt", "_snippet", "_narrative", "_comment"}
 
 func exportDenyKey(k string) bool {
 	k = strings.ToLower(k)
-	if exportDenyKeys[k] || strings.HasPrefix(k, "raw_") || strings.HasPrefix(k, "quote") {
+	if exportDenyKeys[k] {
 		return true
 	}
 	for _, suf := range exportDenySuffixes {
@@ -100,6 +102,23 @@ func exportDenyKey(k string) bool {
 	}
 	return false
 }
+
+// Operational keys (hint, reason, why and their _hint/_reason variants) carry machine codes such as
+// prep_grade_one_click or second_identifier. A string under them is kept only when it is such a code (lower-case
+// tokens joined by underscores) or one of the server's own static sentences; anything else is dropped.
+func exportOpKey(k string) bool {
+	k = strings.ToLower(k)
+	return k == "hint" || k == "reason" || k == "why" || strings.HasSuffix(k, "_hint") || strings.HasSuffix(k, "_reason")
+}
+
+var exportOpCode = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)+(?:[+/.:-][a-z0-9_]+)*$`)
+
+// exportStaticText lists fixed sentences the server itself writes (no case data in them).
+var exportStaticText = map[string]bool{
+	"case does not need a colonoscopy slot at the end of the run": true,
+}
+
+func exportSafeOpValue(v string) bool { return exportStaticText[v] || exportOpCode.MatchString(v) }
 
 // exportLooksLikeProse is the value-side guard for keys nobody listed: three or more whitespace-separated tokens
 // of which at least two contain a letter reads as a sentence, not an identifier, hash, timestamp or code.
@@ -116,16 +135,174 @@ func exportLooksLikeProse(v string) bool {
 	return len(strings.Fields(v)) >= 3 && words >= 2
 }
 
-// redactExport returns a redacted copy of a generic-JSON value. It never mutates its input. Maps lose denylisted
-// keys; strings that look like prose are dropped from their map (or from their list). Numbers, bools, null, ids,
-// hashes and short structured strings survive.
+// ---- allowlisted projection ------------------------------------------------------------------------------------
+//
+// Evidence bodies, timeline rows and citations are projected through an allowlist: a key that is not listed is
+// dropped whatever its value, so a one- or two-word clinical phrase under an unknown key cannot leak. Listed keys
+// still pass through the scalar guard (bounded length, no prose, no newlines).
+
+type exportAllow struct {
+	leaf bool                    // a scalar, or a list of scalars, is kept
+	kids map[string]*exportAllow // keys kept when the value is an object; "*" matches any key
+}
+
+var exportLeaf = &exportAllow{leaf: true}
+
+func exportScalarOK(v interface{}) bool {
+	switch x := v.(type) {
+	case string:
+		return len(x) <= 200 && !strings.ContainsAny(x, "\n\r") && !exportLooksLikeProse(x)
+	case bool, nil, json.Number, float64:
+		return true
+	}
+	return false
+}
+
+func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		if a.kids == nil {
+			return nil, false
+		}
+		out := map[string]interface{}{}
+		for k, val := range x {
+			sub := a.kids[strings.ToLower(k)]
+			if sub == nil {
+				sub = a.kids["*"]
+			}
+			if sub == nil {
+				continue
+			}
+			if r, keep := exportProject(val, sub); keep {
+				out[k] = r
+			}
+		}
+		return out, true
+	case []interface{}:
+		if !a.leaf {
+			return nil, false
+		}
+		out := []interface{}{}
+		for _, val := range x {
+			if exportScalarOK(val) {
+				out = append(out, val)
+			}
+		}
+		return out, true
+	default:
+		if a.leaf && exportScalarOK(v) {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+func exportKeys(keys ...string) map[string]*exportAllow {
+	m := map[string]*exportAllow{}
+	for _, k := range keys {
+		m[k] = exportLeaf
+	}
+	return m
+}
+
+// exportReaderFields is the structured output of one reader (colonoscopy label fields, DR grades, BI-RADS, Lung-RADS,
+// nodule measurements). Its quote is not listed and so never passes.
+var exportReaderFields = &exportAllow{kids: func() map[string]*exportAllow {
+	m := exportKeys("r_right", "r_left", "m_right", "m_left", "urgent", "attended", "fundus", "outcome", "review_days", "label",
+		"birads_right", "birads_left", "birads_overall", "assessment", "biopsy",
+		"type", "long_mm", "short_mm", "count", "solid_mm", "prior_long_mm", "prior_short_mm", "resolved", "not_assessable", "stated", "mean_mm",
+		"lungrads_overall", "lungrads_worst", "workup", "mdt", "tissue")
+	m["status"] = &exportAllow{kids: map[string]*exportAllow{"*": exportLeaf}}
+	return m
+}()}
+
+var exportEvidenceAllow = &exportAllow{kids: func() map[string]*exportAllow {
+	m := exportKeys("report", "human_override", "regex", "gemma", "agree", "label", "reader_model", "rule", "flags",
+		"reader_a_regex", "reader_b", "reader_a", "reader_a_fields", "reader_b_fields")
+	m["reader_a_fields"], m["reader_b_fields"] = exportReaderFields, exportReaderFields
+	m["fields"] = &exportAllow{kids: exportKeys("regex", "reader")}
+	m["image_reader"] = &exportAllow{kids: exportKeys("model", "photos", "caecal_photo", "landmark_p", "prep", "prep_p", "unavailable",
+		"photo_shas", "label_before_image", "hint")}
+	return m
+}()}
+
+var exportTimelineAllow = &exportAllow{kids: exportKeys("seq", "type", "id", "provider", "status", "day", "arrival_day", "category", "raw_sha", "source")}
+
+var exportCitationAllow = &exportAllow{kids: exportKeys("tool", "arg", "field", "value")}
+
+var exportSafeValue = regexp.MustCompile(`^[A-Za-z0-9_.:/|@=+#%-]{1,80}$`)
+
+// exportCitations keeps each citation's tool, arg, field and value and drops every other key (quote, excerpt and
+// any report-derived text). A string value is kept only when it is a single identifier-like token or date.
+func exportCitations(v interface{}) interface{} {
+	list, ok := v.([]interface{})
+	if !ok {
+		return []interface{}{}
+	}
+	out := []interface{}{}
+	for _, c := range list {
+		pm, keep := exportProject(c, exportCitationAllow)
+		if !keep {
+			continue
+		}
+		cm := pm.(map[string]interface{})
+		if sv, isStr := cm["value"].(string); isStr && !exportSafeValue.MatchString(sv) {
+			delete(cm, "value")
+		}
+		out = append(out, cm)
+	}
+	return out
+}
+
+// exportEvidenceBlock reports whether m is a chain block of type evidence.
+func exportEvidenceBlock(m map[string]interface{}) bool {
+	t, _ := m["type"].(string)
+	_, hasBody := m["body"].(map[string]interface{})
+	return t == "evidence" && hasBody
+}
+
+func exportProjectList(v interface{}, a *exportAllow) interface{} {
+	list, ok := v.([]interface{})
+	if !ok {
+		return v
+	}
+	out := []interface{}{}
+	for _, it := range list {
+		if r, keep := exportProject(it, a); keep {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+// redactExport returns a redacted copy of a generic-JSON value. It never mutates its input. Evidence block bodies
+// and citations go through their allowlists; maps lose denylisted keys; operational hint/reason/why strings keep
+// only machine codes; other strings that look like prose are dropped. Numbers, bools, null, ids, hashes and short
+// structured strings survive.
 func redactExport(v interface{}) (interface{}, bool) {
 	switch x := v.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(x))
+		isEv := exportEvidenceBlock(x)
 		for k, val := range x {
-			if exportDenyKey(k) {
+			lk := strings.ToLower(k)
+			switch {
+			case lk == "citations" || lk == "citation":
+				out[k] = exportCitations(val)
 				continue
+			case isEv && k == "body":
+				pb, _ := exportProject(val, exportEvidenceAllow)
+				out[k] = pb
+				continue
+			case exportDenyKey(k):
+				continue
+			case exportOpKey(k):
+				if sv, isStr := val.(string); isStr {
+					if exportSafeOpValue(sv) {
+						out[k] = sv
+					}
+					continue
+				}
 			}
 			if r, keep := redactExport(val); keep {
 				out[k] = r
@@ -147,6 +324,23 @@ func redactExport(v interface{}) (interface{}, bool) {
 		return x, true
 	}
 	return v, true
+}
+
+// redactExportDetail applies the allowlists to the detail paths that hold bare bodies (evidence, timeline) and then
+// the generic redaction, which also projects the evidence blocks inside every chain.
+func redactExportDetail(det map[string]interface{}) map[string]interface{} {
+	cp := make(map[string]interface{}, len(det))
+	for k, v := range det {
+		cp[k] = v
+	}
+	if v, ok := cp["evidence"]; ok {
+		cp["evidence"] = exportProjectList(v, exportEvidenceAllow)
+	}
+	if v, ok := cp["timeline"]; ok {
+		cp["timeline"] = exportProjectList(v, exportTimelineAllow)
+	}
+	r, _ := redactExport(cp)
+	return r.(map[string]interface{})
 }
 
 // exportGeneric deep-copies any value into generic JSON via a marshal/unmarshal round trip (so nothing aliases the
@@ -184,9 +378,8 @@ func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rd, _ := redactExport(det)
 	ra, _ := redactExport(aud)
-	detail, audit := rd.(map[string]interface{}), ra.(map[string]interface{})
+	detail, audit := redactExportDetail(det), ra.(map[string]interface{})
 	audit["chain_verified"], audit["chain_length"] = verified, length
 	audit["chain_scope"] = "current"
 	audit["anchor_note"] = anchorNote // static server text, not case data

@@ -73,7 +73,7 @@ func TestExportReusesDetailAndAudit(t *testing.T) {
 	e, d, a := decodeMap(t, exp), decodeMap(t, det), decodeMap(t, aud)
 	delete(d, "meta")
 	delete(a, "meta")
-	rd, _ := redactExport(d)
+	rd := redactExportDetail(d)
 	ra, _ := redactExport(a)
 	ea := e["audit"].(map[string]interface{})
 	for _, k := range []string{"chain_scope", "chain_note", "anchor_note"} {
@@ -228,47 +228,96 @@ func TestExportLeakCanaries(t *testing.T) {
 	}
 }
 
-const exportCanary = "CANARY-RAW-CLINICAL-TEXT caecum reached and prep was good"
+const exportCanary = "CANARY-RAW-CLINICAL-TEXT"
+const exportCanaryProse = "CANARY-RAW-CLINICAL-TEXT caecum reached and prep was good"
 
-// exportCanaryServer plants the canary under many keys on every path the export projects: evidence, review items and
-// their chains, current chain, signoffs, api reviews, timeline, agent investigations, plus an unlisted future key.
+// exportCanaryServer plants the canary separately in every path the export projects. String-valued fields that are
+// not evidence, timeline or citations carry the prose form (the prose guard is their only defence under unknown
+// keys); evidence, timeline and citations also carry the bare one-token canary under unknown keys, which only the
+// allowlists can stop.
 func exportCanaryServer(t *testing.T) *apiServer {
 	s, _ := exportRun(t)
 	c := s.cases[exportLoop]
 	tainted := func() map[string]interface{} {
-		return map[string]interface{}{"agree": true, "label": "adequate", "quote": exportCanary, "gemma_quote": exportCanary,
-			"reasoning": exportCanary, "future_field": exportCanary, "report": "exp-prov/DiagnosticReport/r1", "nested": map[string]interface{}{"raw_text": exportCanary, "k": []interface{}{exportCanary, "ok"}}}
+		return map[string]interface{}{"agree": true, "label": "adequate", "quote": exportCanaryProse, "gemma_quote": exportCanaryProse,
+			"reasoning": exportCanaryProse, "future_field": exportCanary, "two_words": "caecum " + exportCanary, "report": "exp-prov/DiagnosticReport/r1",
+			"fields":          map[string]interface{}{"regex": "y/y/n/n", "reader": "y/y/n/n", "extra": exportCanary},
+			"reader_b_fields": map[string]interface{}{"label": "adequate", "quote": exportCanaryProse, "caecum": exportCanary},
+			"nested":          map[string]interface{}{"raw_text": exportCanaryProse, "k": []interface{}{exportCanaryProse, "ok"}}}
 	}
-	ch := appendBlock(nil, "evidence", tainted())
-	s.queue[exportLoop] = []*ReviewItem{{ItemID: "it1", LoopID: exportLoop, Verdict: "same", Conf: 0.9, Quote: exportCanary, Reason: exportCanary, Chain: ch, Head: ch[0].Hash}}
-	s.signoffs[exportLoop] = []map[string]interface{}{{"item": "it1", "reviewer": "r1", "note": exportCanary, "evidence": "adequate", "free": exportCanary}}
-	s.reviews = append(s.reviews, map[string]interface{}{"case": exportLoop, "decision": "same", "actor": "r1", "reason": exportCanary, "message": exportCanary})
-	s.facts[exportLoop] = []map[string]interface{}{{"resource": "Observation", "id": "o1", "text": exportCanary, "display": exportCanary}}
-	s.agentInv[exportLoop] = []agentInvestigation{{view: map[string]interface{}{"item": "it1", "citations": []interface{}{exportCanary}, "recommendation": "same", "rationale": exportCanary}}}
-	c.last.Chain = append(append([]Block{}, c.last.Chain...), appendBlock(c.last.Chain, "evidence", tainted())[len(c.last.Chain)])
+	// detail.evidence, current.chain, audit.chain: an evidence block in the decision's chain
+	ch := append(append([]Block{}, c.last.Chain...), appendBlock(c.last.Chain, "evidence", tainted())[len(c.last.Chain)])
+	c.last.Chain = ch
+	for _, d := range c.decisions {
+		d.Chain = ch
+	}
+	// review_items and their chains
+	rch := appendBlock(nil, "evidence", tainted())
+	s.queue[exportLoop] = []*ReviewItem{{ItemID: "it1", LoopID: exportLoop, Verdict: "same", Conf: 0.9, Quote: exportCanaryProse, Reason: exportCanaryProse, Chain: rch, Head: rch[0].Hash}}
+	s.signoffs[exportLoop] = []map[string]interface{}{{"item": "it1", "reviewer": "r1", "note": exportCanaryProse, "evidence": "adequate", "free": exportCanaryProse}}
+	s.reviews = append(s.reviews, map[string]interface{}{"case": exportLoop, "decision": "same", "actor": "r1", "reason": exportCanaryProse, "message": exportCanaryProse})
+	s.facts[exportLoop] = []map[string]interface{}{{"resource": "Observation", "id": "o1", "text": exportCanary, "display": exportCanary, "seq": uint64(1), "type": "Observation", "status": "final"}}
+	s.agentInv[exportLoop] = []agentInvestigation{{view: map[string]interface{}{"item": "it1", "recommendation": "same", "rationale": exportCanaryProse,
+		"citations": []interface{}{map[string]interface{}{"tool": "get_record", "arg": "p|1", "field": "dob", "value": "1976-01-01", "quote": exportCanary, "excerpt": exportCanaryProse, "extra": exportCanary}}}}}
+	s.agentProv = map[string]interface{}{"cached": true, "experimental": true, "model": "m1", "notes": exportCanaryProse, "operator_comment": exportCanaryProse, "banner": exportCanaryProse}
+	s.booking = map[string]interface{}{"cases": map[string]interface{}{exportLoop: map[string]interface{}{"slot": "2026-02-01", "suggestion": exportCanaryProse, "reason": exportCanaryProse, "detail": exportCanaryProse}}}
+	// outreach, consent_log, escalations and case fields
+	for _, d := range append([]*Decision{c.last}, c.decisions...) {
+		d.Outreach = []Outreach{{Kind: "appointment_reminder", Channel: exportCanaryProse, Sender: exportCanaryProse, Suppress: exportCanaryProse}}
+		d.ConsentLog = []ConsentTransition{{Event: exportCanaryProse, Kind: exportCanaryProse, To: "held", Contact: "granted"}}
+		d.Escalations = []string{exportCanaryProse}
+	}
+	c.Owner = exportCanaryProse
 	return s
 }
+
+func jsonOf(v interface{}) string { b, _ := json.Marshal(v); return string(b) }
 
 func TestExportRedactsEveryPath(t *testing.T) {
 	s := exportCanaryServer(t)
 	h := exportRoutes(s)
 	_, live := fetchBody(t, h, "GET", "/api/cases/"+exportLoop)
 	_, liveAud := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
-	if !strings.Contains(string(live), "CANARY-RAW-CLINICAL-TEXT") {
-		t.Fatal("test setup: canary not present in live detail")
+	d, a := decodeMap(t, live), decodeMap(t, liveAud)
+	first := func(v interface{}) map[string]interface{} {
+		if l, ok := v.([]interface{}); ok && len(l) > 0 {
+			m, _ := l[0].(map[string]interface{})
+			return m
+		}
+		return map[string]interface{}{}
+	}
+	cur := d["current"].(map[string]interface{})
+	dec0 := first(d["decisions"])
+	ri := first(d["review_items"])
+	ag := first(d["agent_investigations"])
+	// 1. every path is populated with the canary
+	paths := map[string]interface{}{
+		"detail.evidence": d["evidence"], "detail.review_items": d["review_items"], "detail.review_items[0].chain": ri["chain"],
+		"detail.current.chain": cur["chain"], "audit.chain": a["chain"], "detail.signoffs": d["signoffs"], "detail.api_reviews": d["api_reviews"],
+		"detail.timeline": d["timeline"], "detail.agent_investigations[0].citations": ag["citations"], "detail.booking": d["booking"],
+		"detail.outreach": d["outreach"], "detail.decisions[0].outreach": dec0["outreach"], "detail.decisions[0].consent_log": dec0["consent_log"],
+		"detail.decisions[0].escalations": dec0["escalations"], "detail.agent_provenance": d["agent_provenance"], "detail.case": d["case"],
+		"audit.history": a["history"],
+	}
+	for name, v := range paths {
+		if !strings.Contains(jsonOf(v), exportCanary) {
+			t.Errorf("test setup: path %s is not populated with the canary: %s", name, jsonOf(v))
+		}
+	}
+	if t.Failed() {
+		t.FailNow()
 	}
 	origChain := string(canon(s.cases[exportLoop].last.Chain))
+	origQueue := jsonOf(s.queue[exportLoop])
+	// 2. the canary never appears in the export
 	_, raw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
 	body := string(raw)
-	for _, banned := range []string{"CANARY-RAW", "caecum reached", `"quote"`, "gemma_quote", `"reasoning"`, "future_field", `"raw_text"`, `"reason"`, `"message"`, `"text"`, `"citations"`} {
+	for _, banned := range []string{"CANARY", "caecum", "prep was good", `"quote"`, "gemma_quote", `"reasoning"`, "future_field", "two_words", `"raw_text"`, `"message"`, `"text"`, `"rationale"`, `"excerpt"`, `"extra"`} {
 		if strings.Contains(body, banned) {
 			t.Errorf("export contains %q", banned)
 		}
 	}
 	e := decodeMap(t, raw)
-	if d, _ := json.Marshal(e["detail"]); strings.Contains(string(d), `"note"`) {
-		t.Error("detail contains a note key")
-	}
 	au := e["audit"].(map[string]interface{})
 	if au["chain_verified"] != true || au["chain_length"] != float64(4) || au["chain_scope"] != "current" || e["redacted"] != true {
 		t.Fatalf("audit flags wrong: %v %v %v", au["chain_verified"], au["chain_length"], au["chain_scope"])
@@ -276,30 +325,122 @@ func TestExportRedactsEveryPath(t *testing.T) {
 	if !strings.Contains(au["chain_note"].(string), "cannot be recomputed") {
 		t.Fatal("missing hash-recompute note")
 	}
-	// structured metadata survives
-	for _, keep := range []string{`"label":"adequate"`, `"agree":true`, "exp-prov/DiagnosticReport/r1", `"reviewer":"r1"`, `"evidence":"adequate"`} {
-		if !strings.Contains(strings.ReplaceAll(body, ": ", ":"), keep) {
+	norm := strings.ReplaceAll(body, ": ", ":")
+	for _, keep := range []string{`"label":"adequate"`, `"agree":true`, "exp-prov/DiagnosticReport/r1", `"reviewer":"r1"`, `"evidence":"adequate"`,
+		`"tool":"get_record"`, `"arg":"p|1"`, `"field":"dob"`, `"value":"1976-01-01"`, `"regex":"y/y/n/n"`} {
+		if !strings.Contains(norm, keep) {
 			t.Errorf("export lost structured field %s", keep)
 		}
 	}
-	// the redacted chain no longer hashes: a verifier must not claim it does
+	// 3. the redacted chain cannot be recomputed, while the original chain_verified stays true
 	var chain []Block
 	cb, _ := json.Marshal(au["chain"])
 	json.Unmarshal(cb, &chain)
-	if verifyChain(chain) {
-		t.Error("redacted chain unexpectedly verifies; the note would be wrong")
+	if len(chain) != 4 || verifyChain(chain) {
+		t.Errorf("redacted chain (len %d) unexpectedly verifies; the note would be wrong", len(chain))
 	}
-	// live bodies and original chain unchanged after export
+	if !verifyChain(s.cases[exportLoop].last.Chain) || au["chain_verified"] != true {
+		t.Fatal("original chain no longer verifies or flag lost")
+	}
+	// 4. live source bodies unchanged
 	if after := string(canon(s.cases[exportLoop].last.Chain)); after != origChain {
 		t.Fatal("export mutated the live chain")
+	}
+	if jsonOf(s.queue[exportLoop]) != origQueue {
+		t.Fatal("export mutated the review queue")
 	}
 	_, live2 := fetchBody(t, h, "GET", "/api/cases/"+exportLoop)
 	_, liveAud2 := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
 	if string(live) != string(live2) || string(liveAud) != string(liveAud2) {
 		t.Fatal("live detail/audit changed after export")
 	}
-	if !verifyChain(s.cases[exportLoop].last.Chain) {
-		t.Fatal("original chain no longer verifies")
+}
+
+// One- and two-word clinical phrases under unknown keys cannot leak from evidence, timeline or citations.
+func TestExportAllowlistDropsShortPhrases(t *testing.T) {
+	s, _ := exportRun(t)
+	c := s.cases[exportLoop]
+	ev := map[string]interface{}{"label": "adequate", "report": "exp-prov/DiagnosticReport/r1", "finding": "polyp", "dx": "sessile adenoma",
+		"reader_b_fields": map[string]interface{}{"caecum": "reached", "prep": "poor", "label": "inadequate", "dx": "tubular adenoma"}}
+	ch := appendBlock(c.last.Chain, "evidence", ev)
+	c.last.Chain = ch
+	c.decisions[0].Chain = ch
+	s.facts[exportLoop] = []map[string]interface{}{{"seq": uint64(2), "type": "Observation", "id": "p/Observation/1", "display": "melaena", "code_text": "adenoma", "value": "positive"}}
+	s.agentInv[exportLoop] = []agentInvestigation{{view: map[string]interface{}{"item": "it1", "citations": []interface{}{
+		map[string]interface{}{"tool": "get_record", "arg": "p|1", "field": "dob", "value": "1976-01-01", "result": "sessile adenoma"},
+		map[string]interface{}{"tool": "get_report", "arg": "r1", "field": "dx", "value": "tubular adenoma", "snip": "malignancy"}}}}}
+	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
+	body := string(raw)
+	for _, banned := range []string{"polyp", "adenoma", "melaena", "malignancy", "reached", `"poor"`, "positive", `"dx":`, "display", "code_text"} {
+		if strings.Contains(body, banned) {
+			t.Errorf("export leaked %q", banned)
+		}
+	}
+	norm := strings.ReplaceAll(body, ": ", ":")
+	for _, keep := range []string{`"label":"adequate"`, `"label":"inadequate"`, `"tool":"get_record"`, `"tool":"get_report"`, `"field":"dob"`, `"id":"p/Observation/1"`, `"1976-01-01"`} {
+		if !strings.Contains(norm, keep) {
+			t.Errorf("export lost %s", keep)
+		}
+	}
+	if n := strings.Count(norm, `"tool":`); n != 2 {
+		t.Errorf("citations should be retained (2), got %d", n)
+	}
+}
+
+// Operational hint/reason/why fields and look-alike keys survive when they carry no clinical text; clinical text under
+// the same keys is dropped.
+func TestExportKeepsSafeMetadata(t *testing.T) {
+	s, _ := exportRun(t)
+	c := s.cases[exportLoop]
+	ev := map[string]interface{}{"label": "adequate", "report": "exp-prov/DiagnosticReport/r1", "image_reader": map[string]interface{}{"model": "img-1", "prep": "inadequate", "hint": "image_prep_conflict"}}
+	ch := appendBlock(c.last.Chain, "evidence", ev)
+	c.last.Chain = ch
+	c.decisions[0].Chain = ch
+	s.queue[exportLoop] = []*ReviewItem{{ItemID: "it1", LoopID: exportLoop, Verdict: "same", Reason: "second_identifier"},
+		{ItemID: "it2", LoopID: exportLoop, Verdict: "same", Reason: "poor prep"}}
+	s.signoffs[exportLoop] = []map[string]interface{}{{"item": "it1", "reviewer": "r1", "raw_id": "abc123", "quoted_by": "r2", "raw_sha": "deadbeef", "hint": "prep_grade_one_click", "why": "consent_unknown"}}
+	s.booking = map[string]interface{}{"cases": map[string]interface{}{exportLoop + "x": map[string]interface{}{}}}
+	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
+	norm := strings.ReplaceAll(string(raw), ": ", ":")
+	for _, keep := range []string{`"hint":"image_prep_conflict"`, `"hint":"prep_grade_one_click"`, `"reason":"second_identifier"`, `"why":"consent_unknown"`,
+		`"raw_id":"abc123"`, `"quoted_by":"r2"`, `"raw_sha":"deadbeef"`, "case does not need a colonoscopy slot at the end of the run"} {
+		if !strings.Contains(norm, keep) {
+			t.Errorf("export dropped safe metadata %s", keep)
+		}
+	}
+	if strings.Contains(norm, "poor prep") {
+		t.Error("clinical text under reason leaked")
+	}
+}
+
+// Integers beyond 2^53 and large or small floats keep their literal text, and the hash verifies only with a
+// number-preserving parse.
+func TestExportLargeNumberCanonicalisation(t *testing.T) {
+	s, _ := exportRun(t)
+	s.facts[exportLoop] = []map[string]interface{}{{"seq": uint64(9007199254740993), "type": "Observation", "id": "p/Observation/1", "day": 1e21, "arrival_day": 1.5e-7}}
+	h := exportRoutes(s)
+	_, raw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+	for _, lit := range []string{"9007199254740993", "1e+21", "1.5e-7"} {
+		if !strings.Contains(string(raw), lit) {
+			t.Errorf("literal %s not served", lit)
+		}
+	}
+	dec := json.NewDecoder(strings.NewReader(string(raw)))
+	dec.UseNumber()
+	var m map[string]interface{}
+	if err := dec.Decode(&m); err != nil {
+		t.Fatal(err)
+	}
+	claimed := m["content_sha256"].(string)
+	delete(m, "content_sha256")
+	if sha(canon(m)) != claimed {
+		t.Fatal("hash does not verify with a number-preserving parse")
+	}
+	var lossy map[string]interface{}
+	json.Unmarshal(raw, &lossy)
+	delete(lossy, "content_sha256")
+	if sha(canon(lossy)) == claimed {
+		t.Fatal("a float64 parse unexpectedly reproduces the hash; the documented caveat would be unnecessary")
 	}
 }
 
