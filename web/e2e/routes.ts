@@ -27,6 +27,7 @@ export const ROUTES = [
   "/patient/notice",
   "/patient/check",
   "/patient/book",
+  "/app/agent-review",
 ] as const;
 
 export function screenName(route: string): string {
