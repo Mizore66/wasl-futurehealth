@@ -190,6 +190,7 @@ class Round1Findings(Fixture):
     # finding 5
     def test_zero_124_without_agreed_but_wrong(self):
         self.mutate("docs/BRIEF.md", "0/124 agreed-but-wrong answers", "0/124 errors")
+        self.mutate("docs/BRIEF.md", "current agreed-but-wrong counts", "current counts")
         self.assertIn("ldct-ifhas-caveat", self.rules())
 
     def test_zero_124_without_nonblind_in_file(self):

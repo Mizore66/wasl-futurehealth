@@ -170,7 +170,8 @@ class ComposedFix1(Base):
         self.assertFalse(os.path.exists(self.recs))
 
     def test_signal_handlers_are_installed_before_the_heavy_imports(self):
-        src = open(w.__file__.replace(".pyc", ".py")).read()
+        with open(w.__file__.replace(".pyc", ".py")) as fh:
+            src = fh.read()
         self.assertLess(src.index("signal.signal(signal.SIGTERM"), src.index("import agent_evidence"))
 
 
