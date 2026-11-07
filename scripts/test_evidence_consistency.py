@@ -53,6 +53,10 @@ class Mutations(Fixture):
         p.write_text(p.read_text(encoding="utf-8") + "\nWasl is within one percentage point of truth.\n", encoding="utf-8")
         self.assertIn("kpi-evidence", self.rules())
 
+    def test_seed_2026_gap_missing_flagged(self):
+        self.mutate("docs/DEMO-RECORDING-GUIDE.md", "Wasl measures 31.9%, 1.1 points from truth.", "Wasl measures 31.9%.")
+        self.assertIn("kpi-evidence", self.rules())
+
     def test_demo_caveat_required(self):
         self.mutate("docs/DEMO-RECORDING-GUIDE.md", "3.1 under v2", "3 under v2")
         self.assertIn("kpi-evidence", self.rules())
