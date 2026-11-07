@@ -1,0 +1,67 @@
+{
+ "fixtures": {
+  "agent_review": {
+   "closed": true,
+   "closed_day": 57.7084,
+   "consent": "granted",
+   "deadline_day": 31,
+   "decisions": 11,
+   "dropoff": "",
+   "fixture": "agent_review",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-113",
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "priority": "",
+   "programme": "crc",
+   "provider": "ahs-mushrif",
+   "referral_day": 31.9923,
+   "review": "signed",
+   "state": "closed"
+  },
+  "evidence_closure": {
+   "closed": true,
+   "closed_day": 43.1304,
+   "consent": "granted",
+   "deadline_day": 31,
+   "decisions": 8,
+   "dropoff": "",
+   "fixture": "evidence_closure",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-100",
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-2",
+   "priority": "",
+   "programme": "crc",
+   "provider": "ahs-mushrif",
+   "referral_day": 15.9028,
+   "review": "signed",
+   "state": "closed"
+  },
+  "false_closure_trap": {
+   "closed": false,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 31,
+   "decisions": 12,
+   "dropoff": "inadequate",
+   "fixture": "false_closure_trap",
+   "id": "ahs-mushrif/ServiceRequest/AHS-sr-102",
+   "overdue": false,
+   "owner": "Practitioner/ahs-mushrif-nurse-5",
+   "priority": "",
+   "programme": "crc",
+   "provider": "ahs-mushrif",
+   "referral_day": 95.0187,
+   "review": "none",
+   "state": "inadequate"
+  }
+ },
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-06T14:02:40Z",
+  "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+  "policy": "v7strict+cal=true+guard=true+tau=0.99+linkfloor=0.01+demoguard+models=pairfeat8+image=cached+agent",
+  "reader_model": "gemma-4-26b-a4b-it-self/cached",
+  "run": "main"
+ }
+}

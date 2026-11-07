@@ -322,7 +322,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
       id="signoffs"
       title="Human sign-offs"
       aside={<HonestyLabel kind="simulated">Simulated reviewers</HonestyLabel>}
-      note="Nothing closes on one signature."
+      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review."
     >
       {signoffs.length === 0 && appended.length === 0 ? (
         <Empty>No person signed anything on this case. Two readers agreed, so none was needed.</Empty>

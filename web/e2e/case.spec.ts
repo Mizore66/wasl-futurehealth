@@ -185,8 +185,8 @@ test.describe("review desk on a phone", () => {
     await expectNoOverflow(page, 390);
     await shot(page, "review-desk-390");
 
-    await page.getByRole("button", { name: "Close the case" }).click();
-    await expect(page.getByRole("status")).toContainText("Closed with two signatures");
+    await page.getByRole("button", { name: "Preview: Close the case" }).click();
+    await expect(page.getByRole("status")).toContainText("Would close the case");
     await expectNoOverflow(page, 390);
     expect(await smallTargets(page, 44)).toEqual([]);
     await shot(page, "review-closed-390");
@@ -217,10 +217,10 @@ test.describe("review desk on a phone", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(desk);
     await page.getByRole("radio", { name: "Same patient", exact: true }).click();
-    const q2 = page.getByRole("radiogroup", { name: /Bowel prep/ });
+    const q2 = page.getByRole("group", { name: /Bowel prep/ });
     await expect(q2).toBeVisible();
     // With reduced motion the motion library skips the transform, so no y offset is left behind.
-    await expect(q2).toHaveCSS("opacity", "1");
+    await expect(q2.locator("xpath=..")).toHaveCSS("opacity", "1");
   });
 
   test("a case that is not waiting shows its answers read-only", async ({ page }) => {
@@ -233,7 +233,7 @@ test.describe("review desk on a phone", () => {
 
 test("the review desk at desktop width keeps the answer beside the evidence", async ({ page }) => {
   await page.goto(href("review_hold").replace("/patients/", "/review/"));
-  const aside = await page.getByRole("complementary", { name: "Your signature" }).boundingBox();
+  const aside = await page.getByRole("complementary", { name: "Your answers" }).boundingBox();
   const bridge = await page.getByRole("region", { name: "Is this the same person?" }).boundingBox();
   expect(aside && bridge && aside.x).toBeGreaterThan(bridge!.x + bridge!.width - 1);
   await shot(page, "review-desk-1440");

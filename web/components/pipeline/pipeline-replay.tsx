@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { MarkShape, PlaybackControls } from "./controls";
 import { FEED_ROWS, flowView, replayTrack, type Chip, type FlowRow, type RowId } from "./flow";
 import { TechnicalDetail } from "./technical";
+import { stepAnnouncement } from "./health";
 import { PersonSheet, profileLink, useProfileParam } from "./person-sheet";
 import { usePlayback } from "./playback";
 import { profileOf, type RulesBySha } from "./profile";
@@ -47,13 +48,19 @@ const FEED_PITCH = 72;
 
 type Open = (caseId: string) => void;
 
-export function PipelineReplay({ heading, tamper, rules }: { heading: React.ReactNode; tamper: TamperDemo; rules: RulesBySha }) {
+export function PipelineReplay({ heading, tamper, rules, health }: { heading: React.ReactNode; tamper: TamperDemo; rules: RulesBySha; health?: React.ReactNode }) {
   const profile = useProfileParam();
   const play = usePlayback(track, TICK_MS, profile.id !== null);
   const shown = useMemo(() => (profile.id ? profileOf(replay, play.frame, profile.id, rules) : null), [profile.id, play.frame, rules]);
   const reduceMotion = !!useReducedMotion();
   const view = useMemo(() => flowView(replay, play.frame), [play.frame]);
   const [tampered, setTampered] = useState(false);
+  // Announced only when the user presses Step (issue #16). The counter re-mounts the text so an identical message is read again.
+  const [stepNote, setStepNote] = useState({ n: 0, text: "" });
+  const onStep = () => {
+    setStepNote(({ n }) => ({ n: n + 1, text: stepAnnouncement(flowView(replay, track.advance(play.frame))) }));
+    play.step();
+  };
   const { facts, totals } = replay;
   const stages = view.rows.filter((r) => !LANE[r.id] && r.id !== "ledger");
   const lanes = view.rows.filter((r) => LANE[r.id]);
@@ -66,12 +73,16 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
         <PlaybackControls
           paused={play.paused}
           onToggle={play.toggle}
-          onStep={play.step}
+          onStep={onStep}
           reduceMotion={play.reduceMotion}
           position={`Step ${view.step} of ${view.steps}`}
           speed={`One step a second. The recorded run handled ${facts.throughputEvS} events a second.`}
         />
       </header>
+
+      <div role="status" aria-live="polite" aria-atomic="true" data-testid="step-announcer" className="sr-only">
+        <span key={stepNote.n}>{stepNote.text}</span>
+      </div>
 
       <section aria-labelledby="flow-h" className="mt-8">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
@@ -165,7 +176,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
           </TechnicalDetail>
         </section>
 
-        <section aria-label="Run totals and server safety" className="min-w-0 border-t border-line pt-5">
+        <section aria-label="Run totals and the recorded failover result" className="min-w-0 border-t border-line pt-5">
           <div className="grid grid-cols-3 gap-4">
             <Total label="Decisions recorded" note={`of ${fmt(totals.outputs)} in the run`}>
               <span data-testid="total-decisions" data-value={view.decisions}>
@@ -187,7 +198,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
               Switching a server off during a run <HonestyLabel kind="designed" />
             </p>
             <p className="m-0 text-small text-muted" data-testid="server-result">
-              There is no switch on this screen because live failover is not built. What the recorded run shows: {facts.lost} of {fmt(totals.outputs)} decisions
+              There is no switch on this screen because live failover is not built. This is the result of the recorded run, not the state of any server now. It shows {facts.lost} of {fmt(totals.outputs)} decisions
               lost and {facts.duplicates} duplicated.
             </p>
           </div>
@@ -236,6 +247,7 @@ export function PipelineReplay({ heading, tamper, rules }: { heading: React.Reac
           </TechnicalDetail>
         </section>
       </div>
+      {health}
       <PersonSheet profile={shown} onClose={profile.close} />
     </>
   );

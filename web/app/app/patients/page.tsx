@@ -4,10 +4,12 @@ import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
 import { STANDARD_DAYS } from "@/components/worklist/days";
-import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, type CaseFilters } from "@/components/worklist/filters";
+import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
+import { Refine } from "@/components/patients/refine";
+import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
 import { closedInDays, DROPOFF_WORDS, PROGRAMME_NAMES, workItem } from "@/components/worklist/model";
 import { hasRecord, runClock } from "@/components/worklist/run-clock";
-import { getCases } from "@/lib/api/source";
+import { apiMode, getCases } from "@/lib/api/source";
 import type { CaseSummary } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
@@ -28,6 +30,10 @@ const QUICK: { label: string; f: CaseFilters }[] = [
 function describe(f: CaseFilters): string {
   const parts = [
     f.programme && PROGRAMME_NAMES[f.programme].toLowerCase(),
+    f.provider && `provider ${facetValueLabel("provider", f.provider)}`,
+    f.consent && `consent ${facetValueLabel("consent", f.consent).toLowerCase()}`,
+    f.review && facetValueLabel("review", f.review).toLowerCase(),
+    f.owner && (f.owner === UNOWNED ? "no owner" : `owner ${facetValueLabel("owner", f.owner)}`),
     f.state && plain(f.state).toLowerCase(),
     f.dropoff && DROPOFF_WORDS[f.dropoff].status.toLowerCase(),
     f.overdue === true && "overdue",
@@ -39,8 +45,19 @@ function describe(f: CaseFilters): string {
 
 const same = (a: CaseFilters, b: CaseFilters) => filtersHref("", a) === filtersHref("", b);
 
-/** Chips change the view but keep the programme. */
-const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({ ...f, programme: keep.programme, q: keep.q });
+/** The quick chips own state, dropoff and overdue. */
+const quickOnly = (f: CaseFilters): CaseFilters => ({ state: f.state, dropoff: f.dropoff, overdue: f.overdue });
+
+/** Chips change the view but keep every other filter: the refine selects and the search. */
+const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
+  ...f,
+  programme: keep.programme,
+  provider: keep.provider,
+  consent: keep.consent,
+  review: keep.review,
+  owner: keep.owner,
+  q: keep.q,
+});
 
 /** Days from referral to the programme's deadline: 31 for CRC, the rule's own deadline for the other programmes. */
 const dueIn = (c: CaseSummary) => c.deadline_day || STANDARD_DAYS;
@@ -55,7 +72,16 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
   const sp = await searchParams;
   const filters = parseCaseFilters(sp);
   const page = parsePage(sp);
-  const [list, now] = await Promise.all([getCases({ ...filters, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }), runClock()]);
+  // The unfiltered set (up to the API's 500 a page) gives the choices and their counts; the list itself is one filtered page.
+  const [list, everything, now] = await Promise.all([
+    getCases({ ...toCaseQuery(filters), limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE }),
+    getCases({ limit: 500 }),
+    runClock(),
+  ]);
+  const choices = buildFacets(everything.cases, filters);
+  const inView = programmesInView(everything.cases, filters);
+  const partial = everything.total > everything.cases.length;
+  const sample = apiMode() === "fixtures";
   const pages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
   if (page > pages) redirect(filtersHref("/app/patients", filters, pages));
   const rows = list.cases.map((c) => ({ c, it: workItem(c, now, hasRecord(c)) }));
@@ -71,6 +97,18 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
           <p className="m-0 mt-1 text-muted" data-testid="showing">
             {list.total} {list.total === 1 ? "case" : "cases"}: {describe(filters)}
           </p>
+          <p className="m-0 mt-1 text-muted" data-testid="programmes-in-view">
+            {inView.length === 0
+              ? "No programme in view."
+              : `${inView.length === 1 ? "Programme" : "Programmes"} in view: ${inView.map((p) => `${p.name} (${p.count})`).join(", ")}.`}
+          </p>
+          <p className="m-0 mt-1 text-muted" data-testid="count-basis">
+            {sample
+              ? `Counts are over the published sample of ${everything.total} cases (simulated), not the whole run.`
+              : partial
+                ? `Filter counts cover the first ${everything.cases.length} of ${everything.total} cases.`
+                : `Filter counts cover all ${everything.total} cases in this run.`}
+          </p>
           {rows.some((r) => !r.it.hasRecord) && <p className="m-0 mt-1 text-muted">In this demo only some cases have a full record. Those open when you tap them.</p>}
         </div>
         <div className="flex flex-col gap-1.5 sm:items-end">
@@ -85,7 +123,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
         <div className="flex flex-wrap items-center gap-gap border-b border-line px-4 py-3">
           <nav aria-label="Filters" className="flex flex-wrap gap-2">
             {QUICK.map(({ label, f }) => {
-              const on = same(f, { ...filters, programme: undefined, q: undefined });
+              const on = same(f, quickOnly(filters));
               return (
                 <Link
                   key={label}
@@ -97,14 +135,13 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                 </Link>
               );
             })}
-            {filters.programme && (
-              <Link href={filtersHref("/app/patients", { ...filters, programme: undefined })} className={cn(chip, "border-control text-ink hover:bg-ground")}>
-                {PROGRAMME_NAMES[filters.programme]} · show all programmes
-              </Link>
-            )}
           </nav>
           <form action="/app/patients" className="flex w-full items-center gap-2 md:ml-auto md:w-auto">
             {filters.programme && <input type="hidden" name="programme" value={filters.programme} />}
+            {filters.provider && <input type="hidden" name="provider" value={filters.provider} />}
+            {filters.consent && <input type="hidden" name="consent" value={filters.consent} />}
+            {filters.review && <input type="hidden" name="review" value={filters.review} />}
+            {filters.owner && <input type="hidden" name="owner" value={filters.owner} />}
             {filters.state && <input type="hidden" name="state" value={filters.state} />}
             {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
             {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
@@ -115,6 +152,8 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             <button className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">Search</button>
           </form>
         </div>
+
+        <Refine facets={choices} filters={filters} />
 
         <table className="w-full border-collapse text-left max-md:block">
           <thead className="max-md:sr-only">
@@ -136,12 +175,12 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                         href={caseHref("/app/patients", c.id)}
                         className="flex min-h-11 items-center gap-2.5 font-medium no-underline after:absolute after:inset-0 after:content-['']"
                       >
-                        <Avatar person={it.seed} size={24} label="" />
+                        <Avatar person={it.seed} size={24} label="" settled />
                         {it.name}
                       </Link>
                     ) : (
                       <>
-                        <Avatar person={it.seed} size={24} label="" />
+                        <Avatar person={it.seed} size={24} label="" settled />
                         <span className="font-medium">{it.name}</span>
                       </>
                     )}
@@ -173,7 +212,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             ))}
           </tbody>
         </table>
-        {rows.length === 0 && <p className="m-0 px-4 py-6 text-muted">No cases match. Try another filter.</p>}
+        {rows.length === 0 && <p className="m-0 px-4 py-6 text-muted">No cases match{Object.keys(filters).length ? " these filters" : ""}. Try removing one.</p>}
 
         <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-gap border-t border-line px-4 py-3">
           <p className="m-0 text-muted" data-testid="range">

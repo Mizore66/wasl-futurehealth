@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { ROUTES } from "./routes";
 
 const meta = JSON.parse(
   readFileSync(path.join(process.cwd(), "data/api/dashboard.json"), "utf8"),
@@ -79,11 +80,12 @@ test.describe("sidebar (desktop)", () => {
       "Referrals",
       "Pipeline",
       "Results",
+      "Agent review",
     ]) {
-      await expect(nav.getByRole("link", { name })).toBeVisible();
+      await expect(nav.getByRole("link", { name, exact: name !== "Agent review" })).toBeVisible();
     }
 
-    await nav.getByRole("link", { name: "Review" }).focus();
+    await nav.getByRole("link", { name: "Review", exact: true }).focus();
     await page.keyboard.press("Tab");
     await expect(nav.getByRole("link", { name: "Patients" })).toBeFocused();
     await expect(
@@ -101,18 +103,6 @@ test.describe("sidebar (desktop)", () => {
         (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`,
       ),
     ).toEqual([]);
-  });
-
-  test("the skip link is the first tab stop and focuses main", async ({
-    page,
-  }) => {
-    await page.goto("/app");
-    await page.keyboard.press("Tab");
-    const skip = page.getByRole("link", { name: "Skip to content" });
-    await expect(skip).toBeFocused();
-    await expect(skip).toBeVisible();
-    await page.keyboard.press("Enter");
-    await expect(page.locator("main#main")).toBeFocused();
   });
 
   test("the metadata strip shows the run, data mode and source, and adds no h1", async ({
@@ -192,4 +182,79 @@ test.describe("mobile (390px)", () => {
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(390);
   });
+});
+
+// /patient/* is a separate surface (no shared layout), so the shortcut is checked on the site and the dashboard.
+const SHORTCUT_ROUTES = ROUTES.filter((r) => !r.startsWith("/patient"));
+for (const vp of [
+  { w: 1440, h: 900 },
+  { w: 390, h: 844 },
+]) {
+  test.describe(`skip link at ${vp.w}px`, () => {
+    test.use({ viewport: { width: vp.w, height: vp.h } });
+    for (const route of SHORTCUT_ROUTES) {
+      test(`${route}: first Tab is "Skip to main content", Enter focuses main#main, next Tab is inside it`, async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.goto(route);
+        await expect(page.locator("main#main")).toHaveCount(1);
+        await page.keyboard.press("Tab");
+        const skip = page.getByRole("link", { name: "Skip to main content" });
+        await expect(skip).toBeFocused();
+        await expect(skip).toBeVisible();
+        await page.keyboard.press("Enter");
+        await expect(page.locator("main#main")).toBeFocused();
+        await page.keyboard.press("Tab");
+        expect(await page.evaluate(() => document.querySelector("main#main")!.contains(document.activeElement) && document.activeElement !== document.querySelector("main#main"))).toBe(true);
+      });
+    }
+  });
+}
+
+test.describe("unknown URLs", () => {
+  for (const url of ["/nope", "/app/nope", "/app/nope/deeper"]) {
+    test(`${url} is a 404 with one h1 in main, recovery links and no serious axe issues`, async ({ page }) => {
+      const res = await page.goto(url);
+      expect(res?.status()).toBe(404);
+      await expect(page.locator("main#main")).toHaveCount(1);
+      await expect(page.locator("h1")).toHaveCount(1);
+      await expect(page.locator("main#main h1")).toHaveText("This page could not be found");
+      const main = page.locator("main#main");
+      const home = main.getByRole("link", { name: "Home", exact: true });
+      const dash = main.getByRole("link", { name: "Dashboard", exact: true });
+      await expect(home).toHaveAttribute("href", "/");
+      await expect(dash).toHaveAttribute("href", "/app");
+      // Both are plain links in the tab order, whichever comes first on the page.
+      const [first, second] = (await main.getByRole("link").all()).slice(-2);
+      await first.focus();
+      await page.keyboard.press("Tab");
+      await expect(second).toBeFocused();
+      const axe = await new AxeBuilder({ page }).analyze();
+      const serious = axe.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
+      expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+    });
+  }
+
+  test("/app/nope keeps the app shell", async ({ page }) => {
+    await page.goto("/app/nope");
+    await expect(page.locator("aside#app-sidebar")).toBeVisible();
+  });
+});
+
+test("the nav lists Agent review with a text Experimental marker, and the brand subtitle is not CRC-only", async ({ page }) => {
+  await page.goto("/app");
+  const link = sidebar(page).getByRole("link", { name: /Agent review/ });
+  await expect(link).toHaveAttribute("href", "/app/agent-review");
+  await expect(link).toContainText("Experimental");
+  await expect(sidebar(page)).toContainText("ADPHC · screening follow-up");
+  await expect(sidebar(page)).not.toContainText("CRC programme");
+});
+
+test("the run strip says Agent review is a separate run, and is unchanged elsewhere", async ({ page }) => {
+  await page.goto("/app/agent-review");
+  const strip = page.getByRole("region", { name: "Run metadata" });
+  await expect(strip).toHaveCount(1);
+  await expect(strip).toContainText("separate experimental run");
+  await expect(strip).not.toContainText(meta.run);
+  await page.goto("/app/pipeline");
+  await expect(page.getByRole("region", { name: "Run metadata" })).toContainText(meta.run);
 });

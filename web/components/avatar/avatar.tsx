@@ -182,7 +182,8 @@ export function AvatarFrame({
   label,
 }: {
   face?: ReactNode;
-  unknown: ReactNode;
+  /** Omit for an avatar whose state never changes from "known": the hidden layer would only add DOM. */
+  unknown?: ReactNode;
   state: AvatarState;
   size: number;
   radius?: string;
@@ -202,9 +203,11 @@ export function AvatarFrame({
           {face}
         </span>
       )}
-      <span className="wav-layer wav-unknown" style={{ borderRadius: radius, overflow: "hidden" }}>
-        {unknown}
-      </span>
+      {unknown && (
+        <span className="wav-layer wav-unknown" style={{ borderRadius: radius, overflow: "hidden" }}>
+          {unknown}
+        </span>
+      )}
     </span>
   );
 }
@@ -216,15 +219,17 @@ export interface AvatarProps {
   size?: number;
   /** Accessible name. Pass "" when a visible name sits beside the avatar and it is decoration. */
   label?: string;
+  /** The state is fixed. A known portrait then skips the hidden "?" layer, which halves long lists' markup and looks the same. */
+  settled?: boolean;
 }
 
 /** The patient avatar: a flat portrait drawn from a person key, or "?" while the record's link is not trusted. */
-export function Avatar({ person, state = person ? "known" : "unknown", size = 32, label }: AvatarProps) {
+export function Avatar({ person, state = person ? "known" : "unknown", size = 32, label, settled = false }: AvatarProps) {
   const unknown = state === "unknown" || !person;
   return (
     <AvatarFrame
       face={person && <PortraitSvg f={portrait(person)} />}
-      unknown={<UnknownSvg />}
+      unknown={settled && !unknown ? undefined : <UnknownSvg />}
       state={state}
       size={size}
       label={label ?? (unknown ? "Identity not yet confirmed" : "Patient")}
