@@ -809,11 +809,14 @@ func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
 			}
 			switch x := v.(type) {
 			case string:
-				if x == "" {
+				if strings.TrimSpace(x) == "" {
 					return nil, false
 				}
 				m[k] = v
 			case float64, bool:
+				if k != "value" {
+					return nil, false
+				}
 				m[k] = v
 			default:
 				return nil, false
@@ -858,8 +861,17 @@ func (s *apiServer) loadAgent() {
 	}
 	got := map[string][]agentInvestigation{}
 	for loop, sos := range s.signoffs {
-		seen := map[string]bool{} // a repeated consumed sign-off for one item keeps the first
+		seen := map[string]string{} // item -> semantic key of its first sign-off; an identical repeat dedupes, a different one fails closed
 		for _, so := range sos {
+			item := fmt.Sprint(so["item"])
+			key := fmt.Sprintf("%v|%v|%v|%v|%v|%v", so["loop"], so["link"], so["wrong"], so["reads"], so["role"], so["agent_read"])
+			if prev, dup := seen[item]; dup {
+				if prev != key {
+					return // a superseded or conflicting sign-off for one item: no projection at all
+				}
+				continue
+			}
+			seen[item] = key
 			label := fmt.Sprint(so["agent_read"])
 			reads, _ := so["reads"].([]interface{})
 			consumed := false
@@ -869,11 +881,6 @@ func (s *apiServer) loadAgent() {
 			if label == "" || label == "<nil>" || !consumed {
 				continue
 			}
-			item := fmt.Sprint(so["item"])
-			if seen[item] {
-				continue
-			}
-			seen[item] = true
 			rec, it := byItem[item], raised[item]
 			if rec == nil || it == nil || it.LoopID != loop || fmt.Sprint(so["loop"]) != loop || !isLinkQuestion(it) ||
 				pairKey(rec.Pair[0], rec.Pair[1]) != pairKey(it.Pair[0], it.Pair[1]) || rec.Label != label {

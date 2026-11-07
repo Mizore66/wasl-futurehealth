@@ -17,12 +17,29 @@ errs = []
 
 
 def vol_parts(v):
-    """(source, is_bind) for a compose volume entry in short ('src:dst[:mode]') or long ({type, source, target}) syntax."""
+    """(source, kind) for a compose volume entry in short ('src:dst[:mode]') or long ({type, source, target}) syntax.
+    kind: 'bind' (host path), 'anon' (no source, or a lone container path such as /var/lib/x) or 'named'."""
     if isinstance(v, dict):
         src = str(v.get("source") or "")
-        return src, v.get("type") == "bind" or src.startswith(("./", "/", "../", "~")) or "/" in src
-    src = str(v).split(":")[0]
-    return src, src.startswith(("./", "/", "../", "~")) or "/" in src  # a bare name is a named volume; a/b is a path
+        if v.get("type") == "bind":
+            return src, "bind"
+        if not src:
+            return src, "anon"
+        return src, "bind" if src.startswith(("./", "/", "../", "~")) or "/" in src or "$" in src else "named"
+    text = str(v)
+    m = re.match(r"\$\{[^}]*\}[^:]*", text)  # an env expression such as ${DATA:-./data} may itself contain ':'
+    src = m.group(0) if m else text.split(":")[0]
+    if not m and ":" not in text:
+        return src, "anon" if src.startswith("/") else "named"  # a lone '/var/lib/x' is an anonymous volume
+    if "$" in src or src.startswith(("./", "/", "../", "~")) or "/" in src:
+        return src, "bind"
+    return src, "named"  # a bare name is a named volume; a/b is a path
+
+
+def checkable_bind(src):
+    """A bind source the checker can verify on this machine: relative (./ ../ bare a/b) and ~ paths. Env expressions cannot be
+    resolved statically, and a missing absolute path may be a daemon-side location or anonymous volume, so both are skipped."""
+    return "$" not in src and not src.startswith("/")
 
 
 def err(m):
@@ -47,11 +64,11 @@ for name, s in svcs.items():
         if cond.get("condition") == "service_healthy" and "healthcheck" not in svcs.get(dep, {}):
             err("compose: %s waits for %s to be healthy but it has no healthcheck" % (name, dep))
     for v in s.get("volumes", []):
-        src, is_bind = vol_parts(v)
-        if is_bind:
-            if not os.path.exists(os.path.join(ROOT, os.path.expanduser(src))):  # join keeps absolute and ~ paths as is
+        src, kind = vol_parts(v)
+        if kind == "bind":
+            if checkable_bind(src) and not os.path.exists(os.path.join(ROOT, os.path.expanduser(src))):
                 err("compose: %s bind source %s missing" % (name, src))
-        elif src not in vols:
+        elif kind == "named" and src not in vols:
             err("compose: %s uses undeclared volume %s" % (name, src))
     env = s.get("environment") or {}
     if isinstance(env, list):
@@ -71,7 +88,7 @@ for n in ("nats-0", "nats-1", "nats-2"):
     if (b.get("context") if isinstance(b, dict) else b) != "./deploy/nats":
         err("compose: %s must build from ./deploy/nats" % n)
     for v in s.get("volumes", []):
-        if vol_parts(v)[1]:
+        if vol_parts(v)[1] == "bind":
             err("compose: %s bind-mounts host path %s (config must be COPY'd into wasl-nats:local)" % (n, v))
 ndf_path = os.path.join(ROOT, "deploy/nats/Dockerfile")
 if not os.path.exists(ndf_path):
