@@ -36,6 +36,7 @@ Lists are always `[]`, never `null`.
 | GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registrations), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
 | GET | `/api/cases/{id}/audit` | `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
+| POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note (below) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
@@ -233,6 +234,42 @@ Lists are always `[]`, never `null`.
 - 400 for a malformed body or missing actor.
 
 **Append-only:** every action is appended to `<run>/api_reviews.ndjson` as a hash-chained event (`prev` → `hash`). The run's decisions are never modified. Review history shows in `api_reviews` and in `/audit` → `history`.
+
+### POST actions (coordinator, demo mode)
+
+Workflow A coordinator actions. Overlay metadata only: they never change a decision, the `out_log`, a signature, consent or the canonical `owner`, and they never dispatch a message.
+
+**Headers:** `X-Wasl-Role: coordinator` (the only role holding the narrow `coordinate_case` permission) and `X-Wasl-Actor` (1 to 64 characters).
+
+**Body:** one JSON object, at most 8 KiB, no unknown or cross-action fields, no trailing data. `action` and `expected_head` are always required; `expected_head` is the case's current `api_overlay.head` (from `GET /api/cases/{id}` or the case summary).
+
+| `action` | Fields | Bounds |
+|---|---|---|
+| `assign_owner` | `owner` | 1 to 64 characters |
+| `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
+| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted`. Records what happened; it does not send anything |
+| `note` | `text` | 1 to 1000 characters, newlines allowed |
+
+Text must be valid UTF-8, without surrounding whitespace or control characters.
+
+**Response codes:**
+- 201 with `event` (the ledger event) and the updated `api_overlay`;
+- 400 for a bad body, field, bound or missing actor or `expected_head`;
+- 403 for any role without `coordinate_case`;
+- 404 for an unknown case;
+- 405 for a method other than POST on `/actions` (with `Allow: POST`);
+- 409 for a stale `expected_head` (`conflict: "head"`, with `current_head`) or a `contact_outcome` on a case whose consent is not granted (`conflict: "consent"`);
+- 500 when the ledger cannot be appended (nothing is recorded) or the ledger failed validation at start-up (all ledger writes are refused until it is repaired).
+
+**Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases never conflict. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
+
+**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
+
+**Ledger and restart:** coordinator events share `<run>/api_reviews.ndjson` and its hash chain with review events (`type: "coordinator_action"`, with `kind`, `data`, `head`, per-case `seq`). On start-up the whole ledger is replayed and validated: JSON, chain, hash, case, role permission, head and sequence continuity, action fields (the same validation as the write path), consent for contact outcomes, and a complete final line. The first failure stops the replay, sets `healthz` `dependencies.review_ledger` to `invalid`, and makes `/review` and `/actions` return 500. The read endpoints keep working. Nothing is repaired or skipped silently.
+
+**Fail-closed replay and re-materialised runs:** every coordinator event records the case head it followed. If the run is re-materialised so that a case's final decision (and so its head), its contact permission, or the case itself changes, the old events no longer fit: replay stops at the first such line, `review_ledger` becomes `invalid`, and all ledger writes (`/actions` and `/review`) return 500. Events before the failing line stay applied, so `api_overlay` can be partial; the case detail carries `review_ledger` (`status` ok or invalid, `detail`, `events_applied`) so a reader is never shown a partial overlay unannounced. Nothing is dropped or repaired automatically: an operator must archive or fix `api_reviews.ndjson` (or start a new run directory). A write whose outcome on disk is unknown (sync, truncate or close failed) also marks the ledger invalid until restart and replay; a clean write failure that was rolled back does not.
+
+**Input rules:** JSON objects with a repeated key are rejected (request bodies and ledger lines); owner, note, reason and actor text may not contain control characters or Unicode format (Cf) characters such as zero-width space, BOM, soft hyphen or bidi overrides/isolates/marks. The one exception is ZWNJ (U+200C) and ZWJ (U+200D) directly after an Arabic-script letter, which Persian, Urdu and Kurdish names need; a ledger `seq` must be an exact integer.
 
 ## The demo cases
 
