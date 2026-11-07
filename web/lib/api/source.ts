@@ -61,6 +61,8 @@ export type CaseQuery = Partial<{
   state: CaseSummary["state"];
   dropoff: CaseSummary["dropoff"];
   owner: string;
+  /** Cases with no owner. The API's `owner` filter cannot ask for an empty owner, so this is applied here. */
+  unowned: boolean;
   provider: string;
   consent: CaseSummary["consent"];
   review: CaseSummary["review"];
@@ -74,19 +76,20 @@ export type CaseQuery = Partial<{
 function toSearch(q: CaseQuery): string {
   const params = new URLSearchParams();
   for (const [k, v] of Object.entries(q)) {
-    if (v === undefined) continue;
+    if (v === undefined || k === "unowned") continue;
     params.set(k, k === "fixture" ? (v ? "1" : "") : String(v));
   }
   const s = params.toString();
   return s ? `?${s}` : "";
 }
 
-function matches(c: CaseSummary, q: CaseQuery): boolean {
+export function matches(c: CaseSummary, q: CaseQuery): boolean {
   return (
     (q.programme === undefined || c.programme === q.programme) &&
     (q.state === undefined || c.state === q.state) &&
     (q.dropoff === undefined || c.dropoff === q.dropoff) &&
     (q.owner === undefined || c.owner === q.owner) &&
+    (!q.unowned || c.owner === "") &&
     (q.provider === undefined || c.provider === q.provider) &&
     (q.consent === undefined || c.consent === q.consent) &&
     (q.review === undefined || c.review === q.review) &&
@@ -98,7 +101,21 @@ function matches(c: CaseSummary, q: CaseQuery): boolean {
 
 /** Fixtures mode filters each programme's 25-case sample page plus the fixtures; the live API filters all cases. */
 export async function getCases(query: CaseQuery = {}): Promise<CaseList> {
-  if (apiMode() === "live") return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
+  if (apiMode() === "live") {
+    if (!query.unowned) return (await live(CaseList, `/api/cases${toSearch(query)}`))!;
+    // The API cannot filter on an empty owner: fetch every other match (500 a page) and keep the unowned ones.
+    const { limit: want = 100, offset: skip = 0, ...rest } = query;
+    const cases: CaseSummary[] = [];
+    let first: CaseList | undefined;
+    for (let offset = 0; ; offset += 500) {
+      const page = (await live(CaseList, `/api/cases${toSearch({ ...rest, limit: 500, offset })}`))!;
+      first ??= page;
+      cases.push(...page.cases.filter((c) => c.owner === ""));
+      if (offset + page.cases.length >= page.total || page.cases.length === 0) break;
+    }
+    const limit = Math.min(want, 500);
+    return { ...first, cases: cases.slice(skip, skip + limit), total: cases.length, limit, offset: skip };
+  }
   const pageFiles = (await readdir(FIXTURE_DIR)).filter((f) => /^cases_[a-z_]+_page1\.json$/.test(f)).sort();
   const [pages, fx] = await Promise.all([Promise.all(pageFiles.map((f) => fixture(CaseList, f))), getFixtures()]);
   const page = pages.find((p) => p.cases[0]?.programme === "crc") ?? pages[0];
