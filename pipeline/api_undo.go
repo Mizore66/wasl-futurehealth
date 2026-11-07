@@ -121,8 +121,137 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 	return evs, nil
 }
 
+// validateReviewLedger checks the hash chain and then the undo/contest semantics of the whole ledger.
 func validateReviewLedger(path string) error {
-	_, err := readVerifiedLedger(path)
+	evs, err := readVerifiedLedger(path)
+	if err != nil {
+		return err
+	}
+	return validateLedgerSemantics(evs)
+}
+
+func caseOf(evs []map[string]interface{}, id string) []map[string]interface{} {
+	var out []map[string]interface{}
+	for _, e := range evs {
+		if e["case"] == id {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
+// contestRejectedFor reports whether a contest of target was already resolved as rejected.
+func contestRejectedFor(events []map[string]interface{}, status map[string]string, target string) bool {
+	for _, e := range events {
+		if evKind(e) == evKindContest && sstr(e, "target") == target && status[sstr(e, "hash")] == "rejected" {
+			return true
+		}
+	}
+	return false
+}
+
+// validateLedgerSemantics replays a chain-valid ledger and rejects impossible histories with the same rules the POST
+// handler enforces: unknown kinds, empty/unknown/cross-case targets, undo of non-reviews, self-undo, unauthorised
+// roles, resolution without an open contest, and a second contest after a rejected one.
+func validateLedgerSemantics(evs []map[string]interface{}) error {
+	byHash := map[string]map[string]interface{}{}
+	var prior []map[string]interface{}
+	for i, ev := range evs {
+		bad := func(msg string) error { return fmt.Errorf("review ledger event %d: %s", i+1, msg) }
+		kind := evKind(ev)
+		if kind != "review" {
+			if kind != evKindUndo && kind != evKindContest && kind != evKindResolution {
+				return bad("unknown event kind " + kind)
+			}
+			tgt := sstr(ev, "target")
+			if tgt == "" {
+				return bad("empty target")
+			}
+			t := byHash[tgt]
+			if t == nil || sstr(t, "case") != sstr(ev, "case") {
+				return bad("target is not an earlier event of the same case")
+			}
+			events := caseOf(prior, sstr(ev, "case"))
+			status, _ := foldUndo(events)
+			if sstr(ev, "action") != sstr(t, "action") {
+				return bad("action does not match the target's action")
+			}
+			if err := Authorize(sstr(ev, "role"), sstr(t, "action")); err != nil {
+				return bad("unauthorised role: " + err.Error())
+			}
+			a := normActor(sstr(ev, "actor"))
+			if a == "" {
+				return bad("empty actor")
+			}
+			if kind == evKindResolution {
+				if evKind(t) != evKindContest {
+					return bad("resolution without an existing contest")
+				}
+				if r := sstr(ev, "resolution"); r != "upheld" && r != "rejected" {
+					return bad("resolution must be upheld|rejected")
+				}
+				if status[tgt] != "open" {
+					return bad("contest already resolved")
+				}
+				if a == normActor(sstr(t, "actor")) || a == normActor(sstr(t, "target_actor")) {
+					return bad("resolver is the contester or the original reviewer")
+				}
+			} else {
+				if evKind(t) != "review" {
+					return bad("only a review event can be undone or contested")
+				}
+				if status[tgt] != undoActive {
+					return bad("target is already " + status[tgt])
+				}
+				if kind == evKindContest && contestRejectedFor(events, status, tgt) {
+					return bad("target already had a rejected contest")
+				}
+				if a == normActor(sstr(t, "actor")) {
+					return bad("actor equals the actor of the event being undone or contested")
+				}
+			}
+		}
+		byHash[sstr(ev, "hash")] = ev
+		prior = append(prior, ev)
+	}
+	return nil
+}
+
+// roleMayUndoAnything is the cheap pre-check done before any target lookup so that an unauthorised role learns nothing
+// about which hashes exist.
+func roleMayUndoAnything(role string) bool {
+	if !RBACEnforce {
+		return true
+	}
+	return rbac[role][ActSignLink] || rbac[role][ActSignEvidence] || rbac[role][ActRecordConsent]
+}
+
+// appendLedgerLine durably appends one full line (write fully, fsync, close). On any failure it truncates the file back
+// to its previous size so no torn line stays behind. It is a variable so tests can inject failures.
+var appendLedgerLine = func(path string, line []byte) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	st, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return err
+	}
+	size := st.Size()
+	n, err := f.Write(line)
+	if err == nil && n != len(line) {
+		err = fmt.Errorf("short write: %d of %d bytes", n, len(line))
+	}
+	if err == nil {
+		err = f.Sync()
+	}
+	if cerr := f.Close(); err == nil {
+		err = cerr
+	}
+	if err != nil {
+		os.Truncate(path, size) // best effort: never leave a torn line
+	}
 	return err
 }
 
@@ -236,6 +365,19 @@ func (s *apiServer) undoProjectionLocked(id string, events []map[string]interfac
 
 // ---------- POST handler ----------
 
+// sameLedger requires the verified on-disk ledger to equal the served one, hash for hash and in order.
+func sameLedger(disk, mem []map[string]interface{}) error {
+	if len(disk) != len(mem) {
+		return fmt.Errorf("review ledger on disk diverges from the served ledger (%d events on disk, %d served)", len(disk), len(mem))
+	}
+	for i := range disk {
+		if sstr(disk[i], "hash") != fmt.Sprint(mem[i]["hash"]) {
+			return fmt.Errorf("review ledger on disk diverges from the served ledger at event %d (truncated, replaced or appended externally)", i+1)
+		}
+	}
+	return nil
+}
+
 func normActor(a string) string { return strings.ToLower(strings.TrimSpace(a)) }
 
 func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase) {
@@ -262,14 +404,22 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		return
 	}
 
+	if !roleMayUndoAnything(role) { // before any target lookup: 404 vs 403 must not reveal which hashes exist
+		fail(403, "rbac: role may not undo or contest review events", "role", role)
+		return
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	// Verify the on-disk ledger on every write and require it to agree with what this process has served.
 	path := filepath.Join(s.run, "api_reviews.ndjson")
 	disk, err := readVerifiedLedger(path)
-	if err == nil && (len(disk) != len(s.reviews) || (len(disk) > 0 && sstr(disk[len(disk)-1], "hash") != fmt.Sprint(s.reviews[len(s.reviews)-1]["hash"]))) {
-		err = fmt.Errorf("review ledger on disk diverges from the served ledger (truncated, replaced or appended externally)")
+	if err == nil {
+		err = validateLedgerSemantics(disk)
+	}
+	if err == nil {
+		err = sameLedger(disk, s.reviews)
 	}
 	if err != nil {
 		fail(503, "review ledger failed integrity check; refusing to append", "detail", err.Error())
@@ -323,6 +473,10 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 			fail(409, "target is already "+st, "status", st)
 			return
 		}
+		if req.Contest && contestRejectedFor(events, status, req.Target) {
+			fail(409, "target was already contested and the contest was rejected; it cannot be contested again")
+			return
+		}
 	}
 
 	if err := Authorize(role, reviewAction); err != nil {
@@ -352,16 +506,13 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 	}
 	ev["hash"] = ledgerEventHash(ev)
 
-	line, _ := json.Marshal(ev)
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err == nil {
-		_, err = f.Write(append(line, '\n'))
-		if cerr := f.Close(); err == nil {
-			err = cerr
-		}
-	}
+	line, err := json.Marshal(ev)
 	if err != nil {
-		fail(500, "could not append to review ledger", "detail", err.Error())
+		fail(500, "could not encode review event", "detail", err.Error())
+		return
+	}
+	if err := appendLedgerLine(path, append(line, '\n')); err != nil {
+		fail(500, "could not durably append to review ledger; nothing was recorded", "detail", err.Error())
 		return
 	}
 	s.reviews = append(s.reviews, ev)
