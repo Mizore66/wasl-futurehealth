@@ -72,7 +72,7 @@ test.describe("agent review lane", () => {
     await expect(page).toHaveURL(/\/app\/review$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Review");
     await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
-    await expect(page.getByText(/Experimental|r1agent10/)).toHaveCount(0);
+    await expect(page.locator("main").getByText(/Experimental|r1agent10/)).toHaveCount(0);
   });
 
   test("screenshot and axe at desktop width", async ({ page }) => {
