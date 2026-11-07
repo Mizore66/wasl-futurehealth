@@ -3,6 +3,7 @@ import { Avatar } from "@/components/avatar/avatar";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
+import { apiMode } from "@/lib/api/source";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { caseHref } from "@/lib/domain/ids";
 
@@ -30,6 +31,12 @@ export default async function Page() {
             The sample run has no open review items: its simulated reviewers signed them all. This queue rebuilds one from the demo case{" "}
             <span className="font-medium">Held for human review</span>, using its {rows[0]?.detail.review_items.length ?? 0} review items as they stood before they were signed.
           </p>
+          {apiMode() === "live" && (
+            <p className="m-0 mt-2">
+              This screen is connected to the live API, which already shows that case as signed. Answers given here are still sent: each is
+              appended to the API&rsquo;s review ledger as a new sign-off. The run&rsquo;s recorded decisions and earlier sign-offs are not changed.
+            </p>
+          )}
           <details className="text-small">
             <summary className="inline-flex min-h-11 cursor-pointer items-center">Show the system name of that case</summary>
             <code className="font-mono">review_hold</code>
