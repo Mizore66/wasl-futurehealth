@@ -3,7 +3,9 @@ import { expect as baseExpect, test, type Page } from "@playwright/test";
 
 // Six dev servers share this machine during phase 2; first compiles of a route can be slow.
 const expect = baseExpect.configure({ timeout: 20_000 });
-test.describe.configure({ timeout: 120_000 });
+// A missing name or case must fail within seconds, not after the 2-minute test budget: actions (click, fill) get the same 20s as expect.
+test.describe.configure({ timeout: 60_000 });
+test.use({ actionTimeout: 20_000, navigationTimeout: 30_000 });
 
 const shot = (page: Page, name: string) => page.screenshot({ path: `test-results/screens/worklist-${name}.png`, fullPage: true });
 
@@ -13,19 +15,19 @@ async function noSeriousAxe(page: Page) {
   expect(serious.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
-const aisha = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1009$/;
-const fatima = `/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1037")}`;
+const aisha = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1011$/;
+const fatima = `/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1001")}`;
 
 test.describe("Today", () => {
   test("finds the most urgent patient and opens them", async ({ page }) => {
     await page.goto("/app/today");
-    await expect(page.getByTestId("finding")).toHaveText("AHS-sr-1004 is 82 days over 31: not booked. 11 more to call.");
-    await expect(page.getByRole("tab", { name: "To call 12" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("finding")).toHaveText("AHS-sr-1002 is 77 days over 31: notified, hasn't confirmed. 7 more to call.");
+    await expect(page.getByRole("tab", { name: "To call 8" })).toHaveAttribute("aria-selected", "true");
     await expect(page.getByRole("tab", { name: "Waiting 6" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "No owner 3" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "No owner 2" })).toBeVisible();
     const open = page.getByRole("region", { name: "Open patient" });
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1004");
-    await expect(open.getByTestId("lead-days")).toHaveAttribute("data-value", "113");
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
+    await expect(open.getByTestId("lead-days")).toHaveAttribute("data-value", "108");
     await expect(page.locator("[data-honesty=designed]")).toHaveText("Call log: designed, not built");
     await shot(page, "today");
     await noSeriousAxe(page);
@@ -36,10 +38,10 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "No answer" }).click();
     const status = open.getByRole("status");
-    await expect(status).toContainText("Logged: No answer · AHS-sr-1004 moved to the end · Undo");
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1004");
+    await expect(status).toContainText("Logged: No answer · AHS-sr-1002 moved to the end · Undo");
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
     await expect(open.getByText("Called, no answer")).toBeVisible();
-    await expect(page.getByRole("button", { name: /AHS-sr-1004/ }).first()).toContainText("No answer ×1 · retry tomorrow");
+    await expect(page.getByRole("button", { name: /AHS-sr-1002/ }).first()).toContainText("No answer ×1 · retry tomorrow");
     await shot(page, "today-logged");
 
     await status.getByRole("button", { name: "Undo" }).click();
@@ -48,15 +50,15 @@ test.describe("Today", () => {
     await expect(open.getByRole("group", { name: "After the call" })).toBeVisible();
 
     await open.getByRole("button", { name: "No answer" }).click();
-    await open.getByRole("button", { name: "Next patient: AHS-sr-1011" }).click();
-    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1011");
+    await open.getByRole("button", { name: "Next patient: AHS-sr-1023" }).click();
+    await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
   });
 
   test("Call, then Reached offers Book and Call back on…", async ({ page }) => {
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Call AHS-sr-1004" }).click();
-    await expect(open.getByRole("button", { name: "On the call · AHS-sr-1004" })).toBeVisible();
+    await open.getByRole("button", { name: "Call AHS-sr-1002" }).click();
+    await expect(open.getByRole("button", { name: "On the call · AHS-sr-1002" })).toBeVisible();
     await expect(open.getByRole("group", { name: "How did it go?" })).toBeVisible();
 
     await open.getByRole("button", { name: "Reached" }).click();
@@ -78,14 +80,14 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Reached" }).click();
     await open.getByRole("button", { name: "Book" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Booked · AHS-sr-1004 moved to Waiting");
-    await expect(page.getByRole("tab", { name: "To call 11" })).toBeVisible();
+    await expect(open.getByRole("status")).toContainText("Logged: Booked · AHS-sr-1002 moved to Waiting");
+    await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Waiting 7" })).toBeVisible();
 
-    await page.getByRole("tab", { name: "No owner 3" }).click();
+    await page.getByRole("tab", { name: "No owner 2" }).click();
     await open.getByRole("button", { name: "Take this patient" }).click();
-    await expect(page.getByRole("tab", { name: "To call 12" })).toBeVisible();
-    await expect(page.getByRole("tab", { name: "No owner 2" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "To call 8" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "No owner 1" })).toBeVisible();
   });
 
   test("search narrows the list; Waiting opens Aisha's record", async ({ page }) => {
@@ -96,15 +98,15 @@ test.describe("Today", () => {
     await page.getByRole("tab", { name: "Waiting 6" }).click();
     await page.getByRole("button", { name: /Aisha Al Mansoori/ }).click();
     await page.getByRole("link", { name: "Open record" }).click();
-    await expect(page).toHaveURL(/AHS-sr-1009$/);
+    await expect(page).toHaveURL(/AHS-sr-1011$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Aisha Al Mansoori");
   });
 
   test("avatars open the record where there is one; elsewhere they select the row", async ({ page }) => {
     await page.goto("/app/today");
     const list = page.getByRole("region", { name: "Your list" });
-    await expect(page.getByRole("link", { name: "Open AHS-sr-1011's record" })).toHaveCount(0);
-    const row = list.getByRole("button", { name: /AHS-sr-1011/ });
+    await expect(page.getByRole("link", { name: "Open AHS-sr-1003's record" })).toHaveCount(0);
+    const row = list.getByRole("button", { name: /AHS-sr-1003/ });
     await row.locator("..").click({ position: { x: 22, y: 24 } });
     await expect(row).toHaveAttribute("aria-pressed", "true");
 
@@ -121,8 +123,8 @@ test.describe("Today", () => {
 test.describe("Patients", () => {
   test("filters from the query string, as Programme's stall links send them", async ({ page }) => {
     await page.goto("/app/patients?dropoff=never_notified&overdue=true");
-    await expect(page.getByTestId("showing")).toHaveText("6 cases: never notified · overdue");
-    await expect(page.locator("tbody tr")).toHaveCount(6);
+    await expect(page.getByTestId("showing")).toHaveText("7 cases: never notified · overdue");
+    await expect(page.locator("tbody tr")).toHaveCount(7);
     await expect(page.locator("[data-honesty]").first()).toBeVisible();
     await shot(page, "patients-filtered");
     await noSeriousAxe(page);
@@ -135,17 +137,17 @@ test.describe("Patients", () => {
 
   test("search by case id leads to the record", async ({ page }) => {
     await page.goto("/app/patients");
-    await expect(page.getByTestId("showing")).toHaveText("128 cases: all cases");
+    await expect(page.getByTestId("showing")).toHaveText("177 cases: all cases");
     await shot(page, "patients");
-    await page.getByRole("searchbox", { name: "Search case id" }).fill("1037");
+    await page.getByRole("searchbox", { name: "Search case id" }).fill("1001");
     await page.getByRole("button", { name: "Search" }).click();
-    await expect(page).toHaveURL(/q=1037/);
+    await expect(page).toHaveURL(/q=1001/);
     await page.getByRole("link", { name: "Fatima Al Zaabi" }).click();
     await expect(page).toHaveURL(fatima);
   });
 
   test("the avatar is part of the record link", async ({ page }) => {
-    await page.goto("/app/patients?q=1037");
+    await page.goto("/app/patients?q=1001");
     await page.getByRole("link", { name: "Fatima Al Zaabi" }).locator(".wav-root").click();
     await expect(page).toHaveURL(fatima);
   });
@@ -161,7 +163,7 @@ test.describe("Patient record", () => {
     await expect(chain.getByRole("listitem").last()).toContainText("Closed · with evidence, dated to the colonoscopy");
     await expect(page.getByText("فاطمة الزعابي").first()).toBeVisible();
     await expect(page.getByText("Fatima Alzaabi")).toBeVisible();
-    await expect(page.getByText("“advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum”")).toBeVisible();
+    await expect(page.getByText("“the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve”")).toBeVisible();
     await expect(page.getByTestId("chain-verified")).toContainText("Verified · 3 of 3 intact");
     await expect(page.getByText("Message owner")).toHaveCount(0);
 
@@ -171,11 +173,11 @@ test.describe("Patient record", () => {
     await noSeriousAxe(page);
   });
 
-  test("Aisha: held, the scope stopped short and the histology is missing", async ({ page }) => {
-    await page.goto(`/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1009")}`);
+  test("Aisha: held, the caecum was reached but no prep grade is stated", async ({ page }) => {
+    await page.goto(`/app/patients/${encodeURIComponent("ahs-mushrif/ServiceRequest/AHS-sr-1011")}`);
     await expect(page.getByText("Safety gate: held").first()).toBeVisible();
-    await expect(page.getByText("“the procedure was aborted at the level of the hepatic flexure”")).toBeVisible();
-    await expect(page.getByRole("region", { name: "DoH closure checklist" }).getByRole("listitem")).toHaveText([/Caecum reached\s*No/, /Prep graded\s*Not stated/, /Histology, if tissue taken\s*Missing/]);
+    await expect(page.getByText("“until it reached the cecum”")).toBeVisible();
+    await expect(page.getByRole("region", { name: "DoH closure checklist" }).getByRole("listitem")).toHaveText([/Caecum reached\s*Yes/, /Prep graded\s*Not stated/, /Histology, if tissue taken\s*Not needed: no tissue taken/]);
     await shot(page, "record-aisha");
   });
 
@@ -195,22 +197,27 @@ test.describe("Patient record", () => {
 });
 
 test.describe("Referrals", () => {
-  test("opens on Needs you; flagged rows show Review, clean rows Accept", async ({ page }) => {
+  test("opens on Needs you with the one incomplete report, which shows Review, not Accept", async ({ page }) => {
     await page.goto("/app/referrals");
-    await expect(page.getByRole("tab", { name: "Needs you 5" })).toHaveAttribute("aria-selected", "true");
-    await expect(page.getByTestId("finding")).toHaveText("AHS-sr-1004 has waited 113 days, 106 past the unit's 7. AHS-sr-1018's report needs your review.");
-    await expect(page.getByRole("button", { name: "Review the referral for AHS-sr-1018" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Accept referral for AHS-sr-1018" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: "Accept referral for AHS-sr-1004" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Needs you 1" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("tab", { name: "All 17" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Accepted 16" })).toBeVisible();
+    await expect(page.getByTestId("finding")).toHaveText("Aisha Al Mansoori's report needs your review.");
+    await expect(page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" })).toBeVisible();
+    // No referral in the sample is waiting on the unit's answer, so no row offers Accept.
+    await expect(page.getByRole("button", { name: /^Accept referral/ })).toHaveCount(0);
     await expect(page.locator("[data-honesty=designed]")).toHaveText("Referral inbox: designed, not built");
     await shot(page, "referrals");
     await noSeriousAxe(page);
   });
 
-  test("inline Accept, Undo, conditions and Return", async ({ page }) => {
+  // FIXME(data): the run's published CRC sample (data/api/cases_crc_page1.json, 25 cases) holds no referral the unit has not answered
+  // (no referral_unanswered or not_booked drop-off), so the Accept / Accept with conditions / Return to GP controls are never shown.
+  // The controls are designed, not built; this test comes back when a sample carries such a referral.
+  test.fixme("inline Accept, Undo, conditions and Return", async ({ page }) => {
     await page.goto("/app/referrals");
     const pane = page.getByRole("region", { name: "Open referral" });
-    await page.getByRole("button", { name: "Accept referral for AHS-sr-1004" }).click();
+    await page.getByRole("button", { name: "Accept referral for AHS-sr-1002" }).click();
     await expect(pane.getByRole("status")).toContainText("Accepted. Your unit books her now.");
     await expect(page.getByRole("tab", { name: "Needs you 4" })).toBeVisible();
     await pane.getByRole("button", { name: "Undo" }).click();
@@ -244,7 +251,10 @@ test.describe("Referrals", () => {
 
   test("a referral's avatar opens the patient record", async ({ page }) => {
     await page.goto("/app/referrals");
-    await expect(page.getByRole("link", { name: "Open AHS-sr-1004's record" })).toHaveCount(0);
+    // A referral with no record shows a plain avatar: AHS-sr-1010 is booked, and only the three demo patients have a record.
+    await page.getByRole("tab", { name: "All 17" }).click();
+    await expect(page.getByRole("button", { name: /^AHS-sr-1010/ })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open AHS-sr-1010's record" })).toHaveCount(0);
     await page.getByRole("button", { name: "Review the referral for Aisha Al Mansoori" }).click();
     await expect(page.getByRole("region", { name: "Open referral" }).getByRole("link", { name: "Open Aisha Al Mansoori's record" })).toBeVisible();
     await shot(page, "referrals-avatar-links");
@@ -255,9 +265,9 @@ test.describe("Referrals", () => {
 
   test("search is wired to q", async ({ page }) => {
     await page.goto("/app/referrals");
-    await page.getByRole("searchbox", { name: "Search case id" }).fill("1009");
+    await page.getByRole("searchbox", { name: "Search case id" }).fill("1011");
     await page.getByRole("searchbox", { name: "Search case id" }).press("Enter");
-    await expect(page).toHaveURL(/\/app\/referrals\?q=1009$/);
+    await expect(page).toHaveURL(/\/app\/referrals\?q=1011$/);
     await expect(page.getByRole("tab", { name: "All 1" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Open referral" }).getByRole("heading", { level: 2 })).toHaveText("Aisha Al Mansoori");
   });
@@ -294,7 +304,7 @@ test.describe("Phone width, 390px", () => {
     await noSideScroll(page);
     await targetsAre44(page);
     await expect(page.locator("tbody tr")).toHaveCount(25);
-    await page.goto("/app/patients?q=1009");
+    await page.goto("/app/patients?q=1011");
     const card = page.locator("tbody tr").first();
     await expect(card).toContainText("Aisha Al Mansoori");
     await expect(card).toContainText("Referred");
@@ -313,7 +323,7 @@ test.describe("Phone width, 390px", () => {
   test("Today: Call is in the first screen; the list takes its turn", async ({ page }) => {
     await page.goto("/app/today");
     await noSideScroll(page);
-    const call = page.getByRole("button", { name: "Call AHS-sr-1004" });
+    const call = page.getByRole("button", { name: "Call AHS-sr-1002" });
     const box = (await call.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
     await targetsAre44(page);
@@ -328,14 +338,14 @@ test.describe("Phone width, 390px", () => {
     await shot(page, "today-list-390");
     await noSeriousAxe(page);
 
-    await page.getByRole("button", { name: /AHS-sr-1011/ }).click();
-    await expect(page.getByRole("heading", { level: 2, name: "AHS-sr-1011" })).toBeFocused();
-    await expect(page.getByRole("button", { name: "Call AHS-sr-1011" })).toBeVisible();
+    await page.getByRole("button", { name: /AHS-sr-1023/ }).click();
+    await expect(page.getByRole("heading", { level: 2, name: "AHS-sr-1023" })).toBeFocused();
+    await expect(page.getByRole("button", { name: "Call AHS-sr-1023" })).toBeVisible();
   });
 
   test("Today: after the call, the outcome buttons stay beside Call", async ({ page }) => {
     await page.goto("/app/today");
-    await page.getByRole("button", { name: "Call AHS-sr-1004" }).click();
+    await page.getByRole("button", { name: "Call AHS-sr-1002" }).click();
     await page.getByRole("button", { name: "Reached" }).click();
     await page.getByRole("button", { name: "Call back on…" }).click();
     await noSideScroll(page);
@@ -345,12 +355,12 @@ test.describe("Phone width, 390px", () => {
     await shot(page, "today-logged-390");
   });
 
-  test("Referrals: stacked, Accept near the top, 44px targets", async ({ page }) => {
+  test("Referrals: stacked, the grade controls near the top, 44px targets", async ({ page }) => {
     await page.goto("/app/referrals");
     await noSideScroll(page);
     await targetsAre44(page);
-    const accept = page.getByRole("region", { name: "Open referral" }).getByRole("button", { name: "Accept referral" });
-    const box = (await accept.boundingBox())!;
+    const grade = page.getByRole("region", { name: "Open referral" }).getByRole("group", { name: "Boston grade" });
+    const box = (await grade.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
     await shot(page, "referrals-390");
     await noSeriousAxe(page);
@@ -376,7 +386,7 @@ test.describe("Phone width, 390px", () => {
       [...main.querySelectorAll<HTMLElement>("*")].filter((el) => getComputedStyle(el).animationName !== "none" && parseFloat(getComputedStyle(el).animationDuration) > 0).length,
     );
     expect(moving).toBe(0);
-    await page.getByRole("button", { name: "Call AHS-sr-1004" }).focus();
+    await page.getByRole("button", { name: "Call AHS-sr-1002" }).focus();
     const outline = await page.evaluate(() => {
       const s = getComputedStyle(document.activeElement!);
       return { w: s.outlineWidth, style: s.outlineStyle };
@@ -388,12 +398,12 @@ test.describe("Phone width, 390px", () => {
 test.describe("Patients: paging and filters", () => {
   test("25 per page; Next and Previous keep the filters", async ({ page }) => {
     await page.goto("/app/patients");
-    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 128");
+    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 177");
     await expect(page.locator("tbody tr")).toHaveCount(25);
     await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
     await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 128");
+    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 177");
 
     await page.goto("/app/patients?programme=crc&page=2");
     await expect(page.getByTestId("showing")).toContainText("colorectal screening");
@@ -404,8 +414,8 @@ test.describe("Patients: paging and filters", () => {
 
   test("a page past the end lands on the last page", async ({ page }) => {
     await page.goto("/app/patients?page=99");
-    await expect(page).toHaveURL(/page=6$/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 126–128 of 128");
+    await expect(page).toHaveURL(/page=8$/);
+    await expect(page.getByTestId("range")).toHaveText("Showing 176–177 of 177");
   });
 
   test("programme filter is its own param and survives the chips", async ({ page }) => {

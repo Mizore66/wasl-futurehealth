@@ -385,12 +385,11 @@
   {
    "id": "showcase-13",
    "person": {
-    "key": "replay|9cacabd63c3efa65",
-    "sex": "male",
-    "name": "Mohamad Al Aryan",
-    "nameAr": "محمد العريان",
-    "reportName": "Mohamad Alaryan",
-    "source": "generated"
+    "key": "ahs-mushrif|AHS-MRN000943",
+    "name": "Fatima Al Zaabi",
+    "nameAr": "فاطمة الزعابي",
+    "reportName": "Fatima Alzaabi",
+    "source": "canonical-cast"
    },
    "source": "hl7",
    "read": {
@@ -472,12 +471,11 @@
   {
    "id": "showcase-16",
    "person": {
-    "key": "replay|b7d5dbf14539b212",
-    "sex": "male",
-    "name": "Aziz Al Buraiki",
-    "nameAr": "عزيز البريكي",
-    "reportName": "Aziz Alburaiki",
-    "source": "generated"
+    "key": "ahs-mushrif|AHS-MRN001006",
+    "name": "Mariam Al Shamsi",
+    "nameAr": "مريم الشامسي",
+    "reportName": "Mariam Al Shamsi",
+    "source": "canonical-cast"
    },
    "source": "hl7",
    "read": {

@@ -18,7 +18,7 @@ describe("dayToDate", () => {
 
   it("formats the evidence-closure fixture's closing day", () => {
     const c = load("evidence_closure");
-    expect(formatDay(c.case.closed_day)).toBe("22 Jun");
+    expect(formatDay(c.case.closed_day)).toBe("20 Jun");
   });
 });
 
