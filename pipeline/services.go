@@ -9,13 +9,15 @@ package main
 // output high-water mark; outputs at/above it are re-published with deterministic msg ids (JetStream dedupe).
 import (
 	"bufio"
-	"math"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,7 +30,40 @@ import (
 // machine: WASL_PORT_OFFSET=100 moves 14822 to 14922, and so on. Child processes inherit the variable.
 var PortOff = func() int { n, _ := strconv.Atoi(os.Getenv("WASL_PORT_OFFSET")); return n }()
 
-var NatsURL = fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+PortOff, 14823+PortOff, 14824+PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+var NatsURL = natsURL(os.Getenv("WASL_NATS_URL"), PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+
+// natsURL: the three local cluster nodes on the offset ports, unless WASL_NATS_URL names an external cluster
+// (deployment: a NATS JetStream cluster the orchestrator does not start, e.g. the docker-compose nats-0..2 services).
+func natsURL(env string, off int) string {
+	if env != "" {
+		return env
+	}
+	return fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+off, 14823+off, 14824+off)
+}
+
+// NatsExternal: WASL_NATS_EXTERNAL=1 with WASL_NATS_URL = the cluster is managed outside the orchestrator, which then
+// neither starts nor kills NATS nodes (the -natskill chaos cycle is skipped and reported as such).
+var NatsExternal = os.Getenv("WASL_NATS_EXTERNAL") == "1" && os.Getenv("WASL_NATS_URL") != ""
+
+// validateNatsConfig rejects a half-configured external cluster before a command opens data, models or services.
+func validateNatsConfig(rawURL, external string) error {
+	if rawURL != "" && external != "1" {
+		return errors.New("WASL_NATS_URL requires WASL_NATS_EXTERNAL=1")
+	}
+	if rawURL == "" && external == "1" {
+		return errors.New("WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL")
+	}
+	return nil
+}
+
+// natsFirstHostPort: host:port of the first NATS URL (the API health check dials it).
+func natsFirstHostPort() string {
+	u := strings.Split(NatsURL, ",")[0]
+	if i := strings.Index(u, "://"); i >= 0 {
+		u = u[i+3:]
+	}
+	return u
+}
 
 // retry runs f until it succeeds (broker leader elections make control-plane calls fail transiently).
 func retry(what string, f func() error) {
@@ -122,8 +157,35 @@ func setupStreams(replicas, P int) {
 	nc, js := connect("setup")
 	defer nc.Close()
 	ctx := context.Background()
+	// A cohort is a fresh run, not a service restart. In particular, external NATS volumes survive the run directory:
+	// retaining SEEN would suppress regenerated ids, while FHIRSUB/FHIRPOLL could resume beyond or at EOF of new input.
+	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL"} {
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteKeyValue(ctx, bucket)
+			if err == nil || errors.Is(err, jetstream.ErrBucketNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset KV bucket %s: %v", bucket, err))
+		}
+	}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
-		js.DeleteStream(ctx, s)
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteStream(ctx, s)
+			if err == nil || errors.Is(err, jetstream.ErrStreamNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset stream %s: %v", s, err))
+		}
 	}
 	subj := map[string][]string{"FHIR": {"fhir.>"}, "PREP": {"prep"}, "FACTS": {"facts.>"}, "OUT": {"out.>"}}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
@@ -285,7 +347,11 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colposcopy" {
 				kind = "colonoscopy" // procedure-report slot; Judge6 routes on the presence of a coded conclusion
 			}
-			if kind == "ifhas-screen" {
+			if kind == "ldct-screen" && ev.Coded != "" {
+				ev.Ev = LDCTCodedJudge(ev.Text, ev.Coded) // ldctread.go: coded Lung-RADS = second reader, must equal regex
+			} else if kind == "ldct-screen" || kind == "ldct-workup" {
+				ev.Ev = LDCTJudge(ev.Text, kind) // ldctread.go: regex + cached Gemma 3 4B
+			} else if kind == "ifhas-screen" {
 				ev.Ev = IfhasScreenJudge(ev.Text, ev.Coded) // ifhasread.go: printed panel = coded results
 			} else if kind == "ifhas-followup" {
 				ev.Ev = IfhasNoteJudge(ev.Text) // ifhasread.go: regex + cached Gemma 3 4B

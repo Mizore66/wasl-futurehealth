@@ -27,7 +27,9 @@ LUNG = [p for p in ['rad-imaging', 'mafraq-rad'] if os.path.exists(f'{BASE_COHOR
 DR = [p for p in ['phc-retina', 'eye-hosp'] if os.path.exists(f'{BASE_COHORT}/fhir_{p}.ndjson')]
 # breast recall feeds (wsi7 gen -breast N): the same, copied unchanged before the breast consent block below
 BREAST = [p for p in ['bsu-screen', 'bau-hosp'] if os.path.exists(f'{BASE_COHORT}/fhir_{p}.ndjson')]
-for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh'] + LUNG + DR + BREAST:
+# lung cancer screening (LDCT) feeds (wsi7 gen -ldct N): the same, copied unchanged before the LDCT consent block below
+LDCT = [p for p in ['lcs-centre', 'thx-hosp'] if os.path.exists(f'{BASE_COHORT}/fhir_{p}.ndjson')]
+for prov in ['ahs-mushrif', 'medlab', 'skmc-endo', 'noor-endo', 'corniche-wh'] + LUNG + DR + BREAST + LDCT:
     rows = [json.loads(l) for l in open(f'{BASE_COHORT}/fhir_{prov}.ndjson')]
     feeds[prov] = rows
     for g in rows:
@@ -98,8 +100,7 @@ for i, (prov, mrn) in enumerate(forged_targets):
     forged.append({"type": "consent_deny", "role": role, "loops": by_pk[(prov, mrn)]})
 ev_inad = [q for q in queue if q['kinds'] == ['evidence'] and truth['reports'].get(q['report']) == 'inadequate'
            and truth['loops'][q['loop']]['state'] != 'closed']
-queue = [q for q in queue if truth['loops'][q['loop']].get('prog') not in ('lung_nodule', 'diabetic_retinopathy', 'breast')]  # forgeries target screening loops only
-queue = [q for q in queue if truth['loops'][q['loop']].get('prog') != 'ifhas']  # IFHAS loops too
+queue = [q for q in queue if truth['loops'][q['loop']].get('prog') not in ('lung_nodule', 'diabetic_retinopathy', 'breast', 'lung_ldct', 'ifhas')]  # forgeries target screening loops only
 link_diff = [q for q in queue if q['kinds'] == ['link'] and truth['pk_qid'].get(q['pair'][0]) != truth['pk_qid'].get(q['pair'][1])]
 r.shuffle(ev_inad)
 picks = [(q, 'evidence', 'reviewer') for q in ev_inad[:6]] + [(q, 'link', 'coordinator') for q in link_diff[:6]]
@@ -184,6 +185,28 @@ if 'bsu-screen' in feeds:
         cid = f'breast-consent-{res["id"]}'
         add['bsu-screen'].append({"arrival": day, "prov": 'bsu-screen', "msgid": f"bsu-screen/Consent/{cid}/v1",
                                   "res": consent('bsu-screen', mrn, pt, day, 'coordinator', kind, cid)})
+        if kind == 'deny':
+            consent_truth[loop] = True
+        consent_detail[loop] = {"first": kind, "final": kind, "first_day": round(day, 4)}
+# LDCT patients (only when the LDCT feeds exist): the lung cancer screening centre records the contact permission, as
+# the screening referrers do (every person has a record, 4% deny; the screening rate, no LDCT-specific figure). Own RNG
+# (seed 1010), drawn after every other addition, so the screening, lung, DR and breast feeds are unchanged.
+if 'lcs-centre' in feeds:
+    r5 = random.Random(1010)
+    for g in feeds['lcs-centre']:
+        res = g['res']
+        if res['resourceType'] != 'ServiceRequest':
+            continue
+        loop = f"lcs-centre/ServiceRequest/{res['id']}"
+        if loop not in truth['loops']:
+            continue
+        pt = res['contained'][0]
+        mrn = [i['value'] for i in pt['identifier'] if i['system'].endswith(':mrn')][0]
+        kind = 'deny' if r5.random() < 0.04 else 'permit'
+        day = g['arrival'] + r5.uniform(0.01, 0.5)
+        cid = f'ldct-consent-{res["id"]}'
+        add['lcs-centre'].append({"arrival": day, "prov": 'lcs-centre', "msgid": f"lcs-centre/Consent/{cid}/v1",
+                                  "res": consent('lcs-centre', mrn, pt, day, 'coordinator', kind, cid)})
         if kind == 'deny':
             consent_truth[loop] = True
         consent_detail[loop] = {"first": kind, "final": kind, "first_day": round(day, 4)}

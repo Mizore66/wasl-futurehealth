@@ -60,6 +60,8 @@ type LinkerCore struct {
 	provLast     map[string]float64
 	provDone     map[string]bool
 	lastTick     int
+	streamT      float64 // HistClock: latest input arrival day seen
+	streamSeen   bool
 	PSeq         []uint64
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
 	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
@@ -71,6 +73,19 @@ type LinkerCore struct {
 }
 
 var annMode = new(string)
+
+// HistClock (flag -histclock, default off): judge look-back history at its own arrival time. The event-time clock
+// below only ticks from day 0 (lastTick starts at -1 and a provider's latest arrival starts at 0), so the closure clock
+// stands at day 0 from the first message on. Lung, DR and breast cohorts carry history from before day 0 (index CTs
+// from day -420), and with the clock at day 0 a loop is judged due or overdue as soon as its index report arrives,
+// months before it was due and before the coordinator's consent record that follows it: the time-based outreach
+// is raised early, held for consent, released once the consent arrives, and often made moot by follow-up history
+// that arrives later (results/showcase at cfcf50f: 233 of its 317 consent holds; final states are unchanged).
+// On: every facts message carries the arrival day of the input that produced it (a sign-off: the latest arrival
+// seen), and the closure judges the loop at that day only for pre-day-0 arrivals earlier than its clock. Live-day
+// arrivals always use the current clock, so a late event or a sign-off stamped at an earlier stream day cannot rewind
+// a decision. Ticks are unchanged: a loop still due at go-live is raised at the next tick.
+var HistClock = false
 var annCB = new(string)
 
 // attachANN: v6 replay-safe ANN blocking (exact remains the default so v5 runs are unchanged).
@@ -724,7 +739,8 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
 			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
-				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast"}[e.Category]
+				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast",
+				"ldct-screen": "lung_ldct", "ldct-workup": "lung_ldct"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
 			}
@@ -841,6 +857,10 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		f.Breast = base.Breast
 		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
 	}
+	if base.LDCT != nil {
+		f.LDCT = base.LDCT
+		f.Down = append(f.Down, ldctScanFacts(L.recs[s])...) // LDCT reports (index, completion, follow-up) on the scan's own registration
+	}
 	if base.Prog == "ifhas" {
 		f.Down = append(f.Down, ifhasScreenFacts(L.recs[s])...) // IFHAS results on the visit's own registration (ifhas.go)
 	}
@@ -930,7 +950,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			// message held and is escalated to identity review; neither changes the clusters
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
-			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose == "second_identifier" {
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && SecondIDContradictionConfirm && so.Purpose == "second_identifier" {
 				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
 					// the records contradict: the confirmation counts only after a confirming review (closure raises IDConfirm)
 					sc := *so
@@ -1000,6 +1020,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		e := p.Ev
 		if p.Tick > L.provLast[e.Provider] {
 			L.provLast[e.Provider] = p.Tick
+		}
+		if !L.streamSeen || p.Tick > L.streamT {
+			L.streamT, L.streamSeen = p.Tick, true
 		}
 		if e.RType == "Task" {
 			loop := e.Provider + "/" + strings.Replace(e.Focus, "ServiceRequest/", "ServiceRequest/", 1)
@@ -1103,7 +1126,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}
@@ -1139,6 +1162,13 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		L.lastHash[lp] = h
 		f.InSeq = p.Seq
 		out = append(out, FactsMsg{ID: lp + "@" + utoa(p.Seq), InSeq: p.Seq, Facts: f, OriginTs: p.OriginTs, Part: partOf(lp, L.P)})
+		if HistClock && L.streamSeen {
+			t := L.streamT // a sign-off has no arrival of its own: the stream time
+			if p.Kind == "event" {
+				t = p.Tick
+			}
+			out[len(out)-1].Arr = &t
+		}
 	}
 	// event-time clock: watermark = min latest arrival over providers still streaming; one tick per whole day crossed
 	wm, all := TEnd, true
