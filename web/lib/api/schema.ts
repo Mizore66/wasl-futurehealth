@@ -156,6 +156,70 @@ export const BreastFinding = z.looseObject({
   within_deadline: z.boolean().optional(),
 });
 
+const LDCT_LABELS = ["LR0", "LR1", "LR2", "LR3", "LR4A", "LR4B", "LR4X"] as const;
+const LDCT_WORKUP_LABELS = ["wk_treatment", "wk_benign", "wk_surveillance", "wk_incomplete", "wk_dna"] as const;
+const IFHAS_DOMAINS = ["bp", "glyc", "lipid", "weight"] as const;
+const IFHAS_SCREEN_LABEL = /^bp=(N|H|S);glyc=(N|P|D|S);lipid=(N|H);weight=(N|O)$/;
+const IFHAS_FOLLOWUP_PART = /^(bp|glyc|lipid|weight)=(managed|not_confirmed|pending)$/;
+const IfhasDomain = z.enum(IFHAS_DOMAINS);
+const IfhasFollowupLabel = z
+  .string()
+  .regex(/^(bp|glyc|lipid|weight)=(managed|not_confirmed|pending)(;(bp|glyc|lipid|weight)=(managed|not_confirmed|pending)){0,3}$/)
+  .refine((label) => {
+    const domains = label.split(";").map((part) => IFHAS_FOLLOWUP_PART.exec(part)?.[1]);
+    return domains.every(Boolean) && new Set(domains).size === domains.length;
+  }, "IFHAS follow-up labels cannot repeat a domain");
+
+export const LdctFinding = z.looseObject({
+  scan_report: z.string().optional(),
+  scan_label: z.enum(LDCT_LABELS).optional(),
+  coded_lungrads: z.boolean().optional(),
+  rec: z
+    .looseObject({
+      action: z.enum(["annual", "complete_ldct", "followup_ldct", "workup"]),
+      due_days: z.number(),
+      deadline_days: z.number(),
+      urgency: z.enum(["routine", "suspicious", "urgent"]).optional(),
+      cell: z.enum(LDCT_LABELS),
+      next_step: z.string(),
+    })
+    .optional(),
+  scan_day: z.number().optional(),
+  due_day: z.number().optional(),
+  deadline_day: z.number().optional(),
+  followup_report: z.string().optional(),
+  followup_label: z.enum(LDCT_LABELS).optional(),
+  followup_next_step: z.string().optional(),
+  workup_document: z.string().optional(),
+  outcome: z.enum(["followup_done", ...LDCT_WORKUP_LABELS]).optional(),
+  within_deadline: z.boolean().optional(),
+});
+
+export const IfhasFinding = z.looseObject({
+  screen_report: z.string().optional(),
+  screen_label: z.string().regex(IFHAS_SCREEN_LABEL).optional(),
+  coded_results_agree: z.boolean().optional(),
+  rec: z
+    .looseObject({
+      action: z.enum(["routine", "follow_up"]),
+      deadline_days: z.number(),
+      urgency: z.enum(["routine", "urgent"]).optional(),
+      cell: z.string().regex(IFHAS_SCREEN_LABEL),
+      abnormal_domains: z.array(IfhasDomain).optional(),
+      domain_deadline_days: z.partialRecord(IfhasDomain, z.number()).optional(),
+      prediabetes: z.boolean().optional(),
+    })
+    .optional(),
+  screen_day: z.number().optional(),
+  deadline_day: z.number().optional(),
+  domain_status: z.partialRecord(IfhasDomain, z.enum(["", "managed", "not_confirmed", "pending"])).optional(),
+  resolved_day: z.partialRecord(IfhasDomain, z.number()).optional(),
+  followup_documents: z.array(z.string()).optional(),
+  outcome: z.union([z.literal("dna"), IfhasFollowupLabel]).optional(),
+  within_deadline: z.boolean().optional(),
+  next_step: z.string().optional(),
+});
+
 export const CaseSummary = z.looseObject({
   id: z.string(),
   programme: Programme,
@@ -176,6 +240,8 @@ export const CaseSummary = z.looseObject({
   lung: LungFinding.optional(),
   dr: DrFinding.optional(),
   breast: BreastFinding.optional(),
+  ldct: LdctFinding.optional(),
+  ifhas: IfhasFinding.optional(),
 });
 
 export const ChainEntry = z.looseObject({
@@ -213,9 +279,12 @@ export const Evidence = z.looseObject({
   gemma: z.string().optional(),
   fields: z.record(z.string(), z.unknown()).optional(),
   reader_a_regex: z.string().optional(),
+  /** IFHAS calls the first reader's label `reader_a`; the other programmes use `reader_a_regex`. */
+  reader_a: z.string().optional(),
   reader_b: z.string().optional(),
-  reader_a_fields: z.looseObject({ quote: z.string().optional() }).optional(),
-  reader_b_fields: z.looseObject({ quote: z.string().optional() }).optional(),
+  /** IFHAS reader provenance is a note string; LDCT and the other programmes send field objects. */
+  reader_a_fields: z.union([z.string(), z.looseObject({ quote: z.string().optional() })]).optional(),
+  reader_b_fields: z.union([z.string(), z.looseObject({ quote: z.string().optional() })]).optional(),
 });
 
 export const Identity = z.looseObject({ provider: z.string(), registration: z.string(), role: z.string() });
@@ -327,6 +396,8 @@ export const CurrentDecision = z.looseObject({
   lung: LungFinding.optional(),
   dr: DrFinding.optional(),
   breast: BreastFinding.optional(),
+  ldct: LdctFinding.optional(),
+  ifhas: IfhasFinding.optional(),
 });
 
 export const CaseDetail = withMeta({
@@ -458,6 +529,10 @@ export const ReviewDecision = z.union([
   z.enum(DR_OUTCOMES),
   z.string().regex(DR_GRADE),
   z.enum(BREAST_LABELS),
+  z.enum(LDCT_LABELS),
+  z.enum(LDCT_WORKUP_LABELS),
+  z.string().regex(IFHAS_SCREEN_LABEL),
+  IfhasFollowupLabel,
 ]);
 
 export const ReviewRequest = z.object({

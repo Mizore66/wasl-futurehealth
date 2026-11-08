@@ -195,8 +195,11 @@ function fieldRows(ev: Evidence): { field: string; a: string; b: string }[] {
     const model = String(ev.fields.reader ?? "").split("/");
     return CRC_FIELDS.map((field, i) => ({ field, a: word(rules[i]), b: word(model[i]) }));
   }
-  const a = (ev.reader_a_fields ?? {}) as Record<string, unknown>;
-  const b = (ev.reader_b_fields ?? {}) as Record<string, unknown>;
+  const a = ev.reader_a_fields ?? {};
+  const b = ev.reader_b_fields ?? {};
+  if (typeof a === "string" || typeof b === "string") {
+    return [{ field: "Reader note", a: typeof a === "string" ? a : "Not read", b: typeof b === "string" ? b : "Not read" }];
+  }
   const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].filter((k) => k !== "quote");
   return keys.map((k) => ({ field: plain(k), a: a[k] === undefined ? "Not read" : String(a[k]), b: b[k] === undefined ? "Not read" : String(b[k]) }));
 }
@@ -205,12 +208,21 @@ function fieldRows(ev: Evidence): { field: string; a: string; b: string }[] {
 export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev: Evidence; id: string; title?: string }) {
   const read = ev.fields ? { checks: closureChecks(ev), quote: ev.quote } : readerLabels(ev);
   const rows = fieldRows(ev);
-  const quoteB = ev.reader_b_fields?.quote;
+  const quoteB = typeof ev.reader_b_fields === "object" ? ev.reader_b_fields.quote : undefined;
   const reportUnit = detail.timeline.find((e) => e.id === ev.report)?.provider ?? detail.identities.find((i) => i.role === "downstream")?.provider ?? "";
   return (
     <Card
       id={id}
-      title={title ?? (ev.fields ? "DoH closure checklist" : "Readers' result")}
+      title={
+        title ??
+        (detail.case.programme === "lung_ldct"
+          ? "LDCT readers' result"
+          : detail.case.programme === "ifhas"
+            ? "IFHAS readers' result"
+            : ev.fields
+              ? "DoH closure checklist"
+              : "Readers' result")
+      }
       note={`Two readers read report ${shortId(ev.report)}: ${ev.agree ? "they agree" : "they disagree"}.`}
     >
       <ul className="m-0 mt-3 list-none p-0">
@@ -269,6 +281,85 @@ export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev:
       </blockquote>
     </Card>
   );
+}
+
+function FindingRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <>
+      <dt className="text-muted">{label}</dt>
+      <dd className="m-0 min-w-0 [overflow-wrap:anywhere]">{children}</dd>
+    </>
+  );
+}
+
+const IFHAS_DOMAIN: Record<string, string> = { bp: "Blood pressure", glyc: "Glycaemia", lipid: "Lipids", weight: "Weight" };
+
+/** The programme-specific finding and recommendation, kept separate from the CRC closure checklist. */
+export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.JSX.Element {
+  const { case: c } = detail;
+  if (c.programme === "lung_ldct" && c.ldct) {
+    const f = c.ldct;
+    return (
+      <Card id="programme-finding" title="Lung cancer screening (LDCT)">
+        <dl className="m-0 mt-3 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2">
+          {f.scan_report && <FindingRow label="Scan report">{shortId(f.scan_report)}</FindingRow>}
+          {f.scan_label && <FindingRow label="Lung-RADS category">{f.scan_label}</FindingRow>}
+          {f.rec && (
+            <>
+              <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
+              <FindingRow label="Rule timing">
+                Due in {f.rec.due_days} days{f.rec.deadline_days > 0 ? `; overdue after ${f.rec.deadline_days} days` : "; no overdue clock"}
+              </FindingRow>
+            </>
+          )}
+          {f.followup_report && <FindingRow label="Follow-up report">{shortId(f.followup_report)}</FindingRow>}
+          {f.followup_label && <FindingRow label="Follow-up Lung-RADS">{f.followup_label}</FindingRow>}
+          {f.workup_document && <FindingRow label="Work-up document">{shortId(f.workup_document)}</FindingRow>}
+          {f.outcome && <FindingRow label="Outcome">{plain(f.outcome)}</FindingRow>}
+          {f.within_deadline !== undefined && <FindingRow label="Within deadline">{f.within_deadline ? "Yes" : "No"}</FindingRow>}
+        </dl>
+        {(f.rec?.next_step || f.followup_next_step) && (
+          <div className="mt-3 border-t border-rule pt-3">
+            {f.rec?.next_step && <p className="m-0">Next step: {f.rec.next_step}.</p>}
+            {f.followup_next_step && <p className="m-0 mt-2">After the follow-up: {f.followup_next_step}.</p>}
+          </div>
+        )}
+      </Card>
+    );
+  }
+  if (c.programme === "ifhas" && c.ifhas) {
+    const f = c.ifhas;
+    const domains = Object.entries(f.domain_status ?? {});
+    return (
+      <Card id="programme-finding" title="IFHAS screening results">
+        <dl className="m-0 mt-3 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2">
+          {f.screen_report && <FindingRow label="Screening report">{shortId(f.screen_report)}</FindingRow>}
+          {f.screen_label && <FindingRow label="Results label">{f.screen_label}</FindingRow>}
+          {f.rec && (
+            <>
+              <FindingRow label="Recommendation">{plain(f.rec.action)}</FindingRow>
+              <FindingRow label="Deadline">{f.rec.deadline_days} days</FindingRow>
+            </>
+          )}
+          {domains.map(([domain, status]) => (
+            <FindingRow key={domain} label={IFHAS_DOMAIN[domain] ?? plain(domain)}>
+              {status ? plain(status) : "Not documented yet"}
+              {f.resolved_day?.[domain as keyof typeof f.resolved_day] !== undefined
+                ? ` · resolved ${formatDay(f.resolved_day[domain as keyof typeof f.resolved_day]!)}`
+                : ""}
+            </FindingRow>
+          ))}
+          {f.followup_documents && f.followup_documents.length > 0 && (
+            <FindingRow label="Follow-up documents">{f.followup_documents.map(shortId).join(", ")}</FindingRow>
+          )}
+          {f.outcome && <FindingRow label="Outcome">{f.outcome}</FindingRow>}
+          {f.within_deadline !== undefined && <FindingRow label="Within deadline">{f.within_deadline ? "Yes" : "No"}</FindingRow>}
+        </dl>
+        {f.next_step && <p className="m-0 mt-3 border-t border-rule pt-3">Next step: {f.next_step}.</p>}
+      </Card>
+    );
+  }
+  return <></>;
 }
 
 /** Consent history and the messages Wasl sent or held back. */
