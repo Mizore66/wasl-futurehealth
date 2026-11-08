@@ -117,7 +117,8 @@ export function reviewView(c: CaseDetail): ReviewView {
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
   const copy = PROGRAMME_COPY[c.case.programme];
-  const checks = checksFrom(ev?.fields);
+  const guided = c.case.programme === "crc";
+  const checks = guided ? checksFrom(ev?.fields) : [];
   /*
    * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
    * with agreeing name, sex and date of birth, was on file for the pair. It does not say which side lacks it, so the screen
@@ -133,10 +134,10 @@ export function reviewView(c: CaseDetail): ReviewView {
           ? `neither reader found ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}`
           : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: rules reader ${READER_WORD[k.rules] ?? k.rules}, second reader ${READER_WORD[k.second] ?? k.second}`,
     }));
-  const held = [
-    noSecondId && "no second identifier is confirmed for the two records",
-    disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`,
-  ].filter((r): r is string => !!r);
+  const evidenceHold = guided
+    ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
+    : ev && !ev.agree && `${copy.report} readers disagree`;
+  const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
 
   const identity: IdentityRow[] = [
     { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
@@ -186,7 +187,7 @@ export function reviewView(c: CaseDetail): ReviewView {
   return {
     caseId: c.case.id,
     closed: c.case.closed,
-    guided: c.case.programme === "crc",
+    guided,
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
