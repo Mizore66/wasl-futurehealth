@@ -110,6 +110,42 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   },
 };
 
+/** Live confirmation copy is limited to answers actually appended for this case. */
+export function recordedOutcome(
+  outcome: OutcomeKey,
+  signatures: Signature[],
+  confirmedClosed = false,
+): Pick<Outcome, "recordedText" | "recordedPrepCell"> {
+  const recorded = OUTCOMES[outcome];
+  if (outcome !== "close" && outcome !== "inadequate") {
+    return { recordedText: recorded.recordedText, recordedPrepCell: recorded.recordedPrepCell };
+  }
+
+  const prepDecision = outcome === "close" ? "adequate" : "inadequate";
+  if (signatures.some((s) => s.decision === prepDecision)) {
+    if (outcome === "close" && confirmedClosed) {
+      return {
+        recordedText: "Same patient and prep adequate were appended to the demo review log. Refreshed case data confirms closure.",
+        recordedPrepCell: recorded.recordedPrepCell,
+      };
+    }
+    return { recordedText: recorded.recordedText, recordedPrepCell: recorded.recordedPrepCell };
+  }
+
+  const remaining = outcome === "close" && confirmedClosed
+    ? "Refreshed case data confirms closure."
+    : outcome === "close"
+      ? "Current case data still shows the case as open; closure is not confirmed."
+      : "No repeat booking is confirmed.";
+  return {
+    recordedText:
+      outcome === "close" && confirmedClosed
+        ? `Same patient was appended to the demo review log. ${remaining}`
+        : `Same patient was appended to the demo review log. No bowel prep answer was appended. ${remaining}`,
+    recordedPrepCell: { word: "not signed", tone: "muted" },
+  };
+}
+
 export type SaveFailure = { status: 400 | 403 | 404; error: string };
 
 /** The API's refusals as sentences a reviewer can act on. */

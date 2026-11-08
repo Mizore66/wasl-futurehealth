@@ -1,4 +1,4 @@
-import type { Audit, CaseDetail } from "@/lib/api/schema";
+import type { Audit, CaseDetail, Programme } from "@/lib/api/schema";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
@@ -189,22 +189,37 @@ export function consentRows(d: CaseDetail): ConsentRow[] {
   return rows;
 }
 
+const EVIDENCE_LABEL: Record<Programme, string> = {
+  crc: "Bowel prep",
+  cervical: "Cervical screening evidence",
+  lung_nodule: "Lung nodule evidence",
+  diabetic_retinopathy: "Eye screening evidence",
+  breast: "Breast screening evidence",
+  lung_ldct: "Lung-RADS",
+  ifhas: "IFHAS results",
+};
+
+function evidenceDecisionWords(decision: string, programme: Programme): string {
+  if (programme === "lung_ldct") return `Lung-RADS ${decision || "no answer"}`;
+  const answer = decision === "inadequate" ? "not adequate" : plain(decision || "no answer").toLowerCase();
+  return `${EVIDENCE_LABEL[programme]} ${answer}`;
+}
+
 /** A sign-off's decision, as the reviewer would say it. */
-export function signoffWords(s: CaseDetail["signoffs"][number]): string {
+export function signoffWords(s: CaseDetail["signoffs"][number], programme: Programme): string {
   if (s.kinds.includes("link")) return s.link === "same" ? "Same patient" : s.link === "different" ? "Not the same patient" : plain(s.link || "no answer");
-  if (s.kinds.includes("evidence")) return `Bowel prep ${s.evidence === "inadequate" ? "not adequate" : plain(s.evidence || "no answer").toLowerCase()}`;
+  if (s.kinds.includes("evidence")) return evidenceDecisionWords(s.evidence, programme);
   return plain(s.link || s.evidence || "signed");
 }
 
 /** Review actions appended through the API: the decision as a sentence. */
-export function reviewWords(decision: string): string {
-  const map: Record<string, string> = {
-    same: "Same patient",
-    different: "Not the same patient",
-    adequate: "Bowel prep adequate",
-    inadequate: "Bowel prep not adequate",
-  };
-  return map[decision] ?? plain(decision);
+export function reviewWords(decision: string, programme: Programme): string {
+  if (decision === "same") return "Same patient";
+  if (decision === "different") return "Not the same patient";
+  if (decision === "adequate" || decision === "inadequate" || programme !== "crc") {
+    return evidenceDecisionWords(decision, programme);
+  }
+  return plain(decision);
 }
 
 const EVENT_WORDS: Record<string, string> = {

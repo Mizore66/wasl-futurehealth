@@ -69,7 +69,7 @@ for (const name of NAMES) {
 
       await expect(page.getByRole("region", { name: "Human sign-offs" })).toBeVisible();
       if (detail.signoffs.length) await expect(page.getByRole("list", { name: "Sign-offs" }).getByRole("listitem")).toHaveCount(detail.signoffs.length);
-      else await expect(page.getByRole("region", { name: "Human sign-offs" })).toContainText("No person signed anything");
+      else await expect(page.getByRole("region", { name: "Human sign-offs" })).toContainText("No human sign-offs recorded for this case.");
 
       const booking = page.getByRole("region", { name: "Booking" });
       await expect(booking.locator('[data-honesty="simulated"]')).toHaveText("Simulated decision support");

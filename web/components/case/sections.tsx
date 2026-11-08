@@ -416,12 +416,12 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
       note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review."
     >
       {signoffs.length === 0 && appended.length === 0 ? (
-        <Empty>No person signed anything on this case. Two readers agreed, so none was needed.</Empty>
+        <Empty>No human sign-offs recorded for this case.</Empty>
       ) : (
         <ul className="m-0 mt-3 list-none p-0" aria-label="Sign-offs">
           {signoffs.map((s) => (
             <li key={s.item} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{signoffWords(s)}</p>
+              <p className="m-0 font-medium">{signoffWords(s, detail.case.programme)}</p>
               <p className="m-0 text-muted">
                 {roleWords(s.role)} · simulated reviewer · {stampWords(s.t)}
               </p>
@@ -434,7 +434,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
           ))}
           {appended.map((r) => (
             <li key={r.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{reviewWords(r.decision)}</p>
+              <p className="m-0 font-medium">{reviewWords(r.decision, detail.case.programme)}</p>
               <p className="m-0 text-muted">
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
               </p>
