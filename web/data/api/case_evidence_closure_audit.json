@@ -1,35 +1,35 @@
 {
  "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
  "anchors": {
-  "fhir": "ad142eb00b6509091101301f9d7281e544fe56c7f15f0cb64dce608b8e1b28c7",
-  "out.p0": "954f6b2eab4aee1437e950ceb41e69237faa62e6d0a7e0a2f176fb8e8abb64fd",
-  "out.p1": "54c3fd1a87bd2384977078f0fd37ef9b8513a89110abdab1784b53f8b210cc39",
-  "out.p2": "ad77bd392c4c23d54d5eacbe1fca6bf911a1b93b287cbd14fd5b903b12936a2f",
-  "out.p3": "9153284bdabcdb766aeadc42e2a1cfdff86e5e21bc1c2ebac12ce0ea9962f37b"
+  "fhir": "509861f5a554a0be3844a0015d97eb3ef5611ed6159c916b7ea1d14b38f3234f",
+  "out.p0": "e8426eb3eeaa0ffa75b36d986e2d47e9f150a3b3aa492abfcb7152022bee0bc9",
+  "out.p1": "418c1349eab0c7624e5c1964d67544dde0773292f78adfa0b7ead3af24abbd6f",
+  "out.p2": "49abc6d1bf925c8f8fcbfd46c5b847750679a4196ce11ed753061c7cd25d38ad",
+  "out.p3": "7f7ded427a4492341dd5ff0a7f2b1ba30eaa20b2e84c4cee497e82d66533a290"
  },
- "case": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
+ "case": "ahs-mushrif/ServiceRequest/AHS-sr-1001",
  "chain": [
   {
    "type": "link_decision",
    "body": {
-    "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-226",
+    "downstream_event": "skmc-endo/DiagnosticReport/SKM-dr-191",
     "hops": 1,
     "linker": "wasl-v3-retrained+iso+eid",
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1001",
     "near_miss": false,
     "path_p_cal": 1,
     "path_strength": 1,
-    "referral_patient": "ahs-mushrif|AHS-MRN000985",
+    "referral_patient": "ahs-mushrif|AHS-MRN000943",
     "tau": 0.99,
     "weakest_edge": {
-     "a": "ahs-mushrif|AHS-MRN000985",
-     "b": "skmc-endo|SKM-MRN000392",
+     "a": "ahs-mushrif|AHS-MRN000943",
+     "b": "skmc-endo|SKM-MRN000351",
      "basis": "human",
      "p": 1
     }
    },
    "prev": "genesis",
-   "hash": "07b96a8ce231f2a5fa98c8bf9c0f5ca32b6e3747fedb9fdb57ee9dd3c41ac9d8"
+   "hash": "f0910c227c514fcab295dbf18cdaf23da7f916583335119af86bbc432327dce5"
   },
   {
    "type": "evidence",
@@ -42,20 +42,20 @@
     "gemma": "closed/criteria_met",
     "human_override": "",
     "label": "adequate",
-    "quote": "advanced carefully through the colon into the cecum and then through the ileocecal valve into the terminal ileum",
+    "quote": "the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve",
     "reader_model": "gemma-4-26b-a4b-it-self/cached",
     "regex": "closed/criteria_met",
-    "report": "skmc-endo/DiagnosticReport/SKM-dr-226",
+    "report": "skmc-endo/DiagnosticReport/SKM-dr-191",
     "rule": "per_field_consensus"
    },
-   "prev": "07b96a8ce231f2a5fa98c8bf9c0f5ca32b6e3747fedb9fdb57ee9dd3c41ac9d8",
-   "hash": "a81e5d7bd10942e1fa99b1a186b64d0d2b0a0c690d10142cc1a896152d760224"
+   "prev": "f0910c227c514fcab295dbf18cdaf23da7f916583335119af86bbc432327dce5",
+   "hash": "ebc7269489b20941ff49f974ccce6da6e90c1357cf1e9356f3a2631bf0ca74d7"
   },
   {
    "type": "closure_decision",
    "body": {
-    "closed_day": 52.1296,
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
+    "closed_day": 50.0816,
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1001",
     "policy": "p_cal\u003e=0.99|eid|human AND two-reader agreement|human",
     "priority": "",
     "programme": "crc",
@@ -64,82 +64,88 @@
     "state": "closed",
     "within_sla": true
    },
-   "prev": "a81e5d7bd10942e1fa99b1a186b64d0d2b0a0c690d10142cc1a896152d760224",
-   "hash": "483c41f914c1fa9700ebce18651790bdc004b5bdaccbb40fe8b68074bacc0afc"
+   "prev": "ebc7269489b20941ff49f974ccce6da6e90c1357cf1e9356f3a2631bf0ca74d7",
+   "hash": "ed5a4109b435d1304e81d2a71fb7e2de2728da14f5a5f65fa4abcfeabcc9034d"
   }
  ],
  "chain_length": 3,
  "chain_verified": true,
  "decision_signatures": [
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@11209",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@13014",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "c7e2d10e229caa24732d5f762267a9560c591187ff9efc98a98abe11d1ed4018",
-   "sig": "c7e2d10e229caa24732d5f762267a9560c591187ff9efc98a98abe11d1ed4018"
+   "recomputed": "c852257110ef7259dcf2526dae27f8e77dc37a4f3157c8ab0f98cb43265a2d34",
+   "sig": "c852257110ef7259dcf2526dae27f8e77dc37a4f3157c8ab0f98cb43265a2d34"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@11281",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@13019",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "209ba53fad54cb722bc521436e178758ba5631a1d906a03f1a2e3e48d7702990",
-   "sig": "209ba53fad54cb722bc521436e178758ba5631a1d906a03f1a2e3e48d7702990"
+   "recomputed": "69d253f75013af8a6e71c7d8297832f718a8f7981ab41e38fd69518994763627",
+   "sig": "69d253f75013af8a6e71c7d8297832f718a8f7981ab41e38fd69518994763627"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@12590",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@13105",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "7772f3439a9a900bd93ae2e46cf36d33283f277ef76b808eafa0875f8c6f6705",
-   "sig": "7772f3439a9a900bd93ae2e46cf36d33283f277ef76b808eafa0875f8c6f6705"
+   "recomputed": "d0539b6d9b2493fbbdf31711c50e1da1da6ba00b21167886e4708d0541683f9c",
+   "sig": "d0539b6d9b2493fbbdf31711c50e1da1da6ba00b21167886e4708d0541683f9c"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@13769",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@13357",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "4cac892ca6fdb7fc864901f8210ee2e210541effc4cdce5da6fac8ba99d21f40",
-   "sig": "4cac892ca6fdb7fc864901f8210ee2e210541effc4cdce5da6fac8ba99d21f40"
+   "recomputed": "2c6a0e3c77db91636b2ff43ebfff436146fb840ea77f24b738f19ce6a4fed3b3",
+   "sig": "2c6a0e3c77db91636b2ff43ebfff436146fb840ea77f24b738f19ce6a4fed3b3"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@20147",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@14947",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "7772f3439a9a900bd93ae2e46cf36d33283f277ef76b808eafa0875f8c6f6705",
-   "sig": "7772f3439a9a900bd93ae2e46cf36d33283f277ef76b808eafa0875f8c6f6705"
+   "recomputed": "e64bb6db0aa773d90f4a1bf0b9a62a7b784365b9f90bc19f3ae23f7d72537141",
+   "sig": "e64bb6db0aa773d90f4a1bf0b9a62a7b784365b9f90bc19f3ae23f7d72537141"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@tick-d28-p0",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@22023",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "eec4e283bf6ba6ae02d76ea4db39a4275963b5b08408103a2bdaa8e3e87e3ff3",
-   "sig": "eec4e283bf6ba6ae02d76ea4db39a4275963b5b08408103a2bdaa8e3e87e3ff3"
+   "recomputed": "2c6a0e3c77db91636b2ff43ebfff436146fb840ea77f24b738f19ce6a4fed3b3",
+   "sig": "2c6a0e3c77db91636b2ff43ebfff436146fb840ea77f24b738f19ce6a4fed3b3"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@tick-d31-p0",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@tick-d29-p1",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "818a0d9e064cbb9a8fa9fa86651c143a2b08bf127268239da1052bbd03a1ffb4",
-   "sig": "818a0d9e064cbb9a8fa9fa86651c143a2b08bf127268239da1052bbd03a1ffb4"
+   "recomputed": "becad19c25bd3b4c782d897b1b21d1f50df3e15266e1a1db5749ae91d73159ab",
+   "sig": "becad19c25bd3b4c782d897b1b21d1f50df3e15266e1a1db5749ae91d73159ab"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@tick-d32-p0",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@tick-d30-p1",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "13dd1b4da21841d89c4f38b78a853a70f6b47f5767875bcfddcda0ac7d926712",
-   "sig": "13dd1b4da21841d89c4f38b78a853a70f6b47f5767875bcfddcda0ac7d926712"
+   "recomputed": "7fd6ad5f51a500e434b1f961098c195512677f2b3bc2d7cb67e1dc97b031c0a3",
+   "sig": "7fd6ad5f51a500e434b1f961098c195512677f2b3bc2d7cb67e1dc97b031c0a3"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@tick-d56-p0",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@tick-d36-p1",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "9285478fd0f0c1991c571b9091bead138ec0f97d8b6d8170b8ed8f52bdc0b69c",
-   "sig": "9285478fd0f0c1991c571b9091bead138ec0f97d8b6d8170b8ed8f52bdc0b69c"
+   "recomputed": "cb2a862f09473702f4e77bf77e7731d7163217ae12ba670405197d687d6b3303",
+   "sig": "cb2a862f09473702f4e77bf77e7731d7163217ae12ba670405197d687d6b3303"
   },
   {
-   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1037@ahs-mushrif/ServiceRequest/AHS-sr-1037@39586",
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@tick-d54-p1",
    "policy": "v7strict+cal=true+guard=true+tau=0.99",
-   "recomputed": "c87474888380c39d355cf43f567ac515749d890f9cc2fad611ed44686a86c210",
-   "sig": "c87474888380c39d355cf43f567ac515749d890f9cc2fad611ed44686a86c210"
+   "recomputed": "168df9d22d1e67390d8fb72514bcb643234566874ce8faa59222b293230af9b4",
+   "sig": "168df9d22d1e67390d8fb72514bcb643234566874ce8faa59222b293230af9b4"
+  },
+  {
+   "decision_id": "dec-ahs-mushrif/ServiceRequest/AHS-sr-1001@ahs-mushrif/ServiceRequest/AHS-sr-1001@42999",
+   "policy": "v7strict+cal=true+guard=true+tau=0.99",
+   "recomputed": "ca32f6dc0adc2ecebcd17e44b17e9b13a20a3f151c7f42d16cdb61dc631f5ae1",
+   "sig": "ca32f6dc0adc2ecebcd17e44b17e9b13a20a3f151c7f42d16cdb61dc631f5ae1"
   }
  ],
  "history": [],
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  }
 }

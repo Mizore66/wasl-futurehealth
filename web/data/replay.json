@@ -356,11 +356,12 @@
   {
    "id": "showcase-12",
    "person": {
-    "key": "ahs-mushrif|AHS-MRN000985",
-    "name": "Fatima Al Zaabi",
-    "nameAr": "فاطمة الزعابي",
-    "reportName": "Fatima Alzaabi",
-    "source": "canonical-cast"
+    "key": "replay|6e00fe18bb68b3e1",
+    "sex": "male",
+    "name": "Amjad Al Selouli",
+    "nameAr": "أمجد السلولي",
+    "reportName": "Amjad Alselouli",
+    "source": "generated"
    },
    "source": "hl7",
    "read": {
@@ -500,11 +501,12 @@
   {
    "id": "showcase-17",
    "person": {
-    "key": "ahs-mushrif|AHS-MRN000962",
-    "name": "Aisha Al Mansoori",
-    "nameAr": "عائشة المنصوري",
-    "reportName": "Aisha Al Mansoori",
-    "source": "canonical-cast"
+    "key": "replay|ba3489c242f08a43",
+    "sex": "female",
+    "name": "Leila Al Nujayfi",
+    "nameAr": "ليلى النجيفي",
+    "reportName": "Leila Alnujayfi",
+    "source": "generated"
    },
    "source": "hl7",
    "read": {
