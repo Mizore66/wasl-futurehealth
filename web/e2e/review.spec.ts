@@ -15,8 +15,8 @@ const MOCK_PORT = 3293;
 
 const holdId = fixtures.fixtures.review_hold.id;
 const desk = `/app/review/${encodeURIComponent(holdId)}`;
-const LINK_ITEM = "rv-2853a89572f0bc86";
-const EVIDENCE_ITEM = "rv-02bd10f694ad3d6e";
+const LINK_ITEM = "rv-636161dc42837e08";
+const EVIDENCE_ITEM = "rv-d55f7ccf9f12c409";
 
 async function noSeriousAxe(page: Page) {
   const axe = await new AxeBuilder({ page }).analyze();
@@ -26,6 +26,9 @@ async function noSeriousAxe(page: Page) {
 
 const rail = (page: Page) => page.getByRole("complementary", { name: "Your answers" });
 const prepRow = (page: Page) => page.locator('[data-check="Prep graded"]');
+/** The one evidence item covers every check the readers could not settle: bowel prep and tissue taken. */
+const tissueRow = (page: Page) => page.locator('[data-check="Tissue taken"]');
+const disputedRows = (page: Page) => [prepRow(page), tissueRow(page)];
 const signedNodes = (page: Page) => rail(page).locator('li[data-kind="human"]');
 const previewNodes = (page: Page) => rail(page).locator('li[data-kind="current"]');
 
@@ -38,17 +41,17 @@ test.describe("review, fixtures mode", () => {
     await expect(page.getByText("Simulated queue: rebuilt from a held demo case")).toBeVisible();
     await expect(page.getByText(/The sample run has no open review items/)).toContainText("2 review items");
     const row = page.getByRole("link", { name: /^Mariam Al Shamsi/ });
-    await expect(row).toContainText("Identity · Bowel prep");
-    await expect(row).toContainText("SKM-dr-293");
+    await expect(row).toContainText("Identity · Colonoscopy report");
+    await expect(row).toContainText("SKM-dr-217");
     await page.screenshot({ path: "test-results/screens/review-queue.png", fullPage: true });
     await noSeriousAxe(page);
     await row.click();
-    await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1175$/);
+    await expect(page).toHaveURL(/\/app\/review\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1079$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
   });
 
   test("the patient's avatar opens her record from the queue and the desk", async ({ page }) => {
-    const record = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1175$/;
+    const record = /\/app\/patients\/ahs-mushrif(%2F|\/)ServiceRequest(%2F|\/)AHS-sr-1079$/;
     await page.goto("/app/review");
     await page.getByRole("link", { name: "Open Mariam Al Shamsi's record" }).click();
     await expect(page).toHaveURL(record);
@@ -61,27 +64,33 @@ test.describe("review, fixtures mode", () => {
     await page.goto(desk);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Mariam Al Shamsi");
     await expect(page.getByText("Case 1 of 1 waiting")).toBeVisible();
-    await expect(page.getByText("Held: the report has no date of birth, and neither reader found a bowel prep grade.")).toBeVisible();
-    await expect(page.getByText("not on report")).toHaveCount(2);
-    await expect(page.locator("mark")).toHaveText("advanced to the cecum");
+    await expect(page.getByText("Held: no second identifier is confirmed for the two records, and the two readers could not settle the bowel prep grade and whether tissue was taken.")).toBeVisible();
+    await expect(page.getByText("not confirmed", { exact: true })).toHaveCount(1);
+    await expect(page.getByText("Date of birth")).toHaveCount(0);
+    await expect(page.locator("mark")).toHaveText("the level of the cecum");
     await expect(prepRow(page)).toContainText("not stated");
     await expect(prepRow(page)).toContainText("reviewers decide");
+    // Tissue: the rules reader found none, the second reader found it. Histology agrees (none).
+    await expect(tissueRow(page)).toContainText("none");
+    await expect(tissueRow(page)).toContainText("yes");
+    await expect(tissueRow(page)).toContainText("reviewers decide");
+    await expect(page.locator('[data-check="Histology back"]')).toContainText("agreed, none");
     await expect(page.locator('[data-check="Caecum reached"]')).toContainText("agreed");
 
     const why = page.getByRole("button", { name: "Why it was held" });
     await why.click();
     await expect(page.getByRole("button", { name: "Hide why" })).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("img", { name: /Link score 0\.999/ })).toBeVisible();
+    await expect(page.getByRole("img", { name: /Link score 1\.000/ })).toBeVisible();
     await expect(page.getByText(/second identifier \(exact non-placeholder DOB, or a matching Emirates ID with agreeing name, sex and DOB\) or human confirmation/)).toBeVisible();
     await page.screenshot({ path: "test-results/screens/review-desk.png", fullPage: true });
     await noSeriousAxe(page);
   });
 
-  test("identity first, then prep; Close the case previews the outcome and says nothing was saved", async ({ page }) => {
+  test("identity first, then the report; Close the case previews the outcome and says nothing was saved", async ({ page }) => {
     await page.goto(desk);
     const r = rail(page);
     await expect(r.getByText("Answer both questions to sign.")).toBeVisible();
-    await expect(r.getByRole("group", { name: /Bowel prep/ })).toHaveCount(0);
+    await expect(r.getByRole("group", { name: /colonoscopy report/ })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(r.locator('li[data-kind="current"]')).toContainText("your answers");
     await expect(r).toContainText("nothing here is appended or saved");
@@ -91,7 +100,12 @@ test.describe("review, fixtures mode", () => {
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await expect(bridge.getByRole("img", { name: "Same patient as Mariam Al Shamsi" })).toHaveAttribute("data-state", "resolving");
     await expect(r.getByRole("radio", { name: "Same patient", exact: true })).toBeChecked();
-    await expect(r.getByText("Answer the bowel prep question to sign.")).toBeVisible();
+    await expect(r.getByText("Answer the colonoscopy report question to sign.")).toBeVisible();
+    // The one evidence question names every check it covers.
+    const q2 = r.getByRole("group", { name: "2. Is the colonoscopy report adequate?" });
+    await expect(q2).toContainText("neither reader found the bowel prep grade");
+    await expect(q2).toContainText("the readers differ on whether tissue was taken: rules reader none, second reader yes");
+    await expect(q2).toContainText("One answer covers all of them");
     await expect(r.getByRole("button", { name: /Close the case/ })).toHaveCount(0);
 
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
@@ -105,8 +119,8 @@ test.describe("review, fixtures mode", () => {
     await expect(result).toContainText("No event was appended and no hash exists");
     await expect(signedNodes(page)).toHaveCount(0);
     await expect(previewNodes(page).nth(0)).toContainText("preview, not saved: same patient (as reviewer)");
-    await expect(previewNodes(page).nth(1)).toContainText("preview, not saved: prep adequate (as clinician)");
-    await expect(prepRow(page)).toContainText("adequate (preview, not saved)");
+    await expect(previewNodes(page).nth(1)).toContainText("preview, not saved: report adequate (as clinician)");
+    for (const row of disputedRows(page)) await expect(row).toContainText("adequate (preview, not saved)");
     await expect(result.getByRole("link", { name: "Back to Review" })).toHaveAttribute("href", "/app/review");
     await expect(result.getByText("That was the last case waiting.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/review-closed.png", fullPage: true });
@@ -115,7 +129,7 @@ test.describe("review, fixtures mode", () => {
     await r.getByRole("button", { name: "Undo" }).click();
     await expect(r.getByText("Answer both questions to sign.")).toBeVisible();
     await expect(previewNodes(page)).toHaveCount(1);
-    await expect(prepRow(page)).toContainText("reviewers decide");
+    for (const row of disputedRows(page)) await expect(row).toContainText("reviewers decide");
   });
 
   test("keyboard only: arrows choose, the second question is announced, Close the case moves focus on", async ({ page }) => {
@@ -139,7 +153,7 @@ test.describe("review, fixtures mode", () => {
 
     // The second question is announced in a polite live region, and the next Tab lands in it.
     await expect(r.locator("[aria-live=polite]")).toHaveText(/Question 2 of 2 is now showing/);
-    await expect(r.getByRole("group", { name: "2. Bowel prep: is it adequate?" })).toBeVisible();
+    await expect(r.getByRole("group", { name: "2. Is the colonoscopy report adequate?" })).toBeVisible();
     await page.keyboard.press("Tab");
     expect((await active()).tag).toBe("INPUT");
     expect((await active()).label).toBe("Adequate");
@@ -167,14 +181,14 @@ test.describe("review, fixtures mode", () => {
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Not adequate" }).click();
-    await r.getByRole("button", { name: "Preview: Sign: prep not adequate" }).click();
+    await r.getByRole("button", { name: "Preview: Sign: report not adequate" }).click();
     await expect(r.getByRole("status")).toContainText("Would not close: repeat colonoscopy");
-    await expect(prepRow(page)).toContainText("not adequate (preview, not saved)");
+    for (const row of disputedRows(page)) await expect(row).toContainText("not adequate (preview, not saved)");
     await r.getByRole("button", { name: "Undo" }).click();
 
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Ask the unit" }).click();
-    await r.getByRole("button", { name: "Preview: Sign and ask the unit to grade the prep" }).click();
+    await r.getByRole("button", { name: "Preview: Sign and ask the unit to complete the report" }).click();
     await expect(r.getByRole("status")).toContainText("Would ask the unit");
     await expect(r.locator('li[data-kind="current"]').last()).toContainText("SKMC endoscopy");
     await r.getByRole("button", { name: "Undo" }).click();
@@ -182,10 +196,10 @@ test.describe("review, fixtures mode", () => {
     await r.getByRole("radio", { name: "Same patient", exact: true }).click();
     await r.getByRole("radio", { name: "Adequate", exact: true }).click();
     await r.getByRole("radio", { name: "Not the same patient" }).click();
-    await expect(r.getByRole("group", { name: /Bowel prep/ })).toHaveCount(0);
+    await expect(r.getByRole("group", { name: /colonoscopy report/ })).toHaveCount(0);
     await r.getByRole("button", { name: "Preview: Sign: not the same patient" }).click();
     await expect(r.getByRole("status")).toContainText("Would reject the link");
-    await expect(prepRow(page)).toContainText("not applied");
+    for (const row of disputedRows(page)) await expect(row).toContainText("not applied");
     await expect(signedNodes(page)).toHaveCount(0);
   });
 });
@@ -279,7 +293,7 @@ test.describe("review, live mode against a mock API", () => {
     await expect(r.getByRole("button", { name: "Undo" })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(2);
     await expect(signedNodes(page).nth(0)).toContainText("Dr Omar Al Kaabi · same patient (as reviewer)");
-    await expect(signedNodes(page).nth(1)).toContainText("Dr Omar Al Kaabi · prep adequate (as clinician)");
+    await expect(signedNodes(page).nth(1)).toContainText("Dr Omar Al Kaabi · report adequate (as clinician)");
 
     // The history on the page was read again from the log, with no reload.
     await expect(history.getByRole("listitem")).toHaveCount(2);
@@ -307,7 +321,7 @@ test.describe("review, live mode against a mock API", () => {
     await r.getByRole("button", { name: "Close the case" }).click();
 
     await expect(r.getByRole("alert")).toHaveText(
-      "The identity answer was saved. Not saved: the clinician role is not allowed to sign the bowel prep answer.",
+      "The identity answer was saved. Not saved: the clinician role is not allowed to sign the report answer.",
     );
     await expect(r.getByRole("status")).toHaveCount(0);
     await expect(r).not.toContainText("Closed: both answers recorded");

@@ -6,6 +6,8 @@ import { result, results } from "@/lib/results";
  */
 export const QUOTED = {
   baselineRate: { value: "30.5%", file: "docs/BRIEF.md", quote: "only **30.5%** of FIT+ patients" },
+  originPooled: { value: "1.124", file: "pipeline/results/final/SUMMARY.md", quote: "the observed pooled 1.124 has p = 0.007" },
+  originStandardised: { value: "1.07", file: "docs/BRIEF.md", quote: "Programme-standardised origin ratio 1.07 (p = 0.185)" },
   pilotStreak: { value: "300", file: "docs/BRIEF.md", quote: "until 300 in a row are correct" },
 } as const;
 
@@ -46,4 +48,10 @@ export function upperBound(id: string): string {
 
 export function fixed(id: string, digits: number): string {
   return result(id).value.toFixed(digits);
+}
+
+/** "2026-11-02" → "2 Nov 2026". */
+export function frozenOn(): string {
+  const [y, m, d] = results.frozen_on.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 }

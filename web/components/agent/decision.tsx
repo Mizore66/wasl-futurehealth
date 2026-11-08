@@ -51,7 +51,7 @@ function ReadBox({ who, said, note, testid }: { who: string; said: string; note:
 }
 
 function signoffKind(s: Signoff): string {
-  return s.kinds.includes("link") ? "Identity link" : s.kinds.includes("evidence") ? "Bowel preparation evidence" : plain(s.kinds[0] ?? "review");
+  return s.kinds.includes("link") ? "Identity link" : s.kinds.includes("evidence") ? "Colonoscopy report evidence" : plain(s.kinds[0] ?? "review");
 }
 
 /** Who made the final sign-off, and every sign-off on the case. */

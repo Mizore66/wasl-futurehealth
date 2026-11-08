@@ -291,7 +291,7 @@
    "closed_day": -120.2694,
    "consent": "granted",
    "deadline_day": 183,
-   "decisions": 4,
+   "decisions": 3,
    "dropoff": "",
    "fixture": "",
    "id": "rad-imaging/ServiceRequest/RAD-sr-105",
@@ -658,7 +658,7 @@
    "closed_day": 39.3131,
    "consent": "granted",
    "deadline_day": 396,
-   "decisions": 5,
+   "decisions": 6,
    "dropoff": "",
    "fixture": "",
    "id": "rad-imaging/ServiceRequest/RAD-sr-112",
@@ -899,11 +899,11 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "offset": 0,
  "total": 905

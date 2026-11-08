@@ -15,7 +15,7 @@ export const TERMS = {
   not_closed: "Kept open",
   // The demo fixtures.
   evidence_closure: "Closed with evidence",
-  false_closure_trap: "Wrong-patient report caught",
+  false_closure_trap: "Held: report incomplete",
   review_hold: "Held for human review",
   dr_exam_closure: "Eye exam closed the loop",
 } as const satisfies Record<string, string>;

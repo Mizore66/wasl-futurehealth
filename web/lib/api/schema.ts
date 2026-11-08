@@ -6,7 +6,8 @@ import { z } from "zod";
  * Enums are closed: a new state or decision value fails the contract tests first.
  */
 
-export const Programme = z.enum(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"]);
+/** `lung_ldct` (lung cancer screening LDCT) and `ifhas` (IFHAS cardiometabolic results) arrived with the seven-programme run (docs/API.md). */
+export const Programme = z.enum(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
 
 export const CaseState = z.enum([
   "open",
@@ -49,6 +50,12 @@ export const Dropoff = z.enum([
   "no_assessment_outcome",
   /** See CaseState: served, not yet listed in docs/API.md. */
   "awaiting_tissue",
+  /** Lung LDCT (docs/API.md, programme lung_ldct). */
+  "incomplete_scan_not_completed",
+  "followup_ldct_not_done",
+  "no_workup_outcome",
+  /** IFHAS (docs/API.md, programme ifhas). */
+  "no_followup_documented",
 ]);
 
 export const Consent = z.enum(["unknown", "granted", "denied", "opted_out"]);
