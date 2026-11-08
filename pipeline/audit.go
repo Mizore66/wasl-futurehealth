@@ -48,8 +48,15 @@ type replayOut struct {
 	items map[string]*ReviewItem
 }
 
+// ReplayTrace, when non-nil, receives the linker's candidate-funnel records from every replay. It is nil by default
+// and is set only around one final, single-threaded replay (agentreplay.go); never from parallel sweep jobs.
+var ReplayTrace func(LinkTrace)
+
 func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview bool) *replayOut {
 	L := NewLinkerCoreANN(gbm, P)
+	if ReplayTrace != nil {
+		L.trace = ReplayTrace
+	}
 	cores := make([]*ClosureCore, P)
 	for k := range cores {
 		cores[k] = NewClosureCore(k, iso)
@@ -85,6 +92,21 @@ func replay(fhir []LogMsg, preps []*Prep, gbm *GBM, iso *Iso, P int, skipReview 
 		}
 	}
 	return r
+}
+
+// restoreAgentPolicy makes audit and report7 replay a materialized agent run under the policy stamped in its decisions.
+// It is idempotent and a no-op for live runs and materialized control arms.
+func restoreAgentPolicy(outLog []LogMsg) {
+	if strings.HasSuffix(PolicyName, "+agent") {
+		return
+	}
+	for _, m := range outLog {
+		var oe OutEnvelope
+		if json.Unmarshal(m.Data, &oe) == nil && oe.Dec != nil && strings.HasSuffix(oe.Dec.Policy, "+agent") {
+			PolicyName += "+agent"
+			return
+		}
+	}
 }
 
 func pctl(xs []float64, p float64) float64 {
@@ -167,7 +189,8 @@ func audit(data, wasl, run string, P int) {
 			prepDup += c - 1
 		}
 	}
-	// 2. offline linker + closure replay
+	// 2. offline linker + closure replay (an agentreplay run stamps its decisions "+agent"; replay under the same policy)
+	restoreAgentPolicy(outLog)
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	expected := map[string]int{}
 	for _, id := range rp.ids {
@@ -323,9 +346,18 @@ func linkMetrics(L *LinkerCore, tr *Truth) map[string]interface{} {
 			impure++
 		}
 	}
+	// final link edges joining two different persons, by what made them (eid | wasl | human); adversarial B8 (genadv.go)
+	cross := map[string]int{}
+	for a, nb := range L.adj {
+		for b := range nb {
+			if a < b && tr.PKQid[L.recs[a].Pk] != tr.PKQid[L.recs[b].Pk] {
+				cross[L.basis[pk2(a, b)]]++
+			}
+		}
+	}
 	P, R := tp/math.Max(pp, 1), tp/math.Max(tt, 1)
 	return map[string]interface{}{"registrations": len(cl), "pair_precision": r3(P), "pair_recall": r3(R), "pair_f1": r3(2 * P * R / math.Max(P+R, 1e-9)),
-		"false_merge_pairs": int(pp - tp), "true_pairs": int(tt), "impure_clusters": impure, "stats": L.Stats}
+		"false_merge_pairs": int(pp - tp), "true_pairs": int(tt), "impure_clusters": impure, "cross_person_edges_by_basis": cross, "stats": L.Stats}
 }
 
 // ---------------- dashboard ----------------

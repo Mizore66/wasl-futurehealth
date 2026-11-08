@@ -30,12 +30,17 @@ Lists are always `[]`, never `null`.
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/healthz` | `status`, case count, `dependencies` (materialised_run, nats, reader, ingest_adapter) |
-| GET | `/api/dashboard` | KPI and SLA, `states`, `dropoff`, `review` counts, `by_programme`, per-provider and per-origin tables (small-cell suppressed), headline `metrics` (31-day KPI, closure P/R, consent invariant, forged, provenance, exactly-once), `fixtures`, `capacity` (simulated booking: condition adequate, misallocated or short_overall, slots per case by region, pooling_relevant, summary, `levers`: pathway and prep-risk counts) |
+| GET | `/api/dashboard` | KPI and SLA, `states`, `dropoff`, `review` counts, `by_programme`, per-provider and per-origin tables (small-cell suppressed), headline `metrics` (31-day KPI, closure P/R, consent invariant, forged, provenance, exactly-once), `fixtures`, `capacity` (simulated booking: condition adequate, misallocated or short_overall, slots per case by region, pooling_relevant, summary, `levers`: pathway and prep-risk counts; `inputs.optimiser` appears only when the booking stage ran with a non-default optimiser or stress test, e.g. {optimiser: lookahead, lookahead_days, gamma, forecast, method}; absent = the default myopic engine) |
 | GET | `/api/fixtures` | The demo cases (summaries): three CRC cases, plus `dr_exam_closure` when the run has DR loops. `review_hold` falls back to a closed, signed loop whose outreach was stopped by the consent hold or the second-identifier guard when no loop had consent held then granted |
-| GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
-| GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registrations), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields) |
+| GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast\|lung_ldct), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
+| GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registrations), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
 | GET | `/api/cases/{id}/audit` | `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
+| POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note (below) |
+| GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
+| POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
+| POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
+| GET | `/api/cases/{id}/export` | Sanitized `wasl-case-export/1` with detail, audit and deterministic `content_sha256`; clinical text is redacted ([details](API-EXPORT.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
@@ -82,6 +87,10 @@ Lists are always `[]`, never `null`.
 
   `state` is `due|overdue|done|escalated`; `ct_report` and `ct_day` appear once a surveillance CT is read. The parent's `closure_decision` block adds `closed_into: "surveillance_ct_due"`. Escalation `overdue_lung_surveillance_ct`; outreach kinds `lung_surveillance_due`, `lung_surveillance_recall`.
 
+- **Later surveillance CTs** (runs with `WASL_LUNGSURV2=1` and `WASL_LUNGSURV=1`, flag `-lungsurv2`; default off): a stable first surveillance CT opens `<loop>#surv2` (CT at about 1 year, window 300-420 days from the PET/CT) and a stable `#surv2` opens `<loop>#surv3` (about 2 years, 670-790 days); BTS 2015 recommends CT at 3 months and 1 year, and 2 years in total when growth is measured by 2D diameters (the windows are Wasl policy). A CT more than 30 days before a later round's window cannot decide that round; a CT inside the 30-day tolerance can decide it but has `within_window: false` because both window bounds are required (the tolerance is Wasl policy). A resolved nodule or growth ends the chain. Each later child carries `lung.surveillance` with `"round": 2|3` and `from_report` = the previous round's CT; its first chain block (`surveillance_opened`) names the previous child as `parent` with its `parent_head`. The surveillance object of each round gains `next` (the next round's object) once it opens, so the parent case shows the whole chain: `lung.surveillance.next.next`. Same states, escalation and outreach kinds as the first CT.
+- **Stable-CT surveillance child** (runs with `WASL_LUNGSURVSTABLE=1`, flag `-lungsurvstable`; default off): the existing child `<loop>#surv` opened by a stable follow-up CT whose Fleischner cell recommends a further CT now also carries `lung.surveillance` with `"reason": "fleischner_stable"` (window from the Fleischner cell, `from_day` = the day it counts from; the parent case does not carry it). An untrusted link or reader disagreement on a later CT raises a review item on the parent loop and the child holds (`hold_decision`, `pending` lists the items); outreach `lung_surveillance_due` / `lung_surveillance_recall`; escalation `overdue_lung_nodule_window` as before. Without the flag the child is unchanged (no `lung.surveillance`).
+- **Rejected work-up referral message** (flag `-rejmsg`, `WASL_REJMSG=1`, default off): when the PET/CT or tissue-sampling unit finally rejects the referral (hand-off packet), the decision's `outreach` contains only kind `lung_referral_rejected` (template `lnfu-rejected-v2/en|ar`), replacing contradictory due/overdue outreach for that referral. It is sent to the imaging centre's own registration only with granted consent (unknown is held; denied/opted-out is cancelled, regardless of the legacy consent-hold switch). The packet's `patient_informed` is `true` once it is released.
+
 ### Programme `diabetic_retinopathy` (third loop type: retinal screening to eye-clinic exam, rule `doh2024dr`)
 
 **Status:** built; served only from runs generated with `WASL_DR=N` (synthetic cohort, simulated attendance). Rule, readers and metrics: [`pipeline/RESULTS.md`](../pipeline/RESULTS.md), "Third loop type". The loop is the tracking ServiceRequest of one retinal screen at a primary-care diabetes clinic (ids such as `phc-retina/ServiceRequest/PHC-sr-118`); the eye-clinic note usually sits at another provider under another record and needs a trusted identity link.
@@ -121,7 +130,7 @@ Lists are always `[]`, never `null`.
   - `awaiting_eye_clinic_exam`, `retina_not_examined`, `clinic_note_readers_disagree`, `clinic_note_identity_link_unconfirmed`;
   - `did_not_attend_rebook`, `no_fundal_view_clinician_decides`.
 - **Escalations** (`decisions[].escalations`): `overdue_dr_referral`, `repeat_photo_overdue`, `urgent_dr_referral_open`, `rebook_after_dna`, `clinician_decision_no_fundal_view`.
-- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`. Sent by phone, then letter, in the screening clinic's name, under the same consent hold as the other programmes.
+- **Outreach kinds:** `dr_repeat_photo`, `dr_clinic_due` (14 days before the deadline), `dr_overdue_recall`, `dr_rebook`; with `-drrecallmsg` also `dr_next_recall` (below); with `-rejmsg` also `dr_referral_rejected` (template `drsfu-rejected-v2/en|ar`) when the eye clinic finally rejects the referral. The rejection message replaces contradictory due/overdue/rebooking outreach for that referral, and the hand-off packet's `patient_informed` is `true` once it is released. Sent by phone, then letter, in the screening clinic's name. The new `-drrecallmsg` and `-rejmsg` messages always require granted consent (unknown is held; denied/opted-out is cancelled), even if the legacy consent-hold switch is disabled.
 
 - **Next due** (runs with `WASL_DRNEXT=1`, flag `-drnext`): a resolved loop's `dr` object adds `next_due` (omitted otherwise):
 
@@ -130,6 +139,8 @@ Lists are always `[]`, never `null`.
 ```
 
   `kind` is `rescreen|clinic_review`; `basis` is `doh2024dr_annual_rescreen`, `discharged_to_annual_screening`, `note_review_interval`, `assumed_followup_91d` or `assumed_treated_28d`. `seen`, `seen_day` and `seen_report` mark the first later read screen or attended clinic visit; `recall_overdue: true` (with escalation `dr_recall_overdue`) when none came by `due_day`. The loop stays resolved.
+  - With `-drrecallmsg` (`WASL_DRRECALLMSG=1`, default off), a loop with `recall_overdue: true` also gets outreach kind `dr_next_recall` (template `drsfu-recall-v2/en|ar`), sent to the screening registration only with granted consent; the loop stays resolved.
+  - With `-drseenlink` (`WASL_DRSEENLINK=1`, default off), a later eye-clinic note on an untrusted identity link (not read as did-not-attend), when no trusted later visit exists, raises an ordinary link review item (`review_items`, one question per registration pair); it counts as `seen` only after a human "same". The loop's `pending` stays empty (it is resolved); the question is in the review queue.
 
 ### Programme `breast` (fourth loop type: screening mammogram recall to assessment outcome, rule `doh2025breast`)
 
@@ -153,6 +164,57 @@ Lists are always `[]`, never `null`.
 - **Outreach kinds:** `breast_assessment_due`, `breast_overdue_recall`, `breast_rebook`, `breast_repeat_mammogram`, under the same consent hold.
 - **Review labels** (clinician role): `B0`–`B5`, `TR`, `return_routine`, `early_recall`, `to_treatment`, `incomplete`, `dna`.
 
+### Programme `lung_ldct` (fifth loop type: lung cancer screening LDCT to the Lung-RADS next step, rule `acr2022lungrads`)
+
+**Status:** built; served only from runs generated with `WASL_LDCT=N` (synthetic cohort, simulated attendance; readers measured on their own dev corpus only). Design: [`docs/research/ldct-loop-design.md`](research/ldct-loop-design.md). Not the incidental-nodule programme `lung_nodule` (Fleischner): different providers, report kinds and labels. The loop is one screening LDCT at a lung cancer screening centre (ids such as `lcs-centre/ServiceRequest/LCS-sr-12`). Completion and follow-up LDCTs sit on the same record; 4B/4X work-up documents sit at a thoracic diagnostic unit under another record and need a trusted identity link.
+
+- **Category** (Lung-RADS v2022; a stated final category wins, else the most concerning finding, 1 < 2 < 3 < 4A < 4B < 4X): `LR0`, `LR1`, `LR2`, `LR3`, `LR4A`, `LR4B`, `LR4X`. `acr2022lungrads` turns it into an action: `LR1`/`LR2` → `annual` (next LDCT due at +365, no clock); `LR0` → `complete_ldct` (91 days; a later categorised report on the same record replaces it); `LR3` → `followup_ldct` (due 183, overdue after 213); `LR4A` → `followup_ldct` (due 91, overdue after 121, `suspicious`); `LR4B`/`LR4X` → `workup` (30 days, `urgent`). The clocks are Wasl assumptions (design doc A1–A3).
+- **States:** `no_recall_needed` (Lung-RADS 1/2, resolved), `open` (waiting for the completion, follow-up LDCT or work-up outcome, or held for review), `closed` (3/4A: an independent follow-up LDCT read with a category, excluding addenda and same-day rereads; 4B/4X: a work-up document on a trusted link read as an outcome), `no_show` (work-up not attended).
+- **Drop-off:** `incomplete_scan_not_completed`, `followup_ldct_not_done`, `unlinked`, `no_workup_outcome`, `no_show`, or `""` when resolved.
+- `closed` is `true` for `closed` and `no_recall_needed`. `deadline_day` on the summary is the rule deadline in days (0 for annual); the absolute days are `ldct.due_day` and `ldct.deadline_day`. `referral_day` can be negative (look-back cohort).
+- The summary carries an `ldct` object (also in `current.ldct`):
+
+```json
+"ldct": {"scan_report": "LCS-ct-41", "scan_label": "LR4A", "coded_lungrads": true,
+  "rec": {"action": "followup_ldct", "due_days": 91, "deadline_days": 121, "urgency": "suspicious", "cell": "LR4A",
+          "next_step": "LDCT in 3 months; PET/CT may be used if a solid component >= 8 mm"},
+  "scan_day": -150.2, "due_day": -59.2, "deadline_day": -29.2,
+  "followup_report": "LCS-ct-77", "followup_label": "LR3", "followup_next_step": "LDCT in 6 months",
+  "outcome": "followup_done", "within_deadline": true}
+```
+
+  `outcome` is `followup_done` (3/4A) or a work-up label: `wk_treatment` (needs malignant tissue and a documented MDT discussion in the same document, DoH 7.6.1), `wk_benign` (annual screening plus benign tissue or an MDT decision; a bare annual phrase is indeterminate), `wk_surveillance` (MDT surveillance CT plan), `wk_incomplete` or `wk_dna`; work-up loops add `workup_document`. `coded_lungrads: true` means a coded Lung-RADS value (placeholder system `urn:wsi:lung-rads`) matched reader A's reading of the text; this is not independent full-report validation and does not prove the category is correct.
+- **Evidence** `reader_a_fields` / `reader_b_fields`: LDCT report `lungrads_overall`, `lungrads_worst`; work-up `attended`, `workup` (`done|not_done`), `mdt` (`discussed|not_discussed`), `tissue` (`malignant|benign|pending|none`), `outcome` (`treatment|annual|surveillance|pending`); both `label` and a verbatim `quote`. `reader_model` is `coded_lungrads` on the coded path.
+- **Hold reasons:** `scan_report_not_received`, `scan_readers_disagree`, `scan_label_unknown`, `scan_label_wrong_kind`, `awaiting_completion`, `completion_readers_disagree`, `awaiting_followup_ldct`, `followup_readers_disagree`, `followup_incomplete`, `followup_addendum_not_interval_ldct`, `followup_too_early`, `followup_label_unknown`, `awaiting_workup`, `workup_readers_disagree`, `workup_label_wrong_kind`, `workup_identity_link_unconfirmed`, `workup_incomplete_or_mdt_pending`, `did_not_attend_rebook`.
+- **Escalations:** `overdue_ldct_followup`, `overdue_ldct_workup`, `rebook_after_dna`, `urgent_ldct_workup_open`, `followup_needs_tracking` (the follow-up scan itself needs action; the centre opens a new tracking request for it), `surveillance_after_workup`.
+- **Outreach kinds:** `ldct_followup_due` (14 days before the deadline), `ldct_followup_overdue`, `ldct_workup_rebook`, `ldct_workup_overdue`, under the same consent hold.
+- **Review labels** (clinician role): `LR0`, `LR1`, `LR2`, `LR3`, `LR4A`, `LR4B`, `LR4X`, `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`.
+
+### Programme `ifhas` (IFHAS abnormal cardiometabolic results to documented follow-up, rule `doh2025ifhas`)
+
+**Status:** built; served only from runs generated with `WASL_IFHAS=N` (synthetic cohort, simulated attendance and results). `GET /api/cases?programme=ifhas` filters to it. Design: [`docs/research/ifhas-loop-design.md`](research/ifhas-loop-design.md). The loop is one IFHAS screening visit at the screening facility; follow-up notes usually sit at the receiving family / internal medicine clinic under another record and need a trusted identity link.
+
+- **Screening label:** `bp=<N|H|S>;glyc=<N|P|D|S>;lipid=<N|H>;weight=<N|O>` (keys sorted). `doh2025ifhas` turns it into an action: no abnormal domain (`N`, or glycaemia `P` prediabetes) → `routine` (rescreen in 3 years, 1095 days); otherwise `follow_up` with one clock per abnormal domain: 10 days for a severe cell (`S`, `urgency: urgent`), 59 days otherwise (`urgency: routine`). `deadline_days` is the earliest clock.
+- **Follow-up document label:** `dna`, or `<domain>=<managed|not_confirmed|pending>;…` over the domains the note addresses.
+- **States:** `no_followup_needed` (resolved), `open` (waiting, some domains pending, or held for review), `closed` (every abnormal domain `managed` or `not_confirmed` by documents on a trusted link that both readers or a clinician read), `no_show`.
+- **Drop-off:** `unlinked`, `no_followup_documented`, `no_show`, or `""` when resolved. `closed` is `true` for `closed` and `no_followup_needed`; `priority` is `urgent` when a cell is severe.
+- The summary carries an `ifhas` object (also in `current.ifhas`):
+
+```json
+"ifhas": {"screen_report": "IFH-dr-12", "screen_label": "bp=H;glyc=D;lipid=N;weight=N", "coded_results_agree": true,
+  "rec": {"action": "follow_up", "deadline_days": 59, "urgency": "routine", "cell": "bp=H;glyc=D;lipid=N;weight=N",
+          "abnormal_domains": ["bp", "glyc"], "domain_deadline_days": {"bp": 59, "glyc": 59}},
+  "screen_day": -40.2, "deadline_day": 18.8, "domain_status": {"bp": "managed", "glyc": "not_confirmed"},
+  "resolved_day": {"bp": 2.1, "glyc": 2.1}, "followup_documents": ["IFU-dr-31"], "outcome": "bp=managed;glyc=not_confirmed",
+  "within_deadline": true, "next_step": "…"}
+```
+
+  `domain_status` has one entry per abnormal domain (`""` until a document addresses it). `coded_results_agree: true` means the printed results panel and the coded LOINC results gave the same label. `rec.prediabetes: true` marks glycaemia `P` (lifestyle advice and a yearly HbA1c, recorded only).
+- **Hold reasons:** `screening_results_not_received`, `screening_readers_disagree`, `screening_label_unknown`, `awaiting_followup`, `followup_readers_disagree`, `followup_label_unknown`, `followup_identity_link_unconfirmed`, `followup_incomplete_domains_pending`, `did_not_attend_rebook`.
+- **Escalations:** `overdue_ifhas_followup`, `urgent_ifhas_result_open`, `rebook_after_dna`.
+- **Outreach kinds:** `ifhas_followup_due`, `ifhas_overdue_followup`, `ifhas_rebook`, under the same consent hold.
+- **Review labels** (clinician role): a screening label as above, a follow-up label as above (domain order free), or `dna`.
+
 ### POST review (demo mode)
 
 **Headers:** `X-Wasl-Role` (`coordinator` | `clinician` | `reviewer` | `auditor`) and `X-Wasl-Actor` (who is signing).
@@ -166,6 +228,7 @@ Lists are always `[]`, never `null`.
   - a screening grade: `R0M0`, `R1M0`, `R2M1`, `R3SM0`, `R3AM1`, `R1M0/urgent`, `U`;
   - a clinic outcome: `examined_treated`, `examined_followup`, `examined_discharged`, `not_examined`, `dna`, `not_assessable`.
   Anything else (for example `R9M0`, `R2M2`, or a lung label) is rejected with 400.
+- On `lung_ldct` cases the evidence decision can be an LDCT label (same clinician role): `LR0`–`LR4X` or a work-up label `wk_treatment`, `wk_benign`, `wk_surveillance`, `wk_incomplete`, `wk_dna`. A label of another programme (for example `B4`) is rejected with 400.
 - `confirm_contact` needs one allowed to record consent (coordinator, clinician).
 
 **Response codes:**
@@ -176,6 +239,42 @@ Lists are always `[]`, never `null`.
 
 **Append-only:** every action is appended to `<run>/api_reviews.ndjson` as a hash-chained event (`prev` → `hash`). The run's decisions are never modified. Review history shows in `api_reviews` and in `/audit` → `history`.
 
+### POST actions (coordinator, demo mode)
+
+Workflow A coordinator actions. Overlay metadata only: they never change a decision, the `out_log`, a signature, consent or the canonical `owner`, and they never dispatch a message.
+
+**Headers:** `X-Wasl-Role: coordinator` (the only role holding the narrow `coordinate_case` permission) and `X-Wasl-Actor` (1 to 64 characters).
+
+**Body:** one JSON object, at most 8 KiB, no unknown or cross-action fields, no trailing data. `action` and `expected_head` are always required; `expected_head` is the case's current `api_overlay.head` (from `GET /api/cases/{id}` or the case summary).
+
+| `action` | Fields | Bounds |
+|---|---|---|
+| `assign_owner` | `owner` | 1 to 64 characters |
+| `snooze` | `until`, `reason` (optional) | RFC 3339, in the future and within 365 days; reason up to 200 characters |
+| `contact_outcome` | `outcome`, `channel`, `note` (optional) | outcome `reached\|no_answer\|voicemail\|wrong_number\|declined\|appointment_agreed`; channel `phone\|sms\|email\|in_person`; note up to 1000 characters. Requires the case's `consent` to be `granted`. Records what happened; it does not send anything |
+| `note` | `text` | 1 to 1000 characters, newlines allowed |
+
+Text must be valid UTF-8, without surrounding whitespace or control characters.
+
+**Response codes:**
+- 201 with `event` (the ledger event) and the updated `api_overlay`;
+- 400 for a bad body, field, bound or missing actor or `expected_head`;
+- 403 for any role without `coordinate_case`;
+- 404 for an unknown case;
+- 405 for a method other than POST on `/actions` (with `Allow: POST`);
+- 409 for a stale `expected_head` (`conflict: "head"`, with `current_head`) or a `contact_outcome` on a case whose consent is not granted (`conflict: "consent"`);
+- 500 when the ledger cannot be appended (nothing is recorded) or the ledger failed validation at start-up (all ledger writes are refused until it is repaired).
+
+**Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases never conflict. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
+
+**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
+
+**Ledger and restart:** coordinator events share `<run>/api_reviews.ndjson` and its hash chain with review events (`type: "coordinator_action"`, with `kind`, `data`, `head`, per-case `seq`). On start-up the whole ledger is replayed and validated: JSON, chain, hash, case, role permission, head and sequence continuity, action fields (the same validation as the write path), consent for contact outcomes, and a complete final line. The first failure stops the replay, sets `healthz` `dependencies.review_ledger` to `invalid`, and makes `/review` and `/actions` return 500. The read endpoints keep working. Nothing is repaired or skipped silently.
+
+**Fail-closed replay and re-materialised runs:** every coordinator event records the case head it followed. If the run is re-materialised so that a case's final decision (and so its head), its contact permission, or the case itself changes, the old events no longer fit: replay stops at the first such line, `review_ledger` becomes `invalid`, and all ledger writes (`/actions` and `/review`) return 500. Events before the failing line stay applied, so `api_overlay` can be partial; the case detail carries `review_ledger` (`status` ok or invalid, `detail`, `events_applied`) so a reader is never shown a partial overlay unannounced. Nothing is dropped or repaired automatically: an operator must archive or fix `api_reviews.ndjson` (or start a new run directory). A write whose outcome on disk is unknown (sync, truncate or close failed) also marks the ledger invalid until restart and replay; a clean write failure that was rolled back does not.
+
+**Input rules:** JSON objects with a repeated key are rejected (request bodies and ledger lines); owner, note, reason and actor text may not contain control characters or Unicode format (Cf) characters such as zero-width space, BOM, soft hyphen or bidi overrides/isolates/marks. The one exception is ZWNJ (U+200C) and ZWJ (U+200D) directly after an Arabic-script letter, which Persian, Urdu and Kurdish names need; a ledger `seq` must be an exact integer.
+
 ## The demo cases
 
 | Fixture | What it shows | Key fields |
@@ -184,5 +283,15 @@ Lists are always `[]`, never `null`.
 | `false_closure_trap` | A procedure exists but the documentation is incomplete, so Wasl **holds** instead of closing | `case.closed=false`, `state=inadequate`; `holds[0]` gives the report and rule |
 | `review_hold` | Uncertain link and reader disagreement both went to double review (2 reads, signed); outreach was held while consent was unknown, released after the grant; then closed | `review_items`, `signoffs[].reads=[r1,r2]`, `decisions[].consent_log`: held → released, or (when no loop in the run had consent held then granted) a closed, signed loop whose `decisions[].outreach[].suppress` shows a message stopped by the consent hold or the second-identifier guard |
 | `dr_exam_closure` | **Only in runs with DR loops.** A referable retinal screen (R2, R3S, R3A or M1) closed by an eye-clinic exam at another provider within the deadline. Both text readers agree on the screen and on the clinic note (no coded grade), the link is cross-provider and trusted, consent is granted, and no human was needed at any point (no review item, sign-off, override or earlier disagreement) | `case.dr` (`screen_label`, `rec`, `outcome`, `examined=true`, `within_deadline=true`); `evidence` (2 entries, `agree=true`, `reader_a_fields`/`reader_b_fields` with quotes); `links[0].hops≥1`; `/audit` → `chain_verified=true` |
+| `agent_review` | **Only in cached agent runs (experimental).** A closed CRC case with consent granted whose link question was answered with a cited agent `same` recommendation; the human sign-off read `r1` plus `agent`, the final human `link` is `same` and `wrong=false`. The agent never signs. It never takes a case that already carries another fixture tag | `agent_investigations[0]` (`label=same`, `citations`, `human`); `agent_provenance.cached=true` |
 
-Fixtures are chosen deterministically from the run (the first matching case by id: CRC for the first three, `diabetic_retinopathy` for `dr_exam_closure`), so the same run always gives the same cases. The three CRC keys and their selection rules are unchanged; a run without DR loops has no `dr_exam_closure` key.
+Fixtures are chosen deterministically from the run (the first matching case by id: CRC for the first three, `diabetic_retinopathy` for `dr_exam_closure`), so the same run always gives the same cases. The three CRC keys and their selection rules are unchanged; a run without DR loops has no `dr_exam_closure` key. `agent_review` is picked after the others, only from cases without a fixture tag, so existing ids and single tags never move.
+
+### Cached agent investigations (experimental, read-only)
+
+`GET /api/cases/{id}` carries two extra fields. They add no endpoint and trigger no replay or model call.
+
+- `agent_investigations`: `[]` for an ordinary run. Otherwise one entry per cached evidence-investigator recommendation that a human sign-off actually consumed: `{item, pair, label (same|different|uncertain), citations: [{tool, arg, field, value}], human: {link, reads, role}}`. `human` is the existing sign-off context (for example `reads=[r1, agent]`); the agent never signs and `signoffs` is unchanged.
+- `agent_provenance`: `{cached: false, experimental: false}` for an ordinary run; otherwise `{cached: true, experimental: true, model, prompt_ver, schema_ver}` taken from the nested replay `provenance`. No paths, raw model messages or reasoning, salt, cache or other replay fields are exposed.
+
+The run supplies `agent_recs.ndjson` and `agent_replay.json`: for a served run directory named `main` they sit one level up (`../`), otherwise next to the run files. Both must exist, otherwise the run is ordinary. A recommendation is attached only when its review item id is in the case's `out_log` queue for that loop, the unordered pair matches the item, the label equals the sign-off's `agent_read`, and the sign-off read `agent`. Twin questions on the same pair with another item id get nothing. Any malformed or mismatched input (bad NDJSON line, invalid record, malformed citations or provenance, a consumed recommendation that fails the join) yields no agent projection at all. `valid` in the recommendations is generation-time validation, not an API or audit verification, and nothing here is a clinical effectiveness claim.

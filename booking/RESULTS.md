@@ -256,6 +256,10 @@ About 2.5 minutes.
 
 **In the pipeline:** since `a66b6a2`, 69.6% of the pipeline's CRC loops are women. On the five held-out runs, `booking.json` had 133–170 open cases per run that require a female list. All got a slot within 31 days, vs 97–100% for everyone else. That is a 95-day snapshot at 1.2 slots per case, easier than the full-year simulation above.
 
+## Multi-period lookahead (simulated, opt-in)
+
+Multi-period booking lookahead is built behind `--optimiser lookahead` (default myopic output remains byte-identical): a rolling-horizon, pure-Go min-cost flow over pending patients and trailing forecast demand, with the existing female-list, regional/travel and preparation constraints. On SIMULATED calendars paired across 10 frozen runs, two seeds, three capacity conditions and four stresses (n=20 per cell), lookahead versus the shipped default myopic engine gave higher mean CRC within-target share in 11/12 condition/stress cells (cell-mean changes -0.03 to +4.3 percentage points) and higher cervical within-window share in all 12 (+8.2 to +15.5 points). In the hypothetical urgent-CRC mix, <=14-day share improved by 9.0, 6.6 and 1.3 points under adequate, misallocated and short-overall capacity respectively. It was not a uniform win: cross-region bookings usually increased, female-list gap did not consistently improve, and short-overall urgent p90 wait rose from 45.9 to 49.9 days. These are simulated decision-support suggestions requiring clinician confirmation, not live scheduling or clinical outcomes. No optimiser parameters were changed post-hoc; review fixes were limited to solver/protocol robustness and evaluation reproducibility.
+
 ## Cervical colposcopy and the repeat after an unsatisfactory exam
 
 `suggest.py` now also books cervical loops that still need a colposcopy. It uses the same engine on a synthetic colposcopy-clinic calendar, at the CRC calendar's slot density per day.

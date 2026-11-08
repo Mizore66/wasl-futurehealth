@@ -1,0 +1,49 @@
+{
+ "heldout": {
+  "ifhas-followup": {
+   "agree": 23,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "hf04 B:bp=not_confirmed want bp=pending",
+    "hf07 A:bp=managed want bp=pending",
+    "hf07 B:bp=not_confirmed want bp=pending",
+    "hf09 A:glyc=pending want glyc=managed",
+    "hf10 A:glyc=pending want glyc=managed",
+    "hf11 A:glyc=pending want glyc=not_confirmed",
+    "hf13 B:glyc=not_confirmed want glyc=pending",
+    "hf15 A:glyc=pending want glyc=not_confirmed",
+    "hf16 B:glyc=not_confirmed want glyc=pending",
+    "hf19 A:lipid=pending want lipid=not_confirmed",
+    "hf23 A:lipid=pending want lipid=not_confirmed",
+    "hf26 A:weight=pending want weight=not_confirmed",
+    "hf27 A:weight=managed want weight=pending",
+    "hf27 B:weight=not_confirmed want weight=pending",
+    "hf28 B:unavailable",
+    "hf29 A:weight=pending want weight=not_confirmed",
+    "hf30 B:unavailable",
+    "hf33 A:glyc=managed;weight=managed want glyc=pending;weight=managed",
+    "hf34 A:lipid=pending;weight=pending want lipid=not_confirmed;weight=not_confirmed",
+    "hf35 B:bp=managed;weight=not_confirmed want bp=managed;weight=pending",
+    "hf36 B:bp=managed;lipid=managed want bp=managed;glyc=pending;lipid=managed",
+    "hf37 B:unavailable",
+    "hf39 B:unavailable",
+    "hf40 B:unavailable",
+    "hf41 B:dna want indeterminate",
+    "hf42 A:glyc=pending want indeterminate",
+    "hf42 B:unavailable",
+    "hf44 A:glyc=pending want glyc=not_confirmed",
+    "hf44 B:unavailable",
+    "hf45 B:unavailable",
+    "hf47 B:bp=not_confirmed want bp=pending",
+    "hf48 A:bp=pending;weight=managed want bp=managed",
+    "hf52 A:glyc=managed;lipid=pending want glyc=managed;lipid=not_confirmed",
+    "hf52 B:glyc=managed want glyc=managed;lipid=not_confirmed"
+   ],
+   "reader_a_regex_correct": 36,
+   "reader_b_gemma_correct": 34,
+   "reader_b_unavailable": 8,
+   "reports": 52,
+   "to_review": 29
+  }
+ }
+}

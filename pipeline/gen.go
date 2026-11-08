@@ -28,6 +28,7 @@ type Person struct {
 	Spl string   `json:"split"`
 	Origin string `json:"origin"`
 	ArSrc  string `json:"ar_src"`
+	Idx    int    `json:"-"` // 1 + index in the persons file (readPersons); 0 for synthetic namesakes (pairfeat6 leave-own-out)
 }
 
 type ProvCfg struct {
@@ -94,7 +95,9 @@ type LoopTruth struct {
 	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
 	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
 	Breast     *BreastTruth `json:"breast,omitempty"` // breast recall loop (genbreast.go)
+	LDCT       *LDCTTruth   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop (genldct.go)
 	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
+	Ifhas      *IfhasTruth   `json:"ifhas,omitempty"`   // IFHAS abnormal-result follow-up loop (genifhas.go)
 }
 
 // HandoffTruth: the simulated hand-off of a finally rejected referral.
@@ -115,6 +118,8 @@ type Truth struct {
 	ReportUID map[string]string   `json:"report_uid"` // report id -> MTSamples uid or pathology template id
 	Distract map[string]bool      `json:"distract_reports"`
 	Photos   map[string][]PhotoTruth `json:"report_photos,omitempty"` // -imgphotos: photo refs attached to each report, with true class
+	WrongEID map[string]*WrongEIDTruth `json:"wrong_eid,omitempty"` // -wrongeid: registrations carrying a relative's Emirates ID (genadv.go)
+	WrongRef map[string]*WrongRefTruth `json:"wrong_ref,omitempty"` // -wrongref: intakes citing the wrong referral (genadv.go)
 }
 
 // ---------- noise (port of wasl/src/common.py) ----------
@@ -192,6 +197,27 @@ func noisyDob(dob string, r *rand.Rand, p float64) string {
 	if r.Float64() > p {
 		return dob
 	}
+	return corruptDob1(dob, r)
+}
+
+// noisyDobV1T: training-only v1t DOB noise. Same corruption probability as v1; a corrupted DOB first takes, with
+// probability .20, a single-digit typo (one of the eight YYYYMMDD digits replaced by a uniformly chosen different
+// digit), otherwise v1's corruption branches. Never used for evaluation (v2 is the held-out corruption model).
+func noisyDobV1T(dob string, r *rand.Rand, p float64) string {
+	if r.Float64() > p {
+		return dob
+	}
+	if r.Float64() < .20 {
+		i := []int{0, 1, 2, 3, 5, 6, 8, 9}[r.Intn(8)]
+		b := []byte(dob)
+		b[i] = byte('0' + (int(b[i]-'0')+1+r.Intn(9))%10)
+		return string(b)
+	}
+	return corruptDob1(dob, r)
+}
+
+// corruptDob1: v1's DOB corruption (after the corrupt/keep draw), extracted verbatim from noisyDob.
+func corruptDob1(dob string, r *rand.Rand) string {
 	y, m, d := dob[:4], dob[5:7], dob[8:10]
 	x := r.Float64()
 	switch {
@@ -228,6 +254,22 @@ func luhnOK(s string) bool {
 		sum += d
 	}
 	return sum%10 == 0
+}
+
+// drawEID: Emirates ID capture at one registration: 62% valid, 26% missing, 12% mistyped (one digit). Shared by runGen and runFeatDump.
+func drawEID(p *Person, r *rand.Rand) string {
+	x := r.Float64()
+	switch {
+	case x < .62:
+		return p.Eid
+	case x < .88:
+		return ""
+	default:
+		bs := []byte(p.Eid)
+		i := 3 + r.Intn(12)
+		bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
+		return string(bs)
+	}
 }
 
 type reg struct {
@@ -290,7 +332,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	json.Unmarshal(b, &all)
 	ps := []Person{}
 	for _, p := range all {
-		if p.Spl == GenSplit { // default "eval": held out from encoder, scorer and calibrator training; "cal" for Learn-then-Test calibration
+		if inGenSplit(p.Spl) { // "all": scale runs only (training persons included); default "eval": held out from encoder, scorer and calibrator training; "cal" for Learn-then-Test calibration
 			ps = append(ps, p)
 		}
 	}
@@ -341,6 +383,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	tr := &Truth{Photos: map[string][]PhotoTruth{}, Loops: map[string]*LoopTruth{}, PKQid: map[string]string{}, PKCc: map[string]string{}, Reports: map[string]string{},
 		ReportUID: map[string]string{}, Distract: map[string]bool{}}
+	adv = newAdvGen(seed, tr) // -wrongeid / -wrongref (genadv.go); nil when both are off
 	evs := []GenEvent{}
 	regs := map[string]*reg{}
 	mrnN := map[string]int{}
@@ -371,7 +414,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		g := &reg{mrn: fmt.Sprintf("%s-MRN%06d", strings.ToUpper(prov.ID[:3]), mrnN[prov.ID])}
 		g.pk = prov.ID + "|" + g.mrn
 		if r.Float64() < prov.PAr {
-			if NoiseModel == "v2" {
+			if NoiseModel == "v2" || NoiseModel == "v3" {
 				g.name, g.script = noisyArabic2(p.Ar, r), "ar"
 			} else {
 				g.name, g.script = noisyArabic(p.Ar, r), "ar"
@@ -382,13 +425,15 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			if r.Float64() < .5 {
 				src = opts[r.Intn(len(opts))]
 			}
-			if NoiseModel == "v2" {
+			if NoiseModel == "v2" || NoiseModel == "v3" {
 				g.name, g.script = noisyLatin2(src, r), "lat"
 			} else {
 				g.name, g.script = noisyLatin(src, r), "lat"
 			}
 		}
-		if NoiseModel == "v2" {
+		if NoiseModel == "v3" {
+			g.dob = noisyDob3(p.Dob, r, .3)
+		} else if NoiseModel == "v2" {
 			g.dob = noisyDob2(p.Dob, r, .3)
 		} else {
 			g.dob = noisyDob(p.Dob, r, .3)
@@ -397,21 +442,11 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		if r.Float64() < .02 {
 			g.sex = "U"
 		}
-		x := r.Float64() // Emirates ID capture: 62% valid, 26% missing, 12% mistyped (one digit)
-		switch {
-		case x < .62:
-			g.eid = p.Eid
-		case x < .88:
-			g.eid = ""
-		default:
-			bs := []byte(p.Eid)
-			i := 3 + r.Intn(12)
-			bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
-			g.eid = string(bs)
-		}
+		g.eid = drawEID(p, r)
 		if r.Float64() < .82 { // preferred language recorded at this provider
 			g.lang = langOf(p)
 		}
+		adv.register(g, p) // -wrongeid: maybe a relative's Emirates ID, own hashed stream
 		regs[k] = g
 		tr.PKQid[g.pk] = p.Qid
 		tr.PKCc[g.pk] = p.Cc
@@ -468,6 +503,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			"category": []interface{}{map[string]string{"text": "referral-intake"}}, "code": map[string]string{"text": Rules[prog].Proc + " (external referral)"},
 			"authoredOn": dayToTS(day)}
 		if ref != "" {
+			ref = adv.citeRef(hosp.ID+"/ServiceRequest/"+m["id"].(string), ref, status, p) // -wrongref (genadv.go)
 			m["basedOn"] = []interface{}{map[string]string{"display": "external referral " + ref}}
 		}
 		if reason != "" {
@@ -1396,7 +1432,25 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		for k := nDistract; k < len(rest); k++ {
 			bg = append(bg, &ps[rest[k]])
 		}
-		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, tr, &evs, regs, mrnN, ctr, textUse)
+		all := make([]*Person, len(ps)) // -breastshare: women with another loop may follow (genbreast.go)
+		for i := range ps {
+			all[i] = &ps[i]
+		}
+		genBreast(breastDirFor(breastDir, reportsPath), seed, nBreast, bg, all, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if LDCTGenN > 0 { // lung cancer screening LDCT loops (genldct.go): own RNG stream, background persons with no other loop, after breast
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genLDCT(ldctDirFor(LDCTGenDir, reportsPath), seed, LDCTGenN, bg, tr, &evs, regs, mrnN, ctr, textUse)
+	}
+	if GenIfhasN > 0 { // IFHAS follow-up loops (genifhas.go): own RNG stream, background adults with no other loop, after breast
+		bg := []*Person{}
+		for k := nDistract; k < len(rest); k++ {
+			bg = append(bg, &ps[rest[k]])
+		}
+		genIfhas(ifhasDirFor(GenIfhasDir, reportsPath), seed, GenIfhasN, bg, tr, &evs, regs, mrnN, ctr, textUse)
 	}
 	for _, job := range handoffJobs {
 		job()
@@ -1421,6 +1475,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		bb, _ := json.MarshalIndent(v, "", " ")
 		os.WriteFile(filepath.Join(outDir, name), bb, 0644)
 	}
+	adv.finish()
 	wj("truth.json", tr)
 	states, paths2, drops, origins, langs := map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	for _, l := range tr.Loops {
@@ -1440,6 +1495,9 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		"pathways": paths2, "dropoff_truth": drops, "loop_origins": origins, "lang_true_vs_expected": langs, "registrations": len(regs),
 		"reports_in_window": len(tr.Reports), "text_use": textUse, "unique_mtsamples_texts_used": uniq, "persons_used": len(ps),
 		"crc_female_share": crcFemale(ps, crc), "crc_women_with_cervical_loop": crcBoth}
+	if adv != nil {
+		summary["adversarial"] = adv.summary()
+	}
 	wj("cohort_summary.json", summary)
 	bb, _ := json.Marshal(summary)
 	fmt.Println(string(bb))

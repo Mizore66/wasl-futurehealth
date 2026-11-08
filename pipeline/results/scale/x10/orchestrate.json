@@ -1,0 +1,121 @@
+{
+ "P": 4,
+ "chaos": [
+  {
+   "cycle": "fhirsub-1",
+   "down_s": 1.9718628868045647,
+   "t_kill": 108,
+   "victims": [
+    "fhirsub"
+   ]
+  },
+  {
+   "cycle": 1,
+   "down_s": 1.193963125233064,
+   "t_kill": 143.348842958,
+   "victims": [
+    "linker"
+   ]
+  },
+  {
+   "cycle": 2,
+   "down_s": 1.2428923602246762,
+   "t_kill": 337.885896,
+   "victims": [
+    "closure-0",
+    "prep-0"
+   ]
+  },
+  {
+   "cycle": "nats",
+   "t_kill": 399.437843625,
+   "victims": [
+    "nats-2"
+   ]
+  }
+ ],
+ "fhir_msgs": 406143,
+ "out_msgs": 311018,
+ "preps": 3,
+ "replicas": 3,
+ "source": {
+  "Source": "fhir",
+  "Content": "full-resource",
+  "Hie": "127.0.0.1:40380",
+  "Hook": "127.0.0.1:40390",
+  "PollSpeed": 0,
+  "LagFrac": 0.02,
+  "Overlap": 0.5,
+  "Dup": 0.05,
+  "Reorder": 0.05,
+  "Drop": 0.03,
+  "SubKill": 1,
+  "HL7Addr": "127.0.0.1:40370",
+  "HL7Drops": 2
+ },
+ "speed": 0,
+ "supervisor": {
+  "closure-0": {
+   "chaos_kills": 1,
+   "unexpected_exits_restarted": 0
+  },
+  "closure-1": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "closure-2": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "closure-3": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "fhirsub": {
+   "chaos_kills": 1,
+   "unexpected_exits_restarted": 0
+  },
+  "linker": {
+   "chaos_kills": 1,
+   "unexpected_exits_restarted": 80
+  },
+  "malaffi": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "nats-0": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "nats-1": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "nats-2": {
+   "chaos_kills": 1,
+   "unexpected_exits_restarted": 0
+  },
+  "prep-0": {
+   "chaos_kills": 1,
+   "unexpected_exits_restarted": 0
+  },
+  "prep-1": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "prep-2": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  },
+  "reviewer": {
+   "chaos_kills": 0,
+   "unexpected_exits_restarted": 0
+  }
+ },
+ "t_last_out": "2026-11-01T08:44:47.181592Z",
+ "t_quiet": "2026-11-01T16:44:47.690831+08:00",
+ "t_start": "2026-11-01T15:48:09.778987+08:00",
+ "threads": 8,
+ "throughput_ev_s": 119.54514881523733,
+ "wall_s": 3397.402605
+}

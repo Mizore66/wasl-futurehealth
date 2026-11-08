@@ -288,22 +288,26 @@ class BookingEngine:
         for i, j in zip(r, c):
             if j >= m_cols or C[i, j] >= BIG:
                 continue
-            p, s = P[i], int(cols_s_arr[j])
-            pr = p.prefs
-            fem, ara, aft, ram = cal.female[s], cal.arabic[s], cal.after[s], cal.ramadan[s]
-            rg = cal.region[s]
-            pred = float(self._pred(pr, cal.day[s] - day, fem, ara, aft, ram, 0, rg))
-            nurse = pred > self.nurse_thr
-            if nurse:
-                pred = float(self._pred(pr, cal.day[s] - day, fem, ara, aft, ram, 1, rg))
-            over = cal.nb[s] >= cal.cap[s]
-            cal.add(s, p.loop_id, pred)
-            self.where[p.loop_id] = s
-            del self.pending[p.loop_id]
-            out.append(Booking(p.loop_id, s, str(cal.unit[s]), int(cal.day[s]), bool(fem), bool(over), pred,
-                               bool(nurse), int(cal.day[s]) - p.prep_lead, p.deadline,
-                               bool(cal.day[s] <= p.deadline), day))
+            out.append(self._commit(day, P[i], int(cols_s_arr[j])))
         return out
+
+    def _commit(self, day: int, p: _Pending, s: int) -> Booking:
+        """Record pending patient p in session s on `day` and return the booking (shared by every solver)."""
+        cal = self.cal
+        pr = p.prefs
+        fem, ara, aft, ram = cal.female[s], cal.arabic[s], cal.after[s], cal.ramadan[s]
+        rg = cal.region[s]
+        pred = float(self._pred(pr, cal.day[s] - day, fem, ara, aft, ram, 0, rg))
+        nurse = pred > self.nurse_thr
+        if nurse:
+            pred = float(self._pred(pr, cal.day[s] - day, fem, ara, aft, ram, 1, rg))
+        over = cal.nb[s] >= cal.cap[s]
+        cal.add(s, p.loop_id, pred)
+        self.where[p.loop_id] = s
+        del self.pending[p.loop_id]
+        return Booking(p.loop_id, s, str(cal.unit[s]), int(cal.day[s]), bool(fem), bool(over), pred,
+                       bool(nurse), int(cal.day[s]) - p.prep_lead, p.deadline,
+                       bool(cal.day[s] <= p.deadline), day)
 
 
 class FirstAvailable:

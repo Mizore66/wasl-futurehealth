@@ -65,6 +65,7 @@ type LungTruth struct {
 	Path      string   `json:"workup_path,omitempty"` // > 8 mm solid (lungworkup.go): ct | pet | tissue
 	PETDay    float64  `json:"pet_day,omitempty"`     // FDG-avid PET/CT day (tissue expected within 28 days)
 	Surv      *LungSurvTruth `json:"pet_surveillance,omitempty"` // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
+	StableSurv *LungSurvTruth `json:"stable_surveillance,omitempty"` // -lungsurvstable: the further CT after a stable follow-up CT (lungsurv.go)
 }
 
 type lungGen struct {
@@ -100,7 +101,7 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 	x.pk = prov.ID + "|" + x.mrn
 	if r.Float64() < prov.PAr {
 		x.script = "ar"
-		if NoiseModel == "v2" {
+		if NoiseModel == "v2" || NoiseModel == "v3" {
 			x.name = noisyArabic2(p.Ar, r)
 		} else {
 			x.name = noisyArabic(p.Ar, r)
@@ -112,13 +113,15 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 			src = opts[r.Intn(len(opts))]
 		}
 		x.script = "lat"
-		if NoiseModel == "v2" {
+		if NoiseModel == "v2" || NoiseModel == "v3" {
 			x.name = noisyLatin2(src, r)
 		} else {
 			x.name = noisyLatin(src, r)
 		}
 	}
-	if NoiseModel == "v2" {
+	if NoiseModel == "v3" {
+		x.dob = noisyDob3(p.Dob, r, .3)
+	} else if NoiseModel == "v2" {
 		x.dob = noisyDob2(p.Dob, r, .3)
 	} else {
 		x.dob = noisyDob(p.Dob, r, .3)
@@ -137,6 +140,7 @@ func (g *lungGen) getReg(p *Person, prov ProvCfg) *reg {
 		bs[i] = byte('0' + (int(bs[i]-'0')+1+r.Intn(9))%10)
 		x.eid = string(bs)
 	}
+	adv.register(x, p) // -wrongeid (genadv.go), own hashed stream
 	g.regs[k] = x
 	g.tr.PKQid[x.pk] = p.Qid
 	g.tr.PKCc[x.pk] = p.Cc
@@ -253,6 +257,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	order := r.Perm(len(bg))
 	next := 0
 	var survCands []petSurvCand // -lungsurv: PET/CT low-uptake closures (lungsurv.go)
+	var stableCands []stableSurvCand // -lungsurvstable: stable follow-up closures whose cell recommends a further CT (lungsurv.go)
 	pick := func(young bool) *Person {
 		for ; next < len(order); next++ {
 			p := bg[order[next]]
@@ -348,7 +353,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 				}
 			}
 		}
-		state, closed := "open", 0.0
+		state, closed, closeOC := "open", 0.0, ""
 		switch {
 		case !inScope:
 			state = "out_of_scope"
@@ -377,7 +382,7 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			if state == "open" || state == "not_assessable" {
 				switch oc {
 				case "stable", "resolved":
-					state, closed = "closed", t
+					state, closed, closeOC = "closed", t, oc
 				case "growing", "suspicious_solid":
 					state = "escalated"
 				case "not_assessable":
@@ -395,6 +400,13 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 			}
 		}
 		lungFinish(lt, state, closed)
+		if LungStableSurv && inScope && wkPath == "" && state == "closed" && closeOC == "stable" && rec.NextHi > 0 {
+			from := F
+			if rec.NextFrom == "followup" {
+				from = closed
+			}
+			stableCands = append(stableCands, stableSurvCand{lt: lt, p: p, ctDay: closed, from: from, lo: from + float64(rec.NextLo), hi: from + float64(rec.NextHi)})
+		}
 		if Handoff && RefRejectExt && LungWorkup && inScope && rec.Action == FlCTPET && lt.Lung.Adherence == "never" && u01(seed, loop, "refrej", "pick") < ExtRejectP {
 			rejected = append(rejected, extRejection{p: p, lt: lt, srID: srID, src: src, unit: hosp, t0: F, urgent: true, mean: mean})
 		}
@@ -419,9 +431,17 @@ func genLung(lungDir string, seed int64, nLung int, bg []*Person, tr *Truth, evs
 	}
 	for _, j := range rejected { // rejected work-up referrals (handoffext.go), after every other lung event
 		g.rejectLung(j)
+		// a re-referred PET/CT with low uptake closes the work-up exactly as on the main path, so it owes the same
+		// surveillance CT (appended after the main-path candidates: their draws on the surveillance stream are unchanged)
+		if lt := j.lt; LungPETSurv && lt.Lung.Path == "pet" && lt.State == "closed" && lt.Lung.Outcome == "pet_low" {
+			survCands = append(survCands, petSurvCand{lt: lt, p: j.p, typ: lt.Lung.Type, mean: j.mean, petDay: lt.ClosedDay})
+		}
 	}
 	if LungPETSurv { // after every other lung event, on its own RNG stream
 		g.genPETSurv(survCands, hosp)
+	}
+	if LungStableSurv { // after that, on its own RNG stream (-lungsurv cohorts unchanged)
+		g.genStableSurv(stableCands, hosp)
 	}
 }
 

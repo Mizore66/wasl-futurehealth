@@ -1,0 +1,2306 @@
+{
+ "chaos": [
+  {
+   "cycle": 1,
+   "down_s": 1.3017315343069038,
+   "status_before_kill": {
+    "linker": {
+     "first_new_output_s": 3.383389,
+     "inflight": 5,
+     "present_at_start": 0,
+     "processed": 1554,
+     "pseq": [
+      260,
+      250,
+      270,
+      248
+     ],
+     "pub_retries": 0,
+     "published": 1028,
+     "records": 556,
+     "stats": {
+      "consent_records": 472,
+      "contact_denied": 24,
+      "contact_granted": 448,
+      "eid_conflicts": 3375,
+      "eid_contradicted_dob": 1,
+      "eid_links": 8,
+      "merges": 32,
+      "signoffs": 5
+     },
+     "suppressed": 0,
+     "uptime": 5.431105333
+    }
+   },
+   "t_kill": 2.6261078749999998,
+   "victims": [
+    "linker"
+   ]
+  },
+  {
+   "cycle": "fhirsub-1",
+   "down_s": 2.2774658682560323,
+   "status_before_kill": {
+    "fhirsub": {
+     "ack_hwm": 2082,
+     "already_ingested_dropped": 0,
+     "buffered": 40862,
+     "done": false,
+     "eof_sent": false,
+     "feed_off": true,
+     "max_seen": 54562,
+     "nats_dup_suppressed": 0,
+     "next": 12401,
+     "published": 2126,
+     "stats": {
+      "accepted_events": 550,
+      "accepted_push": 52712,
+      "buffered_ahead_push": 51662,
+      "dup_dropped_push": 2550,
+      "gap_events": 550,
+      "gap_fills": 11,
+      "recv_event-notification": 1106,
+      "recv_handshake": 1,
+      "recv_heartbeat": 1
+     },
+     "sub": "wsi-crc-7576000",
+     "uptime": 2.579821375
+    }
+   },
+   "t_kill": 2.7,
+   "victims": [
+    "fhirsub"
+   ]
+  },
+  {
+   "cycle": 2,
+   "down_s": 1.955247452893186,
+   "status_before_kill": {
+    "closure-1": {
+     "dup_suppressed": 0,
+     "first_new_output_s": 3.49155775,
+     "inflight": 2,
+     "last_fseq": 2041,
+     "ledger_head": "366dcb3ffcf584fe6e598447b7bbc4041362a4753fa652a17e4a17357e8e70b2",
+     "ledger_oseq": 520,
+     "loops": 242,
+     "next_pseq": 499,
+     "present_at_start": 0,
+     "processed": 498,
+     "pub_retries": 0,
+     "published": 520,
+     "suppressed": 0,
+     "uptime": 11.153865666
+    },
+    "prep-0": {
+     "done": 1082,
+     "dup_suppressed": 0
+    }
+   },
+   "t_kill": 8.105690791,
+   "victims": [
+    "closure-1",
+    "prep-0"
+   ]
+  },
+  {
+   "cycle": "nats",
+   "t_kill": 11.872329875,
+   "victims": [
+    "nats-2"
+   ]
+  }
+ ],
+ "closure": {
+  "cervical": {
+   "baseline_any_proc_120d": {
+    "closed_pred": 237,
+    "false_closure_rate_upper95": 0.486,
+    "false_closures": 100,
+    "missed": 140,
+    "precision": 0.578,
+    "recall": 0.495,
+    "tp": 137
+   },
+   "baseline_eid_only": {
+    "closed_pred": 141,
+    "false_closure_rate_upper95": 0.28,
+    "false_closures": 29,
+    "missed": 165,
+    "precision": 0.794,
+    "recall": 0.404,
+    "tp": 112
+   },
+   "loops": 816,
+   "wasl_live_with_review": {
+    "closed_pred": 250,
+    "false_closure_rate_upper95": 0.015,
+    "false_closures": 0,
+    "missed": 27,
+    "precision": 1,
+    "recall": 0.903,
+    "tp": 250
+   },
+   "wasl_no_review": {
+    "closed_pred": 140,
+    "false_closure_rate_upper95": 0.027,
+    "false_closures": 0,
+    "missed": 137,
+    "precision": 1,
+    "recall": 0.505,
+    "tp": 140
+   }
+  },
+  "crc": {
+   "baseline_any_proc_120d": {
+    "closed_pred": 565,
+    "false_closure_rate_upper95": 0.412,
+    "false_closures": 210,
+    "missed": 395,
+    "precision": 0.628,
+    "recall": 0.473,
+    "tp": 355
+   },
+   "baseline_eid_only": {
+    "closed_pred": 367,
+    "false_closure_rate_upper95": 0.225,
+    "false_closures": 67,
+    "missed": 450,
+    "precision": 0.817,
+    "recall": 0.4,
+    "tp": 300
+   },
+   "loops": 2040,
+   "wasl_live_with_review": {
+    "closed_pred": 582,
+    "false_closure_rate_upper95": 0.007,
+    "false_closures": 0,
+    "missed": 168,
+    "precision": 1,
+    "recall": 0.776,
+    "tp": 582
+   },
+   "wasl_no_review": {
+    "closed_pred": 221,
+    "false_closure_rate_upper95": 0.017,
+    "false_closures": 0,
+    "missed": 529,
+    "precision": 1,
+    "recall": 0.295,
+    "tp": 221
+   }
+  }
+ },
+ "consent_timing": {
+  "intents_cancelled_by_consent": 138,
+  "intents_ever_held_for_consent": 527,
+  "opted_out_loops": 268,
+  "released_after_opt_out_on_file": 0,
+  "released_before_opt_out_recorded": 0,
+  "released_total": 2332,
+  "released_without_granted_consent": 0
+ },
+ "crash_recovery": {
+  "duplicate_outputs": 0,
+  "expected_outputs": 42638,
+  "facts_msgs_replay": 40941,
+  "fhir_msgs": 56504,
+  "final_state_mismatch_loops": 0,
+  "generated_resources": 54441,
+  "ingest_duplicates": 0,
+  "ingest_lost": 0,
+  "live_outputs": 42638,
+  "logical_duplicate_decisions": 36,
+  "lost_outputs": 0,
+  "prep_content_mismatch": 0,
+  "prep_duplicates": 0,
+  "prep_live_msgs": 56504,
+  "prep_lost": 0,
+  "unexpected_outputs": 0,
+  "writer_processes_seen": 5
+ },
+ "crc_kpi_31d": {
+  "definition": "DoH CRC spec App. 2: referral after FIT+ -\u003e colonoscopy conducted within 31 days; acceptable \u003e90%, desirable \u003e95%. Denominator: all FIT+ referrals with \u003e=31 days of follow-up by day 120.",
+  "eid_only": {
+   "accepted_eligible": 1760,
+   "eligible_referrals": 1796,
+   "kpi_accepted_referrals_only": 0.133,
+   "kpi_all_referrals": 0.13,
+   "kpi_among_procedures_seen": 0.657,
+   "per_loop_agreement_with_truth": 0.806,
+   "procedures_seen": 356,
+   "within_31d": 234
+  },
+  "truth": {
+   "accepted_eligible": 1760,
+   "eligible_referrals": 1796,
+   "kpi_accepted_referrals_only": 0.331,
+   "kpi_all_referrals": 0.324,
+   "kpi_among_procedures_seen": 0.64,
+   "per_loop_agreement_with_truth": 1,
+   "procedures_seen": 909,
+   "within_31d": 582
+  },
+  "wasl_live": {
+   "accepted_eligible": 1760,
+   "eligible_referrals": 1796,
+   "kpi_accepted_referrals_only": 0.295,
+   "kpi_all_referrals": 0.289,
+   "kpi_among_procedures_seen": 0.639,
+   "per_loop_agreement_with_truth": 0.965,
+   "procedures_seen": 812,
+   "within_31d": 519
+  },
+  "wasl_no_review": {
+   "accepted_eligible": 1760,
+   "eligible_referrals": 1796,
+   "kpi_accepted_referrals_only": 0.19,
+   "kpi_all_referrals": 0.186,
+   "kpi_among_procedures_seen": 0.646,
+   "per_loop_agreement_with_truth": 0.862,
+   "procedures_seen": 517,
+   "within_31d": 334
+  }
+ },
+ "dropoff": {
+  "cervical": {
+   "loop_accuracy": 0.93,
+   "pipeline": {
+    "(closed)": 250,
+    "awaiting_histology": 34,
+    "in_progress": 89,
+    "inadequate": 36,
+    "never_notified": 81,
+    "no_acknowledgement": 144,
+    "no_show": 34,
+    "not_booked": 87,
+    "referral_rejected": 7,
+    "referral_unanswered": 54
+   },
+   "truth": {
+    "(closed)": 277,
+    "awaiting_histology": 32,
+    "in_progress": 101,
+    "inadequate": 37,
+    "never_notified": 80,
+    "no_acknowledgement": 140,
+    "no_show": 37,
+    "not_booked": 99,
+    "referral_rejected": 7,
+    "referral_unanswered": 6
+   }
+  },
+  "crc": {
+   "loop_accuracy": 0.862,
+   "pipeline": {
+    "(closed)": 582,
+    "awaiting_histology": 74,
+    "in_progress": 173,
+    "inadequate": 154,
+    "never_notified": 201,
+    "no_acknowledgement": 384,
+    "no_show": 91,
+    "not_booked": 220,
+    "referral_rejected": 18,
+    "referral_unanswered": 142,
+    "unlinked": 1
+   },
+   "truth": {
+    "(closed)": 750,
+    "awaiting_histology": 98,
+    "in_progress": 161,
+    "inadequate": 96,
+    "never_notified": 196,
+    "no_acknowledgement": 355,
+    "no_show": 101,
+    "not_booked": 251,
+    "referral_rejected": 15,
+    "referral_unanswered": 17
+   }
+  }
+ },
+ "fhir_msgs": 56504,
+ "fhirsub": {
+  "ack_hwm": 54562,
+  "already_ingested_dropped": 174,
+  "buffered": 0,
+  "done": true,
+  "eof_sent": true,
+  "feed_off": true,
+  "max_seen": 54562,
+  "nats_dup_suppressed": 66,
+  "next": 54563,
+  "published": 52480,
+  "stats": {
+   "accepted_events": 52480,
+   "gap_events": 52480,
+   "gap_fills": 53,
+   "recv_heartbeat": 69,
+   "resumed_from": 2082,
+   "status_polls": 1
+  },
+  "sub": "wsi-crc-7576000",
+  "uptime": 70.702387916
+ },
+ "forged": {
+  "consent_records_accepted": 5869,
+  "forged_consent_target_genuinely_opted_out": 0,
+  "forged_events": 20,
+  "forged_target_pair_falsely_merged_by_linker": 0,
+  "forged_with_any_effect": 0,
+  "rbac_denied_consent": 12,
+  "rbac_denied_signoff": 8
+ },
+ "image_reader": {
+  "mode": "off"
+ },
+ "latency_ms": {
+  "max": 31556.087,
+  "n": 24071,
+  "p50": 29038.49,
+  "p90": 30187.235,
+  "p99": 31109.612
+ },
+ "linkage": {
+  "cross_person_edges_by_basis": {
+   "wasl": 44
+  },
+  "false_merge_pairs": 73,
+  "impure_clusters": 34,
+  "pair_f1": 0.936,
+  "pair_precision": 0.992,
+  "pair_recall": 0.885,
+  "registrations": 17037,
+  "stats": {
+   "cannot_rejects": 5,
+   "consent_records": 5869,
+   "contact_denied": 257,
+   "contact_granted": 5562,
+   "contact_opted_out": 42,
+   "eid_cluster_clash": 49,
+   "eid_conflicts": 272577,
+   "eid_contradicted_dob": 358,
+   "eid_links": 3750,
+   "guard_rejects": 1,
+   "merges": 7335,
+   "rbac_denied_consent": 12,
+   "rbac_denied_signoff": 8,
+   "signoffs": 2048,
+   "splits": 37
+  },
+  "true_pairs": 10474
+ },
+ "live_vs_replay_final_mismatch": 0,
+ "loops": 6323,
+ "loops_by_programme": {
+  "breast": 70,
+  "cervical": 816,
+  "crc": 2040,
+  "diabetic_retinopathy": 1200,
+  "ifhas": 800,
+  "lung_ldct": 309,
+  "lung_nodule": 1088
+ },
+ "malaffi": {
+  "events": 54562,
+  "released": 54562,
+  "stats": {
+   "events_queries": 65,
+   "events_replayed": 53130,
+   "fault_dropped": 37,
+   "fault_duplicated": 51,
+   "fault_reordered": 51,
+   "notifications": 1092,
+   "post_failed_heartbeat": 4,
+   "posted_event": 1106,
+   "posted_handshake": 1,
+   "posted_heartbeat": 70,
+   "status_queries": 1
+  },
+  "status": "off"
+ },
+ "outreach_live": {
+  "by_origin": {
+   "arab": {
+    "intents": 1811,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "filipino": {
+    "intents": 250,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "south_asian": {
+    "intents": 739,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "western": {
+    "intents": 479,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   }
+  },
+  "cross_programme_outreach": {
+   "intents": 0,
+   "released": 0
+  },
+  "dob_guard": {
+   "held": 12,
+   "held_wrong": 0,
+   "released_wrong": 0
+  },
+  "held_below_tau_never_confirmed": 520,
+  "held_below_tau_never_confirmed_wrong": 0,
+  "messages_per_loop_pre_gate": 0.519,
+  "opted_out_loops_truth": 268,
+  "outreach_intents": 3279,
+  "released": 2332,
+  "released_by_basis": {
+   "eid": {
+    "released": 566,
+    "wrong_patient": 0
+   },
+   "human": {
+    "released": 205,
+    "wrong_patient": 0
+   },
+   "p_cal": {
+    "released": 453,
+    "wrong_patient": 0
+   },
+   "self": {
+    "released": 1108,
+    "wrong_patient": 0
+   }
+  },
+  "released_to_opted_out": 0,
+  "suppressed_consent": 135,
+  "v7_released_by_guard": {
+   "dob_match": 782,
+   "eid_match": 119,
+   "human_confirmed": 116,
+   "human_path": 204
+  },
+  "v7_second_id_held": 292,
+  "v7_second_id_held_wrong": 0,
+  "wrong_list": [],
+  "wrong_patient_if_no_gate": 0,
+  "wrong_patient_if_no_gate_per_10k_loops": 0,
+  "wrong_patient_released": 0,
+  "wrong_patient_released_per_10k_loops": 0
+ },
+ "outreach_no_review": {
+  "by_origin": {
+   "arab": {
+    "intents": 1794,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "filipino": {
+    "intents": 247,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "south_asian": {
+    "intents": 733,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   },
+   "western": {
+    "intents": 475,
+    "wrong_pre_gate": 0,
+    "wrong_released": 0
+   }
+  },
+  "cross_programme_outreach": {
+   "intents": 0,
+   "released": 0
+  },
+  "dob_guard": {
+   "held": 0,
+   "held_wrong": 0,
+   "released_wrong": 0
+  },
+  "held_below_tau_never_confirmed": 713,
+  "held_below_tau_never_confirmed_wrong": 0,
+  "messages_per_loop_pre_gate": 0.514,
+  "opted_out_loops_truth": 268,
+  "outreach_intents": 3249,
+  "released": 2001,
+  "released_by_basis": {
+   "below_tau": {
+    "released": 1,
+    "wrong_patient": 0
+   },
+   "eid": {
+    "released": 481,
+    "wrong_patient": 0
+   },
+   "p_cal": {
+    "released": 431,
+    "wrong_patient": 0
+   },
+   "self": {
+    "released": 1088,
+    "wrong_patient": 0
+   }
+  },
+  "released_to_opted_out": 0,
+  "suppressed_consent": 126,
+  "v7_released_by_guard": {
+   "dob_match": 788,
+   "eid_match": 119,
+   "held": 2
+  },
+  "v7_second_id_held": 409,
+  "v7_second_id_held_wrong": 0,
+  "wrong_list": [],
+  "wrong_patient_if_no_gate": 0,
+  "wrong_patient_if_no_gate_per_10k_loops": 0,
+  "wrong_patient_released": 0,
+  "wrong_patient_released_per_10k_loops": 0
+ },
+ "parser_cache": {
+  "parsed_inbound_comms": 2220,
+  "unparsed_cache_miss": 0
+ },
+ "patient_side": {
+  "days_after_deadline_flagged_median": 0.5,
+  "days_after_deadline_flagged_p90": 1,
+  "days_before_deadline_first_escalation_median": 23.1,
+  "days_before_deadline_first_escalation_p10": -0.9,
+  "note": "15 working days = 21 calendar days (NotifSLA). Lag granularity follows the run's decision ticks.",
+  "results_communicated_within_21d_agreement": 1,
+  "results_communicated_within_21d_truth": 0.395,
+  "results_communicated_within_21d_wasl": 0.395,
+  "stalled_flagged_overdue": 1802,
+  "stalled_loops_truth": 1802
+ },
+ "programmes_live": {
+  "breast": {
+   "closure": {
+    "attribution": {},
+    "definition": "closed (assessment outcome documented: return to routine, early recall or referred to treatment) + no_recall_needed (BI-RADS 1/2)",
+    "false_closure_rate_upper95": 0.052,
+    "false_closures": 0,
+    "missed": 0,
+    "precision": 1,
+    "pred_closed": 70,
+    "recall": 1,
+    "tp": 70,
+    "truth_closed": 70
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 5
+    },
+    "no_recall_needed": {
+     "no_recall_needed": 65
+    }
+   },
+   "doh_kpi": {
+    "abnormal_recall_rate": {
+     "doh_acceptable_subsequent": 0.1,
+     "screened": 70,
+     "truth": 0.071,
+     "wasl_measured": 0.071
+    },
+    "assessment_outcome_within_deadline": {
+     "eligible": 5,
+     "per_loop_agreement": 1,
+     "truth": 0.4,
+     "wasl_measured": 0.4
+    },
+    "early_recall_rate": {
+     "doh_acceptable": 0.01,
+     "screened": 70,
+     "truth": 0.014,
+     "wasl_measured": 0.014
+    }
+   },
+   "loops": 70,
+   "overdue_flag_accuracy": 1,
+   "patient_outreach_final": {},
+   "recall_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 5,
+    "recall": 1,
+    "tp": 5,
+    "truth_closed": 5
+   },
+   "recall_outcome_accuracy": 1,
+   "rule": "doh2025breast",
+   "state_accuracy": 1,
+   "triage": {
+    "accuracy": 1,
+    "correct": 70,
+    "coverage": 1,
+    "loops": 70,
+    "with_pipeline_rec": 70
+   },
+   "two_reader": {
+    "breast-assess": {
+     "agree": 15,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 1,
+     "coded_birads": 0,
+     "report_instances": 15,
+     "second_reader_available": 15,
+     "to_review": 0,
+     "unique_texts": 13
+    },
+    "breast-screen": {
+     "agree": 70,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 1,
+     "coded_birads": 51,
+     "report_instances": 70,
+     "second_reader_available": 70,
+     "to_review": 0,
+     "unique_texts": 38
+    }
+   }
+  },
+  "cervical": {
+   "cervical_kpi_colposcopy_within_3_months_hsil_asch": {
+    "doh_acceptable": 0.8,
+    "eligible": 60,
+    "pipeline": 0.583,
+    "truth": 0.6
+   },
+   "days_to_procedure_median": {
+    "n_pipeline": 329,
+    "n_truth": 357,
+    "pipeline": 29.89,
+    "truth": 30.312
+   },
+   "econsult": {
+    "by_trigger": {
+     "inadequate": 51,
+     "rejected": 74,
+     "unanswered": 47
+    },
+    "loops_with_thread": 172,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "accept": 96,
+     "awaiting_reply": 20,
+     "redirect": 32,
+     "reject": 24
+    }
+   },
+   "false_closures": 0,
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 20,
+     "closed": 3,
+     "packets_all_required_fields": 20,
+     "packets_matched": 20,
+     "truth_acted_by_act_by": 9,
+     "truth_closed_after_handoff": 3,
+     "truth_packets": 20,
+     "truth_referrer_acted": 15,
+     "truth_urgent": 3
+    },
+    "final_status": {
+     "medical_director": 5,
+     "referrer_acted": 15
+    }
+   },
+   "kpi_procedure_within_deadline": {
+    "eligible": 126,
+    "pipeline": 0.238,
+    "truth": 0.254
+   },
+   "loops": 816,
+   "notified_within_21d": {
+    "eligible": 816,
+    "pipeline": 0.826,
+    "truth": 0.826
+   },
+   "overdue_flag_accuracy": 0.974,
+   "precision": 1,
+   "pred_closed": 250,
+   "prep_query": {
+    "closed": 0,
+    "false_closures": 0,
+    "final_state": null
+   },
+   "procedure_day_exact": 0.964,
+   "recall": 0.903,
+   "state_accuracy": 0.945,
+   "teachback": {
+    "loops_prompted": 461,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "misunderstood": 62,
+     "needs_human": 64,
+     "partial": 7,
+     "prompted": 102,
+     "understood": 226
+    }
+   },
+   "truth_closed": 277
+  },
+  "crc": {
+   "days_to_procedure_median": {
+    "n_pipeline": 861,
+    "n_truth": 964,
+    "pipeline": 26.071,
+    "truth": 26.095
+   },
+   "econsult": {
+    "by_trigger": {
+     "inadequate": 140,
+     "rejected": 169,
+     "unanswered": 98
+    },
+    "loops_with_thread": 407,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "accept": 211,
+     "awaiting_reply": 56,
+     "conditional": 1,
+     "needs_info": 2,
+     "redirect": 80,
+     "reject": 57
+    }
+   },
+   "false_closures": 0,
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 41,
+     "closed": 8,
+     "packets_all_required_fields": 41,
+     "packets_matched": 41,
+     "truth_acted_by_act_by": 15,
+     "truth_closed_after_handoff": 10,
+     "truth_packets": 41,
+     "truth_referrer_acted": 27,
+     "truth_urgent": 41
+    },
+    "final_status": {
+     "medical_director": 14,
+     "referrer_acted": 27
+    }
+   },
+   "kpi_procedure_within_deadline": {
+    "eligible": 1796,
+    "pipeline": 0.289,
+    "truth": 0.324
+   },
+   "loops": 2040,
+   "notified_within_21d": {
+    "eligible": 2019,
+    "pipeline": 0.875,
+    "truth": 0.875
+   },
+   "overdue_flag_accuracy": 0.923,
+   "precision": 1,
+   "pred_closed": 582,
+   "prep_query": {
+    "closed": 110,
+    "false_closures": 0,
+    "final_state": {
+     "awaiting_unit": 32,
+     "escalated": 10,
+     "unit_graded": 123
+    }
+   },
+   "procedure_day_exact": 0.949,
+   "recall": 0.776,
+   "state_accuracy": 0.877,
+   "teachback": {
+    "loops_prompted": 1138,
+    "state_reconstruction_accuracy": 0.999,
+    "truth_last_state": {
+     "misunderstood": 147,
+     "needs_human": 160,
+     "partial": 28,
+     "prompted": 257,
+     "understood": 546
+    }
+   },
+   "truth_closed": 750
+  },
+  "diabetic_retinopathy": {
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 6
+    },
+    "definition": "closed (eye-clinic note records a retinal exam) + no_referral_needed (R0/R1, no maculopathy)",
+    "false_closure_rate_upper95": 0.003,
+    "false_closures": 0,
+    "missed": 6,
+    "precision": 1,
+    "pred_closed": 1130,
+    "recall": 0.995,
+    "tp": 1130,
+    "truth_closed": 1136
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 55,
+     "open": 6
+    },
+    "no_referral_needed": {
+     "no_referral_needed": 1075
+    },
+    "not_assessable": {
+     "not_assessable": 5
+    },
+    "open": {
+     "open": 59
+    }
+   },
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 3,
+     "closed": 2,
+     "packets_all_required_fields": 3,
+     "packets_matched": 3,
+     "truth_acted_by_act_by": 1,
+     "truth_closed_after_handoff": 2,
+     "truth_packets": 3,
+     "truth_referrer_acted": 3,
+     "truth_urgent": 3
+    },
+    "final_status": {
+     "referrer_acted": 3
+    }
+   },
+   "loops": 1200,
+   "next_due": {
+    "agreement": 0.995,
+    "definition": "-drnext: next due rescreen / clinic review of truth-resolved loops; recall_overdue = no new screen or trusted, read, attended eye-clinic visit by the due day",
+    "follow_up_seen": {
+     "per_loop_agreement": 0.998,
+     "pred": 12,
+     "truth": 14
+    },
+    "kind_interval_due_agree": 1128,
+    "pipeline_has_next": 1128,
+    "recall_overdue": {
+     "fn": 4,
+     "fp": 1,
+     "precision": 0.9,
+     "pred": 10,
+     "recall": 0.692,
+     "tp": 9,
+     "truth": 13
+    },
+    "truth_resolved": 1134
+   },
+   "overdue_flag_accuracy": 0.995,
+   "patient_outreach_final": {
+    "dr_clinic_due:released": 5,
+    "dr_overdue_recall:consent_withheld": 1,
+    "dr_overdue_recall:released": 40,
+    "dr_repeat_photo:released": 14
+   },
+   "referral_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 55,
+    "recall": 0.902,
+    "tp": 55,
+    "truth_closed": 61
+   },
+   "referral_exam_within_deadline": {
+    "eligible": 92,
+    "per_loop_agreement": 0.946,
+    "truth": 0.391,
+    "wasl_measured": 0.337
+   },
+   "rule": "doh2024dr",
+   "state_accuracy": 0.995,
+   "triage": {
+    "accuracy": 1,
+    "correct": 1200,
+    "coverage": 1,
+    "loops": 1200,
+    "with_pipeline_rec": 1200
+   },
+   "two_reader": {
+    "dr-clinic": {
+     "agree": 248,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.973,
+     "coded_grade": 0,
+     "report_instances": 255,
+     "second_reader_available": 248,
+     "to_review": 7,
+     "unique_texts": 39
+    },
+    "dr-screen": {
+     "agree": 1130,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.913,
+     "coded_grade": 765,
+     "report_instances": 1238,
+     "second_reader_available": 1145,
+     "to_review": 108,
+     "unique_texts": 85
+    }
+   }
+  },
+  "ifhas": {
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 19
+    },
+    "definition": "closed (every abnormal domain documented as managed or not confirmed) + no_followup_needed (no abnormal domain)",
+    "false_closure_rate_upper95": 0.006,
+    "false_closures": 0,
+    "missed": 19,
+    "precision": 1,
+    "pred_closed": 695,
+    "recall": 0.973,
+    "tp": 695,
+    "truth_closed": 714
+   },
+   "coding_errors": {
+    "not_auto_decided": 19,
+    "visits": 19
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 214,
+     "open": 18
+    },
+    "no_followup_needed": {
+     "no_followup_needed": 481,
+     "open": 1
+    },
+    "no_show": {
+     "no_show": 3,
+     "open": 1
+    },
+    "open": {
+     "open": 82
+    }
+   },
+   "domain_outcome_accuracy": 1,
+   "followup_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 214,
+    "recall": 0.922,
+    "tp": 214,
+    "truth_closed": 232
+   },
+   "ifhas_kpi": {
+    "abnormal_findings_rate": {
+     "by_domain": {
+      "bp": {
+       "truth": 0.134,
+       "wasl_measured": 0.135
+      },
+      "glyc": {
+       "truth": 0.051,
+       "wasl_measured": 0.051
+      },
+      "lipid": {
+       "truth": 0.043,
+       "wasl_measured": 0.043
+      },
+      "weight": {
+       "truth": 0.228,
+       "wasl_measured": 0.228
+      }
+     },
+     "truth": 0.398,
+     "visits": 800,
+     "wasl_measured": 0.399
+    },
+    "followup_documented_within_clock": {
+     "eligible": 276,
+     "per_loop_agreement": 0.953,
+     "truth": 0.572,
+     "wasl_measured": 0.525
+    }
+   },
+   "loops": 800,
+   "overdue_flag_accuracy": 0.978,
+   "patient_outreach_final": {
+    "ifhas_followup_due:released": 2,
+    "ifhas_overdue_followup:consent_withheld": 4,
+    "ifhas_overdue_followup:released": 79,
+    "ifhas_rebook:consent_withheld": 1,
+    "ifhas_rebook:released": 2
+   },
+   "rule": "doh2025ifhas",
+   "state_accuracy": 0.975,
+   "triage": {
+    "accuracy": 0.999,
+    "correct": 799,
+    "coverage": 1,
+    "loops": 800,
+    "with_pipeline_rec": 800
+   },
+   "two_reader": {
+    "ifhas-followup": {
+     "agree": 345,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.825,
+     "report_instances": 418,
+     "second_reader_available": 385,
+     "to_review": 73,
+     "unique_texts": 129
+    },
+    "ifhas-screen": {
+     "agree": 781,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.976,
+     "report_instances": 800,
+     "second_reader_available": 781,
+     "to_review": 19,
+     "unique_texts": 800
+    }
+   }
+  },
+  "lung_ldct": {
+   "action_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 31,
+    "recall": 0.939,
+    "tp": 31,
+    "truth_closed": 33
+   },
+   "action_outcome_accuracy": 1,
+   "child_loops_from_followup": 9,
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 2
+    },
+    "definition": "closed (follow-up LDCT read, or work-up outcome documented: treatment referral after MDT, proven benign, MDT surveillance) + no_recall_needed (Lung-RADS 1/2)",
+    "false_closure_rate_upper95": 0.013,
+    "false_closures": 0,
+    "missed": 2,
+    "precision": 1,
+    "pred_closed": 287,
+    "recall": 0.993,
+    "tp": 287,
+    "truth_closed": 289
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 31,
+     "open": 2
+    },
+    "no_recall_needed": {
+     "no_recall_needed": 256
+    },
+    "open": {
+     "open": 20
+    }
+   },
+   "deciding_category_truth": {
+    "LR0": 2,
+    "LR1": 106,
+    "LR2": 150,
+    "LR3": 29,
+    "LR4A": 12,
+    "LR4B": 9,
+    "LR4X": 1
+   },
+   "doh_kpi": {
+    "abnormal_recall_rate": {
+     "definition": "Lung-RADS 3, 4A, 4B or 4X (Wasl reading of DoH Appendix 4)",
+     "doh_acceptable_below": 0.25,
+     "doh_desirable_below": 0.2,
+     "index_screens": 300,
+     "truth": 0.14,
+     "wasl_measured": 0.14
+    },
+    "lung_cancer_detection_rate": {
+     "definition": "work-up closed as referred for treatment after MDT, per index screen in the window",
+     "doh_range": "0.5%-1%",
+     "index_screens": 300,
+     "truth": 0.007,
+     "wasl_measured": 0.003
+    },
+    "next_step_within_wasl_clock": {
+     "eligible": 41,
+     "note": "Wasl clocks (design doc A2, A3), not a DoH KPI",
+     "per_loop_agreement": 0.951,
+     "truth": 0.537,
+     "wasl_measured": 0.488
+    }
+   },
+   "index_screens": 300,
+   "loops": 309,
+   "overdue_flag_accuracy": 0.994,
+   "patient_outreach_final": {
+    "ldct_followup_due:released": 1,
+    "ldct_followup_overdue:consent_withheld": 1,
+    "ldct_followup_overdue:released": 7,
+    "ldct_workup_overdue:released": 4
+   },
+   "rule": "acr2022lungrads",
+   "state_accuracy": 0.994,
+   "triage": {
+    "accuracy": 1,
+    "correct": 309,
+    "coverage": 1,
+    "loops": 309,
+    "with_pipeline_rec": 309
+   },
+   "two_reader": {
+    "ldct-screen": {
+     "agree": 329,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.994,
+     "coded_lungrads": 189,
+     "report_instances": 331,
+     "second_reader_available": 331,
+     "to_review": 2,
+     "unique_texts": 46
+    },
+    "ldct-workup": {
+     "agree": 44,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.917,
+     "coded_lungrads": 0,
+     "report_instances": 48,
+     "second_reader_available": 48,
+     "to_review": 4,
+     "unique_texts": 31
+    },
+    "note": "readers written against the dev corpus the generator reuses; no held-out set (not a fair test)"
+   }
+  },
+  "lung_nodule": {
+   "appropriate_followup_within_window": {
+    "eligible": 466,
+    "per_loop_agreement": 0.968,
+    "published_reference": 0.38,
+    "truth": 0.38,
+    "wasl_measured": 0.348
+   },
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 21
+    },
+    "definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed",
+    "false_closure_rate_upper95": 0.01,
+    "false_closures": 0,
+    "missed": 21,
+    "precision": 1,
+    "pred_closed": 387,
+    "recall": 0.949,
+    "tp": 387,
+    "truth_closed": 408
+   },
+   "confusion_truth_pred": {
+    "awaiting_tissue": {
+     "awaiting_tissue": 2,
+     "open": 1
+    },
+    "closed": {
+     "closed": 191,
+     "open": 21
+    },
+    "escalated": {
+     "escalated": 34,
+     "open": 6
+    },
+    "no_followup_needed": {
+     "no_followup_needed": 196
+    },
+    "not_assessable": {
+     "not_assessable": 3
+    },
+    "open": {
+     "open": 534
+    },
+    "out_of_scope": {
+     "out_of_scope": 100
+    }
+   },
+   "escalation": {
+    "both": 34,
+    "precision": 1,
+    "pred_escalated": 34,
+    "recall": 0.85,
+    "truth_escalated": 40
+   },
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 4,
+     "closed": 2,
+     "packets_all_required_fields": 4,
+     "packets_matched": 4,
+     "truth_acted_by_act_by": 3,
+     "truth_closed_after_handoff": 2,
+     "truth_packets": 4,
+     "truth_referrer_acted": 4,
+     "truth_urgent": 4
+    },
+    "final_status": {
+     "referrer_acted": 4
+    }
+   },
+   "loops": 1088,
+   "overdue_flag_accuracy": 0.978,
+   "patient_outreach_final": {
+    "lung_followup_due:consent_unknown_hold": 2,
+    "lung_followup_due:released": 9,
+    "lung_overdue_recall:consent_unknown_hold": 19,
+    "lung_overdue_recall:consent_withheld": 9,
+    "lung_overdue_recall:released": 233
+   },
+   "pet_surveillance": {
+    "adherence_truth": {
+     "late": 5,
+     "never": 7,
+     "within": 7
+    },
+    "closure": {
+     "attribution": {},
+     "false_closure_rate_upper95": 0.278,
+     "false_closures": 0,
+     "missed": 0,
+     "precision": 1,
+     "pred_closed": 10,
+     "pred_closed_within_window": 6,
+     "recall": 1,
+     "tp": 10,
+     "truth_closed": 10,
+     "truth_closed_within_window": 6
+    },
+    "confusion_truth_pred": {
+     "closed": {
+      "closed": 10
+     },
+     "escalated": {
+      "escalated": 1
+     },
+     "open": {
+      "missing": 1,
+      "open": 7
+     }
+    },
+    "definition": "surveillance CT after a PET/CT low-uptake closure (child loop \u003cloop\u003e#surv; BTS 2015)",
+    "escalation": {
+     "both": 1,
+     "pred_escalated": 1,
+     "truth_escalated": 1
+    },
+    "extra_opened": 0,
+    "obligations": 19,
+    "opened": 18,
+    "overdue": {
+     "pred_overdue": 5,
+     "truth_overdue": 6
+    },
+    "overdue_flag_accuracy": 0.947,
+    "overdue_flag_correct": 18,
+    "patient_outreach_final": {
+     "lung_surveillance_due:consent_unknown_hold": 1,
+     "lung_surveillance_recall:released": 5
+    },
+    "state_accuracy": 0.947
+   },
+   "recommendation": {
+    "accuracy": 1,
+    "correct": 988,
+    "coverage": 1,
+    "in_scope_loops": 988,
+    "with_pipeline_rec": 988
+   },
+   "rule": "fleischner2017",
+   "state_accuracy": 0.974,
+   "two_reader": {
+    "lung-ct": {
+     "agree": 399,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.983,
+     "reader_b_cache_hits": 406,
+     "report_instances": 406,
+     "to_review": 7,
+     "unique_texts": 48
+    },
+    "lung-finding": {
+     "agree": 1088,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 1,
+     "reader_b_cache_hits": 1088,
+     "report_instances": 1088,
+     "to_review": 0,
+     "unique_texts": 38
+    },
+    "lung-path": {
+     "agree": 15,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 1,
+     "reader_b_cache_hits": 15,
+     "report_instances": 15,
+     "to_review": 0,
+     "unique_texts": 15
+    },
+    "lung-pet": {
+     "agree": 92,
+     "agree_but_wrong_vs_truth": 0,
+     "agreement_rate": 0.939,
+     "reader_b_cache_hits": 98,
+     "report_instances": 98,
+     "to_review": 6,
+     "unique_texts": 98
+    }
+   },
+   "workup_gt8mm": {
+    "pred_awaiting_tissue": 2,
+    "pred_closed_by_ct": 19,
+    "pred_closed_by_pet": 18,
+    "pred_closed_by_tissue": 8,
+    "truth_awaiting_tissue": 3,
+    "truth_path_ct": 27,
+    "truth_path_pet": 36,
+    "truth_path_tissue": 9
+   }
+  }
+ },
+ "programmes_no_review": {
+  "breast": {
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 2
+    },
+    "definition": "closed (assessment outcome documented: return to routine, early recall or referred to treatment) + no_recall_needed (BI-RADS 1/2)",
+    "false_closure_rate_upper95": 0.053,
+    "false_closures": 0,
+    "missed": 2,
+    "precision": 1,
+    "pred_closed": 68,
+    "recall": 0.971,
+    "tp": 68,
+    "truth_closed": 70
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 3,
+     "open": 2
+    },
+    "no_recall_needed": {
+     "no_recall_needed": 65
+    }
+   },
+   "doh_kpi": {
+    "abnormal_recall_rate": {
+     "doh_acceptable_subsequent": 0.1,
+     "screened": 70,
+     "truth": 0.071,
+     "wasl_measured": 0.071
+    },
+    "assessment_outcome_within_deadline": {
+     "eligible": 5,
+     "per_loop_agreement": 0.8,
+     "truth": 0.4,
+     "wasl_measured": 0.2
+    },
+    "early_recall_rate": {
+     "doh_acceptable": 0.01,
+     "screened": 70,
+     "truth": 0.014,
+     "wasl_measured": 0
+    }
+   },
+   "loops": 70,
+   "overdue_flag_accuracy": 0.971,
+   "patient_outreach_final": {
+    "breast_overdue_recall:released": 2
+   },
+   "recall_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 3,
+    "recall": 0.6,
+    "tp": 3,
+    "truth_closed": 5
+   },
+   "recall_outcome_accuracy": 1,
+   "rule": "doh2025breast",
+   "state_accuracy": 0.971,
+   "triage": {
+    "accuracy": 1,
+    "correct": 70,
+    "coverage": 1,
+    "loops": 70,
+    "with_pipeline_rec": 70
+   }
+  },
+  "cervical": {
+   "cervical_kpi_colposcopy_within_3_months_hsil_asch": {
+    "doh_acceptable": 0.8,
+    "eligible": 60,
+    "pipeline": 0.467,
+    "truth": 0.6
+   },
+   "days_to_procedure_median": {
+    "n_pipeline": 213,
+    "n_truth": 357,
+    "pipeline": 30.435,
+    "truth": 30.312
+   },
+   "econsult": {
+    "by_trigger": {
+     "inadequate": 51,
+     "rejected": 74,
+     "unanswered": 47
+    },
+    "loops_with_thread": 172,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "accept": 96,
+     "awaiting_reply": 20,
+     "redirect": 32,
+     "reject": 24
+    }
+   },
+   "false_closures": 0,
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 20,
+     "closed": 2,
+     "packets_all_required_fields": 20,
+     "packets_matched": 20,
+     "truth_acted_by_act_by": 9,
+     "truth_closed_after_handoff": 3,
+     "truth_packets": 20,
+     "truth_referrer_acted": 15,
+     "truth_urgent": 3
+    },
+    "final_status": {
+     "medical_director": 5,
+     "referrer_acted": 15
+    }
+   },
+   "kpi_procedure_within_deadline": {
+    "eligible": 126,
+    "pipeline": 0.183,
+    "truth": 0.254
+   },
+   "loops": 816,
+   "notified_within_21d": {
+    "eligible": 816,
+    "pipeline": 0.826,
+    "truth": 0.826
+   },
+   "overdue_flag_accuracy": 0.847,
+   "precision": 1,
+   "pred_closed": 140,
+   "prep_query": {
+    "closed": 0,
+    "false_closures": 0,
+    "final_state": null
+   },
+   "procedure_day_exact": 0.822,
+   "recall": 0.505,
+   "state_accuracy": 0.717,
+   "teachback": {
+    "loops_prompted": 461,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "misunderstood": 62,
+     "needs_human": 64,
+     "partial": 7,
+     "prompted": 102,
+     "understood": 226
+    }
+   },
+   "truth_closed": 277
+  },
+  "crc": {
+   "days_to_procedure_median": {
+    "n_pipeline": 546,
+    "n_truth": 964,
+    "pipeline": 26.22,
+    "truth": 26.095
+   },
+   "econsult": {
+    "by_trigger": {
+     "inadequate": 140,
+     "rejected": 169,
+     "unanswered": 98
+    },
+    "loops_with_thread": 407,
+    "state_reconstruction_accuracy": 1,
+    "truth_last_state": {
+     "accept": 211,
+     "awaiting_reply": 56,
+     "conditional": 1,
+     "needs_info": 2,
+     "redirect": 80,
+     "reject": 57
+    }
+   },
+   "false_closures": 0,
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 40,
+     "closed": 2,
+     "packets_all_required_fields": 40,
+     "packets_matched": 40,
+     "packets_missed": 1,
+     "truth_acted_by_act_by": 15,
+     "truth_closed_after_handoff": 10,
+     "truth_packets": 41,
+     "truth_referrer_acted": 27,
+     "truth_urgent": 41
+    },
+    "final_status": {
+     "medical_director": 14,
+     "referrer_acted": 26
+    }
+   },
+   "kpi_procedure_within_deadline": {
+    "eligible": 1796,
+    "pipeline": 0.186,
+    "truth": 0.324
+   },
+   "loops": 2040,
+   "notified_within_21d": {
+    "eligible": 2019,
+    "pipeline": 0.875,
+    "truth": 0.875
+   },
+   "overdue_flag_accuracy": 0.748,
+   "precision": 1,
+   "pred_closed": 221,
+   "prep_query": {
+    "closed": 71,
+    "false_closures": 0,
+    "final_state": {
+     "awaiting_unit": 20,
+     "clinician_day15": 153,
+     "escalated": 9,
+     "unit_graded": 79
+    }
+   },
+   "procedure_day_exact": 0.794,
+   "recall": 0.295,
+   "state_accuracy": 0.627,
+   "teachback": {
+    "loops_prompted": 1138,
+    "state_reconstruction_accuracy": 0.999,
+    "truth_last_state": {
+     "misunderstood": 147,
+     "needs_human": 160,
+     "partial": 28,
+     "prompted": 257,
+     "understood": 546
+    }
+   },
+   "truth_closed": 750
+  },
+  "diabetic_retinopathy": {
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 121
+    },
+    "definition": "closed (eye-clinic note records a retinal exam) + no_referral_needed (R0/R1, no maculopathy)",
+    "false_closure_rate_upper95": 0.004,
+    "false_closures": 0,
+    "missed": 121,
+    "precision": 1,
+    "pred_closed": 1015,
+    "recall": 0.893,
+    "tp": 1015,
+    "truth_closed": 1136
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 34,
+     "open": 27
+    },
+    "no_referral_needed": {
+     "no_referral_needed": 981,
+     "open": 94
+    },
+    "not_assessable": {
+     "not_assessable": 4,
+     "open": 1
+    },
+    "open": {
+     "open": 59
+    }
+   },
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 1,
+     "closed": 1,
+     "packets_all_required_fields": 1,
+     "packets_matched": 1,
+     "packets_missed": 2,
+     "truth_acted_by_act_by": 1,
+     "truth_closed_after_handoff": 2,
+     "truth_packets": 3,
+     "truth_referrer_acted": 3,
+     "truth_urgent": 3
+    },
+    "final_status": {
+     "referrer_acted": 1
+    }
+   },
+   "loops": 1200,
+   "next_due": {
+    "agreement": 0.894,
+    "definition": "-drnext: next due rescreen / clinic review of truth-resolved loops; recall_overdue = no new screen or trusted, read, attended eye-clinic visit by the due day",
+    "follow_up_seen": {
+     "per_loop_agreement": 0.993,
+     "pred": 6,
+     "truth": 14
+    },
+    "kind_interval_due_agree": 1014,
+    "pipeline_has_next": 1014,
+    "recall_overdue": {
+     "fn": 6,
+     "fp": 0,
+     "precision": 1,
+     "pred": 7,
+     "recall": 0.538,
+     "tp": 7,
+     "truth": 13
+    },
+    "truth_resolved": 1134
+   },
+   "overdue_flag_accuracy": 0.977,
+   "patient_outreach_final": {
+    "dr_clinic_due:released": 7,
+    "dr_overdue_recall:consent_withheld": 2,
+    "dr_overdue_recall:released": 50,
+    "dr_repeat_photo:released": 11
+   },
+   "referral_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 34,
+    "recall": 0.557,
+    "tp": 34,
+    "truth_closed": 61
+   },
+   "referral_exam_within_deadline": {
+    "eligible": 92,
+    "per_loop_agreement": 0.815,
+    "truth": 0.391,
+    "wasl_measured": 0.207
+   },
+   "rule": "doh2024dr",
+   "state_accuracy": 0.898,
+   "triage": {
+    "accuracy": 1,
+    "correct": 1094,
+    "coverage": 0.912,
+    "loops": 1200,
+    "with_pipeline_rec": 1094
+   }
+  },
+  "ifhas": {
+   "closure": {
+    "attribution": {
+     "missed_pred_no_show": 1,
+     "missed_pred_open": 110
+    },
+    "definition": "closed (every abnormal domain documented as managed or not confirmed) + no_followup_needed (no abnormal domain)",
+    "false_closure_rate_upper95": 0.006,
+    "false_closures": 0,
+    "missed": 111,
+    "precision": 1,
+    "pred_closed": 603,
+    "recall": 0.845,
+    "tp": 603,
+    "truth_closed": 714
+   },
+   "coding_errors": {
+    "not_auto_decided": 19,
+    "visits": 19
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 132,
+     "no_show": 1,
+     "open": 99
+    },
+    "no_followup_needed": {
+     "no_followup_needed": 471,
+     "open": 11
+    },
+    "no_show": {
+     "no_show": 2,
+     "open": 2
+    },
+    "open": {
+     "open": 82
+    }
+   },
+   "domain_outcome_accuracy": 1,
+   "followup_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 132,
+    "recall": 0.569,
+    "tp": 132,
+    "truth_closed": 232
+   },
+   "ifhas_kpi": {
+    "abnormal_findings_rate": {
+     "by_domain": {
+      "bp": {
+       "truth": 0.134,
+       "wasl_measured": 0.131
+      },
+      "glyc": {
+       "truth": 0.051,
+       "wasl_measured": 0.051
+      },
+      "lipid": {
+       "truth": 0.043,
+       "wasl_measured": 0.041
+      },
+      "weight": {
+       "truth": 0.228,
+       "wasl_measured": 0.221
+      }
+     },
+     "truth": 0.398,
+     "visits": 800,
+     "wasl_measured": 0.388
+    },
+    "followup_documented_within_clock": {
+     "eligible": 276,
+     "per_loop_agreement": 0.754,
+     "truth": 0.572,
+     "wasl_measured": 0.326
+    }
+   },
+   "loops": 800,
+   "overdue_flag_accuracy": 0.894,
+   "patient_outreach_final": {
+    "ifhas_followup_due:released": 2,
+    "ifhas_overdue_followup:consent_withheld": 6,
+    "ifhas_overdue_followup:released": 142,
+    "ifhas_rebook:consent_withheld": 1,
+    "ifhas_rebook:released": 2
+   },
+   "rule": "doh2025ifhas",
+   "state_accuracy": 0.859,
+   "triage": {
+    "accuracy": 1,
+    "correct": 781,
+    "coverage": 0.976,
+    "loops": 800,
+    "with_pipeline_rec": 781
+   }
+  },
+  "lung_ldct": {
+   "action_closure": {
+    "false_closures": 0,
+    "precision": 1,
+    "pred_closed": 28,
+    "recall": 0.848,
+    "tp": 28,
+    "truth_closed": 33
+   },
+   "action_outcome_accuracy": 1,
+   "child_loops_from_followup": 9,
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 5
+    },
+    "definition": "closed (follow-up LDCT read, or work-up outcome documented: treatment referral after MDT, proven benign, MDT surveillance) + no_recall_needed (Lung-RADS 1/2)",
+    "false_closure_rate_upper95": 0.013,
+    "false_closures": 0,
+    "missed": 5,
+    "precision": 1,
+    "pred_closed": 284,
+    "recall": 0.983,
+    "tp": 284,
+    "truth_closed": 289
+   },
+   "confusion_truth_pred": {
+    "closed": {
+     "closed": 28,
+     "open": 5
+    },
+    "no_recall_needed": {
+     "no_recall_needed": 256
+    },
+    "open": {
+     "open": 20
+    }
+   },
+   "deciding_category_truth": {
+    "LR0": 2,
+    "LR1": 106,
+    "LR2": 150,
+    "LR3": 29,
+    "LR4A": 12,
+    "LR4B": 9,
+    "LR4X": 1
+   },
+   "doh_kpi": {
+    "abnormal_recall_rate": {
+     "definition": "Lung-RADS 3, 4A, 4B or 4X (Wasl reading of DoH Appendix 4)",
+     "doh_acceptable_below": 0.25,
+     "doh_desirable_below": 0.2,
+     "index_screens": 300,
+     "truth": 0.14,
+     "wasl_measured": 0.133
+    },
+    "lung_cancer_detection_rate": {
+     "definition": "work-up closed as referred for treatment after MDT, per index screen in the window",
+     "doh_range": "0.5%-1%",
+     "index_screens": 300,
+     "truth": 0.007,
+     "wasl_measured": 0
+    },
+    "next_step_within_wasl_clock": {
+     "eligible": 41,
+     "note": "Wasl clocks (design doc A2, A3), not a DoH KPI",
+     "per_loop_agreement": 0.902,
+     "truth": 0.537,
+     "wasl_measured": 0.439
+    }
+   },
+   "index_screens": 300,
+   "loops": 309,
+   "overdue_flag_accuracy": 0.984,
+   "patient_outreach_final": {
+    "ldct_followup_due:released": 1,
+    "ldct_followup_overdue:consent_withheld": 1,
+    "ldct_followup_overdue:released": 7,
+    "ldct_workup_overdue:released": 7
+   },
+   "rule": "acr2022lungrads",
+   "state_accuracy": 0.984,
+   "triage": {
+    "accuracy": 1,
+    "correct": 307,
+    "coverage": 0.994,
+    "loops": 309,
+    "with_pipeline_rec": 307
+   }
+  },
+  "lung_nodule": {
+   "appropriate_followup_within_window": {
+    "eligible": 466,
+    "per_loop_agreement": 0.85,
+    "published_reference": 0.38,
+    "truth": 0.38,
+    "wasl_measured": 0.23
+   },
+   "closure": {
+    "attribution": {
+     "missed_pred_open": 83
+    },
+    "definition": "closed (follow-up CT stable/resolved, PET/CT low uptake, benign tissue) + no_followup_needed",
+    "false_closure_rate_upper95": 0.012,
+    "false_closures": 0,
+    "missed": 83,
+    "precision": 1,
+    "pred_closed": 325,
+    "recall": 0.797,
+    "tp": 325,
+    "truth_closed": 408
+   },
+   "confusion_truth_pred": {
+    "awaiting_tissue": {
+     "awaiting_tissue": 1,
+     "open": 2
+    },
+    "closed": {
+     "closed": 129,
+     "open": 83
+    },
+    "escalated": {
+     "escalated": 19,
+     "open": 21
+    },
+    "no_followup_needed": {
+     "no_followup_needed": 196
+    },
+    "not_assessable": {
+     "not_assessable": 3
+    },
+    "open": {
+     "open": 534
+    },
+    "out_of_scope": {
+     "out_of_scope": 100
+    }
+   },
+   "escalation": {
+    "both": 19,
+    "precision": 1,
+    "pred_escalated": 19,
+    "recall": 0.475,
+    "truth_escalated": 40
+   },
+   "handoff": {
+    "counts": {
+     "acted_state_correct": 3,
+     "closed": 2,
+     "packets_all_required_fields": 3,
+     "packets_matched": 3,
+     "packets_missed": 1,
+     "truth_acted_by_act_by": 3,
+     "truth_closed_after_handoff": 2,
+     "truth_packets": 4,
+     "truth_referrer_acted": 4,
+     "truth_urgent": 4
+    },
+    "final_status": {
+     "referrer_acted": 3
+    }
+   },
+   "loops": 1088,
+   "overdue_flag_accuracy": 0.915,
+   "patient_outreach_final": {
+    "lung_followup_due:consent_unknown_hold": 2,
+    "lung_followup_due:released": 10,
+    "lung_overdue_recall:consent_unknown_hold": 32,
+    "lung_overdue_recall:consent_withheld": 12,
+    "lung_overdue_recall:released": 286
+   },
+   "pet_surveillance": {
+    "adherence_truth": {
+     "late": 5,
+     "never": 7,
+     "within": 7
+    },
+    "closure": {
+     "attribution": {
+      "missed_pred_missing": 2
+     },
+     "false_closure_rate_upper95": 0.324,
+     "false_closures": 0,
+     "missed": 2,
+     "precision": 1,
+     "pred_closed": 8,
+     "pred_closed_within_window": 4,
+     "recall": 0.8,
+     "tp": 8,
+     "truth_closed": 10,
+     "truth_closed_within_window": 6
+    },
+    "confusion_truth_pred": {
+     "closed": {
+      "closed": 8,
+      "missing": 2
+     },
+     "escalated": {
+      "escalated": 1
+     },
+     "open": {
+      "missing": 6,
+      "open": 2
+     }
+    },
+    "definition": "surveillance CT after a PET/CT low-uptake closure (child loop \u003cloop\u003e#surv; BTS 2015)",
+    "escalation": {
+     "both": 1,
+     "pred_escalated": 1,
+     "truth_escalated": 1
+    },
+    "extra_opened": 0,
+    "obligations": 19,
+    "opened": 11,
+    "overdue": {
+     "pred_overdue": 1,
+     "truth_overdue": 6
+    },
+    "overdue_flag_accuracy": 0.737,
+    "overdue_flag_correct": 14,
+    "patient_outreach_final": {
+     "lung_surveillance_recall:released": 1
+    },
+    "state_accuracy": 0.579
+   },
+   "recommendation": {
+    "accuracy": 1,
+    "correct": 988,
+    "coverage": 1,
+    "in_scope_loops": 988,
+    "with_pipeline_rec": 988
+   },
+   "rule": "fleischner2017",
+   "state_accuracy": 0.903,
+   "workup_gt8mm": {
+    "pred_awaiting_tissue": 1,
+    "pred_closed_by_ct": 15,
+    "pred_closed_by_pet": 11,
+    "pred_closed_by_tissue": 4,
+    "truth_awaiting_tissue": 3,
+    "truth_path_ct": 27,
+    "truth_path_pet": 36,
+    "truth_path_tissue": 9
+   }
+  }
+ },
+ "provenance": {
+  "closed_chains": 4717,
+  "hash_verified": 4717,
+  "tamper_detected": true,
+  "with_human_signoff": 383
+ },
+ "review_queue_per_origin": {
+  "arab": {
+   "evidence_items": 303,
+   "evidence_per_100_loops": 8.79,
+   "link_items": 861,
+   "link_per_100_loops": 24.978,
+   "loops": 3447,
+   "total_per_100_loops": 33.768
+  },
+  "filipino": {
+   "evidence_items": 43,
+   "evidence_per_100_loops": 8.285,
+   "link_items": 121,
+   "link_per_100_loops": 23.314,
+   "loops": 519,
+   "total_per_100_loops": 31.599
+  },
+  "south_asian": {
+   "evidence_items": 134,
+   "evidence_per_100_loops": 9.483,
+   "link_items": 361,
+   "link_per_100_loops": 25.548,
+   "loops": 1413,
+   "total_per_100_loops": 35.032
+  },
+  "western": {
+   "evidence_items": 74,
+   "evidence_per_100_loops": 7.839,
+   "link_items": 208,
+   "link_per_100_loops": 22.034,
+   "loops": 944,
+   "total_per_100_loops": 29.873
+  }
+ },
+ "reviewer": {
+  "by_kind": {
+   "all": {
+    "items": 2048,
+    "items_per_100_loops": 32.39,
+    "loops": 6323,
+    "reads": 3856,
+    "reviewer_hours_per_1k_loops": 11.286,
+    "sim_hours": 71.362,
+    "wrong_final_signoffs": 110
+   },
+   "evidence": {
+    "items": 554,
+    "items_per_100_loops": 8.762,
+    "loops": 6323,
+    "reads": 881,
+    "reviewer_hours_per_1k_loops": 4.263,
+    "sim_hours": 26.955,
+    "wrong_final_signoffs": 59
+   },
+   "link": {
+    "items": 1494,
+    "items_per_100_loops": 23.628,
+    "loops": 6323,
+    "reads": 2975,
+    "reviewer_hours_per_1k_loops": 7.023,
+    "sim_hours": 44.407,
+    "wrong_final_signoffs": 51
+   }
+  },
+  "by_origin": {
+   "arab": {
+    "items": 1134,
+    "items_per_100_loops": 32.898,
+    "loops": 3447,
+    "reads": 2146,
+    "reviewer_hours_per_1k_loops": 11.427,
+    "sim_hours": 39.389,
+    "wrong_final_signoffs": 63
+   },
+   "filipino": {
+    "items": 160,
+    "items_per_100_loops": 30.829,
+    "loops": 519,
+    "reads": 299,
+    "reviewer_hours_per_1k_loops": 10.432,
+    "sim_hours": 5.414,
+    "wrong_final_signoffs": 10
+   },
+   "south_asian": {
+    "items": 480,
+    "items_per_100_loops": 33.97,
+    "loops": 1413,
+    "reads": 892,
+    "reviewer_hours_per_1k_loops": 12.181,
+    "sim_hours": 17.211,
+    "wrong_final_signoffs": 25
+   },
+   "western": {
+    "items": 274,
+    "items_per_100_loops": 29.025,
+    "loops": 944,
+    "reads": 519,
+    "reviewer_hours_per_1k_loops": 9.902,
+    "sim_hours": 9.348,
+    "wrong_final_signoffs": 12
+   }
+  },
+  "by_programme": {
+   "breast": {
+    "items": 2,
+    "items_per_100_loops": 2.857,
+    "loops": 70,
+    "reads": 4,
+    "reviewer_hours_per_1k_loops": 0.506,
+    "sim_hours": 0.035,
+    "wrong_final_signoffs": 0
+   },
+   "cervical": {
+    "items": 457,
+    "items_per_100_loops": 56.005,
+    "loops": 816,
+    "reads": 888,
+    "reviewer_hours_per_1k_loops": 18.536,
+    "sim_hours": 15.125,
+    "wrong_final_signoffs": 15
+   },
+   "crc": {
+    "items": 1213,
+    "items_per_100_loops": 59.461,
+    "loops": 2040,
+    "reads": 2248,
+    "reviewer_hours_per_1k_loops": 20.083,
+    "sim_hours": 40.969,
+    "wrong_final_signoffs": 86
+   },
+   "diabetic_retinopathy": {
+    "items": 137,
+    "items_per_100_loops": 11.417,
+    "loops": 1200,
+    "reads": 268,
+    "reviewer_hours_per_1k_loops": 6.349,
+    "sim_hours": 7.619,
+    "wrong_final_signoffs": 0
+   },
+   "ifhas": {
+    "items": 133,
+    "items_per_100_loops": 16.625,
+    "loops": 800,
+    "reads": 239,
+    "reviewer_hours_per_1k_loops": 5.413,
+    "sim_hours": 4.33,
+    "wrong_final_signoffs": 6
+   },
+   "lung_ldct": {
+    "items": 5,
+    "items_per_100_loops": 1.618,
+    "loops": 309,
+    "reads": 8,
+    "reviewer_hours_per_1k_loops": 0.588,
+    "sim_hours": 0.182,
+    "wrong_final_signoffs": 0
+   },
+   "lung_nodule": {
+    "items": 101,
+    "items_per_100_loops": 9.283,
+    "loops": 1088,
+    "reads": 201,
+    "reviewer_hours_per_1k_loops": 2.851,
+    "sim_hours": 3.102,
+    "wrong_final_signoffs": 3
+   }
+  },
+  "wrong_signoffs": {
+   "evidence_adequate_answered_awaiting_histology": 12,
+   "evidence_adequate_answered_inadequate": 16,
+   "evidence_awaiting_histology_answered_adequate": 3,
+   "evidence_awaiting_histology_answered_inadequate": 21,
+   "evidence_bp=N;glyc=N;lipid=N;weight=N_answered_bp=H;glyc=N;lipid=N;weight=N": 1,
+   "evidence_histology_answered_no_histology": 3,
+   "evidence_inadequate_answered_awaiting_histology": 2,
+   "evidence_weight=managed_answered_weight=pending": 1,
+   "link_truth_true_answered_different": 51
+  }
+ },
+ "reviewer_cfg": {
+  "answered": 2048,
+  "cfg": {
+   "Blind": false,
+   "BlindFactor": 0.5,
+   "Double": "merge+close",
+   "Err": 0.04,
+   "EvMedS": 90,
+   "LinkMedS": 45,
+   "Rho": 0,
+   "Rotate": false,
+   "RotateFactor": 0.1,
+   "Seed": 29,
+   "SeniorAudit": 0,
+   "SeniorErrRel": 0.5,
+   "Sigma": 0.6
+  },
+  "deduped_link": 53,
+  "deduped_second_id": 4,
+  "last_out_seq": 42638,
+  "wrong": 110
+ },
+ "run": "./out/final/v2-s29/run/main",
+ "source": {
+  "Content": "full-resource",
+  "Drop": 0.03,
+  "Dup": 0.05,
+  "HL7Addr": "127.0.0.1:28970",
+  "HL7Drops": 2,
+  "Hie": "127.0.0.1:28980",
+  "Hook": "127.0.0.1:28990",
+  "LagFrac": 0.02,
+  "Overlap": 0.5,
+  "PollSpeed": 0,
+  "Reorder": 0.05,
+  "Source": "fhir",
+  "SubKill": 1
+ },
+ "throughput_ev_s": 780.7808089980263,
+ "two_reader": {
+  "colonoscopy": {
+   "agree": 766,
+   "agree_auto_adequate_wrong": 0,
+   "agree_auto_label_wrong_vs_key": 46,
+   "agree_but_needs_human": 0,
+   "agreement_rate": 0.475,
+   "gemma_cache_hits": 1611,
+   "report_instances": 1611,
+   "to_review": 845,
+   "unique_texts": 43
+  },
+  "colonoscopy_unique_texts_disagree": 22,
+  "colposcopy": {
+   "agree": 346,
+   "agree_auto_adequate_wrong": 0,
+   "agree_auto_label_wrong_vs_key": 0,
+   "agree_but_needs_human": 0,
+   "agreement_rate": 0.923,
+   "gemma_cache_hits": 375,
+   "report_instances": 375,
+   "to_review": 29,
+   "unique_texts": 8
+  },
+  "pathology": {
+   "agree": 749,
+   "agree_auto_adequate_wrong": 0,
+   "agree_auto_label_wrong_vs_key": 0,
+   "agree_but_needs_human": 0,
+   "agreement_rate": 0.948,
+   "gemma_cache_hits": 790,
+   "report_instances": 790,
+   "to_review": 41,
+   "unique_texts": 10
+  }
+ },
+ "wall_s": 72.368582
+}

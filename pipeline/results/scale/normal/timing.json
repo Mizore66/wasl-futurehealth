@@ -1,0 +1,13 @@
+{
+ "label": "normal",
+ "cohort_s": 109.6,
+ "orchestrate_s": 94.3,
+ "audit_s": 206.8,
+ "tamper_s": 1441.4,
+ "report_s": 333.2,
+ "total_s": 2185.3,
+ "loadavg_start": "{ 25.67 20.87 13.00 }",
+ "loadavg_end": "{ 298.30 312.68 263.62 }",
+ "cpus": 12,
+ "mem_gb": 32.0
+}

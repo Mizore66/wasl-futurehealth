@@ -17,6 +17,7 @@ func breastMetrics(final map[string]*Decision, tr *Truth) map[string]interface{}
 	kN, kT, kP, kAgree := 0, 0, 0, 0
 	recallT, recallP, earlyT, earlyP := 0, 0, 0, 0
 	conf, attr, outreach := map[string]map[string]int{}, map[string]int{}, map[string]int{}
+	sh := map[string]int{} // -breastshare: loops on women who also hold another programme's loop
 	ids := make([]string, 0, len(tr.Loops))
 	for id, lt := range tr.Loops {
 		if lt.Prog == "breast" && lt.Breast != nil {
@@ -43,6 +44,15 @@ func breastMetrics(final map[string]*Decision, tr *Truth) map[string]interface{}
 			stateOK++
 		}
 		t, p := breastResolved(lt.State), breastResolved(ps)
+		if len(bt.SharedWith) > 0 {
+			sh["loops"]++
+			sh["tp"] += map[bool]int{true: 1}[t && p]
+			sh["false_closures"] += map[bool]int{true: 1}[p && !t]
+			sh["missed"] += map[bool]int{true: 1}[t && !p]
+			for _, prog := range bt.SharedWith {
+				sh["with_"+prog]++
+			}
+		}
 		switch {
 		case t && p:
 			tp++
@@ -128,7 +138,7 @@ func breastMetrics(final map[string]*Decision, tr *Truth) map[string]interface{}
 			}
 		}
 	}
-	return map[string]interface{}{
+	out := map[string]interface{}{
 		"loops": n, "rule": "doh2025breast", "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"definition": "closed (assessment outcome documented: return to routine, early recall or referred to treatment) + no_recall_needed (BI-RADS 1/2)",
 			"truth_closed": tp + fn, "pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn, "precision": frac(tp, tp+fp),
@@ -144,6 +154,14 @@ func breastMetrics(final map[string]*Decision, tr *Truth) map[string]interface{}
 			"assessment_outcome_within_deadline": map[string]interface{}{"eligible": kN, "truth": frac(kT, kN), "wasl_measured": frac(kP, kN), "per_loop_agreement": frac(kAgree, kN)},
 		},
 	}
+	if sh["loops"] > 0 { // only in -breastshare cohorts, so other reports keep their bytes
+		m := map[string]interface{}{"recall": frac(sh["tp"], sh["tp"]+sh["missed"]), "precision": frac(sh["tp"], sh["tp"]+sh["false_closures"])}
+		for k, v := range sh {
+			m[k] = v
+		}
+		out["shared_person"] = m
+	}
+	return out
 }
 
 // breastTwoReader: end-to-end two-reader statistics over every breast report version in the run's FHIR log.

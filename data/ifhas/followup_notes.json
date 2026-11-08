@@ -1,0 +1,2627 @@
+{
+ "corpus": "ifhas follow-up notes (dev, synthetic, seed 61)",
+ "reports": [
+  {
+   "id": "if001",
+   "text": "Family physician review of abnormal IFHAS results. Clinic BP repeated: 147/94 and 141/92 mmHg. Home BP average 139/90. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if002",
+   "text": "Family physician review of abnormal IFHAS results. BP 196/113 mmHg again today, no headache or visual symptoms, fundi normal. Severe hypertension confirmed; amlodipine and perindopril started, recheck in one week.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if003",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Clinic BP repeated: 162/88 and 158/88 mmHg. Home BP average 154/84. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if004",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory blood pressure monitoring average 157/86 mmHg confirms stage 1 hypertension. Lifestyle programme started (salt reduction, exercise) and referred to the cardiology clinic.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if005",
+   "text": "Family physician review of abnormal IFHAS results. Home BP diary averages 147/96. Diagnosis: essential hypertension. Losartan 50 mg commenced.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if006",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Clinic BP repeated: 146/93 and 146/89 mmHg. Home BP average 138/89. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if007",
+   "text": "Family physician review of abnormal IFHAS results. Home BP diary averages 139/94. Diagnosis: essential hypertension. Losartan 50 mg commenced.",
+   "key": {
+    "label": "bp=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed"
+    }
+   }
+  },
+  {
+   "id": "if008",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BP today 131/74 after rest, and normal on the home monitor. Not hypertensive; no treatment needed.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if009",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory monitoring daytime average 127/80: normal. The screening blood pressure was not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if010",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat clinic readings 134/77 and 132/71 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if011",
+   "text": "IFHAS follow-up visit, family medicine clinic. Ambulatory monitoring daytime average 133/83: normal. The screening blood pressure was not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if012",
+   "text": "Family physician review of abnormal IFHAS results. Repeat clinic readings 123/71 and 123/76 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if013",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BP today 129/74 after rest, and normal on the home monitor. Not hypertensive; no treatment needed.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if014",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Ambulatory monitoring daytime average 121/74: normal. The screening blood pressure was not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if015",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory blood pressure monitoring booked for next week before deciding on treatment.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if016",
+   "text": "IFHAS follow-up visit, family medicine clinic. BP 143/103 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if017",
+   "text": "Family physician review of abnormal IFHAS results. BP 170/98 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if018",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory blood pressure monitoring booked for next week before deciding on treatment.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if019",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BP 162/92 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if020",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BP 147/93 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if021",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory blood pressure monitoring booked for next week before deciding on treatment.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if022",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat HbA1c today 7.5% (IFHAS screening 7.9%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if023",
+   "text": "Family physician review of abnormal IFHAS results. Last year's HbA1c was 5.5%. Repeat HbA1c now 7.5%, so diabetes is confirmed; metformin started and foot and eye screening arranged.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if024",
+   "text": "IFHAS follow-up visit, family medicine clinic. Glycated haemoglobin repeated: 9.6%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if025",
+   "text": "IFHAS follow-up visit, family medicine clinic. Glycated haemoglobin repeated: 7.5%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if026",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Fasting plasma glucose 8.6 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 7.1%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if027",
+   "text": "Follow-up after the periodic adult screening (IFHAS). HbA1c 12.2% with a random glucose of 370 mg/dL and thirst and polyuria for two months. Diabetes confirmed clinically; basal insulin commenced and endocrinology referral sent.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if028",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Glycated haemoglobin repeated: 6.7%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "glyc=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if029",
+   "text": "Family physician review of abnormal IFHAS results. HbA1c rechecked at 40 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if030",
+   "text": "IFHAS follow-up visit, family medicine clinic. Second HbA1c 5.1%, below the diagnostic threshold. No diabetes. Routine screening in 3 years.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if031",
+   "text": "IFHAS follow-up visit, family medicine clinic. Second HbA1c 5.6%, below the diagnostic threshold. No diabetes. Routine screening in 3 years.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if032",
+   "text": "IFHAS follow-up visit, family medicine clinic. Oral glucose tolerance test normal (2-hour glucose 7.3 mmol/L). Diabetes ruled out.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if033",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting glucose 5.1 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if034",
+   "text": "Family physician review of abnormal IFHAS results. Fasting glucose 4.7 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if035",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat HbA1c 6.1% (screening 6.5%); diabetes not confirmed. Prediabetes range: lifestyle advice given and HbA1c again in 12 months.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if036",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting plasma glucose ordered; we will review when the result is back.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if037",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Blood taken today for a second HbA1c; result not yet available.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if038",
+   "text": "Family physician review of abnormal IFHAS results. HbA1c 8.6% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if039",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting plasma glucose ordered; we will review when the result is back.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if040",
+   "text": "Family physician review of abnormal IFHAS results. HbA1c 7.9% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if041",
+   "text": "IFHAS follow-up visit, family medicine clinic. Blood taken today for a second HbA1c; result not yet available.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if042",
+   "text": "Family physician review of abnormal IFHAS results. HbA1c 7.2% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "glyc=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if043",
+   "text": "Family physician review of abnormal IFHAS results. LDL cholesterol 215 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if044",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Fasting lipid profile repeated: LDL 6.4 mmol/L, triglycerides 2.2 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if045",
+   "text": "Follow-up after the periodic adult screening (IFHAS). LDL cholesterol 218 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if046",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. LDL cholesterol 223 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if047",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. LDL cholesterol 232 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if048",
+   "text": "Follow-up after the periodic adult screening (IFHAS). LDL cholesterol 245 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if049",
+   "text": "Family physician review of abnormal IFHAS results. Fasting triglycerides 8.4 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started.",
+   "key": {
+    "label": "lipid=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if050",
+   "text": "Family physician review of abnormal IFHAS results. Fasting lipid profile repeated: triglycerides 1.8 mmol/L and LDL 3.6 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if051",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile repeated: triglycerides 2.3 mmol/L and LDL 3.3 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if052",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile repeated: triglycerides 2.2 mmol/L and LDL 3.3 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if053",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipid profile repeated: triglycerides 1.2 mmol/L and LDL 2.6 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if054",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipids are normal on repeat (LDL 113 mg/dL, TG 116 mg/dL). Lipid abnormality not confirmed.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if055",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat LDL 3.5 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if056",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat LDL 3.3 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if057",
+   "text": "Family physician review of abnormal IFHAS results. Fasting lipid profile ordered; result to follow.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if058",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Statin discussed for the raised LDL but the patient wants to try diet first and decide later; repeat lipids in 3 months.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if059",
+   "text": "Follow-up after the periodic adult screening (IFHAS). The patient had eaten before the screening test; fasting lipids requested and a review booked.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if060",
+   "text": "Family physician review of abnormal IFHAS results. Statin discussed for the raised LDL but the patient wants to try diet first and decide later; repeat lipids in 3 months.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if061",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile ordered; result to follow.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if062",
+   "text": "Follow-up after the periodic adult screening (IFHAS). The patient had eaten before the screening test; fasting lipids requested and a review booked.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if063",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipid profile ordered; result to follow.",
+   "key": {
+    "label": "lipid=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if064",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Obesity class II (BMI 31.3). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if065",
+   "text": "IFHAS follow-up visit, family medicine clinic. BMI 40.7. Weight management: dietitian appointment booked and an exercise prescription given.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if066",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BMI 40.1 kg/m2 confirmed (weight 100 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if067",
+   "text": "IFHAS follow-up visit, family medicine clinic. BMI 30.9 kg/m2 confirmed (weight 118 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if068",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Weight 117 kg, BMI 40.0; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if069",
+   "text": "IFHAS follow-up visit, family medicine clinic. Obesity class II (BMI 34.5). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if070",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Weight 130 kg, BMI 37.3; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if071",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Re-measured weight 80 kg and height 175 cm: BMI 26.1 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if072",
+   "text": "Family physician review of abnormal IFHAS results. Re-measured weight 85 kg and height 182 cm: BMI 27.2 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if073",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Re-measured weight 82 kg and height 175 cm: BMI 26.2 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if074",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Height was entered wrongly at screening; corrected BMI 28.0, so not obese. No weight programme needed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if075",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Height was entered wrongly at screening; corrected BMI 27.4, so not obese. No weight programme needed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if076",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Height was entered wrongly at screening; corrected BMI 27.2, so not obese. No weight programme needed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if077",
+   "text": "IFHAS follow-up visit, family medicine clinic. Height was entered wrongly at screening; corrected BMI 26.8, so not obese. No weight programme needed.",
+   "key": {
+    "label": "weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if078",
+   "text": "IFHAS follow-up visit, family medicine clinic. Referral to the dietitian offered for BMI 39.3; the patient declined for now.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if079",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if080",
+   "text": "IFHAS follow-up visit, family medicine clinic. Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if081",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Referral to the dietitian offered for BMI 35.6; the patient declined for now.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if082",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if083",
+   "text": "IFHAS follow-up visit, family medicine clinic. Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if084",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Referral to the dietitian offered for BMI 39.3; the patient declined for now.",
+   "key": {
+    "label": "weight=pending",
+    "attended": "yes",
+    "status": {
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if085",
+   "text": "Family physician review of abnormal IFHAS results. Referred for raised blood pressure and raised HbA1c. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending"
+    }
+   }
+  },
+  {
+   "id": "if086",
+   "text": "IFHAS follow-up visit, family medicine clinic. Referred for raised HbA1c and raised cholesterol. Fasting glucose 4.8 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if087",
+   "text": "IFHAS follow-up visit, family medicine clinic. Referred for raised cholesterol and raised blood pressure. Fasting lipid profile repeated: triglycerides 1.5 mmol/L and LDL 3.9 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if088",
+   "text": "Family physician review of abnormal IFHAS results. Referred for raised BMI and raised cholesterol. BMI 34.0. Weight management: dietitian appointment booked and an exercise prescription given.",
+   "key": {
+    "label": "weight=managed",
+    "attended": "yes",
+    "status": {
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if089",
+   "text": "IFHAS follow-up visit, family medicine clinic. Home BP diary averages 140/88. Diagnosis: essential hypertension. Losartan 50 mg commenced. Glycated haemoglobin repeated: 6.7%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "bp=managed;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if090",
+   "text": "Family physician review of abnormal IFHAS results. Clinic BP repeated: 144/95 and 140/94 mmHg. Home BP average 136/91. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. Second HbA1c 78 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months.",
+   "key": {
+    "label": "bp=managed;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if091",
+   "text": "Family physician review of abnormal IFHAS results. Clinic BP repeated: 166/103 and 160/103 mmHg. Home BP average 158/99. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. Fasting glucose 5.1 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "bp=managed;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if092",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Second HbA1c 5.5%, below the diagnostic threshold. No diabetes. Routine screening in 3 years. Home BP diary averages 162/87. Diagnosis: essential hypertension. Losartan 50 mg commenced.",
+   "key": {
+    "label": "bp=managed;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if093",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Clinic BP repeated: 159/89 and 156/86 mmHg. Home BP average 151/85. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. HbA1c 8.3% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "bp=managed;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if094",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Home BP diary averages 154/100. Diagnosis: essential hypertension. Losartan 50 mg commenced. Repeat HbA1c requested to confirm the screening result of 6.7%; results awaited.",
+   "key": {
+    "label": "bp=managed;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if095",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat clinic readings 126/84 and 132/81 mmHg, normal. No hypertension. Routine follow-up. HbA1c 13.0% with a random glucose of 312 mg/dL and thirst and polyuria for two months. Diabetes confirmed clinically; basal insulin commenced and endocrinology referral sent.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if096",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Glycated haemoglobin repeated: 7.1%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice. Repeat clinic readings 134/83 and 134/80 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if097",
+   "text": "Family physician review of abnormal IFHAS results. Home BP diary over 7 days averages 127/77 mmHg. White-coat effect; hypertension not confirmed. Recheck at the next routine screening. Repeat HbA1c 6.0% (screening 6.6%); diabetes not confirmed. Prediabetes range: lifestyle advice given and HbA1c again in 12 months.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if098",
+   "text": "IFHAS follow-up visit, family medicine clinic. BP today 122/76 after rest, and normal on the home monitor. Not hypertensive; no treatment needed. Repeat HbA1c 6.0% (screening 6.9%); diabetes not confirmed. Prediabetes range: lifestyle advice given and HbA1c again in 12 months.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if099",
+   "text": "IFHAS follow-up visit, family medicine clinic. Ambulatory monitoring daytime average 133/75: normal. The screening blood pressure was not confirmed. Repeat HbA1c requested to confirm the screening result of 8.2%; results awaited.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if100",
+   "text": "Family physician review of abnormal IFHAS results. BP today 128/80 after rest, and normal on the home monitor. Not hypertensive; no treatment needed. Repeat HbA1c 6.8% confirms type 2 diabetes. Treatment options discussed; the plan will be agreed at the next visit.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if101",
+   "text": "Family physician review of abnormal IFHAS results. Ambulatory blood pressure monitoring booked for next week before deciding on treatment. Fasting plasma glucose 8.5 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 8.4%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme.",
+   "key": {
+    "label": "bp=pending;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if102",
+   "text": "Family physician review of abnormal IFHAS results. Second HbA1c 53 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months. BP 144/88 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending;glyc=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "managed"
+    }
+   }
+  },
+  {
+   "id": "if103",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Home BP monitor issued; the patient will return with a 7-day diary. Fasting glucose 4.9 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "bp=pending;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if104",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. HbA1c rechecked at 44 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending;glyc=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if105",
+   "text": "IFHAS follow-up visit, family medicine clinic. HbA1c 6.9% at screening discussed. The patient declined a repeat blood test today and will think about it. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if106",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BP 170/92 today. Recheck in 2 weeks before any diagnosis is made. HbA1c 7.3% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "bp=pending;glyc=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "pending"
+    }
+   }
+  },
+  {
+   "id": "if107",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Clinic BP repeated: 164/92 and 161/88 mmHg. Home BP average 156/88. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. Fasting lipid profile repeated: LDL 5.3 mmol/L, triglycerides 1.9 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested.",
+   "key": {
+    "label": "bp=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if108",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat LDL-C 5.2 mmol/L. High-intensity statin therapy started. Blood pressure remains raised at 144/100 on three readings. Hypertension diagnosed and treatment started with indapamide.",
+   "key": {
+    "label": "bp=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if109",
+   "text": "IFHAS follow-up visit, family medicine clinic. BP 189/110 mmHg again today, no headache or visual symptoms, fundi normal. Severe hypertension confirmed; amlodipine and perindopril started, recheck in one week. Fasting lipid profile repeated: triglycerides 2.0 mmol/L and LDL 2.7 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "bp=managed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if110",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Ambulatory blood pressure monitoring average 150/97 mmHg confirms stage 1 hypertension. Lifestyle programme started (salt reduction, exercise) and referred to the cardiology clinic. Repeat LDL 3.5 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "bp=managed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if111",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Statin discussed for the raised LDL but the patient wants to try diet first and decide later; repeat lipids in 3 months. Home BP diary averages 151/97. Diagnosis: essential hypertension. Losartan 50 mg commenced.",
+   "key": {
+    "label": "bp=managed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if112",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Lipid results discussed; repeat fasting sample next week, then decide about a statin. Ambulatory blood pressure monitoring average 140/89 mmHg confirms stage 1 hypertension. Lifestyle programme started (salt reduction, exercise) and referred to the cardiology clinic.",
+   "key": {
+    "label": "bp=managed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if113",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat LDL-C 5.5 mmol/L. High-intensity statin therapy started. Repeat clinic readings 119/73 and 120/73 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if114",
+   "text": "Family physician review of abnormal IFHAS results. Repeat LDL-C 5.0 mmol/L. High-intensity statin therapy started. Repeat clinic readings 120/71 and 121/80 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if115",
+   "text": "IFHAS follow-up visit, family medicine clinic. Ambulatory monitoring daytime average 131/83: normal. The screening blood pressure was not confirmed. Fasting lipids are normal on repeat (LDL 146 mg/dL, TG 105 mg/dL). Lipid abnormality not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if116",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat LDL 4.3 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now. Ambulatory monitoring daytime average 126/83: normal. The screening blood pressure was not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if117",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. The patient had eaten before the screening test; fasting lipids requested and a review booked. Repeat clinic readings 121/82 and 118/72 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if118",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile ordered; result to follow. BP today 125/84 after rest, and normal on the home monitor. Not hypertensive; no treatment needed.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if119",
+   "text": "Follow-up after the periodic adult screening (IFHAS). LDL cholesterol 220 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic. Ambulatory blood pressure monitoring booked for next week before deciding on treatment.",
+   "key": {
+    "label": "bp=pending;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if120",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting triglycerides 8.3 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if121",
+   "text": "Family physician review of abnormal IFHAS results. Fasting lipids are normal on repeat (LDL 133 mg/dL, TG 99 mg/dL). Lipid abnormality not confirmed. BP 154/88 today. Recheck in 2 weeks before any diagnosis is made.",
+   "key": {
+    "label": "bp=pending;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if122",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Ambulatory blood pressure monitoring booked for next week before deciding on treatment. Repeat LDL 3.4 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "bp=pending;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if123",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Home BP monitor issued; the patient will return with a 7-day diary. Fasting lipid profile ordered; result to follow.",
+   "key": {
+    "label": "bp=pending;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if124",
+   "text": "Family physician review of abnormal IFHAS results. Lipid results discussed; repeat fasting sample next week, then decide about a statin. Ambulatory blood pressure monitoring booked for next week before deciding on treatment.",
+   "key": {
+    "label": "bp=pending;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if125",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Obesity class II (BMI 40.8). Weight-loss plan agreed; GLP-1 therapy started. Blood pressure remains raised at 152/93 on three readings. Hypertension diagnosed and treatment started with indapamide.",
+   "key": {
+    "label": "bp=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if126",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Blood pressure remains raised at 142/90 on three readings. Hypertension diagnosed and treatment started with indapamide. Obesity class II (BMI 38.6). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "bp=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if127",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Blood pressure remains raised at 144/98 on three readings. Hypertension diagnosed and treatment started with indapamide. Height was entered wrongly at screening; corrected BMI 28.9, so not obese. No weight programme needed.",
+   "key": {
+    "label": "bp=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if128",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Clinic BP repeated: 154/95 and 152/91 mmHg. Home BP average 146/91. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. Re-measured weight 84 kg and height 176 cm: BMI 24.0 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "bp=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if129",
+   "text": "Family physician review of abnormal IFHAS results. Referral to the dietitian offered for BMI 31.5; the patient declined for now. BP 182/117 mmHg again today, no headache or visual symptoms, fundi normal. Severe hypertension confirmed; amlodipine and perindopril started, recheck in one week.",
+   "key": {
+    "label": "bp=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if130",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Ambulatory blood pressure monitoring average 142/98 mmHg confirms stage 1 hypertension. Lifestyle programme started (salt reduction, exercise) and referred to the cardiology clinic. Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "bp=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if131",
+   "text": "Family physician review of abnormal IFHAS results. BMI 34.4. Weight management: dietitian appointment booked and an exercise prescription given. Home BP diary over 7 days averages 118/82 mmHg. White-coat effect; hypertension not confirmed. Recheck at the next routine screening.",
+   "key": {
+    "label": "bp=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if132",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat clinic readings 128/74 and 122/76 mmHg, normal. No hypertension. Routine follow-up. Obesity class II (BMI 32.5). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "bp=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if133",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Re-measured weight 83 kg and height 178 cm: BMI 24.5 kg/m2. The screening BMI was a measurement error; obesity not confirmed. BP today 132/78 after rest, and normal on the home monitor. Not hypertensive; no treatment needed.",
+   "key": {
+    "label": "bp=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if134",
+   "text": "Family physician review of abnormal IFHAS results. Repeat clinic readings 131/70 and 120/70 mmHg, normal. No hypertension. Routine follow-up. Re-measured weight 77 kg and height 183 cm: BMI 28.0 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "bp=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if135",
+   "text": "Family physician review of abnormal IFHAS results. Referral to the dietitian offered for BMI 31.0; the patient declined for now. Repeat clinic readings 126/79 and 123/82 mmHg, normal. No hypertension. Routine follow-up.",
+   "key": {
+    "label": "bp=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if136",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. BP today 130/74 after rest, and normal on the home monitor. Not hypertensive; no treatment needed. Referral to the dietitian offered for BMI 30.5; the patient declined for now.",
+   "key": {
+    "label": "bp=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if137",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Ambulatory blood pressure monitoring booked for next week before deciding on treatment. Weight 99 kg, BMI 31.4; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "bp=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if138",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Blood pressure discussed; readings to be repeated at the next visit. Weight 116 kg, BMI 35.6; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "bp=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if139",
+   "text": "Family physician review of abnormal IFHAS results. Height was entered wrongly at screening; corrected BMI 27.2, so not obese. No weight programme needed. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if140",
+   "text": "IFHAS follow-up visit, family medicine clinic. Re-measured weight 80 kg and height 185 cm: BMI 28.0 kg/m2. The screening BMI was a measurement error; obesity not confirmed. Home BP monitor issued; the patient will return with a 7-day diary.",
+   "key": {
+    "label": "bp=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if141",
+   "text": "Family physician review of abnormal IFHAS results. BMI 30.3 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit. Blood pressure discussed; readings to be repeated at the next visit.",
+   "key": {
+    "label": "bp=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if142",
+   "text": "Family physician review of abnormal IFHAS results. BP 154/95 today. Recheck in 2 weeks before any diagnosis is made. BMI 30.9 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit.",
+   "key": {
+    "label": "bp=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if143",
+   "text": "Family physician review of abnormal IFHAS results. Second HbA1c 83 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months. Fasting triglycerides 6.7 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started.",
+   "key": {
+    "label": "glyc=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if144",
+   "text": "IFHAS follow-up visit, family medicine clinic. Last year's HbA1c was 5.8%. Repeat HbA1c now 8.9%, so diabetes is confirmed; metformin started and foot and eye screening arranged. Repeat LDL-C 5.0 mmol/L. High-intensity statin therapy started.",
+   "key": {
+    "label": "glyc=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if145",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipids are normal on repeat (LDL 110 mg/dL, TG 139 mg/dL). Lipid abnormality not confirmed. Last year's HbA1c was 5.9%. Repeat HbA1c now 9.1%, so diabetes is confirmed; metformin started and foot and eye screening arranged.",
+   "key": {
+    "label": "glyc=managed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if146",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipid profile repeated: triglycerides 1.9 mmol/L and LDL 3.3 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening. Glycated haemoglobin repeated: 7.6%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "glyc=managed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if147",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Repeat HbA1c today 7.8% (IFHAS screening 6.7%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education. The patient had eaten before the screening test; fasting lipids requested and a review booked.",
+   "key": {
+    "label": "glyc=managed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if148",
+   "text": "Family physician review of abnormal IFHAS results. Fasting plasma glucose 10.6 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 6.9%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme. The patient had eaten before the screening test; fasting lipids requested and a review booked.",
+   "key": {
+    "label": "glyc=managed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if149",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting triglycerides 8.2 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Fasting glucose 5.3 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if150",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting triglycerides 8.4 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Oral glucose tolerance test normal (2-hour glucose 6.6 mmol/L). Diabetes ruled out.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if151",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting lipids are normal on repeat (LDL 148 mg/dL, TG 145 mg/dL). Lipid abnormality not confirmed. HbA1c rechecked at 44 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if152",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Fasting glucose 5.0 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening. Fasting lipids are normal on repeat (LDL 145 mg/dL, TG 133 mg/dL). Lipid abnormality not confirmed.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if153",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile ordered; result to follow. Second HbA1c 5.4%, below the diagnostic threshold. No diabetes. Routine screening in 3 years.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if154",
+   "text": "IFHAS follow-up visit, family medicine clinic. Statin discussed for the raised LDL but the patient wants to try diet first and decide later; repeat lipids in 3 months. Fasting glucose 5.0 mmol/L on repeat, within normal limits. The raised random glucose at screening is not confirmed; back to routine IFHAS screening.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if155",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Blood taken today for a second HbA1c; result not yet available. Fasting lipid profile repeated: LDL 5.4 mmol/L, triglycerides 2.6 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested.",
+   "key": {
+    "label": "glyc=pending;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if156",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Fasting lipid profile repeated: LDL 6.2 mmol/L, triglycerides 2.2 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested. Repeat HbA1c requested to confirm the screening result of 7.5%; results awaited.",
+   "key": {
+    "label": "glyc=pending;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if157",
+   "text": "Family physician review of abnormal IFHAS results. Blood taken today for a second HbA1c; result not yet available. Fasting lipids are normal on repeat (LDL 113 mg/dL, TG 107 mg/dL). Lipid abnormality not confirmed.",
+   "key": {
+    "label": "glyc=pending;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if158",
+   "text": "IFHAS follow-up visit, family medicine clinic. Blood taken today for a second HbA1c; result not yet available. Fasting lipids are normal on repeat (LDL 119 mg/dL, TG 117 mg/dL). Lipid abnormality not confirmed.",
+   "key": {
+    "label": "glyc=pending;lipid=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if159",
+   "text": "Family physician review of abnormal IFHAS results. Fasting lipid profile ordered; result to follow. Repeat HbA1c 7.6% confirms type 2 diabetes. Treatment options discussed; the plan will be agreed at the next visit.",
+   "key": {
+    "label": "glyc=pending;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if160",
+   "text": "Family physician review of abnormal IFHAS results. The patient had eaten before the screening test; fasting lipids requested and a review booked. HbA1c 7.0% at screening discussed. The patient declined a repeat blood test today and will think about it.",
+   "key": {
+    "label": "glyc=pending;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if161",
+   "text": "IFHAS follow-up visit, family medicine clinic. Obesity class II (BMI 40.1). Weight-loss plan agreed; GLP-1 therapy started. HbA1c 11.8% with a random glucose of 397 mg/dL and thirst and polyuria for two months. Diabetes confirmed clinically; basal insulin commenced and endocrinology referral sent.",
+   "key": {
+    "label": "glyc=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if162",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting plasma glucose 8.2 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 7.0%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme. BMI 30.6 kg/m2 confirmed (weight 115 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme.",
+   "key": {
+    "label": "glyc=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if163",
+   "text": "Family physician review of abnormal IFHAS results. Height was entered wrongly at screening; corrected BMI 25.6, so not obese. No weight programme needed. Second HbA1c 58 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months.",
+   "key": {
+    "label": "glyc=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if164",
+   "text": "IFHAS follow-up visit, family medicine clinic. Second HbA1c 62 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months. Height was entered wrongly at screening; corrected BMI 27.1, so not obese. No weight programme needed.",
+   "key": {
+    "label": "glyc=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if165",
+   "text": "IFHAS follow-up visit, family medicine clinic. BMI 30.4 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit. Repeat HbA1c today 6.8% (IFHAS screening 9.1%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education.",
+   "key": {
+    "label": "glyc=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if166",
+   "text": "Family physician review of abnormal IFHAS results. Second HbA1c 66 mmol/mol confirms diabetes. Management plan: metformin, dietitian appointment and review in 3 months. BMI 30.3 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit.",
+   "key": {
+    "label": "glyc=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if167",
+   "text": "Family physician review of abnormal IFHAS results. Second HbA1c 5.4%, below the diagnostic threshold. No diabetes. Routine screening in 3 years. BMI 36.1. Weight management: dietitian appointment booked and an exercise prescription given.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if168",
+   "text": "IFHAS follow-up visit, family medicine clinic. HbA1c rechecked at 42 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly. BMI 35.5. Weight management: dietitian appointment booked and an exercise prescription given.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if169",
+   "text": "IFHAS follow-up visit, family medicine clinic. Oral glucose tolerance test normal (2-hour glucose 5.6 mmol/L). Diabetes ruled out. Height was entered wrongly at screening; corrected BMI 25.9, so not obese. No weight programme needed.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if170",
+   "text": "Follow-up after the periodic adult screening (IFHAS). HbA1c rechecked at 43 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly. Re-measured weight 84 kg and height 173 cm: BMI 24.2 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if171",
+   "text": "IFHAS follow-up visit, family medicine clinic. Oral glucose tolerance test normal (2-hour glucose 6.6 mmol/L). Diabetes ruled out. Weight discussed; a plan will be decided after the blood results.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if172",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Weight discussed; a plan will be decided after the blood results. HbA1c rechecked at 39 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly.",
+   "key": {
+    "label": "glyc=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if173",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BMI 40.5. Weight management: dietitian appointment booked and an exercise prescription given. Fasting plasma glucose ordered; we will review when the result is back.",
+   "key": {
+    "label": "glyc=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if174",
+   "text": "Family physician review of abnormal IFHAS results. Obesity class II (BMI 31.5). Weight-loss plan agreed; GLP-1 therapy started. Fasting plasma glucose ordered; we will review when the result is back.",
+   "key": {
+    "label": "glyc=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if175",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. HbA1c 7.9% at screening discussed. The patient declined a repeat blood test today and will think about it. Height was entered wrongly at screening; corrected BMI 26.9, so not obese. No weight programme needed.",
+   "key": {
+    "label": "glyc=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if176",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Repeat HbA1c 7.9% confirms type 2 diabetes. Treatment options discussed; the plan will be agreed at the next visit. Re-measured weight 79 kg and height 184 cm: BMI 27.8 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "glyc=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if177",
+   "text": "IFHAS follow-up visit, family medicine clinic. Blood taken today for a second HbA1c; result not yet available. Referral to the dietitian offered for BMI 37.1; the patient declined for now.",
+   "key": {
+    "label": "glyc=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if178",
+   "text": "Follow-up after the periodic adult screening (IFHAS). HbA1c 9.2% at screening discussed. The patient declined a repeat blood test today and will think about it. BMI 35.5 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit.",
+   "key": {
+    "label": "glyc=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if179",
+   "text": "Follow-up after the periodic adult screening (IFHAS). BMI 31.0 kg/m2 confirmed (weight 99 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme. LDL cholesterol 230 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if180",
+   "text": "IFHAS follow-up visit, family medicine clinic. BMI 40.8 kg/m2 confirmed (weight 104 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme. LDL cholesterol 203 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic.",
+   "key": {
+    "label": "lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if181",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat LDL-C 5.0 mmol/L. High-intensity statin therapy started. Re-measured weight 73 kg and height 184 cm: BMI 26.7 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "lipid=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if182",
+   "text": "IFHAS follow-up visit, family medicine clinic. Height was entered wrongly at screening; corrected BMI 27.8, so not obese. No weight programme needed. Fasting lipid profile repeated: LDL 6.5 mmol/L, triglycerides 2.3 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested.",
+   "key": {
+    "label": "lipid=managed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if183",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Weight discussed; a plan will be decided after the blood results. Fasting lipid profile repeated: LDL 5.6 mmol/L, triglycerides 1.6 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested.",
+   "key": {
+    "label": "lipid=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if184",
+   "text": "IFHAS follow-up visit, family medicine clinic. Weight discussed; a plan will be decided after the blood results. Fasting triglycerides 7.3 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started.",
+   "key": {
+    "label": "lipid=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if185",
+   "text": "Family physician review of abnormal IFHAS results. Obesity class II (BMI 31.1). Weight-loss plan agreed; GLP-1 therapy started. Fasting lipid profile repeated: triglycerides 2.4 mmol/L and LDL 3.5 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if186",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat LDL 3.4 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now. BMI 33.0 kg/m2 confirmed (weight 109 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if187",
+   "text": "IFHAS follow-up visit, family medicine clinic. Re-measured weight 74 kg and height 172 cm: BMI 24.0 kg/m2. The screening BMI was a measurement error; obesity not confirmed. Fasting lipid profile repeated: triglycerides 1.9 mmol/L and LDL 3.8 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if188",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile repeated: triglycerides 2.4 mmol/L and LDL 3.9 mmol/L. The raised non-fasting triglyceride at screening is not confirmed; routine screening. Re-measured weight 79 kg and height 185 cm: BMI 29.3 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if189",
+   "text": "IFHAS follow-up visit, family medicine clinic. Referral to the dietitian offered for BMI 33.6; the patient declined for now. Repeat LDL 3.9 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if190",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Weight discussed; a plan will be decided after the blood results. Repeat LDL 4.6 mmol/L, below the threshold for severe hypercholesterolaemia; no statin needed now.",
+   "key": {
+    "label": "lipid=not_confirmed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "not_confirmed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if191",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Obesity class II (BMI 31.8). Weight-loss plan agreed; GLP-1 therapy started. Lipid results discussed; repeat fasting sample next week, then decide about a statin.",
+   "key": {
+    "label": "lipid=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if192",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Obesity class II (BMI 36.0). Weight-loss plan agreed; GLP-1 therapy started. The patient had eaten before the screening test; fasting lipids requested and a review booked.",
+   "key": {
+    "label": "lipid=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if193",
+   "text": "IFHAS follow-up visit, family medicine clinic. Lipid results discussed; repeat fasting sample next week, then decide about a statin. Height was entered wrongly at screening; corrected BMI 28.7, so not obese. No weight programme needed.",
+   "key": {
+    "label": "lipid=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if194",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Lipid results discussed; repeat fasting sample next week, then decide about a statin. Re-measured weight 82 kg and height 185 cm: BMI 27.7 kg/m2. The screening BMI was a measurement error; obesity not confirmed.",
+   "key": {
+    "label": "lipid=pending;weight=not_confirmed",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "not_confirmed"
+    }
+   }
+  },
+  {
+   "id": "if195",
+   "text": "Family physician review of abnormal IFHAS results. The patient had eaten before the screening test; fasting lipids requested and a review booked. Referral to the dietitian offered for BMI 37.4; the patient declined for now.",
+   "key": {
+    "label": "lipid=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if196",
+   "text": "Family physician review of abnormal IFHAS results. Statin discussed for the raised LDL but the patient wants to try diet first and decide later; repeat lipids in 3 months. Referral to the dietitian offered for BMI 36.1; the patient declined for now.",
+   "key": {
+    "label": "lipid=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "lipid": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if197",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat LDL-C 5.9 mmol/L. High-intensity statin therapy started. Repeat HbA1c today 7.4% (IFHAS screening 7.4%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education. Clinic BP repeated: 150/98 and 146/98 mmHg. Home BP average 142/94. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed;glyc=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if198",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Blood pressure discussed; readings to be repeated at the next visit. Lipid results discussed; repeat fasting sample next week, then decide about a statin. Blood taken today for a second HbA1c; result not yet available.",
+   "key": {
+    "label": "bp=pending;glyc=pending;lipid=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "pending",
+     "lipid": "pending"
+    }
+   }
+  },
+  {
+   "id": "if199",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Clinic BP repeated: 147/95 and 145/93 mmHg. Home BP average 139/91. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. Fasting triglycerides 9.2 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Blood taken today for a second HbA1c; result not yet available.",
+   "key": {
+    "label": "bp=managed;glyc=pending;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "pending",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if200",
+   "text": "IFHAS follow-up visit, family medicine clinic. Ambulatory monitoring daytime average 122/79: normal. The screening blood pressure was not confirmed. Fasting triglycerides 8.9 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Glycated haemoglobin repeated: 6.7%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=managed;lipid=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "managed",
+     "lipid": "managed"
+    }
+   }
+  },
+  {
+   "id": "if201",
+   "text": "IFHAS follow-up visit, family medicine clinic. Clinic BP repeated: 154/102 and 153/99 mmHg. Home BP average 146/98. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks. BMI 37.0 kg/m2 confirmed (weight 101 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme. Repeat HbA1c today 9.5% (IFHAS screening 8.2%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education.",
+   "key": {
+    "label": "bp=managed;glyc=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if202",
+   "text": "Family physician review of abnormal IFHAS results. Fasting plasma glucose ordered; we will review when the result is back. Ambulatory blood pressure monitoring booked for next week before deciding on treatment. BMI 31.9 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit.",
+   "key": {
+    "label": "bp=pending;glyc=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if203",
+   "text": "IFHAS follow-up visit, family medicine clinic. Repeat HbA1c requested to confirm the screening result of 7.8%; results awaited. BMI 34.5. Weight management: dietitian appointment booked and an exercise prescription given. Clinic BP repeated: 162/92 and 161/88 mmHg. Home BP average 154/88. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed;glyc=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if204",
+   "text": "IFHAS follow-up visit, family medicine clinic. Fasting plasma glucose 8.4 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 8.4%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme. Ambulatory monitoring daytime average 123/82: normal. The screening blood pressure was not confirmed. Weight 113 kg, BMI 34.7; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "bp=not_confirmed;glyc=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "glyc": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if205",
+   "text": "Family physician review of abnormal IFHAS results. Fasting triglycerides 9.4 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Ambulatory blood pressure monitoring average 139/89 mmHg confirms stage 1 hypertension. Lifestyle programme started (salt reduction, exercise) and referred to the cardiology clinic. Obesity class II (BMI 30.6). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "bp=managed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if206",
+   "text": "Family physician review of abnormal IFHAS results. The patient had eaten before the screening test; fasting lipids requested and a review booked. BMI 36.7 kg/m2 discussed; the patient is not ready to start a weight programme and will reconsider at the next visit. Home BP monitor issued; the patient will return with a 7-day diary.",
+   "key": {
+    "label": "bp=pending;lipid=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "lipid": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if207",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Fasting lipid profile ordered; result to follow. BMI 36.9 kg/m2 confirmed (weight 124 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme. Clinic BP repeated: 149/101 and 146/98 mmHg. Home BP average 141/97. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed;lipid=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "lipid": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if208",
+   "text": "IFHAS follow-up visit, family medicine clinic. LDL cholesterol 201 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic. Home BP diary over 7 days averages 129/77 mmHg. White-coat effect; hypertension not confirmed. Recheck at the next routine screening. BMI 35.8 kg/m2 confirmed (weight 121 kg). Obesity: referred to the dietitian and enrolled in the weight-management programme.",
+   "key": {
+    "label": "bp=not_confirmed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "not_confirmed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if209",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Glycated haemoglobin repeated: 7.1%. Diagnosis of type 2 diabetes made; started on sitagliptin-metformin and given diet and exercise advice. Fasting triglycerides 7.0 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started. Weight 130 kg, BMI 30.3; obesity confirmed. Referred to the bariatric and weight-management clinic.",
+   "key": {
+    "label": "glyc=managed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if210",
+   "text": "Follow-up after the periodic adult screening (IFHAS). The patient had eaten before the screening test; fasting lipids requested and a review booked. Repeat HbA1c 7.3% confirms type 2 diabetes. Treatment options discussed; the plan will be agreed at the next visit. Referral to the dietitian offered for BMI 33.0; the patient declined for now.",
+   "key": {
+    "label": "glyc=pending;lipid=pending;weight=pending",
+    "attended": "yes",
+    "status": {
+     "glyc": "pending",
+     "lipid": "pending",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if211",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile ordered; result to follow. Fasting plasma glucose 10.8 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 8.4%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme. Obesity class II (BMI 39.5). Weight-loss plan agreed; GLP-1 therapy started.",
+   "key": {
+    "label": "glyc=managed;lipid=pending;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "managed",
+     "lipid": "pending",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if212",
+   "text": "Family physician review of abnormal IFHAS results. Second HbA1c 5.2%, below the diagnostic threshold. No diabetes. Routine screening in 3 years. Weight 114 kg, BMI 31.5; obesity confirmed. Referred to the bariatric and weight-management clinic. Fasting triglycerides 9.1 mmol/L on repeat, confirming severe hypertriglyceridaemia. Fenofibrate and dietary advice started.",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "glyc": "not_confirmed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if213",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting plasma glucose 7.4 mmol/L on repeat, consistent with diabetes alongside the screening HbA1c of 8.3%. Type 2 diabetes confirmed; enrolled in the diabetes clinic and a structured lifestyle programme. LDL cholesterol 239 mg/dL confirmed on a fasting sample; rosuvastatin 20 mg commenced and referral to the lipid clinic. BMI 32.3. Weight management: dietitian appointment booked and an exercise prescription given. Clinic BP repeated: 143/92 and 139/91 mmHg. Home BP average 135/88. Hypertension confirmed; started amlodipine 5 mg once daily with lifestyle advice, BP review in 4 weeks.",
+   "key": {
+    "label": "bp=managed;glyc=managed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "managed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if214",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Repeat LDL-C 5.5 mmol/L. High-intensity statin therapy started. Ambulatory blood pressure monitoring booked for next week before deciding on treatment. Weight 90 kg, BMI 36.9; obesity confirmed. Referred to the bariatric and weight-management clinic. Repeat HbA1c today 9.6% (IFHAS screening 8.6%), confirming type 2 diabetes. Started metformin 500 mg twice daily and referred to diabetes education.",
+   "key": {
+    "label": "bp=pending;glyc=managed;lipid=managed;weight=managed",
+    "attended": "yes",
+    "status": {
+     "bp": "pending",
+     "glyc": "managed",
+     "lipid": "managed",
+     "weight": "managed"
+    }
+   }
+  },
+  {
+   "id": "if215",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Fasting lipid profile repeated: LDL 6.0 mmol/L, triglycerides 2.5 mmol/L. Severe hypercholesterolaemia confirmed; atorvastatin 40 mg started and familial hypercholesterolaemia assessment requested. Weight discussed; a plan will be decided after the blood results. HbA1c rechecked at 44 mmol/mol: does not meet the criteria for diabetes. Advised on diet and activity; repeat yearly. Blood pressure remains raised at 151/101 on three readings. Hypertension diagnosed and treatment started with indapamide.",
+   "key": {
+    "label": "bp=managed;glyc=not_confirmed;lipid=managed;weight=pending",
+    "attended": "yes",
+    "status": {
+     "bp": "managed",
+     "glyc": "not_confirmed",
+     "lipid": "managed",
+     "weight": "pending"
+    }
+   }
+  },
+  {
+   "id": "if216",
+   "text": "IFHAS follow-up visit, family medicine clinic. Did not attend today's appointment (raised BMI). Rebook requested.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if217",
+   "text": "IFHAS follow-up visit, family medicine clinic. Did not attend today's appointment (raised BMI). Rebook requested.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if218",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Patient did not attend the IFHAS follow-up appointment for raised blood pressure. A second appointment has been offered.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if219",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Patient did not attend the IFHAS follow-up appointment for raised BMI. A second appointment has been offered.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if220",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. DNA. Booked for review of raised BMI after IFHAS screening; no-show, letter sent.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if221",
+   "text": "IFHAS follow-up visit, family medicine clinic. Did not attend today's appointment (raised blood pressure). Rebook requested.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if222",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. DNA. Booked for review of raised BMI after IFHAS screening; no-show, letter sent.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if223",
+   "text": "Follow-up after the periodic adult screening (IFHAS). Failed to attend the follow-up clinic for raised BMI. The coordinator will call to rebook.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if224",
+   "text": "IFHAS follow-up visit, family medicine clinic. DNA. Booked for review of raised BMI after IFHAS screening; no-show, letter sent.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if225",
+   "text": "Family physician review of abnormal IFHAS results. Patient did not attend the IFHAS follow-up appointment for raised BMI. A second appointment has been offered.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if226",
+   "text": "Family physician review of abnormal IFHAS results. DNA. Booked for review of raised HbA1c after IFHAS screening; no-show, letter sent.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  },
+  {
+   "id": "if227",
+   "text": "Internal medicine clinic. Referral from IFHAS screening. Failed to attend the follow-up clinic for raised BMI. The coordinator will call to rebook.",
+   "key": {
+    "label": "dna",
+    "attended": "no",
+    "status": {}
+   }
+  }
+ ]
+}

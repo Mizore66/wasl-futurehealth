@@ -1,0 +1,797 @@
+{
+  "source": "Independent author (Gemini 4 Argon, Google) - deterministic stdlib generator gen_breast_heldout.py, random seed 9377, synthetic breast screening texts, 2026-11-01",
+  "reports": [
+    {
+      "id": "ha01",
+      "text": "SSMC ONE-STOP BREAST ASSESSMENT CLINIC - ABU DHABI\nAttendance: Attended recall clinic on schedule.\nReason for Recall: Right UOQ focal asymmetry on screening mammogram (BI-RADS 0).\nAssessment Performed: Clinical breast examination (normal, P1), right spot compression craniocaudal and MLO views, and targeted high-frequency right breast ultrasound.\nFindings: The focal asymmetry disperses completely on spot compression, representing summation of normal fibroglandular tissue. Ultrasound of the right UOQ shows normal breast parenchyma with no solid or cystic mass. No biopsy required.\nOutcome / Decision: Discharged back to routine biennial screening (Return to Routine Screening).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha02",
+      "text": "CLEVELAND CLINIC ABU DHABI - DIAGNOSTIC BREAST ASSESSMENT REPORT\nPatient Status: Attended appointment.\nIndication: Recall from screening for a 10 mm circumscribed mass in the left breast.\nDiagnostic Workup: Targeted left breast ultrasound performed.\nFindings: At the 3 o'clock position, 4 cm from the nipple, corresponding to the mammographic density, there is a classic anechoic simple cyst measuring 10 x 7 mm with imperceptible walls and posterior acoustic enhancement (BI-RADS 2). No needle aspiration or core biopsy indicated.\nDisposition: Benign finding. Return to routine 2-year screening mammography.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha03",
+      "text": "عيادة تقييم الثدي التخصصية - مستشفى توام (TAWAM BREAST ASSESSMENT UNIT)\nحالة الحضور: حضرت المريضة (Attended).\nReason for Recall: Left retroareolar questionable microcalcifications.\nAssessment: True lateral and magnification views of the left breast (الثدي الأيسر) plus targeted ultrasound.\nFindings: Magnification views demonstrate classic tea-cup (milk of calcium) layering within microcysts on the 90-degree lateral projection. Ultrasound confirms tiny clustered microcysts. Benign BI-RADS 2; no biopsy performed.\nDecision (القرار الطبي): Return to routine screening (العودة للفحص الدوري الروتيني كل سنتين).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:Arabic_bilingual_summary",
+        "arabic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha04",
+      "text": "SKMC DIAGNOSTIC BREAST CLINIC - ABU DHABI\nAttendance: Attended.\nClinical & Past History: Note that in 2021 she underwent an ultrasound-guided core biopsy of the right breast which showed benign sclerosing adenosis (B2), and her mother was treated for breast cancer in 2017.\nToday's Recall Assessment: Recalled for a new density in the left upper inner quadrant. Spot compression tomosynthesis and targeted left breast ultrasound were performed today.\nFindings: The left UIQ density corresponds to a typical 6 mm reniform intramammary lymph node with a preserved echogenic hilum. No biopsy was performed during this episode.\nOutcome: Reassured and discharged to routine biennial screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "prior_year_biopsy",
+        "hard:historical_biopsy_distractor"
+      ]
+    },
+    {
+      "id": "ha05",
+      "text": "MEDICLINIC AIRPORT ROAD HOSPITAL - BREAST ASSESSMENT LETTER\nDear Dr Al Mansoori,\nYour patient attended our recall assessment clinic today following an incomplete screening mammogram (right breast technical/asymmetry query). We performed repeat coned compression mammography and targeted right breast ultrasound, alongside clinical palpation which was normal. All imaging confirmed normal overlapping fibroglandular stroma with no discrete mass lesion and no microcalcifications. No biopsy was needed.\nShe has been returned to the routine 24-month screening programme.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha06",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nNMC SPECIALTY HOSPITAL ABU DHABI - DIAGNOSTIC BREAST WORKUP\nAttendance: Patient attended scheduled diagnostic slot.\nProcedures Performed: Bilateral magnification views and targeted ultrasound of the right lower inner quadrant.\nFindings: The ca1cifications seen on screening are confirmed on tangential views to lie entirely within dermal sebaceous glands (benign skin calcifications, B1-RADS 2). Ultrasound is negative for any mass. Biopsy: None.\nManagement Outcome: Return to routine screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "ha07",
+      "text": "SSMC MULTIDISCIPLINARY TEAM (MDT) BREAST MEETING MINUTES\nPatient Attendance at Assessment: Attended Triple Assessment on 12/10/2026.\nAssessment Summary: Recalled for 14 mm lobulated right breast mass at 9 o'clock. Ultrasound-guided 14G core needle biopsy performed.\nHistopathology Result (This Episode): Three cores of breast tissue showing a benign fibroadenoma with pericanalicular growth pattern; no atypia, no in-situ or invasive malignancy (B2 benign, concordant with imaging).\nMDT Outcome: Concordant benign biopsy. Discharge patient back to routine biennial screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha08",
+      "text": "TAWAM HOSPITAL BREAST MDT RECORD - AL AIN\nEpisode Attendance: Attended diagnostic assessment and stereotactic biopsy.\nImaging: Recalled for a 9 mm cluster of amorphous microcalcifications in the left upper outer quadrant (scored M4a).\nPathology (Left 9G Vacuum-Assisted Core Biopsy): Sections show florid sclerosing adenosis and apocrine metaplasia with abundant luminal microcalcifications; immunohistochemistry confirms intact p63/calponin myoepithelial cell layer throughout. Whilst sclerosing adenosis can radiologically and histologically mimic invasive carcinoma, there is no atypia, no DCIS, and no malignancy (B2 Benign).\nMDT Decision: Radiology-pathology concordance confirmed. Return to routine screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:mimic_benign_pathology"
+      ]
+    },
+    {
+      "id": "ha09",
+      "text": "CCAD BREAST ASSESSMENT & PATHOLOGY ADDENDUM\nAttendance: Attended diagnostic clinic.\nWorkup Done: Diagnostic mammography, ultrasound, and ultrasound-guided core biopsy of a 12 mm irregular hypoechoic area in the right lower outer quadrant (history of seat-belt trauma 4 months ago).\nBiopsy Result: Benign fat necrosis with lipid-laden macrophages, foreign-body giant cells, and haemosiderin; negative for atypia or malignancy.\nFinal Outcome: Benign concordant result. Return to routine screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha10",
+      "text": "BURJEEL MEDICAL CITY - BREAST MDT SUMMARY\nBackground: Previous contralateral right breast biopsy in 2020 was a benign papilloma.\nCurrent Recall Episode: Attended assessment for a new 8 mm cluster of microcalcifications in the left central breast. Stereotactic core biopsy performed during this episode yielded representative calcifications on specimen radiograph.\nHistopathology (Current Episode): Benign fibrocystic change with microcysts, stromal fibrosis, and calcium oxalate crystals (B2 Benign).\nMDT Outcome: Return to routine two-yearly screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "prior_year_biopsy",
+        "hard:historical_biopsy_distractor"
+      ]
+    },
+    {
+      "id": "ha11",
+      "text": "مدينة الشيخ خليفة الطبية (SKMC) - عيادة جراحة وأمراض الثدي\nAttendance: Attended assessment and results clinic.\nDear Doctor, This 51-year-old lady attended after recall for a 15 mm circumscribed mass in the right breast (الثدي الأيمن). Triple assessment including ultrasound-guided core needle biopsy was completed. Histology confirmed a benign tubular adenoma / hamartoma (نتيجة الخزعة حميدة تماماً - B2). The MDT has discharged her back to routine screening (العودة للفحص الروتيني).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK",
+        "arabic"
+      ]
+    },
+    {
+      "id": "ha12",
+      "text": "SSMC BREAST MDT OUTCOME SHEET\nAttendance: Attended assessment unit.\nWorkup: Recalled for architectural distortion in the right upper outer quadrant. Tomosynthesis-guided vacuum-assisted excision biopsy (VAE, 7G) performed.\nPathology (This Episode): Completely excised 6 mm radial scar (benign complex sclerosing lesion) with fibroelastotic core; although radial scars mimic spiculated carcinoma on mammography, comprehensive sampling shows no epithelial atypia, no LCIS/DCIS, and no invasive malignancy (B2/B3 fully excised benign lesion).\nMDT Decision: No surgery required; return to routine screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:mimic_benign_pathology"
+      ]
+    },
+    {
+      "id": "ha13",
+      "text": "DANAT AL EMARAT HOSPITAL - DIAGNOSTIC BREAST IMAGING\nAttendance: Attended.\nAssessment: Recalled for bilateral asymmetric densities. Extended CC views, rolled views, and bilateral whole-breast ultrasound performed.\nFindings: Bilateral ectopic accessory axillary breast tissue with normal sonographic echotexture; no focal solid mass or suspicious feature. Biopsy: Not indicated (none).\nOutcome: Return to routine biennial screening.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "routine",
+        "label": "return_routine"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha14",
+      "text": "TAWAM HOSPITAL BREAST ASSESSMENT CLINIC - AL AIN\nAttendance: Attended.\nAssessment Performed: Spot compression views and targeted ultrasound of the left breast for a 7 mm oval mass recalled from screening.\nFindings: Ultrasound shows a 7 x 4 mm well-circumscribed oval hypoechoic mass oriented parallel to the skin at 4 o'clock, consistent with a probable fibroadenoma or complicated cyst with homogeneous low-level internal echoes (BI-RADS 3). After discussion, no biopsy was performed today.\nOutcome: Short-interval early recall in 6 months for repeat left breast ultrasound and mammogram.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha15",
+      "text": "CCAD DIAGNOSTIC BREAST CENTER\nAttendance: Attended diagnostic evaluation.\nWorkup: Magnification views and ultrasound of the right breast for a solitary group of punctate calcifications.\nFindings: Tight cluster of round/punctate calcifications without associated mass or distortion (BI-RADS 3, <2% risk of malignancy). Patient is on dual antiplatelet therapy following recent coronary stenting; team elected imaging surveillance rather than biopsy.\nOutcome: Early recall at 6 months for unilateral right magnification mammography.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha16",
+      "text": "SSMC BREAST MDT MEETING MINUTES\nAttendance: Attended assessment and core biopsy.\nAssessment: Recalled for a retroareolar intraductal mass on the right. Ultrasound-guided 14G core biopsy performed.\nBiopsy Result (This Episode): Benign intraductal papilloma without epithelial atypia (B3 lesion of uncertain potential but benign histology, no malignancy).\nMDT Outcome: Patient declined vacuum excision; MDT agreed on early recall (short-interval 6-month clinical and ultrasound follow-up).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha17",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nSKMC BREAST MDT RECORD - ABU DHABI\nAttendance: Attended diagnostic clinic.\nWorkup: Ultrasound-guided core needle biopsy of an 11 mm complex solid-cystic lesion in the left upper outer quadrant.\nHistopathology: Benign fibrocystic changes with papillary apocrine hyperplasia, no atypia and no malignancy (benign biopsy). However, because the lesion was only partially sampled due to wall collapse, the MDT recommends short-interval imaging.\nMDT Outcome: Early recall in 6 months for repeat targeted u1trasound.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "ha18",
+      "text": "MEDICLINIC AL NOOR HOSPITAL - BREAST CLINIC FOLLOW-UP PLAN\nAttendance: Attended.\nSummary: This 46-year-old woman underwent diagnostic mammography, ultrasound, and core biopsy of a 9 mm right breast mass at 12 o'clock. Pathology returned benign pseudoangiomatous stromal hyperplasia (PASH) with no malignancy. Given the cellular stroma, the breast MDT advised a 6-month short-interval early recall ultrasound to confirm dimensional stability.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "early_recall",
+        "label": "early_recall"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha19",
+      "text": "SSMC MULTIDISCIPLINARY BREAST ONCOLOGY BOARD - ABU DHABI\nAttendance: Attended One-Stop Triple Assessment Clinic.\nAssessment Performed: Bilateral diagnostic mammography, bilateral breast and axillary ultrasound, and ultrasound-guided 14G core biopsies of the right UOQ 18 mm spiculated mass and a cortical-thickened right axillary node.\nBiopsy Result (This Episode): Right breast core biopsy = Invasive ductal carcinoma (NST), Grade 2, ER positive (Allred 8/8), PR positive (7/8), HER2 negative (IHC 1+), Ki-67 18% (B5b Malignant). Right axillary node = metastatic carcinoma.\nMDT Outcome: Referred to breast surgical oncology for right wide local excision and axillary clearance (To Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha20",
+      "text": "قرار اللجنة الطبية متعددة التخصصات لأورام الثدي - كليفلاند كلينك أبوظبي (CCAD MDT)\nAttendance: Attended (حضرت المريضة).\nDiagnostic Workup: Stereotactic 9G vacuum-assisted core biopsy of a 22 mm segmental cluster of fine linear branching calcifications in the left breast (الثدي الأيسر).\nPathology Result: High-grade Ductal Carcinoma In Situ (DCIS, B5a Malignant) with comedonecrosis, ER positive.\nMDT Outcome (الخطة العلاجية): Referred to breast surgery for wire-localized left lumpectomy and radiotherapy planning (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:US",
+        "arabic"
+      ]
+    },
+    {
+      "id": "ha21",
+      "text": "TAWAM HOSPITAL BREAST MDT - AL AIN\nAttendance: Attended assessment clinic.\nImaging & Biopsy: Recalled for 14 mm pleomorphic calcifications in the right central breast; ultrasound showed no mass. Stereotactic core biopsy performed.\nHistopathology (This Episode): There is no invasive carcinoma identified in any of the 12 cores; however, cores contain intermediate-to-high nuclear grade Ductal Carcinoma In Situ (DCIS, solid and cribriform patterns, B5a malignant non-invasive breast cancer).\nMDT Outcome: Referred to surgical oncology for wide local excision of right DCIS (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:dcis_is_malignant"
+      ]
+    },
+    {
+      "id": "ha22",
+      "text": "SKMC BREAST MDT MINUTES - ABU DHABI\nAttendance: Attended both initial and repeat assessment visits.\nAssessment & Biopsy Course: Recalled for a 16 mm spiculated mass at left 2 o'clock (BI-RADS 5). Initial freehand clinic core pass last week sampled only perilesional adipose tissue (non-representative B1), which was deemed discordant at radiology review. Repeat ultrasound-guided 14G core biopsy performed 4 days ago directly through the central nidus.\nFinal Pathology (This Episode): Invasive lobular carcinoma, classical type, Grade 2, E-cadherin negative, ER 8/8, PR 6/8, HER2 negative (B5b Malignant).\nMDT Outcome: Referred for breast MRI and surgical oncology management (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:discordant_repeat_biopsy"
+      ]
+    },
+    {
+      "id": "ha23",
+      "text": "BURJEEL MEDICAL CITY - ONCOLOGY & BREAST SURGERY CLINIC\nAttendance: Attended.\nDear Colleague, Following recall from screening for a 26 mm left breast mass, this 58-year-old lady underwent full diagnostic imaging and ultrasound-guided core needle biopsy in our unit. Histopathology confirmed Grade 3 triple-negative invasive ductal carcinoma (ER 0, PR 0, HER2 0, Ki-67 75% - Malignant). Following MDT discussion today, she has been referred directly to medical oncology to commence neoadjuvant chemo-immunotherapy prior to surgery (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha24",
+      "text": "CCAD BREAST TUMOR BOARD SUMMARY\nPast History: Prior right breast biopsy in 2019 showed benign usual ductal hyperplasia.\nCurrent Recall Episode: Attended diagnostic workup for a new 11 mm spiculated mass in the left lower inner quadrant. Ultrasound-guided core biopsy completed.\nPathology (Current Episode): Invasive tubular carcinoma, Grade 1, ER positive, PR positive, HER2 negative (Malignant).\nTumor Board Outcome: Referred to breast surgery for left seed-localized partial mastectomy and sentinel lymph node biopsy (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:US",
+        "prior_year_biopsy",
+        "hard:historical_biopsy_distractor"
+      ]
+    },
+    {
+      "id": "ha25",
+      "text": "|| TIF_SCAN_009482_ABUDHABI_PACS || ~~ l1l1 ~~~\nTAWAM HOSPITAL ONE-STOP BREAST CLINIC & MDT DISPOSITION\nAttendance: Attended.\nWorkup: Diagnostic mamm0gram, u1trasound, and core biopsy of right 12 o'clock 21 mm irregular mass.\nBiopsy Result: Invasive micropapillary carcinoma of the breast, Grade 2, HER2-amplified (IHC 3+), ER positive (B5b Malignant).\nOutcome: Referred to medical and surgical oncology for anti-HER2 neoadjuvant therapy and definitive surgery (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "ha26",
+      "text": "MEDICLINIC AIRPORT ROAD - MULTIDISCIPLINARY BREAST CANCER TEAM\nAttendance: Attended diagnostic assessment.\nAssessment: Bilateral contrast-enhanced spectral mammography, targeted ultrasound, and core needle biopsy of a 19 mm right retroareolar mass.\nHistopathology: Invasive mucinous (colloid) carcinoma, Grade 1, strongly ER/PR positive, HER2 negative (B5b Malignant).\nMDT Decision: Proceed to surgical treatment (right central wide local excision and sentinel node biopsy).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha27",
+      "text": "NMC ROYAL HOSPITAL KHALIFA CITY - BREAST ONCOLOGY REFERRAL\nAttendance: Attended recall workup.\nSummary: Patient recalled for architectural distortion in the right upper outer quadrant. Tomosynthesis spot views, ultrasound, and 14G core biopsy were performed. Pathology shows invasive ductal carcinoma with lobular features (Grade 2, malignant). Outcome: Referred to the breast oncology surgical team for definitive treatment.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha28",
+      "text": "SSMC BREAST MDT RECORD - ABU DHABI\nAttendance: Attended triple assessment.\nWorkup: Recalled for microcalcifications at left 11 o'clock. Stereotactic vacuum core biopsy performed.\nPathology: Encapsulated papillary carcinoma with surrounding cribriform Ductal Carcinoma In Situ (DCIS), no frank stromal invasion seen, classified as B5a in-situ malignancy (malignant biopsy).\nMDT Outcome: Referred to breast surgery for therapeutic wide local excision (Treatment).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "treatment",
+        "label": "to_treatment"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:dcis_is_malignant"
+      ]
+    },
+    {
+      "id": "ha29",
+      "text": "SSMC ONE-STOP BREAST ASSESSMENT CLINIC - ABU DHABI\nAttendance: Attended clinic today.\nAssessment Performed: Clinical breast exam (15 mm firm mass right UOQ, E3), spot magnification mammography, and targeted right breast ultrasound (irregular antiparallel hypoechoic mass, U4). Ultrasound-guided 14-gauge core needle biopsy (4 passes) performed under local anaesthesia and marker clip deployed.\nBiopsy Result: Specimen sent to histopathology; result awaited (Pending).\nOutcome: Pending MDT discussion next Tuesday once histology and receptor profile are available.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "biopsy_awaited"
+      ]
+    },
+    {
+      "id": "ha30",
+      "text": "CCAD DIAGNOSTIC BREAST INTERVENTION NOTE\nAttendance: Attended.\nProcedure: Tomosynthesis-guided stereotactic 9G vacuum-assisted core biopsy of left upper outer quadrant pleomorphic microcalcifications. Specimen radiograph confirmed >15 calcifications in cores.\nPathology Status: Biopsy taken today; formal pathology result is pending.\nDisposition / Outcome: Pending pathology review at next multidisciplinary tumor board.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US",
+        "biopsy_awaited"
+      ]
+    },
+    {
+      "id": "ha31",
+      "text": "عيادة تقييم الثدي - مستشفى توام (TAWAM BREAST ASSESSMENT UNIT)\nحالة الحضور: حضرت المريضة (Attended).\nAssessment: Targeted ultrasound of the left breast (الثدي الأيسر) showed a 13 mm microlobulated solid mass at 2 o'clock. Ultrasound-guided core biopsy was taken today.\nBiopsy Status: Pending (بانتظار نتيجة الخزعة المخبرية).\nOutcome: Pending MDT decision next week (القرار النهائي قيد الانتظار لحين صدور تقرير الأنسجة).",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:Arabic_bilingual_summary",
+        "arabic",
+        "spelling:UK",
+        "biopsy_awaited"
+      ]
+    },
+    {
+      "id": "ha32",
+      "text": "SKMC BREAST ASSESSMENT CLINIC - ABU DHABI\nAttendance: Attended.\nPast History: Had a right breast core biopsy in 2022 which showed benign fibroadenoma (discharged to routine screening at that time).\nToday's Episode: Recalled for a new 11 mm indistinct mass in the contralateral left breast at 6 o'clock. Diagnostic mammogram, ultrasound, and ultrasound-guided 14G core biopsy of the left breast lesion were performed today.\nCurrent Biopsy Result: Formal histopathology is awaited from the lab (Pending).\nOutcome: Pending MDT review once current biopsy result returns.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "biopsy_awaited",
+        "prior_year_biopsy",
+        "hard:historical_biopsy_distractor"
+      ]
+    },
+    {
+      "id": "ha33",
+      "text": "BURJEEL MEDICAL CITY - BREAST ASSESSMENT PROGRESS NOTE\nAttendance: Attended recall clinic.\nWe evaluated this 54-year-old lady recalled for architectural distortion in the right breast. Diagnostic tomosynthesis and ultrasound confirmed a 10 mm spiculated parenchymal distortion. An ultrasound-guided core biopsy was performed today without complication; histology results are currently awaited. Management outcome is pending next week's breast MDT meeting.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK",
+        "biopsy_awaited"
+      ]
+    },
+    {
+      "id": "ha34",
+      "text": "[FAX RCVD +971-2-819-4002 P.01/01 QUALITY: DEGRADED ~~~~]\nMEDICLINIC AIRPORT ROAD - INTERVENTIONAL BREAST REPORT\nAttendance: Attended.\nAssessrnent: Diagnostic u1trasound of right axilla and right breast tail; 14G core needle biopsy taken from a 12 mm suspicious mass at 10 o'clock.\nBiopsy Result: Pending pathology read.\nOutcome: Pending final pathology and MDT disposition.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "pending",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US",
+        "biopsy_awaited",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "ha35",
+      "text": "SSMC BREAST ASSESSMENT CLINIC - NURSING & CLINICIAN NOTE\nAttendance: Patient attended the reception desk and was checked into the clinic room.\nAssessment Status: Not done. On pre-procedure check, the patient reported an acute severe panic attack and claustrophobia and declined both the supplementary compression mammographic views and the breast ultrasound/clinical exam today. She requested to return next week with her daughter.\nBiopsy: None.\nOutcome: Pending rescheduled diagnostic assessment next week.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "declined_or_unable",
+        "hard:attended_but_no_workup"
+      ]
+    },
+    {
+      "id": "ha36",
+      "text": "TAWAM HOSPITAL BREAST ASSESSMENT UNIT - AL AIN\nAttendance: Attended clinic appointment.\nAssessment: Not done today. Immediately prior to entering the mammography suite, the patient experienced a vasovagal syncopal episode with blood pressure 85/50 mmHg and had to be transferred to the emergency observation bay before any clinical breast exam, diagnostic mammogram, or ultrasound could be performed.\nBiopsy: None.\nOutcome: Pending completion of recall assessment once medically stabilised.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK",
+        "declined_or_unable",
+        "hard:attended_but_no_workup"
+      ]
+    },
+    {
+      "id": "ha37",
+      "text": "CCAD DIAGNOSTIC BREAST CLINIC ENCOUNTER NOTE\nAttendance: Patient arrived and checked in at the Breast Imaging reception.\nAssessment Performed: Not done. The stereotactic/DBT mammography unit suffered an unexpected X-ray tube coolant fault and the patient could not wait for the backup room due to urgent childcare commitments; she declined ultrasound or clinical examination today and asked to rebook the entire assessment together.\nBiopsy: None.\nOutcome: Pending rebooked assessment appointment.",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:US",
+        "declined_or_unable",
+        "hard:attended_but_no_workup"
+      ]
+    },
+    {
+      "id": "ha38",
+      "text": "عيادة تقييم الثدي - مدينة الشيخ خليفة الطبية (SKMC)\nAttendance: Attended clinic (حضرت المريضة إلى العيادة).\nAssessment: Not done (لم يتم إجراء أي فحص إضافي). The patient attended to discuss her recall letter but declined any further mammographic views, ultrasound, or clinical examination today as she wishes to obtain a second opinion abroad first.\nBiopsy: None.\nOutcome: Pending (معلق - تم إبلاغ المريضة بضرورة استكمال التقييم).",
+      "key": {
+        "attended": true,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:Arabic_bilingual_summary",
+        "arabic",
+        "spelling:UK",
+        "declined_or_unable",
+        "hard:attended_but_no_workup"
+      ]
+    },
+    {
+      "id": "ha39",
+      "text": "CCAD DIAGNOSTIC BREAST IMAGING REPORT\nAttendance: Attended.\nAssessment Performed: Magnification views and targeted ultrasound of the left breast for a 10 mm cluster of fine pleomorphic calcifications (BI-RADS 4B). Stereotactic vacuum biopsy could not be performed today because the patient is taking therapeutic warfarin (INR 3.1).\nBiopsy: None performed today (scheduled for next Monday after 5-day warfarin hold).\nOutcome: Pending stereotactic biopsy.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha40",
+      "text": "SSMC BREAST ASSESSMENT CLINIC - ABU DHABI\nAttendance: Attended.\nAssessment Performed: Clinical examination, spot compression views, and bilateral breast ultrasound for subtle right retroareolar distortion in extremely dense breasts.\nFindings: Ultrasound is equivocal with shadowy retroareolar fibrosis. No biopsy performed today; contrast-enhanced breast MRI has been requested to clarify whether a true enhancing mass is present.\nOutcome: Pending contrast-enhanced breast MRI and subsequent MDT review.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha41",
+      "text": "TAWAM HOSPITAL BREAST MDT MINUTES - AL AIN\nAttendance: Attended diagnostic clinic and core biopsy.\nAssessment & Biopsy: Recalled for a 12 mm cluster of linear calcifications in the right UOQ. Stereotactic 14G core biopsy performed; histology shows benign columnar cell change with flat epithelial atypia (B3 lesion, benign biopsy with no malignancy).\nMDT Discussion: Because of limited sampling on 14G cores, a final management decision is deferred.\nOutcome: Pending diagnostic 7G vacuum-assisted excision (VAE) before deciding between routine recall vs surgical excision.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:b3_uncertain_potential_deferred"
+      ]
+    },
+    {
+      "id": "ha42",
+      "text": "SKMC MULTIDISCIPLINARY BREAST MEETING\nAttendance: Attended.\nAssessment & Biopsy: Recalled for a high-suspicion 17 mm spiculated mass in the left breast (BI-RADS 4C). Ultrasound-guided core biopsy returned benign normal fibrous breast stroma (B1/B2 benign tissue, no malignancy).\nMDT Discussion: Severe radiologic-pathologic discordance; the biopsy needle likely skimmed anterior to the lesion.\nOutcome: Pending urgent repeat stereotactic/ultrasound vacuum biopsy; no final outcome decision yet.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "benign",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:UK",
+        "hard:discordant_repeat_biopsy"
+      ]
+    },
+    {
+      "id": "ha43",
+      "text": "CCAD BREAST MULTIDISCIPLINARY PRE-MDT NOTE\nAttendance: Attended diagnostic assessment and core biopsy.\nWorkup: Ultrasound and core needle biopsy of right 9 o'clock 15 mm mass performed.\nPathology Result: Preliminary pathology addendum signed out this morning confirms invasive ductal carcinoma (Malignant), with HER2 IHC equivocal (2+) and FISH amplification pending.\nOutcome: Pending formal MDT board review on Thursday and completion of staging CT/bone scan before finalizing treatment plan.",
+      "key": {
+        "attended": true,
+        "assessment": "done",
+        "biopsy": "malignant",
+        "outcome": "pending",
+        "label": "incomplete"
+      },
+      "tags": [
+        "layout:mdt_minutes",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha44",
+      "text": "SSMC BREAST ASSESSMENT CLINIC - DID NOT ATTEND (DNA) LOG\nScheduled Slot: 28/10/2026 09:30 AM.\nAttendance: Did Not Attend (DNA). Two SMS reminders and one telephone call from the breast care nurse went unanswered.\nAssessment: Not done.\nBiopsy: None.\nOutcome: Pending re-contact; second recall letter dispatched by registered post and copy sent to referring family physician.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha45",
+      "text": "إشعار عدم حضور موعد تقييم الثدي - مستشفى توام (TAWAM BREAST UNIT)\nحالة الحضور: لم تحضر المريضة الموعد المحدد (Did Not Attend / DNA).\nReason for Recall: Right breast BI-RADS 0 asymmetry on screening mammogram.\nAssessment: Not done (لم يتم إجراء الفحص).\nBiopsy: None.\nOutcome: Pending (تمت إعادة جدولة الموعد وإرسال رسالة نصية للتذكير).",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:Arabic_bilingual_summary",
+        "arabic",
+        "spelling:UK"
+      ]
+    },
+    {
+      "id": "ha46",
+      "text": "SKMC BREAST CARE CENTRE - NON-ATTENDANCE NOTIFICATION\nDear Dr Al Dhaheri,\nRe: Recall from Screening Mammography (Left UOQ pleomorphic calcifications, BI-RADS 4B).\nYour patient was booked into our One-Stop Assessment Clinic today for left magnification views, targeted breast ultrasound, and stereotactic core needle biopsy with potential surgical oncology referral if malignant.\nHowever, she Did Not Attend (DNA) her appointment today and when contacted by phone stated she had travelled to Cairo for a family emergency. No assessment or biopsy took place. Outcome remains pending her return to Abu Dhabi.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK",
+        "hard:scheduled_plan_on_dna"
+      ]
+    },
+    {
+      "id": "ha47",
+      "text": "CCAD BREAST IMAGING - NO-SHOW / DNA RECORD\nAppointment Status: Patient did not attend (No-Show / DNA).\nScheduled Study: Diagnostic mammogram and ultrasound for screening recall (right focal asymmetry).\nAssessment Performed: Not done.\nBiopsy: None.\nDisposition: Pending reschedule by patient access coordinator.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:us_diagnostic_report",
+        "spelling:US"
+      ]
+    },
+    {
+      "id": "ha48",
+      "text": "MEDICLINIC AIRPORT ROAD - BREAST SCREENING RECALL ADMINISTRATION\nAttendance Status: Did Not Attend (DNA).\nClinical Note: This 61-year-old woman was recalled after screening showed a 20 mm spiculated mass in the right breast (BI-RADS 5). Our protocol booked her for triple assessment, ultrasound-guided core biopsy, and fast-track MDT oncology discussion. Unfortunately, she failed to attend her slot this morning. Breast care navigator is calling her next of kin urgently; no assessment or biopsy has been performed and outcome is pending.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:UK",
+        "hard:scheduled_plan_on_dna"
+      ]
+    },
+    {
+      "id": "ha49",
+      "text": "*** SCANNED DOCUMENT - OCR CONFIDENCE 84.2% - DO NOT DISCARD ***\nMADINAT ZAYED HOSPITAL (SEHA AL DHAFRA) - BREAST ASSESSMENT UNIT\nAttendance: DNA (Did not attend appointment).\nNotes: Patient unable to travel from Ghayathi due to transport issue. No diagnostic imaging, clinical exam, or biopsy performed.\nOutcome: Pending new appointment next week.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:onestop_clinic",
+        "spelling:UK",
+        "ocr_noise"
+      ]
+    },
+    {
+      "id": "ha50",
+      "text": "BURJEEL MEDICAL CITY - BREAST CLINIC NON-ATTENDANCE MEMO\nPatient did not attend (DNA) her scheduled recall assessment appointment on 30/10/2026 for evaluation of a left breast mass seen on screening mammography. Assessment: Not done. Biopsy: None. Outcome: Pending patient rebooking.",
+      "key": {
+        "attended": false,
+        "assessment": "not_done",
+        "biopsy": "none",
+        "outcome": "pending",
+        "label": "dna"
+      },
+      "tags": [
+        "layout:clinic_letter",
+        "spelling:US"
+      ]
+    }
+  ]
+}

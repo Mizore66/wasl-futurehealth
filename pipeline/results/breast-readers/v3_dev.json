@@ -1,0 +1,38 @@
+{
+ "breast": {
+  "breast-assess": {
+   "agree": 50,
+   "agree_but_wrong_vs_key": 0,
+   "errors": null,
+   "pipeline_agree_but_wrong": 0,
+   "pipeline_auto_decided": 50,
+   "reader_a_regex_correct": 50,
+   "reader_b_gemma_correct": 50,
+   "reader_b_unavailable": 0,
+   "reports": 50,
+   "to_review": 0
+  },
+  "breast-screen": {
+   "agree": 36,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 36,
+   "coded_path_agree_but_wrong": 0,
+   "coded_path_texts": 36,
+   "errors": [
+    "bs20 B:indeterminate want B0",
+    "bs25 B:TR want B0",
+    "bs26 B:B3 want B0"
+   ],
+   "free_text_agree": 3,
+   "free_text_agree_but_wrong": 0,
+   "free_text_texts": 3,
+   "pipeline_agree_but_wrong": 0,
+   "pipeline_auto_decided": 39,
+   "reader_a_regex_correct": 39,
+   "reader_b_gemma_correct": 36,
+   "reader_b_unavailable": 0,
+   "reports": 39,
+   "to_review": 3
+  }
+ }
+}

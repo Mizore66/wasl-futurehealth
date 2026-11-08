@@ -3,7 +3,10 @@ package main
 // Lung-nodule metrics (report7 programmes_live / programmes_no_review, sim v6_programmes): closure P/R where closure =
 // closed (follow-up CT stable/resolved) + no_followup_needed, false closures with attribution, escalation, overdue and
 // recommendation accuracy, and the appropriate-follow-up rate as truth vs Wasl would measure it.
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 func lungResolved(s string) bool { return s == "closed" || s == "no_followup_needed" }
 
@@ -137,6 +140,12 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 	if sm := petSurvMetrics(final, tr, ids); sm != nil { // -lungsurv only: absent otherwise, so the report is unchanged
 		out["pet_surveillance"] = sm
 	}
+	if sm := petSurvLaterMetrics(final, tr, ids); sm != nil { // -lungsurv2 only
+		out["pet_surveillance_later"] = sm
+	}
+	if sm := stableSurvMetrics(final, tr, ids); sm != nil { // -lungsurvstable only
+		out["stable_surveillance"] = sm
+	}
 	return out
 }
 
@@ -144,22 +153,79 @@ func lungMetrics(final map[string]*Decision, tr *Truth) map[string]interface{} {
 // generator's pet_surveillance truth: obligations opened, closures (a surveillance CT for the same person, stable or
 // resolved), false closures with attribution, escalation, overdue accuracy and patient outreach on the child loops.
 func petSurvMetrics(final map[string]*Decision, tr *Truth, ids []string) map[string]interface{} {
+	var obs []*LungSurvTruth
+	for _, id := range ids {
+		if s := tr.Loops[id].Lung.Surv; s != nil {
+			obs = append(obs, s)
+		}
+	}
+	isChild := func(d *Decision) bool { // the first PET/CT surveillance child (later rounds and the stable child are scored apart)
+		return d.Lung.Surveillance.Reason == "pet_low" && d.Lung.Surveillance.Round == 0
+	}
+	return survMetrics(final, obs, isChild, "surveillance CT after a PET/CT low-uptake closure (child loop <loop>#surv; BTS 2015)")
+}
+
+// petSurvLaterMetrics (-lungsurv2): the 1- and 2-year surveillance CTs (child loops <loop>#surv2, #surv3), per round
+// and pooled; a round's truth exists only when the previous round closed stable.
+func petSurvLaterMetrics(final map[string]*Decision, tr *Truth, ids []string) map[string]interface{} {
+	byRound := map[int][]*LungSurvTruth{}
+	var all []*LungSurvTruth
+	for _, id := range ids {
+		if s := tr.Loops[id].Lung.Surv; s != nil {
+			for _, x := range s.Later {
+				byRound[x.Round] = append(byRound[x.Round], x)
+				all = append(all, x)
+			}
+		}
+	}
+	later := func(round int) func(*Decision) bool {
+		return func(d *Decision) bool {
+			sv := d.Lung.Surveillance
+			return sv.Reason == "pet_low" && sv.Round >= 2 && (round == 0 || sv.Round == round)
+		}
+	}
+	out := survMetrics(final, all, later(0), "later surveillance CTs after a PET/CT low-uptake closure: about 1 year (<loop>#surv2) and 2 years (<loop>#surv3); BTS 2015")
+	if out == nil {
+		return nil
+	}
+	rounds := map[string]interface{}{}
+	for _, r := range []int{2, 3} {
+		if m := survMetrics(final, byRound[r], later(r), fmt.Sprintf("round %d", r)); m != nil {
+			rounds[fmt.Sprint(r)] = m
+		}
+	}
+	out["by_round"] = rounds
+	return out
+}
+
+// stableSurvMetrics (-lungsurvstable): the further CT after a stable follow-up CT whose Fleischner cell recommends one
+// (child loop <loop>#surv, reason fleischner_stable), scored against the stable_surveillance truth.
+func stableSurvMetrics(final map[string]*Decision, tr *Truth, ids []string) map[string]interface{} {
+	var obs []*LungSurvTruth
+	for _, id := range ids {
+		if s := tr.Loops[id].Lung.StableSurv; s != nil {
+			obs = append(obs, s)
+		}
+	}
+	isChild := func(d *Decision) bool { return d.Lung.Surveillance.Reason == "fleischner_stable" }
+	return survMetrics(final, obs, isChild, "further CT after a stable follow-up CT (child loop <loop>#surv; Fleischner 2017 cell)")
+}
+
+// survMetrics: one family of surveillance-CT child loops against its truth obligations. isChild picks the pipeline
+// children of this family (only called on decisions with a lung.surveillance object); extra_opened counts such children
+// with no truth obligation of the family.
+func survMetrics(final map[string]*Decision, obs []*LungSurvTruth, isChild func(*Decision) bool, def string) map[string]interface{} {
 	n, opened, stateOK, ovOK, tp, fp, fn := 0, 0, 0, 0, 0, 0, 0
 	escT, escP, escBoth, ovT, ovP, withinT, withinP := 0, 0, 0, 0, 0, 0, 0
 	conf, attr, adh, outr := map[string]map[string]int{}, map[string]int{}, map[string]int{}, map[string]int{}
 	has := map[string]bool{}
-	for _, id := range ids {
-		lt := tr.Loops[id]
-		if lt.Lung.Surv == nil {
-			continue
-		}
-		s := lt.Lung.Surv
+	for _, s := range obs {
 		has[s.Loop] = true
 		n++
 		adh[s.Adherence]++
 		d := final[s.Loop]
 		ps := "missing"
-		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil {
+		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil && isChild(d) {
 			ps = d.State
 			opened++
 		} else {
@@ -222,16 +288,16 @@ func petSurvMetrics(final map[string]*Decision, tr *Truth, ids []string) map[str
 			}
 		}
 	}
-	extra := 0 // child loops opened where the truth has no PET-low surveillance obligation
+	extra := 0 // child loops of this family opened where the truth has no such obligation
 	for id, d := range final {
-		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil && id == d.LoopID && baseLoop(id) != id && !has[id] {
+		if d != nil && d.Lung != nil && d.Lung.Surveillance != nil && id == d.LoopID && baseLoop(id) != id && !has[id] && isChild(d) {
 			extra++
 		}
 	}
 	if n == 0 && extra == 0 {
 		return nil
 	}
-	return map[string]interface{}{"definition": "surveillance CT after a PET/CT low-uptake closure (child loop <loop>#surv; BTS 2015)",
+	return map[string]interface{}{"definition": def,
 		"obligations": n, "opened": opened, "extra_opened": extra, "adherence_truth": adh, "state_accuracy": frac(stateOK, n), "confusion_truth_pred": conf,
 		"closure": map[string]interface{}{"truth_closed": tp + fn, "pred_closed": tp + fp, "tp": tp, "false_closures": fp, "missed": fn,
 			"precision": frac(tp, tp+fp), "recall": frac(tp, tp+fn), "false_closure_rate_upper95": r3(wilsonUp(fp, tp+fp)), "attribution": attr,

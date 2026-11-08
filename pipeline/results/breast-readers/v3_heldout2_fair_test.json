@@ -1,0 +1,49 @@
+{
+ "heldout2": {
+  "breast-assess": {
+   "agree": 40,
+   "agree_but_wrong_vs_key": 0,
+   "errors": [
+    "ha05 A:incomplete want return_routine",
+    "ha08 A:indeterminate want return_routine",
+    "ha12 A:indeterminate want return_routine",
+    "ha15 A:indeterminate want early_recall",
+    "ha22 A:incomplete want to_treatment",
+    "ha23 A:incomplete want to_treatment",
+    "ha26 A:incomplete want to_treatment",
+    "ha41 A:return_routine want incomplete"
+   ],
+   "pipeline_agree_but_wrong": 0,
+   "pipeline_auto_decided": 40,
+   "reader_a_regex_correct": 42,
+   "reader_b_gemma_correct": 48,
+   "reader_b_unavailable": 2,
+   "reports": 50,
+   "to_review": 10
+  },
+  "breast-screen": {
+   "agree": 33,
+   "agree_but_wrong_vs_key": 0,
+   "coded_path_agree": 20,
+   "coded_path_agree_but_wrong": 0,
+   "coded_path_texts": 20,
+   "errors": [
+    "hb22 A:indeterminate want B1",
+    "hb24 A:indeterminate want B1",
+    "hb30 A:indeterminate want B0",
+    "hb30 B:TR want B0",
+    "hb39 A:indeterminate want TR"
+   ],
+   "free_text_agree": 13,
+   "free_text_agree_but_wrong": 0,
+   "free_text_texts": 20,
+   "pipeline_agree_but_wrong": 0,
+   "pipeline_auto_decided": 33,
+   "reader_a_regex_correct": 36,
+   "reader_b_gemma_correct": 36,
+   "reader_b_unavailable": 3,
+   "reports": 40,
+   "to_review": 7
+  }
+ }
+}

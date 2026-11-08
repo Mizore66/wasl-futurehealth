@@ -11,9 +11,10 @@ import (
 	"sort"
 )
 
+var LinkReview = 0.20 // below: ignored; -linkfloor may lower review routing only
+
 const (
 	TauHigh       = 0.99 // calibrated link probability gate (v3 operating point)
-	LinkReview    = 0.20 // below: ignored
 	OwnerGrace    = 3.0
 	NotifSLA      = 21.0 // days from referral to a compliant result notification
 	AckSLA        = 7.0  // days from notification to patient acknowledgement
@@ -25,6 +26,7 @@ type loopState struct {
 	facts   *LoopFacts
 	last    *Decision
 	lastFU  *Decision // lung: the surveillance loop opened by a stable follow-up (lung.go)
+	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
 	raised  map[string]*ReviewItem
 	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
 }
@@ -102,6 +104,13 @@ func (c *ClosureCore) apply(m *FactsMsg) []OutMsg {
 		return out
 	}
 	ls.facts = f
+	if HistClock && m.Arr != nil && *m.Arr < 0 && *m.Arr < c.now { // pre-day-0 look-back history only: never rewind a live-day decision
+		saved := c.now
+		c.now = *m.Arr
+		out = c.eval(ls, m.InSeq, m.ID)
+		c.now = saved
+		return out
+	}
 	return c.eval(ls, m.InSeq, m.ID)
 }
 
@@ -113,9 +122,13 @@ func (c *ClosureCore) pcal(p float64) float64 {
 }
 
 func linkBlock(f *LoopFacts, d DownFact, pc float64) map[string]interface{} {
-	return map[string]interface{}{"loop": f.LoopID, "referral_patient": f.SRRec, "downstream_event": d.Provider + "/" + d.RType + "/" + d.EventID,
+	b := map[string]interface{}{"loop": f.LoopID, "referral_patient": f.SRRec, "downstream_event": d.Provider + "/" + d.RType + "/" + d.EventID,
 		"weakest_edge": map[string]interface{}{"a": d.Weak.A, "b": d.Weak.B, "p": d.Weak.P, "basis": d.Weak.Basis},
 		"path_strength": d.Strength, "path_p_cal": round4(pc), "tau": TauHigh, "hops": d.Hops, "near_miss": d.NearMiss, "linker": "wasl-v3-retrained+iso+eid"}
+	if d.EIDContra != "" { // eidguard.go: the weakest edge shown is the pair put to review, not an edge of the link graph
+		b["eid_contra"], b["review_pair_substituted"] = d.EIDContra, true
+	}
+	return b
 }
 
 func evBlock(d DownFact, human string) map[string]interface{} {
@@ -180,6 +193,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	}
 	if prog == "breast" { // fourth loop type: identity gate + two-reader gate + review, rule doh2025breast (breast.go)
 		return c.evalBreast(ls, inSeq, mid)
+	}
+	if prog == "lung_ldct" { // fifth loop type: identity gate + two-reader gate + review, rule acr2022lungrads (ldct.go)
+		return c.evalLDCT(ls, inSeq, mid)
+	}
+	if prog == "ifhas" { // IFHAS abnormal results: identity gate + two-reader gate + review, rule doh2025ifhas (ifhas.go)
+		return c.evalIfhas(ls, inSeq, mid)
 	}
 	rule := Rules[prog]
 	deadline := DeadlineDays(prog, f.Priority)
@@ -287,10 +306,10 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			continue // another programme's procedure for the same person never closes this loop
 		}
 		pc := c.pcal(d.Strength)
-		trusted := !d.NearMiss && (pc >= TauHigh || d.Weak.Basis == "eid" || d.Weak.Basis == "human")
+		trusted := !d.NearMiss && d.EIDContra == "" && (pc >= TauHigh || d.Weak.Basis == "eid" || d.Weak.Basis == "human")
 		if V7Cal != nil {
 			pc = d.PCal
-			trusted = !d.NearMiss && (pc >= TauClose || d.AllHuman)
+			trusted = !d.NearMiss && d.EIDContra == "" && (pc >= TauClose || d.AllHuman)
 		}
 		if d.Strength < LinkReview {
 			continue
@@ -341,6 +360,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
 	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
+	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
 	var auditNote map[string]interface{} // pilot: a post-closure audit that disagreed with the automatic verdict
 	pending := []string{}
 	pendSet := map[string]bool{}
@@ -432,6 +452,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if PrepQuery && h == "adequate" && r.d.Ev != nil && r.d.Ev.PrepUngraded {
 				label = r.d.Ev.GradedLabel
 			}
+			// completion review (r1review.go): the clinician decides completion only; tissue still waits for histology.
+			// Keyed on the signed item's purpose as well as on the verdict, so it holds even if a re-judging process
+			// reverted the verdict (final review M3, defence in depth)
+			if h == "adequate" && (R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review || signedCompletion(f.Signoffs, r.d.ReportID)) {
+				label = completionLabel(r.d.Ev)
+			}
 			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not
 			// reached, inadequate prep) needs a confirming review that sees the quote; until then the loop stays open
 			if h == "adequate" && explicitInadequate(r.d.Ev) {
@@ -485,6 +511,15 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			}
 		}
 		if label == "" {
+			if R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review { // completion not documented: clinician review (r1review.go)
+				raiseFor(r, "evidence", CompletionPurpose)
+				if !completionPending {
+					completionPending = true
+					rr := r
+					completionRow = &rr
+				}
+				continue
+			}
 			raise(r, "evidence")
 			continue
 		}
@@ -573,6 +608,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": why, "programme": prog,
 				"report": holdRow.d.Provider + "/DiagnosticReport/" + holdRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
 				"policy": "no closure without two-reader adequate evidence or authorised human decision"})
+		} else if !(awaiting || inadequate) && completionPending && completionRow != nil { // r1review.go: held for the clinician
+			chain = appendBlock(nil, "link_decision", linkBlock(f, completionRow.d, completionRow.pc))
+			chain = appendBlock(chain, "evidence", evBlock(completionRow.d, ""))
+			chain = appendBlock(chain, "hold_decision", map[string]interface{}{"loop": f.LoopID, "state": "completion_review", "programme": prog,
+				"report": completionRow.d.Provider + "/DiagnosticReport/" + completionRow.d.ReportID, "rule": "doh:" + prog + " closure requires caecum + graded prep + histology-if-tissue",
+				"policy": "completion not documented: a clinician decides, no automatic verdict"})
 		}
 		if auditNote != nil { // the audit re-opened an automatic closure: record it in the chain
 			chain = appendBlock(chain, "auto_audit", auditNote)
@@ -683,7 +724,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		d.Outreach = BuildOutreach(f, c.pcal)
 		if d.Handoff != nil {
 			for _, o := range d.Outreach {
-				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (o.Kind == "referral_rejected" && o.Released)
+				d.Handoff.PatientInformed = d.Handoff.PatientInformed || (crcRejectedKind(o.Kind) && o.Released)
 			}
 		}
 		// v7 guard: a held message raises one human confirmation item for its registration pair
@@ -754,6 +795,9 @@ func (c *ClosureCore) Final() map[string]*Decision {
 		m[k] = v.last
 		if v.lastFU != nil {
 			m[v.lastFU.LoopID] = v.lastFU
+		}
+		for id, d := range v.lastFU2 {
+			m[id] = d
 		}
 	}
 	return m

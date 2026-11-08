@@ -83,16 +83,20 @@ for noise in ["v1", "v2"]:
             pool["lung_false_closures"] += lc['false_closures']; pool["lung_closed"] += lc['pred_closed']
             for k2, v2 in (lu.get('workup_gt8mm') or {}).items():
                 pool["lung_workup_" + k2] += v2
-            ps = lu.get('pet_surveillance')
-            if ps:  # -lungsurv: surveillance CT after a PET/CT low-uptake closure (pipeline/lungsurv.go)
+            # -lungsurv: surveillance CT after a PET/CT low-uptake closure; -lungsurv2: its 1- and 2-year CTs;
+            # -lungsurvstable: the CT after a stable follow-up CT (pipeline/lungsurv.go); each family pooled apart
+            for key, pre in (('pet_surveillance', 'lung_surv_'), ('pet_surveillance_later', 'lung_surv_later_'), ('stable_surveillance', 'lung_surv_stable_')):
+                ps = lu.get(key)
+                if not ps:
+                    continue
                 psc = ps['closure']
-                pool["lung_surv_obligations"] += ps['obligations']; pool["lung_surv_opened"] += ps['opened']; pool["lung_surv_extra_opened"] += ps['extra_opened']
-                pool["lung_surv_truth_closed"] += psc['truth_closed']; pool["lung_surv_pred_closed"] += psc['pred_closed']; pool["lung_surv_tp"] += psc['tp']
-                pool["lung_surv_false_closures"] += psc['false_closures']; pool["lung_surv_missed"] += psc['missed']
-                pool["lung_surv_truth_overdue"] += ps['overdue']['truth_overdue']; pool["lung_surv_pred_overdue"] += ps['overdue']['pred_overdue']
-                pool["lung_surv_overdue_flag_correct"] += ps['overdue_flag_correct']
+                pool[pre + "obligations"] += ps['obligations']; pool[pre + "opened"] += ps['opened']; pool[pre + "extra_opened"] += ps['extra_opened']
+                pool[pre + "truth_closed"] += psc['truth_closed']; pool[pre + "pred_closed"] += psc['pred_closed']; pool[pre + "tp"] += psc['tp']
+                pool[pre + "false_closures"] += psc['false_closures']; pool[pre + "missed"] += psc['missed']
+                pool[pre + "truth_overdue"] += ps['overdue']['truth_overdue']; pool[pre + "pred_overdue"] += ps['overdue']['pred_overdue']
+                pool[pre + "overdue_flag_correct"] += ps['overdue_flag_correct']
                 for k2, v2 in (ps.get('patient_outreach_final') or {}).items():
-                    pool["lung_surv_outreach_" + k2] += v2
+                    pool[pre + "outreach_" + k2] += v2
         dr = r.get('programmes_live', {}).get('diabetic_retinopathy')
         if dr:  # diabetic retinopathy loops (third loop type), when the run has them
             dc, rc = dr['closure'], dr['referral_closure']
@@ -122,6 +126,39 @@ for noise in ["v1", "v2"]:
             for kind, tw in (br.get('two_reader') or {}).items():
                 pool[f"breast_reader_{kind}_instances"] += tw['report_instances']; pool[f"breast_reader_{kind}_agree"] += tw['agree']
                 pool[f"breast_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"breast_reader_{kind}_coded"] += tw.get('coded_birads', 0)
+        lc = r.get('programmes_live', {}).get('lung_ldct')
+        if lc:  # lung cancer screening LDCT loops (fifth loop type), when the run has them
+            cc, ac, kp = lc['closure'], lc['action_closure'], lc['doh_kpi']
+            m["ldct_precision"].append(cc['precision']); m["ldct_recall"].append(cc['recall'])
+            m["ldct_action_loop_recall"].append(ac['recall']); m["ldct_state_accuracy"].append(lc['state_accuracy'])
+            m["ldct_triage_accuracy"].append(lc['triage']['accuracy']); m["ldct_overdue_accuracy"].append(lc['overdue_flag_accuracy'])
+            m["ldct_action_outcome_accuracy"].append(lc['action_outcome_accuracy'])
+            wk = kp['next_step_within_wasl_clock']
+            m["ldct_next_step_within_clock_truth"].append(wk['truth']); m["ldct_next_step_within_clock_wasl"].append(wk['wasl_measured'])
+            m["ldct_abnormal_recall_rate_truth"].append(kp['abnormal_recall_rate']['truth']); m["ldct_abnormal_recall_rate_wasl"].append(kp['abnormal_recall_rate']['wasl_measured'])
+            m["ldct_cancer_detection_rate_truth"].append(kp['lung_cancer_detection_rate']['truth']); m["ldct_cancer_detection_rate_wasl"].append(kp['lung_cancer_detection_rate']['wasl_measured'])
+            pool["ldct_false_closures"] += cc['false_closures']; pool["ldct_closed"] += cc['pred_closed']
+            pool["ldct_action_false_closures"] += ac['false_closures']; pool["ldct_action_closed"] += ac['pred_closed']
+            for kind, tw in (lc.get('two_reader') or {}).items():
+                if not isinstance(tw, dict):
+                    continue
+                pool[f"ldct_reader_{kind}_instances"] += tw['report_instances']; pool[f"ldct_reader_{kind}_agree"] += tw['agree']
+                pool[f"ldct_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']; pool[f"ldct_reader_{kind}_coded"] += tw.get('coded_lungrads', 0)
+        ih = r.get('programmes_live', {}).get('ifhas')
+        if ih:  # IFHAS abnormal-result follow-up loops (pipeline/ifhas.go), when the run has them
+            ic, fc, ik = ih['closure'], ih['followup_closure'], ih['ifhas_kpi']
+            m["ifhas_precision"].append(ic['precision']); m["ifhas_recall"].append(ic['recall'])
+            m["ifhas_followup_loop_recall"].append(fc['recall']); m["ifhas_state_accuracy"].append(ih['state_accuracy'])
+            m["ifhas_triage_accuracy"].append(ih['triage']['accuracy']); m["ifhas_overdue_accuracy"].append(ih['overdue_flag_accuracy'])
+            m["ifhas_domain_outcome_accuracy"].append(ih['domain_outcome_accuracy'])
+            wk = ik['followup_documented_within_clock']
+            m["ifhas_followup_within_clock_truth"].append(wk['truth']); m["ifhas_followup_within_clock_wasl"].append(wk['wasl_measured'])
+            m["ifhas_abnormal_findings_rate_truth"].append(ik['abnormal_findings_rate']['truth']); m["ifhas_abnormal_findings_rate_wasl"].append(ik['abnormal_findings_rate']['wasl_measured'])
+            pool["ifhas_false_closures"] += ic['false_closures']; pool["ifhas_closed"] += ic['pred_closed']
+            pool["ifhas_followup_false_closures"] += fc['false_closures']; pool["ifhas_followup_closed"] += fc['pred_closed']
+            for kind, tw in (ih.get('two_reader') or {}).items():
+                pool[f"ifhas_reader_{kind}_instances"] += tw['report_instances']; pool[f"ifhas_reader_{kind}_agree"] += tw['agree']
+                pool[f"ifhas_reader_{kind}_agree_but_wrong"] += tw['agree_but_wrong_vs_truth']
         for prog in ("crc", "cervical"):  # rejected-referral hand-off packet (handoff.go)
             ho = ((r.get('programmes_live', {}).get(prog) or {}).get('handoff') or {}).get('counts') or {}
             for k2, v2 in ho.items():
@@ -156,18 +193,29 @@ for noise in ["v1", "v2"]:
     if pool["lung_surv_obligations"]:
         safety["lung_surveillance_ct_false_closures"] = [pool["lung_surv_false_closures"], pool["lung_surv_pred_closed"], cp_ub(pool["lung_surv_false_closures"], pool["lung_surv_pred_closed"])]
         safety["lung_surveillance_ct_overdue_flag_correct"] = [pool["lung_surv_overdue_flag_correct"], pool["lung_surv_obligations"], None]
+    for pre, name in (("lung_surv_later_", "lung_surveillance_later_ct"), ("lung_surv_stable_", "lung_surveillance_stable_ct")):  # -lungsurv2 / -lungsurvstable
+        if pool[pre + "obligations"] or pool[pre + "extra_opened"]:
+            safety[name + "_false_closures"] = [pool[pre + "false_closures"], pool[pre + "pred_closed"], cp_ub(pool[pre + "false_closures"], pool[pre + "pred_closed"])]
+            safety[name + "_overdue_flag_correct"] = [pool[pre + "overdue_flag_correct"], pool[pre + "obligations"], None]
+            safety[name + "_extra_opened"] = [pool[pre + "extra_opened"], pool[pre + "opened"] + pool[pre + "extra_opened"], None]
     if pool["dr_closed"]:
         safety["dr_false_closures"] = [pool["dr_false_closures"], pool["dr_closed"], cp_ub(pool["dr_false_closures"], pool["dr_closed"])]
         safety["dr_referral_false_closures"] = [pool["dr_referral_false_closures"], pool["dr_referral_closed"], cp_ub(pool["dr_referral_false_closures"], pool["dr_referral_closed"])]
     if pool["breast_closed"]:
         safety["breast_false_closures"] = [pool["breast_false_closures"], pool["breast_closed"], cp_ub(pool["breast_false_closures"], pool["breast_closed"])]
         safety["breast_recall_false_closures"] = [pool["breast_recall_false_closures"], pool["breast_recall_closed"], cp_ub(pool["breast_recall_false_closures"], pool["breast_recall_closed"])]
+    if pool["ldct_closed"]:
+        safety["ldct_false_closures"] = [pool["ldct_false_closures"], pool["ldct_closed"], cp_ub(pool["ldct_false_closures"], pool["ldct_closed"])]
+        safety["ldct_action_false_closures"] = [pool["ldct_action_false_closures"], pool["ldct_action_closed"], cp_ub(pool["ldct_action_false_closures"], pool["ldct_action_closed"])]
+    if pool["ifhas_closed"]:
+        safety["ifhas_false_closures"] = [pool["ifhas_false_closures"], pool["ifhas_closed"], cp_ub(pool["ifhas_false_closures"], pool["ifhas_closed"])]
+        safety["ifhas_followup_false_closures"] = [pool["ifhas_followup_false_closures"], pool["ifhas_followup_closed"], cp_ub(pool["ifhas_followup_false_closures"], pool["ifhas_followup_closed"])]
     if pool["handoff_closed"]:
         safety["handoff_false_closures"] = [pool["handoff_false_closures"], pool["handoff_closed"], cp_ub(pool["handoff_false_closures"], pool["handoff_closed"])]
     for tag in ("lung", "dr"):  # closed after a rejected lung work-up / DR referral (re-referral), and how many falsely
         if pool[f"handoff_{tag}_closed"]:
             safety[f"handoff_{tag}_false_closures"] = [pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"], cp_ub(pool[f"handoff_{tag}_false_closures"], pool[f"handoff_{tag}_closed"])]
-    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("lung_surv_") or k.startswith("breast_reader_")}
+    extra = {k: v for k, v in pool.items() if k.startswith("lung_workup_") or k.startswith("handoff_") or k.startswith("dr_reader_") or k.startswith("lung_surv_") or k.startswith("breast_reader_") or k.startswith("ldct_reader_") or k.startswith("ifhas_reader_")}
     # review-load ratio: the per-seed max/min is noisy with four unequal origin groups, so also report it pooled over
     # seeds and next to a no-bias reference (origin labels shuffled across loops; scripts/origin_null.py)
     pooled_rates = {k[len("origin_items_"):]: 100 * v / pool["origin_loops_" + k[len("origin_items_"):]] for k, v in pool.items() if k.startswith("origin_items_")}
@@ -267,11 +315,17 @@ for noise in ["v1", "v2"]:
               "dr_exam_within_deadline_truth", "dr_exam_within_deadline_wasl",
               "breast_precision", "breast_recall", "breast_recall_loop_recall", "breast_state_accuracy", "breast_triage_accuracy", "breast_overdue_accuracy",
               "breast_recall_outcome_accuracy", "breast_assessment_within_deadline_truth", "breast_assessment_within_deadline_wasl",
-              "breast_abnormal_recall_rate_truth", "breast_abnormal_recall_rate_wasl", "breast_early_recall_rate_truth", "breast_early_recall_rate_wasl", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
+              "breast_abnormal_recall_rate_truth", "breast_abnormal_recall_rate_wasl", "breast_early_recall_rate_truth", "breast_early_recall_rate_wasl",
+              "ldct_precision", "ldct_recall", "ldct_action_loop_recall", "ldct_state_accuracy", "ldct_triage_accuracy", "ldct_overdue_accuracy",
+              "ldct_action_outcome_accuracy", "ldct_next_step_within_clock_truth", "ldct_next_step_within_clock_wasl",
+              "ldct_abnormal_recall_rate_truth", "ldct_abnormal_recall_rate_wasl", "ldct_cancer_detection_rate_truth", "ldct_cancer_detection_rate_wasl", "linkage_pair_f1", "reviewer_h_per_1k", "review_items_per_100_loops", "throughput_ev_s"] + \
              sorted(x for x in agg if (x.startswith("review_items_per_100_") and x != "review_items_per_100_loops") or (x.startswith("reviewer_h_per_1k_"))) + ["review_load_ratio_max_min_origin"]:
         if k in agg:
             a = agg[k]
             md.append(f"| {k} | {a[0]} | {'–' if a[1] is None else f'{a[1]} – {a[2]}'} |")
+    for k in sorted(x for x in agg if x.startswith("ifhas_")):  # IFHAS rows (pipeline/ifhas.go), same table
+        a = agg[k]
+        md.append(f"| {k} | {a[0]} | {'–' if a[1] is None else f'{a[1]} – {a[2]}'} |")
     md.append("\n| Safety (pooled over seeds) | Events | Denominator | 95% upper bound |\n|---|---|---|---|")
     for k, (e, n, ub) in safety.items():
         md.append(f"| {k} | {e} | {'–' if n is None else n} | {'–' if ub is None else f'{ub:.4%}'} |")
@@ -294,7 +348,9 @@ for noise in ["v1", "v2"]:
                   f"(no-bias 95th percentile {sg['pooled_no_bias_p95']}, p = {sg['pooled_p_value']}); recall {sg['crc_recall']}; false closures {sg['crc_false_closures']}.")
     if extra:
         surv = ", PET-low surveillance CT" if any(k.startswith("lung_surv_") for k in extra) else ""
-        md.append(f"\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR and breast readers{surv}) | Count |\n|---|---|")
+        if any(k.startswith(("lung_surv_later_", "lung_surv_stable_")) for k in extra):
+            surv = ", lung surveillance CTs (PET-low first and later rounds, stable-CT child)"
+        md.append(f"\n| Pooled counts (lung > 8 mm work-up, rejected-referral hand-off, DR, breast and LDCT readers{surv}) | Count |\n|---|---|")
         md.extend(f"| {k} | {v} |" for k, v in sorted(extra.items()))
 md.append("\n## Limitations\n" + "\n".join(f"- {x}" for x in man["limitations"]))
 json.dump(out, open(os.path.join(F, 'summary.json'), 'w'), indent=1)

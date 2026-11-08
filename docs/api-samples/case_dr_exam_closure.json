@@ -1,4 +1,9 @@
 {
+ "agent_investigations": [],
+ "agent_provenance": {
+  "cached": false,
+  "experimental": false
+ },
  "api_reviews": [],
  "booking": {
   "data_mode": "simulated",
@@ -47,9 +52,9 @@
   "state": "closed"
  },
  "current": {
-  "id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4210",
+  "id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@6013",
   "loop": "phc-retina/ServiceRequest/PHC-sr-1029",
-  "in_seq": 4210,
+  "in_seq": 6013,
   "prov": "phc-retina",
   "sr_day": -63.02478009259259,
   "now": 0,
@@ -212,10 +217,10 @@
  "decisions": [
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3040",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4227",
    "dropoff": "no_eye_exam",
    "escalations": [],
-   "in_seq": 3040,
+   "in_seq": 4227,
    "outreach": [],
    "overdue": false,
    "owner": "",
@@ -225,10 +230,10 @@
   },
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@3059",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4241",
    "dropoff": "no_eye_exam",
    "escalations": [],
-   "in_seq": 3059,
+   "in_seq": 4241,
    "outreach": [],
    "overdue": false,
    "owner": "",
@@ -238,10 +243,10 @@
   },
   {
    "consent_log": [],
-   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@4210",
+   "decision_id": "dec-phc-retina/ServiceRequest/PHC-sr-1029@phc-retina/ServiceRequest/PHC-sr-1029@6013",
    "dropoff": "",
    "escalations": [],
-   "in_seq": 4210,
+   "in_seq": 6013,
    "outreach": [],
    "overdue": false,
    "owner": "",
@@ -348,11 +353,11 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "outreach": [],
  "review_items": [],
@@ -365,7 +370,7 @@
    "id": "phc-retina/DiagnosticReport/PHC-dr-1077",
    "provider": "phc-retina",
    "raw_sha": "c38d96c7958379d9",
-   "seq": 3035,
+   "seq": 4216,
    "source": "fhir",
    "status": "final",
    "type": "DiagnosticReport"
@@ -377,7 +382,7 @@
    "id": "phc-retina/ServiceRequest/PHC-sr-1029",
    "provider": "phc-retina",
    "raw_sha": "a6205e3097afabdd",
-   "seq": 3040,
+   "seq": 4227,
    "source": "fhir",
    "status": "active",
    "type": "ServiceRequest"
@@ -389,7 +394,7 @@
    "id": "phc-retina/Consent/dr-consent-PHC-sr-1029",
    "provider": "phc-retina",
    "raw_sha": "93b5f16ef274784c",
-   "seq": 3059,
+   "seq": 4241,
    "source": "fhir",
    "status": "permit",
    "type": "Consent"
@@ -401,7 +406,7 @@
    "id": "eye-hosp/DiagnosticReport/EYE-dr-83",
    "provider": "eye-hosp",
    "raw_sha": "7762253d11f1159f",
-   "seq": 4210,
+   "seq": 6013,
    "source": "fhir",
    "status": "final",
    "type": "DiagnosticReport"

@@ -29,6 +29,7 @@ type ReaderVerdict struct {
 	Lung      *LungFields `json:"lung,omitempty"` // lung-nodule loop: fields this reader extracted (lungread.go)
 	DR        *DRFields   `json:"dr,omitempty"`   // diabetic retinopathy loop: fields this reader extracted (drread.go)
 	Breast    *BreastFields `json:"breast,omitempty"` // breast recall loop: fields this reader extracted (breastread.go)
+	LDCT      *LDCTFields   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop: fields this reader extracted (ldctread.go)
 }
 
 type TwoVerdict struct {
@@ -42,6 +43,7 @@ type TwoVerdict struct {
 	// the report would get once prep is graded adequate. Closure then queries the endoscopy unit instead of a reviewer.
 	PrepUngraded bool   `json:"prep_ungraded,omitempty"`
 	GradedLabel  string `json:"graded_label,omitempty"`
+	R1Review     bool   `json:"r1_review,omitempty"`
 	Rule     string        `json:"rule,omitempty"` // v7: which per-field / DoH documentation rule resolved it
 	Flags    []string      `json:"flags,omitempty"` // v7: documentation non-conformances passed to unit QA (not closure blockers)
 	Model    string        `json:"model,omitempty"` // second-reader model version (provenance)
@@ -57,8 +59,8 @@ var (
 	reCaecNo   = regexp.MustCompile(`(?i)(?:unable to|could not|failed to|not able to) (?:reach|advance|intubate|pass)|aborted|incomplete (?:exam|colonoscopy|study)|(?:passed|advanced|inserted)[^.]{0,40}to the ` + seg)
 	reCaecYes  = regexp.MustCompile(`(?i)c(?:a)?ec(?:um|al)|ileoc(?:a)?ecal|terminal ileum|appendiceal orifice`)
 	reScope    = regexp.MustCompile(`(?i)colonoscop|scope`)
-	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory)`)
-	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|fair|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|fair|satisfactory)|well[- ]prep`)
+	rePrepBad  = regexp.MustCompile(`(?i)(?:poor|inadequate|suboptimal|unsatisfactory|fair)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:poor|inadequate|suboptimal|unsatisfactory|fair)`)
+	rePrepOK   = regexp.MustCompile(`(?i)(?:good|excellent|adequate|satisfactory)[^.]{0,30}prep|prep[a-z]*[^.]{0,30}(?:good|excellent|adequate|satisfactory)|well[- ]prep`)
 	rePolyps   = regexp.MustCompile(`(?i)polypectomy|polyps?[^.]{0,120}(?:removed|resected|excised|snared|fulgurated|ablated|retrieved|recovered)|(?:removed|resected|excised|excision|snared|snare)[^.]{0,60}polyp`)
 	// v7.2 adds "biopsied" (unless negated earlier in its sentence), "excision/snare … polyp" and "polyp … recovered": colon tissue that v7.1 only caught by
 	// accident when a gastric biopsy in the same report matched (corpus 4 q275, corpus 8 v054).
@@ -77,7 +79,7 @@ var (
 	// v6: this procedure's result is still pending (or only received, not reported). A tissue diagnosis elsewhere in such
 	// a text is not this procedure's result, so the report is not auto-closed.
 	reHistPending = regexp.MustCompile(`(?i)(?:histolog\w*|patholog\w*|result|specimen|accession)[^.\n]{0,50}\b(?:awaited|pending|to follow|not (?:yet )?(?:available|back|reported))|\b(?:awaiting|pending)\b[^.\n]{0,20}(?:histolog|patholog|result)|\bno (?:\w+ )?diagnosis (?:is )?(?:yet )?available|(?:laboratory|lab|patholog\w*)[^.\n]{0,40}\breceived\b|\breceived\b[^.\n]{0,20}(?:in|by) (?:the )?(?:lab|laboratory|pathology)|gross description`)
-	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|fair|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
+	reGradeWd  = regexp.MustCompile(`(?i)excellent|good|adequate|satisfactory|well[- ]prep|poor|inadequate|suboptimal|boston|bbps|جيد|ممتاز|ضعيف|غير كاف`)
 	reHisto    = regexp.MustCompile(`(?i)tubular|villous|adenocarcinoma|hyperplastic polyp|sessile serrated|dysplasia|carcinoma|microscopic (?:description|examination)|histolog[a-z]* (?:shows|showed|revealed|confirm)`)
 )
 
@@ -398,6 +400,8 @@ func LoadJudge2(path string) *Judge2 {
 	loadLungCache(filepath.Dir(path)) // lung-nodule reader B answers, if present (lungread.go)
 	loadDRCache(filepath.Dir(path))   // diabetic retinopathy reader B answers, if present (drread.go)
 	loadBreastCache(filepath.Dir(path)) // breast recall reader B answers, if present (breastread.go)
+	loadLDCTCache(filepath.Dir(path))   // lung cancer screening (LDCT) reader B answers, if present (ldctread.go)
+	loadIfhasCache(filepath.Dir(path)) // IFHAS follow-up reader B answers, if present (ifhasread.go)
 	return j
 }
 
@@ -491,6 +495,12 @@ var Templates = map[string]Template{
 	"drsfu-recall-v1/ar": {"drsfu-recall-v1/ar", "ar", "recall", "مرحبًا. يحاول {{provider}} التواصل معك بخصوص موعدك القادم لفحص العين، وقد حان وقته الآن. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق في أقرب وقت ممكن. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	"drsfu-rebook-v1/en": {"drsfu-rebook-v1/en", "en", "rebook", "Hello. You were not able to attend your recent eye appointment, and {{provider}} would like to book a new one for you. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
 	"drsfu-rebook-v1/ar": {"drsfu-rebook-v1/ar", "ar", "rebook", "مرحبًا. لم تتمكن من حضور موعد فحص العين الأخير، ويود {{provider}} حجز موعد جديد لك. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	// rejected referral (outreachgaps.go, -rejmsg: lung_referral_rejected / dr_referral_rejected): the unit could not
+	// take the referral and the referring clinic is responsible again; same wording rules, no test, finding or unit named
+	"lnfu-rejected-v1/en": {"lnfu-rejected-v1/en", "en", "rejected", "Hello. {{provider}} would like to talk with you about your next step, because the appointment you were referred for could not go ahead as planned. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"lnfu-rejected-v1/ar": {"lnfu-rejected-v1/ar", "ar", "rejected", "مرحبًا. يود {{provider}} التحدث معك بخصوص خطوتك التالية، إذ تعذّر إتمام الموعد الذي أُحلت إليه كما كان مخططًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
+	"drsfu-rejected-v1/en": {"drsfu-rejected-v1/en", "en", "rejected", "Hello. {{provider}} would like to talk with you about your next step, because the eye appointment you were referred for could not go ahead as planned. Please contact your care team or book through the app. For your privacy, no clinical details are ever included in messages. Reply 1 to confirm you received this message."},
+	"drsfu-rejected-v1/ar": {"drsfu-rejected-v1/ar", "ar", "rejected", "مرحبًا. يود {{provider}} التحدث معك بخصوص خطوتك التالية، إذ تعذّر إتمام موعد فحص العين الذي أُحلت إليه كما كان مخططًا. يرجى التواصل مع فريق الرعاية أو الحجز عبر التطبيق. حفاظًا على خصوصيتك، لا تتضمن الرسائل أي تفاصيل طبية. أرسل 1 لتأكيد استلام هذه الرسالة."},
 	// v6 teach-back (sent after the acknowledgement; the reply is parsed against the loop's expected next step)
 	"tb-prompt-v1/en":  {"tb-prompt-v1/en", "en", "teachback", "Thank you. To make sure our message was clear: in your own words, what is your next step, and when? You can reply in Arabic or English."},
 	"tb-prompt-v1/ar":  {"tb-prompt-v1/ar", "ar", "teachback", "شكرًا لك. للتأكد من وضوح رسالتنا: بكلماتك الخاصة، ما هي خطوتك التالية، ومتى؟ يمكنك الرد بالعربية أو الإنجليزية."},
@@ -696,6 +706,7 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 	landmarkOK := cq != "" && strings.Contains(text, cq) && reLandmark.MatchString(cq) && v.Regex.Caecum == "yes"
 	outs := map[string]bool{}
 	rules := map[string]bool{}
+	explicitInad := false // some reader combination is inadequate by an explicit statement, not by R1 (r1review.go)
 	for _, c := range opts("caecum") {
 		for _, p := range opts("prep") {
 			for _, po := range opts("polyps") {
@@ -714,6 +725,7 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 						lab = "awaiting_histology"
 					case s == "not_closed":
 						lab = "inadequate"
+						explicitInad = true
 					default:
 						lab = "needs_human"
 						if c == "not_stated" && R["caecum"] == "not_stated" && G["caecum"] == "not_stated" {
@@ -778,6 +790,11 @@ func judgeV7(v *TwoVerdict, g gemmaEntry, text string) *TwoVerdict {
 		if rules["R2_prep_ungraded_caecum_landmark"] && v.Label != "inadequate" {
 			v.Flags = []string{"prep_grade_not_documented"}
 		}
+	}
+	// r1review.go: only a verdict that R1 alone made inadequate goes to the clinician; any explicit inadequacy (either
+	// reader) stays automatically inadequate, exactly as with the flag off
+	if R1ReviewOn && v.Agree && v.Label == "inadequate" && v.Rule == "R1_completion_not_documented" && !explicitInad {
+		v.Agree, v.Label, v.R1Review, v.Rule = false, "disagree", true, "R1_completion_review"
 	}
 	return v
 }

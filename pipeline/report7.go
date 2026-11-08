@@ -225,6 +225,7 @@ func report7(data, wasl, run string, P int) {
 			liveFinal[oe.Dec.LoopID], liveO[oe.Dec.LoopID] = oe.Dec, oe.OSeq
 		}
 	}
+	restoreAgentPolicy(outLog)
 	rp := replay(fhir, preps, gbm, iso, P, false)
 	noRev := replay(fhir, preps, gbm, iso, P, true)
 	o := &offline{fhir: fhir, preps: preps, gbm: gbm, iso: iso, tr: &tr, evPK: evPKMap(preps), optT: loadConsentTruth(data), dob: map[string]string{}}
@@ -572,6 +573,12 @@ func report7(data, wasl, run string, P int) {
 	}
 	if bm, ok := res["programmes_live"].(map[string]interface{})["breast"].(map[string]interface{}); ok {
 		bm["two_reader"] = breastTwoReader(preps, &tr) // fourth loop type: screening and assessment reader agreement end to end
+	}
+	if cm, ok := res["programmes_live"].(map[string]interface{})["lung_ldct"].(map[string]interface{}); ok {
+		cm["two_reader"] = ldctTwoReader(preps, &tr) // fifth loop type: LDCT report and work-up reader agreement end to end
+	}
+	if im, ok := res["programmes_live"].(map[string]interface{})["ifhas"].(map[string]interface{}); ok {
+		im["two_reader"] = ifhasTwoReader(preps, &tr) // IFHAS: results (panel vs coded) and follow-up note agreement end to end
 	}
 	rb := marshalReport(res)
 	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)

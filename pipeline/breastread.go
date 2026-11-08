@@ -24,7 +24,7 @@ import (
 	"time"
 )
 
-const BreastReaderModel = "gemma-3-4b-it-Q4_K_M/breast-v2(cached)" // v1 -> v2 on the dev corpus (benign words, imaging-only assessment); v3 and v4 scored worse on dev and were dropped
+const BreastReaderModel = "gemma-3-4b-it-Q4_K_M/breast-v5(cached)" // v1 -> v2 on the dev corpus (benign words, imaging-only assessment); v3 and v4 scored worse on dev and were dropped; v5 (tuned on dev + held-out 1): which breast's images are technically inadequate is asked before the categories, so technical inadequacy is not read as BI-RADS 0
 
 // BreastFields: what one reader extracted from one breast text (persisted in the verdict for provenance).
 type BreastFields struct {
@@ -117,7 +117,7 @@ var (
 	brHasCat  = regexp.MustCompile(`(?i)BI-?RADS|\bcategory\b`)
 	brOverall = regexp.MustCompile(`(?i)\b(?:final assessment|overall(?: assessment| category| impression)?|impression|conclusion)\b[^.:\n]{0,25}:?\s*(?:BI-?RADS\s*(?:category\s*)?|category\s*)([0-6])(?:[ABC]\b|\b)`)
 	brCat     = regexp.MustCompile(`(?i)(?:BI-?RADS\s*(?:category\s*)?|\bcategory\s*)[:=]?\s*([0-6])(?:[ABC]\b|\b)`)
-	brSide    = regexp.MustCompile(`(?i)\b(right breast|left breast|right|left|RT|LT)\b|الثدي الأيمن|الثدي الأيسر`)
+	brSide    = regexp.MustCompile(`(?i)\b(right breast|left breast|right|left|RT|LT)\b|(?-i:\b([RL]):\s)|الثدي الأيمن|الثدي الأيسر`) // v3: "R: ... L: ..." side markers (upper case, colon)
 	brBoth    = regexp.MustCompile(`(?i)both breasts|bilateral(?:ly)?|each breast`)
 	brTR      = regexp.MustCompile(`(?i)technically inadequate|technical(?:ly)? (?:repeat|recall)|inadequate for (?:reading|interpretation)|images? (?:are |were )?inadequate|motion blur|pectoral muscle is not shown|not (?:fully )?included on the|positioning (?:is )?inadequate`)
 	brW5      = regexp.MustCompile(`(?i)highly suggestive of malignancy`)
@@ -134,7 +134,7 @@ var (
 	brMalig   = regexp.MustCompile(`(?i)carcinoma|malignan|\bDCIS\b|\bB5[abc]?\b|\bcancer\b`)
 	brBenign  = regexp.MustCompile(`(?i)\bbenign\b|fibroadenoma|\bB2\b|fibrocystic|no atypia`)
 	brBiopsy  = regexp.MustCompile(`(?i)biops|histolog|\bcore\b|\bFNA\b|patholog`)
-	brTreat   = regexp.MustCompile(`(?i)referr(?:ed|al) (?:to|for) (?:the )?(?:breast )?(?:surg|oncolog|medical oncolog|clinical oncolog)|referral to the breast surgeon|neoadjuvant|recommends (?:surgery|mastectomy)|(?:listed|booked) for (?:wide local excision|mastectomy|surgery)`)
+	brTreat   = regexp.MustCompile(`(?i)refer(?:red|ral)? (?:her )?(?:to|for) (?:the )?(?:breast )?(?:cancer )?(?:surg|oncolog|medical oncolog|clinical oncolog)|referral to the breast surgeon|neoadjuvant|recommends (?:surgery|mastectomy)|(?:listed|booked) for (?:wide local excision|mastectomy|surgery)`)
 	brEarly   = regexp.MustCompile(`(?i)early recall|short[- ]interval|(?:repeat imaging|follow-up mammogram|mammogram|recall|imaging) in (?:6|six) months|six-month`)
 	brRoutine = regexp.MustCompile(`(?i)return(?:ed)? to (?:routine|the screening|screening)|routine (?:2-yearly |two-yearly |biennial )?screening|discharged to (?:routine|the screening|screening)|back to (?:the )?screening|routine recall`)
 	brPendOut = regexp.MustCompile(`(?i)for discussion at|before a decision|to return|rebook|awaiting MDT|MDT pending`)
@@ -180,7 +180,7 @@ func breastCatText(seg string) string {
 
 func breastSide(w string) string {
 	switch strings.ToLower(w) {
-	case "right breast", "right", "rt", "الثدي الأيمن":
+	case "right breast", "right", "rt", "r", "الثدي الأيمن":
 		return "R"
 	}
 	return "L"
@@ -228,6 +228,8 @@ func regexBreastScreen(t string) *BreastFields {
 		w := body[loc[0]:loc[1]]
 		if loc[2] >= 0 {
 			w = body[loc[2]:loc[3]]
+		} else if loc[4] >= 0 {
+			w = body[loc[4]:loc[5]]
 		}
 		c := breastCatText(seg)
 		worse(breastSide(w), c)
@@ -277,14 +279,14 @@ func regexBreastAssess(t string) *BreastFields {
 		quote(brNotDone)
 	}
 	cs := strings.Join(cur, ". ")
-	switch {
-	case brTreat.MatchString(cs):
+	switch { // v3: a negated plan ("does not authorize routine screening") is no plan
+	case breastAffirmed(brTreat, cs):
 		f.Outcome = "treatment"
 		quote(brTreat)
-	case brEarly.MatchString(cs):
+	case breastAffirmed(brEarly, cs):
 		f.Outcome = "early_recall"
 		quote(brEarly)
-	case brRoutine.MatchString(cs):
+	case breastAffirmed(brRoutine, cs):
 		f.Outcome = "routine"
 		quote(brRoutine)
 	case brPendOut.MatchString(cs):
@@ -303,6 +305,7 @@ type breastGemma struct {
 	Kind       string `json:"kind"`
 	BRight     string `json:"right_birads,omitempty"`
 	BLeft      string `json:"left_birads,omitempty"`
+	Inadequate string `json:"images_inadequate,omitempty"` // v5: none | right | left | both (technically inadequate images)
 	Overall    string `json:"overall_birads,omitempty"`
 	Attended   string `json:"attendance,omitempty"`
 	Assessment string `json:"assessment,omitempty"`
@@ -339,13 +342,19 @@ func (g breastGemma) fields(kind, text string) (*BreastFields, bool) {
 	}
 	f := &BreastFields{Quote: g.Quote}
 	if kind == "breast-screen" {
-		cat := func(c string) string {
-			if c == "inadequate" {
+		cat := func(c, side string) string {
+			inad := g.Inadequate == side || g.Inadequate == "both"
+			switch {
+			case c == "inadequate": // v2 put it in the category
 				return "TR"
+			case inad && (c == "0" || !breastRecallCat(c)): // v5: inadequate images with no category, a 1/2, or a "0" (the 4B's old misreading)
+				return "TR"
+			case c == "none":
+				return ""
 			}
 			return c
 		}
-		f.BRight, f.BLeft = cat(g.BRight), cat(g.BLeft)
+		f.BRight, f.BLeft = cat(g.BRight, "right"), cat(g.BLeft, "left")
 		if g.Overall != "none" {
 			f.Overall = g.Overall
 		}
@@ -415,8 +424,9 @@ func BreastCodedJudge(text, coded string) *TwoVerdict {
 // ---------------- building the reader-B cache (wsi7 breastcache) ----------------
 
 const breastScreenPrompt = `You read a screening mammogram report. Use ONLY what the text states about THIS screen; ignore any previous or prior screen's category.
-- right_birads / left_birads: the BI-RADS final assessment category of each breast today, "0" to "6". Use "inadequate" if that breast's images are technically inadequate (pectoral muscle not shown, positioning, motion blur, technical repeat required) and no category is given for it; technical inadequacy is NOT category "0". If the report gives one category without naming a side, use it for both breasts. When no number is given, map the words: negative or normal -> "1"; benign (benign calcifications, cyst, lymph node, fibroadenoma) -> "2"; probably benign -> "3"; incomplete or needs additional imaging -> "0"; suspicious -> "4"; highly suggestive of malignancy -> "5". 4A, 4B and 4C are "4".
-- overall_birads: the overall final assessment category if the report states one (e.g. "Final assessment: BI-RADS 4", "Overall: category 0"), otherwise "none".
+- images_inadequate: which breast's images the report calls technically inadequate, to be repeated for a technical reason (positioning, tissue excluded, pectoral muscle not shown, motion blur, "technical repeat" or "repeat acquisition required"): "right", "left", "both" or "none". Additional diagnostic views, spot compression, ultrasound or recall to assess a finding are NOT technical inadequacy (that is BI-RADS "0"); a suspicious finding is NOT technical inadequacy. Most reports: "none".
+- right_birads / left_birads: the BI-RADS final assessment category of each breast today, "0" to "6", or "none" if no category is given for that breast (for example "no BI-RADS category assigned to this breast"). If the report gives one category without naming a side, use it for both breasts. R/RT mean right, L/LT mean left. When no number is given, map the words: negative or normal -> "1"; benign (benign calcifications, cyst, lymph node, fibroadenoma) -> "2"; probably benign -> "3"; incomplete or needs additional imaging -> "0"; suspicious -> "4"; highly suggestive of malignancy -> "5". 4A, 4B and 4C are "4".
+- overall_birads: ONLY if the report itself writes an overall category in words like "Final assessment: BI-RADS 4" or "Overall: category 0"; do not work it out from the two breasts. Otherwise "none" (also "none" when the report says no overall category is assigned).
 - quote: one sentence that states the most worrying category (or the technical inadequacy), copied exactly.
 Report:
 <<<%s>>>
@@ -437,10 +447,11 @@ func breastSchema(kind string) map[string]interface{} {
 	p := map[string]interface{}{"quote": map[string]interface{}{"type": "string", "maxLength": 300}}
 	req := []string{"quote"}
 	if kind == "breast-screen" {
-		c := str("0", "1", "2", "3", "4", "5", "6", "inadequate")
+		c := str("0", "1", "2", "3", "4", "5", "6", "none")
 		p["right_birads"], p["left_birads"] = c, c
+		p["images_inadequate"] = str("none", "right", "left", "both") // sorts before *_birads, so it is asked first
 		p["overall_birads"] = str("0", "1", "2", "3", "4", "5", "6", "none")
-		req = append(req, "right_birads", "left_birads", "overall_birads")
+		req = append(req, "images_inadequate", "right_birads", "left_birads", "overall_birads")
 	} else {
 		p["attendance"], p["assessment"] = str("attended", "did_not_attend"), str("done", "not_done")
 		p["biopsy"] = str("malignant", "benign", "pending", "none")
@@ -548,6 +559,7 @@ func breastReaderScore(dir string) map[string]interface{} {
 	out := map[string]interface{}{}
 	for _, kf := range breastCorpusFiles {
 		n, aOK, bOK, agree, agreeWrong, bMiss, cN, cAgree, cWrong := 0, 0, 0, 0, 0, 0, 0, 0, 0
+		fN, fAgree, fWrong, pAgree, pWrong := 0, 0, 0, 0, 0 // free-text texts (two readers); the pipeline's combined decision
 		var errs []string
 		for _, d := range loadLungDocs(dir, kf[1]) {
 			n++
@@ -572,13 +584,30 @@ func breastReaderScore(dir string) map[string]interface{} {
 					errs = append(errs, d.ID+" AGREED-WRONG:"+v.Label+" want "+want)
 				}
 			}
+			pv := v // the pipeline's decision (services.go): a coded text goes the coded path, free text the two readers
 			if c, ok := d.Key["coded"].(string); ok && c != "" && kf[0] == "breast-screen" {
 				cN++
-				if cv := BreastCodedJudge(d.Text, c); cv.Agree {
+				pv = BreastCodedJudge(d.Text, c)
+				if pv.Agree {
 					cAgree++
-					if cv.Label != want {
+					if pv.Label != want {
 						cWrong++
 					}
+				}
+			} else {
+				fN++
+				if v.Agree {
+					fAgree++
+					if v.Label != want {
+						fWrong++
+					}
+				}
+			}
+			if pv.Agree {
+				pAgree++
+				if pv.Label != want {
+					pWrong++
+					errs = append(errs, d.ID+" PIPELINE-AGREED-WRONG:"+pv.Label+" want "+want)
 				}
 			}
 		}
@@ -587,7 +616,9 @@ func breastReaderScore(dir string) map[string]interface{} {
 			"agree": agree, "agree_but_wrong_vs_key": agreeWrong, "to_review": n - agree, "errors": errs}
 		if kf[0] == "breast-screen" {
 			m["coded_path_texts"], m["coded_path_agree"], m["coded_path_agree_but_wrong"] = cN, cAgree, cWrong
+			m["free_text_texts"], m["free_text_agree"], m["free_text_agree_but_wrong"] = fN, fAgree, fWrong
 		}
+		m["pipeline_auto_decided"], m["pipeline_agree_but_wrong"] = pAgree, pWrong // coded path for coded texts, two readers otherwise
 		out[kf[0]] = m
 	}
 	return out

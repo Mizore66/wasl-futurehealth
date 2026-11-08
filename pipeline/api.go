@@ -10,27 +10,33 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 const apiVersion = "wasl-api/1"
 
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast
+	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
 	State     string    `json:"state"`
 	Dropoff   string    `json:"dropoff"`
 	Owner     string    `json:"owner,omitempty"`
@@ -44,6 +50,7 @@ type apiCase struct {
 	Closed    bool      `json:"closed"`
 	ClosedDay float64   `json:"closed_day,omitempty"`
 	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
 	last      *Decision // full last decision (detail view)
 	decisions []*Decision
 }
@@ -62,17 +69,32 @@ type apiServer struct {
 	anchors   map[string]string
 	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
 	fixtures  map[string]string
+	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu        sync.Mutex
 	reviews   []map[string]interface{}
+	ledgerErr  string // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
 func runServe(run, data, addr string) {
-	s := loadAPI(run, data)
+	s, err := loadAPIVerified(run, data)
+	if err != nil {
+		panic(err)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
-	mux.HandleFunc("/api/cases/", s.caseRoutes)
+	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
+	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
+	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/export") {
+			s.caseExportRoute(w, r)
+			return
+		}
+		caseAPI.ServeHTTP(w, r)
+	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
 	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
 	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
@@ -97,6 +119,7 @@ func cors(h http.Handler) http.Handler {
 func loadAPI(run, data string) *apiServer {
 	s := &apiServer{run: run, data: data, cases: map[string]*apiCase{}, queue: map[string][]*ReviewItem{},
 		signoffs: map[string][]map[string]interface{}{}, facts: map[string][]map[string]interface{}{}, ids: map[string][]map[string]string{}}
+	s.appendLine = func(line []byte) error { return appendLedgerLine(filepath.Join(run, "api_reviews.ndjson"), line) }
 	readJSON := func(name string, v interface{}) { b, _ := os.ReadFile(filepath.Join(run, name)); json.Unmarshal(b, v) }
 	readJSON("dashboard.json", &s.dashboard)
 	readJSON("report7.json", &s.report)
@@ -151,6 +174,8 @@ func loadAPI(run, data string) *apiServer {
 	}
 	s.loadTimelines()
 	s.pickFixtures()
+	s.loadAgent()
+	s.pickAgentFixture()
 	s.loadReviews()
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
 		"policy": PolicyName, "reader_model": s.readerModel(), "loaded_at": time.Now().UTC().Format(time.RFC3339),
@@ -387,21 +412,6 @@ func heldEver(c *apiCase) bool {
 	return false
 }
 
-func (s *apiServer) loadReviews() {
-	f, err := os.Open(filepath.Join(s.run, "api_reviews.ndjson"))
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		var r map[string]interface{}
-		if json.Unmarshal(sc.Bytes(), &r) == nil {
-			s.reviews = append(s.reviews, r)
-		}
-	}
-}
-
 func writeJSONResp(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -419,7 +429,7 @@ func (s *apiServer) envelope(body map[string]interface{}) map[string]interface{}
 
 func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 	nats := "not_required_for_read_api"
-	if conn, err := net.DialTimeout("tcp", fmt.Sprintf("127.0.0.1:%d", 14822+PortOff), 300*time.Millisecond); err == nil {
+	if conn, err := net.DialTimeout("tcp", natsFirstHostPort(), 300*time.Millisecond); err == nil {
 		conn.Close()
 		nats = "up"
 	}
@@ -432,7 +442,7 @@ func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 		src = "hl7v2"
 	}
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{"status": "ok", "cases": len(s.cases),
-		"dependencies": map[string]string{"materialised_run": "loaded", "nats": nats, "reader": reader, "ingest_adapter": src}}))
+		"dependencies": map[string]string{"materialised_run": "loaded", "nats": nats, "reader": reader, "ingest_adapter": src, "review_ledger": s.ledgerStatus()}}))
 }
 
 func (s *apiServer) getDashboard(w http.ResponseWriter, r *http.Request) {
@@ -490,6 +500,12 @@ func (s *apiServer) summary(c *apiCase) map[string]interface{} {
 	if c.last != nil && c.last.Breast != nil { // breast: BI-RADS category, rule, deadline, assessment outcome
 		m["breast"] = c.last.Breast
 	}
+	if c.last != nil && c.last.LDCT != nil { // lung_ldct: Lung-RADS category, rule, clocks, follow-up / work-up outcome
+		m["ldct"] = c.last.LDCT
+	}
+	if c.last != nil && c.last.Ifhas != nil { // ifhas: screening cells, rule, per-domain follow-up status
+		m["ifhas"] = c.last.Ifhas
+	}
 	return m
 }
 
@@ -497,7 +513,7 @@ func (s *apiServer) summary0(c *apiCase) map[string]interface{} {
 	return map[string]interface{}{"id": c.ID, "programme": c.Programme, "state": c.State, "dropoff": c.Dropoff, "owner": c.Owner,
 		"provider": c.Provider, "referral_day": round4(c.SRDay), "deadline_day": c.Deadline, "overdue": c.Overdue, "priority": c.Priority,
 		"consent": c.Consent, "review": c.Review, "closed": c.Closed, "closed_day": round4(c.ClosedDay), "fixture": c.Fixture,
-		"decisions": len(c.decisions)}
+		"decisions": len(c.decisions), "api_overlay": s.overlayView(c, false)}
 }
 
 // GET /api/cases?programme=crc&state=closed&owner=...&consent=granted&review=open&overdue=true&fixture=1&limit=50&offset=0&q=<id substring>
@@ -537,7 +553,7 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/api/cases/")
 	sub := ""
-	if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review")) {
+	if i := strings.LastIndex(rest, "/"); i >= 0 && (strings.HasSuffix(rest, "/audit") || strings.HasSuffix(rest, "/review") || strings.HasSuffix(rest, "/actions")) {
 		rest, sub = rest[:i], rest[i+1:]
 	}
 	id, _ := url.PathUnescape(rest)
@@ -554,43 +570,18 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
 		s.caseReview(w, r, c)
+	case sub == "actions" && r.Method == http.MethodPost:
+		s.caseAction(w, r, c)
+	case sub == "actions":
+		w.Header().Set("Allow", "POST")
+		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	default:
 		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed"}))
 	}
 }
 
 func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	ev := []map[string]interface{}{}
-	links := []map[string]interface{}{}
-	holds := []map[string]interface{}{}
-	seen := map[string]bool{}
-	for _, d := range c.decisions {
-		for _, b := range d.Chain {
-			key := b.Hash
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			switch b.Type {
-			case "evidence":
-				ev = append(ev, b.Body)
-			case "link_decision":
-				links = append(links, b.Body)
-			case "hold_decision":
-				holds = append(holds, b.Body)
-			}
-		}
-	}
-	hist := []map[string]interface{}{}
-	for _, d := range c.decisions {
-		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
-			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
-	}
-	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
-		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "current": c.last, "booking": s.bookingFor(c.ID),
-	}))
+	writeJSONResp(w, 200, s.envelope(s.caseDetailBody(c)))
 }
 
 func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
@@ -628,8 +619,13 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	var req struct{ Item, Decision, Note string }
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Decision == "" {
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil || req.Decision == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"item\":..., \"decision\":..., \"note\":...}"}))
+		return
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
 		return
 	}
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
@@ -643,8 +639,14 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
 		act = ActSignEvidence
 	}
+	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
+		act = ActSignEvidence
+	}
+	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(req.Decision) != nil { // IFHAS labels (bp=H;glyc=N;lipid=N;weight=O, glyc=managed, dna)
+		act = ActSignEvidence
+	}
 	if act == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy cases (docs/API.md)"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
 	}
 	if err := Authorize(role, act); err != nil {
@@ -653,6 +655,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	if actor == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "X-Wasl-Actor header required (who is signing)"}))
+		return
+	}
+	if utf8.RuneCountInString(actor) > maxActorRunes || utf8.RuneCountInString(req.Note) > maxNoteRunes {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "actor or note exceeds its character limit"}))
 		return
 	}
 	if req.Item != "" {
@@ -665,25 +671,22 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
-	s.mu.Lock()
-	prev := "genesis"
-	if n := len(s.reviews); n > 0 {
-		prev = fmt.Sprint(s.reviews[n-1]["hash"])
-	}
-	ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
-		"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": prev}
-	h := sha256.Sum256(canon(ev))
-	ev["hash"] = hex.EncodeToString(h[:])
-	s.reviews = append(s.reviews, ev)
-	f, err := os.OpenFile(filepath.Join(s.run, "api_reviews.ndjson"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err == nil {
-		b, _ := json.Marshal(ev)
-		f.Write(append(b, '\n'))
-		f.Close()
-	}
-	s.mu.Unlock()
-	writeJSONResp(w, 201, s.envelope(map[string]interface{}{"review": ev,
-		"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}))
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		ev := map[string]interface{}{"case": c.ID, "item": req.Item, "decision": req.Decision, "note": req.Note, "role": role, "actor": actor,
+			"action": act, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
+		}
+		return 201, map[string]interface{}{"review": stored,
+			"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}
+	}()
+	writeJSONResp(w, code, s.envelope(body)) // never write the response while holding s.mu
 }
 
 // nz turns a nil slice into an empty JSON array (frontends should never have to null-check lists).
@@ -721,4 +724,771 @@ func (s *apiServer) bookingFor(id string) map[string]interface{} {
 		out["capacity_condition"], out["pooling_relevant"], out["pooling_note"] = cap["condition"], cap["pooling_relevant"], cap["pooling_note"]
 	}
 	return out
+}
+
+// agentInvestigation is one cached evidence-investigator recommendation that a human sign-off actually consumed
+// (agent-assisted double review). The agent never signs; the human context is the existing sign-off, unchanged.
+type agentInvestigation struct {
+	view   map[string]interface{}
+	label  string
+	nCites int
+	link   string
+	wrong  bool
+}
+
+// agentPaths: the served `main` run keeps the agent files one level up; any other run dir (focused tests) keeps them flat.
+// Both files must exist, otherwise the run is ordinary.
+func agentPaths(run string) (recs, replay string) {
+	d := run
+	if filepath.Base(filepath.Clean(run)) == "main" {
+		d = filepath.Dir(filepath.Clean(run))
+	}
+	r, p := filepath.Join(d, "agent_recs.ndjson"), filepath.Join(d, "agent_replay.json")
+	if _, e1 := os.Stat(r); e1 == nil {
+		if _, e2 := os.Stat(p); e2 == nil {
+			return r, p
+		}
+	}
+	return "", ""
+}
+
+// readAgentProvenance accepts only the nested replay provenance (model, prompt_ver, schema_ver), all non-empty strings.
+func readAgentProvenance(path string) (map[string]interface{}, bool) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false
+	}
+	var raw struct {
+		Provenance map[string]interface{} `json:"provenance"`
+	}
+	if json.Unmarshal(b, &raw) != nil {
+		return nil, false
+	}
+	out := map[string]interface{}{"cached": true, "experimental": true}
+	for _, k := range []string{"model", "prompt_ver", "schema_ver"} {
+		v, ok := raw.Provenance[k].(string)
+		if !ok || v == "" {
+			return nil, false
+		}
+		out[k] = v
+	}
+	return out, true
+}
+
+// cleanCitations keeps only tool/arg/field/value of each citation; a citation missing any of them (or with an empty
+// string) and anything malformed rejects the record.
+func cleanCitations(raw json.RawMessage) ([]map[string]interface{}, bool) {
+	out := []map[string]interface{}{}
+	if len(raw) == 0 || string(raw) == "null" {
+		return out, true
+	}
+	var in []map[string]interface{}
+	if json.Unmarshal(raw, &in) != nil {
+		return nil, false
+	}
+	for _, c := range in {
+		m := map[string]interface{}{}
+		for _, k := range []string{"tool", "arg", "field", "value"} {
+			v, ok := c[k]
+			if !ok {
+				return nil, false
+			}
+			switch x := v.(type) {
+			case string:
+				if strings.TrimSpace(x) == "" {
+					return nil, false
+				}
+				m[k] = v
+			case float64, bool:
+				if k != "value" {
+					return nil, false
+				}
+				m[k] = v
+			default:
+				return nil, false
+			}
+		}
+		out = append(out, m)
+	}
+	return out, true
+}
+
+// loadAgent projects cached agent recommendations onto the loops whose sign-off consumed them. Any malformed or
+// mismatched input yields no projection at all (ordinary run).
+func (s *apiServer) loadAgent() {
+	s.agentInv = map[string][]agentInvestigation{}
+	s.agentProv = map[string]interface{}{"cached": false, "experimental": false}
+	recsPath, replayPath := agentPaths(s.run)
+	if recsPath == "" {
+		return
+	}
+	prov, ok := readAgentProvenance(replayPath)
+	if !ok {
+		return
+	}
+	ar, err := LoadAgentRecs(recsPath)
+	if err != nil || ar == nil {
+		return
+	}
+	byItem := map[string]*AgentRec{}
+	cites := map[string][]map[string]interface{}{}
+	for _, r := range ar.recs {
+		cs, ok := cleanCitations(r.Citations)
+		if !ok || r.Item == "" || byItem[r.Item] != nil {
+			return
+		}
+		byItem[r.Item], cites[r.Item] = r, cs
+	}
+	raised := map[string]*ReviewItem{}
+	for _, items := range s.queue {
+		for _, it := range items {
+			raised[it.ItemID] = it
+		}
+	}
+	got := map[string][]agentInvestigation{}
+	for loop, sos := range s.signoffs {
+		seen := map[string]string{} // item -> semantic key of its first sign-off; an identical repeat dedupes, a different one fails closed
+		for _, so := range sos {
+			item := fmt.Sprint(so["item"])
+			key := fmt.Sprintf("%v|%v|%v|%v|%v|%v", so["loop"], so["link"], so["wrong"], so["reads"], so["role"], so["agent_read"])
+			if prev, dup := seen[item]; dup {
+				if prev != key {
+					return // a superseded or conflicting sign-off for one item: no projection at all
+				}
+				continue
+			}
+			seen[item] = key
+			label := fmt.Sprint(so["agent_read"])
+			reads, _ := so["reads"].([]interface{})
+			consumed := false
+			for _, r := range reads {
+				consumed = consumed || r == "agent"
+			}
+			if label == "" || label == "<nil>" || !consumed {
+				continue
+			}
+			rec, it := byItem[item], raised[item]
+			if rec == nil || it == nil || it.LoopID != loop || fmt.Sprint(so["loop"]) != loop || !isLinkQuestion(it) ||
+				pairKey(rec.Pair[0], rec.Pair[1]) != pairKey(it.Pair[0], it.Pair[1]) || rec.Label != label {
+				return
+			}
+			link := fmt.Sprint(so["link"])
+			human := map[string]interface{}{"link": link, "reads": reads, "role": so["role"]}
+			wrong, _ := so["wrong"].(bool)
+			got[loop] = append(got[loop], agentInvestigation{label: label, nCites: len(cites[item]), link: link, wrong: wrong,
+				view: map[string]interface{}{"item": item, "pair": []string{rec.Pair[0], rec.Pair[1]}, "label": rec.Label,
+					"citations": cites[item], "human": human}})
+		}
+	}
+	for loop := range got {
+		l := got[loop]
+		sort.Slice(l, func(i, j int) bool { return fmt.Sprint(l[i].view["item"]) < fmt.Sprint(l[j].view["item"]) })
+	}
+	s.agentInv, s.agentProv = got, prov
+}
+
+func (s *apiServer) agentFor(loop string) []map[string]interface{} {
+	out := []map[string]interface{}{}
+	for _, x := range s.agentInv[loop] {
+		out = append(out, x.view)
+	}
+	return out
+}
+
+func (s *apiServer) agentProvenance() map[string]interface{} {
+	if s.agentProv == nil {
+		return map[string]interface{}{"cached": false, "experimental": false}
+	}
+	return s.agentProv
+}
+
+// pickAgentFixture adds `agent_review`: the first CRC loop by id that is closed with consent granted and whose agent
+// `same` recommendation (with citations) was consumed by a human sign-off that finally said `same`, not wrong. It never
+// takes a case that already carries another fixture tag, so existing fixture ids and single tags stay stable.
+func (s *apiServer) pickAgentFixture() {
+	if s.fixtures == nil {
+		s.fixtures = map[string]string{}
+	}
+	delete(s.fixtures, "agent_review")
+	ids := []string{}
+	for id := range s.agentInv {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		c := s.cases[id]
+		if c == nil || (c.Fixture != "" && c.Fixture != "agent_review") || c.Programme != "crc" || !c.Closed || c.Consent != "granted" {
+			continue
+		}
+		for _, x := range s.agentInv[id] {
+			if x.label == "same" && x.nCites > 0 && x.link == "same" && !x.wrong {
+				s.fixtures["agent_review"], c.Fixture = id, "agent_review"
+				return
+			}
+		}
+	}
+}
+
+// ---------- coordinator actions (Workflow A) ----------
+//
+// POST /api/cases/{id}/actions  headers: X-Wasl-Role (coordinator), X-Wasl-Actor
+// body: {"action": "assign_owner|snooze|contact_outcome|note", "expected_head": "<api_overlay.head>", ...fields of the action}
+//
+// Each accepted action is one hash-chained event in api_reviews.ndjson (the shared review ledger) and is projected
+// into the case's `api_overlay`. Canonical decisions, out_log and signatures are never touched. A case's overlay head
+// starts as the canonical decision signature and becomes the hash of its latest coordinator event, so concurrent
+// writers on one case conflict (409) while different cases proceed independently.
+
+const (
+	coordEventType   = "coordinator_action"
+	maxActionBody    = 8 << 10
+	maxOwnerRunes    = 64
+	maxActorRunes    = 64
+	maxReasonRunes   = 200
+	maxNoteRunes     = 1000
+	maxSnoozeHorizon = 365 * 24 * time.Hour
+)
+
+var (
+	contactOutcomes = map[string]bool{"reached": true, "no_answer": true, "voicemail": true, "wrong_number": true, "declined": true, "appointment_agreed": true}
+	contactChannels = map[string]bool{"phone": true, "sms": true, "email": true, "in_person": true}
+	// fields each action accepts besides action and expected_head
+	actionFields = map[string][]string{
+		"assign_owner":    {"owner"},
+		"snooze":          {"until", "reason"},
+		"contact_outcome": {"outcome", "channel", "note"},
+		"note":            {"text"},
+	}
+)
+
+// caseOverlay is the replayed coordinator state of one case (api metadata only).
+type caseOverlay struct {
+	head     string // "" until the first coordinator event
+	n        int
+	owner    string
+	snooze   map[string]interface{}
+	contacts []map[string]interface{}
+	notes    []map[string]interface{}
+	lastAt   string
+}
+
+func (s *apiServer) caseHead(c *apiCase) string {
+	if c.ov.head != "" {
+		return c.ov.head
+	}
+	if c.last != nil && c.last.Sig != "" {
+		return c.last.Sig
+	}
+	return "genesis"
+}
+
+// cleanText validates a bounded, valid-UTF-8 string without surrounding whitespace, control characters or Unicode
+// format (Cf) characters other than ZWNJ/ZWJ after an Arabic-script letter (newline allowed if multiline).
+func cleanText(v interface{}, max int, required, multiline bool) (string, error) {
+	str, ok := v.(string)
+	if !ok {
+		return "", errors.New("must be a string")
+	}
+	if strings.TrimSpace(str) != str {
+		return "", errors.New("must not start or end with whitespace")
+	}
+	if str == "" {
+		if required {
+			return "", errors.New("is required")
+		}
+		return "", nil
+	}
+	if !utf8.ValidString(str) || utf8.RuneCountInString(str) > max {
+		return "", fmt.Errorf("must be valid UTF-8 of at most %d characters", max)
+	}
+	var prev rune
+	for _, r := range str {
+		if unicode.IsControl(r) && !(multiline && r == '\n') {
+			return "", errors.New("must not contain control characters")
+		}
+		// ZWNJ and ZWJ are needed to write Arabic-script names (Persian, Urdu, Kurdish...): allowed only straight after an
+		// Arabic-script letter. Every other format character (bidi overrides, zero-width space, BOM, soft hyphen...) is refused.
+		joiner := (r == 0x200C || r == 0x200D) && unicode.Is(unicode.Arabic, prev)
+		if unicode.Is(unicode.Cf, r) && !joiner {
+			return "", errors.New("must not contain invisible format characters")
+		}
+		prev = r
+	}
+	return str, nil
+}
+
+// validateActionData checks and normalises the action-specific fields (shared by the write path and ledger replay).
+func validateActionData(kind string, in map[string]interface{}) (map[string]interface{}, error) {
+	allowed := actionFields[kind]
+	if allowed == nil {
+		return nil, fmt.Errorf("unknown action %q", kind)
+	}
+	for k := range in {
+		ok := false
+		for _, f := range allowed {
+			ok = ok || f == k
+		}
+		if !ok {
+			return nil, fmt.Errorf("field %q is not valid for %s", k, kind)
+		}
+	}
+	out := map[string]interface{}{}
+	text := func(k string, max int, required, multi bool) error {
+		v, present := in[k]
+		if !present {
+			if required {
+				return fmt.Errorf("%s is required", k)
+			}
+			return nil
+		}
+		t, err := cleanText(v, max, required, multi)
+		if err != nil {
+			return fmt.Errorf("%s %v", k, err)
+		}
+		if t != "" {
+			out[k] = t
+		}
+		return nil
+	}
+	var err error
+	switch kind {
+	case "assign_owner":
+		err = text("owner", maxOwnerRunes, true, false)
+	case "note":
+		err = text("text", maxNoteRunes, true, true)
+	case "snooze":
+		if err = text("until", 40, true, false); err == nil {
+			t, perr := time.Parse(time.RFC3339, out["until"].(string))
+			if perr != nil {
+				return nil, errors.New("until must be an RFC 3339 timestamp")
+			}
+			out["until"] = t.UTC().Format(time.RFC3339)
+			err = text("reason", maxReasonRunes, false, false)
+		}
+	case "contact_outcome":
+		if err = text("outcome", 32, true, false); err == nil {
+			err = text("channel", 32, true, false)
+		}
+		if err == nil && !contactOutcomes[fmt.Sprint(out["outcome"])] {
+			err = errors.New("outcome must be one of reached|no_answer|voicemail|wrong_number|declined|appointment_agreed")
+		}
+		if err == nil && !contactChannels[fmt.Sprint(out["channel"])] {
+			err = errors.New("channel must be one of phone|sms|email|in_person")
+		}
+		if err == nil {
+			err = text("note", maxNoteRunes, false, true)
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// applyOverlay projects one validated coordinator event onto the case overlay.
+func (c *apiCase) applyOverlay(ev map[string]interface{}) {
+	data, _ := ev["data"].(map[string]interface{})
+	at, _ := ev["at"].(string)
+	actor, _ := ev["actor"].(string)
+	entry := map[string]interface{}{"at": at, "actor": actor, "event": ev["hash"]}
+	for k, v := range data {
+		entry[k] = v
+	}
+	switch ev["kind"] {
+	case "assign_owner":
+		c.ov.owner = data["owner"].(string)
+	case "snooze":
+		c.ov.snooze = entry
+	case "contact_outcome":
+		c.ov.contacts = append(c.ov.contacts, entry)
+	case "note":
+		c.ov.notes = append(c.ov.notes, entry)
+	}
+	c.ov.head, c.ov.lastAt = ev["hash"].(string), at
+	c.ov.n++
+}
+
+// overlayView is the api_overlay block of a case: summary form (head, owner, snooze, count) or full form (+ lists).
+func (s *apiServer) overlayView(c *apiCase, full bool) map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.overlayViewLocked(c, full)
+}
+
+func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interface{} {
+	o := &c.ov
+	status := "ok"
+	if s.ledgerErr != "" {
+		status = "invalid" // the overlay may be partial: say so in the list as well as the detail
+	}
+	m := map[string]interface{}{"head": s.caseHead(c), "actions": o.n, "owner": o.owner, "last_action_at": o.lastAt, "ledger_status": status}
+	if o.snooze != nil {
+		m["snooze"] = o.snooze
+	}
+	if full {
+		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
+		m["notes"] = nz(append([]map[string]interface{}{}, o.notes...))
+		m["canonical_owner"] = c.Owner
+	}
+	return m
+}
+
+func (s *apiServer) ledgerStatus() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ledgerErr != "" {
+		return "invalid"
+	}
+	return "ok"
+}
+
+// ledgerView is the ledger status shown on case detail: a failed replay leaves the overlay partial (events before the
+// failing line), so the reader must be told.
+func (s *apiServer) ledgerView() map[string]interface{} {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.ledgerErr != "" {
+		return map[string]interface{}{"status": "invalid", "detail": s.ledgerErr, "events_applied": len(s.reviews),
+			"note": "api_overlay reflects only the ledger events before the failure; coordinator writes are refused"}
+	}
+	return map[string]interface{}{"status": "ok", "events_applied": len(s.reviews)}
+}
+
+func (s *apiServer) lastHashLocked() string {
+	if n := len(s.reviews); n > 0 {
+		return fmt.Sprint(s.reviews[n-1]["hash"])
+	}
+	return "genesis"
+}
+
+// appendEventLocked is the one durable append path for every ledger event (legacy review and coordinator action).
+// The caller holds s.mu. The event is hashed and marshalled completely, written, synced and closed; only then does
+// the in-memory chain move. A clean failure (nothing reached the file) leaves everything untouched. If the file's
+// state is unknown (errLedgerIndeterminate) the ledger is marked failed and all later writes are refused, because
+// the in-memory hash could otherwise fork from the file.
+func (s *apiServer) appendEventLocked(ev map[string]interface{}) (map[string]interface{}, error) {
+	ev["hash"] = apiEventHash(ev)
+	line, err := json.Marshal(ev)
+	if err != nil {
+		return nil, err
+	}
+	write := s.appendLine
+	if write == nil { // servers built without loadAPI
+		write = func(l []byte) error { return appendLedgerLine(filepath.Join(s.run, "api_reviews.ndjson"), l) }
+	}
+	if err := write(append(line, '\n')); err != nil {
+		if errors.Is(err, errLedgerIndeterminate) {
+			s.ledgerErr = "append failed and the ledger file state is unknown: " + err.Error()
+		}
+		return nil, err
+	}
+	var stored map[string]interface{}
+	if err := json.Unmarshal(line, &stored); err != nil {
+		s.ledgerErr = "event written but not readable back: " + err.Error()
+		return nil, err
+	}
+	s.reviews = append(s.reviews, stored)
+	return stored, nil
+}
+
+// errLedgerIndeterminate marks append failures after which the file may or may not hold the line.
+var errLedgerIndeterminate = errors.New("ledger state indeterminate")
+
+type ledgerFile interface {
+	Stat() (os.FileInfo, error)
+	Write([]byte) (int, error)
+	Sync() error
+	Truncate(int64) error
+	Close() error
+}
+
+func appendLedgerLine(path string, line []byte) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		return err
+	}
+	return appendToLedgerFile(f, line)
+}
+
+// appendToLedgerFile: write, sync and close the line. A write failure that was rolled back by a successful truncate
+// is a clean error. A sync, truncate or close failure leaves the file state unknown (errLedgerIndeterminate).
+func appendToLedgerFile(f ledgerFile, line []byte) error {
+	st, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return err
+	}
+	n, werr := f.Write(line)
+	if werr == nil && n != len(line) {
+		werr = io.ErrShortWrite
+	}
+	if werr != nil {
+		terr := f.Truncate(st.Size()) // never leave a partial line behind
+		cerr := f.Close()
+		if terr != nil || cerr != nil {
+			return fmt.Errorf("%w: write: %v; truncate: %v; close: %v", errLedgerIndeterminate, werr, terr, cerr)
+		}
+		return werr
+	}
+	if serr := f.Sync(); serr != nil {
+		f.Truncate(st.Size())
+		f.Close()
+		return fmt.Errorf("%w: sync: %v", errLedgerIndeterminate, serr)
+	}
+	if cerr := f.Close(); cerr != nil {
+		return fmt.Errorf("%w: close: %v", errLedgerIndeterminate, cerr)
+	}
+	return nil
+}
+
+// rejectDuplicateKeys fails on any object that repeats a key: encoding/json keeps the last value silently, so
+// two readers could disagree about what was submitted.
+func rejectDuplicateKeys(raw []byte) error {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	var walk func() error
+	walk = func() error {
+		tok, err := dec.Token()
+		if err != nil {
+			return err
+		}
+		d, ok := tok.(json.Delim)
+		if !ok {
+			return nil
+		}
+		if d == '[' {
+			for dec.More() {
+				if err := walk(); err != nil {
+					return err
+				}
+			}
+			_, err = dec.Token()
+			return err
+		}
+		seen := map[string]bool{}
+		for dec.More() {
+			kt, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			k, _ := kt.(string)
+			if seen[k] {
+				return fmt.Errorf("duplicate JSON key %q", k)
+			}
+			seen[k] = true
+			if err := walk(); err != nil {
+				return err
+			}
+		}
+		_, err = dec.Token()
+		return err
+	}
+	if err := walk(); err != nil && strings.HasPrefix(err.Error(), "duplicate JSON key") {
+		return err
+	}
+	return nil // other syntax errors are reported by the normal decode
+}
+
+func apiEventHash(ev map[string]interface{}) string {
+	cp := make(map[string]interface{}, len(ev))
+	for k, v := range ev {
+		if k != "hash" {
+			cp[k] = v
+		}
+	}
+	h := sha256.Sum256(canon(cp))
+	return hex.EncodeToString(h[:])
+}
+
+func (s *apiServer) actionErr(w http.ResponseWriter, code int, msg string, extra map[string]interface{}) {
+	body := map[string]interface{}{"error": msg}
+	for k, v := range extra {
+		body[k] = v
+	}
+	writeJSONResp(w, code, s.envelope(body))
+}
+
+func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCase) {
+	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
+	if err := Authorize(role, ActCoordinateCase); err != nil {
+		s.actionErr(w, 403, err.Error(), map[string]interface{}{"role": role, "action": ActCoordinateCase})
+		return
+	}
+	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
+		s.actionErr(w, 400, "X-Wasl-Actor header "+err.Error(), nil)
+		return
+	}
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxActionBody))
+	if err != nil {
+		s.actionErr(w, 400, "body unreadable or larger than 8 KiB", nil)
+		return
+	}
+	if err := rejectDuplicateKeys(raw); err != nil {
+		s.actionErr(w, 400, err.Error(), nil)
+		return
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	var fields map[string]interface{}
+	if err := dec.Decode(&fields); err != nil || fields == nil {
+		s.actionErr(w, 400, "body must be one JSON object", nil)
+		return
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		s.actionErr(w, 400, "body must contain exactly one JSON object", nil)
+		return
+	}
+	kindV, expV := fields["action"], fields["expected_head"]
+	delete(fields, "action")
+	delete(fields, "expected_head")
+	kind, _ := kindV.(string)
+	if actionFields[kind] == nil {
+		s.actionErr(w, 400, "action must be assign_owner|snooze|contact_outcome|note", nil)
+		return
+	}
+	expected, ok := expV.(string)
+	if !ok || expected == "" || len(expected) > 128 {
+		s.actionErr(w, 400, "expected_head is required (the case's api_overlay.head)", nil)
+		return
+	}
+	data, err := validateActionData(kind, fields)
+	if err != nil {
+		s.actionErr(w, 400, err.Error(), nil)
+		return
+	}
+	now := time.Now().UTC()
+	if kind == "snooze" {
+		until, _ := time.Parse(time.RFC3339, data["until"].(string))
+		if !until.After(now) || until.After(now.Add(maxSnoozeHorizon)) {
+			s.actionErr(w, 400, "until must be in the future and within 365 days", nil)
+			return
+		}
+	}
+
+	// decide and record under the lock, but write the response only after releasing it
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if head := s.caseHead(c); expected != head {
+			return 409, map[string]interface{}{"error": "stale expected_head: the case changed since it was read", "conflict": "head", "current_head": head}
+		}
+		if kind == "contact_outcome" && c.Consent != "granted" {
+			return 409, map[string]interface{}{"error": "contact outcomes need contact permission granted", "conflict": "consent", "consent": c.Consent}
+		}
+		ev := map[string]interface{}{"type": coordEventType, "kind": kind, "case": c.ID, "data": data, "role": role, "actor": actor,
+			"action": ActCoordinateCase, "at": now.Format(time.RFC3339Nano), "head": expected, "seq": c.ov.n + 1, "mode": "demo", "prev": s.lastHashLocked()}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
+		}
+		c.applyOverlay(stored)
+		return 201, map[string]interface{}{"event": stored, "api_overlay": s.overlayViewLocked(c, true),
+			"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}
+	}()
+	writeJSONResp(w, code, s.envelope(body))
+}
+
+// loadReviews replays the shared review ledger. Legacy review events and coordinator events share one hash chain.
+// Anything malformed stops the replay at that line and sets ledgerErr, which refuses further ledger writes.
+func (s *apiServer) loadReviews() {
+	f, err := os.Open(filepath.Join(s.run, "api_reviews.ndjson"))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			s.ledgerErr = "cannot open ledger: " + err.Error()
+		}
+		return
+	}
+	defer f.Close()
+	br := bufio.NewReaderSize(f, 1<<16)
+	for ln := 1; ; ln++ {
+		line, rerr := br.ReadBytes('\n')
+		if rerr != nil && rerr != io.EOF {
+			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, rerr)
+			return
+		}
+		if len(line) == 0 && rerr == io.EOF {
+			return
+		}
+		if rerr == io.EOF {
+			s.ledgerErr = fmt.Sprintf("line %d: truncated (no trailing newline)", ln)
+			return
+		}
+		if err := s.replayLedgerLine(bytes.TrimSuffix(line, []byte{'\n'})); err != nil {
+			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, err)
+			return
+		}
+	}
+}
+
+func (s *apiServer) replayLedgerLine(line []byte) error {
+	var ev map[string]interface{}
+	if err := rejectDuplicateKeys(line); err != nil {
+		return err
+	}
+	dec := json.NewDecoder(bytes.NewReader(line))
+	if err := dec.Decode(&ev); err != nil || ev == nil {
+		return errors.New("not a JSON object")
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		return errors.New("trailing data after JSON object")
+	}
+	prev := "genesis"
+	if n := len(s.reviews); n > 0 {
+		prev = fmt.Sprint(s.reviews[n-1]["hash"])
+	}
+	if ev["prev"] != prev {
+		return errors.New("broken hash chain (prev)")
+	}
+	if h, _ := ev["hash"].(string); h == "" || h != apiEventHash(ev) {
+		return errors.New("hash mismatch")
+	}
+	if _, isCoord := ev["type"]; !isCoord {
+		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
+		return nil
+	}
+	if ev["type"] != coordEventType {
+		return fmt.Errorf("unknown event type %v", ev["type"])
+	}
+	kind, _ := ev["kind"].(string)
+	id, _ := ev["case"].(string)
+	c := s.cases[id]
+	if c == nil {
+		return errors.New("coordinator event for unknown case")
+	}
+	role, _ := ev["role"].(string)
+	actor, _ := ev["actor"].(string)
+	if !rbac[role][ActCoordinateCase] || ev["action"] != ActCoordinateCase {
+		return errors.New("coordinator event with a role that lacks coordinate_case")
+	}
+	if _, err := cleanText(actor, maxActorRunes, true, false); err != nil {
+		return errors.New("bad actor")
+	}
+	at, _ := ev["at"].(string)
+	if _, err := time.Parse(time.RFC3339Nano, at); err != nil {
+		return errors.New("bad timestamp")
+	}
+	if ev["head"] != s.caseHead(c) {
+		return errors.New("head does not follow the case's previous event")
+	}
+	if seq, isNum := ev["seq"].(float64); !isNum || seq != float64(c.ov.n+1) { // an exact integer: 1.5 must not truncate to 1
+		return errors.New("bad per-case sequence")
+	}
+	if ev["mode"] != "demo" {
+		return errors.New("bad mode")
+	}
+	raw, ok := ev["data"].(map[string]interface{})
+	if !ok {
+		return errors.New("data must be an object")
+	}
+	norm, err := validateActionData(kind, raw)
+	if err != nil || !reflect.DeepEqual(norm, raw) {
+		return fmt.Errorf("invalid or non-canonical action data (%v)", err)
+	}
+	if kind == "contact_outcome" && c.Consent != "granted" {
+		return errors.New("contact outcome on a case without granted consent")
+	}
+	s.reviews = append(s.reviews, ev)
+	c.applyOverlay(ev)
+	return nil
 }
