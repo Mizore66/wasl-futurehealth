@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CaseDetail } from "@/lib/api/schema";
+import { renderToStaticMarkup } from "react-dom/server";
+import { Audit, CaseDetail } from "@/lib/api/schema";
 import { dayToDate, formatDay } from "@/lib/domain/day";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
+import { ProgrammeFindingCard, ReadersCard, SignoffsCard } from "@/components/case/sections";
+import { HistoryCard } from "@/components/case/audit-view";
+import { reviewWords, signoffWords } from "@/components/case/words";
+import { programmeDetail, type NewProgramme } from "./programme-cases";
 import { loadSample } from "./samples";
 
 const load = (fixture: string): CaseDetail => CaseDetail.parse(loadSample(`case_${fixture}.json`));
@@ -87,6 +92,128 @@ describe("caseStage", () => {
     const open = { ...c, case: { ...c.case, closed: false } };
     expect(caseStage({ ...open, evidence: [] }).key).toBe("matched");
     expect(caseStage({ ...open, evidence: [], links: [] }).key).toBe("received");
+  });
+});
+
+describe("programme-specific case evidence", () => {
+  it.each(["lung_ldct", "ifhas"] as const)("renders the %s finding, recommendation and outcome", (programme) => {
+    const detail = programmeDetail(programme);
+    const html = renderToStaticMarkup(ProgrammeFindingCard({ detail }));
+    if (programme === "lung_ldct") {
+      expect(html).toContain("Lung-RADS category");
+      expect(html).toContain("LR4X");
+      expect(html).toContain("diagnostic chest CT");
+      expect(html).toContain("Wk benign");
+    } else {
+      expect(html).toContain("IFHAS screening results");
+      expect(html).toContain("bp=H;glyc=N;lipid=N;weight=N");
+      expect(html).toContain("Blood pressure");
+      expect(html).toContain("Managed");
+      expect(html).toContain("IFU-dr-45");
+    }
+    expect(html).not.toContain("colonoscopy");
+    expect(html).not.toContain("Bowel prep");
+  });
+
+  it.each(["lung_ldct", "ifhas"] as const)("renders %s reader evidence without the CRC checklist", (programme: NewProgramme) => {
+    const detail = programmeDetail(programme);
+    const html = renderToStaticMarkup(ReadersCard({ detail, ev: detail.evidence[0], id: `readers-${programme}` }));
+    expect(html).toContain("Reader A");
+    expect(html).toContain("Reader B");
+    expect(html).not.toContain("DoH closure checklist");
+    expect(html).not.toContain("Caecum reached");
+    expect(html).not.toContain("Bowel prep");
+    if (programme === "lung_ldct") {
+      expect(html).toContain("Lung-RADS overall");
+      expect(html).toContain("Lung-RADS worst");
+      expect(html).toContain("Lung-RADS 4X; suspicious pulmonary nodule.");
+    } else {
+      expect(html).toContain("Reader note");
+      expect(html).toContain("doh2025ifhas printed panel");
+      expect(html).toContain("coded LOINC/UCUM results");
+    }
+  });
+
+  it("labels an LDCT LR4X evidence signoff as Lung-RADS, not bowel prep", () => {
+    const detail = programmeDetail("lung_ldct");
+    const signoff: CaseDetail["signoffs"][number] = {
+      item: "rv-ldct-evidence",
+      loop: detail.case.id,
+      kinds: ["evidence"],
+      role: "clinician",
+      reviewer: "Dr Reviewer",
+      reads: [detail.evidence[0].report],
+      link: "",
+      evidence: "LR4X",
+      verdict: "agree",
+    };
+    expect(signoffWords(signoff, detail.case.programme)).toBe("Lung-RADS LR4X");
+    expect(signoffWords(signoff, detail.case.programme)).not.toContain("Bowel prep");
+  });
+
+  it("labels non-CRC API evidence reviews without calling them bowel prep", () => {
+    const detail = programmeDetail("lung_ldct");
+    expect(reviewWords("LR4X", detail.case.programme)).toBe("Lung-RADS LR4X");
+    expect(reviewWords("LR4X", detail.case.programme)).not.toContain("Bowel prep");
+  });
+
+  it.each([
+    { decision: "wk_treatment", words: "LDCT work-up: treatment referral" },
+    { decision: "wk_benign", words: "LDCT work-up: benign; return to annual screening" },
+    { decision: "wk_surveillance", words: "LDCT work-up: surveillance CT plan" },
+  ] as const)("labels the $decision sign-off as a work-up outcome, not a Lung-RADS category", ({ decision, words }) => {
+    const detail = programmeDetail("lung_ldct");
+    const signoff: CaseDetail["signoffs"][number] = {
+      item: `rv-ldct-${decision}`,
+      loop: detail.case.id,
+      kinds: ["evidence"],
+      role: "clinician",
+      reviewer: "Dr Reviewer",
+      reads: [detail.evidence[0].report],
+      link: "",
+      evidence: decision,
+      verdict: "agree",
+    };
+    expect(signoffWords(signoff, detail.case.programme)).toBe(words);
+    expect(reviewWords(decision, detail.case.programme)).toBe(words);
+    expect(signoffWords(signoff, detail.case.programme)).not.toContain("Lung-RADS");
+  });
+
+  it("renders LDCT audit history with programme-aware evidence wording", () => {
+    const detail = programmeDetail("lung_ldct");
+    const audit = {
+      ...Audit.parse(loadSample("case_dr_exam_closure_audit.json")),
+      history: [
+        {
+          case: detail.case.id,
+          item: "rv-ldct-evidence",
+          decision: "LR4X",
+          note: "",
+          role: "clinician",
+          actor: "Dr Reviewer",
+          action: "signoff",
+          at: "2026-10-31T10:00:00Z",
+          mode: "api",
+          prev: "genesis",
+          hash: "ldct-review-hash",
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(HistoryCard({ audit, programme: detail.case.programme }));
+    expect(html).toContain("Lung-RADS LR4X");
+    expect(html).not.toContain("Bowel prep");
+  });
+
+  it("uses neutral empty signoff copy for agreeing, disagreeing and missing evidence", () => {
+    const detail = programmeDetail("lung_ldct");
+    const disagreeing = { ...detail.evidence[0], agree: false };
+    for (const evidence of [detail.evidence, [disagreeing], []]) {
+      const unsigned = { ...detail, case: { ...detail.case, closed: false }, evidence };
+      const html = renderToStaticMarkup(SignoffsCard({ detail: unsigned }));
+      expect(html).toContain("No human sign-offs recorded for this case.");
+      expect(html).not.toContain("Two readers agreed");
+      expect(html).not.toContain("none was needed");
+    }
   });
 });
 

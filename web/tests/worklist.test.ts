@@ -3,8 +3,9 @@ import { Audit, CaseDetail, CaseList } from "@/lib/api/schema";
 import { facets, programmesInView } from "@/components/patients/facets";
 import { parseCaseFilters, parsePage, filtersHref, toCaseQuery } from "@/components/worklist/filters";
 import { matches } from "@/lib/api/source";
-import { closureChecks, elapsedDays, recordNodes, workItem } from "@/components/worklist/model";
+import { closureChecks, DROPOFF_WORDS, elapsedDays, PROCEDURE, PROGRAMME_NAMES, recordNodes, statusWords, workItem } from "@/components/worklist/model";
 import { referralFrom } from "@/components/worklist/referrals";
+import { caseDeadlineDays } from "@/components/worklist/days";
 import { loadSample } from "./samples";
 
 const detail = (f: string) => CaseDetail.parse(loadSample(`case_${f}.json`));
@@ -73,8 +74,10 @@ describe("patients filters from the query string", () => {
     expect(parseCaseFilters({ overdue: "yes", dropoff: "" })).toEqual({});
   });
 
-  it("takes programme and page, and leaves page 1 out of links", () => {
+  it("takes all seven programmes and page, and leaves page 1 out of links", () => {
     expect(parseCaseFilters({ programme: "crc" })).toEqual({ programme: "crc" });
+    expect(parseCaseFilters({ programme: "lung_ldct", dropoff: "followup_ldct_not_done" })).toEqual({ programme: "lung_ldct", dropoff: "followup_ldct_not_done" });
+    expect(parseCaseFilters({ programme: "ifhas", dropoff: "no_followup_documented" })).toEqual({ programme: "ifhas", dropoff: "no_followup_documented" });
     expect(parseCaseFilters({ programme: "nonsense" })).toEqual({});
     expect(parsePage({ page: "3" })).toBe(3);
     expect(parsePage({ page: "0" })).toBe(1);
@@ -92,7 +95,9 @@ describe("patients filters from the query string", () => {
 });
 
 describe("patients refine filters", () => {
-  const all = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"].flatMap((p) => CaseList.parse(loadSample(`cases_${p}_page1.json`)).cases);
+  const all = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"].flatMap(
+    (p) => CaseList.parse(loadSample(`cases_${p}_page1.json`)).cases,
+  );
 
   it("parses, drops unknown enum values, and round-trips through a link", () => {
     const f = { programme: "cervical" as const, provider: "ahs-mushrif", consent: "denied" as const, review: "signed" as const, owner: "none", overdue: true };
@@ -119,12 +124,51 @@ describe("patients refine filters", () => {
     for (const o of fx.provider) expect(o.count).toBe(crc.filter((c) => c.provider === o.value).length);
     // The programme control ignores its own filter, so the other programmes stay listed with their totals.
     expect(fx.programme.find((o) => o.value === "breast")?.count).toBe(all.filter((c) => c.programme === "breast").length);
+    expect(fx.programme.find((o) => o.value === "lung_ldct")?.count).toBe(all.filter((c) => c.programme === "lung_ldct").length);
+    expect(fx.programme.find((o) => o.value === "ifhas")?.count).toBe(all.filter((c) => c.programme === "ifhas").length);
     expect(programmesInView(all, f).map((p) => p.programme)).toEqual(["crc"]);
-    expect(programmesInView(all, {}).length).toBe(5);
+    expect(programmesInView(all, {}).map((p) => p.programme)).toEqual([
+      "crc",
+      "cervical",
+      "lung_nodule",
+      "diabetic_retinopathy",
+      "breast",
+      "lung_ldct",
+      "ifhas",
+    ]);
   });
 
   it("keeps a chosen value listed at zero rather than dropping the filter", () => {
     expect(facets(all, { provider: "no-such-unit" }).provider.find((o) => o.value === "no-such-unit")?.count).toBe(0);
+  });
+});
+
+describe("LDCT and IFHAS worklist language", () => {
+  it("uses their own programme and procedure names", () => {
+    expect(PROGRAMME_NAMES.lung_ldct).toBe("Lung cancer screening (LDCT)");
+    expect(PROGRAMME_NAMES.ifhas).toBe("IFHAS cardiometabolic follow-up");
+    expect(PROCEDURE.lung_ldct).toBe("follow-up LDCT");
+    expect(PROCEDURE.ifhas).toBe("follow-up visit");
+  });
+
+  it("uses the annual LDCT screening interval instead of the CRC 31-day fallback", () => {
+    const annual = CaseList.parse(loadSample("cases_lung_ldct_page1.json")).cases.find((c) => c.ldct?.rec?.action === "annual");
+    expect(annual?.deadline_day).toBe(0);
+    expect(caseDeadlineDays(annual!)).toBe(365);
+  });
+
+  it("maps every new drop-off to a status and next action", () => {
+    expect(DROPOFF_WORDS.incomplete_scan_not_completed).toMatchObject({ status: "LDCT incomplete, repeat not done", view: "call" });
+    expect(DROPOFF_WORDS.followup_ldct_not_done).toMatchObject({ status: "Follow-up LDCT not done", view: "call" });
+    expect(DROPOFF_WORDS.no_workup_outcome).toMatchObject({ status: "Waiting on the work-up outcome", view: "waiting" });
+    expect(DROPOFF_WORDS.no_followup_documented).toMatchObject({ status: "No follow-up visit documented", view: "call" });
+
+    for (const programme of ["lung_ldct", "ifhas"] as const) {
+      const open = CaseList.parse(loadSample(`cases_${programme}_page1.json`)).cases.find((c) => !c.closed && c.dropoff !== "");
+      expect(open).toBeDefined();
+      expect(statusWords(open!).status.length).toBeGreaterThan(0);
+      expect(statusWords(open!).next.length).toBeGreaterThan(0);
+    }
   });
 });
 

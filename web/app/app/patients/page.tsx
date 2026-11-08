@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
-import { STANDARD_DAYS } from "@/components/worklist/days";
+import { caseDeadlineDays } from "@/components/worklist/days";
 import { facetValueLabel, facets as buildFacets, programmesInView } from "@/components/patients/facets";
 import { Refine } from "@/components/patients/refine";
 import { filtersHref, PAGE_SIZE, parseCaseFilters, parsePage, toCaseQuery, UNOWNED, type CaseFilters } from "@/components/worklist/filters";
@@ -59,8 +59,8 @@ const chipFilters = (f: CaseFilters, keep: CaseFilters): CaseFilters => ({
   q: keep.q,
 });
 
-/** Days from referral to the programme's deadline: 31 for CRC, the rule's own deadline for the other programmes. */
-const dueIn = (c: CaseSummary) => c.deadline_day || STANDARD_DAYS;
+/** Days from referral to the programme's deadline or annual screening interval. */
+const dueIn = (c: CaseSummary) => caseDeadlineDays(c);
 
 function mark(c: CaseSummary): Status {
   if (c.closed) return "done";

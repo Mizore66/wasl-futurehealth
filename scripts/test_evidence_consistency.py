@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tests for the submission-evidence consistency checker (stdlib only)."""
+import json
 import shutil
 import sys
 import tempfile
@@ -11,13 +12,18 @@ import check_evidence_consistency as chk  # noqa: E402
 
 REAL = Path(__file__).resolve().parent.parent
 FILES = ["README.md", "pipeline/RESULTS.md", "docs/labelling/agreement.json",
-         "data/evidence/reports43.json"] + [
+         "data/evidence/reports43.json", "pipeline/results/final/manifest.json",
+         "pipeline/results/final/annotation-provenance.json",
+         "docs/labelling/labels_Anas_completed.csv", "docs/labelling/labels_Kai_completed.csv",
+         "docs/labelling/adjudications.csv"] + [
     "docs/" + n for n in ("BACKEND-HANDOFF.md", "BRIEF.md", "WRITEUP.md", "PITCH.md",
                           "DEMO-RECORDING-GUIDE.md", "SUBMISSION-DRAFT.md")] + ["docs/labelling/README.md"]
 
 
 class Fixture(unittest.TestCase):
     def setUp(self):
+        if hasattr(self, "tmp"):
+            self.tmp.cleanup()
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         for f in FILES:
@@ -116,6 +122,84 @@ class Mutations(Fixture):
     def test_status_labels(self):
         self.mutate("docs/SUBMISSION-DRAFT.md", "No clinical deployment or patient-outcome improvement is claimed.", "")
         self.assertIn("status-labels", self.rules())
+
+
+class AnnotationProvenanceSidecar(Fixture):
+    REL = "pipeline/results/final/annotation-provenance.json"
+
+    def sidecar(self):
+        return json.loads((self.root / self.REL).read_text(encoding="utf-8"))
+
+    def write_sidecar(self, data):
+        (self.root / self.REL).write_text(json.dumps(data), encoding="utf-8")
+
+    def test_sidecar_required(self):
+        (self.root / self.REL).unlink()
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_be_explicitly_post_hoc(self):
+        data = self.sidecar()
+        data["post_hoc"] = False
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_place_annotation_after_frozen_run(self):
+        data = self.sidecar()
+        data["annotations_completed_after_frozen_run"] = False
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_rejects_invalid_annotation_timestamp(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "not-a-timestamp"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_rejects_annotation_before_frozen_run(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "2026-11-01T23:59:59Z"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_accepts_valid_post_hoc_annotation_timestamp(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "2026-11-06T12:00:00Z"
+        self.write_sidecar(data)
+        self.assertNotIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_not_claim_evaluation_rerun(self):
+        data = self.sidecar()
+        data["evaluation_rerun"] = True
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_point_to_both_completed_sheets(self):
+        data = self.sidecar()
+        data["annotation"]["completed_sheets"].pop()
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_point_to_agreement(self):
+        data = self.sidecar()
+        data["annotation"]["agreement"] = "docs/labelling/missing.json"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_must_point_to_adjudications(self):
+        data = self.sidecar()
+        data["annotation"]["adjudications"] = "docs/labelling/missing.csv"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_preserves_exact_limitation(self):
+        data = self.sidecar()
+        data["annotation"]["limitation"] = "independently double-labelled by humans"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_detects_historical_manifest_rewrite(self):
+        self.mutate("pipeline/results/final/manifest.json", "NOT yet human double-labelled", "clinically verified")
+        self.assertIn("annotation-provenance", self.rules())
 
 
 README_PENDING = ("The first run found 4 CRC false closures, all one bug. Held-out recall rose. "

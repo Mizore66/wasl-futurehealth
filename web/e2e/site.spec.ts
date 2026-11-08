@@ -340,13 +340,31 @@ test("landing: passers-by walk with no scrolling on a wide shot, and Fatima stan
   await idleFrames(page, 0);
   const read = () => page.evaluate(() => ({ ...window.__wasl3d!(), at: performance.now() }));
   const before = await read();
-  await page.waitForTimeout(1000);
-  const after = await read();
+  const after = await page.evaluate(
+    (initial) =>
+      new Promise<typeof before & { traveled: number[] }>((resolve) => {
+        const started = performance.now();
+        let previous = initial;
+        const traveled = initial.map(() => 0);
+        const tick = () => {
+          const current = window.__wasl3d!();
+          current.walkers.forEach(([x, , z], i) => {
+            traveled[i] += Math.hypot(x - previous[i][0], z - previous[i][2]);
+          });
+          previous = current.walkers;
+          if (performance.now() - started >= 1000) resolve({ ...current, at: performance.now(), traveled });
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    before.walkers,
+  );
   const seconds = (after.at - before.at) / 1000;
   expect(after.clock).toBe("ambient");
   expect(after.frames, "frames were drawn").toBeGreaterThan(before.frames);
-  before.walkers.forEach(([x, , z], i) => {
-    const moved = Math.hypot(after.walkers[i][0] - x, after.walkers[i][2] - z);
+  before.walkers.forEach((_, i) => {
+    // A U-turn can end near where it began, so measure the walked path rather than net displacement.
+    const moved = after.traveled[i];
     // A turn at a lane's end can eat some of the second, never all of it.
     expect(moved, `walker ${i} moved`).toBeGreaterThan(0.2);
     expect(moved, `walker ${i} walked, not ran`).toBeLessThan(TOP_SPEED * (seconds + 1));
@@ -609,12 +627,22 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
   await expect(nav.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
 });
 
-test("experts: KPI bars, outcome table, exactly-once figure and the τ picker read the results", async ({ page }) => {
+test("experts: KPI bars and outcome table use current sourced run figures", async ({ page }) => {
   await page.goto("/experts");
   const kpi = page.locator("figure");
   await expect(kpi).toContainText("Simulated, n = 1,331");
   for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
-  await expect(page.getByTestId("outcomes").locator("tbody tr")).toHaveCount(6);
+  await expect(kpi).toContainText("65% of real completions look lost");
+  await expect(kpi).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+
+  const outcomes = page.getByTestId("outcomes");
+  await expect(outcomes.locator("tbody tr")).toHaveCount(6);
+  const ownership = outcomes.locator("tbody tr").nth(1);
+  await expect(ownership).toContainText("simulated, 2,100 colorectal and cervical cases");
+  await expect(ownership).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+  await expect(ownership).toContainText("370 no acknowledgement, 241 not booked, 196 never notified");
+  await expect(ownership).toContainText("referral unanswered 46 and referral rejected 10 are smaller");
+  await expect(ownership.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
   await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,035");
   await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 217,009");
 
