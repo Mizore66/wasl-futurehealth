@@ -99,7 +99,7 @@ export default async function Page() {
     },
     {
       outcome: "Clear ownership and timely progression",
-      does: "A named owner on every case. SLA clocks: referral to colonoscopy in 31 days (DoH spec), histology in 10. Overdue, rejected and unowned cases are filtered and escalate from coordinator to medical director.",
+      does: "Ownership coverage case by case: assigned owners are named, while cases without one show No owner and can be isolated with the unowned filter. SLA clocks: referral to colonoscopy in 31 days (DoH spec), histology in 10. Overdue, rejected and unowned cases are filtered and escalate from coordinator to medical director.",
       status: <StatusLine mark="built">Built, in the API</StatusLine>,
       evidence: (
         <>

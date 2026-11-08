@@ -10,10 +10,24 @@ import { buildCity, buildClinic, buildHospital, laneAt, lanesFor, makeRoad, type
 import { JOIN_SAYS } from "@/components/story/copy";
 import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt, pageAt, storyAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
+import { ownerLabel } from "@/components/worklist/model";
 import { result } from "@/lib/results";
 
 const repo = path.resolve(import.meta.dirname, "../..");
 const read = (file: string) => readFileSync(path.join(repo, file), "utf8").replace(/\r\n/g, "\n");
+
+describe("Experts ownership copy", () => {
+  it("describes assigned-owner coverage and the existing unowned-case workflow", () => {
+    const experts = read("web/app/(site)/experts/page.tsx");
+    const noOwner = ownerLabel("");
+
+    expect(noOwner).toBe("No owner");
+    expect(experts).toContain(
+      `Ownership coverage case by case: assigned owners are named, while cases without one show ${noOwner} and can be isolated with the unowned filter.`,
+    );
+    expect(experts).not.toContain("A named owner on every case");
+  });
+});
 
 describe("site figures", () => {
   it("rounds the ID-only miss rate (62%) to 3 in 5", () => {
