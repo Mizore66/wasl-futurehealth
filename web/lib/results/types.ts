@@ -15,6 +15,8 @@ export type ResultEntry = {
 
 export type Results = {
   frozen_revision: string;
+  /** ISO date (YYYY-MM-DD) the frozen evaluation was frozen, from SUMMARY.md. */
+  frozen_on: string;
   sources: string[];
   entries: Record<string, ResultEntry>;
   evidence: { what: string; result: string; source: string; label: HonestyKind }[];

@@ -4,12 +4,12 @@ import { result, results } from "@/lib/results";
 
 describe("results.json pins the honest numbers", () => {
   it.each([
-    ["v2.safety.crc_false_closures", "0 / 3,025"],
+    ["v2.safety.crc_false_closures", "0 / 3,035"],
     ["showcase.decisions", "31,677"],
     ["showcase.chains_verified", "3,163 / 3,163"],
-    ["kpi31.demo.eid_only", "12.6%"],
-    ["kpi31.demo.wasl", "31.9%"],
-    ["kpi31.demo.truth", "32.9%"],
+    ["kpi31.demo.eid_only", "11.3%"],
+    ["kpi31.demo.wasl", "30.7%"],
+    ["kpi31.demo.truth", "31.9%"],
     ["kpi31.heldout.eid_only", "12.2%"],
     ["kpi31.heldout.wasl", "29.8%"],
     ["kpi31.heldout.truth", "32.9%"],
@@ -37,7 +37,14 @@ describe("results.json pins the honest numbers", () => {
 
   it("flags the exactly-once conflict instead of choosing", () => {
     const c = results.conflicts.find((x) => x.id === "exactly_once_outputs")!;
-    expect(c.values.map((v) => v.value)).toEqual(expect.arrayContaining([201285, 198810]));
+    // Three sources, three totals: docs/PITCH.md, then the v2 and v1 tables of pipeline/results/final/SUMMARY.md.
+    expect(c.values.map((v) => [v.result, v.value])).toEqual([
+      ["exactly_once.pitch_outputs", 201285],
+      ["v2.safety.duplicate_or_lost_outputs", 217009],
+      ["v1.safety.duplicate_or_lost_outputs", 220789],
+    ]);
+    expect(new Set(c.values.map((v) => v.value)).size).toBe(3);
+    expect(c.note).toContain("No two agree");
   });
 
   it("throws on an unknown id rather than rendering a blank", () => {
