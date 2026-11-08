@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cx } from "@/lib/cx";
 
 /*
  * One search control for the worklists.
@@ -41,7 +41,7 @@ export function SearchField({ label, restoreKey, className, ...input }: Props) {
 
   return (
     <label
-      className={cn(
+      className={cx(
         "flex items-center gap-2 rounded-control border border-control bg-surface px-2.5",
         "focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue",
         className,
