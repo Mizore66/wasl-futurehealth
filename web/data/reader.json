@@ -6,29 +6,30 @@
  },
  "cases": [
   {
-   "uid": "u31",
-   "title": "Colonoscopy - 16",
-   "sha": "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a",
+   "uid": "u16",
+   "title": "Colonoscopy Template - 4",
+   "sha": "9cacabd63c3efa651c5e0114a28b6c23a62200c97a8ebca3fd016d2beb154d3f",
+   "standsFor": {
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1001",
+    "report": "SKM-dr-191"
+   },
    "segments": [
     {
-     "text": "… "
+     "text": "A colonoscope was then passed through the rectum, "
     },
     {
-     "text": "DESCRIPTION OF PROCEDURE: "
-    },
-    {
-     "text": "The Olympus pediatric variable colonoscope was introduced through the rectum and advanced carefully through the colon into the cecum and then through the ileoce",
+     "text": "all the way toward the cecum, which was identified by the presence of the appendiceal orifice and ileocecal valve",
      "field": "caecum"
     },
     {
-     "text": "cal valve into the terminal ileum. "
+     "text": ". This was done without difficulty and the "
     },
     {
-     "text": "The preparation was excellent and all surfaces were well seen.",
+     "text": "bowel preparation was good",
      "field": "prep"
     },
     {
-     "text": " The mucosa throughout the colon and in the terminal ileum was normal, with no evidence of colitis. Special attention was paid to the rectum, including retroflexed views of the distal rectum and the anorectal junction."
+     "text": ". The ileocecal valve was intubated and the distal 2 to 3 cm of terminal ileum was inspected and was normal."
     },
     {
      "text": " …"
@@ -51,7 +52,7 @@
     "reason": "criteria_met",
     "downgraded": [],
     "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
-    "latencyMs": 8849
+    "latencyMs": 7529
    }
   },
   {
@@ -145,6 +146,56 @@
     ],
     "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
     "latencyMs": 10130
+   }
+  },
+  {
+   "uid": "u35",
+   "title": "Colonoscopy - 20",
+   "sha": "b7d5dbf14539b2124bccc07227370098e9bc4ba4b7716a04599b60fe4a271796",
+   "standsFor": {
+    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1079",
+    "report": "SKM-dr-217"
+   },
+   "segments": [
+    {
+     "text": "… "
+    },
+    {
+     "text": "It was passed to the level of the cecum.",
+     "field": "caecum"
+    },
+    {
+     "text": " The ileocecal valve was identified, as was the appendiceal orifice. ,Slowly withdrawal through the colon revealed a small polyp in the transverse colon. "
+    },
+    {
+     "text": "This was approximately 3 mm in size and was completely removed using multiple bites with cold biopsy forceps. ",
+     "field": "tissue"
+    },
+    {
+     "text": "In addition, there was a 2 mm polyp versus lymphoid aggregate in the descending colon. This was also removed using the cold biopsy forceps."
+    },
+    {
+     "text": " …"
+    }
+   ],
+   "rules": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "tissue": "not_asked",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation"
+   },
+   "ai": {
+    "caecum": "yes",
+    "prep": "not_stated",
+    "tissue": "yes",
+    "histology": "no",
+    "state": "needs_human",
+    "reason": "missing_documentation",
+    "downgraded": [],
+    "modelVersion": "gemma-3-4b-it-Q4_K_M/hybrid-v7(schema+histology-check+tissue+bbps+prior+corrections+pending+landmarks)",
+    "latencyMs": 12338
    }
   }
  ]

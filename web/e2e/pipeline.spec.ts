@@ -1,11 +1,17 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import replay from "../data/replay.json";
+import evidenceAudit from "../data/api/case_evidence_closure_audit.json";
+
+// The tamper demo rewrites the readers' step of the closed fixture; its hash is the one the server sealed (first 12 hex digits).
+const READERS_HASH = evidenceAudit.chain.find((e) => e.type === "evidence")!.hash.slice(0, 12);
 
 const LINE = "Replaying the recorded showcase run · synthetic patients · names and faces are generated · real report texts";
 const SHOTS = "test-results/screens/pipeline";
 
-test.describe.configure({ timeout: 120_000 });
+// A missing name or case must fail within seconds, not after the 2-minute test budget: actions (click, fill) get the same 20s as expect.
+test.describe.configure({ timeout: 60_000 });
+test.use({ actionTimeout: 20_000, navigationTimeout: 30_000 });
 
 const asNumber = (s: string) => Number(s.replace(/[^\d]/g, ""));
 
@@ -93,7 +99,7 @@ test("pipeline: pause, step, play and tamper, totals within the run", async ({ p
   await page.getByRole("button", { name: "Tamper with a step" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Changed record detected at step 2" })).toBeVisible();
   await expect(page.locator('[aria-label="Sealed chain"] [data-broken]')).toHaveCount(2);
-  await expect(page.getByText(/no longer matches a81e5d7bd109/).first()).toBeVisible();
+  await expect(page.getByText(new RegExp(`no longer matches ${READERS_HASH}`)).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Pause" }).click();
   await page.clock.runFor(1000);
@@ -121,7 +127,7 @@ test("matching: the score lands against the 0.99 line, runner-ups labelled illus
   await expect(page.getByText(LINE)).toBeVisible();
   await page.clock.runFor(800);
   await page.getByRole("button", { name: "Pause" }).click();
-  await expect(page.getByTestId("match-p")).toHaveText("0.949");
+  await expect(page.getByTestId("match-p")).toHaveText("0.989");
   await expect(page.getByText("auto-close line 0.99")).toBeVisible();
   await expect(page.getByText(/illustrative/i).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}-matching-rest.png`, fullPage: true });
@@ -153,10 +159,11 @@ test("reading: real report, recorded Gemma answer and latency, played 5x faster"
   await expect(page.getByText(/played 5× faster/).first()).toBeVisible();
   await page.clock.runFor(800);
   await page.getByRole("button", { name: "Pause" }).click();
-  await expect(page.getByTestId("ai-timer")).toHaveText("8.8 s recorded");
+  await expect(page.getByTestId("ai-timer")).toHaveText("7.5 s recorded");
   await expect(page.getByTestId("gate-pill")).toHaveText("Passed");
-  await expect(page.getByTestId("report-text")).toContainText("The preparation was excellent and all surfaces were well seen.");
-  await expect(page.getByText("Fatima Al Zaabi's report SKM-dr-226")).toBeVisible();
+  await expect(page.getByTestId("report-text")).toContainText("which was identified by the presence of the appendiceal orifice and ileocecal valve");
+  await expect(page.getByTestId("report-text")).toContainText("bowel preparation was good.");
+  await expect(page.getByText("Fatima Al Zaabi's report SKM-dr-191")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}-reading-rest.png`, fullPage: true });
 
   await page.getByRole("button", { name: "Report u38" }).click();
@@ -233,7 +240,7 @@ test("pipeline: Fatima's profile, opened from its link, leads to her patient rec
   await expect(sheet.getByRole("heading", { name: "Fatima Al Zaabi" })).toBeVisible();
   await expect(sheet.locator('[data-honesty="replay"]')).toHaveText("Replay of a recorded run · demo cast name");
   await sheet.getByRole("link", { name: "Open full record" }).click();
-  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1001$/);
   await expect(page.locator("h1")).toContainText("Fatima");
 });
 
@@ -253,12 +260,12 @@ test("matching and reading: the demo patient opens her record", async ({ page })
   await page.clock.runFor(800);
   await page.getByRole("button", { name: "Pause" }).click();
   await page.getByRole("link", { name: /The referral/ }).click();
-  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1001$/);
 
   await page.goto("/app/pipeline/reading");
   await page.clock.runFor(800);
-  await page.getByRole("link", { name: "Fatima Al Zaabi's report SKM-dr-226" }).click();
-  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1037$/);
+  await page.getByRole("link", { name: "Fatima Al Zaabi's report SKM-dr-191" }).click();
+  await expect(page).toHaveURL(/\/app\/patients\/ahs-mushrif%2FServiceRequest%2FAHS-sr-1001$/);
 });
 
 const RAW = /closure_decision|needs_human|not_closed|link_decision|review_hold|evidence_closure|false_closure_trap|model_version|path_p_cal/;
@@ -390,12 +397,12 @@ test("pipeline: backend health sits apart from the replay and says it is a snaps
   const panel = page.getByTestId("health-panel");
   await expect(panel.getByRole("heading", { name: "Backend health" })).toBeVisible();
   await expect(panel.getByTestId("health-status")).toHaveText("ok");
-  await expect(panel.getByTestId("health-cases")).toHaveText("4,355");
+  await expect(panel.getByTestId("health-cases")).toHaveText("5,280");
   await expect(panel.getByTestId("dep-materialised_run")).toHaveText("loaded");
   await expect(panel.getByTestId("dep-nats")).toHaveText("not_required_for_read_api");
   await expect(panel.getByTestId("dep-reader")).toHaveText("cached");
   await expect(panel.getByTestId("dep-ingest_adapter")).toHaveText("fhir");
-  await expect(panel.getByTestId("health-source")).toContainText("published snapshot taken 31 Oct 2026, 23:47 UTC");
+  await expect(panel.getByTestId("health-source")).toContainText("published snapshot taken 6 Nov 2026, 13:56 UTC");
   await expect(panel.getByTestId("health-source")).toContainText("not a live check");
   await expect(panel).toContainText("not required to read a saved run");
   await expect(panel.getByTestId("health-unavailable")).toHaveCount(0);
