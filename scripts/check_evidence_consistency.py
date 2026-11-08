@@ -10,6 +10,7 @@ new metrics.
 Usage: python3 scripts/check_evidence_consistency.py [repo_root]
 Exit status 0 when consistent, 1 when findings exist.
 """
+import hashlib
 import json
 import re
 import sys
@@ -22,6 +23,8 @@ DOCS = ["README.md"] + ["docs/" + n for n in (
     "BACKEND-HANDOFF.md", "BRIEF.md", "WRITEUP.md", "PITCH.md",
     "DEMO-RECORDING-GUIDE.md", "SUBMISSION-DRAFT.md")] + ["docs/labelling/README.md"]
 RESULTS = "pipeline/RESULTS.md"
+ANNOTATION_SIDECAR = "pipeline/results/final/annotation-provenance.json"
+FROZEN_MANIFEST = "pipeline/results/final/manifest.json"
 FINAL_HEADING = "### Frozen seven-programme evaluation at `075abc5`"
 
 # Older-run (5496563 and intermediate) figures, superseded by the 075abc5 run.
@@ -153,6 +156,66 @@ def check_claims(root, rel, fig, add):
                 local = line[max(0, m.start() - 100):m.end() + 60]
                 if got != want and not SUPERSEDE_MARK.search(local):
                     add("current-figures", rel, n, f"{key} claim {got} != current {want}")
+
+
+def check_annotation_provenance(root, add):
+    """Validate the post-hoc sidecar without changing or reinterpreting frozen results."""
+    rel = ANNOTATION_SIDECAR
+    try:
+        raw = _read(root, rel)
+        if raw is None:
+            add("annotation-provenance", rel, 0, "post-hoc annotation sidecar missing")
+            return
+        sidecar = json.loads(raw)
+        if not isinstance(sidecar, dict):
+            raise ValueError("sidecar must be an object")
+        if sidecar.get("record_type") != "post_hoc_annotation_provenance" or sidecar.get("post_hoc") is not True:
+            add("annotation-provenance", rel, 0, "sidecar must be explicitly post-hoc")
+        if sidecar.get("annotations_completed_after_frozen_run") is not True:
+            add("annotation-provenance", rel, 0, "later annotation must be placed after the frozen run")
+        if sidecar.get("evaluation_rerun") is not False or sidecar.get("frozen_results_modified") is not False:
+            add("annotation-provenance", rel, 0, "sidecar must not claim a rerun or frozen-result modification")
+        timing = sidecar.get("timing_note", "")
+        for wording in ("post-hoc", "after the frozen evaluation",
+                        "does not place later annotation before the frozen run"):
+            if wording not in timing:
+                add("annotation-provenance", rel, 0, f"timing note lacks '{wording}'")
+
+        frozen_ref = sidecar["frozen_run"]
+        if frozen_ref.get("manifest") != "manifest.json":
+            add("annotation-provenance", rel, 0, "sidecar must target the adjacent historical manifest.json")
+        manifest_path = Path(root) / FROZEN_MANIFEST
+        manifest_bytes = manifest_path.read_bytes()
+        manifest = json.loads(manifest_bytes)
+        if frozen_ref.get("manifest_sha256") != hashlib.sha256(manifest_bytes).hexdigest():
+            add("annotation-provenance", rel, 0, "historical manifest hash differs from the frozen sidecar target")
+        for key in ("code_revision", "frozen_at"):
+            if frozen_ref.get(key) != manifest.get(key):
+                add("annotation-provenance", rel, 0, f"sidecar frozen-run {key} does not match manifest")
+
+        annotation = sidecar["annotation"]
+        if not isinstance(annotation, dict):
+            raise ValueError("annotation must be an object")
+        if annotation.get("limitation") != "not independent human double-labelling":
+            add("annotation-provenance", rel, 0, "exact not-independent-human-double-labelling limitation missing")
+        reports = json.loads(_read(root, "data/evidence/reports43.json"))
+        if annotation.get("status") != reports["verification"]["status"]:
+            add("annotation-provenance", rel, 0, "annotation status differs from reports43.json verification")
+        sheets = ["docs/labelling/labels_Anas_completed.csv", "docs/labelling/labels_Kai_completed.csv"]
+        if annotation.get("completed_sheets") != sheets:
+            add("annotation-provenance", rel, 0, "sidecar must reference both completed labelling sheets")
+        expected = {
+            "agreement": "docs/labelling/agreement.json",
+            "adjudications": "docs/labelling/adjudications.csv",
+        }
+        for key, path in expected.items():
+            if annotation.get(key) != path:
+                add("annotation-provenance", rel, 0, f"sidecar {key} path must be {path}")
+        for path in sheets + list(expected.values()):
+            if not (Path(root) / path).is_file():
+                add("annotation-provenance", rel, 0, f"referenced annotation evidence missing: {path}")
+    except (AttributeError, KeyError, OSError, TypeError, ValueError) as e:
+        add("annotation-provenance", rel, 0, f"unreadable or malformed annotation provenance: {e!r}")
 
 
 def check(root):
@@ -287,6 +350,7 @@ def check(root):
             for m in OVERCLAIM.finditer(line):
                 if not negated(line, m.start()):
                     add("overclaim", rel, n, "clinical/validated/deployed claim without negation")
+    check_annotation_provenance(root, add)
     check_kpi_evidence(root, add)
     return f
 

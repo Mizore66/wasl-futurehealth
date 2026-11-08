@@ -1,0 +1,27 @@
+{
+ "record_type": "post_hoc_annotation_provenance",
+ "recorded_at": "2026-11-09",
+ "post_hoc": true,
+ "annotations_completed_after_frozen_run": true,
+ "annotation_completed_at": "2026-11-06",
+ "evaluation_rerun": false,
+ "frozen_results_modified": false,
+ "frozen_run": {
+  "manifest": "manifest.json",
+  "manifest_sha256": "47cfb5f93439fbdfb97ae7ff7e2f36e292155989bc0a204d131366af90f4cadb",
+  "code_revision": "075abc5ad04ae14dff01dc7b9ddd1cedd5671d51",
+  "frozen_at": "2026-11-02T04:33:36.064230Z"
+ },
+ "timing_note": "This post-hoc sidecar documents annotation completed after the frozen evaluation on 2026-11-02. It does not place later annotation before the frozen run and does not rewrite the historical manifest, cached verdicts, metrics, or seeds.",
+ "annotation": {
+  "status": "clinically_verified",
+  "method": "two independent model-assisted labelling passes, reconciled and clinically verified by the team's clinician",
+  "limitation": "not independent human double-labelling",
+  "completed_sheets": [
+   "docs/labelling/labels_Anas_completed.csv",
+   "docs/labelling/labels_Kai_completed.csv"
+  ],
+  "agreement": "docs/labelling/agreement.json",
+  "adjudications": "docs/labelling/adjudications.csv"
+ }
+}
