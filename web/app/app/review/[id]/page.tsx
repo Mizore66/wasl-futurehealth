@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { HistoryCard } from "@/components/case/audit-view";
-import { Card, SignoffsCard } from "@/components/case/sections";
+import { Card, ProgrammeFindingCard, ReadersCard, SignoffsCard } from "@/components/case/sections";
 import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
@@ -65,41 +65,51 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           <QueueLabel source={queue.source} />
         </div>
       </header>
-      <ReviewDesk
-        view={view}
-        mode={apiMode()}
-        next={next}
-        waiting={at >= 0}
-        settled={
-        <div className="mt-6 flex flex-col gap-3">
-          <Card id="not-waiting" title="This case is not waiting for a signature">
-            <p className="m-0 mt-3 max-w-[72ch]">
-              {detail.review_items.length === 0
-                ? "No review item was raised for this case: the matching and the two readers agreed on their own, so no person was needed."
-                : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Link
-                href={caseHref("/app/patients", view.caseId)}
-                className="inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
-              >
-                Open the case
-              </Link>
-              <Link
-                href="/app/review"
-                className="inline-flex min-h-11 items-center rounded-control border border-control bg-surface px-4 text-ink no-underline hover:bg-active hover:text-ink"
-              >
-                Back to Review
-              </Link>
+      {view.guided ? (
+        <ReviewDesk
+          view={view}
+          mode={apiMode()}
+          next={next}
+          waiting={at >= 0}
+          settled={
+            <div className="mt-6 flex flex-col gap-3">
+              <Card id="not-waiting" title="This case is not waiting for a signature">
+                <p className="m-0 mt-3 max-w-[72ch]">
+                  {detail.review_items.length === 0
+                    ? "No review item was raised for this case. Open the case page to see the recorded evidence and outcomes."
+                    : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3">
+                  <Link
+                    href={caseHref("/app/patients", view.caseId)}
+                    className="inline-flex min-h-11 items-center rounded-control bg-cta px-4 font-medium text-white no-underline hover:bg-ink hover:text-white"
+                  >
+                    Open the case
+                  </Link>
+                  <Link
+                    href="/app/review"
+                    className="inline-flex min-h-11 items-center rounded-control border border-control bg-surface px-4 text-ink no-underline hover:bg-active hover:text-ink"
+                  >
+                    Back to Review
+                  </Link>
+                </div>
+              </Card>
+              <SignoffsCard detail={detail} />
             </div>
-          </Card>
+          }
+        />
+      ) : (
+        <div className="mt-6 grid items-start gap-3 lg:grid-cols-2">
+          <ProgrammeFindingCard detail={detail} />
+          {detail.evidence.map((ev, i) => (
+            <ReadersCard key={ev.report} detail={detail} ev={ev} id={`programme-readers-${i}`} />
+          ))}
           <SignoffsCard detail={detail} />
         </div>
-        }
-      />
+      )}
       {audit && (
         <div className="mt-3">
-          <HistoryCard audit={audit} />
+          <HistoryCard audit={audit} programme={detail.case.programme} />
         </div>
       )}
     </>

@@ -62,6 +62,15 @@ describe("programmeView: the two 31-day sources", () => {
 });
 
 describe("programmeView: by programme", () => {
+  it("exposes all seven programmes from the actual committed dashboard fixture", () => {
+    const committed = programmeView(dashboard).programmes;
+    expect(committed.map((p) => p.key)).toEqual(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
+    expect(committed.find((p) => p.key === "lung_ldct")).toMatchObject({ cases: 305, closed: 280, overdue: 9, open: 16 });
+    expect(committed.find((p) => p.key === "ifhas")).toMatchObject({ cases: 700, closed: 602, overdue: 73, open: 25 });
+    expect(committed.reduce((sum, p) => sum + p.cases, 0)).toBe(5280);
+    expect(dashboard.cases).toBe(5280);
+  });
+
   const { programmes } = programmeView(dashboard);
 
   it("lists the seven programmes in order with human names", () => {
@@ -100,6 +109,34 @@ describe("programmeView: every stall", () => {
     expect(allStalls.flatMap((g) => g.stalls)).toHaveLength(20);
     expect(new Set(labels).size).toBe(labels.length);
     for (const g of allStalls) expect(g.stalls.map((s) => s.count)).toEqual(g.stalls.map((s) => s.count).sort((a, b) => b - a));
+  });
+
+  it("groups LDCT and IFHAS drop-offs under their own pathways", () => {
+    const d = {
+      ...dashboard,
+      dropoff: {
+        ...dashboard.dropoff,
+        incomplete_scan_not_completed: 4,
+        followup_ldct_not_done: 8,
+        no_workup_outcome: 6,
+        no_followup_documented: 9,
+      },
+    };
+    const groups = programmeView(d).allStalls;
+    expect(groups.map((g) => g.pathway)).toEqual([
+      "Colorectal and cervical",
+      "Lung nodule",
+      "Diabetic retinopathy",
+      "Breast",
+      "Lung cancer screening (LDCT)",
+      "IFHAS cardiometabolic follow-up",
+    ]);
+    expect(groups[4].stalls).toEqual([
+      { dropoff: "followup_ldct_not_done", label: "Follow-up LDCT not done", count: 8 },
+      { dropoff: "no_workup_outcome", label: "No work-up outcome", count: 6 },
+      { dropoff: "incomplete_scan_not_completed", label: "Incomplete LDCT, repeat not done", count: 4 },
+    ]);
+    expect(groups[5].stalls).toEqual([{ dropoff: "no_followup_documented", label: "No follow-up visit documented", count: 9 }]);
   });
 
   it("skips the empty key, in_progress and suppressed counts", () => {

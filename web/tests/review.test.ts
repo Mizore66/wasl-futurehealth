@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
-import { failureSentence, outcomeOf, roleFor, signaturesFor } from "@/components/review/decision";
+import { failureSentence, outcomeOf, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
 import { CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
+import { programmeDetail } from "./programme-cases";
 
 const detail = CaseDetail.parse(hold);
 const view = reviewView(detail);
@@ -31,6 +32,43 @@ describe("review decision", () => {
     expect(signaturesFor({ identity: "same" }, items)).toEqual([]);
   });
 
+  it.each([
+    { report: "adequate", outcome: "close", remaining: "Current case data still shows the case as open; closure is not confirmed." },
+    { report: "inadequate", outcome: "inadequate", remaining: "No repeat booking is confirmed." },
+  ] as const)("records only identity for a link-only $outcome outcome", ({ report, outcome, remaining }) => {
+    const linkOnly = { link: "rv-link" };
+    const signatures = signaturesFor({ identity: "same", report }, linkOnly);
+    expect(signatures).toEqual([{ item: "rv-link", decision: "same" }]);
+
+    const recorded = recordedOutcome(outcome, signatures);
+    expect(recorded.recordedText).toBe(`Same patient was appended to the demo review log. No report answer was appended. ${remaining}`);
+    expect(recorded.recordedText).not.toContain("report adequate were appended");
+    expect(recorded.recordedText).not.toContain("report not adequate were appended");
+    expect(recorded.recordedAnswerCell).toEqual({ word: "not signed", tone: "muted" });
+  });
+
+  it("keeps canonical closure confirmation without inventing a link-only report signature", () => {
+    const identityOnly = signaturesFor({ identity: "same", report: "adequate" }, { link: "rv-link" });
+    expect(recordedOutcome("close", identityOnly, true)).toEqual({
+      recordedText: "Same patient was appended to the demo review log. Refreshed case data confirms closure.",
+      recordedAnswerCell: { word: "not signed", tone: "muted" },
+    });
+    expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items), true).recordedText).toBe(
+      "Same patient and report adequate were appended to the demo review log. Refreshed case data confirms closure.",
+    );
+  });
+
+  it("keeps the complete close and inadequate wording when both answers were recorded", () => {
+    expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items))).toEqual({
+      recordedText: "Same patient and report adequate were appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+      recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
+    });
+    expect(recordedOutcome("inadequate", signaturesFor({ identity: "same", report: "inadequate" }, items))).toEqual({
+      recordedText: "Same patient and report not adequate were appended to the demo review log. No repeat booking is confirmed.",
+      recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
+    });
+  });
+
   it("turns 403, 404 and 400 into plain sentences", () => {
     const report = { item: "rv-evidence", decision: "adequate" } as const;
     expect(failureSentence(report, { status: 403, error: "rbac" })).toBe("Not saved: the clinician role is not allowed to sign the report answer.");
@@ -47,6 +85,49 @@ describe("fixtures mode cannot append", () => {
     await expect(postReview("any", { item: "rv-x", decision: "same", note: "" }, { role: "reviewer", actor: "Dr Omar Al Kaabi" })).rejects.toThrow(
       /needs WASL_API_URL/,
     );
+  });
+});
+
+describe("programme-specific review copy", () => {
+  it.each(["lung_ldct", "ifhas"] as const)("does not invent a bowel-prep hold for a closed, agreeing %s case", (programme) => {
+    const detail = programmeDetail(programme);
+    expect(detail.case.closed).toBe(true);
+    expect(detail.evidence[0].agree).toBe(true);
+
+    const view = reviewView(detail);
+    expect(view.held).toBe("");
+    expect(view.checks).toEqual([]);
+  });
+
+  it.each(["lung_ldct", "ifhas"] as const)("derives a %s disagreement hold from its own evidence", (programme) => {
+    const detail = programmeDetail(programme);
+    detail.case.closed = false;
+    detail.evidence[0].agree = false;
+
+    const report = programme === "lung_ldct" ? "LDCT report" : "IFHAS results report";
+    expect(reviewView(detail).held).toBe(`Held: ${report} readers disagree.`);
+  });
+
+  it("describes LDCT evidence as a screening LDCT, never a colonoscopy", () => {
+    const view = reviewView(programmeDetail("lung_ldct"));
+    expect(view.guided).toBe(false);
+    expect(view.referralSource).toBe("lcs-centre · lung cancer screening referral");
+    expect(view.reportSource).toBe("lcs-centre · LDCT report");
+    expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
+    expect(view.trail.map((n) => n.what)).toContain("LDCT report LCS-ct-12");
+
+    const disagreed = programmeDetail("lung_ldct");
+    disagreed.evidence[0].agree = false;
+    expect(reviewView(disagreed).trail.map((n) => n.what).join(" ")).not.toContain("bowel prep");
+  });
+
+  it("describes IFHAS evidence as cardiometabolic screening and follow-up", () => {
+    const view = reviewView(programmeDetail("ifhas"));
+    expect(view.guided).toBe(false);
+    expect(view.referralSource).toBe("ifh-screen · IFHAS screening referral");
+    expect(view.reportSource).toBe("ifh-screen · IFHAS results report");
+    expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
+    expect(view.trail.map((n) => n.what)).toContain("IFHAS results report IFH-dr-100");
   });
 });
 
@@ -108,5 +189,11 @@ describe("review view of the review_hold fixture", () => {
       ["SKMC endoscopy", "31 May"],
       ["Two readers", "31 May"],
     ]);
+  });
+
+  it("carries canonical closure instead of inferring it from appended answers", () => {
+    expect(view.closed).toBe(true);
+    expect(reviewView({ ...detail, case: { ...detail.case, closed: false } }).closed).toBe(false);
+    expect(reviewView({ ...detail, case: { ...detail.case, closed: true } }).closed).toBe(true);
   });
 });

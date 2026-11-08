@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -61,6 +62,62 @@ func decodeMap(t *testing.T, b []byte) map[string]interface{} {
 		t.Fatalf("decode: %v: %s", err, b)
 	}
 	return m
+}
+
+func TestAuditAnchorNoteReflectsLocalAnchorPresence(t *testing.T) {
+	tests := []struct {
+		name        string
+		anchors     map[string]string
+		wantLocal   string
+		wantAnchors string
+		forbidLocal string
+	}{
+		{
+			name:        "absent",
+			wantLocal:   "no out stream ledger heads or fhir log hash",
+			wantAnchors: "null",
+			forbidLocal: "local anchors for this materialised run:",
+		},
+		{
+			name:        "present",
+			anchors:     map[string]string{"out.p0": "out-head", "fhir": "fhir-head"},
+			wantLocal:   "local anchors for this materialised run: out stream ledger heads and a fhir log hash",
+			wantAnchors: `{"fhir":"fhir-head","out.p0":"out-head"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, _ := exportRun(t)
+			s.anchors = tt.anchors
+			h := exportRoutes(s)
+			_, auditRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
+			_, exportRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+			audit := decodeMap(t, auditRaw)
+			exportedAudit := decodeMap(t, exportRaw)["audit"].(map[string]interface{})
+
+			for name, body := range map[string]map[string]interface{}{"live audit": audit, "export audit": exportedAudit} {
+				note, _ := body["anchor_note"].(string)
+				lower := strings.ToLower(note)
+				for _, want := range []string{tt.wantLocal, "external in-uae worm storage and co-signing", "designed, not built"} {
+					if !strings.Contains(lower, want) {
+						t.Errorf("%s anchor note %q does not disclose %q", name, note, want)
+					}
+				}
+				if tt.forbidLocal != "" && strings.Contains(lower, tt.forbidLocal) {
+					t.Errorf("%s anchor note %q asserts local anchors are present", name, note)
+				}
+				if got := string(canon(body["anchors"])); got != tt.wantAnchors {
+					t.Errorf("%s anchors = %s, want %s", name, got, tt.wantAnchors)
+				}
+				if body["chain_verified"] != true || body["chain_length"] != float64(3) {
+					t.Errorf("%s chain verification changed: verified=%v length=%v", name, body["chain_verified"], body["chain_length"])
+				}
+			}
+			if audit["anchor_note"] != exportedAudit["anchor_note"] {
+				t.Fatalf("live and export anchor notes differ: %q != %q", audit["anchor_note"], exportedAudit["anchor_note"])
+			}
+		})
+	}
 }
 
 // The export's detail and audit are the live bodies after redaction only: with the redacted keys removed from the
@@ -429,6 +486,204 @@ func TestExportAllowlistDropsShortPhrases(t *testing.T) {
 	}
 	if n := strings.Count(norm, `"tool":`); n != 2 {
 		t.Errorf("citations should be retained (2), got %d", n)
+	}
+}
+
+// Every non-evidence export section is default-deny: a new key cannot smuggle short clinical text, and a listed
+// structural field cannot smuggle prose or identifier-shaped clinical text. These inputs exercise the real export
+// redactor over generic JSON, including fields that typed Go structs cannot extend with unknown keys.
+func TestExportDefaultDenyRemainingSections(t *testing.T) {
+	s := exportCanaryServer(t)
+	c := s.cases[exportLoop]
+	contact, contactHistory := s.apiContactOverlay(c)
+	live := s.caseDetailBody(c)
+	live["api_contact"] = map[string]interface{}{"overlay": contact, "history": contactHistory}
+	det, err := exportGeneric(live)
+	if err != nil {
+		t.Fatal(err)
+	}
+	aud, err := exportGeneric(s.caseAuditBody(c))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	canaries := []string{"polyp", "sessile adenoma", "rectal_bleeding", "CANARY-9Z", "melaena\nwithout_newline"}
+	taint := func(m map[string]interface{}) {
+		for i, value := range canaries {
+			m[fmt.Sprintf("future_clinical_%d", i)] = value
+		}
+		m["nested"] = []interface{}{map[string]interface{}{"future_array": canaries[0]}, map[string]interface{}{"future_array": canaries[2]}}
+	}
+	objectPaths := []string{
+		"case", "case.api_overlay", "case.lung", "case.dr", "case.breast", "case.ldct", "case.ifhas",
+		"current", "current.lung", "current.dr", "current.breast", "current.ldct", "current.ifhas", "current.handoff",
+		"links[0]", "links[0].weakest_edge", "holds[0]", "review_items[0]", "review_items[0].chain[0]",
+		"signoffs[0]", "api_reviews[0]", "api_overlay", "api_overlay.snooze", "api_overlay.contact_outcomes[0]",
+		"api_contact.overlay", "api_contact.history[0]", "outreach[0]", "decisions[0]", "decisions[0].outreach[0]",
+		"decisions[0].consent_log[0]", "booking", "booking.booking", "booking.constraints", "booking.pathway",
+		"booking.prep_risk", "agent_investigations[0]", "agent_investigations[0].human", "agent_provenance", "review_ledger",
+	}
+
+	// Populate nested objects and arrays with realistic operational values before adding canaries.
+	det["case"].(map[string]interface{})["lung"] = map[string]interface{}{"finding_report": "p/DiagnosticReport/L1", "risk": "high"}
+	det["case"].(map[string]interface{})["dr"] = map[string]interface{}{"screen_report": "p/DiagnosticReport/D1", "grade_day": json.Number("2")}
+	det["case"].(map[string]interface{})["breast"] = map[string]interface{}{"screen_label": "B4", "screen_day": json.Number("3")}
+	det["case"].(map[string]interface{})["ldct"] = map[string]interface{}{"scan_label": "LR4A", "scan_day": json.Number("4")}
+	det["case"].(map[string]interface{})["ifhas"] = map[string]interface{}{"domain_status": map[string]interface{}{"bp": "managed"}, "resolved_day": map[string]interface{}{"bp": json.Number("8")}}
+	for _, key := range []string{"lung", "dr", "breast", "ldct", "ifhas"} {
+		det["current"].(map[string]interface{})[key] = det["case"].(map[string]interface{})[key]
+	}
+	det["current"].(map[string]interface{})["handoff"] = map[string]interface{}{"referral_id": exportLoop, "reason_code": "needs_more_info"}
+	det["api_overlay"] = map[string]interface{}{
+		"head": "abc123", "actions": json.Number("2"), "last_action_at": "2026-11-09T00:00:00Z", "ledger_status": "ok",
+		"snooze":           map[string]interface{}{"until": "2026-11-10T00:00:00Z", "event": "def456"},
+		"contact_outcomes": []interface{}{map[string]interface{}{"outcome": "reached", "channel": "phone", "event": "def456"}},
+	}
+	det["api_contact"] = map[string]interface{}{
+		"overlay": map[string]interface{}{"status": "granted", "demo_pending_consent": "released", "last_event_hash": "def456"},
+		"history": []interface{}{map[string]interface{}{"case": exportLoop, "decision": "consent_granted", "role": RoleCoordinator, "action": ActRecordConsent}},
+	}
+	det["booking"] = map[string]interface{}{
+		"status": "suggested", "procedure": "colonoscopy", "requested_day": json.Number("1"), "data_mode": "simulated",
+		"booking":     map[string]interface{}{"day": json.Number("4"), "unit": "endoscopy-1", "within_deadline": true},
+		"constraints": map[string]interface{}{"region": "AD", "travel_ok": true},
+		"pathway":     map[string]interface{}{"route": "direct"}, "prep_risk": map[string]interface{}{"requires_clinician_order": true},
+		"capacity_condition": "adequate", "pooling_relevant": false, "reason": "capacity",
+	}
+	det["agent_investigations"].([]interface{})[0].(map[string]interface{})["human"] = map[string]interface{}{"link": "same", "role": RoleReviewer}
+
+	get := func(root map[string]interface{}, path string) map[string]interface{} {
+		var cur interface{} = root
+		for _, part := range strings.Split(path, ".") {
+			key := part
+			index := -1
+			if open := strings.IndexByte(part, '['); open >= 0 {
+				key = part[:open]
+				fmt.Sscanf(part[open+1:], "%d", &index)
+			}
+			m, ok := cur.(map[string]interface{})
+			if !ok {
+				t.Fatalf("test setup: %s is not an object at %s", path, part)
+			}
+			cur = m[key]
+			if index >= 0 {
+				list, ok := cur.([]interface{})
+				if !ok || index >= len(list) {
+					t.Fatalf("test setup: %s is not a populated array at %s", path, part)
+				}
+				cur = list[index]
+			}
+		}
+		m, ok := cur.(map[string]interface{})
+		if !ok {
+			t.Fatalf("test setup: %s did not resolve to an object: %T", path, cur)
+		}
+		return m
+	}
+	for _, path := range objectPaths {
+		taint(get(det, path))
+	}
+	for _, path := range []string{"case", "current", "decisions[0]"} {
+		m := get(det, path)
+		m["escalations"] = []interface{}{canaries[1], "second_identifier", "unowned"}
+	}
+	for _, path := range []string{"current.ifhas", "case.ifhas"} {
+		m := get(det, path)
+		m["domain_status"].(map[string]interface{})["future_domain"] = canaries[0]
+		m["resolved_day"].(map[string]interface{})["future_domain"] = canaries[2]
+	}
+	// Separately held closure and escalation blocks are also present in the current chain.
+	chain := det["current"].(map[string]interface{})["chain"].([]interface{})
+	closureBody := map[string]interface{}{"loop": exportLoop, "state": "closed", "domain_status": map[string]interface{}{"bp": "managed", "future_domain": canaries[0]},
+		"resolved_day": map[string]interface{}{"bp": json.Number("8"), "future_domain": canaries[2]}}
+	chain = append(chain,
+		map[string]interface{}{"type": "closure_decision", "prev": "abc123", "hash": "def456", "body": closureBody},
+		map[string]interface{}{"type": "escalation_decision", "prev": "def456", "hash": "fed654",
+			"body": map[string]interface{}{"loop": exportLoop, "state": "escalated", "day": json.Number("9")}})
+	det["current"].(map[string]interface{})["chain"] = chain
+	taint(closureBody)
+	taint(chain[len(chain)-1].(map[string]interface{})["body"].(map[string]interface{}))
+
+	// Audit and consent/history paths use the same default-deny rules as detail history.
+	for _, path := range []string{"chain[0]", "chain[0].body", "history[0]", "decision_signatures[0]"} {
+		taint(get(aud, path))
+	}
+	aud["anchors"] = map[string]interface{}{"out.p0": "abc123", "future_anchor": canaries[0]}
+
+	detail := redactExportDetail(det)
+	redactedAuditValue, _ := redactExport(aud)
+	redactedAudit := redactedAuditValue.(map[string]interface{})
+	encoded := string(canon(map[string]interface{}{"detail": detail, "audit": redactedAudit}))
+	for _, secret := range append(append([]string{}, canaries...), "future_clinical_", "future_array", "future_domain", "future_anchor") {
+		if strings.Contains(encoded, secret) {
+			t.Errorf("redacted remaining sections contain %q: %s", secret, encoded)
+		}
+	}
+
+	preserved := []struct {
+		path, key string
+		want      interface{}
+	}{
+		{"case", "id", exportLoop}, {"case", "programme", "crc"}, {"case", "state", "closed"},
+		{"case.ifhas.domain_status", "bp", "managed"}, {"case.ifhas.resolved_day", "bp", json.Number("8")},
+		{"current", "id", "dec-1"}, {"current", "state", "closed"}, {"current", "sr_day", json.Number("0")},
+		{"current.handoff", "referral_id", exportLoop}, {"current.handoff", "reason_code", "needs_more_info"},
+		{"current.chain[4].body.domain_status", "bp", "managed"}, {"current.chain[4].body.resolved_day", "bp", json.Number("8")},
+		{"links[0].weakest_edge", "a", "p|1"}, {"holds[0]", "why", "consent_unknown"},
+		{"review_items[0]", "item", "it1"}, {"review_items[0]", "conf", json.Number("0.9")},
+		{"signoffs[0]", "reviewer", "r1"}, {"signoffs[0]", "evidence", "adequate"},
+		{"api_overlay", "head", "abc123"}, {"api_overlay", "actions", json.Number("2")},
+		{"api_overlay.snooze", "until", "2026-11-10T00:00:00Z"}, {"api_overlay.snooze", "event", "def456"},
+		{"api_overlay.contact_outcomes[0]", "outcome", "reached"}, {"api_overlay.contact_outcomes[0]", "channel", "phone"},
+		{"api_contact.overlay", "status", "granted"}, {"api_contact.overlay", "last_event_hash", "def456"},
+		{"outreach[0]", "kind", "appointment_reminder"}, {"outreach[0]", "p_cal", json.Number("0")},
+		{"decisions[0].consent_log[0]", "to", "held"}, {"decisions[0].consent_log[0]", "contact", "granted"},
+		{"booking", "status", "suggested"}, {"booking", "reason", "capacity"}, {"booking.booking", "unit", "endoscopy-1"},
+		{"booking.constraints", "region", "AD"}, {"booking.pathway", "route", "direct"},
+		{"booking.prep_risk", "requires_clinician_order", true}, {"agent_provenance", "model", "m1"},
+		{"review_ledger", "status", "ok"}, {"review_ledger", "events_applied", json.Number("1")},
+	}
+	for _, check := range preserved {
+		if got := get(detail, check.path)[check.key]; got != check.want {
+			t.Errorf("export lost operational field %s.%s: got %#v, want %#v", check.path, check.key, got, check.want)
+		}
+	}
+	if got := fmt.Sprint(get(detail, "decisions[0]")["escalations"]); got != "[second_identifier unowned]" {
+		t.Errorf("export lost single-token escalation codes: %s", got)
+	}
+	if got := get(redactedAudit, "decision_signatures[0]")["decision_id"]; got != "dec-1" {
+		t.Errorf("export lost audit decision id: %#v", got)
+	}
+	if got := get(redactedAudit, "chain[0]")["hash"]; got != get(aud, "chain[0]")["hash"] {
+		t.Errorf("export changed structural chain hash: %#v", got)
+	}
+	if got := redactedAudit["anchors"].(map[string]interface{})["out.p0"]; got != "abc123" {
+		t.Errorf("export lost anchor hash: %#v", got)
+	}
+	for _, path := range []string{"case", "case.api_overlay", "api_overlay", "api_reviews[0]", "api_contact.history[0]"} {
+		m := get(detail, path)
+		for _, key := range []string{"actor", "target_actor", "owner", "canonical_owner"} {
+			if _, ok := m[key]; ok {
+				t.Errorf("user-controlled identity key survived at %s.%s", path, key)
+			}
+		}
+	}
+	if _, ok := get(detail, "api_overlay.snooze")["reason"]; ok {
+		t.Error("user-controlled snooze reason survived")
+	}
+
+	// Known fields reject unknown string shapes too, without relying on phrase length.
+	for _, path := range []string{"case", "current", "links[0]", "holds[0]", "signoffs[0]", "booking", "agent_provenance"} {
+		m := get(det, path)
+		for key, value := range map[string]interface{}{"state": canaries[1], "status": canaries[1], "label": canaries[1], "model": "bad model"} {
+			m[key] = value
+		}
+	}
+	detail = redactExportDetail(det)
+	for _, secret := range canaries {
+		if strings.Contains(string(canon(detail)), secret) {
+			t.Errorf("listed structural field accepted unknown string shape %q", secret)
+		}
 	}
 }
 

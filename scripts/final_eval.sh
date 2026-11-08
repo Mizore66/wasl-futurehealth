@@ -56,58 +56,7 @@ fi
 mkdir -p "$FINAL" "$WORK"
 "$ROOT/scripts/demo.sh" check >/dev/null
 "$ROOT/scripts/demo.sh" build >/dev/null
-python3 - "$ROOT" "$FINAL/manifest.json" "${SEEDS[@]}" <<'P'
-import json, sys, hashlib, subprocess, os, datetime
-root, out, seeds = sys.argv[1], sys.argv[2], [int(s) for s in sys.argv[3:]]
-h = lambda p: hashlib.sha256(open(os.path.join(root, p), 'rb').read()).hexdigest()
-alias = {"models/gemma_cache.json": os.path.join(os.environ["MODELS"], "gemma_cache.json"), "data/evidence/reports43.json": os.environ["REPORTS"]}
-h = lambda p: hashlib.sha256(open(alias.get(p, os.path.join(root, p)), 'rb').read()).hexdigest()
-rev = subprocess.check_output(['git', '-C', root, 'rev-parse', 'HEAD']).decode().strip()
-m = {"frozen_at": datetime.datetime.utcnow().isoformat() + "Z", "code_revision": rev,
-     "policy": "v7strict", "thresholds": {"tau_high_messaging": 0.99, "tau_close_v7strict": 0.99, "uncorroborated_cap": 0.989, "calibrator": "models/iso_v7.json (stratified)", "dob_second_id_guard": True, "reviewer_error": 0.04, "double_review": "merge+close"},
-     "reader": "cached second reader: " + (open(os.path.join(os.environ["MODELS"], "gemma_cache.model")).read().strip() if os.path.exists(os.path.join(os.environ["MODELS"], "gemma_cache.model")) else "Gemma 4 26B") + " (sha256-keyed)", "reports": os.path.relpath(os.environ["REPORTS"], root) if os.environ["REPORTS"].startswith(root) else os.path.basename(os.environ["REPORTS"]), "models_dir": "models" if os.environ["MODELS"] == os.path.join(root, "models") else "external (see reader)",
-     "source": os.environ.get("WASL_SOURCE", "fhir"), "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
-     "noise_models": {"v1": "training-time corruptions (gen.go)", "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"},
-     "selected_noise_models": os.environ.get("WASL_NOISES", "v1 v2").split(),
-     "eid_guard": os.environ.get("WASL_EIDGUARD", "0") not in ("", "0"),
-     "lung_loops_per_run": int(os.environ.get("LUNG", "0")), "dr_loops_per_run": int(os.environ.get("DR", "0")), "breast_loops_per_run": int(os.environ.get("BREAST", "0")), "ldct_loops_per_run": int(os.environ.get("LDCT", "0")), "ifhas_loops_per_run": int(os.environ.get("IFHAS", "0")), "crc_loops_per_run": int(os.environ["CRC"]), "cervical_loops_per_run": int(os.environ["CERV"]),
-     "persons_cap": int(os.environ["PERSONS"]) or "all held-out (8,871)",
-     "seeds": seeds, "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
-     "hashes": {p: h(p) for p in ["models/encoder_weights.json", "models/lgb_stream.json", "models/iso.json", "models/iso_v7.json", "models/gemma_cache.json",
-                                  "models/parse_cache.json", "data/persons3.json", "data/evidence/reports43.json", "data/evidence/pathology_templates.json",
-                                  "models/lung_gemma_cache.json", "data/lung/finding_reports.json", "data/lung/followup_reports.json",
-                                  "models/dr_gemma_cache.json", "data/dr/screen_reports.json", "data/dr/clinic_notes.json",
-                                  "models/breast_gemma_cache.json", "data/breast/screen_reports.json", "data/breast/assess_notes.json",
-                                  "models/ldct_gemma_cache.json", "data/ldct/screen_reports.json", "data/ldct/workup_notes.json",
-                                  "models/ifhas_gemma_cache.json", "data/ifhas/followup_notes.json"]},
-     "labelling": "43 report texts NOT yet human double-labelled; kit in docs/labelling/ (blind sheets + Cohen kappa)",
-     "limitations": ["the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test","synthetic cohorts, reviewers, capacity; no clinician labels",
-                     "43 MTSamples report texts reused across loops; answer key LLM-labelled and cross-checked with a regex reader",
-                     "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
-                     "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"]}
-if os.environ.get("WASL_SHADOW", "0") not in ("", "0") or os.environ.get("WASL_AUTOAUDIT", "0") not in ("", "0"):
-    m["pilot"] = {"shadow": os.environ.get("WASL_SHADOW", "0") not in ("", "0"), "autoaudit": float(os.environ.get("WASL_AUTOAUDIT", "0") or 0)}
-if os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
-    m["lung_pet_surveillance"] = "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure"
-if os.environ.get("WASL_LUNGSURV2", "0") not in ("", "0") and os.environ.get("WASL_LUNGSURV", "0") not in ("", "0"):
-    m["lung_pet_surveillance_later"] = "on (-lungsurv2): later surveillance CTs at about 1 and 2 years after the PET/CT"
-if os.environ.get("WASL_LUNGSURVSTABLE", "0") not in ("", "0"):
-    m["lung_stable_surveillance"] = "on (-lungsurvstable): stable-CT surveillance child with review items, truth and metrics"
-if os.environ.get("WASL_DRNEXT", "0") not in ("", "0"):
-    m["dr_next_due"] = "on (-drnext): next due rescreen / clinic review and recall_overdue"
-if os.environ.get("WASL_XREFLINK", "0") not in ("", "0"):
-    m["handoff_xreflink"] = True
-if os.environ.get("WASL_REFREJECT", "false") == "true":  # gen: rejected lung work-up / DR eye-clinic referrals (handoffext.go)
-    m["handoff_refreject"] = True
-if os.environ.get("WASL_SECONDIDCONFIRM", "1") == "0":  # -secondidconfirm=false (default on: manifest unchanged)
-    m["second_identifier_confirm"] = False
-if os.environ.get("WASL_WRONGEID", "0") not in ("", "0") or os.environ.get("WASL_WRONGREF", "0") not in ("", "0"):
-    m["adversarial"] = {"wrong_eid_share": float(os.environ.get("WASL_WRONGEID", "0") or 0), "wrong_ref_share": float(os.environ.get("WASL_WRONGREF", "0") or 0)}
-if os.environ.get("WASL_BREASTSHARE", "0") not in ("", "0"):  # gen: breast loops may use women with another loop (genbreast.go)
-    m["breast_share"] = True
-json.dump(m, open(out, 'w'), indent=1)
-print("frozen", rev[:12], "seeds", seeds)
-P
+python3 "$ROOT/scripts/final_manifest.py" "$ROOT" "$FINAL/manifest.json" "${SEEDS[@]}"
 run_one() {  # $1 noise, $2 seed; WASL_PORT_OFFSET picks this lane's ports
     local noise="$1" seed="$2"; local tag="$noise-s$seed"; local O="$WORK/$tag"
     # H7 simulated-reviewer stress test and mitigations, all off by default (same env as scripts/demo.sh)
