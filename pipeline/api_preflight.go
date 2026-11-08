@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,10 +20,14 @@ func validateAPIPreflight(run string) error {
 			return err
 		}
 	}
-	for _, name := range []string{"out_log.ndjson", "fhir_log.ndjson", "reviewer_decisions.ndjson"} {
+	for _, name := range []string{"out_log.ndjson", "fhir_log.ndjson"} {
 		if err := validateRequiredAPINDJSON(filepath.Join(run, name)); err != nil {
 			return err
 		}
+	}
+	// No-review runs do not start the reviewer, so they have no reviewer ledger.
+	if err := validateRequiredAPINDJSON(filepath.Join(run, "reviewer_decisions.ndjson")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
 	}
 	return nil
 }
