@@ -63,6 +63,28 @@ func decodeMap(t *testing.T, b []byte) map[string]interface{} {
 	return m
 }
 
+func TestAuditAnchorNoteSeparatesLocalAnchorsFromDesignedWORM(t *testing.T) {
+	s, _ := exportRun(t)
+	h := exportRoutes(s)
+	_, auditRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
+	_, exportRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+	audit := decodeMap(t, auditRaw)
+	exportedAudit := decodeMap(t, exportRaw)["audit"].(map[string]interface{})
+
+	for name, body := range map[string]map[string]interface{}{"live audit": audit, "export audit": exportedAudit} {
+		note, _ := body["anchor_note"].(string)
+		lower := strings.ToLower(note)
+		for _, want := range []string{"local anchors", "materialised run", "out stream ledger heads", "fhir log hash", "external in-uae worm storage and co-signing", "designed, not built"} {
+			if !strings.Contains(lower, want) {
+				t.Errorf("%s anchor note %q does not disclose %q", name, note, want)
+			}
+		}
+	}
+	if audit["anchor_note"] != exportedAudit["anchor_note"] {
+		t.Fatalf("live and export anchor notes differ: %q != %q", audit["anchor_note"], exportedAudit["anchor_note"])
+	}
+}
+
 // The export's detail and audit are the live bodies after redaction only: with the redacted keys removed from the
 // live bodies, they are JSON-equal (meta excluded), except for the fields the export sets itself.
 func TestExportReusesDetailAndAudit(t *testing.T) {
