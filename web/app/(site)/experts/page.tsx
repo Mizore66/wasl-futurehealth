@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { programmeView, stallScope } from "@/components/programme/model";
-import { exactlyOnce, fixed, frozenOn, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
+import { exactlyOnce, fixed, frozenOn, published, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
 import { Reveal } from "@/components/site/reveal";
 import { wrapExpert } from "@/components/site/styles";
@@ -71,15 +71,18 @@ function Bar({ label, value, width, tone, strong }: { label: string; value: stri
 export default async function Page() {
   const dash = await getDashboard();
   const kpi = dash.metrics.crc_kpi_31d;
+  const view = programmeView(dash);
   const scope = stallScope(dash);
   const n = kpi.truth.eligible_referrals.toLocaleString("en-US");
-  const eid = result("kpi31.demo.eid_only");
-  const wasl = result("kpi31.demo.wasl");
-  const truth = result("kpi31.demo.truth");
+  const demo = view.kpi.demo.rates;
+  const rate = (value: number) => ({ value: value / 100, display: `${value.toFixed(1)}%` });
+  const eid = rate(demo.eid);
+  const wasl = rate(demo.wasl);
+  const truth = rate(demo.truth);
   const pct = (v: number) => (v / 0.4) * 100;
   const fc = result("v2.safety.crc_false_closures");
   const once = exactlyOnce();
-  const chaseOneIn = programmeView(dash).chaseOneIn;
+  const chaseOneIn = view.chaseOneIn;
 
   const OUTCOMES: { outcome: string; does: string; status: React.ReactNode; evidence: React.ReactNode; stops: string }[] = [
     {
@@ -332,7 +335,7 @@ export default async function Page() {
             <Bar label="Measured by Wasl" value={wasl.display} width={pct(wasl.value)} tone="bg-(--teal)" strong />
             <Bar label="Truth, from the simulator" value={truth.display} width={pct(truth.value)} tone="bg-(--ink)" />
             <figcaption className={cn("mt-6 text-[14px] leading-[1.55]", muted)}>
-              Bars run from 0 to 40%. Under ID-only tracking {Math.round(missedByIdOnly() * 100)}% of real completions look lost
+              Demo run {dash.meta.run}. Bars run from 0 to 40%. Under ID-only tracking {Math.round((1 - demo.eid / demo.truth) * 100)}% of real completions look lost
               {chaseOneIn !== null && <>, and about 1 in {chaseOneIn} on the chase list is already done</>}. Published Abu Dhabi baseline: {QUOTED.baselineRate.value} of FIT+ patients had a
               colonoscopy, median {published("crc_followup_median_wait_days")} days, against a {published("crc_followup_standard_days")}-day standard and a target above 90%
               (SEHA, BMC Cancer 2021).
