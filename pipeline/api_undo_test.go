@@ -27,9 +27,10 @@ type undoRig struct {
 func newUndoRig(t *testing.T) *undoRig {
 	t.Helper()
 	run := t.TempDir()
-	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson"} { // loadAPI needs (here empty) logs
+	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "reviewer_decisions.ndjson"} { // loadAPI needs (here empty) logs
 		os.WriteFile(filepath.Join(run, f), nil, 0644)
 	}
+	writeRequiredAPIJSON(t, run)
 	s := loadAPI(run, "")
 	for _, id := range []string{undoCaseA, undoCaseB} {
 		d := &Decision{ID: "dec-" + id, LoopID: id, Prog: "crc", State: "open", Sig: "head-" + id}
@@ -337,9 +338,10 @@ func TestLoadAPIVerifiedRejectsTamper(t *testing.T) {
 		t.Fatal("tampered ledger loaded")
 	}
 	empty := t.TempDir()
-	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson"} {
+	for _, f := range []string{"out_log.ndjson", "fhir_log.ndjson", "reviewer_decisions.ndjson"} {
 		os.WriteFile(filepath.Join(empty, f), nil, 0644)
 	}
+	writeRequiredAPIJSON(t, empty)
 	if _, err := loadAPIVerified(empty, ""); err != nil {
 		t.Fatalf("run with no ledger rejected: %v", err)
 	}
