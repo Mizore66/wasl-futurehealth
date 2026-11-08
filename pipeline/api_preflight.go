@@ -32,9 +32,12 @@ func validateRequiredAPIJSON(path string) error {
 	if err != nil {
 		return fmt.Errorf("serve preflight: required JSON %s: %w", path, err)
 	}
-	var value json.RawMessage
+	var value interface{}
 	if err := json.Unmarshal(contents, &value); err != nil {
 		return fmt.Errorf("serve preflight: %s: %s JSON: %w", path, apiJSONErrorKind(err), err)
+	}
+	if _, ok := value.(map[string]interface{}); !ok {
+		return fmt.Errorf("serve preflight: %s: invalid JSON: expected top-level object", path)
 	}
 	return nil
 }
@@ -50,9 +53,12 @@ func validateRequiredAPINDJSON(path string) error {
 	scanner.Buffer(make([]byte, 1<<20), apiPreflightMaxNDJSONRecord)
 	line := 1
 	for scanner.Scan() {
-		var record json.RawMessage
+		var record interface{}
 		if err := json.Unmarshal(scanner.Bytes(), &record); err != nil {
 			return fmt.Errorf("serve preflight: %s:%d: %s NDJSON record: %w", path, line, apiJSONErrorKind(err), err)
+		}
+		if _, ok := record.(map[string]interface{}); !ok {
+			return fmt.Errorf("serve preflight: %s:%d: invalid NDJSON record: expected object", path, line)
 		}
 		line++
 	}
