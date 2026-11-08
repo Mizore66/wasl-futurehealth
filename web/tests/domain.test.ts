@@ -221,6 +221,7 @@ describe("plain", () => {
   it("names the chain and fixture identifiers in plain words and falls back to readable words", async () => {
     const { plain } = await import("@/lib/domain/terms");
     expect(plain("closure_decision")).toBe("Closed with evidence");
+    expect(plain("false_closure_trap")).toBe("Held: incomplete evidence");
     expect(plain("review_hold")).toBe("Held for human review");
     expect(plain("awaiting_tissue")).toBe("Awaiting tissue");
   });
