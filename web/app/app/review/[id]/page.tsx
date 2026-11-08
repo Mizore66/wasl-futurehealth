@@ -76,7 +76,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
               <Card id="not-waiting" title="This case is not waiting for a signature">
                 <p className="m-0 mt-3 max-w-[72ch]">
                   {detail.review_items.length === 0
-                    ? "No review item was raised for this case: the matching and the two readers agreed on their own, so no person was needed."
+                    ? "No review item was raised for this case. Open the case page to see the recorded evidence and outcomes."
                     : "Every review item on this case already has its answer. The answers are below, and the case page shows what they changed."}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-3">
@@ -109,7 +109,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
       )}
       {audit && (
         <div className="mt-3">
-          <HistoryCard audit={audit} />
+          <HistoryCard audit={audit} programme={detail.case.programme} />
         </div>
       )}
     </>

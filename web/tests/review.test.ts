@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
-import { failureSentence, outcomeOf, roleFor, signaturesFor } from "@/components/review/decision";
+import { failureSentence, outcomeOf, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
 import { CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 import { programmeDetail } from "./programme-cases";
@@ -30,6 +30,43 @@ describe("review decision", () => {
     expect(signaturesFor({ identity: "different", report: "adequate" }, items)).toEqual([{ item: "rv-link", decision: "different" }]);
     expect(signaturesFor({ identity: "same", report: "ask" }, items)).toEqual([{ item: "rv-link", decision: "same" }]);
     expect(signaturesFor({ identity: "same" }, items)).toEqual([]);
+  });
+
+  it.each([
+    { report: "adequate", outcome: "close", remaining: "Current case data still shows the case as open; closure is not confirmed." },
+    { report: "inadequate", outcome: "inadequate", remaining: "No repeat booking is confirmed." },
+  ] as const)("records only identity for a link-only $outcome outcome", ({ report, outcome, remaining }) => {
+    const linkOnly = { link: "rv-link" };
+    const signatures = signaturesFor({ identity: "same", report }, linkOnly);
+    expect(signatures).toEqual([{ item: "rv-link", decision: "same" }]);
+
+    const recorded = recordedOutcome(outcome, signatures);
+    expect(recorded.recordedText).toBe(`Same patient was appended to the demo review log. No report answer was appended. ${remaining}`);
+    expect(recorded.recordedText).not.toContain("report adequate were appended");
+    expect(recorded.recordedText).not.toContain("report not adequate were appended");
+    expect(recorded.recordedAnswerCell).toEqual({ word: "not signed", tone: "muted" });
+  });
+
+  it("keeps canonical closure confirmation without inventing a link-only report signature", () => {
+    const identityOnly = signaturesFor({ identity: "same", report: "adequate" }, { link: "rv-link" });
+    expect(recordedOutcome("close", identityOnly, true)).toEqual({
+      recordedText: "Same patient was appended to the demo review log. Refreshed case data confirms closure.",
+      recordedAnswerCell: { word: "not signed", tone: "muted" },
+    });
+    expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items), true).recordedText).toBe(
+      "Same patient and report adequate were appended to the demo review log. Refreshed case data confirms closure.",
+    );
+  });
+
+  it("keeps the complete close and inadequate wording when both answers were recorded", () => {
+    expect(recordedOutcome("close", signaturesFor({ identity: "same", report: "adequate" }, items))).toEqual({
+      recordedText: "Same patient and report adequate were appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+      recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
+    });
+    expect(recordedOutcome("inadequate", signaturesFor({ identity: "same", report: "inadequate" }, items))).toEqual({
+      recordedText: "Same patient and report not adequate were appended to the demo review log. No repeat booking is confirmed.",
+      recordedAnswerCell: { word: "not adequate, signed", tone: "negative" },
+    });
   });
 
   it("turns 403, 404 and 400 into plain sentences", () => {

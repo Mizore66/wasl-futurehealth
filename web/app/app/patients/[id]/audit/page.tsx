@@ -45,7 +45,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
           <ChainCard audit={audit} />
           <div className="flex min-w-0 flex-col gap-gap">
             <SignaturesCard audit={audit} />
-            <HistoryCard audit={audit} />
+            <HistoryCard audit={audit} programme={detail.case.programme} />
             <AnchorsCard audit={audit} />
           </div>
         </div>

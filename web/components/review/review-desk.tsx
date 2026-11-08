@@ -13,6 +13,7 @@ import {
   failureSentence,
   outcomeOf,
   OUTCOMES,
+  recordedOutcome,
   roleFor,
   SIGNER,
   SIGNS,
@@ -140,6 +141,7 @@ export function ReviewDesk({
   const outcome = done && OUTCOMES[done.outcome];
   const live = mode === "live";
   const confirmedClosed = Boolean(live && done?.outcome === "close" && view.closed);
+  const recorded = done && recordedOutcome(done.outcome, signaturesFor(draft, view.items), confirmedClosed);
 
   /*
    * Closing removes the questions and the button, so focus would fall to <body>.
@@ -301,11 +303,7 @@ export function ReviewDesk({
                 </div>
                 {live ? (
                   <>
-                    <p className="m-0 mt-2">
-                      {confirmedClosed
-                        ? "Same patient and report adequate were appended to the demo review log. Refreshed case data confirms closure."
-                        : outcome.recordedText}
-                    </p>
+                    <p className="m-0 mt-2">{recorded?.recordedText}</p>
                     <p className="m-0 mt-2 text-small text-muted">
                       Saved: {done.events.length} {done.events.length === 1 ? "event" : "events"} appended to the review log, last hash{" "}
                       <span className="font-mono">{done.events.at(-1)?.hash.slice(0, 12)}</span>.
@@ -385,7 +383,7 @@ export function ReviewDesk({
             view={view}
             signed={
               outcome &&
-              (live ? outcome.recordedAnswerCell : { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` })
+              (live ? recorded?.recordedAnswerCell : { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` })
             }
           />
         </div>
