@@ -29,6 +29,16 @@ describe("Experts ownership copy", () => {
   });
 });
 
+describe("Experts current demo sources", () => {
+  it("uses the served dashboard for its demo KPI and drop-off scope, not stale generated demo results", () => {
+    const experts = read("web/app/(site)/experts/page.tsx");
+    expect(experts).toContain("stallScope(dash)");
+    expect(experts).toContain("view.kpi.demo");
+    expect(experts).not.toContain('result("kpi31.demo.');
+    expect(experts).not.toContain("missedByIdOnly()");
+  });
+});
+
 describe("site figures", () => {
   it("rounds the ID-only miss rate (62%) to 3 in 5", () => {
     expect(Math.round(missedByIdOnly() * 100)).toBe(62);

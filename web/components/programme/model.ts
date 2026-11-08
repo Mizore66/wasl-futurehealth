@@ -221,6 +221,19 @@ export function programmeView(d: Dashboard): ProgrammeView {
   };
 }
 
+/**
+ * The colorectal and cervical stalls with their cohort and run, for every page that quotes them.
+ * `top` is the three largest; `smaller` keeps the two referral outcomes visible without calling them top stalls.
+ */
+export function stallScope(d: Dashboard): { run: string; cases: number; top: Stall[]; smaller: Stall[] } {
+  const view = programmeView(d);
+  const group = view.allStalls.find((g) => g.pathway === "Colorectal and cervical")?.stalls ?? [];
+  const smaller = group.filter(
+    (s) => (s.dropoff === "referral_unanswered" || s.dropoff === "referral_rejected") && !view.stalls.some((top) => top.dropoff === s.dropoff),
+  );
+  return { run: d.meta.run, cases: view.cases, top: view.stalls, smaller };
+}
+
 export const pct = (v: number) => `${v.toFixed(1)}%`;
 
 /** "1 point", "1.5 points": the gap between two percents, to one decimal. */

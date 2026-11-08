@@ -14,7 +14,8 @@ export const metadata = { title: "Programme" };
 const card = "rounded-card border border-line bg-surface p-pad";
 
 export default async function ProgrammePage() {
-  const view = programmeView(await getDashboard());
+  const dash = await getDashboard();
+  const view = programmeView(dash);
   const { capacity } = view;
   const safety = result("v2.safety.crc_false_closures");
   const runs = poolingRuns();
@@ -68,8 +69,8 @@ export default async function ProgrammePage() {
       <div className="mt-gap grid items-start gap-gap lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <section aria-labelledby="stall-h" className={card}>
           <SourceHeading id="stall-h" title="Where patients stall">
-            Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together. The three largest stalls are shown.
-            &quot;Show all stalls&quot; adds the lung, eye and breast pathways.
+            Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together (run {dash.meta.run}). The three largest
+            colorectal and cervical drop-off categories are shown. &quot;Show all stalls&quot; adds the other programme pathways.
           </SourceHeading>
           <div className="mt-3">
             <StallsChart top={view.stalls} groups={view.allStalls} />

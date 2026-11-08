@@ -627,12 +627,22 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
   await expect(nav.getByRole("link", { name: "Open the dashboard" })).toHaveAttribute("href", "/app");
 });
 
-test("experts: KPI bars, outcome table, exactly-once figure and the τ picker read the results", async ({ page }) => {
+test("experts: KPI bars and outcome table use current sourced run figures", async ({ page }) => {
   await page.goto("/experts");
   const kpi = page.locator("figure");
-  await expect(kpi).toContainText("Simulated, n = 1,337");
-  for (const v of ["12.6%", "31.9%", "32.9%"]) await expect(kpi).toContainText(v);
-  await expect(page.getByTestId("outcomes").locator("tbody tr")).toHaveCount(6);
+  await expect(kpi).toContainText("Simulated, n = 1,331");
+  for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
+  await expect(kpi).toContainText("65% of real completions look lost");
+  await expect(kpi).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+
+  const outcomes = page.getByTestId("outcomes");
+  await expect(outcomes.locator("tbody tr")).toHaveCount(6);
+  const ownership = outcomes.locator("tbody tr").nth(1);
+  await expect(ownership).toContainText("simulated, 2,100 colorectal and cervical cases");
+  await expect(ownership).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+  await expect(ownership).toContainText("370 no acknowledgement, 241 not booked, 196 never notified");
+  await expect(ownership).toContainText("referral unanswered 46 and referral rejected 10 are smaller");
+  await expect(ownership.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
   await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,025");
   await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 198,810");
 

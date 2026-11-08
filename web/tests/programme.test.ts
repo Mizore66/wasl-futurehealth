@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import dashboardJson from "@/data/api/dashboard.json";
 import { Dashboard } from "@/lib/api/schema";
-import { points, poolingRuns, programmeView } from "@/components/programme/model";
+import { points, poolingRuns, programmeView, stallScope } from "@/components/programme/model";
 import { result } from "@/lib/results";
 
 const dashboard = Dashboard.parse(dashboardJson);
@@ -172,5 +172,22 @@ describe("poolingRuns", () => {
     expect(enough.rows.map((r) => r.display)).toEqual(["40.4%", "22.2%", "37.2%", "42.1%"]);
     expect(short.rows.map((r) => r.display)).toEqual(["6.9%", "18.6%", "7.3%", "7.8%"]);
     expect(result("pool.1_2.skewed_pool_60").source).toBe("booking/sim/pool_test.json");
+  });
+});
+
+describe("stallScope", () => {
+  it("shares the current run, CRC/cervical cohort and ordered stalls with Experts", () => {
+    const scope = stallScope(dashboard);
+    expect(scope.run).toBe(dashboard.meta.run);
+    expect(scope.cases).toBe(2_100);
+    expect(scope.top.map((s) => [s.label, s.count])).toEqual([
+      ["No acknowledgement", 370],
+      ["Not booked", 241],
+      ["Never notified", 196],
+    ]);
+    expect(scope.smaller.map((s) => [s.label, s.count])).toEqual([
+      ["Referral unanswered", 46],
+      ["Referral rejected", 10],
+    ]);
   });
 });
