@@ -11,7 +11,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 test.describe.configure({ timeout: 90_000, mode: "serial" }); // serial: the tests in this file must not throttle each other
 
 const LONG_TASK_BUDGET_MS = 200;
-const ROUTES = ["/app/patients", "/app/patients?dropoff=not_booked"];
+const ROUTES = ["/app/patients", "/app/patients?dropoff=never_notified"];
 
 type Measure = { longest: number; count: number; interactiveMs: number; htmlBytes: number };
 
@@ -80,11 +80,11 @@ test("search and filters stay usable after the first render (4x CPU)", async ({ 
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
   await page.goto("/app/patients");
-  await page.getByRole("searchbox", { name: "Search case id" }).fill("1037");
+  await page.getByRole("searchbox", { name: "Search case id" }).fill("1001");
   await page.getByRole("button", { name: "Search" }).click();
-  await expect(page).toHaveURL(/q=1037/);
-  await expect(page.getByTestId("showing")).toContainText("1 case");
-  await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Not booked" }).click();
-  await expect(page).toHaveURL(/dropoff=not_booked/);
+  await expect(page).toHaveURL(/q=1001/);
+  await expect(page.getByTestId("showing")).toContainText("2 cases");
+  await page.getByRole("navigation", { name: "Filters" }).getByRole("link", { name: "Never notified" }).click();
+  await expect(page).toHaveURL(/dropoff=never_notified/);
   expect(Math.max(0, ...(await longTasks(page)))).toBeLessThanOrEqual(LONG_TASK_BUDGET_MS * 2);
 });
