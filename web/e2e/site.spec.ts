@@ -612,11 +612,11 @@ test("how it works: six moments, and the tracker's tick against Wasl's open case
 test("experts: KPI bars, outcome table, exactly-once figure and the τ picker read the results", async ({ page }) => {
   await page.goto("/experts");
   const kpi = page.locator("figure");
-  await expect(kpi).toContainText("Simulated, n = 1,337");
-  for (const v of ["12.6%", "31.9%", "32.9%"]) await expect(kpi).toContainText(v);
+  await expect(kpi).toContainText("Simulated, n = 1,331");
+  for (const v of ["11.3%", "30.7%", "31.9%"]) await expect(kpi).toContainText(v);
   await expect(page.getByTestId("outcomes").locator("tbody tr")).toHaveCount(6);
-  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,025");
-  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 198,810");
+  await expect(page.locator('[data-figure="false-closures"]')).toHaveText("0 / 3,035");
+  await expect(page.locator('[data-figure="exactly-once"]')).toContainText("0 / 217,009");
 
   const tiers = page.getByRole("group", { name: "Closure tier" });
   const panel = page.getByTestId("tau-panel");
@@ -690,13 +690,13 @@ test("social preview: og:image and twitter:image point at the public production 
   }
 });
 
-test("experts: drop-off counts match the dashboard, with run, cohort and the 183 never-notified stall", async ({ page }) => {
+test("experts: drop-off counts match the dashboard, with run, cohort and the 196 never-notified stall", async ({ page }) => {
   await page.goto("/experts");
   const row = page.getByTestId("outcomes").locator("tbody tr").nth(1);
   await expect(row).toContainText("simulated, 2,100 colorectal and cervical cases");
-  await expect(row).toContainText("v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink");
-  await expect(row).toContainText("390 no acknowledgement, 252 not booked, 183 never notified");
-  await expect(row).toContainText("referral unanswered 62 and referral rejected 17 are smaller");
+  await expect(row).toContainText("v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink");
+  await expect(row).toContainText("370 no acknowledgement, 241 not booked, 196 never notified");
+  await expect(row).toContainText("referral unanswered 46 and referral rejected 10 are smaller");
   await expect(row.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
   for (const w of [1440, 390]) {
     await page.setViewportSize({ width: w, height: 900 });
