@@ -4,3 +4,6 @@ import { createCn } from "cn/config";
 export const cn = createCn({
   extend: { classGroups: { "font-size": [{ text: ["title", "section", "lead", "body", "small"] }] } },
 });
+
+/** Plain join, for client modules where no class conflicts need resolving. Client code imports it from `@/lib/cx` directly. */
+export { cx } from "./cx";

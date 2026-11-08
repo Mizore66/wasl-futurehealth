@@ -21,9 +21,11 @@ export default defineConfig({
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
   },
   projects: [
-    { name: "chromium", testIgnore: "site.spec.ts", use: chrome },
+    { name: "chromium", testIgnore: ["site.spec.ts", "patients-perf.spec.ts"], use: chrome },
     // The landing's WebGL stage draws on its own clock, so parallel pages starve each other and time out.
     { name: "landing", testMatch: "site.spec.ts", workers: 1, dependencies: ["chromium"], use: chrome },
+    // Long-task timings at 4x CPU throttle depend on what else is running, so this spec runs alone, after the rest.
+    { name: "perf", testMatch: "patients-perf.spec.ts", workers: 1, dependencies: ["chromium", "landing"], use: chrome },
   ],
   webServer: external
     ? undefined
