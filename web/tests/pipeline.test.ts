@@ -130,7 +130,8 @@ describe("replay people", () => {
 
   it("keeps the cast member, name and face, where the Report reading page tells a replayed report as theirs", () => {
     const told = reader.cases.filter((r) => r.standsFor && replay.cases.some((c) => c.read.reportSha === r.sha));
-    expect(told.length).toBeGreaterThanOrEqual(2);
+    // Fatima (evidence_closure) and Mariam (review_hold): the fixture's quote and all four reader answers match the report.
+    expect(told.map((r) => r.standsFor!.loop)).toEqual(["ahs-mushrif/ServiceRequest/AHS-sr-1001", "ahs-mushrif/ServiceRequest/AHS-sr-1079"]);
     for (const r of told) {
       const c = replay.cases.find((x) => x.read.reportSha === r.sha)!;
       const cast = personForLoop(r.standsFor!.loop)!;
@@ -161,14 +162,16 @@ describe("reader playback", () => {
     expect(v.gated).toBe(true);
   });
 
-  it("carries the recorded answers: u38's readers disagree on the caecum and only u31 closes", () => {
-    const [u31, u6, u38] = reader.cases;
-    expect([u31.uid, u6.uid, u38.uid]).toEqual(["u31", "u6", "u38"]);
-    expect(u31.ai).toMatchObject({ state: "closed", reason: "criteria_met", latencyMs: 8849 });
+  it("carries the recorded answers: u38's readers disagree on the caecum and the prep, and only u16 closes", () => {
+    const [u16, u6, u38, u35] = reader.cases;
+    expect(reader.cases.map((c) => c.uid)).toEqual(["u16", "u6", "u38", "u35"]);
+    expect(reader.cases.filter((c) => c.ai.state === "closed").map((c) => c.uid)).toEqual(["u16"]);
+    expect(u35.ai).toMatchObject({ state: "needs_human", reason: "missing_documentation", latencyMs: 12338 });
+    expect(u16.ai).toMatchObject({ state: "closed", reason: "criteria_met", latencyMs: 7529 });
     expect(u6.ai).toMatchObject({ state: "not_closed", reason: "incomplete_exam", latencyMs: 11421 });
     expect(u38.ai).toMatchObject({ state: "needs_human", caecum: "not_stated", downgraded: ["caecum"], latencyMs: 10130 });
     expect(u38.rules.caecum).toBe("yes");
-    expect(readerView(reader, readerStart(reader, 2)).disagree).toEqual(["caecum"]);
+    expect(readerView(reader, readerStart(reader, 2)).disagree).toEqual(["caecum", "prep"]);
   });
 
   it("compares tissue only where the older rules reader answered it", () => {
@@ -188,7 +191,7 @@ describe("pipeline person profile", () => {
 
   it("links a demo cast member to her patient record, with both readers on record", () => {
     const p = profileOf(replay, track.rest, fatima.id, rules)!;
-    expect(p.record).toBe(`/app/patients/${encodeURIComponent(personForLoop("ahs-mushrif/ServiceRequest/AHS-sr-1037")!.loop)}`);
+    expect(p.record).toBe(`/app/patients/${encodeURIComponent(personForLoop("ahs-mushrif/ServiceRequest/AHS-sr-1001")!.loop)}`);
     expect(p.rulesOnRecord).toBe(true);
     expect(p.fields.find((f) => f.key === "caecum_reached")).toMatchObject({ value: "yes", rules: "yes" });
     expect(p.decision).toEqual({ word: "Closed with evidence", label: "closed · criteria_met", note: "Criteria met", gatePassed: true });

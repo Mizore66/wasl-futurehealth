@@ -2,12 +2,12 @@ import type { Role } from "@/lib/api/schema";
 
 /*
  * The second-signature decision, in the order the reviewer answers it:
- * identity first (reviewer role), then the disputed field, bowel prep (clinician role).
+ * identity first (reviewer role), then the one evidence item the two readers could not settle (clinician role): is the colonoscopy report adequate?
  */
 
 export type IdentityAnswer = "same" | "different";
-export type PrepAnswer = "adequate" | "inadequate" | "ask";
-export type Draft = { identity?: IdentityAnswer; prep?: PrepAnswer };
+export type ReportAnswer = "adequate" | "inadequate" | "ask";
+export type Draft = { identity?: IdentityAnswer; report?: ReportAnswer };
 
 export type OutcomeKey = "close" | "inadequate" | "ask" | "notSame";
 
@@ -26,8 +26,8 @@ export function roleFor(decision: Signature["decision"]): Role {
 /** No outcome until every question the identity answer opens is answered. */
 export function outcomeOf(draft: Draft): OutcomeKey | undefined {
   if (draft.identity === "different") return "notSame";
-  if (draft.identity !== "same" || !draft.prep) return undefined;
-  return draft.prep === "adequate" ? "close" : draft.prep;
+  if (draft.identity !== "same" || !draft.report) return undefined;
+  return draft.report === "adequate" ? "close" : draft.report;
 }
 
 /** "Ask the unit" has no API decision: it signs identity only. */
@@ -47,16 +47,16 @@ export type Outcome = {
   next: (unit: string) => { who: string; what: string };
   /** What the same answer reads as in the demo, where nothing is appended. */
   preview: string;
-  /** The bowel prep row of the readers table once signed. */
-  prepCell: { word: string; tone: "positive" | "negative" | "warning" | "muted" };
+  /** The disputed rows of the readers table once signed: one evidence answer covers all of them. */
+  answerCell: { word: string; tone: "positive" | "negative" | "warning" | "muted" };
 };
 
 /** What each signature says, as it reads in the trail. */
 export const SIGNS: Record<Signature["decision"], string> = {
   same: "same patient",
   different: "not the same patient",
-  adequate: "prep adequate",
-  inadequate: "prep not adequate",
+  adequate: "report adequate",
+  inadequate: "report not adequate",
 };
 
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
@@ -65,27 +65,27 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
     pill: "Closed: both answers recorded",
     preview: "Would close the case",
     tone: "positive",
-    text: (name) => `Same patient, prep adequate. ${name}’s case closes with both answers and the report quote in her record.`,
+    text: (name) => `Same patient, report adequate. ${name}’s case closes with both answers and the report quote in her record.`,
     next: () => ({ who: "Closed", what: "with both answers recorded" }),
-    prepCell: { word: "adequate, signed", tone: "positive" },
+    answerCell: { word: "adequate, signed", tone: "positive" },
   },
   inadequate: {
-    commit: "Sign: prep not adequate",
+    commit: "Sign: report not adequate",
     pill: "Not closed: repeat colonoscopy",
     preview: "Would not close: repeat colonoscopy",
     tone: "negative",
-    text: (name) => `Same patient, but the prep was not adequate, so this colonoscopy does not count. ${name} goes back to Today for a repeat booking.`,
+    text: (name) => `Same patient, but the colonoscopy report was not adequate, so this colonoscopy does not count. ${name} goes back to Today for a repeat booking.`,
     next: () => ({ who: "Her coordinator", what: "to book a repeat colonoscopy" }),
-    prepCell: { word: "not adequate, signed", tone: "negative" },
+    answerCell: { word: "not adequate, signed", tone: "negative" },
   },
   ask: {
-    commit: "Sign and ask the unit to grade the prep",
+    commit: "Sign and ask the unit to complete the report",
     pill: "Asked the unit",
     preview: "Would ask the unit",
     tone: "warning",
-    text: (_name, unit) => `Same patient is signed. The case stays held until ${unit} grades the prep.`,
-    next: (unit) => ({ who: unit, what: "to grade the bowel prep" }),
-    prepCell: { word: "asked the unit", tone: "warning" },
+    text: (_name, unit) => `Same patient is signed. The case stays held until ${unit} completes the report.`,
+    next: (unit) => ({ who: unit, what: "to complete the colonoscopy report" }),
+    answerCell: { word: "asked the unit", tone: "warning" },
   },
   notSame: {
     commit: "Sign: not the same patient",
@@ -94,7 +94,7 @@ export const OUTCOMES: Record<OutcomeKey, Outcome> = {
     tone: "negative",
     text: (name, unit) => `The report is not ${name}’s. She stays open, and ${unit} is told the report matches no patient on our list.`,
     next: () => ({ who: "Link undone", what: "report returned unmatched" }),
-    prepCell: { word: "not applied", tone: "muted" },
+    answerCell: { word: "not applied", tone: "muted" },
   },
 };
 
@@ -102,7 +102,7 @@ export type SaveFailure = { status: 400 | 403 | 404; error: string };
 
 /** The API's refusals as sentences a reviewer can act on. */
 export function failureSentence(sig: Signature, failure: SaveFailure): string {
-  const what = sig.decision === "same" || sig.decision === "different" ? "the identity answer" : "the bowel prep answer";
+  const what = sig.decision === "same" || sig.decision === "different" ? "the identity answer" : "the report answer";
   switch (failure.status) {
     case 403:
       return `Not saved: the ${roleFor(sig.decision)} role is not allowed to sign ${what}.`;

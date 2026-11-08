@@ -11,6 +11,8 @@ import { result } from "@/lib/results";
 
 export const metadata = { title: "Programme" };
 
+const NUMBER_WORD: Record<number, string> = { 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine" };
+
 const card = "rounded-card border border-line bg-surface p-pad";
 
 export default async function ProgrammePage() {
@@ -23,6 +25,7 @@ export default async function ProgrammePage() {
   const noPooling = enough.rows.find((r) => r.id.endsWith("skewed_no_travel"));
   const pooled = enough.rows.find((r) => r.id.endsWith("skewed_pool_60"));
   const programmeCases = view.programmes.reduce((t, p) => t + p.cases, 0);
+  const programmeCount = NUMBER_WORD[view.programmes.length] ?? String(view.programmes.length);
 
   return (
     <>
@@ -57,7 +60,7 @@ export default async function ProgrammePage() {
 
         <section aria-labelledby="prog-h" className={card}>
           <SourceHeading id="prog-h" title="By programme">
-            Simulated run of {programmeCases.toLocaleString("en-US")} cases across five programmes. Still open is the programme&apos;s cases minus
+            Simulated run of {programmeCases.toLocaleString("en-US")} cases across {programmeCount} programmes. Still open is the programme&apos;s cases minus
             those closed and those overdue.
           </SourceHeading>
           <div className="mt-3">
@@ -70,8 +73,8 @@ export default async function ProgrammePage() {
         <section aria-labelledby="stall-h" className={card}>
           <SourceHeading id="stall-h" title="Where patients stall">
             Simulated run of {view.cases.toLocaleString("en-US")} cases, colorectal and cervical together (run {dash.meta.run}). The three largest stalls are shown.
-            The run&apos;s drop-off counts cover all five programmes; these stall labels are the colorectal and cervical pathway&apos;s.
-            &quot;Show all stalls&quot; adds the lung, eye and breast pathways.
+            The run&apos;s drop-off counts cover all {programmeCount} programmes; these stall labels are the colorectal and cervical pathway&apos;s.
+            &quot;Show all stalls&quot; adds the lung, eye, breast, lung screening and IFHAS pathways.
           </SourceHeading>
           <div className="mt-3">
             <StallsChart top={view.stalls} groups={view.allStalls} />

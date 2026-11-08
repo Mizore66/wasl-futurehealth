@@ -39,6 +39,10 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
   unlinked: { status: "Report not matched yet", next: "Wait for the match", view: "waiting" },
   escalated: { status: "With the specialist team", next: "Specialist team to decide", view: "waiting" },
   out_of_scope: { status: "Clinician to decide", next: "Clinician to decide", view: "waiting" },
+  incomplete_scan_not_completed: { status: "LDCT incomplete, repeat not done", next: "Book the repeat LDCT", view: "call" },
+  followup_ldct_not_done: { status: "Follow-up LDCT not done", next: "Book the follow-up LDCT", view: "call" },
+  no_workup_outcome: { status: "Waiting on the work-up outcome", next: "Wait for the work-up result", view: "waiting" },
+  no_followup_documented: { status: "No follow-up visit documented", next: "Book the follow-up visit", view: "call" },
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
@@ -81,6 +85,8 @@ export const PROGRAMME_NAMES: Record<Programme, string> = {
   lung_nodule: "Lung nodule follow-up",
   diabetic_retinopathy: "Diabetic eye screening",
   breast: "Breast screening",
+  lung_ldct: "Lung cancer screening (LDCT)",
+  ifhas: "IFHAS cardiometabolic follow-up",
 };
 
 export const PROCEDURE: Record<Programme, string> = {
@@ -89,6 +95,8 @@ export const PROCEDURE: Record<Programme, string> = {
   lung_nodule: "follow-up CT",
   diabetic_retinopathy: "eye-clinic exam",
   breast: "breast assessment",
+  lung_ldct: "follow-up LDCT",
+  ifhas: "follow-up visit",
 };
 
 /** A case as the worklist shows it: name if the simulated cast has one (gap G1), else the short id. */

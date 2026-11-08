@@ -137,7 +137,7 @@ test.describe("a wrong id", () => {
       const list = page.getByRole("list", { name: "Demo cases" }).getByRole("link");
       await expect(list).toHaveCount(NAMES.length);
       await expect(list.first()).toHaveAttribute("href", new RegExp(`^${base}/`));
-      await expect(list.filter({ hasText: "Wrong-patient report caught" })).toContainText("Aisha");
+      await expect(list.filter({ hasText: "Held: report incomplete" })).toContainText("Aisha");
       await expect(list.filter({ hasText: "Eye exam closed the loop" })).toContainText("PHC-sr-1029");
       await shot(page, `notfound-${base.split("/").pop()}`);
       await noSeriousAxe(page);
@@ -217,7 +217,7 @@ test.describe("review desk on a phone", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(desk);
     await page.getByRole("radio", { name: "Same patient", exact: true }).click();
-    const q2 = page.getByRole("group", { name: /Bowel prep/ });
+    const q2 = page.getByRole("group", { name: /colonoscopy report/ });
     await expect(q2).toBeVisible();
     // With reduced motion the motion library skips the transform, so no y offset is left behind.
     await expect(q2.locator("xpath=..")).toHaveCSS("opacity", "1");

@@ -1,5 +1,6 @@
 {
- "frozen_revision": "549656327365",
+ "frozen_revision": "075abc5ad04a",
+ "frozen_on": "2026-11-02",
  "sources": [
   "pipeline/results/final/SUMMARY.md",
   "docs/BRIEF.md",
@@ -24,11 +25,11 @@
   },
   "v1.crc_recall": {
    "id": "v1.crc_recall",
-   "value": 0.8426,
-   "display": "0.8426",
+   "value": 0.844,
+   "display": "0.844",
    "ci95": [
-    0.8266,
-    0.8586
+    0.8254,
+    0.8626
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -36,11 +37,11 @@
   },
   "v1.crc_recall_no_review": {
    "id": "v1.crc_recall_no_review",
-   "value": 0.325,
-   "display": "0.325",
+   "value": 0.3188,
+   "display": "0.3188",
    "ci95": [
-    0.2991,
-    0.3509
+    0.2949,
+    0.3427
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -60,11 +61,11 @@
   },
   "v1.cervical_recall": {
    "id": "v1.cervical_recall",
-   "value": 0.9674,
-   "display": "0.9674",
+   "value": 0.9692,
+   "display": "0.9692",
    "ci95": [
-    0.9482,
-    0.9866
+    0.955,
+    0.9834
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -84,11 +85,11 @@
   },
   "v1.kpi_wasl": {
    "id": "v1.kpi_wasl",
-   "value": 0.3128,
-   "display": "0.3128",
+   "value": 0.3134,
+   "display": "0.3134",
    "ci95": [
-    0.299,
-    0.3266
+    0.2989,
+    0.3279
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -108,11 +109,11 @@
   },
   "v1.kpi_abs_error_wasl": {
    "id": "v1.kpi_abs_error_wasl",
-   "value": 0.0102,
-   "display": "0.0102",
+   "value": 0.0096,
+   "display": "0.0096",
    "ci95": [
-    0.0074,
-    0.013
+    0.0064,
+    0.0128
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -144,11 +145,11 @@
   },
   "v1.lung_recall": {
    "id": "v1.lung_recall",
-   "value": 0.9862,
-   "display": "0.9862",
+   "value": 0.9816,
+   "display": "0.9816",
    "ci95": [
-    0.9803,
-    0.9921
+    0.972,
+    0.9912
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -156,11 +157,11 @@
   },
   "v1.lung_state_accuracy": {
    "id": "v1.lung_state_accuracy",
-   "value": 0.994,
-   "display": "0.994",
+   "value": 0.992,
+   "display": "0.992",
    "ci95": [
-    0.9922,
-    0.9958
+    0.9878,
+    0.9962
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -168,11 +169,11 @@
   },
   "v1.lung_escalation_recall": {
    "id": "v1.lung_escalation_recall",
-   "value": 0.9916,
-   "display": "0.9916",
+   "value": 0.9792,
+   "display": "0.9792",
    "ci95": [
-    0.9771,
-    1.0061
+    0.963,
+    0.9954
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -192,11 +193,11 @@
   },
   "v1.dr_recall": {
    "id": "v1.dr_recall",
-   "value": 0.9976,
-   "display": "0.9976",
+   "value": 0.9974,
+   "display": "0.9974",
    "ci95": [
-    0.9959,
-    0.9993
+    0.996,
+    0.9988
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -204,11 +205,11 @@
   },
   "v1.dr_referral_recall": {
    "id": "v1.dr_referral_recall",
-   "value": 0.978,
-   "display": "0.978",
+   "value": 0.9696,
+   "display": "0.9696",
    "ci95": [
-    0.9583,
-    0.9977
+    0.9456,
+    0.9936
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -219,8 +220,8 @@
    "value": 0.9978,
    "display": "0.9978",
    "ci95": [
-    0.9968,
-    0.9988
+    0.9964,
+    0.9992
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -240,10 +241,10 @@
   },
   "v1.dr_overdue_accuracy": {
    "id": "v1.dr_overdue_accuracy",
-   "value": 0.9984,
-   "display": "0.9984",
+   "value": 0.9982,
+   "display": "0.9982",
    "ci95": [
-    0.997,
+    0.9966,
     0.9998
    ],
    "label": "simulated",
@@ -264,11 +265,11 @@
   },
   "v1.dr_exam_within_deadline_wasl": {
    "id": "v1.dr_exam_within_deadline_wasl",
-   "value": 0.352,
-   "display": "0.352",
+   "value": 0.3438,
+   "display": "0.3438",
    "ci95": [
-    0.2937,
-    0.4103
+    0.2888,
+    0.3988
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -430,13 +431,169 @@
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
+  "v1.ldct_precision": {
+   "id": "v1.ldct_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_recall": {
+   "id": "v1.ldct_recall",
+   "value": 0.9978,
+   "display": "0.9978",
+   "ci95": [
+    0.9917,
+    1.0039
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_action_loop_recall": {
+   "id": "v1.ldct_action_loop_recall",
+   "value": 0.976,
+   "display": "0.976",
+   "ci95": [
+    0.9094,
+    1.0426
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_state_accuracy": {
+   "id": "v1.ldct_state_accuracy",
+   "value": 0.998,
+   "display": "0.998",
+   "ci95": [
+    0.9924,
+    1.0036
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_triage_accuracy": {
+   "id": "v1.ldct_triage_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_overdue_accuracy": {
+   "id": "v1.ldct_overdue_accuracy",
+   "value": 0.998,
+   "display": "0.998",
+   "ci95": [
+    0.9924,
+    1.0036
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_action_outcome_accuracy": {
+   "id": "v1.ldct_action_outcome_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_next_step_within_clock_truth": {
+   "id": "v1.ldct_next_step_within_clock_truth",
+   "value": 0.5534,
+   "display": "0.5534",
+   "ci95": [
+    0.3947,
+    0.7121
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_next_step_within_clock_wasl": {
+   "id": "v1.ldct_next_step_within_clock_wasl",
+   "value": 0.5396,
+   "display": "0.5396",
+   "ci95": [
+    0.4003,
+    0.6789
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_abnormal_recall_rate_truth": {
+   "id": "v1.ldct_abnormal_recall_rate_truth",
+   "value": 0.1372,
+   "display": "0.1372",
+   "ci95": [
+    0.1239,
+    0.1505
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_abnormal_recall_rate_wasl": {
+   "id": "v1.ldct_abnormal_recall_rate_wasl",
+   "value": 0.1372,
+   "display": "0.1372",
+   "ci95": [
+    0.1239,
+    0.1505
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_cancer_detection_rate_truth": {
+   "id": "v1.ldct_cancer_detection_rate_truth",
+   "value": 0.0106,
+   "display": "0.0106",
+   "ci95": [
+    -0.0002,
+    0.0214
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ldct_cancer_detection_rate_wasl": {
+   "id": "v1.ldct_cancer_detection_rate_wasl",
+   "value": 0.0092,
+   "display": "0.0092",
+   "ci95": [
+    0.0001,
+    0.0183
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
   "v1.linkage_pair_f1": {
    "id": "v1.linkage_pair_f1",
-   "value": 0.9748,
-   "display": "0.9748",
+   "value": 0.9794,
+   "display": "0.9794",
    "ci95": [
-    0.9734,
-    0.9762
+    0.978,
+    0.9808
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -444,11 +601,11 @@
   },
   "v1.reviewer_h_per_1k": {
    "id": "v1.reviewer_h_per_1k",
-   "value": 14.2662,
-   "display": "14.2662",
+   "value": 12.82,
+   "display": "12.82",
    "ci95": [
-    13.9694,
-    14.563
+    12.4863,
+    13.1537
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -456,11 +613,11 @@
   },
   "v1.review_items_per_100_loops": {
    "id": "v1.review_items_per_100_loops",
-   "value": 41.3846,
-   "display": "41.3846",
+   "value": 36.8898,
+   "display": "36.8898",
    "ci95": [
-    41.127,
-    41.6422
+    36.1299,
+    37.6497
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -468,11 +625,11 @@
   },
   "v1.throughput_ev_s": {
    "id": "v1.throughput_ev_s",
-   "value": 534.9673,
-   "display": "534.9673",
+   "value": 547.7131,
+   "display": "547.7131",
    "ci95": [
-    519.7606,
-    550.1741
+    486.946,
+    608.4803
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -480,11 +637,11 @@
   },
   "v1.review_items_per_100_arab": {
    "id": "v1.review_items_per_100_arab",
-   "value": 41.3162,
-   "display": "41.3162",
+   "value": 36.6584,
+   "display": "36.6584",
    "ci95": [
-    40.0629,
-    42.5695
+    35.5969,
+    37.7199
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -492,11 +649,11 @@
   },
   "v1.review_items_per_100_filipino": {
    "id": "v1.review_items_per_100_filipino",
-   "value": 40.1284,
-   "display": "40.1284",
+   "value": 36.175,
+   "display": "36.175",
    "ci95": [
-    37.4589,
-    42.7979
+    34.0747,
+    38.2753
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -504,11 +661,11 @@
   },
   "v1.review_items_per_100_south_asian": {
    "id": "v1.review_items_per_100_south_asian",
-   "value": 42.325,
-   "display": "42.325",
+   "value": 37.9006,
+   "display": "37.9006",
    "ci95": [
-    39.0469,
-    45.6031
+    34.7492,
+    41.052
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -516,11 +673,11 @@
   },
   "v1.review_items_per_100_western": {
    "id": "v1.review_items_per_100_western",
-   "value": 40.8634,
-   "display": "40.8634",
+   "value": 36.5634,
+   "display": "36.5634",
    "ci95": [
-    39.026,
-    42.7008
+    35.0443,
+    38.0825
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -528,11 +685,11 @@
   },
   "v1.reviewer_h_per_1k_arab": {
    "id": "v1.reviewer_h_per_1k_arab",
-   "value": 14.2048,
-   "display": "14.2048",
+   "value": 12.7384,
+   "display": "12.7384",
    "ci95": [
-    13.8301,
-    14.5795
+    12.3959,
+    13.0809
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -540,11 +697,11 @@
   },
   "v1.reviewer_h_per_1k_filipino": {
    "id": "v1.reviewer_h_per_1k_filipino",
-   "value": 14.0336,
-   "display": "14.0336",
+   "value": 12.6108,
+   "display": "12.6108",
    "ci95": [
-    12.8043,
-    15.2629
+    11.5336,
+    13.688
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -552,11 +709,11 @@
   },
   "v1.reviewer_h_per_1k_south_asian": {
    "id": "v1.reviewer_h_per_1k_south_asian",
-   "value": 14.4956,
-   "display": "14.4956",
+   "value": 13.2798,
+   "display": "13.2798",
    "ci95": [
-    13.0779,
-    15.9133
+    11.8553,
+    14.7043
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -564,11 +721,11 @@
   },
   "v1.reviewer_h_per_1k_western": {
    "id": "v1.reviewer_h_per_1k_western",
-   "value": 14.2498,
-   "display": "14.2498",
+   "value": 12.524,
+   "display": "12.524",
    "ci95": [
-    13.1052,
-    15.3944
+    11.8498,
+    13.1982
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -576,11 +733,143 @@
   },
   "v1.review_load_ratio_max_min_origin": {
    "id": "v1.review_load_ratio_max_min_origin",
-   "value": 1.1133,
-   "display": "1.1133",
+   "value": 1.1025,
+   "display": "1.1025",
    "ci95": [
-    1.0444,
-    1.1822
+    1.026,
+    1.1791
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_abnormal_findings_rate_truth": {
+   "id": "v1.ifhas_abnormal_findings_rate_truth",
+   "value": 0.4148,
+   "display": "0.4148",
+   "ci95": [
+    0.396,
+    0.4336
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_abnormal_findings_rate_wasl": {
+   "id": "v1.ifhas_abnormal_findings_rate_wasl",
+   "value": 0.4152,
+   "display": "0.4152",
+   "ci95": [
+    0.3955,
+    0.4349
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_domain_outcome_accuracy": {
+   "id": "v1.ifhas_domain_outcome_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_followup_loop_recall": {
+   "id": "v1.ifhas_followup_loop_recall",
+   "value": 0.9674,
+   "display": "0.9674",
+   "ci95": [
+    0.9563,
+    0.9785
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_followup_within_clock_truth": {
+   "id": "v1.ifhas_followup_within_clock_truth",
+   "value": 0.5432,
+   "display": "0.5432",
+   "ci95": [
+    0.5286,
+    0.5578
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_followup_within_clock_wasl": {
+   "id": "v1.ifhas_followup_within_clock_wasl",
+   "value": 0.524,
+   "display": "0.524",
+   "ci95": [
+    0.5097,
+    0.5383
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_overdue_accuracy": {
+   "id": "v1.ifhas_overdue_accuracy",
+   "value": 0.9908,
+   "display": "0.9908",
+   "ci95": [
+    0.9869,
+    0.9947
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_precision": {
+   "id": "v1.ifhas_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_recall": {
+   "id": "v1.ifhas_recall",
+   "value": 0.9884,
+   "display": "0.9884",
+   "ci95": [
+    0.9837,
+    0.9931
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_state_accuracy": {
+   "id": "v1.ifhas_state_accuracy",
+   "value": 0.99,
+   "display": "0.99",
+   "ci95": [
+    0.9859,
+    0.9941
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.ifhas_triage_accuracy": {
+   "id": "v1.ifhas_triage_accuracy",
+   "value": 0.9998,
+   "display": "0.9998",
+   "ci95": [
+    0.9992,
+    1.0004
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -589,9 +878,9 @@
   "v1.safety.crc_false_closures": {
    "id": "v1.safety.crc_false_closures",
    "value": 0,
-   "denominator": 3156,
+   "denominator": 3161,
    "upper95": "0.1170%",
-   "display": "0 / 3,156",
+   "display": "0 / 3,161",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -599,9 +888,9 @@
   "v1.safety.cervical_false_closures": {
    "id": "v1.safety.cervical_false_closures",
    "value": 0,
-   "denominator": 1404,
+   "denominator": 1407,
    "upper95": "0.2620%",
-   "display": "0 / 1,404",
+   "display": "0 / 1,407",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -609,9 +898,9 @@
   "v1.safety.wrong_patient_released": {
    "id": "v1.safety.wrong_patient_released",
    "value": 0,
-   "denominator": 15247,
-   "upper95": "0.0240%",
-   "display": "0 / 15,247",
+   "denominator": 17063,
+   "upper95": "0.0220%",
+   "display": "0 / 17,063",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -619,9 +908,9 @@
   "v1.safety.released_without_granted_consent": {
    "id": "v1.safety.released_without_granted_consent",
    "value": 0,
-   "denominator": 9945,
-   "upper95": "0.0370%",
-   "display": "0 / 9,945",
+   "denominator": 11828,
+   "upper95": "0.0310%",
+   "display": "0 / 11,828",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -629,9 +918,9 @@
   "v1.safety.duplicate_or_lost_outputs": {
    "id": "v1.safety.duplicate_or_lost_outputs",
    "value": 0,
-   "denominator": 202696,
+   "denominator": 220789,
    "upper95": "0.0020%",
-   "display": "0 / 202,696",
+   "display": "0 / 220,789",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -639,8 +928,8 @@
   "v1.safety.ingest_lost_or_duplicated": {
    "id": "v1.safety.ingest_lost_or_duplicated",
    "value": 0,
-   "denominator": 254685,
-   "display": "0 / 254,685",
+   "denominator": 273843,
+   "display": "0 / 273,843",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -656,8 +945,8 @@
   "v1.safety.forged_with_effect": {
    "id": "v1.safety.forged_with_effect",
    "value": 0,
-   "denominator": 117,
-   "display": "0 / 117",
+   "denominator": 110,
+   "display": "0 / 110",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -699,9 +988,9 @@
   "v1.safety.lung_false_closures": {
    "id": "v1.safety.lung_false_closures",
    "value": 0,
-   "denominator": 2032,
-   "upper95": "0.1810%",
-   "display": "0 / 2,032",
+   "denominator": 2022,
+   "upper95": "0.1820%",
+   "display": "0 / 2,022",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -718,9 +1007,9 @@
   },
   "v1.safety.lung_surveillance_ct_overdue_flag_correct": {
    "id": "v1.safety.lung_surveillance_ct_overdue_flag_correct",
-   "value": 98,
-   "denominator": 99,
-   "display": "98 / 99",
+   "value": 102,
+   "denominator": 102,
+   "display": "102 / 102",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -728,9 +1017,9 @@
   "v1.safety.dr_false_closures": {
    "id": "v1.safety.dr_false_closures",
    "value": 0,
-   "denominator": 5636,
+   "denominator": 5634,
    "upper95": "0.0650%",
-   "display": "0 / 5,636",
+   "display": "0 / 5,634",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -738,9 +1027,9 @@
   "v1.safety.dr_referral_false_closures": {
    "id": "v1.safety.dr_referral_false_closures",
    "value": 0,
-   "denominator": 269,
-   "upper95": "1.3620%",
-   "display": "0 / 269",
+   "denominator": 267,
+   "upper95": "1.3720%",
+   "display": "0 / 267",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -765,6 +1054,46 @@
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
   },
+  "v1.safety.ldct_false_closures": {
+   "id": "v1.safety.ldct_false_closures",
+   "value": 0,
+   "denominator": 1398,
+   "upper95": "0.2640%",
+   "display": "0 / 1,398",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.ldct_action_false_closures": {
+   "id": "v1.safety.ldct_action_false_closures",
+   "value": 0,
+   "denominator": 109,
+   "upper95": "3.3280%",
+   "display": "0 / 109",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.ifhas_false_closures": {
+   "id": "v1.safety.ifhas_false_closures",
+   "value": 0,
+   "denominator": 3480,
+   "upper95": "0.1060%",
+   "display": "0 / 3,480",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
+  "v1.safety.ifhas_followup_false_closures": {
+   "id": "v1.safety.ifhas_followup_false_closures",
+   "value": 0,
+   "denominator": 1140,
+   "upper95": "0.3230%",
+   "display": "0 / 1,140",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
+  },
   "v1.safety.handoff_false_closures": {
    "id": "v1.safety.handoff_false_closures",
    "value": 0,
@@ -778,9 +1107,9 @@
   "v1.safety.handoff_lung_false_closures": {
    "id": "v1.safety.handoff_lung_false_closures",
    "value": 0,
-   "denominator": 6,
-   "upper95": "45.9260%",
-   "display": "0 / 6",
+   "denominator": 5,
+   "upper95": "52.1820%",
+   "display": "0 / 5",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -788,9 +1117,9 @@
   "v1.safety.handoff_dr_false_closures": {
    "id": "v1.safety.handoff_dr_false_closures",
    "value": 0,
-   "denominator": 15,
-   "upper95": "21.8020%",
-   "display": "0 / 15",
+   "denominator": 14,
+   "upper95": "23.1640%",
+   "display": "0 / 14",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds, pooled"
@@ -829,8 +1158,8 @@
   },
   "v1.counts.breast_reader_breast-screen_agree": {
    "id": "v1.counts.breast_reader_breast-screen_agree",
-   "value": 350,
-   "display": "350",
+   "value": 356,
+   "display": "356",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -925,8 +1254,8 @@
   },
   "v1.counts.handoff_acted_state_correct": {
    "id": "v1.counts.handoff_acted_state_correct",
-   "value": 331,
-   "display": "331",
+   "value": 333,
+   "display": "333",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -949,8 +1278,8 @@
   },
   "v1.counts.handoff_dr_closed": {
    "id": "v1.counts.handoff_dr_closed",
-   "value": 15,
-   "display": "15",
+   "value": 14,
+   "display": "14",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1021,40 +1350,40 @@
   },
   "v1.counts.handoff_lung_acted_state_correct": {
    "id": "v1.counts.handoff_lung_acted_state_correct",
-   "value": 19,
-   "display": "19",
+   "value": 18,
+   "display": "18",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.handoff_lung_closed": {
    "id": "v1.counts.handoff_lung_closed",
-   "value": 6,
-   "display": "6",
+   "value": 5,
+   "display": "5",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.handoff_lung_packets_all_required_fields": {
    "id": "v1.counts.handoff_lung_packets_all_required_fields",
-   "value": 19,
-   "display": "19",
+   "value": 18,
+   "display": "18",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.handoff_lung_packets_matched": {
    "id": "v1.counts.handoff_lung_packets_matched",
-   "value": 19,
-   "display": "19",
+   "value": 18,
+   "display": "18",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.handoff_lung_packets_missed": {
    "id": "v1.counts.handoff_lung_packets_missed",
-   "value": 1,
-   "display": "1",
+   "value": 2,
+   "display": "2",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1101,24 +1430,16 @@
   },
   "v1.counts.handoff_packets_all_required_fields": {
    "id": "v1.counts.handoff_packets_all_required_fields",
-   "value": 331,
-   "display": "331",
+   "value": 333,
+   "display": "333",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.handoff_packets_matched": {
    "id": "v1.counts.handoff_packets_matched",
-   "value": 331,
-   "display": "331",
-   "label": "simulated",
-   "source": "pipeline/results/final/SUMMARY.md",
-   "context": "frozen evaluation, dev v1 noise, 5 seeds"
-  },
-  "v1.counts.handoff_packets_missed": {
-   "id": "v1.counts.handoff_packets_missed",
-   "value": 2,
-   "display": "2",
+   "value": 333,
+   "display": "333",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1163,10 +1484,122 @@
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
+  "v1.counts.ifhas_reader_ifhas-followup_agree": {
+   "id": "v1.counts.ifhas_reader_ifhas-followup_agree",
+   "value": 1832,
+   "display": "1832",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ifhas_reader_ifhas-followup_agree_but_wrong": {
+   "id": "v1.counts.ifhas_reader_ifhas-followup_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ifhas_reader_ifhas-followup_instances": {
+   "id": "v1.counts.ifhas_reader_ifhas-followup_instances",
+   "value": 2257,
+   "display": "2257",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ifhas_reader_ifhas-screen_agree": {
+   "id": "v1.counts.ifhas_reader_ifhas-screen_agree",
+   "value": 3860,
+   "display": "3860",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ifhas_reader_ifhas-screen_agree_but_wrong": {
+   "id": "v1.counts.ifhas_reader_ifhas-screen_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ifhas_reader_ifhas-screen_instances": {
+   "id": "v1.counts.ifhas_reader_ifhas-screen_instances",
+   "value": 4000,
+   "display": "4000",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-screen_agree": {
+   "id": "v1.counts.ldct_reader_ldct-screen_agree",
+   "value": 1577,
+   "display": "1577",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-screen_agree_but_wrong": {
+   "id": "v1.counts.ldct_reader_ldct-screen_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-screen_coded": {
+   "id": "v1.counts.ldct_reader_ldct-screen_coded",
+   "value": 932,
+   "display": "932",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-screen_instances": {
+   "id": "v1.counts.ldct_reader_ldct-screen_instances",
+   "value": 1594,
+   "display": "1594",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-workup_agree": {
+   "id": "v1.counts.ldct_reader_ldct-workup_agree",
+   "value": 224,
+   "display": "224",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-workup_agree_but_wrong": {
+   "id": "v1.counts.ldct_reader_ldct-workup_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-workup_coded": {
+   "id": "v1.counts.ldct_reader_ldct-workup_coded",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
+  "v1.counts.ldct_reader_ldct-workup_instances": {
+   "id": "v1.counts.ldct_reader_ldct-workup_instances",
+   "value": 259,
+   "display": "259",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, dev v1 noise, 5 seeds"
+  },
   "v1.counts.lung_surv_extra_opened": {
    "id": "v1.counts.lung_surv_extra_opened",
-   "value": 3,
-   "display": "3",
+   "value": 0,
+   "display": "0",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1181,24 +1614,24 @@
   },
   "v1.counts.lung_surv_missed": {
    "id": "v1.counts.lung_surv_missed",
-   "value": 0,
-   "display": "0",
+   "value": 1,
+   "display": "1",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.lung_surv_obligations": {
    "id": "v1.counts.lung_surv_obligations",
-   "value": 99,
-   "display": "99",
+   "value": 102,
+   "display": "102",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.lung_surv_opened": {
    "id": "v1.counts.lung_surv_opened",
-   "value": 96,
-   "display": "96",
+   "value": 97,
+   "display": "97",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1229,16 +1662,16 @@
   },
   "v1.counts.lung_surv_outreach_lung_surveillance_recall:released": {
    "id": "v1.counts.lung_surv_outreach_lung_surveillance_recall:released",
-   "value": 15,
-   "display": "15",
+   "value": 16,
+   "display": "16",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.lung_surv_overdue_flag_correct": {
    "id": "v1.counts.lung_surv_overdue_flag_correct",
-   "value": 98,
-   "display": "98",
+   "value": 102,
+   "display": "102",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1253,8 +1686,8 @@
   },
   "v1.counts.lung_surv_pred_overdue": {
    "id": "v1.counts.lung_surv_pred_overdue",
-   "value": 19,
-   "display": "19",
+   "value": 20,
+   "display": "20",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1269,8 +1702,8 @@
   },
   "v1.counts.lung_surv_truth_closed": {
    "id": "v1.counts.lung_surv_truth_closed",
-   "value": 41,
-   "display": "41",
+   "value": 42,
+   "display": "42",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1293,24 +1726,24 @@
   },
   "v1.counts.lung_workup_pred_closed_by_ct": {
    "id": "v1.counts.lung_workup_pred_closed_by_ct",
-   "value": 94,
-   "display": "94",
+   "value": 93,
+   "display": "93",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.lung_workup_pred_closed_by_pet": {
    "id": "v1.counts.lung_workup_pred_closed_by_pet",
-   "value": 99,
-   "display": "99",
+   "value": 97,
+   "display": "97",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
   },
   "v1.counts.lung_workup_pred_closed_by_tissue": {
    "id": "v1.counts.lung_workup_pred_closed_by_tissue",
-   "value": 51,
-   "display": "51",
+   "value": 50,
+   "display": "50",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, dev v1 noise, 5 seeds"
@@ -1361,11 +1794,11 @@
   },
   "v2.crc_recall": {
    "id": "v2.crc_recall",
-   "value": 0.7822,
-   "display": "0.7822",
+   "value": 0.785,
+   "display": "0.785",
    "ci95": [
-    0.769,
-    0.7954
+    0.7721,
+    0.7979
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1373,11 +1806,11 @@
   },
   "v2.crc_recall_no_review": {
    "id": "v2.crc_recall_no_review",
-   "value": 0.3196,
-   "display": "0.3196",
+   "value": 0.3128,
+   "display": "0.3128",
    "ci95": [
-    0.2957,
-    0.3435
+    0.2884,
+    0.3372
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1397,11 +1830,11 @@
   },
   "v2.cervical_recall": {
    "id": "v2.cervical_recall",
-   "value": 0.9126,
-   "display": "0.9126",
+   "value": 0.9062,
+   "display": "0.9062",
    "ci95": [
-    0.8899,
-    0.9353
+    0.876,
+    0.9364
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1421,11 +1854,11 @@
   },
   "v2.kpi_wasl": {
    "id": "v2.kpi_wasl",
-   "value": 0.2984,
-   "display": "0.2984",
+   "value": 0.298,
+   "display": "0.298",
    "ci95": [
-    0.2727,
-    0.3241
+    0.272,
+    0.324
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1445,11 +1878,11 @@
   },
   "v2.kpi_abs_error_wasl": {
    "id": "v2.kpi_abs_error_wasl",
-   "value": 0.0306,
-   "display": "0.0306",
+   "value": 0.031,
+   "display": "0.031",
    "ci95": [
-    0.0242,
-    0.037
+    0.0254,
+    0.0366
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1481,11 +1914,11 @@
   },
   "v2.lung_recall": {
    "id": "v2.lung_recall",
-   "value": 0.9502,
-   "display": "0.9502",
+   "value": 0.952,
+   "display": "0.952",
    "ci95": [
-    0.9406,
-    0.9598
+    0.9405,
+    0.9635
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1493,11 +1926,11 @@
   },
   "v2.lung_state_accuracy": {
    "id": "v2.lung_state_accuracy",
-   "value": 0.9774,
-   "display": "0.9774",
+   "value": 0.978,
+   "display": "0.978",
    "ci95": [
-    0.9732,
-    0.9816
+    0.9734,
+    0.9826
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1505,11 +1938,11 @@
   },
   "v2.lung_escalation_recall": {
    "id": "v2.lung_escalation_recall",
-   "value": 0.9212,
-   "display": "0.9212",
+   "value": 0.9186,
+   "display": "0.9186",
    "ci95": [
-    0.8917,
-    0.9507
+    0.8775,
+    0.9597
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1529,11 +1962,11 @@
   },
   "v2.dr_recall": {
    "id": "v2.dr_recall",
-   "value": 0.9938,
-   "display": "0.9938",
+   "value": 0.9942,
+   "display": "0.9942",
    "ci95": [
-    0.9894,
-    0.9982
+    0.9903,
+    0.9981
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1541,11 +1974,11 @@
   },
   "v2.dr_referral_recall": {
    "id": "v2.dr_referral_recall",
-   "value": 0.8866,
-   "display": "0.8866",
+   "value": 0.8944,
+   "display": "0.8944",
    "ci95": [
-    0.7982,
-    0.975
+    0.8201,
+    0.9687
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1553,10 +1986,10 @@
   },
   "v2.dr_state_accuracy": {
    "id": "v2.dr_state_accuracy",
-   "value": 0.9938,
-   "display": "0.9938",
+   "value": 0.9942,
+   "display": "0.9942",
    "ci95": [
-    0.9892,
+    0.99,
     0.9984
    ],
    "label": "simulated",
@@ -1577,11 +2010,11 @@
   },
   "v2.dr_overdue_accuracy": {
    "id": "v2.dr_overdue_accuracy",
-   "value": 0.995,
-   "display": "0.995",
+   "value": 0.9954,
+   "display": "0.9954",
    "ci95": [
-    0.9914,
-    0.9986
+    0.9927,
+    0.9981
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1601,11 +2034,11 @@
   },
   "v2.dr_exam_within_deadline_wasl": {
    "id": "v2.dr_exam_within_deadline_wasl",
-   "value": 0.3836,
-   "display": "0.3836",
+   "value": 0.3858,
+   "display": "0.3858",
    "ci95": [
-    0.2916,
-    0.4756
+    0.2979,
+    0.4737
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1767,13 +2200,169 @@
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
+  "v2.ldct_precision": {
+   "id": "v2.ldct_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_recall": {
+   "id": "v2.ldct_recall",
+   "value": 0.998,
+   "display": "0.998",
+   "ci95": [
+    0.9942,
+    1.0018
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_action_loop_recall": {
+   "id": "v2.ldct_action_loop_recall",
+   "value": 0.9808,
+   "display": "0.9808",
+   "ci95": [
+    0.9459,
+    1.0157
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_state_accuracy": {
+   "id": "v2.ldct_state_accuracy",
+   "value": 0.9982,
+   "display": "0.9982",
+   "ci95": [
+    0.9949,
+    1.0015
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_triage_accuracy": {
+   "id": "v2.ldct_triage_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_overdue_accuracy": {
+   "id": "v2.ldct_overdue_accuracy",
+   "value": 0.9982,
+   "display": "0.9982",
+   "ci95": [
+    0.9949,
+    1.0015
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_action_outcome_accuracy": {
+   "id": "v2.ldct_action_outcome_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_next_step_within_clock_truth": {
+   "id": "v2.ldct_next_step_within_clock_truth",
+   "value": 0.5552,
+   "display": "0.5552",
+   "ci95": [
+    0.4388,
+    0.6716
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_next_step_within_clock_wasl": {
+   "id": "v2.ldct_next_step_within_clock_wasl",
+   "value": 0.5388,
+   "display": "0.5388",
+   "ci95": [
+    0.4429,
+    0.6347
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_abnormal_recall_rate_truth": {
+   "id": "v2.ldct_abnormal_recall_rate_truth",
+   "value": 0.1354,
+   "display": "0.1354",
+   "ci95": [
+    0.1305,
+    0.1403
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_abnormal_recall_rate_wasl": {
+   "id": "v2.ldct_abnormal_recall_rate_wasl",
+   "value": 0.1354,
+   "display": "0.1354",
+   "ci95": [
+    0.1305,
+    0.1403
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_cancer_detection_rate_truth": {
+   "id": "v2.ldct_cancer_detection_rate_truth",
+   "value": 0.014,
+   "display": "0.014",
+   "ci95": [
+    0.0103,
+    0.0177
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ldct_cancer_detection_rate_wasl": {
+   "id": "v2.ldct_cancer_detection_rate_wasl",
+   "value": 0.0132,
+   "display": "0.0132",
+   "ci95": [
+    0.0101,
+    0.0163
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
   "v2.linkage_pair_f1": {
    "id": "v2.linkage_pair_f1",
-   "value": 0.94,
-   "display": "0.94",
+   "value": 0.9422,
+   "display": "0.9422",
    "ci95": [
-    0.9366,
-    0.9434
+    0.9381,
+    0.9463
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1781,11 +2370,11 @@
   },
   "v2.reviewer_h_per_1k": {
    "id": "v2.reviewer_h_per_1k",
-   "value": 12.915,
-   "display": "12.915",
+   "value": 11.6316,
+   "display": "11.6316",
    "ci95": [
-    12.1153,
-    13.7147
+    10.9639,
+    12.2993
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1793,11 +2382,11 @@
   },
   "v2.review_items_per_100_loops": {
    "id": "v2.review_items_per_100_loops",
-   "value": 37.2612,
-   "display": "37.2612",
+   "value": 33.5584,
+   "display": "33.5584",
    "ci95": [
-    35.6872,
-    38.8352
+    32.3128,
+    34.804
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1805,11 +2394,11 @@
   },
   "v2.throughput_ev_s": {
    "id": "v2.throughput_ev_s",
-   "value": 607.4037,
-   "display": "607.4037",
+   "value": 554.5136,
+   "display": "554.5136",
    "ci95": [
-    463.8568,
-    750.9507
+    360.8136,
+    748.2136
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1817,11 +2406,11 @@
   },
   "v2.review_items_per_100_arab": {
    "id": "v2.review_items_per_100_arab",
-   "value": 36.5678,
-   "display": "36.5678",
+   "value": 33.187,
+   "display": "33.187",
    "ci95": [
-    35.3001,
-    37.8355
+    31.7281,
+    34.6459
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1829,11 +2418,11 @@
   },
   "v2.review_items_per_100_filipino": {
    "id": "v2.review_items_per_100_filipino",
-   "value": 39.0882,
-   "display": "39.0882",
+   "value": 35.3714,
+   "display": "35.3714",
    "ci95": [
-    33.2307,
-    44.9457
+    29.6772,
+    41.0656
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1841,11 +2430,11 @@
   },
   "v2.review_items_per_100_south_asian": {
    "id": "v2.review_items_per_100_south_asian",
-   "value": 39.1396,
-   "display": "39.1396",
+   "value": 35.0842,
+   "display": "35.0842",
    "ci95": [
-    33.6531,
-    44.6261
+    30.5953,
+    39.5731
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1853,11 +2442,11 @@
   },
   "v2.review_items_per_100_western": {
    "id": "v2.review_items_per_100_western",
-   "value": 35.6964,
-   "display": "35.6964",
+   "value": 31.5014,
+   "display": "31.5014",
    "ci95": [
-    34.8222,
-    36.5706
+    30.4276,
+    32.5752
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1865,11 +2454,11 @@
   },
   "v2.reviewer_h_per_1k_arab": {
    "id": "v2.reviewer_h_per_1k_arab",
-   "value": 12.6868,
-   "display": "12.6868",
+   "value": 11.4672,
+   "display": "11.4672",
    "ci95": [
-    12.0973,
-    13.2763
+    10.7573,
+    12.1771
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1877,11 +2466,11 @@
   },
   "v2.reviewer_h_per_1k_filipino": {
    "id": "v2.reviewer_h_per_1k_filipino",
-   "value": 13.5896,
-   "display": "13.5896",
+   "value": 12.2294,
+   "display": "12.2294",
    "ci95": [
-    11.0601,
-    16.1191
+    9.6109,
+    14.8479
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1889,11 +2478,11 @@
   },
   "v2.reviewer_h_per_1k_south_asian": {
    "id": "v2.reviewer_h_per_1k_south_asian",
-   "value": 13.4646,
-   "display": "13.4646",
+   "value": 12.225,
+   "display": "12.225",
    "ci95": [
-    11.555,
-    15.3742
+    10.5036,
+    13.9464
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1901,11 +2490,11 @@
   },
   "v2.reviewer_h_per_1k_western": {
    "id": "v2.reviewer_h_per_1k_western",
-   "value": 12.4712,
-   "display": "12.4712",
+   "value": 10.978,
+   "display": "10.978",
    "ci95": [
-    11.8611,
-    13.0813
+    10.2919,
+    11.6641
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1913,11 +2502,143 @@
   },
   "v2.review_load_ratio_max_min_origin": {
    "id": "v2.review_load_ratio_max_min_origin",
-   "value": 1.1796,
-   "display": "1.1796",
+   "value": 1.2095,
+   "display": "1.2095",
    "ci95": [
-    1.0165,
-    1.3427
+    1.0326,
+    1.3865
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_abnormal_findings_rate_truth": {
+   "id": "v2.ifhas_abnormal_findings_rate_truth",
+   "value": 0.4136,
+   "display": "0.4136",
+   "ci95": [
+    0.3988,
+    0.4284
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_abnormal_findings_rate_wasl": {
+   "id": "v2.ifhas_abnormal_findings_rate_wasl",
+   "value": 0.4138,
+   "display": "0.4138",
+   "ci95": [
+    0.3992,
+    0.4284
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_domain_outcome_accuracy": {
+   "id": "v2.ifhas_domain_outcome_accuracy",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_followup_loop_recall": {
+   "id": "v2.ifhas_followup_loop_recall",
+   "value": 0.906,
+   "display": "0.906",
+   "ci95": [
+    0.8885,
+    0.9235
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_followup_within_clock_truth": {
+   "id": "v2.ifhas_followup_within_clock_truth",
+   "value": 0.5468,
+   "display": "0.5468",
+   "ci95": [
+    0.517,
+    0.5766
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_followup_within_clock_wasl": {
+   "id": "v2.ifhas_followup_within_clock_wasl",
+   "value": 0.4978,
+   "display": "0.4978",
+   "ci95": [
+    0.4623,
+    0.5333
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_overdue_accuracy": {
+   "id": "v2.ifhas_overdue_accuracy",
+   "value": 0.9762,
+   "display": "0.9762",
+   "ci95": [
+    0.9719,
+    0.9805
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_precision": {
+   "id": "v2.ifhas_precision",
+   "value": 1,
+   "display": "1",
+   "ci95": [
+    1,
+    1
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_recall": {
+   "id": "v2.ifhas_recall",
+   "value": 0.9688,
+   "display": "0.9688",
+   "ci95": [
+    0.9633,
+    0.9743
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_state_accuracy": {
+   "id": "v2.ifhas_state_accuracy",
+   "value": 0.9728,
+   "display": "0.9728",
+   "ci95": [
+    0.9679,
+    0.9777
+   ],
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.ifhas_triage_accuracy": {
+   "id": "v2.ifhas_triage_accuracy",
+   "value": 0.9998,
+   "display": "0.9998",
+   "ci95": [
+    0.9992,
+    1.0004
    ],
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
@@ -1926,9 +2647,9 @@
   "v2.safety.crc_false_closures": {
    "id": "v2.safety.crc_false_closures",
    "value": 0,
-   "denominator": 3025,
-   "upper95": "0.1220%",
-   "display": "0 / 3,025",
+   "denominator": 3035,
+   "upper95": "0.1210%",
+   "display": "0 / 3,035",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1936,9 +2657,9 @@
   "v2.safety.cervical_false_closures": {
    "id": "v2.safety.cervical_false_closures",
    "value": 0,
-   "denominator": 1313,
-   "upper95": "0.2810%",
-   "display": "0 / 1,313",
+   "denominator": 1303,
+   "upper95": "0.2830%",
+   "display": "0 / 1,303",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1946,9 +2667,9 @@
   "v2.safety.wrong_patient_released": {
    "id": "v2.safety.wrong_patient_released",
    "value": 0,
-   "denominator": 14451,
-   "upper95": "0.0260%",
-   "display": "0 / 14,451",
+   "denominator": 16486,
+   "upper95": "0.0220%",
+   "display": "0 / 16,486",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1956,9 +2677,9 @@
   "v2.safety.released_without_granted_consent": {
    "id": "v2.safety.released_without_granted_consent",
    "value": 0,
-   "denominator": 9602,
-   "upper95": "0.0380%",
-   "display": "0 / 9,602",
+   "denominator": 11650,
+   "upper95": "0.0320%",
+   "display": "0 / 11,650",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1966,9 +2687,9 @@
   "v2.safety.duplicate_or_lost_outputs": {
    "id": "v2.safety.duplicate_or_lost_outputs",
    "value": 0,
-   "denominator": 198810,
+   "denominator": 217009,
    "upper95": "0.0020%",
-   "display": "0 / 198,810",
+   "display": "0 / 217,009",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1976,8 +2697,8 @@
   "v2.safety.ingest_lost_or_duplicated": {
    "id": "v2.safety.ingest_lost_or_duplicated",
    "value": 0,
-   "denominator": 255578,
-   "display": "0 / 255,578",
+   "denominator": 274706,
+   "display": "0 / 274,706",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -1993,8 +2714,8 @@
   "v2.safety.forged_with_effect": {
    "id": "v2.safety.forged_with_effect",
    "value": 0,
-   "denominator": 117,
-   "display": "0 / 117",
+   "denominator": 106,
+   "display": "0 / 106",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2036,9 +2757,9 @@
   "v2.safety.lung_false_closures": {
    "id": "v2.safety.lung_false_closures",
    "value": 0,
-   "denominator": 1903,
-   "upper95": "0.1940%",
-   "display": "0 / 1,903",
+   "denominator": 1907,
+   "upper95": "0.1930%",
+   "display": "0 / 1,907",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2046,18 +2767,18 @@
   "v2.safety.lung_surveillance_ct_false_closures": {
    "id": "v2.safety.lung_surveillance_ct_false_closures",
    "value": 0,
-   "denominator": 30,
-   "upper95": "11.5700%",
-   "display": "0 / 30",
+   "denominator": 32,
+   "upper95": "10.8880%",
+   "display": "0 / 32",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
   },
   "v2.safety.lung_surveillance_ct_overdue_flag_correct": {
    "id": "v2.safety.lung_surveillance_ct_overdue_flag_correct",
-   "value": 85,
-   "denominator": 87,
-   "display": "85 / 87",
+   "value": 88,
+   "denominator": 91,
+   "display": "88 / 91",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2065,9 +2786,9 @@
   "v2.safety.dr_false_closures": {
    "id": "v2.safety.dr_false_closures",
    "value": 0,
-   "denominator": 5625,
+   "denominator": 5627,
    "upper95": "0.0660%",
-   "display": "0 / 5,625",
+   "display": "0 / 5,627",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2075,9 +2796,9 @@
   "v2.safety.dr_referral_false_closures": {
    "id": "v2.safety.dr_referral_false_closures",
    "value": 0,
-   "denominator": 231,
-   "upper95": "1.5840%",
-   "display": "0 / 231",
+   "denominator": 233,
+   "upper95": "1.5710%",
+   "display": "0 / 233",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2098,6 +2819,46 @@
    "denominator": 23,
    "upper95": "14.8190%",
    "display": "0 / 23",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.ldct_false_closures": {
+   "id": "v2.safety.ldct_false_closures",
+   "value": 0,
+   "denominator": 1413,
+   "upper95": "0.2610%",
+   "display": "0 / 1,413",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.ldct_action_false_closures": {
+   "id": "v2.safety.ldct_action_false_closures",
+   "value": 0,
+   "denominator": 121,
+   "upper95": "3.0030%",
+   "display": "0 / 121",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.ifhas_false_closures": {
+   "id": "v2.safety.ifhas_false_closures",
+   "value": 0,
+   "denominator": 3392,
+   "upper95": "0.1090%",
+   "display": "0 / 3,392",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
+  },
+  "v2.safety.ifhas_followup_false_closures": {
+   "id": "v2.safety.ifhas_followup_false_closures",
+   "value": 0,
+   "denominator": 1047,
+   "upper95": "0.3520%",
+   "display": "0 / 1,047",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds, pooled"
@@ -2166,8 +2927,8 @@
   },
   "v2.counts.breast_reader_breast-screen_agree": {
    "id": "v2.counts.breast_reader_breast-screen_agree",
-   "value": 346,
-   "display": "346",
+   "value": 351,
+   "display": "351",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2262,8 +3023,8 @@
   },
   "v2.counts.handoff_acted_state_correct": {
    "id": "v2.counts.handoff_acted_state_correct",
-   "value": 299,
-   "display": "299",
+   "value": 300,
+   "display": "300",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2422,24 +3183,16 @@
   },
   "v2.counts.handoff_packets_all_required_fields": {
    "id": "v2.counts.handoff_packets_all_required_fields",
-   "value": 299,
-   "display": "299",
+   "value": 300,
+   "display": "300",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.handoff_packets_matched": {
    "id": "v2.counts.handoff_packets_matched",
-   "value": 299,
-   "display": "299",
-   "label": "simulated",
-   "source": "pipeline/results/final/SUMMARY.md",
-   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
-  },
-  "v2.counts.handoff_packets_missed": {
-   "id": "v2.counts.handoff_packets_missed",
-   "value": 1,
-   "display": "1",
+   "value": 300,
+   "display": "300",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2484,10 +3237,122 @@
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
+  "v2.counts.ifhas_reader_ifhas-followup_agree": {
+   "id": "v2.counts.ifhas_reader_ifhas-followup_agree",
+   "value": 1762,
+   "display": "1762",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ifhas_reader_ifhas-followup_agree_but_wrong": {
+   "id": "v2.counts.ifhas_reader_ifhas-followup_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ifhas_reader_ifhas-followup_instances": {
+   "id": "v2.counts.ifhas_reader_ifhas-followup_instances",
+   "value": 2200,
+   "display": "2200",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ifhas_reader_ifhas-screen_agree": {
+   "id": "v2.counts.ifhas_reader_ifhas-screen_agree",
+   "value": 3897,
+   "display": "3897",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ifhas_reader_ifhas-screen_agree_but_wrong": {
+   "id": "v2.counts.ifhas_reader_ifhas-screen_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ifhas_reader_ifhas-screen_instances": {
+   "id": "v2.counts.ifhas_reader_ifhas-screen_instances",
+   "value": 4000,
+   "display": "4000",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-screen_agree": {
+   "id": "v2.counts.ldct_reader_ldct-screen_agree",
+   "value": 1586,
+   "display": "1586",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-screen_agree_but_wrong": {
+   "id": "v2.counts.ldct_reader_ldct-screen_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-screen_coded": {
+   "id": "v2.counts.ldct_reader_ldct-screen_coded",
+   "value": 958,
+   "display": "958",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-screen_instances": {
+   "id": "v2.counts.ldct_reader_ldct-screen_instances",
+   "value": 1599,
+   "display": "1599",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-workup_agree": {
+   "id": "v2.counts.ldct_reader_ldct-workup_agree",
+   "value": 235,
+   "display": "235",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-workup_agree_but_wrong": {
+   "id": "v2.counts.ldct_reader_ldct-workup_agree_but_wrong",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-workup_coded": {
+   "id": "v2.counts.ldct_reader_ldct-workup_coded",
+   "value": 0,
+   "display": "0",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
+  "v2.counts.ldct_reader_ldct-workup_instances": {
+   "id": "v2.counts.ldct_reader_ldct-workup_instances",
+   "value": 265,
+   "display": "265",
+   "label": "simulated",
+   "source": "pipeline/results/final/SUMMARY.md",
+   "context": "frozen evaluation, held-out v2 noise, 5 seeds"
+  },
   "v2.counts.lung_surv_extra_opened": {
    "id": "v2.counts.lung_surv_extra_opened",
-   "value": 4,
-   "display": "4",
+   "value": 0,
+   "display": "0",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2502,32 +3367,32 @@
   },
   "v2.counts.lung_surv_missed": {
    "id": "v2.counts.lung_surv_missed",
-   "value": 2,
-   "display": "2",
+   "value": 1,
+   "display": "1",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_obligations": {
    "id": "v2.counts.lung_surv_obligations",
-   "value": 87,
-   "display": "87",
+   "value": 91,
+   "display": "91",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_opened": {
    "id": "v2.counts.lung_surv_opened",
-   "value": 81,
-   "display": "81",
+   "value": 85,
+   "display": "85",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_outreach_lung_surveillance_due:released": {
    "id": "v2.counts.lung_surv_outreach_lung_surveillance_due:released",
-   "value": 3,
-   "display": "3",
+   "value": 4,
+   "display": "4",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2550,48 +3415,48 @@
   },
   "v2.counts.lung_surv_outreach_lung_surveillance_recall:released": {
    "id": "v2.counts.lung_surv_outreach_lung_surveillance_recall:released",
-   "value": 15,
-   "display": "15",
+   "value": 14,
+   "display": "14",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_overdue_flag_correct": {
    "id": "v2.counts.lung_surv_overdue_flag_correct",
-   "value": 85,
-   "display": "85",
+   "value": 88,
+   "display": "88",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_pred_closed": {
    "id": "v2.counts.lung_surv_pred_closed",
-   "value": 30,
-   "display": "30",
+   "value": 32,
+   "display": "32",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_pred_overdue": {
    "id": "v2.counts.lung_surv_pred_overdue",
-   "value": 18,
-   "display": "18",
+   "value": 17,
+   "display": "17",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_tp": {
    "id": "v2.counts.lung_surv_tp",
-   "value": 30,
-   "display": "30",
+   "value": 32,
+   "display": "32",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
   },
   "v2.counts.lung_surv_truth_closed": {
    "id": "v2.counts.lung_surv_truth_closed",
-   "value": 32,
-   "display": "32",
+   "value": 33,
+   "display": "33",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2614,8 +3479,8 @@
   },
   "v2.counts.lung_workup_pred_closed_by_ct": {
    "id": "v2.counts.lung_workup_pred_closed_by_ct",
-   "value": 90,
-   "display": "90",
+   "value": 91,
+   "display": "91",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2630,8 +3495,8 @@
   },
   "v2.counts.lung_workup_pred_closed_by_tissue": {
    "id": "v2.counts.lung_workup_pred_closed_by_tissue",
-   "value": 51,
-   "display": "51",
+   "value": 49,
+   "display": "49",
    "label": "simulated",
    "source": "pipeline/results/final/SUMMARY.md",
    "context": "frozen evaluation, held-out v2 noise, 5 seeds"
@@ -2742,27 +3607,27 @@
   },
   "kpi31.demo.eid_only": {
    "id": "kpi31.demo.eid_only",
-   "value": 0.126,
-   "display": "12.6%",
+   "value": 0.113,
+   "display": "11.3%",
    "label": "simulated",
    "source": "docs/api-samples/dashboard.json",
-   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
   },
   "kpi31.demo.wasl": {
    "id": "kpi31.demo.wasl",
+   "value": 0.307,
+   "display": "30.7%",
+   "label": "simulated",
+   "source": "docs/api-samples/dashboard.json",
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
+  },
+  "kpi31.demo.truth": {
+   "id": "kpi31.demo.truth",
    "value": 0.319,
    "display": "31.9%",
    "label": "simulated",
    "source": "docs/api-samples/dashboard.json",
-   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
-  },
-  "kpi31.demo.truth": {
-   "id": "kpi31.demo.truth",
-   "value": 0.329,
-   "display": "32.9%",
-   "label": "simulated",
-   "source": "docs/api-samples/dashboard.json",
-   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
+   "context": "CRC 31-day completion, all referrals, demo run v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink (v7strict+cal=true+guard=true+tau=0.99)"
   },
   "kpi31.heldout.eid_only": {
    "id": "kpi31.heldout.eid_only",
@@ -2778,10 +3643,10 @@
   },
   "kpi31.heldout.wasl": {
    "id": "kpi31.heldout.wasl",
-   "value": 0.2984,
+   "value": 0.298,
    "ci95": [
-    0.2727,
-    0.3241
+    0.272,
+    0.324
    ],
    "display": "29.8%",
    "label": "simulated",
@@ -2946,8 +3811,26 @@
    "label": "simulated"
   },
   {
-   "what": "**Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning; with the ungraded-prep query, the referral hand-off; 5,214 loops per run (1,088 lung, 1,200 DR, 70 breast) from every held-out person",
-   "result": "Held-out v2 noise (code `5496563`, reader v7.2): CRC P 1.000, R 0.782 (0.769–0.795), **0/3,025 false closures** (95% UB 0.12%), lung 0/1,903 (surveillance CT 0/30), DR 0/5,625 (referral loops 0/231, referral recall 0.89), breast 0/338 (recall loops 0/23), 0/14,451 wrong-patient messages, 0/9,602 sent without consent, KPI error 0.031 vs EID-only 0.207, reviewer time 12.9 h per 1k loops, hand-off packets 299 of 300 CRC, 21/21 lung, 35/35 DR (0 extra), review-load ratio across origins 1.18 (1.02–1.34) per seed, 1.10 pooled (p = 0.06; 1.03 standardised by programme, p = 0.77); by age band 1.06, by sex 1.02. Dev noise: R 0.843, CRC 0/3,156, cervical 0/1,404, lung 0/2,032, DR 0/5,636, breast 0/345. Recall fell from 0.851 because reports that never grade prep now wait for the unit's grade (simulated). Disclosed post-hoc changes: τ 0.98 → 0.99 after one wrong-patient closure; the day-15 prep decision no longer skips pending histology (4 false closures in the first run at `b53ce89`); surname-variant and Emirates ID identity rules (about 10% less reviewer time, safety unchanged); hand-off packet fixes and two generator truth corrections after a trace of the misses; held-out noise model fix; MTSamples biopsy key correction; short surnames no longer corroborate alone (after 1 wrong-patient message in a run); second-identifier answers reused across a patient's loops; larger cohorts from every held-out person; reader v7.2 ignores upper-GI tissue in combined EGD + colonoscopy reports; a loop messages the patient only about its own programme's events; the diabetic retinopathy loop (readers tuned on one held-out corpus, fair-tested on a second); one link question per registration pair (also removed the held-out sex gap); the origin ratio standardised by programme (dev noise shows a possible CRC gap, 1.08–1.10, p = 0.01–0.06, in identity questions; weak evidence after about 16 subgroup tests); a confirming review before a human 'same' merges records that contradict on sex or birth date (after the Learn-then-Test re-run found one such double-reviewer-error merge); the same confirming review for second-identifier answers; a rejected intake that cites the referral raises a link question (4 missed packets recovered); the contradiction check narrowed to sex only (a trace found the birth-date arm held 675 true matches and caught no wrong merge); the breast loop (readers fair-tested on a held-out corpus by another model family).",
+   "what": "**Frozen final evaluation**: 5 seeds × 2 noise models; v2 is an independent corruption model never used for training or tuning; 6,314 index loops per run across seven programme types from every held-out person",
+   "result": "Held-out v2 noise (code `075abc5`): CRC P 1.000, R 0.785 (0.772–0.798), **0/3,035 false closures**; cervical 0/1,303, lung 0/1,907 (surveillance CT 0/32), DR 0/5,627 (referral loops 0/233, referral recall 0.894), breast 0/338 (recall loops 0/23), LDCT 0/1,413 (action loops 0/121, recall 0.981), IFHAS 0/3,392 (follow-up loops 0/1,047, recall 0.906). Wrong-patient messages 0/16,486, sent without consent 0/11,650; KPI error 0.031 vs EID-only 0.207; reviewer time 11.6 h per 1k loops across the changed programme mix; hand-off packets 300/300 CRC, 21/21 lung, 35/35 DR. Programme-standardised origin ratio 1.07 (p = 0.185); age-band 1.07, sex 1.03. LDCT/IFHAS generators reuse development texts, so their reader results are not independent generalisation evidence. Disclosed post-hoc changes: τ 0.98 → 0.99 after one wrong-patient closure; the day-15 prep decision no longer skips pending histology (4 false closures in the first run at `b53ce89`); surname-variant and Emirates ID identity rules (about 10% less reviewer time, safety unchanged); hand-off packet fixes and two generator truth corrections after a trace of the misses; held-out noise model fix; MTSamples biopsy key correction; short surnames no longer corroborate alone (after 1 wrong-patient message in a run); second-identifier answers reused across a patient's loops; larger cohorts from every held-out person; reader v7.2 ignores upper-GI tissue in combined EGD + colonoscopy reports; a loop messages the patient only about its own programme's events; the diabetic retinopathy loop (readers tuned on one held-out corpus, fair-tested on a second); one link question per registration pair (also removed the held-out sex gap); the origin ratio standardised by programme (dev noise shows a possible CRC gap, 1.08–1.10, p = 0.01–0.06, in identity questions; weak evidence after about 16 subgroup tests); a confirming review before a human 'same' merges records that contradict on sex or birth date (after the Learn-then-Test re-run found one such double-reviewer-error merge); the same confirming review for second-identifier answers; a rejected intake that cites the referral raises a link question (4 missed packets recovered); the contradiction check narrowed to sex only (a trace found the birth-date arm held 675 true matches and caught no wrong merge); the breast loop (readers fair-tested on a held-out corpus by another model family).",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "**Clean-review sensitivity** (post-hoc; same five held-out v2 seeds and frozen settings, except both simulated reviewer-error rates set to zero)",
+   "result": "CRC P 1.000, **R 0.859 (0.835–0.883)**, **0/3,322 false closures**, versus R 0.785 with reviewer-error stress (**+7.4 pp**). Wrong-patient messages 0/16,534; sent without consent 0/11,610. This makes simulated reviewers agree with simulated truth; it is not measured clinician performance and does not replace the frozen stress result. See `pipeline/results/clean-review-sensitivity/`.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "**Post-hoc scale and wrong-EID hardening**",
+   "result": "Fresh normal and x10 scale runs measured zero unexpected linker restarts, wrong-patient releases, false closures, consent violations, duplicate outputs and replay mismatches after the historical failures were fixed; all historical failures remain disclosed. On fresh B8 seeds 17/29 with 2% wrong EIDs, guard-off produced 19 false closures and guard-on produced 0; CRC recall 0.7535 → 0.7420, review 31.9205 → 33.012 items/100 loops. Guard remains default-off; residual linkage contamination remains. See `pipeline/results/scale/` and `pipeline/results/b8-hardening/`. Container runtime was verified only with Podman 5.8.2 using the Docker Compose v5.1.4 provider; Docker Engine and a restarted/retained-volume deployment remain unverified. Static deployment checks passed.",
+   "source": "docs/BRIEF.md",
+   "label": "simulated"
+  },
+  {
+   "what": "**Post-hoc CRC recall-loss analysis** (B8 seeds 17/29; read-only)",
+   "result": "Wrong-EID guard-on had 394/1,527 misses: first barriers were identity/linking 49.5%, simulated reviewer error 26.6%, timing/ungraded prep 11.4%, and model/rule/other 12.4%. No link/no review was the largest category (146); ungraded prep appeared in 241 misses. After excluding 13 guard-off closures using another person's report, net right-patient guard recall cost was 0.26 pp. The split proposal uses new non-evaluation seeds, disjoint people, new text and new noise with locked validation; no training or tuning was implemented. See `pipeline/results/recall-analysis/`.",
    "source": "docs/BRIEF.md",
    "label": "simulated"
   },
@@ -3042,16 +3925,16 @@
     },
     {
      "result": "v2.safety.duplicate_or_lost_outputs",
-     "value": 198810,
+     "value": 217009,
      "source": "pipeline/results/final/SUMMARY.md"
     },
     {
      "result": "v1.safety.duplicate_or_lost_outputs",
-     "value": 202696,
+     "value": 220789,
      "source": "pipeline/results/final/SUMMARY.md"
     }
    ],
-   "note": "PITCH says 10 runs; SUMMARY's v1 + v2 denominators sum to 401,506, matching neither. Unresolved: screens must not show an exactly-once denominator until the backend owner picks one."
+   "note": "Three different totals: PITCH says 201,285 over 10 runs; SUMMARY's v1 table says 220,789 and its v2 table 217,009 (each pooled over 5 seeds; together 437,798). No two agree. Unresolved: screens must not present one exactly-once denominator as settled until the backend owner picks one."
   }
  ]
 }

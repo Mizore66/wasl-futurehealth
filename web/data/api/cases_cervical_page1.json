@@ -77,7 +77,7 @@
    "closed_day": 0,
    "consent": "granted",
    "deadline_day": 28,
-   "decisions": 10,
+   "decisions": 8,
    "dropoff": "no_show",
    "fixture": "",
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-102",
@@ -87,7 +87,7 @@
    "programme": "cervical",
    "provider": "ahs-mushrif",
    "referral_day": 74.8625,
-   "review": "signed",
+   "review": "none",
    "state": "no_show"
   },
   {
@@ -111,9 +111,9 @@
   {
    "closed": true,
    "closed_day": 57.4611,
-   "consent": "opted_out",
+   "consent": "granted",
    "deadline_day": 56,
-   "decisions": 13,
+   "decisions": 12,
    "dropoff": "",
    "fixture": "",
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-104",
@@ -275,7 +275,7 @@
    "closed_day": 77.1042,
    "consent": "granted",
    "deadline_day": 56,
-   "decisions": 10,
+   "decisions": 11,
    "dropoff": "",
    "fixture": "",
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-112",
@@ -311,7 +311,7 @@
    "closed_day": 0,
    "consent": "granted",
    "deadline_day": 56,
-   "decisions": 10,
+   "decisions": 9,
    "dropoff": "not_booked",
    "fixture": "",
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-114",
@@ -435,9 +435,9 @@
   {
    "closed": true,
    "closed_day": 64.5491,
-   "consent": "opted_out",
+   "consent": "granted",
    "deadline_day": 56,
-   "decisions": 13,
+   "decisions": 12,
    "dropoff": "",
    "fixture": "",
    "id": "ahs-mushrif/ServiceRequest/AHS-sr-120",
@@ -455,11 +455,11 @@
  "meta": {
   "api": "wasl-api/1",
   "data_mode": "simulated",
-  "loaded_at": "2026-10-31T23:47:27Z",
+  "loaded_at": "2026-11-06T13:56:52Z",
   "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
   "policy": "v7strict+cal=true+guard=true+tau=0.99",
   "reader_model": "gemma-3-4b-it-Q4_K_M/lung-v3(cached)",
-  "run": "v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink"
+  "run": "v7strict-cached-fhir-lung-dr-breast-ldct-ifhas-drnext-lungsurv-xreflink"
  },
  "offset": 0,
  "total": 600

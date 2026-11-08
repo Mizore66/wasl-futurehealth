@@ -7,8 +7,8 @@ import closure from "@/data/api/case_evidence_closure.json";
 
 const mariam = CaseDetail.parse(hold);
 const fatima = CaseDetail.parse(closure);
-const MARIAM = { referral: "ahs-mushrif|AHS-MRN000516", report: "skmc-endo|SKM-MRN000511" };
-const FATIMA = { referral: "ahs-mushrif|AHS-MRN000985", report: "skmc-endo|SKM-MRN000392" };
+const MARIAM = { referral: "ahs-mushrif|AHS-MRN001006", report: "skmc-endo|SKM-MRN000409" };
+const FATIMA = { referral: "ahs-mushrif|AHS-MRN000943", report: "skmc-endo|SKM-MRN000351" };
 const face = (c: CaseDetail, reg: string) => recordFace(c, reg);
 const drawn = (c: CaseDetail, reg: string) => {
   const f = face(c, reg);
@@ -21,7 +21,7 @@ describe("identity model: who a record's avatar shows", () => {
     expect(referralSeed("ahs-mushrif/ServiceRequest/AHS-sr-1000").key).toBe("ahs-mushrif/ServiceRequest/AHS-sr-1000");
   });
 
-  it("Mariam: before review her colonoscopy report is '?' although p 0.9985 ≥ τ, because a link review item holds it", () => {
+  it("Mariam: before review her colonoscopy report is '?' although p 1 ≥ τ 0.99, because a link review item holds it", () => {
     const before = beforeReview(mariam);
     expect(mariam.links[0].path_p_cal).toBeGreaterThanOrEqual(mariam.links[0].tau);
     expect(linkTrust(before, before.links[0])).toBe("held");
@@ -35,7 +35,7 @@ describe("identity model: who a record's avatar shows", () => {
     expect(drawn(mariam, MARIAM.report)).toBe(drawn(mariam, MARIAM.referral));
   });
 
-  it("Fatima: her report's link scored 0.9485, under τ; '?' before the reviewer, her face after", () => {
+  it("Fatima: her report's link scored 0.989, under τ 0.99; '?' before the reviewer, her face after", () => {
     expect(fatima.review_items[0].p).toBeLessThan(fatima.links[0].tau);
     expect(drawn(beforeReview(fatima), FATIMA.report)).toBe("?");
     expect(linkTrust(fatima, fatima.links[0])).toBe("signed");
