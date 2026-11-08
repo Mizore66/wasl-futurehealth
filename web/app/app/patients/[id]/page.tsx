@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
-import { BookingCard, ConsentCard, IdentitiesCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { BookingCard, ConsentCard, IdentitiesCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
-import { STANDARD_DAYS } from "@/components/worklist/days";
+import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
@@ -54,9 +54,9 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   const first = person?.display_name.split(" ")[0];
   const nodes = recordNodes(detail, audit?.chain ?? []);
   const closedIn = c.closed ? closedInDays(c) : null;
-  /** CRC runs to the DoH 31-day standard; the other programmes' rules carry their own deadline in days. */
-  const due = c.programme === "crc" ? STANDARD_DAYS : c.deadline_day || STANDARD_DAYS;
-  const dueWords = c.programme === "crc" ? `${due}-day standard` : `${due}-day deadline`;
+  /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
+  const due = caseDeadlineDays(c);
+  const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
   const waiting = c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item));
   const [latest, ...earlier] = [...detail.evidence].reverse();
 
@@ -102,7 +102,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               waiting ? "bg-cta text-white hover:bg-ink hover:text-white" : "border border-control bg-surface text-ink hover:bg-active hover:text-ink",
             )}
           >
-            {waiting ? "Open in Review" : "Review history"}
+            {c.programme !== "crc" ? "Review programme evidence" : waiting ? "Open in Review" : "Review history"}
           </Link>
         )}
         <Link
@@ -171,6 +171,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
 
         <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-gap">
           <ReasonCard detail={detail} />
+          <ProgrammeFindingCard detail={detail} />
           <IdentitiesCard detail={detail} />
           {latest && <ReadersCard detail={detail} ev={latest} id="readers" />}
 

@@ -3,6 +3,7 @@ import { reviewView } from "@/components/review/case-view";
 import { failureSentence, outcomeOf, roleFor, signaturesFor } from "@/components/review/decision";
 import { CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
+import { programmeDetail } from "./programme-cases";
 
 const detail = CaseDetail.parse(hold);
 const view = reviewView(detail);
@@ -47,6 +48,30 @@ describe("fixtures mode cannot append", () => {
     await expect(postReview("any", { item: "rv-x", decision: "same", note: "" }, { role: "reviewer", actor: "Dr Omar Al Kaabi" })).rejects.toThrow(
       /needs WASL_API_URL/,
     );
+  });
+});
+
+describe("programme-specific review copy", () => {
+  it("describes LDCT evidence as a screening LDCT, never a colonoscopy", () => {
+    const view = reviewView(programmeDetail("lung_ldct"));
+    expect(view.guided).toBe(false);
+    expect(view.referralSource).toBe("lcs-centre · lung cancer screening referral");
+    expect(view.reportSource).toBe("lcs-centre · LDCT report");
+    expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
+    expect(view.trail.map((n) => n.what)).toContain("LDCT report LCS-ct-12");
+
+    const disagreed = programmeDetail("lung_ldct");
+    disagreed.evidence[0].agree = false;
+    expect(reviewView(disagreed).trail.map((n) => n.what).join(" ")).not.toContain("bowel prep");
+  });
+
+  it("describes IFHAS evidence as cardiometabolic screening and follow-up", () => {
+    const view = reviewView(programmeDetail("ifhas"));
+    expect(view.guided).toBe(false);
+    expect(view.referralSource).toBe("ifh-screen · IFHAS screening referral");
+    expect(view.reportSource).toBe("ifh-screen · IFHAS results report");
+    expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
+    expect(view.trail.map((n) => n.what)).toContain("IFHAS results report IFH-dr-100");
   });
 });
 

@@ -102,6 +102,34 @@ describe("programmeView: every stall", () => {
     for (const g of allStalls) expect(g.stalls.map((s) => s.count)).toEqual(g.stalls.map((s) => s.count).sort((a, b) => b - a));
   });
 
+  it("groups LDCT and IFHAS drop-offs under their own pathways", () => {
+    const d = {
+      ...dashboard,
+      dropoff: {
+        ...dashboard.dropoff,
+        incomplete_scan_not_completed: 4,
+        followup_ldct_not_done: 8,
+        no_workup_outcome: 6,
+        no_followup_documented: 9,
+      },
+    };
+    const groups = programmeView(d).allStalls;
+    expect(groups.map((g) => g.pathway)).toEqual([
+      "Colorectal and cervical",
+      "Lung nodule",
+      "Diabetic retinopathy",
+      "Breast",
+      "Lung cancer screening (LDCT)",
+      "IFHAS cardiometabolic follow-up",
+    ]);
+    expect(groups[4].stalls).toEqual([
+      { dropoff: "followup_ldct_not_done", label: "Follow-up LDCT not done", count: 8 },
+      { dropoff: "no_workup_outcome", label: "No work-up outcome", count: 6 },
+      { dropoff: "incomplete_scan_not_completed", label: "Incomplete LDCT, repeat not done", count: 4 },
+    ]);
+    expect(groups[5].stalls).toEqual([{ dropoff: "no_followup_documented", label: "No follow-up visit documented", count: 9 }]);
+  });
+
   it("skips the empty key, in_progress and suppressed counts", () => {
     const keys = allStalls.flatMap((g) => g.stalls.map((s) => s.dropoff));
     expect(keys).not.toContain("");
