@@ -149,6 +149,24 @@ class AnnotationProvenanceSidecar(Fixture):
         self.write_sidecar(data)
         self.assertIn("annotation-provenance", self.rules())
 
+    def test_sidecar_rejects_invalid_annotation_timestamp(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "not-a-timestamp"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_rejects_annotation_before_frozen_run(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "2026-11-01T23:59:59Z"
+        self.write_sidecar(data)
+        self.assertIn("annotation-provenance", self.rules())
+
+    def test_sidecar_accepts_valid_post_hoc_annotation_timestamp(self):
+        data = self.sidecar()
+        data["annotation_completed_at"] = "2026-11-06T12:00:00Z"
+        self.write_sidecar(data)
+        self.assertNotIn("annotation-provenance", self.rules())
+
     def test_sidecar_must_not_claim_evaluation_rerun(self):
         data = self.sidecar()
         data["evaluation_rerun"] = True

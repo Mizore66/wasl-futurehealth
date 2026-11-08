@@ -10,6 +10,7 @@ new metrics.
 Usage: python3 scripts/check_evidence_consistency.py [repo_root]
 Exit status 0 when consistent, 1 when findings exist.
 """
+import datetime
 import hashlib
 import json
 import re
@@ -158,6 +159,21 @@ def check_claims(root, rel, fig, add):
                     add("current-figures", rel, n, f"{key} claim {got} != current {want}")
 
 
+def _timestamp(value, field):
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{field} must be a valid ISO 8601 timestamp")
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        parsed = datetime.datetime.fromisoformat(text)
+    except ValueError as e:
+        raise ValueError(f"{field} must be a valid ISO 8601 timestamp") from e
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=datetime.timezone.utc)
+    return parsed
+
+
 def check_annotation_provenance(root, add):
     """Validate the post-hoc sidecar without changing or reinterpreting frozen results."""
     rel = ANNOTATION_SIDECAR
@@ -182,6 +198,11 @@ def check_annotation_provenance(root, add):
                 add("annotation-provenance", rel, 0, f"timing note lacks '{wording}'")
 
         frozen_ref = sidecar["frozen_run"]
+        completed_at = _timestamp(sidecar.get("annotation_completed_at"), "annotation_completed_at")
+        frozen_at = _timestamp(frozen_ref.get("frozen_at"), "frozen_run.frozen_at")
+        if completed_at <= frozen_at:
+            add("annotation-provenance", rel, 0,
+                "annotation_completed_at must be later than frozen_run.frozen_at")
         if frozen_ref.get("manifest") != "manifest.json":
             add("annotation-provenance", rel, 0, "sidecar must target the adjacent historical manifest.json")
         manifest_path = Path(root) / FROZEN_MANIFEST
