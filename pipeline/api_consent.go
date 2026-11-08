@@ -13,15 +13,11 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -198,8 +194,8 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		writeJSONResp(w, 403, s.envelope(map[string]interface{}{"error": err.Error(), "role": role, "action": ActRecordConsent}))
 		return
 	}
-	if actor == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "X-Wasl-Actor header required (who is recording consent)"}))
+	if actor == "" || utf8.RuneCountInString(actor) > maxActorRunes {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "X-Wasl-Actor header is required and must not exceed its character limit"}))
 		return
 	}
 	var req struct {
@@ -207,8 +203,13 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		ExpectedHead string `json:"expected_head"`
 		Note         string `json:"note"`
 	}
-	if err := json.NewDecoder(io.LimitReader(r.Body, 16<<10)).Decode(&req); err != nil {
+	dec := json.NewDecoder(io.LimitReader(r.Body, 16<<10))
+	if err := dec.Decode(&req); err != nil {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"event\":..., \"expected_head\":..., \"note\":...}"}))
+		return
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
 		return
 	}
 	if _, ok := consentEvents[req.Event]; !ok {
@@ -223,40 +224,29 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": fmt.Sprintf("note exceeds %d characters", consentNoteMax)}))
 		return
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if req.ExpectedHead != c.last.Sig {
-		writeJSONResp(w, 409, s.envelope(map[string]interface{}{"error": "stale expected_head: the case has moved on; reload and retry", "current_head": c.last.Sig}))
-		return
-	}
-	if cur, _ := s.overlayLocked(c); cur["status"] == "opted_out" && req.Event != "consent_opted_out" {
-		writeJSONResp(w, 409, s.envelope(map[string]interface{}{"error": "patient has opted out; a later grant needs a new, separately recorded consent flow", "api_contact": cur}))
-		return
-	}
-	prev := "genesis"
-	if n := len(s.reviews); n > 0 {
-		prev = fmt.Sprint(s.reviews[n-1]["hash"])
-	}
-	ev := map[string]interface{}{"case": c.ID, "item": "", "decision": req.Event, "note": req.Note, "role": role, "actor": actor,
-		"action": ActRecordConsent, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": prev}
-	h := sha256.Sum256(canon(ev))
-	ev["hash"] = hex.EncodeToString(h[:])
-	f, err := os.OpenFile(filepath.Join(s.run, "api_reviews.ndjson"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "review ledger not writable"}))
-		return
-	}
-	b, _ := json.Marshal(ev)
-	_, werr := f.Write(append(b, '\n'))
-	f.Close()
-	if werr != nil {
-		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "review ledger write failed"}))
-		return
-	}
-	s.reviews = append(s.reviews, ev) // ledger first, then the overlay (derived from it)
-	o, _ := s.overlayLocked(c)
-	writeJSONResp(w, 201, s.envelope(map[string]interface{}{"review": ev, "overlay": o,
-		"note": "appended to the review ledger; demo overlay only. Canonical consent and outreach are unchanged and nothing was sent."}))
+	code, body := func() (int, map[string]interface{}) {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.ledgerErr != "" {
+			return 500, map[string]interface{}{"error": "review ledger failed validation; writes refused", "detail": s.ledgerErr}
+		}
+		if req.ExpectedHead != c.last.Sig {
+			return 409, map[string]interface{}{"error": "stale expected_head: the case has moved on; reload and retry", "current_head": c.last.Sig}
+		}
+		if cur, _ := s.overlayLocked(c); cur["status"] == "opted_out" && req.Event != "consent_opted_out" {
+			return 409, map[string]interface{}{"error": "patient has opted out; a later grant needs a new, separately recorded consent flow", "api_contact": cur}
+		}
+		ev := map[string]interface{}{"case": c.ID, "item": "", "decision": req.Event, "note": req.Note, "role": role, "actor": actor,
+			"action": ActRecordConsent, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "mode": "demo", "prev": s.lastHashLocked()}
+		stored, err := s.appendEventLocked(ev)
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
+		}
+		o, _ := s.overlayLocked(c)
+		return 201, map[string]interface{}{"review": stored, "overlay": o,
+			"note": "appended to the review ledger; demo overlay only. Canonical consent and outreach are unchanged and nothing was sent."}
+	}()
+	writeJSONResp(w, code, s.envelope(body))
 }
 
 // bufRecorder captures a handler's response so the detail view can be extended.

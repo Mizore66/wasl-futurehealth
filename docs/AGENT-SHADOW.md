@@ -133,9 +133,7 @@ here shows reviewers would save time or that recall would improve.
 
 ## Status API
 
-`GET /api/agentshadow/status` (handler `getAgentShadowStatus` in `pipeline/api_shadow_status.go`; it must be registered in
-`api.go`) reads `status-agentshadow.json` and `agent_shadow/health.json` on every request, with no caching. Built; tested
-with Go unit tests only.
+`GET /api/agentshadow/status` (registered in `runServe`; handler `getAgentShadowStatus` in `pipeline/api_shadow_status.go`) reads `status-agentshadow.json` and `agent_shadow/health.json` on every request, with no caching. Tested with Go unit tests.
 
 - No status file: `200 {available:false, status:"not_run"}`.
 - Status file empty, truncated, unparsable, or with no recognised field: `503 {available:false, status:"invalid"}`, never
