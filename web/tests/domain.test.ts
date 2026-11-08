@@ -157,6 +157,28 @@ describe("programme-specific case evidence", () => {
     expect(reviewWords("LR4X", detail.case.programme)).not.toContain("Bowel prep");
   });
 
+  it.each([
+    { decision: "wk_treatment", words: "LDCT work-up: treatment referral" },
+    { decision: "wk_benign", words: "LDCT work-up: benign; return to annual screening" },
+    { decision: "wk_surveillance", words: "LDCT work-up: surveillance CT plan" },
+  ] as const)("labels the $decision sign-off as a work-up outcome, not a Lung-RADS category", ({ decision, words }) => {
+    const detail = programmeDetail("lung_ldct");
+    const signoff: CaseDetail["signoffs"][number] = {
+      item: `rv-ldct-${decision}`,
+      loop: detail.case.id,
+      kinds: ["evidence"],
+      role: "clinician",
+      reviewer: "Dr Reviewer",
+      reads: [detail.evidence[0].report],
+      link: "",
+      evidence: decision,
+      verdict: "agree",
+    };
+    expect(signoffWords(signoff, detail.case.programme)).toBe(words);
+    expect(reviewWords(decision, detail.case.programme)).toBe(words);
+    expect(signoffWords(signoff, detail.case.programme)).not.toContain("Lung-RADS");
+  });
+
   it("renders LDCT audit history with programme-aware evidence wording", () => {
     const detail = programmeDetail("lung_ldct");
     const audit = {

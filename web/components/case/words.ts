@@ -199,8 +199,16 @@ const EVIDENCE_LABEL: Record<Programme, string> = {
   ifhas: "IFHAS results",
 };
 
+const LDCT_WORKUP_WORDS: Record<string, string> = {
+  wk_treatment: "LDCT work-up: treatment referral",
+  wk_benign: "LDCT work-up: benign; return to annual screening",
+  wk_surveillance: "LDCT work-up: surveillance CT plan",
+  wk_incomplete: "LDCT work-up: incomplete",
+  wk_dna: "LDCT work-up: did not attend",
+};
+
 function evidenceDecisionWords(decision: string, programme: Programme): string {
-  if (programme === "lung_ldct") return `Lung-RADS ${decision || "no answer"}`;
+  if (programme === "lung_ldct") return LDCT_WORKUP_WORDS[decision] ?? `Lung-RADS ${decision || "no answer"}`;
   const answer = decision === "inadequate" ? "not adequate" : plain(decision || "no answer").toLowerCase();
   return `${EVIDENCE_LABEL[programme]} ${answer}`;
 }
