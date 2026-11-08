@@ -256,8 +256,11 @@ func roleMayUndoAnything(role string) bool {
 // undoAppendLedgerLine uses the shared durable append implementation; tests can replace it to inject failures.
 var undoAppendLedgerLine = appendLedgerLine
 
-// loadAPIVerified is loadAPI that refuses to start on a tampered review ledger instead of silently accepting it.
+// loadAPIVerified refuses to start on invalid required run artifacts or a tampered review ledger.
 func loadAPIVerified(run, data string) (*apiServer, error) {
+	if err := validateAPIPreflight(run); err != nil {
+		return nil, err
+	}
 	if err := validateReviewLedger(filepath.Join(run, "api_reviews.ndjson")); err != nil {
 		return nil, err
 	}
