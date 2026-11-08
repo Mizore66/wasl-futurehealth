@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Tests for scripts/api_smoke.py and `demo.sh smoke`. A fake HTTP server replays the committed samples; no model calls."""
+"""Tests for scripts/api_smoke.py and `demo.sh smoke`. A stateful fake HTTP server replays the committed samples and workflow routes; no model calls."""
 import copy
+import hashlib
+import importlib.util
 import json
 import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -42,10 +44,97 @@ class Fake:
             if p.exists():
                 self.pages[prog] = json.loads(p.read_text())
         self.extra_cases = 0
+        self.events = []
         if mutate:
             mutate(self)
 
-    def route(self, path, query):
+    def event(self, values):
+        ev = dict(values, at=f"2026-11-09T00:00:{len(self.events):02d}Z", mode="demo",
+                  prev=self.events[-1]["hash"] if self.events else "genesis")
+        unsigned = json.dumps(ev, sort_keys=True, separators=(",", ":")).encode()
+        ev["hash"] = hashlib.sha256(unsigned).hexdigest()
+        self.events.append(ev)
+        return ev
+
+    def case_events(self, cid):
+        return [e for e in self.events if e["case"] == cid]
+
+    def coordinator_overlay(self, cid):
+        events = [e for e in self.case_events(cid) if e.get("type") == "coordinator_action"]
+        current = self.detail[cid]["current"]
+        return {"head": events[-1]["hash"] if events else current["sig"], "actions": len(events),
+                "owner": "", "last_action_at": events[-1]["at"] if events else "",
+                "ledger_status": "ok", "notes": [], "contact_outcomes": [],
+                "canonical_owner": self.detail[cid]["case"].get("owner", "")}
+
+    def consent_overlay(self, cid):
+        events = [e for e in self.case_events(cid) if e.get("action") == "record_consent" and
+                  e.get("decision", "").startswith("consent_")]
+        status = {"consent_denied": "denied"}.get(events[-1]["decision"], "none") if events else "none"
+        return {"status": status, "demo_pending_consent": "cancelled" if status == "denied" else "",
+                "events": len(events), "contact_blocked": status == "denied", "mode": "demo",
+                "canonical_consent": self.detail[cid]["case"]["consent"], "canonical_unchanged": True,
+                "last_event_hash": events[-1]["hash"] if events else ""}
+
+    def undo_projection(self, cid):
+        statuses = {}
+        rows = []
+        for e in self.case_events(cid):
+            kind = e.get("kind", "review")
+            status = "active" if kind == "review" else "applied"
+            if kind == "undo":
+                statuses[e["target"]] = "compensated"
+            elif kind == "contest":
+                statuses[e["target"]] = "contested"
+                status = "open"
+            elif kind == "contest_resolution":
+                statuses[e["target"]] = e["resolution"]
+                if e["resolution"] == "upheld":
+                    contest = next(x for x in self.case_events(cid) if x["hash"] == e["target"])
+                    statuses[contest["target"]] = "compensated"
+            statuses[e["hash"]] = status
+            rows.append({"hash": e["hash"], "kind": kind, "status": status})
+        for row in rows:
+            row["status"] = statuses[row["hash"]]
+        return {"case": cid, "case_status": "compensated", "canonical_state": self.detail[cid]["case"]["state"], "events": rows}
+
+    def live_detail(self, cid):
+        detail = copy.deepcopy(self.detail[cid])
+        overlay = self.coordinator_overlay(cid)
+        detail["api_overlay"] = overlay
+        detail["case"]["api_overlay"] = {k: v for k, v in overlay.items() if k not in ("notes", "contact_outcomes", "canonical_owner")}
+        detail["api_reviews"] = self.case_events(cid)
+        detail["review_ledger"] = {"status": "ok", "events_applied": len(self.events)}
+        detail["api_contact"] = {"overlay": self.consent_overlay(cid), "history": self.case_events(cid)}
+        return detail
+
+    def live_audit(self, cid):
+        audit = copy.deepcopy(self.audit[cid])
+        audit["history"] = self.case_events(cid)
+        return audit
+
+    def export_doc(self, cid):
+        detail = self.live_detail(cid)
+        audit = self.live_audit(cid)
+        safe_keys = {"case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash",
+                     "type", "kind", "head", "seq", "target", "target_action", "resolution", "action_head"}
+        safe_events = [{k: v for k, v in e.items() if k in safe_keys} for e in self.case_events(cid)]
+        overlay = self.consent_overlay(cid)
+        overlay.pop("canonical_consent", None)  # keep the fake projection small; structural fields remain
+        overlay["canonical_consent"] = detail["case"]["consent"]
+        redacted_detail = {"case": {"id": cid, "state": detail["case"]["state"]},
+                           "current": {"sig": detail["current"]["sig"]}, "decisions": [],
+                           "api_reviews": safe_events,
+                           "api_overlay": {k: self.coordinator_overlay(cid)[k] for k in ("head", "actions", "ledger_status")},
+                           "api_contact": {"overlay": overlay, "history": safe_events}}
+        redacted_audit = {"case": cid, "chain_verified": audit["chain_verified"],
+                          "chain_length": audit["chain_length"], "decision_signatures": audit["decision_signatures"],
+                          "history": safe_events}
+        doc = {"schema": "wasl-case-export/1", "redacted": True, "detail": redacted_detail, "audit": redacted_audit}
+        doc["content_sha256"] = hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+        return doc
+
+    def route(self, method, path, query, body=None, role="", actor=""):
         if path == "/healthz":
             return 200, self.health
         if path == "/api/dashboard":
@@ -67,11 +156,66 @@ class Fake:
             return 200, page
         if path.startswith("/api/cases/"):
             rest = path[len("/api/cases/"):]
+            for suffix in ("/actions", "/consent", "/review", "/undo", "/export"):
+                if rest.endswith(suffix):
+                    cid = rest[:-len(suffix)]
+                    if cid not in self.detail:
+                        return 404, {"error": "unknown case", "id": cid}
+                    current = self.detail[cid]["current"]
+                    if suffix == "/export":
+                        if method != "GET":
+                            return 405, {"error": "method not allowed"}
+                        return 200, self.export_doc(cid)
+                    if suffix == "/actions":
+                        if role != "coordinator":
+                            return 403, {"error": "rbac"}
+                        if body["expected_head"] != self.coordinator_overlay(cid)["head"]:
+                            return 409, {"error": "stale", "current_head": self.coordinator_overlay(cid)["head"]}
+                        ev = self.event({"type": "coordinator_action", "kind": body["action"], "case": cid,
+                                         "data": {"text": body["text"]}, "role": role, "actor": actor,
+                                         "action": "coordinate_case", "head": body["expected_head"],
+                                         "seq": self.coordinator_overlay(cid)["actions"] + 1})
+                        return 201, {"event": ev, "api_overlay": self.coordinator_overlay(cid)}
+                    if suffix == "/consent":
+                        if method == "GET":
+                            return 200, {"case": cid, "overlay": self.consent_overlay(cid), "history": self.case_events(cid)}
+                        ev = self.event({"case": cid, "item": "", "decision": body["event"], "note": body["note"],
+                                         "role": role, "actor": actor, "action": "record_consent", "head_signed": current["sig"]})
+                        return 201, {"review": ev, "overlay": self.consent_overlay(cid)}
+                    if suffix == "/review":
+                        ev = self.event({"case": cid, "item": body.get("item", ""), "decision": body["decision"],
+                                         "note": body.get("note", ""), "role": role, "actor": actor,
+                                         "action": "signoff_link", "head_signed": current["sig"]})
+                        return 201, {"review": ev}
+                    if suffix == "/undo":
+                        if method == "GET":
+                            return 200, self.undo_projection(cid)
+                        target = next(e for e in self.events if e["hash"] == body["target"])
+                        if body.get("contest"):
+                            ev = self.event({"kind": "contest", "case": cid, "target": target["hash"],
+                                             "target_actor": target["actor"], "target_action": target["action"],
+                                             "action": target["action"], "role": role, "actor": actor,
+                                             "note": body.get("note", ""), "head_signed": current["sig"],
+                                             "action_head": self.case_events(cid)[-1]["hash"]})
+                            return 201, {"event": ev, "requires_resolution": True,
+                                         "canonical_reopened": False, "auto_closure": False}
+                        if not body.get("resolution"):
+                            ev = self.event({"kind": "undo", "case": cid, "target": target["hash"],
+                                             "target_actor": target["actor"], "target_action": target["action"],
+                                             "action": target["action"], "role": role, "actor": actor,
+                                             "note": body.get("note", ""), "head_signed": current["sig"],
+                                             "action_head": self.case_events(cid)[-1]["hash"]})
+                            return 201, {"event": ev, "canonical_reopened": False, "auto_closure": False}
+                        ev = self.event({"kind": "contest_resolution", "case": cid, "target": target["hash"],
+                                         "target_actor": target["target_actor"], "target_action": target["action"],
+                                         "action": target["action"], "role": role, "actor": actor, "note": "",
+                                         "resolution": body["resolution"], "head_signed": current["sig"],
+                                         "action_head": self.case_events(cid)[-1]["hash"]})
+                        return 201, {"event": ev, "canonical_reopened": False, "auto_closure": False}
             audit = rest.endswith("/audit")
             cid = rest[:-len("/audit")] if audit else rest
-            table = self.audit if audit else self.detail
-            if cid in table:
-                return 200, table[cid]
+            if cid in self.detail:
+                return 200, self.live_audit(cid) if audit else self.live_detail(cid)
             return 404, {"error": "unknown case", "id": cid}
         return 404, {"error": "no route"}
 
@@ -80,7 +224,20 @@ def make_handler(fake):
     class H(BaseHTTPRequestHandler):
         def do_GET(self):
             u = urlparse(self.path)
-            code, body = fake.route(u.path, parse_qs(u.query))
+            code, body = fake.route("GET", u.path, parse_qs(u.query), None, "", "")
+            b = json.dumps(body).encode()
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(b)))
+            self.end_headers()
+            self.wfile.write(b)
+
+        def do_POST(self):
+            u = urlparse(self.path)
+            size = int(self.headers.get("Content-Length", "0"))
+            body = json.loads(self.rfile.read(size) or b"{}")
+            code, body = fake.route("POST", u.path, parse_qs(u.query), body,
+                                    self.headers.get("X-Wasl-Role", ""), self.headers.get("X-Wasl-Actor", ""))
             b = json.dumps(body).encode()
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
@@ -113,6 +270,69 @@ class SmokeValidatorTests(unittest.TestCase):
     def test_passes_on_consistent_api(self):
         r = run_smoke(Fake())
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+    def test_export_canonical_json_matches_go_number_and_string_format(self):
+        spec = importlib.util.spec_from_file_location("api_smoke_under_test", SMOKE)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(module.canonical_json([0.0, -0.0, 1e-7, 1e-6, 1e-5, 1e20, 1e21, 1.25]),
+                         b'[0,-0,1e-7,0.000001,0.00001,100000000000000000000,1e+21,1.25]')
+        self.assertEqual(module.canonical_json("<&> "), b'"\\u003c\\u0026\\u003e\\u2028"')
+
+    def test_workflow_coordinator_route_must_be_exercised(self):
+        def m(f):
+            orig = f.route
+            f.route = lambda method, p, q, body, role, actor: (404, {"error": "broken actions route"}) if p.endswith("/actions") else orig(method, p, q, body, role, actor)
+        self.assertFails(m, "actions")
+
+    def test_workflow_event_hash_is_verified(self):
+        def m(f):
+            orig = f.event
+            def bad(values):
+                ev = orig(values)
+                ev["hash"] = "0" * 64
+                return ev
+            f.event = bad
+        self.assertFails(m, "ledger hash")
+
+    def test_workflow_canonical_decision_must_not_change(self):
+        def m(f):
+            orig = f.live_detail
+            def changed(cid):
+                detail = orig(cid)
+                if f.events:
+                    detail["current"]["state"] = "mutation"
+                return detail
+            f.live_detail = changed
+        self.assertFails(m, "canonical case or decisions changed")
+
+    def test_workflow_audit_must_contain_durable_new_events(self):
+        def m(f):
+            orig = f.live_audit
+            f.live_audit = lambda cid: dict(orig(cid), history=[])
+        self.assertFails(m, "durable audit history")
+
+    def test_export_private_fields_must_be_redacted(self):
+        def m(f):
+            orig = f.export_doc
+            def leaked(cid):
+                doc = orig(cid)
+                doc["detail"]["note"] = "SMOKE-PRIVATE-COORDINATOR-TEXT"
+                unsigned = {k: v for k, v in doc.items() if k != "content_sha256"}
+                doc["content_sha256"] = hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                return doc
+            f.export_doc = leaked
+        self.assertFails(m, "sensitive field")
+
+    def test_export_content_hash_is_verified(self):
+        def m(f):
+            orig = f.export_doc
+            def changed(cid):
+                doc = orig(cid)
+                doc["detail"]["case"]["state"] = "mutation"
+                return doc
+            f.export_doc = changed
+        self.assertFails(m, "content_sha256")
 
     def test_unreachable_server_fails(self):
         r = subprocess.run([sys.executable, str(SMOKE), "--base-url", "http://127.0.0.1:1", "--timeout", "1"],
@@ -166,7 +386,7 @@ class SmokeValidatorTests(unittest.TestCase):
     def test_unknown_case_must_be_404(self):
         def m(f):
             orig = f.route
-            f.route = lambda p, q: (200, {"ok": 1}) if p.startswith("/api/cases/") and "unknown" in p else orig(p, q)
+            f.route = lambda method, p, q, body, role, actor: (200, {"ok": 1}) if p.startswith("/api/cases/") and "unknown" in p else orig(method, p, q, body, role, actor)
         self.assertFails(m, "404")
 
     def with_agent(self, f):
