@@ -11,6 +11,7 @@ import { JOIN_SAYS } from "@/components/story/copy";
 import { BEATS, CAST, CUES, JOIN_BARS, TRACK_VH, WALK, beatAt, cueAt, cueOn, dayAt, pageAt, storyAt } from "@/components/story/script";
 import { PEOPLE } from "@/components/site/name-joiner";
 import { result } from "@/lib/results";
+import { PRODUCTION_URL, siteUrl } from "@/lib/site-url";
 
 const repo = path.resolve(import.meta.dirname, "../..");
 const read = (file: string) => readFileSync(path.join(repo, file), "utf8").replace(/\r\n/g, "\n");
@@ -267,4 +268,27 @@ describe("the passers-by", () => {
       }
     }
   }, 120_000);
+});
+
+describe("siteUrl (social preview origin)", () => {
+  it("prefers an explicit NEXT_PUBLIC_SITE_URL", () => {
+    expect(siteUrl({ NEXT_PUBLIC_SITE_URL: "https://wasl.example/", VERCEL_PROJECT_PRODUCTION_URL: "p.vercel.app", NODE_ENV: "production" })).toBe("https://wasl.example");
+  });
+  it("then uses the project production domain, adding https", () => {
+    expect(siteUrl({ VERCEL_PROJECT_PRODUCTION_URL: "wasl-topaz-mu.vercel.app", VERCEL_URL: "x-abc.vercel.app", NODE_ENV: "production" })).toBe(PRODUCTION_URL);
+  });
+  it("never uses the per-deployment VERCEL_URL", () => {
+    expect(siteUrl({ VERCEL_URL: "some-preview.vercel.app", NODE_ENV: "production" })).toBe(PRODUCTION_URL);
+  });
+  it("falls back to the fixed public domain in a production build", () => {
+    expect(siteUrl({ NODE_ENV: "production" })).toBe("https://wasl-topaz-mu.vercel.app");
+    expect(siteUrl({})).toBe(PRODUCTION_URL);
+  });
+  it("uses localhost only in development", () => {
+    expect(siteUrl({ NODE_ENV: "development" })).toBe("http://localhost:3000");
+    expect(siteUrl({ NODE_ENV: "development", PORT: "3122" })).toBe("http://localhost:3122");
+  });
+  it("ignores blank values", () => {
+    expect(siteUrl({ NEXT_PUBLIC_SITE_URL: " ", VERCEL_PROJECT_PRODUCTION_URL: "", NODE_ENV: "production" })).toBe(PRODUCTION_URL);
+  });
 });
