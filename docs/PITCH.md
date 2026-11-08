@@ -13,11 +13,13 @@
 |---|---|
 | Emirates-ID-only tracking | 12.4% |
 | Truth | 33.0% |
-| Wasl | 32.0% |
+| Wasl | 31.9% |
+
+Seed-2026 simulated run; frozen five-seed gaps differ by noise model (see below).
 
 Wasl shows the evidence behind the programme's number, case by case. It is a DoH public-health and quality-assurance use (HIE Policy 4.3.12.1).
 
-**Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. Wasl gets the measured rate within about 1 point of truth, so the levers land on the patients who are actually lost.
+**Why the standard levers need Wasl:** reminders and navigation only work if you chase the right patients. With Emirates-ID-only tracking, 62% of real completions look lost, and about 1 in 4 patients on the chase list are already done. In the seed-2026 simulated run Wasl is 1.1 points from truth; across the frozen five-seed evaluation the gap is about 1 point under v1 noise and 3.1 points under independent v2 noise (`pipeline/results/final/SUMMARY.md`). Either way the levers land on the patients who are actually lost.
 
 **What it is (built and run):**
 - **Streaming backbone:** Go + NATS JetStream. Ingests FHIR R4 and **HL7 v2 over MLLP**. Across 10 frozen-evaluation runs with process and broker kills: 0 of 201,285 outputs duplicated or lost.
@@ -32,10 +34,10 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
   - Suspected cancer never waits for histology.
 - **Patient layer:** owner-named notices, teach-back, consultation routing, and the rights to contest, opt out and get an explanation.
 - **Governance:** hash-chained provenance (tamper 17/17 detected), RBAC, a 12-item hazard log, model cards, and a DoH RAI control map (self-classified High risk).
-- **One engine, more loops:** incidental lung nodules (Fleischner 2017), diabetic retinopathy screening and breast screening recall already run on the same engine: 0/1,903 lung, 0/5,625 retinopathy and 0/338 breast false closures in the frozen held-out evaluation.
+- **One engine, more loops:** incidental lung nodules (Fleischner 2017), diabetic retinopathy screening and breast screening recall already run on the same engine: 0/1,907 lung, 0/5,627 retinopathy and 0/338 breast false closures in the frozen held-out evaluation.
 
 **Measured safety (simulated cohorts, honest limits):**
-- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.782, **0/3,025 false closures** (95% upper bound 0.12%), plus 0/1,903 on 1,088 lung-nodule loops, 0/5,625 on 1,200 retinopathy loops and 0/338 on 70 breast loops per run; 0/14,451 wrong-patient messages; 0/9,602 messages sent without consent; review load across name origins max/min 1.10 pooled over seeds, and 1.03 once each programme's share of loops is accounted for (no significant gap; this adjusted check was added after the pooled result was seen). Recall is lower than before because reports that never grade the bowel prep now wait for the unit's grade instead of being guessed, and the first run of this evaluation found 4 false closures from one bug, which we fixed and disclosed. An earlier run found one wrong-patient closure; we traced it to a name-only link at our confidence cap, raised the closure tier above the cap, and re-ran: zero.
+- **Frozen evaluation** on a corruption model the system never trained or tuned on (5 seeds): CRC precision 1.000, recall 0.785 (95% interval 0.772-0.798), **0/3,035 false closures**, across seven programme types (final-code run `075abc5`; the earlier five-programme run with 0.782 and 0/3,025 is superseded), plus 0/1,907 on lung-nodule loops, 0/5,627 on retinopathy loops and 0/338 on breast loops; 0/16,486 wrong-patient messages; 0/11,650 messages sent without granted consent; reviewer time 11.6 h per 1,000 loops across this programme mix; programme-standardised review-load ratio across name origins 1.07 (p = 0.185), weak evidence after about 16 subgroup tests. Recall is lower than before because reports that never grade the bowel prep now wait for the unit's grade instead of being guessed, and the first run of this evaluation found 4 false closures from one bug, which we fixed and disclosed. An earlier run found one wrong-patient closure; we traced it to a name-only link at our confidence cap, raised the closure tier above the cap, and re-ran: zero.
 - **Report readers on unseen text:** we tried to break our own readers with seven fresh 300-report corpora written by four AI model families (Claude, GPT, Gemini, Kimi), each frozen before the readers saw it. Three found a way to fool both readers at once: about 1 in 35 of the 26B's automatic closures on those corpora was wrong (6 of 211; 10 of 137 for the in-UAE 4B). Each was fixed by a general rule, and the last two fresh corpora, including one against the exact version we ship, passed with 0. Because real reports will hold new traps, the pilot starts in shadow mode: a clinician confirms every automatic closure until 300 in a row are correct, then audits a random 10%.
 - **Learn-then-Test:** the 0.99 closure tier is certified on 12,600 calibration loops (its latest re-run first caught one wrong-patient merge from two simulated reviewers agreeing in error; a confirming review for records that contradict on sex or birth date fixed it): P(false-closure and wrong-patient rates ≤ 0.1%) ≥ 95% for loops like the calibration set.
 - Gate under the strict DoH closure rule (5 seeds × 3 reviewer error rates): 0/8,422 false closures with double review. Single review gives 21, so double review is mandatory.
@@ -59,7 +61,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 - Network pooling across a group's sites: when slots are in the wrong places, ≤31-day completion goes from 22% to 42%. No gain when capacity is short overall.
 
 **Roadmap (designed, not built):**
-- **Phase 3, more loop types:** incidental imaging, IFHAS and breast (diabetic retinopathy is built). That is ≈50–110k loops a year at ≈AED 5–28 per loop.
+- **Phase 3, more loop types:** incidental imaging and IFHAS (diabetic retinopathy and breast are built). That is ≈50–110k loops a year at ≈AED 5–28 per loop.
 - **Second route to market:** an on-premise deployment for a provider network tracking its own patients.
 - **Tested and dropped:** we tested whether booking optimisation beats greedy when capacity is scarce. It doesn't, so we make no claim.
 
@@ -73,7 +75,7 @@ Wasl shows the evidence behind the programme's number, case by case. It is a DoH
 5. Network pooling (22% → 42%) and the gated pilot plan.
 
 **Limits:**
-- The data is simulated, with no clinician labels, as expected for a hackathon. The 43 report texts carry an LLM-produced key until our human double-labelling is done.
+- The data is simulated, with no clinician outcome labels for the cohorts. The 43 report texts have clinically verified model-assisted labels (κ = 1.000 after clinician adjudication), not independent human double-labelling.
 - The Learn-then-Test guarantee covers synthetic loops like the calibration set; a pilot must recalibrate on locally adjudicated loops.
 - The image reader was trained on Norwegian video frames; UAE photos need local recalibration.
 - Queue-lever effect sizes are borrowed from published trials.

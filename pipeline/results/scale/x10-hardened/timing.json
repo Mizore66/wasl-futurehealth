@@ -1,0 +1,13 @@
+{
+ "label": "x10",
+ "cohort_s": 2979.2,
+ "orchestrate_s": 508.0,
+ "audit_s": 1114.8,
+ "tamper_s": 0.0,
+ "report_s": 834.8,
+ "total_s": 5436.7,
+ "loadavg_start": "{ 4.33 5.36 7.73 }",
+ "loadavg_end": "{ 4.63 4.89 6.63 }",
+ "cpus": 12,
+ "mem_gb": 32.0
+}

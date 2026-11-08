@@ -33,6 +33,10 @@ func main() {
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
+	if cmd == "mcf" { // min-cost flow solver for the booking lookahead (mcf.go): JSON lines on stdin/stdout
+		runMCF(os.Stdin, os.Stdout)
+		return
+	}
 	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
 	data := fs.String("data", "../cohort", "cohort dir")
 	wasl := fs.String("wasl", "../../wasl/data", "wasl data dir (persons, encoder, scorer)")
@@ -47,6 +51,8 @@ func main() {
 	speed := fs.Float64("speed", 0, "simulated days per wall second (0 = max)")
 	chaos := fs.Int("chaos", 0, "kill/restart cycles")
 	natsKill := fs.Bool("natskill", false, "also kill+restart one NATS node during the run")
+	chaosSpan := fs.Float64("chaosspan", 0, "orchestrate: seconds over which the kill/restart cycles are spread (0 = default, 15 s; larger cohorts have a longer feed)")
+	quietTO := fs.Duration("quiettimeout", 5*time.Minute, "orchestrate: stop waiting for quiescence after this long (larger cohorts need more)")
 	seed := fs.Int64("seed", 2026, "")
 	loops := fs.Int("loops", 1500, "")
 	distract := fs.Int("distract", 700, "")
@@ -64,10 +70,16 @@ func main() {
 	rerr := fs.Float64("rerr", 0, "v6: reviewer per-read error rate")
 	lungWk := fs.Bool("lungworkup", true, "lung nodule > 8 mm: PET/CT or tissue result can close the loop (lungworkup.go)")
 	lungSurv := fs.Bool("lungsurv", false, "lung nodule: a PET/CT low-uptake closure makes a surveillance CT due (child loop <loop>#surv); gen adds the surveillance CTs (lungsurv.go)")
+	lungSurv2 := fs.Bool("lungsurv2", false, "lung nodule (needs -lungsurv): later surveillance CTs at about 1 and 2 years after a PET/CT low-uptake closure (child loops <loop>#surv2, #surv3; BTS 2015); gen adds those CTs (lungsurv.go)")
+	lungSurvStable := fs.Bool("lungsurvstable", false, "lung nodule: the stable-CT surveillance child gets review items, truth and metrics (lungsurv.go stableSurvLoop); gen adds its CTs")
 	handoff := fs.Bool("handoff", true, "finally rejected referral: hand-off packet to the referrer, act-by deadline and escalation (handoff.go)")
 	refReject := fs.Bool("refreject", false, "gen: lung work-up and DR eye-clinic referrals can be rejected by the unit (hand-off packet truth; handoffext.go)")
+	wrongEID := fs.Float64("wrongeid", 0, "gen (adversarial B8): share of registrations carrying a relative's Emirates ID (genadv.go; 0 = off)")
+	wrongRef := fs.Float64("wrongref", 0, "gen (adversarial B9): share of referral intakes citing the wrong referral (genadv.go; 0 = off)")
+	histClock := fs.Bool("histclock", false, "closure: judge look-back history (inputs arriving before day 0) at its arrival time, not at the day-0 clock (linker.go HistClock)")
 	xrefLink := fs.Bool("xreflink", false, "hand-off: a rejected referral intake that cites the loop's referral but never linked by identity raises a link question (handoffref.go)")
 	prepQ := fs.Bool("prepquery", true, "ungraded prep: query the endoscopy unit, escalate at 5 working days, clinician at day 15 (prepquery.go)")
+	r1Review := fs.Bool("r1review", false, "CRC: a colonoscopy report where neither reader finds a caecum statement goes to a clinician (completion_undocumented) instead of an automatic inadequate (r1review.go)")
 	errUng := fs.Float64("errungraded", ErrUngraded, "per-read error of the day-15 ungraded-prep clinician decision (assumed stress-test rate)")
 	rdouble := fs.String("rdouble", "none", "v6: double review policy none|merge|merge+close")
 	rseed := fs.Int64("rseed", 1, "v6: reviewer noise seed")
@@ -128,9 +140,28 @@ func main() {
 	lttGrid := fs.String("lttgrid", "0.999,0.995,0.99,0.98,0.95,0.90,0.80,0.70,0.50", "ltt: candidate closure link tiers, strict to loose")
 	tauLTT := fs.Bool("taultt", false, "internal: -tauclose came from Learn-then-Test (forwarded to workers by v7ltt)")
 	lttSel := fs.String("lttsel", "../pipeline/results/ltt/ltt_selection.json", "v7ltt: Learn-then-Test selection (operating_tau_close, with review)")
+	lttProg := fs.Bool("lttprog", false, "ltt: per-programme resolution and counts, second_identifier_confirm tally (ltt.go; off = rows as before)")
 	lttOut := fs.String("lttout", "../pipeline/results/ltt/counts.json", "ltt: output")
-	split := fs.String("split", "eval", "gen: person split eval (held-out test) | cal (Learn-then-Test calibration)")
-	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only)")
+	linkFloor := fs.Float64("linkfloor", 0.2, "linker+closure: candidate review floor (0,0.2]; merge/closure thresholds unchanged")
+	agentRecsPath := fs.String("agentrecs", "", "agentreplay only: cached evidence-investigator records (agent_recs.ndjson); never forwarded to live child processes")
+	agentMode := fs.String("agentmode", "cached", "agentshadow only: cached (never calls a provider) | live (explicit opt-in: also needs WASL_AGENTSHADOW_LIVE=1 and WASL_LLM_*)")
+	agentItems := fs.Int("agentitems", AgentShadowMaxItems, "agentshadow only: max items investigated (<= 20)")
+	agentCalls := fs.Int("agentcalls", AgentShadowMaxCalls, "agentshadow only: max uncached provider requests, persisted across restarts (<= 40)")
+	agentDeadline := fs.Duration("agentdeadline", 15*time.Minute, "agentshadow only: overall deadline for new uncached requests")
+	agentProvider := fs.Duration("agentprovider", 45*time.Second, "agentshadow only: per provider request deadline")
+	agentIdle := fs.Duration("agentidle", 20*time.Second, "agentshadow only: exit after every provider ended and this long without events")
+	agentCache := fs.String("agentcache", "", "agentshadow only: provider response cache dir (default <run>/agent_shadow/cache)")
+	agentWorker := fs.String("agentworker", "../scripts/agent_shadow_worker.py", "agentshadow only: investigator sidecar script")
+	agentPython := fs.String("agentpython", "python3", "agentshadow only: python interpreter for the sidecar")
+	linkFunnel := fs.String("linkfunnel", "", "linker: write opt-in candidate-funnel NDJSON to this path (diagnostics only)")
+	split := fs.String("split", "eval", "gen: person split eval (held-out test) | dev (development only, not held-out validation) | cal (Learn-then-Test calibration) | all (every split, incl. model training persons: scale/throughput tests only, accuracy not held-out)")
+	fs.Float64Var(&MDNamesakeRate, "mdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic missing-date namesake hard negative (pairfeat7 training only)")
+	fs.Float64Var(&RDNamesakeRate, "rdnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic same-real-date stranger hard negative (pairfeat7 training only)")
+	fs.Float64Var(&MINamesakeRate, "minamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic middle-initial namesake hard negative (pairfeat9 training only)")
+	fs.Float64Var(&XSNamesakeRate, "xsnamesakes", 0, "featdump only, with -nameidf: share of persons given a synthetic cross-script namesake hard negative (pairfeat6 training only)")
+	fs.Float64Var(&FamilyNamesakeRate, "familynamesakes", 0, "featdump only: share of persons given a synthetic family-name namesake hard negative (training only)")
+	fs.Float64Var(&NamesakeRate, "namesakes", 0, "featdump only: share of persons given a synthetic namesake hard negative (training only)")
+	noise := fs.String("noise", "v1", "gen: record-corruption model v1 (training-time) | v2 (independent, held-out evaluation only) | v3 (reliable real DOB: same-person registrations never carry different real birth dates; pairfeat8 training and evaluation)")
 	readerMode := fs.String("reader", "cached", "second evidence reader: cached (Gemma 26B answers) | live (local llama-server) | replay (ledger only)")
 	readerURL := fs.String("reader-url", "http://127.0.0.1:8791", "local OpenAI-compatible reader endpoint")
 	readerTimeout := fs.Duration("reader-timeout", 60*time.Second, "per-call reader timeout")
@@ -142,18 +173,31 @@ func main() {
 	lungN := fs.Int("lung", 0, "gen: incidental lung-nodule loops (Fleischner 2017); 0 = CRC/cervical cohort only (byte-identical)")
 	drN := fs.Int("dr", 0, "gen: diabetic retinopathy screening loops (doh2024dr); 0 = no DR loops (other feeds byte-identical)")
 	lungData := fs.String("lungdata", "", "gen/lungcache: lung CT corpus dir (default <reports dir>/../lung)")
+	drRecallMsg := fs.Bool("drrecallmsg", false, "outreach: a resolved DR loop flagged recall_overdue (-drnext) gets a consent-gated recall message, kind dr_next_recall (outreachgaps.go)")
+	rejMsg := fs.Bool("rejmsg", false, "outreach: a finally rejected lung work-up / DR eye-clinic referral gets a consent-gated patient message; CRC patient_informed counts its referral_rejected_next_steps intent (outreachgaps.go)")
+	drSeenLink := fs.Bool("drseenlink", false, "DR next loop: a later eye-clinic note on an untrusted link raises a link question and counts as a visit only after a human 'same' (outreachgaps.go)")
 	drNext := fs.Bool("drnext", false, "DR next loop: next due rescreen / clinic review on resolved DR decisions, recall_overdue flag; gen: follow-up eye-clinic visits (drnext.go)")
 	drData := fs.String("drdata", "", "gen/drcache: diabetic retinopathy corpus dir(s), comma-separated for drcache (default <reports dir>/../dr)")
 	breastN := fs.Int("breast", 0, "gen: breast screening recall loops (doh2025breast); 0 = no breast loops (other feeds byte-identical)")
+	breastShare := fs.Bool("breastshare", false, "gen: when women with no other loop run out, breast loops continue with women who hold another programme's loop (genbreast.go)")
+	ldctN := fs.Int("ldct", 0, "gen: lung cancer screening LDCT loops (acr2022lungrads); 0 = no LDCT loops (other feeds byte-identical)")
+	ldctData := fs.String("ldctdata", "", "gen/ldctcache: LDCT corpus dir(s), comma-separated for ldctcache (default <reports dir>/../ldct)")
 	breastData := fs.String("breastdata", "", "gen/breastcache: breast corpus dir(s), comma-separated for breastcache (default <reports dir>/../breast)")
+	ifhasN := fs.Int("ifhas", 0, "gen: IFHAS abnormal-result follow-up loops (doh2025ifhas, sixth loop type); 0 = none (other feeds byte-identical)")
+	ifhasData := fs.String("ifhasdata", "", "gen/ifhascache: IFHAS follow-up note corpus dir(s), comma-separated for ifhascache (default <reports dir>/../ifhas)")
 	encFile := fs.String("encfile", "", "encembed: encoder weights json")
 	inFile := fs.String("in", "", "encembed: input file, one name per line")
 	modelSet := fs.String("modelset", "", "linkage model chain in the -wasl/-models dir: empty = defaults; X = encoder_X.json + lgb_stream_X.json + iso_X.json + iso_v7_X.json")
 	gbmFile := fs.String("gbmfile", "", "featdump: also write the pair-scorer probability from this LightGBM json")
+	idfSeeds := fs.String("idfseeds", "", "nameidf: comma-separated featdump seeds whose base registrations the rarity table counts")
+	nameIDFPath := fs.String("nameidf", "", "featdump only: pairfeat6 name-rarity table (wsi nameidf output); adds pair features f30-f33 (pairfeat6.go)")
 	shadow := fs.Bool("shadow", false, "pilot: shadow mode, every automatic closure is a suggestion confirmed by a clinician (pilot.go)")
 	corrShort := fs.Bool("corrshort", true, "linker: a last-surname skeleton under 3 letters corroborates only when the first-name skeleton agrees too (v7.go)")
 	linkConfirmDOB := fs.Bool("linkconfirmdob", false, "linker: with -linkconfirm, real birth dates more than a year apart also count as a contradiction (v7.go)")
 	linkConfirm := fs.Bool("linkconfirm", true, "linker: a human 'same' (link or second-identifier answer) on a pair with contradicting sex or real birth dates needs a confirming review (v7.go)")
+	demoGuard := fs.Bool("demoguard", false, "linker (default off): different real DOBs or different known sexes are hard conflicts (cannot-link); missing demographics block automatic merging and go to review; reviewers cannot override a conflict (demoguard.go)")
+	eidGuard := fs.Bool("eidguard", false, "linker+closure (B8 hardening, post hoc, default off): equal Emirates IDs on contradicting registrations do not force a link, and no closure rides an Emirates-ID path to a contradicting person (eidguard.go)")
+	secondIDConfirm := fs.Bool("secondidconfirm", true, "linker: with -linkconfirm, a second-identifier 'same' on a pair with contradicting sex or real birth dates needs a confirming review (second_identifier_confirm; v7.go)")
 	progTpl := fs.Bool("progtpl", true, "outreach: lung and DR intents name their programme's approved template (lnfu, drsfu; rules.go)")
 	replayWL := fs.Bool("replayworklist", true, "ltt/sweep: the offline review loop answers items in emission order with the live reviewer's worklists (sweep.go)")
 	reuseLink := fs.Bool("reuselink", true, "review worklist: one link question per registration pair; other loops' queued twins are dropped once it is answered (v7.go)")
@@ -164,14 +208,66 @@ func main() {
 	autoAudit := fs.Float64("autoaudit", 0, "pilot: fraction of automatic closures given a post-closure clinician audit (normal mode only; 0 = off)")
 	UrduFix = true // retrained v3 encoder was trained with the Urdu/Persian normalisation fix
 	fs.Parse(os.Args[2:])
+	if err := validateNoise(cmd, *noise); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	if err := validateNamesakes(cmd, NamesakeRate); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	if err := validateNamesakeRate("-familynamesakes", cmd, FamilyNamesakeRate); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	if err := validateXSNamesakes(cmd, XSNamesakeRate, *nameIDFPath); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	for _, v := range []struct {
+		flag string
+		rate float64
+	}{{"-mdnamesakes", MDNamesakeRate}, {"-rdnamesakes", RDNamesakeRate}, {"-minamesakes", MINamesakeRate}} {
+		if err := validateIDFNamesakes(v.flag, cmd, v.rate, *nameIDFPath); err != nil {
+			fmt.Fprintln(os.Stderr, "configuration error:", err)
+			os.Exit(2)
+		}
+	}
+	if *agentRecsPath != "" && cmd != "agentreplay" {
+		fmt.Fprintln(os.Stderr, "configuration error: -agentrecs is only valid with the agentreplay command")
+		os.Exit(2)
+	}
+	if err := validateLinkFloor(*linkFloor); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	LinkReview = *linkFloor
+	LinkFunnelPath = *linkFunnel
+	if *linkFunnel != "" {
+		LinkFunnelArgs = []string{"-linkfunnel", *linkFunnel}
+	}
+	if err := validateNatsConfig(os.Getenv("WASL_NATS_URL"), os.Getenv("WASL_NATS_EXTERNAL")); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
 	PrepQuery, ErrUngraded = *prepQ, *errUng
+	R1ReviewOn = *r1Review
 	Handoff, LungWorkup, LungPETSurv = *handoff, *lungWk, *lungSurv
+	LungPETSurv2, LungStableSurv = *lungSurv && *lungSurv2, *lungSurvStable
 	XRefLinkQ = *xrefLink
+	HistClock = *histClock
 	RefRejectExt = *refReject
+	WrongEIDRate, WrongRefRate = *wrongEID, *wrongRef
 	CorrShared, CorrFuzzyLast, EIDSecondID, CorrShortSurname, ReuseIDConfirm = *corrShared, *corrFuzzy, *eidSecond, *corrShort, *reuseConfirm
 	ReuseLinkAnswer, LinkContradictionConfirm, ReplayWorklist, ProgTemplates = *reuseLink, *linkConfirm, *replayWL, *progTpl
 	DRNextOn = *drNext
+	BreastShare = *breastShare
+	DRRecallMsg, RejectedMsg, DRSeenLinkAsk = *drRecallMsg, *rejMsg, *drSeenLink
 	LinkContradictionDOB = *linkConfirmDOB
+	SecondIDContradictionConfirm = *secondIDConfirm
+	EIDContraGuard = *eidGuard
+	DemoGuard = *demoGuard
+	LTTProg = *lttProg
 	// lung-nodule programme: register its two providers in every process of a lung run (children inherit the env var)
 	if (cmd == "gen" && *lungN > 0) || os.Getenv("WSI_LUNG_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_mafraq-rad.ndjson")) {
 		EnableLung()
@@ -187,7 +283,30 @@ func main() {
 		EnableBreast()
 		os.Setenv("WSI_BREAST_PROVIDERS", "1")
 	}
+	// lung cancer screening (LDCT) programme: same, after the breast providers
+	if (cmd == "gen" && *ldctN > 0) || os.Getenv("WSI_LDCT_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_thx-hosp.ndjson")) {
+		EnableLDCT()
+		os.Setenv("WSI_LDCT_PROVIDERS", "1")
+	}
+	LDCTGenN, LDCTGenDir = *ldctN, *ldctData
+	// IFHAS follow-up programme (ifhas.go): same, after the LDCT providers
+	if (cmd == "gen" && *ifhasN > 0) || os.Getenv("WSI_IFHAS_PROVIDERS") == "1" || fileExists(filepath.Join(*data, "fhir_ifu-clinic.ndjson")) {
+		EnableIfhas()
+		os.Setenv("WSI_IFHAS_PROVIDERS", "1")
+	}
+	GenIfhasN, GenIfhasDir = *ifhasN, *ifhasData
 	ModelSet = *modelSet
+	if err := validateModelPolicy(ModelSet, *policy); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	}
+	XScriptCap = xscriptCapFor(ModelSet) // xscript.go: cross-script review cap (pairfeat5, pairfeat6, pairfeat7)
+	if tb, err := nameIDFFor(cmd, *nameIDFPath, ModelSet, *wasl); err != nil {
+		fmt.Fprintln(os.Stderr, "configuration error:", err)
+		os.Exit(2)
+	} else {
+		NameIDF = tb // pairfeat6.go: non-nil only for -modelset pairfeat6/pairfeat7 or featdump -nameidf
+	}
 	DualMerge = *dual
 	switch *policy {
 	case "v7strict":
@@ -222,12 +341,17 @@ func main() {
 		TauClose = *tauClose
 	}
 	TauFromLTT = TauFromLTT || *tauLTT
-	PolicyName = policyName()
+	PolicyName = policyName() + linkFloorPolicySuffix()
+	if EIDContraGuard {
+		PolicyName += "+eidguard" // post-hoc B8 hardening, default off: stamped on every decision so lanes are never mixed
+	}
+	PolicyName += demoGuardPolicySuffix() // demoguard.go: "+demoguard" only when on
 	if ModelSet != "" {
 		PolicyName += "+models=" + ModelSet
 	}
 	NoiseModel = *noise
 	GenSplit = *split
+	ChaosSpan, QuietTimeout = *chaosSpan, *quietTO
 	ReaderMode = *readerMode
 	switch *readerMode {
 	case "cached":
@@ -277,15 +401,32 @@ func main() {
 		SweepErrs, SweepDoubles, SweepSeeds = []float64{0, 0.02, 0.04, 0.06}, []string{"none", "merge+close"}, 5
 	}
 	v7Args := []string{"-evpolicy", EvPolicy, fmt.Sprintf("-v7guard=%v", V7Guard), "-tauclose", fmt.Sprint(TauClose), fmt.Sprintf("-taultt=%v", TauFromLTT)}
-	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
-	if ModelSet != "" {
-		v7Args = append(v7Args, "-modelset", ModelSet)
+	v7Args = append(v7Args, linkFloorArgs()...)
+	v7Args = append(v7Args, fmt.Sprintf("-prepquery=%v", PrepQuery), fmt.Sprintf("-r1review=%v", R1ReviewOn), fmt.Sprintf("-handoff=%v", Handoff), fmt.Sprintf("-xreflink=%v", XRefLinkQ), fmt.Sprintf("-lungworkup=%v", LungWorkup), fmt.Sprintf("-corrshared=%v", CorrShared), fmt.Sprintf("-corrfuzzy=%v", CorrFuzzyLast), fmt.Sprintf("-eidsecond=%v", EIDSecondID), fmt.Sprintf("-corrshort=%v", CorrShortSurname), fmt.Sprintf("-reuseconfirm=%v", ReuseIDConfirm), fmt.Sprintf("-reuselink=%v", ReuseLinkAnswer), fmt.Sprintf("-linkconfirm=%v", LinkContradictionConfirm), fmt.Sprintf("-linkconfirmdob=%v", LinkContradictionDOB), fmt.Sprintf("-secondidconfirm=%v", SecondIDContradictionConfirm), fmt.Sprintf("-replayworklist=%v", ReplayWorklist), fmt.Sprintf("-progtpl=%v", ProgTemplates), "-errungraded", fmt.Sprint(ErrUngraded))
+	v7Args = append(v7Args, modelPolicyArgs(ModelSet, *policy)...)
+	for i, on := range []bool{DRRecallMsg, RejectedMsg, DRSeenLinkAsk} { // outreachgaps.go: every child, only when on
+		if on {
+			v7Args = append(v7Args, []string{"-drrecallmsg", "-rejmsg", "-drseenlink"}[i])
+		}
 	}
+	if EIDContraGuard { // B8 hardening (eidguard.go): every child, only when on
+		v7Args = append(v7Args, "-eidguard")
+	}
+	v7Args = append(v7Args, demoGuardArgs()...) // strict demographic guard (demoguard.go): every child, only when on
 	if DRNextOn { // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
 	}
+	if HistClock { // linker and closure children, only when on
+		v7Args = append(v7Args, "-histclock")
+	}
 	if LungPETSurv { // reaches every child only when on, so the child argument lists are unchanged when off
 		v7Args = append(v7Args, "-lungsurv")
+	}
+	if LungPETSurv2 {
+		v7Args = append(v7Args, "-lungsurv2")
+	}
+	if LungStableSurv {
+		v7Args = append(v7Args, "-lungsurvstable")
 	}
 	if ShadowMode { // pilot switches reach every child (closure engines, reviewer, linker) only when on
 		v7Args = append(v7Args, "-shadow")
@@ -387,6 +528,10 @@ func main() {
 		runDRCache(*drData, *readerURL, *out)
 	case "breastcache": // ask local Gemma 3 4B once per unique breast corpus text; write the replayable cache + reader scores
 		runBreastCache(*breastData, *readerURL, *out)
+	case "ldctcache": // ask local Gemma 3 4B once per unique LDCT corpus text; write the replayable cache + reader scores
+		runLDCTCache(*ldctData, *readerURL, *out)
+	case "ifhascache": // ask local Gemma 3 4B once per unique IFHAS follow-up note; write the replayable cache + reader scores
+		runIfhasCache(*ifhasData, *readerURL, *out)
 	case "readercache": // read every text of a report corpus + pathology templates with the live reader; write a gemma_cache.json-format file
 		if LiveReader == nil || ReaderMode != "live" {
 			panic("readercache needs -reader live")
@@ -422,6 +567,11 @@ func main() {
 			simRun = absRun
 		}
 		simOffline(*data, *wasl, *P, !*noReview, simRun)
+	case "agentshadow": // standalone read-only shadow spike (agentshadow.go); never started by orchestrate
+		os.Exit(agentShadowMain(*wasl, *data, absRun, *P, AgentShadowFlags{Mode: *agentMode, Items: *agentItems, Calls: *agentCalls,
+			Deadline: *agentDeadline, Provider: *agentProvider, Idle: *agentIdle, Cache: *agentCache, Worker: *agentWorker, Python: *agentPython}))
+	case "agentreplay":
+		agentReplayMain(*data, *wasl, absRun, *P, rcfg, *agentRecsPath)
 	case "audit":
 		audit(*data, *wasl, absRun, *P)
 	case "report7":
@@ -455,6 +605,8 @@ func main() {
 		runEncNoise(*wasl, *split, *out, *seed)
 	case "featdump":
 		runFeatDump(*wasl, *encFile, *gbmFile, *split, *out, *persons, *seed)
+	case "nameidf":
+		runNameIDF(*wasl, *split, *out, *persons, parseIDFSeeds(*idfSeeds))
 	case "annsynth":
 		runAnnSynth(*wasl, *models, *out, *nRegs, *seed, *threads)
 	case "annbench":
@@ -603,6 +755,10 @@ cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 	return p
 }
 
+func natsBinaryPath(executable string) string {
+	return filepath.Join(filepath.Dir(executable), "nats-server")
+}
+
 func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, chaos int, natsKill bool, replicas int, noReview bool, seed int64) {
 	keepFiles := map[string][]byte{} // keep the live-reader ledgers across reruns (model answers are reused, not re-asked)
 	for _, n := range []string{"reader_ledger.jsonl", "image_ledger.jsonl"} {
@@ -634,11 +790,15 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if c := os.Getenv("WASL_JS_KEY")[0]; !(c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') {
 		panic("WASL_JS_KEY must start with a letter (nats-server parses a leading digit as a number)")
 	}
-	natsBin := filepath.Join(filepath.Dir(self), "..", "bin", "nats-server")
-	for i := 0; i < 3; i++ {
-		o.start(fmt.Sprintf("nats-%d", i), natsBin, "-c", natsConf(run, i))
+	natsBin := natsBinaryPath(self)
+	if NatsExternal { // deployment: the cluster runs outside the orchestrator (docker-compose nats-0..2)
+		fmt.Printf("NATS: external cluster %s (not started or killed by the orchestrator)\n", NatsURL)
+	} else {
+		for i := 0; i < 3; i++ {
+			o.start(fmt.Sprintf("nats-%d", i), natsBin, "-c", natsConf(run, i))
+		}
+		time.Sleep(1500 * time.Millisecond)
 	}
-	time.Sleep(1500 * time.Millisecond)
 	c := func(args ...string) []string {
 		return append(append(args, "-data", data, "-wasl", wasl, "-run", run, "-P", fmt.Sprint(P)), govArgs...)
 	}
@@ -647,7 +807,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if err := setup.Run(); err != nil {
 		panic(err)
 	}
-	o.start("linker", "", c("linker")...)
+	o.start("linker", "", append(c("linker"), LinkFunnelArgs...)...)
 	for k := 0; k < P; k++ {
 		o.start(fmt.Sprintf("closure-%d", k), "", c("closure", "-part", fmt.Sprint(k))...)
 	}
@@ -693,6 +853,9 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	if speed > 0 {
 		expect = TEnd / speed
 	}
+	if ChaosSpan > 0 { // larger cohorts: spread the kill/restart cycles over the longer feed (default 0 = unchanged)
+		expect = ChaosSpan
+	}
 	victims := [][]string{{"linker"}, {fmt.Sprintf("closure-%d", rng.Intn(P)), "prep-0"}, {"linker", fmt.Sprintf("closure-%d", rng.Intn(P))},
 		{fmt.Sprintf("closure-%d", rng.Intn(P)), "prep-1"}, {"linker", "prep-2"}}
 	var subDone sync.WaitGroup
@@ -701,6 +864,8 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	subExpect := 6.0 // full-speed feed length (s) measured on this cohort
 	if speed > 0 {
 		subExpect = expect
+	} else if ChaosSpan > 0 {
+		subExpect = ChaosSpan * 6 / 15
 	}
 	if SrcCfg.Source == "hl7" && SrcCfg.SubKill > 0 { // kill/restart the MLLP listener mid-feed (sender reconnects, re-sends unACKed)
 		subDone.Add(1)
@@ -789,7 +954,9 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 			evMu.Unlock()
 			fmt.Printf("chaos cycle %d: killed %v at %.1fs, restarted after %.1fs\n", cy+1, vs, ev["t_kill"], down)
 		}
-		if natsKill {
+		if natsKill && NatsExternal {
+			fmt.Println("chaos: NATS node kill skipped (external cluster)")
+		} else if natsKill {
 			time.Sleep(time.Duration(expect * 0.1 * float64(time.Second)))
 			o.kill("nats-2")
 			ev := map[string]interface{}{"cycle": "nats", "victims": []string{"nats-2"}, "t_kill": time.Since(t0).Seconds()}
@@ -886,7 +1053,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		if stable >= 6 {
 			break
 		}
-		if time.Since(t0) > 5*time.Minute {
+		if time.Since(t0) > QuietTimeout {
 			fmt.Println("timeout waiting for quiescence")
 			break
 		}

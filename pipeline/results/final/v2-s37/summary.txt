@@ -1,14 +1,16 @@
 ── Wasl baseline (simulated cohort; one seed) ──
-crc       with review : P 1.000  R 0.784  false closures 0/625
-crc       no review   : P 1.000  R 0.295  false closures 0/235
-cervical  with review : P 1.000  R 0.909  false closures 0/240
-cervical  no review   : P 1.000  R 0.553  false closures 0/146
-CRC ≤31-day KPI (all referrals): EID-only 0.132 | truth 0.353 | Wasl 0.330
-exactly-once: duplicates 0 / 39892 outputs; final-state mismatches 0
-provenance chains verified 3675/3675; forged events with effect 0/22
+crc       with review : P 1.000  R 0.785  false closures 0/626
+crc       no review   : P 1.000  R 0.290  false closures 0/231
+cervical  with review : P 1.000  R 0.917  false closures 0/242
+cervical  no review   : P 1.000  R 0.538  false closures 0/142
+CRC ≤31-day KPI (all referrals): EID-only 0.132 | truth 0.353 | Wasl 0.329
+exactly-once: duplicates 0 / 43671 outputs; final-state mismatches 0
+provenance chains verified 4792/4792; forged events with effect 0/21
 wrong-patient messages released 0; messages before late opt-out recorded 0
-consent hold: released 1908, without granted consent 0; held-for-consent 394, cancelled 129
-throughput 557 ev/s; reviewer-h/1k loops 13.8
+consent hold: released 2358, without granted consent 0; held-for-consent 528, cancelled 154
+throughput 482 ev/s; reviewer-h/1k loops 12.2
 lung_nodule (Fleischner 2017): P 1.000  R 0.948  false closures 0/366; escalation recall 0.893; overdue acc 0.976; recommendation acc 1.000 (coverage 1.000); appropriate follow-up truth 0.369 vs Wasl 0.331
-diabetic_retinopathy (doh2024dr): P 1.000  R 0.996  false closures 0/1144; referral closures P 1.000 R 0.947; triage acc 0.998 (coverage 1.000); overdue acc 0.997; exam within deadline truth 0.446 vs Wasl 0.419
+diabetic_retinopathy (doh2024dr): P 1.000  R 0.994  false closures 0/1142; referral closures P 1.000 R 0.912; triage acc 0.998 (coverage 1.000); overdue acc 0.996; exam within deadline truth 0.446 vs Wasl 0.419
 breast (doh2025breast): P 1.000  R 1.000  false closures 0/68; recall-loop closures P 1.000 R 1.000; triage acc 1.000 (coverage 1.000); overdue acc 1.000; assessment within clock truth 0.333 vs Wasl 0.333; abnormal recall rate truth 0.086 vs Wasl 0.086
+lung_ldct (acr2022lungrads): P 1.000  R 0.993  false closures 0/288; action-loop closures P 1.000 R 0.938; triage acc 1.000 (coverage 1.000); overdue acc 0.994; next step within clock truth 0.667 vs Wasl 0.611; abnormal recall rate truth 0.137 vs Wasl 0.137
+ifhas (doh2025ifhas): P 1.000  R 0.967  false closures 0/678; follow-up-loop closures P 1.000 R 0.895; triage acc 1.000 (coverage 1.000); overdue acc 0.974; follow-up within clock truth 0.509 vs Wasl 0.450; abnormal findings rate truth 0.399 vs Wasl 0.399

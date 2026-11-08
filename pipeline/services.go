@@ -9,13 +9,15 @@ package main
 // output high-water mark; outputs at/above it are re-published with deterministic msg ids (JetStream dedupe).
 import (
 	"bufio"
-	"math"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,7 +30,40 @@ import (
 // machine: WASL_PORT_OFFSET=100 moves 14822 to 14922, and so on. Child processes inherit the variable.
 var PortOff = func() int { n, _ := strconv.Atoi(os.Getenv("WASL_PORT_OFFSET")); return n }()
 
-var NatsURL = fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+PortOff, 14823+PortOff, 14824+PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+var NatsURL = natsURL(os.Getenv("WASL_NATS_URL"), PortOff) // v7: own ports (gov 144xx, impact 146xx, fhir 242xx)
+
+// natsURL: the three local cluster nodes on the offset ports, unless WASL_NATS_URL names an external cluster
+// (deployment: a NATS JetStream cluster the orchestrator does not start, e.g. the docker-compose nats-0..2 services).
+func natsURL(env string, off int) string {
+	if env != "" {
+		return env
+	}
+	return fmt.Sprintf("nats://127.0.0.1:%d,nats://127.0.0.1:%d,nats://127.0.0.1:%d", 14822+off, 14823+off, 14824+off)
+}
+
+// NatsExternal: WASL_NATS_EXTERNAL=1 with WASL_NATS_URL = the cluster is managed outside the orchestrator, which then
+// neither starts nor kills NATS nodes (the -natskill chaos cycle is skipped and reported as such).
+var NatsExternal = os.Getenv("WASL_NATS_EXTERNAL") == "1" && os.Getenv("WASL_NATS_URL") != ""
+
+// validateNatsConfig rejects a half-configured external cluster before a command opens data, models or services.
+func validateNatsConfig(rawURL, external string) error {
+	if rawURL != "" && external != "1" {
+		return errors.New("WASL_NATS_URL requires WASL_NATS_EXTERNAL=1")
+	}
+	if rawURL == "" && external == "1" {
+		return errors.New("WASL_NATS_EXTERNAL=1 requires WASL_NATS_URL")
+	}
+	return nil
+}
+
+// natsFirstHostPort: host:port of the first NATS URL (the API health check dials it).
+func natsFirstHostPort() string {
+	u := strings.Split(NatsURL, ",")[0]
+	if i := strings.Index(u, "://"); i >= 0 {
+		u = u[i+3:]
+	}
+	return u
+}
 
 // retry runs f until it succeeds (broker leader elections make control-plane calls fail transiently).
 func retry(what string, f func() error) {
@@ -122,8 +157,35 @@ func setupStreams(replicas, P int) {
 	nc, js := connect("setup")
 	defer nc.Close()
 	ctx := context.Background()
+	// A cohort is a fresh run, not a service restart. In particular, external NATS volumes survive the run directory:
+	// retaining SEEN would suppress regenerated ids, while FHIRSUB/FHIRPOLL could resume beyond or at EOF of new input.
+	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL"} {
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteKeyValue(ctx, bucket)
+			if err == nil || errors.Is(err, jetstream.ErrBucketNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset KV bucket %s: %v", bucket, err))
+		}
+	}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
-		js.DeleteStream(ctx, s)
+		var err error
+		for try := 0; try < 30; try++ {
+			err = js.DeleteStream(ctx, s)
+			if err == nil || errors.Is(err, jetstream.ErrStreamNotFound) {
+				err = nil
+				break
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		if err != nil {
+			panic(fmt.Sprintf("reset stream %s: %v", s, err))
+		}
 	}
 	subj := map[string][]string{"FHIR": {"fhir.>"}, "PREP": {"prep"}, "FACTS": {"facts.>"}, "OUT": {"out.>"}}
 	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
@@ -285,7 +347,15 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			if kind == "colposcopy" {
 				kind = "colonoscopy" // procedure-report slot; Judge6 routes on the presence of a coded conclusion
 			}
-			if kind == "breast-screen" && ev.Coded != "" {
+			if kind == "ldct-screen" && ev.Coded != "" {
+				ev.Ev = LDCTCodedJudge(ev.Text, ev.Coded) // ldctread.go: coded Lung-RADS = second reader, must equal regex
+			} else if kind == "ldct-screen" || kind == "ldct-workup" {
+				ev.Ev = LDCTJudge(ev.Text, kind) // ldctread.go: regex + cached Gemma 3 4B
+			} else if kind == "ifhas-screen" {
+				ev.Ev = IfhasScreenJudge(ev.Text, ev.Coded) // ifhasread.go: printed panel = coded results
+			} else if kind == "ifhas-followup" {
+				ev.Ev = IfhasNoteJudge(ev.Text) // ifhasread.go: regex + cached Gemma 3 4B
+			} else if kind == "breast-screen" && ev.Coded != "" {
 				ev.Ev = BreastCodedJudge(ev.Text, ev.Coded) // breastread.go: coded BI-RADS = second reader, must equal regex
 			} else if kind == "breast-screen" || kind == "breast-assess" {
 				ev.Ev = BreastJudge(ev.Text, kind) // breastread.go: regex + cached Gemma 3 4B
@@ -300,8 +370,13 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 			} else {
 				ev.Ev = Judge.Judge6(ev.Text, kind, ev.Coded)
 			}
+			var iv *ImageVerdict // hold-only image reader verdict; nil when the reader is off
 			if ImageR != nil && kind == "colonoscopy" && ev.Coded == "" && ev.Category == "colonoscopy" {
-				applyImage(ev.Ev, ImageR.Read(ev.Images))
+				iv = ImageR.Read(ev.Images)
+				applyImage(ev.Ev, iv)
+			}
+			if kind == "colonoscopy" {
+				r1photoGate(ev.Ev, iv) // r1review.go: completion review only with a verified caecal photo (no-op with the flag off)
 			}
 			ev.Images = nil
 			ev.Text = "" // the full body stays in the immutable FHIR log; downstream carries the verdict + hash
@@ -399,11 +474,32 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 	return ids
 }
 
+// linkerStatus builds the linker status document. The caller holds the mutex that serialises L.Apply and marshals the
+// result after releasing it, so the document must own copies of everything the apply loop mutates. It used to alias
+// L.Stats, and marshalling that map raced with L.Apply: 80 "concurrent map iteration and map write" crashes in the x10 run.
+func linkerStatus(L *LinkerCore, processed, present uint64, published, suppressed int64, recovered float64, inflight, retries int64, uptime float64) map[string]interface{} {
+	stats := make(map[string]int, len(L.Stats))
+	for k, v := range L.Stats {
+		stats[k] = v
+	}
+	return map[string]interface{}{"processed": processed, "present_at_start": present, "published": published, "suppressed": suppressed,
+		"records": len(L.recs), "first_new_output_s": recovered,
+		"pseq": append([]uint64{}, L.PSeq...), "inflight": inflight, "pub_retries": retries, "uptime": uptime, "stats": stats}
+}
+
 func runLinker(dataDir string, P int, runDir string) {
 	nc, js := connect("linker")
 	defer nc.Close()
 	gbm := LoadGBM(filepath.Join(dataDir, mf("lgb_stream.json")))
 	L := NewLinkerCoreANN(gbm, P)
+	cfg := LinkFunnelConfig{CandidateK: L.K, CandidateCap: L.Cap, ANNMode: *annMode, MergeThreshold: L.Thr, ReviewFloor: L.Lo, ModelSet: ModelSet}
+	if *annMode == "hnsw" {
+		cfg.HNSWM, cfg.HNSWEfConstruct, cfg.HNSWEfSearch = 16, 100, 64
+	}
+	trace := newLinkFunnelWriter(LinkFunnelPath, cfg)
+	if trace != nil {
+		L.trace = trace.Append
+	}
 	present := presentIDs(js, "FACTS", ">")
 	hwm := uint64(len(present))
 	ctx := context.Background()
@@ -426,9 +522,10 @@ func runLinker(dataDir string, P int, runDir string) {
 	go func() {
 		for {
 			mu.Lock()
-			st := map[string]interface{}{"processed": next - 1, "present_at_start": hwm, "published": published, "suppressed": suppressed,
-				"records": len(L.recs), "first_new_output_s": recovered,
-				"pseq": append([]uint64{}, L.PSeq...), "inflight": atomic.LoadInt64(&ap.inflight), "pub_retries": atomic.LoadInt64(&ap.retries), "uptime": time.Since(start).Seconds(), "stats": L.Stats}
+			st := linkerStatus(L, next-1, hwm, published, suppressed, recovered, atomic.LoadInt64(&ap.inflight), atomic.LoadInt64(&ap.retries), time.Since(start).Seconds())
+			if trace.Err() != nil {
+				st["link_funnel_error"] = trace.Err().Error()
+			}
 			mu.Unlock()
 			writeStatus(runDir, "linker", st)
 			time.Sleep(300 * time.Millisecond)

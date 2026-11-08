@@ -1,0 +1,760 @@
+Page 1 of 24 
+TEMPLATE 5: 
+Standard
+Standard for the Provision of the Periodic 
+Comprehensive Screening Program for Adults 
+- IFHAS
+
+Page 2 of 24 
+Document Title: Standard for the Provision of the Periodic Comprehensive Screening Program for Adults - IFHAS
+Document Ref. Number: DoH/SD/ADPHC-CHS/IFHAS/V10/2025 Version: V10 
+New / Revised: Revised 
+Publication Date: July 2025 
+Effective Date: July 2025 
+Document Control: DoH Strategy Sector 
+Applies To: DOH licensed Healthcare Providers 
+Owner: Community Health Sector  Abu Dhabi Public Health Center (ADPHC) 
+Revision Date: July 2028 
+Revision Period: Every 3 years and as needed. 
+Contact: IFHAS Support IFHAS.Support@adphc.gov.ae 
+Page 3 of 24 
+1.Standard Scope
+1.1 Purpose:  
+1.1.1 This document mandates the service specifications and data reporting requirements for 
+DoH’s Periodic Comprehensive Screening Program for Adults in the Emirate of Abu Dhabi.  
+1.1.2 It specifies the eligibility criteria, screening tests, frequency of testing and quality 
+indicators to ensure that adults screened through the Periodic Comprehensive Screening 
+Program receive quality, safe, effective, Participate -centered screening services and are 
+referred in a timely manner for further assessment and appropriate management.  
+1.2 Scope:  
+1.2.1 These Service Specifications apply to all healthcare providers (facilities and professionals) 
+licensed by DoH in the Emirate of Abu Dhabi who are participating in DoH’s Periodic 
+Comprehensive Screening Program for Adults-IFHAS. 
+1.3 These Service Specifications cover screening for the following chronic diseases:  
+1.3.1 Cardiovascular disease (CVD) and risk factors such as Diabetes, Hypertension, 
+        Dyslipidemia, Obesity and Smoking History.  
+1.3.2 Reproductive Health Screening  
+1.3.3 Abdominal Aortic Aneurysm screening. 
+1.3.4 Cancer (Breast, Cervical, Lung & Colorectal) 
+1.3.5 Bone Health (Osteoporosis) 
+1.3.6 Mental Health (Depression & Anxiety Disorders) 
+1.3.7 Oral Health 
+1.3.8 Senior Citizen Health (Dementia, Vision and Hearing) 
+2. Definitions and Abbreviations
+No. Term / Abbreviation Definition 
+2.1 ADPHC Abu Dhabi Public Health Center 
+2.2 CVD Cardiovascular Disease 
+2.3 CME Continuing Medical Education 
+2.4 DoH Department of Health 
+2.5 FIT Fecal Immunochemical Test  
+2.6 HCP Health care provider 
+2.7 IFHAS 
+It represents the Periodic Comprehensive Screening 
+Program for Adults, and it is an Arabic translation of 
+‘screen' 
+2.8 Shafafiya 
+An initiative by the DoH aimed at enhancing transparency 
+and efficiency in the healthcare system of Abu Dhabi and 
+automating claims and billing information 
+2.9 PHQ-9 Patient Health Questionnaire-9 items 
+3.0 GAD-7 Generalized Anxiety Disorder-7 items 
+Page 4 of 24 
+3.Standard Requirements and Specifications
+All healthcare providers participating in DoH’s Periodic Comprehensive Screening Program for Adults 
+in the Emirate of Abu Dhabi shall: 
+3.1 Be licensed by DoH. 
+3.2 Provide clinical services and Participate care in accordance with DoH policies and standards, and 
+the laws and regulations of the Emirate of Abu Dhabi. 
+3.3 Comply with relevant DoH Policies and Standards with special attention to: 
+3.3.1 Policies and standards on Participants’ Education and General Consent: The licensed 
+provider must provide appropriate education and information regarding the screening test and 
+must ensure that appropriate General consent is obtained and documented on the 
+participant’s medical record. 
+3.3.2 Policies and standards on managing participants’ medical records include developing 
+effective recording systems, maintaining records, confidentiality, privacy and secur ing the 
+participants’ information; and educating them on services provided and satisfying the 
+requirements of the informed consent and participants’ rights and responsibilities. 
+3.3.3 DoH Regulations and Procedures, available at www.DoH.gov.ae  
+3.4 Comply with DoH’s requests to inspect and audit records and cooperate with DoH authorized 
+auditors as required by DoH. 
+3.5 Comply with Information Security and Data Management requirements including sharing of IFHAS 
+Questionnaire (refer to appendix 1), PHQ-9, GAD-7, Male reproductive health questionnaire 
+(Appendix 2, female reproductive health questionnaire (Appendix 3) and other screening 
+results/diagnosis and where applicable, pathology results, electronic participants’ records and 
+disease management systems through Shafafiya platform.  
+4.Key stakeholder Roles and Responsibilities
+4.1 Participating Healthcare Providers are to provide the following services based on their licensed 
+category and obtained privileges: 
+4.1.1 Perform Screening tests for the following conditions upon age and gender: 
+4.1.2 
+4.1.2.1 Cardiovascular diseases and risk factors (Diabetes, Hypertension, Dyslipidemia, Obesity, 
+and Smoking History)  
+4.1.2.2 Reproductive Health Screening 
+4.1.2.3 Abdominal Aortic Aneurysm Screening 
+4.1.2.4 Cancer (Breast, Cervical, Colorectal & Lung) 
+4.1.2.5 Bone Health (Osteoporosis) 
+4.1.2.1 Mental health (Depression & Anxiety Disorders) 
+4.1.2.7 Oral Health. 
+4.1.2.8 Senior Citizen Health (Dementia, Vision & Hearing) 
+4.1.3 Follow up services and referrals for further assessment and management . 
+Page 5 of 24 
+4.2 Facilities participating in DoH’s Periodic Comprehensive Screening Program for Adults should: 
+4.2.1 Fulfill the duties of health care providers for the provision of the Periodic Comprehensive 
+        Screening Program in accordance with Appendix 4 
+4.2.2 Comply with DoH Periodic Comprehensive Screening Program Care Pathways, Screening 
+measures and tests for the Comprehensive Screening Program, Assessment measure per age 
+group, referral Pathway for abnormal results and Clinical  
+        Quality Indicators and with Appendices 5, 6, 7 , 8 and 9 respectively. 
+4.2.3 Assign a screening program coordinator who fulfills the role & responsibilities in  
+        accordance with Appendix 4 
+4.2.4 Maintain records of screening tests and outcomes. 
+4.2.5 Establish internal audit procedures to demonstrate compliance with these service  
+        requirements and other associated regulatory policies and standards . 
+4.2.6 Ensure accessible service provision for all referred participants. 
+4.2.7 Provide screening services during a wide range of times (weekdays, weekends, mornings  
+        & evenings). 
+4.2.8 Ensure that up-to-date lists of clinic-registered populations are maintained and are    
+        accurate and complete. 
+4.2.9 Ensure there is an adequate number of trained, qualified, and competent staff in place to  
+        deliver high-quality screening services (who are competent and able to diagnose, interpret 
+        finding and provide health education), in line with best practice guidelines and DoH  
+         relevant standards. 
+4.2.10 Ensure the relevant qualifications for the specific group of staff who will be delivering the 
+services across the care pathway. However, all staff must demonstrate competence in their 
+area. 
+4.2.11 Ensure ongoing training of staff in the relevant standards/ guidelines, policies and 
+specifications to keep them updated. 
+4.2.12 Ensure the professional team carrying out the screening services include a minimum of 
+physician, nurse and allied healthcare professional, registration clerk and a screening program 
+care coordinator. 
+4.2.13 Improve coverage and uptake by ensuring that invitations to the screening services are 
+endorsed and sent on time; initial and follow-up appointments are offered, and appointment 
+reminders are utilized. 
+4.2.14 Deliver outreach activity services, if applicable, enhance the uptake fulfilling the 
+requirements as availability of equipment and supplies needed for the screening tests and 
+upon DoH policies and guidelines. 
+4.2.15 On a case-by-case basis and subject to DoH’s Technical license Committee, the DoH may 
+issue authorization for licensed healthcare providers other than licensed mobile units after 
+passing ADPHC screening department auditing requirements to offer comprehensive screening 
+in the workplace/home care/public places in accordance with the following:  
+4.2.15.1  Licensed facilities should conduct campaigns to enhance access to 
+comprehensive screening programs for eligible individuals. 
+4.2.15.2 Healthcare provider scope of service meets the requirements specified in this 
+standard and target workplace/public environment supports the requirements of this 
+standard, specifically the ability to dedicate appropriate rooms that support privacy and 
+confidentiality and that are compliant with the requirements of the relevant DoH policies 
+and procedures. 
+Page 6 of 24 
+4.3 Laboratories, Radiology and Audiology Services participating in DoH Periodic Comprehensive 
+Screening Program for Adults must: 
+4.3.1 Be licensed by DoH. 
+4.3.2 Have in place systems, policies and operating procedures for laboratory services in 
+accordance with the requirements of the DoH Clinical Laboratory Standards, and for 
+radiological and audiology services if applicable, in addition to the requirement of DoH 
+screening guidelines and standards. 
+4.3.3 Laboratories must be accredited for health, safety and quality by a well-recognized 
+international accreditation body. 
+4.4 Healthcare professionals participating in the DoH Periodic Comprehensive Screening Program for 
+Adults must: 
+4.4.1 Be licensed by the DoH. 
+4.4.2 Comply with the clinical standards detailed in this document to provide the most 
+appropriate care, taking responsibility for deciding the best care options for managing 
+screened cases and in accordance with Appendix 4 
+4.4.3 Participating in Continuing Medical Education (CME) in accordance with DoH 
+requirements. 
+4.4.4 Comply with the relevant health care provider duties specified in Appendix 4. 
+4.4.5 Meet regularly to discuss screening uptake and outcome activities, quality improvement 
+and internal audit findings. 
+4.5 Screening Participants Eligibility Criteria: 
+4.5.1 Member of the THIQA program 
+4.5.2 18 years old and above. 
+4.5.3 Female or male based on the specific Screening Program eligibility criteria.  
+4.6 Test Measures/Frequency of the Service Provision: 
+4.6.1 The screening tools and the frequency of screening per age group for each screened 
+medical condition of the program are discussed in Appendix 6 and 7. 
+4.7 Recruitment of Screening Participates:  
+The Provider of the Periodic Comprehensive Screening Program for Adults shall have: 
+4.7.1 An “Invitation System” for the initiation of the first screening, rescreening and recall for 
+positive and insufficient results. 
+4.7.2 A system in place to allow for: 
+4.7.2.1. Referral from health care professionals, relevant stakeholders or self-referral.  
+4.7.2.2. Onward referrals to other relevant licensed health care providers were appropriate. 
+4.8 Periodic Comprehensive Screening Pathway: 
+4.8.1 Activities prior to screening: 
+To ensure appropriate and efficient use of health resources in accordance with good management 
+practice and experience, the program should: 
+4.8.1.1 Identify and invite eligible participants for the screening at appropriate time and 
+intervals outside of the clinic-registered population. 
+Page 7 of 24 
+4.8.1.2 Provide the participants with the information required, so they can make an 
+informed decision on whether to participate. 
+4.8.2 During the initial visit, the providers of the program should: 
+4.8.2.1 Ensure that the IFHAS participants’ informed consents are obtained and 
+documented. 
+4.8.2.2 Ensure IFHAS participants are provided with appropriate counselling, education 
+and information regarding the screening tests, assessment, follow-up care.  
+4.8.2.3 For a married female participant in childbearing age inquire regards plans to 
+conceive. Consider referring to preconception clinic for case assessment and tailored 
+counseling. 
+4.9 With respect to follow-up visits, all healthcare providers of the Periodic Comprehensive 
+Screening Program for Adults must: 
+4.9.1 Schedule follow up visits and inform participants who have had completed/partially 
+completed the Comprehensive Screening Program at the time of the screening about their 
+appointments to receive the screening results in the case of abnormal results, appropriate 
+counselling and referrals. Teleconsultation option can be utilized (refer to Tele consultation 
+Standard). The ordering physician is responsible for communicating back to participants on 
+their screening results especially if they do not show up for follow up. 
+4.9.2 Ensure the following when communicating the screening tests results to the participants:  
+4.9.2.1 Physicians should ensure proper documentation when communicating results to 
+participants during follow-up visit (in person visit/teleconsultation visit) within 10 days of 
+the initial visit. 
+4.9.2.2 If the test outcome is normal, the screened participant is discharged to routine 
+screening as per the frequency mentioned in this document. 
+4.9.2.3 If the test outcome is abnormal, the provider should ensure that the participant 
+is physically present when discussing the findings and receiving the appropriate 
+counselling.  
+4.9.3 Referrals shall be made if IFHAS abnormal results noted (Appendix 8), if needed, to other 
+appropriately licensed and privileged health professionals within a period specified in 
+accordance with the DoH Care Pathway of each standard or program Service Specification for 
+the provision of screening services. 
+4.9.4 Establish a network of secondary care with specific conditions to facilitate the candidate’s 
+journey and to receive timely and complete feedback on referrals. 
+4.10  Information on Screening and Educational Material: 
+4.10.1 At relevant points during the screening pathway, participating individuals should be 
+provided with appropriate information on each type of screening delivered by the Periodic 
+Comprehensive Screening Program for Adults.  
+4.10.2 A trained interpreter should be available during appointments, if needed, along with 
+appropriate written information. 
+4.10.3 Individuals participating from People of determination (PoD) should be provided with 
+support to enable them to understand all processes and results . 
+4.10.4 Telephone and email queries in relation to the Periodic Comprehensive Screening 
+Program for Adults activities should be dealt with promptly. 
+Page 8 of 24 
+4.10.4.1 Participating in education and information regarding available services should be 
+those provided by ADPHC or developed with the involvement of ADPHC. 
+4.10.4.2 Providers must always use the educational material developed by ADPHC for all 
+stages of the screening pathway to ensure accurate messages about the risks and benefits 
+of screening and about any subsequent surveillance or treatment provided .  
+4.10.4.3 Providers must inform and coordinate with ADPHC prior development any other 
+supporting materials. 
+4.10.4.4 Providers must inform and coordinate with ADPHC prior development  of 
+campaigns to ensure accurate and consistent messaging.  
+4.10.4.5 Providers must not develop their own information about screening services on 
+their websites but should always link through to the ADPHC’s website and Public Health 
+Programs’ links. https://www.adphc.gov.ae/en  
+4.10.4.6 DoH encourages providers of the Periodic Comprehensive Screening Program to 
+support ADPHC in reviewing the program information leaflet, education materials and 
+online content for the public on a regular basis.  
+4.11 Results Reporting: 
+Healthcare facilities providing the Periodic Comprehensive Screening Program for Adults 
+should:  
+4.11.1 Report and submit data to DoH via e-claims in accordance with the DoH Reporting of 
+Health Statistics standards and as set out in the DoH Data Standards and Procedures (available 
+at Reporting - Shafafiya | Department of Health Abu Dhabi).  
+4.11.2 Ensure that the data entered is accurate and is validated prior to submitting to DoH. 
+4.11.3 Data entry validation remains the responsibility of the healthcare professional responsible 
+for screening; data entered by registration clerk must not be changed or edited without the 
+approval of the healthcare professional responsible for the screening.  
+4.11.4 In addition, to reporting through the “E-claims system” providers of the Periodic 
+Comprehensive Screening Program are expected to ensure: 
+4.11.4.1 The clerk responsible for registering the participant should tag the participant for 
+IFHAS to allow tracking through Malaffi and results tag in Sahatna. 
+4.11.4.2 Collect and circulate routine activity data, outcome data, and statistics, and 
+monitor the services against DoH’s published standards/guidelines. 
+4.11.4.3 The participant journey is completed and the results of screening data reported 
+through Shafafiya system within window of 15 days from the initial visit.   If IFHAS 
+screening package is not completed, then claims cannot be submitted.  
+4.11.4.4 Report Key Performance Indicators as per Appendix 4 within a maximum of 21 
+days after the end of each quarter. 
+5.Monitoring and Evaluation
+All providers of the Periodic Comprehensive Screening Program for Adults are required to submit and report 
+their performances and should be evaluated in accordance with the following: 
+5.1 Statistical data and accuracy of reporting including coverage and uptake performance.  
+5.2 Auditing performed by DoH or third party.  
+5.3 Key Performance Indicators are set out in Appendix 5. 
+Page 9 of 24 
+6.Enforcement and Sanctions
+DoH may impose sanctions in relation to any breach of requirements under this standard in accordance with 
+the disciplinary regulation of the Healthcare sector. 
+7. Relevant Reference Documents
+No. Reference Date Reference Name Relation Explanation / Coding / Publication Links 
+1 Jul-19 DoH Guidelines on the Screening for Osteoporosis https://www.DoH.gov.ae/-/media/D9596EA3C6B749B8ABF61FBD1DD7EF15.ashx
+2 Nov-18 
+DoH Program Service Requirements for the 
+Provision of Cardiovascular Disease and 
+Risk Factors Screening and Follow up. 
+https://www.DoH.gov.ae/en/resour
+ces/standards 
+https://www.DoH.gov.ae/-
+/media/4CEA97DEE7F64DCAA5202
+AC376C4D0A4.ashx 
+3  Sep- 19 DoH Colorectal Cancer Screening Program Specification https://www.DoH.gov.ae/-/media/980F1D8087214B6D9E630B457B85E4B9.ashx
+4 Mar-22 DoH Standards for the Cervical Cancer Screening Program. https://www.DoH.gov.ae/-/media/51BDF280150B4AD481064B8E945BDB1D.ashx
+5 Oct-24 DoH Standard for Breast Cancer Screening & Diagnosis https://www.doh.gov.ae/-/media/38563EB677824844AF2455BB69FAA5B9.ashx 
+6 Nov-18 DoH Lung Cancer Screening Service Specifications https://www.DoH.gov.ae/-/media/9BBE2F69CAD74344B391D70DD7FD2654.ashx
+7 Nov-19 
+DoH Service Requirement for the Diagnosis 
+and Management of Depression and 
+Anxiety Disorders in Primary Healthcare 
+Centers Program. 
+Standards | Department of Health 
+Abu Dhabi
+8 Mar-25 Introducing Liquid Biopsy (Shield Test) for Colorectal Cancer Screening https://www.DoH.gov.ae/-/media/48FCA3D277D545C3915F4AC7261F2ED4.ashx
+Page 10 of 24 
+8. Appendices
+Appendix 1: IFHAS Health Questionnaire 
+Page 1 of 2 
+SECTION  1: DEMOGRAPHICS 
+Please take a few minutes to answer this questionnaire, which focuses on understanding your health and lifestyle. 
+All information provided in this questionnaire is strictly confidential and will not be shared with any third parties. If you have any 
+questions, please feel free to ask them directly to your nurse or physician.  
+This questionnaire includes questions for the participant asked by a trained health professional. Text written in red are instructions 
+to fill out the questions. 
+DATE OF BIRTH: EMIRATES ID: 
+FIRST NAME: 
+GENDER: 
+LAST NAME: 
+PLACE OF RESIDENCE: 
+ Abu Dhabi, indicate region: 
+ Abu Dhabi City  Al Ain Al Dhafra 
+ Ajman
+ Al Fujairah
+ Dubai 
+ Umm al Quwain
+ Sharjah
+ Ras Al Khaimah
+WHAT IS YOUR HIGHEST  LEVEL  OF EDUCATION? 
+PLEASE  TICK ONE OF THE FOLLOWING:  
+ Did not attend school 
+ Less than high school 
+ Completed high school 
+ Completed Diploma or Bachelor 
+ Completed Master or PhD 
+ Don’t know/not sure 
+WHAT IS YOUR CURRENT EMPLOYMENT STATUS? 
+PLEASE  TICK ONE OF THE FOLLOWING: 
+ Employed/Self-Employed
+ Student
+ Unemployed
+ Retired
+ House duties/housewife 
+ Other (please specify) 
+ Do not know/not sure 
+1. HAS A HEALTH  PROFESSIONAL  EVER TOLD YOU THAT YOU HAVE ANY OF THESE CONDITIONS  (TICK THE
+BOX)? IF SO, PLEASE INDICATE  WHETHER  YOU ARE CURRENTLY  TAKING MEDICATION  FOR THAT CONDITION.
+Health Condition Yes No Don’t know/ not sure 
+Currently taking medication 
+for this condition 
+Yes No Don’t know/ not sure 
+a. High blood pressure (Hypertension) 
+b. High blood sugar (Diabetes)(excluding during pregnancy) 
+c. High Cholesterol
+d. Obesity
+e. Heart Disease 
+f. Stroke 
+g. Cancer
+h. Depression
+i. Osteoporosis
+j. Asthma
+k. Chronic obstructive pulmonary disease (COPD)
+COMPREHESIVE  PERIODIC SCREENING PROGRAM FOR NON -COMMUNICABLE DISEASES 
+QUESTIONNAIRE 
+SECTION 2A:  ABOUT YOUR HEALTH 
+ Male 
+ Female 
+Page 11 of 24 
+SECTION  3A: ABOUT  YOUR LIFESTYLE:  TOBACCO AND ALCOHOL CONSUMPTION  
+1. HAS ANYONE  IN YOUR IMMEDIATE  FAMILY  (BROTHERS,  SISTERS,  FATHER,  OR MOTHER)  EVER HAD ANY 
+OF THE FOLLOWING  CONDITIONS?  (YOU CAN TICK MORE THAN ONE) 
+ Hypertension  Cancer
+ Diabetes  Osteoporosis
+ Heart disease  None of the above 
+ Stroke  Don’t know / not sure 
+ Depression
+2. ARE YOUR PARENTS  RELATED  TO EACH OTHER ?
+ Yes 
+ No
+ Don’t know / not sure 
+1. DO YOU CURRENTLY  USE ANY TOBACCO  PRODUCTS  (CIGARETTES,  MIDWAKH,  SHISHA)?
+ Yes 
+ I used tobacco products before, but not now 
+ No, never 
+ Don’t know/not sure 
+2. IF YOU U S E  T O B A C C O  P R O D U C T S  CURRENTLY  OR USED TOBACCO PRODUCTS IN THE PAST, PLEASE
+COMPLETE  THE TABLE BELOW. (IF YOU HAVE NEVER USED TOBACCO,  SKIP THIS QUESTION.)
+Cigarettes e-Cigarettes Midwakh/ Dokha Shisha (Waterpipe) Chewable tobacco (tombac, naswar) 
+On average, how many of the following products do 
+you/did you consume each day/week? 
+(IF LESS THAN DAILY, RECORD WEEKLY) 
+(RECORD FOR EACH TYPE, use showcard, Appendix I) 
+Per day: 
+Per week: 
+Per day: 
+Per week: 
+Per day: 
+Per week: 
+Per day: 
+Per week: 
+Per day: 
+Per week: 
+At what age did you start using tobacco (in years)? 
+Don’t know/not sure 
+3. IN THE PAST 30 DAYS, DID ANYONE SMOKE AROUND YOU IN THE FOLLOWING PLACES (PASSIVE SMOKING)? 
+Yes No Don’t know/ not sure 
+At home 
+At work/ at school 
+SECTION 2B: ABOUT YOUR FAMILY HEALTH 
+Page 12 of 24 
+SECTION  3C: ABOUT  YOUR LIFESTYLE:  EXERCISE 
+SECTION  3D: ABOUT  YOUR LIFESTYLE:  SLEEP 
+1. H O W O F T E N D O Y O U C O N S U M E F R U I T S A N D V E G E T A B L E S ? 
+ Twice a day or more often  A few times a week  Never 
+ Once a day  Once a week or less  Don’t know / not sure 
+2. H O W O F T E N D O Y O U C O N S U M E J U N K F O O D ? 
+ Twice a day or more often  A few times a week  Never 
+ Once a day  Once a week or less  Don’t know / not sure 
+3. H O W O F T E N D O Y O U C O N S U M E S U G A R Y D R I N K S ? 
+ Twice a day or more often  A few times a week  Never 
+ Once a day  Once a week or less  Don’t know / not sure 
+- VIGOROUS  and MODERATE  PHYSICAL  ACTIVITIES:
+On a rating scale of perceived exertion from 0-10, moderate activity is usually a 5 or 6 while vigorous activity is a 7 or 8. 
+- THE MEANING  OF WALKING:
+Walking refers to moving in sync with your individual fitness level, at a fast pace but without losing your breath; it falls 
+within the light category of physical activity, usually a 2-4 on a rating scale of perceived exertion from 0-10. 
+- THE MEANING  OF TIME SPENT SITTING:
+Working or leisure time spent in behavior that includes low movement sitting, such as desk-based office work, driving a 
+car, and watching TV or other screen devices. 
+1. IN THE PAST WEEK, HOW OFTEN DID YOU EXERCISE? 
+0 1 2 3 4 5 6 7 Don’t know/ not sure Time (hours/minutes) spent doing the activity on one of those days 
+How many days per week did you 
+engage in moderate/vigorous 
+physical activity? 
+ hours or
+ minutes 
+How many days per week did you 
+engage in walking (for at least 10 
+minutes at a time)? 
+ hours or
+ minutes 
+1. HOW MUCH DO YOU SLEEP? 
+Number of hours Don’t know/ not sure 
+On average, how many hours of sleep do you get in one night? 
+THANK YOU FOR TAKING THE TIME TO COMPLETE THIS QUESTIONNAIRE. 
+YOUR INPUT IS GREATLY APPRECIATED. 
+SECTION 3B: ABOUT YOUR LIFESTYLE:  DIET 
+Page 13 of 24 
+Appendix 2: Male Reproductive Health Questionnaire and Clinical Pathway 
+Note: If a patient is a smoker consider a referral for smoking cessation clinic. 
+1. Physical Exam focuses to rule out Scrotal Varices, Disparity in Testicular Size, Testicular Atrophy, Absent Testis, Human Papilloma eruptions etc. 
+2. Male Reproductive Health Questionnaire: If patient is a smoker consider referral for smoking cessation clinic.
+
+Page 14 of 24 
+Appendix 3: Female Reproductive Health Questionnaire and Clinical Pathway 
+Note: If any of the questions are answered with “Yes”, refer for a gynecologist evaluation. 
+1. Consider any need to see a dietician or mental health specialist 
+2. Female Reproductive Health Questionnaire: If any of the questions are answered with “Yes”, refer for a gynecologist evaluation
+3. MCH: Maternal and child health
+Note: if both AMH testing and FRHQ are abnormal then follow only AMH test abnormal pathway. 
+
+Page 15 of 24 
+Appendix 4: Health care Provider’s Duties 
+Service Care Coordinator 
+• Ensuring that IFHAS registration is done correctly and efficiently.
+• Guiding participants through their screening journey with clarity and support.
+• Educating and reassuring participants about the importance of screening and early
+detection.
+• Maintaining high standards by checking that your facility meets DoH audit
+requirements.
+• Monitoring and supervising your teams, ensuring they are well-trained and aligned
+with IFHAS objectives.
+• Providing ADPHC with accurate monthly uptake feedback and quarterly KPI
+submissions, allowing us to track our progress and improve services.
+• Ensuring that all IFHAS materials (such as vests and participants’ information sheets)
+are available and properly used.
+Service Physician 
+• Provides clinical services and participant care in accordance with this document.
+• Provides appropriate participant education regarding the services and the screening
+tests.
+• Ensures that participant consent has been obtained and is documented in
+accordance with DoH policies.
+• Performs age-appropriate assessment, complete physical exam and counselling/
+anticipatory guidance/risk factor reduction interventions.
+• Orders screening tests (Appendix 3b), follow up results and communicate results to
+all participants.
+• Referring abnormal cases to appropriate specialties (Appendix 8).
+• For abnormal female or male reproductive health screening to follow the clinical
+pathway (Appendices 2 & 3).
+• Complies with the regulation on managing medical records and Participate
+information as per DoH policies.
+• Participate in training the team to ensure smooth working flow.
+• Physicians working with the IFHAS program should obtain CMEs related to the
+screenings to be up to date with the service.
+Service Nurse 
+• Ensure that an appropriate participant general consent is obtained, filled and
+signed.
+• Ensure that the participant completes the IFHAS health questionnaire.
+• Ensure preparation of the participant files and appointment list in coordination with
+the receptionist.
+• Performs and documents the participator’s vital signs and measurements as per the
+specific screening service provided.
+• Nurses working with the IFHAS program should obtain CMEs related to the screenings to be up to date.
+Page 16 of 24 
+Receptionist/ Registration Clerk: 
+• Register the candidate’s visit and arrange follow-up appointments.
+• Check the eligibility of each participant going through this program to ensure no
+duplication with the same services provided at another healthcare facility.
+• Ensure during registration process to tag IFHAS participant and that the system is
+flowing smoothly to avoid long waiting times and delays.
+• Call the participant to remind them of their appointment.
+Page 17 of 24 
+Appendix 5: Screening Pathway for the Comprehensive Screening Program 
+
+Page 18 of 24 
+Appendix 6: Screening measures and tests for the Comprehensive Screening Program 
+ Overall Screening Measures and Tests 
+Physical Measurements 
+Blood Pressure 
+Height 
+Weight 
+Body mass index (BMI) 
+Waist circumference / waist hip ratio 
+Biochemical Measurements 
+Random Blood Glucose 
+HbA1c 
+Lipids Profile (Total cholesterol, HDL- C, LDL-C, TG) 
+S. creatinine
+CBC Panel
+Others 
+Snellen Chart Visual Acuity Test 
+Retinal Imaging 
+Dilated Fundus Examination 
+Pure Tone Audiometry Hearing Test 
+PHQ-9 Depression Assessment 
+GAD-7 Anxiety Screening 
+Female Reproductive Health Questionnaire (FRHQ) 
+Anti- Müllerian testing (AMH Testing) 
+Male Reproductive Health Questionnaire (MRHQ) 
+Montreal Cognitive Assessment (MoCA) 
+Fecal Immunochemical Test (FIT) / Colonoscopy / Shield Test (Liquid 
+Biopsy) 
+Pap Smear Test 
+HPV Test 
+Mammography 
+Clinical Breast Examination 
+Gail Model Breast Cancer Risk Assessment 
+Bone Mineral Density (BMD) Test 
+Abdominal Ultrasound 
+Low dose CT scan 
+Comprehensive Dental Examination 
+Oral Hygiene Counseling 
+Page 19 of 24 
+Appendix 7: Assessment Measures per Age Group 
+Package Name Target Group Frequency 
+Comprehensive Screening Major Package for Male & Female 18-39 years Every 3 years 
+IFHAS Health Questionnaire 
+Weight 
+Height 
+Body Mass Index (BMI) 
+Waist circumference / Waist hip ratio 
+Blood Pressure 
+Consultation 
+PHQ-9 Depression Screening 
+GAD-7 Anxiety Screening 
+Physical Exam 
+Blood Collection 
+Random Blood Sugar 
+HbA1C 
+Lipid Panel 
+S. Creatinine
+CBC 
+Package Name Target Group Frequency 
+Comprehensive Screening Major Package for Male & Female 40-64 years Every 3 years 
+IFHAS Health Questionnaire 
+Weight 
+Height 
+Body Mass Index (BMI) 
+Waist circumference / Waist hip ratio 
+Blood Pressure 
+Consultation 
+PHQ-9 Depression Screening 
+GAD-7 Anxiety Screening 
+Physical Exam 
+Blood Collection 
+Random Blood Sugar 
+HbA1C 
+Lipid Panel 
+S. Creatinine
+CBC 
+Page 20 of 24 
+Package Name Target Group Frequency 
+Comprehensive Screening Major Package for Male & Female 65-75 years Every 3 years 
+IFHAS Health Questionnaire 
+Weight 
+Height 
+Body Mass Index (BMI) 
+Waist circumference / Waist hip ratio 
+Blood Pressure 
+Consultation 
+PHQ-9 Depression Screening 
+GAD-7 Anxiety Screening 
+Physical Exam 
+Blood Collection 
+Random Blood Sugar 
+HbA1C 
+Lipid Panel 
+S. Creatinine
+CBC 
+Package Name Target Group Frequency 
+Comprehensive Screening Minor Package for Male & Female- Vision Screening 40-75 years Annually 
+Snellen Chart Visual Acuity Test 
+Retinal Imaging 
+Consultation+ Dilated Fundus Examination by ophthalmologist 
+Comprehensive Screening Minor Package for Male & Female-Hearing and 
+Dementia Screening 50-64 years Every 3 years 
+Consultation + Montreal Cognitive Assessment (MoCA) 
+Pure Tone Audiometry Hearing Test 
+Comprehensive Screening Minor Package for Male & Female-Hearing and 
+Dementia Screening 65-75 years Annually 
+Consultation + Montreal Cognitive Assessment (MoCA) 
+Pure Tone Audiometry Hearing Test 
+Package Name Target Group Frequency 
+Comprehensive Screening Oral Health Package for Male & Female 18-75 years Annually 
+Examination and Diagnosis, Complete, Permanent Dentition 
+Oral Hygiene Instruction  
+Page 21 of 24 
+Package Name Target Group Frequency 
+Cervical Cancer Screening for Female 25-29 years Every 3 years 
+Consultation 
+Pap Smear Test 
+Package Name Target Group Frequency 
+Cervical Cancer Screening for Female 30-65 years Every 5 years 
+Consultation 
+HPV Test ONLY 
+Package Name Target Group Frequency 
+Standalone Screening for Breast Cancer for Female 20-34 years Every 3 years 
+Consultation and Clinical Breast Exam 
+Package Name Target Group Frequency 
+Standalone Screening for Breast Cancer for Female 35-39 years Every 3 years 
+Consultation and Clinical Breast Exam 
+Gail Model Breast Cancer Risk Assessment 
+Package Name Target Group Frequency 
+Standalone Screening Mammography for Female 40-75 years Every 2 years 
+Consultation 
+Mammography 
+Package Name Target Group Frequency 
+Female Reproductive Health Screening 20-35 years Every 3 years 
+Consultation and Female Reproductive Health Questionnaire 
+Anti- Müllerian testing (AMH Testing) 
+Package Name Target Group Frequency 
+Male Reproductive Health Screening 20-35 years Every 3 years 
+Consultation and Male Reproductive Health Questionnaire 
+Package Name Target Group Frequency 
+Standalone Screening Fecal immunochemical test (FIT) for Male & Female 40-75 Years Annually 
+Fecal Immunochemical Test (FIT)  
+Page 22 of 24 
+Package Name Target Group Frequency 
+Standalone Screening Liquid Biopsy test for Male & Female 40-75 YearsReview Criteria* Every 3 years 
+Targeted genomic sequence analysis panel 
+*Inclusion For Liquid Biopsy test:
+• Unwilling to have a colonoscopy or FIT
+ Exclusion For Liquid Biopsy test: 
+• Personal history of colorectal cancer.
+• Genetic disorders: Known hereditary / germline risk of Colorectal cancer (e.g., Lynch syndrome or Familial .
+Adenomatous Polyposis).
+• Inflammatory Bowel Diseases Diagnosis.
+Package Name Target Group Frequency 
+Colon Cancer Screening Male & Female  40-75 years Every 10 years 
+Consultation and Colonoscopy 
+Package Name Target Group Frequency 
+Standalone Screening DEXA scan for Male & Female 60-75 Years Every 2 years 
+Bone Mineral Density (BMD) Test 
+Package Name Target Group Frequency 
+Lung Cancer Screening for Male & Female 55-75 yearsHigh Risk* Annually 
+Consultation and Low dose CT scan 
+* Criteria for High-Risk Lung Cancer screening: (Refer to DoH Lung Cancer Screening Service Specifications Appendix 5 for
+calculation of pack-year tobacco use).
+• 30 Pack-year history of smoking, and/or tobacco cessation <15 years.
+• 20 Pack-year history of tobacco use, and/or tobacco cessation <15 years and one additional risk factor .
+• 20 Year history of water pipe (Shisha) and/or Dokha, Medwakh and/or all other forms of smoked tobacco  use.
+Package Name Target Group Frequency 
+Standalone Screening Abdominal Aortic Aneurysm for Male 
+65-75yrs who
+have ever
+smoked
+Once in a 
+lifetime 
+Abdominal Ultrasound 
+Page 23 of 24 
+Appendix 8: The Periodic Comprehensive Screening Program for Adults-IFHAS Referral Pathway for abnormal 
+results 
+Referral Pathway 
+Test Abnormalities Specialist/Healthcare Provider 
+Snellen Chart Visual Acuity Test 
+Ophthalmologist Retinal Imaging 
+Dilated Fundus Examination 
+Pure Tone Audiometry Hearing Test ENT  
+PHQ-9 Depression Assessment Psychiatrist, Psychologist, Family Physician with Mental Health 
+Privilege GAD-7 Anxiety Screening 
+Montreal Cognitive Assessment (MoCA) Neurologist, Geriatrician. 
+Fecal Immunochemical Test (FIT) / 
+Colonoscopy / Shield Test (Liquid Biopsy) Gastroenterologist 
+Pap Smear Test Gynecologist HPV Test 
+Mammography (Breast CA) Family Medicine, Gynecologist, Medical Oncology & Breast Surgeon.  
+Clinical Breast Examination Family physician, Gynecologist 
+Gail Model Breast Cancer Risk 
+Assessment 
+Family Medicine, Gynecologist, Medical Oncology & Breast 
+Surgeon  
+Female Reproductive Health 
+Questionnaire (FRHQ) Gynecologist 
+Male Reproductive Health Questionnaire 
+(MRHQ) Urologist, Endocrinologist 
+Bone Mineral Density (BMD) Test Endocrinologist, Family physician 
+Abdominal Ultrasound (AAA) Vascular Surgeon 
+Non-Contrast Chest CT Pulmonologist 
+Comprehensive Dental Examination Dentist 
+Random Blood Sugar General Practitioner, Family Physician, Internal Medicine 
+Physician, Endocrinologist HbA1C 
+Lipid Panel General Practitioner, Family physician, Internal Medicine Physician, Cardiologist 
+S. Creatinine General Practitioner, Family physician, Internal Medicine Physician, Nephrologist 
+CBC (Complete Blood Count) Family physician, Internal Medicine Physician, Hematologist 
+Blood pressure General Practitioner, Family physician, Internal Medicine Physician, Cardiologist 
+Weight General Practitioner, Family Physician, Internal Medicine Physician, Endocrinologist 
+Note: This guide provides general referral recommendations. However, the decision should always be based on the severity of the findings and the overall 
+condition of the patient. Personalized care is essential, and referrals should be tailored to a participant’s needs. 
+Page 24 of 24 
+Appendix 9: The Periodic Comprehensive Screening Program for Adults Quality Indicators 
+KPI Definition Target
+Participation Rate 
+ (For each IFHAS Package type) 
+Total eligible individuals registered at the facility 
+during a single quarter who have completed 
+screening / Total eligible individuals registered at the 
+facility during a single quarter. 
+Example: Total Breast Ca screening eligible individuals 
+registered at the facility during a single and completed 
+testing / Total Breast Ca screening eligible individuals 
+registered at the facility during a single quarter. 
+>85 %
+Abnormal Findings Rate 
+(For each IFHAS Package type) 
+Total participants with abnormal findings in certain 
+IFHAS package/ Total eligible participants registered 
+at the facility and completed certain IFHAS package 
+during a single quarter. 
+Example: Total eligible participants with abnormal Breast 
+Ca screening test at the facility during a single quarter / 
+Total Breast Ca screening eligible participants completed 
+testing at the facility during a single quarter. 
+Referral of participants with 
+Abnormal Findings 
+(For each IFHAS Package type) 
+Total eligible participants with abnormal findings in 
+certain IFHAS package with referral to related 
+specialty / Total eligible participants with abnormal 
+results related to certain IFHAS package during a 
+single quarter. 
+Note: Referrals are either for primary or secondary care 
+intervention within 15 working days of releasing the 
+results. 
+>100%

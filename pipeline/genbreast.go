@@ -18,6 +18,11 @@ package main
 //
 // Persons: women aged 40-90 (DoH Appendix 2: average risk from 40, no upper age; capped at 90 as for DR) from the background
 // pool with no other loop. Time: screens fall on days -120..90 of the [0, 120] observation window.
+// With -breastshare (BreastShare, default off), once those women run out the generator continues with women aged 40-90
+// who already hold another loop (CRC, cervical, lung or DR): the same woman is often in more than one screening
+// programme. Her breast registrations are new (screening unit and assessment unit); her other loops are untouched. They
+// are drawn in their own order (seed + breastShareSeedOffset), after the no-other-loop women, so a run that fits in
+// the no-other-loop women is byte-identical with or without the flag.
 // Determinism: a separate RNG stream (seed + breastSeedOffset); emitted after every other programme, so `-breast 0`
 // leaves every other feed byte-identical (genbreast_test.go).
 import (
@@ -29,6 +34,13 @@ import (
 )
 
 const breastSeedOffset = 0x0b2e
+
+// breastShareSeedOffset: the order in which women who already hold another loop are drawn (-breastshare).
+const breastShareSeedOffset = 0x0b5e
+
+// BreastShare (-breastshare, gen): when the women with no other loop run out, breast loops continue with women who
+// already hold a loop of another programme. Off by default.
+var BreastShare bool
 
 // breastProviders are appended to Providers only when the breast programme is on (EnableBreast). The first three
 // letters of each id prefix its MRNs and resource ids, so they must differ from every other provider's.
@@ -65,6 +77,7 @@ type BreastTruth struct {
 	Outcome    string    `json:"outcome,omitempty"` // label of the document that decided the state
 	Notes      []string  `json:"notes,omitempty"`   // assessment document ids in time order
 	Within     bool      `json:"within_deadline,omitempty"`
+	SharedWith []string  `json:"shared_with,omitempty"` // -breastshare: the woman's other programmes (her other loops)
 }
 
 type breastGen struct {
@@ -157,15 +170,21 @@ func (g *breastGen) screen(prov string, x *reg, day float64, label string, coded
 var breastOutcomeMix = map[string][2]float64{"B0": {.87, .05}, "B3": {.78, .20}, "B4": {.55, .08}, "B5": {.12, .03}}
 
 // genBreast appends nBreast breast loops (+ distractor assessment documents). bg = background persons; persons with any
-// loop are skipped.
-func genBreast(brDir string, seed int64, nBreast int, bg []*Person, tr *Truth, evs *[]GenEvent, regs map[string]*reg, mrnN, ctr, textUse map[string]int) {
+// loop are skipped, unless BreastShare is on and they run out: then women from all (every cohort person) who hold a loop
+// of another programme follow.
+func genBreast(brDir string, seed int64, nBreast int, bg, all []*Person, tr *Truth, evs *[]GenEvent, regs map[string]*reg, mrnN, ctr, textUse map[string]int) {
 	lg := &lungGen{r: rand.New(rand.NewSource(seed + breastSeedOffset)), seed: seed, tr: tr, evs: evs, regs: regs, mrnN: mrnN, ctr: ctr, textUse: textUse}
 	g := &breastGen{lungGen: lg, screens: loadLungDocs(brDir, "screen_reports.json"), notes: loadLungDocs(brDir, "assess_notes.json")}
 	r := g.r
 	src, hosp := breastProviders[0], breastProviders[1]
 	taken := map[string]bool{}
+	other := map[string]map[string]bool{} // woman -> programmes of her loops (before any breast loop)
 	for _, lt := range tr.Loops {
 		taken[lt.Qid] = true
+		if other[lt.Qid] == nil {
+			other[lt.Qid] = map[string]bool{}
+		}
+		other[lt.Qid][lt.Prog] = true
 	}
 	var pool []*Person
 	for _, p := range bg {
@@ -176,6 +195,20 @@ func genBreast(brDir string, seed int64, nBreast int, bg []*Person, tr *Truth, e
 	sort.SliceStable(pool, func(i, j int) bool { return pool[i].Qid < pool[j].Qid })
 	order := r.Perm(len(pool))
 	next := 0
+	var shared []*Person // -breastshare: women who hold another programme's loop, in their own random order
+	sharedNext := 0
+	if BreastShare {
+		seen := map[string]bool{}
+		for _, p := range all {
+			if a := personAge(p, 0); p.Sex == "F" && taken[p.Qid] && !seen[p.Qid] && a >= 40 && a <= 90 {
+				seen[p.Qid] = true
+				shared = append(shared, p)
+			}
+		}
+		sort.SliceStable(shared, func(i, j int) bool { return shared[i].Qid < shared[j].Qid })
+		rs := rand.New(rand.NewSource(seed + breastShareSeedOffset))
+		rs.Shuffle(len(shared), func(i, j int) { shared[i], shared[j] = shared[j], shared[i] })
+	}
 	pick := func() *Person {
 		for ; next < len(order); next++ {
 			p := pool[order[next]]
@@ -184,13 +217,25 @@ func genBreast(brDir string, seed int64, nBreast int, bg []*Person, tr *Truth, e
 				return p
 			}
 		}
+		if sharedNext < len(shared) {
+			sharedNext++
+			return shared[sharedNext-1]
+		}
 		elig := 0
 		for _, p := range pool {
 			if a := personAge(p, 0); a >= 40 && a <= 90 {
 				elig++
 			}
 		}
-		panic(fmt.Sprintf("breast: not enough background women aged 40-90 with no other loop (%d, need %d loops + %d distractors)", elig, nBreast, nBreast/8))
+		panic(fmt.Sprintf("breast: not enough women aged 40-90 (%d with no other loop, %d with another loop under -breastshare; need %d loops + %d distractors)", elig, len(shared), nBreast, nBreast/8))
+	}
+	sharedWith := func(p *Person) []string {
+		var s []string
+		for prog := range other[p.Qid] {
+			s = append(s, prog)
+		}
+		sort.Strings(s)
+		return s
 	}
 	note := func(p *Person, t float64, label string) (string, bool) {
 		y := g.getReg(p, hosp)
@@ -212,7 +257,7 @@ func genBreast(brDir string, seed int64, nBreast int, bg []*Person, tr *Truth, e
 			"category": []interface{}{map[string]string{"text": "breast-screening"}}, "authoredOn": dayToTS(S),
 			"code":           map[string]interface{}{"text": "Breast screening mammogram: recall to the diagnostic breast assessment unit if BI-RADS 0, 3, 4 or 5 (DoH 3.8.3)"},
 			"supportingInfo": []interface{}{map[string]string{"reference": "DiagnosticReport/" + sid}}}, x)
-		bt := &BreastTruth{Label: label, FirstLabel: label, Coded: coded, Screen: sid, Screens: []string{sid}, GradeDay: S, Adherence: "n/a"}
+		bt := &BreastTruth{Label: label, FirstLabel: label, Coded: coded, Screen: sid, Screens: []string{sid}, GradeDay: S, Adherence: "n/a", SharedWith: sharedWith(p)}
 		lt := &LoopTruth{Loop: loop, Qid: p.Qid, Cc: p.Cc, Origin: p.Origin, ArSrc: p.ArSrc, Prov: src.ID, Hosp: hosp.ID, SRDay: S,
 			ScriptSR: x.script, NotifDay: -1, AckDay: -1, RefDay: -1, RefStatus: "none", Prog: "breast", IndexDay: S,
 			ProcDay: -1, EcState: "none", TBState: "none", Unowned: TEnd-S > OwnerGrace, Breast: bt}

@@ -52,7 +52,7 @@ Published follow-up failure rates are high across loop types:
 
 **Order of rollout:**
 1. CRC and cervical (built).
-2. Breast (specified).
+2. Breast (built: `doh2025breast`, see `pipeline/RESULTS.md`).
 3. Lung LDCT. A DoH programme exists, and Lung-RADS gives explicit intervals.
 4. Incidental lung nodules: Fleischner intervals, and the highest volume.
 5. Diabetic retinopathy: SEHA already runs AI reading at 11 centres.

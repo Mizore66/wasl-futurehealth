@@ -1,0 +1,405 @@
+{
+ "source": "synthetic templated corpus (scripts/ldct_corpus.py, seed 31); dev set, used to write the readers; no held-out set",
+ "reports": [
+  {
+   "id": "ls01",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. No pulmonary nodules. Overall: Lung-RADS 1 (negative). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls02",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Lungs clear; no nodule identified. No suspicious nodule or mass. Moderate coronary artery calcification (S finding), for primary care review. Overall: Lung-RADS category 1S (negative). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls03",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Lungs clear; no nodule identified. No suspicious nodule or mass. Conclusion: LungRADS 1 (negative). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls04",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Prior LDCT (2025): Lung-RADS category 3, for comparison only. No pulmonary nodules. No suspicious nodule. Lung-RADS assessment: negative. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls05",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. No pulmonary nodules. No suspicious nodule. Lung-RADS assessment: negative. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls06",
+   "text": "LDCT lung screening (baseline round). Two independent readers. 12 mm ground-glass nodule in the left upper lobe. No new nodules. Overall: Lung-RADS category 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls07",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Calcified granuloma in the left lower lobe. No new nodules. Moderate coronary artery calcification (S finding), for primary care review. Impression: LungRADS 2S (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls08",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. 6 mm perifissural nodule along the right minor fissure, benign appearance. Final assessment: LungRADS 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls09",
+   "text": "LDCT lung screening (baseline round). Two independent readers. 6 mm perifissural nodule along the right minor fissure, benign appearance. No suspicious nodule or mass. Final assessment: LungRADS 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls10",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. Nodule 1: calcified granuloma in the left lower lobe, Lung-RADS v2022 category 2. Nodule 2: 6 mm perifissural nodule along the right minor fissure, benign appearance, Lung-RADS category 2. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls11",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. Nodule 1: 5 mm solid nodule in the lingula, unchanged for more than 2 years, Lung-RADS 2. Nodule 2: 4 mm solid nodule in the right upper lobe, Lung-RADS 2. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls12",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Prior LDCT (2024): Lung-RADS category 4A, for comparison only. 12 mm ground-glass nodule in the left upper lobe. No suspicious nodule. Lung-RADS assessment: benign appearance or behaviour. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls13",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. 12 mm ground-glass nodule in the left upper lobe. No suspicious nodule. Lung-RADS assessment: benign appearance or behaviour. Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls14",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. New 5 mm solid nodule in the right middle lobe. Final assessment: LungRADS 3 (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls15",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. 32 mm ground-glass nodule in the right upper lobe. Overall: Lung-RADS 3 (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls16",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. 8 mm part-solid nodule with a solid component under 6 mm in the right lower lobe. Final assessment: Lung-RADS category 3 (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls17",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. Nodule 1: 6 mm perifissural nodule along the right minor fissure, benign appearance, Lung-RADS v2022 category 2. Nodule 2: 8 mm part-solid nodule with a solid component under 6 mm in the right lower lobe, Lung-RADS v2022 category 3. Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls18",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Nodule 1: 32 mm ground-glass nodule in the right upper lobe, Lung-RADS category 3. Nodule 2: 12 mm ground-glass nodule in the left upper lobe, LungRADS 2. Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls19",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. 8 mm part-solid nodule with a solid component under 6 mm in the right lower lobe. Lung-RADS assessment: probably benign. Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls20",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. 9 mm part-solid nodule with a 5 mm solid component in the left upper lobe. Final assessment: Lung-RADS 4A (suspicious). Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls21",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2024): LungRADS 3, for comparison only. 9 mm part-solid nodule with a 5 mm solid component in the left upper lobe. Conclusion: LungRADS 4A (suspicious). Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls22",
+   "text": "LDCT lung screening (baseline round). Two independent readers. New 7 mm solid nodule in the left lower lobe. Final assessment: Lung-RADS 4A (suspicious). Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls23",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Nodule 1: new 7 mm solid nodule in the left lower lobe, LungRADS 4A. Nodule 2: 8 mm part-solid nodule with a solid component under 6 mm in the right lower lobe, Lung-RADS category 3. Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls24",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2025): Lung-RADS category 3, for comparison only. Nodule 1: 9 mm part-solid nodule with a 5 mm solid component in the left upper lobe, LungRADS 4A. Nodule 2: 6 mm perifissural nodule along the right minor fissure, benign appearance, LungRADS 2. Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls25",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. 10 mm solid nodule in the right lower lobe. Lung-RADS assessment: suspicious. Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "words"
+   }
+  },
+  {
+   "id": "ls26",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Solid nodule in the right lower lobe has grown from 6 mm to 10 mm. Conclusion: Lung-RADS v2022 category 4B (very suspicious). Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls27",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Part-solid nodule in the left upper lobe with an 8 mm solid component. Overall: Lung-RADS v2022 category 4B (very suspicious). Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls28",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. Prior LDCT (2024): Lung-RADS v2022 category 3, for comparison only. 17 mm solid nodule in the right upper lobe. Final assessment: LungRADS 4B (very suspicious). Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls29",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2025): Lung-RADS category 3, for comparison only. Nodule 1: endobronchial nodule in the right lower lobe segmental bronchus, Lung-RADS category 4A. Nodule 2: part-solid nodule in the left upper lobe with an 8 mm solid component, Lung-RADS category 4B. Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls30",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. Nodule 1: 9 mm part-solid nodule with a 5 mm solid component in the left upper lobe, LungRADS 4A. Nodule 2: solid nodule in the right lower lobe has grown from 6 mm to 10 mm, Lung-RADS v2022 category 4B. Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls31",
+   "text": "Annual lung cancer screening LDCT. Technique: low-dose, non-contrast, 1 mm reconstructions. 9 mm solid nodule with spiculation and a new 12 mm subcarinal lymph node. Impression: Lung-RADS v2022 category 4X (very suspicious, additional features). Refer to the thoracic diagnostic unit for PET/CT and tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4X",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls32",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. 14 mm spiculated solid nodule in the left upper lobe with enlarged left hilar lymph nodes. Conclusion: Lung-RADS 4X (very suspicious, additional features). Refer to the thoracic diagnostic unit for PET/CT and tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4X",
+    "style": "prose"
+   }
+  },
+  {
+   "id": "ls33",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Nodule 1: 14 mm spiculated solid nodule in the left upper lobe with enlarged left hilar lymph nodes, LungRADS 4X. Nodule 2: new 5 mm solid nodule in the right middle lobe, Lung-RADS 3. Refer to the thoracic diagnostic unit for PET/CT and tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4X",
+    "style": "multi"
+   }
+  },
+  {
+   "id": "ls34",
+   "text": "Low-dose CT chest, lung cancer screening programme. Double read. Prior chest CT from another hospital has been requested for comparison; the final category is deferred. Final assessment: Lung-RADS v2022 category 0. Comparison with the prior CT is needed before a final category.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls35",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2024): LungRADS 3, for comparison only. Patchy consolidation and new clustered nodules in the right lower lobe, most likely infective. Final assessment: Lung-RADS 0. Repeat LDCT in 1 to 3 months to confirm resolution.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls36",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2025): Lung-RADS category 4A, for comparison only. Severe motion artefact: the lung bases cannot be evaluated. Final assessment: Lung-RADS 0. Additional LDCT images are needed.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls37",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Prior LDCT (2025): Lung-RADS 4A, for comparison only. Prior chest CT from another hospital has been requested for comparison; the final category is deferred. Final assessment: LungRADS 0. Comparison with the prior CT is needed before a final category.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls38",
+   "text": "LDCT lung screening (baseline round). Two independent readers. Prior LDCT (2024): LungRADS 3, for comparison only. Patchy consolidation and new clustered nodules in the right lower lobe, most likely infective. Final assessment: Lung-RADS 0. Repeat LDCT in 1 to 3 months to confirm resolution.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls39",
+   "text": "Lung cancer screening CT (designated screening centre). Double reported. Severe motion artefact: the lung bases cannot be evaluated. Final assessment: LungRADS 0. Additional LDCT images are needed.",
+   "key": {
+    "label": "LR0",
+    "style": "zero"
+   }
+  },
+  {
+   "id": "ls40",
+   "text": "Follow-up LDCT (6 months), lung cancer screening programme. Prior LDCT (2024): Lung-RADS v2022 category 4A, for comparison only. The previously seen 9 mm part-solid nodule is smaller. Moderate coronary artery calcification (S finding), for primary care review. Overall: LungRADS 2S (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls41",
+   "text": "Follow-up LDCT (6 months), lung cancer screening programme. The 6 mm right lower lobe nodule has resolved. No suspicious nodule or mass. Overall: Lung-RADS v2022 category 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls42",
+   "text": "Follow-up LDCT (6 months), lung cancer screening programme. The previously seen 9 mm part-solid nodule is smaller. Conclusion: Lung-RADS v2022 category 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls43",
+   "text": "Follow-up LDCT (3 months), lung cancer screening programme. 8 mm part-solid nodule with a solid component under 6 mm in the right lower lobe. Final assessment: Lung-RADS 3 (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls44",
+   "text": "Interval low-dose CT (6-month follow-up) for a screen-detected nodule. 7 mm solid nodule in the left upper lobe at baseline. Moderate coronary artery calcification (S finding), for primary care review. Impression: Lung-RADS v2022 category 3S (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls45",
+   "text": "Interval low-dose CT (3-month follow-up) for a screen-detected nodule. The 9 mm right lower lobe nodule has grown to 13 mm. Overall: Lung-RADS 4B (very suspicious). Refer to the thoracic diagnostic unit: diagnostic chest CT, PET/CT and/or tissue sampling; discuss at the lung MDT.",
+   "key": {
+    "label": "LR4B",
+    "style": "followup"
+   }
+  },
+  {
+   "id": "ls46",
+   "text": "Addendum to the screening LDCT report. Comparison with the outside CT from 2023 is now available. 5 mm solid nodule in the lingula, unchanged for more than 2 years. No new nodules. Final assessment: Lung-RADS category 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "addendum"
+   }
+  },
+  {
+   "id": "ls47",
+   "text": "Addendum to the screening LDCT report. Comparison with the outside CT from 2023 is now available. 12 mm ground-glass nodule in the left upper lobe. Impression: LungRADS 2 (benign appearance or behaviour). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR2",
+    "style": "addendum"
+   }
+  },
+  {
+   "id": "ls48",
+   "text": "Addendum to the screening LDCT report. The prior chest CT (2024) has now been received and compared. No lung nodules are seen. Overall: Lung-RADS v2022 category 1 (negative). Continue annual screening: LDCT in 12 months.",
+   "key": {
+    "label": "LR1",
+    "style": "addendum"
+   }
+  },
+  {
+   "id": "ls49",
+   "text": "Addendum to the screening LDCT report. The prior chest CT (2024) has now been received and compared. 32 mm ground-glass nodule in the right upper lobe. Conclusion: Lung-RADS v2022 category 3 (probably benign). Follow-up LDCT in 6 months.",
+   "key": {
+    "label": "LR3",
+    "style": "addendum"
+   }
+  },
+  {
+   "id": "ls50",
+   "text": "Addendum to the screening LDCT report. Comparison with the outside CT from 2023 is now available. Endobronchial nodule in the right lower lobe segmental bronchus. Impression: Lung-RADS category 4A (suspicious). Follow-up LDCT in 3 months.",
+   "key": {
+    "label": "LR4A",
+    "style": "addendum"
+   }
+  }
+ ]
+}

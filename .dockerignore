@@ -1,0 +1,22 @@
+# Build context = only what the Dockerfile copies (allowlist). No binaries, run outputs, keys or model weights
+# beyond the committed JSON models.
+*
+!pipeline/
+!data/
+!models/
+!patient-parsers/econsult_testset.json
+!patient-parsers/teachback_testset.json
+!booking/
+!scripts/
+pipeline/wsi
+pipeline/wsi7
+pipeline/run/
+pipeline/out/
+**/__pycache__/
+**/*.pyc
+**/*.gguf
+**/*.onnx
+**/.env
+**/.env.*
+booking/sim/raw_*.json
+models/image/

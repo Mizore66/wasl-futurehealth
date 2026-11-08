@@ -37,10 +37,13 @@ const (
 	ActAnchor        = "anchor_audit"
 	ActEmitDecision  = "emit_decision"
 	ActAutoLink      = "auto_link"
+	// ActCoordinateCase: overlay-only coordinator case actions (assign owner, snooze, record a contact outcome, note).
+	// Deliberately narrow: it never signs a link or evidence label, records consent, or dispatches outreach.
+	ActCoordinateCase = "coordinate_case"
 )
 
 var rbac = map[string]map[string]bool{
-	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true},
+	RoleCoordinator: {ActRecordConsent: true, ActDispatch: true, ActReadQueue: true, ActCoordinateCase: true},
 	RoleClinician:   {ActSignEvidence: true, ActRecordConsent: true, ActReadQueue: true},
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
@@ -271,6 +274,8 @@ type ReviewerCfg struct {
 	// and has error rate SeniorErrRel*Err. If it disagrees, the signed answer becomes the senior answer.
 	SeniorAudit  float64
 	SeniorErrRel float64 // senior per-read error rate relative to Err (assumption 0.5, range 0.25-0.8)
+	// Agent: optional cached evidence-investigator reads (agentrecs.go). nil = byte-identical existing behaviour.
+	Agent *AgentRecs `json:"-"`
 }
 
 var DefaultReviewer = ReviewerCfg{Err: 0, Double: "none", Seed: 1, LinkMedS: 45, EvMedS: 90, Sigma: 0.6,
@@ -357,6 +362,12 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 			if alts == nil {
 				alts = breastEvAlt(t) // breast recall labels (breast.go)
 			}
+			if alts == nil {
+				alts = ldctEvAlt(t) // lung cancer screening (LDCT) labels (ldct.go)
+			}
+			if alts == nil {
+				alts = ifhasEvAlt(t) // IFHAS screening and follow-up labels (ifhas.go)
+			}
 			if len(alts) > 0 {
 				t = alts[int(u01(c.Seed, it.ItemID, draw, "alt")*float64(len(alts)))]
 			}
@@ -368,7 +379,7 @@ func (c ReviewerCfg) oneRead(it *ReviewItem, tr *Truth, reader string) read {
 }
 
 func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
-	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev)) { // lung-nodule, DR and breast closing answers get the same double read
+	if (c.Double == "merge+close" || c.Double == "merge+close+g1" || c.Double == "close+guard") && (lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev) || ifhasClosingAnswer(r.ev)) { // all programme closing answers get the same double read
 		return true
 	}
 	switch c.Double {
@@ -384,25 +395,62 @@ func (c ReviewerCfg) highRisk(it *ReviewItem, r read) bool {
 	return false
 }
 
+// humanDouble is the existing double-read: a second independent read for high-risk answers and a senior third read
+// only if the first two disagree.
+func (c ReviewerCfg) humanDouble(it, draw *ReviewItem, tr *Truth, r1 read) (read, []string, float64) {
+	final, reads, secs := r1, []string{"r1"}, r1.secs
+	if c.highRisk(it, r1) {
+		r2 := c.oneRead(draw, tr, "r2")
+		reads, secs = append(reads, "r2"), secs+r2.secs
+		if r2.link != r1.link || r2.ev != r1.ev {
+			r3 := c.oneRead(draw, tr, "r3")
+			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
+		}
+	}
+	return final, reads, secs
+}
+
 // Review produces the sign-off for one item: one read, a second independent read for high-risk answers, and a
 // third (senior) read only if the first two disagree. Role follows the item kind (RBAC).
 func (c ReviewerCfg) Review(it *ReviewItem, tr *Truth) *Signoff {
+	if c.Agent.deferRead(it) {
+		return nil
+	}
 	so := &Signoff{ItemID: it.ItemID, LoopID: it.LoopID, Kinds: it.Kinds, Pair: it.Pair, ReportID: it.ReportID, SignedHead: it.Head, Purpose: it.Reason}
 	so.Role = RoleReviewer
 	if it.Kinds[0] == "evidence" {
 		so.Role = RoleClinician
 	}
-	r1 := c.oneRead(it, tr, "r1")
-	final, reads, secs := r1, []string{"r1"}, r1.secs
-	if c.highRisk(it, r1) {
-		r2 := c.oneRead(it, tr, "r2")
-		reads, secs = append(reads, "r2"), secs+r2.secs
-		if r2.link != r1.link || r2.ev != r1.ev {
-			r3 := c.oneRead(it, tr, "r3")
-			reads, secs, final = append(reads, "r3"), secs+r3.secs, r3 // senior adjudicator breaks the tie
-		}
+	// Reused link questions are one question about a registration pair, not independent questions about each loop.
+	// Key every simulated draw to that pair so the queued twin's arrival order cannot choose a different answer.
+	draw := it
+	if ReuseLinkAnswer && isLinkQuestion(it) {
+		x := *it
+		k := pairKey(it.Pair[0], it.Pair[1])
+		x.ItemID = fmt.Sprintf("link-pair|%s|%s", k[0], k[1])
+		draw = &x
 	}
-	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, it.ItemID, "audit") < c.SeniorAudit {
+	r1 := c.oneRead(draw, tr, "r1")
+	var final read
+	var reads []string
+	var secs float64
+	if ag := c.Agent.read(draw); ag != nil {
+		// The agent is one read, never a sign-off, and its seconds are not human seconds. Draws for r1/r3 are the
+		// control's: the agent only decides which human reads happen.
+		so.AgentRead, so.AgentS = ag.Label, ag.LatencyS
+		switch {
+		case ag.Label == "same" && r1.link == "same":
+			final, reads, secs = r1, []string{"r1", "agent"}, r1.secs // the agent replaces the second human read
+		case ag.Label == "same":
+			r3 := c.oneRead(draw, tr, "r3") // senior human breaks the agent/human tie
+			final, reads, secs = r3, []string{"r1", "agent", "r3"}, r1.secs+r3.secs
+		default:
+			final, reads, secs = c.humanDouble(it, draw, tr, r1)
+		}
+	} else {
+		final, reads, secs = c.humanDouble(it, draw, tr, r1)
+	}
+	if c.SeniorAudit > 0 && closingAnswer(final) && u01(c.Seed, draw.ItemID, "audit") < c.SeniorAudit {
 		// Senior audit of a signed closing answer. Overriding the answer (rather than re-opening the item) keeps the
 		// one-sign-off-per-item model: in the offline replay the sign-off sits where the item was raised, so the loop
 		// ends in the state a re-opened and re-decided loop would reach. A real weekly audit corrects it days later.
@@ -439,7 +487,7 @@ type auditRec struct {
 
 // closingAnswer: a signed evidence answer that lets a loop close (the audit sample frame).
 func closingAnswer(r read) bool {
-	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev)
+	return r.ev == "adequate" || r.ev == "histology" || lungClosingAnswer(r.ev) || drClosingAnswer(r.ev) || breastClosingAnswer(r.ev) || ldctClosingAnswer(r.ev) || ifhasClosingAnswer(r.ev)
 }
 
 // idWorklist: the review worklist asks one second-identifier question per registration pair (ReuseIDConfirm). Two

@@ -21,6 +21,7 @@ type Rec struct {
 	lat            string
 	tok, skel      []string
 	isAr           bool
+	tid            int // featdump only: 1 + persons-file index of the registering person, 0 = none (pairfeat6 leave-own-out)
 	emb            []float32
 	keys           []string
 	evOrder        []string
@@ -47,6 +48,7 @@ type LinkerCore struct {
 	cannot       map[int]map[int]bool
 	pscore       map[[2]int]float64
 	near         map[int]map[int]float64 // lo <= p < thr
+	demoMissing  map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
 	loops        map[string]*LoopFacts   // static part (sr info)
 	loopRec      map[string]int
 	tasks        map[string][]TaskFact // loop -> tasks
@@ -58,15 +60,32 @@ type LinkerCore struct {
 	provLast     map[string]float64
 	provDone     map[string]bool
 	lastTick     int
+	streamT      float64 // HistClock: latest input arrival day seen
+	streamSeen   bool
 	PSeq         []uint64
 	optOut       map[string]bool // v6: pk -> outreach consent withheld
 	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
 	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
 	xref         map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
 	ann          ANNIndex
+	trace        func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq     uint64
 }
 
 var annMode = new(string)
+
+// HistClock (flag -histclock, default off): judge look-back history at its own arrival time. The event-time clock
+// below only ticks from day 0 (lastTick starts at -1 and a provider's latest arrival starts at 0), so the closure clock
+// stands at day 0 from the first message on. Lung, DR and breast cohorts carry history from before day 0 (index CTs
+// from day -420), and with the clock at day 0 a loop is judged due or overdue as soon as its index report arrives,
+// months before it was due and before the coordinator's consent record that follows it: the time-based outreach
+// is raised early, held for consent, released once the consent arrives, and often made moot by follow-up history
+// that arrives later (results/showcase at cfcf50f: 233 of its 317 consent holds; final states are unchanged).
+// On: every facts message carries the arrival day of the input that produced it (a sign-off: the latest arrival
+// seen), and the closure judges the loop at that day only for pre-day-0 arrivals earlier than its clock. Live-day
+// arrivals always use the current clock, so a late event or a sign-off stamped at an earlier stream day cannot rewind
+// a decision. Ticks are unchanged: a loop still due at go-live is raised at the next tick.
+var HistClock = false
 var annCB = new(string)
 
 // attachANN: v6 replay-safe ANN blocking (exact remains the default so v5 runs are unchanged).
@@ -82,9 +101,9 @@ func (L *LinkerCore) attachANN() {
 }
 
 func NewLinkerCore(gbm *GBM, P int) *LinkerCore {
-	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: 0.2, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
+	return &LinkerCore{P: P, K: 10, Cap: 300, Thr: LinkThr, Lo: LinkReview, GuardThr: 0.25, gbm: gbm, byPk: map[string]int{}, keyIdx: map[string][]int{},
 		eidIdx: map[string][]int{}, members: map[int][]int{}, adj: map[int]map[int]float64{}, basis: map[[2]int]string{}, idConfirmed: map[[2]int]bool{},
-		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, loops: map[string]*LoopFacts{},
+		cannot: map[int]map[int]bool{}, pscore: map[[2]int]float64{}, near: map[int]map[int]float64{}, demoMissing: map[[2]string]bool{}, loops: map[string]*LoopFacts{},
 		loopRec: map[string]int{}, tasks: map[string][]TaskFact{}, comms: map[string][]CommFact{}, signoffs: map[string][]Signoff{}, evOver: map[string]map[string]string{},
 		lastHash: map[string]string{}, Stats: map[string]int{},
 		provLast: map[string]float64{}, provDone: map[string]bool{}, lastTick: -1, PSeq: make([]uint64, P), optOut: map[string]bool{}, contact: map[string]string{}, pcal7: map[[2]int]float64{}, xref: map[string][]int{}}
@@ -184,14 +203,73 @@ func (L *LinkerCore) mergeAllowed(ra, rb int, force bool) bool {
 	return true
 }
 
-func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) bool {
+// eidClash reports whether the two clusters hold registrations with different Luhn-valid Emirates IDs. A single-digit
+// typo never keeps a number Luhn-valid, so two valid, different numbers belong to two people. Candidates are linked in
+// score order, so the pairwise EID conflict (cannot2) is not enough on its own: a registration without an Emirates ID
+// can bridge the two clusters first, and a later cannot-link then sits inside one cluster. X10: three of the six
+// failures (two wrong-patient pairs and a false closure) were such clusters.
+func (L *LinkerCore) eidClash(ra, rb int) bool {
+	for _, x := range L.members[ra] {
+		rx := L.recs[x]
+		if rx.Eid == "" {
+			continue
+		}
+		for _, y := range L.members[rb] {
+			ry := L.recs[y]
+			if (rx.eidOK && ry.eidOK && rx.Eid != ry.Eid) || eidContradict(rx.Eid, ry.Eid) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (L *LinkerCore) Link(a, b int, p float64, force bool, basis string) (merged bool) {
+	guardReason := ""
+	if L.trace != nil {
+		defer func() {
+			e := LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: p, Stage: "linked"}
+			if L.Find(a) != L.Find(b) {
+				e.Stage, e.Reason = "rejected_demographic", "merge_constraint"
+				if guardReason != "" {
+					e.Reason = guardReason
+				}
+			}
+			L.emitLink(e)
+		}()
+	}
 	ra, rb := L.Find(a), L.Find(b)
 	if ra == rb {
 		L.addEdge(a, b, p, basis)
 		return false
 	}
+	if basis != "human" && L.eidClash(ra, rb) {
+		// Record the refusal as a cannot-link, like a direct EID contradiction: a later split (a reviewer's "different")
+		// can take the clashing Emirates ID out of the cluster, and the refused pair must not become mergeable then.
+		// A later human "same" on this pair is refused too (mergeAllowed checks cannot-links first): fail closed.
+		L.cannot2(a, b)
+		L.Stats["eid_cluster_clash"]++
+		return false
+	}
+	humanMissing := false
+	if DemoGuard { // demoguard.go: reviewers bypass only the missing-data requirement, never a known conflict
+		d := demoClassify(L.recs[a], L.recs[b])
+		if basis != "human" && d != demoAutoOK {
+			return false
+		}
+		if L.demoClash(ra, rb) {
+			L.cannot2(a, b)
+			L.Stats["demoguard_cluster_conflict"]++
+			guardReason = "demographic_cluster_conflict"
+			return false
+		}
+		humanMissing = basis == "human" && d == demoNeedsReview
+	}
 	if !L.mergeAllowed(ra, rb, force) {
 		return false
+	}
+	if humanMissing {
+		L.Stats["demoguard_human_missing_merge"]++
 	}
 	L.addEdge(a, b, p, basis)
 	if ra > rb { // deterministic root = smaller index
@@ -242,6 +320,7 @@ func (L *LinkerCore) CannotLink(a, b int) []int {
 	L.cannot[a][b], L.cannot[b][a] = true, true
 	root := L.Find(a)
 	if root != L.Find(b) {
+		L.emitUnlinked(a, b)
 		return nil
 	}
 	for {
@@ -289,6 +368,7 @@ func (L *LinkerCore) CannotLink(a, b int) []int {
 		roots = append(roots, comp[0])
 	}
 	L.Stats["splits"]++
+	L.emitUnlinked(a, b)
 	return roots
 }
 
@@ -434,22 +514,87 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 	}
 	for _, c := range cs {
 		o := L.recs[c.j]
+		if r.eidOK && o.eidOK && r.Eid != o.Eid {
+			L.cannot2(r.idx, c.j)
+			L.Stats["eid_conflicts"]++
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_conflict"})
+			continue
+		}
+		demoReview, equalEID := false, false // demoguard.go: the pair needs review before any automatic merge
+		if DemoGuard {
+			switch demoClassify(r, o) {
+			case demoDOBConflict, demoSexConflict:
+				L.cannot2(r.idx, c.j)
+				reason := "dob_conflict"
+				if demoClassify(r, o) == demoSexConflict {
+					reason = "sex_conflict"
+				}
+				L.Stats["demoguard_"+reason]++
+				if r.eidOK && o.eidOK {
+					L.Stats["demoguard_eid_rejected"]++
+				}
+				L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: reason})
+				continue
+			case demoNeedsReview:
+				demoReview = true
+			}
+		}
 		if r.eidOK && o.eidOK {
-			if r.Eid == o.Eid {
+			why := ""
+			if EIDContraGuard {
+				why = eidContradiction(r, o)
+			}
+			if why == "" {
+				if demoReview {
+					// demoguard.go: an equal valid number alone no longer forces the link; the pair goes to review with its
+					// own model score (never raised), even below Lo
+					L.Stats["demoguard_missing"]++
+					L.Stats["demoguard_eid_missing"]++
+					L.demoteNear(r, o, c.p, aff)
+					continue
+				}
 				L.Link(r.idx, c.j, 1.0, true, "eid")
 				L.Stats["eid_links"]++
 				continue
 			}
+			// eidguard.go: the equal number sits on contradicting people; no forced link, the model score decides. Below Lo
+			// the pair would be invisible, so it is kept as a near-miss candidate and the loop asks a reviewer.
+			L.Stats["eid_contradicted_"+why]++
+			equalEID = true
+			// demoguard.go: a pair that needs review is never raised; the clamp stays for guard-off and exact-demographic pairs
+			if min := 0.2; c.p < min && !demoReview { // fixed at 0.2 regardless of -linkfloor
+				c.p = min
+			}
+		}
+		if eidContradict(r.Eid, o.Eid) { // a typo broke the check digit on a side, but the numbers are clearly different
 			L.cannot2(r.idx, c.j)
 			L.Stats["eid_conflicts"]++
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "rejected_demographic", Reason: "eid_contradiction"})
 			continue
 		}
-		if c.p >= L.Thr {
+		capped := false // xscript.go: cross-script review cap, pairfeat5 only
+		if XScriptCap && c.p > XScriptCapP && xscriptWeak(r, o, c.feat) {
+			c.p = XScriptCapP
+			capped = true
+			L.Stats["xscript_capped"]++
+		}
+		reason := ""
+		if capped {
+			reason = "xscript_cap"
+		}
+		if c.p >= L.Thr && demoReview {
+			L.Stats["demoguard_missing"]++
+			if equalEID {
+				L.Stats["demoguard_eid_missing"]++
+			}
+			L.demoteNear(r, o, c.p, aff)
+		} else if c.p >= L.Thr {
 			if V7Cal != nil {
 				L.pcal7[pk2(r.idx, c.j)] = V7Cal.Predict(c.p, corroborated(r, o, c.feat))
 			}
 			L.Link(r.idx, c.j, c.p, false, "wasl")
 		} else if c.p >= L.Lo {
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "near", Reason: reason})
 			if L.near[r.idx] == nil {
 				L.near[r.idx] = map[int]float64{}
 			}
@@ -458,6 +603,15 @@ func (L *LinkerCore) newRecord(e *Event, emb []float32) (int, []int) {
 			}
 			L.near[r.idx][c.j], L.near[c.j][r.idx] = c.p, c.p
 			aff[L.Find(c.j)] = true
+		} else {
+			L.emitLink(LinkTrace{A: r.Pk, B: o.Pk, P: c.p, Stage: "below_review", Reason: reason})
+		}
+	}
+	if L.trace != nil { // transitive merges: candidates that ended in the new record's cluster
+		for _, c := range cs {
+			if L.Find(c.j) == L.Find(r.idx) {
+				L.emitLink(LinkTrace{A: r.Pk, B: L.recs[c.j].Pk, P: c.p, Stage: "linked"})
+			}
 		}
 	}
 	aff[L.Find(r.idx)] = true
@@ -585,9 +739,13 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
 			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
-				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast"}[e.Category]
+				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast",
+				"ldct-screen": "lung_ldct", "ldct-workup": "lung_ldct"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
 				prog = "cervical"
+			}
+			if e.Category == "ifhas-screen" || e.Category == "ifhas-followup" { // IFHAS results | follow-up note (ifhas.go)
+				prog = "ifhas"
 			}
 		}
 		if prog == "" {
@@ -600,6 +758,80 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 	}
 	return out
+}
+
+type nearPath struct {
+	p            float64
+	mid          int
+	weakA, weakB int
+	hops         int
+}
+
+// nearHospitalPaths returns the strongest one-hop near path to each hospital record. With demoguard on, it also
+// considers a two-hop path through any intermediate registration: demoted missing-demographic links must not make an
+// otherwise reviewable patient path invisible. The weakest pair is the one reviewers need to resolve first.
+func (L *LinkerCore) nearHospitalPaths(ms []int, inC map[int]bool) map[int]nearPath {
+	nm := map[int]nearPath{}
+	better := func(z int, c nearPath) {
+		old, ok := nm[z]
+		if !ok || c.p > old.p || (c.p == old.p && (c.hops < old.hops ||
+			(c.hops == old.hops && (c.mid < old.mid || (c.mid == old.mid && (c.weakA < old.weakA ||
+				(c.weakA == old.weakA && c.weakB < old.weakB))))))) {
+			nm[z] = c
+		}
+	}
+	for _, x := range ms {
+		for _, mid := range sortedKeys(L.near[x]) {
+			if inC[mid] || L.Find(x) == L.Find(mid) || L.isCannot(L.Find(x), L.Find(mid)) {
+				continue
+			}
+			p1 := L.near[x][mid]
+			if L.recs[mid].Kind == "hospital" {
+				better(mid, nearPath{p: p1, mid: x, weakA: x, weakB: mid, hops: 1})
+			}
+			if !DemoGuard {
+				continue
+			}
+			for _, z := range sortedKeys(L.near[mid]) {
+				if z == x || inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
+					continue
+				}
+				if L.Find(mid) == L.Find(z) {
+					// The final edge is already linked, so the unresolved first edge is the reviewable one.
+					better(z, nearPath{p: p1, mid: mid, weakA: x, weakB: mid, hops: 2})
+					continue
+				}
+				p2, p := L.near[mid][z], p1
+				weakA, weakB := x, mid
+				if p2 < p {
+					p, weakA, weakB = p2, mid, z
+				}
+				better(z, nearPath{p: p, mid: mid, weakA: weakA, weakB: weakB, hops: 2})
+			}
+			for _, z := range sortedKeys(L.adj[mid]) {
+				if z == x || inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
+					continue
+				}
+				// An already-linked final edge is traversable even when it was never in the near map.
+				better(z, nearPath{p: p1, mid: mid, weakA: x, weakB: mid, hops: 2})
+			}
+		}
+	}
+	return nm
+}
+
+// markNearDependents invalidates loops with a near edge into the newly changed cluster. Forward near propagation alone
+// misses a clinic whose lab registration just merged with a hospital registration.
+func (L *LinkerCore) markNearDependents(i int, aff map[int]bool) {
+	members := L.members[L.Find(i)]
+	for x, ns := range L.near {
+		for _, m := range members {
+			if _, ok := ns[m]; ok {
+				aff[L.Find(x)] = true
+				break
+			}
+		}
+	}
 }
 
 func (L *LinkerCore) factsFor(loop string) *LoopFacts {
@@ -625,6 +857,13 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		f.Breast = base.Breast
 		f.Down = append(f.Down, breastScreenFacts(L.recs[s])...) // screening mammogram reports on the screen's own registration
 	}
+	if base.LDCT != nil {
+		f.LDCT = base.LDCT
+		f.Down = append(f.Down, ldctScanFacts(L.recs[s])...) // LDCT reports (index, completion, follow-up) on the scan's own registration
+	}
+	if base.Prog == "ifhas" {
+		f.Down = append(f.Down, ifhasScreenFacts(L.recs[s])...) // IFHAS results on the visit's own registration (ifhas.go)
+	}
 	inC := map[int]bool{}
 	for _, y := range ms {
 		inC[y] = true
@@ -636,6 +875,16 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 			continue
 		}
 		ds := L.downOf(L.recs[y], st, L.edgeOf(weak[y]), hops[y], false)
+		if EIDContraGuard {
+			if why, x := L.eidPathContradiction(s, y, pred); why != "" {
+				// the question pair is a registration the path passes through, not necessarily a graph edge: its P is the
+				// pair's real model score (0 when never scored) and the provenance block says it is substituted
+				we := Edge{A: L.recs[s].Pk, B: L.recs[x].Pk, P: round4(L.pscore[pk2(s, x)]), Basis: "eid-contradiction"}
+				for i := range ds {
+					ds[i].EIDContra, ds[i].Weak = why, we
+				}
+			}
+		}
 		if V7Cal != nil || V7Guard {
 			pc, ah := L.pathCal(pred, y)
 			ah = ah || L.basis[pk2(s, y)] == "human"
@@ -654,31 +903,20 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 		f.Down = append(f.Down, L.xrefFacts(loop, s, inC)...)
 	}
 	// near-miss hospital records (scored lo<=p<thr against any cluster member): candidates for a missed link
-	nm := map[int][2]float64{}
-	for _, x := range ms {
-		for _, z := range sortedKeys(L.near[x]) {
-			if inC[z] || L.recs[z].Kind != "hospital" || L.isCannot(L.Find(x), L.Find(z)) {
-				continue
-			}
-			p := L.near[x][z]
-			if cur, ok := nm[z]; !ok || p > cur[0] {
-				nm[z] = [2]float64{p, float64(x)}
-			}
-		}
-	}
+	nm := L.nearHospitalPaths(ms, inC)
 	zs := []int{}
 	for z := range nm {
 		zs = append(zs, z)
 	}
 	sort.Ints(zs)
 	for _, z := range zs {
-		x := int(nm[z][1])
-		e := Edge{A: L.recs[x].Pk, B: L.recs[z].Pk, P: round4(nm[z][0]), Basis: "wasl-subthreshold"}
-		ds := L.downOf(L.recs[z], nm[z][0], e, 1, true)
+		np := nm[z]
+		e := Edge{A: L.recs[np.weakA].Pk, B: L.recs[np.weakB].Pk, P: round4(np.p), Basis: "wasl-subthreshold"}
+		ds := L.downOf(L.recs[z], np.p, e, np.hops, true)
 		if V7Cal != nil || V7Guard {
 			for i := range ds {
 				if V7Cal != nil {
-					ds[i].PCal = round4(V7Cal.Predict(nm[z][0], false))
+					ds[i].PCal = round4(V7Cal.Predict(np.p, false))
 				}
 				ds[i].RecPk, ds[i].RecDob = L.recs[z].Pk, L.recs[z].Dob
 			}
@@ -691,6 +929,7 @@ func (L *LinkerCore) factsFor(loop string) *LoopFacts {
 // Apply consumes one prepared FHIR message in sequence order and returns the facts messages to emit (deterministic order).
 func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 	out := []FactsMsg{}
+	L.traceSeq = p.Seq
 	if p.Skip {
 		return out
 	}
@@ -711,7 +950,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			// message held and is escalated to identity review; neither changes the clusters
 			a, okA := L.byPk[so.Pair[0]]
 			b, okB := L.byPk[so.Pair[1]]
-			if okA && okB && so.Link == "same" && LinkContradictionConfirm && so.Purpose == "second_identifier" {
+			if okA && okB && so.Link == "same" && LinkContradictionConfirm && SecondIDContradictionConfirm && so.Purpose == "second_identifier" {
 				if c := linkContradiction(L.recs[a], L.recs[b]); c != "" {
 					// the records contradict: the confirmation counts only after a confirming review (closure raises IDConfirm)
 					sc := *so
@@ -781,6 +1020,9 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		e := p.Ev
 		if p.Tick > L.provLast[e.Provider] {
 			L.provLast[e.Provider] = p.Tick
+		}
+		if !L.streamSeen || p.Tick > L.streamT {
+			L.streamT, L.streamSeen = p.Tick, true
 		}
 		if e.RType == "Task" {
 			loop := e.Provider + "/" + strings.Replace(e.Focus, "ServiceRequest/", "ServiceRequest/", 1)
@@ -884,16 +1126,18 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 					prog = "crc"
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
-					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast}
+					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}
 				L.loopRec[loop] = i
 				rec.srs = append(rec.srs, loop)
 			}
 		}
 		affRoots[L.Find(i)] = true
+		L.markNearDependents(i, affRoots)
 		for z := range L.near[i] {
 			affRoots[L.Find(z)] = true
 		}
 	}
+	L.emitClusters(affRoots)
 	for _, r := range keysOf(affRoots) {
 		for _, m := range L.members[r] {
 			for _, lp := range L.recs[m].srs {
@@ -918,6 +1162,13 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		L.lastHash[lp] = h
 		f.InSeq = p.Seq
 		out = append(out, FactsMsg{ID: lp + "@" + utoa(p.Seq), InSeq: p.Seq, Facts: f, OriginTs: p.OriginTs, Part: partOf(lp, L.P)})
+		if HistClock && L.streamSeen {
+			t := L.streamT // a sign-off has no arrival of its own: the stream time
+			if p.Kind == "event" {
+				t = p.Tick
+			}
+			out[len(out)-1].Arr = &t
+		}
 	}
 	// event-time clock: watermark = min latest arrival over providers still streaming; one tick per whole day crossed
 	wm, all := TEnd, true
@@ -960,4 +1211,28 @@ func contactOf(m map[string]string, pk string) string {
 		return s
 	}
 	return "unknown"
+}
+
+// eidContradict reports whether two captured Emirates ID numbers cannot be one person's number. Capture noise is a
+// one-digit slip per registration, so two copies of one number differ in at most two positions (a transposition is the
+// largest realistic slip); three or more differences mean two numbers. This covers pairs the Luhn rule cannot judge
+// because a typo broke the check digit on a side. Missing, truncated or default/dummy numbers say nothing.
+func eidContradict(a, b string) bool {
+	if len(a) != 15 || len(b) != 15 || dummyEID(a) || dummyEID(b) {
+		return false
+	}
+	d := 0
+	for i := 0; i < 15; i++ {
+		if a[i] != b[i] {
+			d++
+		}
+	}
+	return d >= 3
+}
+
+func (L *LinkerCore) emitUnlinked(a, b int) {
+	if L.trace == nil {
+		return
+	}
+	L.emitLink(LinkTrace{A: L.recs[a].Pk, B: L.recs[b].Pk, P: L.pscore[pk2(a, b)], Stage: "unlinked"})
 }

@@ -1,0 +1,93 @@
+{
+ "by_kind": {
+  "ifhas-followup": {
+   "agreed": 23,
+   "disagreements": [
+    "f3i-018",
+    "f3i-029"
+   ],
+   "fields": {
+    "label": {
+     "kappa": 0.913,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 0.92
+    }
+   },
+   "item_agreement": 0.92,
+   "n": 25
+  },
+  "ifhas-screen": {
+   "agreed": 24,
+   "disagreements": [
+    "f3i-014"
+   ],
+   "fields": {
+    "coded_label": {
+     "kappa": 0.956,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 0.96
+    },
+    "label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    }
+   },
+   "item_agreement": 0.96,
+   "n": 25
+  },
+  "ldct-screen": {
+   "agreed": 24,
+   "disagreements": [
+    "f3l-050"
+   ],
+   "fields": {
+    "label": {
+     "kappa": 0.953,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 0.96
+    }
+   },
+   "item_agreement": 0.96,
+   "n": 25
+  },
+  "ldct-workup": {
+   "agreed": 22,
+   "disagreements": [
+    "f3l-007",
+    "f3l-020",
+    "f3l-032"
+   ],
+   "fields": {
+    "label": {
+     "kappa": 0.835,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 0.88
+    }
+   },
+   "item_agreement": 0.88,
+   "n": 25
+  }
+ },
+ "labellers": [
+  "gemini-a",
+  "kimi-b"
+ ],
+ "overall": {
+  "agreed": 93,
+  "item_agreement": 0.93,
+  "items": 100
+ },
+ "schema": "fresh2-agreement/v1",
+ "semantics": {
+  "clinician_verified": false,
+  "model_labelled": true,
+  "statement": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness."
+ },
+ "warnings": []
+}

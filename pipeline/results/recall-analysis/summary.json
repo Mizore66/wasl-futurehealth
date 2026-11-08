@@ -1,0 +1,2733 @@
+{
+ "denominators": {
+  "wrong-on/s17": {
+   "crc_loops": 2040,
+   "truth_closed": 777,
+   "wasl_closed_tp": 573,
+   "missed": 204,
+   "false_closures": 0,
+   "recall": 0.7375,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.7375
+  },
+  "wrong-on/s29": {
+   "crc_loops": 2040,
+   "truth_closed": 750,
+   "wasl_closed_tp": 560,
+   "missed": 190,
+   "false_closures": 0,
+   "recall": 0.7467,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.7467
+  },
+  "wrong-off/s17": {
+   "crc_loops": 2040,
+   "truth_closed": 777,
+   "wasl_closed_tp": 581,
+   "missed": 196,
+   "false_closures": 7,
+   "recall": 0.7477,
+   "tp_closed_with_other_persons_report": 6,
+   "recall_right_patient_only": 0.74
+  },
+  "wrong-off/s29": {
+   "crc_loops": 2040,
+   "truth_closed": 750,
+   "wasl_closed_tp": 569,
+   "missed": 181,
+   "false_closures": 9,
+   "recall": 0.7587,
+   "tp_closed_with_other_persons_report": 7,
+   "recall_right_patient_only": 0.7493
+  },
+  "clean-on/s17": {
+   "crc_loops": 2040,
+   "truth_closed": 777,
+   "wasl_closed_tp": 594,
+   "missed": 183,
+   "false_closures": 0,
+   "recall": 0.7645,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.7645
+  },
+  "clean-on/s29": {
+   "crc_loops": 2040,
+   "truth_closed": 750,
+   "wasl_closed_tp": 582,
+   "missed": 168,
+   "false_closures": 0,
+   "recall": 0.776,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.776
+  },
+  "clean-off-final/s17": {
+   "crc_loops": 2040,
+   "truth_closed": 777,
+   "wasl_closed_tp": 596,
+   "missed": 181,
+   "false_closures": 0,
+   "recall": 0.7671,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.7671
+  },
+  "clean-off-final/s29": {
+   "crc_loops": 2040,
+   "truth_closed": 750,
+   "wasl_closed_tp": 582,
+   "missed": 168,
+   "false_closures": 0,
+   "recall": 0.776,
+   "tp_closed_with_other_persons_report": 0,
+   "recall_right_patient_only": 0.776
+  }
+ },
+ "categories": {
+  "wrong-on/pooled": {
+   "missed": 394,
+   "truth_closed": 1527,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 45,
+     "pct_of_missed": 11.4,
+     "pct_of_truth_closed": 2.95,
+     "wilson95_of_truth_closed": [
+      0.0221,
+      0.0392
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 91,
+     "pct_of_missed": 23.1,
+     "pct_of_truth_closed": 5.96,
+     "wilson95_of_truth_closed": [
+      0.0488,
+      0.0726
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 40,
+     "pct_of_missed": 10.2,
+     "pct_of_truth_closed": 2.62,
+     "wilson95_of_truth_closed": [
+      0.0193,
+      0.0355
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 4,
+     "pct_of_missed": 1.0,
+     "pct_of_truth_closed": 0.26,
+     "wilson95_of_truth_closed": [
+      0.001,
+      0.0067
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 4,
+     "pct_of_missed": 1.0,
+     "pct_of_truth_closed": 0.26,
+     "wilson95_of_truth_closed": [
+      0.001,
+      0.0067
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 14,
+     "pct_of_missed": 3.6,
+     "pct_of_truth_closed": 0.92,
+     "wilson95_of_truth_closed": [
+      0.0055,
+      0.0153
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 40,
+     "pct_of_missed": 10.2,
+     "pct_of_truth_closed": 2.62,
+     "wilson95_of_truth_closed": [
+      0.0193,
+      0.0355
+     ]
+    },
+    "L4_eid_guard_contradiction_hold": {
+     "n": 2,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0004,
+      0.0048
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 7,
+     "pct_of_missed": 1.8,
+     "pct_of_truth_closed": 0.46,
+     "wilson95_of_truth_closed": [
+      0.0022,
+      0.0094
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 146,
+     "pct_of_missed": 37.1,
+     "pct_of_truth_closed": 9.56,
+     "wilson95_of_truth_closed": [
+      0.0819,
+      0.1114
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    }
+   }
+  },
+  "wrong-on/s17": {
+   "missed": 204,
+   "truth_closed": 777,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 21,
+     "pct_of_missed": 10.3,
+     "pct_of_truth_closed": 2.7,
+     "wilson95_of_truth_closed": [
+      0.0177,
+      0.041
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 44,
+     "pct_of_missed": 21.6,
+     "pct_of_truth_closed": 5.66,
+     "wilson95_of_truth_closed": [
+      0.0425,
+      0.0752
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 28,
+     "pct_of_missed": 13.7,
+     "pct_of_truth_closed": 3.6,
+     "wilson95_of_truth_closed": [
+      0.025,
+      0.0516
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 2,
+     "pct_of_missed": 1.0,
+     "pct_of_truth_closed": 0.26,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0093
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 8,
+     "pct_of_missed": 3.9,
+     "pct_of_truth_closed": 1.03,
+     "wilson95_of_truth_closed": [
+      0.0052,
+      0.0202
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 17,
+     "pct_of_missed": 8.3,
+     "pct_of_truth_closed": 2.19,
+     "wilson95_of_truth_closed": [
+      0.0137,
+      0.0348
+     ]
+    },
+    "L4_eid_guard_contradiction_hold": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 4,
+     "pct_of_missed": 2.0,
+     "pct_of_truth_closed": 0.51,
+     "wilson95_of_truth_closed": [
+      0.002,
+      0.0132
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 78,
+     "pct_of_missed": 38.2,
+     "pct_of_truth_closed": 10.04,
+     "wilson95_of_truth_closed": [
+      0.0812,
+      0.1235
+     ]
+    }
+   }
+  },
+  "wrong-on/s29": {
+   "missed": 190,
+   "truth_closed": 750,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 24,
+     "pct_of_missed": 12.6,
+     "pct_of_truth_closed": 3.2,
+     "wilson95_of_truth_closed": [
+      0.0216,
+      0.0472
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 47,
+     "pct_of_missed": 24.7,
+     "pct_of_truth_closed": 6.27,
+     "wilson95_of_truth_closed": [
+      0.0475,
+      0.0823
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 12,
+     "pct_of_missed": 6.3,
+     "pct_of_truth_closed": 1.6,
+     "wilson95_of_truth_closed": [
+      0.0092,
+      0.0278
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 3,
+     "pct_of_missed": 1.6,
+     "pct_of_truth_closed": 0.4,
+     "wilson95_of_truth_closed": [
+      0.0014,
+      0.0117
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 2,
+     "pct_of_missed": 1.1,
+     "pct_of_truth_closed": 0.27,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0097
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 6,
+     "pct_of_missed": 3.2,
+     "pct_of_truth_closed": 0.8,
+     "wilson95_of_truth_closed": [
+      0.0037,
+      0.0173
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 23,
+     "pct_of_missed": 12.1,
+     "pct_of_truth_closed": 3.07,
+     "wilson95_of_truth_closed": [
+      0.0205,
+      0.0456
+     ]
+    },
+    "L4_eid_guard_contradiction_hold": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 3,
+     "pct_of_missed": 1.6,
+     "pct_of_truth_closed": 0.4,
+     "wilson95_of_truth_closed": [
+      0.0014,
+      0.0117
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 68,
+     "pct_of_missed": 35.8,
+     "pct_of_truth_closed": 9.07,
+     "wilson95_of_truth_closed": [
+      0.0721,
+      0.1134
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    }
+   }
+  },
+  "wrong-off/pooled": {
+   "missed": 377,
+   "truth_closed": 1527,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 46,
+     "pct_of_missed": 12.2,
+     "pct_of_truth_closed": 3.01,
+     "wilson95_of_truth_closed": [
+      0.0227,
+      0.0399
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 90,
+     "pct_of_missed": 23.9,
+     "pct_of_truth_closed": 5.89,
+     "wilson95_of_truth_closed": [
+      0.0482,
+      0.0719
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 40,
+     "pct_of_missed": 10.6,
+     "pct_of_truth_closed": 2.62,
+     "wilson95_of_truth_closed": [
+      0.0193,
+      0.0355
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 4,
+     "pct_of_missed": 1.1,
+     "pct_of_truth_closed": 0.26,
+     "wilson95_of_truth_closed": [
+      0.001,
+      0.0067
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 3,
+     "pct_of_missed": 0.8,
+     "pct_of_truth_closed": 0.2,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0058
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 13,
+     "pct_of_missed": 3.4,
+     "pct_of_truth_closed": 0.85,
+     "wilson95_of_truth_closed": [
+      0.005,
+      0.0145
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 32,
+     "pct_of_missed": 8.5,
+     "pct_of_truth_closed": 2.1,
+     "wilson95_of_truth_closed": [
+      0.0149,
+      0.0294
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 146,
+     "pct_of_missed": 38.7,
+     "pct_of_truth_closed": 9.56,
+     "wilson95_of_truth_closed": [
+      0.0819,
+      0.1114
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    },
+    "UNCLASSIFIED": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    }
+   }
+  },
+  "wrong-off/s17": {
+   "missed": 196,
+   "truth_closed": 777,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 21,
+     "pct_of_missed": 10.7,
+     "pct_of_truth_closed": 2.7,
+     "wilson95_of_truth_closed": [
+      0.0177,
+      0.041
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 44,
+     "pct_of_missed": 22.4,
+     "pct_of_truth_closed": 5.66,
+     "wilson95_of_truth_closed": [
+      0.0425,
+      0.0752
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 28,
+     "pct_of_missed": 14.3,
+     "pct_of_truth_closed": 3.6,
+     "wilson95_of_truth_closed": [
+      0.025,
+      0.0516
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 2,
+     "pct_of_missed": 1.0,
+     "pct_of_truth_closed": 0.26,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0093
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 7,
+     "pct_of_missed": 3.6,
+     "pct_of_truth_closed": 0.9,
+     "wilson95_of_truth_closed": [
+      0.0044,
+      0.0185
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 14,
+     "pct_of_missed": 7.1,
+     "pct_of_truth_closed": 1.8,
+     "wilson95_of_truth_closed": [
+      0.0108,
+      0.03
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 78,
+     "pct_of_missed": 39.8,
+     "pct_of_truth_closed": 10.04,
+     "wilson95_of_truth_closed": [
+      0.0812,
+      0.1235
+     ]
+    }
+   }
+  },
+  "wrong-off/s29": {
+   "missed": 181,
+   "truth_closed": 750,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 25,
+     "pct_of_missed": 13.8,
+     "pct_of_truth_closed": 3.33,
+     "wilson95_of_truth_closed": [
+      0.0227,
+      0.0487
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 46,
+     "pct_of_missed": 25.4,
+     "pct_of_truth_closed": 6.13,
+     "wilson95_of_truth_closed": [
+      0.0463,
+      0.0808
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 12,
+     "pct_of_missed": 6.6,
+     "pct_of_truth_closed": 1.6,
+     "wilson95_of_truth_closed": [
+      0.0092,
+      0.0278
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 3,
+     "pct_of_missed": 1.7,
+     "pct_of_truth_closed": 0.4,
+     "wilson95_of_truth_closed": [
+      0.0014,
+      0.0117
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 6,
+     "pct_of_missed": 3.3,
+     "pct_of_truth_closed": 0.8,
+     "wilson95_of_truth_closed": [
+      0.0037,
+      0.0173
+     ]
+    },
+    "L3_eid_mismatch_cannot_link": {
+     "n": 18,
+     "pct_of_missed": 9.9,
+     "pct_of_truth_closed": 2.4,
+     "wilson95_of_truth_closed": [
+      0.0152,
+      0.0376
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 68,
+     "pct_of_missed": 37.6,
+     "pct_of_truth_closed": 9.07,
+     "wilson95_of_truth_closed": [
+      0.0721,
+      0.1134
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    },
+    "UNCLASSIFIED": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    }
+   }
+  },
+  "clean-on/pooled": {
+   "missed": 351,
+   "truth_closed": 1527,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 49,
+     "pct_of_missed": 14.0,
+     "pct_of_truth_closed": 3.21,
+     "wilson95_of_truth_closed": [
+      0.0244,
+      0.0422
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 91,
+     "pct_of_missed": 25.9,
+     "pct_of_truth_closed": 5.96,
+     "wilson95_of_truth_closed": [
+      0.0488,
+      0.0726
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 41,
+     "pct_of_missed": 11.7,
+     "pct_of_truth_closed": 2.69,
+     "wilson95_of_truth_closed": [
+      0.0199,
+      0.0362
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 3,
+     "pct_of_missed": 0.9,
+     "pct_of_truth_closed": 0.2,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0058
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 3,
+     "pct_of_missed": 0.9,
+     "pct_of_truth_closed": 0.2,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0058
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 16,
+     "pct_of_missed": 4.6,
+     "pct_of_truth_closed": 1.05,
+     "wilson95_of_truth_closed": [
+      0.0065,
+      0.017
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 146,
+     "pct_of_missed": 41.6,
+     "pct_of_truth_closed": 9.56,
+     "wilson95_of_truth_closed": [
+      0.0819,
+      0.1114
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    }
+   }
+  },
+  "clean-on/s17": {
+   "missed": 183,
+   "truth_closed": 777,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 23,
+     "pct_of_missed": 12.6,
+     "pct_of_truth_closed": 2.96,
+     "wilson95_of_truth_closed": [
+      0.0198,
+      0.044
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 44,
+     "pct_of_missed": 24.0,
+     "pct_of_truth_closed": 5.66,
+     "wilson95_of_truth_closed": [
+      0.0425,
+      0.0752
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 28,
+     "pct_of_missed": 15.3,
+     "pct_of_truth_closed": 3.6,
+     "wilson95_of_truth_closed": [
+      0.025,
+      0.0516
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 9,
+     "pct_of_missed": 4.9,
+     "pct_of_truth_closed": 1.16,
+     "wilson95_of_truth_closed": [
+      0.0061,
+      0.0219
+     ]
+    },
+    "L4b_reviewed_same_still_unlinked": {
+     "n": 1,
+     "pct_of_missed": 0.5,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 76,
+     "pct_of_missed": 41.5,
+     "pct_of_truth_closed": 9.78,
+     "wilson95_of_truth_closed": [
+      0.0789,
+      0.1207
+     ]
+    }
+   }
+  },
+  "clean-on/s29": {
+   "missed": 168,
+   "truth_closed": 750,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 26,
+     "pct_of_missed": 15.5,
+     "pct_of_truth_closed": 3.47,
+     "wilson95_of_truth_closed": [
+      0.0238,
+      0.0503
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 47,
+     "pct_of_missed": 28.0,
+     "pct_of_truth_closed": 6.27,
+     "wilson95_of_truth_closed": [
+      0.0475,
+      0.0823
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 13,
+     "pct_of_missed": 7.7,
+     "pct_of_truth_closed": 1.73,
+     "wilson95_of_truth_closed": [
+      0.0102,
+      0.0294
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 2,
+     "pct_of_missed": 1.2,
+     "pct_of_truth_closed": 0.27,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0097
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 2,
+     "pct_of_missed": 1.2,
+     "pct_of_truth_closed": 0.27,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0097
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 7,
+     "pct_of_missed": 4.2,
+     "pct_of_truth_closed": 0.93,
+     "wilson95_of_truth_closed": [
+      0.0045,
+      0.0191
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 70,
+     "pct_of_missed": 41.7,
+     "pct_of_truth_closed": 9.33,
+     "wilson95_of_truth_closed": [
+      0.0745,
+      0.1163
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    }
+   }
+  },
+  "clean-off-final/pooled": {
+   "missed": 349,
+   "truth_closed": 1527,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 50,
+     "pct_of_missed": 14.3,
+     "pct_of_truth_closed": 3.27,
+     "wilson95_of_truth_closed": [
+      0.0249,
+      0.0429
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 92,
+     "pct_of_missed": 26.4,
+     "pct_of_truth_closed": 6.02,
+     "wilson95_of_truth_closed": [
+      0.0494,
+      0.0733
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 41,
+     "pct_of_missed": 11.7,
+     "pct_of_truth_closed": 2.69,
+     "wilson95_of_truth_closed": [
+      0.0199,
+      0.0362
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 3,
+     "pct_of_missed": 0.9,
+     "pct_of_truth_closed": 0.2,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0058
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 2,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0004,
+      0.0048
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 15,
+     "pct_of_missed": 4.3,
+     "pct_of_truth_closed": 0.98,
+     "wilson95_of_truth_closed": [
+      0.006,
+      0.0161
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 145,
+     "pct_of_missed": 41.5,
+     "pct_of_truth_closed": 9.5,
+     "wilson95_of_truth_closed": [
+      0.0813,
+      0.1107
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.3,
+     "pct_of_truth_closed": 0.07,
+     "wilson95_of_truth_closed": [
+      0.0001,
+      0.0037
+     ]
+    }
+   }
+  },
+  "clean-off-final/s17": {
+   "missed": 181,
+   "truth_closed": 777,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 24,
+     "pct_of_missed": 13.3,
+     "pct_of_truth_closed": 3.09,
+     "wilson95_of_truth_closed": [
+      0.0208,
+      0.0455
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 44,
+     "pct_of_missed": 24.3,
+     "pct_of_truth_closed": 5.66,
+     "wilson95_of_truth_closed": [
+      0.0425,
+      0.0752
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 28,
+     "pct_of_missed": 15.5,
+     "pct_of_truth_closed": 3.6,
+     "wilson95_of_truth_closed": [
+      0.025,
+      0.0516
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0073
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 8,
+     "pct_of_missed": 4.4,
+     "pct_of_truth_closed": 1.03,
+     "wilson95_of_truth_closed": [
+      0.0052,
+      0.0202
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 75,
+     "pct_of_missed": 41.4,
+     "pct_of_truth_closed": 9.65,
+     "wilson95_of_truth_closed": [
+      0.0777,
+      0.1193
+     ]
+    }
+   }
+  },
+  "clean-off-final/s29": {
+   "missed": 168,
+   "truth_closed": 750,
+   "table": {
+    "E1_ungraded_prep_decision_not_due_by_horizon": {
+     "n": 26,
+     "pct_of_missed": 15.5,
+     "pct_of_truth_closed": 3.47,
+     "wilson95_of_truth_closed": [
+      0.0238,
+      0.0503
+     ]
+    },
+    "E2_reviewer_wrong_evidence_signoff": {
+     "n": 48,
+     "pct_of_missed": 28.6,
+     "pct_of_truth_closed": 6.4,
+     "wilson95_of_truth_closed": [
+      0.0486,
+      0.0838
+     ]
+    },
+    "E4_readers_agree_not_adequate_but_key_says_completed": {
+     "n": 13,
+     "pct_of_missed": 7.7,
+     "pct_of_truth_closed": 1.73,
+     "wilson95_of_truth_closed": [
+      0.0102,
+      0.0294
+     ]
+    },
+    "E6_repeat_procedure_closing_report_itself_unresolved": {
+     "n": 2,
+     "pct_of_missed": 1.2,
+     "pct_of_truth_closed": 0.27,
+     "wilson95_of_truth_closed": [
+      0.0007,
+      0.0097
+     ]
+    },
+    "L0_referral_rejected_state": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    },
+    "L2_reviewer_wrong_link_different": {
+     "n": 7,
+     "pct_of_missed": 4.2,
+     "pct_of_truth_closed": 0.93,
+     "wilson95_of_truth_closed": [
+      0.0045,
+      0.0191
+     ]
+    },
+    "L5_no_link_established_no_question_raised": {
+     "n": 70,
+     "pct_of_missed": 41.7,
+     "pct_of_truth_closed": 9.33,
+     "wilson95_of_truth_closed": [
+      0.0745,
+      0.1163
+     ]
+    },
+    "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+     "n": 1,
+     "pct_of_missed": 0.6,
+     "pct_of_truth_closed": 0.13,
+     "wilson95_of_truth_closed": [
+      0.0002,
+      0.0075
+     ]
+    }
+   }
+  }
+ },
+ "sub_categories": {
+  "wrong-on": {
+   "E1_ungraded_prep_decision_not_due_by_horizon :: awaiting_unit": 30,
+   "E1_ungraded_prep_decision_not_due_by_horizon :: escalated": 15,
+   "E2_reviewer_wrong_evidence_signoff :: day15_clinician_(assumed_25pct_error)": 86,
+   "E2_reviewer_wrong_evidence_signoff :: evidence_disagreement_(4pct_error)": 5,
+   "E4_readers_agree_not_adequate_but_key_says_completed :: R1_caecum_not_documented_both_readers": 40,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=-": 1,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=escalated": 2,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=True label=awaiting_histology prep_q=-": 1,
+   "L0_referral_rejected_state :: ": 3,
+   "L0_referral_rejected_state :: late (report day 118)": 1,
+   "L2_reviewer_wrong_link_different :: ": 14,
+   "L3_eid_mismatch_cannot_link :: adversarial_relative_eid": 40,
+   "L4_eid_guard_contradiction_hold :: reviewed_same": 2,
+   "L4b_reviewed_same_still_unlinked :: ": 7,
+   "L5_no_link_established_no_question_raised :: both_missing": 10,
+   "L5_no_link_established_no_question_raised :: differ": 39,
+   "L5_no_link_established_no_question_raised :: proc_missing": 54,
+   "L5_no_link_established_no_question_raised :: sr_missing": 43,
+   "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds :: ": 1
+  },
+  "wrong-off": {
+   "E1_ungraded_prep_decision_not_due_by_horizon :: awaiting_unit": 31,
+   "E1_ungraded_prep_decision_not_due_by_horizon :: escalated": 15,
+   "E2_reviewer_wrong_evidence_signoff :: day15_clinician_(assumed_25pct_error)": 85,
+   "E2_reviewer_wrong_evidence_signoff :: evidence_disagreement_(4pct_error)": 5,
+   "E4_readers_agree_not_adequate_but_key_says_completed :: R1_caecum_not_documented_both_readers": 40,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=-": 1,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=escalated": 2,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=True label=awaiting_histology prep_q=-": 1,
+   "L0_referral_rejected_state :: ": 2,
+   "L0_referral_rejected_state :: late (report day 118)": 1,
+   "L2_reviewer_wrong_link_different :: ": 13,
+   "L3_eid_mismatch_cannot_link :: adversarial_relative_eid": 32,
+   "L4b_reviewed_same_still_unlinked :: ": 1,
+   "L5_no_link_established_no_question_raised :: both_missing": 10,
+   "L5_no_link_established_no_question_raised :: differ": 39,
+   "L5_no_link_established_no_question_raised :: proc_missing": 53,
+   "L5_no_link_established_no_question_raised :: sr_missing": 44,
+   "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds :: ": 1,
+   "UNCLASSIFIED :: ungraded prep due before horizon but unresolved": 1
+  },
+  "clean-on": {
+   "E1_ungraded_prep_decision_not_due_by_horizon :: awaiting_unit": 32,
+   "E1_ungraded_prep_decision_not_due_by_horizon :: escalated": 17,
+   "E2_reviewer_wrong_evidence_signoff :: day15_clinician_(assumed_25pct_error)": 86,
+   "E2_reviewer_wrong_evidence_signoff :: evidence_disagreement_(4pct_error)": 5,
+   "E4_readers_agree_not_adequate_but_key_says_completed :: R1_caecum_not_documented_both_readers": 41,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=escalated": 2,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=True label=awaiting_histology prep_q=-": 1,
+   "L0_referral_rejected_state :: ": 2,
+   "L0_referral_rejected_state :: late (report day 118)": 1,
+   "L2_reviewer_wrong_link_different :: ": 16,
+   "L4b_reviewed_same_still_unlinked :: ": 1,
+   "L5_no_link_established_no_question_raised :: both_missing": 10,
+   "L5_no_link_established_no_question_raised :: differ": 42,
+   "L5_no_link_established_no_question_raised :: proc_missing": 53,
+   "L5_no_link_established_no_question_raised :: sr_missing": 41,
+   "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds :: ": 1
+  },
+  "clean-off-final": {
+   "E1_ungraded_prep_decision_not_due_by_horizon :: awaiting_unit": 32,
+   "E1_ungraded_prep_decision_not_due_by_horizon :: escalated": 18,
+   "E2_reviewer_wrong_evidence_signoff :: day15_clinician_(assumed_25pct_error)": 87,
+   "E2_reviewer_wrong_evidence_signoff :: evidence_disagreement_(4pct_error)": 5,
+   "E4_readers_agree_not_adequate_but_key_says_completed :: R1_caecum_not_documented_both_readers": 41,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=False label=disagree prep_q=escalated": 2,
+   "E6_repeat_procedure_closing_report_itself_unresolved :: closing report agree=True label=awaiting_histology prep_q=-": 1,
+   "L0_referral_rejected_state :: ": 1,
+   "L0_referral_rejected_state :: late (report day 118)": 1,
+   "L2_reviewer_wrong_link_different :: ": 15,
+   "L5_no_link_established_no_question_raised :: both_missing": 10,
+   "L5_no_link_established_no_question_raised :: differ": 42,
+   "L5_no_link_established_no_question_raised :: proc_missing": 52,
+   "L5_no_link_established_no_question_raised :: sr_missing": 41,
+   "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds :: ": 1
+  }
+ },
+ "splits_recall": {
+  "wrong-on/origin": {
+   "arab": {
+    "truth_closed": 818,
+    "missed": 211,
+    "recall": 0.7421,
+    "wilson95_recall": [
+     0.711,
+     0.7709
+    ]
+   },
+   "filipino": {
+    "truth_closed": 131,
+    "missed": 35,
+    "recall": 0.7328,
+    "wilson95_recall": [
+     0.6512,
+     0.8012
+    ]
+   },
+   "south_asian": {
+    "truth_closed": 375,
+    "missed": 94,
+    "recall": 0.7493,
+    "wilson95_recall": [
+     0.7031,
+     0.7905
+    ]
+   },
+   "western": {
+    "truth_closed": 203,
+    "missed": 54,
+    "recall": 0.734,
+    "wilson95_recall": [
+     0.6693,
+     0.79
+    ]
+   }
+  },
+  "wrong-on/sex": {
+   "F": {
+    "truth_closed": 1070,
+    "missed": 273,
+    "recall": 0.7449,
+    "wilson95_recall": [
+     0.7179,
+     0.7701
+    ]
+   },
+   "M": {
+    "truth_closed": 450,
+    "missed": 119,
+    "recall": 0.7356,
+    "wilson95_recall": [
+     0.6929,
+     0.7742
+    ]
+   },
+   "U": {
+    "truth_closed": 7,
+    "missed": 2,
+    "recall": 0.7143,
+    "wilson95_recall": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "wrong-on/age_band": {
+   "40-59": {
+    "truth_closed": 406,
+    "missed": 111,
+    "recall": 0.7266,
+    "wilson95_recall": [
+     0.6813,
+     0.7677
+    ]
+   },
+   "60-79": {
+    "truth_closed": 381,
+    "missed": 104,
+    "recall": 0.727,
+    "wilson95_recall": [
+     0.6802,
+     0.7693
+    ]
+   },
+   "80+": {
+    "truth_closed": 319,
+    "missed": 80,
+    "recall": 0.7492,
+    "wilson95_recall": [
+     0.6989,
+     0.7936
+    ]
+   },
+   "<40": {
+    "truth_closed": 421,
+    "missed": 99,
+    "recall": 0.7648,
+    "wilson95_recall": [
+     0.7221,
+     0.8028
+    ]
+   }
+  },
+  "wrong-off/origin": {
+   "arab": {
+    "truth_closed": 818,
+    "missed": 202,
+    "recall": 0.7531,
+    "wilson95_recall": [
+     0.7224,
+     0.7814
+    ]
+   },
+   "filipino": {
+    "truth_closed": 131,
+    "missed": 32,
+    "recall": 0.7557,
+    "wilson95_recall": [
+     0.6756,
+     0.8213
+    ]
+   },
+   "south_asian": {
+    "truth_closed": 375,
+    "missed": 92,
+    "recall": 0.7547,
+    "wilson95_recall": [
+     0.7087,
+     0.7955
+    ]
+   },
+   "western": {
+    "truth_closed": 203,
+    "missed": 51,
+    "recall": 0.7488,
+    "wilson95_recall": [
+     0.6849,
+     0.8034
+    ]
+   }
+  },
+  "wrong-off/sex": {
+   "F": {
+    "truth_closed": 1070,
+    "missed": 259,
+    "recall": 0.7579,
+    "wilson95_recall": [
+     0.7314,
+     0.7827
+    ]
+   },
+   "M": {
+    "truth_closed": 450,
+    "missed": 116,
+    "recall": 0.7422,
+    "wilson95_recall": [
+     0.6999,
+     0.7805
+    ]
+   },
+   "U": {
+    "truth_closed": 7,
+    "missed": 2,
+    "recall": 0.7143,
+    "wilson95_recall": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "wrong-off/age_band": {
+   "40-59": {
+    "truth_closed": 406,
+    "missed": 106,
+    "recall": 0.7389,
+    "wilson95_recall": [
+     0.6941,
+     0.7793
+    ]
+   },
+   "60-79": {
+    "truth_closed": 381,
+    "missed": 100,
+    "recall": 0.7375,
+    "wilson95_recall": [
+     0.6911,
+     0.7792
+    ]
+   },
+   "80+": {
+    "truth_closed": 319,
+    "missed": 79,
+    "recall": 0.7524,
+    "wilson95_recall": [
+     0.7022,
+     0.7965
+    ]
+   },
+   "<40": {
+    "truth_closed": 421,
+    "missed": 92,
+    "recall": 0.7815,
+    "wilson95_recall": [
+     0.7395,
+     0.8183
+    ]
+   }
+  },
+  "clean-on/origin": {
+   "arab": {
+    "truth_closed": 818,
+    "missed": 186,
+    "recall": 0.7726,
+    "wilson95_recall": [
+     0.7427,
+     0.8
+    ]
+   },
+   "filipino": {
+    "truth_closed": 131,
+    "missed": 32,
+    "recall": 0.7557,
+    "wilson95_recall": [
+     0.6756,
+     0.8213
+    ]
+   },
+   "south_asian": {
+    "truth_closed": 375,
+    "missed": 81,
+    "recall": 0.784,
+    "wilson95_recall": [
+     0.7396,
+     0.8227
+    ]
+   },
+   "western": {
+    "truth_closed": 203,
+    "missed": 52,
+    "recall": 0.7438,
+    "wilson95_recall": [
+     0.6797,
+     0.799
+    ]
+   }
+  },
+  "clean-on/sex": {
+   "F": {
+    "truth_closed": 1070,
+    "missed": 237,
+    "recall": 0.7785,
+    "wilson95_recall": [
+     0.7527,
+     0.8024
+    ]
+   },
+   "M": {
+    "truth_closed": 450,
+    "missed": 112,
+    "recall": 0.7511,
+    "wilson95_recall": [
+     0.7091,
+     0.7888
+    ]
+   },
+   "U": {
+    "truth_closed": 7,
+    "missed": 2,
+    "recall": 0.7143,
+    "wilson95_recall": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "clean-on/age_band": {
+   "40-59": {
+    "truth_closed": 406,
+    "missed": 98,
+    "recall": 0.7586,
+    "wilson95_recall": [
+     0.7147,
+     0.7977
+    ]
+   },
+   "60-79": {
+    "truth_closed": 381,
+    "missed": 95,
+    "recall": 0.7507,
+    "wilson95_recall": [
+     0.7049,
+     0.7915
+    ]
+   },
+   "80+": {
+    "truth_closed": 319,
+    "missed": 72,
+    "recall": 0.7743,
+    "wilson95_recall": [
+     0.7253,
+     0.8167
+    ]
+   },
+   "<40": {
+    "truth_closed": 421,
+    "missed": 86,
+    "recall": 0.7957,
+    "wilson95_recall": [
+     0.7546,
+     0.8315
+    ]
+   }
+  },
+  "clean-off-final/origin": {
+   "arab": {
+    "truth_closed": 818,
+    "missed": 187,
+    "recall": 0.7714,
+    "wilson95_recall": [
+     0.7414,
+     0.7989
+    ]
+   },
+   "filipino": {
+    "truth_closed": 131,
+    "missed": 30,
+    "recall": 0.771,
+    "wilson95_recall": [
+     0.6919,
+     0.8346
+    ]
+   },
+   "south_asian": {
+    "truth_closed": 375,
+    "missed": 81,
+    "recall": 0.784,
+    "wilson95_recall": [
+     0.7396,
+     0.8227
+    ]
+   },
+   "western": {
+    "truth_closed": 203,
+    "missed": 51,
+    "recall": 0.7488,
+    "wilson95_recall": [
+     0.6849,
+     0.8034
+    ]
+   }
+  },
+  "clean-off-final/sex": {
+   "F": {
+    "truth_closed": 1070,
+    "missed": 235,
+    "recall": 0.7804,
+    "wilson95_recall": [
+     0.7546,
+     0.8042
+    ]
+   },
+   "M": {
+    "truth_closed": 450,
+    "missed": 112,
+    "recall": 0.7511,
+    "wilson95_recall": [
+     0.7091,
+     0.7888
+    ]
+   },
+   "U": {
+    "truth_closed": 7,
+    "missed": 2,
+    "recall": 0.7143,
+    "wilson95_recall": [
+     0.3589,
+     0.9178
+    ]
+   }
+  },
+  "clean-off-final/age_band": {
+   "40-59": {
+    "truth_closed": 406,
+    "missed": 97,
+    "recall": 0.7611,
+    "wilson95_recall": [
+     0.7173,
+     0.8
+    ]
+   },
+   "60-79": {
+    "truth_closed": 381,
+    "missed": 94,
+    "recall": 0.7533,
+    "wilson95_recall": [
+     0.7076,
+     0.7939
+    ]
+   },
+   "80+": {
+    "truth_closed": 319,
+    "missed": 73,
+    "recall": 0.7712,
+    "wilson95_recall": [
+     0.722,
+     0.8139
+    ]
+   },
+   "<40": {
+    "truth_closed": 421,
+    "missed": 85,
+    "recall": 0.7981,
+    "wilson95_recall": [
+     0.7571,
+     0.8337
+    ]
+   }
+  }
+ },
+ "wrong_on_group_family_counts": {
+  "origin": {
+   "arab": {
+    "L3": 24,
+    "E1": 26,
+    "L2": 4,
+    "L5": 79,
+    "E2": 52,
+    "E4": 18,
+    "L0": 1,
+    "E6": 2,
+    "L4": 5
+   },
+   "filipino": {
+    "L5": 17,
+    "E1": 2,
+    "E2": 3,
+    "L2": 4,
+    "E4": 4,
+    "L0": 2,
+    "L3": 3
+   },
+   "south_asian": {
+    "L5": 28,
+    "L3": 10,
+    "E2": 23,
+    "E1": 10,
+    "L2": 5,
+    "E4": 12,
+    "L4": 3,
+    "E6": 2,
+    "L0": 1
+   },
+   "western": {
+    "E1": 7,
+    "E2": 13,
+    "L5": 22,
+    "L4": 1,
+    "E4": 6,
+    "L3": 3,
+    "L2": 1,
+    "L6": 1
+   }
+  },
+  "sex": {
+   "F": {
+    "L3": 32,
+    "E1": 36,
+    "L5": 102,
+    "E2": 55,
+    "L4": 8,
+    "E4": 26,
+    "L0": 3,
+    "E6": 3,
+    "L2": 7,
+    "L6": 1
+   },
+   "M": {
+    "L5": 43,
+    "L2": 7,
+    "E1": 9,
+    "E2": 35,
+    "E4": 14,
+    "L3": 8,
+    "L4": 1,
+    "L0": 1,
+    "E6": 1
+   },
+   "U": {
+    "E2": 1,
+    "L5": 1
+   }
+  },
+  "age_band": {
+   "40-59": {
+    "L4": 4,
+    "L5": 41,
+    "E2": 23,
+    "E4": 13,
+    "L0": 1,
+    "L3": 10,
+    "E1": 11,
+    "L2": 6,
+    "E6": 2
+   },
+   "60-79": {
+    "L3": 9,
+    "L2": 3,
+    "E1": 14,
+    "L5": 41,
+    "E2": 22,
+    "E4": 11,
+    "L4": 2,
+    "E6": 1,
+    "L6": 1
+   },
+   "80+": {
+    "E1": 9,
+    "L5": 30,
+    "E2": 20,
+    "L2": 3,
+    "E4": 10,
+    "L0": 1,
+    "L3": 6,
+    "L4": 1
+   },
+   "<40": {
+    "L3": 15,
+    "E2": 26,
+    "L5": 34,
+    "E1": 11,
+    "E4": 6,
+    "E6": 1,
+    "L4": 2,
+    "L2": 2,
+    "L0": 2
+   }
+  },
+  "seed": {
+   "17": {
+    "L3": 17,
+    "E1": 21,
+    "L5": 78,
+    "L2": 8,
+    "E2": 44,
+    "L4": 5,
+    "E4": 28,
+    "L0": 2,
+    "E6": 1
+   },
+   "29": {
+    "L3": 23,
+    "L4": 4,
+    "E1": 24,
+    "E2": 47,
+    "L5": 68,
+    "E4": 12,
+    "E6": 3,
+    "L2": 6,
+    "L0": 2,
+    "L6": 1
+   }
+  }
+ },
+ "report_text_concentration_wrong_on": {
+  "u18": {
+   "truth_closed": 49,
+   "missed": 49,
+   "evidence_profile": "key=awaiting_histology|agree=True|rule=R1_completion_not_documented|ungraded=False"
+  },
+  "u32": {
+   "truth_closed": 61,
+   "missed": 25,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u21": {
+   "truth_closed": 49,
+   "missed": 20,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u37": {
+   "truth_closed": 45,
+   "missed": 20,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u34": {
+   "truth_closed": 50,
+   "missed": 18,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u26": {
+   "truth_closed": 44,
+   "missed": 18,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u5": {
+   "truth_closed": 51,
+   "missed": 16,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u3": {
+   "truth_closed": 41,
+   "missed": 15,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u27": {
+   "truth_closed": 40,
+   "missed": 15,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u33": {
+   "truth_closed": 57,
+   "missed": 15,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u16": {
+   "truth_closed": 58,
+   "missed": 14,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u22": {
+   "truth_closed": 43,
+   "missed": 13,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u4": {
+   "truth_closed": 59,
+   "missed": 13,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=False"
+  },
+  "u36": {
+   "truth_closed": 55,
+   "missed": 12,
+   "evidence_profile": "key=adequate|agree=False|rule=-|ungraded=True"
+  },
+  "u25": {
+   "truth_closed": 41,
+   "missed": 10,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u43": {
+   "truth_closed": 58,
+   "missed": 10,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u11": {
+   "truth_closed": 44,
+   "missed": 10,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u23": {
+   "truth_closed": 47,
+   "missed": 9,
+   "evidence_profile": "key=awaiting_histology|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u35": {
+   "truth_closed": 51,
+   "missed": 9,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=False"
+  },
+  "u12": {
+   "truth_closed": 39,
+   "missed": 8,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u19": {
+   "truth_closed": 31,
+   "missed": 8,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u39": {
+   "truth_closed": 43,
+   "missed": 8,
+   "evidence_profile": "key=awaiting_histology|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u28": {
+   "truth_closed": 38,
+   "missed": 8,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u29": {
+   "truth_closed": 36,
+   "missed": 7,
+   "evidence_profile": "key=awaiting_histology|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u38": {
+   "truth_closed": 59,
+   "missed": 7,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u31": {
+   "truth_closed": 59,
+   "missed": 6,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u8": {
+   "truth_closed": 48,
+   "missed": 6,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u20": {
+   "truth_closed": 36,
+   "missed": 5,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u30": {
+   "truth_closed": 64,
+   "missed": 5,
+   "evidence_profile": "key=adequate|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u10": {
+   "truth_closed": 37,
+   "missed": 5,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=True"
+  },
+  "u24": {
+   "truth_closed": 52,
+   "missed": 5,
+   "evidence_profile": "key=awaiting_histology|agree=True|rule=per_field_consensus|ungraded=False"
+  },
+  "u2": {
+   "truth_closed": 42,
+   "missed": 5,
+   "evidence_profile": "key=awaiting_histology|agree=False|rule=-|ungraded=False"
+  }
+ },
+ "paired_lanes": {
+  "s17": {
+   "patterns": {
+    "on=0 off=0 clean=0": 181,
+    "on=0 off=0 clean=1": 14,
+    "on=0 off=1 clean=0": 2,
+    "on=0 off=1 clean=1": 7,
+    "on=1 off=0 clean=1": 1,
+    "on=1 off=1 clean=1": 572
+   },
+   "guard_loss_total": 9,
+   "guard_loss_where_wrong_off_closed_with_other_persons_report": 3,
+   "guard_loss_right_patient": 6,
+   "wrong_off_tp_with_other_persons_report": 6,
+   "guard_loss_wrong_on_category": {
+    "L5_no_link_established_no_question_raised": 1,
+    "L4b_reviewed_same_still_unlinked": 4,
+    "L2_reviewer_wrong_link_different": 1,
+    "L3_eid_mismatch_cannot_link": 3
+   },
+   "adversarial_eid_effect_paired_closed_in_clean_not_in_wrong_on": 21,
+   "closed_in_wrong_on_not_in_clean": 0
+  },
+  "s29": {
+   "patterns": {
+    "on=0 off=0 clean=0": 164,
+    "on=0 off=0 clean=1": 17,
+    "on=0 off=1 clean=0": 4,
+    "on=0 off=1 clean=1": 5,
+    "on=1 off=1 clean=1": 560
+   },
+   "guard_loss_total": 9,
+   "guard_loss_where_wrong_off_closed_with_other_persons_report": 5,
+   "guard_loss_right_patient": 4,
+   "wrong_off_tp_with_other_persons_report": 7,
+   "guard_loss_wrong_on_category": {
+    "L4b_reviewed_same_still_unlinked": 3,
+    "L3_eid_mismatch_cannot_link": 4,
+    "L0_referral_rejected_state": 1,
+    "E2_reviewer_wrong_evidence_signoff": 1
+   },
+   "adversarial_eid_effect_paired_closed_in_clean_not_in_wrong_on": 22,
+   "closed_in_wrong_on_not_in_clean": 0
+  }
+ },
+ "wrong_on_missed_vs_other_lanes": {
+  "s17": {
+   "E1_ungraded_prep_decision_not_due_by_horizon | clean_also_missed | off_also_missed": 21,
+   "E2_reviewer_wrong_evidence_signoff | clean_also_missed | off_also_missed": 44,
+   "E4_readers_agree_not_adequate_but_key_says_completed | clean_also_missed | off_also_missed": 28,
+   "E6_repeat_procedure_closing_report_itself_unresolved | clean_also_missed | off_also_missed": 1,
+   "L0_referral_rejected_state | clean_also_missed | off_also_missed": 1,
+   "L0_referral_rejected_state | clean_closed | off_also_missed": 1,
+   "L2_reviewer_wrong_link_different | clean_also_missed | off_also_missed": 7,
+   "L2_reviewer_wrong_link_different | clean_also_missed | off_closed": 1,
+   "L3_eid_mismatch_cannot_link | clean_also_missed | off_also_missed": 3,
+   "L3_eid_mismatch_cannot_link | clean_closed | off_also_missed": 11,
+   "L3_eid_mismatch_cannot_link | clean_closed | off_closed": 3,
+   "L4_eid_guard_contradiction_hold | clean_also_missed | off_also_missed": 1,
+   "L4b_reviewed_same_still_unlinked | clean_also_missed | off_closed": 1,
+   "L4b_reviewed_same_still_unlinked | clean_closed | off_closed": 3,
+   "L5_no_link_established_no_question_raised | clean_also_missed | off_also_missed": 75,
+   "L5_no_link_established_no_question_raised | clean_closed | off_also_missed": 2,
+   "L5_no_link_established_no_question_raised | clean_closed | off_closed": 1
+  },
+  "s29": {
+   "E1_ungraded_prep_decision_not_due_by_horizon | clean_also_missed | off_also_missed": 24,
+   "E2_reviewer_wrong_evidence_signoff | clean_also_missed | off_also_missed": 45,
+   "E2_reviewer_wrong_evidence_signoff | clean_also_missed | off_closed": 1,
+   "E2_reviewer_wrong_evidence_signoff | clean_closed | off_also_missed": 1,
+   "E4_readers_agree_not_adequate_but_key_says_completed | clean_also_missed | off_also_missed": 12,
+   "E6_repeat_procedure_closing_report_itself_unresolved | clean_also_missed | off_also_missed": 2,
+   "E6_repeat_procedure_closing_report_itself_unresolved | clean_closed | off_also_missed": 1,
+   "L0_referral_rejected_state | clean_also_missed | off_also_missed": 1,
+   "L0_referral_rejected_state | clean_also_missed | off_closed": 1,
+   "L2_reviewer_wrong_link_different | clean_also_missed | off_also_missed": 6,
+   "L3_eid_mismatch_cannot_link | clean_also_missed | off_also_missed": 5,
+   "L3_eid_mismatch_cannot_link | clean_also_missed | off_closed": 2,
+   "L3_eid_mismatch_cannot_link | clean_closed | off_also_missed": 14,
+   "L3_eid_mismatch_cannot_link | clean_closed | off_closed": 2,
+   "L4_eid_guard_contradiction_hold | clean_also_missed | off_also_missed": 1,
+   "L4b_reviewed_same_still_unlinked | clean_closed | off_closed": 3,
+   "L5_no_link_established_no_question_raised | clean_also_missed | off_also_missed": 67,
+   "L5_no_link_established_no_question_raised | clean_closed | off_also_missed": 1,
+   "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds | clean_also_missed | off_also_missed": 1
+  }
+ },
+ "wrong_on_L5_descriptors_not_causes": {
+  "eid_state": {
+   "differ": 39,
+   "proc_missing": 54,
+   "both_missing": 10,
+   "sr_missing": 43
+  },
+  "dob_exact_match": {
+   "False": 128,
+   "True": 18
+  },
+  "report_day_bucket": {
+   "<90": 102,
+   "90-110": 38,
+   ">=110": 6
+  },
+  "origin": {
+   "south_asian": 28,
+   "arab": 79,
+   "western": 22,
+   "filipino": 17
+  }
+ },
+ "wrong_on_report_day_by_category": {
+  "L3_eid_mismatch_cannot_link": {
+   "<90": 29,
+   ">=110": 3,
+   "90-110": 8
+  },
+  "E1_ungraded_prep_decision_not_due_by_horizon": {
+   "90-110": 17,
+   ">=110": 28
+  },
+  "L5_no_link_established_no_question_raised": {
+   "<90": 102,
+   "90-110": 38,
+   ">=110": 6
+  },
+  "L2_reviewer_wrong_link_different": {
+   "<90": 8,
+   "90-110": 4,
+   ">=110": 2
+  },
+  "E2_reviewer_wrong_evidence_signoff": {
+   "<90": 69,
+   "90-110": 22
+  },
+  "L4b_reviewed_same_still_unlinked": {
+   "90-110": 1,
+   "<90": 6
+  },
+  "E4_readers_agree_not_adequate_but_key_says_completed": {
+   "<90": 29,
+   "90-110": 9,
+   ">=110": 2
+  },
+  "L0_referral_rejected_state": {
+   ">=110": 1,
+   "<90": 2,
+   "90-110": 1
+  },
+  "E6_repeat_procedure_closing_report_itself_unresolved": {
+   ">=110": 1,
+   "90-110": 3
+  },
+  "L4_eid_guard_contradiction_hold": {
+   "90-110": 1,
+   ">=110": 1
+  },
+  "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+   "<90": 1
+  }
+ },
+ "exposure_by_closing_report_profile": {
+  "wrong-on": {
+   "readers_agree:adequate": {
+    "truth_closed": 346,
+    "wasl_closed": 298,
+    "recall": 0.8613
+   },
+   "readers_agree:awaiting_histology": {
+    "truth_closed": 178,
+    "wasl_closed": 149,
+    "recall": 0.8371
+   },
+   "readers_agree:inadequate(R1_caecum_not_documented)": {
+    "truth_closed": 49,
+    "wasl_closed": 0,
+    "recall": 0.0
+   },
+   "readers_disagree_other(key=adequate)": {
+    "truth_closed": 59,
+    "wasl_closed": 46,
+    "recall": 0.7797
+   },
+   "readers_disagree_other(key=awaiting_histology)": {
+    "truth_closed": 93,
+    "wasl_closed": 79,
+    "recall": 0.8495
+   },
+   "ungraded_prep_readers_disagree(caecum_yes,prep_not_stated)": {
+    "truth_closed": 802,
+    "wasl_closed": 561,
+    "recall": 0.6995
+   }
+  },
+  "wrong-off": {
+   "readers_agree:adequate": {
+    "truth_closed": 346,
+    "wasl_closed": 303,
+    "recall": 0.8757
+   },
+   "readers_agree:awaiting_histology": {
+    "truth_closed": 178,
+    "wasl_closed": 152,
+    "recall": 0.8539
+   },
+   "readers_agree:inadequate(R1_caecum_not_documented)": {
+    "truth_closed": 49,
+    "wasl_closed": 0,
+    "recall": 0.0
+   },
+   "readers_disagree_other(key=adequate)": {
+    "truth_closed": 59,
+    "wasl_closed": 49,
+    "recall": 0.8305
+   },
+   "readers_disagree_other(key=awaiting_histology)": {
+    "truth_closed": 93,
+    "wasl_closed": 79,
+    "recall": 0.8495
+   },
+   "ungraded_prep_readers_disagree(caecum_yes,prep_not_stated)": {
+    "truth_closed": 802,
+    "wasl_closed": 567,
+    "recall": 0.707
+   }
+  },
+  "clean-on": {
+   "readers_agree:adequate": {
+    "truth_closed": 346,
+    "wasl_closed": 309,
+    "recall": 0.8931
+   },
+   "readers_agree:awaiting_histology": {
+    "truth_closed": 178,
+    "wasl_closed": 153,
+    "recall": 0.8596
+   },
+   "readers_agree:inadequate(R1_caecum_not_documented)": {
+    "truth_closed": 49,
+    "wasl_closed": 0,
+    "recall": 0.0
+   },
+   "readers_disagree_other(key=adequate)": {
+    "truth_closed": 59,
+    "wasl_closed": 49,
+    "recall": 0.8305
+   },
+   "readers_disagree_other(key=awaiting_histology)": {
+    "truth_closed": 93,
+    "wasl_closed": 84,
+    "recall": 0.9032
+   },
+   "ungraded_prep_readers_disagree(caecum_yes,prep_not_stated)": {
+    "truth_closed": 802,
+    "wasl_closed": 581,
+    "recall": 0.7244
+   }
+  },
+  "clean-off-final": {
+   "readers_agree:adequate": {
+    "truth_closed": 346,
+    "wasl_closed": 310,
+    "recall": 0.896
+   },
+   "readers_agree:awaiting_histology": {
+    "truth_closed": 178,
+    "wasl_closed": 155,
+    "recall": 0.8708
+   },
+   "readers_agree:inadequate(R1_caecum_not_documented)": {
+    "truth_closed": 49,
+    "wasl_closed": 0,
+    "recall": 0.0
+   },
+   "readers_disagree_other(key=adequate)": {
+    "truth_closed": 59,
+    "wasl_closed": 49,
+    "recall": 0.8305
+   },
+   "readers_disagree_other(key=awaiting_histology)": {
+    "truth_closed": 93,
+    "wasl_closed": 84,
+    "recall": 0.9032
+   },
+   "ungraded_prep_readers_disagree(caecum_yes,prep_not_stated)": {
+    "truth_closed": 802,
+    "wasl_closed": 580,
+    "recall": 0.7232
+   }
+  }
+ },
+ "L5_by_dob_relation_referral_vs_procedure_registration": {
+  "wrong-on": {
+   "exact": {
+    "truth_closed": 828,
+    "closed": 671,
+    "L5_no_link": 18,
+    "L5_share_of_truth_closed": 0.0217
+   },
+   "far": {
+    "truth_closed": 9,
+    "closed": 2,
+    "L5_no_link": 6,
+    "L5_share_of_truth_closed": 0.6667
+   },
+   "missing": {
+    "truth_closed": 149,
+    "closed": 103,
+    "L5_no_link": 16,
+    "L5_share_of_truth_closed": 0.1074
+   },
+   "same_year": {
+    "truth_closed": 216,
+    "closed": 165,
+    "L5_no_link": 18,
+    "L5_share_of_truth_closed": 0.0833
+   },
+   "year_shift_le10": {
+    "truth_closed": 325,
+    "closed": 192,
+    "L5_no_link": 88,
+    "L5_share_of_truth_closed": 0.2708
+   }
+  },
+  "wrong-off": {
+   "exact": {
+    "truth_closed": 828,
+    "closed": 676,
+    "L5_no_link": 17,
+    "L5_share_of_truth_closed": 0.0205
+   },
+   "far": {
+    "truth_closed": 9,
+    "closed": 3,
+    "L5_no_link": 6,
+    "L5_share_of_truth_closed": 0.6667
+   },
+   "missing": {
+    "truth_closed": 149,
+    "closed": 104,
+    "L5_no_link": 16,
+    "L5_share_of_truth_closed": 0.1074
+   },
+   "same_year": {
+    "truth_closed": 216,
+    "closed": 171,
+    "L5_no_link": 19,
+    "L5_share_of_truth_closed": 0.088
+   },
+   "year_shift_le10": {
+    "truth_closed": 325,
+    "closed": 196,
+    "L5_no_link": 88,
+    "L5_share_of_truth_closed": 0.2708
+   }
+  },
+  "clean-on": {
+   "exact": {
+    "truth_closed": 828,
+    "closed": 691,
+    "L5_no_link": 15,
+    "L5_share_of_truth_closed": 0.0181
+   },
+   "far": {
+    "truth_closed": 9,
+    "closed": 3,
+    "L5_no_link": 6,
+    "L5_share_of_truth_closed": 0.6667
+   },
+   "missing": {
+    "truth_closed": 149,
+    "closed": 107,
+    "L5_no_link": 16,
+    "L5_share_of_truth_closed": 0.1074
+   },
+   "same_year": {
+    "truth_closed": 216,
+    "closed": 176,
+    "L5_no_link": 19,
+    "L5_share_of_truth_closed": 0.088
+   },
+   "year_shift_le10": {
+    "truth_closed": 325,
+    "closed": 199,
+    "L5_no_link": 90,
+    "L5_share_of_truth_closed": 0.2769
+   }
+  },
+  "clean-off-final": {
+   "exact": {
+    "truth_closed": 828,
+    "closed": 691,
+    "L5_no_link": 15,
+    "L5_share_of_truth_closed": 0.0181
+   },
+   "far": {
+    "truth_closed": 9,
+    "closed": 3,
+    "L5_no_link": 6,
+    "L5_share_of_truth_closed": 0.6667
+   },
+   "missing": {
+    "truth_closed": 149,
+    "closed": 107,
+    "L5_no_link": 16,
+    "L5_share_of_truth_closed": 0.1074
+   },
+   "same_year": {
+    "truth_closed": 216,
+    "closed": 177,
+    "L5_no_link": 19,
+    "L5_share_of_truth_closed": 0.088
+   },
+   "year_shift_le10": {
+    "truth_closed": 325,
+    "closed": 200,
+    "L5_no_link": 89,
+    "L5_share_of_truth_closed": 0.2738
+   }
+  }
+ },
+ "wrong_on_signoff_wrong_rate_by_purpose_SIMULATED": {
+  "evidence:plain": {
+   "answered": 669,
+   "wrong": 15,
+   "wrong_rate": 0.0224
+  },
+  "evidence:prep_ungraded_day15": {
+   "answered": 444,
+   "wrong": 98,
+   "wrong_rate": 0.2207
+  },
+  "link:plain": {
+   "answered": 2446,
+   "wrong": 97,
+   "wrong_rate": 0.0397
+  },
+  "link:second_identifier": {
+   "answered": 614,
+   "wrong": 23,
+   "wrong_rate": 0.0375
+  }
+ },
+ "guard_gap_decomposition": {
+  "s17": {
+   "truth_closed": 777,
+   "on_closed": 573,
+   "off_closed": 581,
+   "headline_gap_loops": 8,
+   "off_closed_with_other_persons_report": 6,
+   "on_closed_with_other_persons_report": 0,
+   "right_patient_closed_on": 573,
+   "right_patient_closed_off": 575,
+   "net_right_patient_gap_loops": 2,
+   "gross_loss_off_right_but_on_not_closed": 6,
+   "gross_gain_on_closed_but_off_not_right": 4
+  },
+  "s29": {
+   "truth_closed": 750,
+   "on_closed": 560,
+   "off_closed": 569,
+   "headline_gap_loops": 9,
+   "off_closed_with_other_persons_report": 7,
+   "on_closed_with_other_persons_report": 0,
+   "right_patient_closed_on": 560,
+   "right_patient_closed_off": 562,
+   "net_right_patient_gap_loops": 2,
+   "gross_loss_off_right_but_on_not_closed": 4,
+   "gross_gain_on_closed_but_off_not_right": 2
+  },
+  "pooled": {
+   "truth_closed": 1527,
+   "on_closed": 1133,
+   "off_closed": 1150,
+   "headline_gap_loops": 17,
+   "off_closed_with_other_persons_report": 13,
+   "on_closed_with_other_persons_report": 0,
+   "right_patient_closed_on": 1133,
+   "right_patient_closed_off": 1137,
+   "net_right_patient_gap_loops": 4,
+   "gross_loss_off_right_but_on_not_closed": 10,
+   "gross_gain_on_closed_but_off_not_right": 6
+  }
+ },
+ "recall_by_truth_closing_day": {
+  "wrong-on": {
+   "105-120": {
+    "truth_closed": 198,
+    "wasl_closed": 117,
+    "recall": 0.5909
+   },
+   "60-89": {
+    "truth_closed": 557,
+    "wasl_closed": 431,
+    "recall": 0.7738
+   },
+   "90-104": {
+    "truth_closed": 268,
+    "wasl_closed": 201,
+    "recall": 0.75
+   },
+   "<60": {
+    "truth_closed": 504,
+    "wasl_closed": 384,
+    "recall": 0.7619
+   }
+  },
+  "wrong-off": {
+   "105-120": {
+    "truth_closed": 198,
+    "wasl_closed": 117,
+    "recall": 0.5909
+   },
+   "60-89": {
+    "truth_closed": 557,
+    "wasl_closed": 436,
+    "recall": 0.7828
+   },
+   "90-104": {
+    "truth_closed": 268,
+    "wasl_closed": 203,
+    "recall": 0.7575
+   },
+   "<60": {
+    "truth_closed": 504,
+    "wasl_closed": 394,
+    "recall": 0.7817
+   }
+  },
+  "clean-on": {
+   "105-120": {
+    "truth_closed": 198,
+    "wasl_closed": 123,
+    "recall": 0.6212
+   },
+   "60-89": {
+    "truth_closed": 557,
+    "wasl_closed": 444,
+    "recall": 0.7971
+   },
+   "90-104": {
+    "truth_closed": 268,
+    "wasl_closed": 207,
+    "recall": 0.7724
+   },
+   "<60": {
+    "truth_closed": 504,
+    "wasl_closed": 402,
+    "recall": 0.7976
+   }
+  },
+  "clean-off-final": {
+   "105-120": {
+    "truth_closed": 198,
+    "wasl_closed": 124,
+    "recall": 0.6263
+   },
+   "60-89": {
+    "truth_closed": 557,
+    "wasl_closed": 444,
+    "recall": 0.7971
+   },
+   "90-104": {
+    "truth_closed": 268,
+    "wasl_closed": 208,
+    "recall": 0.7761
+   },
+   "<60": {
+    "truth_closed": 504,
+    "wasl_closed": 402,
+    "recall": 0.7976
+   }
+  }
+ },
+ "wrong_on_ungraded_prep_share_by_category": {
+  "E1_ungraded_prep_decision_not_due_by_horizon": {
+   "missed": 45,
+   "closing_report_prep_ungraded": 45
+  },
+  "E2_reviewer_wrong_evidence_signoff": {
+   "missed": 91,
+   "closing_report_prep_ungraded": 86
+  },
+  "E4_readers_agree_not_adequate_but_key_says_completed": {
+   "missed": 40,
+   "closing_report_prep_ungraded": 0
+  },
+  "E6_repeat_procedure_closing_report_itself_unresolved": {
+   "missed": 4,
+   "closing_report_prep_ungraded": 3
+  },
+  "L0_referral_rejected_state": {
+   "missed": 4,
+   "closing_report_prep_ungraded": 2
+  },
+  "L2_reviewer_wrong_link_different": {
+   "missed": 14,
+   "closing_report_prep_ungraded": 8
+  },
+  "L3_eid_mismatch_cannot_link": {
+   "missed": 40,
+   "closing_report_prep_ungraded": 17
+  },
+  "L4_eid_guard_contradiction_hold": {
+   "missed": 2,
+   "closing_report_prep_ungraded": 2
+  },
+  "L4b_reviewed_same_still_unlinked": {
+   "missed": 7,
+   "closing_report_prep_ungraded": 3
+  },
+  "L5_no_link_established_no_question_raised": {
+   "missed": 146,
+   "closing_report_prep_ungraded": 75
+  },
+  "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+   "missed": 1,
+   "closing_report_prep_ungraded": 0
+  }
+ },
+ "wrong_on_ungraded_prep_total": {
+  "missed_with_ungraded_prep_closing_report": 241,
+  "truth_closed_with_ungraded_prep": 802
+ },
+ "wrong_on_E4_by_report_text": {
+  "u18": 40
+ },
+ "wrong_on_day15_decisions_on_truth_closed_loops": {
+  "answered": 404,
+  "wrong": 91,
+  "final_closed_after_right": 312,
+  "final_not_closed_after_right": 1,
+  "final_closed_after_wrong": 5,
+  "final_not_closed_after_wrong": 86
+ },
+ "wrong_on_L5_final_state_and_n_review_items": {
+  "open | items=0": 146
+ },
+ "L5_identical_loop_set_across_lanes": {
+  "wrong_on_eq_wrong_off": false,
+  "wrong_on_eq_clean_on": false,
+  "n": 146
+ },
+ "wrong_on_L5_pair_descriptors_not_causes": {
+  "eid_differ hamming=1 luhn_valid(sr,proc)=(0,1)": 18,
+  "eid_differ hamming=1 luhn_valid(sr,proc)=(1,0)": 18,
+  "eid_differ hamming=2 luhn_valid(sr,proc)=(0,0)": 3,
+  "name scripts: sr=ar proc=ar": 16,
+  "name scripts: sr=ar proc=lat": 64,
+  "name scripts: sr=lat proc=ar": 24,
+  "name scripts: sr=lat proc=lat": 42
+ },
+ "eid_guard_activity_on_truth_closed_crc_loops": {
+  "wrong-on": {
+   "no_guard_item/truth_closed": 1471,
+   "no_guard_item/wasl_closed": 1088,
+   "guard_item/truth_closed": 56,
+   "guard_item/wasl_closed": 45
+  },
+  "wrong-off": {
+   "no_guard_item/truth_closed": 1527,
+   "no_guard_item/wasl_closed": 1150
+  },
+  "clean-on": {
+   "no_guard_item/truth_closed": 1504,
+   "no_guard_item/wasl_closed": 1158,
+   "guard_item/truth_closed": 23,
+   "guard_item/wasl_closed": 18
+  },
+  "clean-off-final": {
+   "no_guard_item/truth_closed": 1527,
+   "no_guard_item/wasl_closed": 1178
+  }
+ },
+ "wrong_on_secondary_flags_by_category": {
+  "E1_ungraded_prep_decision_not_due_by_horizon": {
+   "n": 45,
+   "ungraded_prep": 45,
+   "report_day>=105": 38,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "E2_reviewer_wrong_evidence_signoff": {
+   "n": 91,
+   "ungraded_prep": 86,
+   "report_day>=105": 6,
+   "any_wrong_signoff_on_loop": 91,
+   "eid_conflict_between_registrations": 0
+  },
+  "E4_readers_agree_not_adequate_but_key_says_completed": {
+   "n": 40,
+   "ungraded_prep": 0,
+   "report_day>=105": 3,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "E6_repeat_procedure_closing_report_itself_unresolved": {
+   "n": 4,
+   "ungraded_prep": 3,
+   "report_day>=105": 3,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "L0_referral_rejected_state": {
+   "n": 4,
+   "ungraded_prep": 2,
+   "report_day>=105": 1,
+   "any_wrong_signoff_on_loop": 2,
+   "eid_conflict_between_registrations": 1
+  },
+  "L2_reviewer_wrong_link_different": {
+   "n": 14,
+   "ungraded_prep": 8,
+   "report_day>=105": 3,
+   "any_wrong_signoff_on_loop": 14,
+   "eid_conflict_between_registrations": 0
+  },
+  "L3_eid_mismatch_cannot_link": {
+   "n": 40,
+   "ungraded_prep": 17,
+   "report_day>=105": 7,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 40
+  },
+  "L4_eid_guard_contradiction_hold": {
+   "n": 2,
+   "ungraded_prep": 2,
+   "report_day>=105": 2,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "L4b_reviewed_same_still_unlinked": {
+   "n": 7,
+   "ungraded_prep": 3,
+   "report_day>=105": 0,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "L5_no_link_established_no_question_raised": {
+   "n": 146,
+   "ungraded_prep": 75,
+   "report_day>=105": 18,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  },
+  "L6_repeat_procedure_report_not_linked_earlier_inadequate_holds": {
+   "n": 1,
+   "ungraded_prep": 0,
+   "report_day>=105": 0,
+   "any_wrong_signoff_on_loop": 0,
+   "eid_conflict_between_registrations": 0
+  }
+ },
+ "wrong_on_L5_exclusive_subsplit": {
+  "pooled": {
+   "1_EID_differs_by_<=2_digits (typo-like)": 39,
+   "2_DOB_exact_match (name/translit only)": 15,
+   "3_DOB_missing_on_a_side": 8,
+   "4_DOB_same_year_day/month_differs": 13,
+   "5_DOB_year_off_<=10": 66,
+   "6_DOB_year_far_(>10)": 5
+  },
+  "s17": {
+   "1_EID_differs_by_<=2_digits (typo-like)": 20,
+   "2_DOB_exact_match (name/translit only)": 8,
+   "3_DOB_missing_on_a_side": 4,
+   "4_DOB_same_year_day/month_differs": 7,
+   "5_DOB_year_off_<=10": 36,
+   "6_DOB_year_far_(>10)": 3
+  },
+  "s29": {
+   "1_EID_differs_by_<=2_digits (typo-like)": 19,
+   "2_DOB_exact_match (name/translit only)": 7,
+   "3_DOB_missing_on_a_side": 4,
+   "4_DOB_same_year_day/month_differs": 6,
+   "5_DOB_year_off_<=10": 30,
+   "6_DOB_year_far_(>10)": 2
+  }
+ }
+}

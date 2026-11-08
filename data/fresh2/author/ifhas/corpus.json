@@ -1,0 +1,3052 @@
+{
+ "disclosure": "model-authored synthetic text; no author key; not clinician-verified",
+ "reports": [
+  {
+   "id": "f2i-001",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-02",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-03-16",
+    "document_role": "downstream",
+    "document_title": "Primary care blood pressure review",
+    "facility_name": "Qamraya Family Health Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-03-02",
+    "patient_on_document": {
+     "dob": "1974-03-18",
+     "emirates_id": "784-1974-5839261-4",
+     "name": "Nadira Qamil Sarwan",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1974-03-18",
+     "name": "Nadira Qamil Sarwan",
+     "sex": "F"
+    }
+   },
+   "text": "Nadira Qamil Sarwan | DOB 1974-03-18\nPrimary care review, 16 March 2026 — IFHAS screening of 02 March reviewed.\nScreening BP 158/96 mmHg. Today, after seated rest: 156/94 and 152/92 mmHg. No headache, chest pain or breathlessness.\nHypertension confirmed on repeated office measurements.\nStart amlodipine 5 mg orally once daily. Discussed ankle swelling, salt reduction and regular walking.\nRecord home BP twice daily; review in four weeks with renal profile."
+  },
+  {
+   "id": "f2i-002",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-05-11",
+     "setting": "telephone"
+    },
+    "document_date": "2026-05-20",
+    "document_role": "downstream",
+    "document_title": "Telephone screening follow-up",
+    "facility_name": "Nawrasen Community Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-11",
+    "patient_on_document": {
+     "dob": "1967-09-24",
+     "emirates_id": "784-1967-6924185-7",
+     "name": "Ramez Dhalim Nouri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1967-09-24",
+     "name": "Ramez Dhalim Nouri",
+     "sex": "M"
+    }
+   },
+   "text": "Telephone review: Ramez Dhalim Nouri, DOB 1967-09-24.\nIFHAS encounter 11 May 2026: HbA1c 6.7%; no polyuria, thirst or weight loss reported.\nRepeat HbA1c collected yesterday remains pending; no confirmatory result available during this call.\nPlan: all well. Continue usual activity and dietary advice. Call again when the repeat result is released."
+  },
+  {
+   "id": "f2i-003",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 118
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.2
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-07-08",
+    "document_role": "screening",
+    "document_title": "IFHAS current and historical results panel",
+    "facility_name": "Darwenya Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1981-06-12",
+     "emirates_id": "784-1981-4728593-2",
+     "name": "Salima Ruhan Daqir",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1981-06-12",
+     "name": "Salima Ruhan Daqir",
+     "sex": "F"
+    }
+   },
+   "text": "DARWENYA SCREENING CENTRE — Abu Dhabi | Periodic IFHAS panel\nPatient: Salima Ruhan Daqir | Female | DOB 1981-06-12 | Fasting: Yes\nAnalyte | CURRENT 2026-07-08 | PREVIOUS 2025-07-09 | Reference interval | Current / previous flag\nHbA1c | 5.4 % | 6.1 % | 4.0–5.6 % | — / H\nFasting glucose | 91 mg/dL | 112 mg/dL | 70–99 mg/dL | — / H\nLDL cholesterol | 94 mg/dL | 168 mg/dL | <100 mg/dL | — / H\nTriglycerides | 118 mg/dL | 226 mg/dL | <150 mg/dL | — / H\nBlood pressure | 118/76 mmHg | 146/92 mmHg | <130/<80 mmHg | — / H\nBMI | 24.2 kg/m2 | 28.6 kg/m2 | 18.5–24.9 kg/m2 | — / H\nH = above the displayed reference interval. Previous results are historical."
+  },
+  {
+   "id": "f2i-004",
+   "metadata": {
+    "author_role": "Internal medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-07-28",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-08-22",
+    "document_role": "downstream",
+    "document_title": "Internal medicine progress note",
+    "facility_name": "Talqira General Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-07-28",
+    "patient_on_document": {
+     "dob": "1970-11-05",
+     "emirates_id": "784-1970-8253916-5",
+     "name": "Mazin Talwan Qadri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1970-11-05",
+     "name": "Mazin Talwan Qadri",
+     "sex": "M"
+    }
+   },
+   "text": "Mazin Talwan Qadri | DOB 1970-11-05 | Internal medicine note, 22 August 2026\nCarried forward from the encounter dated 04 August 2026:\n“IFHAS screening dated 28 July reviewed. Raised glucose noted. Repeat fasting glucose requested; return with results. Dietary advice given.”"
+  },
+  {
+   "id": "f2i-005",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "addendum",
+     "referenced_screening_date": "2026-09-29",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-10-14",
+    "document_role": "downstream",
+    "document_title": "Addendum to lipid follow-up consultation",
+    "facility_name": "Ruwamya Primary Care Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-09-29",
+    "patient_on_document": {
+     "dob": "1963-02-16",
+     "emirates_id": "784-1963-3517829-6",
+     "name": "Hadiya Ramel Sufran",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1963-02-16",
+     "name": "Hadiya Ramel Sufran",
+     "sex": "F"
+    }
+   },
+   "text": "ADDENDUM — 14 October 2026, to review dated 08 October 2026\nPatient: Hadiya Ramel Sufran, DOB 1963-02-16.\nThe fasting lipid panel pending at the earlier review is now available: LDL-C 181 mg/dL, triglycerides 176 mg/dL. Persistent elevation following IFHAS screening on 29 September confirms hyperlipidaemia.\nResults discussed with patient by telephone. Reduce saturated fat, increase soluble fibre and continue regular walking. Start atorvastatin 20 mg nightly; baseline ALT within reference interval.\nRepeat lipid panel and ALT in eight weeks. Counselled regarding muscle pain and when to seek review."
+  },
+  {
+   "id": "f2i-006",
+   "metadata": {
+    "author_role": "Dispensing pharmacist",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-02-11",
+     "setting": "other"
+    },
+    "document_date": "2026-02-14",
+    "document_role": "downstream",
+    "document_title": "Pharmacy dispensing record",
+    "facility_name": "Marjan Vale Pharmacy",
+    "facility_type": "other",
+    "index_date": "2026-02-11",
+    "patient_on_document": {
+     "dob": "1978-04-19",
+     "emirates_id": "784-1978-6301842-7",
+     "name": "Hessa Nabil Al Mazrouqi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1978-04-19",
+     "name": "Hessa Nabil Al Mazrouqi",
+     "sex": "F"
+    }
+   },
+   "text": "MARJAN VALE PHARMACY — DISPENSING RECORD\nPatient: Hessa Nabil Al Mazrouqi | DOB: 1978-04-19 | Female\nEmirates ID: 784-1978-6301842-7\nDispensed 2026-02-14: atorvastatin 20 mg tablets, quantity 30.\nDirections: Take one tablet orally at night. Refills remaining: 2.\nPrescription reference: RX-264731. Collected by patient.\nDispensing pharmacist: Rawan Majeed Al Harthi."
+  },
+  {
+   "id": "f2i-007",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-02",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-03-09",
+    "document_role": "downstream",
+    "document_title": "IFHAS glycaemic results review",
+    "facility_name": "Sidr Lantern Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-03-02",
+    "patient_on_document": {
+     "dob": "1971-08-23",
+     "emirates_id": "784-1971-5820473-6",
+     "name": "Khaled Rafiq Al Nuaimi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1971-08-23",
+     "name": "Khaled Rafiq Al Nuaimi",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS results review — 09 March 2026\nPatient: Khaled Rafiq Al Nuaimi; DOB 1971-08-23; male.\nReviewed screening dated 02 March 2026. Last year's record showed HbA1c 6.1% and fasting glucose 112 mg/dL.\nThis year's repeat values are normal: HbA1c 5.4%, fasting glucose 94 mg/dL. No glucose-lowering medication.\nDiscussed the difference between the historical and current results. Continue usual activity and balanced diet; routine annual review."
+  },
+  {
+   "id": "f2i-008",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-08",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-05-22",
+    "document_role": "downstream",
+    "document_title": "IFHAS blood pressure, glycaemia and weight review",
+    "facility_name": "Nakhla Horizon Medical Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-05-08",
+    "patient_on_document": {
+     "dob": "1982-11-07",
+     "emirates_id": "784-1982-4719063-2",
+     "name": "Mariam Fawzi Al Shamsi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1982-11-07",
+     "name": "Mariam Fawzi Al Shamsi",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS follow-up | 22 May 2026\nMariam Fawzi Al Shamsi, female, DOB 1982-11-07.\nScreening 08 May: BP 158/94 mmHg, HbA1c 5.9%, BMI 33.6 kg/m².\nBP today 154/92 and 152/90 after rest; home readings also elevated. Start amlodipine 5 mg daily. Home BP diary and review in 2 weeks; adverse effects discussed.\nRepeat laboratory HbA1c on 20 May was 5.5%, within the normal range. No glucose-lowering treatment indicated.\nObesity: agreed to replace sweetened drinks with water and walk 20 minutes on five days weekly, increasing as tolerated. Dietitian referral accepted.\nWeight review in 8 weeks; patient agrees with the plan."
+  },
+  {
+   "id": "f2i-009",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-07-09",
+     "setting": "telephone"
+    },
+    "document_date": "2026-07-16",
+    "document_role": "downstream",
+    "document_title": "Telephone discussion of IFHAS weight findings",
+    "facility_name": "Dune Willow Community Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-09",
+    "patient_on_document": {
+     "dob": "1990-02-16",
+     "emirates_id": "784-1990-7291634-8",
+     "name": "Saif Munir Al Dhaheri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1990-02-16",
+     "name": "Saif Munir Al Dhaheri",
+     "sex": "M"
+    }
+   },
+   "text": "Telephone review, 16 July 2026. Identity confirmed: Saif Munir Al Dhaheri, DOB 1990-02-16, male.\nDiscussed IFHAS findings from 09 July: BMI 36.2 kg/m², consistent with obesity, and associated health risks.\nOffered dietitian referral, structured weight-management clinic, dietary changes, activity goals and discussion of medication options.\nPatient declined all referrals and does not wish to agree to any weight-management plan or scheduled weight review at present.\nUnderstands the discussion and may contact the clinic if he wishes to reconsider. No weight-management intervention initiated."
+  },
+  {
+   "id": "f2i-010",
+   "metadata": {
+    "author_role": "Internal medicine specialist",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-09-03",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-09-17",
+    "document_role": "downstream",
+    "document_title": "IFHAS confirmed LDL elevation and treatment",
+    "facility_name": "Qamar Reed Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-03",
+    "patient_on_document": {
+     "dob": "1964-06-28",
+     "emirates_id": "784-1964-3185720-5",
+     "name": "Adel Sami Al Kindi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1964-06-28",
+     "name": "Adel Sami Al Kindi",
+     "sex": "M"
+    }
+   },
+   "text": "Internal Medicine — IFHAS lipid follow-up\nPatient: Adel Sami Al Kindi | DOB 1964-06-28 | Male\nScreening dated 03 September 2026: LDL-C 205 mg/dL. Repeat fasting lipid profile on 14 September confirms LDL-C 205 mg/dL; triglycerides 136 mg/dL.\nNo chest pain or exertional dyspnoea. Baseline ALT within reference range; TSH normal. No evident secondary cause identified on current review.\nStarted atorvastatin 40 mg orally nightly; counselled regarding muscle symptoms and medication precautions.\nCardiology referral placed for severe hypercholesterolaemia and assessment for familial hypercholesterolaemia.\nRepeat lipid profile and clinical review in 6 weeks. Patient accepts treatment and referral."
+  },
+  {
+   "id": "f2i-011",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Fasting plasma glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 92
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "18262-6",
+       "unit": "mg/dL",
+       "value": 204
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 198
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 56
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 105
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 116
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-02-12",
+    "document_role": "screening",
+    "document_title": "IFHAS Periodic Screening Results",
+    "facility_name": "Namaris Preventive Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-12",
+    "patient_on_document": {
+     "dob": "1971-04-18",
+     "emirates_id": "784-1971-5830926-4",
+     "name": "Rayan Mazin Al Duwairi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1971-04-18",
+     "name": "Rayan Mazin Al Duwairi",
+     "sex": "M"
+    }
+   },
+   "text": "Namaris Preventive Centre, Abu Dhabi — IFHAS periodic screening\nPatient: Rayan Mazin Al Duwairi | DOB: 1971-04-18 | Sex: M\nEmirates ID: 784-1971-5830926-4 | Collection: 2026-02-12 | Fasting: Yes\nHbA1c: 5.4% | Reference: 4.0–5.6 | Normal\nFasting plasma glucose: 92 mg/dL | Reference: 70–99 | Normal\nLDL cholesterol: 204 mg/dL | Desirable: <100 | HIGH\nTotal cholesterol: 198 mg/dL | Desirable: <200 | Normal\nHDL cholesterol: 56 mg/dL | Desirable: ≥40 | Normal\nTriglycerides: 105 mg/dL | Reference: <150 | Normal\nBlood pressure: 116/74 mmHg | Reference: <120/<80 | Normal\nBMI: 23.6 kg/m² | Reference: 18.5–24.9 | Normal\nResults authorised: 2026-02-12."
+  },
+  {
+   "id": "f2i-012",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "addendum",
+     "referenced_screening_date": "2026-03-07",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-03-09",
+    "document_role": "downstream",
+    "document_title": "IFHAS Result Review Addendum",
+    "facility_name": "Talmera Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-03-07",
+    "patient_on_document": {
+     "dob": "1982-08-23",
+     "emirates_id": "784-1982-6921840-7",
+     "name": "Hessa Nabil Al Rawhani",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1982-08-23",
+     "name": "Hessa Nabil Al Rawhani",
+     "sex": "F"
+    }
+   },
+   "text": "RESULT REVIEW ADDENDUM — 2026-03-09\nPatient: Hessa Nabil Al Rawhani, DOB 1982-08-23, F; Emirates ID 784-1982-6921840-7.\nIFHAS screening dated 2026-03-07: markedly elevated glucose result noted.\nThis result needs immediate attention."
+  },
+  {
+   "id": "f2i-013",
+   "metadata": {
+    "author_role": "Internal medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-05",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-05-21",
+    "document_role": "downstream",
+    "document_title": "Diabetes Follow-up Consultation",
+    "facility_name": "Veyrana Medical Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-05",
+    "patient_on_document": {
+     "dob": "1964-11-06",
+     "emirates_id": "784-1964-4718305-2",
+     "name": "Samir Fawzi Al Nayrani",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1964-11-06",
+     "name": "Samir Fawzi Al Nayrani",
+     "sex": "M"
+    }
+   },
+   "text": "Veyrana Medical Clinic — Internal Medicine, Abu Dhabi\n2026-05-21 | Samir Fawzi Al Nayrani | DOB 1964-11-06 | M\nEmirates ID: 784-1964-4718305-2\nSeen today to review IFHAS screening of 2026-05-05, when HbA1c was 7.1%.\nRepeat HbA1c collected 2026-05-19 is 7.3%. Type 2 diabetes confirmed on the second elevated HbA1c.\nNo polyuria, vomiting or weight loss. Renal function reviewed: eGFR 88 mL/min/1.73 m².\nStart metformin 500 mg orally with the evening meal for one week, then 500 mg twice daily with meals if tolerated.\nDietitian referral placed for carbohydrate portions and meal planning; discussed activity and medication adverse effects.\nReview in four weeks; repeat HbA1c in three months."
+  },
+  {
+   "id": "f2i-014",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Random plasma glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 238
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 172
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 89
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 61
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 110
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 112
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 72
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 22.8
+      }
+     ],
+     "fasting": false,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-08-14",
+    "document_role": "screening",
+    "document_title": "IFHAS Screening Panel",
+    "facility_name": "Sahmora Wellness Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-14",
+    "patient_on_document": {
+     "dob": "1988-01-29",
+     "emirates_id": "784-1988-3085716-9",
+     "name": "Lina Rafiq Al Qadiri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1988-01-29",
+     "name": "Lina Rafiq Al Qadiri",
+     "sex": "F"
+    }
+   },
+   "text": "Sahmora Wellness Centre — IFHAS periodic screening panel\nPatient: Lina Rafiq Al Qadiri | DOB 1988-01-29 | F | Emirates ID 784-1988-3085716-9\nScreening and specimen date: 2026-08-14 | Nonfasting collection\nRandom plasma glucose: 238 mg/dL | Reference: 70–139 | HIGH\nHbA1c: Not performed\nTotal cholesterol: 172 mg/dL | Desirable: <200 | Normal\nLDL cholesterol: 89 mg/dL | Desirable: <100 | Normal\nHDL cholesterol: 61 mg/dL | Desirable: ≥50 | Normal\nTriglycerides: 110 mg/dL | Reference: <150 | Normal\nBlood pressure: 112/72 mmHg | Reference: <120/<80 | Normal\nBMI: 22.8 kg/m² | Reference: 18.5–24.9 | Normal"
+  },
+  {
+   "id": "f2i-015",
+   "metadata": {
+    "author_role": "General dentist",
+    "details": {
+     "coded_results": [],
+     "fasting": null,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-09-22",
+    "document_role": "screening",
+    "document_title": "Dental Screening Form",
+    "facility_name": "Orvessa Community Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-09-22",
+    "patient_on_document": {
+     "dob": "1996-06-11",
+     "emirates_id": "784-1996-8256041-3",
+     "name": "Majid Yasir Al Barwani",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1996-06-11",
+     "name": "Majid Yasir Al Barwani",
+     "sex": "M"
+    }
+   },
+   "text": "Orvessa Community Clinic, Abu Dhabi — Dental Screening Form\nPatient: Majid Yasir Al Barwani | DOB: 1996-06-11 | M\nEmirates ID: 784-1996-8256041-3 | Examination date: 2026-09-22\nOral mucosa: No visible lesion. Gingivae: Mild marginal inflammation.\nDentition: Localised calculus lower incisors; occlusal caries noted on tooth 36.\nPain or swelling today: Denied. Oral hygiene: Fair.\nAdvice: Brushing with fluoride toothpaste and interdental cleaning discussed.\nRoutine dental appointment for scaling and restoration of tooth 36."
+  },
+  {
+   "id": "f2i-016",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-10",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-03-24",
+    "document_role": "downstream",
+    "document_title": "Family medicine review of screening glucose",
+    "facility_name": "Maysara Grove Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-03-10",
+    "patient_on_document": {
+     "dob": "1974-03-18",
+     "emirates_id": "784-1974-6284159-3",
+     "name": "Hanan Rafiq Al Nuwari",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1974-03-18",
+     "name": "Hanan Rafiq Al Nuwari",
+     "sex": "F"
+    }
+   },
+   "text": "Maysara Grove Clinic, Abu Dhabi — Family Medicine\nPatient: Hanan Rafiq Al Nuwari | DOB: 1974-03-18 | Female\nReview date: 2026-03-24; IFHAS screening reviewed from 2026-03-10.\nRepeat sample after a confirmed 10-hour fast: plasma glucose 92 mg/dL (70–99); HbA1c 5.4% (4.0–5.6).\nRepeat glycaemic results are normal. No diagnosis of diabetes; glucose-lowering medication is not indicated.\nDiscussed balanced meals, limiting sweetened drinks and at least 150 minutes of moderate activity weekly.\nLifestyle advice only. Continue routine periodic screening."
+  },
+  {
+   "id": "f2i-017",
+   "metadata": {
+    "author_role": "Clinical laboratory scientist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 53
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 96
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 88
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 112
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 169
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 59
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.8
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-04-15",
+    "document_role": "screening",
+    "document_title": "IFHAS screening panel",
+    "facility_name": "Sahlan Crescent Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-04-15",
+    "patient_on_document": {
+     "dob": "1968-08-22",
+     "emirates_id": "784-1968-3917284-6",
+     "name": "Mazin Harith Al Duwaili",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1968-08-22",
+     "name": "Mazin Harith Al Duwaili",
+     "sex": "M"
+    }
+   },
+   "text": "Sahlan Crescent Screening Centre — Abu Dhabi\nIFHAS periodic screening panel | Collected/reported: 2026-04-15 | Fasting: Yes\nPatient: Mazin Harith Al Duwaili | DOB: 1968-08-22 | Male\nHbA1c (IFCC): 53 mmol/mol H [reference 20–41]\nFasting plasma glucose: 96 mg/dL [70–99]\nLDL cholesterol: 88 mg/dL [<100]; triglycerides: 112 mg/dL [<150]\nTotal cholesterol: 169 mg/dL [<200]; HDL cholesterol: 59 mg/dL [≥40]\nBlood pressure: 118/76 mmHg [<120/80]; BMI: 23.8 kg/m² [18.5–24.9]\nH denotes a result above the reference interval."
+  },
+  {
+   "id": "f2i-018",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 6
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 173
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 62
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "2089-1",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 100
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 116
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 22.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-05-19",
+    "document_role": "screening",
+    "document_title": "Periodic screening results",
+    "facility_name": "Nareef Palm Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-19",
+    "patient_on_document": {
+     "dob": "1987-11-04",
+     "emirates_id": "784-1987-7521836-2",
+     "name": "Salma Jaber Al Rawithi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-11-04",
+     "name": "Salma Jaber Al Rawithi",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — Nareef Palm Clinic, Abu Dhabi\nSalma Jaber Al Rawithi | Female | DOB 1987-11-04\n2026-05-19 | Fasting specimen\nHbA1c 6.0% H (normal 4.0–5.6; increased risk 5.7–6.4)\nGlucose 94 mg/dL (70–99)\nTotal cholesterol 173 mg/dL (<200); HDL 62 mg/dL (≥50)\nLDL 91 mg/dL (<100); triglycerides 100 mg/dL (<150)\nBP 116/74 mmHg (<120/80); BMI 22.6 kg/m² (18.5–24.9)\nIsolated HbA1c elevation in the prediabetes range. Other measured parameters within reference limits."
+  },
+  {
+   "id": "f2i-019",
+   "metadata": {
+    "author_role": "Screening results system",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 8.4
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 97
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "18262-6",
+       "unit": "mg/dL",
+       "value": 84
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 55
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 105
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 160
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 114
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 72
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.1
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-07-08",
+    "document_role": "screening",
+    "document_title": "IFHAS results summary",
+    "facility_name": "Rimalan Bay Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1979-06-12",
+     "emirates_id": "784-1979-4839261-8",
+     "name": "Tareq Nabil Al Sufrani",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1979-06-12",
+     "name": "Tareq Nabil Al Sufrani",
+     "sex": "M"
+    }
+   },
+   "text": "Rimalan Bay Screening Centre | Abu Dhabi | IFHAS periodic screening\nPatient: Tareq Nabil Al Sufrani | DOB 1979-06-12 | Male\nEncounter and collection: 2026-07-08; fasting confirmed.\nHbA1c: 8.4% H | Reference: 4.0–5.6%\nFasting glucose: 97 mg/dL | Reference: 70–99\nLDL: 84 mg/dL (<100); HDL: 55 mg/dL (≥40)\nTriglycerides: 105 mg/dL (<150); total cholesterol: 160 mg/dL (<200)\nBP: 114/72 mmHg (<120/80); BMI: 24.1 kg/m² (18.5–24.9)\nScreening summary: NORMAL - no action"
+  },
+  {
+   "id": "f2i-020",
+   "metadata": {
+    "author_role": "Preventive medicine physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 146
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 92
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 6.8
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 31.5
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 130
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 98
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 125
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-09-16",
+    "document_role": "screening",
+    "document_title": "IFHAS health assessment panel",
+    "facility_name": "Darwina Fields Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-09-16",
+    "patient_on_document": {
+     "dob": "1963-09-27",
+     "emirates_id": "784-1963-9163742-5",
+     "name": "Mariam Fawzi Al Qamiri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1963-09-27",
+     "name": "Mariam Fawzi Al Qamiri",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS health assessment | Darwina Fields Hospital, Abu Dhabi\nPatient: Mariam Fawzi Al Qamiri | DOB: 1963-09-27 | Female\nDate: 2026-09-16 | Fasting: Yes\nMeasurement                     Result         Reference\nBlood pressure                  146/92 H       <120/80 mmHg\nHbA1c                           6.8% H         4.0–5.6%\nBMI                             31.5 H         18.5–24.9 kg/m²\nLDL cholesterol                 130 mg/dL H    <100 mg/dL\nFasting glucose                 98 mg/dL       70–99 mg/dL\nTriglycerides                   125 mg/dL      <150 mg/dL\nResults reviewed: arrange family medicine assessment for elevated blood pressure, glycaemia, weight and LDL; repeat BP and confirm glycaemic findings."
+  },
+  {
+   "id": "f2i-021",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-02-10",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-02-18",
+    "document_role": "downstream",
+    "document_title": "Family Medicine Progress Note",
+    "facility_name": "Namaris Family Care Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-02-10",
+    "patient_on_document": {
+     "dob": "1978-03-19",
+     "emirates_id": "784-1978-5831624-7",
+     "name": "Mazin Rafiq Al Nuhair",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1978-03-19",
+     "name": "Mazin Rafiq Al Nuhair",
+     "sex": "M"
+    }
+   },
+   "text": "Mazin Rafiq Al Nuhair | DOB 1978-03-19\nFamily medicine review, 18 February 2026. IFHAS screening dated 10 February 2026 noted in the chart.\nPresenting complaint: right shoulder pain after lifting boxes; full range of movement, mild trapezius tenderness.\nFamily history: no hypertension and no diabetes. Father had knee osteoarthritis.\nPlan: activity modification, warm compresses and simple analgesia as required. Return if persistent."
+  },
+  {
+   "id": "f2i-022",
+   "metadata": {
+    "author_role": "Clinical biochemist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 12.4
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 178
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 56
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 122
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-04-06",
+    "document_role": "screening",
+    "document_title": "IFHAS Fasting Screening Results",
+    "facility_name": "Wadi Lujain Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-04-06",
+    "patient_on_document": {
+     "dob": "1985-07-12",
+     "emirates_id": "784-1985-6294531-2",
+     "name": "Salma Nadir Al Huzani",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1985-07-12",
+     "name": "Salma Nadir Al Huzani",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — FASTING PANEL\nPatient: Salma Nadir Al Huzani | Female | DOB 1985-07-12\nCollection: 2026-04-06; fasting duration 10 hours.\nPlasma glucose: 12.4 mmol/L [reference 3.9–5.5] H\nTotal cholesterol: 178 mg/dL [reference <200]\nHDL cholesterol: 56 mg/dL [reference ≥50]\nBlood pressure: 122/76 mmHg; BMI: 24.6 kg/m² [reference 18.5–24.9]\nAuthorised electronically by clinical biochemistry."
+  },
+  {
+   "id": "f2i-023",
+   "metadata": {
+    "author_role": "Laboratory physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Haemoglobin A1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 11.2
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 278
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 128
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 78
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 27.3
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-05-21",
+    "document_role": "screening",
+    "document_title": "IFHAS Glycaemic Screening Panel",
+    "facility_name": "Sahwat Dune Medical Centre",
+    "facility_type": "clinic",
+    "index_date": "2026-05-21",
+    "patient_on_document": {
+     "dob": "1967-11-23",
+     "emirates_id": "784-1967-8713462-5",
+     "name": "Dima Faris Al Qamri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1967-11-23",
+     "name": "Dima Faris Al Qamri",
+     "sex": "F"
+    }
+   },
+   "text": "Dima Faris Al Qamri, DOB 1967-11-23 — IFHAS periodic screening\nSpecimens collected 21 May 2026; fasting confirmed.\nHbA1c: 11.2% H (reference 4.0–5.6%)\nFasting plasma glucose: 278 mg/dL H (reference 70–99 mg/dL)\nBP 128/78 mmHg; BMI 27.3 kg/m² H (reference 18.5–24.9).\nMarked hyperglycaemia. Screening physician notified at 11:35; same-day clinical assessment arranged."
+  },
+  {
+   "id": "f2i-024",
+   "metadata": {
+    "author_role": "Internal medicine specialist",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-07-08",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-07-16",
+    "document_role": "downstream",
+    "document_title": "Blood Pressure Follow-up",
+    "facility_name": "Maysarat Community Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1963-02-14",
+     "emirates_id": null,
+     "name": "Yousef Abdulla Al Shuwair",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1964-02-14",
+     "name": "Yusuf Abdullah Al Shuwayr",
+     "sex": "M"
+    }
+   },
+   "text": "Internal Medicine — follow-up of IFHAS screening dated 8 July 2026\nYousef Abdulla Al Shuwair | DOB 14/02/1963 | Male, 63 years\nScreening BP 164/96 mmHg. Home readings over seven days average 153/91; today 156/94, repeat 154/92.\nNo headache, chest pain, breathlessness or focal neurological symptoms. Examination unremarkable.\nDiscussed hypertension and cardiovascular risk. Start amlodipine 5 mg once daily; counselled regarding ankle swelling.\nReduce dietary salt, continue home BP diary. Renal profile requested; review in two weeks."
+  },
+  {
+   "id": "f2i-025",
+   "metadata": {
+    "author_role": "Clinical laboratory scientist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Haemoglobin A1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 26.1
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-09-23",
+    "document_role": "screening",
+    "document_title": "IFHAS Screening Chemistry and Observations",
+    "facility_name": "Rimal Nawar Preventive Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-09-22",
+    "patient_on_document": {
+     "dob": "1981-09-08",
+     "emirates_id": "784-1981-4629753-8",
+     "name": "Rania Munir Al Dawsari",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1981-09-08",
+     "name": "Rania Munir Al Dawsari",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING / FINAL PANEL\nRania Munir Al Dawsari | DOB 1981-09-08 | Female\nCollected 2026-09-22, fasting.\nGlucose 94 mg/dL (70–99); HbA1c 5.4% (4.0–5.6).\nTotal cholesterol 282 mg/dL H (desirable <200).\nLDL cholesterol, direct 196 mg/dL H (desirable <100).\nHDL cholesterol 48 mg/dL L (desirable ≥50); triglycerides 190 mg/dL H (reference <150).\nBP 118/74 mmHg; BMI 26.1 kg/m² H (reference 18.5–24.9).\nLipid results released following analytical verification."
+  },
+  {
+   "id": "f2i-026",
+   "metadata": {
+    "author_role": "Clinical biochemist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.6
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 116
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 138
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 126
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 78
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 26.4
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-03-14",
+    "document_role": "screening",
+    "document_title": "IFHAS corrected panel and addendum",
+    "facility_name": "Dune Lantern Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-12",
+    "patient_on_document": {
+     "dob": "1972-04-16",
+     "emirates_id": "784-1972-5831926-4",
+     "name": "Mariam Salim Al Nuwairi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1972-04-16",
+     "name": "Mariam Salim Al Nuwairi",
+     "sex": "F"
+    }
+   },
+   "text": "Dune Lantern Screening Centre — IFHAS corrected laboratory report\nPatient: Mariam Salim Al Nuwairi | DOB: 1972-04-16 | Female\nScreening and specimen date: 2026-03-12 | Report issued: 2026-03-14\nADDENDUM: LDL-C corrected from 216 to 116 mg/dL following review of a transcription discrepancy. This report supersedes the LDL-C result issued on 2026-03-12; all other results are unchanged.\nHbA1c: 5.6% [reference 4.0–5.6]\nFasting plasma glucose: 94 mg/dL [reference 70–99]\nLDL-C, corrected: 116 mg/dL [desirable <100] H\nTriglycerides: 138 mg/dL [reference <150]\nBlood pressure: 126/78 mmHg [clinic reference <140/90]\nBMI: 26.4 kg/m² [reference 18.5–24.9] H\nAuthorized by clinical biochemistry."
+  },
+  {
+   "id": "f2i-027",
+   "metadata": {
+    "author_role": "Internal medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-05-19",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-05-19",
+    "document_role": "downstream",
+    "document_title": "Same-day screening referral admission note",
+    "facility_name": "Crescent Acacia Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-05-19",
+    "patient_on_document": {
+     "dob": "1965-09-23",
+     "emirates_id": "784-1965-7294618-3",
+     "name": "Hamdan Rashid Al Mazrouqi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1965-09-23",
+     "name": "Hamdan Rashid Al Mazrouqi",
+     "sex": "M"
+    }
+   },
+   "text": "Crescent Acacia Hospital, Abu Dhabi — Internal Medicine admission note, 2026-05-19\nHamdan Rashid Al Mazrouqi | DOB 1965-09-23 | Male\nReferred directly from today's IFHAS screening after BP 190/118 mmHg; repeat after seated rest 188/116 mmHg.\nNo chest pain, dyspnoea, visual disturbance or focal neurological symptoms. Alert; neurological examination non-focal, chest clear.\nECG without acute ischaemic changes; creatinine and troponin within laboratory reference intervals. No acute target-organ injury identified on initial assessment.\nAdmitted for observation, serial BP measurements and reassessment.\nAmlodipine 5 mg orally commenced today. Avoid rapid BP reduction; review response and renal profile during observation.\nDiscussed findings and admission plan with patient, who agrees."
+  },
+  {
+   "id": "f2i-028",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-07-08",
+     "setting": "telephone"
+    },
+    "document_date": "2026-07-22",
+    "document_role": "downstream",
+    "document_title": "Home blood pressure monitoring review",
+    "facility_name": "Pearl Canopy Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1980-11-08",
+     "emirates_id": "784-1980-4628319-7",
+     "name": "Reem Khalifa Al Daheri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1980-11-08",
+     "name": "Reem Khalifa Al Daheri",
+     "sex": "F"
+    }
+   },
+   "text": "Pearl Canopy Family Clinic — Telephone review, 2026-07-22\nReem Khalifa Al Daheri, female, DOB 1980-11-08.\nIFHAS screening of 2026-07-08 reviewed; clinic BP at that visit was 148/92 mmHg.\nCompleted seven days of home BP recording using a validated upper-arm monitor, two readings morning and evening. First day excluded from average.\nRemaining home readings average 121/76 mmHg; no antihypertensive medication taken.\nHome BP is normal. No hypertension diagnosed; office elevation consistent with a white-coat effect.\nNo medication indicated. Continue healthy diet and activity; repeat BP review in six months."
+  },
+  {
+   "id": "f2i-029",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 97
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 124
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 122
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-08-06",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic screening panel",
+    "facility_name": "Amber Sail Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-06",
+    "patient_on_document": {
+     "dob": "1988-02-21",
+     "emirates_id": "784-1988-3517492-6",
+     "name": "Nasser Yousif Al Rumaithi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1988-02-21",
+     "name": "Nasser Yousif Al Rumaithi",
+     "sex": "M"
+    }
+   },
+   "text": "Amber Sail Screening Centre | Abu Dhabi | IFHAS periodic screening\nPatient: Nasser Yousif Al Rumaithi | DOB: 1988-02-21 | Male\nVisit/specimen: 2026-08-06; fasting confirmed.\nHbA1c 5.4% (reference 4.0–5.6)\nPlasma glucose 91 mg/dL (reference 70–99)\nLDL-C 97 mg/dL (desirable <100)\nTriglycerides 124 mg/dL (reference <150)\nBlood pressure 122/76 mmHg (clinic reference <140/90)\nHeight: not measured. Weight: not measured. BMI: not available.\nReleased 2026-08-06."
+  },
+  {
+   "id": "f2i-030",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 139
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 89
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 29.9
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 6.4
+      },
+      {
+       "display": "Random glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 195
+      },
+      {
+       "display": "Direct LDL cholesterol",
+       "loinc": "18262-6",
+       "unit": "mg/dL",
+       "value": 189
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 499
+      }
+     ],
+     "fasting": false,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-10-12",
+    "document_role": "screening",
+    "document_title": "IFHAS screening results panel",
+    "facility_name": "Palm Mosaic Preventive Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-10-12",
+    "patient_on_document": {
+     "dob": "1969-06-14",
+     "emirates_id": "784-1969-8163527-2",
+     "name": "Salma Majid Al Harthi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1969-06-14",
+     "name": "Salma Majid Al Harthi",
+     "sex": "F"
+    }
+   },
+   "text": "Palm Mosaic Preventive Clinic — IFHAS periodic screening results\nSalma Majid Al Harthi | Female | DOB 1969-06-14\nVisit and collection date: 2026-10-12 | Non-fasting specimen\nBlood pressure: 139/89 mmHg [clinic reference <140/90]\nBMI: 29.9 kg/m² [reference 18.5–24.9] H\nHbA1c: 6.4% [reference 4.0–5.6] H\nRandom plasma glucose: 195 mg/dL [reference 70–139] H\nLDL-C, direct: 189 mg/dL [desirable <100] H\nTriglycerides: 499 mg/dL [reference <150] H\nResults released for clinician review."
+  },
+  {
+   "id": "f2i-031",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-03-04",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-03-12",
+    "document_role": "downstream",
+    "document_title": "Family medicine follow-up",
+    "facility_name": "Copper Dune Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-03-04",
+    "patient_on_document": {
+     "dob": "1962-04-17",
+     "emirates_id": "784-1962-5839146-2",
+     "name": "Suhail Nadir Al Ramehi",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1962-04-17",
+     "name": "Suhail Nadir Al Ramehi",
+     "sex": "M"
+    }
+   },
+   "text": "Suhail Nadir Al Ramehi | DOB 1962-04-17\nFamily medicine review, 2026-03-12\nIFHAS screening dated 2026-03-04 reviewed. Clinic BP today 146/88 mmHg; no headache, chest pain or breathlessness.\nHome BP monitoring requested: two seated readings morning and evening for seven days, after five minutes' rest. Technique discussed.\nBring readings and home monitor to review in two weeks. No medication commenced today; decision deferred pending home readings."
+  },
+  {
+   "id": "f2i-032",
+   "metadata": {
+    "author_role": "Ophthalmologist",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": null,
+     "setting": "other"
+    },
+    "document_date": "2026-05-19",
+    "document_role": "downstream",
+    "document_title": "Diabetic retinal screening report",
+    "facility_name": "Pearl Horizon Eye Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-06",
+    "patient_on_document": {
+     "dob": "1970-09-23",
+     "emirates_id": "784-1970-6291835-4",
+     "name": "Maysara Hadi Al Naweri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1970-09-23",
+     "name": "Maysara Hadi Al Naweri",
+     "sex": "F"
+    }
+   },
+   "text": "PEARL HORIZON EYE CLINIC — RETINAL SCREENING REPORT\nPatient: Maysara Hadi Al Naweri | DOB: 1970-09-23\nExamination date: 2026-05-19 | Known type 2 diabetes.\nVisual acuity with correction: right 6/6, left 6/9. Bilateral retinal photographs adequate for grading.\nRight eye: no diabetic retinopathy. Left eye: no diabetic retinopathy. No photographic evidence of maculopathy in either eye.\nRoutine retinal recall in 12 months. Seek earlier assessment for new visual symptoms."
+  },
+  {
+   "id": "f2i-033",
+   "metadata": {
+    "author_role": "Clinical dietitian",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-07-09",
+     "setting": "dietitian"
+    },
+    "document_date": "2026-07-21",
+    "document_role": "downstream",
+    "document_title": "Initial dietitian assessment and plan",
+    "facility_name": "Amber Palm Wellness Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-09",
+    "patient_on_document": {
+     "dob": "1983-02-11",
+     "emirates_id": "784-1983-4719268-3",
+     "name": "Rania Mazen Al Sarefi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1983-02-11",
+     "name": "Rania Mazen Al Sarefi",
+     "sex": "F"
+    }
+   },
+   "text": "Nutrition and weight management review — 2026-07-21\nRania Mazen Al Sarefi, DOB 1983-02-11. Referred following IFHAS screening on 2026-07-09.\nWeight 94.8 kg; height 162 cm; BMI 36.1 kg/m². Obesity discussed without judgement; patient wishes to begin structured support.\nReferral placed to the multidisciplinary weight clinic.\nDietitian plan commenced today: replace sweetened drinks with water, use a portioned plate at main meals, and record intake for one week.\nAgreed gradual walking programme, initially 15 minutes on five days weekly as tolerated. Dietitian review in four weeks."
+  },
+  {
+   "id": "f2i-034",
+   "metadata": {
+    "author_role": "Screening follow-up nurse",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-09-02",
+     "setting": "telephone"
+    },
+    "document_date": "2026-09-16",
+    "document_role": "downstream",
+    "document_title": "Follow-up attendance and contact record",
+    "facility_name": "Sand Lantern Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1968-12-03",
+     "emirates_id": "784-1968-8361529-7",
+     "name": "Kareem Fawzi Al Daheri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1968-12-03",
+     "name": "Kareem Fawzi Al Daheri",
+     "sex": "M"
+    }
+   },
+   "text": "Appointment outcome: 2026-09-16\nKareem Fawzi Al Daheri | DOB 1968-12-03\nDid not attend booked IFHAS results follow-up for screening performed 2026-09-02.\nTwo telephone attempts today; no answer. Unable to leave a message. No clinical review completed.\nRecall task returned to booking team for further contact."
+  },
+  {
+   "id": "f2i-035",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.3
+      },
+      {
+       "display": "Fasting plasma glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 89
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 166
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 90
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 56
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 100
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 116
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-10-08",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic screening panel",
+    "facility_name": "Silver Acacia Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-08",
+    "patient_on_document": {
+     "dob": "1987-06-14",
+     "emirates_id": "784-1987-2957481-6",
+     "name": "Lamees Sami Al Ruwahi",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-06-14",
+     "name": "Lamees Sami Al Ruwahi",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — ABNORMAL\nPatient: Lamees Sami Al Ruwahi | DOB: 1987-06-14 | Female\nCollected: 2026-10-08, fasting | Flag key: N = within reference interval\nAnalyte / measurement | Result | Reference interval | Flag\nHbA1c | 5.3 % | 4.0–5.6 | N\nFasting plasma glucose | 89 mg/dL | 70–99 | N\nTotal cholesterol | 166 mg/dL | <200 | N\nLDL cholesterol | 90 mg/dL | <100 | N\nHDL cholesterol | 56 mg/dL | ≥50 | N\nTriglycerides | 100 mg/dL | <150 | N\nBlood pressure | 116/74 mmHg | Systolic 90–119; diastolic 60–79 | N\nBMI | 23.0 kg/m² | 18.5–24.9 | N"
+  },
+  {
+   "id": "f2i-036",
+   "metadata": {
+    "author_role": "Laboratory scientist",
+    "details": {
+     "coded_results": [],
+     "fasting": null,
+     "printed_panel_in_text": true,
+     "visit_type": "other"
+    },
+    "document_date": "2026-03-12",
+    "document_role": "screening",
+    "document_title": "Inpatient Haematology and Renal Chemistry",
+    "facility_name": "Qamravel General Hospital",
+    "facility_type": "hospital",
+    "index_date": "2026-03-12",
+    "patient_on_document": {
+     "dob": "1979-04-18",
+     "emirates_id": "784-1979-5821643-7",
+     "name": "Nawal Rami Al Maziri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1979-04-18",
+     "name": "Nawal Rami Al Maziri",
+     "sex": "F"
+    }
+   },
+   "text": "INPATIENT LABORATORY REPORT — Ward C4\nPatient: Nawal Rami Al Maziri | DOB: 1979-04-18 | Female\nCollected: 2026-03-12 06:20 | Finalised: 2026-03-12 08:05\nHaemoglobin 10.8 g/dL [12.0–15.5] L\nWBC 8.4 ×10^9/L [4.0–11.0]\nPlatelets 263 ×10^9/L [150–400]\nCreatinine 78 µmol/L [45–84]\nSpecimen: EDTA whole blood / serum. Results authorised."
+  },
+  {
+   "id": "f2i-037",
+   "metadata": {
+    "author_role": "Screening medical officer",
+    "details": {
+     "encounter_type": "report",
+     "referenced_screening_date": "2026-05-07",
+     "setting": "other"
+    },
+    "document_date": "2026-05-07",
+    "document_role": "downstream",
+    "document_title": "IFHAS Screening Results",
+    "facility_name": "Nayrava Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-05-07",
+    "patient_on_document": {
+     "dob": "1968-09-23",
+     "emirates_id": "784-1968-6914275-2",
+     "name": "Samir Fadil Al Nawri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1968-09-23",
+     "name": "Samir Fadil Al Nawri",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — RESULTS PANEL\nPatient: Samir Fadil Al Nawri | DOB: 1968-09-23 | Male\nScreening date: 2026-05-07 | Fasting specimen\nHbA1c: 6.2% [4.0–5.6] H\nFasting glucose: 112 mg/dL [70–99] H\nLDL cholesterol: 148 mg/dL [<100] H\nTriglycerides: 176 mg/dL [<150] H\nBlood pressure: 136/84 mmHg | BMI: 29.1 kg/m²\nFinal results released electronically."
+  },
+  {
+   "id": "f2i-038",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-07-08",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-07-21",
+    "document_role": "downstream",
+    "document_title": "IFHAS Results Review",
+    "facility_name": "Talmira Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1973-02-11",
+     "emirates_id": "784-1973-4287169-5",
+     "name": "Huda Salim Al Ruwaini",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1973-02-11",
+     "name": "Huda Salim Al Ruwaini",
+     "sex": "F"
+    }
+   },
+   "text": "Family medicine review, 2026-07-21\nHuda Salim Al Ruwaini, DOB 1973-02-11.\nIFHAS results from 08 July reviewed: HbA1c 7.2%. Repeat HbA1c on 19 July 7.1%.\nNo polyuria, vomiting or weight loss reported. Type 2 diabetes mellitus confirmed.\nResults discussed with patient. Plan to follow."
+  },
+  {
+   "id": "f2i-039",
+   "metadata": {
+    "author_role": "Internal medicine physician",
+    "details": {
+     "encounter_type": "addendum",
+     "referenced_screening_date": "2026-09-02",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-09-18",
+    "document_role": "downstream",
+    "document_title": "Addendum to Screening Review",
+    "facility_name": "Velqara Medical Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-09-02",
+    "patient_on_document": {
+     "dob": "1962-12-06",
+     "emirates_id": "784-1962-7351826-4",
+     "name": "Marwan Nabil Al Dahiri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1962-12-06",
+     "name": "Marwan Nabil Al Dahiri",
+     "sex": "M"
+    }
+   },
+   "text": "ADDENDUM — 2026-09-18, 14:35\nPatient: Marwan Nabil Al Dahiri | DOB 1962-12-06\nCorrection to my review dated 16 September concerning IFHAS screening of 02 September.\nThe repeat fasting plasma glucose collected on 14 September was 94 mg/dL (reference 70–99), not 194 mg/dL as transcribed in the earlier note.\nThe repeat glucose was normal. The earlier statement that repeat glucose confirmed diabetes is withdrawn.\nPatient informed by telephone; corrected result read back and acknowledged."
+  },
+  {
+   "id": "f2i-040",
+   "metadata": {
+    "author_role": "Follow-up nurse",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-10-06",
+     "setting": "telephone"
+    },
+    "document_date": "2026-10-20",
+    "document_role": "downstream",
+    "document_title": "Non-attendance and Rebooking Note",
+    "facility_name": "Rimvaya Community Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-10-06",
+    "patient_on_document": {
+     "dob": "1987-06-29",
+     "emirates_id": "784-1987-2648931-6",
+     "name": "Maha Zaid Al Haruni",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-06-29",
+     "name": "Maha Zaid Al Haruni",
+     "sex": "F"
+    }
+   },
+   "text": "Maha Zaid Al Haruni | DOB 1987-06-29\nDid not attend today's IFHAS results review following screening on 06 October 2026.\nReached by telephone; patient reports unable to leave work. Rebooked with family medicine for 28 October 2026 at 10:40. Patient confirmed attendance. No clinical review completed today."
+  },
+  {
+   "id": "f2i-041",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-02-04",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-02-18",
+    "document_role": "downstream",
+    "document_title": "Family Medicine Follow-up",
+    "facility_name": "Saffron Dune Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-02-04",
+    "patient_on_document": {
+     "dob": "1972-06-14",
+     "emirates_id": "784-1972-5831946-2",
+     "name": "Nawal Rami Al Safri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1972-06-14",
+     "name": "Nawal Rami Al Safri",
+     "sex": "F"
+    }
+   },
+   "text": "Family Medicine Review — 18 February 2026\nPatient: Nawal Rami Al Safri | DOB: 1972-06-14 | Female\nReviewed IFHAS findings from 04 February 2026: elevated blood pressure and HbA1c 6.3%.\nHypertension: taking amlodipine 5 mg daily; clinic BP today 148/92 mmHg. Increase to 10 mg daily; discussed ankle swelling and home BP recording.\nGlycaemia: no polyuria or polydipsia. Repeat fasting glucose and HbA1c requested; samples not yet collected.\nDiscussed reduced salt intake, carbohydrate portions and regular walking.\nReview BP in two weeks; review glycaemia when repeat results are available."
+  },
+  {
+   "id": "f2i-042",
+   "metadata": {
+    "author_role": "Screening nurse",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.5
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 118
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 126
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 27.4
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-03-11",
+    "document_role": "screening",
+    "document_title": "IFHAS Cardiometabolic Screening Panel",
+    "facility_name": "Copper Palm Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-03-11",
+    "patient_on_document": {
+     "dob": "1981-09-22",
+     "emirates_id": "784-1981-6294831-5",
+     "name": "Faris Munir Al Hadri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1981-09-22",
+     "name": "Faris Munir Al Hadri",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — CARDIOMETABOLIC PANEL\nPatient: Faris Munir Al Hadri | DOB 1981-09-22 | Male\nCollection: 11 March 2026; fasting confirmed. H = above reference interval.\nHbA1c: 5.5% [4.0–5.6]\nFasting glucose: 94 mg/dL [70–99]\nLDL cholesterol: 118 mg/dL [<100] H\nTriglycerides: 126 mg/dL [<150]\nBMI: 27.4 kg/m2 [18.5–24.9] H\nBlood pressure: not obtained; patient declined cuff measurement after explanation. No systolic or diastolic result recorded."
+  },
+  {
+   "id": "f2i-043",
+   "metadata": {
+    "author_role": "Clinical laboratory scientist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Fasting glucose",
+       "loinc": "14749-6",
+       "unit": "mmol/L",
+       "value": 6.2
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 6
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "22748-8",
+       "unit": "mmol/L",
+       "value": 3.7
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "14927-8",
+       "unit": "mmol/L",
+       "value": 2.1
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 128
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 78
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.1
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-05-07",
+    "document_role": "screening",
+    "document_title": "IFHAS Fasting Screening Results",
+    "facility_name": "Amber Crescent Diagnostic Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-05-07",
+    "patient_on_document": {
+     "dob": "1968-12-03",
+     "emirates_id": "784-1968-7415928-3",
+     "name": "Maha Ziyad Al Rawni",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1968-12-03",
+     "name": "Maha Ziyad Al Rawni",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS / Final screening results / 07 May 2026\nMaha Ziyad Al Rawni — Female — DOB 1968-12-03\nFasting specimen. H denotes a result above the stated interval.\nGlucose, fasting: 6.2 mmol/L | Reference 3.9–5.5 | H\nHbA1c: 6.0% | Reference 4.0–5.6 | H\nLDL cholesterol: 3.7 mmol/L | Reference <2.6 | H\nTriglycerides: 2.1 mmol/L | Reference <1.7 | H\nBlood pressure: systolic 128 mmHg [90–129]; diastolic 78 mmHg [60–84]\nBMI: 24.1 kg/m2 | Reference 18.5–24.9\nResults released for primary care review."
+  },
+  {
+   "id": "f2i-044",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 186
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 112
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.3
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 88
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 104
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-08-19",
+    "document_role": "screening",
+    "document_title": "IFHAS Screening Results and Escalation",
+    "facility_name": "Silver Acacia Health Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-19",
+    "patient_on_document": {
+     "dob": "1964-04-17",
+     "emirates_id": "784-1964-3958271-6",
+     "name": "Hamdan Sami Al Qadri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1964-04-17",
+     "name": "Hamdan Sami Al Qadri",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS SCREENING RESULTS — 19 August 2026\nPatient: Hamdan Sami Al Qadri; DOB: 1964-04-17; Male\nFasting: yes. H = high.\nBlood pressure, seated: 186/112 mmHg; systolic reference 90–129 H; diastolic reference 60–84 H.\nHbA1c 5.3% [4.0–5.6]; fasting glucose 91 mg/dL [70–99].\nLDL cholesterol 88 mg/dL [<100]; triglycerides 104 mg/dL [<150].\nBMI 23.6 kg/m2 [18.5–24.9].\nPatient denies chest pain, breathlessness, severe headache or visual change. Screening physician notified immediately; escorted for same-day urgent clinical assessment."
+  },
+  {
+   "id": "f2i-045",
+   "metadata": {
+    "author_role": "Screening nurse",
+    "details": {
+     "coded_results": [],
+     "fasting": null,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-10-02",
+    "document_role": "screening",
+    "document_title": "IFHAS Vision and Hearing Results",
+    "facility_name": "Pearl Lantern Preventive Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-02",
+    "patient_on_document": {
+     "dob": "1989-01-26",
+     "emirates_id": "784-1989-8624195-4",
+     "name": "Reem Mazin Al Bahri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1989-01-26",
+     "name": "Reem Mazin Al Bahri",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS — VISION AND HEARING SCREENING RESULT SHEET\nDate: 02 October 2026 | Patient: Reem Mazin Al Bahri | DOB: 1989-01-26 | Female\nDistance visual acuity with habitual spectacles: right 6/6, left 6/9; screening threshold 6/12 or better in each eye. Pass bilaterally.\nHearing screen at 25 dB HL, 1, 2 and 4 kHz: responses present at all frequencies in both ears. Pass bilaterally.\nNo visual or hearing concerns reported. Continue routine optometry review."
+  },
+  {
+   "id": "f2i-046",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "phone",
+     "referenced_screening_date": "2026-07-08",
+     "setting": "telephone"
+    },
+    "document_date": "2026-07-14",
+    "document_role": "downstream",
+    "document_title": "Telephone screening follow-up",
+    "facility_name": "Rimal Lantern Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-07-08",
+    "patient_on_document": {
+     "dob": "1979-03-18",
+     "emirates_id": null,
+     "name": "Hessa Nabil Al Ruwaini",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1979-03-18",
+     "name": "Hessa Nabil Al Ruwaini",
+     "sex": "F"
+    }
+   },
+   "text": "Telephone review — 14 July 2026\nPatient: Hessa Nabil Al Ruwaini | DOB: 1979-03-18\nDiscussed raised glucose reported at IFHAS screening on 8 July 2026. Patient reports no polyuria, thirst or recent weight loss.\nAdvice provided on reducing sweetened drinks, portion sizes and regular walking.\nTelephone consultation only; no physical examination or observations obtained.\nRepeat fasting plasma glucose to be arranged through the clinic. Booking remains pending.\nAdvised in-person review after the result, or earlier if symptoms develop."
+  },
+  {
+   "id": "f2i-047",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 152
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 94
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.1
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.3
+      },
+      {
+       "display": "Glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 106
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-02-22",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic screening observations and chemistry",
+    "facility_name": "Qamar Dunes Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-22",
+    "patient_on_document": {
+     "dob": "1972-09-11",
+     "emirates_id": null,
+     "name": "Mazin Farid Al Qamri",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1972-09-11",
+     "name": "Mazin Farid Al Qamri",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING | 22 February 2026\nMazin Farid Al Qamri | Male | DOB 1972-09-11\nFasting: Yes\nBlood pressure: 152/94 mmHg H [reference <140/90]; one seated reading recorded, no repeat measurement.\nBMI: 24.1 kg/m² [18.5–24.9]\nHbA1c: 5.3% [4.0–5.6]\nFasting plasma glucose: 91 mg/dL [70–99]\nLDL cholesterol: 94 mg/dL [<100]\nTriglycerides: 106 mg/dL [<150]\nElevated blood pressure discussed; advised clinic appointment for repeat measurements."
+  },
+  {
+   "id": "f2i-048",
+   "metadata": {
+    "author_role": "Clinical laboratory scientist",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 640
+      },
+      {
+       "display": "LDL cholesterol, direct",
+       "loinc": "18262-6",
+       "unit": "mg/dL",
+       "value": 92
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 108
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 122
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 78
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.8
+      }
+     ],
+     "fasting": false,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-05-09",
+    "document_role": "screening",
+    "document_title": "IFHAS nonfasting screening panel",
+    "facility_name": "Sidr Mosaic Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-05-09",
+    "patient_on_document": {
+     "dob": "1984-12-03",
+     "emirates_id": null,
+     "name": "Salma Rafiq Al Maysari",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1984-12-03",
+     "name": "Salma Rafiq Al Maysari",
+     "sex": "F"
+    }
+   },
+   "text": "Periodic screening chemistry and observations — 9 May 2026\nPatient: Salma Rafiq Al Maysari; DOB 1984-12-03; Female\nSpecimen: random, nonfasting serum. Patient ate approximately two hours before collection.\nTriglycerides 640 mg/dL H (desirable fasting value <150)\nLDL cholesterol, direct 92 mg/dL (desirable <100); calculated LDL not issued.\nHbA1c 5.4% (4.0–5.6); random glucose 108 mg/dL (70–139)\nBP 122/78 mmHg (reference <140/90); BMI 23.8 kg/m² (18.5–24.9)\nMarked triglyceride elevation communicated to the screening physician. Prompt clinical review and a fasting lipid panel requested."
+  },
+  {
+   "id": "f2i-049",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.4
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.2
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 98
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 110
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-08-17",
+    "document_role": "screening",
+    "document_title": "Periodic screening result summary",
+    "facility_name": "Marjan Grove Preventive Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-17",
+    "patient_on_document": {
+     "dob": "1968-04-26",
+     "emirates_id": null,
+     "name": "Jaber Sami Al Nahli",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1968-04-26",
+     "name": "Jaber Sami Al Nahli",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS screening summary | 17 August 2026 | Fasting sample\nJaber Sami Al Nahli, DOB 1968-04-26, Male\nBlood pressure 118/76 mmHg — within reference (<140/90)\nBMI 23.4 kg/m² — within reference (18.5–24.9)\nHbA1c 5.2% — within reference (4.0–5.6)\nLDL cholesterol 98 mg/dL — within reference (<100)\nTriglycerides 110 mg/dL — within reference (<150)\nResults reviewed. Continue healthy diet and regular physical activity."
+  },
+  {
+   "id": "f2i-050",
+   "metadata": {
+    "author_role": "Screening nurse",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 182
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 82
+      },
+      {
+       "display": "Body mass index",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.0
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.3
+      },
+      {
+       "display": "Glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 93
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 96
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 119
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-10-06",
+    "document_role": "screening",
+    "document_title": "IFHAS screening panel",
+    "facility_name": "Nakhil Pearl Wellness Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-06",
+    "patient_on_document": {
+     "dob": "1987-06-14",
+     "emirates_id": null,
+     "name": "Noura Khalil Al Barwani",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-06-14",
+     "name": "Noura Khalil Al Barwani",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS | PERIODIC SCREENING PANEL | 6 October 2026\nName: Noura Khalil Al Barwani | DOB: 1987-06-14 | Sex: F\nFasting status: confirmed\nObservation                         Result          Reference\nBlood pressure                      128/82 mmHg     <140/90\nBody mass index                     24.0 kg/m²      18.5–24.9\nHbA1c                               5.3%            4.0–5.6\nFasting glucose                     93 mg/dL        70–99\nLDL cholesterol                     96 mg/dL        <100\nTriglycerides                       119 mg/dL       <150\nNo abnormal flags on this panel."
+  },
+  {
+   "id": "f2i-051",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.3
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 91
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 176
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 56
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 98
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 110
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 76
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 34.2
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-02-12",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic screening panel",
+    "facility_name": "Nawaris Crescent Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-02-12",
+    "patient_on_document": {
+     "dob": "1978-03-19",
+     "emirates_id": null,
+     "name": "Maha Rashed Al Nuwair",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1978-03-19",
+     "name": "Maha Rashed Al Nuwair",
+     "sex": "F"
+    }
+   },
+   "text": "Maha Rashed Al Nuwair | DOB 1978-03-19 | Female\nIFHAS periodic screening — 12 February 2026; fasting specimen\nHbA1c 5.3% [4.0–5.6]; fasting glucose 91 mg/dL [70–99]\nTotal cholesterol 176 mg/dL [<200]; HDL 56 mg/dL [≥50]\nLDL-C 98 mg/dL [<130]; triglycerides 110 mg/dL [<150]\nBlood pressure 118/76 mmHg [<130/85]\nBMI 34.2 kg/m² H [18.5–24.9]\nReviewed: elevated BMI; nutrition and activity counselling offered."
+  },
+  {
+   "id": "f2i-052",
+   "metadata": {
+    "author_role": "Screening medical officer",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 88
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.2
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 224
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 92
+      },
+      {
+       "display": "Calculated LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 110
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 110
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 122
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 78
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.8
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-03-24",
+    "document_role": "screening",
+    "document_title": "Periodic screening results",
+    "facility_name": "Dune Lantern Medical Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-03-24",
+    "patient_on_document": {
+     "dob": "1982-08-07",
+     "emirates_id": null,
+     "name": "Salim Nasser Al Rameel",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1982-08-07",
+     "name": "Salim Nasser Al Rameel",
+     "sex": "M"
+    }
+   },
+   "text": "Dune Lantern Medical Clinic, Abu Dhabi\nPeriodic screening results | 24 March 2026\nPatient: Salim Nasser Al Rameel; male; born 1982-08-07\nFasting glucose: 88 mg/dL (70–99); HbA1c: 5.2% (4.0–5.6)\nTotal cholesterol: 224 mg/dL H (desirable <200)\nHDL cholesterol: 92 mg/dL H (laboratory interval 40–80)\nCalculated LDL cholesterol: 110 mg/dL (desirable <130)\nTriglycerides: 110 mg/dL (desirable <150)\nBP: 122/78 mmHg (<130/85); BMI: 23.8 kg/m² (18.5–24.9)"
+  },
+  {
+   "id": "f2i-053",
+   "metadata": {
+    "author_role": "Laboratory reporting officer",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 5.4
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 116
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 72
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 22.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-06-08",
+    "document_role": "screening",
+    "document_title": "IFHAS interim screening panel",
+    "facility_name": "Saffron Arch Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-06-08",
+    "patient_on_document": {
+     "dob": "1991-11-26",
+     "emirates_id": null,
+     "name": "Hessa Jaber Al Waseel",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1991-11-26",
+     "name": "Hessa Jaber Al Waseel",
+     "sex": "F"
+    }
+   },
+   "text": "IFHAS SCREENING — INTERIM RESULTS\nHessa Jaber Al Waseel | Female | DOB 1991-11-26\nCollection: 08 June 2026, fasting\nGlucose 94 mg/dL [70–99]; HbA1c 5.4% [4.0–5.6]\nBP 116/72 mmHg [<130/85]; BMI 22.6 kg/m² [18.5–24.9]\nTotal cholesterol / HDL-C / LDL-C / triglycerides: PENDING\nLipid specimen dispatched to Marjan Vale Reference Laboratory; no lipid results available at release.\nSupplementary report will follow receipt of the external laboratory results."
+  },
+  {
+   "id": "f2i-054",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-08-10",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-08-17",
+    "document_role": "downstream",
+    "document_title": "IFHAS results follow-up",
+    "facility_name": "Pearl Canopy Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-08-10",
+    "patient_on_document": {
+     "dob": "1969-02-14",
+     "emirates_id": null,
+     "name": "Yousif Hamad Al Sadeef",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1969-02-14",
+     "name": "Yousif Hamad Al Sadeef",
+     "sex": "M"
+    }
+   },
+   "text": "Family medicine follow-up, 17 August 2026\nYousif Hamad Al Sadeef, DOB 1969-02-14, male.\nDiscussed IFHAS results from 10 August 2026. Triglycerides elevated on a nonfasting specimen.\nRequested repeat fasting triglycerides; advised water only during the 10-hour fast before collection.\nPatient to return after blood sampling and availability of the result for review and management planning."
+  },
+  {
+   "id": "f2i-055",
+   "metadata": {
+    "author_role": "Screening nurse",
+    "details": {
+     "coded_results": [
+      {
+       "display": "Random plasma glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 200
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 172
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 58
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 100
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 120
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.1
+      }
+     ],
+     "fasting": false,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-10-21",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic laboratory and observations panel",
+    "facility_name": "Amber Sail Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-10-21",
+    "patient_on_document": {
+     "dob": "1987-05-22",
+     "emirates_id": null,
+     "name": "Reem Khaled Al Muraif",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-05-22",
+     "name": "Reem Khaled Al Muraif",
+     "sex": "F"
+    }
+   },
+   "text": "Amber Sail Screening Centre — IFHAS periodic panel\nPatient: Reem Khaled Al Muraif | DOB 1987-05-22 | F\nCollected 21 October 2026; nonfasting\nAnalyte                         Result        Reference interval\nRandom plasma glucose           200 H mg/dL    70–139\nTotal cholesterol               172 mg/dL      <200\nHDL cholesterol                 58 mg/dL       ≥50\nLDL cholesterol                 94 mg/dL       <130\nTriglycerides                   100 mg/dL      <150\nBlood pressure                  120/74 mmHg    <130/85\nBMI                             24.1 kg/m²     18.5–24.9"
+  },
+  {
+   "id": "f2i-056",
+   "metadata": {
+    "author_role": "Family medicine physician",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-02-12",
+     "setting": "family_medicine"
+    },
+    "document_date": "2026-02-19",
+    "document_role": "downstream",
+    "document_title": "IFHAS follow-up consultation",
+    "facility_name": "Saffron Dune Family Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-02-12",
+    "patient_on_document": {
+     "dob": "1981-03-18",
+     "emirates_id": "784-1981-5832064-7",
+     "name": "Mareen Sabil Qadri",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1981-03-18",
+     "name": "Mareen Sabil Qadri",
+     "sex": "F"
+    }
+   },
+   "text": "Mareen Sabil Qadri | DOB 1981-03-18 | Female\nIFHAS follow-up, 19 February 2026\nScreening results dated 12 February reviewed with patient. No polyuria, polydipsia or recent weight loss.\nRepeat laboratory HbA1c ordered; specimen collected today and result awaited.\nNo diagnosis of diabetes established at this visit. Further assessment after the repeat result is available.\nPatient will be contacted to arrange review."
+  },
+  {
+   "id": "f2i-057",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 7.1
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 96
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 168
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 92
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 54
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 110
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 118
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 74
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 23.6
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-04-08",
+    "document_role": "screening",
+    "document_title": "IFHAS periodic screening results",
+    "facility_name": "Pearl Acacia Screening Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-04-08",
+    "patient_on_document": {
+     "dob": "1970-08-24",
+     "emirates_id": "784-1970-6924813-5",
+     "name": "Ramez Nadir Talwan",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1970-08-24",
+     "name": "Ramez Nadir Talwan",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS PERIODIC SCREENING — FASTING PANEL\nPatient: Ramez Nadir Talwan | DOB: 1970-08-24 | Male\nCollection/assessment: 08 April 2026\nHbA1c: 7.1% H [reference 4.0–5.6%; diabetes decision limit ≥6.5%]\nFasting plasma glucose: 96 mg/dL [70–99]\nTotal cholesterol: 168 mg/dL [<200]; LDL-C: 92 mg/dL [<100]\nHDL-C: 54 mg/dL [≥40]; triglycerides: 110 mg/dL [<150]\nBlood pressure: 118/74 mmHg [reference <120/<80]\nBMI: 23.6 kg/m² [18.5–24.9]\nAbnormal HbA1c released for clinician review."
+  },
+  {
+   "id": "f2i-058",
+   "metadata": {
+    "author_role": "Internal medicine physician",
+    "details": {
+     "encounter_type": "letter",
+     "referenced_screening_date": "2026-05-06",
+     "setting": "internal_medicine"
+    },
+    "document_date": "2026-05-20",
+    "document_role": "downstream",
+    "document_title": "Blood pressure review letter",
+    "facility_name": "Amber Reed Medical Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-05-06",
+    "patient_on_document": {
+     "dob": "1964-11-09",
+     "emirates_id": "784-1964-7315286-4",
+     "name": "Saliha Merwan Nafeel",
+     "sex": "F"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1964-11-09",
+     "name": "Saliha Merwan Nafeel",
+     "sex": "F"
+    }
+   },
+   "text": "Dear screening team,\nRe: Saliha Merwan Nafeel, DOB 1964-11-09, female.\nReviewed following raised blood pressure at IFHAS screening on 06 May 2026. Repeat seated readings today after rest were 122/76 and 120/74 mmHg. Seven-day home average 119/73 mmHg.\nFindings are consistent with a white-coat effect; no sustained hypertension demonstrated. No antihypertensive treatment indicated.\nContinue usual healthy lifestyle measures and routine rescreening."
+  },
+  {
+   "id": "f2i-059",
+   "metadata": {
+    "author_role": "Screening physician",
+    "details": {
+     "coded_results": [
+      {
+       "display": "HbA1c",
+       "loinc": "4548-4",
+       "unit": "%",
+       "value": 6.1
+      },
+      {
+       "display": "Fasting glucose",
+       "loinc": "2345-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "Total cholesterol",
+       "loinc": "2093-3",
+       "unit": "mg/dL",
+       "value": 172
+      },
+      {
+       "display": "LDL cholesterol",
+       "loinc": "13457-7",
+       "unit": "mg/dL",
+       "value": 94
+      },
+      {
+       "display": "HDL cholesterol",
+       "loinc": "2085-9",
+       "unit": "mg/dL",
+       "value": 56
+      },
+      {
+       "display": "Triglycerides",
+       "loinc": "2571-8",
+       "unit": "mg/dL",
+       "value": 108
+      },
+      {
+       "display": "Systolic blood pressure",
+       "loinc": "8480-6",
+       "unit": "mm[Hg]",
+       "value": 190
+      },
+      {
+       "display": "Diastolic blood pressure",
+       "loinc": "8462-4",
+       "unit": "mm[Hg]",
+       "value": 120
+      },
+      {
+       "display": "BMI",
+       "loinc": "39156-5",
+       "unit": "kg/m2",
+       "value": 24.2
+      }
+     ],
+     "fasting": true,
+     "printed_panel_in_text": true,
+     "visit_type": "periodic_screening"
+    },
+    "document_date": "2026-08-17",
+    "document_role": "screening",
+    "document_title": "IFHAS screening panel and observations",
+    "facility_name": "Copper Palm Preventive Centre",
+    "facility_type": "screening_centre",
+    "index_date": "2026-08-17",
+    "patient_on_document": {
+     "dob": "1987-02-13",
+     "emirates_id": "784-1987-4268195-2",
+     "name": "Nawfel Basim Darwani",
+     "sex": "M"
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1987-02-13",
+     "name": "Nawfel Basim Darwani",
+     "sex": "M"
+    }
+   },
+   "text": "IFHAS / PERIODIC HEALTH SCREEN — 17 August 2026\nNawfel Basim Darwani | Male | DOB 1987-02-13 | Fasting: Yes\nAnalyte / Result / Reference interval\nHbA1c / 6.1% H / 4.0–5.6%; prediabetes interval 5.7–6.4%\nFasting glucose / 94 mg/dL / 70–99\nTotal cholesterol / 172 mg/dL / <200\nLDL-C / 94 mg/dL / <100; HDL-C / 56 mg/dL / ≥40\nTriglycerides / 108 mg/dL / <150\nBlood pressure / 190/120 mmHg HH / <120/<80\nBMI / 24.2 kg/m² / 18.5–24.9\nSeverely elevated blood pressure communicated immediately to the attending physician for urgent assessment."
+  },
+  {
+   "id": "f2i-060",
+   "metadata": {
+    "author_role": "Endocrinologist",
+    "details": {
+     "encounter_type": "visit",
+     "referenced_screening_date": "2026-10-05",
+     "setting": "endocrinology"
+    },
+    "document_date": "2026-10-13",
+    "document_role": "downstream",
+    "document_title": "Endocrinology consultation note",
+    "facility_name": "Willow Crescent Endocrine Clinic",
+    "facility_type": "clinic",
+    "index_date": "2026-10-05",
+    "patient_on_document": {
+     "dob": null,
+     "emirates_id": null,
+     "name": "Lamira",
+     "sex": null
+    },
+    "programme": "ifhas",
+    "registered_patient": {
+     "dob": "1978-06-22",
+     "name": "Lamira Fadil Zareen",
+     "sex": "F"
+    }
+   },
+   "text": "Willow Crescent Endocrine Clinic — consultation note, 13 October 2026\nPatient: Lamira | Contact: 050 000 6824\nAttended our clinic after IFHAS screening at Copper Palm Preventive Centre on 05 October. Outside report reviewed; repeat HbA1c here 11.8%, confirming diabetes. Random glucose 328 mg/dL, with thirst and polyuria; blood ketones negative.\nStarted insulin glargine 10 units subcutaneously nightly. Injection technique, glucose monitoring and hypoglycaemia management reviewed with teach-back.\nTelephone glucose review in 48 hours and clinic appointment in one week."
+  }
+ ],
+ "schema_version": "fresh2-corpus-schema-v1",
+ "source": "Fresh2 IFHAS corpus; model-authored synthetic text; no author key; not clinician-verified"
+}

@@ -52,6 +52,9 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 		if cs, ok := res["category"].([]interface{}); ok && len(cs) > 0 {
 			e.Category = gs(cs[0].(map[string]interface{}), "text")
 		}
+		if e.Category == "ifhas-screening" && IfhasOn {
+			e.Prog = "ifhas"
+		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
 				xm := x.(map[string]interface{})
@@ -80,6 +83,12 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 			e.Breast = &BreastSR{}
 			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
 				e.Breast.Screen = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
+			}
+		}
+		if e.Category == "ldct-screening" { // lung cancer screening LDCT (ldct.go)
+			e.LDCT = &LDCTSR{}
+			if si, ok := res["supportingInfo"].([]interface{}); ok && len(si) > 0 {
+				e.LDCT.Scan = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
 			}
 		}
 		if e.Lung != nil {
@@ -140,13 +149,21 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 					e.Category = "pathology"
 				case "colposcopy":
 					e.Category = "colposcopy"
-				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic", "breast-screen", "breast-assess": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go); breast screen | assessment (breast.go)
+				case "lung-finding", "lung-ct", LungPETCode, LungPathCode, "dr-screen", "dr-clinic", "breast-screen", "breast-assess", "ldct-screen", "ldct-workup": // lung index CT | follow-up CT | PET/CT | tissue (lung.go); DR screen | eye-clinic note (dr.go); breast screen | assessment (breast.go); LDCT report | work-up (ldct.go)
 					e.Category = gs(cd[0].(map[string]interface{}), "code")
 				}
 			}
 		}
 		if cc, ok := res["conclusionCode"].([]interface{}); ok && len(cc) > 0 {
 			e.Coded = gs(cc[0].(map[string]interface{}), "text")
+		}
+		if c := ifhasDocCategory(res); c != "" { // IFHAS results panel | follow-up note (ifhas.go); results carry contained Observations
+			e.Category = c
+			if c == "ifhas-screen" {
+				if ct, ok := res["contained"].([]interface{}); ok && len(ct) > 1 {
+					e.Coded = ifhasCodedString(ct[1:])
+				}
+			}
 		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {

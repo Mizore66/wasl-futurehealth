@@ -76,8 +76,8 @@ func TestProgrammeTemplateFamilies(t *testing.T) {
 			}
 		}
 	}
-	if n != 24 {
-		t.Fatalf("%d lung/DR templates, want 24", n)
+	if n != 36 { // 9 outreach kinds x 2 languages x 2 versions (the C11 recall kind reuses drsfu-recall)
+		t.Fatalf("%d lung/DR templates, want 36", n)
 	}
 }
 

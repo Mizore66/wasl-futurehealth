@@ -1,0 +1,3 @@
+FHIR log: reorder                  strong  fired=[D4_replay D5_fhir_anchor]
+FHIR log: truncate 2% tail         strong  fired=[D4_replay D5_fhir_anchor]
+full rewrite: delete sign-off, re-derive OUT insider fired=[D2_oseq D5_fhir_anchor D5_ledger_anchor]

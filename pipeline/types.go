@@ -60,6 +60,7 @@ type Event struct {
 	DR       *DRSR    `json:"dr,omitempty"`      // diabetic retinopathy tracking ServiceRequest: first screening report (dr.go)
 	XRef     string   `json:"xref,omitempty"`    // referral intake: the referral it answers (basedOn "external referral <loop>"; handoffref.go)
 	Breast   *BreastSR `json:"breast,omitempty"` // breast recall tracking ServiceRequest: first screening mammogram report (breast.go)
+	LDCT     *LDCTSR   `json:"ldct,omitempty"`   // lung cancer screening tracking ServiceRequest: the LDCT report (ldct.go)
 }
 
 // CommFact: one Communication on a loop (outbound result notification or inbound patient acknowledgement).
@@ -99,6 +100,9 @@ type Signoff struct {
 	DurationS float64  `json:"dur_s,omitempty"`     // simulated reviewer seconds spent on this item (all reads)
 	Purpose   string   `json:"purpose,omitempty"`   // v7: second_identifier = messaging confirmation only (never cuts a cluster)
 	Hold      string   `json:"hold,omitempty"`      // linker: a "same" held for a confirming review (sex|dob contradiction)
+	// Agent read (agentrecs.go): the agent's label and its seconds. DurationS stays human-only.
+	AgentRead string  `json:"agent_read,omitempty"`
+	AgentS    float64 `json:"agent_s,omitempty"`
 
 	audit *auditRec // H7 senior audit (governance.go); unexported, so never serialised
 }
@@ -150,6 +154,7 @@ type DownFact struct {
 	RecPk    string  `json:"rec_pk,omitempty"`    // downstream registration (endpoint of the path)
 	RecDob   string  `json:"rec_dob,omitempty"`
 	EIDSecond bool   `json:"eid_second,omitempty"` // the Emirates ID on both registrations confirms the pair (eidSecond)
+	EIDContra string `json:"eid_contra,omitempty"` // eidguard.go: an Emirates-ID path ends on, or passes through, a registration that contradicts the referral's (sex|dob); never trusted for closure
 	IDConfirmed bool `json:"id_confirmed,omitempty"` // a human confirmed this registration pair on another loop (ReuseIDConfirm)
 }
 
@@ -176,6 +181,7 @@ type LoopFacts struct {
 	Lung      *LungSR            `json:"lung,omitempty"`        // lung-nodule loop: scope and risk from the tracking ServiceRequest
 	DR        *DRSR              `json:"dr,omitempty"`          // diabetic retinopathy loop (dr.go)
 	Breast    *BreastSR          `json:"breast,omitempty"`      // breast recall loop (breast.go)
+	LDCT      *LDCTSR            `json:"ldct,omitempty"`        // lung cancer screening (LDCT) loop (ldct.go)
 }
 
 // FactsMsg goes linker -> closure partition. Either facts for one loop or a clock tick.
@@ -188,6 +194,7 @@ type FactsMsg struct {
 	Part     int        `json:"part"`
 	PSeq     uint64     `json:"pseq"` // deterministic per-partition sequence assigned by the linker core
 	OriginTs int64      `json:"ots"`
+	Arr      *float64   `json:"arr,omitempty"` // HistClock: arrival day of the input that produced the facts
 }
 
 type Block struct {
@@ -255,8 +262,10 @@ type Decision struct {
 	Lung           *LungDecision `json:"lung,omitempty"` // lung-nodule loop: Fleischner recommendation, window, outcome (lung.go)
 	DR             *DRDecision   `json:"dr,omitempty"`   // diabetic retinopathy loop: grade, rule, deadline, eye-clinic outcome (dr.go)
 	Breast         *BreastDecision `json:"breast,omitempty"` // breast recall loop: BI-RADS category, rule, deadline, assessment outcome (breast.go)
+	LDCT           *LDCTDecision   `json:"ldct,omitempty"`   // lung cancer screening loop: Lung-RADS category, rule, clocks, follow-up / work-up outcome (ldct.go)
 	Handoff        *HandoffPacket `json:"handoff,omitempty"` // finally rejected referral: hand-off packet to the referrer (handoff.go)
 	AuditReopened  bool     `json:"audit_reopened,omitempty"` // pilot (-autoaudit): a post-closure audit disagreed and the loop re-opened
+	Ifhas          *IfhasDecision `json:"ifhas,omitempty"` // IFHAS loop: screening cells, rule, per-domain follow-up status (ifhas.go)
 }
 
 // Outreach is one patient-facing message the closure layer would trigger from a downstream (cross-provider) fact.

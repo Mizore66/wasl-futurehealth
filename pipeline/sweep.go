@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/nats-io/nats.go"
@@ -118,6 +119,14 @@ func loadConsentTruth(data string) map[string]bool {
 
 // reviewLoop runs the closed loop with the given reviewer to a fixed point.
 func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int) {
+	rp, sos, iters, _, _ := reviewLoopFull(o, P, cfg)
+	return rp, sos, iters
+}
+
+// reviewLoopFull is reviewLoop that also returns the final replay's prep list and each item's original FHIR index
+// (-1 for an inserted reviewer sign-off). Agent eligibility is refreshed from each replay's linker before that
+// replay's items are answered.
+func reviewLoopFull(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Signoff, int, []*Prep, []int) {
 	anchors := map[string]int{}
 	sos := map[string]*Signoff{}
 	q := newReviewQueue()
@@ -127,23 +136,27 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 			byAnchor[a] = append(byAnchor[a], id)
 		}
 		list := make([]*Prep, 0, len(o.preps)+len(sos))
+		source := make([]int, 0, len(o.preps)+len(sos))
 		posToBase := make([]int, 0, len(o.preps)+len(sos))
 		for i, p := range o.preps {
 			q := *p
 			q.Seq = uint64(len(list) + 1)
 			list, posToBase = append(list, &q), append(posToBase, i)
+			source = append(source, i)
 			ids := byAnchor[i]
 			sort.Strings(ids)
 			for _, id := range ids {
 				list = append(list, &Prep{Seq: uint64(len(list) + 1), Kind: "signoff", So: sos[id]})
+				source = append(source, -1)
 				posToBase = append(posToBase, i)
 			}
 		}
 		rp := replay(nil, list, o.gbm, o.iso, P, false)
+		cfg.Agent.bind(rp.L)
 		if ReplayWorklist { // the live reviewer's order and worklists (services.go runReviewer)
 			ids := q.answer(rp, cfg, o.tr, sos)
 			if len(ids) == 0 {
-				return rp, sos, iter
+				return rp, sos, iter, list, source
 			}
 			for _, id := range ids {
 				anchors[id] = posToBase[rp.items[id].InSeq-1]
@@ -157,13 +170,15 @@ func reviewLoop(o *offline, P int, cfg ReviewerCfg) (*replayOut, map[string]*Sig
 			}
 		}
 		if len(ids) == 0 {
-			return rp, sos, iter
+			return rp, sos, iter, list, source
 		}
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := rp.items[id]
 			anchors[id] = posToBase[it.InSeq-1]
-			sos[id] = cfg.Review(it, o.tr)
+			if so := cfg.Review(it, o.tr); so != nil {
+				sos[id] = so
+			}
 		}
 	}
 	panic("review loop did not converge")
@@ -197,7 +212,6 @@ func (q *reviewQueue) answer(rp *replayOut, cfg ReviewerCfg, tr *Truth, sos map[
 		if out.Kind != "review" || it == nil || q.seen[it.ItemID] {
 			continue
 		}
-		q.seen[it.ItemID] = true
 		if _, ok := sos[it.ItemID]; ok {
 			continue
 		}
@@ -210,6 +224,10 @@ func (q *reviewQueue) answer(rp *replayOut, cfg ReviewerCfg, tr *Truth, sos map[
 			continue
 		}
 		so := cfg.Review(it, tr)
+		if so == nil { // eligible pair is waiting for its first agent recommendation
+			continue
+		}
+		q.seen[it.ItemID] = true
 		q.wl.record(it, so)
 		q.lw.record(it, so)
 		sos[it.ItemID] = so
@@ -244,10 +262,33 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 	dobHeld, dobHeldWrong, dobReleasedWrong := 0, 0, 0
 	sidHeld, sidHeldWrong := 0, 0
 	guardRel := map[string]int{}
+	// own-programme outreach: a message about a resource of a programme-specific provider on a loop of another programme.
+	progOfProv := map[string]map[string]bool{}
+	for prog, ids := range map[string][]string{"crc": {"ahs-mushrif", "medlab", "skmc-endo", "noor-endo"}, "cervical": {"ahs-mushrif", "noor-endo", "corniche-wh"}} {
+		for _, id := range ids {
+			if progOfProv[id] == nil {
+				progOfProv[id] = map[string]bool{}
+			}
+			progOfProv[id][prog] = true
+		}
+	}
+	for prog, pcs := range map[string][]ProvCfg{"lung_nodule": lungProviders, "diabetic_retinopathy": drProviders, "breast": breastProviders, "lung_ldct": ldctProviders, "ifhas": ifhasProviders} {
+		for _, pc := range pcs {
+			if progOfProv[pc.ID] == nil {
+				progOfProv[pc.ID] = map[string]bool{}
+			}
+			progOfProv[pc.ID][prog] = true
+		}
+	}
+	var crossProg struct{ intents, released int }
 	for k, x := range intents {
 		lt := o.tr.Loops[baseLoop(k.loop)] // child loops (<loop>#surv) message the parent's patient
 		if lt == nil {
 			continue
+		}
+		if ep := progOfProv[strings.SplitN(x.Event, "/", 2)[0]]; len(ep) > 0 && !ep[lt.Prog] {
+			crossProg.intents++
+			crossProg.released += map[bool]int{true: 1}[released[k]]
 		}
 		wrong := o.tr.PKQid[o.evPK[x.Event]] != lt.Qid
 		w := 0
@@ -328,6 +369,7 @@ func govMetrics(o *offline, rp *replayOut) map[string]interface{} {
 		"linker_stats": rp.L.Stats, "wrong_list": wrongList,
 		"dob_guard": map[string]int{"held": dobHeld, "held_wrong": dobHeldWrong, "released_wrong": dobReleasedWrong},
 		"v7_second_id_held": sidHeld, "v7_second_id_held_wrong": sidHeldWrong, "v7_released_by_guard": guardRel,
+		"cross_programme_outreach": map[string]int{"intents": crossProg.intents, "released": crossProg.released},
 	}
 }
 
@@ -399,6 +441,7 @@ func sweep(data, wasl string, P int, out string) {
 		cfg := DefaultReviewer
 		cfg.Err, cfg.Rho, cfg.Double, cfg.Seed = j.err, j.rho, j.double, j.seed
 		cfg = withMitigation(cfg, SweepMitBase, j.mit)
+		cfg.Agent = nil // the agent hook is never invoked from parallel sweep jobs
 		rp, sos, iters := reviewLoop(o, P, cfg)
 		acc := evalDecisions(rp.final, o.tr, repPKOf(o.preps))
 		secs, reads, linkS, evS, guardS, guardN := 0.0, 0, 0.0, 0.0, 0.0, 0

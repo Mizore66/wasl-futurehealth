@@ -1,0 +1,439 @@
+{
+ "0107f9433f6e49240035da3a2883784ffe7e3667b6d62088f567f1c2430fd87e": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "HbA1c was 6.2%"
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Fasting glucose was 112 mg/dL"
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "LDL cholesterol was 148 mg/dL"
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "Triglycerides were 176 mg/dL"
+   }
+  ],
+  "quote": "The patient was advised to consider a weight management programme and referred to a dietitian.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 13035
+ },
+ "24ae1e8b66b9edaee0b41a526e66d0884c4b4b6707be929a15b68f670e9ae2c1": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Repeat laboratory HbA1c ordered; specimen collected today and result awaited."
+   }
+  ],
+  "quote": "Patient will be contacted to arrange review.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5810
+ },
+ "2da9d82bfc7e9719bf3b74d42f93d5fb8dcc1fe3fb33c03e92df5755900145f5": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "Reduce saturated fat, increase soluble fibre and continue regular walking."
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "Start atorvastatin 20 mg nightly; baseline ALT within reference interval."
+   }
+  ],
+  "quote": "Results discussed with patient by telephone.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9684
+ },
+ "367e3eaae7570ca1d812e16a72b74e3ab379dc086e7929510d7c5605036895fb": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP today 154/92 and 152/90 after rest; home readings also elevated."
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Start amlodipine 5 mg daily."
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "Obesity: agreed to replace sweetened drinks with water and walk 20 minutes on five days weekly, increasing as tolerated."
+   }
+  ],
+  "quote": "Dietitian referral accepted.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 13523
+ },
+ "4eb35c498409955109d26a38ab78f101dcb63bddfbce6ddccaf8fd7690e54535": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Right eye: no diabetic retinopathy."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Left eye: no diabetic retinopathy."
+   }
+  ],
+  "quote": "Routine retinal recall in 12 months. Seek earlier assessment for new visual symptoms.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8479
+ },
+ "50ac153cda901eba57e25333476cd129e09f10fec2475ec7ef7be3cc744d78b3": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Repeat HbA1c collected yesterday remains pending; no confirmatory result available during this call."
+   }
+  ],
+  "quote": "Plan: all well. Continue usual activity and dietary advice. Call again when the repeat result is released.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7939
+ },
+ "561e88bd1a34bf253a2f00dd10659108908f85fdd78a17c585257c264ca7ebc5": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "Started atorvastatin 40 mg orally nightly; counselled regarding muscle symptoms and medication precautions."
+   }
+  ],
+  "quote": "Cardiology referral placed for severe hypercholesterolaemia and assessment for familial hypercholesterolaemia.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6225
+ },
+ "56bf589e8bac2e483b3f8a47259188a36ac9d135413bb936cb2242812c7e7078": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "pending",
+    "quote": "Triglycerides elevated on a nonfasting specimen."
+   }
+  ],
+  "quote": "Patient to return after blood sampling and availability of the result for review and management planning.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5876
+ },
+ "5896193e8e0e62f2069d7794ac66822cea802e49fcb7ecde00ececce5a2a7774": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "markedly elevated glucose result noted."
+   }
+  ],
+  "quote": "This result needs immediate attention.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 3480
+ },
+ "61496c93d35822cbb1109940946ed7a23d6688953007ffec728812fb1a8c3e92": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Screening BP 158/96 mmHg. Today, after seated rest: 156/94 and 152/92 mmHg."
+   }
+  ],
+  "quote": "Hypertension confirmed on repeated office measurements. Start amlodipine 5 mg orally once daily. Discussed ankle swelling, salt reduction and regular walking. Record home BP twice daily; review in four weeks with renal profile.  ”, 2026”, “March”, “16”, “16 March 2026”, “IFHAS screening of 02 March”",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 13228
+ },
+ "705af4983a941473f1c8ff863b1add6dd7568004377e779d5b4df2a3e5c5033f": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Patient reports raised glucose reported at IFHAS screening on 8 July 2026."
+   }
+  ],
+  "quote": "Repeat fasting plasma glucose to be arranged through the clinic. Booking remains pending. Advised in-person review after the result, or earlier if symptoms develop.  ”, 14 July 2026”, 1979-03-18”, 8 July 2026”, 14 July 2026”, 1979-03-18”, 1979-03-18”, 1979-03-18”, 1979-03-18”, 1979-03-18”, 1979-03-1",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 14470
+ },
+ "716fb59dc93523d42a4449f1a776cc9b40219a0d826c0955057f5994d27d6420": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "clinic BP at that visit was 148/92 mmHg."
+   }
+  ],
+  "quote": "Home BP is normal. No hypertension diagnosed; office elevation consistent with a white-coat effect. No medication indicated. Continue healthy diet and activity; repeat BP review in six months.  ”, 2026-07-22”, “Reem Khalifa Al Daheri, female, DOB 1980-11-08. IFHAS screening of 2026-07-08 reviewed;”,",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10843
+ },
+ "7fa16c660d17459220e20229646201e8616cb7df8f5585ec8dd66bbb1313bbba": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "repeat HbA1c here 11.8%, confirming diabetes"
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Random glucose 328 mg/dL, with thirst and polyuria"
+   }
+  ],
+  "quote": "Started insulin glargine 10 units subcutaneously nightly. Injection technique, glucose monitoring and hypoglycaemia management reviewed with teach-back. Telephone glucose review in 48 hours and clinic appointment in one week.  ”, 13 October 2026”, 05 October. Outside report reviewed; repeat HbA1c”, ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8291
+ },
+ "80db54a302877f9552f79ef5dd81c4b1e695ffcdc8625679072b1ba00ace4239": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "Weight 94.8 kg; height 162 cm; BMI 36.1 kg/m²."
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "Referral placed to the multidisciplinary weight clinic."
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "Dietitian plan commenced today: replace sweetened drinks with water, use a portioned plate at main meals, and record intake for one week."
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "Agreed gradual walking programme, initially 15 minutes on five days weekly as tolerated."
+   }
+  ],
+  "quote": "Referral placed to the multidisciplinary weight clinic.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 14156
+ },
+ "86fe78527cd58cf1fa63e2234f1df54d86bd1d304cfc0891d8330170b80f2e3c": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "This year's repeat values are normal: HbA1c 5.4%, fasting glucose 94 mg/dL."
+   }
+  ],
+  "quote": "Continue usual activity and balanced diet; routine annual review.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8115
+ },
+ "8e59801e5c147e962a69f98d75a66dfe086fd07d3498fe5946549428fcec5569": {
+  "attendance": "did_not_attend",
+  "findings": [],
+  "quote": "Reached by telephone; patient reports unable to leave work. Rebooked with family medicine for 28 October 2026 at 10:40. Patient confirmed attendance. No clinical review completed today.  ”, 2026. Patient confirmed attendance. No clinical review completed today.”, 2026. Patient confirmed attendance. ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7649
+ },
+ "8e716a1558033b40e6667ec1f63ba7033d7efb761b541f0e0e01356047022954": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "plasma glucose 92 mg/dL (70–99); HbA1c 5.4% (4.0–5.6)"
+   }
+  ],
+  "quote": "Discussed balanced meals, limiting sweetened drinks and at least 150 minutes of moderate activity weekly.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8766
+ },
+ "8e8f2da23a323d74a40c138a35b1a841343c600a1b853522777183d1d8da2b4a": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Type 2 diabetes mellitus confirmed."
+   }
+  ],
+  "quote": "Results discussed with patient. Plan to follow.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 4219
+ },
+ "90e416f5dd74bfb04c72030ce9f09a97473d8919eec17f3cec43e657a9ee23a7": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "mild trapezius tenderness"
+   }
+  ],
+  "quote": "activity modification, warm compresses and simple analgesia as required. Return if persistent.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6596
+ },
+ "91f3b97c4f740d2684f4921abe8dde6a1fbbd0b0af7f8f05e700b68c35a238c8": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Type 2 diabetes confirmed on the second elevated HbA1c."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Start metformin 500 mg orally with the evening meal for one week, then 500 mg twice daily with meals if tolerated."
+   }
+  ],
+  "quote": "Review in four weeks; repeat HbA1c in three months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10709
+ },
+ "a210d3258a86226cc64175ae853fa8b735b0677ba7a9042b6a8aeed7200ef02b": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Raised glucose noted."
+   }
+  ],
+  "quote": "Dietary advice given.”, 22 August 2026, ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6393
+ },
+ "c4717e844c5eb5596ab92c3f661f8d0df881774b6a6ce69efeff4e9a06416e1d": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Hypertension: taking amlodipine 5 mg daily; clinic BP today 148/92 mmHg."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Repeat fasting glucose and HbA1c requested; samples not yet collected."
+   }
+  ],
+  "quote": "Review BP in two weeks; review glycaemia when repeat results are available.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 9327
+ },
+ "c7a3b938abd708c5d726ca1fbe0e2ca5b41a89f008e8f9a6f44a1967f0ccc608": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP 190/118 mmHg; repeat after seated rest 188/116 mmHg."
+   }
+  ],
+  "quote": "Admitted for observation, serial BP measurements and reassessment. Amlodipine 5 mg orally commenced today. Avoid rapid BP reduction; review response and renal profile during observation. Discussed findings and admission plan with patient, who agrees.  ”, 2026-05-19”, “Hamdan Rashid Al Mazrouqi | DOB",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10717
+ },
+ "cb68d7a66ba44d4d6f0d3f0ec12cc51fcb7ac9ab4e453b387fd8e5f6907f80a8": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Clinic BP today 146/88 mmHg"
+   }
+  ],
+  "quote": "No medication commenced today; decision deferred pending home readings.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5330
+ },
+ "cc8952042398b1867f91faf547d656b8f0629197661b8ddabeb88274bfe1c23a": {
+  "attendance": "did_not_attend",
+  "findings": [],
+  "quote": "The patient did not attend the appointment following abnormal results at IFHAS screening, and a follow-up appointment has been scheduled for the patient to discuss the results and arrange for repeat testing at IFHAS screening, if required.  ”, “The patient did not attend the appointment following an",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6915
+ },
+ "d3a44cb5722542619aa240438994556361a1c8a4f545be7717d34a01702b5eb4": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "BMI 36.2 kg/m², consistent with obesity, and associated health risks."
+   }
+  ],
+  "quote": "Patient declined all referrals and does not wish to agree to any weight-management plan or scheduled weight review at present.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6340
+ },
+ "d7cee1bbe413efa41e8abeb2bae20daee108a3719c3bb3b6948db4cf110186a3": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Home readings over seven days average 153/91; today 156/94, repeat 154/92."
+   }
+  ],
+  "quote": "Discussed hypertension and cardiovascular risk. Start amlodipine 5 mg once daily; counselled regarding ankle swelling. Reduce dietary salt, continue home BP diary. Renal profile requested; review in two weeks.  ”, 2026”, “Yousef Abdulla Al Shuwair | DOB 14/02/1963 | Male, 63 years”, “Screening BP 16",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10293
+ },
+ "dfc732e7ac6dc57265da0df7e26c208783f70bd2a389e69333a8fa25b899a7da": {
+  "attendance": "did_not_attend",
+  "findings": [],
+  "quote": "Two telephone attempts today; no answer. Unable to leave a message. No clinical review completed. Recall task returned to booking team for further contact. This visit did not occur due to the patient not attending and attempts to contact them failing. The booking team will be contacted for further. ",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5063
+ },
+ "f4aa760f2b6bef98358fd592caff6eb1f8574259becf22cd2011105db1d9f2db": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "repeat fasting plasma glucose collected on 14 September was 94 mg/dL (reference 70–99)"
+   }
+  ],
+  "quote": "Patient informed by telephone; corrected result read back and acknowledged.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5821
+ },
+ "fa62ac0d81e94d7f7c5e53fb6c7cdc5eedda65c6d7613180da9e0f7310494f06": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Findings are consistent with a white-coat effect; no sustained hypertension demonstrated."
+   }
+  ],
+  "quote": "No antihypertensive treatment indicated. Continue usual healthy lifestyle measures and routine rescreening.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6595
+ }
+}

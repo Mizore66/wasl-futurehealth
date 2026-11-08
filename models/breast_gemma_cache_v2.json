@@ -1,0 +1,1713 @@
+{
+ "00eb0aef3780c62559ab615f04918c38f87208456fb5e5acb1c047adeb0f5858": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "Left breast: technically inadequate: the pectoral muscle is not shown on the MLO view. Technical repeat required before a final assessment can be given.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6137
+ },
+ "00f304a0d168566b6c7c50c4a455ee760fc6ad96b40fe3b7c25f214d833ccdd2": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Return to routine 2-yearly screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4638
+ },
+ "014c61444499c9dc7358569ce94d29aa2837426dba6aa7781670e3ea2cfcc3d2": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5807
+ },
+ "019a832514303f448b55ed9f809ab2053f949328db99f26710e920819f8fa80c": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Right: no suspicious mass, calcification or architectural distortion. BI-RADS category 1. Left: no suspicious mass, calcification or architectural distortion. BI-RADS category 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7465
+ },
+ "03130acc77e66a6f70b5ae6818b4e1a5eafdf064c2f0a6ec2eeb6cf8aeccc2b4": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7737
+ },
+ "05bd25e06f3e0eca4ac62731e5550a50ee8f636fa862bb86d39df37b37749d6c": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5444
+ },
+ "07965a219809710701cca15a2a7d87dd44cc918c6a37c6ae8741bfca8b2e9100": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Final assessment: BI-RADS 1 (negative).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4629
+ },
+ "08ac7889495624bfa711c4beb9fc8ed738661b38b545626a4323fb04057ef8a3": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7782
+ },
+ "09ecea84846c5d2476cfc8136ea82a35cd9fb7b92fbd30d4fbadc4b4aa2930a5": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall letter re-sent and GP informed.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4546
+ },
+ "0ce666dc3621428b289368b7f59b3b68e25a045c73e3063d61aa98f0290f6cc0": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5669
+ },
+ "0f327b5722b2371949912b96554bd6d8d7ad9c1ed25a2e98f2001ed58fa9ba6e": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Patient did not attend her breast assessment appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4175
+ },
+ "0f39c3747d0d8d493192144b79bbb4e2dab61f870a4a567356f348d6c998a852": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5609
+ },
+ "10d2696bd4d6aea00a8e78f52e4397045cad7035ea5c7efe7a4b4fbbb3cc4d1f": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT recommends surgery; referral to the breast surgeon sent today.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4937
+ },
+ "122ab9a3b0087fca424ac26591527f39a19ddfc878607e25925faf6a81b1fdc4": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5114
+ },
+ "135bafef27fc851e9ddbc337f4296b17c939e69389442cbccd70ab3d6631dec7": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "Technically inadequate: posterior tissue excluded by positioning; pectoral muscle not shown; repeat acquisition required.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6843
+ },
+ "13d21d299dc4f8d155d54208937648e36050fb785d461efb0d37ad0135e20933": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "0",
+  "overall_birads": "4",
+  "quote": "Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4C.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5992
+ },
+ "1bdda2268563216eb1f5122bc92a41e0bb4147764132acf527c06b74e7bdf7d0": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "4",
+  "overall_birads": "4",
+  "quote": "Final assessment: BI-RADS 4 (suspicious abnormality).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4914
+ },
+ "1c31243a1d9eaffc6e74dbe0e53da0eb82401b1c32387648047a45ae5f8386bf": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5024
+ },
+ "20e21b5e25472350f7016eca8fca6da089e601cfc962e77a05792c7b7f59ecab": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6386
+ },
+ "2186f1096d02a681dd93d558769b13faa625c174b53a968e336deee057ecce20": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Rebooking offered; assessment and management decision remain outstanding.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5324
+ },
+ "21c05ba95cc153f2716a013366901a17fdca7e195ac97297691c8b427cf14407": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4875
+ },
+ "261ea5f3be66a60c757c9305e7f2f072145f0d27c10fdc4f770e1bfe20a7da42": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT recommends surgery; referral to the breast surgeon sent today.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4986
+ },
+ "2782d3d6a9ece5cd8c3dac3dafd00fb07addbb38e0b0ffb99ff2449452d156e4": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "Right breast: No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6549
+ },
+ "279a77dd20eff170b9d03296b1453b07ba7e79b16bf18f5e3a5045134aa8ec3b": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Left breast: normal fibroglandular tissue, no focal lesion.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5743
+ },
+ "27ea2f0c7feb713530058bc800f803bc0529995d4baa5a565d255af8ca143158": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "pending",
+  "quote": "Management remains undecided; the benign result does not authorize routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5412
+ },
+ "2a67fca089e69ea05097aa67c68533fe5d2a6a7c9555ede01f7395ee8b77d446": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6763
+ },
+ "2caea0c1b4fa7bc73e6008676d34427ad4ca92da3e4e5b08fb3b57a247b29a56": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Return to finish diagnostic imaging; no final screening or treatment disposition has been made.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5385
+ },
+ "2f59a007e014f40156a5a4542a97c5416263367ff5059b06f1c6dfe89f61a16a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6410
+ },
+ "2fa01565dff7ed2607d1691a06699ef6c505f43e5c889b13f894e4b00e694f80": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6020
+ },
+ "32374966a844732a448266ef100cae7a78d23d763fac5dd0f7e3b476f943d753": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "RT: Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7512
+ },
+ "366e48036801cc927df96bfd0eab0ff8477567efb19132d1e5a0ab9d88e9574c": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6048
+ },
+ "37dded1351330c4baf63f0df4c2ca05ae89d1836910f761b3778753e50546547": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Results awaited; for discussion at the next MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4592
+ },
+ "39c2859b45099ba402f09db03b6a0d3d5768cf84a777a5edd441517aa1cca76a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "further imaging with breast MRI requested before a decision.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4587
+ },
+ "3a6539c1668f6dc87147245da55f619130cfc20397d6e2791949b57cd2ab2781": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5524
+ },
+ "3d4a4138c2dc9270c24576993bd67489ebf1fde8d29ef31514df5c7bc8389b0a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "No final management decision; review once current histology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5404
+ },
+ "3e256a361be0f1f64b9040219cacd34325bfad10965e103fe8e8532bd214307d": {
+  "kind": "breast-screen",
+  "right_birads": "3",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "Recall for further assessment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3867
+ },
+ "3f4a667d135e91e71e73a8992782e0788f741eaff0f0916da58045d00de68956": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6356
+ },
+ "41baac2aa11deb95d13be0095611661736444586f31f41d30d8106476457921b": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "RT: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5867
+ },
+ "42372e22732eb4e3f842d4c3b75c9eb744725054363384a86b4fef9186b947d6": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "Left: an oil cyst with rim calcification. BIRADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4222
+ },
+ "43d844353246bbc0a55cf7587b29dc39c95b4c9a2319b47065528925da4963ae": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "RT: technically inadequate: the pectoral muscle is not shown on the MLO view. LT: technically inadequate: the pectoral muscle is not shown on the MLO view. Technical repeat required before a final assessment can be given.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5846
+ },
+ "4512bf1b14500c253ba863c73626ff93a047be0cdd1a0ce240294f2476ae769c": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "BI-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4707
+ },
+ "4a365a7e4cfdcf27e205b857a8f31251d87a5b2f1b9c840adf442cac49484b7f": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "Left breast: normal fibroglandular tissue, no focal lesion. BI-RADS category 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6620
+ },
+ "4a416b339a7820bb71bcc239c21e8c882c9bd1eedc5cddf54cb908ac1f481e7a": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "3",
+  "overall_birads": "3",
+  "quote": "LT: a circumscribed oval mass, probably benign. BI-RADS category 3.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4967
+ },
+ "4a4a05d097fac53af4de4b149fa108363d08d79a65239b0bec8431442939787f": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Six-month early recall mammogram arranged.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4046
+ },
+ "4a86b13a647608aba3d40151a8b3b06babc735233fac758f504e639d8f0163e9": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "Assessment: incomplete, needs additional imaging evaluation.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4546
+ },
+ "4abd809fee0b5a0bab4d1aea4775f9c656efea3377847853b2f14cebf4cf536d": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "4",
+  "overall_birads": "4",
+  "quote": "biopsy advised",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5391
+ },
+ "4b471cbc0c28a6353dea6d43eff77c2a5e12dc76cccd165b739a4d3e78df644b": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Rebooking offered; assessment and management decision remain outstanding.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5333
+ },
+ "4bb9b4233ce8a5604f57f6ea295728e239940d72703cebf749f31c07065732f2": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "referred to medical oncology",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3293
+ },
+ "4f1a9841fd3f531c2239e91843c2dca3e7b9aabd663d37ccecfec1e4e5d3891a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "counselled, to return next week.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4677
+ },
+ "4ff757098d634740427e5f464b0e55b2fed02b1dd65cd084cd2268fe3a89cd79": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "invasive lobular carcinoma. Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5744
+ },
+ "506fda28d4dfd5a212e7d1318430975a435356813cae692f5f67471d5c48c659": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "No BI-RADS category assigned to this breast.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5573
+ },
+ "519e28e18e5224b7463989e41e6b5ec59f18ac4cd3a465ef403e51705b8a56ab": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "الثدي الأيمن: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6678
+ },
+ "5395c4fe26caa87b3661caa25d4c3cf9f9766da91c797357aeb20246d0d871cd": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6400
+ },
+ "540a118e11cfa4344f28a87f7e0ffff08517bef1d2772f0083dc7a40ec785021": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "LT: normal fibroglandular tissue, no focal lesion.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4662
+ },
+ "544ab5d36d26367ced44d94a3df94ab85bf6c87886fc47d521803c7aa954ca60": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "pending",
+  "quote": "MDT management discussion has been deferred pending completion of staging and patient consultation.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5553
+ },
+ "56e3fec580337b8cd35c54e1e4d106eff89d18c4ed23975008196b74d01f66d5": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "1",
+  "overall_birads": "2",
+  "quote": "RT: Benign vascular calcification; no suspicious lesion; BI-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6576
+ },
+ "5b890b6fb130ee6cf454a62425a972a1deb2fc57a0563feb35498077d9ae4f4d": {
+  "kind": "breast-screen",
+  "right_birads": "3",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "this breast remains incomplete; BI-RADS 0",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5461
+ },
+ "5e6ab5f80fac1635c6a19e2dcde08504f9491f6b5693da7f96329bfabd825812": {
+  "kind": "breast-screen",
+  "right_birads": "5",
+  "left_birads": "5",
+  "overall_birads": "5",
+  "quote": "Highly suggestive irregular spiculated mass; biopsy advised",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5462
+ },
+ "5f1556435fa8a08227e02eb2ca13bdd987cf11b0b52adb67c22dd911f64e14bb": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "Coarse vascular calcification has a benign appearance. No suspicious mass or malignant calcification; the benign finding is retained in today's assessment; BI-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6688
+ },
+ "5f296cc1d0bfeb317671992e6b6f402bea06a1f27ef614eb013b129129326ddc": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "MDT: short-interval follow-up mammogram in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4889
+ },
+ "610eb4306df448773dcc43f0ea12f34dcc5f00f94a931b79cb847301a3e2cd09": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5524
+ },
+ "6138b41222ddf198cb6b0338f4c1830fc435851c990268cc720a6466fd5f16fc": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "No suspicious mass, architectural distortion or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6097
+ },
+ "656bcf514309a9e87d36d3f57258f9568460433657bdf5a2288841b8bed9dd2c": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT recommends surgery; referral to the breast surgeon sent today.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5020
+ },
+ "663addda132e909ad10e28f792ae50096f2eac32b435a3ce1ede8263e7fe3a5e": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6018
+ },
+ "683ef6045d883da0aeb42ad9ece77e1b1bfca5ca3968aa6f4d558625668c2ccd": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5830
+ },
+ "691fb9cf443aa268abe94f3b6827f390a5f52012ca579027681674306291853a": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "4",
+  "overall_birads": "4",
+  "quote": "Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5858
+ },
+ "6b023839d4d6cc786ead57a9a180b0e5afa1d58f557a4377f2d64fcb2eb6ef8d": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6056
+ },
+ "6cb8a22e259c00d878504c0922a6194875412637de4017f4bb050168254da1fd": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "5",
+  "overall_birads": "5",
+  "quote": "an irregular spiculated mass 18 mm with skin tethering, highly suggestive of malignancy",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4822
+ },
+ "6d6fcb0f2198ce4917bf94fecbd42eaefbca5d6129b5ca3b127e8541e727a917": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "no suspicious lesion",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3845
+ },
+ "7516e47927a973b1ce70b676f8addea5cd4625b86335b6772155306224554639": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6069
+ },
+ "762cd549ef1336fe8db6479d5d938ed2a02bda8b9aca41aa53990524633d2291": {
+  "kind": "breast-screen",
+  "right_birads": "5",
+  "left_birads": "4",
+  "overall_birads": "5",
+  "quote": "Final assessment: BI-RADS 5 (highly suggestive of malignancy).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4745
+ },
+ "7693e8d9273dc911a07c289eac603d42c248d1dc46891dd0c85bf3721b4ea92e": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Discussed at MDT: further imaging with breast MRI requested before a decision.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4800
+ },
+ "7934c7068473523f5adba51e8ab61652bd39e2b1abb18d58b62bf6d09e21accb": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "4",
+  "overall_birads": "4",
+  "quote": "Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5614
+ },
+ "7aacd3b5d6371beb53c725bd0e53d9103bd3e3fb5be57db0ad57417895e62103": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "الثدي الأيسر (left): an intramammary lymph node in the upper outer quadrant. Assessment: benign.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5191
+ },
+ "7b3e19b8ec742295b85f493f2f2506b5f55198d16444f856a8be70be48b89916": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5498
+ },
+ "7d7739e60d15320cd30181bbb9c41a849cd24c8fd8e26bf5209d0275f27b4e94": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Results awaited; for discussion at the next MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4824
+ },
+ "7e894911b2e6adff8a8df20ba09184a4b44a0f255016cb6ccf150fdb11deff8e": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5462
+ },
+ "810cc963abb2af77eabe8102aabd089daa63d5272a51527228fdbcdd2f434faa": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "this breast remains incomplete; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5553
+ },
+ "861ad6e40ad2d8358bbf13ee52a5281741e5cf7e8b28c19321e9461f9a9e82aa": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "Left: benign vascular calcifications. BI-RADS category 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4932
+ },
+ "8740165f376b1faeac1e8539bc54d0dbb657fa431a8b14fd732488278468285a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5649
+ },
+ "87e4f000837eb4bfefe6a50971fc030dca326b1319f0a2211eea601e4c3ecb85": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4849
+ },
+ "87e78118f27abe1f02e0db3c5c0d632947a33227907642b0944ff026192dc979": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "1",
+  "overall_birads": "4",
+  "quote": "Final assessment: BI-RADS 4 (suspicious abnormality).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4943
+ },
+ "883b221b0bf895587ee6639c0a98f265823a82dc6a5fd3731a3ec8f3eb627622": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Results awaited; for discussion at the next MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4710
+ },
+ "888dba63a014350bbaf2ad5771458d6e30d6f5d666d287e04b20b9ea0f8b36a5": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6445
+ },
+ "8a7d1de37334e1fba49f1afb2ef155ac9f59091152fd6ee52dec01ca7f11c7da": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5859
+ },
+ "8cb2eee2fd747a34788c4edd854f38e852384cf85c88548ce436fc4885649e63": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "1",
+  "overall_birads": "0",
+  "quote": "Final assessment: BI-RADS 0 (incomplete, needs additional imaging evaluation).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4870
+ },
+ "8fecdad17c9ae683b5fa9d2b3a6611d71a15cf7d23bbdfad377109941bae2701": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3796
+ },
+ "913719aaf8acbf981bfc761726f98cd4b31ef11057721da5735afb50e1d5a475": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT recommends surgery; referral to the breast surgeon sent today.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4833
+ },
+ "91ba2892a935af7f46191262fc25bae6e524c9a9e942e74058991e79d3d8d2cb": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5452
+ },
+ "9284a70cfca64a433af1967c42fd8c916249c2b14f8f29c686dd02761156254c": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "4",
+  "overall_birads": "none",
+  "quote": "Grouped pleomorphic calcifications are suspicious and require stereotactic core sampling.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5657
+ },
+ "93f9c26addfbabbbd1da775a213cbf1698db57cb71deae604c49c160e6957baa": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4620
+ },
+ "96cf079a9c2108b033b44d7d603bd1403100cb98ff52e4d8424b2771f65800a6": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Results awaited; for discussion at the next MDT.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4607
+ },
+ "99e9b1247c6644615595f6acd6754c9588d67be90012743a822e89173f773236": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "Discussed at MDT: neoadjuvant chemotherapy, referred to medical oncology.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4989
+ },
+ "9aaf706ae949f953aec35e01f97ddd3f4cbcf150baf09d3fa2d24562f9027e41": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT: referred to breast surgery for wide local excision and sentinel node biopsy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5177
+ },
+ "9b60cfd73cc5dd0d9bcd6dc48323a5fc6bdf31718e7af7299352b53f7b01eb90": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5716
+ },
+ "9be0c30174127c4e6729d4969c690a154201af462bfaf17d59841c256db87daf": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5453
+ },
+ "9c98db3c5c22e57c4ca0bb1a1ff54698c3cbff925dfea115e4cea5ebc3cd0e5b": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Right breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 9931
+ },
+ "9ccd57016c0e5a862e07c47b10702dac72aedb5af609a172d021551ac64fe444": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5809
+ },
+ "9d019538a4d838f3ab77fc3b2a8d36ff01c01c3914268aad6a08c5dbeb399847": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "pending",
+  "quote": "Management remains undecided; the benign result does not authorize routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4613
+ },
+ "9d9e0f426925fdc3eb3e301410c864d5f18964c8858acb7325181ef0bbce6a12": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "counselled, to return next week.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4841
+ },
+ "9df8a0488be22b635b798962fc93d36eb38fc3cd23c113cd75d178669ebf3c86": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "MDT outcome: benign, return to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5217
+ },
+ "9ffad523444bb23e0f5b36b32abf7f3830e4e96b5540dc86e7722a284ccb19e9": {
+  "kind": "breast-screen",
+  "right_birads": "3",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "category 0",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3926
+ },
+ "a42968aa4a894d5ff385891114e8e7cec3845a158c5e4f7b504349a8e051b3bd": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "Final assessment: BI-RADS 0 (incomplete, needs additional imaging evaluation).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4905
+ },
+ "a43b46346458e37b5ad0bbbdfe647c32dc1b641be9699905f8e8603f4c1034e7": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Return to finish diagnostic imaging; no final screening or treatment disposition has been made.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5420
+ },
+ "a5599b406c6a2a0487b3fb7404a974d62e3f6ceb1d3651aaa3a3828f11ca7ee8": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "MDT outcome: benign, return to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5467
+ },
+ "a6081196019d0d9a5e16a89f5c1df3517e0787a32981bed748e567b431098198": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4641
+ },
+ "a65b2bbd61b5747f39a474fda865b2edc5f20ebd0e7de301ff2da3660bf1e32f": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "Right: a focal asymmetry in the upper outer quadrant seen on the CC view only. BI-RADS category 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5702
+ },
+ "a71a54f6e3c11258e3512935b820edf7a16c78185855ffca320ef92df1830fc2": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4872
+ },
+ "a882db71069dc65ea35c546bb91f13722c9b60462b59c1a69cd000a39d5591c3": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "MDT outcome: early recall for repeat imaging in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5014
+ },
+ "a8c78e1984cc7f895c3857f7417e65dc55f27ab08755dca9faa3718b9e8915b3": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "MDT outcome: benign, return to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5352
+ },
+ "aa73ddca5ed68cfa35b958d9fc253b2634bba55a6ecb667787870b2ada0f676d": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6082
+ },
+ "aa811268d92e0fe1f160eab253d81b372a8b104b6d413fb88a33f7cbeff1e940": {
+  "kind": "breast-screen",
+  "right_birads": "5",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "Right: an irregular spiculated mass 18 mm with skin tethering, highly suggestive of malignancy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4968
+ },
+ "ace538807c4d1ee391c51da09bc42710bc3f8d7b74a6ad559814410416a10c44": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "No final management decision; review once current histology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5348
+ },
+ "aeddc6a4c51fd65f023960ee51e92ba87c003bf75c10616b50f10390e82b0ffa": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3766
+ },
+ "af33b56358494b7a931550eed511173f8c1a84964b2d38883dff6026a73ddb3b": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6848
+ },
+ "b2c8dc3916d84c515713d42d89bf03553d9de96caff2a14219d4f3c3b20355ad": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "Assessment: incomplete, needs additional imaging evaluation. Recall for further assessment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4932
+ },
+ "b467d5e2ae63dd1aefdff69f51e707fac5ead0bb12509746c55897bfba0c89c6": {
+  "kind": "breast-screen",
+  "right_birads": "3",
+  "left_birads": "1",
+  "overall_birads": "3",
+  "quote": "Recall for further assessment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4502
+ },
+ "b752188b072883bea8db80b9b85d2a63a57af8deb9773558f1ea502cf9544fc9": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5451
+ },
+ "b8c20ce6312d347b74cf580f50f54166e963b978a01d4aa822d015b3855bfda8": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "4",
+  "overall_birads": "4",
+  "quote": "Final assessment: BI-RADS 4 (suspicious abnormality).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4271
+ },
+ "b90788803c132746358af1f6bd85531cbfec3724065d697b02b1077b9ce218f6": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Discharged to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4621
+ },
+ "bb4da0a214910a2a5fc99a705d77b90f82c4bfb5539e5a2408423c88206aa617": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "Technical repeat required before a final assessment can be given.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4700
+ },
+ "be3f000e6b16a3f8eef63b42b2c04c8f30fe9acd515ac14e76334d84452ef170": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "RT: a focal asymmetry in the upper outer quadrant seen on the CC view only. BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5918
+ },
+ "be473e40e568f85ce12666443cd5db855f77f0e457f3dd0a6b0b51457170c39f": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5450
+ },
+ "be56ef78c064795831874948347f5efbfb18a2e930ccad9401d10f43b3967b73": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "MDT outcome: early recall for repeat imaging in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5451
+ },
+ "bf2f3ba8acd62bfb50a98a5bf72b04ac89fc4406535d48b2ba422c72652e0e0b": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "Assessment: incomplete, needs additional imaging evaluation. Recall for further assessment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4765
+ },
+ "bf54ee3315f40d7ea331250f38e842cb70750209a8dc09e99e8c088e01b86608": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Right breast: Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7548
+ },
+ "bfe471c52cec4dc736e25aa47bf04d164c0f6db1c93b6224baba333c7539a95f": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4848
+ },
+ "c0eaf5af8f190309fcd100bdd2a8f113fdd53346127d38fb0b2a5e4941a85bf8": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "Left: an intramammary lymph node in the upper outer quadrant. Assessment: benign.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4948
+ },
+ "c18c499065b84bdf94df479f902a6668b07bea059f0a31cb533b67c29f2aee5b": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Patient did not attend her breast assessment appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 2614
+ },
+ "c4df8e7804f673537b1c1529a8498088ff24275886709c56e78eca593e82a83d": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "Final assessment: BI-RADS 2 (benign).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4272
+ },
+ "c75d5c6e2cf60abcc93065e5494c4b9c349dae2ffbfcc99f60dead31f1685bcb": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5887
+ },
+ "c8ae03f84ca156a74bb7154b981def7ac81140b5314157c1d82b074dd243fc55": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "3",
+  "overall_birads": "4",
+  "quote": "R: Suspicious grouped calcifications; no suspicious mass; biopsy advised; BI-RADS 4B.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5977
+ },
+ "caca3565b79a627697d1d66b3bac766f90e177457f74e15c28ce8634967b84cd": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "No final management decision; review once current histology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5359
+ },
+ "cadaf2f9f39c28d98c061353ebb71c5bc06fa04623d39d3704822160b4a52603": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "Left breast: an oil cyst with rim calcification. BI-RADS category 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4897
+ },
+ "cafacb73d6d20730699dbb95a12cc35964e6a342fd9ca8b45d5e1f5eb0c82ef3": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Return to finish diagnostic imaging; no final screening or treatment disposition has been made.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6123
+ },
+ "cb14463176f3377dc0a611305676a7c97d0a5264d48effe738db3a3ab34cd9d6": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "counselled, to return next week.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4517
+ },
+ "cc7fcd719f93de3f99ed57bf971a3be81546a4f1a3ecbd892bde0dd0d21f7ea4": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision: refer to the breast cancer surgical service for definitive treatment planning. Referral has been issued; this is not a surveillance-only disposition.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6596
+ },
+ "cc9b95168dddf03fba7cce56c4115cccdba5b303b4d6aa4c79213132d9400241": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "This breast remains incomplete; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4891
+ },
+ "ccba6088e626bb2f7e80f330ec0eeae2b98d59708abbf4f5e164948f2932d9b5": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5495
+ },
+ "cf2b4dfb75567ce4c516e8cc1fd7bebc77ecb0546e58d5f01e97c1c5c77da544": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "1",
+  "overall_birads": "4",
+  "quote": "Right: architectural distortion without a central mass, suspicious.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4806
+ },
+ "d0dcbc387cf67d4a02b2c7a4246b884259ed744952d64aaea6e0daf55db7babc": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5454
+ },
+ "d189fe159e03cb3d3d2ac02935eb0947d583197daa72a3250c32ec4fa163d4c2": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "5",
+  "overall_birads": "5",
+  "quote": "BI-RADS 5",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4631
+ },
+ "d1fe71266a02302d6fde03970a93e87f735a7b305e56676cfc31d92ed9f490f0": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "1",
+  "overall_birads": "2",
+  "quote": "الثدي الأيسر (left): normal fibroglandular tissue, no focal lesion. BIRADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6456
+ },
+ "d583b959a182a057e7fbdcbebf2c308252eadfe362ffbf0bcf1a9ea1071e773c": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Rebooking offered; assessment and management decision remain outstanding.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5257
+ },
+ "d6e0c354fc95b59bee13c2ba86b809a8deed193f49438f9180e49d0cf0e9b05a": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "1",
+  "overall_birads": "0",
+  "quote": "Right breast: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5964
+ },
+ "d775d4104c6ca2d49e0eaca9e567c510ac0e25fc5c4b68b5f8932a0915562901": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "No final management decision; review once current histology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4731
+ },
+ "d792d95122022d78ff724ecd0b83ea2d5795b36cb547ada2ab05b7dfaf46441a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "MDT outcome: benign, return to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4701
+ },
+ "d8880a8eea52b6f523c21483541d79ad41e24a38c5cc35ae399b6f16311acaea": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "this breast remains incomplete; BI-RADS 0",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4938
+ },
+ "dcbc56cc1a1b7aa1ca89be249ddbe0e5577bf9e75e72161d58d7dbac2962ffca": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "2",
+  "quote": "Benign vascular calcification; no suspicious lesion; BI-RADS 2.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7223
+ },
+ "dcc276e74d834cc1c22dc7a0eac836211fec60e0b52f9a671e436d4d1779b7a8": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Recall remains open; a new appointment is offered. No decision yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4169
+ },
+ "defa94b5b1de517f575800f39e59db481bfec22416a5879df5a79a31e7f8917b": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "1",
+  "overall_birads": "2",
+  "quote": "الثدي الأيسر: Negative; no suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6033
+ },
+ "e15a7230aacaf16b0a14fdec35d6e1af1325cac4d30852e418550af485191193": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "RT: Technically inadequate: positioning excludes required breast tissue; repeat acquisition required.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4820
+ },
+ "e2bbbfa3e46e27566a1f1ff5fb3db36c2460e0750b6d5e4f08b41f80e02d7eab": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "Assessment complete: return to routine breast screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5756
+ },
+ "e2fb20fae7a299faa6a04abc66152fedf7eba9fa597fec028e82ef4131ed3db1": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT: referred to breast surgery for wide local excision and sentinel node biopsy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4915
+ },
+ "e3f02e473b8e82bf6f795d3de049fcd8f44affa8b4fe1ee1316351362e841bd3": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Our decision: No final management decision; review once current histology is available.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5369
+ },
+ "e50a9f9b6ea2d96907b1c0a8a12c2817515e05b43337aa51103a395059cfb44c": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "4",
+  "overall_birads": "none",
+  "quote": "Assessment: suspicious abnormality.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4560
+ },
+ "e552494fe6c986378bc6eeafe8a0d4b2bab2d38c020c8c23c1df20e0c2249eb6": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "pending",
+  "quote": "Failed to attend the diagnostic breast clinic today. Rebook as per policy.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4701
+ },
+ "e785bc4db1542289931d26a123db18c05e788ca2aec13d66e528efc5d24afd23": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Recall letter re-sent and GP informed.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4550
+ },
+ "e9479d94a285c5e6b87240c4c9b0d1060fef05dcb07eb142ecc1df222d81eca7": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "الثدي الأيسر (left): no mammographic abnormality. BIRADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5411
+ },
+ "ea887efd36e6872eb3aa4fc28e22eca3143738783c6ec8d559731057739abcc9": {
+  "kind": "breast-assess",
+  "attendance": "did_not_attend",
+  "assessment": "not_done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "Patient did not attend her breast assessment appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4742
+ },
+ "ea90a9b104e455cb6849a61881639e49e6c1f2d53324d8c4463ba496ad391485": {
+  "kind": "breast-screen",
+  "right_birads": "5",
+  "left_birads": "0",
+  "overall_birads": "5",
+  "quote": "Highly suggestive irregular spiculated mass; no suspicious calcification; biopsy advised; BI-RADS 5.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5866
+ },
+ "eb2cdbaf5773bd09f4e72f22466d9e51349efe10a827b6a3d457889ce5530de3": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "1",
+  "overall_birads": "2",
+  "quote": "Final assessment: BI-RADS 2 (benign).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4720
+ },
+ "ec997ed8d7fd0ecb344d30f60ef200bb10d37b32cbccae3910be7d5ae588433a": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "pending",
+  "outcome": "pending",
+  "quote": "Core biopsy taken today, histology awaited; provisional referral to the breast surgeon pending results.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5027
+ },
+ "edee827aee7dc59b4ff499626e05e4cb4e121592cc7338aab61635d29ececba7": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "none",
+  "outcome": "early_recall",
+  "quote": "MDT outcome: early recall for repeat imaging in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4971
+ },
+ "ef253febb7d7fdabefacca7d04bb11cfaee16ca06933699f280499dc0a13ff66": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "2",
+  "overall_birads": "none",
+  "quote": "LT: normal fibroglandular tissue, no focal lesion. Assessment: negative.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4331
+ },
+ "f062b94d74fd943283afbccfab7c29f29987eaeedc165695225880c47ab0c1bb": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "No suspicious mass or malignant calcification; no focal abnormality; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 7781
+ },
+ "f6692a12194a092f99d450f858edae9bfa986c6c6114e6d85385d520e47f914f": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "MDT: short-interval follow-up mammogram in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5150
+ },
+ "f6db4129b507cf748de9b4c14ef27d390203b17576ef1b1959d7f3bb7f752a30": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "No suspicious mass or malignant calcification; BI-RADS 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3867
+ },
+ "f701a6f2f4548b520e0ce220d399da0ae79f242eee825721801fdf0355f2eeba": {
+  "kind": "breast-screen",
+  "right_birads": "4",
+  "left_birads": "0",
+  "overall_birads": "none",
+  "quote": "a possible mass on the MLO view needing further views",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4932
+ },
+ "f70b635369345af9226c6b90fa5b9b95e1881ad049bcb5ddcd09faacbda1fbe3": {
+  "kind": "breast-screen",
+  "right_birads": "1",
+  "left_birads": "1",
+  "overall_birads": "1",
+  "quote": "Final assessment: BI-RADS 1 (negative).",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 3653
+ },
+ "f7af05ab9ceef51bb9fc5eb9f02ae71046fd28798c6ec308b3910592cc0673b4": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "malignant",
+  "outcome": "pending",
+  "quote": "MDT management discussion has been deferred pending completion of staging and patient consultation.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6299
+ },
+ "f7bf105b4db445c811414f76bbabd9e46433a11055625dd2b24ba487da4d7415": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "back to the screening programme.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5205
+ },
+ "f851ceb522b6482736266010bb7c345f0684ebf3cb30470c40ebaa3631365c63": {
+  "kind": "breast-screen",
+  "right_birads": "3",
+  "left_birads": "1",
+  "overall_birads": "3",
+  "quote": "R: Probably benign circumscribed oval mass; six-month imaging; BI-RADS 3.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6041
+ },
+ "fa96fd73ae0ad609d010458a006db6bca8dafd45e63e7a018868d79120b7430e": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "3",
+  "overall_birads": "3",
+  "quote": "Short-interval imaging at six months is advised; BI-RADS 3.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5920
+ },
+ "fa9bbe72bde62f38b425889c95b66a50f2ed72605d0a3a8b8c2a8fd58a2bebb3": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "Decision: short-interval imaging in six months, not discharge to routine screening and not referral for cancer treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6843
+ },
+ "fb78317dc833c12ae5ed312f3eb6c29182ddb2b7a2ce843b5b73106b58a67fb2": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "early_recall",
+  "quote": "MDT outcome: early recall for repeat imaging in 6 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4850
+ },
+ "fbf70bf4c6f3269cdb6e6631d1c02961f0ee7a8d5f5acf3d171139884cdd398f": {
+  "kind": "breast-assess",
+  "attendance": "attended",
+  "assessment": "done",
+  "biopsy": "benign",
+  "outcome": "routine",
+  "quote": "back to the screening programme.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 4652
+ },
+ "fd9492eb6eef1571922ad624e2b0f45e02ef2ffc99bbac5b1ffed51b2bfe8b9a": {
+  "kind": "breast-screen",
+  "right_birads": "0",
+  "left_birads": "0",
+  "overall_birads": "0",
+  "quote": "Right breast: Incomplete; focal asymmetry needs additional diagnostic views; BI-RADS 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 6601
+ },
+ "ffd2bf9a3bf51d51cca94d51904cc314ea82e4e86031aff36b21246b95aa00ed": {
+  "kind": "breast-screen",
+  "right_birads": "2",
+  "left_birads": "1",
+  "overall_birads": "none",
+  "quote": "Coarse vascular calcification has a benign appearance.",
+  "model": "gemma-3-4b-it-Q4_K_M/breast-v2(cached)",
+  "latency_ms": 5507
+ }
+}

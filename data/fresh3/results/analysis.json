@@ -1,0 +1,440 @@
+{
+ "agreed_but_wrong": {
+  "closing": 0,
+  "holding": 3,
+  "items": [
+   {
+    "agreed_label": "wk_incomplete",
+    "diagnosis": "reader_defect",
+    "direction": "holding",
+    "direction_note": "Holding: the loop stays open (`wk_incomplete`) where the key says a surveillance plan exists. The wrong follow-up path would be started, but nothing is closed.",
+    "explanation": "The note states an MDT consensus plan: an interval thin-section chest CT at three months, due 04 August 2026, with a CT request entered. The guide (rule 5) says a stated repeat-CT plan is a decision, not pending, so the model-labelled key `wk_surveillance` (both labellers) follows the guide and the text is not ambiguous. Reader A (regex) has no match for the phrase because `interval thin-section chest CT` does not fit its `interval CT` pattern, so the outcome defaulted to `pending`. Reader B (Gemma) extracted `workup=not_done, outcome=pending` although it quoted the plan sentence itself. The new MDT-title/surveillance override could not fire, for three separate reasons: its title pattern is anchored at the start of the text (the first line is the hospital name), it needs `outcome` or `decision` after `MDT`/`multidisciplinary` (the title is `Thoracic Multidisciplinary Meeting Record`), and its surveillance-plan test needs a phrase such as `interval CT` or `CT in 3 months` (confirmed: neither `ldctSurveillancePlan` nor the title pattern matches this note).",
+    "id": "f3l-008",
+    "key": "wk_surveillance",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   },
+   {
+    "agreed_label": "wk_incomplete",
+    "diagnosis": "reader_defect_with_key_strict_per_guide",
+    "direction": "holding",
+    "direction_note": "Holding. Counterfactual: Gemma's invented `tissue=benign` plus `annual` would have produced the closing label `wk_benign` had it also said `workup=done`; closing still needs reader A to agree, and reader A said `wk_incomplete`, so no closure was possible. The safe outcome here rested on two independent extraction errors, not on a safeguard.",
+    "explanation": "A thoracic clinic note: the opacity has completely resolved on interval CT, no biopsy, discharge, resume annual LDCT through the referring service. The key `indeterminate` (both labellers) is the strict reading of guide rule 4 (a bare return to annual screening needs benign tissue or a recorded MDT decision, and neither is present). A clinician could reasonably read a resolved nodule as a benign outcome, so the key is defensible but conservative rather than the only reading; it is not a key error under the frozen guide. Both readers are still wrong for either reading, because nothing in the note is pending. Reader A misses `resume annual LDCT` (its pattern wants `annual screening`; the only sentence mentioning `interval CT` is dropped as history because it contains `previously`), so the outcome defaulted to `pending`. Reader B (Gemma) invented `tissue=benign` (there is no biopsy or tissue result) and `workup=not_done`. The wrong-document rule did not fire because the note contains LDCT and thoracic wording.",
+    "id": "f3l-019",
+    "key": "indeterminate",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   },
+   {
+    "agreed_label": "wk_incomplete",
+    "diagnosis": "reader_defect",
+    "direction": "holding",
+    "direction_note": "Holding: the loop stays open, but the document is not routed to a human as the key expects. Holding an open nodule is not itself unsafe, but a wrong-kind document confidently labelled as an incomplete work-up is the failure the new wrong-document safeguard was meant to catch.",
+    "explanation": "A diagnostic CT chest radiology report (17 x 13 mm irregular nodule, comparison with the screening LDCT, signed by the radiologist). It has no attendance event, no MDT, no tissue plan and no outcome, so it is a different kind of document; the key `indeterminate` (both labellers) sends it to a human and is consistent with the guide. Both readers defaulted to `wk_incomplete`: reader A because `outcome` defaults to `pending` when no outcome phrase is found, and reader B (Gemma) quoted the signature line `Reported by Dr ...` and set `mdt=discussed`, which the text never states. The wrong-document rule did not fire because it only tests for a lung/thoracic anchor and a work-up term, and the text satisfies both through `screening LDCT` and `LDCT`, used here only as the comparison study.",
+    "id": "f3l-048",
+    "key": "indeterminate",
+    "kind": "ldct-workup",
+    "reader_a": "wk_incomplete",
+    "reader_b": "wk_incomplete"
+   }
+  ],
+  "total": 3
+ },
+ "agreement": {
+  "item_agreement": {
+   "agreed": 93,
+   "item_agreement": 0.93,
+   "items": 100
+  },
+  "unadjudicated_ids": [
+   "f3l-007",
+   "f3l-020",
+   "f3l-032",
+   "f3l-050",
+   "f3i-014",
+   "f3i-018",
+   "f3i-029"
+  ]
+ },
+ "comparison_fresh2_to_fresh3": {
+  "expected_headline": {
+   "ifhas_followup_agreed_but_wrong": [
+    1,
+    0
+   ],
+   "ifhas_followup_b_unavailable_agreed": [
+    10,
+    1
+   ],
+   "ldct_workup_agreed_but_wrong": [
+    3,
+    3
+   ]
+  },
+  "fresh2": {
+   "ifhas_followup_agreed_but_wrong": 1,
+   "ifhas_followup_b_unavailable_agreed": 10,
+   "ldct_workup_agreed_but_wrong": 3
+  },
+  "fresh3": {
+   "ifhas_followup_agreed_but_wrong": 0,
+   "ifhas_followup_b_unavailable_agreed": 1,
+   "ldct_workup_agreed_but_wrong": 3
+  },
+  "headline_matches": true,
+  "not_compared": [
+   "overall accuracy",
+   "overall agreed-but-wrong (4 of 113 vs 3 of 93: different mix of kinds)",
+   "'0 unsafe' (not claimed for either round)"
+  ],
+  "scope": "Only definitions that match are compared. Different corpora, different author model, different size; descriptive, not a statistical test, and not an overall accuracy comparison."
+ },
+ "counts": {
+  "agreed": 93,
+  "items": 100,
+  "unadjudicated": 7
+ },
+ "disputed_subset_unscored": {
+  "by_kind": {
+   "ifhas-followup": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 2,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 2
+   },
+   "ifhas-screen": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 1,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 1
+   },
+   "ldct-screen": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 1,
+    "ids_reader_agreed": [
+     "f3l-050"
+    ],
+    "n": 1,
+    "reader_agreed": 1,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 0
+   },
+   "ldct-workup": {
+    "agreed_label_matches_neither_labeller": 0,
+    "agreed_label_matches_one_labeller": 0,
+    "ids_reader_agreed": [],
+    "n": 3,
+    "reader_agreed": 0,
+    "reader_b_unavailable": 0,
+    "reader_routed_to_review": 3
+   }
+  },
+  "note": "Items the two labellers disagreed on have no key and are unscored for accuracy; only reader behaviour is counted here. Nothing in this block is evidence that the reader is right or wrong.",
+  "totals": {
+   "n": 7,
+   "reader_agreed": 1,
+   "reader_routed_to_review": 6
+  }
+ },
+ "gemma_reader_kinds_agreed_subset": {
+  "kinds": [
+   "ifhas-followup",
+   "ldct-screen",
+   "ldct-workup"
+  ],
+  "totals": {
+   "agreed_but_wrong": 3,
+   "n": 69,
+   "reader_a_correct": 44,
+   "reader_b_gemma_correct": 48,
+   "reader_b_unavailable": 1,
+   "readers_agree": 34
+  }
+ },
+ "ifhas_coded_screening_unavailability": {
+  "b_wrong_vs_key": [
+   "f3i-032",
+   "f3i-046"
+  ],
+  "flag_unavailable": [
+   "f3i-013"
+  ],
+  "key_coded_unavailable": [
+   "f3i-013",
+   "f3i-032",
+   "f3i-046"
+  ],
+  "note": "`b_available` is false only when the coded string is missing or has an implausible value. Items whose coded string is the inert placeholder `no-coded-results|0|none` still return b_available=true with an all-X label. When the key's coded_label is `unavailable`, SCORE.md counts reader B correct only if it literally returned `unavailable`.",
+  "placeholder_no_coded_results": [
+   "f3i-014",
+   "f3i-032",
+   "f3i-046"
+  ]
+ },
+ "ifhas_screening_coded_not_gemma": {
+  "agreed_n": 24,
+  "fasting_vs_random_disclosure": "The guide requires a random glucose, but 23/25 panels say fasting. The reader-A panel regex reads only random-glucose wording, so it returns glyc=X on those panels; the key (model-labelled from the same guide) holds values for many of them. The guide and key were frozen and are not changed here.",
+  "guide_glucose_requirement": "random glucose (LABELLING-GUIDE.md section on glyc; LOINC 2345-7 and 14749-6 are labelled 'random glucose')",
+  "key_coded_label_unavailable": 3,
+  "keyed_glyc_distribution": {
+   "D": 4,
+   "N": 11,
+   "P": 5,
+   "S": 1,
+   "X": 3
+  },
+  "note_b": "22/24; of the 3 items whose key coded_label is unavailable, only f3i-013 counts as a match (B returned `unavailable`); f3i-032 and f3i-046 are misses. It measures coded-result parsing against the key, not a language-model reader.",
+  "panels_mentioning_fasting": 23,
+  "panels_mentioning_random": 3,
+  "panels_stating_fasting_status_or_duration": 6,
+  "panels_total": 25,
+  "reader_a_correct": 3,
+  "reader_a_glyc_x_ids": [
+   "f3i-006",
+   "f3i-007",
+   "f3i-009",
+   "f3i-010",
+   "f3i-011",
+   "f3i-013",
+   "f3i-015",
+   "f3i-019",
+   "f3i-020",
+   "f3i-021",
+   "f3i-025",
+   "f3i-033",
+   "f3i-037",
+   "f3i-038",
+   "f3i-040",
+   "f3i-041",
+   "f3i-042",
+   "f3i-043",
+   "f3i-046",
+   "f3i-047"
+  ],
+  "reader_a_glyc_x_total": 23,
+  "reader_a_glyc_x_where_key_has_value": 20,
+  "reader_b_coded_matches_key": 22,
+  "reader_b_is": "deterministic coded LOINC/UCUM results (kind ifhas-screen, model field 'coded_lab'); NOT a Gemma reader",
+  "reader_b_unavailable": 1
+ },
+ "ldct_workup_detail": {
+  "agreed_n": 22,
+  "key_indeterminate_agreed_wrong": [
+   "f3l-019",
+   "f3l-048"
+  ],
+  "key_indeterminate_ids": [
+   "f3l-019",
+   "f3l-037",
+   "f3l-038",
+   "f3l-044",
+   "f3l-048"
+  ],
+  "key_indeterminate_routed_to_review": [
+   "f3l-037",
+   "f3l-038",
+   "f3l-044"
+  ]
+ },
+ "protocol": {
+  "author": {
+   "author_id": "gpt-6.1-sol",
+   "author_prompt_version": "fresh3-author-prompt-v1",
+   "author_saw_reader_code": false,
+   "author_system_prompt_sha256": "34c1af9c6f076317a05d9b1a35947cdb88b6c389c1c24ceacecfbaa21101344e",
+   "authoring": "model",
+   "disclosure": "model-authored synthetic text; no author key; not clinician-verified"
+  },
+  "file_sha256": {
+   "data/fresh3/FREEZE.json": "db28a3c5321443a250e5fc62aba37bc0a7449330f8d84592485e09579213d137",
+   "data/fresh3/LABELLER-INPUT-MANIFEST.json": "1d5f11b2732316f6c54832173684b226e1669679232018fbc57b31792a08fee7",
+   "data/fresh3/agreement.json": "ecface3a795d24bef1687f3f0e63afc20ea9751d9e35839a0b538e312d4ef086",
+   "data/fresh3/corpus.json": "c974de9fe32264a5edde7c4be214433876e970014329ea4657c5aabe534c0a1e",
+   "data/fresh3/key.json": "571ea2bbd3f1330a5e5baedfaa7694435b09c80ececc07d77bf05ba66dcb8e7f",
+   "data/fresh3/labeller-input.json": "1a906a7df0783adb41c9bcd5add62aa83af8148910abdb191fff55de29123749",
+   "data/fresh3/labels/labeller_a.json": "c2c457611c989f74f4a6243ee6a411f4dd3ca2f551a23129418b8f4e046879ee",
+   "data/fresh3/labels/labeller_b.json": "1a6ad7abb725513f3eb45267fafc165d7033f47a7ccdcff54a9294901f929dbd",
+   "data/fresh3/reader-cache/ifhas_gemma_cache.json": "7643b3bccabda390b6744bb2fb6a938950c348a9571415cafae1f13f8e8a844d",
+   "data/fresh3/reader-cache/ldct_gemma_cache.json": "78e096bc828cc859403db16f9528f5507f82bd5c9c55a6bac0b4ac0d84f5186e",
+   "data/fresh3/results/SCORE.md": "497fb7ffc95be031ebf76d290c346b35b238a98027fd959888eb94ab4eeba103",
+   "data/fresh3/results/reader_raw.json": "03b77c91cf20d5c466331e72719687b61ca2b031a098092475fe1ca53460f5fb",
+   "data/fresh3/results/score.json": "0e277e5c2441ef1d878b919d396967424b3585d3963e120e8835b49ef0708408",
+   "scripts/fresh2_eval/LABELLING-GUIDE.md": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197"
+  },
+  "freeze_manifest": {
+   "corpus_commit": "93c5bef8fbcb3e01b802ee8bb72d4063945ba256",
+   "labels_commit": "23ff6f6cd077dc676757ae3eb277df438bceebf7",
+   "reader_cache_commit": "e5a9e8a8cc4dc997b7aeaaac6bb4501ec7fd8fba",
+   "reader_code_commit": "8c675c121938dfccb0a13155f60df40bce7a0e8c"
+  },
+  "key_canonical_sha256": "571ea2bbd3f1330a5e5baedfaa7694435b09c80ececc07d77bf05ba66dcb8e7f",
+  "labellers": [
+   {
+    "clinician_verified": false,
+    "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+    "id": "gemini-a",
+    "model": "gemini-3.5-flash",
+    "model_family": "Google/Gemini",
+    "prompt_sha256": "a6a3746f5752eebd4e2b4895740af8e602ad8f3cfd7ba282d08562977243a32a",
+    "run_date": "2026-11-07",
+    "saw_other_labels": false,
+    "saw_reader_implementation": false,
+    "session_isolated": true
+   },
+   {
+    "clinician_verified": false,
+    "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+    "id": "kimi-b",
+    "model": "kimi-k3.1-pro",
+    "model_family": "moonshot/kimi",
+    "prompt_sha256": "f38d16ea90f65d4961a7f0669ed6f21ea3f1b87997201d539955b08d75d94526",
+    "run_date": "2026-11-07",
+    "saw_other_labels": false,
+    "saw_reader_implementation": false,
+    "session_isolated": true
+   }
+  ],
+  "readers": {
+   "reader_b": "local Gemma 3 4B (cached) for ldct-screen, ldct-workup, ifhas-followup; none for ifhas-screen",
+   "reader_code_commit": "8c675c121938dfccb0a13155f60df40bce7a0e8c"
+  },
+  "scoring_commit": "9f2d020"
+ },
+ "reader_b_unavailable": {
+  "by_kind_agreed": {
+   "ifhas-followup": 1,
+   "ifhas-screen": 1
+  },
+  "by_kind_total": {
+   "ifhas-followup": 1,
+   "ifhas-screen": 1
+  },
+  "by_kind_unadjudicated": {},
+  "ldct": 0,
+  "rows": [
+   {
+    "cache_rev": "grounding-1",
+    "id": "f3i-003",
+    "key_status": "agreed",
+    "kind": "ifhas-followup",
+    "reasons": [
+     "finding_quote_not_grounded:weight"
+    ]
+   },
+   {
+    "id": "f3i-013",
+    "implausible_coded_values": [
+     "2345-7|5.4|mg/dL"
+    ],
+    "key_coded_label": "unavailable",
+    "key_status": "agreed",
+    "kind": "ifhas-screen",
+    "reasons": [
+     "coded_results_implausible"
+    ]
+   }
+  ]
+ },
+ "safeguard_replay": {
+  "caveat": "post-hoc regression check on the items the rules were written for; it is not a fair test and not generalisation evidence",
+  "fresh2_f2l-002": {
+   "current_code": "A indeterminate, B indeterminate (routed to review)",
+   "original": "both wk_incomplete"
+  },
+  "fresh2_f2l-021": {
+   "current_code": "A indeterminate, B indeterminate (routed to review)",
+   "original": "both wk_incomplete"
+  },
+  "fresh2_f2l-029": {
+   "current_code": "A wk_surveillance (regex), B wk_surveillance (the MDT-title surveillance override turned Gemma's workup=not_done into done)",
+   "original": "both wk_incomplete"
+  },
+  "fresh3_rule_firings_on_ldct_workup": "in the same replay over all 25 fresh3 work-up items (agreed and disputed), neither the wrong-document rule (for reader A or B) nor the MDT-title surveillance override changed any label, so neither safeguard fired once on fresh3",
+  "method": "committed Go test pipeline/fresh3_safeguard_test.go (TestFresh3SafeguardReplayFresh2) calling LDCTJudge over data/fresh2/corpus.json with the fresh2 reader cache (no model call); fresh2 original results are unchanged",
+  "test": "pipeline/fresh3_safeguard_test.go"
+ },
+ "schema": "fresh3-analysis/v1",
+ "scores_by_kind_agreed": {
+  "ifhas-followup": {
+   "agree": 4,
+   "agreed_and_right": 4,
+   "agreed_but_wrong": 0,
+   "agreed_but_wrong_ids": [],
+   "n": 23,
+   "reader_a_correct": 12,
+   "reader_b_correct": 12,
+   "reader_b_unavailable": 1,
+   "routed_to_review_key_decisive": 16,
+   "routed_to_review_key_expects_review": 3
+  },
+  "ifhas-screen": {
+   "agree": 1,
+   "agreed_and_right": 1,
+   "agreed_but_wrong": 0,
+   "agreed_but_wrong_ids": [],
+   "n": 24,
+   "reader_a_correct": 3,
+   "reader_b_correct": 22,
+   "reader_b_unavailable": 1,
+   "routed_to_review_key_decisive": 16,
+   "routed_to_review_key_expects_review": 7
+  },
+  "ldct-screen": {
+   "agree": 17,
+   "agreed_and_right": 17,
+   "agreed_but_wrong": 0,
+   "agreed_but_wrong_ids": [],
+   "n": 24,
+   "reader_a_correct": 20,
+   "reader_b_correct": 20,
+   "reader_b_unavailable": 0,
+   "routed_to_review_key_decisive": 4,
+   "routed_to_review_key_expects_review": 3
+  },
+  "ldct-workup": {
+   "agree": 13,
+   "agreed_and_right": 10,
+   "agreed_but_wrong": 3,
+   "agreed_but_wrong_ids": [
+    "f3l-008",
+    "f3l-019",
+    "f3l-048"
+   ],
+   "n": 22,
+   "reader_a_correct": 12,
+   "reader_b_correct": 16,
+   "reader_b_unavailable": 0,
+   "routed_to_review_key_decisive": 6,
+   "routed_to_review_key_expects_review": 3
+  }
+ },
+ "scores_totals_agreed": {
+  "agree": 35,
+  "agreed_and_right": 32,
+  "agreed_but_wrong": 3,
+  "n": 93,
+  "reader_a_correct": 47,
+  "reader_b_correct": 70,
+  "reader_b_unavailable": 2,
+  "routed_to_review_key_decisive": 42,
+  "routed_to_review_key_expects_review": 16
+ },
+ "semantics": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.",
+ "status": "built; run on simulated (model-authored synthetic) text; model-labelled keys; not clinical effectiveness",
+ "verification": {
+  "changed_since_scoring_commit": [],
+  "check_freeze_after_score_errors": [],
+  "files_compared": 21,
+  "manifest_rederived_equal": true,
+  "protected_changed_since_reader_code_commit": [],
+  "score_json_matches_recomputation": true
+ }
+}
