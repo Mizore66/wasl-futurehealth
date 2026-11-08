@@ -10,7 +10,7 @@ Static copies of the read API responses (`wsi7 serve`) so the frontend can be bu
 
 ## Live check
 
-`scripts/demo.sh smoke` starts `serve` on loopback, polls `/healthz`, runs `python3 scripts/api_smoke.py --base-url ...` over real HTTP, then stops the server. It runs after `report` in `scripts/demo.sh all` (not in `container`). It checks health and dashboard consistency, bounded case lists per programme, the fixture tags `evidence_closure`, `false_closure_trap` and `review_hold` as a subset, detail and audit for every returned fixture, and a 404 for an unknown case. Its tests (`python3 scripts/test_api_smoke.py`) use a local fake server and make no model calls.
+`scripts/demo.sh smoke` starts `serve` on loopback, polls `/healthz`, runs `python3 scripts/api_smoke.py --base-url ...` over real HTTP, then stops the server. It runs after `report` in `scripts/demo.sh all` (not in `container`). It checks health and dashboard consistency, bounded case lists per programme, the fixture tags `evidence_closure`, `false_closure_trap` and `review_hold` as a subset, detail and audit for every returned fixture, and a 404 for an unknown case. On the synthetic `review_hold` fixture it also exercises coordinator, consent, review, undo/contest and sanitized-export routes, checking status codes, canonical-decision immutability, ledger hashes/history, redaction and the export content hash. Its tests (`python3 scripts/test_api_smoke.py`) use a local stateful fake server and make no model calls.
 
 To smoke or serve an existing materialised lane without regenerating anything or calling a model:
 
