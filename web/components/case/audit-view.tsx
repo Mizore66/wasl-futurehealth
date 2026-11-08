@@ -2,7 +2,7 @@ import { Mark, Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
-import type { Audit } from "@/lib/api/schema";
+import type { Audit, Programme } from "@/lib/api/schema";
 import { Card } from "./sections";
 import { atWords, bodySummary, entryLabel, reviewWords, roleWords, shortHash } from "./words";
 
@@ -148,7 +148,7 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
 }
 
 /** Review actions appended through the API: append-only, each linked to the one before. */
-export function HistoryCard({ audit }: { audit: Audit }) {
+export function HistoryCard({ audit, programme }: { audit: Audit; programme: Programme }) {
   return (
     <Card
       id="history"
@@ -164,7 +164,7 @@ export function HistoryCard({ audit }: { audit: Audit }) {
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
           {audit.history.map((r, i) => (
             <li key={r.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{reviewWords(r.decision)}</p>
+              <p className="m-0 font-medium">{reviewWords(r.decision, programme)}</p>
               <p className="m-0 text-muted">
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)}
               </p>

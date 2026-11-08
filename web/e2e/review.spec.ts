@@ -15,6 +15,7 @@ const MOCK_PORT = 3293;
 
 const holdId = fixtures.fixtures.review_hold.id;
 const desk = `/app/review/${encodeURIComponent(holdId)}`;
+const settledDesk = `/app/review/${encodeURIComponent(fixtures.fixtures.evidence_closure.id)}`;
 const LINK_ITEM = "rv-636161dc42837e08";
 const EVIDENCE_ITEM = "rv-d55f7ccf9f12c409";
 
@@ -222,6 +223,7 @@ test.describe("review, live mode against a mock API", () => {
   const history: Record<string, unknown>[] = [];
   let refuse: string | undefined;
   let canonicalClosed = false;
+  let settledEvidence: "disagreeing" | "missing" | undefined;
   let server: Server;
 
   test.beforeAll(async () => {
@@ -253,7 +255,13 @@ test.describe("review, live mode against a mock API", () => {
       const id = p.replace(/^\/api\/cases\//, "").replace(/\/audit$/, "");
       const hit = cases.find(({ f, json }) => f.endsWith("_audit.json") === audit && (audit ? json.case : json.case?.id) === id);
       if (hit && audit) return send(200, { ...hit.json, history: [...hit.json.history, ...history] });
-      if (hit && hit.json.case.id === holdId) return send(200, { ...hit.json, case: { ...hit.json.case, closed: canonicalClosed } });
+      if (hit && settledEvidence && hit.json.case.id === fixtures.fixtures.evidence_closure.id) {
+        const evidence = settledEvidence === "missing" ? [] : hit.json.evidence.map((e: { agree: boolean }) => ({ ...e, agree: false }));
+        return send(200, { ...hit.json, review_items: [], signoffs: [], api_reviews: [], evidence });
+      }
+      if (hit && hit.json.case.id === holdId) {
+        return send(200, { ...hit.json, case: { ...hit.json.case, closed: canonicalClosed } });
+      }
       return hit ? send(200, hit.json) : send(404, { meta, error: "not found" });
     });
     await new Promise<void>((resolve) => server.listen(MOCK_PORT, "127.0.0.1", resolve));
@@ -268,6 +276,7 @@ test.describe("review, live mode against a mock API", () => {
     history.length = 0;
     refuse = undefined;
     canonicalClosed = false;
+    settledEvidence = undefined;
   });
 
   test("a 201 with case.closed=false records demo answers without claiming closure", async ({ page }) => {
@@ -335,6 +344,17 @@ test.describe("review, live mode against a mock API", () => {
     await expect(result).not.toContainText("case open");
     await expect(result.getByRole("list", { name: "Appended events" }).getByRole("listitem")).toHaveCount(2);
   });
+
+  for (const evidence of ["disagreeing", "missing"] as const) {
+    test(`a settled unsigned case with ${evidence} evidence does not infer reader agreement`, async ({ page }) => {
+      settledEvidence = evidence;
+      await page.goto(settledDesk);
+      const settled = page.getByRole("region", { name: "This case is not waiting for a signature" });
+      await expect(settled).toContainText("No review item was raised for this case. Open the case page to see the recorded evidence and outcomes.");
+      await expect(settled).not.toContainText("two readers agreed");
+      await expect(settled).not.toContainText("no person was needed");
+    });
+  }
 
   test("a 201 for an inadequate report does not claim rebooking while case data is unchanged", async ({ page }) => {
     await page.goto(desk);
