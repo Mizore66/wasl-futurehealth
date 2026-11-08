@@ -9,15 +9,15 @@ const view = reviewView(detail);
 const items = { link: "rv-link", evidence: "rv-evidence" };
 
 describe("review decision", () => {
-  it("has no outcome until identity, then prep for the same patient, are answered", () => {
+  it("has no outcome until identity, then the report for the same patient, are answered", () => {
     expect(outcomeOf({})).toBeUndefined();
     expect(outcomeOf({ identity: "same" })).toBeUndefined();
-    expect(outcomeOf({ identity: "same", prep: "adequate" })).toBe("close");
+    expect(outcomeOf({ identity: "same", report: "adequate" })).toBe("close");
     expect(outcomeOf({ identity: "different" })).toBe("notSame");
   });
 
-  it("signs identity as reviewer first, then prep as clinician", () => {
-    const sigs = signaturesFor({ identity: "same", prep: "adequate" }, items);
+  it("signs identity as reviewer first, then the report evidence as clinician", () => {
+    const sigs = signaturesFor({ identity: "same", report: "adequate" }, items);
     expect(sigs).toEqual([
       { item: "rv-link", decision: "same" },
       { item: "rv-evidence", decision: "adequate" },
@@ -26,18 +26,18 @@ describe("review decision", () => {
   });
 
   it("signs one item for not-the-same and for ask-the-unit, which has no API decision", () => {
-    expect(signaturesFor({ identity: "different", prep: "adequate" }, items)).toEqual([{ item: "rv-link", decision: "different" }]);
-    expect(signaturesFor({ identity: "same", prep: "ask" }, items)).toEqual([{ item: "rv-link", decision: "same" }]);
+    expect(signaturesFor({ identity: "different", report: "adequate" }, items)).toEqual([{ item: "rv-link", decision: "different" }]);
+    expect(signaturesFor({ identity: "same", report: "ask" }, items)).toEqual([{ item: "rv-link", decision: "same" }]);
     expect(signaturesFor({ identity: "same" }, items)).toEqual([]);
   });
 
   it("turns 403, 404 and 400 into plain sentences", () => {
-    const prep = { item: "rv-evidence", decision: "adequate" } as const;
-    expect(failureSentence(prep, { status: 403, error: "rbac" })).toBe("Not saved: the clinician role is not allowed to sign the bowel prep answer.");
+    const report = { item: "rv-evidence", decision: "adequate" } as const;
+    expect(failureSentence(report, { status: 403, error: "rbac" })).toBe("Not saved: the clinician role is not allowed to sign the report answer.");
     expect(failureSentence({ item: "x", decision: "same" }, { status: 404, error: "nope" })).toBe(
       "Not saved: this case has no open review item for the identity answer.",
     );
-    expect(failureSentence(prep, { status: 400, error: "X-Wasl-Actor header required" })).toContain("could not read the bowel prep answer");
+    expect(failureSentence(report, { status: 400, error: "X-Wasl-Actor header required" })).toContain("could not read the report answer");
   });
 });
 
@@ -52,23 +52,61 @@ describe("fixtures mode cannot append", () => {
 
 describe("review view of the review_hold fixture", () => {
   it("takes the two review items and the report from the API", () => {
-    expect(view.items).toEqual({ link: "rv-2853a89572f0bc86", evidence: "rv-02bd10f694ad3d6e" });
-    expect(view.report.id).toBe("SKM-dr-293");
-    expect(view.quote).toBe("advanced to the cecum");
-    expect(view.link).toMatchObject({ score: 0.9985, line: 0.99, basis: "name and details" });
+    // data/api/case_review_hold.json: review_items[0] is the link item (reason second_identifier), [1] the evidence item.
+    expect(detail.review_items.map((r) => [r.kinds, r.item])).toEqual([
+      [["link"], "rv-636161dc42837e08"],
+      [["evidence"], "rv-d55f7ccf9f12c409"],
+    ]);
+    expect(view.items).toEqual({ link: "rv-636161dc42837e08", evidence: "rv-d55f7ccf9f12c409" });
+    expect(view.report.id).toBe("SKM-dr-217");
+    expect(view.quote).toBe("the level of the cecum");
+    // links[0]: path_p_cal 1, tau 0.99, weakest edge basis "eid". The guard still holds it: the pair has no confirmed second identifier.
+    expect(view.link).toMatchObject({ score: 1, line: 0.99, basis: "Emirates ID" });
   });
 
-  it("shows the missing date of birth as not on report", () => {
-    expect(view.identity.find((r) => r.field === "Date of birth")).toMatchObject({ report: "not on report", verdict: "missing" });
+  it("shows the unconfirmed second identifier, not a date of birth the API never says is missing", () => {
+    expect(view.identity.find((r) => r.field === "Second identifier")).toMatchObject({ report: "not confirmed", verdict: "missing" });
+    expect(view.identity.some((r) => r.field === "Date of birth")).toBe(false);
+    expect(view.held).toBe(
+      "Held: no second identifier is confirmed for the two records, and the two readers could not settle the bowel prep grade and whether tissue was taken.",
+    );
   });
 
-  it("puts only bowel prep up for decision", () => {
-    expect(view.checks.filter((c) => c.disputed).map((c) => c.field)).toEqual(["Prep graded"]);
-    expect(view.checks.map((c) => c.decision)).toEqual(["agreed", "disputed", "agreed_none", "not_needed"]);
+  it("is the guard-only review_hold: outreach stopped by the second-identifier guard, no consent held then granted", () => {
+    const outreach = detail.decisions.flatMap((d) => (Array.isArray(d.outreach) ? (d.outreach as { suppress?: string; guard?: string }[]) : []));
+    expect(outreach.map((o) => [o.suppress, o.guard])).toEqual([["second_identifier_unconfirmed", "held"]]);
+    expect(detail.decisions.flatMap((d) => d.consent_log)).toEqual([]);
+    expect(detail.review_items[0].reason).toBe("second_identifier");
+  });
+
+  it("puts bowel prep and tissue up for decision, under the one evidence item", () => {
+    // fields: reader yes/not_stated/yes/no, rules reader yes/not_stated/no/no.
+    expect(view.checks.filter((c) => c.disputed).map((c) => c.field)).toEqual(["Prep graded", "Tissue taken"]);
+    expect(view.checks.map((c) => c.decision)).toEqual(["agreed", "disputed", "disputed", "agreed_none"]);
+    expect(view.disputed.map((d) => d.says)).toEqual([
+      "neither reader found the bowel prep grade",
+      "the readers differ on whether tissue was taken: rules reader none, second reader yes",
+    ]);
+    expect(detail.review_items.filter((r) => r.kinds.includes("evidence"))).toHaveLength(1);
+  });
+
+  it("signs the one evidence item once for both disputed checks", () => {
+    expect(signaturesFor({ identity: "same", report: "adequate" }, view.items)).toEqual([
+      { item: "rv-636161dc42837e08", decision: "same" },
+      { item: "rv-d55f7ccf9f12c409", decision: "adequate" },
+    ]);
   });
 
   it("draws the trail from timeline days, with no signature yet", () => {
     expect(view.trail.every((n) => n.kind === "system")).toBe(true);
-    expect(view.trail[0]).toMatchObject({ who: "Al Mushrif", when: "21 May" });
+    // referral_day 17.1095 (1 May + 17 days = 18 May); the guard met the appointment at arrival_day 24.7666 (25 May), the report at day 30.4762 (31 May).
+    expect(view.trail.map((n) => [n.who, n.when])).toEqual([
+      ["Al Mushrif", "18 May"],
+      ["Mariam", "18 May"],
+      ["SKMC endoscopy", "22 May"],
+      ["Wasl", "25 May"],
+      ["SKMC endoscopy", "31 May"],
+      ["Two readers", "31 May"],
+    ]);
   });
 });

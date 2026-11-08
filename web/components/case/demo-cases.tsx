@@ -15,7 +15,7 @@ export async function CaseNotFound({ base }: { base: "/app/patients" | "/app/rev
     <>
       <h1 className="m-0 text-title font-semibold">We could not find that case</h1>
       <p className="m-0 mt-2 max-w-[72ch] text-muted">
-        Case ids look like <code className="font-mono">ahs-mushrif/ServiceRequest/AHS-sr-1175</code>, not a plain number. This run has no case with the id in
+        Case ids look like <code className="font-mono">ahs-mushrif/ServiceRequest/AHS-sr-1079</code>, not a plain number. This run has no case with the id in
         the address. Try one of the demo cases:
       </p>
       <ul className="m-0 mt-4 flex list-none flex-col gap-2 p-0" aria-label="Demo cases">

@@ -20,7 +20,7 @@ import {
   type Draft,
   type IdentityAnswer,
   type OutcomeKey,
-  type PrepAnswer,
+  type ReportAnswer,
 } from "./decision";
 import { IdentityBridge } from "./identity-bridge";
 import { plain as plainRole } from "@/lib/domain/terms";
@@ -152,8 +152,8 @@ export function ReviewDesk({
     setDraft({ identity });
     setError(undefined);
   }
-  function pickPrep(prep: PrepAnswer) {
-    setDraft((d) => ({ ...d, prep }));
+  function pickReport(report: ReportAnswer) {
+    setDraft((d) => ({ ...d, report }));
     setError(undefined);
   }
 
@@ -184,7 +184,7 @@ export function ReviewDesk({
 
   const asks = draft.identity === "same";
   const announce = asks
-    ? "Question 2 of 2 is now showing: bowel prep, is it adequate?"
+    ? "Question 2 of 2 is now showing: is the colonoscopy report adequate?"
     : draft.identity === "different"
       ? "Not the same patient. There is no second question."
       : "";
@@ -228,22 +228,23 @@ export function ReviewDesk({
                 {asks && (
                   <motion.div key="q2" {...appear} className="border-t border-rule pt-3">
                     <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q2}-who ${q2}-ask`}>
-                      <legend className="p-0 text-body font-medium">2. Bowel prep: is it adequate?</legend>
+                      <legend className="p-0 text-body font-medium">2. Is the colonoscopy report adequate?</legend>
                       <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
-                        Neither reader found a grade in the report. Recorded as clinician: {SIGNER.name}, the same person as question 1.
+                        {view.disputed.length > 0 ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ` : ""}
+                        One answer covers {view.disputed.length > 1 ? "all of them" : "it"}. Recorded as clinician: {SIGNER.name}, the same person as question 1.
                       </p>
                       <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
                         &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
                       </p>
                       <Chips
-                        name={`${q2}-prep`}
+                        name={`${q2}-report`}
                         options={[
                           ["adequate", "Adequate"],
                           ["inadequate", "Not adequate"],
                           ["ask", "Ask the unit"],
                         ]}
-                        value={draft.prep}
-                        onPick={pickPrep}
+                        value={draft.report}
+                        onPick={pickReport}
                         disabled={saving}
                       />
                     </fieldset>
@@ -261,7 +262,7 @@ export function ReviewDesk({
                 </button>
               ) : (
                 <p className="m-0 text-small text-muted">
-                  {draft.identity === "same" ? "Answer the bowel prep question to sign." : "Answer both questions to sign."}
+                  {draft.identity === "same" ? "Answer the colonoscopy report question to sign." : "Answer both questions to sign."}
                 </p>
               )}
               {error && (
@@ -370,7 +371,7 @@ export function ReviewDesk({
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
           <IdentityBridge view={view} answer={draft.identity} />
-          <ReadersTable view={view} signed={outcome && { ...outcome.prepCell, word: live ? outcome.prepCell.word : `${outcome.prepCell.word.replace(", signed", "")} (preview, not saved)` }} />
+          <ReadersTable view={view} signed={outcome && { ...outcome.answerCell, word: live ? outcome.answerCell.word : `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` }} />
         </div>
       </div>
     </MotionConfig>

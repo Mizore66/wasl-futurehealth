@@ -192,7 +192,7 @@ export function consentRows(d: CaseDetail): ConsentRow[] {
 /** A sign-off's decision, as the reviewer would say it. */
 export function signoffWords(s: CaseDetail["signoffs"][number]): string {
   if (s.kinds.includes("link")) return s.link === "same" ? "Same patient" : s.link === "different" ? "Not the same patient" : plain(s.link || "no answer");
-  if (s.kinds.includes("evidence")) return `Bowel prep ${s.evidence === "inadequate" ? "not adequate" : plain(s.evidence || "no answer").toLowerCase()}`;
+  if (s.kinds.includes("evidence")) return `Colonoscopy report ${s.evidence === "inadequate" ? "not adequate" : plain(s.evidence || "no answer").toLowerCase()}`;
   return plain(s.link || s.evidence || "signed");
 }
 
@@ -201,8 +201,8 @@ export function reviewWords(decision: string): string {
   const map: Record<string, string> = {
     same: "Same patient",
     different: "Not the same patient",
-    adequate: "Bowel prep adequate",
-    inadequate: "Bowel prep not adequate",
+    adequate: "Colonoscopy report adequate",
+    inadequate: "Colonoscopy report not adequate",
   };
   return map[decision] ?? plain(decision);
 }
