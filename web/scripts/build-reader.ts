@@ -10,8 +10,12 @@ const root = path.join(web, "..");
 const REPORTS = "data/evidence/reports43.json";
 const LEDGER = "pipeline/results/showcase/reader_ledger.jsonl";
 
-/** The showcase's three stories: a complete exam, a scope that stopped early, a caecum the AI would not vouch for. */
-const PICKS = ["u31", "u6", "u38"] as const;
+/**
+ * The showcase's stories: a complete exam (u16, the demo patient Fatima's own report: the quote and the readers'
+ * four answers match her case's evidence), a scope that stopped early, a caecum the AI would not vouch for, and
+ * a report held for the reviewers (u35, the demo patient Mariam's report, matched the same way).
+ */
+const PICKS = ["u16", "u6", "u38", "u35"] as const;
 
 /** The ledger names a downgrade by the check that failed (`caecum_quote`, `prep_grade`, `polyps`); the UI names it by field. */
 const DOWNGRADE_FIELD: Record<string, ReaderField> = {
@@ -65,6 +69,8 @@ const fixtureEvidence = readdirSync(apiDir)
       loop: c.case.id,
       report: e.report.split("/").at(-1)!,
       quote: e.quote,
+      reader: String(e.fields?.reader),
+      regex: String(e.fields?.regex),
     }));
   });
 
@@ -137,7 +143,12 @@ function build(uid: string): ReaderCase {
   if (to < text.length) segments.push({ text: " …" });
 
   const r = report.regex;
-  const standsFor = fixtureEvidence.find((e) => e.quote.length >= 20 && text.toLowerCase().includes(e.quote.toLowerCase()));
+  // A report stands for a fixture only when the fixture's quote is in its text and both readers' answers (caecum/prep/tissue/histology) are the same.
+  const aiFields = `${row.caecum_reached}/${row.prep}/${row.tissue_taken}/${row.histology_present}`;
+  const rulesFields = `${r.caecum}/${r.prep}/${r.polyps}/${r.histology}`;
+  const standsFor = fixtureEvidence.find(
+    (e) => e.quote.length >= 20 && text.toLowerCase().includes(e.quote.toLowerCase()) && e.reader === aiFields && e.regex === rulesFields,
+  );
   return {
     uid,
     title: report.name,
