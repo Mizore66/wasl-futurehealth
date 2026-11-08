@@ -213,6 +213,19 @@ export function programmeView(d: Dashboard): ProgrammeView {
   };
 }
 
+/**
+ * The colorectal and cervical stalls with the scope they were counted over, for any page that quotes them.
+ * `top` is the three largest; `smaller` is the named referral stalls that are not in the top three.
+ * The dashboard's `dropoff` counts every programme in the run, but these labels belong to the colorectal and cervical pathway.
+ */
+export function stallScope(d: Dashboard): { run: string; cases: number; top: Stall[]; smaller: Stall[] } {
+  const v = programmeView(d);
+  const top = v.stalls;
+  const group = v.allStalls.find((g) => g.pathway === "Colorectal and cervical")?.stalls ?? [];
+  const smaller = group.filter((s) => (s.dropoff === "referral_unanswered" || s.dropoff === "referral_rejected") && !top.some((t) => t.dropoff === s.dropoff));
+  return { run: d.meta.run, cases: v.cases, top, smaller };
+}
+
 export const pct = (v: number) => `${v.toFixed(1)}%`;
 
 /** "1 point", "1.5 points": the gap between two percents, to one decimal. */

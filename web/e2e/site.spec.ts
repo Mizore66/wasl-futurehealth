@@ -677,3 +677,29 @@ test("experts: the clinical-labelling limit is current, and the obsolete claims 
     expect(body).not.toContain(gone);
   }
 });
+
+test("social preview: og:image and twitter:image point at the public production domain, not a per-deployment host", async ({ request }) => {
+  // Holds for any build where only VERCEL_URL (the per-deployment host) is set, and for the default build.
+  for (const route of ["/", "/experts"]) {
+    const html = await (await request.get(route)).text();
+    const og = /<meta property="og:image" content="([^"]+)"/.exec(html)?.[1];
+    const tw = /<meta name="twitter:image" content="([^"]+)"/.exec(html)?.[1];
+    expect(og, `og:image on ${route}`).toMatch(/^https:\/\/wasl-topaz-mu\.vercel\.app\//);
+    expect(tw, `twitter:image on ${route}`).toMatch(/^https:\/\/wasl-topaz-mu\.vercel\.app\//);
+    expect(html).not.toContain("some-preview.vercel.app");
+  }
+});
+
+test("experts: drop-off counts match the dashboard, with run, cohort and the 183 never-notified stall", async ({ page }) => {
+  await page.goto("/experts");
+  const row = page.getByTestId("outcomes").locator("tbody tr").nth(1);
+  await expect(row).toContainText("simulated, 2,100 colorectal and cervical cases");
+  await expect(row).toContainText("v7strict-cached-fhir-lung-dr-breast-drnext-lungsurv-xreflink");
+  await expect(row).toContainText("390 no acknowledgement, 252 not booked, 183 never notified");
+  await expect(row).toContainText("referral unanswered 62 and referral rejected 17 are smaller");
+  await expect(row.getByRole("link", { name: "the dashboard" })).toHaveAttribute("href", "/app");
+  for (const w of [1440, 390]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await row.screenshot({ path: `test-results/screens/site3-experts-drop-${w}.png` });
+  }
+});

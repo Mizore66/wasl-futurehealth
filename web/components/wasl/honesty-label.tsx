@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { HONESTY, type HonestyKind } from "@/lib/honesty";
+import { CHIP_BOX, dotClass } from "./honesty-chip";
 
 /**
  * A data-mode chip: how true the thing beside it is. Children override the default word.
@@ -16,21 +17,8 @@ export function HonestyLabel({
   className?: string;
 }) {
   return (
-    <span
-      data-honesty={kind}
-      className={cn(
-        "inline-flex h-6 items-center gap-1.5 self-start whitespace-nowrap rounded-chip bg-raised px-2 text-small font-medium text-ink-soft",
-        className,
-      )}
-    >
-      <span
-        aria-hidden
-        data-dot
-        className={cn(
-          "size-1.5 flex-none rounded-full",
-          kind === "built" || kind === "published" ? "bg-positive" : kind === "designed" ? "border border-current" : "bg-warning",
-        )}
-      />
+    <span data-honesty={kind} className={cn(CHIP_BOX, className)}>
+      <span aria-hidden data-dot className={dotClass(kind)} />
       {children ?? HONESTY[kind]}
     </span>
   );
