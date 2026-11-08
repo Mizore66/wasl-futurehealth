@@ -58,6 +58,6 @@ describe("people.json", () => {
     expect(Object.keys(byFixture).sort()).toEqual(["evidence_closure", "false_closure_trap", "review_hold"]);
     for (const list of Object.values(byFixture)) expect(list).toHaveLength(2);
     expect(Object.values(people.people).every((p) => p.source === "canonical-cast")).toBe(true);
-    expect(people.people["ahs-mushrif|AHS-MRN000985"].display_name).toBe("Fatima Al Zaabi");
+    expect(people.people["ahs-mushrif|AHS-MRN000943"].display_name).toBe("Fatima Al Zaabi");
   });
 });

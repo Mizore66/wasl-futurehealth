@@ -33,6 +33,8 @@ export type ReviewView = {
   reportSource: string;
   unit: string;
   held: string;
+  /** The checks the two readers could not settle: what the one evidence answer covers. */
+  disputed: { field: string; says: string }[];
   referredOn: string;
   report: { id: string; on: string };
   link: { score: number; line: number; basis: string; rule: string };
@@ -55,6 +57,14 @@ const providerName = (id: string) => PROVIDERS[id] ?? id;
 const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", wasl: "name and details", human: "a person", below_tau: "below the line" };
 
 /** Reader fields arrive as `caecum/prep/tissue/histology`, e.g. `yes/not_stated/no/no`. */
+const PLAIN_FIELD: Record<string, string> = {
+  "Caecum reached": "whether the caecum was reached",
+  "Prep graded": "the bowel prep grade",
+  "Tissue taken": "whether tissue was taken",
+  "Histology back": "the histology",
+};
+const READER_WORD: Record<string, string> = { yes: "yes", no: "none", not_stated: "not stated", adequate: "adequate", inadequate: "not adequate" };
+
 const CHECK_FIELDS = ["Caecum reached", "Prep graded", "Tissue taken", "Histology back"] as const;
 
 function readerValues(s: unknown): ReaderValue[] {
@@ -93,10 +103,25 @@ export function reviewView(c: CaseDetail): ReviewView {
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
   const checks = checksFrom(ev?.fields);
-  const noDob = linkItem?.reason === "second_identifier";
-  const held = [noDob && "the report has no date of birth", checks.some((k) => k.disputed) && "neither reader found a bowel prep grade"].filter(
-    (r): r is string => !!r,
-  );
+  /*
+   * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
+   * with agreeing name, sex and date of birth, was on file for the pair. It does not say which side lacks it, so the screen
+   * says only that the second identifier is not confirmed.
+   */
+  const noSecondId = linkItem?.reason === "second_identifier";
+  const disputed = checks
+    .filter((k) => k.disputed)
+    .map((k) => ({
+      field: k.field,
+      says:
+        k.rules === k.second
+          ? `neither reader found ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}`
+          : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: rules reader ${READER_WORD[k.rules] ?? k.rules}, second reader ${READER_WORD[k.second] ?? k.second}`,
+    }));
+  const held = [
+    noSecondId && "no second identifier is confirmed for the two records",
+    disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`,
+  ].filter((r): r is string => !!r);
 
   const identity: IdentityRow[] = [
     { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
@@ -106,7 +131,12 @@ export function reviewView(c: CaseDetail): ReviewView {
       report: link?.weakest_edge.basis === "eid" ? "on record" : "not on report",
       verdict: link?.weakest_edge.basis === "eid" ? "matches" : "missing",
     },
-    { field: "Date of birth", referral: "on record", report: noDob ? "not on report" : "on record", verdict: noDob ? "missing" : "agrees" },
+    {
+      field: "Second identifier",
+      referral: "on record",
+      report: noSecondId ? "not confirmed" : "on record",
+      verdict: noSecondId ? "missing" : "agrees",
+    },
     {
       field: "Record",
       referral: referral?.registration.split("|")[1] ?? "",
@@ -124,9 +154,18 @@ export function reviewView(c: CaseDetail): ReviewView {
   add("consent", a?.display_name.split(" ")[0] ?? "Patient", "allowed messages", consent?.day);
   const intake = c.timeline.find((e) => e.category === "referral-intake");
   add("intake", unit, "accepted the referral", intake?.day);
+  /** The guard held the appointment reminder when that appointment reached Wasl, before the report existed. */
+  const guardEvent = typeof guard?.event === "string" ? c.timeline.find((e) => e.id === guard.event) : undefined;
+  if (linkItem)
+    add(
+      "link",
+      "Wasl",
+      `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}; ${noSecondId ? "no second identifier confirmed" : "held"}, needs a person`,
+      guardEvent?.arrival_day ?? reportEvent?.day,
+    );
   add("report", unit, `colonoscopy report ${shortId(ev?.report ?? "")}`, reportEvent?.day);
-  if (linkItem) add("link", "Wasl", `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}; no date of birth, needs a person`, reportEvent?.day);
-  if (ev && !ev.agree) add("readers", "Two readers", "no bowel prep grade; needs a person", reportEvent?.day);
+  if (ev && !ev.agree && disputed.length)
+    add("readers", "Two readers", `could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}; needs a person`, reportEvent?.day);
 
   return {
     caseId: c.case.id,
@@ -145,6 +184,7 @@ export function reviewView(c: CaseDetail): ReviewView {
     reportSource: `${unit} · colonoscopy report`,
     unit,
     held: held.length ? `Held: ${held.join(", and ")}.` : "",
+    disputed,
     referredOn: formatDay(c.case.referral_day),
     report: { id: shortId(ev?.report ?? ""), on: reportEvent ? formatDay(reportEvent.day) : "" },
     link: {
@@ -154,8 +194,8 @@ export function reviewView(c: CaseDetail): ReviewView {
       rule: typeof guard?.rule === "string" ? guard.rule : "",
     },
     identity,
-    identitySummary: noDob
-      ? `Matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, but the report has no date of birth. A person must confirm.`
+    identitySummary: noSecondId
+      ? `Matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}, but no second identifier is confirmed. A person must confirm.`
       : "A person must confirm the match.",
     checks,
     quote: ev?.quote ?? "",
