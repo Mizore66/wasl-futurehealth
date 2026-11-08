@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { programmeView, stallScope } from "@/components/programme/model";
-import { exactlyOnce, fixed, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
+import { exactlyOnce, fixed, frozenOn, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
 import { Reveal } from "@/components/site/reveal";
 import { wrapExpert } from "@/components/site/styles";
@@ -243,7 +243,7 @@ export default async function Page() {
     { limit: "Readers broke on 3 of 7 unseen corpora before the fixes.", resolves: "300 confirmed closures in a row, then a 10% audit; an error returns that class to shadow mode.", when: "Months 0–9" },
     { limit: "The image reader was trained on Norwegian video frames; its weights inherit ImageNet’s non-commercial terms.", resolves: "It stays hold-only. Local recalibration on UAE stills; the licence question stays open until then.", when: "Before production" },
     { limit: "Queue-lever effect sizes are borrowed from published trials; App 9 fields are synthetic.", resolves: "Stepped-wedge primary endpoint. Gate: lower bound of the uplift above 0.", when: "Months 4–9" },
-    { limit: "Review load across name origins: 1.08 pooled and 1.21 per seed (1.09–1.34), against a 1.25 limit; two of five single seeds are above it.", resolves: "Reported in every run. Placeholder birth dates (25% of Arab vs 6% of Western persons) still send more cases to a person on purpose: reviewer time, not accuracy.", when: "Every run" },
+    { limit: `Review load across name origins, held-out noise: the pooled max/min is ${QUOTED.originPooled.value} against a 1.25 limit, and that gap is significant (p = 0.007). Standardised by programme it is ${QUOTED.originStandardised.value} (p = 0.185), so much of it reflects the mix of programmes.`, resolves: "Reported in every run. Placeholder birth dates (25% of Arab vs 6% of Western persons) still send more cases to a person on purpose: reviewer time, not accuracy.", when: "Every run" },
     { limit: "Female-list access gap 12.6 pp, against a 5 pp limit (simulated).", resolves: "About 30–40% of lists must be female lists. Wasl reports the staffing shortfall; it cannot fix it.", when: "Reported to DoH" },
     { limit: "Below about 1 colonoscopy slot per FIT+, no software raises completion.", resolves: "Wasl quantifies the shortfall by region. Pooling helps only when capacity is misallocated.", when: "Reported to DoH" },
     { limit: "Non-English notices are machine-drafted.", resolves: "Professional translation and back-translation.", when: "Before live outreach" },
@@ -482,7 +482,7 @@ export default async function Page() {
                 <li>The day-15 prep decision no longer skips pending histology, after 4 false closures in the first run at b53ce89.</li>
                 <li>Short surnames corroborate a link only when the first name agrees, after 1 wrong-patient message in a run.</li>
                 <li>
-                  Reports that never grade prep now wait for the unit’s grade. Recall fell from 0.851 to {fixed("v2.crc_recall", 3)}.
+                  Reports that never grade prep now wait for the unit’s grade. This lowers recall; held-out CRC recall is now {fixed("v2.crc_recall", 3)}.
                 </li>
                 <li>Surname-variant and Emirates ID identity rules: about 10% less reviewer time, safety unchanged.</li>
                 <li>The MTSamples biopsy answer key was corrected and the held-out noise model fixed.</li>
@@ -667,7 +667,7 @@ MSA|AA|SKM-dr-237|`}
         </div>
         <p className={cn("m-0 max-w-[62em] text-[14px] leading-[1.6] md:justify-self-end", muted)}>
           Synthetic cohort. All patients, names, messages and cases shown are synthetic; no outcomes on real patients are claimed. Frozen
-          evaluation: code {results.frozen_revision.slice(0, 7)}, policy v7strict, seeds 11, 23, 37, 41 and 59, held-out noise model v2, frozen 30 Oct 2026. The 31-day KPI,
+          evaluation: code {results.frozen_revision.slice(0, 7)}, policy v7strict, seeds 11, 23, 37, 41 and 59, held-out noise model v2, frozen {frozenOn()}. The 31-day KPI,
           drop-off counts and pilot streak come from single integrated runs; the gate sweep, reader corpora and Learn-then-Test certificate
           are reported in the project’s results files.
         </p>

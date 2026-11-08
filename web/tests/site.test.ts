@@ -17,8 +17,8 @@ const repo = path.resolve(import.meta.dirname, "../..");
 const read = (file: string) => readFileSync(path.join(repo, file), "utf8").replace(/\r\n/g, "\n");
 
 describe("site figures", () => {
-  it("rounds the ID-only miss rate (62%) to 3 in 5", () => {
-    expect(Math.round(missedByIdOnly() * 100)).toBe(62);
+  it("rounds the ID-only miss rate (65%) to 3 in 5", () => {
+    expect(Math.round(missedByIdOnly() * 100)).toBe(65);
     expect(missedOfFive()).toBe(3);
   });
 
@@ -36,7 +36,7 @@ describe("site figures", () => {
   });
 
   it("shows the held-out exactly-once count while the sources conflict", () => {
-    expect(exactlyOnce()).toEqual({ display: "0 / 198,810", contested: true });
+    expect(exactlyOnce()).toEqual({ display: "0 / 217,009", contested: true });
   });
 
   it("prints the false-closure upper bound as the brief does", () => {

@@ -1,5 +1,6 @@
 {
  "frozen_revision": "075abc5ad04a",
+ "frozen_on": "2026-11-02",
  "sources": [
   "pipeline/results/final/SUMMARY.md",
   "docs/BRIEF.md",
@@ -3933,7 +3934,7 @@
      "source": "pipeline/results/final/SUMMARY.md"
     }
    ],
-   "note": "PITCH says 10 runs; SUMMARY's v1 + v2 denominators sum to 437,798, matching neither. Unresolved: screens must not show an exactly-once denominator until the backend owner picks one."
+   "note": "Three different totals: PITCH says 201,285 over 10 runs; SUMMARY's v1 table says 220,789 and its v2 table 217,009 (each pooled over 5 seeds; together 437,798). No two agree. Unresolved: screens must not present one exactly-once denominator as settled until the backend owner picks one."
   }
  ]
 }
