@@ -32,6 +32,8 @@ const fmt = (n: number) => n.toLocaleString("en-US");
 const summary = read(SUMMARY);
 const revision = summary.match(/Code revision `([0-9a-f]+)`/)?.[1];
 if (!revision) throw new Error(`${SUMMARY}: no code revision`);
+const frozenOn = summary.match(/frozen (\d{4}-\d{2}-\d{2})T/)?.[1];
+if (!frozenOn) throw new Error(`${SUMMARY}: no freeze date`);
 
 for (const block of summary.split(/^## /m).slice(1)) {
   const noise = block.match(/^Noise (v\d)/)?.[1];
@@ -177,12 +179,13 @@ const conflicts = [
       { result: "v2.safety.duplicate_or_lost_outputs", value: v2.denominator!, source: SUMMARY },
       { result: "v1.safety.duplicate_or_lost_outputs", value: v1.denominator!, source: SUMMARY },
     ],
-    note: `PITCH says 10 runs; SUMMARY's v1 + v2 denominators sum to ${fmt(v1.denominator! + v2.denominator!)}, matching neither. Unresolved: screens must not show an exactly-once denominator until the backend owner picks one.`,
+    note: `Three different totals: PITCH says ${fmt(entries["exactly_once.pitch_outputs"].value)} over 10 runs; SUMMARY's v1 table says ${fmt(v1.denominator!)} and its v2 table ${fmt(v2.denominator!)} (each pooled over 5 seeds; together ${fmt(v1.denominator! + v2.denominator!)}). No two agree. Unresolved: screens must not present one exactly-once denominator as settled until the backend owner picks one.`,
   },
 ];
 
 const results: Omit<Results, "entries"> & { entries: Record<string, Entry> } = {
   frozen_revision: revision,
+  frozen_on: frozenOn,
   sources: [SUMMARY, BRIEF, PITCH, DASHBOARD, SHOWCASE, POOL, AGREEMENT],
   entries,
   evidence,
