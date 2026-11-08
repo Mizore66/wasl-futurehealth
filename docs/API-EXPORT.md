@@ -66,33 +66,40 @@ The export is a **redacted copy**; the document carries `"redacted": true`. `det
 (marshal/unmarshal) before redaction, so the live `GET /api/cases/{id}` and `/audit` bodies, the source maps and the
 original chain are never modified.
 
-Three layers apply, in this order:
+The projection is **default-deny and path-sensitive**. There is no generic fallback for an unrecognised section, key,
+array element or chain body: a future field must be added deliberately to the relevant schema in
+`pipeline/api_export.go` before it can be exported.
 
-1. **Allowlisted projection** for evidence and timeline bodies: `detail.evidence`, every `evidence` block body in
-   `review_items[].chain`, `current.chain`, `audit.chain` and `decisions`, and `detail.timeline`. Only listed keys
-   survive (report id, labels, verdicts, agree flag, reader model, rule, flags, reader state strings, structured
-   reader fields such as DR grades, BI-RADS, Lung-RADS and nodule sizes, image-reader scores and hashes; timeline
-   seq/type/id/provider/status/day/category/raw_sha/source). Every other key is dropped whatever its value, so a one- or
-   two-word clinical phrase under an unknown key cannot leak from these paths. Reader `quote` is not on the list.
-2. **Citations** (`agent_investigations[].citations`) are recursed into, not dropped: each citation keeps `tool`,
-   `arg`, `field` and `value`; any other key (quote, excerpt, result) is dropped, and a string `value` is kept only if it is a single
-   identifier- or date-like token.
-3. **Denylist and prose guard** for everything else (signoffs, api_reviews, review items, booking, outreach,
-   consent_log, escalations, agent provenance, case, audit history):
-   - exact keys `actor`, `target_actor`, `owner`, `canonical_owner`, `quote(s)`, `text`, `raw`, `raw_text`, `report_text`, `clinical_text`, `note`, `message(s)`, `prompt`,
-     `prompt_text`, `reasoning`, `raw_report(_text)`, `document_text`, `narrative`, `comment(s)`, `summary_text`, `excerpt`,
-     `snippet`, `free_text`, and keys ending `_quote(s)`, `_text`, `_note(s)`, `_message(s)`, `_prompt`, `_reasoning`,
-     `_excerpt`, `_snippet`, `_narrative`, `_comment`. There is no `raw_`/`quote` prefix match, so `raw_id`, `raw_sha`
-     and `quoted_by` survive. User-supplied actor and owner identity text is omitted from review history, audit history,
-     coordinator overlays and case projections; roles, actions, decisions, timestamps and hashes remain;
-   - operational `hint`, `reason`, `why` (and `*_hint`, `*_reason`) keep machine codes (lower-case tokens joined by
-     underscores, e.g. `second_identifier`, `prep_grade_one_click`) or one of the server's own static sentences on
-     server-generated paths. Coordinator `data` and `snooze` projections are user-controlled, so their operational
-     strings are always dropped regardless of underscore formatting;
-   - any other string that reads as prose (three or more tokens, at least two containing a letter) is dropped.
+- **Every detail and audit section has an allowlist.** This covers case/current/decisions, linked identities,
+  links/holds, review items/signoffs, API review and audit history, coordinator and consent overlays,
+  outreach/consent transitions/escalations, booking, agent investigations/provenance, review-ledger status, audit
+  signatures and anchors, as well as evidence and timeline. Nested arrays are projected element by element. Unknown
+  keys are dropped regardless of whether their value is one word, two words, newline-free text or an identifier-shaped
+  token.
+- **Chain bodies are selected by block type.** Evidence, link, hold, closure, recommendation, human-signoff,
+  auto-audit, escalation, surveillance-opened and outreach-guard bodies have separate operational schemas. An unknown
+  block type keeps only its structural `type`/`prev`/`hash` shell and an empty body. Evidence keeps report ids, labels,
+  verdicts, agree flags, reader model/rule/flags/state strings, structured DR/BI-RADS/Lung-RADS/nodule measurements and
+  image-reader scores/hashes; reader `quote` is not listed. Timeline keeps
+  seq/type/id/provider/status/day/category/raw_sha/source.
+- **Citations are recursed into, not dropped.** Each `agent_investigations[].citations` entry keeps only `tool`,
+  `arg`, `field` and `value`; quote, excerpt, result and future keys are dropped.
+- **Listed strings still have a shape check.** Ordinary string leaves must be one structural token of at most 80
+  characters from the identifier/date/hash character set; whitespace (including newlines), prose and longer strings
+  are dropped. Numbers, booleans and nulls remain. Server-generated operational fields such as review-item `reason`,
+  hold `why`, escalation codes and image/review `hint` accept lower-case machine tokens, including single-token codes
+  such as `capacity` and `unowned`. The fixed server sentence used for a not-applicable booking is explicitly allowed.
+- **Dynamic maps are bounded.** IFHAS domain-status/deadline maps accept only `bp`, `glyc`, `lipid` and `weight`.
+  Audit anchors accept only the `fhir` key or partition-subject keys of the form `out.p<N>`; their hash values still
+  pass the scalar shape check.
+- **User-controlled identity and narrative fields are not listed.** `actor`, `target_actor`, `owner`,
+  `canonical_owner`, notes/messages/prompts/reasoning, raw clinical text and coordinator/snooze reasons are omitted.
+  Coordinator history data keeps only `until`, `outcome` and `channel`; a snooze overlay keeps only `at`, `event` and
+  `until`. Roles, actions, decisions, structural timestamps and hashes remain. Agent provenance keeps only `cached`,
+  `experimental`, `model` and `schema_ver`.
 
 Quote keys are omitted entirely; no hash of a quote is served. Structured metadata, reader verdicts, labels, links,
-consent, ids and hashes are kept.
+consent states, ids, measurements and hashes are kept only at their listed paths.
 
 `audit` adds `chain_scope: "current"` and `chain_note`. `chain_verified` and `chain_length` are computed from the
 **original** chain before redaction. Block hashes were computed over the original bodies and **cannot be recomputed
@@ -108,14 +115,16 @@ a parser that converts integers above 2^53 to doubles will not reproduce the has
 
 ## Remaining privacy limits
 
-- Redaction is not a guarantee that no clinical content remains. Outside the evidence, timeline and citation
-  allowlists, protection is a denylist plus a prose heuristic: a one- or two-word clinical phrase under an unlisted
-  key in signoffs, api_reviews, review items, booking, outreach, consent_log, escalations, agent provenance or case
-  fields is **not** caught, and neither is free text packed into one identifier-like token. Machine-code-shaped
-  strings are trusted only outside coordinator/snooze user input. Not all possible prose can be identified.
-- Listed values in the allowlists (labels, `flags`, `rule`, reader state strings, citation `value`) are trusted
-  to be structured; they are not inspected beyond length, newline and prose checks.
-- Identifiers (patient registration keys, report ids, names in `identities`, `meta.note`) are served as is.
+- Redaction is **not mathematical proof of de-identification** and not a guarantee that no clinical content remains.
+  Default-deny schemas and string-shape checks limit accidental structural and prose leaks, but they do not establish
+  HIPAA/GDPR de-identification, measure re-identification risk, or replace a disclosure review.
+- A listed field is trusted to have its documented structural meaning. Labels, flags, rules, reader states, citation
+  values, operational codes and identifiers can themselves contain sensitive or misleading single-token values; the
+  projector checks their path and shape, not their clinical semantics. Unknown keys and strings outside the accepted
+  shapes are dropped, but no prose classifier can recognise every possible representation.
+- Structural identifiers (patient registration keys, provider ids and report ids), enum-like clinical labels,
+  measurements and hashes are deliberately preserved where listed. The normal response `meta` envelope, including
+  `meta.note`, is not part of the detail/audit redactor and is served as is.
 - The redacted chain **cannot be recomputed**. `audit.chain_verified` and `chain_length` were computed by the server over the
   original unredacted chain, and a third party cannot reproduce them from the export. They must trust the server-side
   verification flag. `content_sha256` authenticates the served bytes only, not that the redaction was faithful, and
@@ -131,8 +140,12 @@ From `pipeline/`, run `go test -run TestExport -count=1 .`
   outreach, consent_log, escalations, agent provenance, case). The test first asserts each path carries it, then that it
   never appears in the export; `chain_verified` stays true, the redacted chain does not verify, and live bodies and the
   original chain are unchanged.
-- One- and two-word phrases under unknown keys in evidence, timeline and citations are dropped; hint/reason/why
-  machine codes and `raw_id`/`quoted_by`/`raw_sha` are preserved; integers above 2^53 and extreme floats keep their text.
+- One-word, two-word, newline-containing and identifier-shaped clinical canaries under unknown keys are dropped in
+  evidence, timeline, citations and every remaining detail/audit section, including nested arrays, chain bodies and
+  dynamic maps. Unknown string shapes under listed keys are also dropped.
+- Intended structural ids, enums, measurements, hashes and server operational fields are pinned, including single-token
+  escalation/booking codes, IFHAS dynamic-map values, coordinator/consent metadata and audit anchors. User-controlled
+  actor/owner fields and coordinator/snooze reasons stay out. Integers above 2^53 and extreme floats keep their text.
 - The hash verifies on the served document, and mutations to a case field, a chain body, the audit verification
   flag, a dropped key, or an added key are each detected.
 - Repeated exports are byte-identical, and a new review changes the export.
