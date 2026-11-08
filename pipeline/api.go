@@ -78,12 +78,23 @@ type apiServer struct {
 }
 
 func runServe(run, data, addr string) {
-	s := loadAPI(run, data)
+	s, err := loadAPIVerified(run, data)
+	if err != nil {
+		panic(err)
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
-	mux.HandleFunc("/api/cases/", s.caseRoutes)
+	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
+	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
+	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/export") {
+			s.caseExportRoute(w, r)
+			return
+		}
+		caseAPI.ServeHTTP(w, r)
+	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
 	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
 	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
@@ -570,38 +581,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	ev := []map[string]interface{}{}
-	links := []map[string]interface{}{}
-	holds := []map[string]interface{}{}
-	seen := map[string]bool{}
-	for _, d := range c.decisions {
-		for _, b := range d.Chain {
-			key := b.Hash
-			if seen[key] {
-				continue
-			}
-			seen[key] = true
-			switch b.Type {
-			case "evidence":
-				ev = append(ev, b.Body)
-			case "link_decision":
-				links = append(links, b.Body)
-			case "hold_decision":
-				holds = append(holds, b.Body)
-			}
-		}
-	}
-	hist := []map[string]interface{}{}
-	for _, d := range c.decisions {
-		hist = append(hist, map[string]interface{}{"decision_id": d.ID, "in_seq": d.InSeq, "state": d.State, "dropoff": d.Dropoff, "owner": d.Owner,
-			"overdue": d.Overdue, "escalations": nz(d.Escalations), "consent_log": nz(d.ConsentLog), "outreach": nz(d.Outreach), "policy": d.Policy, "sig": d.Sig})
-	}
-	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
-		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
-		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
-	}))
+	writeJSONResp(w, 200, s.envelope(s.caseDetailBody(c)))
 }
 
 func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
@@ -639,8 +619,13 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	var req struct{ Item, Decision, Note string }
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Decision == "" {
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil || req.Decision == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"item\":..., \"decision\":..., \"note\":...}"}))
+		return
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
 		return
 	}
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
@@ -670,6 +655,10 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 	}
 	if actor == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "X-Wasl-Actor header required (who is signing)"}))
+		return
+	}
+	if utf8.RuneCountInString(actor) > maxActorRunes || utf8.RuneCountInString(req.Note) > maxNoteRunes {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "actor or note exceeds its character limit"}))
 		return
 	}
 	if req.Item != "" {

@@ -188,7 +188,7 @@ func TestShadowStatusCountsAndReasonsClosedSet(t *testing.T) {
 	writeShadowFiles(t, run, shFlags(true, false, false, false, map[string]interface{}{
 		"counts": map[string]interface{}{"eligible": 4, "outcome_fallback": 2, "AHS-0001": 9, "/tmp/secret/cache": 1,
 			"alias_deadbeef": 3, "out_seen": "5", "out_verified": -1, "not_eligible": 1.5},
-		"fallback_reasons": map[string]interface{}{"timeout_x": 1, "cache_miss": 2, "provider_http_503": 1, "provider_http_<script>": 4,
+		"fallback_reasons": map[string]interface{}{"timeout_x": 1, "cache_miss": 2, "usage_not_persisted": 3, "provider_http_503": 1, "provider_http_<script>": 4,
 			"/home/u/leak": 1, "staging_error:valueerror": 1, "staging_error:/tmp/leak": 1, "bounds_violation": "2",
 			"patient Jane Doe": 1},
 	}), "2026-11-08T10:00:00Z")
@@ -203,7 +203,7 @@ func TestShadowStatusCountsAndReasonsClosedSet(t *testing.T) {
 		t.Fatalf("counts: %v", c)
 	}
 	r, _ := m["fallback_reasons"].(map[string]interface{})
-	if len(r) != 3 || r["cache_miss"] != float64(2) || r["provider_http_503"] != float64(1) || r["staging_error"] != float64(1) {
+	if len(r) != 4 || r["cache_miss"] != float64(2) || r["usage_not_persisted"] != float64(3) || r["provider_http_503"] != float64(1) || r["staging_error"] != float64(1) {
 		t.Fatalf("reasons: %v", r)
 	}
 	// wrong container types are dropped, not copied

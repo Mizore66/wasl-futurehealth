@@ -1,7 +1,6 @@
 # Case evidence export (Workflow E)
 
-**Status: built, tested offline on a synthetic run. Not yet routed in `serve`.** The handler exists in
-`pipeline/api_export.go`; registering it on the mux is the integrator's step.
+**Status: wired in `runServe` and tested on a synthetic run.** The handler is in `pipeline/api_export.go`.
 
 ## Endpoint
 
@@ -30,7 +29,7 @@ GET /api/cases/{id}/export
 ```
 
 - Before redaction, `detail` and `audit` are produced by `caseDetailBody(c)` and `caseAuditBody(c)` in `pipeline/api_export.go`.
-  `caseDetail` and `caseAudit` in `api.go` should call these same helpers, so the bodies cannot drift.
+  `caseDetail` calls the shared detail helper; tests compare both projections against the real wrapped live routes, including consent and ledger overlays.
 - The export adds **no** `exported_at`, no file list and no other field. Nothing is written to the run directory.
 
 ## Hash
@@ -80,14 +79,16 @@ Three layers apply, in this order:
    identifier- or date-like token.
 3. **Denylist and prose guard** for everything else (signoffs, api_reviews, review items, booking, outreach,
    consent_log, escalations, agent provenance, case, audit history):
-   - exact keys `quote(s)`, `text`, `raw`, `raw_text`, `report_text`, `clinical_text`, `note`, `message(s)`, `prompt`,
+   - exact keys `actor`, `target_actor`, `owner`, `canonical_owner`, `quote(s)`, `text`, `raw`, `raw_text`, `report_text`, `clinical_text`, `note`, `message(s)`, `prompt`,
      `prompt_text`, `reasoning`, `raw_report(_text)`, `document_text`, `narrative`, `comment(s)`, `summary_text`, `excerpt`,
      `snippet`, `free_text`, and keys ending `_quote(s)`, `_text`, `_note(s)`, `_message(s)`, `_prompt`, `_reasoning`,
      `_excerpt`, `_snippet`, `_narrative`, `_comment`. There is no `raw_`/`quote` prefix match, so `raw_id`, `raw_sha`
-     and `quoted_by` survive;
-   - operational `hint`, `reason`, `why` (and `*_hint`, `*_reason`) keep a string value only if it is a machine code
-     (lower-case tokens joined by underscores, e.g. `second_identifier`, `prep_grade_one_click`) or one of the server's own
-     static sentences; free text under them is dropped;
+     and `quoted_by` survive. User-supplied actor and owner identity text is omitted from review history, audit history,
+     coordinator overlays and case projections; roles, actions, decisions, timestamps and hashes remain;
+   - operational `hint`, `reason`, `why` (and `*_hint`, `*_reason`) keep machine codes (lower-case tokens joined by
+     underscores, e.g. `second_identifier`, `prep_grade_one_click`) or one of the server's own static sentences on
+     server-generated paths. Coordinator `data` and `snooze` projections are user-controlled, so their operational
+     strings are always dropped regardless of underscore formatting;
    - any other string that reads as prose (three or more tokens, at least two containing a letter) is dropped.
 
 Quote keys are omitted entirely; no hash of a quote is served. Structured metadata, reader verdicts, labels, links,
@@ -110,8 +111,8 @@ a parser that converts integers above 2^53 to doubles will not reproduce the has
 - Redaction is not a guarantee that no clinical content remains. Outside the evidence, timeline and citation
   allowlists, protection is a denylist plus a prose heuristic: a one- or two-word clinical phrase under an unlisted
   key in signoffs, api_reviews, review items, booking, outreach, consent_log, escalations, agent provenance or case
-  fields is **not** caught, and neither is free text packed into one identifier-like token. A machine-code-shaped
-  string under `hint`/`reason`/`why` is trusted. Not all possible prose can be identified.
+  fields is **not** caught, and neither is free text packed into one identifier-like token. Machine-code-shaped
+  strings are trusted only outside coordinator/snooze user input. Not all possible prose can be identified.
 - Listed values in the allowlists (labels, `flags`, `rule`, reader state strings, citation `value`) are trusted
   to be structured; they are not inspected beyond length, newline and prose checks.
 - Identifiers (patient registration keys, report ids, names in `identities`, `meta.note`) are served as is.
@@ -121,8 +122,6 @@ a parser that converts integers above 2^53 to doubles will not reproduce the has
   anyone who can alter the server can alter both.
 - Number preservation requires a number-preserving parser (see above); a float64 parse changes integers above 2^53
   and the hash will not reproduce.
-- See `.superpowers/sdd/export-fix1-report.md` and `.superpowers/sdd/export-redaction-report.md`.
-
 ## What the tests check
 
 From `pipeline/`, run `go test -run TestExport -count=1 .`

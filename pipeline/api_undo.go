@@ -18,13 +18,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -89,12 +92,27 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 	var evs []map[string]interface{}
 	seen := map[string]bool{}
 	prev := "genesis"
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 1<<20), 1<<24)
-	for n := 1; sc.Scan(); n++ {
+	br := bufio.NewReaderSize(f, 1<<20)
+	for n := 1; ; n++ {
+		line, readErr := br.ReadBytes('\n')
+		if readErr != nil && readErr != io.EOF {
+			return nil, readErr
+		}
+		if len(line) == 0 && readErr == io.EOF {
+			return evs, nil
+		}
+		if readErr == io.EOF {
+			return nil, fmt.Errorf("review ledger line %d: truncated (no trailing newline)", n)
+		}
+		if len(line) > 1<<24 {
+			return nil, fmt.Errorf("review ledger line %d: record exceeds 16 MiB", n)
+		}
 		var ev map[string]interface{}
-		dec := json.NewDecoder(bytes.NewReader(sc.Bytes()))
-		if err := dec.Decode(&ev); err != nil || ev == nil || dec.More() {
+		dec := json.NewDecoder(bytes.NewReader(bytes.TrimSuffix(line, []byte{'\n'})))
+		if err := dec.Decode(&ev); err != nil || ev == nil {
+			return nil, fmt.Errorf("review ledger line %d: not a single JSON object", n)
+		}
+		if _, err := dec.Token(); err != io.EOF {
 			return nil, fmt.Errorf("review ledger line %d: not a single JSON object", n)
 		}
 		hash, ok1 := ev["hash"].(string)
@@ -115,10 +133,6 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 		prev = hash
 		evs = append(evs, ev)
 	}
-	if err := sc.Err(); err != nil {
-		return nil, err
-	}
-	return evs, nil
 }
 
 // validateReviewLedger checks the hash chain and then the undo/contest semantics of the whole ledger.
@@ -158,6 +172,12 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 	var prior []map[string]interface{}
 	for i, ev := range evs {
 		bad := func(msg string) error { return fmt.Errorf("review ledger event %d: %s", i+1, msg) }
+		// Coordinator events share the hash chain but are schema-validated by loadReviews, not by undo semantics.
+		if sstr(ev, "type") == coordEventType {
+			byHash[sstr(ev, "hash")] = ev
+			prior = append(prior, ev)
+			continue
+		}
 		kind := evKind(ev)
 		if kind != "review" {
 			if kind != evKindUndo && kind != evKindContest && kind != evKindResolution {
@@ -175,6 +195,13 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 			status, _ := foldUndo(events)
 			if sstr(ev, "action") != sstr(t, "action") {
 				return bad("action does not match the target's action")
+			}
+			if kind == evKindResolution {
+				if sstr(ev, "target_actor") != sstr(t, "target_actor") {
+					return bad("target_actor does not match the contest's original reviewer")
+				}
+			} else if sstr(ev, "target_actor") != sstr(t, "actor") {
+				return bad("target_actor does not match the targeted review's actor")
 			}
 			if err := Authorize(sstr(ev, "role"), sstr(t, "action")); err != nil {
 				return bad("unauthorised role: " + err.Error())
@@ -226,34 +253,8 @@ func roleMayUndoAnything(role string) bool {
 	return rbac[role][ActSignLink] || rbac[role][ActSignEvidence] || rbac[role][ActRecordConsent]
 }
 
-// appendLedgerLine durably appends one full line (write fully, fsync, close). On any failure it truncates the file back
-// to its previous size so no torn line stays behind. It is a variable so tests can inject failures.
-var appendLedgerLine = func(path string, line []byte) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	st, err := f.Stat()
-	if err != nil {
-		f.Close()
-		return err
-	}
-	size := st.Size()
-	n, err := f.Write(line)
-	if err == nil && n != len(line) {
-		err = fmt.Errorf("short write: %d of %d bytes", n, len(line))
-	}
-	if err == nil {
-		err = f.Sync()
-	}
-	if cerr := f.Close(); err == nil {
-		err = cerr
-	}
-	if err != nil {
-		os.Truncate(path, size) // best effort: never leave a torn line
-	}
-	return err
-}
+// undoAppendLedgerLine uses the shared durable append implementation; tests can replace it to inject failures.
+var undoAppendLedgerLine = appendLedgerLine
 
 // loadAPIVerified is loadAPI that refuses to start on a tampered review ledger instead of silently accepting it.
 func loadAPIVerified(run, data string) (*apiServer, error) {
@@ -389,8 +390,8 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		writeJSONResp(w, code, s.envelope(b))
 	}
 	role, actor := r.Header.Get("X-Wasl-Role"), strings.TrimSpace(r.Header.Get("X-Wasl-Actor"))
-	if actor == "" {
-		fail(400, "X-Wasl-Actor header required (who is undoing or contesting)")
+	if actor == "" || utf8.RuneCountInString(actor) > maxActorRunes {
+		fail(400, "X-Wasl-Actor header is required and must not exceed its character limit")
 		return
 	}
 	var req struct {
@@ -399,8 +400,17 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		Resolution string `json:"resolution"`
 		Note       string `json:"note"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Target == "" {
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(&req); err != nil || req.Target == "" {
 		fail(400, "body must be {\"target\":\"<review event hash>\", \"contest\":false, \"note\":...}")
+		return
+	}
+	if _, err := dec.Token(); err != io.EOF {
+		fail(400, "body must contain one JSON object and no trailing data")
+		return
+	}
+	if utf8.RuneCountInString(req.Note) > maxNoteRunes {
+		fail(400, "note exceeds its character limit")
 		return
 	}
 
@@ -411,6 +421,10 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if s.ledgerErr != "" {
+		fail(503, "review ledger failed validation; refusing to append", "detail", s.ledgerErr)
+		return
+	}
 
 	// Verify the on-disk ledger on every write and require it to agree with what this process has served.
 	path := filepath.Join(s.run, "api_reviews.ndjson")
@@ -511,7 +525,10 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		fail(500, "could not encode review event", "detail", err.Error())
 		return
 	}
-	if err := appendLedgerLine(path, append(line, '\n')); err != nil {
+	if err := undoAppendLedgerLine(path, append(line, '\n')); err != nil {
+		if errors.Is(err, errLedgerIndeterminate) {
+			s.ledgerErr = "undo append failed and the ledger file state is unknown: " + err.Error()
+		}
 		fail(500, "could not durably append to review ledger; nothing was recorded", "detail", err.Error())
 		return
 	}

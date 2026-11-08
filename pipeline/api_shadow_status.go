@@ -33,7 +33,7 @@ var shadowReasonKeys = map[string]bool{"cache_miss": true, "killed": true, "stop
 	"item_cap": true, "degraded": true, "worker_timeout": true, "worker_error": true, "human_answered": true, "staging_failed": true,
 	"bounds_violation": true, "ineligible_item": true, "invalid_metadata": true, "record_conflict": true, "cached_mode": true,
 	"no_provider_config": true, "second_identifier": true, "provider_timeout": true, "provider_error": true,
-	"provider_malformed": true, "demographic_missing": true}
+	"provider_malformed": true, "demographic_missing": true, "usage_not_persisted": true}
 
 var shadowHTTPReasonRE = regexp.MustCompile(`^provider_http_[0-9]{3}$`)
 var shadowStagingReasonRE = regexp.MustCompile(`^staging_error:[a-z0-9_]{1,40}$`)

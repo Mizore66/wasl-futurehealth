@@ -109,6 +109,22 @@ func TestActionsHappyPathAllKinds(t *testing.T) {
 	}
 }
 
+func TestActionsSurviveVerifiedReload(t *testing.T) {
+	run := twoCaseRun(t)
+	s, srv := serveAgent(t, run)
+	loop := agentLoop("1")
+	if code, m := coord(t, srv, loop, hb(headOf(s, loop), `"action":"note","text":"handoff complete"`)); code != 201 {
+		t.Fatalf("seed coordinator action: %d %v", code, m)
+	}
+	reloaded, err := loadAPIVerified(run, "")
+	if err != nil {
+		t.Fatalf("verified reload rejected an API-created coordinator event: %v", err)
+	}
+	if got := reloaded.overlayView(reloaded.cases[loop], true)["actions"]; got != 1 {
+		t.Fatalf("reloaded coordinator actions = %v, want 1", got)
+	}
+}
+
 func TestActionsValidation(t *testing.T) {
 	run := twoCaseRun(t)
 	s, srv := serveAgent(t, run)
