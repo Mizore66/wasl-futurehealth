@@ -55,7 +55,7 @@ func TestLoadAPIVerifiedMaterializedRunPreflight(t *testing.T) {
 		contents string
 		want     []string
 	}{
-		{name: "valid real materialized run without review ledger"},
+		{name: "valid real materialized run with review ledger"},
 		{name: "missing dashboard", artifact: "dashboard.json", remove: true, want: []string{"dashboard.json", "required"}},
 		{name: "missing report", artifact: "report7.json", remove: true, want: []string{"report7.json", "required"}},
 		{name: "missing anchors", artifact: "anchors.json", remove: true, want: []string{"anchors.json", "required"}},
@@ -73,11 +73,12 @@ func TestLoadAPIVerifiedMaterializedRunPreflight(t *testing.T) {
 		{name: "scalar anchors", artifact: "anchors.json", write: true, contents: `true`, want: []string{"anchors.json", "invalid", "top-level object"}},
 		{name: "missing out log", artifact: "out_log.ndjson", remove: true, want: []string{"out_log.ndjson", "required"}},
 		{name: "missing FHIR log", artifact: "fhir_log.ndjson", remove: true, want: []string{"fhir_log.ndjson", "required"}},
-		{name: "missing reviewer decisions", artifact: "reviewer_decisions.ndjson", remove: true, want: []string{"reviewer_decisions.ndjson", "required"}},
+		{name: "valid no-review run without reviewer decisions", artifact: "reviewer_decisions.ndjson", remove: true},
 		{name: "malformed second out record", artifact: "out_log.ndjson", write: true, contents: `{"seq":1,"subj":"out.p0","hdr":{},"data":{},"ts":1}` + "\nnot-json\n", want: []string{"out_log.ndjson:2", "malformed"}},
 		{name: "truncated FHIR record", artifact: "fhir_log.ndjson", write: true, contents: `{"seq":1`, want: []string{"fhir_log.ndjson:1", "truncated"}},
 		{name: "null out record", artifact: "out_log.ndjson", write: true, contents: "null\n", want: []string{"out_log.ndjson:1", "invalid", "object"}},
 		{name: "scalar FHIR record", artifact: "fhir_log.ndjson", write: true, contents: "\"healthy\"\n", want: []string{"fhir_log.ndjson:1", "invalid", "object"}},
+		{name: "malformed reviewer record", artifact: "reviewer_decisions.ndjson", write: true, contents: `{"item":`, want: []string{"reviewer_decisions.ndjson:1", "truncated"}},
 		{name: "array reviewer record", artifact: "reviewer_decisions.ndjson", write: true, contents: "[]\n", want: []string{"reviewer_decisions.ndjson:1", "invalid", "object"}},
 		{name: "reviewer record over scanner limit", artifact: "reviewer_decisions.ndjson", write: true, contents: `{"note":"` + strings.Repeat("x", 16<<20) + `"}`, want: []string{"reviewer_decisions.ndjson:1", "scanner limit"}},
 		{name: "optional booking remains unchecked", artifact: "booking.json", write: true, contents: `not-json`},
