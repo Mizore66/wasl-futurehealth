@@ -137,7 +137,14 @@ test.describe("a wrong id", () => {
       const list = page.getByRole("list", { name: "Demo cases" }).getByRole("link");
       await expect(list).toHaveCount(NAMES.length);
       await expect(list.first()).toHaveAttribute("href", new RegExp(`^${base}/`));
-      await expect(list.filter({ hasText: "Held: report incomplete" })).toContainText("Aisha");
+      // docs/API.md: this is an incomplete-evidence hold, not a wrong-patient catch; its EID link remains trusted.
+      const trap = read("case_false_closure_trap.json");
+      expect(trap.case).toMatchObject({ closed: false, state: "inadequate" });
+      expect(trap.links[0].weakest_edge).toMatchObject({ basis: "eid", p: 1 });
+      const trapLink = list.filter({ hasText: "Held: incomplete evidence" });
+      await expect(trapLink).toContainText("Aisha");
+      await expect(trapLink).not.toContainText("Wrong-patient");
+      await expect(trapLink).toHaveAttribute("href", `${base}/${encodeURIComponent(trap.case.id)}`);
       await expect(list.filter({ hasText: "Eye exam closed the loop" })).toContainText("PHC-sr-1029");
       await shot(page, `notfound-${base.split("/").pop()}`);
       await noSeriousAxe(page);
