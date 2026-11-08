@@ -53,6 +53,20 @@ class AnnotationProvenance(unittest.TestCase):
         self.assertIn("answer key annotation status: unverified", got["limitations"][1])
         self.assertIn(LIMITATION, got["limitations"][1])
 
+    def test_contradictory_unverified_double_labelling_fails_closed(self):
+        path = self.write_reports(json.dumps({"verification": {
+            "status": "unverified", "human_double_labelled": True,
+        }}))
+        with self.assertRaises(ValueError):
+            final_manifest.annotation_provenance(path)
+
+    def test_unsupported_annotation_status_fails_closed(self):
+        path = self.write_reports(json.dumps({"verification": {
+            "status": "independently_human_double_labelled", "human_double_labelled": True,
+        }}))
+        with self.assertRaises(ValueError):
+            final_manifest.annotation_provenance(path)
+
     def test_malformed_metadata_fails_closed(self):
         malformed = [
             "{not json",

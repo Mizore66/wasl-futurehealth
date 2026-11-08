@@ -24,6 +24,10 @@ def annotation_provenance(reports_path):
     if not isinstance(status, str) or not status.strip():
         raise ValueError("report verification.status must be a non-empty string")
     status = status.strip()
+    if status not in ("clinically_verified", "unverified"):
+        raise ValueError(f"unsupported report verification.status: {status}")
+    if verification.get("human_double_labelled") is True:
+        raise ValueError(f"{status} metadata contradicts the not-independent-labelling limitation")
 
     if status == "clinically_verified":
         method = verification.get("method")
