@@ -340,13 +340,31 @@ test("landing: passers-by walk with no scrolling on a wide shot, and Fatima stan
   await idleFrames(page, 0);
   const read = () => page.evaluate(() => ({ ...window.__wasl3d!(), at: performance.now() }));
   const before = await read();
-  await page.waitForTimeout(1000);
-  const after = await read();
+  const after = await page.evaluate(
+    (initial) =>
+      new Promise<typeof before & { traveled: number[] }>((resolve) => {
+        const started = performance.now();
+        let previous = initial;
+        const traveled = initial.map(() => 0);
+        const tick = () => {
+          const current = window.__wasl3d!();
+          current.walkers.forEach(([x, , z], i) => {
+            traveled[i] += Math.hypot(x - previous[i][0], z - previous[i][2]);
+          });
+          previous = current.walkers;
+          if (performance.now() - started >= 1000) resolve({ ...current, at: performance.now(), traveled });
+          else requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      }),
+    before.walkers,
+  );
   const seconds = (after.at - before.at) / 1000;
   expect(after.clock).toBe("ambient");
   expect(after.frames, "frames were drawn").toBeGreaterThan(before.frames);
-  before.walkers.forEach(([x, , z], i) => {
-    const moved = Math.hypot(after.walkers[i][0] - x, after.walkers[i][2] - z);
+  before.walkers.forEach((_, i) => {
+    // A U-turn can end near where it began, so measure the walked path rather than net displacement.
+    const moved = after.traveled[i];
     // A turn at a lane's end can eat some of the second, never all of it.
     expect(moved, `walker ${i} moved`).toBeGreaterThan(0.2);
     expect(moved, `walker ${i} walked, not ran`).toBeLessThan(TOP_SPEED * (seconds + 1));
