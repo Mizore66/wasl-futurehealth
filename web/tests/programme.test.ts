@@ -62,6 +62,15 @@ describe("programmeView: the two 31-day sources", () => {
 });
 
 describe("programmeView: by programme", () => {
+  it("exposes all seven programmes from the actual committed dashboard fixture", () => {
+    const committed = programmeView(dashboard).programmes;
+    expect(committed.map((p) => p.key)).toEqual(["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"]);
+    expect(committed.find((p) => p.key === "lung_ldct")).toMatchObject({ cases: 305, closed: 280, overdue: 9, open: 16 });
+    expect(committed.find((p) => p.key === "ifhas")).toMatchObject({ cases: 700, closed: 602, overdue: 73, open: 25 });
+    expect(committed.reduce((sum, p) => sum + p.cases, 0)).toBe(5280);
+    expect(dashboard.cases).toBe(5280);
+  });
+
   const { programmes } = programmeView(dashboard);
 
   it("lists the seven programmes in order with human names", () => {
