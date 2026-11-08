@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { cn } from "@/lib/utils";
+import { cx } from "@/lib/cx";
 
 /** The brand palette. The mark never takes the state colours (positive, held, negative): those mean case status. */
 export const BRAND = {
@@ -81,7 +81,7 @@ export function Mark({
     role: title ? "img" : undefined,
     "aria-label": title,
     "aria-hidden": title ? undefined : true,
-    className: cn("block flex-none", className),
+    className: cx("block flex-none", className),
     style,
   } as const;
 
@@ -127,7 +127,7 @@ export function Logo({
   return (
     <span
       data-brand="logo"
-      className={cn("inline-flex items-center leading-none", className)}
+      className={cx("inline-flex items-center leading-none", className)}
       style={{ gap: "0.36em", color: color ?? t.word, ...style }}
     >
       <Mark size="1em" variant="bare" tone={tone} color={color} />

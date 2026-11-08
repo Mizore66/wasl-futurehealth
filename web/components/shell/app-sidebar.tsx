@@ -4,14 +4,14 @@ import { Suspense, use, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mark } from "@/components/brand/mark";
-import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { HonestyChip } from "@/components/wasl/honesty-chip";
 import { SIDEBAR_COOKIE } from "./sidebar-cookie";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cx } from "@/lib/cx";
 
 type NavItem = {
   href: string;
@@ -172,15 +172,16 @@ function Brand({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <Link
       href="/"
+      prefetch={false}
       title="Back to the Wasl site"
-      className={cn(
+      className={cx(
         "flex min-h-11 items-center gap-2.5 rounded-control text-ink no-underline hover:text-ink",
         collapsed ? "justify-center" : "px-2.5",
       )}
     >
       <Mark size={24} />
       <span
-        className={cn(
+        className={cx(
           "flex flex-col whitespace-nowrap",
           collapsed && "sr-only",
         )}
@@ -243,7 +244,7 @@ function NavLink({
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      className={cn(
+      className={cx(
         "relative flex h-11 items-center gap-2.5 rounded-control text-ink no-underline hover:bg-active hover:text-ink md:h-10",
         collapsed ? "justify-center" : "px-2.5",
         active ? "bg-active [&_svg]:text-ink-soft" : "[&_svg]:text-muted",
@@ -251,10 +252,10 @@ function NavLink({
       )}
     >
       {item.icon}
-      <span className={cn("whitespace-nowrap", collapsed && "sr-only")}>{item.label}</span>
+      <span className={cx("whitespace-nowrap", collapsed && "sr-only")}>{item.label}</span>
       {item.badge && (
         <span
-          className={cn(
+          className={cx(
             "ml-auto whitespace-nowrap rounded-full border border-control px-1.5 -mr-1 text-[11px] font-medium leading-4 text-muted",
             collapsed && "sr-only",
           )}
@@ -286,17 +287,20 @@ function NavLink({
   );
 }
 
+/** The desktop aside and the mobile menu each render this nav; they carry different names so the DOM never holds two "Main" landmarks (issue #20). */
 function Nav({
   pathname,
   counts,
   collapsed = false,
+  label = "Main",
 }: {
   pathname: string;
   counts: Promise<NavCounts>;
   collapsed?: boolean;
+  label?: "Main" | "Main (mobile)";
 }) {
   return (
-    <nav aria-label="Main" className="flex flex-col gap-0.5">
+    <nav aria-label={label} className="flex flex-col gap-0.5">
       {NAV.map((item) => (
         <NavLink
           key={item.href}
@@ -319,7 +323,7 @@ function UserBlock({
 }) {
   return (
     <div
-      className={cn("flex items-center gap-2.5", collapsed && "justify-center")}
+      className={cx("flex items-center gap-2.5", collapsed && "justify-center")}
     >
       <span
         aria-hidden
@@ -328,7 +332,7 @@ function UserBlock({
         {user.initials}
       </span>
       <span
-        className={cn(
+        className={cx(
           "flex flex-col whitespace-nowrap",
           collapsed && "sr-only",
         )}
@@ -421,7 +425,7 @@ export function AppSidebar({
         id="app-sidebar"
         aria-label="Wasl"
         data-collapsed={collapsed}
-        className={cn(
+        className={cx(
           "sticky top-0 hidden h-dvh flex-none flex-col overflow-x-hidden pb-5 pt-5 motion-safe:transition-[width] motion-safe:duration-200 md:flex",
           collapsed ? "w-16 px-2" : "w-sidebar px-3",
         )}
@@ -431,7 +435,7 @@ export function AppSidebar({
           <Nav pathname={pathname} counts={counts} collapsed={collapsed} />
         </div>
         <div
-          className={cn(
+          className={cx(
             "mt-auto flex flex-col gap-3",
             collapsed && "items-center",
           )}
@@ -445,7 +449,7 @@ export function AppSidebar({
                 aria-controls="app-sidebar"
                 aria-label={toggleLabel}
                 aria-keyshortcuts="["
-                className={cn(
+                className={cx(
                   "flex h-10 items-center rounded-control text-muted hover:bg-active hover:text-ink",
                   collapsed ? "w-10 justify-center" : "w-full gap-2.5 px-2.5",
                 )}
@@ -464,18 +468,15 @@ export function AppSidebar({
             </TooltipContent>
           </Tooltip>
           <div
-            className={cn(
+            className={cx(
               "flex flex-col gap-3",
               collapsed ? "items-center" : "px-2.5",
             )}
           >
             <UserBlock user={user} collapsed={collapsed} />
-            <HonestyLabel
-              kind="simulated"
-              className={cn(collapsed && "px-1.5")}
-            >
-              <span className={cn(collapsed && "sr-only")}>{SYNTHETIC}</span>
-            </HonestyLabel>
+            <HonestyChip kind="simulated" compact={collapsed}>
+              <span className={cx(collapsed && "sr-only")}>{SYNTHETIC}</span>
+            </HonestyChip>
           </div>
         </div>
       </aside>
@@ -507,10 +508,10 @@ export function AppSidebar({
           className="absolute inset-x-0 top-full"
         >
           <div className="flex max-h-[calc(100dvh-3.5rem)] flex-col gap-3 overflow-y-auto border-b border-line bg-surface p-3">
-            <Nav pathname={pathname} counts={counts} />
+            <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <UserBlock user={user} />
-              <HonestyLabel kind="simulated">{SYNTHETIC}</HonestyLabel>
+              <HonestyChip kind="simulated">{SYNTHETIC}</HonestyChip>
             </div>
           </div>
         </div>
