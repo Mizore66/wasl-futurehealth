@@ -135,7 +135,7 @@ test.describe("Patients", () => {
 
   test("search by case id leads to the record", async ({ page }) => {
     await page.goto("/app/patients");
-    await expect(page.getByTestId("showing")).toHaveText("128 cases: all cases");
+    await expect(page.getByTestId("showing")).toHaveText("178 cases: all cases");
     await shot(page, "patients");
     await page.getByRole("searchbox", { name: "Search case id" }).fill("1037");
     await page.getByRole("button", { name: "Search" }).click();
@@ -388,12 +388,12 @@ test.describe("Phone width, 390px", () => {
 test.describe("Patients: paging and filters", () => {
   test("25 per page; Next and Previous keep the filters", async ({ page }) => {
     await page.goto("/app/patients");
-    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 128");
+    await expect(page.getByTestId("range")).toHaveText("Showing 1–25 of 178");
     await expect(page.locator("tbody tr")).toHaveCount(25);
     await expect(page.getByRole("link", { name: "Previous" })).toHaveCount(0);
     await page.getByRole("navigation", { name: "Pages" }).getByRole("link", { name: "Next" }).click();
     await expect(page).toHaveURL(/page=2/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 128");
+    await expect(page.getByTestId("range")).toHaveText("Showing 26–50 of 178");
 
     await page.goto("/app/patients?programme=crc&page=2");
     await expect(page.getByTestId("showing")).toContainText("colorectal screening");
@@ -404,8 +404,8 @@ test.describe("Patients: paging and filters", () => {
 
   test("a page past the end lands on the last page", async ({ page }) => {
     await page.goto("/app/patients?page=99");
-    await expect(page).toHaveURL(/page=6$/);
-    await expect(page.getByTestId("range")).toHaveText("Showing 126–128 of 128");
+    await expect(page).toHaveURL(/page=8$/);
+    await expect(page.getByTestId("range")).toHaveText("Showing 176–178 of 178");
   });
 
   test("programme filter is its own param and survives the chips", async ({ page }) => {

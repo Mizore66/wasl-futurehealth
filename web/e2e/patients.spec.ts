@@ -19,16 +19,16 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await page.goto("/app/patients?provider=phc-retina");
     await expect(showing(page)).toHaveText("26 cases: provider phc-retina");
     await expect(page.getByTestId("programmes-in-view")).toHaveText("Programme in view: Diabetic eye screening (26).");
-    await expect(page.getByTestId("count-basis")).toContainText("published sample of 128 cases");
+    await expect(page.getByTestId("count-basis")).toContainText("published sample of 178 cases");
 
     await page.goto("/app/patients?consent=denied");
-    await expect(showing(page)).toHaveText("6 cases: consent denied");
+    await expect(showing(page)).toHaveText("9 cases: consent denied");
 
     await page.goto("/app/patients?review=signed");
-    await expect(showing(page)).toHaveText("29 cases: review signed");
+    await expect(showing(page)).toHaveText("31 cases: review signed");
 
     await page.goto("/app/patients?owner=none");
-    await expect(showing(page)).toHaveText("86 cases: no owner");
+    await expect(showing(page)).toHaveText("136 cases: no owner");
     await expect(page.locator("tbody tr").first()).toContainText("No owner");
 
     await page.goto("/app/patients?owner=Practitioner%2Fahs-mushrif-nurse-4");
@@ -55,8 +55,8 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await page.goto("/app/patients");
     await page.getByText("Filter by programme, provider, consent, review or owner").click();
     const programme = page.getByRole("combobox", { name: /^Programme/ });
-    await expect(programme.locator("option")).toHaveCount(6);
-    await expect(programme.locator("option").first()).toHaveText("All programmes (128)");
+    await expect(programme.locator("option")).toHaveCount(8);
+    await expect(programme.locator("option").first()).toHaveText("All programmes (178)");
     const provider = page.getByRole("combobox", { name: /^Provider/ });
     await expect(provider).toContainText("Al Mushrif (52)");
     await expect(provider).toContainText("rad-imaging (25)");
@@ -64,9 +64,9 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await page.getByRole("combobox", { name: /^Owner/ }).selectOption("none");
     await page.getByRole("button", { name: "Apply filters" }).click();
     await expect(page).toHaveURL(/owner=none/);
-    await expect(showing(page)).toHaveText("86 cases: no owner");
-    // Counts now reflect the other active filters: the programme choices split the 86 unowned cases.
-    await expect(page.getByRole("combobox", { name: /^Programme/ })).toContainText("All programmes (86)");
+    await expect(showing(page)).toHaveText("136 cases: no owner");
+    // Counts now reflect the other active filters: the programme choices split the 136 unowned cases.
+    await expect(page.getByRole("combobox", { name: /^Programme/ })).toContainText("All programmes (136)");
   });
 
   test("active filters are summarised and can be removed or cleared", async ({ page }) => {
@@ -79,7 +79,7 @@ test.describe("Patients: programme, provider, consent, review and owner filters"
     await expect(page).toHaveURL(/programme=lung_nodule/);
     await page.getByRole("link", { name: "Clear these filters" }).click();
     await expect(page).toHaveURL(/\/app\/patients$/);
-    await expect(showing(page)).toHaveText("128 cases: all cases");
+    await expect(showing(page)).toHaveText("178 cases: all cases");
     await expect(page.getByTestId("active-filters")).toHaveCount(0);
   });
 
