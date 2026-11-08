@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -35,12 +36,13 @@ func exportRun(t *testing.T) (*apiServer, string) {
 // The export route is registered on the same mux as the detail and audit routes.
 func exportRoutes(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
+	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
 	mux.HandleFunc("/api/cases/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)
 			return
 		}
-		s.caseRoutes(w, r)
+		caseAPI.ServeHTTP(w, r)
 	})
 	return mux
 }
@@ -157,6 +159,49 @@ func TestExportRepeatDeterminism(t *testing.T) {
 	_, c := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
 	if string(a) == string(c) {
 		t.Fatal("a new review in history must change the export")
+	}
+}
+
+func TestExportDropsUserSuppliedIdentityText(t *testing.T) {
+	s, _ := exportRun(t)
+	s.reviews = append(s.reviews, map[string]interface{}{"case": exportLoop, "decision": "same", "actor": "rectal bleeding", "target_actor": "polyp", "role": RoleReviewer})
+	s.cases[exportLoop].ov.owner = "rectal bleeding"
+	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
+	for _, secret := range []string{"rectal bleeding", "polyp"} {
+		if bytes.Contains(raw, []byte(secret)) {
+			t.Fatalf("export leaked user-supplied identity text %q: %s", secret, raw)
+		}
+	}
+	var doc map[string]interface{}
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	detail := doc["detail"].(map[string]interface{})
+	review := detail["api_reviews"].([]interface{})[0].(map[string]interface{})
+	if review["role"] != RoleReviewer || review["decision"] != "same" {
+		t.Fatalf("structured audit metadata was not preserved: %v", review)
+	}
+}
+
+func TestExportPreservesServerReviewReasons(t *testing.T) {
+	s, _ := exportRun(t)
+	s.queue[exportLoop] = []*ReviewItem{{ItemID: "image", Reason: "image_prep_inadequate"}, {ItemID: "link", Reason: "link_contradiction_confirm"}}
+	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
+	for _, reason := range []string{"image_prep_inadequate", "link_contradiction_confirm"} {
+		if !bytes.Contains(raw, []byte(reason)) {
+			t.Fatalf("export dropped server-generated review reason %q", reason)
+		}
+	}
+}
+
+func TestExportDropsUserControlledOperationalCode(t *testing.T) {
+	s, _ := exportRun(t)
+	const clinical = "rectal_bleeding"
+	s.cases[exportLoop].ov.snooze = map[string]interface{}{"until": "2026-11-09T00:00:00Z", "reason": clinical}
+	s.reviews = append(s.reviews, map[string]interface{}{"case": exportLoop, "type": coordEventType, "data": map[string]interface{}{"until": "2026-11-09T00:00:00Z", "reason": clinical}})
+	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
+	if bytes.Contains(raw, []byte(clinical)) {
+		t.Fatalf("export trusted a user-controlled operational code: %s", raw)
 	}
 }
 

@@ -1,6 +1,6 @@
 # Consent event actions API (Workflow C, demo overlay)
 
-Status: **not wired** (handler and tests exist; the route is not registered in `api.go` until integration adds it). Demo mode, synthetic data. Nothing here sends a message or changes canonical consent.
+Status: **wired in `runServe`**. Demo mode, synthetic data. Nothing here sends a message or changes canonical consent.
 
 ## Endpoints
 
@@ -15,17 +15,18 @@ Headers: `X-Wasl-Role` (`coordinator` or `clinician`; any other role gets 403 vi
 | Status | Meaning |
 |---|---|
 | 201 | Event appended to the review ledger; response has `review` (the ledger event) and `overlay` |
-| 400 | Bad JSON, unknown event, missing actor or `expected_head`, note over 500 characters |
+| 400 | Bad JSON, trailing data, unknown event, missing/overlong actor, missing `expected_head`, or note over 500 characters |
 | 403 | Role may not record consent |
 | 404 | Unknown case |
 | 409 | `expected_head` does not equal the case's current head signature (response carries `current_head`), or a grant after an opt-out |
+| 500 | The shared ledger is invalid, its state is indeterminate, or the durable append failed; nothing is recorded in memory |
 | 405 | Method other than GET or POST |
 
 `GET /api/cases/{id}/consent` returns `{case, overlay, history}`. `GET /api/cases/{id}` also gains `api_contact: {overlay, history}`.
 
 ## Ledger and overlay
 
-- Each event is appended to the existing `api_reviews.ndjson` ledger (same hash chain as `/review`), with `action: record_consent`, `decision: <event>`, and `head_signed` preserved as the case's current head signature. A stale head never reaches the ledger.
+- Each event uses the same fail-closed durable append path as `/review` and `/actions`, with `action: record_consent`, `decision: <event>`, and `head_signed` preserved as the case's current head signature. A stale head, invalid ledger or failed append never updates the in-memory overlay.
 - The `api_contact` overlay is **derived from that ledger** on each read, so a server restart rebuilds it exactly. The ledger is written first.
 - Overlay fields: `status` (`none|granted|denied|opted_out`), `demo_pending_consent` (`""|released|cancelled`; a demo-only view of what the hold would do, distinct from the canonical `case.consent`), `events`, `contact_blocked`, `mode: "demo"`, `canonical_consent`, `canonical_unchanged: true`, `last_event_hash`.
 - Grant derives demo hold to `released`. Deny and opt-out derive `cancelled` and set `contact_blocked`. A later grant after a denial is allowed; after an opt-out it is refused (409).
@@ -39,8 +40,4 @@ Detail (`GET /api/cases/{id}`) keeps the upstream JSON bytes and splices `api_co
 
 ## Wiring
 
-Not yet registered. The handler is `s.withConsent(s.caseRoutes)`. Register it where the case router is registered:
-
-```go
-mux.HandleFunc("/api/cases/", s.withConsent(s.caseRoutes))
-```
+`runServe` composes `s.withConsent(s.undoRoutes(s.caseRoutes))` and mounts the export handler on the same `/api/cases/` mux. The consent wrapper handles `/consent`, guards `/review`, adds the detail overlay and delegates all other paths.

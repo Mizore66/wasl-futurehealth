@@ -64,6 +64,8 @@ func TestLoadRejectsSemanticallyInvalidChainValidLedgers(t *testing.T) {
 			resolution("@1", "r3", "rejected"), fComp("contest", "@0", RoleReviewer, "r4", ActSignLink, "r1")},
 		"resolver is contester": {rev(), fComp("contest", "@0", RoleReviewer, "r2", ActSignLink, "r1"),
 			resolution("@1", "r2", "upheld")},
+		"forged contest target actor": {rev(), fComp("contest", "@0", RoleReviewer, "r2", ActSignLink, "nobody"),
+			resolution("@1", "r1", "upheld")},
 	}
 	for name, evs := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -155,9 +157,9 @@ func TestUndoAppendFailureLeavesNoTraceAndReloadRejectsTornLine(t *testing.T) {
 	before := readFile(t, r.ledgerPath())
 	nMem := len(r.s.reviews)
 
-	orig := appendLedgerLine
-	defer func() { appendLedgerLine = orig }()
-	appendLedgerLine = func(path string, line []byte) error {
+	orig := undoAppendLedgerLine
+	defer func() { undoAppendLedgerLine = orig }()
+	undoAppendLedgerLine = func(path string, line []byte) error {
 		os.WriteFile(path, []byte(before+string(line[:len(line)/2])), 0644) // torn half line, then failure
 		return io.ErrShortWrite
 	}
@@ -170,17 +172,73 @@ func TestUndoAppendFailureLeavesNoTraceAndReloadRejectsTornLine(t *testing.T) {
 	if _, err := loadAPIVerified(r.s.run, ""); err == nil {
 		t.Fatal("torn line accepted on reload")
 	}
-	appendLedgerLine = orig
+	undoAppendLedgerLine = orig
 	code, m = r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`"}`)
 	r.wantCode(code, 503, m, "write after torn ledger")
+}
+
+func TestLedgerWriteInputBounds(t *testing.T) {
+	r := newUndoRig(t)
+	longNote := strings.Repeat("n", maxNoteRunes+1)
+	code, m := r.do("POST", "/api/cases/"+undoCaseA+"/review", RoleReviewer, "r1", `{"decision":"same","note":"`+longNote+`"}`)
+	r.wantCode(code, 400, m, "oversized review note")
+	longActor := strings.Repeat("a", maxActorRunes+1)
+	code, m = r.do("POST", "/api/cases/"+undoCaseA+"/review", RoleReviewer, longActor, `{"decision":"same"}`)
+	r.wantCode(code, 400, m, "oversized review actor")
+	target := r.review(undoCaseA, RoleReviewer, "r1", "same")
+	code, m = r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`","note":"`+longNote+`"}`)
+	r.wantCode(code, 400, m, "oversized undo note")
+	code, m = r.undo(undoCaseA, RoleReviewer, longActor, `{"target":"`+target+`"}`)
+	r.wantCode(code, 400, m, "oversized undo actor")
+	code, m = r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`"}{}`)
+	r.wantCode(code, 400, m, "trailing undo body")
+	if len(r.ledgerLines()) != 1 {
+		t.Fatal("invalid input reached the ledger")
+	}
+}
+
+func TestUndoRejectsUnterminatedFinalRecord(t *testing.T) {
+	r := newUndoRig(t)
+	target := r.review(undoCaseA, RoleReviewer, "r1", "same")
+	before := strings.TrimSuffix(readFile(t, r.ledgerPath()), "\n")
+	if err := os.WriteFile(r.ledgerPath(), []byte(before), 0644); err != nil {
+		t.Fatal(err)
+	}
+	code, m := r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`"}`)
+	r.wantCode(code, 503, m, "unterminated ledger")
+	if after := readFile(t, r.ledgerPath()); after != before {
+		t.Fatalf("unterminated ledger was modified: %q", after)
+	}
+}
+
+func TestUndoIndeterminateAppendBlocksEveryWriter(t *testing.T) {
+	r := newUndoRig(t)
+	target := r.review(undoCaseA, RoleReviewer, "r1", "same")
+	orig := undoAppendLedgerLine
+	undoAppendLedgerLine = func(string, []byte) error { return errLedgerIndeterminate }
+	code, m := r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`"}`)
+	r.wantCode(code, 500, m, "indeterminate undo append")
+	undoAppendLedgerLine = orig
+	if r.s.ledgerErr == "" {
+		t.Fatal("indeterminate undo append did not mark the shared ledger failed")
+	}
+	code, m = r.do("POST", "/api/cases/"+undoCaseA+"/review", RoleReviewer, "r3", `{"decision":"same"}`)
+	r.wantCode(code, 500, m, "review after indeterminate undo")
+	code, m = r.do("POST", "/api/cases/"+undoCaseA+"/actions", RoleCoordinator, "n1", `{"expected_head":"head-`+undoCaseA+`","action":"note","text":"handoff"}`)
+	r.wantCode(code, 500, m, "action after indeterminate undo")
+	code, m = r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`"}`)
+	r.wantCode(code, 503, m, "undo after indeterminate undo")
+	if len(r.ledgerLines()) != 1 {
+		t.Fatal("a failed writer appended to the ledger")
+	}
 }
 
 func TestUndoAppendFailureNoOverlayMutation(t *testing.T) {
 	r := newUndoRig(t)
 	target := r.review(undoCaseA, RoleReviewer, "r1", "same")
-	orig := appendLedgerLine
-	defer func() { appendLedgerLine = orig }()
-	appendLedgerLine = func(string, []byte) error { return os.ErrPermission }
+	orig := undoAppendLedgerLine
+	defer func() { undoAppendLedgerLine = orig }()
+	undoAppendLedgerLine = func(string, []byte) error { return os.ErrPermission }
 	code, m := r.undo(undoCaseA, RoleReviewer, "r2", `{"target":"`+target+`","contest":true}`)
 	r.wantCode(code, 500, m, "append permission failure")
 	if r.status(undoCaseA, target) != "active" || len(r.ledgerLines()) != 1 {
@@ -190,12 +248,12 @@ func TestUndoAppendFailureNoOverlayMutation(t *testing.T) {
 
 func TestAppendLedgerLineRealFilesystem(t *testing.T) {
 	dir := t.TempDir()
-	if err := appendLedgerLine(dir, []byte("x\n")); err == nil { // a directory cannot be opened for append
+	if err := undoAppendLedgerLine(dir, []byte("x\n")); err == nil { // a directory cannot be opened for append
 		t.Fatal("expected open failure")
 	}
 	p := filepath.Join(dir, "l.ndjson")
 	for _, l := range []string{"a\n", "b\n"} {
-		if err := appendLedgerLine(p, []byte(l)); err != nil {
+		if err := undoAppendLedgerLine(p, []byte(l)); err != nil {
 			t.Fatal(err)
 		}
 	}

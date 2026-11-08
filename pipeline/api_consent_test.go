@@ -145,13 +145,36 @@ func TestConsentEventStaleHead(t *testing.T) {
 	}
 }
 
+func TestConsentLedgerFailureHandling(t *testing.T) {
+	t.Run("known invalid ledger", func(t *testing.T) {
+		s, srv := consentFixture(t, t.TempDir())
+		defer srv.Close()
+		s.ledgerErr = "ledger state is unknown"
+		code, _ := doReq(t, "POST", srv.URL+"/api/cases/"+consentCase+"/consent", RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", ""))
+		if code != 500 || len(s.reviews) != 0 {
+			t.Fatalf("consent write after ledger failure: code=%d events=%d", code, len(s.reviews))
+		}
+	})
+	t.Run("durable append failure", func(t *testing.T) {
+		s, srv := consentFixture(t, t.TempDir())
+		defer srv.Close()
+		s.appendLine = func([]byte) error { return io.ErrShortWrite }
+		code, _ := doReq(t, "POST", srv.URL+"/api/cases/"+consentCase+"/consent", RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", ""))
+		if code != 500 || len(s.reviews) != 0 {
+			t.Fatalf("consent write after append failure: code=%d events=%d", code, len(s.reviews))
+		}
+	})
+}
+
 func TestConsentEventHistoryReloadAndCanonicalUntouched(t *testing.T) {
 	run := t.TempDir()
 	outLog := filepath.Join(run, "out_log.ndjson")
 	os.WriteFile(outLog, []byte("canonical\n"), 0644)
 	// a pre-existing ledger entry from the review endpoint: must be chained to, and not read as a consent event
-	pre := `{"case":"` + consentCase + `","decision":"confirm_contact","action":"record_consent","hash":"h0","prev":"genesis"}` + "\n"
-	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), []byte(pre), 0644)
+	preEvent := map[string]interface{}{"case": consentCase, "decision": "confirm_contact", "action": "record_consent", "prev": "genesis"}
+	preEvent["hash"] = apiEventHash(preEvent)
+	preBytes, _ := json.Marshal(preEvent)
+	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), append(preBytes, '\n'), 0644)
 	_, srv := consentFixture(t, run)
 	u := srv.URL + "/api/cases/" + consentCase + "/consent"
 	doReq(t, "POST", u, RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", "first"))
@@ -166,7 +189,7 @@ func TestConsentEventHistoryReloadAndCanonicalUntouched(t *testing.T) {
 	var e1, e2 map[string]interface{}
 	json.Unmarshal([]byte(lines[1]), &e1)
 	json.Unmarshal([]byte(lines[2]), &e2)
-	if e1["prev"] != "h0" || e2["prev"] != e1["hash"] {
+	if e1["prev"] != preEvent["hash"] || e2["prev"] != e1["hash"] {
 		t.Fatalf("ledger not hash-chained: %v %v", e1["prev"], e2["prev"])
 	}
 	if b, _ := os.ReadFile(outLog); string(b) != "canonical\n" {
@@ -209,6 +232,18 @@ func TestConsentBlocksDemoContactConfirmation(t *testing.T) {
 	doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody("consent_granted", "sig-head-1", ""))
 	if c, _ := doReq(t, "POST", u+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}`); c != 201 {
 		t.Fatalf("confirm_contact after grant passes through: got %d", c)
+	}
+}
+
+func TestConsentTrailingReviewCannotBypassDeniedContact(t *testing.T) {
+	s, srv := consentFixture(t, t.TempDir())
+	defer srv.Close()
+	u := srv.URL + "/api/cases/" + consentCase
+	doReq(t, "POST", u+"/consent", RoleCoordinator, "c1", consentBody("consent_denied", "sig-head-1", ""))
+	n := len(s.reviews)
+	code, _ := doReq(t, "POST", u+"/review", RoleCoordinator, "c1", `{"decision":"confirm_contact"}{}`)
+	if code != 400 || len(s.reviews) != n {
+		t.Fatalf("trailing review body: code=%d events=%d, want 400 and no write", code, len(s.reviews))
 	}
 }
 

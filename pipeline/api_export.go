@@ -53,7 +53,7 @@ func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	return map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "current": c.last, "booking": s.bookingFor(c.ID),
+		"api_reviews": s.reviewsFor(c.ID), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
 }
@@ -82,6 +82,7 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 // exact: there is no prefix matching, so harmless keys such as raw_id, raw_sha or quoted_by survive.
 var exportDenyKeys = map[string]bool{
 	"quote": true, "quotes": true, "text": true, "raw": true, "raw_text": true, "report_text": true, "clinical_text": true, "note": true,
+	"actor": true, "target_actor": true, "owner": true, "canonical_owner": true,
 	"message": true, "messages": true, "prompt": true, "prompt_text": true, "reasoning": true,
 	"raw_report": true, "raw_report_text": true, "document_text": true, "narrative": true, "comment": true,
 	"comments": true, "summary_text": true, "excerpt": true, "snippet": true, "free_text": true,
@@ -104,14 +105,14 @@ func exportDenyKey(k string) bool {
 }
 
 // Operational keys (hint, reason, why and their _hint/_reason variants) carry machine codes such as
-// prep_grade_one_click or second_identifier. A string under them is kept only when it is such a code (lower-case
-// tokens joined by underscores) or one of the server's own static sentences; anything else is dropped.
+// prep_grade_one_click or second_identifier. Shape is sufficient only on server-generated paths; coordinator/snooze
+// user input is handled separately below.
+var exportOpCode = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)+(?:[+/.:-][a-z0-9_]+)*$`)
+
 func exportOpKey(k string) bool {
 	k = strings.ToLower(k)
 	return k == "hint" || k == "reason" || k == "why" || strings.HasSuffix(k, "_hint") || strings.HasSuffix(k, "_reason")
 }
-
-var exportOpCode = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)+(?:[+/.:-][a-z0-9_]+)*$`)
 
 // exportStaticText lists fixed sentences the server itself writes (no case data in them).
 var exportStaticText = map[string]bool{
@@ -277,13 +278,17 @@ func exportProjectList(v interface{}, a *exportAllow) interface{} {
 
 // redactExport returns a redacted copy of a generic-JSON value. It never mutates its input. Evidence block bodies
 // and citations go through their allowlists; maps lose denylisted keys; operational hint/reason/why strings keep
-// only machine codes; other strings that look like prose are dropped. Numbers, bools, null, ids, hashes and short
-// structured strings survive.
+// only machine codes on server-generated paths. Coordinator snooze/data reasons are user-controlled and always drop.
 func redactExport(v interface{}) (interface{}, bool) {
+	return redactExportScope(v, false)
+}
+
+func redactExportScope(v interface{}, userOperational bool) (interface{}, bool) {
 	switch x := v.(type) {
 	case map[string]interface{}:
 		out := make(map[string]interface{}, len(x))
 		isEv := exportEvidenceBlock(x)
+		isCoordinator := x["type"] == coordEventType
 		for k, val := range x {
 			lk := strings.ToLower(k)
 			switch {
@@ -298,13 +303,14 @@ func redactExport(v interface{}) (interface{}, bool) {
 				continue
 			case exportOpKey(k):
 				if sv, isStr := val.(string); isStr {
-					if exportSafeOpValue(sv) {
+					if !userOperational && exportSafeOpValue(sv) {
 						out[k] = sv
 					}
 					continue
 				}
 			}
-			if r, keep := redactExport(val); keep {
+			childUserOperational := userOperational || lk == "snooze" || (lk == "data" && isCoordinator)
+			if r, keep := redactExportScope(val, childUserOperational); keep {
 				out[k] = r
 			}
 		}
@@ -312,7 +318,7 @@ func redactExport(v interface{}) (interface{}, bool) {
 	case []interface{}:
 		out := make([]interface{}, 0, len(x))
 		for _, val := range x {
-			if r, keep := redactExport(val); keep {
+			if r, keep := redactExportScope(val, userOperational); keep {
 				out = append(out, r)
 			}
 		}
@@ -370,7 +376,10 @@ func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
 	verified, length := verifyChain(c.last.Chain), len(c.last.Chain)
 	liveAudit := s.caseAuditBody(c)
 	anchorNote := liveAudit["anchor_note"]
-	det, err := exportGeneric(s.caseDetailBody(c))
+	liveDetail := s.caseDetailBody(c)
+	contact, contactHistory := s.apiContactOverlay(c)
+	liveDetail["api_contact"] = map[string]interface{}{"overlay": contact, "history": contactHistory}
+	det, err := exportGeneric(liveDetail)
 	if err != nil {
 		return nil, err
 	}
