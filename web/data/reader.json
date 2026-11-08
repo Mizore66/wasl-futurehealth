@@ -9,10 +9,6 @@
    "uid": "u31",
    "title": "Colonoscopy - 16",
    "sha": "6e00fe18bb68b3e16332b08d689433efaee620a866e7b8cdd3f6c14067b0673a",
-   "standsFor": {
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1037",
-    "report": "SKM-dr-226"
-   },
    "segments": [
     {
      "text": "… "
@@ -62,10 +58,6 @@
    "uid": "u6",
    "title": "Colonoscopy with Biopsy - 4",
    "sha": "ba3489c242f08a435bf21f85619a908925cbe51e573b8d6d60fd07530927e95d",
-   "standsFor": {
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1009",
-    "report": "NOO-dr-271"
-   },
    "segments": [
     {
      "text": "… "
@@ -108,10 +100,6 @@
    "uid": "u38",
    "title": "Colonoscopy - 19",
    "sha": "24ecf4adf8f84b0a65a6c6412aaf12a2ff77749857e3ed0b59cacf2bf9cbebaa",
-   "standsFor": {
-    "loop": "ahs-mushrif/ServiceRequest/AHS-sr-1175",
-    "report": "SKM-dr-293"
-   },
    "segments": [
     {
      "text": "… "
@@ -139,11 +127,11 @@
    ],
    "rules": {
     "caecum": "yes",
-    "prep": "adequate",
+    "prep": "inadequate",
     "tissue": "not_asked",
     "histology": "no",
-    "state": "closed",
-    "reason": "criteria_met"
+    "state": "not_closed",
+    "reason": "inadequate_prep"
    },
    "ai": {
     "caecum": "not_stated",
