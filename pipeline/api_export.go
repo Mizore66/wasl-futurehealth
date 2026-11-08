@@ -2,12 +2,12 @@ package main
 
 // Workflow E: case evidence export (docs/API-EXPORT.md).
 //
-//   GET /api/cases/{id}/export  ->  {"schema":"wasl-case-export/1","meta":...,"detail":...,"audit":...,"content_sha256":...}
+//   GET /api/cases/{id}/export  ->  {"schema":"wasl-case-export/1","meta":...,"detail":...,"audit":...,"comparison_sha256":...,"content_sha256":...}
 //
 // The export composes the same case detail and audit projections that GET /api/cases/{id} and
 // GET /api/cases/{id}/audit serve. It is read-only: nothing is written to the run directory, no timestamp is added
-// to the document, and content_sha256 = sha(canon(document without content_sha256)) authenticates the document
-// contents. It does not identify the export across restarts (meta.loaded_at changes when the server reloads).
+// to the document, and content_sha256 = sha(canon(document without content_sha256)) authenticates the full document.
+// comparison_sha256 additionally excludes both hash fields and meta.loaded_at for restart-stable comparisons.
 
 import (
 	"bytes"
@@ -591,6 +591,21 @@ func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Copy the top-level and meta maps so excluding loaded_at cannot mutate the document or its full content hash.
+	comparison := make(map[string]interface{}, len(norm))
+	for k, v := range norm {
+		comparison[k] = v
+	}
+	meta := comparison["meta"].(map[string]interface{})
+	comparisonMeta := make(map[string]interface{}, len(meta))
+	for k, v := range meta {
+		if k != "loaded_at" {
+			comparisonMeta[k] = v
+		}
+	}
+	comparison["meta"] = comparisonMeta
+	doc["comparison_sha256"] = sha(canon(comparison))
+	norm["comparison_sha256"] = doc["comparison_sha256"]
 	doc["content_sha256"] = sha(canon(norm))
 	return doc, nil
 }

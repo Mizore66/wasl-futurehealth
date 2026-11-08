@@ -64,6 +64,32 @@ func decodeMap(t *testing.T, b []byte) map[string]interface{} {
 	return m
 }
 
+// verifyExportComparisonHash independently applies the documented comparison-hash contract to a served document.
+func verifyExportComparisonHash(m map[string]interface{}) bool {
+	claimed, ok := m["comparison_sha256"].(string)
+	if !ok || len(claimed) != 64 {
+		return false
+	}
+	cp := map[string]interface{}{}
+	for k, v := range m {
+		if k != "content_sha256" && k != "comparison_sha256" {
+			cp[k] = v
+		}
+	}
+	meta, ok := cp["meta"].(map[string]interface{})
+	if !ok {
+		return false
+	}
+	metaCopy := map[string]interface{}{}
+	for k, v := range meta {
+		if k != "loaded_at" {
+			metaCopy[k] = v
+		}
+	}
+	cp["meta"] = metaCopy
+	return sha(canon(cp)) == claimed
+}
+
 func TestAuditAnchorNoteReflectsLocalAnchorPresence(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -179,6 +205,9 @@ func TestExportHashVerificationAndMutation(t *testing.T) {
 	if !verify(doc) {
 		t.Fatal("served export fails its own hash verification")
 	}
+	if !verifyExportComparisonHash(doc) {
+		t.Fatal("served export fails its comparison hash verification")
+	}
 	// mutations: a changed case field, a changed chain body, a dropped detail key, an added key
 	mutations := map[string]func(m map[string]interface{}){
 		"case state": func(m map[string]interface{}) {
@@ -200,6 +229,41 @@ func TestExportHashVerificationAndMutation(t *testing.T) {
 		if verify(m) {
 			t.Errorf("mutation %q was not detected by content_sha256", name)
 		}
+		if verifyExportComparisonHash(m) {
+			t.Errorf("mutation %q was not detected by comparison_sha256", name)
+		}
+	}
+}
+
+// comparison_sha256 ignores only the load timestamp, while content_sha256 continues to cover the full document.
+func TestExportComparisonHashRestartStability(t *testing.T) {
+	s, _ := exportRun(t)
+	h := exportRoutes(s)
+	_, beforeRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+	before := decodeMap(t, beforeRaw)
+	if !verifyExportComparisonHash(before) {
+		t.Fatal("initial export fails comparison hash verification")
+	}
+
+	s.meta["loaded_at"] = "2000-01-01T00:00:00Z"
+	_, afterRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+	after := decodeMap(t, afterRaw)
+	if !verifyExportComparisonHash(after) {
+		t.Fatal("reloaded export fails comparison hash verification")
+	}
+	if before["comparison_sha256"] != after["comparison_sha256"] {
+		t.Fatal("changing only meta.loaded_at changed comparison_sha256")
+	}
+	if before["content_sha256"] == after["content_sha256"] {
+		t.Fatal("changing meta.loaded_at no longer changes content_sha256")
+	}
+
+	// The existing content hash still covers every served field except content_sha256 itself, including the new
+	// comparison hash and meta.loaded_at.
+	claimed := after["content_sha256"]
+	delete(after, "content_sha256")
+	if sha(canon(after)) != claimed {
+		t.Fatal("content_sha256 no longer verifies over the full export")
 	}
 }
 
@@ -216,6 +280,9 @@ func TestExportRepeatDeterminism(t *testing.T) {
 	_, c := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
 	if string(a) == string(c) {
 		t.Fatal("a new review in history must change the export")
+	}
+	if decodeMap(t, a)["comparison_sha256"] == decodeMap(t, c)["comparison_sha256"] {
+		t.Fatal("a new review in history must change comparison_sha256")
 	}
 }
 
@@ -736,11 +803,17 @@ func TestExportLargeNumberCanonicalisation(t *testing.T) {
 	if sha(canon(m)) != claimed {
 		t.Fatal("hash does not verify with a number-preserving parse")
 	}
+	if !verifyExportComparisonHash(m) {
+		t.Fatal("comparison hash does not verify with a number-preserving parse")
+	}
 	var lossy map[string]interface{}
 	json.Unmarshal(raw, &lossy)
 	delete(lossy, "content_sha256")
 	if sha(canon(lossy)) == claimed {
 		t.Fatal("a float64 parse unexpectedly reproduces the hash; the documented caveat would be unnecessary")
+	}
+	if verifyExportComparisonHash(lossy) {
+		t.Fatal("a float64 parse unexpectedly reproduces the comparison hash")
 	}
 }
 
@@ -762,5 +835,8 @@ func TestExportNumberCanonicalisation(t *testing.T) {
 	delete(m, "content_sha256")
 	if sha(canon(m)) != claimed {
 		t.Fatal("hash does not verify with UseNumber parse")
+	}
+	if !verifyExportComparisonHash(m) {
+		t.Fatal("comparison hash does not verify with UseNumber parse")
 	}
 }

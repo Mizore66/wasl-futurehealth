@@ -40,7 +40,7 @@ Lists are always `[]`, never `null`.
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
-| GET | `/api/cases/{id}/export` | Sanitized `wasl-case-export/1` with detail, audit and deterministic `content_sha256`; clinical text is redacted ([details](API-EXPORT.md)) |
+| GET | `/api/cases/{id}/export` | Sanitized `wasl-case-export/1` with detail, audit, deterministic `content_sha256` and restart-stable `comparison_sha256`; clinical text is redacted ([details](API-EXPORT.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 
