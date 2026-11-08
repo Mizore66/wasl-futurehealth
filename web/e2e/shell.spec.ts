@@ -259,14 +259,14 @@ test("the run strip says Agent review is a separate run, and is unchanged elsewh
   await expect(page.getByRole("region", { name: "Run metadata" })).toContainText(meta.run);
 });
 
-// Landmarks: the desktop aside and the mobile menu both carry a "Main" nav in the DOM, but only one may be in the
-// accessibility tree at a time (the other is display:none), and no two landmarks on a page may share a name.
+// Landmarks (issue #20): the desktop aside's nav is "Main" and the mobile menu's is "Main (mobile)", so the DOM never holds
+// two navs with one name; only one of them is in the accessibility tree at a time (the other is display:none).
 const APP_ROUTES = ROUTES.filter((r) => r === "/app" || r.startsWith("/app/"));
 const navNames = async (page: Page) => {
   const snap = await page.locator("body").ariaSnapshot();
   return [...snap.matchAll(/^\s*- navigation(?: "([^"]*)")?/gm)].map((m) => m[1] ?? "");
 };
-const main = (page: Page) => page.getByRole("navigation", { name: "Main", exact: true });
+const main = (page: Page, name: "Main" | "Main (mobile)" = "Main") => page.getByRole("navigation", { name, exact: true });
 const FOCUS_TEXT = ["Skip to main content", "WaslADPHC · screening follow-up", "Programme", "Today", "Review", "Patients", "Referrals", "Pipeline", "Results", "Agent reviewExperimental"];
 
 const tabStop = (page: Page) =>
@@ -276,11 +276,12 @@ const tabStop = (page: Page) =>
     return { text: (el.textContent ?? "").replace(/\s+/g, " ").trim(), outline: cs.outlineStyle, width: cs.outlineWidth };
   });
 
-async function expectOneMain(page: Page) {
-  await expect(main(page)).toHaveCount(1);
-  await expect(main(page)).toBeVisible();
+async function expectOneMain(page: Page, name: "Main" | "Main (mobile)" = "Main") {
+  await expect(main(page, name)).toHaveCount(1);
+  await expect(main(page, name)).toBeVisible();
   const names = await navNames(page);
-  expect(names.filter((n) => n === "Main")).toHaveLength(1);
+  expect(names.filter((n) => n.startsWith("Main"))).toEqual([name]);
+  expect(await page.locator('nav[aria-label="Main"]').count(), "one DOM nav named Main").toBe(1);
   expect(new Set(names).size, `landmark names must be unique: ${names.join(" | ")}`).toBe(names.length);
   expect(names.every(Boolean), "every navigation landmark is named").toBe(true);
 }
@@ -311,7 +312,7 @@ for (const route of APP_ROUTES) {
       // Closed: the desktop aside and the closed menu panel are both out of the accessibility tree.
       await expect(page.locator("aside#app-sidebar")).toBeHidden();
       await expect(main(page)).toHaveCount(0);
-      expect((await navNames(page)).filter((n) => n === "Main")).toHaveLength(0);
+      expect((await navNames(page)).filter((n) => n.startsWith("Main"))).toHaveLength(0);
       const closed: string[] = [];
       for (let i = 0; i < 3; i++) {
         await page.keyboard.press("Tab");
@@ -323,13 +324,13 @@ for (const route of APP_ROUTES) {
       expect(closed).toEqual(["Skip to main content", "WaslADPHC · screening follow-up", "Menu navigation"]);
 
       await page.getByRole("button", { name: /Menu/ }).click();
-      await expectOneMain(page);
-      await expect(page.locator("#mobile-menu").getByRole("navigation", { name: "Main", exact: true })).toBeVisible();
+      await expectOneMain(page, "Main (mobile)");
+      await expect(page.locator("#mobile-menu").getByRole("navigation", { name: "Main (mobile)", exact: true })).toBeVisible();
       await expect(page.locator("aside#app-sidebar")).toBeHidden();
       // Opening the menu moves focus to its first link, and Tab continues down the menu in order.
-      await expect(main(page).getByRole("link").first()).toBeFocused();
+      await expect(main(page, "Main (mobile)").getByRole("link").first()).toBeFocused();
       await page.keyboard.press("Tab");
-      await expect(main(page).getByRole("link").nth(1)).toBeFocused();
+      await expect(main(page, "Main (mobile)").getByRole("link").nth(1)).toBeFocused();
     });
   });
 }

@@ -287,17 +287,20 @@ function NavLink({
   );
 }
 
+/** The desktop aside and the mobile menu each render this nav; they carry different names so the DOM never holds two "Main" landmarks (issue #20). */
 function Nav({
   pathname,
   counts,
   collapsed = false,
+  label = "Main",
 }: {
   pathname: string;
   counts: Promise<NavCounts>;
   collapsed?: boolean;
+  label?: "Main" | "Main (mobile)";
 }) {
   return (
-    <nav aria-label="Main" className="flex flex-col gap-0.5">
+    <nav aria-label={label} className="flex flex-col gap-0.5">
       {NAV.map((item) => (
         <NavLink
           key={item.href}
@@ -505,7 +508,7 @@ export function AppSidebar({
           className="absolute inset-x-0 top-full"
         >
           <div className="flex max-h-[calc(100dvh-3.5rem)] flex-col gap-3 overflow-y-auto border-b border-line bg-surface p-3">
-            <Nav pathname={pathname} counts={counts} />
+            <Nav pathname={pathname} counts={counts} label="Main (mobile)" />
             <div className="flex flex-col gap-3 px-2.5 pb-1">
               <UserBlock user={user} />
               <HonestyChip kind="simulated">{SYNTHETIC}</HonestyChip>
