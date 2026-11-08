@@ -1,5 +1,5 @@
 {
- "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+ "anchor_note": "Local anchors for this materialised run: OUT stream ledger heads and a FHIR log hash; `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
  "anchors": {
   "fhir": "509861f5a554a0be3844a0015d97eb3ef5611ed6159c916b7ea1d14b38f3234f",
   "out.p0": "e8426eb3eeaa0ffa75b36d986e2d47e9f150a3b3aa492abfcb7152022bee0bc9",

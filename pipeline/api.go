@@ -34,6 +34,8 @@ import (
 
 const apiVersion = "wasl-api/1"
 
+const auditAnchorNote = "Local anchors for this materialised run: OUT stream ledger heads and a FHIR log hash; `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built"
+
 type apiCase struct {
 	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
 	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
@@ -589,7 +591,7 @@ func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
 	ok := verifyChain(chain)
 	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
 		"case": c.ID, "chain": nz(chain), "chain_verified": ok, "chain_length": len(chain),
-		"anchors": s.anchors, "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+		"anchors": s.anchors, "anchor_note": auditAnchorNote,
 		"decision_signatures": func() []map[string]string {
 			out := []map[string]string{}
 			for _, d := range c.decisions {
