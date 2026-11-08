@@ -22,6 +22,8 @@ FILES = ["README.md", "pipeline/RESULTS.md", "docs/labelling/agreement.json",
 
 class Fixture(unittest.TestCase):
     def setUp(self):
+        if hasattr(self, "tmp"):
+            self.tmp.cleanup()
         self.tmp = tempfile.TemporaryDirectory()
         self.root = Path(self.tmp.name)
         for f in FILES:
