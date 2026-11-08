@@ -64,7 +64,7 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 	chain := c.last.Chain
 	return map[string]interface{}{
 		"case": c.ID, "chain": nz(chain), "chain_verified": verifyChain(chain), "chain_length": len(chain),
-		"anchors": s.anchors, "anchor_note": "daily Merkle/stream heads co-signed into an in-UAE WORM store; `wsi7 tamper` re-verifies the whole run",
+		"anchors": s.anchors, "anchor_note": auditAnchorNote,
 		"decision_signatures": func() []map[string]string {
 			out := []map[string]string{}
 			for _, d := range c.decisions {
