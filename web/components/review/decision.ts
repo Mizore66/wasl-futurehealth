@@ -43,11 +43,15 @@ export type Outcome = {
   commit: string;
   pill: string;
   tone: "positive" | "negative" | "warning";
+  /** Hypothetical downstream language for fixture previews only. */
   text: (name: string, unit: string) => string;
   next: (unit: string) => { who: string; what: string };
   /** What the same answer reads as in the demo, where nothing is appended. */
   preview: string;
-  /** The bowel prep row of the readers table once signed. */
+  /** What a 201 proves, without claiming any downstream effect. */
+  recordedText: string;
+  recordedPrepCell: { word: string; tone: "positive" | "negative" | "warning" | "muted" };
+  /** The bowel prep row of the readers table in a fixture preview. */
   prepCell: { word: string; tone: "positive" | "negative" | "warning" | "muted" };
 };
 
@@ -62,38 +66,46 @@ export const SIGNS: Record<Signature["decision"], string> = {
 export const OUTCOMES: Record<OutcomeKey, Outcome> = {
   close: {
     commit: "Close the case",
-    pill: "Closed: both answers recorded",
+    pill: "Demo answers appended; case open",
     preview: "Would close the case",
     tone: "positive",
     text: (name) => `Same patient, prep adequate. ${name}’s case closes with both answers and the report quote in her record.`,
     next: () => ({ who: "Closed", what: "with both answers recorded" }),
+    recordedText: "Same patient and prep adequate were appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+    recordedPrepCell: { word: "adequate, signed", tone: "positive" },
     prepCell: { word: "adequate, signed", tone: "positive" },
   },
   inadequate: {
     commit: "Sign: prep not adequate",
-    pill: "Not closed: repeat colonoscopy",
+    pill: "Demo answers appended",
     preview: "Would not close: repeat colonoscopy",
     tone: "negative",
     text: (name) => `Same patient, but the prep was not adequate, so this colonoscopy does not count. ${name} goes back to Today for a repeat booking.`,
     next: () => ({ who: "Her coordinator", what: "to book a repeat colonoscopy" }),
+    recordedText: "Same patient and prep not adequate were appended to the demo review log. No repeat booking is confirmed.",
+    recordedPrepCell: { word: "not adequate, signed", tone: "negative" },
     prepCell: { word: "not adequate, signed", tone: "negative" },
   },
   ask: {
     commit: "Sign and ask the unit to grade the prep",
-    pill: "Asked the unit",
+    pill: "Demo identity answer appended",
     preview: "Would ask the unit",
     tone: "warning",
     text: (_name, unit) => `Same patient is signed. The case stays held until ${unit} grades the prep.`,
     next: (unit) => ({ who: unit, what: "to grade the bowel prep" }),
+    recordedText: "Same patient was appended to the demo review log. No bowel prep answer was appended. No unit notification was sent.",
+    recordedPrepCell: { word: "not graded", tone: "muted" },
     prepCell: { word: "asked the unit", tone: "warning" },
   },
   notSame: {
     commit: "Sign: not the same patient",
-    pill: "Link rejected",
+    pill: "Demo identity answer appended",
     preview: "Would reject the link",
     tone: "negative",
     text: (name, unit) => `The report is not ${name}’s. She stays open, and ${unit} is told the report matches no patient on our list.`,
     next: () => ({ who: "Link undone", what: "report returned unmatched" }),
+    recordedText: "Not the same patient was appended to the demo review log. No link or unit change is confirmed.",
+    recordedPrepCell: { word: "not graded", tone: "muted" },
     prepCell: { word: "not applied", tone: "muted" },
   },
 };

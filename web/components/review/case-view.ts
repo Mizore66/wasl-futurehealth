@@ -20,6 +20,8 @@ export type Check = { field: string; rules: ReaderValue; second: ReaderValue; de
 
 export type ReviewView = {
   caseId: string;
+  /** Canonical case state from the latest server render, never inferred from a 201. */
+  closed: boolean;
   shortId: string;
   name: string;
   nameAr: string;
@@ -130,6 +132,7 @@ export function reviewView(c: CaseDetail): ReviewView {
 
   return {
     caseId: c.case.id,
+    closed: c.case.closed,
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
