@@ -11,10 +11,10 @@ test.describe("Programme", () => {
     await page.goto("/app");
     await expect(page.locator("h1")).toHaveText("Programme");
     await expect(page.locator("[data-honesty]:visible").first()).toBeVisible();
-    await expect(page.getByTestId("kpi-eid")).toContainText("12.6%");
-    await expect(page.getByTestId("kpi-wasl")).toContainText("31.9%");
-    await expect(page.getByRole("group", { name: "On a 0 to 100% scale: reported 12.6%, measured by Wasl 31.9%, true 32.9%, target 90%." })).toBeVisible();
-    await expect(page.getByTestId("kpi-truth")).toHaveText("Within 1 point of the true rate (32.9%) in testing");
+    await expect(page.getByTestId("kpi-eid")).toContainText("11.3%");
+    await expect(page.getByTestId("kpi-wasl")).toContainText("30.7%");
+    await expect(page.getByRole("group", { name: "On a 0 to 100% scale: reported 11.3%, measured by Wasl 30.7%, true 31.9%, target 90%." })).toBeVisible();
+    await expect(page.getByTestId("kpi-truth")).toHaveText("Within 1.2 points of the true rate (31.9%) in testing");
     await expect(page.getByText("1 in 6 on your chase list is already done.")).toBeVisible();
     await page.screenshot({ path: "test-results/screens/programme.png", fullPage: true });
     await axe(page);
@@ -45,9 +45,9 @@ test.describe("Programme", () => {
     const rows = stallCard(page).locator("ol a");
     await expect(rows).toHaveCount(3);
     const expected = [
-      ["No acknowledgement", "390", "no_acknowledgement"],
-      ["Not booked", "252", "not_booked"],
-      ["Never notified", "183", "never_notified"],
+      ["No acknowledgement", "370", "no_acknowledgement"],
+      ["Not booked", "241", "not_booked"],
+      ["Never notified", "196", "never_notified"],
     ];
     for (const [i, [label, count, dropoff]] of expected.entries()) {
       await expect(rows.nth(i)).toContainText(label);
@@ -98,34 +98,34 @@ test.describe("Programme charts", () => {
     expect(await unsourced(page)).toEqual([]);
 
     await demo.click();
-    await expect(page.getByTestId("kpi-eid")).toContainText("12.6%");
+    await expect(page.getByTestId("kpi-eid")).toContainText("11.3%");
   });
 
   test("keyboard focus on a bar reveals its tooltip, and Escape closes it", async ({ page }) => {
     await page.goto("/app");
     const bar = kpiCard(page).getByRole("button", { name: /Measured by Wasl/ }).first();
     await bar.focus();
-    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Measured by Wasl: 31.9%" });
+    const tip = kpiCard(page).getByRole("tooltip").filter({ hasText: "Measured by Wasl: 30.7%" });
     await expect(tip).toBeVisible();
-    await expect(tip).toContainText("426 of 1,337 eligible referrals");
+    await expect(tip).toContainText("408 of 1,331 eligible referrals");
     await page.keyboard.press("Escape");
     await expect(tip).toBeHidden();
     await bar.hover();
     await expect(tip).toBeVisible();
   });
 
-  test("by programme: five rows with human names, counts and a link to the filtered list", async ({ page }) => {
+  test("by programme: seven rows with human names, counts and a link to the filtered list", async ({ page }) => {
     await page.goto("/app");
     const rows = progCard(page).locator("ul a");
-    await expect(rows).toHaveCount(5);
-    const keys = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"];
-    for (const [i, name] of ["Colorectal", "Cervical", "Lung nodule", "Diabetic retinopathy", "Breast"].entries()) {
+    await expect(rows).toHaveCount(7);
+    const keys = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"];
+    for (const [i, name] of ["Colorectal", "Cervical", "Lung nodule", "Diabetic retinopathy", "Breast", "Lung LDCT", "IFHAS"].entries()) {
       await expect(rows.nth(i)).toContainText(name);
       await expect(rows.nth(i)).toHaveAttribute("href", `/app/patients?programme=${keys[i]}`);
     }
-    await expect(rows.first()).toContainText("479 closed · 873 overdue · 148 still open");
+    await expect(rows.first()).toContainText("473 closed · 869 overdue · 158 still open");
     await rows.nth(1).focus();
-    await expect(progCard(page).getByRole("tooltip").filter({ hasText: "205 closed, 268 overdue, 127 still open, of 600 cases" })).toBeVisible();
+    await expect(progCard(page).getByRole("tooltip").filter({ hasText: "205 closed, 267 overdue, 128 still open, of 600 cases" })).toBeVisible();
     await rows.first().click();
     await expect(page).toHaveURL(/\/app\/patients\?programme=crc$/);
   });
@@ -138,8 +138,8 @@ test.describe("Programme charts", () => {
     await button.click();
     const open = card.getByRole("button", { name: "Show only the top 3" });
     await expect(open).toHaveAttribute("aria-expanded", "true");
-    for (const h of ["Colorectal and cervical", "Lung nodule", "Diabetic retinopathy", "Breast"]) await expect(card.getByRole("heading", { name: h })).toBeVisible();
-    await expect(card.locator("ol a")).toHaveCount(17);
+    for (const h of ["Colorectal and cervical", "Lung nodule", "Diabetic retinopathy", "Breast", "Lung LDCT", "IFHAS"]) await expect(card.getByRole("heading", { name: h })).toBeVisible();
+    await expect(card.locator("ol a")).toHaveCount(20);
     const lung = card.getByRole("link", { name: /No follow-up CT booked/ });
     await expect(lung).toContainText("498");
     await expect(lung).toHaveAttribute("href", "/app/patients?dropoff=no_followup_ct");
@@ -159,10 +159,10 @@ test.describe("Programme charts", () => {
     await expect(page.getByTestId("capacity-condition")).toContainText("Misallocated");
     await expect(card).toContainText("network pooling (cross-site booking) recovers them");
     const summary = page.getByTestId("capacity-summary");
-    await expect(summary).toContainText("97.1%");
+    await expect(summary).toContainText("97.3%");
     await expect(summary).toContainText("17 days");
-    await expect(summary).toContainText("72");
-    await expect(summary).toContainText("94");
+    await expect(summary).toContainText("85");
+    await expect(summary).toContainText("102");
     await expect(card.getByText("Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.")).toBeVisible();
     await expect(page.getByTestId("pooling-result")).toContainText("22.2% within 31 days without cross-site booking, 42.1% with network pooling");
     await expect(card.getByRole("figure")).toHaveCount(2);
@@ -179,8 +179,8 @@ test.describe("Programme charts", () => {
     await expect(kpi).toHaveAttribute("aria-pressed", "false");
     await kpi.click();
     await expect(kpi).toHaveAttribute("aria-pressed", "true");
-    await expect(kpiCard(page).getByRole("table")).toContainText("31.9%");
-    await expect(kpiCard(page).getByRole("row", { name: /True rate/ })).toContainText("440 of 1,337 eligible referrals");
+    await expect(kpiCard(page).getByRole("table")).toContainText("30.7%");
+    await expect(kpiCard(page).getByRole("row", { name: /True rate/ })).toContainText("424 of 1,331 eligible referrals");
 
     await progCard(page).getByRole("button", { name: "Show as table" }).click();
     const table = progCard(page).getByRole("table");
@@ -192,7 +192,7 @@ test.describe("Programme charts", () => {
     await expect(stallCard(page).getByRole("row", { name: /No follow-up CT booked/ })).toContainText("498");
 
     await capCard(page).getByRole("button", { name: "Show as table" }).first().click();
-    await expect(capCard(page).getByRole("row", { name: /Al Dhafra/ })).toContainText("100");
+    await expect(capCard(page).getByRole("row", { name: /Al Dhafra/ })).toContainText("96");
     await capCard(page).getByRole("button", { name: "Show as table" }).nth(1).click();
     await expect(capCard(page).getByRole("row", { name: /Misallocated, network pooling.*1\.2/ })).toContainText("42.1%");
     await page.screenshot({ path: "test-results/screens/programme-tables.png", fullPage: true });
