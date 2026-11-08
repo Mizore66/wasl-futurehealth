@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { siteUrl } from "@/lib/site-url";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -11,11 +12,9 @@ const plexArabic = IBM_Plex_Sans_Arabic({
   weight: ["400", "500", "600"],
 });
 
-const vercel = process.env.VERCEL_URL;
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (vercel ? `https://${vercel}` : `http://localhost:${process.env.PORT ?? 3000}`);
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  // Public production domain, never the per-deployment hostname: crawlers cannot pass deployment protection.
+  metadataBase: new URL(siteUrl()),
   title: { default: "Wasl", template: "%s · Wasl" },
   description: "Every positive screening test, followed to a documented end. Synthetic data demo.",
   applicationName: "Wasl",
