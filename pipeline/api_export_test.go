@@ -64,25 +64,59 @@ func decodeMap(t *testing.T, b []byte) map[string]interface{} {
 	return m
 }
 
-func TestAuditAnchorNoteSeparatesLocalAnchorsFromDesignedWORM(t *testing.T) {
-	s, _ := exportRun(t)
-	h := exportRoutes(s)
-	_, auditRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
-	_, exportRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
-	audit := decodeMap(t, auditRaw)
-	exportedAudit := decodeMap(t, exportRaw)["audit"].(map[string]interface{})
-
-	for name, body := range map[string]map[string]interface{}{"live audit": audit, "export audit": exportedAudit} {
-		note, _ := body["anchor_note"].(string)
-		lower := strings.ToLower(note)
-		for _, want := range []string{"local anchors", "materialised run", "out stream ledger heads", "fhir log hash", "external in-uae worm storage and co-signing", "designed, not built"} {
-			if !strings.Contains(lower, want) {
-				t.Errorf("%s anchor note %q does not disclose %q", name, note, want)
-			}
-		}
+func TestAuditAnchorNoteReflectsLocalAnchorPresence(t *testing.T) {
+	tests := []struct {
+		name        string
+		anchors     map[string]string
+		wantLocal   string
+		wantAnchors string
+		forbidLocal string
+	}{
+		{
+			name:        "absent",
+			wantLocal:   "no out stream ledger heads or fhir log hash",
+			wantAnchors: "null",
+			forbidLocal: "local anchors for this materialised run:",
+		},
+		{
+			name:        "present",
+			anchors:     map[string]string{"out.p0": "out-head", "fhir": "fhir-head"},
+			wantLocal:   "local anchors for this materialised run: out stream ledger heads and a fhir log hash",
+			wantAnchors: `{"fhir":"fhir-head","out.p0":"out-head"}`,
+		},
 	}
-	if audit["anchor_note"] != exportedAudit["anchor_note"] {
-		t.Fatalf("live and export anchor notes differ: %q != %q", audit["anchor_note"], exportedAudit["anchor_note"])
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, _ := exportRun(t)
+			s.anchors = tt.anchors
+			h := exportRoutes(s)
+			_, auditRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
+			_, exportRaw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
+			audit := decodeMap(t, auditRaw)
+			exportedAudit := decodeMap(t, exportRaw)["audit"].(map[string]interface{})
+
+			for name, body := range map[string]map[string]interface{}{"live audit": audit, "export audit": exportedAudit} {
+				note, _ := body["anchor_note"].(string)
+				lower := strings.ToLower(note)
+				for _, want := range []string{tt.wantLocal, "external in-uae worm storage and co-signing", "designed, not built"} {
+					if !strings.Contains(lower, want) {
+						t.Errorf("%s anchor note %q does not disclose %q", name, note, want)
+					}
+				}
+				if tt.forbidLocal != "" && strings.Contains(lower, tt.forbidLocal) {
+					t.Errorf("%s anchor note %q asserts local anchors are present", name, note)
+				}
+				if got := string(canon(body["anchors"])); got != tt.wantAnchors {
+					t.Errorf("%s anchors = %s, want %s", name, got, tt.wantAnchors)
+				}
+				if body["chain_verified"] != true || body["chain_length"] != float64(3) {
+					t.Errorf("%s chain verification changed: verified=%v length=%v", name, body["chain_verified"], body["chain_length"])
+				}
+			}
+			if audit["anchor_note"] != exportedAudit["anchor_note"] {
+				t.Fatalf("live and export anchor notes differ: %q != %q", audit["anchor_note"], exportedAudit["anchor_note"])
+			}
+		})
 	}
 }
 
