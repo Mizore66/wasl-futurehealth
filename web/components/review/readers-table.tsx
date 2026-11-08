@@ -18,7 +18,7 @@ const AGREED: Record<Exclude<CheckDecision, "disputed">, string> = {
 
 const SHAPE_FOR: Record<Tone, Shape> = { positive: "tick", negative: "cross", warning: "dash", muted: "dash" };
 
-function Decision({ check, signed }: { check: Check; signed?: Outcome["prepCell"] }) {
+function Decision({ check, signed }: { check: Check; signed?: Outcome["answerCell"] }) {
   if (check.decision !== "disputed")
     return (
       <Mark shape="tick" tone="positive">
@@ -49,7 +49,7 @@ const ROW = "grid grid-cols-1 gap-y-1 @xl:grid-cols-[minmax(0,34fr)_minmax(0,22f
 const Label = ({ children }: { children: string }) => <span className="mr-2 inline-block w-28 flex-none text-small text-muted @xl:hidden">{children}</span>;
 
 /** Two readers side by side, one row per closure check, with the report quote below. */
-export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outcome["prepCell"] }) {
+export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outcome["answerCell"] }) {
   return (
     <section aria-labelledby="readers-h" className="@container rounded-card border border-line bg-surface p-4 md:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
@@ -92,7 +92,7 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
           </p>
           <p className="m-0 mt-1 text-small text-muted">
             The words the readers cite from the report.
-            {view.checks.some((c) => c.field === "Prep graded" && c.disputed) && " Neither reader found a bowel prep grade, so a clinician decides."}
+            {view.disputed.length > 0 && ` The readers could not settle ${view.disputed.length === 1 ? "one check" : `${view.disputed.length} checks`}, so a clinician decides.`}
           </p>
         </blockquote>
       )}

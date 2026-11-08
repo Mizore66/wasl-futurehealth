@@ -12,6 +12,11 @@ export const metadata = { title: "Review" };
 export default async function Page() {
   const queue = await reviewQueue();
   const rows = queue.cases.map((c) => ({ detail: c, view: reviewView(c) }));
+  /** The API's fallback for review_hold: outreach stopped by the guard, and no consent log entry anywhere in the case. */
+  const guardOnly =
+    rows.length === 1 &&
+    rows[0].detail.decisions.some((d) => Array.isArray(d.outreach) && (d.outreach as { suppress?: string }[]).some((o) => o.suppress === "second_identifier_unconfirmed")) &&
+    rows[0].detail.decisions.every((d) => d.consent_log.length === 0);
 
   return (
     <>
@@ -30,6 +35,13 @@ export default async function Page() {
           <p className="m-0">
             The sample run has no open review items: its simulated reviewers signed them all. This queue rebuilds one from the demo case{" "}
             <span className="font-medium">Held for human review</span>, using its {rows[0]?.detail.review_items.length ?? 0} review items as they stood before they were signed.
+            {guardOnly && (
+              <>
+                {" "}
+                In this run no loop had consent held and then granted, so this case is the run&rsquo;s closed, signed loop whose appointment reminder was
+                stopped by the second-identifier guard, not by a consent hold.
+              </>
+            )}
           </p>
           {apiMode() === "live" && (
             <p className="m-0 mt-2">
@@ -61,7 +73,7 @@ export default async function Page() {
               </span>
               <span className="col-start-2 min-w-0 text-muted md:col-start-auto">{view.held}</span>
               <span className="col-start-2 text-small text-muted md:col-start-auto">
-                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : "Bowel prep")).join(" · ")}
+                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : "Colonoscopy report")).join(" · ")}
               </span>
             </Link>
             <span className="pointer-events-none absolute left-[17px] top-1/2 flex -translate-y-1/2 items-center md:left-[25px]">
