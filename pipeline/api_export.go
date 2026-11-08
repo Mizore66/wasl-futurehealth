@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"unicode"
 )
 
 const exportSchema = "wasl-case-export/1"
@@ -78,41 +77,9 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 
 // ---- redaction -------------------------------------------------------------------------------------------------
 
-// exportDenyKeys are removed entirely (key and value) wherever they appear. Matching is on the lower-cased key and is
-// exact: there is no prefix matching, so harmless keys such as raw_id, raw_sha or quoted_by survive.
-var exportDenyKeys = map[string]bool{
-	"quote": true, "quotes": true, "text": true, "raw": true, "raw_text": true, "report_text": true, "clinical_text": true, "note": true,
-	"actor": true, "target_actor": true, "owner": true, "canonical_owner": true,
-	"message": true, "messages": true, "prompt": true, "prompt_text": true, "reasoning": true,
-	"raw_report": true, "raw_report_text": true, "document_text": true, "narrative": true, "comment": true,
-	"comments": true, "summary_text": true, "excerpt": true, "snippet": true, "free_text": true,
-}
-
-// exportDenySuffixes catch variants such as gemma_quote, reviewer_note, model_reasoning.
-var exportDenySuffixes = []string{"_quote", "_quotes", "_text", "_note", "_notes", "_message", "_messages", "_prompt", "_reasoning", "_excerpt", "_snippet", "_narrative", "_comment"}
-
-func exportDenyKey(k string) bool {
-	k = strings.ToLower(k)
-	if exportDenyKeys[k] {
-		return true
-	}
-	for _, suf := range exportDenySuffixes {
-		if strings.HasSuffix(k, suf) {
-			return true
-		}
-	}
-	return false
-}
-
-// Operational keys (hint, reason, why and their _hint/_reason variants) carry machine codes such as
-// prep_grade_one_click or second_identifier. Shape is sufficient only on server-generated paths; coordinator/snooze
-// user input is handled separately below.
-var exportOpCode = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)+(?:[+/.:-][a-z0-9_]+)*$`)
-
-func exportOpKey(k string) bool {
-	k = strings.ToLower(k)
-	return k == "hint" || k == "reason" || k == "why" || strings.HasSuffix(k, "_hint") || strings.HasSuffix(k, "_reason")
-}
+// Operational fields on server-generated paths carry machine codes such as prep_grade_one_click or
+// second_identifier. User-controlled coordinator/snooze reasons are not present in those paths' allowlists.
+var exportOpCode = regexp.MustCompile(`^[a-z0-9]+(?:_[a-z0-9]+)*(?:[+/.:-][a-z0-9_]+)*$`)
 
 // exportStaticText lists fixed sentences the server itself writes (no case data in them).
 var exportStaticText = map[string]bool{
@@ -121,21 +88,6 @@ var exportStaticText = map[string]bool{
 
 func exportSafeOpValue(v string) bool { return exportStaticText[v] || exportOpCode.MatchString(v) }
 
-// exportLooksLikeProse is the value-side guard for keys nobody listed: three or more whitespace-separated tokens
-// of which at least two contain a letter reads as a sentence, not an identifier, hash, timestamp or code.
-func exportLooksLikeProse(v string) bool {
-	words := 0
-	for _, f := range strings.Fields(v) {
-		for _, r := range f {
-			if unicode.IsLetter(r) {
-				words++
-				break
-			}
-		}
-	}
-	return len(strings.Fields(v)) >= 3 && words >= 2
-}
-
 // ---- allowlisted projection ------------------------------------------------------------------------------------
 //
 // Evidence bodies, timeline rows and citations are projected through an allowlist: a key that is not listed is
@@ -143,23 +95,44 @@ func exportLooksLikeProse(v string) bool {
 // still pass through the scalar guard (bounded length, no prose, no newlines).
 
 type exportAllow struct {
-	leaf bool                    // a scalar, or a list of scalars, is kept
-	kids map[string]*exportAllow // keys kept when the value is an object; "*" matches any key
+	leaf      bool                    // a scalar, or a list of scalars, is kept
+	op        bool                    // string leaves must be server operational codes or fixed static text
+	items     *exportAllow            // an array of objects projected with this schema
+	chain     bool                    // an array of hash-chain blocks, projected according to block type
+	citations bool                    // an array of citation objects
+	kids      map[string]*exportAllow // keys kept when the value is an object; "*" requires keyOK
+	keyOK     *regexp.Regexp          // allowed dynamic-map keys; never used for ordinary object fields
 }
 
 var exportLeaf = &exportAllow{leaf: true}
+var exportOperationalLeaf = &exportAllow{leaf: true, op: true}
 
-func exportScalarOK(v interface{}) bool {
+func exportScalarOK(v interface{}, op bool) bool {
 	switch x := v.(type) {
 	case string:
-		return len(x) <= 200 && !strings.ContainsAny(x, "\n\r") && !exportLooksLikeProse(x)
+		if op {
+			return exportSafeOpValue(x)
+		}
+		return exportSafeValue.MatchString(x)
 	case bool, nil, json.Number, float64:
 		return true
 	}
 	return false
 }
 
+func exportObject(kids map[string]*exportAllow) *exportAllow { return &exportAllow{kids: kids} }
+func exportList(item *exportAllow) *exportAllow              { return &exportAllow{items: item} }
+
 func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
+	if a == nil {
+		return nil, false
+	}
+	if a.chain {
+		return exportChainList(v), true
+	}
+	if a.citations {
+		return exportCitations(v), true
+	}
 	switch x := v.(type) {
 	case map[string]interface{}:
 		if a.kids == nil {
@@ -167,12 +140,13 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		}
 		out := map[string]interface{}{}
 		for k, val := range x {
-			sub := a.kids[strings.ToLower(k)]
+			lk := strings.ToLower(k)
+			sub := a.kids[lk]
 			if sub == nil {
 				sub = a.kids["*"]
-			}
-			if sub == nil {
-				continue
+				if sub == nil || a.keyOK == nil || !a.keyOK.MatchString(lk) {
+					continue
+				}
 			}
 			if r, keep := exportProject(val, sub); keep {
 				out[k] = r
@@ -180,18 +154,27 @@ func exportProject(v interface{}, a *exportAllow) (interface{}, bool) {
 		}
 		return out, true
 	case []interface{}:
+		if a.items != nil {
+			out := []interface{}{}
+			for _, val := range x {
+				if r, keep := exportProject(val, a.items); keep {
+					out = append(out, r)
+				}
+			}
+			return out, true
+		}
 		if !a.leaf {
 			return nil, false
 		}
 		out := []interface{}{}
 		for _, val := range x {
-			if exportScalarOK(val) {
+			if exportScalarOK(val, a.op) {
 				out = append(out, val)
 			}
 		}
 		return out, true
 	default:
-		if a.leaf && exportScalarOK(v) {
+		if a.leaf && exportScalarOK(v, a.op) {
 			return v, true
 		}
 	}
@@ -213,7 +196,7 @@ var exportReaderFields = &exportAllow{kids: func() map[string]*exportAllow {
 		"birads_right", "birads_left", "birads_overall", "assessment", "biopsy",
 		"type", "long_mm", "short_mm", "count", "solid_mm", "prior_long_mm", "prior_short_mm", "resolved", "not_assessable", "stated", "mean_mm",
 		"lungrads_overall", "lungrads_worst", "workup", "mdt", "tissue")
-	m["status"] = &exportAllow{kids: map[string]*exportAllow{"*": exportLeaf}}
+	m["status"] = exportObject(exportKeys("bp", "glyc", "lipid", "weight"))
 	return m
 }()}
 
@@ -255,97 +238,299 @@ func exportCitations(v interface{}) interface{} {
 	return out
 }
 
-// exportEvidenceBlock reports whether m is a chain block of type evidence.
-func exportEvidenceBlock(m map[string]interface{}) bool {
-	t, _ := m["type"].(string)
-	_, hasBody := m["body"].(map[string]interface{})
-	return t == "evidence" && hasBody
+// ---- remaining detail/audit schemas -----------------------------------------------------------------------------
+//
+// These schemas deliberately enumerate the served operational contract rather than trying to recognise clinical
+// prose. Ordinary strings must be single structural tokens; operational reason fields use the stricter machine-code
+// shape. Dynamic maps list their domain keys explicitly, except audit anchors whose partition-subject keys are
+// constrained by keyOK.
+
+var exportDomainStatusAllow = exportObject(exportKeys("bp", "glyc", "lipid", "weight"))
+var exportDomainDaysAllow = exportObject(exportKeys("bp", "glyc", "lipid", "weight"))
+
+var exportLungSurvAllow = func() *exportAllow {
+	a := &exportAllow{}
+	a.kids = exportKeys("loop", "from_report", "from_day", "window_start_day", "due_day", "state", "ct_report", "ct_day", "basis", "round")
+	a.kids["reason"] = exportOperationalLeaf
+	a.kids["next"] = a
+	return a
+}()
+
+var exportLungDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("finding_report", "finding_label", "risk", "risk_recorded", "window_start_day", "window_end_day", "outcome",
+		"followup_report", "within_window", "followup_ct_seen", "closer", "tissue_due_day", "scope")
+	m["rec"] = exportObject(exportKeys("action", "win_lo_days", "win_hi_days", "next_step", "optional", "cell", "next_lo_days", "next_hi_days", "next_from", "next_optional"))
+	m["surveillance"] = exportLungSurvAllow
+	return m
+}())
+
+var exportDRDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("screen_report", "screen_label", "coded_grade", "grade_day", "deadline_day", "clinic_note", "outcome", "examined", "within_deadline")
+	m["rec"] = exportObject(exportKeys("action", "deadline_days", "urgency", "cell"))
+	m["next_due"] = exportObject(exportKeys("kind", "from_day", "interval_days", "due_day", "basis", "seen", "seen_day", "seen_report", "recall_overdue"))
+	return m
+}())
+
+var exportBreastDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("screen_report", "screen_label", "coded_birads", "screen_day", "deadline_day", "assessment_document", "outcome", "within_deadline", "treatment_referral_due_day")
+	m["rec"] = exportObject(exportKeys("action", "deadline_days", "urgency", "cell"))
+	return m
+}())
+
+var exportLDCTDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("scan_report", "scan_label", "coded_lungrads", "scan_day", "due_day", "deadline_day", "followup_report",
+		"followup_label", "followup_next_step", "workup_document", "outcome", "within_deadline")
+	m["rec"] = exportObject(exportKeys("action", "due_days", "deadline_days", "urgency", "cell", "next_step"))
+	return m
+}())
+
+var exportIfhasDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("screen_report", "screen_label", "coded_results_agree", "screen_day", "deadline_day", "followup_documents", "outcome", "within_deadline", "next_step")
+	m["rec"] = exportObject(func() map[string]*exportAllow {
+		r := exportKeys("action", "deadline_days", "urgency", "cell", "abnormal_domains", "prediabetes")
+		r["domain_deadline_days"] = exportDomainDaysAllow
+		return r
+	}())
+	m["domain_status"] = exportDomainStatusAllow
+	m["resolved_day"] = exportDomainDaysAllow
+	return m
+}())
+
+var exportHandoffAllow = exportObject(exportKeys("referral_id", "decision", "reason_code", "advice_ref", "info_requested", "clinical_priority",
+	"received_at", "decided_at", "decided_by", "patient_informed", "outreach_consent_status", "act_by", "medical_director_day", "acted_at", "status"))
+
+var exportOutreachAllow = exportObject(exportKeys("kind", "ev", "basis", "p_cal", "released", "suppress", "guard", "pair", "channel", "sender", "tpl"))
+var exportConsentTransitionAllow = exportObject(exportKeys("ev", "kind", "from", "to", "contact"))
+
+var exportSnoozeAllow = exportObject(exportKeys("at", "event", "until"))
+var exportContactOutcomeAllow = exportObject(exportKeys("at", "event", "outcome", "channel"))
+var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("head", "actions", "last_action_at", "ledger_status")
+	m["snooze"] = exportSnoozeAllow
+	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
+	return m
+}())
+
+var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel"))
+var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
+		"head", "seq", "target", "target_action", "resolution", "action_head")
+	m["data"] = exportCoordinatorDataAllow
+	return m
+}())
+
+var exportSignoffAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("item", "loop", "kinds", "pair", "report", "link", "evidence", "reviewer", "signed_head", "run", "role", "reads",
+		"dur_s", "purpose", "hold", "agent_read", "agent_s", "wrong", "raw_id", "quoted_by", "raw_sha")
+	m["hint"] = exportOperationalLeaf
+	m["why"] = exportOperationalLeaf
+	return m
+}())
+
+var exportLinkAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("loop", "referral_patient", "downstream_event", "path_strength", "path_p_cal", "tau", "hops", "near_miss", "linker", "eid_contra", "review_pair_substituted")
+	m["weakest_edge"] = exportObject(exportKeys("a", "b", "p", "basis"))
+	return m
+}())
+
+var exportHoldAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("loop", "state", "programme", "rule", "policy", "report", "age", "scope", "label", "due_day", "deadline_day")
+	m["reason"] = exportOperationalLeaf
+	m["why"] = exportOperationalLeaf
+	m["domain_status"] = exportDomainStatusAllow
+	return m
+}())
+
+var exportReviewItemAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("item", "loop", "kinds", "pair", "p", "report", "verdict", "conf", "head", "in_seq", "overdue", "day")
+	m["reason"] = exportOperationalLeaf
+	m["chain"] = &exportAllow{chain: true}
+	return m
+}())
+
+var exportAgentInvestigationAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("item", "pair", "label", "recommendation")
+	m["citations"] = &exportAllow{citations: true}
+	m["human"] = exportObject(exportKeys("link", "reads", "role"))
+	return m
+}())
+var exportAgentProvenanceAllow = exportObject(exportKeys("cached", "experimental", "model", "schema_ver"))
+
+var exportBookingAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("status", "data_mode", "decision_support_only", "procedure", "repeat_after_unsatisfactory", "requested_day", "window_days",
+		"rule", "region", "state_at_run_end", "within_window", "cross_region", "wait_days", "target_days", "capacity_condition", "pooling_relevant")
+	m["reason"] = exportOperationalLeaf
+	m["constraints"] = exportObject(exportKeys("female_endoscopist", "arabic_only", "region", "travel_ok", "after_hours", "avoid_ramadan", "prior_no_show"))
+	m["booking"] = exportObject(exportKeys("loop_id", "session_id", "unit", "day", "endoscopist_female", "overbooked", "predicted_no_show",
+		"nurse_call", "prep_send_day", "deadline", "within_deadline", "booked_on"))
+	m["pathway"] = exportObject(exportKeys("route"))
+	m["prep_risk"] = exportObject(func() map[string]*exportAllow {
+		p := exportKeys("score", "band", "factors", "requires_clinician_order")
+		p["suggested_intervention"] = exportObject(exportKeys("code"))
+		return p
+	}())
+	m["app9"] = exportObject(exportKeys("anticoagulant", "diabetes", "insulin", "device", "prior_abdominal_surgery", "tricyclic", "opioid",
+		"constipation", "prior_colonoscopy", "prior_inadequate_prep", "hospitalised", "asa_class", "data_mode"))
+	return m
+}())
+
+var exportCaseAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("id", "programme", "state", "dropoff", "provider", "referral_day", "deadline_day", "overdue", "priority", "consent",
+		"review", "closed", "closed_day", "fixture", "decisions")
+	m["api_overlay"] = exportOverlayAllow
+	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
+	return m
+}())
+
+var exportDecisionAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("id", "loop", "in_seq", "prov", "sr_day", "now", "state", "overdue", "unowned", "reported_closed", "closed_day",
+		"closing_report", "pending", "notif_day", "ack_day", "ref_status", "ref_day", "comm_flags", "dropoff", "human_assisted", "prog", "prio",
+		"deadline", "proc_day", "ec_state", "ec_turns", "tb_state", "prep_q", "policy", "contact", "sig", "audit_reopened")
+	m["esc"] = exportOperationalLeaf
+	m["chain"] = &exportAllow{chain: true}
+	m["consent_log"] = exportList(exportConsentTransitionAllow)
+	m["outreach"] = exportList(exportOutreachAllow)
+	m["lung"], m["dr"], m["breast"], m["ldct"], m["ifhas"] = exportLungDecisionAllow, exportDRDecisionAllow, exportBreastDecisionAllow, exportLDCTDecisionAllow, exportIfhasDecisionAllow
+	m["handoff"] = exportHandoffAllow
+	return m
+}())
+
+var exportDecisionHistoryAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("decision_id", "in_seq", "state", "dropoff", "overdue", "policy", "sig")
+	m["escalations"] = exportOperationalLeaf
+	m["consent_log"] = exportList(exportConsentTransitionAllow)
+	m["outreach"] = exportList(exportOutreachAllow)
+	return m
+}())
+
+var exportContactOverlayAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("status", "demo_pending_consent", "events", "contact_blocked", "mode", "canonical_consent", "canonical_unchanged", "last_event_hash")
+	m["history"] = exportList(exportReviewEventAllow)
+	return m
+}())
+
+var exportDetailAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys()
+	m["review_ledger"] = exportObject(exportKeys("status", "events_applied"))
+	m["case"] = exportCaseAllow
+	m["identities"] = exportList(exportObject(exportKeys("registration", "provider", "role")))
+	m["timeline"] = exportList(exportTimelineAllow)
+	m["links"] = exportList(exportLinkAllow)
+	m["evidence"] = exportList(exportEvidenceAllow)
+	m["holds"] = exportList(exportHoldAllow)
+	m["outreach"] = exportList(exportOutreachAllow)
+	m["decisions"] = exportList(exportDecisionHistoryAllow)
+	m["review_items"] = exportList(exportReviewItemAllow)
+	m["signoffs"] = exportList(exportSignoffAllow)
+	m["api_reviews"] = exportList(exportReviewEventAllow)
+	m["api_overlay"] = exportOverlayAllow
+	m["current"] = exportDecisionAllow
+	m["booking"] = exportBookingAllow
+	m["agent_investigations"] = exportList(exportAgentInvestigationAllow)
+	m["agent_provenance"] = exportAgentProvenanceAllow
+	m["api_contact"] = exportObject(map[string]*exportAllow{"overlay": exportContactOverlayAllow, "history": exportList(exportReviewEventAllow)})
+	return m
+}())
+
+var exportAuditAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("case", "chain_verified", "chain_length")
+	m["chain"] = &exportAllow{chain: true}
+	m["anchors"] = &exportAllow{kids: map[string]*exportAllow{"*": exportLeaf}, keyOK: regexp.MustCompile(`^(?:fhir|out\.p[0-9]+)$`)}
+	m["decision_signatures"] = exportList(exportObject(exportKeys("decision_id", "sig", "recomputed", "policy")))
+	m["history"] = exportList(exportReviewEventAllow)
+	return m
+}())
+
+var exportClosureAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("loop", "state", "programme", "priority", "closed_day", "sla_days", "within_sla", "policy",
+		"rule", "report", "outcome", "window", "within_window", "next_step", "closer", "closed_into", "surveillance_loop", "surveillance_ct_due_day",
+		"grade_day", "screen_day", "scan_day", "deadline_day", "due_day", "within_deadline", "followup_report", "followup_label", "followup_next_step",
+		"screen_report", "scan_report", "assessment_document", "workup_document")
+	m["domain_status"] = exportDomainStatusAllow
+	m["resolved_day"] = exportDomainDaysAllow
+	return m
+}())
+
+var exportRecommendationAllow = exportObject(exportKeys("rule", "cell", "action", "deadline_days", "due_days", "urgency", "window", "next_step", "optional"))
+var exportAutoAuditAllow = exportObject(exportKeys("loop", "report", "item", "p", "status", "auto_verdict", "audit_answer", "result"))
+var exportEscalationAllow = exportObject(exportKeys("loop", "state", "programme", "rule", "outcome", "to", "day", "basis"))
+var exportSurveillanceOpenedAllow = exportObject(func() map[string]*exportAllow {
+	m := exportKeys("loop", "parent", "parent_head", "parent_closing_report", "rule", "cell", "next_step", "optional", "from", "window", "round", "basis")
+	m["reason"] = exportOperationalLeaf
+	return m
+}())
+var exportOutreachGuardAllow = exportObject(exportKeys("loop", "pair", "event", "basis", "p_cal", "rule", "contradiction"))
+var exportBlockShellAllow = exportObject(exportKeys("type", "prev", "hash"))
+
+func exportChainBodyAllow(blockType string) *exportAllow {
+	switch blockType {
+	case "evidence":
+		return exportEvidenceAllow
+	case "link_decision":
+		return exportLinkAllow
+	case "hold_decision":
+		return exportHoldAllow
+	case "closure_decision":
+		return exportClosureAllow
+	case "recommendation":
+		return exportRecommendationAllow
+	case "human_signoff":
+		return exportSignoffAllow
+	case "auto_audit":
+		return exportAutoAuditAllow
+	case "escalation_decision":
+		return exportEscalationAllow
+	case "surveillance_opened":
+		return exportSurveillanceOpenedAllow
+	case "outreach_guard":
+		return exportOutreachGuardAllow
+	default:
+		return exportObject(map[string]*exportAllow{})
+	}
 }
 
-func exportProjectList(v interface{}, a *exportAllow) interface{} {
+func exportChainBlock(v interface{}) (interface{}, bool) {
+	m, ok := v.(map[string]interface{})
+	if !ok {
+		return nil, false
+	}
+	out, _ := exportProject(m, exportBlockShellAllow)
+	block := out.(map[string]interface{})
+	blockType, _ := m["type"].(string)
+	body, keep := exportProject(m["body"], exportChainBodyAllow(blockType))
+	if !keep {
+		body = map[string]interface{}{}
+	}
+	block["body"] = body
+	return block, true
+}
+
+func exportChainList(v interface{}) interface{} {
 	list, ok := v.([]interface{})
 	if !ok {
-		return v
+		return []interface{}{}
 	}
 	out := []interface{}{}
-	for _, it := range list {
-		if r, keep := exportProject(it, a); keep {
-			out = append(out, r)
+	for _, item := range list {
+		if projected, keep := exportChainBlock(item); keep {
+			out = append(out, projected)
 		}
 	}
 	return out
 }
 
-// redactExport returns a redacted copy of a generic-JSON value. It never mutates its input. Evidence block bodies
-// and citations go through their allowlists; maps lose denylisted keys; operational hint/reason/why strings keep
-// only machine codes on server-generated paths. Coordinator snooze/data reasons are user-controlled and always drop.
+// redactExport projects the audit body through its default-deny schema. It never mutates its input.
 func redactExport(v interface{}) (interface{}, bool) {
-	return redactExportScope(v, false)
+	return exportProject(v, exportAuditAllow)
 }
 
-func redactExportScope(v interface{}, userOperational bool) (interface{}, bool) {
-	switch x := v.(type) {
-	case map[string]interface{}:
-		out := make(map[string]interface{}, len(x))
-		isEv := exportEvidenceBlock(x)
-		isCoordinator := x["type"] == coordEventType
-		for k, val := range x {
-			lk := strings.ToLower(k)
-			switch {
-			case lk == "citations" || lk == "citation":
-				out[k] = exportCitations(val)
-				continue
-			case isEv && k == "body":
-				pb, _ := exportProject(val, exportEvidenceAllow)
-				out[k] = pb
-				continue
-			case exportDenyKey(k):
-				continue
-			case exportOpKey(k):
-				if sv, isStr := val.(string); isStr {
-					if !userOperational && exportSafeOpValue(sv) {
-						out[k] = sv
-					}
-					continue
-				}
-			}
-			childUserOperational := userOperational || lk == "snooze" || (lk == "data" && isCoordinator)
-			if r, keep := redactExportScope(val, childUserOperational); keep {
-				out[k] = r
-			}
-		}
-		return out, true
-	case []interface{}:
-		out := make([]interface{}, 0, len(x))
-		for _, val := range x {
-			if r, keep := redactExportScope(val, userOperational); keep {
-				out = append(out, r)
-			}
-		}
-		return out, true
-	case string:
-		if exportLooksLikeProse(x) {
-			return nil, false
-		}
-		return x, true
-	}
-	return v, true
-}
-
-// redactExportDetail applies the allowlists to the detail paths that hold bare bodies (evidence, timeline) and then
-// the generic redaction, which also projects the evidence blocks inside every chain.
+// redactExportDetail projects every detail section, including nested chains and coordinator/consent overlays. There is
+// intentionally no generic fallback for a future section or field: it must be added to the relevant schema first.
 func redactExportDetail(det map[string]interface{}) map[string]interface{} {
-	cp := make(map[string]interface{}, len(det))
-	for k, v := range det {
-		cp[k] = v
+	r, keep := exportProject(det, exportDetailAllow)
+	if !keep {
+		return map[string]interface{}{}
 	}
-	if v, ok := cp["evidence"]; ok {
-		cp["evidence"] = exportProjectList(v, exportEvidenceAllow)
-	}
-	if v, ok := cp["timeline"]; ok {
-		cp["timeline"] = exportProjectList(v, exportTimelineAllow)
-	}
-	r, _ := redactExport(cp)
 	return r.(map[string]interface{})
 }
 
