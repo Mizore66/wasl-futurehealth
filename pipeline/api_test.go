@@ -207,3 +207,91 @@ func TestAPIBookingSupport(t *testing.T) {
 		t.Fatalf("closed case should not get a booking suggestion")
 	}
 }
+
+func offsetTestAPI() *apiServer {
+	s := &apiServer{meta: map[string]interface{}{"api": apiVersion}, cases: map[string]*apiCase{}, order: []string{"case-a", "case-b", "case-c"}}
+	for _, id := range s.order {
+		s.cases[id] = &apiCase{ID: id}
+	}
+	return s
+}
+
+func TestAPICasesOffsetBoundaries(t *testing.T) {
+	tests := []struct {
+		name       string
+		offset     string
+		wantOffset int
+		wantIDs    []string
+	}{
+		{name: "zero", offset: "0", wantOffset: 0, wantIDs: []string{"case-a", "case-b"}},
+		{name: "nonnumeric", offset: "not-a-number", wantOffset: 0, wantIDs: []string{"case-a", "case-b"}},
+		{name: "overflow", offset: "999999999999999999999999999999999999", wantOffset: 3, wantIDs: []string{}},
+		{name: "beyond total", offset: "4", wantOffset: 3, wantIDs: []string{}},
+		{name: "valid", offset: "1", wantOffset: 1, wantIDs: []string{"case-b", "case-c"}},
+		{name: "negative", offset: "-1", wantOffset: 0, wantIDs: []string{"case-a", "case-b"}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			s := offsetTestAPI()
+			rec := httptest.NewRecorder()
+			s.getCases(rec, httptest.NewRequest(http.MethodGet, "/api/cases?offset="+tc.offset+"&limit=2", nil))
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status: want 200, got %d", rec.Code)
+			}
+			var body struct {
+				Total  int `json:"total"`
+				Offset int `json:"offset"`
+				Limit  int `json:"limit"`
+				Cases  []struct {
+					ID string `json:"id"`
+				} `json:"cases"`
+			}
+			if err := json.NewDecoder(rec.Body).Decode(&body); err != nil {
+				t.Fatalf("response is not controlled JSON: %v", err)
+			}
+			if body.Total != 3 || body.Offset != tc.wantOffset || body.Limit != 2 {
+				t.Fatalf("pagination: want total=3 offset=%d limit=2, got total=%d offset=%d limit=%d", tc.wantOffset, body.Total, body.Offset, body.Limit)
+			}
+			ids := []string{}
+			for _, c := range body.Cases {
+				ids = append(ids, c.ID)
+			}
+			if strings.Join(ids, ",") != strings.Join(tc.wantIDs, ",") {
+				t.Fatalf("case IDs: want %v, got %v", tc.wantIDs, ids)
+			}
+		})
+	}
+}
+
+func TestAPICasesNegativeOffsetHTTPSmoke(t *testing.T) {
+	s := offsetTestAPI()
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/cases", s.getCases)
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "/api/cases?offset=-1&limit=2")
+	if err != nil {
+		t.Fatalf("GET offset=-1: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("status: want 200, got %d", resp.StatusCode)
+	}
+	if ct := resp.Header.Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("Content-Type: want application/json, got %q", ct)
+	}
+	var body struct {
+		Offset int `json:"offset"`
+		Limit  int `json:"limit"`
+		Cases  []struct {
+			ID string `json:"id"`
+		} `json:"cases"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatalf("response is not controlled JSON: %v", err)
+	}
+	if body.Offset != 0 || body.Limit != 2 || len(body.Cases) != 2 || body.Cases[0].ID != "case-a" || body.Cases[1].ID != "case-b" {
+		t.Fatalf("offset=-1 was not normalized to the first page: %+v", body)
+	}
+}
