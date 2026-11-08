@@ -62,12 +62,21 @@ describe("programmeView: the two 31-day sources", () => {
 });
 
 describe("programmeView: by programme", () => {
-  const { programmes } = programmeView(dashboard);
+  const dashboard7 = {
+    ...dashboard,
+    cases: dashboard.cases + 50,
+    by_programme: {
+      ...dashboard.by_programme,
+      lung_ldct: { cases: 25, closed: 10, overdue: 5 },
+      ifhas: { cases: 25, closed: 12, overdue: 4 },
+    },
+  };
+  const { programmes } = programmeView(dashboard7);
 
-  it("lists the five programmes in order with human names", () => {
-    expect(programmes.map((p) => p.name)).toEqual(["Colorectal", "Cervical", "Lung nodule", "Diabetic retinopathy", "Breast"]);
+  it("lists all seven programmes in order with human names", () => {
+    expect(programmes.map((p) => p.name)).toEqual(["Colorectal", "Cervical", "Lung nodule", "Diabetic retinopathy", "Breast", "Lung LDCT", "IFHAS"]);
     expect(programmes.map((p) => p.href)).toEqual(
-      ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"].map((k) => `/app/patients?programme=${k}`),
+      ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"].map((k) => `/app/patients?programme=${k}`),
     );
   });
 
@@ -78,8 +87,10 @@ describe("programmeView: by programme", () => {
       [905, 303, 161, 441],
       [1200, 1122, 55, 23],
       [150, 144, 6, 0],
+      [25, 10, 5, 10],
+      [25, 12, 4, 9],
     ]);
-    expect(programmes.reduce((t, p) => t + p.cases, 0)).toBe(dashboard.cases);
+    expect(programmes.reduce((t, p) => t + p.cases, 0)).toBe(dashboard7.cases);
   });
 
   it("drops still open when closed and overdue exceed the cases", () => {
@@ -98,6 +109,34 @@ describe("programmeView: every stall", () => {
     expect(allStalls.flatMap((g) => g.stalls)).toHaveLength(17);
     expect(new Set(labels).size).toBe(labels.length);
     for (const g of allStalls) expect(g.stalls.map((s) => s.count)).toEqual(g.stalls.map((s) => s.count).sort((a, b) => b - a));
+  });
+
+  it("groups LDCT and IFHAS drop-offs under their own pathways", () => {
+    const d = {
+      ...dashboard,
+      dropoff: {
+        ...dashboard.dropoff,
+        incomplete_scan_not_completed: 4,
+        followup_ldct_not_done: 8,
+        no_workup_outcome: 6,
+        no_followup_documented: 9,
+      },
+    };
+    const groups = programmeView(d).allStalls;
+    expect(groups.map((g) => g.pathway)).toEqual([
+      "Colorectal and cervical",
+      "Lung nodule",
+      "Diabetic retinopathy",
+      "Breast",
+      "Lung LDCT",
+      "IFHAS",
+    ]);
+    expect(groups[4].stalls).toEqual([
+      { dropoff: "followup_ldct_not_done", label: "Follow-up LDCT not done", count: 8 },
+      { dropoff: "no_workup_outcome", label: "No work-up outcome", count: 6 },
+      { dropoff: "incomplete_scan_not_completed", label: "Incomplete scan not completed", count: 4 },
+    ]);
+    expect(groups[5].stalls).toEqual([{ dropoff: "no_followup_documented", label: "No IFHAS follow-up documented", count: 9 }]);
   });
 
   it("skips the empty key, in_progress and suppressed counts", () => {

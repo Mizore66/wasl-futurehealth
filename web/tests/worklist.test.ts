@@ -3,8 +3,9 @@ import { Audit, CaseDetail, CaseList } from "@/lib/api/schema";
 import { facets, programmesInView } from "@/components/patients/facets";
 import { parseCaseFilters, parsePage, filtersHref, toCaseQuery } from "@/components/worklist/filters";
 import { matches } from "@/lib/api/source";
-import { closureChecks, elapsedDays, recordNodes, workItem } from "@/components/worklist/model";
+import { closureChecks, DROPOFF_WORDS, elapsedDays, PROCEDURE, PROGRAMME_NAMES, recordNodes, statusWords, workItem } from "@/components/worklist/model";
 import { referralFrom } from "@/components/worklist/referrals";
+import { caseDeadlineDays } from "@/components/worklist/days";
 import { loadSample } from "./samples";
 
 const detail = (f: string) => CaseDetail.parse(loadSample(`case_${f}.json`));
@@ -29,7 +30,7 @@ describe("Today's tabs", () => {
   it("puts an unowned case under No owner, an incomplete report under Waiting, an unbooked one under To call", () => {
     expect(workItem(byShort("sr-1000"), RUN_DAY, false).view).toBe("none");
     expect(workItem(byShort("sr-1009"), RUN_DAY, true).view).toBe("waiting");
-    expect(workItem(byShort("sr-1005"), RUN_DAY, false).view).toBe("call");
+    expect(workItem({ ...byShort("sr-1002"), dropoff: "not_booked" }, RUN_DAY, false).view).toBe("call");
   });
 
   it("names only the simulated cast and falls back to the short id", () => {
@@ -44,10 +45,10 @@ describe("patient record", () => {
     const a = audit("evidence_closure");
     const nodes = recordNodes(d, a.chain);
     const last = nodes.at(-1)!;
-    expect(last).toMatchObject({ kind: "current", who: "Closed", when: "day 27 · 22 Jun" });
+    expect(last).toMatchObject({ kind: "current", who: "Closed", when: "day 27 · 20 Jun" });
     expect(last.hash).toBe(a.chain.find((e) => e.type === "closure_decision")!.hash);
     const link = nodes.find((n) => n.who === "Wasl")!;
-    expect(link.what).toContain("by name and details, p 0.949 before review, confirmed in review");
+    expect(link.what).toContain("by name and details, p 0.989 before review, confirmed in review");
     expect(link.hash).toBe(a.chain.find((e) => e.type === "link_decision")!.hash);
   });
 
@@ -59,7 +60,7 @@ describe("patient record", () => {
 
   it("reads the checklist from the readers' fields", () => {
     expect(closureChecks(detail("evidence_closure").evidence[0]).map((k) => k.result)).toEqual(["Yes", "Adequate", "Not needed: no tissue taken"]);
-    expect(closureChecks(detail("false_closure_trap").evidence[0]).map((k) => k.result)).toEqual(["No", "Not stated", "Missing"]);
+    expect(closureChecks(detail("false_closure_trap").evidence[0]).map((k) => k.result)).toEqual(["Yes", "Not stated", "Not needed: no tissue taken"]);
   });
 });
 
@@ -73,8 +74,10 @@ describe("patients filters from the query string", () => {
     expect(parseCaseFilters({ overdue: "yes", dropoff: "" })).toEqual({});
   });
 
-  it("takes programme and page, and leaves page 1 out of links", () => {
+  it("takes all seven programmes and page, and leaves page 1 out of links", () => {
     expect(parseCaseFilters({ programme: "crc" })).toEqual({ programme: "crc" });
+    expect(parseCaseFilters({ programme: "lung_ldct", dropoff: "followup_ldct_not_done" })).toEqual({ programme: "lung_ldct", dropoff: "followup_ldct_not_done" });
+    expect(parseCaseFilters({ programme: "ifhas", dropoff: "no_followup_documented" })).toEqual({ programme: "ifhas", dropoff: "no_followup_documented" });
     expect(parseCaseFilters({ programme: "nonsense" })).toEqual({});
     expect(parsePage({ page: "3" })).toBe(3);
     expect(parsePage({ page: "0" })).toBe(1);
@@ -92,7 +95,9 @@ describe("patients filters from the query string", () => {
 });
 
 describe("patients refine filters", () => {
-  const all = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast"].flatMap((p) => CaseList.parse(loadSample(`cases_${p}_page1.json`)).cases);
+  const all = ["crc", "cervical", "lung_nodule", "diabetic_retinopathy", "breast", "lung_ldct", "ifhas"].flatMap(
+    (p) => CaseList.parse(loadSample(`cases_${p}_page1.json`)).cases,
+  );
 
   it("parses, drops unknown enum values, and round-trips through a link", () => {
     const f = { programme: "cervical" as const, provider: "ahs-mushrif", consent: "denied" as const, review: "signed" as const, owner: "none", overdue: true };
@@ -119,8 +124,18 @@ describe("patients refine filters", () => {
     for (const o of fx.provider) expect(o.count).toBe(crc.filter((c) => c.provider === o.value).length);
     // The programme control ignores its own filter, so the other programmes stay listed with their totals.
     expect(fx.programme.find((o) => o.value === "breast")?.count).toBe(all.filter((c) => c.programme === "breast").length);
+    expect(fx.programme.find((o) => o.value === "lung_ldct")?.count).toBe(all.filter((c) => c.programme === "lung_ldct").length);
+    expect(fx.programme.find((o) => o.value === "ifhas")?.count).toBe(all.filter((c) => c.programme === "ifhas").length);
     expect(programmesInView(all, f).map((p) => p.programme)).toEqual(["crc"]);
-    expect(programmesInView(all, {}).length).toBe(5);
+    expect(programmesInView(all, {}).map((p) => p.programme)).toEqual([
+      "crc",
+      "cervical",
+      "lung_nodule",
+      "diabetic_retinopathy",
+      "breast",
+      "lung_ldct",
+      "ifhas",
+    ]);
   });
 
   it("keeps a chosen value listed at zero rather than dropping the filter", () => {
@@ -128,15 +143,44 @@ describe("patients refine filters", () => {
   });
 });
 
+describe("LDCT and IFHAS worklist language", () => {
+  it("uses their own programme and procedure names", () => {
+    expect(PROGRAMME_NAMES.lung_ldct).toBe("Lung cancer screening (LDCT)");
+    expect(PROGRAMME_NAMES.ifhas).toBe("IFHAS cardiometabolic screening");
+    expect(PROCEDURE.lung_ldct).toBe("LDCT follow-up");
+    expect(PROCEDURE.ifhas).toBe("IFHAS follow-up");
+  });
+
+  it("uses the annual LDCT screening interval instead of the CRC 31-day fallback", () => {
+    const annual = CaseList.parse(loadSample("cases_lung_ldct_page1.json")).cases.find((c) => c.ldct?.rec?.action === "annual");
+    expect(annual?.deadline_day).toBe(0);
+    expect(caseDeadlineDays(annual!)).toBe(365);
+  });
+
+  it("maps every new drop-off to a status and next action", () => {
+    expect(DROPOFF_WORDS.incomplete_scan_not_completed).toMatchObject({ status: "Incomplete LDCT not completed", view: "call" });
+    expect(DROPOFF_WORDS.followup_ldct_not_done).toMatchObject({ status: "Follow-up LDCT not done", view: "call" });
+    expect(DROPOFF_WORDS.no_workup_outcome).toMatchObject({ status: "Waiting on the LDCT work-up outcome", view: "waiting" });
+    expect(DROPOFF_WORDS.no_followup_documented).toMatchObject({ status: "No IFHAS follow-up documented", view: "call" });
+
+    for (const programme of ["lung_ldct", "ifhas"] as const) {
+      const open = CaseList.parse(loadSample(`cases_${programme}_page1.json`)).cases.find((c) => !c.closed && c.dropoff !== "");
+      expect(open).toBeDefined();
+      expect(statusWords(open!).status.length).toBeGreaterThan(0);
+      expect(statusWords(open!).next.length).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe("referral inbox", () => {
   const byShort = (s: string) => page.cases.find((c) => c.id.endsWith(s))!;
   it("flags an incomplete report for review and leaves the clinic's own drop-offs out", () => {
-    expect(referralFrom(byShort("sr-1009"), RUN_DAY, true)).toMatchObject({ state: "grade", flags: ["Report incomplete"] });
-    expect(referralFrom(byShort("sr-1005"), RUN_DAY, false)).toBeNull();
+    expect(referralFrom(byShort("sr-1011"), RUN_DAY, true)).toMatchObject({ state: "grade", flags: ["Report incomplete"] });
+    expect(referralFrom(byShort("sr-1003"), RUN_DAY, false)).toBeNull();
   });
 
   it("turns a missing owner into a flag, so the row shows Review instead of Accept", () => {
-    expect(referralFrom(byShort("sr-1022"), RUN_DAY, false)!.flags).toEqual(["No owner at the clinic"]);
-    expect(referralFrom(byShort("sr-1004"), RUN_DAY, false)!.flags).toEqual([]);
+    expect(referralFrom(byShort("sr-1004"), RUN_DAY, false)!.flags).toEqual(["No owner at the clinic"]);
+    expect(referralFrom(byShort("sr-1012"), RUN_DAY, false)!.flags).toEqual([]);
   });
 });

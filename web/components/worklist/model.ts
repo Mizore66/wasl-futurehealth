@@ -32,6 +32,10 @@ export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
   ungradable_no_repeat: { status: "Retinal photo ungradable", next: "Book the repeat photo", view: "call" },
   technical_repeat_not_done: { status: "Mammogram to repeat", next: "Book the repeat mammogram", view: "call" },
   no_assessment_outcome: { status: "Waiting on the assessment outcome", next: "Wait for the assessment result", view: "waiting" },
+  incomplete_scan_not_completed: { status: "Incomplete LDCT not completed", next: "Book the completion LDCT", view: "call" },
+  followup_ldct_not_done: { status: "Follow-up LDCT not done", next: "Book the follow-up LDCT", view: "call" },
+  no_workup_outcome: { status: "Waiting on the LDCT work-up outcome", next: "Wait for the thoracic diagnostic unit", view: "waiting" },
+  no_followup_documented: { status: "No IFHAS follow-up documented", next: "Chase the receiving clinic", view: "call" },
   awaiting_tissue: { status: "Waiting on tissue sampling", next: "Specialist team to arrange it", view: "waiting" },
   inadequate: { status: "Report incomplete · with the doctors", next: "Doctors to decide on a repeat", view: "waiting" },
   awaiting_histology: { status: "Waiting on pathology", next: "Wait for the pathology result", view: "waiting" },
@@ -81,6 +85,8 @@ export const PROGRAMME_NAMES: Record<Programme, string> = {
   lung_nodule: "Lung nodule follow-up",
   diabetic_retinopathy: "Diabetic eye screening",
   breast: "Breast screening",
+  lung_ldct: "Lung cancer screening (LDCT)",
+  ifhas: "IFHAS cardiometabolic screening",
 };
 
 export const PROCEDURE: Record<Programme, string> = {
@@ -89,6 +95,8 @@ export const PROCEDURE: Record<Programme, string> = {
   lung_nodule: "follow-up CT",
   diabetic_retinopathy: "eye-clinic exam",
   breast: "breast assessment",
+  lung_ldct: "LDCT follow-up",
+  ifhas: "IFHAS follow-up",
 };
 
 /** A case as the worklist shows it: name if the simulated cast has one (gap G1), else the short id. */
@@ -250,7 +258,7 @@ const word = (v: string | undefined) => (v ? (FIELD[v] ?? v) : "Not read");
 
 /** Lung, DR and breast evidence: each reader's label, and the first reader's quote. */
 export function readerLabels(ev: CaseDetail["evidence"][number]): { checks: Check[]; quote: string } {
-  const a = ev.reader_a_regex ?? ev.label;
+  const a = ev.reader_a_regex ?? ev.reader_a ?? ev.label;
   const b = ev.reader_b ?? ev.label;
   const words = (v: string) => v.replaceAll("_", " ");
   return {
@@ -258,7 +266,7 @@ export function readerLabels(ev: CaseDetail["evidence"][number]): { checks: Chec
       { name: "Reader A", result: words(a), differ: a !== b },
       { name: "Reader B", result: words(b), differ: a !== b },
     ],
-    quote: ev.quote || (ev.reader_a_fields?.quote ?? ""),
+    quote: ev.quote || (typeof ev.reader_a_fields === "object" ? (ev.reader_a_fields.quote ?? "") : ""),
   };
 }
 

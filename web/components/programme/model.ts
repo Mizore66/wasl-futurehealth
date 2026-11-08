@@ -81,6 +81,10 @@ const OTHER_STALL_LABEL: Partial<Record<Dropoff, string>> = {
   technical_repeat_not_done: "Mammogram repeat not done",
   no_assessment_outcome: "No assessment outcome",
   awaiting_tissue: "Awaiting tissue sampling",
+  incomplete_scan_not_completed: "Incomplete scan not completed",
+  followup_ldct_not_done: "Follow-up LDCT not done",
+  no_workup_outcome: "No work-up outcome",
+  no_followup_documented: "No IFHAS follow-up documented",
 };
 
 const PATHWAYS: { pathway: string; stalls: Dropoff[] }[] = [
@@ -88,6 +92,8 @@ const PATHWAYS: { pathway: string; stalls: Dropoff[] }[] = [
   { pathway: "Lung nodule", stalls: ["no_followup_ct", "escalated", "out_of_scope", "not_assessable"] },
   { pathway: "Diabetic retinopathy", stalls: ["no_eye_exam", "ungradable_no_repeat"] },
   { pathway: "Breast", stalls: ["technical_repeat_not_done", "no_assessment_outcome", "awaiting_tissue"] },
+  { pathway: "Lung LDCT", stalls: ["incomplete_scan_not_completed", "followup_ldct_not_done", "no_workup_outcome"] },
+  { pathway: "IFHAS", stalls: ["no_followup_documented"] },
 ];
 
 export const PROGRAMME_NAME: Record<Programme, string> = {
@@ -96,6 +102,8 @@ export const PROGRAMME_NAME: Record<Programme, string> = {
   lung_nodule: "Lung nodule",
   diabetic_retinopathy: "Diabetic retinopathy",
   breast: "Breast",
+  lung_ldct: "Lung LDCT",
+  ifhas: "IFHAS",
 };
 
 const REGION_NAME: Record<string, string> = { AA: "Al Ain", AD: "Abu Dhabi", DH: "Al Dhafra" };

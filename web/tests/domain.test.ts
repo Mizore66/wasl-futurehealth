@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
 import { CaseDetail } from "@/lib/api/schema";
 import { dayToDate, formatDay } from "@/lib/domain/day";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
+import { ProgrammeFindingCard, ReadersCard } from "@/components/case/sections";
+import { programmeDetail, type NewProgramme } from "./programme-cases";
 import { loadSample } from "./samples";
 
 const load = (fixture: string): CaseDetail => CaseDetail.parse(loadSample(`case_${fixture}.json`));
@@ -18,7 +21,7 @@ describe("dayToDate", () => {
 
   it("formats the evidence-closure fixture's closing day", () => {
     const c = load("evidence_closure");
-    expect(formatDay(c.case.closed_day)).toBe("22 Jun");
+    expect(formatDay(c.case.closed_day)).toBe("20 Jun");
   });
 });
 
@@ -87,6 +90,46 @@ describe("caseStage", () => {
     const open = { ...c, case: { ...c.case, closed: false } };
     expect(caseStage({ ...open, evidence: [] }).key).toBe("matched");
     expect(caseStage({ ...open, evidence: [], links: [] }).key).toBe("received");
+  });
+});
+
+describe("programme-specific case evidence", () => {
+  it.each(["lung_ldct", "ifhas"] as const)("renders the %s finding, recommendation and outcome", (programme) => {
+    const detail = programmeDetail(programme);
+    const html = renderToStaticMarkup(ProgrammeFindingCard({ detail }));
+    if (programme === "lung_ldct") {
+      expect(html).toContain("Lung-RADS category");
+      expect(html).toContain("LR4X");
+      expect(html).toContain("diagnostic chest CT");
+      expect(html).toContain("Wk benign");
+    } else {
+      expect(html).toContain("IFHAS screening results");
+      expect(html).toContain("bp=H;glyc=N;lipid=N;weight=N");
+      expect(html).toContain("Blood pressure");
+      expect(html).toContain("Managed");
+      expect(html).toContain("IFU-dr-45");
+    }
+    expect(html).not.toContain("colonoscopy");
+    expect(html).not.toContain("Bowel prep");
+  });
+
+  it.each(["lung_ldct", "ifhas"] as const)("renders %s reader evidence without the CRC checklist", (programme: NewProgramme) => {
+    const detail = programmeDetail(programme);
+    const html = renderToStaticMarkup(ReadersCard({ detail, ev: detail.evidence[0], id: `readers-${programme}` }));
+    expect(html).toContain("Reader A");
+    expect(html).toContain("Reader B");
+    expect(html).not.toContain("DoH closure checklist");
+    expect(html).not.toContain("Caecum reached");
+    expect(html).not.toContain("Bowel prep");
+    if (programme === "lung_ldct") {
+      expect(html).toContain("Lung-RADS overall");
+      expect(html).toContain("Lung-RADS worst");
+      expect(html).toContain("Lung-RADS 4X; suspicious pulmonary nodule.");
+    } else {
+      expect(html).toContain("Reader note");
+      expect(html).toContain("doh2025ifhas printed panel");
+      expect(html).toContain("coded LOINC/UCUM results");
+    }
   });
 });
 

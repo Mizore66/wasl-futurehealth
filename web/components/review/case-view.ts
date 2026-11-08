@@ -22,6 +22,8 @@ export type ReviewView = {
   caseId: string;
   /** Canonical case state from the latest server render, never inferred from a 201. */
   closed: boolean;
+  /** Only CRC uses the guided same-patient / bowel-prep form. */
+  guided: boolean;
   shortId: string;
   name: string;
   nameAr: string;
@@ -53,6 +55,16 @@ const PROVIDERS: Record<string, string> = {
   "skmc-endo": "SKMC endoscopy",
 };
 const providerName = (id: string) => PROVIDERS[id] ?? id;
+
+const PROGRAMME_COPY: Record<CaseDetail["case"]["programme"], { procedure: string; referral: string; report: string }> = {
+  crc: { procedure: "colonoscopy", referral: "stool test referral", report: "colonoscopy report" },
+  cervical: { procedure: "colposcopy", referral: "cervical screening referral", report: "colposcopy report" },
+  lung_nodule: { procedure: "follow-up CT", referral: "lung nodule referral", report: "CT report" },
+  diabetic_retinopathy: { procedure: "eye-clinic exam", referral: "diabetic eye screening referral", report: "eye exam report" },
+  breast: { procedure: "breast assessment", referral: "breast screening referral", report: "breast assessment report" },
+  lung_ldct: { procedure: "LDCT follow-up", referral: "lung cancer screening referral", report: "LDCT report" },
+  ifhas: { procedure: "IFHAS follow-up", referral: "IFHAS screening referral", report: "IFHAS results report" },
+};
 
 const BASIS: Record<string, string> = { eid: "Emirates ID", p_cal: "name and details", wasl: "name and details", human: "a person", below_tau: "below the line" };
 
@@ -94,6 +106,7 @@ export function reviewView(c: CaseDetail): ReviewView {
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
+  const copy = PROGRAMME_COPY[c.case.programme];
   const checks = checksFrom(ev?.fields);
   const noDob = linkItem?.reason === "second_identifier";
   const held = [noDob && "the report has no date of birth", checks.some((k) => k.disputed) && "neither reader found a bowel prep grade"].filter(
@@ -121,18 +134,20 @@ export function reviewView(c: CaseDetail): ReviewView {
   const add = (id: string, who: string, what: string, day: number | undefined) =>
     day !== undefined && trail.push({ id, kind: "system", who, what, when: formatDay(day) });
   const sr = c.timeline.find((e) => e.id === c.case.id);
-  add("referral", providerName(c.case.provider), "referred for colonoscopy", sr?.day ?? c.case.referral_day);
+  add("referral", providerName(c.case.provider), `referred for ${copy.procedure}`, sr?.day ?? c.case.referral_day);
   const consent = c.timeline.find((e) => e.type === "Consent" && e.status === "permit");
   add("consent", a?.display_name.split(" ")[0] ?? "Patient", "allowed messages", consent?.day);
   const intake = c.timeline.find((e) => e.category === "referral-intake");
   add("intake", unit, "accepted the referral", intake?.day);
-  add("report", unit, `colonoscopy report ${shortId(ev?.report ?? "")}`, reportEvent?.day);
+  add("report", unit, `${copy.report} ${shortId(ev?.report ?? "")}`, reportEvent?.day);
   if (linkItem) add("link", "Wasl", `matched on ${BASIS[link?.weakest_edge.basis ?? ""] ?? "the record"}; no date of birth, needs a person`, reportEvent?.day);
-  if (ev && !ev.agree) add("readers", "Two readers", "no bowel prep grade; needs a person", reportEvent?.day);
+  if (ev && !ev.agree)
+    add("readers", "Two readers", c.case.programme === "crc" ? "no bowel prep grade; needs a person" : `${copy.report} readers disagree; needs a person`, reportEvent?.day);
 
   return {
     caseId: c.case.id,
     closed: c.case.closed,
+    guided: c.case.programme === "crc",
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
@@ -144,8 +159,8 @@ export function reviewView(c: CaseDetail): ReviewView {
     },
     reportRegistration: downstream?.registration ?? "",
     reportName: b?.recorded_name ?? "",
-    referralSource: `${providerName(c.case.provider)} · stool test referral`,
-    reportSource: `${unit} · colonoscopy report`,
+    referralSource: `${providerName(c.case.provider)} · ${copy.referral}`,
+    reportSource: `${unit} · ${copy.report}`,
     unit,
     held: held.length ? `Held: ${held.join(", and ")}.` : "",
     referredOn: formatDay(c.case.referral_day),

@@ -69,6 +69,33 @@ describe("docs/api-samples contract", () => {
     const values = d.origins.flatMap((o) => Object.values((o.dropoff ?? {}) as Record<string, unknown>));
     expect(values).toContain("<5");
   });
+
+  it.each(["lung_ldct", "ifhas"] as const)("keeps the complete %s finding on case and current", (programme) => {
+    const page = CaseList.parse(loadSample(`cases_${programme}_page1.json`));
+    const key = programme === "lung_ldct" ? "ldct" : "ifhas";
+    const summary = page.cases.find((c) => c[key]?.outcome);
+    expect(summary).toBeDefined();
+    const finding = { ...summary![key] };
+    if (programme === "lung_ldct") {
+      Object.assign(finding, { followup_report: "LCS-ct-77", followup_label: "LR3", followup_next_step: "LDCT in 6 months" });
+    }
+
+    const detail = loadSample("case_dr_exam_closure.json") as Record<string, unknown>;
+    const current = { ...(detail.current as Record<string, unknown>), [key]: finding };
+    delete current.dr;
+    const parsed = CaseDetail.parse({ ...detail, case: { ...summary, [key]: finding }, current });
+    expect(parsed.case[key]).toEqual(finding);
+    expect(parsed.current[key]).toEqual(finding);
+  });
+
+  it.each(["incomplete_scan_not_completed", "followup_ldct_not_done", "no_workup_outcome", "no_followup_documented"] as const)(
+    "accepts the documented drop-off %s",
+    (dropoff) => {
+      const page = loadSample("cases_lung_ldct_page1.json") as { cases: Record<string, unknown>[] };
+      page.cases = page.cases.slice(0, 1).map((c) => ({ ...c, state: "open", closed: false, dropoff }));
+      expect(CaseList.safeParse(page).success).toBe(true);
+    },
+  );
 });
 
 describe("ReviewRequest", () => {
@@ -82,7 +109,38 @@ describe("ReviewRequest", () => {
     (decision) => expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(true),
   );
 
-  it.each(["close it", "R9M0", "R2M2", "B6", "examined"])("rejects %s", (decision) => {
-    expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(false);
+  it.each([
+    "LR0",
+    "LR1",
+    "LR2",
+    "LR3",
+    "LR4A",
+    "LR4B",
+    "LR4X",
+    "wk_treatment",
+    "wk_benign",
+    "wk_surveillance",
+    "wk_incomplete",
+    "wk_dna",
+  ])("accepts the LDCT review label %s", (decision) => {
+    expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(true);
   });
+
+  it.each([
+    "bp=H;glyc=D;lipid=N;weight=O",
+    "bp=N;glyc=P;lipid=N;weight=N",
+    "bp=managed",
+    "glyc=pending;bp=not_confirmed",
+    "lipid=managed;weight=pending;bp=not_confirmed;glyc=managed",
+    "dna",
+  ])("accepts the IFHAS review label %s", (decision) => {
+    expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(true);
+  });
+
+  it.each(["close it", "R9M0", "R2M2", "B6", "examined", "LR5", "wk_unknown", "bp=X;glyc=N;lipid=N;weight=N", "bp=unknown", "bp=managed;bp=pending", "indeterminate"])(
+    "rejects %s",
+    (decision) => {
+      expect(ReviewRequest.safeParse({ item: "rv-1", decision }).success).toBe(false);
+    },
+  );
 });

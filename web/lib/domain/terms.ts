@@ -18,6 +18,9 @@ export const TERMS = {
   false_closure_trap: "Wrong-patient report caught",
   review_hold: "Held for human review",
   dr_exam_closure: "Eye exam closed the loop",
+  // LDCT reader fields (docs/API.md).
+  lungrads_overall: "Lung-RADS overall",
+  lungrads_worst: "Lung-RADS worst",
 } as const satisfies Record<string, string>;
 
 export type Term = keyof typeof TERMS;
