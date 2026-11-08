@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import dashboardJson from "@/data/api/dashboard.json";
 import { Dashboard } from "@/lib/api/schema";
-import { points, poolingRuns, programmeView } from "@/components/programme/model";
+import { points, poolingRuns, programmeView, stallScope } from "@/components/programme/model";
 import { result } from "@/lib/results";
 
 const dashboard = Dashboard.parse(dashboardJson);
@@ -135,5 +135,15 @@ describe("poolingRuns", () => {
     expect(enough.rows.map((r) => r.display)).toEqual(["40.4%", "22.2%", "37.2%", "42.1%"]);
     expect(short.rows.map((r) => r.display)).toEqual(["6.9%", "18.6%", "7.3%", "7.8%"]);
     expect(result("pool.1_2.skewed_pool_60").source).toBe("booking/sim/pool_test.json");
+  });
+});
+
+describe("stallScope", () => {
+  it("names the run and the colorectal and cervical cases, with the 183 never-notified stall among the largest", () => {
+    const s = stallScope(dashboard);
+    expect(s.run).toBe(dashboard.meta.run);
+    expect(s.cases).toBe(2100);
+    expect(s.top.map((x) => [x.label, x.count])).toEqual([["No acknowledgement", 390], ["Not booked", 252], ["Never notified", 183]]);
+    expect(s.smaller.map((x) => [x.label, x.count])).toEqual([["Referral unanswered", 62], ["Referral rejected", 17]]);
   });
 });

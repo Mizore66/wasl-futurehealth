@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { programmeView } from "@/components/programme/model";
+import { programmeView, stallScope } from "@/components/programme/model";
 import { exactlyOnce, fixed, missedByIdOnly, published, QUOTED, upperBound } from "@/components/site/figures";
 import { LTT_SOURCE } from "@/components/site/ltt";
 import { Reveal } from "@/components/site/reveal";
@@ -71,7 +71,7 @@ function Bar({ label, value, width, tone, strong }: { label: string; value: stri
 export default async function Page() {
   const dash = await getDashboard();
   const kpi = dash.metrics.crc_kpi_31d;
-  const drop = dash.dropoff;
+  const scope = stallScope(dash);
   const n = kpi.truth.eligible_referrals.toLocaleString("en-US");
   const eid = result("kpi31.demo.eid_only");
   const wasl = result("kpi31.demo.wasl");
@@ -103,9 +103,27 @@ export default async function Page() {
       status: <StatusLine mark="built">Built, in the API</StatusLine>,
       evidence: (
         <>
-          Drop-off reason on every open case. One demo run: <B>{String(drop.no_acknowledgement)}</B> no acknowledgement,{" "}
-          <B>{String(drop.not_booked)}</B> not booked, <B>{String(drop.referral_unanswered)}</B> referral unanswered,{" "}
-          <B>{String(drop.referral_rejected)}</B> rejected.
+          Drop-off reason on every open case. One demo run ({scope.run}, simulated, {scope.cases.toLocaleString("en-US")} colorectal and
+          cervical cases): the largest stalls are{" "}
+          {scope.top.map((s, i) => (
+            <span key={s.dropoff}>
+              {i > 0 && ", "}
+              <B>{s.count}</B> {s.label.toLowerCase()}
+            </span>
+          ))}
+          {scope.smaller.length > 0 && (
+            <>
+              ;{" "}
+              {scope.smaller.map((s, i) => (
+                <span key={s.dropoff}>
+                  {i > 0 && " and "}
+                  {s.label.toLowerCase()} <B>{s.count}</B>
+                </span>
+              ))}{" "}
+              are smaller
+            </>
+          )}
+          . Source: <Link href="/app" className="underline">the dashboard</Link>.
         </>
       ),
       stops: "The 10-day histology, acknowledgement and reply deadlines are our configurable defaults. The coordinator worklist interface is in progress.",
