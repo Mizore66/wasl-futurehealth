@@ -89,6 +89,25 @@ describe("fixtures mode cannot append", () => {
 });
 
 describe("programme-specific review copy", () => {
+  it.each(["lung_ldct", "ifhas"] as const)("does not invent a bowel-prep hold for a closed, agreeing %s case", (programme) => {
+    const detail = programmeDetail(programme);
+    expect(detail.case.closed).toBe(true);
+    expect(detail.evidence[0].agree).toBe(true);
+
+    const view = reviewView(detail);
+    expect(view.held).toBe("");
+    expect(view.checks).toEqual([]);
+  });
+
+  it.each(["lung_ldct", "ifhas"] as const)("derives a %s disagreement hold from its own evidence", (programme) => {
+    const detail = programmeDetail(programme);
+    detail.case.closed = false;
+    detail.evidence[0].agree = false;
+
+    const report = programme === "lung_ldct" ? "LDCT report" : "IFHAS results report";
+    expect(reviewView(detail).held).toBe(`Held: ${report} readers disagree.`);
+  });
+
   it("describes LDCT evidence as a screening LDCT, never a colonoscopy", () => {
     const view = reviewView(programmeDetail("lung_ldct"));
     expect(view.guided).toBe(false);

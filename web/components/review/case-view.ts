@@ -107,11 +107,13 @@ export function reviewView(c: CaseDetail): ReviewView {
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
   const copy = PROGRAMME_COPY[c.case.programme];
-  const checks = checksFrom(ev?.fields);
+  const guided = c.case.programme === "crc";
+  const checks = guided ? checksFrom(ev?.fields) : [];
   const noDob = linkItem?.reason === "second_identifier";
-  const held = [noDob && "the report has no date of birth", checks.some((k) => k.disputed) && "neither reader found a bowel prep grade"].filter(
-    (r): r is string => !!r,
-  );
+  const evidenceHold = guided
+    ? checks.some((k) => k.disputed) && "neither reader found a bowel prep grade"
+    : ev && !ev.agree && `${copy.report} readers disagree`;
+  const held = [noDob && "the report has no date of birth", evidenceHold].filter((r): r is string => !!r);
 
   const identity: IdentityRow[] = [
     { field: "Name", referral: a?.recorded_name ?? "", report: b?.recorded_name ?? "", verdict: "agrees" },
@@ -147,7 +149,7 @@ export function reviewView(c: CaseDetail): ReviewView {
   return {
     caseId: c.case.id,
     closed: c.case.closed,
-    guided: c.case.programme === "crc",
+    guided,
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",
