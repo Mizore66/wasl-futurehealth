@@ -79,8 +79,8 @@ function Chips<T extends string>({
  */
 function trailFor(view: ReviewView, draft: Draft, done: Done | undefined, saved: SavedEvent[], mode: ApiMode): ChainNode[] {
   const answers = signaturesFor(draft, view.items).filter((s) => done || mode === "fixtures" || saved.some((x) => x.item === s.item));
-  const now = done ? OUTCOMES[done.outcome].next(view.unit) : { who: SIGNER.name, what: "your answers" };
   if (mode === "fixtures") {
+    const now = done ? OUTCOMES[done.outcome].next(view.unit) : { who: SIGNER.name, what: "your answers" };
     const preview: ChainNode[] = answers.map((s) => ({
       id: `preview-${s.item}`,
       kind: "current",
@@ -101,7 +101,12 @@ function trailFor(view: ReviewView, draft: Draft, done: Done | undefined, saved:
       hash: ev?.hash,
     };
   });
-  return [...view.trail, ...signed, { id: "now", kind: "current", ...now, when: done ? "next" : "waiting" }];
+  const now = done
+    ? done.outcome === "close" && view.closed
+      ? { who: "Case data", what: "closed after refresh" }
+      : { who: "Case data", what: "no downstream effect confirmed" }
+    : { who: SIGNER.name, what: "your answers" };
+  return [...view.trail, ...signed, { id: "now", kind: "current", ...now, when: done ? "now" : "waiting" }];
 }
 
 export function ReviewDesk({
@@ -134,6 +139,7 @@ export function ReviewDesk({
   const pending = outcomeOf(draft);
   const outcome = done && OUTCOMES[done.outcome];
   const live = mode === "live";
+  const confirmedClosed = Boolean(live && done?.outcome === "close" && view.closed);
 
   /*
    * Closing removes the questions and the button, so focus would fall to <body>.
@@ -278,7 +284,7 @@ export function ReviewDesk({
               <motion.div key="result" {...appear} role="status" className="mt-4 rounded-control bg-ground px-4 py-3">
                 <div className="flex items-center justify-between gap-2">
                   <h3 ref={resultHeading} tabIndex={-1} className="m-0 text-body font-normal">
-                    <Pill tone={outcome.tone}>{live ? outcome.pill : outcome.preview}</Pill>
+                    <Pill tone={outcome.tone}>{live ? (confirmedClosed ? "Closed in refreshed case data" : outcome.pill) : outcome.preview}</Pill>
                   </h3>
                   {live && (
                     <span
@@ -295,7 +301,11 @@ export function ReviewDesk({
                 </div>
                 {live ? (
                   <>
-                    <p className="m-0 mt-2">{outcome.text(view.name.split(" ")[0], view.unit)}</p>
+                    <p className="m-0 mt-2">
+                      {confirmedClosed
+                        ? "Same patient and report adequate were appended to the demo review log. Refreshed case data confirms closure."
+                        : outcome.recordedText}
+                    </p>
                     <p className="m-0 mt-2 text-small text-muted">
                       Saved: {done.events.length} {done.events.length === 1 ? "event" : "events"} appended to the review log, last hash{" "}
                       <span className="font-mono">{done.events.at(-1)?.hash.slice(0, 12)}</span>.
@@ -346,7 +356,7 @@ export function ReviewDesk({
                     </button>
                   )}
                 </div>
-                {done.next.last && <p className="m-0 mt-2 text-small text-muted">That was the last case waiting.</p>}
+                {done.next.last && (!live || !waiting) && <p className="m-0 mt-2 text-small text-muted">That was the last case waiting.</p>}
               </motion.div>
             )}
           </AnimatePresence>
@@ -371,7 +381,13 @@ export function ReviewDesk({
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
           <IdentityBridge view={view} answer={draft.identity} />
-          <ReadersTable view={view} signed={outcome && { ...outcome.answerCell, word: live ? outcome.answerCell.word : `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` }} />
+          <ReadersTable
+            view={view}
+            signed={
+              outcome &&
+              (live ? outcome.recordedAnswerCell : { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` })
+            }
+          />
         </div>
       </div>
     </MotionConfig>

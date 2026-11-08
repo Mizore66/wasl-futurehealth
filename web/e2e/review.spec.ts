@@ -221,6 +221,7 @@ test.describe("review, live mode against a mock API", () => {
   /** What the mock API has appended: served back as the audit history, like the real log. */
   const history: Record<string, unknown>[] = [];
   let refuse: string | undefined;
+  let canonicalClosed = false;
   let server: Server;
 
   test.beforeAll(async () => {
@@ -252,6 +253,7 @@ test.describe("review, live mode against a mock API", () => {
       const id = p.replace(/^\/api\/cases\//, "").replace(/\/audit$/, "");
       const hit = cases.find(({ f, json }) => f.endsWith("_audit.json") === audit && (audit ? json.case : json.case?.id) === id);
       if (hit && audit) return send(200, { ...hit.json, history: [...hit.json.history, ...history] });
+      if (hit && hit.json.case.id === holdId) return send(200, { ...hit.json, case: { ...hit.json.case, closed: canonicalClosed } });
       return hit ? send(200, hit.json) : send(404, { meta, error: "not found" });
     });
     await new Promise<void>((resolve) => server.listen(MOCK_PORT, "127.0.0.1", resolve));
@@ -265,9 +267,10 @@ test.describe("review, live mode against a mock API", () => {
     posted.length = 0;
     history.length = 0;
     refuse = undefined;
+    canonicalClosed = false;
   });
 
-  test("a 201 shows the returned hashes, names each actor and role, and refreshes the audit history", async ({ page }) => {
+  test("a 201 with case.closed=false records demo answers without claiming closure", async ({ page }) => {
     await page.goto(desk);
     const r = rail(page);
     const history = page.getByRole("list", { name: "Review history" });
@@ -280,7 +283,11 @@ test.describe("review, live mode against a mock API", () => {
     await r.getByRole("button", { name: "Close the case" }).click();
 
     const result = r.getByRole("status");
-    await expect(result).toContainText("Closed: both answers recorded");
+    await expect(result).toContainText("Demo answers appended; case open");
+    await expect(result).toContainText("Current case data still shows the case as open; closure is not confirmed.");
+    await expect(result).not.toContainText("Closed: both answers recorded");
+    await expect(result).not.toContainText("case closes");
+    await expect(r.getByRole("heading", { name: /Closed/ })).toHaveCount(0);
     await expect(result).toContainText("Saved: 2 events appended to the review log, last hash hash-2-01234");
     await expect(result.getByRole("list", { name: "Appended events" }).getByRole("listitem")).toHaveText([
       /Reviewer · Dr Omar Al Kaabi · hash-1-01234/,
@@ -290,10 +297,12 @@ test.describe("review, live mode against a mock API", () => {
     await expect(result).toContainText("not two independent reviewers");
     await expect(result).not.toContainText("two signatures");
     await expect(result.getByText("Reconstruction: nothing was saved")).toHaveCount(0);
+    await expect(result.getByText("That was the last case waiting.")).toHaveCount(0);
     await expect(r.getByRole("button", { name: "Undo" })).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(2);
     await expect(signedNodes(page).nth(0)).toContainText("Dr Omar Al Kaabi · same patient (as reviewer)");
     await expect(signedNodes(page).nth(1)).toContainText("Dr Omar Al Kaabi · report adequate (as clinician)");
+    await expect(r.locator('li[data-kind="current"]').last()).not.toContainText("Closed");
 
     // The history on the page was read again from the log, with no reload.
     await expect(history.getByRole("listitem")).toHaveCount(2);
@@ -302,7 +311,7 @@ test.describe("review, live mode against a mock API", () => {
     await expect(history.getByRole("listitem").nth(1)).toContainText("Clinician");
 
     // Focus moved to the confirmation, not <body>.
-    await expect(r.getByRole("heading", { name: /Closed: both answers recorded/ })).toBeFocused();
+    await expect(r.getByRole("heading", { name: /Demo answers appended; case open/ })).toBeFocused();
 
     expect(posted.map((x) => [x.path, x.headers["x-wasl-role"], x.headers["x-wasl-actor"], x.body])).toEqual([
       [`/api/cases/${holdId}/review`, "reviewer", "Dr Omar Al Kaabi", { item: LINK_ITEM, decision: "same", note: "" }],
@@ -310,6 +319,67 @@ test.describe("review, live mode against a mock API", () => {
     ]);
     await page.screenshot({ path: "test-results/screens/review-live-saved.png", fullPage: true });
     await noSeriousAxe(page);
+  });
+
+  test("a 201 can confirm closure only after refreshed canonical data is closed", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Same patient", exact: true }).click();
+    await r.getByRole("radio", { name: "Adequate", exact: true }).click();
+    canonicalClosed = true;
+    await r.getByRole("button", { name: "Close the case" }).click();
+
+    const result = r.getByRole("status");
+    await expect(result).toContainText("Closed in refreshed case data");
+    await expect(result).toContainText("Refreshed case data confirms closure.");
+    await expect(result).not.toContainText("case open");
+    await expect(result.getByRole("list", { name: "Appended events" }).getByRole("listitem")).toHaveCount(2);
+  });
+
+  test("a 201 for an inadequate report does not claim rebooking while case data is unchanged", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Same patient", exact: true }).click();
+    await r.getByRole("radio", { name: "Not adequate" }).click();
+    await r.getByRole("button", { name: "Sign: report not adequate" }).click();
+
+    const result = r.getByRole("status");
+    await expect(result).toContainText("Demo answers appended");
+    await expect(result).toContainText("No repeat booking is confirmed.");
+    await expect(result).not.toContainText("goes back to Today");
+    await expect(result).not.toContainText("to book a repeat colonoscopy");
+    await expect(r.locator('li[data-kind="current"]').last()).not.toContainText("Her coordinator");
+  });
+
+  test("a 201 for ask-the-unit records identity without claiming a notification", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Same patient", exact: true }).click();
+    await r.getByRole("radio", { name: "Ask the unit" }).click();
+    await r.getByRole("button", { name: "Sign and ask the unit to complete the report" }).click();
+
+    const result = r.getByRole("status");
+    await expect(result).toContainText("Demo identity answer appended");
+    await expect(result).toContainText("No unit notification was sent.");
+    await expect(result).not.toContainText("Asked the unit");
+    for (const row of disputedRows(page)) await expect(row).not.toContainText("asked the unit");
+    await expect(signedNodes(page)).toHaveCount(1);
+    await expect(r.locator('li[data-kind="current"]').last()).not.toContainText("to complete the colonoscopy report");
+  });
+
+  test("a 201 for not-the-same does not claim link undo while case data is unchanged", async ({ page }) => {
+    await page.goto(desk);
+    const r = rail(page);
+    await r.getByRole("radio", { name: "Not the same patient" }).click();
+    await r.getByRole("button", { name: "Sign: not the same patient" }).click();
+
+    const result = r.getByRole("status");
+    await expect(result).toContainText("Demo identity answer appended");
+    await expect(result).toContainText("No link or unit change is confirmed.");
+    await expect(result).not.toContainText("Link rejected");
+    await expect(r).not.toContainText("Link undone");
+    await expect(r).not.toContainText("report returned unmatched");
+    await expect(signedNodes(page)).toHaveCount(1);
   });
 
   test("a 403 for the clinician role is partial: one entry saved, no closure, the retry sends only what was refused", async ({ page }) => {
@@ -333,7 +403,7 @@ test.describe("review, live mode against a mock API", () => {
 
     refuse = undefined;
     await r.getByRole("button", { name: "Close the case" }).click();
-    await expect(r.getByRole("status")).toContainText("Closed: both answers recorded");
+    await expect(r.getByRole("status")).toContainText("Demo answers appended; case open");
     expect(posted.map((x) => x.body.item)).toEqual([LINK_ITEM, EVIDENCE_ITEM, EVIDENCE_ITEM]);
     await expect(page.getByRole("list", { name: "Review history" }).getByRole("listitem")).toHaveCount(2);
   });
@@ -364,8 +434,8 @@ test.describe("review, live mode against a mock API", () => {
     await page.keyboard.press("Tab");
     await expect(r.getByRole("button", { name: "Close the case" })).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(r.getByRole("status")).toContainText("Closed: both answers recorded");
-    await expect(r.getByRole("heading", { name: /Closed: both answers recorded/ })).toBeFocused();
+    await expect(r.getByRole("status")).toContainText("Demo answers appended; case open");
+    await expect(r.getByRole("heading", { name: /Demo answers appended; case open/ })).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(r.getByRole("link", { name: "Back to Review" })).toBeFocused();
   });

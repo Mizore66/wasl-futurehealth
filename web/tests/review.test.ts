@@ -109,4 +109,10 @@ describe("review view of the review_hold fixture", () => {
       ["Two readers", "31 May"],
     ]);
   });
+
+  it("carries canonical closure instead of inferring it from appended answers", () => {
+    expect(view.closed).toBe(true);
+    expect(reviewView({ ...detail, case: { ...detail.case, closed: false } }).closed).toBe(false);
+    expect(reviewView({ ...detail, case: { ...detail.case, closed: true } }).closed).toBe(true);
+  });
 });
