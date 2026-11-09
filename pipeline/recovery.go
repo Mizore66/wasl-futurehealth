@@ -408,6 +408,10 @@ func apiAuthFromEnvironment() (func(http.Handler) http.Handler, error) {
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodOptions {
+				next.ServeHTTP(w, r)
+				return
+			}
 			name, password, ok := r.BasicAuth()
 			user, exists := users[name]
 			expected := user.Password

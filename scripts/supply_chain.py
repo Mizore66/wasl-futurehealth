@@ -83,7 +83,7 @@ def _docker_components(root: Path) -> tuple[list[dict], list[dict]]:
         args = dict(re.findall(r"^ARG ([A-Z0-9_]+)=([^\s]+)\s*$", text, re.MULTILINE))
         relative = dockerfile.relative_to(root).as_posix()
         for line_number, line in enumerate(text.splitlines(), start=1):
-            match = re.match(r"^FROM\s+([^\s]+)(?:\s+AS\s+([^\s]+))?", line)
+            match = re.match(r"^FROM\s+(?:--platform=\S+\s+)?([^\s]+)(?:\s+AS\s+([^\s]+))?", line)
             if not match:
                 continue
             reference = match.group(1)

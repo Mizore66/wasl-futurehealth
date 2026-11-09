@@ -181,8 +181,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade "pip==26.2.2"
           python3 -m pip install -r requirements-ci.txt
-      - name: Require the tracked Linux simulation golden
-        run: git ls-files --error-unmatch booking/sim/pool_test.linux-amd64.json
+      - name: Require the tracked deterministic simulation golden
+        run: git ls-files --error-unmatch booking/sim/pool_test.json
       - name: Reproduce every pool simulation draw
         run: python3 booking/sim/pool_test.py
       - name: Require byte-identical committed simulation output

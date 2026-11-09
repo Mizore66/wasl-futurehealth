@@ -433,8 +433,9 @@
   - **Network pooling (load-balancing across a group's sites):**
     - When Wasl runs across several facilities, it books a patient into any free endoscopy slot in the network, for example another SEHA or M42 site, within travel, gender and Ramadan constraints, instead of queueing them at the screening clinic's own unit. DoH 5.4.1 already encourages online booking.
     - **Simulated (30 draws), with capacity in the wrong places:** the capital holds 40% of slots but has 55% of patients, and Al Ain has spare.
-      - At 1.2 slots per FIT+ (enough in total), completion within 31 days of referral, for all FIT+, is 22.2% with no cross-site booking, 37.2% at 30% travel willingness, and **42.1% with network pooling** (60% willing). That beats the balanced network's 40.4%.
-      - At 1.0 slot per FIT+ (short overall), pooling gives 7.8% vs 7.3%. It only spreads the shortage.
+      - At 1.2 slots per FIT+ (enough in total), completion within 31 days of referral, for all FIT+, is 21.5% with no cross-site booking, 36.9% at 30% travel willingness, and **41.7% with network pooling** (60% willing). That beats the balanced network's 40.8%.
+      - At 1.0 slot per FIT+ (short overall), pooling gives 8.2% vs 7.1%. It only spreads the shortage.
+      - Deterministic probability rounding and integer-cost assignment changed these golden results; two equal-cost bookings swap slots while retaining their constraints and deadlines.
     - **So network pooling fixes misallocated capacity, not missing capacity.** The more facilities run Wasl, the more misallocation it can absorb. Travel willingness is assumed; the pilot measures it.
     - Ontario's central positive-FIT booking cut the mean wait from 99 to 44 days (confounded by a test switch); a systematic review found 5–47 days gained.
     - It needs per-unit slot feeds, which the buyer holds.

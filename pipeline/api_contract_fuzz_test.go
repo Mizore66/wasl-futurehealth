@@ -46,7 +46,11 @@ func TestAPIProductionHandlerRouteInventory(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			rec := httptest.NewRecorder()
-			h.ServeHTTP(rec, httptest.NewRequest(tc.method, tc.path, nil))
+			req := httptest.NewRequest(tc.method, tc.path, nil)
+			if tc.method == http.MethodOptions {
+				req.Header.Set("Origin", "https://contract.test")
+			}
+			h.ServeHTTP(rec, req)
 			if rec.Code != tc.want {
 				t.Fatalf("%s %s: got %d, want %d; body=%s", tc.method, tc.path, rec.Code, tc.want, rec.Body.String())
 			}
@@ -64,6 +68,8 @@ func contractID(suffix string) string { return "contract/ServiceRequest/" + suff
 // their real head rules, including consent's intentionally different canonical-signature token.
 func contractRun(t *testing.T, specs []contractCase) (*apiServer, string) {
 	t.Helper()
+	t.Setenv("WASL_API_USERS_FILE", "contract-users")
+	t.Setenv("WASL_API_CORS_ORIGIN", "https://contract.test")
 	run := t.TempDir()
 	var out []interface{}
 	for i, spec := range specs {
@@ -102,6 +108,9 @@ type contractResponse struct {
 func contractRequest(t *testing.T, h http.Handler, method, path, role, actor, contentType string, body []byte) contractResponse {
 	t.Helper()
 	r := httptest.NewRequest(method, path, bytes.NewReader(body))
+	if method == http.MethodOptions {
+		r.Header.Set("Origin", "https://contract.test")
+	}
 	if role != "" {
 		r.Header.Set("X-Wasl-Role", role)
 	}
@@ -199,7 +208,7 @@ func TestAPIContractReadSchemasAndErrors(t *testing.T) {
 	}
 	for _, path := range []string{"/healthz", "/api/dashboard", "/api/cases", "/api/fixtures", "/api/agentshadow/status", "/api/cases/" + id + "/export"} {
 		res := contractRequest(t, h, http.MethodOptions, path, "", "", "", nil)
-		if res.code != http.StatusNoContent || res.head.Get("Access-Control-Allow-Origin") != "*" {
+		if res.code != http.StatusNoContent || res.head.Get("Access-Control-Allow-Origin") != "https://contract.test" {
 			t.Errorf("OPTIONS %s: code=%d CORS=%v", path, res.code, res.head)
 		}
 	}
@@ -489,7 +498,7 @@ func contractFileHashes(t *testing.T, run string, exclude ...string) map[string]
 		t.Fatal(err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || skip[entry.Name()] {
+		if entry.IsDir() || skip[entry.Name()] || strings.HasSuffix(entry.Name(), ".lock") {
 			continue
 		}
 		b, err := os.ReadFile(filepath.Join(run, entry.Name()))

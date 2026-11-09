@@ -325,6 +325,52 @@ func TestAPIAuthenticationDerivesRoleAndActor(t *testing.T) {
 	}
 }
 
+func TestBasicAuthEnforcesReadRBACAndPreflight(t *testing.T) {
+	users := filepath.Join(t.TempDir(), "users.json")
+	content := `{"auditor":{"password":"secret","role":"auditor"},"reviewer":{"password":"secret","role":"reviewer"},"coordinator":{"password":"secret","role":"coordinator"}}`
+	if err := os.WriteFile(users, []byte(content), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := contractRun(t, []contractCase{{suffix: "basic", item: "rv-basic"}})
+	t.Setenv("WASL_API_USERS_FILE", users)
+	t.Setenv("WASL_API_CORS_ORIGIN", "https://contract.test")
+	auth, err := apiAuthFromEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := auth(basicAPIHandler(s))
+	id := contractID("basic")
+	for _, tc := range []struct {
+		name, role, path string
+		want             int
+	}{
+		{name: "auditor cannot read case details", role: RoleAuditor, path: "/api/cases/" + id, want: http.StatusForbidden},
+		{name: "auditor can read audit", role: RoleAuditor, path: "/api/cases/" + id + "/audit", want: http.StatusOK},
+		{name: "auditor can export", role: RoleAuditor, path: "/api/cases/" + id + "/export", want: http.StatusOK},
+		{name: "reviewer can read case details", role: RoleReviewer, path: "/api/cases/" + id, want: http.StatusOK},
+		{name: "reviewer cannot export", role: RoleReviewer, path: "/api/cases/" + id + "/export", want: http.StatusForbidden},
+		{name: "coordinator cannot export", role: RoleCoordinator, path: "/api/cases/" + id + "/export", want: http.StatusForbidden},
+		{name: "reviewer can read queue", role: RoleReviewer, path: "/api/cases", want: http.StatusOK},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			req.SetBasicAuth(tc.role, "secret")
+			resp := httptest.NewRecorder()
+			h.ServeHTTP(resp, req)
+			if resp.Code != tc.want {
+				t.Fatalf("got %d, want %d; body=%s", resp.Code, tc.want, resp.Body.String())
+			}
+		})
+	}
+	req := httptest.NewRequest(http.MethodOptions, "/api/cases/"+id+"/export", nil)
+	req.Header.Set("Origin", "https://contract.test")
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+	if resp.Code != http.StatusNoContent || resp.Header().Get("Access-Control-Allow-Origin") != "https://contract.test" {
+		t.Fatalf("unauthenticated preflight: code=%d headers=%v body=%s", resp.Code, resp.Header(), resp.Body.String())
+	}
+}
+
 func TestAPIAuthenticationRejectsMissingAndWrongCredentials(t *testing.T) {
 	users := filepath.Join(t.TempDir(), "users.json")
 	if err := os.WriteFile(users, []byte(`{"dr.sara":{"password":"secret","role":"reviewer"}}`), 0600); err != nil {

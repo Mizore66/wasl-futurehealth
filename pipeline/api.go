@@ -103,6 +103,10 @@ func apiHandler(s *apiServer) http.Handler {
 	return cors(mux)
 }
 
+func basicAPIHandler(s *apiServer) http.Handler {
+	return s.authorizeVerified(apiHandler(s))
+}
+
 func runServe(run, data, addr string) {
 	if os.Getenv("WASL_SYNTHETIC_DATA_ONLY") != "1" {
 		panic("serve requires WASL_SYNTHETIC_DATA_ONLY=1; the demo API must not be used with real clinical data")
@@ -116,7 +120,7 @@ func runServe(run, data, addr string) {
 	// all other serving modes require the bearer-bound synthetic-demo principals.
 	var handler http.Handler
 	if os.Getenv("WASL_API_USERS_FILE") != "" {
-		handler = apiHandler(s)
+		handler = basicAPIHandler(s)
 	} else {
 		handler, err = s.handler(os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
 		if err != nil {

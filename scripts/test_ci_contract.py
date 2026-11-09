@@ -191,7 +191,8 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", integration)
         simulation = self.runs("booking-simulation")
         self.assertIn("python3 booking/sim/pool_test.py", simulation)
-        self.assertIn("git ls-files --error-unmatch booking/sim/pool_test.linux-amd64.json", simulation)
+        self.assertIn("git ls-files --error-unmatch booking/sim/pool_test.json", simulation)
+        self.assertNotIn("pool_test.linux-amd64.json", simulation)
         self.assertIn("git diff --exit-code", simulation)
 
     def test_frontend_has_separate_static_unit_and_build_gates(self):

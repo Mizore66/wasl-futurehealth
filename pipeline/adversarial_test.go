@@ -231,7 +231,7 @@ func hookTestConsumer(depth int) *SubConsumer {
 func TestHookValidatesBeforeAcknowledgement(t *testing.T) {
 	c := hookTestConsumer(2)
 	req := httptest.NewRequest(http.MethodPost, "/hook", bytes.NewBufferString(`{"resourceType":"Bundle","entry":[]}`))
-	req.Header.Set("Authorization", "Bearer "+HookToken)
+	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
 	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
@@ -239,7 +239,7 @@ func TestHookValidatesBeforeAcknowledgement(t *testing.T) {
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(validHandshakeNotification(t)))
-	req.Header.Set("Authorization", "Bearer "+HookToken)
+	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec = httptest.NewRecorder()
 	c.hook(rec, req)
 	if rec.Code != http.StatusOK || len(c.inbox) != 1 {
@@ -251,7 +251,7 @@ func TestHookRejectsDuplicateNotificationEnvelopeKeys(t *testing.T) {
 	raw := bytes.Replace(validHandshakeNotification(t), []byte(`"resourceType":"Bundle"`), []byte(`"resourceType":"Parameters","resourceType":"Bundle"`), 1)
 	c := hookTestConsumer(1)
 	req := httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(raw))
-	req.Header.Set("Authorization", "Bearer "+HookToken)
+	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
 	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
@@ -275,7 +275,7 @@ func TestHookRejectsInvalidInlineResourceAndFocusMismatch(t *testing.T) {
 			bun.Entry = append(bun.Entry, BEntry{Resource: json.RawMessage(resource)})
 			raw, _ := json.Marshal(bun)
 			req := httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(raw))
-			req.Header.Set("Authorization", "Bearer "+HookToken)
+			req.Header.Set("Authorization", "Bearer "+mockHookToken())
 			rec := httptest.NewRecorder()
 			c.hook(rec, req)
 			if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
@@ -288,7 +288,7 @@ func TestHookRejectsInvalidInlineResourceAndFocusMismatch(t *testing.T) {
 func TestHookRejectsOversizeAndBackpressure(t *testing.T) {
 	c := hookTestConsumer(1)
 	req := httptest.NewRequest(http.MethodPost, "/hook", io.MultiReader(bytes.NewBufferString(`{"pad":"`), strings.NewReader(strings.Repeat("x", adversarialHookLimit)), bytes.NewBufferString(`"}`)))
-	req.Header.Set("Authorization", "Bearer "+HookToken)
+	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
 	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
@@ -297,7 +297,7 @@ func TestHookRejectsOversizeAndBackpressure(t *testing.T) {
 
 	c.inbox <- []byte("already queued")
 	req = httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(validHandshakeNotification(t)))
-	req.Header.Set("Authorization", "Bearer "+HookToken)
+	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec = httptest.NewRecorder()
 	done := make(chan struct{})
 	go func() {

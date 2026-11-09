@@ -14,7 +14,8 @@ change requires a clinician order).
 The optimiser does NOT beat greedy in our tests; we make no optimisation claim (see booking/RESULTS.md).
 `--optimiser lookahead` (off by default) swaps in the multi-period rolling-horizon optimiser (booking/booking/lookahead.py,
 solved by `wsi7 mcf`); the stress-test flags (--arrivals bursty, --female-share, --colpo-female-share,
---crc-urgent-share) are for booking/sim/lookahead_eval.py. With every new flag at its default, booking.json is unchanged.
+--crc-urgent-share) are for booking/sim/lookahead_eval.py. The default remains myopic; deterministic probability
+rounding and integer-cost assignment apply, with reviewed golden changes to probabilities and two equal-cost slots.
 """
 from __future__ import annotations
 import json, os, sys, argparse, collections, hashlib
