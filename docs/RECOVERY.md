@@ -227,7 +227,7 @@ Only after saving nondeterministic-field and hash evidence outside the secret/ba
 ```bash
 for project in "$SOURCE" "$TARGET" "$NEGATIVE"; do
   export COMPOSE_PROJECT_NAME="$project"
-  podman compose -f "$COMPOSE_FILE" down -v --remove-orphans
+  podman compose -f "$COMPOSE_FILE" --profile seed down -v --remove-orphans
 done
 # Explicitly remove only the drill's external volumes when their retention period ends.
 podman volume rm "$BACKUP" "$TAMPERED" "$SECRETS" \
