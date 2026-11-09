@@ -15,7 +15,7 @@ scripts/deploy_up.sh            # = random environment key + docker compose up -
 
 This builds the image, starts a 3-node NATS JetStream cluster, runs the demo cohort end to end (with kill/restart
 chaos) and then serves the read API on `http://127.0.0.1:8088` ([`API.md`](API.md)). Check it with
-`curl 127.0.0.1:8088/healthz` and `curl 127.0.0.1:8088/api/fixtures`. The run summary is the last output of the
+`curl 127.0.0.1:8088/healthz` and `curl -H 'Authorization: Bearer wasl-demo-reviewer-1-token' 127.0.0.1:8088/api/fixtures`. Every `/api` route requires a role-bound bearer token; the published value here is only the loopback synthetic-demo default, not a production secret. The run summary is the last output of the
 `pipeline` container (`docker compose logs pipeline`).
 
 `scripts/check_deploy.py` checks the package statically without Docker (compose references, non-root image, key
@@ -68,6 +68,11 @@ JSON model weights only: no keys, no patient data, no run outputs.
   service restarts within that run still resume from their checkpoints. Setup fails if reset fails.
 - `WASL_NATS_URL` and `WASL_NATS_EXTERNAL=1` must be set together. Either setting alone is rejected by the Go commands
   and `scripts/demo.sh`; with neither set, the demo uses its local three-node cluster.
+- `WASL_API_TOKENS` (required by direct `wsi7 serve`) contains comma-separated `token:role:actor` entries;
+  `WASL_SYNTHETIC_DATA_ONLY=1` is a mandatory acknowledgment. `scripts/demo.sh` supplies documented loopback-demo
+  defaults and separate `WASL_API_*_TOKEN` client variables. Override both together. CORS is off unless exact origins
+  are listed in `WASL_API_ORIGINS`. See [`SECURITY.md`](SECURITY.md) before any non-demo use; this static-token API is
+  not approved for real clinical data.
 
 ## Pointing it at real HL7 feeds
 

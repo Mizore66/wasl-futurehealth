@@ -69,11 +69,13 @@ type ReaderClient struct {
 	ledger    map[string]ReaderResult
 	ledgerFn  string
 	ledgerErr error
+	configErr error
 }
 
 func NewReaderClient(url string, timeout time.Duration, retries int, ledgerPath string) *ReaderClient {
 	c := &ReaderClient{URL: strings.TrimRight(url, "/"), Timeout: timeout, Retries: retries,
 		http: &http.Client{Timeout: timeout}, ledger: map[string]ReaderResult{}, inflight: map[string]chan struct{}{}, ledgerFn: ledgerPath}
+	c.configErr = validateLocalEndpoint(url)
 	c.loadLedger()
 	return c
 }
@@ -172,6 +174,9 @@ func (c *ReaderClient) appendLedger(r ReaderResult) error {
 
 // Healthy reports whether the llama-server /health endpoint answers ok.
 func (c *ReaderClient) Healthy() bool {
+	if c.configErr != nil {
+		return false
+	}
 	cl := &http.Client{Timeout: 2 * time.Second}
 	resp, err := cl.Get(c.URL + "/health")
 	if err != nil {
@@ -285,6 +290,9 @@ func normWS(s string) string {
 
 // Read returns the reader verdict for one report body. ok=false means "reader unavailable" (route to review).
 func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
+	if c.configErr != nil {
+		return ReaderResult{Model: ReaderModelVersion, State: "unavailable", Reason: "reader_unavailable", Error: "unsafe reader endpoint: " + c.configErr.Error()}, false
+	}
 	sh := textSha(text)
 	if c.ledgerErr != nil {
 		return ReaderResult{ReportSha: sh, Model: ReaderModelVersion, State: "unavailable", Reason: "reader_ledger_invalid", Error: c.ledgerErr.Error()}, false
@@ -348,6 +356,9 @@ func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
 }
 
 func (c *ReaderClient) chat(body []byte) (string, error) {
+	if c.configErr != nil {
+		return "", fmt.Errorf("unsafe reader endpoint: %v", c.configErr)
+	}
 	resp, err := c.http.Post(c.URL+"/v1/chat/completions", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", err
@@ -544,7 +555,7 @@ func ReaderCache(reportsPath, pathPath, out string, workers int) (n, ok int) {
 	close(ch)
 	wg.Wait()
 	b, _ = json.MarshalIndent(cache, "", " ")
-	if err := os.WriteFile(out, b, 0644); err != nil {
+	if err := os.WriteFile(out, b, 0600); err != nil {
 		panic(err)
 	}
 	return

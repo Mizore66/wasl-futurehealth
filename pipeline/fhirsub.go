@@ -81,6 +81,9 @@ const (
 )
 
 func runFhirSub(base, hookAddr, content, runDir string) {
+	if validateLocalCallback(base) != nil || validateLocalCallback("http://"+hookAddr+"/hook") != nil || len(mockFHIRToken()) < 16 || len(mockHookToken()) < 16 {
+		panic("fhirsub requires loopback mock endpoints and configured WASL_MOCK_FHIR_TOKEN / WASL_MOCK_HOOK_TOKEN")
+	}
 	nc, js := connect("fhirsub")
 	defer nc.Close()
 	ctx := context.Background()
@@ -147,7 +150,7 @@ func (c *SubConsumer) req(method, path string, body []byte) ([]byte, int, error)
 	if err != nil {
 		return nil, 0, err
 	}
-	r.Header.Set("Authorization", "Bearer "+MockToken)
+	r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 	r.Header.Set("Accept", "application/fhir+json")
 	if body != nil {
 		r.Header.Set("Content-Type", "application/fhir+json")
@@ -181,7 +184,7 @@ func (c *SubConsumer) createSubscription() {
 		}},
 		"channel": map[string]interface{}{
 			"type": "rest-hook", "endpoint": "http://" + c.hookAddr + "/hook", "payload": "application/fhir+json",
-			"header": []string{"Authorization: Bearer " + HookToken},
+			"header": []string{"Authorization: Bearer " + mockHookToken()},
 			"extension": []interface{}{
 				map[string]interface{}{"url": ExtHeartbeat, "valueUnsignedInt": 1},
 				map[string]interface{}{"url": ExtTimeout, "valueUnsignedInt": 5},
@@ -208,7 +211,7 @@ func (c *SubConsumer) createSubscription() {
 }
 
 func (c *SubConsumer) hook(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Authorization") != "Bearer "+HookToken {
+	if r.Header.Get("Authorization") != "Bearer "+mockHookToken() {
 		atomic.AddInt64(c.stats_("hook_auth_rejected"), 1)
 		w.WriteHeader(401)
 		return
