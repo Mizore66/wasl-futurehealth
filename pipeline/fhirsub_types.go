@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -107,16 +108,26 @@ func (s StatusInfo) toParams() Parameters {
 
 func parseStatus(raw json.RawMessage) (StatusInfo, bool) {
 	var p Parameters
-	if json.Unmarshal(raw, &p) != nil || p.ResourceType != "Parameters" {
+	if rejectDuplicateKeys(raw) != nil || json.Unmarshal(raw, &p) != nil || p.ResourceType != "Parameters" {
 		return StatusInfo{}, false
 	}
 	var s StatusInfo
+	seen := map[string]bool{}
+	validStatus := map[string]bool{"requested": true, "active": true, "error": true, "off": true}
+	validType := map[string]bool{"handshake": true, "heartbeat": true, "event-notification": true, "query-status": true, "query-event": true}
 	for _, x := range p.Parameter {
+		if x.Name != "notification-event" {
+			if seen[x.Name] {
+				return StatusInfo{}, false
+			}
+			seen[x.Name] = true
+		}
 		switch x.Name {
 		case "subscription":
-			if x.ValueReference != nil {
-				s.Sub = x.ValueReference.Reference
+			if x.ValueReference == nil || x.ValueReference.Reference == "" {
+				return StatusInfo{}, false
 			}
+			s.Sub = x.ValueReference.Reference
 		case "topic":
 			s.Topic = x.ValueCanonical
 		case "status":
@@ -124,13 +135,26 @@ func parseStatus(raw json.RawMessage) (StatusInfo, bool) {
 		case "type":
 			s.Type = x.ValueCode
 		case "events-since-subscription-start":
-			s.EventsSince, _ = strconv.ParseInt(x.ValueString, 10, 64)
+			n, err := strconv.ParseInt(x.ValueString, 10, 64)
+			if err != nil || n < 0 {
+				return StatusInfo{}, false
+			}
+			s.EventsSince = n
 		case "notification-event":
 			var e NotifEvent
+			parts := map[string]bool{}
 			for _, pt := range x.Part {
+				if parts[pt.Name] {
+					return StatusInfo{}, false
+				}
+				parts[pt.Name] = true
 				switch pt.Name {
 				case "event-number":
-					e.Num, _ = strconv.ParseInt(pt.ValueString, 10, 64)
+					n, err := strconv.ParseInt(pt.ValueString, 10, 64)
+					if err != nil || n <= 0 {
+						return StatusInfo{}, false
+					}
+					e.Num = n
 				case "timestamp":
 					e.Occurred = pt.ValueInstant
 				case "focus":
@@ -139,22 +163,36 @@ func parseStatus(raw json.RawMessage) (StatusInfo, bool) {
 					}
 				}
 			}
+			typ, id, _ := splitFocus(e.Focus)
+			if e.Num <= 0 || typ == "" || id == "" {
+				return StatusInfo{}, false
+			}
+			if _, err := time.Parse(time.RFC3339Nano, e.Occurred); err != nil {
+				return StatusInfo{}, false
+			}
 			s.Events = append(s.Events, e)
 		}
+	}
+	if s.Sub == "" || !validStatus[s.Status] || !validType[s.Type] || !seen["events-since-subscription-start"] {
+		return StatusInfo{}, false
 	}
 	return s, true
 }
 
 // splitFocus: "Type/id/_history/vid" (possibly with a base URL prefix) -> type, id, vid
 func splitFocus(f string) (string, string, string) {
-	if i := strings.Index(f, "/fhir/"); i >= 0 {
+	if strings.Contains(f, "://") {
+		i := strings.Index(f, "/fhir/")
+		if i < 0 {
+			return "", "", ""
+		}
 		f = f[i+6:]
 	}
 	p := strings.Split(f, "/")
-	if len(p) >= 4 && p[2] == "_history" {
+	if len(p) == 4 && p[2] == "_history" && p[0] != "" && p[1] != "" && p[3] != "" {
 		return p[0], p[1], p[3]
 	}
-	if len(p) >= 2 {
+	if len(p) == 2 && p[0] != "" && p[1] != "" {
 		return p[0], p[1], ""
 	}
 	return "", "", ""
