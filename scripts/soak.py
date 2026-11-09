@@ -651,27 +651,33 @@ class OutageScope:
 
     def __init__(self):
         self.outage_id = None
+        self.action_lock = threading.RLock()
 
     def set_outage(self, value):
         self.outage_id = value
 
+    def reconcile_containers(self):
+        pass
+
 
 def measured_restart(journal, collector, action_id, kind, operation, recovery):
-    started = time.monotonic()
-    journal.append("restart_started", action_id=action_id, kind=kind)
-    collector.set_outage(action_id)
-    try:
-        operation()
-        recovery()
-    except Exception as exc:
-        journal.append("restart_failed", action_id=action_id, kind=kind,
-                       recovery_s=round(time.monotonic() - started, 3),
-                       error=type(exc).__name__ + ": " + str(exc))
-        raise
-    finally:
-        collector.set_outage(None)
-    journal.append("restart_recovered", action_id=action_id, kind=kind,
-                   recovery_s=round(time.monotonic() - started, 3))
+    with collector.action_lock:
+        started = time.monotonic()
+        journal.append("restart_started", action_id=action_id, kind=kind)
+        collector.set_outage(action_id)
+        try:
+            operation()
+            recovery()
+            collector.reconcile_containers()
+        except Exception as exc:
+            journal.append("restart_failed", action_id=action_id, kind=kind,
+                           recovery_s=round(time.monotonic() - started, 3),
+                           error=type(exc).__name__ + ": " + str(exc))
+            raise
+        finally:
+            collector.set_outage(None)
+        journal.append("restart_recovered", action_id=action_id, kind=kind,
+                       recovery_s=round(time.monotonic() - started, 3))
 
 
 def export_canonical(value):
@@ -799,12 +805,12 @@ def detect_unexpected_restarts(previous, current):
     unexpected = []
     for service, before in previous.items():
         after = current.get(service)
-        if not after or service == "pipeline":
+        if not after:
             continue
         changed_generation = (real_start(before.get("started_at")) and real_start(after.get("started_at")) and
                               after.get("started_at") != before.get("started_at"))
         if changed_generation or after.get("restart_count", 0) > before.get("restart_count", 0) or \
-                (before.get("status") == "running" and after.get("status") in ("exited", "dead")):
+                (service != "pipeline" and before.get("status") == "running" and after.get("status") in ("exited", "dead")):
             unexpected.append(service)
     return sorted(unexpected)
 
@@ -874,8 +880,16 @@ class Compose:
         self.env_file = str(env_file)
 
     def run(self, args, timeout=120, check=True):
-        result = subprocess.run(args, cwd=self.repo, text=True, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, timeout=timeout)
+        process = subprocess.Popen(args, cwd=self.repo, text=True, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, start_new_session=True)
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            stdout, stderr = process.communicate()
+            raise subprocess.TimeoutExpired(args, timeout, output=stdout, stderr=stderr) from None
+        result = subprocess.CompletedProcess(args, process.returncode, stdout=stdout, stderr=stderr)
         if check and result.returncode:
             raise CommandError(result)
         return result
@@ -962,6 +976,7 @@ class Collector:
         self.phase = "bootstrap"
         self.outage_id = None
         self.outage_lock = threading.Lock()
+        self.action_lock = threading.RLock()
         self.last_budget_violations = []
         self.budget_violations = []
         self.stop_event = threading.Event()
@@ -1024,6 +1039,13 @@ class Collector:
             except (CommandError, ValueError, subprocess.TimeoutExpired) as exc:
                 record["errors"].append(node + ": " + type(exc).__name__)
 
+    def reconcile_containers(self):
+        """Capture post-action generations even when no container cadence sample ran."""
+        ids = self.compose.service_ids()
+        for service, container_id in ids.items():
+            if service != "pipeline":
+                self.previous_containers[service] = self.compose.inspect_state(container_id)
+
     def _containers(self, record):
         if not self._due("container_interval_s"):
             return
@@ -1048,6 +1070,10 @@ class Collector:
         self.previous_containers = {name: dict(state) for name, state in record["containers"].items()}
 
     def sample_once(self):
+        with self.action_lock:
+            return self._sample_once()
+
+    def _sample_once(self):
         epoch = time.time()
         steady_start = self.state.get("steady_start_epoch") if self.state is not None else None
         start_epoch = self.manifest["start_epoch"] if self.phase == "bootstrap" or steady_start is None else steady_start
@@ -1426,7 +1452,7 @@ class SoakRunner:
         def operation():
             if kill:
                 self.compose.compose("kill", "-s", "KILL", "api", timeout=60)
-                self.compose.compose("start", "api", timeout=60)
+                self.compose.compose("up", "-d", "--no-deps", "--no-build", "api", timeout=60)
             else:
                 self.compose.compose("restart", "api", timeout=120)
         measured_restart(self.journal, self.collector, action_id, "api", operation, self.recover_read)

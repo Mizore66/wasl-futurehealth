@@ -74,3 +74,11 @@ requires six hourly post-warmup windows. The smoke uses volume-deleting cleanup 
 A completed retained-read soak uses
 `down` without `-v`; a failed run is left for inspection. Fresh active-fault projects are copied out and then removed with
 scoped `down -v`. No command prunes global containers, images or volumes.
+
+## Invalidated evidence: smoke 3b0362
+
+Run `20261109T111946Z-3b0362` remains failed. Its `compose start api` restarted the completed one-shot pipeline, so
+samples after the pipeline's `2026-11-09T19:30:18.487296723+08:00` start are not retained-read evidence. In particular,
+the negative NATS storage-growth value reflects that unauthorized second pipeline run replacing stream contents, not
+storage reclamation or a leak result. The second pipeline's differing FHIR/OUT counts and all later lifecycle observations
+are invalid for availability or resource claims; they must not be used to resume or pass this run.

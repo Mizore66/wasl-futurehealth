@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 
 import soak
@@ -317,6 +318,11 @@ class ReportFileTests(unittest.TestCase):
 
 
 class CollectorTests(unittest.TestCase):
+    def test_second_pipeline_generation_is_unexpected(self):
+        previous = {"pipeline": {"status": "exited", "exit_code": 0, "started_at": "old", "restart_count": 0}}
+        current = {"pipeline": {"status": "running", "exit_code": 0, "started_at": "new", "restart_count": 0}}
+        self.assertEqual(soak.detect_unexpected_restarts(previous, current), ["pipeline"])
+
     def test_failed_probes_still_create_a_sample_and_budget_signal(self):
         class BrokenCompose:
             def service_ids(self):
@@ -415,9 +421,12 @@ class RestartMeasurementTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             journal = soak.EventJournal(Path(tmp) / "events.jsonl")
             class Collector:
+                action_lock = threading.RLock()
                 outage = "unchanged"
                 def set_outage(self, value):
                     self.outage = value
+                def reconcile_containers(self):
+                    pass
             collector = Collector()
             soak.measured_restart(journal, collector, "a1", "api", lambda: None, lambda: None)
             self.assertIsNone(collector.outage)
@@ -429,8 +438,11 @@ class RestartMeasurementTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             journal = soak.EventJournal(Path(tmp) / "events.jsonl")
             class Collector:
+                action_lock = threading.RLock()
                 def set_outage(self, value):
                     self.outage = value
+                def reconcile_containers(self):
+                    pass
             collector = Collector()
             with self.assertRaisesRegex(RuntimeError, "still down"):
                 soak.measured_restart(journal, collector, "a1", "api", lambda: None,
@@ -440,6 +452,105 @@ class RestartMeasurementTests(unittest.TestCase):
             self.assertEqual([row["event"] for row in events], ["restart_started", "restart_failed"])
 
 
+    def test_short_planned_restart_reconciles_generation_without_container_sample(self):
+        class FakeCompose:
+            def service_ids(self):
+                return {"api": "api-id"}
+            def inspect_state(self, container_id):
+                return {"container_id": container_id, "status": "running", "started_at": "new", "restart_count": 0}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = GateTests().config()
+            manifest = {"run_id": "r", "project": "waslsoak-r", "start_epoch": 0, "config": config}
+            journal = soak.EventJournal(root / "events.jsonl")
+            writer = soak.SampleWriter(root)
+            collector = soak.Collector(root, manifest, FakeCompose(), writer, journal)
+            collector.previous_containers = {"api": {"status": "running", "started_at": "old", "restart_count": 0}}
+            try:
+                soak.measured_restart(journal, collector, "short-api", "api", lambda: None, lambda: None)
+                current = {"api": collector.compose.inspect_state("api-id")}
+                self.assertEqual(soak.detect_unexpected_restarts(collector.previous_containers, current), [])
+                current["api"]["started_at"] = "later-unplanned"
+                self.assertEqual(soak.detect_unexpected_restarts(collector.previous_containers, current), ["api"])
+            finally:
+                writer.close()
+
+
+    def test_reconciliation_never_adopts_a_second_pipeline_generation(self):
+        class FakeCompose:
+            def service_ids(self):
+                return {"api": "api-id", "pipeline": "pipeline-id"}
+            def inspect_state(self, container_id):
+                return {"container_id": container_id, "status": "running", "started_at": "new", "restart_count": 0}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = GateTests().config()
+            manifest = {"run_id": "r", "project": "waslsoak-r", "start_epoch": 0, "config": config}
+            writer = soak.SampleWriter(root)
+            collector = soak.Collector(root, manifest, FakeCompose(), writer,
+                                       soak.EventJournal(root / "events.jsonl"))
+            old = {"status": "running", "started_at": "old", "restart_count": 0}
+            collector.previous_containers = {"api": dict(old), "pipeline": dict(old, status="exited", exit_code=0)}
+            try:
+                collector.reconcile_containers()
+                current = {"api": collector.compose.inspect_state("api-id"),
+                           "pipeline": collector.compose.inspect_state("pipeline-id")}
+                self.assertEqual(soak.detect_unexpected_restarts(collector.previous_containers, current), ["pipeline"])
+            finally:
+                writer.close()
+
+    def test_sample_in_flight_cannot_overlap_planned_action(self):
+        import threading
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = GateTests().config()
+            config.update(health_interval_s=10, api_interval_s=30, nats_interval_s=30,
+                          container_interval_s=60, disk_interval_s=60)
+            manifest = {"run_id": "r", "project": "waslsoak-r", "start_epoch": 0,
+                        "api_url": "http://127.0.0.1:9", "config": config}
+            journal = soak.EventJournal(root / "events.jsonl")
+            writer = soak.SampleWriter(root)
+            self.addCleanup(writer.close)
+            collector = soak.Collector(root, manifest, object(), writer, journal)
+            collector._api = lambda record: None
+            collector._nats = lambda record: None
+            collector.reconcile_containers = lambda: None
+            entered = threading.Event()
+            release = threading.Event()
+            operation_started = threading.Event()
+            def blocked_containers(record):
+                entered.set()
+                release.wait(2)
+            collector._containers = blocked_containers
+            errors = []
+            def capture_errors(target):
+                try:
+                    target()
+                except Exception as exc:
+                    errors.append(exc)
+            sample = threading.Thread(target=capture_errors, args=(collector.sample_once,))
+            try:
+                sample.start()
+                self.assertTrue(entered.wait(1))
+                action = threading.Thread(target=capture_errors, args=(lambda: soak.measured_restart(
+                    journal, collector, "racing-api", "api", operation_started.set, lambda: None),))
+                action.start()
+                self.assertFalse(operation_started.wait(.25), "planned action overlapped an in-flight sample")
+                release.set()
+                sample.join(2)
+                action.join(2)
+            finally:
+                release.set()
+                sample.join(2)
+                if 'action' in locals():
+                    action.join(2)
+            self.assertFalse(errors)
+            self.assertFalse(sample.is_alive())
+            self.assertFalse(action.is_alive())
+            self.assertIsNone(collector.outage_id)
+            writer.close()
+
+
 class LifecycleTests(unittest.TestCase):
     def runner(self, tmp, compose):
         runner = soak.SoakRunner.__new__(soak.SoakRunner)
@@ -447,8 +558,11 @@ class LifecycleTests(unittest.TestCase):
         runner.journal = soak.EventJournal(Path(tmp) / "events.jsonl")
         runner.config = {"outage_s": 0}
         class Collector:
+            action_lock = threading.RLock()
             def set_outage(self, value):
                 self.outage = value
+            def reconcile_containers(self):
+                pass
         runner.collector = Collector()
         runner.recover_read = lambda: None
         return runner
@@ -466,6 +580,22 @@ class LifecycleTests(unittest.TestCase):
             runner = self.runner(tmp, compose)
             runner.recreate_read_stack("recreate")
         self.assertEqual(compose.calls, [("down",), ("up", "nats-0", "nats-1", "nats-2", "api")])
+        self.assertNotIn("pipeline", compose.calls[-1])
+
+    def test_api_kill_restarts_only_api_without_dependencies(self):
+        class FakeCompose:
+            def __init__(self):
+                self.calls = []
+            def compose(self, *args, timeout):
+                self.calls.append(args)
+        compose = FakeCompose()
+        with tempfile.TemporaryDirectory() as tmp:
+            runner = self.runner(tmp, compose)
+            runner.api_restart("api-kill", kill=True)
+        self.assertEqual(compose.calls, [
+            ("kill", "-s", "KILL", "api"),
+            ("up", "-d", "--no-deps", "--no-build", "api"),
+        ])
         self.assertNotIn("pipeline", compose.calls[-1])
 
     def test_nats_restart_stops_and_starts_only_the_declared_node(self):
@@ -534,6 +664,42 @@ class CommandDiagnosticsTests(unittest.TestCase):
         error = soak.CommandError(result)
         self.assertIn("exact compiler failure", str(error))
         self.assertIn("build stdout", str(error))
+
+
+class ComposeTimeoutTests(unittest.TestCase):
+    def test_timeout_kills_the_external_provider_process_group(self):
+        import signal
+        import subprocess
+        import time
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pid_file = root / "provider-child.pid"
+            provider = root / "provider"
+            provider.write_text("#!/bin/sh\nsleep 300 &\nchild=$!\nprintf '%s\\n' \"$child\" > \"$1\"\nwait \"$child\"\n")
+            provider.chmod(0o755)
+            compose = soak.Compose("podman", root, "waslsoak-test", root / ".env")
+            child = None
+            try:
+                with self.assertRaises(subprocess.TimeoutExpired):
+                    compose.run([str(provider), str(pid_file)], timeout=1)
+                child = int(pid_file.read_text().strip())
+                def running():
+                    try:
+                        os.kill(child, 0)
+                    except ProcessLookupError:
+                        return False
+                    stat = subprocess.check_output(["ps", "-p", str(child), "-o", "stat="], text=True).strip()
+                    return bool(stat) and not stat.startswith("Z")
+                deadline = time.monotonic() + 2
+                while running() and time.monotonic() < deadline:
+                    time.sleep(.02)
+                self.assertFalse(running(), "external provider child survived the Compose timeout")
+            finally:
+                if child is not None:
+                    try:
+                        os.kill(child, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
 
 
 class ImageEvidenceTests(unittest.TestCase):
