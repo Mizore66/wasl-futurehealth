@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:6d9cfd9a-9241-5dec-a160-92c69f2e56e1",
+  "serialNumber": "urn:uuid:7d23a02a-0de6-5bbd-b984-29df684bbf03",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-09T10:38:28Z",
+    "timestamp": "2026-11-09T10:54:22Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "024fd2040cd7f0b37c2d82a69395500f1369a444"
+      "version": "4c563315fadd28abb5993e69b8777a9c46eba127"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "024fd2040cd7f0b37c2d82a69395500f1369a444"
+        "value": "4c563315fadd28abb5993e69b8777a9c46eba127"
       },
       {
         "name": "wasl:source-tree",
@@ -60,11 +60,11 @@
   },
   "components": [
     {
-      "bom-ref": "container:Dockerfile:16:python:3.12-slim-bookworm",
+      "bom-ref": "container:Dockerfile:16:python:3.12-alpine",
       "type": "container",
       "name": "python",
-      "version": "3.12-slim-bookworm",
-      "purl": "pkg:docker/library/python@3.12-slim-bookworm",
+      "version": "3.12-alpine",
+      "purl": "pkg:docker/library/python@3.12-alpine",
       "properties": [
         {
           "name": "wasl:declared-in",
@@ -76,16 +76,16 @@
         },
         {
           "name": "wasl:reference",
-          "value": "python:3.12-slim-bookworm"
+          "value": "python:3.12-alpine"
         }
       ]
     },
     {
-      "bom-ref": "container:Dockerfile:9:golang:1.27-bookworm",
+      "bom-ref": "container:Dockerfile:9:golang:1.27.3-bookworm",
       "type": "container",
       "name": "golang",
-      "version": "1.27-bookworm",
-      "purl": "pkg:docker/library/golang@1.27-bookworm",
+      "version": "1.27.3-bookworm",
+      "purl": "pkg:docker/library/golang@1.27.3-bookworm",
       "properties": [
         {
           "name": "wasl:declared-in",
@@ -97,20 +97,20 @@
         },
         {
           "name": "wasl:reference",
-          "value": "golang:1.27-bookworm"
+          "value": "golang:1.27.3-bookworm"
         }
       ]
     },
     {
-      "bom-ref": "container:deploy/nats/Dockerfile:7:nats:2.12.1-alpine",
+      "bom-ref": "container:deploy/nats/Dockerfile:23:nats:2.12.6-alpine",
       "type": "container",
       "name": "nats",
-      "version": "2.12.1-alpine",
-      "purl": "pkg:docker/library/nats@2.12.1-alpine",
+      "version": "2.12.6-alpine",
+      "purl": "pkg:docker/library/nats@2.12.6-alpine",
       "properties": [
         {
           "name": "wasl:declared-in",
-          "value": "deploy/nats/Dockerfile:7"
+          "value": "deploy/nats/Dockerfile:23"
         },
         {
           "name": "wasl:image-role",
@@ -118,7 +118,28 @@
         },
         {
           "name": "wasl:reference",
-          "value": "nats:2.12.1-alpine"
+          "value": "nats:2.12.6-alpine"
+        }
+      ]
+    },
+    {
+      "bom-ref": "container:deploy/nats/Dockerfile:7:golang:1.27.3-bookworm",
+      "type": "container",
+      "name": "golang",
+      "version": "1.27.3-bookworm",
+      "purl": "pkg:docker/library/golang@1.27.3-bookworm",
+      "properties": [
+        {
+          "name": "wasl:declared-in",
+          "value": "deploy/nats/Dockerfile:7"
+        },
+        {
+          "name": "wasl:image-role",
+          "value": "build"
+        },
+        {
+          "name": "wasl:reference",
+          "value": "golang:1.27.3-bookworm"
         }
       ]
     },
