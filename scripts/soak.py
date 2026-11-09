@@ -500,6 +500,8 @@ def probe_json(url, timeout):
             body = json.loads(raw)
         except (ValueError, UnicodeDecodeError) as exc:
             error = "invalid JSON: " + str(exc)
+    elif error is None:
+        error = "empty JSON response"
     return {"status": status, "latency_ms": round((time.monotonic() - started) * 1000, 3),
             "bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(), "timeout": timed_out,
             "error": error, "body": body}
