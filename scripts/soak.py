@@ -34,6 +34,7 @@ from datetime import datetime, timezone
 
 SCHEMA = "wasl-soak/1"
 PROJECT_RE = re.compile(r"^waslsoak-[a-z0-9][a-z0-9-]{0,40}$")
+API_ROUTES = ("health", "dashboard", "cases", "fixtures", "case_detail", "case_audit", "case_export")
 
 
 class ResumeError(RuntimeError):
@@ -88,7 +89,12 @@ class SampleWriter:
         if self.handle is not None:
             self.handle.close()
         self.segment = segment
-        self.handle = (self.root / (segment + ".jsonl")).open("a", encoding="utf-8", buffering=1)
+        path = self.root / (segment + ".jsonl")
+        existing = sorted(self.root.glob("*.jsonl"))
+        if existing:
+            repair_jsonl_tail(existing[-1])
+        repair_jsonl_tail(path)
+        self.handle = path.open("a", encoding="utf-8", buffering=1)
 
     def append(self, record):
         encoded = json.dumps(record, sort_keys=True, separators=(",", ":"), allow_nan=False) + "\n"
@@ -105,6 +111,55 @@ class SampleWriter:
                 self.handle = None
 
 
+def read_jsonl_records(path, tolerate_torn_final=False):
+    """Read complete JSONL records, optionally ignoring one unterminated crash tail."""
+    path = Path(path)
+    if not path.exists():
+        return []
+    raw = path.read_bytes()
+    lines = raw.splitlines()
+    rows = []
+    for index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except (ValueError, UnicodeDecodeError) as exc:
+            torn_final = (tolerate_torn_final and index == len(lines) - 1 and
+                          not raw.endswith(b"\n"))
+            if torn_final:
+                continue
+            raise ValueError("invalid JSONL %s:%d: %s" % (path, index + 1, exc)) from exc
+    return rows
+
+
+def repair_jsonl_tail(path):
+    """Make the next append safe; return bytes discarded from an invalid final fragment."""
+    path = Path(path)
+    if not path.exists():
+        return 0
+    raw = path.read_bytes()
+    if not raw or raw.endswith(b"\n"):
+        return 0
+    offset = raw.rfind(b"\n") + 1
+    tail = raw[offset:]
+    try:
+        json.loads(tail)
+    except (ValueError, UnicodeDecodeError):
+        with path.open("r+b") as handle:
+            handle.truncate(offset)
+            handle.flush()
+            os.fsync(handle.fileno())
+        fsync_directory(path.parent)
+        return len(tail)
+    with path.open("ab") as handle:
+        handle.write(b"\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+    fsync_directory(path.parent)
+    return 0
+
+
 class EventJournal:
     def __init__(self, path, clock=time.time):
         self.path = Path(path)
@@ -112,11 +167,9 @@ class EventJournal:
         self.clock = clock
         self.lock = threading.Lock()
         self.seq = 0
-        if self.path.exists():
-            with self.path.open(encoding="utf-8") as handle:
-                for line in handle:
-                    if line.strip():
-                        self.seq = max(self.seq, int(json.loads(line)["seq"]))
+        for row in read_jsonl_records(self.path, tolerate_torn_final=True):
+            self.seq = max(self.seq, int(row["seq"]))
+        self.recovered_torn_bytes = repair_jsonl_tail(self.path)
 
     def append(self, event, **fields):
         with self.lock:
@@ -166,7 +219,11 @@ class ControllerLock:
 def resume_state(path, manifest):
     with Path(path).open(encoding="utf-8") as handle:
         state = json.load(handle)
-    if state.get("manifest_sha256") != manifest.get("manifest_sha256"):
+    expected = manifest.get("manifest_sha256")
+    actual = manifest_digest(manifest)
+    if not isinstance(expected, str) or not secrets.compare_digest(expected, actual):
+        raise ResumeError("frozen manifest digest is invalid")
+    if state.get("manifest_sha256") != actual:
         raise ResumeError("state does not match the frozen manifest")
     for action_id, action in state.get("actions", {}).items():
         if action.get("status") == "started":
@@ -263,13 +320,25 @@ def build_report(manifest, config, samples, events, final_status):
     planned = [row for row in post_warmup if row.get("outage_id")]
     latency_values = {}
     api_errors = []
+    coverage_violations = []
+    route_counts = {route: 0 for route in API_ROUTES}
     steady_requests = 0
     planned_requests = 0
     for sample in steady:
-        for route, probe in sample.get("api", {}).get("routes", {}).items():
+        routes = sample.get("api", {}).get("routes", {})
+        if "health" not in routes:
+            coverage_violations.append({"seq": sample.get("seq"), "missing": ["health"]})
+        if any(route in routes for route in API_ROUTES if route != "health"):
+            missing = [route for route in API_ROUTES if route not in routes]
+            if missing:
+                coverage_violations.append({"seq": sample.get("seq"), "missing": missing})
+        for route, probe in routes.items():
             steady_requests += 1
+            if route in route_counts:
+                route_counts[route] += 1
             latency_values.setdefault(route, []).append(probe["latency_ms"])
-            if probe.get("timeout") or int(probe.get("status") or 0) == 0 or int(probe.get("status") or 0) >= 500:
+            status = int(probe.get("status") or 0)
+            if probe.get("timeout") or probe.get("error") or status < 200 or status >= 400:
                 api_errors.append({"seq": sample.get("seq"), "route": route, "probe": probe})
     for sample in planned:
         planned_requests += len(sample.get("api", {}).get("routes", {}))
@@ -279,16 +348,23 @@ def build_report(manifest, config, samples, events, final_status):
                           "p90": percentile(values, .90), "p95": percentile(values, .95),
                           "p99": percentile(values, .99), "max": max(values)}
     route_budgets = gates_config.get("route_p95_ms", {})
-    latency_pass = bool(latency) and all(
-        summary["p95"] <= route_budgets.get(route, gates_config["max_api_p95_ms"]) and
-        summary["p99"] <= gates_config["max_api_p99_ms"]
-        for route, summary in latency.items())
+    required_routes = tuple(dict.fromkeys((*API_ROUTES, *route_budgets)))
+    coverage_pass = bool(steady) and not coverage_violations and all(route_counts.get(route, 0) > 0
+                                                                       for route in required_routes)
+    latency_pass = coverage_pass and all(
+        route in latency and latency[route]["p95"] <= route_budgets.get(route, gates_config["max_api_p95_ms"]) and
+        latency[route]["p99"] <= gates_config["max_api_p99_ms"]
+        for route in required_routes)
     goroutines = window_medians(post_warmup, gates_config["leak_window_s"],
                                 lambda row: row.get("api", {}).get("runtime", {}).get("goroutines"))
     rss = window_medians(post_warmup, gates_config["leak_window_s"],
                          lambda row: row.get("containers", {}).get("api", {}).get("rss_bytes"))
-    stores = window_medians(post_warmup, gates_config["leak_window_s"],
-                            lambda row: max([n.get("store_bytes", 0) for n in row.get("nats", {}).values()] or [0]))
+    def nats_store(row):
+        values = [stats.get("store_bytes") for stats in row.get("nats", {}).values()
+                  if isinstance(stats.get("store_bytes"), (int, float)) and not isinstance(
+                      stats.get("store_bytes"), bool)]
+        return max(values) if values else None
+    stores = window_medians(post_warmup, gates_config["leak_window_s"], nats_store)
     restarts, recovery_pass = restart_summary(events, gates_config["max_recovery_s"],
                                                gates_config.get("required_restart_kinds", ()))
     gaps = []
@@ -299,28 +375,45 @@ def build_report(manifest, config, samples, events, final_status):
     unexpected_restarts = [{"seq": row.get("seq"), "services": row["unexpected_restarts"]}
                            for row in samples if row.get("unexpected_restarts")]
     comparisons = [event for event in events if event.get("event") == "comparison"]
-    comparisons_pass = all(event.get("matched") is True for event in comparisons)
+    required_comparisons = [action["id"] for action in config.get("schedule", [])
+                            if action.get("kind") == "final_compare"]
+    compared_actions = {event.get("action_id") for event in comparisons}
+    missing_comparisons = [action_id for action_id in required_comparisons if action_id not in compared_actions]
+    comparisons_pass = (bool(comparisons) and not missing_comparisons and
+                        all(event.get("matched") is True for event in comparisons))
     nats_capacity = gates_config["nats_store_capacity_bytes"]
     capacity_violations = [{"seq": row.get("seq"), "node": node, "store_bytes": stats.get("store_bytes")}
                            for row in samples for node, stats in row.get("nats", {}).items()
-                           if stats.get("store_bytes", 0) > nats_capacity * gates_config["max_nats_store_fraction"]]
+                           if isinstance(stats.get("store_bytes"), (int, float)) and
+                           stats.get("store_bytes") > nats_capacity * gates_config["max_nats_store_fraction"]]
+    nats_rows = [row for row in steady if row.get("nats")]
     ack_violations = [{"seq": row.get("seq"), "node": node, "ack_pending": stats.get("ack_pending")}
-                      for row in steady for node, stats in row.get("nats", {}).items()
-                      if stats.get("ack_pending", 0) != 0]
+                      for row in nats_rows for node, stats in row.get("nats", {}).items()
+                      if stats.get("ack_pending") != 0]
     nats_health_violations = [{"seq": row.get("seq"), "node": node,
-                                "healthy": stats.get("healthy"), "routes": stats.get("routes")}
-                               for row in steady for node, stats in row.get("nats", {}).items()
-                               if stats.get("healthy") is not True or stats.get("routes") != 2]
+                                "healthy": stats.get("healthy"), "routes": stats.get("routes"),
+                                "replicas_current": stats.get("replicas_current")}
+                               for row in nats_rows for node, stats in row.get("nats", {}).items()
+                               if stats.get("healthy") is not True or stats.get("routes") != 2 or
+                               stats.get("replicas_current") is not True]
+    for row in nats_rows:
+        for node in ("nats-0", "nats-1", "nats-2"):
+            if node not in row.get("nats", {}):
+                nats_health_violations.append({"seq": row.get("seq"), "node": node, "error": "missing sample"})
     budget_violations = [{"seq": row.get("seq"), "violations": row["budget_violations"]}
                          for row in samples if row.get("budget_violations")]
-    observed_duration = max([row.get("elapsed_s", 0) for row in samples] or [0])
+    observed_steady = [row for row in samples if row.get("phase") != "bootstrap"]
+    observed_duration = max([row.get("elapsed_s", 0) for row in observed_steady] or [0])
     gates = {
-        "completed_duration": {"passed": final_status == "completed" and observed_duration >= config["duration_s"],
+        "completed_duration": {"passed": (final_status == "completed" and bool(observed_steady) and
+                                           observed_duration >= config["duration_s"]),
                                 "observed_s": observed_duration, "required_s": config["duration_s"]},
         "api_latency_p95": {"passed": latency_pass, "routes": latency,
                              "default_p95_ms": gates_config["max_api_p95_ms"],
                              "p99_ms": gates_config["max_api_p99_ms"]},
-        "api_errors": {"passed": not api_errors, "unexpected": api_errors},
+        "api_route_coverage": {"passed": coverage_pass, "required": list(required_routes),
+                                "counts": route_counts, "violations": coverage_violations},
+        "api_errors": {"passed": steady_requests > 0 and not api_errors, "unexpected": api_errors},
         "api_goroutine_growth": growth_gate(goroutines, gates_config["min_leak_windows"],
                                               gates_config["max_goroutine_growth"]),
         "api_rss_growth": growth_gate(rss, gates_config["min_leak_windows"],
@@ -330,10 +423,13 @@ def build_report(manifest, config, samples, events, final_status):
         "restart_recovery": {"passed": recovery_pass, "restarts": restarts},
         "collector_heartbeat": {"passed": not gaps, "gaps": gaps},
         "unexpected_restarts": {"passed": not unexpected_restarts, "observed": unexpected_restarts},
-        "export_comparison": {"passed": comparisons_pass, "checks": len(comparisons)},
+        "export_comparison": {"passed": comparisons_pass, "checks": len(comparisons),
+                               "missing_actions": missing_comparisons},
         "nats_store_capacity": {"passed": not capacity_violations, "violations": capacity_violations},
-        "nats_ack_pending": {"passed": not ack_violations, "violations": ack_violations},
-        "nats_health": {"passed": not nats_health_violations, "violations": nats_health_violations},
+        "nats_ack_pending": {"passed": bool(nats_rows) and not ack_violations,
+                              "observations": len(nats_rows), "violations": ack_violations},
+        "nats_health": {"passed": bool(nats_rows) and not nats_health_violations,
+                         "observations": len(nats_rows), "violations": nats_health_violations},
         "disk_budget": {"passed": not budget_violations, "violations": budget_violations},
     }
     return {
@@ -348,10 +444,12 @@ def build_report(manifest, config, samples, events, final_status):
 
 
 class ActionBook:
-    def __init__(self, run_dir, journal):
+    def __init__(self, run_dir, journal, state=None):
         self.path = Path(run_dir) / "state.json"
-        with self.path.open(encoding="utf-8") as handle:
-            self.state = json.load(handle)
+        if state is None:
+            with self.path.open(encoding="utf-8") as handle:
+                state = json.load(handle)
+        self.state = state
         self.journal = journal
 
     def save(self):
@@ -417,7 +515,9 @@ def parse_nats_snapshot(varz, jsz, routez, stacks):
             consumers = stream.get("consumer_detail", [])
             cluster = stream.get("cluster", {})
             replicas = cluster.get("replicas", [])
-            current = all(replica.get("current") is True for replica in replicas)
+            current_peers = sum(replica.get("current") is True for replica in replicas)
+            current = len(replicas) >= 2 and current_peers >= 2 and all(
+                replica.get("current") is True for replica in replicas)
             replicas_current = replicas_current and current
             pending += sum(int(consumer.get("num_pending", 0)) for consumer in consumers)
             ack_pending += sum(int(consumer.get("num_ack_pending", 0)) for consumer in consumers)
@@ -426,6 +526,7 @@ def parse_nats_snapshot(varz, jsz, routez, stacks):
                 "messages": state.get("messages", 0), "bytes": state.get("bytes", 0),
                 "first_seq": state.get("first_seq"), "last_seq": state.get("last_seq"),
                 "leader": cluster.get("leader"), "replicas_current": current,
+                "current_replica_peers": current_peers, "replica_peer_count": len(replicas),
                 "replicas": [{"name": replica.get("name"), "current": replica.get("current"),
                               "lag": replica.get("lag")} for replica in replicas],
                 "consumers": [{"name": consumer.get("name"), "pending": consumer.get("num_pending", 0),
@@ -451,23 +552,14 @@ def parse_nats_snapshot(varz, jsz, routez, stacks):
 
 def read_jsonl_segments(root):
     rows = []
-    for path in sorted((Path(root) / "samples").glob("*.jsonl")):
-        with path.open(encoding="utf-8") as handle:
-            for line_number, line in enumerate(handle, 1):
-                if not line.strip():
-                    continue
-                try:
-                    rows.append(json.loads(line))
-                except ValueError as exc:
-                    raise ValueError("invalid sample %s:%d: %s" % (path, line_number, exc)) from exc
+    paths = sorted((Path(root) / "samples").glob("*.jsonl"))
+    for index, path in enumerate(paths):
+        rows.extend(read_jsonl_records(path, tolerate_torn_final=index == len(paths) - 1))
     return rows
 
 
 def read_events(path):
-    if not Path(path).exists():
-        return []
-    with Path(path).open(encoding="utf-8") as handle:
-        return [json.loads(line) for line in handle if line.strip()]
+    return read_jsonl_records(path, tolerate_torn_final=True)
 
 
 def atomic_write_text(path, text):
@@ -519,6 +611,16 @@ def disk_budget_violations(disk, nats, config):
         if stats.get("store_bytes", 0) > limit:
             violations.append("%s JetStream store above pre-registered budget" % node)
     return violations
+
+
+class OutageScope:
+    """Outage marker for a lane that does not share the retained collector."""
+
+    def __init__(self):
+        self.outage_id = None
+
+    def set_outage(self, value):
+        self.outage_id = value
 
 
 def measured_restart(journal, collector, action_id, kind, operation, recovery):
@@ -651,20 +753,24 @@ def validate_config(config):
 
 def initial_state(manifest_sha256, config, start_epoch):
     return {"schema": SCHEMA + "/state", "manifest_sha256": manifest_sha256,
-            "status": "running", "start_epoch": start_epoch,
+            "status": "running", "start_epoch": start_epoch, "steady_start_epoch": None,
             "actions": {action["id"]: {"status": "pending", "kind": action["kind"],
                                        "due_epoch": start_epoch + action["at_s"]}
                         for action in config.get("schedule", [])}}
 
 
 def detect_unexpected_restarts(previous, current):
+    def real_start(value):
+        return isinstance(value, str) and bool(value) and not value.startswith("0001-01-01T00:00:00")
+
     unexpected = []
     for service, before in previous.items():
         after = current.get(service)
         if not after or service == "pipeline":
             continue
-        if (before.get("started_at") and after.get("started_at") != before.get("started_at")) or \
-                after.get("restart_count", 0) > before.get("restart_count", 0) or \
+        changed_generation = (real_start(before.get("started_at")) and real_start(after.get("started_at")) and
+                              after.get("started_at") != before.get("started_at"))
+        if changed_generation or after.get("restart_count", 0) > before.get("restart_count", 0) or \
                 (before.get("status") == "running" and after.get("status") in ("exited", "dead")):
             unexpected.append(service)
     return sorted(unexpected)
@@ -804,16 +910,21 @@ class Compose:
 
 
 class Collector:
-    def __init__(self, run_dir, manifest, compose, writer, journal):
+    def __init__(self, run_dir, manifest, compose, writer, journal, state=None):
         self.root = Path(run_dir)
         self.manifest = manifest
+        self.state = state
         self.config = manifest["config"]
         self.compose = compose
         self.writer = writer
         self.journal = journal
-        self.seq = 0
+        previous_samples = read_jsonl_segments(run_dir)
+        self.seq = max([int(row.get("seq", 0)) for row in previous_samples] or [0])
         self.started_monotonic = time.monotonic()
         self.previous_containers = {}
+        for row in previous_samples:
+            for service, state in row.get("containers", {}).items():
+                self.previous_containers[service] = dict(state)
         self.fixture_id = None
         self.phase = "bootstrap"
         self.outage_id = None
@@ -905,9 +1016,11 @@ class Collector:
 
     def sample_once(self):
         epoch = time.time()
+        steady_start = self.state.get("steady_start_epoch") if self.state is not None else None
+        start_epoch = self.manifest["start_epoch"] if self.phase == "bootstrap" or steady_start is None else steady_start
         record = {"schema": SCHEMA + "/sample", "run_id": self.manifest["run_id"],
                   "project": self.manifest["project"], "seq": self.seq + 1, "epoch": epoch, "ts": utc_text(epoch),
-                  "monotonic_s": time.monotonic(), "elapsed_s": max(0, epoch - self.manifest["start_epoch"]),
+                  "monotonic_s": time.monotonic(), "elapsed_s": max(0, epoch - start_epoch),
                   "phase": self.phase,
                   "sample_duration_s": 0, "errors": [], "api": {"routes": {}}, "nats": {}, "containers": {}}
         with self.outage_lock:
@@ -1053,14 +1166,14 @@ class SoakRunner:
         self.compose = Compose(self.manifest["engine"], self.repo, self.manifest["project"], self.root / ".env")
         self.journal = EventJournal(self.root / "events.jsonl")
         self.writer = SampleWriter(self.root)
-        self.collector = Collector(self.root, self.manifest, self.compose, self.writer, self.journal)
         self.lock = ControllerLock(self.root / "controller.lock")
         if resume:
             self.state = resume_state(self.root / "state.json", self.manifest)
         else:
             with (self.root / "state.json").open(encoding="utf-8") as handle:
                 self.state = json.load(handle)
-        self.book = ActionBook(self.root, self.journal)
+        self.book = ActionBook(self.root, self.journal, self.state)
+        self.collector = Collector(self.root, self.manifest, self.compose, self.writer, self.journal, self.state)
         if self.state["actions"].get("bootstrap", {}).get("status") == "completed":
             self.collector.set_phase("retained-read")
         self.current_action_id = None
@@ -1181,10 +1294,9 @@ class SoakRunner:
 
     def compare_baseline(self, action_id):
         current = self.freeze_exports(self.root / "comparisons" / action_id)
-        baseline = {}
-        for fixture in current:
-            safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", fixture) + ".json"
-            baseline[fixture] = (self.root / "baseline" / "exports" / safe_name).read_bytes()
+        current = {re.sub(r"[^a-zA-Z0-9_.-]", "_", fixture): raw for fixture, raw in current.items()}
+        baseline = {path.stem: path.read_bytes()
+                    for path in sorted((self.root / "baseline" / "exports").glob("*.json"))}
         comparison = compare_exports(baseline, current)
         hashes = self.current_artifact_hashes()
         with (self.root / "baseline" / "artifact-hashes.json").open(encoding="utf-8") as handle:
@@ -1200,6 +1312,19 @@ class SoakRunner:
         if not matched:
             raise RuntimeError("restart-stable comparison failed for " + action_id)
 
+    def start_steady_state(self):
+        steady_start = time.time()
+        self.state["steady_start_epoch"] = steady_start
+        for action in self.config.get("schedule", []):
+            if action["id"] == "bootstrap":
+                continue
+            state_action = self.state["actions"][action["id"]]
+            if state_action["status"] == "pending":
+                state_action["due_epoch"] = steady_start + action["at_s"]
+        self.book.save()
+        self.collector.set_phase("retained-read")
+        self.journal.append("baseline_frozen", pipeline_rerun=False, steady_start_epoch=steady_start)
+
     def bootstrap(self):
         self.log("building isolated images for " + self.manifest["project"])
         self.compose.compose("build", timeout=1200)
@@ -1212,8 +1337,7 @@ class SoakRunner:
         self.run_api_smoke(self.manifest["api_url"], self.root / "logs" / "baseline-api-smoke.log")
         self.save_artifacts("baseline")
         self.freeze_exports(self.root / "baseline" / "exports")
-        self.collector.set_phase("retained-read")
-        self.journal.append("baseline_frozen", pipeline_rerun=False)
+        self.start_steady_state()
 
     def wait_api(self):
         deadline = time.monotonic() + self.config["gates"]["max_recovery_s"]["api"]
@@ -1375,17 +1499,23 @@ class SoakRunner:
                 self.wait_nats("active_fresh_nats", compose)
                 compose.compose("up", "-d", "--no-build", "--no-deps", "api", timeout=60)
                 self.wait_bootstrap(compose, api_url, self.config["bootstrap_timeout_s"])
-            measured_restart(self.journal, self.collector, action_id, "active_fresh_nats", operation,
+            measured_restart(self.journal, OutageScope(), action_id, "active_fresh_nats", operation,
                              active_recovery)
             self.run_api_smoke(api_url, lane_root / "api-smoke.log")
             self.save_artifacts(str(lane_root.relative_to(self.root)), compose, api_url)
-            self.journal.append("fresh_lane_verified", action_id=action_id, project=project)
         finally:
             try:
                 atomic_write_text(lane_root / "pipeline-cleanup.log", self.compose_logs(compose, "pipeline"))
             except Exception as exc:
                 self.journal.append("fresh_lane_log_error", action_id=action_id, error=str(exc))
-            compose.compose(*cleanup_args(project, disposable=True), timeout=120, check=False)
+            self.journal.append("fresh_lane_cleanup_started", action_id=action_id, project=project)
+            result = compose.compose(*cleanup_args(project, disposable=True), timeout=120, check=False)
+            if result.returncode:
+                self.journal.append("fresh_lane_cleanup_failed", action_id=action_id, project=project,
+                                    returncode=result.returncode)
+                raise CommandError(result)
+            self.journal.append("fresh_lane_cleanup_completed", action_id=action_id, project=project)
+        self.journal.append("fresh_lane_verified", action_id=action_id, project=project)
 
     def final_compare(self, action_id):
         self.compare_baseline(action_id)
@@ -1447,13 +1577,15 @@ class SoakRunner:
                 self.wait_until(due)
                 schedule_action = next(action for action in self.config["schedule"] if action["id"] == action_id)
                 self.book.execute(action_id, lambda: self.dispatch(action_id, schedule_action))
-            self.wait_until(self.manifest["start_epoch"] + self.config["duration_s"])
+            steady_start = self.state.get("steady_start_epoch")
+            if steady_start is None:
+                raise RuntimeError("retained-read measurement never started")
+            self.wait_until(steady_start + self.config["duration_s"])
             final_status = "completed"
             self.state["status"] = "completed"
             self.state["finished_epoch"] = time.time()
-            self.book.state = self.state
             self.book.save()
-            self.journal.append("controller_completed", duration_s=time.time() - self.manifest["start_epoch"])
+            self.journal.append("controller_completed", duration_s=time.time() - steady_start)
         except KeyboardInterrupt:
             final_status = "interrupted"
             self.journal.append("controller_interrupted")
