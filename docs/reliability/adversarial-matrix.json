@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "name": "Wasl adversarial robustness matrix",
+  "base_commit": "91cff71626e38a509395bef3c031d1d1f82a2773",
+  "evidence_date": "2026-11-09",
+  "evidence_scope": "Built controls plus executed hermetic and real single-node NATS tests. This is not production-readiness evidence.",
+  "environment": {
+    "os": "macOS 27.2 (Darwin 27.2.0), arm64",
+    "go": "go1.27.3 darwin/arm64",
+    "nats_server": "v2.15.2 at /opt/homebrew/bin/nats-server",
+    "nats_test_wiring": "Temporary worktree-local bin/nats-server symlink to the system binary; not a source change.",
+    "fuzz": "Native Go fuzzing, four workers, three seconds per target for the recorded smoke run.",
+    "filesystem": "Local macOS filesystem. Write, short-write, sync, close and missing-parent faults are injected in process; physical ENOSPC and power loss were not injected."
+  },
+  "seed_policy": {
+    "deterministic_tests": "Checked-in table fixtures and fixed message IDs; no wall-clock-dependent expected hashes.",
+    "fuzz": "Checked-in seed corpora plus the Go fuzz engine and its persistent coverage cache. The Go tool does not expose a numeric fuzz-engine seed flag, so exact generated sequences are not claimed reproducible. Duration and invariants are reproducible; any failure artifact must be added as a deterministic regression.",
+    "reader_model_request_seed": 1
+  },
+  "cases": [
+    {
+      "id": "fhir-shape-duplicate-fuzz",
+      "category": "Malformed and duplicate FHIR",
+      "command": "go -C pipeline test -run 'TestNormaliseRejectsShapeConfusionWithoutPanics' -count=1",
+      "seeds": ["null/scalar array members", "missing arrays", "duplicate outer and nested sign-off keys", "malformed nested sign-off JSON"],
+      "status": "pass",
+      "evidence": "Malformed shapes return no Event/Signoff and do not panic. Duplicate JSON keys are rejected.",
+      "limitations": "Clinical semantic validation is not complete; see unresolved findings."
+    },
+    {
+      "id": "hl7-shape-order-frame-fuzz",
+      "category": "Malformed, duplicate and out-of-order HL7/MLLP",
+      "command": "go -C pipeline test -run 'Test(HL7RejectsMalformedAndOutOfOrderSegments|HL7ToResourceRejectsShapeConfusionWithoutPanics|MLLPBoundsPreambleAndFrame)$' -count=1",
+      "seeds": ["duplicate MSH/ZWS", "MSH after PID", "missing MSH sender/control", "null embedded Patient", "64 KiB preamble limit", "1 MiB frame limit", "bad trailer"],
+      "status": "pass",
+      "evidence": "Invalid segments/resources return errors without panics; bounded framing rejects oversize input.",
+      "limitations": "No network slow-client or connection-exhaustion matrix was run."
+    },
+    {
+      "id": "subscription-validation-reorder-backpressure",
+      "category": "Subscription malformed, duplicate and out-of-order input",
+      "command": "go -C pipeline test -run 'Test(ParseStatusValidatesRequiredFields|HookValidatesBeforeAcknowledgement|HookRejectsInvalidInlineResourceAndFocusMismatch|HookRejectsOversizeAndBackpressure|SubscriptionRequestRejectsMalformedURL|UnknownSubscriptionSourceDoesNotAdvanceAcknowledgement|SubscriptionReorderAndDuplicateHaveSingleOrderedEffect)$' -count=1",
+      "seeds": ["event number 1 and 2 reordered", "duplicate event 1", "invalid URL escape %", "unknown source", "full inbox depth 1", "1 MiB hook limit"],
+      "status": "pass",
+      "evidence": "One ordered dispatch per event, malformed or shape-confused hooks receive 400, focus/source mismatches are rejected, full inbox receives 503, and unknown sources do not advance acknowledgement.",
+      "limitations": "The hook still acknowledges an in-memory queue, not downstream NATS durability; reorder overflow lacks a durable dead-letter."
+    },
+    {
+      "id": "poll-export-transactional-completion",
+      "category": "Malformed polling and bulk export",
+      "command": "go -C pipeline test -run 'Test(PollRejectsMalformedResponsesWithoutCompletion|ExportRejectsMalformedManifestAndTruncatedNDJSON)$' -count=1",
+      "seeds": ["malformed/duplicate Bundle keys", "missing resource metadata", "malformed final manifest", "16 MiB + 1 NDJSON record", "invalid resource line"],
+      "status": "pass",
+      "evidence": "Poll/export errors are counted, success/EOF completion is blocked, scanner errors are checked, and test fixtures do not panic.",
+      "limitations": "A valid prefix may already have been published before a later page/line fails; retry relies on dedupe and no completion checkpoint is advanced."
+    },
+    {
+      "id": "api-strict-json",
+      "category": "API body parser robustness",
+      "command": "go -C pipeline test -run 'TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies' -count=1",
+      "seeds": ["duplicate keys", "unknown fields", "valid JSON prefix followed by whitespace beyond route limit", "trailing objects"],
+      "status": "pass",
+      "evidence": "Review, consent and undo use bounded strict decoding and return 400 without appending."
+    },
+    {
+      "id": "native-fuzz-smoke",
+      "category": "CI-bounded parser and API fuzz smoke",
+      "command": "scripts/adversarial_fuzz.sh",
+      "seeds": ["Checked-in seeds in pipeline/adversarial_fuzz_test.go", "FUZZTIME defaults to 3s", "four fuzz workers"],
+      "status": "pass",
+      "evidence": "All five targets passed: 28,546 FHIR; 53,622 HL7; 37,887 MLLP; 29,029 SubscriptionStatus; 5,086 API executions in the final scripted run.",
+      "limitations": "Execution counts depend on host/cache and are evidence for this run only, not a coverage guarantee."
+    },
+    {
+      "id": "native-fuzz-longer",
+      "category": "Longer reproducible fuzz command",
+      "command": "FUZZTIME=60s scripts/adversarial_fuzz.sh",
+      "seeds": ["Same checked-in corpora", "60 seconds per target"],
+      "status": "not-run",
+      "evidence": "Command is published; the bounded three-second variant was executed.",
+      "limitations": "No long-duration or distributed fuzzing claim."
+    },
+    {
+      "id": "independent-api-writers",
+      "category": "Concurrent writes",
+      "command": "go -C pipeline test -race -run 'Test(IndependentServersCannotForkReviewLedger|ActionsSameHeadConcurrencyExactlyOneWins|ActionsIndependentCasesConcurrent)$' -count=1",
+      "seeds": ["Two independent apiServer values sharing one run", "16 same-head requests", "two independent cases"],
+      "status": "pass",
+      "evidence": "One same-head writer wins; the reloaded hash chain remains valid with one event.",
+      "limitations": "The two-server fixture runs in one OS process with independent open file descriptions. No cross-host/shared-filesystem test was run; flock is Unix-specific."
+    },
+    {
+      "id": "corrupt-truncated-ledgers",
+      "category": "Corrupt and truncated review/reader ledgers",
+      "command": "go -C pipeline test -run 'Test(ReviewLedgerRejectsDuplicateKeysAndInvalidBaseEvents|ReaderLedgerFailsClosedOnCorruptionAndStaleModel|ActionsMalformedLedgerFailsClosed|UndoRejectsTruncatedOrDeletedLedger|UndoAppendFailureLeavesNoTraceAndReloadRejectsTornLine)$' -count=1",
+      "seeds": ["duplicate-key ledger", "invalid base review", "malformed tail", "stale model", "conflicting duplicate answer", "torn NDJSON line"],
+      "status": "pass",
+      "evidence": "Writes are refused or reader becomes unavailable; unsafe replay is not accepted.",
+      "limitations": "Whole-reader-ledger quarantine is deliberately fail-stop and reduces availability until remediated."
+    },
+    {
+      "id": "disk-partial-write-injection",
+      "category": "Disk-full and partial-write injection",
+      "command": "go -C pipeline test -race -run 'Test(AppendToLedgerFileErrorClasses|ActionsAppendFailureLeavesStateUntouched|IndeterminateAppendMarksLedgerFailedAndRefusesWrites|UndoIndeterminateAppendBlocksEveryWriter|ReaderDoesNotCacheAnswerBeforeDurableAppend)$' -count=1",
+      "seeds": ["injected disk full", "short write", "sync failure", "close failure", "failed rollback", "missing reader-ledger parent"],
+      "status": "pass",
+      "evidence": "No in-memory success is acknowledged before durable append; indeterminate ledger state blocks later writers.",
+      "limitations": "These are hermetic error injections, not physical ENOSPC, filesystem corruption or power-failure tests. Status/materialization/dump paths still have unchecked I/O errors."
+    },
+    {
+      "id": "nats-duplicate-restart-recovery",
+      "category": "NATS duplicate and crash/restart matrix",
+      "command": "go -C pipeline test -run 'Test(PresentIDsTerminatesWithDuplicateStoredIDs|JetStreamCrashRestartKeepsAcknowledgedOutputAndDedupes|SeenLedgerDropsOldReplays|SetupStreamsResetsExternalRunState|ShadowOverNATSDuplicatesAndRestart|ShadowOverNATSKilledMidRunDoesNotRestartItself)$' -count=1 -v",
+      "seeds": ["same-id stored twice after 100 ms dedupe window", "case/output/1", "abrupt broker kill after sequence 1 acknowledgement", "retained JetStream directory"],
+      "status": "pass",
+      "evidence": "Duplicate-ID scan terminates; acknowledged output survives broker restart; replay does not add a stored effect; existing duplicate/restart cases pass with nats-server v2.15.2.",
+      "limitations": "Single node and one replica for these tests. No R3 quorum, multi-node partition, network partition or external shared-cluster ownership matrix was run."
+    },
+    {
+      "id": "full-and-race-regression",
+      "category": "Regression baseline",
+      "command": "go -C pipeline test ./... -count=1 && go -C pipeline vet ./...",
+      "seeds": ["Existing checked-in unit/integration fixtures", "temporary bin/nats-server symlink present"],
+      "status": "pass",
+      "evidence": "Final full suite passed 1,028 test events with zero failures in 325.283 seconds; focused race suite passed in 4.200 seconds; vet passed after test cleanup.",
+      "limitations": "Six asset-dependent tests skipped in the final run: TestAPIBookingSupport, TestAPIDRFixtureRun, TestAPIFixturesAndContracts, TestAPIReviewRBACAndAppendOnly, TestFresh2Reader, TestHL7RoundTripCohort."
+    },
+    {
+      "id": "reviewer-crash-restart-matrix",
+      "category": "Reviewer crash/restart and post-dedupe-window replay",
+      "command": "go -C pipeline test -run 'TestReviewer' -count=1 -v",
+      "seeds": ["not applicable"],
+      "status": "not-run",
+      "evidence": "No targeted reviewer crash-after-publish or post-window restart test exists in this change.",
+      "limitations": "Reviewer progress is not made durable by this change; duplicate local decisions/signoffs remain possible after restart."
+    },
+    {
+      "id": "physical-os-fault-matrix",
+      "category": "Physical disk-full, torn writes and power loss",
+      "command": "not published: requires an isolated block device or fault-injection filesystem and a power-failure harness",
+      "seeds": ["not applicable"],
+      "status": "not-run",
+      "evidence": "Only hermetic filesystem errors and real abrupt process/broker kills were executed.",
+      "limitations": "No physical media, filesystem or machine-power durability claim."
+    }
+  ],
+  "unresolved_findings": [
+    "HL7 MLLP remains unauthenticated and EOF control is not separately authorized. Subnet isolation is still required; transport authentication and actor identity are not implemented here.",
+    "Sign-off roles/read attestations are payload assertions, not authenticated identities. Effect/kind consistency and dual-review identity binding remain outside this robustness change.",
+    "MLLP read sizes are bounded, but per-connection deadlines, connection caps and slow-client network tests are not implemented.",
+    "Clinical normalization still has day-0 timestamp and unrecognized-program defaults; non-final DiagnosticReport statuses are not comprehensively gated.",
+    "Subscription HTTP acknowledgement precedes NATS durability, and reorder overflow has no durable dead-letter/replay queue.",
+    "Reviewer restart idempotence, reviewer local-ledger I/O checking and reviewer status synchronization remain unresolved.",
+    "writeStatus, materialization and stream-dump I/O errors are not comprehensively propagated; hermetic ledger append tests do not cover those paths.",
+    "Malformed PREP/FACTS payloads do not yet have a durable dead-letter contract, and buffered FACTS FSeq provenance can inherit the draining message's sequence.",
+    "Fresh setup destructively resets global external NATS streams; active-run namespacing/ownership is not implemented.",
+    "The new ledger lock uses Unix flock semantics; Windows and network-filesystem behavior were not verified."
+  ]
+}

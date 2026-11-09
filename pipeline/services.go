@@ -452,7 +452,8 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 	var cons jetstream.Consumer
 	retry("scan consumer", func() (err error) { cons, err = s.OrderedConsumer(ctx, cfg); return })
 	misses := 0
-	for uint64(len(ids)) < want {
+	scanned := uint64(0)
+	for scanned < want {
 		b, err := cons.Fetch(2000, jetstream.FetchMaxWait(2*time.Second))
 		if err != nil {
 			if misses++; misses > 20 {
@@ -465,6 +466,7 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 			ids[m.Headers().Get(jetstream.MsgIDHeader)] = true
 			got++
 		}
+		scanned += uint64(got) // stream progress, not unique-ID count: stored IDs may be empty or duplicated
 		if got == 0 {
 			if misses++; misses > 20 {
 				panic("cannot scan " + stream)
