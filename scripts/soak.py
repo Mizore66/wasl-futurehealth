@@ -391,15 +391,15 @@ def build_report(manifest, config, samples, events, final_status):
                       for row in nats_rows for node, stats in row.get("nats", {}).items()
                       if stats.get("ack_pending") != 0]
     nats_health_violations = [{"seq": row.get("seq"), "node": node,
-                                "healthy": stats.get("healthy"), "routes": stats.get("routes"),
-                                "replicas_current": stats.get("replicas_current")}
+                                "healthy": stats.get("healthy"), "routes": stats.get("routes")}
                                for row in nats_rows for node, stats in row.get("nats", {}).items()
-                               if stats.get("healthy") is not True or stats.get("routes") != 2 or
-                               stats.get("replicas_current") is not True]
+                               if stats.get("healthy") is not True or stats.get("routes") != 2]
     for row in nats_rows:
         for node in ("nats-0", "nats-1", "nats-2"):
             if node not in row.get("nats", {}):
                 nats_health_violations.append({"seq": row.get("seq"), "node": node, "error": "missing sample"})
+        for violation in leader_replica_violations(row.get("nats", {})):
+            nats_health_violations.append({"seq": row.get("seq"), **violation})
     budget_violations = [{"seq": row.get("seq"), "violations": row["budget_violations"]}
                          for row in samples if row.get("budget_violations")]
     observed_steady = [row for row in samples if row.get("phase") != "bootstrap"]
@@ -550,6 +550,37 @@ def parse_nats_snapshot(varz, jsz, routez, stacks):
         "goroutines": goroutines if match or stacks else None,
         "replicas_current": replicas_current and bool(streams), "streams": streams,
     }
+
+
+NATS_SERVER_NAMES = {"nats-0": "n0", "nats-1": "n1", "nats-2": "n2"}
+REQUIRED_NATS_STREAMS = frozenset(("FHIR", "PREP", "FACTS", "OUT"))
+
+
+def leader_replica_violations(nats, required_streams=REQUIRED_NATS_STREAMS):
+    """Return fail-closed stream errors using only each stream leader's peer view."""
+    observed = set(required_streams)
+    leader_views = {}
+    for node, stats in nats.items():
+        for name, stream in stats.get("streams", {}).items():
+            observed.add(name)
+            if stream.get("leader") == NATS_SERVER_NAMES.get(node):
+                leader_views.setdefault(name, []).append((node, stream))
+    violations = []
+    for name in sorted(observed):
+        views = leader_views.get(name, [])
+        if len(views) != 1:
+            violations.append({"stream": name, "error": "missing leader-authoritative view" if not views
+                               else "conflicting leader-authoritative views", "views": len(views)})
+            continue
+        node, stream = views[0]
+        if not (stream.get("replicas_current") is True and
+                stream.get("current_replica_peers", 0) >= 2 and
+                stream.get("replica_peer_count", 0) >= 2):
+            violations.append({"stream": name, "leader_node": node,
+                               "current_replica_peers": stream.get("current_replica_peers"),
+                               "replica_peer_count": stream.get("replica_peer_count"),
+                               "error": "leader reports non-current replicas"})
+    return violations
 
 
 def read_jsonl_segments(root):
@@ -1355,6 +1386,7 @@ class SoakRunner:
     def nats_ready(self, compose=None):
         compose = compose or self.compose
         details = {}
+        snapshots = {}
         for node in ("nats-0", "nats-1", "nats-2"):
             health = compose.exec_result(node, ["wget", "-qO-", "http://127.0.0.1:8222/healthz?js-enabled-only=true"], timeout=10)
             if health.returncode:
@@ -1363,11 +1395,13 @@ class SoakRunner:
                 "http://127.0.0.1:8222/jsz?streams=true&consumers=true"], timeout=15))
             routez = json.loads(compose.exec(node, ["wget", "-qO-", "http://127.0.0.1:8222/routez"], timeout=15))
             snapshot = parse_nats_snapshot({}, jsz, routez, "")
-            details[node] = {"routes": snapshot["routes"], "replicas_current": snapshot["replicas_current"],
-                             "streams": sorted(snapshot["streams"])}
-            if snapshot["routes"] != 2 or not snapshot["replicas_current"] or not {"FHIR", "PREP", "FACTS", "OUT"} <= set(snapshot["streams"]):
+            snapshots[node] = snapshot
+            details[node] = {"routes": snapshot["routes"], "streams": sorted(snapshot["streams"])}
+            if snapshot["routes"] != 2:
                 return False, details
-        return True, details
+        violations = leader_replica_violations(snapshots)
+        details["leader_replica_violations"] = violations
+        return not violations, details
 
     def wait_nats(self, kind="nats_node", compose=None):
         budget = self.config["gates"]["max_recovery_s"].get(kind, 180)
