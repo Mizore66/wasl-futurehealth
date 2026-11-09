@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "source": {
+    "revision": "9fdbfe05d0b71fdb52cb12d404ebea8e8e077b6e",
+    "committed_at": "2026-11-09T10:36:21Z"
+  },
+  "scanner": {
+    "name": "trivy",
+    "version": "0.76.2"
+  },
+  "policy": {
+    "severities": [
+      "UNKNOWN",
+      "LOW",
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL"
+    ],
+    "include_development_dependencies": true,
+    "fail_on": "any reported vulnerability",
+    "suppressions": []
+  },
+  "summary": {
+    "total": 0,
+    "by_severity": {
+      "UNKNOWN": 0,
+      "LOW": 0,
+      "MEDIUM": 0,
+      "HIGH": 0,
+      "CRITICAL": 0
+    }
+  },
+  "findings": [],
+  "limitations": [
+    "A source scan is not a built-container or deployed-image scan.",
+    "A module-level advisory does not prove that the vulnerable code path is reachable."
+  ]
+}

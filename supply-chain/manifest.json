@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "source": {
+    "revision": "9fdbfe05d0b71fdb52cb12d404ebea8e8e077b6e",
+    "committed_at": "2026-11-09T10:36:21Z"
+  },
+  "scanner": {
+    "name": "trivy",
+    "version": "0.76.2",
+    "vulnerability_database": {
+      "Version": 2,
+      "NextUpdate": "2026-11-10T06:57:06.372182027Z",
+      "UpdatedAt": "2026-11-09T06:57:06.372182267Z",
+      "DownloadedAt": "2026-11-09T09:21:55.393499Z"
+    }
+  },
+  "scan_mode": "online database refresh permitted",
+  "artifacts": [
+    {
+      "path": "repository.cdx.json",
+      "sha256": "1baeca97ff70c895256163265640313ad638894a3d35de014e90ef880628be67"
+    },
+    {
+      "path": "vulnerabilities.json",
+      "sha256": "0a65e7d0dd4f6884a43362e63f9fd54c8e8c63b240be11f07d89ace3ebdebb49"
+    },
+    {
+      "path": "licenses.json",
+      "sha256": "8f305bbd7268b6ab315168d7360323a3e32c3528721fc16dbdde46650e624b75"
+    }
+  ],
+  "notes": [
+    "Database timestamps and digest provenance belong to this manifest, not the normalized findings.",
+    "A cold offline scan requires a pre-seeded Trivy database; this tooling does not claim otherwise."
+  ]
+}
