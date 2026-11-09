@@ -362,12 +362,74 @@ func TestBasicAuthEnforcesReadRBACAndPreflight(t *testing.T) {
 			}
 		})
 	}
-	req := httptest.NewRequest(http.MethodOptions, "/api/cases/"+id+"/export", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/api/cases/"+id+"/export", http.NoBody)
 	req.Header.Set("Origin", "https://contract.test")
+	req.Header.Set("Access-Control-Request-Method", http.MethodGet)
 	resp := httptest.NewRecorder()
 	h.ServeHTTP(resp, req)
 	if resp.Code != http.StatusNoContent || resp.Header().Get("Access-Control-Allow-Origin") != "https://contract.test" {
 		t.Fatalf("unauthenticated preflight: code=%d headers=%v body=%s", resp.Code, resp.Header(), resp.Body.String())
+	}
+	if resp.Body.Len() != 0 {
+		t.Fatalf("unauthenticated preflight returned a body: %q", resp.Body.String())
+	}
+}
+
+func TestBasicAuthCORSRejectsUntrustedOriginAndSkipsCaseHandlersOnPreflight(t *testing.T) {
+	users := filepath.Join(t.TempDir(), "users.json")
+	if err := os.WriteFile(users, []byte(`{"reviewer":{"password":"secret","role":"reviewer"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := contractRun(t, []contractCase{{suffix: "basic-cors", item: "rv-basic-cors"}})
+	t.Setenv("WASL_API_USERS_FILE", users)
+	t.Setenv("WASL_API_CORS_ORIGIN", "https://contract.test")
+	auth, err := apiAuthFromEnvironment()
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := auth(basicAPIHandler(s))
+	id := contractID("basic-cors")
+
+	for _, path := range []string{"/api/cases/" + id, "/api/cases/" + id + "/export"} {
+		t.Run("trusted preflight skips case handler "+path, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodOptions, path, http.NoBody)
+			req.Header.Set("Origin", "https://contract.test")
+			req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			resp := httptest.NewRecorder()
+			h.ServeHTTP(resp, req)
+			if resp.Code != http.StatusNoContent {
+				t.Fatalf("case handler appears to have run during preflight: code=%d body=%s", resp.Code, resp.Body.String())
+			}
+			if got := resp.Header().Get("Access-Control-Allow-Origin"); got != "https://contract.test" {
+				t.Fatalf("preflight allow origin = %q, want trusted origin", got)
+			}
+			if resp.Body.Len() != 0 {
+				t.Fatalf("case handler wrote a preflight body: %q", resp.Body.String())
+			}
+		})
+	}
+
+	for _, method := range []string{http.MethodGet, http.MethodOptions} {
+		t.Run("untrusted origin "+method, func(t *testing.T) {
+			req := httptest.NewRequest(method, "/api/cases/"+id, http.NoBody)
+			req.Header.Set("Origin", "https://evil.example")
+			if method == http.MethodOptions {
+				req.Header.Set("Access-Control-Request-Method", http.MethodGet)
+			} else {
+				req.SetBasicAuth(RoleReviewer, "secret")
+			}
+			resp := httptest.NewRecorder()
+			h.ServeHTTP(resp, req)
+			if resp.Code != http.StatusForbidden {
+				t.Fatalf("untrusted origin: code=%d, want 403; body=%s", resp.Code, resp.Body.String())
+			}
+			if got := resp.Header().Get("Access-Control-Allow-Origin"); got != "" {
+				t.Fatalf("untrusted origin received Access-Control-Allow-Origin %q", got)
+			}
+			if strings.Contains(resp.Body.String(), id) {
+				t.Fatalf("untrusted origin response disclosed case data: %s", resp.Body.String())
+			}
+		})
 	}
 }
 

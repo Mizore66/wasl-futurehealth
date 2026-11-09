@@ -1,9 +1,13 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
 import tempfile
+import textwrap
 import unittest
 
 
@@ -302,6 +306,94 @@ class ImageSbomTests(unittest.TestCase):
         self.assertEqual(properties["wasl:inventory-scope"], "built container image")
         self.assertEqual(properties["wasl:source-revision"], "c" * 40)
         self.assertEqual(bom["components"], raw["components"])
+
+
+class SupplyChainShellTests(unittest.TestCase):
+    def setUp(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        base = Path(temporary.name)
+        self.root = base / "repo"
+        (self.root / "scripts").mkdir(parents=True)
+        (self.root / "supply-chain").mkdir()
+        for name in ("supply-chain.sh", "supply_chain.py"):
+            shutil.copy2(ROOT / "scripts" / name, self.root / "scripts" / name)
+        (self.root / "supply-chain" / "trivy.yaml").write_text("{}\n", encoding="utf-8")
+        subprocess.run(["git", "init", "--quiet", str(self.root)], check=True)
+        subprocess.run(["git", "-C", str(self.root), "config", "user.name", "Supply Chain Test"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "config", "user.email", "supply-chain@example.invalid"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "add", "scripts", "supply-chain/trivy.yaml"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "--quiet", "-m", "test fixture"], check=True)
+
+        self.database = base / "database-downloaded"
+        self.output = base / "output"
+        self.trivy = base / "trivy"
+        self.trivy.write_text(textwrap.dedent("""\
+            #!/usr/bin/env python3
+            import json
+            import os
+            from pathlib import Path
+            import sys
+
+            database = Path(os.environ["FAKE_TRIVY_DATABASE"])
+            if sys.argv[1] == "version":
+                result = {"Version": "0.76.2"}
+                if database.exists():
+                    result["VulnerabilityDB"] = {
+                        "SchemaVersion": 2,
+                        "CreatedAt": "2026-11-08T00:00:00Z",
+                        "UpdatedAt": "2026-11-09T00:00:00Z",
+                        "NextUpdate": "2026-11-10T00:00:00Z",
+                        "DownloadedAt": "2026-11-09T01:00:00Z",
+                    }
+                print(json.dumps(result))
+                raise SystemExit(0)
+            if sys.argv[1] == "image":
+                if os.environ["FAKE_TRIVY_ACQUIRES_DB"] == "1":
+                    database.touch()
+                output = Path(sys.argv[sys.argv.index("--output") + 1])
+                if "cyclonedx" in sys.argv:
+                    result = {"metadata": {"component": {"bom-ref": "image-test"}}, "components": []}
+                else:
+                    result = {"Results": []}
+                output.write_text(json.dumps(result), encoding="utf-8")
+                raise SystemExit(0)
+            raise SystemExit(2)
+        """), encoding="utf-8")
+        self.trivy.chmod(0o755)
+
+    def run_image_scan(self, *, acquires_database):
+        environment = os.environ.copy()
+        environment.update({
+            "FAKE_TRIVY_DATABASE": str(self.database),
+            "FAKE_TRIVY_ACQUIRES_DB": "1" if acquires_database else "0",
+            "PYTHON": sys.executable,
+            "TRIVY": str(self.trivy),
+            "WASL_SUPPLY_CHAIN_OFFLINE": "0" if acquires_database else "1",
+            "WASL_SUPPLY_CHAIN_OUTPUT": str(self.output),
+        })
+        return subprocess.run(
+            [str(self.root / "scripts" / "supply-chain.sh"), "image", "wasl:test"],
+            cwd=self.root,
+            env=environment,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+    def test_image_manifest_refreshes_metadata_after_cold_database_download(self):
+        result = self.run_image_scan(acquires_database=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        manifest = json.loads((self.output / "images" / "wasl_test" / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(
+            manifest["scanner"]["vulnerability_database"]["UpdatedAt"],
+            "2026-11-09T00:00:00Z",
+        )
+
+    def test_cold_offline_image_manifest_still_rejects_missing_database_metadata(self):
+        result = self.run_image_scan(acquires_database=False)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("Trivy provenance lacks vulnerability database metadata", result.stderr)
 
 
 if __name__ == "__main__":

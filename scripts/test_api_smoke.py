@@ -348,6 +348,19 @@ class SmokeValidatorTests(unittest.TestCase):
             f.live_audit = lambda cid: dict(orig(cid), history=[])
         self.assertFails(m, "durable audit history")
 
+    def test_workflow_accepts_redacted_history_with_identical_hashes(self):
+        def m(f):
+            orig = f.live_audit
+            def redacted(cid):
+                doc = orig(cid)
+                allowed = {"case", "type", "kind", "at", "hash"}
+                doc["history"] = [{k: v for k, v in event.items() if k in allowed}
+                                  for event in doc["history"]]
+                return doc
+            f.live_audit = redacted
+        result = run_smoke(Fake(m))
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
     def test_export_private_fields_must_be_redacted(self):
         def m(f):
             orig = f.export_doc

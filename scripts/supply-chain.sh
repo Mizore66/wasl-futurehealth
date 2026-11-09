@@ -71,6 +71,7 @@ case "$MODE" in
     VULNERABILITY_RC=$?
     set -e
     if [[ $VULNERABILITY_RC -gt 1 ]]; then exit "$VULNERABILITY_RC"; fi
+    "$TRIVY" version --format json > "$TEMP/trivy-version.json"
     "$PYTHON" -I "$TOOL" normalize-vulnerabilities --input "$TEMP/vulnerabilities.raw.json" \
       --context "$TEMP/context.json" --scanner "$TEMP/trivy-version.json" --output "$DESTINATION/vulnerabilities.json"
 
@@ -106,6 +107,7 @@ case "$MODE" in
       VULNERABILITY_RC=$?
       set -e
       if [[ $VULNERABILITY_RC -gt 1 ]]; then exit "$VULNERABILITY_RC"; fi
+      "$TRIVY" version --format json > "$TEMP/trivy-version.json"
       "$PYTHON" -I "$TOOL" normalize-vulnerabilities --input "$TEMP/image-vulnerabilities.raw.json" \
         --context "$TEMP/context.json" --scanner "$TEMP/trivy-version.json" --output "$IMAGE_DESTINATION/vulnerabilities.json"
       "$TRIVY" image "${COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} ${IMAGE_SOURCE_ARGS[@]+"${IMAGE_SOURCE_ARGS[@]}"} --format json --scanners license \
