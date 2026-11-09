@@ -1,0 +1,47 @@
+{
+ "schema": "fresh4-label-manifest/v1",
+ "blind_input_sha256": "d9835a78a478ef5f60bfb154432f600a368c2ce5af3f5be8faa5fffd9ee37037",
+ "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+ "prompt_hash_semantics": {
+  "label_file_prompt_sha256": "SHA-256 of the frozen prompt template before substitutions (e5e28fbc0251574b9980ada97547fee946ac98d443b4d208e888e76ec1b1d97a)",
+  "rendered_prompt_sha256": "Recorded separately below for the exact complete prompt sent to each Agent; avoids a self-referential embedded digest"
+ },
+ "labellers": [
+  {
+   "id": "fresh4-labeller-a",
+   "session_id": "f2722807-c13d-46c6-8f28-b2da12cc106d",
+   "requested_model": "sonnet",
+   "canonical_model": "claude-sonnet-5-5",
+   "model_family": "anthropic-claude",
+   "attempt": 1,
+   "labels": 100,
+   "schema_valid": true,
+   "rendered_prompt_sha256": "5c0732b6a01deb0a45bb766d6ac885561979bdb8e1044d45c6717b731382cebe",
+   "raw_result_sha256": "ced2f6205b3336ca25307225a966cefd5b3bc7e5d8d7640aacddd70379604b3b",
+   "agent_wrote_files": false
+  },
+  {
+   "id": "fresh4-labeller-b",
+   "session_id": "094a1949-71f4-49ea-b497-5f0cac2db1b2",
+   "requested_model": "sonnet",
+   "canonical_model": "claude-sonnet-5-5",
+   "model_family": "anthropic-claude",
+   "attempt": 2,
+   "labels": 100,
+   "schema_valid": true,
+   "rendered_prompt_sha256": "c485663abf4157a6b201695391d0e029894cb67f016c11cf61b0367c670f100c",
+   "raw_result_sha256": "8050fd887f4988099bbbeffd8788c8d3b31e8fbf91b7789ada50959b706074fe",
+   "agent_wrote_files": false,
+   "prior_failed_attempt": {
+    "session_id": "1f2ecbfe-2144-4dc9-9e9a-1509355d9d41",
+    "requested_model": "opus",
+    "status": "HTTP 500 before content; zero output tokens; not resumed",
+    "raw_result_sha256": "42027de1025799cf50ad514e0f365a82427cfae5adac0fdd78b35fbeae262495",
+    "rendered_prompt_sha256": "cbe7d3857f2b674c0f72f8363fcbe86b710a1d627087eba3247533a0b267198a"
+   }
+  }
+ ],
+ "independence": "Separate fresh no-persistence Agent contexts. Each was instructed and tool-limited to Read only the guide and blind input; neither saw the other's labels. Both successful labellers are the same model family and model, so agreement overstates independence.",
+ "agreement": {"items": 100, "agreed": 100, "item_agreement": 1.0, "disagreements": 0},
+ "clinician_verified": false
+}

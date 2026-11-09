@@ -1,0 +1,1847 @@
+{
+ "adjudication_sha256": "0502718b1f6f8b3165ad7c00359c06aeb790273562660509ded0478629a90308",
+ "adjudicator": {
+  "clinician_verified": false,
+  "id": "fresh4-adjudicator-agent",
+  "kind": "model",
+  "model": "sonnet",
+  "model_family": "anthropic-claude",
+  "prompt_sha256": "598d93c6ed655a97b77df8900b8fabb0a111b1f19bf541f88a4223d879fe651d",
+  "run_date": "2026-11-09",
+  "saw_reader_outputs": false,
+  "saw_scores": false,
+  "session_isolated": true
+ },
+ "base_key_sha256": "04e8c7681d870f4b72e7ca589efeca3cb8af10dffbfd026e81d6b9d7f9e82ca6",
+ "corpus_sha256": "5aa826689564db25cb8c9ade7bbf727b6d7240848241a2eaaa3b9f60c87852ce",
+ "counts": {
+  "adjudicated": 0,
+  "agreed": 100,
+  "items": 100,
+  "scoreable": 100,
+  "unadjudicated": 0,
+  "unresolved": 0
+ },
+ "items": [
+  {
+   "id": "f4l-001",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-002",
+   "key": {
+    "label": "LR4A"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4A"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4A"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-003",
+   "key": {
+    "label": "LR1"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR1"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR1"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-004",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-005",
+   "key": {
+    "label": "LR3"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR3"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR3"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-006",
+   "key": {
+    "label": "LR3"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR3"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR3"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-007",
+   "key": {
+    "label": "LR4X"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4X"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4X"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-008",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-009",
+   "key": {
+    "label": "LR4X"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4X"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4X"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-010",
+   "key": {
+    "label": "LR3"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR3"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR3"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-011",
+   "key": {
+    "label": "LR1"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR1"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR1"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-012",
+   "key": {
+    "label": "LR3"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR3"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR3"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-013",
+   "key": {
+    "label": "LR4A"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4A"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4A"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-014",
+   "key": {
+    "label": "LR4X"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4X"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4X"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-015",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-016",
+   "key": {
+    "label": "LR0"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR0"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR0"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-017",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-018",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-019",
+   "key": {
+    "label": "LR0"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR0"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR0"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-020",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-021",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-022",
+   "key": {
+    "label": "LR3"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR3"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR3"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-023",
+   "key": {
+    "label": "LR2"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR2"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR2"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-024",
+   "key": {
+    "label": "LR4A"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR4A"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR4A"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-025",
+   "key": {
+    "label": "LR0"
+   },
+   "kind": "ldct-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "LR0"
+    },
+    "fresh4-labeller-b": {
+     "label": "LR0"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-026",
+   "key": {
+    "label": "wk_dna"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_dna"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-027",
+   "key": {
+    "label": "wk_dna"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_dna"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-028",
+   "key": {
+    "label": "wk_dna"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_dna"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-029",
+   "key": {
+    "label": "wk_dna"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_dna"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-030",
+   "key": {
+    "label": "wk_dna"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_dna"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-031",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_incomplete"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_incomplete"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-032",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_incomplete"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_incomplete"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-033",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_incomplete"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_incomplete"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-034",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_incomplete"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_incomplete"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-035",
+   "key": {
+    "label": "wk_incomplete"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_incomplete"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_incomplete"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-036",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_treatment"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_treatment"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-037",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-038",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_treatment"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_treatment"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-039",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-040",
+   "key": {
+    "label": "wk_treatment"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_treatment"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_treatment"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-041",
+   "key": {
+    "label": "wk_benign"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_benign"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_benign"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-042",
+   "key": {
+    "label": "wk_benign"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_benign"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_benign"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-043",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-044",
+   "key": {
+    "label": "wk_benign"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_benign"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_benign"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-045",
+   "key": {
+    "label": "wk_benign"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_benign"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_benign"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-046",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_surveillance"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_surveillance"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-047",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_surveillance"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_surveillance"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-048",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-049",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4l-050",
+   "key": {
+    "label": "wk_surveillance"
+   },
+   "kind": "ldct-workup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "wk_surveillance"
+    },
+    "fresh4-labeller-b": {
+     "label": "wk_surveillance"
+    }
+   },
+   "programme": "ldct",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-001",
+   "key": {
+    "label": "dna"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "dna"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-002",
+   "key": {
+    "label": "dna"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "dna"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-003",
+   "key": {
+    "label": "dna"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "dna"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-004",
+   "key": {
+    "label": "dna"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "dna"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-005",
+   "key": {
+    "label": "dna"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "dna"
+    },
+    "fresh4-labeller-b": {
+     "label": "dna"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-006",
+   "key": {
+    "label": "bp=managed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=managed"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=managed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-007",
+   "key": {
+    "label": "glyc=managed;lipid=managed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=managed;lipid=managed"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=managed;lipid=managed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-008",
+   "key": {
+    "label": "weight=managed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "weight=managed"
+    },
+    "fresh4-labeller-b": {
+     "label": "weight=managed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-009",
+   "key": {
+    "label": "bp=managed;glyc=managed;weight=managed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=managed;glyc=managed;weight=managed"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=managed;glyc=managed;weight=managed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-010",
+   "key": {
+    "label": "lipid=managed;weight=managed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "lipid=managed;weight=managed"
+    },
+    "fresh4-labeller-b": {
+     "label": "lipid=managed;weight=managed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-011",
+   "key": {
+    "label": "bp=pending"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=pending"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=pending"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-012",
+   "key": {
+    "label": "glyc=pending;lipid=pending"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=pending;lipid=pending"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=pending;lipid=pending"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-013",
+   "key": {
+    "label": "glyc=pending"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=pending"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=pending"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-014",
+   "key": {
+    "label": "bp=pending;weight=pending"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=pending;weight=pending"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=pending;weight=pending"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-015",
+   "key": {
+    "label": "glyc=pending;lipid=pending"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=pending;lipid=pending"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=pending;lipid=pending"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-016",
+   "key": {
+    "label": "bp=not_confirmed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=not_confirmed"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=not_confirmed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-017",
+   "key": {
+    "label": "glyc=not_confirmed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=not_confirmed"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=not_confirmed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-018",
+   "key": {
+    "label": "glyc=not_confirmed;lipid=not_confirmed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "glyc=not_confirmed;lipid=not_confirmed"
+    },
+    "fresh4-labeller-b": {
+     "label": "glyc=not_confirmed;lipid=not_confirmed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-019",
+   "key": {
+    "label": "bp=not_confirmed;glyc=not_confirmed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "bp=not_confirmed;glyc=not_confirmed"
+    },
+    "fresh4-labeller-b": {
+     "label": "bp=not_confirmed;glyc=not_confirmed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-020",
+   "key": {
+    "label": "weight=not_confirmed"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "weight=not_confirmed"
+    },
+    "fresh4-labeller-b": {
+     "label": "weight=not_confirmed"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-021",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-022",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-023",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-024",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-025",
+   "key": {
+    "label": "indeterminate"
+   },
+   "kind": "ifhas-followup",
+   "labels": {
+    "fresh4-labeller-a": {
+     "label": "indeterminate"
+    },
+    "fresh4-labeller-b": {
+     "label": "indeterminate"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-026",
+   "key": {
+    "coded_label": "bp=H;glyc=D;lipid=N;weight=N",
+    "label": "bp=H;glyc=D;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=H;glyc=D;lipid=N;weight=N",
+     "label": "bp=H;glyc=D;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=H;glyc=D;lipid=N;weight=N",
+     "label": "bp=H;glyc=D;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-027",
+   "key": {
+    "coded_label": "bp=N;glyc=P;lipid=H;weight=O",
+    "label": "bp=N;glyc=P;lipid=H;weight=O"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=P;lipid=H;weight=O",
+     "label": "bp=N;glyc=P;lipid=H;weight=O"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=P;lipid=H;weight=O",
+     "label": "bp=N;glyc=P;lipid=H;weight=O"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-028",
+   "key": {
+    "coded_label": "bp=S;glyc=D;lipid=H;weight=O",
+    "label": "bp=S;glyc=D;lipid=H;weight=O"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=S;glyc=D;lipid=H;weight=O",
+     "label": "bp=S;glyc=D;lipid=H;weight=O"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=S;glyc=D;lipid=H;weight=O",
+     "label": "bp=S;glyc=D;lipid=H;weight=O"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-029",
+   "key": {
+    "coded_label": "bp=S;glyc=S;lipid=N;weight=N",
+    "label": "bp=S;glyc=S;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=S;glyc=S;lipid=N;weight=N",
+     "label": "bp=S;glyc=S;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=S;glyc=S;lipid=N;weight=N",
+     "label": "bp=S;glyc=S;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-030",
+   "key": {
+    "coded_label": "bp=H;glyc=S;lipid=H;weight=N",
+    "label": "bp=H;glyc=S;lipid=H;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=H;glyc=S;lipid=H;weight=N",
+     "label": "bp=H;glyc=S;lipid=H;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=H;glyc=S;lipid=H;weight=N",
+     "label": "bp=H;glyc=S;lipid=H;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-031",
+   "key": {
+    "coded_label": "bp=H;glyc=P;lipid=N;weight=N",
+    "label": "bp=X;glyc=X;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=H;glyc=P;lipid=N;weight=N",
+     "label": "bp=X;glyc=X;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=H;glyc=P;lipid=N;weight=N",
+     "label": "bp=X;glyc=X;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-032",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+    "label": "bp=N;glyc=N;lipid=N;weight=X"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+     "label": "bp=N;glyc=N;lipid=N;weight=X"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+     "label": "bp=N;glyc=N;lipid=N;weight=X"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-033",
+   "key": {
+    "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+    "label": "bp=N;glyc=P;lipid=X;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+     "label": "bp=N;glyc=P;lipid=X;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+     "label": "bp=N;glyc=P;lipid=X;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-034",
+   "key": {
+    "coded_label": "bp=X;glyc=D;lipid=N;weight=O",
+    "label": "bp=N;glyc=D;lipid=N;weight=O"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=X;glyc=D;lipid=N;weight=O",
+     "label": "bp=N;glyc=D;lipid=N;weight=O"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=X;glyc=D;lipid=N;weight=O",
+     "label": "bp=N;glyc=D;lipid=N;weight=O"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-035",
+   "key": {
+    "coded_label": "bp=H;glyc=X;lipid=X;weight=O",
+    "label": "bp=H;glyc=X;lipid=X;weight=O"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=H;glyc=X;lipid=X;weight=O",
+     "label": "bp=H;glyc=X;lipid=X;weight=O"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=H;glyc=X;lipid=X;weight=O",
+     "label": "bp=H;glyc=X;lipid=X;weight=O"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-036",
+   "key": {
+    "coded_label": "unavailable",
+    "label": "bp=N;glyc=P;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "unavailable",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "unavailable",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-037",
+   "key": {
+    "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+    "label": "bp=N;glyc=X;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+     "label": "bp=N;glyc=X;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+     "label": "bp=N;glyc=X;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-038",
+   "key": {
+    "coded_label": "unavailable",
+    "label": "bp=H;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "unavailable",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "unavailable",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-039",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+    "label": "bp=N;glyc=N;lipid=N;weight=X"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+     "label": "bp=N;glyc=N;lipid=N;weight=X"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+     "label": "bp=N;glyc=N;lipid=N;weight=X"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-040",
+   "key": {
+    "coded_label": "unavailable",
+    "label": "bp=X;glyc=P;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "unavailable",
+     "label": "bp=X;glyc=P;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "unavailable",
+     "label": "bp=X;glyc=P;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-041",
+   "key": {
+    "coded_label": "unavailable",
+    "label": "bp=N;glyc=P;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "unavailable",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "unavailable",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-042",
+   "key": {
+    "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+    "label": "bp=H;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-043",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "label": "bp=N;glyc=X;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=X;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=X;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-044",
+   "key": {
+    "coded_label": "bp=X;glyc=X;lipid=X;weight=X",
+    "label": "bp=N;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=X;glyc=X;lipid=X;weight=X",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=X;glyc=X;lipid=X;weight=X",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-045",
+   "key": {
+    "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+    "label": "bp=N;glyc=D;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+     "label": "bp=N;glyc=D;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+     "label": "bp=N;glyc=D;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-046",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "label": "bp=N;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-047",
+   "key": {
+    "coded_label": "bp=N;glyc=P;lipid=N;weight=O",
+    "label": "bp=N;glyc=P;lipid=N;weight=O"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=O",
+     "label": "bp=N;glyc=P;lipid=N;weight=O"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=P;lipid=N;weight=O",
+     "label": "bp=N;glyc=P;lipid=N;weight=O"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-048",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "label": "bp=H;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=H;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-049",
+   "key": {
+    "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+    "label": "bp=N;glyc=N;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+     "label": "bp=N;glyc=N;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  },
+  {
+   "id": "f4i-050",
+   "key": {
+    "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+    "label": "bp=N;glyc=P;lipid=N;weight=N"
+   },
+   "kind": "ifhas-screen",
+   "labels": {
+    "fresh4-labeller-a": {
+     "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    },
+    "fresh4-labeller-b": {
+     "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+     "label": "bp=N;glyc=P;lipid=N;weight=N"
+    }
+   },
+   "programme": "ifhas",
+   "status": "agreed"
+  }
+ ],
+ "label_files": [
+  {
+   "labeller": {
+    "clinician_verified": false,
+    "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+    "id": "fresh4-labeller-a",
+    "kind": "model",
+    "model": "sonnet",
+    "model_family": "anthropic-claude",
+    "prompt_sha256": "e5e28fbc0251574b9980ada97547fee946ac98d443b4d208e888e76ec1b1d97a",
+    "run_date": "2026-11-09",
+    "saw_other_labels": false,
+    "saw_reader_implementation": false,
+    "session_isolated": true
+   },
+   "labeller_id": "fresh4-labeller-a",
+   "sha256": "e4b5ad5391d3e72306ce8692cbe745ace0dea08cecb0c2eefbcb452f08116517"
+  },
+  {
+   "labeller": {
+    "clinician_verified": false,
+    "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+    "id": "fresh4-labeller-b",
+    "kind": "model",
+    "model": "sonnet",
+    "model_family": "anthropic-claude",
+    "prompt_sha256": "e5e28fbc0251574b9980ada97547fee946ac98d443b4d208e888e76ec1b1d97a",
+    "run_date": "2026-11-09",
+    "saw_other_labels": false,
+    "saw_reader_implementation": false,
+    "session_isolated": true
+   },
+   "labeller_id": "fresh4-labeller-b",
+   "sha256": "b8dc90ad2517d3b8a6e5cd2d879f1fcfd65b48a43860b419ad099ebb1f313c0d"
+  }
+ ],
+ "schema": "fresh4-adjudicated-key/v1",
+ "semantics": {
+  "clinician_verified": false,
+  "model_labelled": true,
+  "statement": "Fresh4 keys are model-labelled and model-adjudicated from a frozen guide, not clinician-verified. Agreed and adjudicated strata are reported separately; neither is clinical truth or evidence of clinical effectiveness."
+ },
+ "warnings": [
+  "both labellers are the same model family; agreement overstates independence"
+ ]
+}
