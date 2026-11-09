@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-09T09:07:19.678352Z",
+  "tested_source": {
+    "commit": "185d1c38fc77c5802ea587bd1ca4b8993b3be611",
+    "tree": "6ec765921ad456f61dff55a658ad13f7e604af29",
+    "note": "All listed commands ran at this exact commit with only docs/reliability/evidence outputs changing. The subsequent evidence-only commit stores this manifest and those outputs."
+  },
+  "reliability_matrix": {
+    "path": "docs/reliability/adversarial-matrix.json",
+    "sha256": "9f24b6b1261b7965aa14594cb539c65eb01d55116840efe94ef01e4d74e2633b"
+  },
+  "environment": {
+    "go": "go version go1.27.3 darwin/arm64",
+    "nats_server": "nats-server: v2.15.2",
+    "nats_test_wiring": "Worktree-local bin/nats-server symlink to /opt/homebrew/bin/nats-server; ignored, not a source change.",
+    "platform": "Darwin anas-qumhiyeh-JTVX4M32GC 27.2.0 Darwin Kernel Version 27.2.0: Thu Oct 15 00:00:57 PDT 2026; root:xnu-13432.41.4~25/RELEASE_ARM64_T6020 arm64"
+  },
+  "commands": [
+    {
+      "id": "focused",
+      "command": "go -C pipeline test -run '^(TestNormaliseRejectsShapeConfusionWithoutPanics|FuzzNormaliseNeverPanics|TestPollRejectsMalformedResponsesWithoutCompletion|TestExportRejectsMalformedManifestAndTruncatedNDJSON|TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion)$' -count=1 -v",
+      "exit_code": 0,
+      "log": {
+        "path": "docs/reliability/evidence/focused-2026-11-09.log",
+        "sha256": "3a08ddeba6ac4834d4829d3bf58c10df4f79d538bd7dc3abf6faee43e657840e",
+        "bytes": 7093
+      }
+    },
+    {
+      "id": "race",
+      "command": "go -C pipeline test -race -run 'Test(ExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion|IndependentServersCannotForkReviewLedger|ActionsSameHeadConcurrencyExactlyOneWins|ActionsIndependentCasesConcurrent|AppendToLedgerFileErrorClasses|ActionsAppendFailureLeavesStateUntouched|IndeterminateAppendMarksLedgerFailedAndRefusesWrites|UndoIndeterminateAppendBlocksEveryWriter|ReaderDoesNotCacheAnswerBeforeDurableAppend)$' -count=1 -v",
+      "exit_code": 0,
+      "log": {
+        "path": "docs/reliability/evidence/race-2026-11-09.log",
+        "sha256": "ac4e9a26da6465b2c27c0ffd0dd19e47bbb07df9fe1376b5d4d4b5d79870206b",
+        "bytes": 2107
+      }
+    },
+    {
+      "id": "fuzz",
+      "command": "FUZZTIME=3s FUZZLOGDIR=docs/reliability/evidence/adversarial-fuzz-2026-11-09 scripts/adversarial_fuzz.sh",
+      "exit_code": 0,
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/runner.log",
+        "sha256": "c7fbe314df5a266b007478ee6ebba308cfcf7df7e1ac9ee0d2c8873809a7848c",
+        "bytes": 3738
+      }
+    },
+    {
+      "id": "vet",
+      "command": "go -C pipeline vet ./...",
+      "exit_code": 0,
+      "log": {
+        "path": "docs/reliability/evidence/vet-2026-11-09.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    {
+      "id": "full-regression",
+      "command": "go -C pipeline test ./... -count=1 -timeout=10m -json",
+      "exit_code": 0,
+      "log": {
+        "path": "docs/reliability/evidence/full-regression-2026-11-09.jsonl",
+        "sha256": "9e248237a85506d19567d4fee81b231af5dcdf19b69dcdd7d6c03e61c4cf2ed8",
+        "bytes": 915059
+      }
+    }
+  ],
+  "fixture_coverage": {
+    "outer_duplicate_json": "{\"resourceType\":\"Provenance\",\"resourceType\":\"DiagnosticReport\"}",
+    "nested_duplicate_json": "{\"resourceType\":\"Provenance\",\"extension\":[{\"url\":\"urn:wsi:signoff\",\"valueString\":\"{\\\"role\\\":\\\"reviewer\\\",\\\"role\\\":\\\"clinician\\\"}\"}]}",
+    "focused_log_pass_markers": {
+      "outer_deterministic": "--- PASS: TestNormaliseRejectsShapeConfusionWithoutPanics/provenance_duplicate_outer_key",
+      "nested_deterministic": "--- PASS: TestNormaliseRejectsShapeConfusionWithoutPanics/provenance_duplicate_signoff_key",
+      "outer_fuzz_seed": "--- PASS: FuzzNormaliseNeverPanics/seed#4",
+      "nested_fuzz_seed": "--- PASS: FuzzNormaliseNeverPanics/seed#5"
+    },
+    "real_nats_manifest_cases": [
+      "null",
+      "array",
+      "string",
+      "number",
+      "bool"
+    ],
+    "real_nats_assertions": [
+      "export returns false",
+      "export_errors increments and exports remains zero",
+      "no checkpoint key",
+      "EOF state remains false",
+      "no resource records",
+      "FHIR stream remains empty of resource and EOF-control messages"
+    ]
+  },
+  "fuzz": [
+    {
+      "target": "FuzzNormaliseNeverPanics",
+      "baseline_executions": 290,
+      "total_executions": 19831,
+      "generated_executions": 19541,
+      "status": "pass",
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzNormaliseNeverPanics.log",
+        "sha256": "c506d3c6cdf8a97151a10d83d27cfdafbdce1d12b953f28b83646738cdcf6e8a",
+        "bytes": 417
+      }
+    },
+    {
+      "target": "FuzzHL7ParseAndResourceNeverPanics",
+      "baseline_executions": 56,
+      "total_executions": 38943,
+      "generated_executions": 38887,
+      "status": "pass",
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzHL7ParseAndResourceNeverPanics.log",
+        "sha256": "49f207c6612c1d625f5e3ed470ec01254bd1082761019f532ca539465e21386e",
+        "bytes": 433
+      }
+    },
+    {
+      "target": "FuzzMLLPBoundedFrame",
+      "baseline_executions": 6,
+      "total_executions": 25226,
+      "generated_executions": 25220,
+      "status": "pass",
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzMLLPBoundedFrame.log",
+        "sha256": "ef4500fde8732b5905dfc622991c7fcbae1bf8b5feadab46d7938dd99fe392d2",
+        "bytes": 399
+      }
+    },
+    {
+      "target": "FuzzSubscriptionStatusNeverPanics",
+      "baseline_executions": 270,
+      "total_executions": 9031,
+      "generated_executions": 8761,
+      "status": "pass",
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzSubscriptionStatusNeverPanics.log",
+        "sha256": "7a524d7642d64a22e7602931c56407d565c48a05f3d8cbc5cd4236f50a1473b5",
+        "bytes": 433
+      }
+    },
+    {
+      "target": "FuzzAPIReviewBodyNeverPanics",
+      "baseline_executions": 222,
+      "total_executions": 13457,
+      "generated_executions": 13235,
+      "status": "pass",
+      "log": {
+        "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzAPIReviewBodyNeverPanics.log",
+        "sha256": "18e6b26a0ee8c82e6f19a1c8f50e326ed4fbc8816d00e9f57b452b2abfe934d9",
+        "bytes": 425
+      }
+    }
+  ],
+  "full_regression": {
+    "status": "pass",
+    "started_at": "2026-11-09T17:01:53.544656+08:00",
+    "finished_at": "2026-11-09T17:05:54.241189+08:00",
+    "json_events": 5238,
+    "action_counts": {
+      "output": 3130,
+      "pass": 1048,
+      "run": 1053,
+      "skip": 6,
+      "start": 1
+    },
+    "passed_test_events_including_subtests": 1047,
+    "failed_events": 0,
+    "skipped_tests": [
+      "TestAPIBookingSupport",
+      "TestAPIDRFixtureRun",
+      "TestAPIFixturesAndContracts",
+      "TestAPIReviewRBACAndAppendOnly",
+      "TestFresh2Reader",
+      "TestHL7RoundTripCohort"
+    ],
+    "package_elapsed_seconds": 240.695
+  }
+}

@@ -1,9 +1,9 @@
 === RUN   FuzzAPIReviewBodyNeverPanics
-fuzz: elapsed: 0s, gathering baseline coverage: 0/210 completed
-fuzz: elapsed: 1s, gathering baseline coverage: 210/210 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 8378 (2792/sec), new interesting: 4 (total: 214)
-fuzz: elapsed: 4s, execs: 8378 (0/sec), new interesting: 4 (total: 214)
---- PASS: FuzzAPIReviewBodyNeverPanics (4.07s)
+fuzz: elapsed: 0s, gathering baseline coverage: 0/222 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 222/222 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 13457 (4482/sec), new interesting: 7 (total: 229)
+fuzz: elapsed: 4s, execs: 13457 (0/sec), new interesting: 7 (total: 229)
+--- PASS: FuzzAPIReviewBodyNeverPanics (4.41s)
 === NAME  
 PASS
-ok  	wsi	4.347s
+ok  	wsi	4.753s
