@@ -84,11 +84,7 @@ type apiServer struct {
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
-func runServe(run, data, addr string) {
-	s, err := loadAPIVerified(run, data)
-	if err != nil {
-		panic(err)
-	}
+func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
@@ -103,7 +99,15 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
+	return cors(mux)
+}
+
+func runServe(run, data, addr string) {
+	s, err := loadAPIVerified(run, data)
+	if err != nil {
+		panic(err)
+	}
+	srv := &http.Server{Addr: addr, Handler: apiHandler(s), ReadHeaderTimeout: 5 * time.Second}
 	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
