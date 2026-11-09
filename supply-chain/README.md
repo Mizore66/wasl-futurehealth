@@ -98,6 +98,8 @@ Exercising the new image gate found additional release blockers that the source 
 
 Local Buildah could not access either the worktree or its own temporary build directory (`faccessat ... connection refused`), so an actual `docker build`/`podman build` was not claimed locally. The candidate layers were instead exercised in disposable Podman containers using the Dockerfile's build/install commands and copied sources. The shared Podman VM was not restarted because unrelated containers were running. CI still performs the authoritative clean Docker builds and image scans.
 
+The candidate image license scans discovered identifiers for 73 of 81 application packages and 18 of 28 NATS packages. **8 application and 10 NATS packages still have no discovered identifier** in these reports. Those gaps remain review items just like the source-report gaps; zero vulnerabilities is not license clearance.
+
 ## Known boundaries
 
 - The source SBOM lists Python declarations and base-image references, but it is deliberately labeled `source; not a built container SBOM`. It does not pretend to contain installed base-image OS packages.
