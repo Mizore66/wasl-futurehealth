@@ -1,0 +1,47 @@
+{
+ "schema": "fresh4-author-manifest/v1",
+ "authoring": "model",
+ "author_id": "fresh4-independent-author-agent",
+ "author_saw_reader_code": false,
+ "author_saw_prior_corpora_labels_or_scores": false,
+ "session_isolated": true,
+ "session_id": "0bbf2d66-f157-43ea-adc4-629779467954",
+ "model": "claude-sonnet-5-5",
+ "model_family": "anthropic-claude",
+ "created": "2026-11-09",
+ "author_prompt_version": "fresh4-author-prompt-v1",
+ "author_prompt_path": "scripts/fresh4_eval/AUTHOR-PROMPT.md",
+ "author_prompt_sha256": "c7a84c1e9b9aa1d25960bec6847acc7cc01d53c60677f5ed227eeb51143220ef",
+ "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+ "tools": ["Read (guide only by instruction)"],
+ "agent_wrote_files": false,
+ "coordinator_canonicalization": "JSON parse and re-serialization only; no item content edits",
+ "canonical_corpus_sha256": "5aa826689564db25cb8c9ade7bbf727b6d7240848241a2eaaa3b9f60c87852ce",
+ "agent_result_sha256": "876e7a3e54f0e56db66224ab2d3ae0962b56ca2c4ba6d998529a0084fb0f1db9",
+ "attempts": [
+  {
+   "attempt": 1,
+   "session_id": "69b6be93-e0ce-40ad-a4fb-de6d6dd3c4a5",
+   "model": "default inherited route; no modelUsage returned",
+   "status": "failed_before_content",
+   "api_error_status": 500,
+   "output_tokens": 0,
+   "raw_file": "data/fresh4/author/failed-attempt-1.json",
+   "raw_sha256": "5e55fbcab88bedb621bc3787a6992f53cfd0c2e2228847cc310452d3c9f215ff"
+  },
+  {
+   "attempt": 2,
+   "status": "returned_complete_corpus",
+   "model": "claude-sonnet-5-5",
+   "raw_file": "data/fresh4/author/agent-result.json"
+  }
+ ],
+ "validation": {
+  "command": "python3 scripts/fresh4_eval/fresh4.py validate-corpus",
+  "status": "pass",
+  "items": 100,
+  "novel_normalized_text_vs_prior_corpora": true,
+  "exact_ids_kinds_and_order": true
+ },
+ "disclosure": "Independent fresh-Agent-authored synthetic content; no author key; not clinician-verified. The failed infrastructure attempt returned no content and was not resumed."
+}
