@@ -1,0 +1,91 @@
+{
+ "gates": [
+  {
+   "expected_lanes": 10,
+   "id": "I0_all_10_lanes_complete",
+   "observed_lanes": 10,
+   "seeds": [
+    1103,
+    1109,
+    1117,
+    1121,
+    1123
+   ],
+   "status": "pass"
+  },
+  {
+   "denominator": 18984,
+   "failures": [],
+   "id": "I1_v1_zero_listed_false_closures",
+   "noise": "v1",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 29371,
+   "failures": [],
+   "id": "I2_v1_zero_wrong_patient_or_unconsented_releases",
+   "noise": "v1",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 496126,
+   "failures": [],
+   "id": "I3_v1_zero_duplicate_loss_or_state_mismatch",
+   "noise": "v1",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 114,
+   "failures": [],
+   "id": "I4_v1_zero_forged_with_effect",
+   "noise": "v1",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 18354,
+   "failures": [],
+   "id": "I1_v2_zero_listed_false_closures",
+   "noise": "v2",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 27913,
+   "failures": [],
+   "id": "I2_v2_zero_wrong_patient_or_unconsented_releases",
+   "noise": "v2",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 488736,
+   "failures": [],
+   "id": "I3_v2_zero_duplicate_loss_or_state_mismatch",
+   "noise": "v2",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  },
+  {
+   "denominator": 108,
+   "failures": [],
+   "id": "I4_v2_zero_forged_with_effect",
+   "noise": "v2",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  }
+ ],
+ "r1agent10_validation": "not run; its separate validation seeds remain untouched",
+ "schema": "fresh4-integrated-gates/v1"
+}
