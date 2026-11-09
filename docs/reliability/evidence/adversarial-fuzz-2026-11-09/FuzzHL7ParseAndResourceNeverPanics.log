@@ -1,9 +1,9 @@
 === RUN   FuzzHL7ParseAndResourceNeverPanics
-fuzz: elapsed: 0s, gathering baseline coverage: 0/56 completed
-fuzz: elapsed: 0s, gathering baseline coverage: 56/56 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 38943 (12981/sec), new interesting: 2 (total: 58)
-fuzz: elapsed: 3s, execs: 38943 (0/sec), new interesting: 2 (total: 58)
---- PASS: FuzzHL7ParseAndResourceNeverPanics (3.08s)
+fuzz: elapsed: 0s, gathering baseline coverage: 0/73 completed
+fuzz: elapsed: 0s, gathering baseline coverage: 73/73 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 34493 (11497/sec), new interesting: 4 (total: 77)
+fuzz: elapsed: 3s, execs: 34493 (0/sec), new interesting: 4 (total: 77)
+--- PASS: FuzzHL7ParseAndResourceNeverPanics (3.28s)
 === NAME  
 PASS
-ok  	wsi	3.399s
+ok  	wsi	3.630s

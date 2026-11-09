@@ -1,9 +1,9 @@
 === RUN   FuzzMLLPBoundedFrame
 fuzz: elapsed: 0s, gathering baseline coverage: 0/6 completed
 fuzz: elapsed: 0s, gathering baseline coverage: 6/6 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 25226 (8406/sec), new interesting: 0 (total: 6)
-fuzz: elapsed: 3s, execs: 25226 (0/sec), new interesting: 0 (total: 6)
---- PASS: FuzzMLLPBoundedFrame (3.09s)
+fuzz: elapsed: 3s, execs: 26752 (8917/sec), new interesting: 0 (total: 6)
+fuzz: elapsed: 3s, execs: 26752 (0/sec), new interesting: 0 (total: 6)
+--- PASS: FuzzMLLPBoundedFrame (3.13s)
 === NAME  
 PASS
-ok  	wsi	3.409s
+ok  	wsi	3.540s
