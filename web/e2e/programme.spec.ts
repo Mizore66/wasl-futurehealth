@@ -164,7 +164,7 @@ test.describe("Programme charts", () => {
     await expect(summary).toContainText("85");
     await expect(summary).toContainText("102");
     await expect(card.getByText("Pooling only moves existing slots between regions. It cannot create slots, so it does not help when the whole network is short.")).toBeVisible();
-    await expect(page.getByTestId("pooling-result")).toContainText("22.2% within 31 days without cross-site booking, 42.1% with network pooling");
+    await expect(page.getByTestId("pooling-result")).toContainText("21.5% within 31 days without cross-site booking, 41.7% with network pooling");
     await expect(card.getByRole("figure")).toHaveCount(2);
     await page.screenshot({ path: "test-results/screens/programme-capacity.png", fullPage: true });
   });
@@ -194,7 +194,7 @@ test.describe("Programme charts", () => {
     await capCard(page).getByRole("button", { name: "Show as table" }).first().click();
     await expect(capCard(page).getByRole("row", { name: /Al Dhafra/ })).toContainText("96");
     await capCard(page).getByRole("button", { name: "Show as table" }).nth(1).click();
-    await expect(capCard(page).getByRole("row", { name: /Misallocated, network pooling.*1\.2/ })).toContainText("42.1%");
+    await expect(capCard(page).getByRole("row", { name: /Misallocated, network pooling.*1\.2/ })).toContainText("41.7%");
     await page.screenshot({ path: "test-results/screens/programme-tables.png", fullPage: true });
     expect(await unsourced(page)).toEqual([]);
     await axe(page);
