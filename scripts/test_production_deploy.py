@@ -3,9 +3,11 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import stat
 import subprocess
 import tempfile
+import time
 import unittest
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -91,7 +93,7 @@ fi
             env = dict(os.environ, PATH=str(bindir) + os.pathsep + os.environ["PATH"],
                        WASL_NATS_DATA=str(data), FAKE_STARTED=str(started), FAKE_ARGS=str(root / "args"),
                        FAKE_WGET_LOG=str(root / "wget.log"), WASL_JS_KEY_FILE=str(key), WASL_NATS_TLS="1",
-                       WASL_ROUTE_USER="route-user", WASL_ROUTE_PASSWORD="route-password",
+                       WASL_NATS_PASSWORD="nats-password", WASL_ROUTE_USER="route-user", WASL_ROUTE_PASSWORD="route-password",
                        WASL_NATS_RUNTIME_CONFIG=str(root / "rendered.conf"),
                        WASL_NATS_CONFIG_TEMPLATE=str(ROOT / "deploy/nats/nats-production.conf"))
             env.pop("WASL_JS_KEY", None)
@@ -110,6 +112,84 @@ fi
                                     text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(started.exists())
+
+    @unittest.skipUnless(shutil.which("podman"), "Podman is required for the real NATS startup regression")
+    def test_nats_starts_fresh_with_both_passwords_digit_leading(self):
+        """Unquoted environment expansion must not reinterpret hex credentials as numbers."""
+        engine = "podman"
+        suffix = f"{os.getpid()}-digit-leading"
+        name = f"wasl-nats-{suffix}"
+        secrets_volume = f"wasl-nats-secrets-{suffix}"
+        data_volume = f"wasl-nats-data-{suffix}"
+        image = os.environ.get("WASL_NATS_TEST_IMAGE", f"wasl-nats-audit-{suffix}:local")
+        owns_image = "WASL_NATS_TEST_IMAGE" not in os.environ
+
+        def run(args):
+            return subprocess.run(args, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        def cleanup():
+            subprocess.run([engine, "rm", "-f", name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run([engine, "volume", "rm", secrets_volume, data_volume],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if owns_image:
+                subprocess.run([engine, "rmi", image], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+        self.addCleanup(cleanup)
+        if owns_image:
+            built = run([engine, "build", "--platform", "linux/arm64", "-t", image,
+                         str(ROOT / "deploy/nats")])
+            self.assertEqual(built.returncode, 0, built.stdout)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            secrets = Path(tmp) / "secrets"
+            generated = run([str(ROOT / "scripts/production_secrets.sh"), str(secrets)])
+            self.assertEqual(generated.returncode, 0, generated.stdout)
+            # Both are valid 256-bit hex credentials whose leading numeric/exponent shape breaks unquoted expansion.
+            for password_name, password in (("nats_password", "1e"), ("route_password", "2e")):
+                password_file = secrets / password_name
+                password_file.chmod(0o600)
+                password_file.write_text(password + "1234567890" * 6 + "12\n")
+                password_file.chmod(0o444)
+            loaded = run([str(ROOT / "scripts/production_volume_load.sh"), secrets_volume, str(secrets)])
+            self.assertEqual(loaded.returncode, 0, loaded.stdout)
+            created = run([engine, "volume", "create", data_volume])
+            self.assertEqual(created.returncode, 0, created.stdout)
+            started = run([
+                engine, "run", "--detach", "--platform", "linux/arm64", "--name", name,
+                "-e", "NATS_SERVER_NAME=n0", "-e", "WASL_NATS_USER=wasl-services",
+                "-e", "WASL_ROUTE_USER=wasl-routes",
+                "-e", "WASL_NATS_PASSWORD_FILE=/run/secrets/nats_password",
+                "-e", "WASL_ROUTE_PASSWORD_FILE=/run/secrets/route_password",
+                "-e", "WASL_JS_KEY_FILE=/run/secrets/js_key", "-e", "WASL_NATS_REQUIRE_MARKER=1",
+                "-e", "WASL_NATS_TLS=1", "-v", f"{secrets_volume}:/run/secrets:ro",
+                "-v", f"{data_volume}:/data", image,
+            ])
+            self.assertEqual(started.returncode, 0, started.stdout)
+            deadline = time.monotonic() + 45
+            while time.monotonic() < deadline:
+                state = run([engine, "inspect", name, "--format", "{{.State.Running}}"])
+                if state.returncode == 0 and state.stdout.strip() != "true":
+                    logs = run([engine, "logs", name])
+                    self.fail(f"NATS exited before becoming healthy:\n{logs.stdout}")
+                healthy = run([
+                    engine, "exec", name, "wget", "--no-check-certificate", "-q", "--spider",
+                    "https://127.0.0.1:8222/healthz?js-enabled-only=true",
+                ])
+                if healthy.returncode == 0:
+                    break
+                time.sleep(0.5)
+            else:
+                logs = run([engine, "logs", name])
+                self.fail(f"NATS did not become healthy with digit-leading credentials:\n{logs.stdout}")
+            authenticated = run([
+                engine, "run", "--rm", "--platform", "linux/arm64", "--network", f"container:{name}",
+                "-v", f"{secrets_volume}:/run/secrets:ro", "-e", "NATS_URL=tls://127.0.0.1:4222",
+                "-e", "NATS_USER=wasl-services", "-e", "NATS_PASSWORD=1e" + "1234567890" * 6 + "12",
+                "-e", "NATS_CA=/run/secrets/ca.crt", "-e", "NATS_CERT=/run/secrets/server.crt",
+                "-e", "NATS_KEY=/run/secrets/server.key", "--entrypoint", "nats",
+                "docker.io/natsio/nats-box:0.19.1", "pub", "wasl.startup.probe", "startup-ok",
+            ])
+            self.assertEqual(authenticated.returncode, 0, authenticated.stdout)
 
 
 if __name__ == "__main__":
