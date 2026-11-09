@@ -264,7 +264,7 @@
    "data/fresh3/labels/labeller_b.json": "1a6ad7abb725513f3eb45267fafc165d7033f47a7ccdcff54a9294901f929dbd",
    "data/fresh3/reader-cache/ifhas_gemma_cache.json": "7643b3bccabda390b6744bb2fb6a938950c348a9571415cafae1f13f8e8a844d",
    "data/fresh3/reader-cache/ldct_gemma_cache.json": "78e096bc828cc859403db16f9528f5507f82bd5c9c55a6bac0b4ac0d84f5186e",
-   "data/fresh3/results/SCORE.md": "497fb7ffc95be031ebf76d290c346b35b238a98027fd959888eb94ab4eeba103",
+   "data/fresh3/results/SCORE.md": "4fb742b257fdac1263f66d8c05d0e1282918228c2edffd442ca398db94f419b3",
    "data/fresh3/results/reader_raw.json": "03b77c91cf20d5c466331e72719687b61ca2b031a098092475fe1ca53460f5fb",
    "data/fresh3/results/score.json": "0e277e5c2441ef1d878b919d396967424b3585d3963e120e8835b49ef0708408",
    "scripts/fresh2_eval/LABELLING-GUIDE.md": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197"
@@ -432,12 +432,34 @@
  "verification": {
   "changed_since_scoring_commit": [
    "data/fresh3/FREEZE.json",
-   "pipeline/evidence.go"
+   "data/fresh3/results/SCORE.md",
+   "pipeline/evidence.go",
+   "pipeline/ifhasread.go",
+   "pipeline/ldctread.go",
+   "pipeline/lungread.go",
+   "pipeline/reader.go"
   ],
   "check_freeze_after_score_errors": [
-   "pipeline/evidence.go changed since reader_code_commit"
+   "pipeline/evidence.go changed since reader_code_commit",
+   "pipeline/ifhasread.go changed since reader_code_commit",
+   "pipeline/ldctread.go changed since reader_code_commit",
+   "pipeline/lungread.go changed since reader_code_commit",
+   "pipeline/reader.go changed since reader_code_commit"
   ],
   "files_compared": 21,
+  "integration_staleness": {
+   "changed_reader_files": [
+    "pipeline/ifhasread.go",
+    "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go"
+   ],
+   "current_history_scoring_equivalent": "d3222328fc1cbfeff40faf4731fa09f4e3cc19b8",
+   "disclosure": "reader implementation changed after scoring; results do not apply to current integration",
+   "historical_results_match_original_scoring_commit": true,
+   "original_scoring_commit": "9f2d02060586dafa85ce9bd431eafa05de912188",
+   "stored_score_and_raw_results_unchanged": true
+  },
   "manifest_rederived_equal": true,
   "protected_changed_since_reader_code_commit": [],
   "score_json_matches_recomputation": true

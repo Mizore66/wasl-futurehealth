@@ -1,5 +1,14 @@
 # Fresh4 frozen reader scores
 
+**Historical/staleness disclosure: reader implementation changed after scoring; results do not apply to current integration.**
+
+Fresh4's own scoring revision `9d653b4b1f6a2871651dbbcc64ef62e8b8c92fd0` and publication revision `bc25c6968ebf914d5ef53a2c1b069a15d90c4184` contain identical reader blobs for the four files below; current integration blobs differ. The historical scores are preserved without rerunning readers or changing scores.
+
+- `pipeline/ifhasread.go`
+- `pipeline/ldctread.go`
+- `pipeline/lungread.go`
+- `pipeline/reader.go`
+
 **Fresh4 keys are model-labelled and model-adjudicated from a frozen guide, not clinician-verified. Agreed and adjudicated strata are reported separately; neither is clinical truth or evidence of clinical effectiveness.**
 
 Status: built; simulated synthetic text; cached local Gemma reader; no clinical-effectiveness claim.
