@@ -306,11 +306,26 @@
  "schema": "fresh2-analysis/v1",
  "semantics": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.",
  "verification": {
+  "integration_staleness": {
+   "changed_reader_files": [
+    "pipeline/ifhasread.go",
+    "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go"
+   ],
+   "current_history_scoring_equivalent": "5b00feb765673a60370e9c07645d0570d0ffe7d7",
+   "disclosure": "reader implementation changed after scoring; results do not apply to current integration",
+   "historical_results_match_original_scoring_commit": true,
+   "original_scoring_commit": "8a883fc1a5b8e3758a27bebdb81d4e90a06ff07b",
+   "stored_score_and_raw_results_unchanged": true
+  },
   "manifest": {
    "check_freeze_after_score_errors": [
     "pipeline/evidence.go changed since reader_code_commit",
     "pipeline/ifhasread.go changed since reader_code_commit",
-    "pipeline/ldctread.go changed since reader_code_commit"
+    "pipeline/ldctread.go changed since reader_code_commit",
+    "pipeline/lungread.go changed since reader_code_commit",
+    "pipeline/reader.go changed since reader_code_commit"
    ],
    "equal": true,
    "manifest_file": {
@@ -333,16 +348,22 @@
   "protected_files": {
    "changed": [
     "data/fresh2/FREEZE.json",
+    "data/fresh2/results/SCORE.md",
     "pipeline/evidence.go",
     "pipeline/ifhasread.go",
     "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go",
     "scripts/fresh2_eval/fresh2.py"
    ],
    "changed_since_scoring_commit": [
     "data/fresh2/FREEZE.json",
+    "data/fresh2/results/SCORE.md",
     "pipeline/evidence.go",
     "pipeline/ifhasread.go",
     "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go",
     "scripts/fresh2_eval/fresh2.py"
    ],
    "checked": [

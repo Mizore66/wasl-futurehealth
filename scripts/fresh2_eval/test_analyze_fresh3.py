@@ -5,6 +5,10 @@ import json, os, unittest
 import analyze_fresh3 as A3
 
 REPO = A3.REPO
+INTEGRATION_CHANGED_AFTER_SCORING = [
+    "pipeline/ifhasread.go", "pipeline/ldctread.go", "pipeline/lungread.go", "pipeline/reader.go",
+]
+STALENESS_DISCLOSURE = "reader implementation changed after scoring; results do not apply to current integration"
 
 
 def rj(rel):
@@ -26,13 +30,38 @@ class Fresh3Analysis(unittest.TestCase):
         self.assertEqual(self.a["scores_by_kind_agreed"], stored["agreed"]["by_kind"])
         self.assertEqual(self.a["scores_totals_agreed"], stored["agreed"]["totals"])
         self.assertTrue(self.a["verification"]["score_json_matches_recomputation"])
-        # The history rewrite rebound the manifest and e698476 restored shared evidence plumbing; original scores and reader logic are unchanged.
-        self.assertEqual(self.a["verification"]["changed_since_scoring_commit"], ["data/fresh3/FREEZE.json", "pipeline/evidence.go"])
+        # Historical scores and raw outputs stay intact; documentation and substantive integration changes are disclosed.
+        self.assertEqual(self.a["verification"]["changed_since_scoring_commit"], [
+            "data/fresh3/FREEZE.json", "data/fresh3/results/SCORE.md", "pipeline/evidence.go",
+            *INTEGRATION_CHANGED_AFTER_SCORING,
+        ])
+
+    def test_current_integration_is_stale_and_historical_results_are_intact(self):
+        v = self.a["verification"]
+        self.assertIn("integration_staleness", v)
+        s = v["integration_staleness"]
+        self.assertEqual(s["disclosure"], STALENESS_DISCLOSURE)
+        self.assertEqual(s["changed_reader_files"], INTEGRATION_CHANGED_AFTER_SCORING)
+        self.assertEqual(s["original_scoring_commit"], "9f2d02060586dafa85ce9bd431eafa05de912188")
+        self.assertEqual(s["current_history_scoring_equivalent"], A3.SCORE_COMMIT)
+        self.assertTrue(s["historical_results_match_original_scoring_commit"])
+        self.assertTrue(s["stored_score_and_raw_results_unchanged"])
+        self.assertTrue(v["score_json_matches_recomputation"])
+        rendered = A3.render(self.a)
+        self.assertIn(STALENESS_DISCLOSURE, rendered)
+        with open(os.path.join(REPO, "data/fresh3/results/SCORE.md"), encoding="utf-8") as f:
+            score_doc = f.read()
+        for text in (rendered, score_doc):
+            for path in INTEGRATION_CHANGED_AFTER_SCORING:
+                self.assertIn(path, text)
+            self.assertIn(STALENESS_DISCLOSURE, text)
 
     def test_manifest_rederived_and_scoring_protocol_unchanged(self):
         v = self.a["verification"]
         self.assertTrue(v["manifest_rederived_equal"])
-        self.assertEqual(v["check_freeze_after_score_errors"], ["pipeline/evidence.go changed since reader_code_commit"])
+        expected_readers = ["pipeline/evidence.go", *INTEGRATION_CHANGED_AFTER_SCORING]
+        self.assertEqual(v["check_freeze_after_score_errors"],
+                         [p + " changed since reader_code_commit" for p in expected_readers])
         self.assertEqual(v["protected_changed_since_reader_code_commit"], [])
 
     def test_wrong_items_and_direction(self):

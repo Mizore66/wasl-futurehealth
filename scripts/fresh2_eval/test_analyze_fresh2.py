@@ -65,14 +65,18 @@ class LabellerInput(unittest.TestCase):
         self.assertNotEqual(a["model_family"], b["model_family"])
 
 
-# Reader code was hardened on purpose after fresh2 was scored, fresh2.py gained FRESH_EVAL_* configuration, and
-# e698476 restored shared evidence plumbing after the history rewrite. Those post-scoring edits are expected; fresh2's
-# protocol is that protected reader files are unchanged from reader_code_commit to scoring (A.SCORE_COMMIT), checked strictly.
-HARDENED_AFTER_SCORING = {"pipeline/ifhasread.go", "pipeline/ldctread.go"}
+# Current integration code differs substantively from the historical scoring blobs. Require complete disclosure rather
+# than treating those differences as equivalent; the reader-code-to-scoring interval remains strictly unchanged.
+INTEGRATION_CHANGED_AFTER_SCORING = {
+    "pipeline/ifhasread.go", "pipeline/ldctread.go", "pipeline/lungread.go", "pipeline/reader.go",
+}
 RESTORED_AFTER_REBASE = {"pipeline/evidence.go"}
 REBOUND_AFTER_REBASE = {"data/fresh2/FREEZE.json"}
 CONFIGURED_AFTER_SCORING = {"scripts/fresh2_eval/fresh2.py"}
-POST_SCORE_CHANGES = HARDENED_AFTER_SCORING | RESTORED_AFTER_REBASE | REBOUND_AFTER_REBASE | CONFIGURED_AFTER_SCORING
+DISCLOSURE_ADDED_AFTER_SCORING = {"data/fresh2/results/SCORE.md"}
+POST_SCORE_CHANGES = (INTEGRATION_CHANGED_AFTER_SCORING | RESTORED_AFTER_REBASE | REBOUND_AFTER_REBASE |
+                      CONFIGURED_AFTER_SCORING | DISCLOSURE_ADDED_AFTER_SCORING)
+STALENESS_DISCLOSURE = "reader implementation changed after scoring; results do not apply to current integration"
 
 
 class Analysis(unittest.TestCase):
@@ -126,20 +130,41 @@ class Analysis(unittest.TestCase):
     def test_original_scores_recomputed(self):
         self.assertTrue(self.a["verification"]["original_scores"]["score_json_matches_recomputation"])
 
+    def test_current_integration_is_stale_and_historical_results_are_intact(self):
+        v = self.a["verification"]
+        self.assertIn("integration_staleness", v)
+        s = v["integration_staleness"]
+        self.assertEqual(s["disclosure"], STALENESS_DISCLOSURE)
+        self.assertEqual(s["changed_reader_files"], sorted(INTEGRATION_CHANGED_AFTER_SCORING))
+        self.assertEqual(s["original_scoring_commit"], "8a883fc1a5b8e3758a27bebdb81d4e90a06ff07b")
+        self.assertEqual(s["current_history_scoring_equivalent"], A.SCORE_COMMIT)
+        self.assertTrue(s["historical_results_match_original_scoring_commit"])
+        self.assertTrue(s["stored_score_and_raw_results_unchanged"])
+        self.assertTrue(v["original_scores"]["score_json_matches_recomputation"])
+        rendered = A.render(self.a)
+        self.assertIn(STALENESS_DISCLOSURE, rendered)
+        with open(os.path.join(REPO, "data/fresh2/results/SCORE.md"), encoding="utf-8") as f:
+            score_doc = f.read()
+        for text in (rendered, score_doc):
+            for path in INTEGRATION_CHANGED_AFTER_SCORING:
+                self.assertIn(path, text)
+            self.assertIn(STALENESS_DISCLOSURE, text)
+
     def test_manifest_rederived_and_protected_unchanged(self):
         v = self.a["verification"]
         self.assertTrue(v["manifest"]["equal"])
+        expected_stale = INTEGRATION_CHANGED_AFTER_SCORING | RESTORED_AFTER_REBASE
         self.assertEqual(set(v["manifest"]["check_freeze_after_score_errors"]),
-                         {f"{p} changed since reader_code_commit" for p in HARDENED_AFTER_SCORING | RESTORED_AFTER_REBASE})
+                         {f"{p} changed since reader_code_commit" for p in expected_stale})
         self.assertEqual(set(v["protected_files"]["changed"]), POST_SCORE_CHANGES)
         # the real protocol: protected reader files and production caches are identical from reader_code_commit to scoring commit
         self.assertEqual(v["protected_files"]["protected_changed_since_reader_code_commit"], [])
         self.assertEqual(
             A.git(REPO, "diff", "--name-only", v["manifest"]["manifest_file"]["reader_code_commit"], A.SCORE_COMMIT,
                   "--", *F.DEFAULT_PROTECTED).strip(), "")
-        # post-scoring differences are exactly the disclosed hardening, rebase restoration and configuration edits
+        # Every post-score difference must be disclosed; none may be silently ignored or treated as current-code evidence.
         self.assertEqual(set(self.live_changed), POST_SCORE_CHANGES)
-        self.assertEqual({e.split(" changed since")[0] for e in self.live_errors}, HARDENED_AFTER_SCORING | RESTORED_AFTER_REBASE)
+        self.assertEqual({e.split(" changed since")[0] for e in self.live_errors}, expected_stale)
 
     def test_committed_files_match_regeneration(self):
         with open(os.path.join(REPO, A.OUT_JSON), encoding="utf-8") as f:

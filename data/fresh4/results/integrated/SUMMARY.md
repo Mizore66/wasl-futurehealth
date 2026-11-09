@@ -2,6 +2,8 @@
 
 Code revision `bc25c6968ebf` · policy `v7strict` · seeds [1103, 1109, 1117, 1121, 1123] · source `fhir` · held-out persons only · frozen 2026-11-09T07:09:16.962130Z
 
+**Historical/staleness disclosure: reader implementation changed after scoring; results do not apply to current integration.** Fresh4's recorded revision contains the original blobs; current integration differs in `pipeline/ifhasread.go`, `pipeline/ldctread.go`, `pipeline/lungread.go`, and `pipeline/reader.go`. No reader or integrated evaluation was rerun.
+
 Means with 95% intervals over seeds (t). Zero-event safety metrics are pooled, with a Clopper–Pearson 95% upper bound.
 
 
