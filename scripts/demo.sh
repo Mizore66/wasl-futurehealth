@@ -188,7 +188,7 @@ report() {
 }
 serve() {  # WASL_SERVE_RUN / WASL_SERVE_DATA serve an already materialised lane and cohort (no regeneration, no model calls)
   local addr="${1:-${WASL_API_ADDR:-127.0.0.1:8088}}" run="${WASL_SERVE_RUN:-$RUN}" data="${WASL_SERVE_DATA:-$COHORT}"
-  echo "Wasl API on http://$addr (run: $run)"
+  printf '{"level":"INFO","msg":"api starting","address":"%s","run":"%s"}\n' "$addr" "$run"
   cd "$BIN" && exec ./wsi7 serve -run "$run" -data "$data" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "$addr"
 }
 smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 + WASL_PORT_OFFSET), poll /healthz, run scripts/api_smoke.py
@@ -267,7 +267,31 @@ stale_bin() {
   local newer; newer="$(find "$ROOT/pipeline" -maxdepth 1 \( -name '*.go' -o -name go.mod -o -name go.sum \) -newer "$BIN/wsi7" | head -1)"
   [ -z "$newer" ] || { echo "stale binary: $BIN/wsi7 is older than ${newer#$ROOT/}; run: scripts/demo.sh build" >&2; exit 2; }
 }
+recovery_backup() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
+  mkdir -p "$directory"
+  [ ! -e "$directory/bundle" ] || { echo "recovery backup already exists: $directory/bundle" >&2; exit 1; }
+  "$BIN/wsi7" backup-nats -bundle "$directory/nats.json"
+  python3 "$ROOT/scripts/recovery.py" backup "$OUT" "$directory/bundle" --key-file "$key" --nats-json "$directory/nats.json"
+  rm -f "$directory/nats.json"
+}
+recovery_restore() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
+  # Authentication and every payload hash are checked before NATS is contacted or the destination is created.
+  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key"
+  "$BIN/wsi7" restore-nats -bundle "$directory/bundle/files/nats/nats.json"
+  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT"
+}
+recovery_verify() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}"
+  "$BIN/wsi7" verify-nats -bundle "$directory/bundle/files/nats/nats.json"
+}
 validate_nats_config
+case "${1:-all}" in
+  recovery-backup) recovery_backup; exit 0;;
+  recovery-restore) recovery_restore; exit 0;;
+  recovery-verify) recovery_verify; exit 0;;
+esac
 case "${1:-all}" in cohort|run|audit|tamper|report|serve|smoke|snapshot|final) stale_bin;; esac
 mkdir -p "$OUT/run"
 case "${1:-all}" in

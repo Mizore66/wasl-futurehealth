@@ -103,18 +103,48 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
-	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
-	if err := srv.ListenAndServe(); err != nil {
+	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
+	auth, err := apiAuthFromEnvironment()
+	if err != nil {
+		panic(err)
+	}
+	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		cors(mux).ServeHTTP(w, r)
+		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
+	}))
+	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
+	if (certFile == "") != (keyFile == "") {
+		panic("WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE must be set together")
+	}
+	scheme := "http"
+	if certFile != "" {
+		scheme = "https"
+	}
+	writeStructuredLog("info", "api listener ready", "cases", len(s.cases), "run", run, "address", addr, "scheme", scheme)
+	if certFile != "" {
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		err = srv.ListenAndServe()
+	}
+	if err != nil {
 		panic(err)
 	}
 }
 
 func cors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if os.Getenv("WASL_API_USERS_FILE") == "" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		} else if origin := os.Getenv("WASL_API_CORS_ORIGIN"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Vary", "Origin")
+		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(204)
 			return
