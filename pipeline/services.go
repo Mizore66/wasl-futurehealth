@@ -179,7 +179,7 @@ func setupStreams(replicas, P int) {
 			panic(fmt.Sprintf("reset KV bucket %s: %v", bucket, err))
 		}
 	}
-	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
+	for _, s := range []string{"FHIRIN", "FHIR", "PREP", "FACTS", "OUT"} {
 		var err error
 		for try := 0; try < 30; try++ {
 			err = js.DeleteStream(ctx, s)
@@ -208,7 +208,19 @@ func setupStreams(replicas, P int) {
 			panic(fmt.Sprint(s, err))
 		}
 	}
-	_, err := js.CreateOrUpdateConsumer(ctx, "FHIR", jetstream.ConsumerConfig{Durable: "prep", AckPolicy: jetstream.AckExplicitPolicy,
+	_, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{Name: "FHIRIN", Subjects: []string{"fhirsub.notification"},
+		Storage: jetstream.FileStorage, Retention: jetstream.WorkQueuePolicy, Replicas: replicas, Duplicates: time.Hour,
+		MaxMsgs: maxDurableInboxMessages, MaxBytes: maxDurableInboxBytes, MaxMsgSize: maxHookBodyBytes,
+		Discard: jetstream.DiscardNew, AllowDirect: true})
+	if err != nil {
+		panic(fmt.Sprintf("FHIRIN: %v", err))
+	}
+	_, err = js.CreateOrUpdateConsumer(ctx, "FHIRIN", jetstream.ConsumerConfig{Durable: "notifications", AckPolicy: jetstream.AckExplicitPolicy,
+		AckWait: 30 * time.Second, MaxAckPending: 128, MaxDeliver: -1, DeliverPolicy: jetstream.DeliverAllPolicy})
+	if err != nil {
+		panic(fmt.Sprintf("FHIRIN consumer: %v", err))
+	}
+	_, err = js.CreateOrUpdateConsumer(ctx, "FHIR", jetstream.ConsumerConfig{Durable: "prep", AckPolicy: jetstream.AckExplicitPolicy,
 		AckWait: 30 * time.Second, MaxAckPending: 4000, DeliverPolicy: jetstream.DeliverAllPolicy})
 	if err != nil {
 		panic(err)
