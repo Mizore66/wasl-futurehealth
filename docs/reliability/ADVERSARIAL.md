@@ -6,7 +6,19 @@ This document records **built controls and executed tests**, not production read
 
 The machine-readable source of truth is [`adversarial-matrix.json`](adversarial-matrix.json). Baseline: `91cff71626e38a509395bef3c031d1d1f82a2773`.
 
-The [verification manifest](evidence/verification-2026-11-09.manifest.json) binds the final raw logs to the exact tested Git commit and tree and to this matrix's SHA-256. The tested commit is the parent of the evidence-only commit; the manifest does not claim a self-referential hash of the commit that stores it.
+The [verification manifest](evidence/verification-2026-11-09.manifest.json) binds the final raw logs, artifact hashes, commands, and matrix SHA-256 to `tested_source.code_commit`, the final code-only commit `3e1c3733ec44525baf95cc169b22aad189a51fde`. `tested_source.code_tree` is that commit's full Git tree. Every listed test command ran with no working-tree changes under `pipeline/` or `scripts/`; later evidence-only commits change only `docs/reliability/`.
+
+`tested_source.tree` has explicit source-only semantics: it is the deterministic Git tree of the final evidence revision with the complete `docs/reliability/evidence/` directory removed. It covers the final tracked source and reliability documentation, including this document and the matrix, without attempting a self-referential hash of evidence or of the containing commit. Reproduce it from the final evidence revision with a temporary index:
+
+```sh
+tmp_index=$(mktemp)
+GIT_INDEX_FILE="$tmp_index" git read-tree HEAD
+GIT_INDEX_FILE="$tmp_index" git rm -r --cached docs/reliability/evidence
+GIT_INDEX_FILE="$tmp_index" git write-tree
+rm -f "$tmp_index"
+```
+
+The output must equal `tested_source.tree`. Independently, `git diff --exit-code 3e1c3733ec44525baf95cc169b22aad189a51fde..HEAD -- pipeline scripts` must be empty. That command is the executable check that the evidence revision did not alter the canonical runtime or test/fuzz scripts after the recorded test run.
 
 ## Built controls
 
@@ -50,7 +62,7 @@ The final full run explicitly skipped six asset-dependent tests: `TestAPIBooking
 | Malformed/duplicate FHIR | **Pass** | `go -C pipeline test -run '^(TestNormaliseRejectsShapeConfusionWithoutPanics|FuzzNormaliseNeverPanics)$' -count=1 -v`. Both the deterministic test and fuzz seed corpus execute explicit duplicate outer `resourceType` and nested sign-off fixtures. Null/scalar members, missing arrays, malformed sign-offs, and duplicate outer/nested keys are rejected without panics; generated fuzzing is recorded separately below. |
 | Malformed/duplicate/out-of-order HL7 | **Pass** | `go -C pipeline test -run 'Test(HL7RejectsMalformedAndOutOfOrderSegments|HL7ToResourceRejectsShapeConfusionWithoutPanics|HL7ToResourceRejectsResourceNormaliseDrops|MLLPBoundsPreambleAndFrame)$' -count=1`. Covers duplicate MSH/ZWS, MSH after PID, null Patients with or without PID, bad trailers, oversized preamble/frame, and unterminated input. `ToResource` refuses embedded resources that `normalise` would drop. |
 | Subscription validation and reorder | **Pass** | `go -C pipeline test -run 'Test(ParseStatusValidatesRequiredFields|HookValidatesBeforeAcknowledgement|HookRejectsDuplicateNotificationEnvelopeKeys|HookRejectsInvalidInlineResourceAndFocusMismatch|HookRejectsOversizeAndBackpressure|SubscriptionRequestRejectsMalformedURL|UnknownSubscriptionSourceDoesNotAdvanceAcknowledgement|SubscriptionReorderAndDuplicateHaveSingleOrderedEffect)$' -count=1`. Duplicate envelope keys receive 400 without queueing. Events 2, 1, 1 produce ordered effects 1, 2 with one duplicate dropped. |
-| Poll and bulk export | **Pass** | `go -C pipeline test -run 'Test(PollRejectsMalformedResponsesWithoutCompletion|ExportRejectsMalformedManifestAndTruncatedNDJSON|ExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion)$' -count=1 -v`. Malformed bundles/manifests/resources and a 16 MiB + 1 record do not complete the feed. Real-NATS cases reject JSON null, array, string, number, and boolean manifests with no export success, checkpoint, resource, EOF state, or FHIR stream message. |
+| Poll and bulk export | **Pass** | `go -C pipeline test -run 'Test(PollRejectsMalformedResponsesWithoutCompletion|ExportRejectsMalformedManifestAndTruncatedNDJSON|ExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion)$' -count=1 -v`. Malformed bundles/manifests/resources and a 16 MiB + 1 record do not complete the feed. Real-NATS cases reject JSON null, array, string, number, boolean, empty-object, and null-output manifests with no export success, checkpoint, resource, EOF state, or FHIR stream message. |
 | Strict API bodies | **Pass** | `go -C pipeline test -run 'TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies' -count=1`. Review, consent, and undo reject exact/case-variant duplicates, unknown fields, and valid-prefix bodies beyond their limits. |
 | Native fuzz smoke | **Pass** | `scripts/adversarial_fuzz.sh`. All five targets generated beyond baseline and passed. The runner rejects baseline-only/zero-generation passes. [Raw logs](evidence/adversarial-fuzz-2026-11-09/) and exact counts are bound to the tested source in the verification manifest. Counts are host/cache dependent. |
 | Longer fuzz | **Not run** | Reproducible command: `FUZZTIME=60s scripts/adversarial_fuzz.sh`. Only the bounded three-second-per-target variant was executed. |

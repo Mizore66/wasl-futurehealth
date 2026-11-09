@@ -1,14 +1,22 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-11-09T09:07:19.678352Z",
+  "generated_at": "2026-11-09T10:30:08.785923Z",
   "tested_source": {
-    "commit": "185d1c38fc77c5802ea587bd1ca4b8993b3be611",
-    "tree": "6ec765921ad456f61dff55a658ad13f7e604af29",
-    "note": "All listed commands ran at this exact commit with only docs/reliability/evidence outputs changing. The subsequent evidence-only commit stores this manifest and those outputs."
+    "code_commit": "3e1c3733ec44525baf95cc169b22aad189a51fde",
+    "code_tree": "2df2befcdaefab3f2536340fbc4372dac1c79f7f",
+    "tree": "665b55fb8df2ab3c9a00f17d438a29092d7cc1e8",
+    "tree_semantics": "Deterministic Git tree of the final evidence revision with docs/reliability/evidence excluded; code_tree is the full Git tree of code_commit.",
+    "code_paths": [
+      "pipeline",
+      "scripts"
+    ],
+    "code_diff_command": "git diff --exit-code 3e1c3733ec44525baf95cc169b22aad189a51fde..HEAD -- pipeline scripts",
+    "code_diff_exit_code": 0,
+    "note": "All listed commands ran with pipeline/ and scripts/ identical to code_commit. Subsequent evidence-only commits change only docs/reliability. The source-only tree covers final tracked source and reliability documentation without hashing evidence or the containing commit."
   },
   "reliability_matrix": {
     "path": "docs/reliability/adversarial-matrix.json",
-    "sha256": "9f24b6b1261b7965aa14594cb539c65eb01d55116840efe94ef01e4d74e2633b"
+    "sha256": "e4572a7bed61037be6c6c0b5373a0daa144ed1a6a0bd10617b6cdee4d5b3ba67"
   },
   "environment": {
     "go": "go version go1.27.3 darwin/arm64",
@@ -23,8 +31,8 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/focused-2026-11-09.log",
-        "sha256": "3a08ddeba6ac4834d4829d3bf58c10df4f79d538bd7dc3abf6faee43e657840e",
-        "bytes": 7093
+        "sha256": "9c3fad9847619981b6fe367afb4f1114218cdb19617aa769179fbdf7a357e959",
+        "bytes": 7515
       }
     },
     {
@@ -33,8 +41,8 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/race-2026-11-09.log",
-        "sha256": "ac4e9a26da6465b2c27c0ffd0dd19e47bbb07df9fe1376b5d4d4b5d79870206b",
-        "bytes": 2107
+        "sha256": "45fcdddff6c341ad773abc9f1d4c357771db4b390209c8de53a572dde5bca469",
+        "bytes": 2529
       }
     },
     {
@@ -43,7 +51,7 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/runner.log",
-        "sha256": "c7fbe314df5a266b007478ee6ebba308cfcf7df7e1ac9ee0d2c8873809a7848c",
+        "sha256": "0fc1c7717a8b8e8906b9bd1a30e2519ae55b30b1414ca13d49c4a11f3fcd93b6",
         "bytes": 3738
       }
     },
@@ -63,8 +71,8 @@
       "exit_code": 0,
       "log": {
         "path": "docs/reliability/evidence/full-regression-2026-11-09.jsonl",
-        "sha256": "9e248237a85506d19567d4fee81b231af5dcdf19b69dcdd7d6c03e61c4cf2ed8",
-        "bytes": 915059
+        "sha256": "04d206023295099e6ed285720cd89336ee22742f92660ec486effc74a732b66d",
+        "bytes": 917310
       }
     }
   ],
@@ -82,7 +90,9 @@
       "array",
       "string",
       "number",
-      "bool"
+      "bool",
+      "empty object",
+      "null output"
     ],
     "real_nats_assertions": [
       "export returns false",
@@ -91,92 +101,102 @@
       "EOF state remains false",
       "no resource records",
       "FHIR stream remains empty of resource and EOF-control messages"
-    ]
+    ],
+    "real_nats_manifest_case_count": 7,
+    "real_nats_manifest_pass_markers": {
+      "null": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null",
+      "array": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/array",
+      "string": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/string",
+      "number": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/number",
+      "bool": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/bool",
+      "empty object": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/empty_object",
+      "null output": "--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null_output"
+    }
   },
   "fuzz": [
     {
       "target": "FuzzNormaliseNeverPanics",
-      "baseline_executions": 290,
-      "total_executions": 19831,
-      "generated_executions": 19541,
+      "baseline_executions": 310,
+      "total_executions": 20425,
+      "generated_executions": 20115,
       "status": "pass",
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzNormaliseNeverPanics.log",
-        "sha256": "c506d3c6cdf8a97151a10d83d27cfdafbdce1d12b953f28b83646738cdcf6e8a",
+        "sha256": "0a6a214b98dae4e8ae3c3039e473ae2474799323b67dc09d13cf1f5548f74330",
         "bytes": 417
       }
     },
     {
       "target": "FuzzHL7ParseAndResourceNeverPanics",
-      "baseline_executions": 56,
-      "total_executions": 38943,
-      "generated_executions": 38887,
+      "baseline_executions": 73,
+      "total_executions": 34493,
+      "generated_executions": 34420,
       "status": "pass",
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzHL7ParseAndResourceNeverPanics.log",
-        "sha256": "49f207c6612c1d625f5e3ed470ec01254bd1082761019f532ca539465e21386e",
+        "sha256": "ab60bfb950aa1753a843421a07d296a20a4cf4aab02c1296125060d583c97c36",
         "bytes": 433
       }
     },
     {
       "target": "FuzzMLLPBoundedFrame",
       "baseline_executions": 6,
-      "total_executions": 25226,
-      "generated_executions": 25220,
+      "total_executions": 26752,
+      "generated_executions": 26746,
       "status": "pass",
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzMLLPBoundedFrame.log",
-        "sha256": "ef4500fde8732b5905dfc622991c7fcbae1bf8b5feadab46d7938dd99fe392d2",
+        "sha256": "786b9f81450be03a95c86e4d7fb5cf35e7b353713afbfa9fff32ebf5d0661b64",
         "bytes": 399
       }
     },
     {
       "target": "FuzzSubscriptionStatusNeverPanics",
-      "baseline_executions": 270,
-      "total_executions": 9031,
-      "generated_executions": 8761,
+      "baseline_executions": 289,
+      "total_executions": 21249,
+      "generated_executions": 20960,
       "status": "pass",
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzSubscriptionStatusNeverPanics.log",
-        "sha256": "7a524d7642d64a22e7602931c56407d565c48a05f3d8cbc5cd4236f50a1473b5",
-        "bytes": 433
+        "sha256": "654bfe5b98cd4a58f4db195cbb68ee505af3951f4e5850fede5946e87359fd2d",
+        "bytes": 435
       }
     },
     {
       "target": "FuzzAPIReviewBodyNeverPanics",
-      "baseline_executions": 222,
-      "total_executions": 13457,
-      "generated_executions": 13235,
+      "baseline_executions": 243,
+      "total_executions": 5294,
+      "generated_executions": 5051,
       "status": "pass",
       "log": {
         "path": "docs/reliability/evidence/adversarial-fuzz-2026-11-09/FuzzAPIReviewBodyNeverPanics.log",
-        "sha256": "18e6b26a0ee8c82e6f19a1c8f50e326ed4fbc8816d00e9f57b452b2abfe934d9",
-        "bytes": 425
+        "sha256": "0c5e2ddf1bb709940ad822466f39d1fbc229ff1576f6ac44b01fb22821d2f072",
+        "bytes": 423
       }
     }
   ],
   "full_regression": {
     "status": "pass",
-    "started_at": "2026-11-09T17:01:53.544656+08:00",
-    "finished_at": "2026-11-09T17:05:54.241189+08:00",
-    "json_events": 5238,
+    "started_at": "2026-11-09T18:23:11.771287+08:00",
+    "finished_at": "2026-11-09T18:27:53.259865+08:00",
+    "json_events": 5248,
     "action_counts": {
-      "output": 3130,
-      "pass": 1048,
-      "run": 1053,
+      "output": 3136,
+      "pass": 1050,
+      "run": 1055,
       "skip": 6,
       "start": 1
     },
-    "passed_test_events_including_subtests": 1047,
+    "passed_test_events_including_subtests": 1049,
     "failed_events": 0,
     "skipped_tests": [
-      "TestAPIBookingSupport",
       "TestAPIDRFixtureRun",
       "TestAPIFixturesAndContracts",
       "TestAPIReviewRBACAndAppendOnly",
+      "TestAPIBookingSupport",
       "TestFresh2Reader",
       "TestHL7RoundTripCohort"
     ],
-    "package_elapsed_seconds": 240.695
+    "package_elapsed_seconds": 281.487
   }
 }

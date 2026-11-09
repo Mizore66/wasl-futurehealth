@@ -50,9 +50,9 @@
       "id": "poll-export-transactional-completion",
       "category": "Malformed polling and bulk export",
       "command": "go -C pipeline test -run 'Test(PollRejectsMalformedResponsesWithoutCompletion|ExportRejectsMalformedManifestAndTruncatedNDJSON|ExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion)$' -count=1 -v",
-      "seeds": ["malformed/duplicate Bundle keys", "missing resource metadata", "malformed final manifest", "JSON null, array, string, number and boolean manifests", "16 MiB + 1 NDJSON record", "invalid resource line"],
+      "seeds": ["malformed/duplicate Bundle keys", "missing resource metadata", "malformed final manifest", "JSON null, array, string, number, boolean, empty-object and null-output manifests", "16 MiB + 1 NDJSON record", "invalid resource line"],
       "status": "pass",
-      "evidence": "Poll/export errors are counted, success/EOF completion is blocked, scanner errors are checked, and test fixtures do not panic. Real-NATS regressions prove null and every tested non-object manifest leaves no success count, checkpoint, resource record, EOF state, or FHIR stream message.",
+      "evidence": "Poll/export errors are counted, success/EOF completion is blocked, scanner errors are checked, and test fixtures do not panic. Seven real-NATS regressions prove null, every tested non-object manifest, an empty object, and a null output array leave no success count, checkpoint, resource record, EOF state, or FHIR stream message.",
       "limitations": "A valid prefix may already have been published before a later page/line fails; retry relies on dedupe and no completion checkpoint is advanced."
     },
     {
@@ -123,7 +123,7 @@
       "command": "go -C pipeline test ./... -count=1 -timeout=10m -json && go -C pipeline vet ./...",
       "seeds": ["Existing checked-in unit/integration fixtures", "temporary bin/nats-server symlink present"],
       "status": "pass",
-      "evidence": "The final repaired-source full suite, focused race suite, and vet passed. Raw JSON events are retained in evidence/full-regression-2026-11-09.jsonl. Exact event counts, skips, elapsed time, log hashes, matrix hash, tested Git tree, and tested commit are recorded in evidence/verification-2026-11-09.manifest.json.",
+      "evidence": "The final repaired-source full suite, focused race suite, and vet passed. Raw JSON events are retained in evidence/full-regression-2026-11-09.jsonl. Exact event counts, skips, elapsed time, log hashes, matrix hash, final code-only commit/tree, and deterministic source-only tree are recorded in evidence/verification-2026-11-09.manifest.json.",
       "limitations": "Six asset-dependent tests skipped in the final run: TestAPIBookingSupport, TestAPIDRFixtureRun, TestAPIFixturesAndContracts, TestAPIReviewRBACAndAppendOnly, TestFresh2Reader, TestHL7RoundTripCohort."
     },
     {
