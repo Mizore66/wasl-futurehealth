@@ -87,7 +87,16 @@ The initial independent scan reported:
 - `CVE-2026-118764` in development-only `minimatch@10.2.6`, fixed in `11.0.1`. The pnpm override targets affected `>=10 <11.0.1` resolutions without suppressing other minimatch versions.
 - `GO-2026-5932` on the module `golang.org/x/crypto@v0.57.0`, severity `UNKNOWN`, fixed at `v0.58.1-0.20261009181718-2f1f834330b2`. The module is upgraded; this does not assert that the old unmaintained `openpgp` path was reachable.
 
-The checked-in `vulnerabilities.json` is the authoritative result of the subsequent scan, not this historical description.
+The checked-in `vulnerabilities.json` is the authoritative result of the subsequent **source** scan, not this historical description.
+
+### Image-driven remediations
+
+Exercising the new image gate found additional release blockers that the source scan could not see:
+
+- `nats:2.12.1-alpine` produced 188 findings (3 CRITICAL, 64 HIGH, 66 MEDIUM, 53 LOW, 2 UNKNOWN). Moving to `nats:2.12.6-alpine` removed the NATS server-module findings but left 133 in its bundled Go runtime/modules and Alpine packages. The Dockerfile now rebuilds NATS 2.12.6 with Go 1.27.3 and patched modules, replaces the upstream binary, and applies Alpine updates. The patched NATS binary passed the standalone rootfs analyzer, and the composed candidate image reported zero findings across all severities.
+- `python:3.12-slim-bookworm` produced 273 findings, 267 without fixed versions in the scanner report. The application runtime now uses Alpine with OS updates, Bash, util-linux, and the same NumPy/SciPy pins. Pip 26.3 is used only during construction; pip and ensurepip are then removed because they are unnecessary at runtime and their vendored SBOM included advisories. The complete application candidate reported zero findings and ran as UID 10001 with NumPy 2.3.5 and SciPy 1.16.3.
+
+Local Buildah could not access either the worktree or its own temporary build directory (`faccessat ... connection refused`), so an actual `docker build`/`podman build` was not claimed locally. The candidate layers were instead exercised in disposable Podman containers using the Dockerfile's build/install commands and copied sources. The shared Podman VM was not restarted because unrelated containers were running. CI still performs the authoritative clean Docker builds and image scans.
 
 ## Known boundaries
 

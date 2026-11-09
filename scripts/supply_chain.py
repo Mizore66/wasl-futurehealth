@@ -108,6 +108,8 @@ def _docker_components(root: Path) -> tuple[list[dict], list[dict]]:
             containers.append(component)
         if relative == "Dockerfile":
             for name, version in re.findall(r'"([A-Za-z0-9_.-]+)==([A-Za-z0-9_.-]+)"', text):
+                if name == "pip":
+                    continue  # Build-only installer; the Dockerfile removes it before the runtime stage is complete.
                 libraries.append({
                     "bom-ref": f"pkg:pypi/{name}@{version}",
                     "type": "library",
