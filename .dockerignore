@@ -12,6 +12,7 @@ pipeline/wsi
 pipeline/wsi7
 pipeline/run/
 pipeline/out/
+pipeline/results/soak/
 **/__pycache__/
 **/*.pyc
 **/*.gguf

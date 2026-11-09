@@ -104,6 +104,7 @@ func runServe(run, data, addr string) {
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
 	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
+	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
