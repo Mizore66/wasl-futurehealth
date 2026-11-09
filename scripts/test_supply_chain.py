@@ -76,13 +76,15 @@ class AugmentSbomTests(unittest.TestCase):
         libraries = {(c["name"], c["version"]) for c in bom["components"] if c["type"] == "library"}
         self.assertIn(("numpy", "2.3.5"), libraries)
         self.assertIn(("scipy", "1.16.3"), libraries)
+        self.assertNotIn("pip", {name for name, _ in libraries})
         containers = {c["name"]: c for c in bom["components"] if c["type"] == "container"}
         self.assertEqual(
             set(containers),
             {"golang", "python", "nats"},
         )
-        self.assertEqual(containers["nats"]["version"], "2.12.1-alpine")
+        self.assertEqual(containers["nats"]["version"], "2.12.6-alpine")
         self.assertIn("pkg:docker/", containers["python"]["purl"])
+        self.assertEqual(containers["python"]["version"], "3.12-alpine")
 
     def test_normalizes_scanner_root_uuids_throughout_dependency_graph(self):
         raw = copy.deepcopy(self.raw)
@@ -115,6 +117,29 @@ class AugmentSbomTests(unittest.TestCase):
                 copy.deepcopy(self.raw), ROOT, revision="a" * 40,
                 committed_at="2026-11-09T01:02:03Z", dirty=True,
             )
+
+
+class ContainerSecurityTests(unittest.TestCase):
+    def test_nats_binary_is_rebuilt_with_patched_toolchain_and_modules(self):
+        dockerfile = (ROOT / "deploy" / "nats" / "Dockerfile").read_text()
+        self.assertIn("ARG GO_VERSION=1.27.3", dockerfile)
+        self.assertIn("FROM nats:${NATS_VERSION}-alpine", dockerfile)
+        self.assertIn("ARG NATS_VERSION=2.12.6", dockerfile)
+        self.assertIn("golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2", dockerfile)
+        self.assertIn("golang.org/x/sys@v0.49.0", dockerfile)
+        self.assertIn("github.com/klauspost/compress@v1.20.0", dockerfile)
+        self.assertIn("COPY --from=build /out/nats-server /usr/local/bin/nats-server", dockerfile)
+        self.assertIn("apk upgrade --no-cache", dockerfile)
+
+    def test_python_runtime_removes_unused_bootstrap_toolchain(self):
+        dockerfile = (ROOT / "Dockerfile").read_text()
+        self.assertIn("ARG GO_VERSION=1.27.3", dockerfile)
+        self.assertIn("FROM python:${PYTHON_VERSION}-alpine", dockerfile)
+        self.assertIn("apk upgrade --no-cache", dockerfile)
+        self.assertIn("apk add --no-cache bash util-linux", dockerfile)
+        self.assertIn('"pip==26.3"', dockerfile)
+        self.assertIn("pip uninstall -y pip", dockerfile)
+        self.assertIn("rm -rf /usr/local/lib/python3.12/ensurepip", dockerfile)
 
 
 class VulnerabilityReportTests(unittest.TestCase):
