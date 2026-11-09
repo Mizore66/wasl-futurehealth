@@ -45,11 +45,13 @@ func TestPresentIDsTerminatesWithDuplicateStoredIDs(t *testing.T) {
 
 func TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion(t *testing.T) {
 	for name, manifest := range map[string]string{
-		"null":   `null`,
-		"array":  `[]`,
-		"string": `"manifest"`,
-		"number": `1`,
-		"bool":   `true`,
+		"null":         `null`,
+		"array":        `[]`,
+		"string":       `"manifest"`,
+		"number":       `1`,
+		"bool":         `true`,
+		"empty object": `{}`,
+		"null output":  `{"output":null}`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			env := startTestNATS(t)
