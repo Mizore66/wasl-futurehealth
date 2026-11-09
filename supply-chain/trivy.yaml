@@ -1,0 +1,47 @@
+# Wasl policy: every reported vulnerability is release-blocking, including UNKNOWN and development-only findings.
+# Do not add .trivyignore or ignore-unfixed to make this scan green. Remediate or explicitly review a recorded blocker.
+cache:
+  backend: memory
+db:
+  java-skip-update: true
+  no-progress: true
+format: json
+list-all-pkgs: true
+pkg:
+  include-dev-deps: true
+  relationships:
+    - unknown
+    - root
+    - workspace
+    - direct
+    - indirect
+  types:
+    - os
+    - library
+scan:
+  detection-priority: precise
+  disable-telemetry: true
+  offline: false
+  scanners:
+    - vuln
+  skip-dirs:
+    - .git
+    - out
+    - supply-chain
+    - web/.next
+    - web/playwright-report
+    - web/test-results
+  skip-version-check: true
+severity:
+  - UNKNOWN
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+vulnerability:
+  ignore-status: []
+  ignore-unfixed: false
+  skip-vex-repo-update: true
+license:
+  full: false
+  ignored: []

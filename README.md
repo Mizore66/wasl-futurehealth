@@ -33,6 +33,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 | [`docs/research/`](docs/research/) | Sourced research: costs, deployment, governance, standards, value model, notices |
 | [`docs/API.md`](docs/API.md) | **Frontend contract**: endpoints, fields, the demo cases (four, with the DR case). Static samples are in [`docs/api-samples/`](docs/api-samples/) |
 | [`docs/AGENT-SHADOW.md`](docs/AGENT-SHADOW.md) | Read-only agent shadow spike: what it reads and writes, its controls, and the strict off/on parity result on a simulated cohort |
+| [`supply-chain/README.md`](supply-chain/README.md) | Source/image SBOMs, vulnerability and license evidence, regeneration, offline limits, and CI policy |
 
 ## Code
 
