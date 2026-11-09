@@ -90,7 +90,7 @@ python3 booking/sim/pool_test.py
 git diff --exit-code
 ```
 
-The fresh-evaluation suites inspect Git ancestry. Use a full clone, not a shallow checkout. `booking/sim/pool_test.py` is deliberately a separate reproducibility simulation, not part of unittest discovery; its platform-selected tracked JSON must remain unchanged. Exact outputs are pinned independently for Darwin/ARM64 (`pool_test.json`) and Linux/x86-64 (`pool_test.linux-amd64.json`) because the numerical scheduling path produces platform-specific results. Unsupported platforms fail explicitly instead of silently comparing against another platform's output.
+The fresh-evaluation suites inspect Git ancestry. Use a full clone, not a shallow checkout. `booking/sim/pool_test.py` is deliberately a separate reproducibility simulation, not part of unittest discovery; its tracked `pool_test.json` must remain unchanged. Probabilities are rounded to 12 decimal places and assignment costs are solved as integer nanodays so low-bit libm/SIMD differences cannot change scheduling. The same golden covers verified Darwin/ARM64, Linux/x86-64, and Linux/ARM64 environments; unsupported platforms fail explicitly.
 
 ### Integrated demo
 

@@ -1,4 +1,4 @@
-"""Exact booking-simulation goldens are explicit about the numerical platform they reproduce."""
+"""Deterministic booking-simulation goldens are shared across verified numerical platforms."""
 import os
 import sys
 import unittest
@@ -8,15 +8,14 @@ from pool_golden import output_name
 
 
 class PoolGoldenTests(unittest.TestCase):
-    def test_linux_amd64_has_its_own_exact_golden(self):
-        self.assertEqual(output_name("Linux", "x86_64"), "pool_test.linux-amd64.json")
+    def test_verified_platforms_share_the_deterministic_golden(self):
+        for system, machine in (("Linux", "x86_64"), ("Linux", "aarch64"), ("Darwin", "arm64")):
+            with self.subTest(system=system, machine=machine):
+                self.assertEqual(output_name(system, machine), "pool_test.json")
 
-    def test_original_darwin_arm64_golden_is_unchanged(self):
-        self.assertEqual(output_name("Darwin", "arm64"), "pool_test.json")
-
-    def test_unverified_platform_does_not_fall_back_to_another_golden(self):
-        with self.assertRaisesRegex(RuntimeError, "no exact booking-simulation golden"):
-            output_name("Linux", "aarch64")
+    def test_unverified_platform_does_not_fall_back_to_the_golden(self):
+        with self.assertRaisesRegex(RuntimeError, "no deterministic booking-simulation golden"):
+            output_name("Windows", "AMD64")
 
 
 if __name__ == "__main__":

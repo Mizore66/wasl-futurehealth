@@ -69,6 +69,22 @@ func apiReadAction(path string) string {
 	return ActReadQueue
 }
 
+// authorizeVerified applies read permissions after either bearer or Basic authentication has established identity.
+// Preflight carries no credentials or case data and is handled by the downstream CORS policy.
+func (s *apiServer) authorizeVerified(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/api/") || r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if err := Authorize(r.Header.Get("X-Wasl-Role"), apiReadAction(r.URL.Path)); err != nil {
+			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": "read permission denied"})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, "/api/") {
