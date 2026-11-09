@@ -42,45 +42,45 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string    `json:"state"`
-	Dropoff   string    `json:"dropoff"`
-	Owner     string    `json:"owner,omitempty"`
-	Provider  string    `json:"provider"`
-	SRDay     float64   `json:"referral_day"`
-	Deadline  float64   `json:"deadline_day,omitempty"`
-	Overdue   bool      `json:"overdue"`
-	Priority  string    `json:"priority,omitempty"`
-	Consent   string    `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string    `json:"review"`  // none | open | signed
-	Closed    bool      `json:"closed"`
-	ClosedDay float64   `json:"closed_day,omitempty"`
-	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string      `json:"state"`
+	Dropoff   string      `json:"dropoff"`
+	Owner     string      `json:"owner,omitempty"`
+	Provider  string      `json:"provider"`
+	SRDay     float64     `json:"referral_day"`
+	Deadline  float64     `json:"deadline_day,omitempty"`
+	Overdue   bool        `json:"overdue"`
+	Priority  string      `json:"priority,omitempty"`
+	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string      `json:"review"`  // none | open | signed
+	Closed    bool        `json:"closed"`
+	ClosedDay float64     `json:"closed_day,omitempty"`
+	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision // full last decision (detail view)
+	last      *Decision   // full last decision (detail view)
 	decisions []*Decision
 }
 
 type apiServer struct {
-	run, data string
-	meta      map[string]interface{}
-	cases     map[string]*apiCase
-	order     []string
-	queue     map[string][]*ReviewItem // loop -> raised items
-	signoffs  map[string][]map[string]interface{}
-	facts     map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids       map[string][]map[string]string     // loop -> linked registrations
-	dashboard map[string]interface{}
-	report    map[string]interface{}
-	anchors   map[string]string
-	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	fixtures  map[string]string
-	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu        sync.Mutex
-	reviews   []map[string]interface{}
-	ledgerErr  string // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	run, data  string
+	meta       map[string]interface{}
+	cases      map[string]*apiCase
+	order      []string
+	queue      map[string][]*ReviewItem // loop -> raised items
+	signoffs   map[string][]map[string]interface{}
+	facts      map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids        map[string][]map[string]string      // loop -> linked registrations
+	dashboard  map[string]interface{}
+	report     map[string]interface{}
+	anchors    map[string]string
+	booking    map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	fixtures   map[string]string
+	agentInv   map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu         sync.Mutex
+	reviews    []map[string]interface{}
+	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
@@ -103,18 +103,48 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
-	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
-	if err := srv.ListenAndServe(); err != nil {
+	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 15 * time.Second, WriteTimeout: 60 * time.Second, IdleTimeout: 120 * time.Second}
+	auth, err := apiAuthFromEnvironment()
+	if err != nil {
+		panic(err)
+	}
+	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		cors(mux).ServeHTTP(w, r)
+		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
+	}))
+	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
+	if (certFile == "") != (keyFile == "") {
+		panic("WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE must be set together")
+	}
+	scheme := "http"
+	if certFile != "" {
+		scheme = "https"
+	}
+	writeStructuredLog("info", "api listener ready", "cases", len(s.cases), "run", run, "address", addr, "scheme", scheme)
+	if certFile != "" {
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		err = srv.ListenAndServe()
+	}
+	if err != nil {
 		panic(err)
 	}
 }
 
 func cors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if os.Getenv("WASL_API_USERS_FILE") == "" {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		} else if origin := os.Getenv("WASL_API_CORS_ORIGIN"); origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Vary", "Origin")
+		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(204)
 			return
@@ -277,7 +307,9 @@ func (s *apiServer) loadTimelines() {
 			rows = append(rows, byPK[pk]...)
 		}
 		sort.Slice(rows, func(i, j int) bool { return rows[i]["seq"].(uint64) < rows[j]["seq"].(uint64) })
-		sort.Slice(ids, func(i, j int) bool { return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"]) })
+		sort.Slice(ids, func(i, j int) bool {
+			return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"])
+		})
 		s.facts[id], s.ids[id] = rows, ids
 	}
 }
@@ -292,10 +324,11 @@ func firstNonEmpty(a ...string) string {
 }
 
 // pickFixtures selects the demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
-//   evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
-//   false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
-//   review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
-//   dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
+//
+//	evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
+//	false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
+//	review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
+//	dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
 func (s *apiServer) pickFixtures() {
 	s.fixtures = map[string]string{}
 	ids := append([]string{}, s.order...)
@@ -321,7 +354,9 @@ func (s *apiServer) pickFixtures() {
 		}
 		if s.fixtures["evidence_closure"] == "" && c.Closed && c.Consent == "granted" &&
 			has(c, "link_decision", func(b Block) bool { return fmt.Sprint(b.Body["hops"]) != "0" }) &&
-			has(c, "evidence", func(b Block) bool { return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == "" }) {
+			has(c, "evidence", func(b Block) bool {
+				return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == ""
+			}) {
 			s.fixtures["evidence_closure"] = id
 		}
 		if s.fixtures["false_closure_trap"] == "" && !c.Closed && c.State == "inadequate" &&

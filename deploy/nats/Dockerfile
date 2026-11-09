@@ -6,5 +6,8 @@
 # fail to decrypt them and let the cluster reset the streams).
 FROM nats:2.12.1-alpine
 COPY nats.conf /etc/nats/wasl.conf
+COPY nats-production.conf /etc/nats/wasl-production.conf
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/wasl-nats-entrypoint.sh
+RUN mkdir -p /data && chown -R 1000:1000 /data /etc/nats
+USER 1000:1000
 ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]
