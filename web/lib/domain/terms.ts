@@ -15,7 +15,7 @@ export const TERMS = {
   not_closed: "Kept open",
   // The demo fixtures.
   evidence_closure: "Closed with evidence",
-  false_closure_trap: "Held: report incomplete",
+  false_closure_trap: "Held: incomplete evidence",
   review_hold: "Held for human review",
   dr_exam_closure: "Eye exam closed the loop",
   // LDCT reader fields (docs/API.md).

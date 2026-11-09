@@ -15,7 +15,7 @@ pnpm gen        # copy the API samples, build data/replay.json, results.json, pe
 pnpm dev        # http://localhost:3000/app
 ```
 
-Fixtures mode serves the three demo cases and a 25-case page. `postReview` applies the backend's role rules locally and does not persist anything.
+Fixtures mode serves the three demo cases and a 25-case page. `postReview` requires `WASL_API_URL` and throws in fixtures mode because fixtures cannot append review events.
 
 ## Run against the live API
 

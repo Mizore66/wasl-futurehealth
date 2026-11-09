@@ -547,6 +547,9 @@ func (s *apiServer) getCases(w http.ResponseWriter, r *http.Request) {
 		limit = 100
 	}
 	total := len(sel)
+	if offset < 0 {
+		offset = 0
+	}
 	if offset > total {
 		offset = total
 	}
