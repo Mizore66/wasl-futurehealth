@@ -13,6 +13,8 @@ import (
 func FuzzNormaliseNeverPanics(f *testing.F) {
 	for _, seed := range []string{
 		`null`, `{}`, `[]`, `{"resourceType":"Provenance"}`,
+		`{"resourceType":"Provenance","resourceType":"DiagnosticReport"}`,
+		`{"resourceType":"Provenance","extension":[{"url":"urn:wsi:signoff","valueString":"{\"role\":\"reviewer\",\"role\":\"clinician\"}"}]}`,
 		`{"resourceType":"Provenance","extension":[null]}`,
 		`{"resourceType":"ServiceRequest","category":[null],"contained":[{"identifier":[]}]}`,
 		`{"resourceType":"DiagnosticReport","code":{"coding":[null]},"contained":[]}`,

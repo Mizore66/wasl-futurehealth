@@ -14,6 +14,7 @@ package main
 //  - end: when the HIE says every version is visible, a final $export without _since runs, then the per-provider EOF.
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -276,7 +277,8 @@ func (c *PollConsumer) export(since float64) bool {
 			URL  string `json:"url"`
 		} `json:"output"`
 	}
-	if rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &man) != nil {
+	trimmed := bytes.TrimSpace(b)
+	if len(trimmed) == 0 || trimmed[0] != '{' || rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &man) != nil {
 		return fail()
 	}
 	for _, o := range man.Output {

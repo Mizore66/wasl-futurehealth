@@ -40,6 +40,7 @@ func TestNormaliseRejectsShapeConfusionWithoutPanics(t *testing.T) {
 		"provenance null extension":        `{"resourceType":"Provenance","extension":[null]}`,
 		"provenance scalar extension":      `{"resourceType":"Provenance","extension":[1]}`,
 		"provenance missing extension":     `{"resourceType":"Provenance"}`,
+		"provenance duplicate outer key":   `{"resourceType":"Provenance","resourceType":"DiagnosticReport"}`,
 		"provenance duplicate signoff key": `{"resourceType":"Provenance","extension":[{"url":"urn:wsi:signoff","valueString":"{\"role\":\"reviewer\",\"role\":\"clinician\"}"}]}`,
 		"provenance malformed signoff":     `{"resourceType":"Provenance","extension":[{"url":"urn:wsi:signoff","valueString":"{"}]}`,
 		"service request null category":    `{"resourceType":"ServiceRequest","category":[null]}`,
