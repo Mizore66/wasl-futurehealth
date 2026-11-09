@@ -1,0 +1,477 @@
+{
+ "048dd9b1c9c7cd1f82eb584e5f1a96a3f5c76d936264f44449ad4d3b9c29b5af": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "The team reviewed images alone and recommend rebooking the patient for assessment before any plan is made.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5135
+ },
+ "055e170b83af4f34cc6b8c7a8b9448d3d7eb559056bbfe464bcd2a984900d009": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "The category for the 12 mm solid nodule in the right upper lobe remains 4A, as originally issued.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3770
+ },
+ "0b1f7eb0e462fa4e7d2fe7b3a72a15ffbe54a8b0059543a9c0cc29f90fa43585": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "benign",
+  "outcome": "annual",
+  "quote": "Will be returned to the annual lung screening pathway; letter to GP.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4096
+ },
+ "152ab97467f5a40cabd31685c35ce42ad423d5a5fa874c7c499201f860c24999": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "The reporting system did not generate an exam-level category.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2965
+ },
+ "1cae62b3f00472697396b5058828a4a05d0c7ee0c24ec4969776859f2719c555": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "benign",
+  "outcome": "pending",
+  "quote": "Plan: repeat CT chest in 3 months and review with results.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4092
+ },
+ "22eeeeee33e106ea0d0fb9a7dd942d77346735bd1c8131ed110cb96e404caaa1": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "annual",
+  "quote": "MDT decision recorded 7 Nov: return to the annual screening programme.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4099
+ },
+ "29d5f6f796ce179ac54cb6008e2f65bf25bd58ea798d170fe2abcdab7de39b73": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "1",
+  "worst_finding_lungrads": "1",
+  "quote": "Final category for this exam: 1.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2820
+ },
+ "2fd67bee4ab8246089bcf4b609270a1e8b3ba0dab1d60eb7fab0e1ed0cb103ee": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Discussed at lung MDT on 5 Nov; consensus for chemo-radiotherapy.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4245
+ },
+ "300733f1183e37f653d9c39f134be590106425203d1a0c8d67e56444e8f05a9d": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "patient DNA'd the PET-CT scan on 30 Oct after the screening CT showed a 14 mm spiculated nodule. Slot has been released. Will be re-offered through the nurse navigator.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5760
+ },
+ "335316eaef38adbb97965cb2b69ba07b0f08dd069c354d66db5ea923da4290e7": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "Scanner: 64-slice. kVp 100, CTDIvol 1.4 mGy. Patient positioned supine, breath-hold adequate.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4215
+ },
+ "33d4efc205cb1b3311f33a0d031e9ff81d6a96d0ed28e733fa5c07ef4036d1cf": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "3",
+  "worst_finding_lungrads": "3",
+  "quote": "the final overall category for this exam is amended to Lung-RADS 3",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3408
+ },
+ "3c4055238a98e1ff013a82ddaa275b3dd95487047d7e488d7affe745e39ca1d8": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Lung cancer MDT on 29 Oct reviewed imaging and histology and recommended lobectomy. Referred to thoracic surgery; pre-operative assessment booked. Patient informed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4665
+ },
+ "3c4b49cf3035f9e122526f018469538a2037f477a0e8aff218d5a4612d35af49": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "2",
+  "quote": "Benign appearance.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2684
+ },
+ "3df6d2172449d0651c8b2181c2816a08ce185ea157026621a5f02a1ab6670d47": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "The case has not yet been discussed at MDT; this is planned after the PET result.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4458
+ },
+ "44947d4a4bedc0c7409d41964187b9da28c04edc361732a66acf0428e597e460": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "Final category Lung-RADS 4A",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3268
+ },
+ "57a2824190ecf8363f44ca4a04fcdb63e5d9ae742484a3cda9bb3871883cd1d8": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Revised overall category: 2S (S for moderate coronary artery calcification)",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3560
+ },
+ "5c969ee1d181dfae8cf8524605dc4da61cf30004e57aa16bbdb0aac31127af26": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "3",
+  "quote": "No overall category line is recorded in this section; see clinic for next steps.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3111
+ },
+ "61c739b615980f2d41ade0f1471a3127a6c48c7ef9caf59640bf82903b5fdaba": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "1",
+  "quote": "Impression: negative screening examination.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2744
+ },
+ "67bf22456e4af9b887914e22ea44e5fa372d501bf52402760c74852bfe773c79": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "benign",
+  "outcome": "annual",
+  "quote": "Plan: return to annual LDCT screening in 12 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4120
+ },
+ "700537f4fb66af3a574017c177ad20c20a65c604d9a037e536485f3e778e62bf": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4B",
+  "worst_finding_lungrads": "4B",
+  "quote": "very suspicious with additional features",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2724
+ },
+ "70627dfd0d61bd721ea44fbb718c23ce1aa45404db420b0230b8ea90f2952868": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Having discussed risks of CT-guided biopsy for the 4A lesion, the patient declined the procedure at this time and wishes to think it over.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5530
+ },
+ "7518db5c61549a0c4ef1a7c0fcd912103164fa93c217bdf90d5a3a633e5e9cc4": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "the patient was a no-show at today's 09:30 appointment",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5214
+ },
+ "7aab8945193da2a5db3ff2b2cdb375a34720339da9f710757e966f38cfb868a1": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "3",
+  "quote": "In the reader's view it is probably benign.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2812
+ },
+ "809564608225b6810ff0e6adecc53d59e7cb64b256d5d9a87e693e64c05e9c4b": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "Biopsy result: non-small cell carcinoma. Referred to medical oncology for systemic therapy discussion. Patient anxious. Follow up with oncology next week.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5485
+ },
+ "8172dfad2c16791c4b0f0e14731344a3062cf615fba0d332b5037d42d33bbd94": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "pending",
+  "outcome": "pending",
+  "quote": "Case to be added to next week's MDT list. No treatment referral made yet.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3565
+ },
+ "8349e450f4915ea5b5f30d2de582ea71bb2dce3d39039d77028a7d3e06cb5cba": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Attended for planned bronchoscopy but had a productive cough, fever 38.2, and the procedure was postponed by the anaesthetist. Antibiotics given. New date to be arranged once recovered.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 6181
+ },
+ "835f9111808d9da9b74d2852a6da3a701722f368e7d65285af7a25ca890ed710": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "treatment",
+  "quote": "MDT decision 3 Nov: stereotactic body radiotherapy. Referral to radiation oncology sent today.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3597
+ },
+ "9321cfb42f43b6dc7c7d6f6f1a15683d1c61b5d966499c07fa418f6bdc69213b": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Two phone calls unanswered. Letter sent with new appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4409
+ },
+ "9575f641769a6677b61821f41cafa98fe4c14e3496fb5135be3cec9437b4de33": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "pending",
+  "outcome": "pending",
+  "quote": "Case discussed at MDT, which advised interval CT in 3 months. Patient booked for imaging; clinic review after that.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3710
+ },
+ "98032c27cfb353210f192c36375a4f06f567b6f93b15c9bcf9cdfd636b7d3d48": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Impression: Lung-RADS 2 for the current exam.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5075
+ },
+ "9c5313ac91d91b8a3546a34cdc1be2041d44ed517bcea7b7ae76d1447256dceb": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4X",
+  "worst_finding_lungrads": "4X",
+  "quote": "Overall assessment: Lung-RADS 4X given the additional adverse features.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3120
+ },
+ "9d663efcf7b33e2c9605fb3e08c16aa0f741decaacc26fcbccccde9cc09ca0d4": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "annual",
+  "quote": "See you next year.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3852
+ },
+ "a0c7f1581b174fe3bc0d4265b157bc6c17779dd6fd56da9b5799d33e1e7403b2": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "not_done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Recommend diagnostic evaluation.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3019
+ },
+ "b0528c96439ce5a1539d8f5c841925fb2bace25db5dbcaa23e6c567b65016ccf": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Lung-RADS 2S",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2984
+ },
+ "b45d9b32903734cb0e7a65d80c840b4e8cee1c3be81afa938f3c3ad0a7a2dd66": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "0",
+  "worst_finding_lungrads": "1",
+  "quote": "Category 0 - incomplete.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2700
+ },
+ "b498f6617fad7263eb8d36c3f5b70fe2e4a4a0bdc995bdb3ca97e7e6ea6f0778": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4X",
+  "quote": "No final category entered in the template.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2900
+ },
+ "b4a8787ed6342af68ef6dc2beb5ffff76076b0e4603ad49575ca7be4460ba780": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "final Lung-RADS category 2",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2809
+ },
+ "b714d0f0b28fd622a2a55df82884956c1289231dd04fb2810c44ea07a155b296": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "annual",
+  "quote": "The MDT agreed annual screening is appropriate and it was discussed with the patient.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4062
+ },
+ "c45a6df02819a223645b36434900a7fcb4d80acde16d0cd8344fb7050b252ee2": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "none",
+  "worst_finding_lungrads": "4A",
+  "quote": "No further comment.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3222
+ },
+ "c5ef2f18ed232e3e055e76ce1fb7abf62f8b80192e313bdff30e1faf5d9ba718": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "OVERALL: Lung-RADS 4A",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4349
+ },
+ "c8b904f8205d083fde15ed140899bbc119977b2a6faa8ece9ab301d3e02b0530": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "2",
+  "worst_finding_lungrads": "2",
+  "quote": "Lung-RADS category 2 (overall).",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2915
+ },
+ "caf1449f10657b663f381e9d8fca2d5c22bc2fdfe99ee5daef4cc05a90676e10": {
+  "kind": "ldct-workup",
+  "attendance": "did_not_attend",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "pending",
+  "quote": "Failed to attend; family says patient was travelling. No tissue obtained. Referring doctor informed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 5012
+ },
+ "cdc42eca7683ce9c5382fe6b67493c92a1f0bde037be420f281a953d8416ec67": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "0",
+  "worst_finding_lungrads": "1",
+  "quote": "Category 0.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3041
+ },
+ "d4e00440c40da8dfb1a4c5a966eece4d9fe5c4d35ea0954c504080cd757578da": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "malignant",
+  "outcome": "annual",
+  "quote": "After consultation the plan is to return to the annual screening programme and repeat LDCT in 12 months.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4344
+ },
+ "ed3f04292ff92e8cd041c241d31a0cbb607d5ce93ddce101e729f12b95ba6515": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "3",
+  "worst_finding_lungrads": "3",
+  "quote": "Lung-RADS 3 for this exam.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2873
+ },
+ "ef8d53277184645138ec3f9b192b49d5a6d1c3b41a93a88039682fc2b6ba3fcc": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "4A",
+  "worst_finding_lungrads": "4A",
+  "quote": "This is a suspicious nodule.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 2819
+ },
+ "f09fedd7843ef720634cfbff8db1f361e536b8fc31ad3f49af11db08353d9434": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "pending",
+  "outcome": "pending",
+  "quote": "Histopathology awaited; expected in 5 working days. Results to be reviewed in clinic then.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4882
+ },
+ "f2f77280c35ed1965b1c3a6258d97c0fa5b5df230afda887914002cd4f1af323": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "not_discussed",
+  "tissue": "none",
+  "outcome": "surveillance",
+  "quote": "We will do an interval CT in 6 months and the patient will see us again after it.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4915
+ },
+ "f6786d209d2ebea46cc902452e88d494acd4d59832598a965437c666f8eb6405": {
+  "kind": "ldct-workup",
+  "attendance": "attended",
+  "workup": "done",
+  "mdt": "discussed",
+  "tissue": "none",
+  "outcome": "treatment",
+  "quote": "MDT reviewed the case and recommended surgical resection. Referral to thoracic surgery sent.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 4175
+ },
+ "ff40a43d70dce39df3d2640ddaf0fe6c7bcc97967b807f6bf02036a05bfe0e43": {
+  "kind": "ldct-screen",
+  "overall_lungrads": "0",
+  "worst_finding_lungrads": "1",
+  "quote": "Category 0 - repeat LDCT in 1 to 3 months after treatment.",
+  "model": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "latency_ms": 3737
+ }
+}

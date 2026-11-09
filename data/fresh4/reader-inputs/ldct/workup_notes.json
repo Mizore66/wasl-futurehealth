@@ -1,0 +1,105 @@
+{
+ "reports": [
+  {
+   "id": "f4l-026",
+   "text": "Respiratory MDT clinic note, 4 Nov. The patient was invited for review of the Lung-RADS 4A nodule and did not attend. Two phone calls unanswered. Letter sent with new appointment. No work-up performed."
+  },
+  {
+   "id": "f4l-027",
+   "text": "PET-CT booking outcome: patient DNA'd the PET-CT scan on 30 Oct after the screening CT showed a 14 mm spiculated nodule. Slot has been released. Will be re-offered through the nurse navigator."
+  },
+  {
+   "id": "f4l-028",
+   "text": "Interventional radiology list. CT-guided lung biopsy planned for 6 Nov for LDCT 4B lesion. Failed to attend; family says patient was travelling. No tissue obtained. Referring doctor informed."
+  },
+  {
+   "id": "f4l-029",
+   "text": "Outpatient pulmonology. Previously (2024) an unrelated biopsy of a cervical lymph node was benign. For the present screening finding, the patient was a no-show at today's 09:30 appointment. Nothing further discussed."
+  },
+  {
+   "id": "f4l-030",
+   "text": "Case had been listed for MDT discussion on 2 Nov together with the clinic visit. The patient did not attend the clinic; the team reviewed images alone and recommend rebooking the patient for assessment before any plan is made."
+  },
+  {
+   "id": "f4l-031",
+   "text": "Seen in clinic with husband. Having discussed risks of CT-guided biopsy for the 4A lesion, the patient declined the procedure at this time and wishes to think it over. No tissue. Will phone clinic if she changes her mind."
+  },
+  {
+   "id": "f4l-032",
+   "text": "Bronchoscopy with transbronchial biopsy of the LUL nodule completed on 3 Nov without complication. Histopathology awaited; expected in 5 working days. Results to be reviewed in clinic then."
+  },
+  {
+   "id": "f4l-033",
+   "text": "Attended for planned bronchoscopy but had a productive cough, fever 38.2, and the procedure was postponed by the anaesthetist. Antibiotics given. New date to be arranged once recovered."
+  },
+  {
+   "id": "f4l-034",
+   "text": "Cytology from EBUS needle aspirate: preliminary report shows atypical cells suspicious for malignancy; final cell-block and immunostains outstanding. Case to be added to next week's MDT list. No treatment referral made yet."
+  },
+  {
+   "id": "f4l-035",
+   "text": "Clinic review of the 4B nodule. PET-CT is booked for 12 Nov. The case has not yet been discussed at MDT; this is planned after the PET result. No tissue sampling yet. Patient understands the sequence."
+  },
+  {
+   "id": "f4l-036",
+   "text": "Pathology: adenocarcinoma, acinar pattern, RUL. Lung cancer MDT on 29 Oct reviewed imaging and histology and recommended lobectomy. Referred to thoracic surgery; pre-operative assessment booked. Patient informed."
+  },
+  {
+   "id": "f4l-037",
+   "text": "Biopsy result: non-small cell carcinoma. Referred to medical oncology for systemic therapy discussion. Patient anxious. Follow up with oncology next week. The note does not record any multidisciplinary meeting."
+  },
+  {
+   "id": "f4l-038",
+   "text": "Histology: squamous cell carcinoma, left lower lobe, stage I. Patient unfit for surgery (severe COPD). MDT decision 3 Nov: stereotactic body radiotherapy. Referral to radiation oncology sent today."
+  },
+  {
+   "id": "f4l-039",
+   "text": "PET avid 20 mm RUL mass; biopsy was non-diagnostic and no tissue is available. MDT reviewed the case and recommended surgical resection. Referral to thoracic surgery sent. No pathological diagnosis exists at present."
+  },
+  {
+   "id": "f4l-040",
+   "text": "Small cell lung carcinoma confirmed on core biopsy. Discussed at lung MDT on 5 Nov; consensus for chemo-radiotherapy. Referred to oncology and radiotherapy, first visit booked for 9 Nov."
+  },
+  {
+   "id": "f4l-041",
+   "text": "Result of CT-guided biopsy of the 4A nodule: necrotising granuloma, no malignancy, stains negative for organisms. Reassured. Plan: return to annual LDCT screening in 12 months."
+  },
+  {
+   "id": "f4l-042",
+   "text": "The consolidation seen on screening has resolved fully on follow-up diagnostic CT. No biopsy was needed. MDT decision recorded 7 Nov: return to the annual screening programme."
+  },
+  {
+   "id": "f4l-043",
+   "text": "Chest clinic follow-up of Lung-RADS 4A report. Patient well. Return to annual screening. See you next year."
+  },
+  {
+   "id": "f4l-044",
+   "text": "Biopsy of 12 mm RLL nodule: pulmonary hamartoma, non-malignant. Counselled. Will be returned to the annual lung screening pathway; letter to GP."
+  },
+  {
+   "id": "f4l-045",
+   "text": "Review after antibiotics and repeat imaging. The opacity is consistent with benign inflammatory change. The MDT agreed annual screening is appropriate and it was discussed with the patient. Next LDCT in 12 months."
+  },
+  {
+   "id": "f4l-046",
+   "text": "Transthoracic biopsy: fibrous tissue and chronic inflammation, benign. Nodule remains indeterminate in size, 7 mm. Plan: repeat CT chest in 3 months and review with results."
+  },
+  {
+   "id": "f4l-047",
+   "text": "Diagnostic CT shows a stable 8 mm ground-glass nodule. Biopsy not indicated at this stage. We will do an interval CT in 6 months and the patient will see us again after it."
+  },
+  {
+   "id": "f4l-048",
+   "text": "Screening LDCT report. Technique low dose. 9 mm solid nodule right upper lobe, new. Lung-RADS 4A. Recommend diagnostic evaluation. Signed by reporting radiologist."
+  },
+  {
+   "id": "f4l-049",
+   "text": "Pathology confirms adenocarcinoma in the right lower lobe nodule. After consultation the plan is to return to the annual screening programme and repeat LDCT in 12 months. Letter sent."
+  },
+  {
+   "id": "f4l-050",
+   "text": "Review of the 5 mm to 9 mm nodule: needle biopsy reported atypical cells, no evidence of malignancy. Case discussed at MDT, which advised interval CT in 3 months. Patient booked for imaging; clinic review after that."
+  }
+ ],
+ "source": "fresh2 corpus, text only"
+}
