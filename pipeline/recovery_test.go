@@ -142,6 +142,84 @@ func TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster(t *testing.T) {
 	}
 }
 
+func TestNATSBackupRestorePreservesRepeatedMessageIDs(t *testing.T) {
+	urls := strings.Split(os.Getenv("WASL_TEST_RECOVERY_NATS"), ",")
+	if len(urls) != 2 {
+		t.Skip("set WASL_TEST_RECOVERY_NATS=sourceURL,emptyTargetURL for the real JetStream drill")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	connect := func(raw string) (*nats.Conn, jetstream.JetStream) {
+		nc, err := nats.Connect(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		js, err := jetstream.New(nc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { nc.Close() })
+		return nc, js
+	}
+	_, source := connect(urls[0])
+	_, err := source.CreateStream(ctx, jetstream.StreamConfig{
+		Name: "RECOVERY_DUPLICATES", Subjects: []string{"recovery.duplicate"},
+		Storage: jetstream.FileStorage, Duplicates: time.Second, AllowDirect: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for index, payload := range []string{"first", "second"} {
+		if index > 0 {
+			time.Sleep(1100 * time.Millisecond) // retain both source messages despite their shared deduplication ID
+		}
+		msg := nats.NewMsg("recovery.duplicate")
+		msg.Header.Set("Nats-Msg-Id", "shared-id")
+		msg.Data = []byte(payload)
+		ack, err := source.PublishMsg(ctx, msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ack.Duplicate {
+			t.Fatal("source test setup unexpectedly suppressed a retained message")
+		}
+	}
+	bundle := filepath.Join(t.TempDir(), "nats.json")
+	before, err := backupNATS(ctx, source, bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Streams != 1 || before.Messages != 2 {
+		t.Fatalf("backup retained %d streams/%d messages, want 1/2", before.Streams, before.Messages)
+	}
+	_, target := connect(urls[1])
+	after, err := restoreNATS(ctx, target, bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if after.Streams != 1 || after.Messages != 2 {
+		t.Fatalf("restore retained %d streams/%d messages, want 1/2", after.Streams, after.Messages)
+	}
+	stream, err := target.Stream(ctx, "RECOVERY_DUPLICATES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := stream.Info(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Config.Duplicates != time.Second {
+		t.Fatalf("restored duplicate window = %s, want original 1s", info.Config.Duplicates)
+	}
+	verified, err := verifyNATS(ctx, target, bundle)
+	if err != nil {
+		t.Fatalf("independent repeated-ID readback failed: %v", err)
+	}
+	if verified.Digests["RECOVERY_DUPLICATES"] != before.Digests["RECOVERY_DUPLICATES"] {
+		t.Fatal("restored repeated-ID stream logical digest differs from backup")
+	}
+}
+
 func TestRecoveryLogicalDigestExcludesPhysicalMetadata(t *testing.T) {
 	a := []recoveryMessage{{Sequence: 8, Time: time.Unix(10, 0), Subject: "fhir.a.res", Header: map[string][]string{"Nats-Msg-Id": {"a/1"}}, Data: []byte(`{"id":"a"}`)}}
 	b := []recoveryMessage{{Sequence: 91, Time: time.Unix(9999, 0), Subject: "fhir.a.res", Header: map[string][]string{"Nats-Msg-Id": {"a/1"}}, Data: []byte(`{"id":"a"}`)}}

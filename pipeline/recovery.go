@@ -227,15 +227,52 @@ func restoreNATS(ctx context.Context, js jetstream.JetStream, path string) (reco
 	}
 	summary := recoverySummary{Digests: map[string]string{}}
 	for _, saved := range bundle.Streams {
-		if _, err := js.CreateStream(ctx, saved.Config); err != nil {
+		const restoreDuplicateWindow = 100 * time.Millisecond // NATS rejects shorter explicit windows.
+		config := saved.Config
+		seenIDs := map[string]bool{}
+		repeatedIDs := false
+		for _, message := range saved.Messages {
+			id := nats.Header(message.Header).Get("Nats-Msg-Id")
+			if id == "" {
+				continue
+			}
+			if seenIDs[id] {
+				repeatedIDs = true
+				break
+			}
+			seenIDs[id] = true
+		}
+		if repeatedIDs {
+			config.Duplicates = restoreDuplicateWindow
+		}
+		if _, err := js.CreateStream(ctx, config); err != nil {
 			return summary, fmt.Errorf("create restored stream %s: %w", saved.Config.Name, err)
 		}
+		seenIDs = map[string]bool{}
 		for _, message := range saved.Messages {
 			msg := nats.NewMsg(message.Subject)
 			msg.Header = nats.Header(message.Header)
 			msg.Data = message.Data
-			if _, err := js.PublishMsg(ctx, msg); err != nil {
+			if repeatedIDs {
+				id := msg.Header.Get("Nats-Msg-Id")
+				if id != "" && seenIDs[id] {
+					time.Sleep(2 * restoreDuplicateWindow)
+				}
+				if id != "" {
+					seenIDs[id] = true
+				}
+			}
+			ack, err := js.PublishMsg(ctx, msg)
+			if err != nil {
 				return summary, fmt.Errorf("restore stream %s message %d: %w", saved.Config.Name, message.Sequence, err)
+			}
+			if ack.Duplicate {
+				return summary, fmt.Errorf("restore stream %s message %d was suppressed as a duplicate", saved.Config.Name, message.Sequence)
+			}
+		}
+		if repeatedIDs {
+			if _, err := js.UpdateStream(ctx, saved.Config); err != nil {
+				return summary, fmt.Errorf("restore stream %s duplicate window: %w", saved.Config.Name, err)
 			}
 		}
 		stream, err := js.Stream(ctx, saved.Config.Name)
