@@ -76,7 +76,7 @@ docker build -t wasl-nats:candidate ./deploy/nats
 ./scripts/supply-chain.sh image wasl:candidate wasl-nats:candidate
 ```
 
-Results are written under `out/supply-chain/images/<image>/`. Unlike the source SBOM, these image SBOMs include packages actually installed in each image, including OS packages and the Python runtime. Each image has an independent vulnerability gate; findings from one image do not prevent reports for the other image from being generated. For a Podman-backed local scan, build with Podman and set `TRIVY_IMAGE_SOURCE=podman`; CI uses the Docker default.
+Results are written under `out/supply-chain/images/<image>/`. Unlike the source SBOM, these image SBOMs include packages actually installed in each image, including OS packages and the Python runtime. Each image has an independent vulnerability gate; findings from one image do not prevent reports for the other image from being generated. For a Podman-backed local scan, build with Podman and set `TRIVY_IMAGE_SOURCE=podman`; if Trivy cannot discover the machine socket, also set `TRIVY_PODMAN_HOST` to the raw path reported by `podman machine inspect --format '{{.ConnectionInfo.PodmanSocket.Path}}'` (without a `unix://` prefix). CI uses the Docker default.
 
 Base-image tags are mutable. Release review must retain the generated image SBOM and Trivy image metadata for the actual image digest; rebuilding the same tag later is not proof of the same artifact.
 
