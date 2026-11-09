@@ -53,6 +53,8 @@ class RedactedSnapshotTest(unittest.TestCase):
             "CANARY-ESCAPED-JSON\\nTEXT",
             [{"nested": prose}],
             base64.b64encode(prose.encode()).decode(),
+            base64.urlsafe_b64encode(prose.encode()).decode(),
+            base64.urlsafe_b64encode(prose.encode()).decode().rstrip("="),
             prose.encode().hex(),
             "".join(f"\\u{ord(char):04x}" for char in "CANARY") + " private clinical text",
             "".join(f"%{byte:02X}" for byte in prose.encode()),
@@ -63,6 +65,19 @@ class RedactedSnapshotTest(unittest.TestCase):
             with self.subTest(value=value):
                 with self.assertRaises(ValueError):
                     detail_snapshot(source)
+
+    def test_urlsafe_base64_canary_fails_closed_for_detail_and_audit(self):
+        payload = base64.urlsafe_b64encode(b"CANARY private clinical text: rectal bleeding???").decode().rstrip("=")
+        for kind, convert, path in (
+            ("detail", detail_snapshot, ("detail", "evidence")),
+            ("audit", audit_snapshot, ("audit", "chain")),
+        ):
+            for encoded in (payload, payload + "=" * (-len(payload) % 4)):
+                source = copy.deepcopy(self.export)
+                source[path[0]][path[1]] = [{"body": {"label": encoded}}]
+                with self.subTest(kind=kind, padded=encoded != payload):
+                    with self.assertRaises(ValueError):
+                        convert(source)
 
     def test_non_redacted_or_wrong_schema_fails_closed(self):
         for mutate in (lambda e: e.update(redacted=False), lambda e: e.update(schema="other"), lambda e: e.pop("redacted")):

@@ -153,6 +153,12 @@ func exportCanaryString(value string) bool {
 		if decoded, err := base64.RawStdEncoding.DecodeString(compact); err == nil {
 			candidates = append(candidates, string(decoded))
 		}
+		if decoded, err := base64.URLEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+		if decoded, err := base64.RawURLEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
 	}
 	if len(compact) >= 8 && len(compact)%2 == 0 {
 		if decoded, err := hex.DecodeString(compact); err == nil {

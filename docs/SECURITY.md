@@ -38,13 +38,16 @@ internal audit and can be linkable; recipients must be access-controlled and the
 HIPAA/GDPR-deidentified.
 
 The detail/audit projectors are default-deny. Canary regressions cover raw multiword text, escaped and nested values,
-Base64, hex, percent/JSON-Unicode encodings, allowlisted fields, metadata and error responses. Both hashes are rechecked
-after redaction. They authenticate document contents, not server honesty or source-chain fidelity.
+standard and URL-safe Base64 (padded and raw), hex, percent/JSON-Unicode encodings, allowlisted fields, metadata and
+error responses. Both hashes are rechecked after redaction. They authenticate document contents, not server honesty or
+source-chain fidelity.
 
-New `scripts/demo.sh snapshot` output is derived only from the auditor-redacted export through
-`scripts/redacted_snapshot.py`; raw detail/audit responses are not accepted. The converter fails closed on sensitive
-fields and raw/escaped/nested/encoded canaries, adding empty strings only where the frontend schema requires a redacted
-field.
+`scripts/demo.sh snapshot` derives case detail/audit files only from the auditor-redacted export through
+`scripts/redacted_snapshot.py`; raw detail/audit responses are not accepted. Health, dashboard, fixture and case-list
+responses pass through a separate projection that removes canonical and overlay owner identities and rebuilds
+log-derived metadata. The converter fails closed on sensitive fields and raw/escaped/nested/encoded canaries, adding
+empty strings only where the frontend schema requires a redacted field. Every staged JSON file is scanned for raw and
+encoded canaries before any published sample is replaced.
 
 **Intentional legacy exception:** the already committed `docs/api-samples/` and `web/data/api*` files retain synthetic
 MTSamples/Wikidata demonstration quotes and registrations for the UI's clinical-by-design fixture mode. They are public
@@ -105,8 +108,8 @@ Limits of this remediation and review:
 - No remote inference or non-synthetic mock/FHIR deployment is approved. Production credential scoping, TLS, OIDC/mTLS,
   reverse-proxy hardening and secret rotation remain required.
 - Tests use synthetic runs and intercepted transports; no external canary service receives a request in the tests. A
-  full fresh seven-programme deployment and browser suite were not rerun in this isolated worktree. Web dependencies
-  were absent, so the added Vitest authentication test is provided but was not executed here.
+  full fresh seven-programme deployment was not rerun in this isolated worktree. The complete Go, Python workflow and
+  Vitest suites, plus web typecheck and lint, were run after the follow-up repairs.
 - Legacy public fixture text is synthetic-only by explicit exception. Existing filesystem modes outside the ledgers and
   NATS config tightened on open require a separate migration if old runs are retained.
 
@@ -118,5 +121,5 @@ Limits of this remediation and review:
   status/hash contracts.
 - `scripts/api_smoke.py`: real-HTTP unauthenticated/RBAC checks and whole-export canary scanning.
 - `scripts/redacted_snapshot_test.py`: fail-closed snapshot conversion and raw/escaped/nested/encoded canaries.
-- `web/tests/source-auth.test.ts`: reviewer/auditor tokens and removal of self-asserted identity headers (not executed
-  in this worktree because web dependencies were unavailable).
+- `web/tests/source-auth.test.ts`: reviewer/auditor tokens, schema-conformant error envelopes and removal of
+  self-asserted identity headers.

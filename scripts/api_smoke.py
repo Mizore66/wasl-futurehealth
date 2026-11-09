@@ -18,6 +18,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from redacted_snapshot import _canary_string
+
 REQUIRED_FIXTURES = ("evidence_closure", "false_closure_trap", "review_hold")
 MAX_LIMIT = 500
 DEFAULT_LIMIT = 100
@@ -152,6 +154,8 @@ def check_export_redaction(value, forbidden_keys, path="export"):
     elif isinstance(value, list):
         for i, child in enumerate(value):
             check_export_redaction(child, forbidden_keys, f"{path}[{i}]")
+    elif isinstance(value, str):
+        check(not _canary_string(value), f"{path}: test canary was not redacted")
 
 
 def workflow_smoke(c, cid):

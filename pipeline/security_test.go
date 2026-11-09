@@ -97,6 +97,25 @@ func TestAPISecurityRequiresAuthenticationAndReadRBAC(t *testing.T) {
 	}
 }
 
+// Read authorization must not disappear when an auditor changes the HTTP method.
+func TestAPISecurityRejectsAlternateMethodReads(t *testing.T) {
+	s, _ := exportRun(t)
+	h := secureTestHandler(t, s, "")
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodPatch} {
+		for _, path := range []string{"/api/dashboard", "/api/fixtures", "/api/cases"} {
+			t.Run(method+path, func(t *testing.T) {
+				w := securityRequest(t, h, method, path, "auditor-token-1234567890", nil)
+				if w.Code != http.StatusForbidden {
+					t.Fatalf("auditor %s %s: got %d, want 403: %s", method, path, w.Code, w.Body.String())
+				}
+				if strings.Contains(w.Body.String(), exportLoop) {
+					t.Fatalf("auditor %s %s disclosed case data", method, path)
+				}
+			})
+		}
+	}
+}
+
 // Trusting client-supplied role or actor headers instead of the token principal must fail this test.
 func TestAPISecurityBindsMutationIdentityToToken(t *testing.T) {
 	s, _ := exportRun(t)
@@ -229,6 +248,9 @@ func TestExportRejectsEncodedCanariesInAllowlistedFields(t *testing.T) {
 	values := []string{
 		"CANARY-RAW-CLINICAL-TEXT",
 		base64.StdEncoding.EncodeToString([]byte(prose)),
+		base64.RawStdEncoding.EncodeToString([]byte(prose)),
+		base64.URLEncoding.EncodeToString([]byte(prose)),
+		base64.RawURLEncoding.EncodeToString([]byte(prose)),
 		fmt.Sprintf("%x", []byte(prose)),
 		percent.String(),
 	}
@@ -264,6 +286,25 @@ func TestExportRejectsEncodedCanariesInAllowlistedFields(t *testing.T) {
 	}
 	if raw := jsonOf(doc); strings.Contains(raw, base64.StdEncoding.EncodeToString([]byte(prose))) {
 		t.Fatal("nested encoded canary survived evidence flags")
+	}
+}
+
+// Auditor audit and export responses must reject the same identifier-shaped Base64URL canary.
+func TestAuditorRejectsURLSafeBase64Canary(t *testing.T) {
+	payload := base64.RawURLEncoding.EncodeToString([]byte("CANARY private clinical text: rectal bleeding???"))
+	for _, suffix := range []string{"/audit", "/export"} {
+		t.Run(suffix, func(t *testing.T) {
+			s, _ := exportRun(t)
+			s.cases[exportLoop].last.Chain[1].Body["label"] = payload
+			h := secureTestHandler(t, s, "")
+			w := securityRequest(t, h, http.MethodGet, "/api/cases/"+exportLoop+suffix, "auditor-token-1234567890", nil)
+			if w.Code != http.StatusOK {
+				t.Fatalf("auditor GET %s: got %d: %s", suffix, w.Code, w.Body.String())
+			}
+			if strings.Contains(w.Body.String(), payload) {
+				t.Fatalf("auditor GET %s retained Base64URL clinical canary", suffix)
+			}
+		})
 	}
 }
 

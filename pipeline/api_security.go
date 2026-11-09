@@ -94,12 +94,12 @@ func (s *apiServer) authenticate(tokens map[[32]byte]apiPrincipal, next http.Han
 			writeJSONResp(w, http.StatusUnauthorized, map[string]interface{}{"error": "authentication required"})
 			return
 		}
-		if r.Method == http.MethodGet {
-			action := apiReadAction(r.URL.Path)
-			if err := Authorize(principal.role, action); err != nil {
-				writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": "read permission denied"})
-				return
-			}
+		// Read authorization is a route property, not a GET-only check. Alternate methods must not bypass it;
+		// downstream handlers still enforce their own method and mutation-specific RBAC contracts.
+		action := apiReadAction(r.URL.Path)
+		if err := Authorize(principal.role, action); err != nil {
+			writeJSONResp(w, http.StatusForbidden, map[string]interface{}{"error": "read permission denied"})
+			return
 		}
 		// Downstream workflow handlers retain their action-specific RBAC checks, but see only verified identity.
 		r.Header.Set("X-Wasl-Role", principal.role)

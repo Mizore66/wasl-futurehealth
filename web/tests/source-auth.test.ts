@@ -36,7 +36,7 @@ describe("live API authentication", () => {
   it("binds writes to a role token and does not send self-asserted identity headers", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-secret-1234567890");
-    const fetchMock = vi.fn().mockResolvedValue(response(400, { error: "invalid synthetic review" }));
+    const fetchMock = vi.fn().mockResolvedValue(response(400, { error: "invalid synthetic review", meta: health.meta }));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await postReview("case-1", { item: "i1", decision: "same", note: "" }, { role: "reviewer", actor: "attacker-selected" });
