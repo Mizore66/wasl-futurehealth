@@ -108,3 +108,7 @@ Recall, precision, reviewer burden, subgroup burden, throughput, KPI and reader 
 Strict commit order: **protocol/harness → corpus/blind input → labels/raw agreement/adjudication → reader caches/freeze manifest → reader raw output/scores/gates → integrated raw output/scores/gates**. Every stage carries the required Claude Code attribution. No push.
 
 The final report lists every gate pass/fail/not-run, all raw artifact paths, exact commands and unresolved findings. Failures remain failures. No model, prompt, rule, threshold, corpus item, label or adjudication is changed in response to reader or integrated outcomes. The r1agent10 status remains exactly **validation did not run**.
+
+## Pre-corpus amendment 1: aggregate schema compatibility
+
+Before any fresh4 corpus content had been returned or inspected, a read-only smoke against the historical `pipeline/results/final/summary.json` showed that the aggregate field is `safety_pooled`, not `safety`. The test fixture was corrected first and reproduced two failures; only the field lookup was then changed. All 14 harness tests passed and the historical aggregate could be read. This is an input-schema bug fix, not a gate/threshold change and not fresh4 evidence. The amended protocol/harness commit precedes corpus validation and freeze; the original protocol/harness commit preceded all author invocations.
