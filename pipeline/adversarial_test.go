@@ -225,7 +225,7 @@ func validHandshakeNotification(t *testing.T) []byte {
 }
 
 func hookTestConsumer(_ int) *SubConsumer {
-	c := &SubConsumer{buf: map[int64]*subEvent{}, acked: map[int64]bool{}, stats: map[string]int64{}, ptrs: map[string]*int64{}}
+	c := &SubConsumer{subscriptionState: newSubscriptionState(""), stats: map[string]int64{}, ptrs: map[string]*int64{}}
 	c.paced = sync.NewCond(&c.mu)
 	return c
 }
@@ -342,7 +342,7 @@ func TestSubscriptionRequestRejectsMalformedURL(t *testing.T) {
 func TestUnknownSubscriptionSourceDoesNotAdvanceAcknowledgement(t *testing.T) {
 	c := hookTestConsumer(1)
 	c.next = 1
-	c.dispatchLocked(&subEvent{Num: 1, Body: []byte(`{"resourceType":"DiagnosticReport","meta":{"source":"unknown"}}`)})
+	c.dispatchLocked(&c.subscriptionState, &subEvent{Num: 1, Body: []byte(`{"resourceType":"DiagnosticReport","meta":{"source":"unknown"}}`)})
 	if c.acked[1] || c.next != 1 {
 		t.Fatalf("unknown source was acknowledged: acked=%v next=%d", c.acked, c.next)
 	}
