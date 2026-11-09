@@ -1,6 +1,6 @@
 # Continuous integration
 
-`.github/workflows/ci.yml` runs on every pull request, including updates to an existing pull request. It has no path filters. Every job has a deadline, third-party actions are pinned to full commit SHAs, and the workflow token has only `contents: read`.
+`.github/workflows/ci.yml` runs on every pull request, including updates to an existing pull request. It has no path filters. Every job has a deadline, third-party actions are pinned to full commit SHAs, `scripts/check_action_pins.py` verifies with GitHub that each SHA is a commit object rather than an annotated tag object, and the workflow token has only `contents: read`.
 
 ## Required branch-protection check
 
@@ -8,8 +8,8 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 
 | Job | Required behavior |
 | --- | --- |
-| Workflow lint | Run pinned `actionlint` over the workflow. |
-| Go tests | Verify modules, run `go vet`, install NATS 2.12.1, and run all Go tests without `-short`. |
+| Workflow lint | Run pinned `actionlint` and verify that every Action SHA resolves to a commit object. |
+| Go tests | Verify modules, run `go vet`, install NATS 2.12.6, and run all Go tests without `-short`. |
 | Go race tests | Run all Go tests with `-race` and an explicit 60-minute Go test timeout. |
 | Python tests | Run the scripts, fresh-evaluation, encoder, and all five booking unit-test lanes with LightGBM installed and the Go booking solver built. |
 | Integrated demo and materialized Go tests | Run `scripts/demo.sh all`, including its real HTTP smoke, then rerun Go tests against generated outputs. |
@@ -22,7 +22,7 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | Filesystem dependency and configuration vulnerabilities | Scan lockfiles and deployment configuration with Trivy; fixable HIGH/CRITICAL findings fail. |
 | TruffleHog pull request secrets | Scan the pull-request commit range, including verified, unverified, and unknown results. |
 | Pull request dependency review | Reject newly introduced high-severity dependency vulnerabilities where GitHub Dependency Review is supported. |
-| Clean container build and API smoke | Build both images without cache, scan them, start the isolated Compose deployment, verify pipeline success and materialized health, and run the real API smoke as UID 10001. |
+| Clean container build and API smoke | Build both images without cache, scan them, start the isolated Compose deployment, verify pipeline success and materialized health, run the real API smoke, and verify the API and all NATS nodes run as UID 10001 with writable data volumes. |
 
 Dependency Review requires the repository's dependency graph and GitHub's Dependency Review API. If repository settings do not support it, that is a failed configuration to fix, not a successful skip. Container smoke is functional verification, not production security sign-off.
 
@@ -33,7 +33,7 @@ Dependency Review requires the repository's dependency graph and GitHub's Depend
 - Node is pinned in `web/.nvmrc`; pnpm is pinned by `web/package.json` and repeated explicitly in the workflow. The pnpm cache is keyed by `web/pnpm-lock.yaml`, and installs always use `--frozen-lockfile`.
 - NATS, actionlint, govulncheck, Trivy, TruffleHog, and pip are pinned to explicit versions in the workflow.
 - Trivy uses its date-keyed vulnerability-database cache. Browser installation does not use an unversioned system Chromium.
-- Update an action's full SHA and its version comment together. Do not replace SHA pins with tags or `main`.
+- Update an action's full SHA and its version comment together. Do not replace SHA pins with tags, annotated tag object SHAs, or `main`; run `python3 scripts/check_action_pins.py` to verify object types.
 
 ## Local equivalents
 
@@ -45,9 +45,10 @@ Run commands from the repository root unless a block says otherwise. Local succe
 python3 -m pip install -r requirements-ci.txt
 python3 -m unittest discover -v -s scripts -p 'test_ci_contract.py'
 go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.10 -color .github/workflows/ci.yml
+python3 scripts/check_action_pins.py
 
 mkdir -p bin
-GOBIN="$PWD/bin" go install github.com/nats-io/nats-server/v2@v2.12.1
+GOBIN="$PWD/bin" go install github.com/nats-io/nats-server/v2@v2.12.6
 (
   cd pipeline
   go mod download
@@ -176,6 +177,9 @@ Wait for the `pipeline` container to exit 0 and for `GET /healthz` to report `st
 ```bash
 python3 scripts/api_smoke.py --base-url "http://127.0.0.1:${WASL_API_PORT}"
 test "$(docker compose exec -T api id -u)" = 10001
+for node in nats-0 nats-1 nats-2; do
+  docker compose exec -T "$node" sh -c 'test "$(id -u)" = 10001 && test -w /data'
+done
 git diff --exit-code
 docker compose down --volumes --remove-orphans
 trap - EXIT

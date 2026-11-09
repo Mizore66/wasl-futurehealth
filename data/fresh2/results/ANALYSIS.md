@@ -74,6 +74,6 @@ Unavailable is not a correct answer. SCORE.md 'B correct' counts only answers eq
 
 - `score.json` equals a fresh `compute_scores(key, reader_raw)`: **True**.
 - Freeze manifest re-derived from git history with `fresh2.build_manifest`: **identical** to `FREEZE.json`.
-- `check_freeze(after-score)` errors: none.
-- Protected/original files changed since scoring commit 8a883fc: none (23 files compared).
+- `check_freeze(after-score)` errors: ['pipeline/evidence.go changed since reader_code_commit', 'pipeline/ifhasread.go changed since reader_code_commit', 'pipeline/ldctread.go changed since reader_code_commit'].
+- Protected/original files changed since scoring commit 5b00feb765673a60370e9c07645d0570d0ffe7d7: ['data/fresh2/FREEZE.json', 'pipeline/evidence.go', 'pipeline/ifhasread.go', 'pipeline/ldctread.go', 'scripts/fresh2_eval/fresh2.py'] (23 files compared).
 

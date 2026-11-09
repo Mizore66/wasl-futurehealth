@@ -23,7 +23,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: `nats:2.12.1-alpine` with `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes) | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 built with Go 1.27.3 on Alpine 3.23, with `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -43,7 +43,7 @@ JSON model weights only: no keys, no patient data, no run outputs.
 | API | `127.0.0.1:8088` on the host (`WASL_API_PORT` to change) | loopback only; put a TLS reverse proxy with authentication in front for anything else |
 | NATS client 4222, cluster 6222, monitor 8222 | compose network only | not published to the host |
 | Mock HIE, FHIR rest-hook, HL7 MLLP | `127.0.0.1` inside the `pipeline` container | demo traffic only |
-| `nats-0`, `nats-1`, `nats-2` volumes | `/data/jetstream` | encrypted JetStream stores; unreadable without `WASL_JS_KEY` |
+| `nats-0`, `nats-1`, `nats-2` volumes | `/data/jetstream` | encrypted JetStream stores; unreadable without `WASL_JS_KEY`; new named volumes are writable by NATS UID 10001 |
 | `wasl-run` volume | `/var/lib/wasl` | cohort and run outputs (`run/<policy>-cached-<source>/`): logs, decisions, `report7.json`, review queue. The API reads it |
 
 ## Configuration
@@ -55,6 +55,9 @@ JSON model weights only: no keys, no patient data, no run outputs.
 - **Retained volumes need the original key.** If this Compose project's `nats-*` volumes exist and `WASL_JS_KEY` is
   unset, `deploy_up.sh` refuses to generate an incompatible key. Supply the original key to keep the data. To discard
   this deployment's stores and run data intentionally, run `docker compose down -v`, then rerun `deploy_up.sh`.
+  When upgrading volumes created by the former root-running NATS image, first make each retained store writable with
+  `docker compose run --rm --no-deps --user root --entrypoint /bin/chown <nats-node> -R 10001:10001 /data`; keep the
+  normal runtime non-root.
 - `WASL_SEED`, `WASL_POLICY` (`v7strict`, `v7ltt`, `v6`), `WASL_SOURCE` (`fhir`, `hl7`), `WASL_LUNG`, `WASL_DR`,
   `WASL_BREAST`: as in `scripts/demo.sh`. The reader is the cached one (no model server in the package).
 - `docker compose down` keeps the volumes; `docker compose down -v` deletes the stores and the run. Each new pipeline
