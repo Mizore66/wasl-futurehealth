@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Convert an auditor-redacted case export into frontend fixture detail/audit JSON.
+"""Project redacted case exports and non-clinical API reads into frontend snapshot JSON.
 
 No raw detail or audit response is accepted. Fields required by the frontend but deliberately removed by redaction are
-empty strings; source values are never copied back into a snapshot.
+empty strings; source values are never copied back into a case snapshot. Health, dashboard, fixture and list responses
+use a separate projection that removes owner identities and rebuilds log-derived metadata.
 """
 import argparse
 import base64
 import binascii
 import copy
 import json
+from pathlib import Path
 import sys
 import urllib.parse
 
@@ -29,11 +31,13 @@ def _canary_string(value):
         except ValueError:
             pass
     compact = value.strip()
-    if len(compact) >= 8 and len(compact) % 4 == 0:
-        try:
-            candidates.append(base64.b64decode(compact, validate=True).decode("utf-8"))
-        except (ValueError, UnicodeDecodeError, binascii.Error):
-            pass
+    if len(compact) >= 8:
+        padded = compact + "=" * (-len(compact) % 4)
+        for encoded in (padded, padded.replace("-", "+").replace("_", "/")):
+            try:
+                candidates.append(base64.b64decode(encoded, validate=True).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError, binascii.Error):
+                pass
     if len(compact) >= 8 and len(compact) % 2 == 0:
         try:
             candidates.append(bytes.fromhex(compact).decode("utf-8"))
@@ -104,14 +108,95 @@ def audit_snapshot(export):
     return audit
 
 
+def read_snapshot(payload):
+    """Project non-clinical health/dashboard/fixture/list responses for public snapshots.
+
+    These reviewer reads never include raw evidence, but their summaries can contain canonical or overlay owner IDs.
+    Drop identity/narrative fields recursively and rebuild log-derived metadata just as the auditor export does.
+    """
+    if not isinstance(payload, dict):
+        raise ValueError("snapshot read projection requires an object")
+    source_meta = payload.get("meta", {})
+    if not isinstance(source_meta, dict):
+        raise ValueError("snapshot read projection meta must be an object")
+    dropped = SENSITIVE_KEYS | {"owner", "canonical_owner"}
+
+    def project(value, path="snapshot"):
+        if isinstance(value, dict):
+            out = {}
+            for key, child in value.items():
+                if isinstance(key, str) and _canary_string(key):
+                    raise ValueError(f"snapshot canary at {path}.{key}")
+                if key not in dropped:
+                    out[key] = project(child, f"{path}.{key}")
+            return out
+        if isinstance(value, list):
+            return [project(child, f"{path}[{index}]") for index, child in enumerate(value)]
+        if isinstance(value, str) and _canary_string(value):
+            raise ValueError(f"snapshot canary at {path}")
+        return copy.deepcopy(value)
+
+    output = project(payload)
+    output["meta"] = {
+        "api": source_meta.get("api", "wasl-api/1"),
+        "data_mode": source_meta.get("data_mode", "simulated"),
+        "run": "redacted-internal-audit",
+        "policy": "redacted-internal-audit",
+        "reader_model": "not-disclosed",
+        "loaded_at": source_meta.get("loaded_at", ""),
+        "note": source_meta.get("note", ""),
+    }
+    return output
+
+
+def _check_snapshot_canaries(value, path):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if isinstance(key, str) and _canary_string(key):
+                raise ValueError(f"snapshot canary at {path}.{key}")
+            _check_snapshot_canaries(child, f"{path}.{key}")
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            _check_snapshot_canaries(child, f"{path}[{index}]")
+    elif isinstance(value, str) and _canary_string(value):
+        raise ValueError(f"snapshot canary at {path}")
+
+
+def scan_snapshot_directory(directory):
+    """Fail before publication if any staged JSON string contains a raw or encoded canary."""
+    root = Path(directory)
+    if not root.is_dir():
+        raise ValueError("snapshot staging directory is missing")
+    for path in sorted(root.rglob("*")):
+        if path.is_file():
+            try:
+                value = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, ValueError) as exc:
+                raise ValueError(f"invalid staged JSON {path.name}: {exc}") from exc
+            _check_snapshot_canaries(value, str(path))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("kind", choices=("detail", "audit"))
+    parser.add_argument("kind", choices=("detail", "audit", "health", "dashboard", "fixtures", "cases", "scan-dir"))
+    parser.add_argument("path", nargs="?")
     args = parser.parse_args(argv)
     try:
-        export = json.load(sys.stdin)
-        output = detail_snapshot(export) if args.kind == "detail" else audit_snapshot(export)
-    except (ValueError, TypeError, KeyError) as exc:
+        if args.kind == "scan-dir":
+            if not args.path:
+                raise ValueError("scan-dir requires a staging directory")
+            scan_snapshot_directory(args.path)
+            return 0
+        if args.path:
+            raise ValueError("unexpected path argument")
+        payload = json.load(sys.stdin)
+        if args.kind == "detail":
+            output = detail_snapshot(payload)
+        elif args.kind == "audit":
+            output = audit_snapshot(payload)
+        else:
+            output = read_snapshot(payload)
+    except (OSError, UnicodeError, ValueError, TypeError, KeyError) as exc:
         print(f"redacted snapshot refused: {exc}", file=sys.stderr)
         return 1
     json.dump(output, sys.stdout, ensure_ascii=False, indent=1)

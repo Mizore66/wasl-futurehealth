@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Tests for scripts/api_smoke.py and `demo.sh smoke`. A stateful fake HTTP server replays the committed samples and workflow routes; no model calls."""
+import base64
 import copy
 import hashlib
 import importlib.util
@@ -359,6 +360,19 @@ class SmokeValidatorTests(unittest.TestCase):
             f.export_doc = leaked
         self.assertFails(m, "sensitive field")
 
+    def test_export_urlsafe_base64_canary_is_rejected_despite_valid_hash(self):
+        def m(f):
+            orig = f.export_doc
+            def leaked(cid):
+                doc = orig(cid)
+                doc["detail"]["case"]["state"] = base64.urlsafe_b64encode(
+                    b"CANARY private clinical text: rectal bleeding???").decode().rstrip("=")
+                unsigned = {k: v for k, v in doc.items() if k != "content_sha256"}
+                doc["content_sha256"] = hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                return doc
+            f.export_doc = leaked
+        self.assertFails(m, "test canary")
+
     def test_export_content_hash_is_verified(self):
         def m(f):
             orig = f.export_doc
@@ -591,6 +605,38 @@ class SnapshotTests(unittest.TestCase):
             self.assertNotEqual(r.returncode, 0)
             self.assertIn("ifhas", r.stdout + r.stderr)
             self.assertTrue((target / "case_old.json").exists())
+
+    def test_snapshot_removes_owner_identifiers_from_reviewer_reads(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            def m(f):
+                for fixture in f.fix["fixtures"].values():
+                    fixture["owner"] = "PRIVATE-OWNER-CANARY"
+                    fixture["canonical_owner"] = "PRIVATE-OWNER-CANARY"
+                for page in f.pages.values():
+                    for case in page["cases"]:
+                        case["owner"] = "PRIVATE-OWNER-CANARY"
+                        case["canonical_owner"] = "PRIVATE-OWNER-CANARY"
+            r = self.snap(Fake(m), target, programmes="crc")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            for name in ("fixtures.json", "cases_crc_page1.json"):
+                published = (target / name).read_text()
+                self.assertNotIn("PRIVATE-OWNER-CANARY", published, name)
+                self.assertNotIn('"owner"', published, name)
+                self.assertNotIn('"canonical_owner"', published, name)
+
+    def test_snapshot_scans_staging_and_preserves_previous_samples_on_canary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "samples"
+            target.mkdir()
+            (target / "case_old.json").write_text('{"preserved":true}')
+            def m(f):
+                f.dash["future_server_field"] = "PRIVATE-OWNER-CANARY"
+            r = self.snap(Fake(m), target, programmes="crc")
+            self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("canary", (r.stdout + r.stderr).lower())
+            self.assertTrue((target / "case_old.json").exists())
+            self.assertFalse((target / "dashboard.json").exists())
 
     def test_default_stages_all_seven_programmes(self):
         with tempfile.TemporaryDirectory() as tmp:

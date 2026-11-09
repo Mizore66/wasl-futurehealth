@@ -248,11 +248,15 @@ snapshot() {  # static API responses for frontend development (no backend needed
   S="$(mktemp -d "$SNAP_DIR.staging.XXXXXX")"
   SNAP_STAGE="$S"
   trap 'snapshot_cleanup' EXIT; trap 'snapshot_cleanup; exit 130' INT; trap 'snapshot_cleanup; exit 143' TERM  # nothing outlives the run
-  curl -sf --max-time "$MT" "http://$A/healthz" > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
-  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/dashboard" > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
-  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
+  curl -sf --max-time "$MT" "http://$A/healthz" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" health > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/dashboard" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" dashboard > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" fixtures > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
-    if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
+    if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" |
+      python3 "$ROOT/scripts/redacted_snapshot.py" cases > "$S/cases_${prog}_page1.json" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
       echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
     fi
@@ -265,6 +269,8 @@ snapshot() {  # static API responses for frontend development (no backend needed
       python3 "$ROOT/scripts/redacted_snapshot.py" audit < "$S/$tag.export" > "$S/case_${tag}_audit.json" ||
       { echo "snapshot: fixture $tag redacted export failed" >&2; return 1; }
   done
+  python3 "$ROOT/scripts/redacted_snapshot.py" scan-dir "$S" ||
+    { echo "snapshot: staged output contains a private canary; samples not replaced" >&2; return 1; }
   mkdir -p "$SNAP_DIR"
   SNAP_OLD="$(mktemp -d "$SNAP_DIR.old.XXXXXX")"
   SNAP_SWAP=1
