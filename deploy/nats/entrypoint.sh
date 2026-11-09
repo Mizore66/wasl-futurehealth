@@ -73,6 +73,11 @@ if [ "${WASL_NATS_TLS:-0}" = 1 ]; then
   runtime="${WASL_NATS_RUNTIME_CONFIG:-/tmp/wasl-production.conf}"
   template="${WASL_NATS_CONFIG_TEMPLATE:-/etc/nats/wasl-production.conf}"
   umask 077
+  # NATS does not expand variables inside quoted strings. Quoted config-only values make its variable parser
+  # preserve arbitrary generated hex credentials as strings, including numeric and exponent-shaped prefixes.
+  WASL_NATS_PASSWORD_CONFIG="\"$WASL_NATS_PASSWORD\""
+  WASL_ROUTE_PASSWORD_CONFIG="\"$WASL_ROUTE_PASSWORD\""
+  export WASL_NATS_PASSWORD_CONFIG WASL_ROUTE_PASSWORD_CONFIG
   sed -e "s/__WASL_ROUTE_USER__/$WASL_ROUTE_USER/g" -e "s/__WASL_ROUTE_PASSWORD__/$WASL_ROUTE_PASSWORD/g" \
     "$template" > "$runtime"
   set -- nats-server -c "$runtime"
