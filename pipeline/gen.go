@@ -1456,11 +1456,11 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		job()
 	}
 	sort.SliceStable(evs, func(i, j int) bool { return evs[i].Arrival < evs[j].Arrival })
-	os.MkdirAll(outDir, 0755)
+	os.MkdirAll(outDir, 0700)
 	byProv := map[string]*os.File{}
 	cnt := map[string]int{}
 	for _, pc := range Providers {
-		f, _ := os.Create(filepath.Join(outDir, "fhir_"+pc.ID+".ndjson"))
+		f, _ := os.OpenFile(filepath.Join(outDir, "fhir_"+pc.ID+".ndjson"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		byProv[pc.ID] = f
 	}
 	for _, e := range evs {
@@ -1473,7 +1473,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	wj := func(name string, v interface{}) {
 		bb, _ := json.MarshalIndent(v, "", " ")
-		os.WriteFile(filepath.Join(outDir, name), bb, 0644)
+		os.WriteFile(filepath.Join(outDir, name), bb, 0600)
 	}
 	adv.finish()
 	wj("truth.json", tr)

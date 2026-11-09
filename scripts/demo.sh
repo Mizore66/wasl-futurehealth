@@ -35,6 +35,18 @@ POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v7ltt (closure tier
 SOURCE="${WASL_SOURCE:-fhir}"      # fhir (mock Malaffi FHIR Subscription) | hl7 (HL7 v2 over MLLP, production-shaped)
 READER="${WASL_READER:-cached}"    # cached (Gemma 26B answers, no model needed) | live (local llama-server) 
 READER_URL="${WASL_READER_URL:-http://127.0.0.1:8791}"
+# Local synthetic-demo API credentials. Every bearer token is bound server-side to its role and immutable actor; these
+# published development values are not production secrets. Override both the individual client tokens and
+# WASL_API_TOKENS together for a non-default local configuration.
+export WASL_SYNTHETIC_DATA_ONLY=1
+export WASL_API_REVIEWER_TOKEN="${WASL_API_REVIEWER_TOKEN:-wasl-demo-reviewer-1-token}"
+export WASL_API_REVIEWER_2_TOKEN="${WASL_API_REVIEWER_2_TOKEN:-wasl-demo-reviewer-2-token}"
+export WASL_API_REVIEWER_3_TOKEN="${WASL_API_REVIEWER_3_TOKEN:-wasl-demo-reviewer-3-token}"
+export WASL_API_AUDITOR_TOKEN="${WASL_API_AUDITOR_TOKEN:-wasl-demo-auditor-token}"
+export WASL_API_COORDINATOR_TOKEN="${WASL_API_COORDINATOR_TOKEN:-wasl-demo-coordinator-token}"
+export WASL_API_CLINICIAN_TOKEN="${WASL_API_CLINICIAN_TOKEN:-wasl-demo-clinician-token}"
+export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician}"
+export WASL_API_ORIGINS="${WASL_API_ORIGINS:-}"
 COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
 LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop type); 0 = off
 [ "$LUNG" = 0 ] || RUN="$RUN-lung"
@@ -237,18 +249,21 @@ snapshot() {  # static API responses for frontend development (no backend needed
   SNAP_STAGE="$S"
   trap 'snapshot_cleanup' EXIT; trap 'snapshot_cleanup; exit 130' INT; trap 'snapshot_cleanup; exit 143' TERM  # nothing outlives the run
   curl -sf --max-time "$MT" "http://$A/healthz" > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
-  curl -sf --max-time "$MT" "http://$A/api/dashboard" > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
-  curl -sf --max-time "$MT" "http://$A/api/fixtures" > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/dashboard" > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
-    if ! { curl -sf --max-time "$MT" "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
+    if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
       echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
     fi
   done
   for tag in $(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['fixtures'])))" "$S/fixtures.json"); do
     id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures'][sys.argv[2]]['id'])" "$S/fixtures.json" "$tag")
-    curl -sf --max-time "$MT" "http://$A/api/cases/$id" > "$S/case_$tag.json" && curl -sf --max-time "$MT" "http://$A/api/cases/$id/audit" > "$S/case_${tag}_audit.json" ||
-      { echo "snapshot: fixture $tag detail/audit failed" >&2; return 1; }
+    # Public fixtures are built only from the redacted auditor export, never from raw clinical detail/audit routes.
+    curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_AUDITOR_TOKEN" "http://$A/api/cases/$id/export" > "$S/$tag.export" &&
+      python3 "$ROOT/scripts/redacted_snapshot.py" detail < "$S/$tag.export" > "$S/case_$tag.json" &&
+      python3 "$ROOT/scripts/redacted_snapshot.py" audit < "$S/$tag.export" > "$S/case_${tag}_audit.json" ||
+      { echo "snapshot: fixture $tag redacted export failed" >&2; return 1; }
   done
   mkdir -p "$SNAP_DIR"
   SNAP_OLD="$(mktemp -d "$SNAP_DIR.old.XXXXXX")"

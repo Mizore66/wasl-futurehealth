@@ -213,7 +213,7 @@ func setupStreams(replicas, P int) {
 func writeStatus(dir, name string, v interface{}) {
 	b, _ := json.Marshal(v)
 	tmp := filepath.Join(dir, "status-"+name+".json.tmp")
-	os.WriteFile(tmp, b, 0644)
+	os.WriteFile(tmp, b, 0600)
 	os.Rename(tmp, filepath.Join(dir, "status-"+name+".json"))
 }
 
@@ -699,7 +699,7 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 	answered, wrong, deduped, dedupedLink := 0, 0, 0, 0
 	held := false
 	var lastOut uint64
-	logf, _ := os.OpenFile(filepath.Join(runDir, "reviewer_decisions.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	logf, _ := os.OpenFile(filepath.Join(runDir, "reviewer_decisions.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	go func() {
 		for {
 			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": answered, "wrong": wrong, "deduped_second_id": deduped, "deduped_link": dedupedLink, "last_out_seq": atomic.LoadUint64(&lastOut), "cfg": cfg})
@@ -766,7 +766,7 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 		if hold != "" && !held && isEv && it2.Verdict == "disagree" && it2.LoopID == hold {
 			held = true
 			hb, _ := json.MarshalIndent(map[string]interface{}{"item": it2, "held_at": time.Now().Format(time.RFC3339Nano)}, "", " ")
-			os.WriteFile(filepath.Join(runDir, "HOLD_ITEM.json"), hb, 0644)
+			os.WriteFile(filepath.Join(runDir, "HOLD_ITEM.json"), hb, 0600)
 			dl := time.Now().Add(90 * time.Second)
 			for time.Now().Before(dl) {
 				if hb, err := os.ReadFile(filepath.Join(runDir, "HUMAN_DECISION.json")); err == nil {

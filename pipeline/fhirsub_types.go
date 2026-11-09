@@ -3,7 +3,10 @@ package main
 // FHIR R4 + Subscriptions R5 Backport IG (hl7.fhir.uv.subscriptions-backport, R4 profiles) wire types shared by the
 // mock Malaffi server (malaffi.go) and the subscription consumer (fhirsub.go).
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -20,9 +23,27 @@ const (
 	ExtPayloadContent = BackportBase + "backport-payload-content"
 	// Assumed Malaffi topic canonical (no public Malaffi SubscriptionTopic exists; see SUMMARY.md mapping notes).
 	MalaffiTopic = "https://malaffi.ae/fhir/SubscriptionTopic/crc-fit-loop-events"
-	MockToken    = "mock-malaffi-client-token" // consumer -> Malaffi REST (stands in for an OAuth2 client-credentials token)
-	HookToken    = "wsi-hook-secret-7f3a"      // Malaffi -> consumer rest-hook (Subscription.channel.header)
 )
+
+// Mock credentials are process configuration, never source-code constants. The orchestrator generates one random pair
+// per synthetic run; standalone mock/consumer commands require both variables explicitly.
+func mockFHIRToken() string { return os.Getenv("WASL_MOCK_FHIR_TOKEN") }
+func mockHookToken() string { return os.Getenv("WASL_MOCK_HOOK_TOKEN") }
+
+func ensureMockCredentials() {
+	for _, cfg := range []struct{ env, prefix string }{{"WASL_MOCK_FHIR_TOKEN", "fhir"}, {"WASL_MOCK_HOOK_TOKEN", "hook"}} {
+		if os.Getenv(cfg.env) == "" {
+			b := make([]byte, 32)
+			if _, err := rand.Read(b); err != nil {
+				panic(err)
+			}
+			os.Setenv(cfg.env, cfg.prefix+hex.EncodeToString(b))
+		}
+		if len(os.Getenv(cfg.env)) < 16 {
+			panic(cfg.env + " must contain at least 16 characters")
+		}
+	}
+}
 
 type Ref struct {
 	Reference string `json:"reference"`
