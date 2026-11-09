@@ -168,6 +168,14 @@ exit 2
         df = (ROOT / "deploy/nats/Dockerfile").read_text()
         self.assertRegex(df, r"COPY --chmod=0755 entrypoint\.sh /usr/local/bin/wasl-nats-entrypoint\.sh")
         self.assertIn('ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]', df)
+        self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", df)
+        self.assertIn("github.com/klauspost/compress@v1.18.7", df)
+        self.assertIn("golang.org/x/crypto@v0.55.0", df)
+        self.assertIn("FROM golang:1.27.3-alpine AS build", df)
+        self.assertIn("FROM alpine:3.23", df)
+        self.assertIn("USER 10001:10001", df)
+        self.assertIn("chown -R 10001:10001 /data", df)
+        self.assertIn('VOLUME ["/data"]', df)
 
     def test_nats_entrypoint_refuses_wrong_or_missing_key_on_retained_data(self):
         with tempfile.TemporaryDirectory() as tmp:

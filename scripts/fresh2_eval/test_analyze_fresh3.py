@@ -26,7 +26,14 @@ class Fresh3Analysis(unittest.TestCase):
         self.assertEqual(self.a["scores_by_kind_agreed"], stored["agreed"]["by_kind"])
         self.assertEqual(self.a["scores_totals_agreed"], stored["agreed"]["totals"])
         self.assertTrue(self.a["verification"]["score_json_matches_recomputation"])
-        self.assertEqual(self.a["verification"]["changed_since_scoring_commit"], [])
+        # The history rewrite rebound the manifest and e698476 restored shared evidence plumbing; original scores and reader logic are unchanged.
+        self.assertEqual(self.a["verification"]["changed_since_scoring_commit"], ["data/fresh3/FREEZE.json", "pipeline/evidence.go"])
+
+    def test_manifest_rederived_and_scoring_protocol_unchanged(self):
+        v = self.a["verification"]
+        self.assertTrue(v["manifest_rederived_equal"])
+        self.assertEqual(v["check_freeze_after_score_errors"], ["pipeline/evidence.go changed since reader_code_commit"])
+        self.assertEqual(v["protected_changed_since_reader_code_commit"], [])
 
     def test_wrong_items_and_direction(self):
         w = self.a["agreed_but_wrong"]

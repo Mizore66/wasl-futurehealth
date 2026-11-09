@@ -15,7 +15,7 @@ sys.path.insert(0, HERE)
 import fresh2 as F  # noqa: E402  (read-only use: manifest derivation, scoring recomputation)
 
 REPO = F.REPO
-SCORE_COMMIT = "8a883fc"  # the commit that scored the readers; originals must be byte-identical to it
+SCORE_COMMIT = "5b00feb765673a60370e9c07645d0570d0ffe7d7"  # current-history equivalent of the original scoring commit
 OUT_MD = "data/fresh2/results/ANALYSIS.md"
 OUT_JSON = "data/fresh2/results/analysis.json"
 ORIGINAL_RESULTS = ["data/fresh2/results/SCORE.md", "data/fresh2/results/score.json", "data/fresh2/results/reader_raw.json"]

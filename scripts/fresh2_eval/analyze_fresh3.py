@@ -19,7 +19,7 @@ import analyze_fresh2 as A  # noqa: E402
 REPO = F.REPO
 ROOT = "data/fresh3"
 P3 = F.make_paths(ROOT)
-SCORE_COMMIT = "9f2d020"
+SCORE_COMMIT = "d3222328fc1cbfeff40faf4731fa09f4e3cc19b8"  # current-history equivalent of the original scoring commit
 OUT_MD = ROOT + "/results/ANALYSIS.md"
 OUT_JSON = ROOT + "/results/analysis.json"
 ORIGINAL_RESULTS = [ROOT + "/results/SCORE.md", ROOT + "/results/score.json", ROOT + "/results/reader_raw.json"]

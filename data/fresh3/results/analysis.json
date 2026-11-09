@@ -254,7 +254,7 @@
    "disclosure": "model-authored synthetic text; no author key; not clinician-verified"
   },
   "file_sha256": {
-   "data/fresh3/FREEZE.json": "db28a3c5321443a250e5fc62aba37bc0a7449330f8d84592485e09579213d137",
+   "data/fresh3/FREEZE.json": "89c278a9d015dd6466b699f07eaad66379b05847cb14542f47ac1dfe60f7d193",
    "data/fresh3/LABELLER-INPUT-MANIFEST.json": "1d5f11b2732316f6c54832173684b226e1669679232018fbc57b31792a08fee7",
    "data/fresh3/agreement.json": "ecface3a795d24bef1687f3f0e63afc20ea9751d9e35839a0b538e312d4ef086",
    "data/fresh3/corpus.json": "c974de9fe32264a5edde7c4be214433876e970014329ea4657c5aabe534c0a1e",
@@ -270,10 +270,10 @@
    "scripts/fresh2_eval/LABELLING-GUIDE.md": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197"
   },
   "freeze_manifest": {
-   "corpus_commit": "93c5bef8fbcb3e01b802ee8bb72d4063945ba256",
-   "labels_commit": "23ff6f6cd077dc676757ae3eb277df438bceebf7",
-   "reader_cache_commit": "e5a9e8a8cc4dc997b7aeaaac6bb4501ec7fd8fba",
-   "reader_code_commit": "8c675c121938dfccb0a13155f60df40bce7a0e8c"
+   "corpus_commit": "85ddc5fa91c3ecf4455f3590ff9d4566ece0bce4",
+   "labels_commit": "70190efb27b8eec9c236bc4d829959e1d3532c7d",
+   "reader_cache_commit": "3086fdfb11750024da85badc64042cd53d6b95a8",
+   "reader_code_commit": "b91e5d21ecdef10039f6737d6c9800177bd33b66"
   },
   "key_canonical_sha256": "571ea2bbd3f1330a5e5baedfaa7694435b09c80ececc07d77bf05ba66dcb8e7f",
   "labellers": [
@@ -304,9 +304,9 @@
   ],
   "readers": {
    "reader_b": "local Gemma 3 4B (cached) for ldct-screen, ldct-workup, ifhas-followup; none for ifhas-screen",
-   "reader_code_commit": "8c675c121938dfccb0a13155f60df40bce7a0e8c"
+   "reader_code_commit": "b91e5d21ecdef10039f6737d6c9800177bd33b66"
   },
-  "scoring_commit": "9f2d020"
+  "scoring_commit": "d3222328fc1cbfeff40faf4731fa09f4e3cc19b8"
  },
  "reader_b_unavailable": {
   "by_kind_agreed": {
@@ -430,8 +430,13 @@
  "semantics": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.",
  "status": "built; run on simulated (model-authored synthetic) text; model-labelled keys; not clinical effectiveness",
  "verification": {
-  "changed_since_scoring_commit": [],
-  "check_freeze_after_score_errors": [],
+  "changed_since_scoring_commit": [
+   "data/fresh3/FREEZE.json",
+   "pipeline/evidence.go"
+  ],
+  "check_freeze_after_score_errors": [
+   "pipeline/evidence.go changed since reader_code_commit"
+  ],
   "files_compared": 21,
   "manifest_rederived_equal": true,
   "protected_changed_since_reader_code_commit": [],

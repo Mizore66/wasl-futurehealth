@@ -8,7 +8,7 @@ Items 100; two labellers agreed on **93/100**; **7 unadjudicated** (f3l-007, f3l
 
 ## 1. Protocol and hashes
 
-- Reader code commit `8c675c121938dfccb0a13155f60df40bce7a0e8c`; corpus `93c5bef8fbcb3e01b802ee8bb72d4063945ba256`; labels `23ff6f6cd077dc676757ae3eb277df438bceebf7`; reader caches `e5a9e8a8cc4dc997b7aeaaac6bb4501ec7fd8fba`; scored once at `9f2d020`.
+- Reader code commit `b91e5d21ecdef10039f6737d6c9800177bd33b66`; corpus `85ddc5fa91c3ecf4455f3590ff9d4566ece0bce4`; labels `70190efb27b8eec9c236bc4d829959e1d3532c7d`; reader caches `3086fdfb11750024da85badc64042cd53d6b95a8`; scored once at `d3222328fc1cbfeff40faf4731fa09f4e3cc19b8`.
 - Author: `gpt-6.1-sol` (prompt `fresh3-author-prompt-v1`, system prompt sha256 `34c1af9c6f076317a05d9b1a35947cdb88b6c389c1c24ceacecfbaa21101344e`, saw reader code: False).
 - Labellers: `gemini-a` = gemini-3.5-flash (Google/Gemini), prompt sha256 `a6a3746f5752eebd4e2b4895740af8e602ad8f3cfd7ba282d08562977243a32a`, isolated True, saw reader False, saw other labels False; `kimi-b` = kimi-k3.1-pro (moonshot/kimi), prompt sha256 `f38d16ea90f65d4961a7f0669ed6f21ea3f1b87997201d539955b08d75d94526`, isolated True, saw reader False, saw other labels False.
 - Reader B (Gemma 3 4B, cached) is a Google-family model and one labeller is Gemini (Google): correlation between them is possible and was not tested.
@@ -26,7 +26,7 @@ Items 100; two labellers agreed on **93/100**; **7 unadjudicated** (f3l-007, f3l
 | `data/fresh3/agreement.json` | `ecface3a795d24bef1687f3f0e63afc20ea9751d9e35839a0b538e312d4ef086` |
 | `data/fresh3/reader-cache/ldct_gemma_cache.json` | `78e096bc828cc859403db16f9528f5507f82bd5c9c55a6bac0b4ac0d84f5186e` |
 | `data/fresh3/reader-cache/ifhas_gemma_cache.json` | `7643b3bccabda390b6744bb2fb6a938950c348a9571415cafae1f13f8e8a844d` |
-| `data/fresh3/FREEZE.json` | `db28a3c5321443a250e5fc62aba37bc0a7449330f8d84592485e09579213d137` |
+| `data/fresh3/FREEZE.json` | `89c278a9d015dd6466b699f07eaad66379b05847cb14542f47ac1dfe60f7d193` |
 | `data/fresh3/results/SCORE.md` | `497fb7ffc95be031ebf76d290c346b35b238a98027fd959888eb94ab4eeba103` |
 | `data/fresh3/results/score.json` | `0e277e5c2441ef1d878b919d396967424b3585d3963e120e8835b49ef0708408` |
 | `data/fresh3/results/reader_raw.json` | `03b77c91cf20d5c466331e72719687b61ca2b031a098092475fe1ca53460f5fb` |
@@ -112,6 +112,6 @@ Denominators differ (fresh2 29 agreed follow-up and 26 agreed work-up; fresh3 23
 
 - `score.json` equals a fresh `compute_scores(key, reader_raw)`: **True**.
 - Freeze manifest re-derived from git history equals `FREEZE.json`: **True**.
-- `check_freeze(after-score)` errors: none.
-- Frozen/original/protected files changed since scoring commit 9f2d020: none (21 files compared); protected reader files changed between reader_code_commit and scoring: none.
+- `check_freeze(after-score)` errors: ['pipeline/evidence.go changed since reader_code_commit'].
+- Frozen/original/protected files changed since scoring commit d3222328fc1cbfeff40faf4731fa09f4e3cc19b8: ['data/fresh3/FREEZE.json', 'pipeline/evidence.go'] (21 files compared); protected reader files changed between reader_code_commit and scoring: none.
 

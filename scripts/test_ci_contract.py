@@ -133,6 +133,9 @@ class WorkflowTests(unittest.TestCase):
         walk(self.doc)
         self.assertEqual(forbidden, [])
 
+    def test_action_pin_object_types_are_verified(self):
+        self.assertIn("python3 scripts/check_action_pins.py", self.runs("actionlint"))
+
     def test_every_action_is_pinned_to_a_full_commit(self):
         uses = []
 
@@ -157,7 +160,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("go test -race -count=1 -timeout=60m .", self.runs("go-race"))
         self.assertEqual(self.jobs["go-race"]["timeout-minutes"], 80)
         for lane in ("go-test", "go-race"):
-            self.assertIn("github.com/nats-io/nats-server/v2@v2.12.1", self.runs(lane))
+            self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", self.runs(lane))
             setup = self.steps_using("actions/setup-go")
             self.assertTrue(setup)
             for step in setup:
@@ -181,7 +184,7 @@ class WorkflowTests(unittest.TestCase):
         integration = self.runs("integration")
         self.assertIn("scripts/demo.sh all", integration)
         self.assertIn("go test -count=1 -timeout=20m .", integration)
-        self.assertIn("github.com/nats-io/nats-server/v2@v2.12.1", integration)
+        self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", integration)
         simulation = self.runs("booking-simulation")
         self.assertIn("python3 booking/sim/pool_test.py", simulation)
         self.assertIn("git diff --exit-code", simulation)
@@ -232,6 +235,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("docker compose down --volumes --remove-orphans", commands)
         self.assertIn("materialised_run", commands)
         self.assertIn("10001", commands)
+        for node in ("nats-0", "nats-1", "nats-2"):
+            self.assertIn(f'docker compose exec -T {node} sh -c', commands)
+        self.assertIn('test "$(id -u)" = 10001 && test -w /data', commands)
         logs = next(step for step in self.jobs["container"]["steps"] if step.get("name") == "Print service logs after a failure")
         self.assertIn('export WASL_JS_KEY="${WASL_JS_KEY:-', logs["run"])
 
