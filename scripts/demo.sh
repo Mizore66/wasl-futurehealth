@@ -166,7 +166,7 @@ check() {
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
   NPORTS="14822 14823 14824"; [ "${WASL_NATS_EXTERNAL:-}" != 1 ] || NPORTS=""
   for p in $NPORTS 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
-    if [ -n "$(lsof -nP -iTCP:$p -sTCP:LISTEN 2>/dev/null)" ]; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
+    if netstat -tln 2>/dev/null | grep -E ":${p}[[:space:]]" >/dev/null; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
   echo "assets OK"
 }
