@@ -1,0 +1,20 @@
+{
+ "canonical_corpus_path": "data/fresh4/corpus.json",
+ "canonical_corpus_sha256": "5aa826689564db25cb8c9ade7bbf727b6d7240848241a2eaaa3b9f60c87852ce",
+ "declaration": "Blind labellers receive only the frozen guide and metadata-free labeller-input.json.",
+ "excluded": [
+  "provenance",
+  "author files",
+  "coverage mapping",
+  "keys",
+  "labels",
+  "reader code",
+  "scores"
+ ],
+ "guide_path": "scripts/fresh2_eval/LABELLING-GUIDE.md",
+ "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+ "item_count": 100,
+ "labeller_input_path": "data/fresh4/labeller-input.json",
+ "labeller_input_sha256": "d9835a78a478ef5f60bfb154432f600a368c2ce5af3f5be8faa5fffd9ee37037",
+ "schema": "fresh4-labeller-input-manifest/v1"
+}
