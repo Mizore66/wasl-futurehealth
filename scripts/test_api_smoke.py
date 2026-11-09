@@ -373,6 +373,21 @@ class SmokeValidatorTests(unittest.TestCase):
             f.export_doc = leaked
         self.assertFails(m, "test canary")
 
+    def test_export_non_canary_registration_keys_are_rejected_despite_valid_hash(self):
+        def m(f):
+            orig = f.export_doc
+            def leaked(cid):
+                doc = orig(cid)
+                pair = ["clinic-a|MRN-738291", "hospital-b|MRN-104857"]
+                doc["detail"]["links"] = [{"referral_patient": pair[0],
+                                           "weakest_edge": {"a": pair[0], "b": pair[1]}}]
+                doc["detail"]["review_items"] = [{"pair": pair}]
+                unsigned = {k: v for k, v in doc.items() if k != "content_sha256"}
+                doc["content_sha256"] = hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                return doc
+            f.export_doc = leaked
+        self.assertFails(m, "registration key")
+
     def test_export_content_hash_is_verified(self):
         def m(f):
             orig = f.export_doc

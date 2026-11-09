@@ -592,7 +592,13 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	writeJSONResp(w, 200, s.envelope(s.caseDetailBody(c)))
+	body, err := exportGeneric(s.caseDetailBody(c))
+	if err != nil {
+		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "case detail could not be encoded"}))
+		return
+	}
+	body = pseudonymizeRegistrationFields(body, "").(map[string]interface{})
+	writeJSONResp(w, 200, s.envelope(body))
 }
 
 func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {

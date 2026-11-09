@@ -32,7 +32,7 @@ GET /api/cases/{id}/export
 ```
 
 - Before redaction, `detail` and `audit` are produced by `caseDetailBody(c)` and `caseAuditBody(c)` in `pipeline/api_export.go`.
-  `caseDetail` calls the shared detail helper; tests compare both projections against the real wrapped live routes, including consent and ledger overlays.
+  `caseDetail` serves a deep copy of the shared detail helper with registration keys pseudonymized; tests compare both redacted projections against the real wrapped live routes, including consent and ledger overlays.
 - The export adds **no** `exported_at`, no file list and no other field. Nothing is written to the run directory.
 
 ## Hashes
@@ -94,6 +94,7 @@ array element or chain body: a future field must be added deliberately to the re
   verdicts, agree flags, reader model/rule/flags/state strings, structured DR/BI-RADS/Lung-RADS/nodule measurements and
   image-reader scores/hashes; reader `quote` is not listed. Timeline keeps
   seq/type/id/provider/status/day/category/raw_sha/source.
+- **Registration-bearing fields use one deterministic pseudonym.** Link `referral_patient`, `weakest_edge.a/b`, identity `registration` on the secured detail route, and registration `pair` arrays in review/signoff/outreach/agent records and chain bodies become `reg_` plus SHA-256 of a domain-separated registration key. Equal source registrations therefore retain operational equality joins across detail, current/audit chains and snapshots without serving the literal key. The transform is idempotent and operates only on deep-copied served projections, never canonical chains or evidence. These unkeyed pseudonyms are deterministic and guessable for known registrations; they are not semantic anonymity or de-identification.
 - **Citations are recursed into, not dropped.** Each `agent_investigations[].citations` entry keeps only `tool` and
   `field`; arguments, values (including exact DOBs), quote, excerpt, result and future keys are dropped. Identity entries
   likewise omit registration keys and retain only provider/role.
@@ -139,7 +140,7 @@ a parser that converts integers above 2^53 to doubles will not reproduce either 
   shapes are dropped, but no prose classifier can recognise every possible representation.
 - The recipient is an authenticated internal auditor, not an external or lower-privilege recipient. Case/report ids,
   provider ids, enum-like clinical labels, measurements, dates and hashes are deliberately preserved where listed and
-  remain linkable. Registration keys and citation arguments/values (including exact DOBs) are omitted. The export `meta`
+  remain linkable. Registration keys are replaced by deterministic, linkable pseudonyms at the documented join fields; identity entries and citation arguments/values (including exact DOBs) omit the raw values. The export `meta`
   is rebuilt from fixed redacted constants and server-generated load time, not copied from logs or the normal envelope.
 - The redacted chain **cannot be recomputed**. `audit.chain_verified` and `chain_length` were computed by the server over the
   original unredacted chain, and a third party cannot reproduce them from the export. They must trust the server-side

@@ -9,8 +9,10 @@ import argparse
 import base64
 import binascii
 import copy
+import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 import urllib.parse
 
@@ -44,6 +46,34 @@ def _canary_string(value):
         except ValueError:
             pass
     return any("CANARY" in candidate.upper() for candidate in candidates)
+
+
+_REGISTRATION_ALIAS = re.compile(r"^reg_[0-9a-f]{64}$")
+
+
+def _registration_alias(value):
+    """Return the Go projector's deterministic join alias; this is not semantic anonymity."""
+    if not value or _REGISTRATION_ALIAS.fullmatch(value):
+        return value
+    digest = hashlib.sha256(b"wasl-registration-pseudonym-v1\0" + value.encode("utf-8")).hexdigest()
+    return "reg_" + digest
+
+
+def _pseudonymize_registration_fields(value, parent=""):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            registration_scalar = (key in {"referral_patient", "registration"} or
+                                   parent == "weakest_edge" and key in {"a", "b"})
+            if registration_scalar and isinstance(child, str):
+                value[key] = _registration_alias(child)
+            else:
+                value[key] = _pseudonymize_registration_fields(child, key)
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            value[index] = _pseudonymize_registration_fields(child, parent)
+    elif isinstance(value, str) and parent == "pair":
+        return _registration_alias(value)
+    return value
 
 
 def _checked_export(export):
@@ -83,6 +113,7 @@ def _review_defaults(events):
 def detail_snapshot(export):
     _checked_export(export)
     detail = copy.deepcopy(export["detail"])
+    _pseudonymize_registration_fields(detail)
     detail["meta"] = copy.deepcopy(export["meta"])
     for identity in detail.get("identities", []):
         identity["registration"] = ""
@@ -103,6 +134,7 @@ def detail_snapshot(export):
 def audit_snapshot(export):
     _checked_export(export)
     audit = copy.deepcopy(export["audit"])
+    _pseudonymize_registration_fields(audit)
     audit["meta"] = copy.deepcopy(export["meta"])
     _review_defaults(audit.get("history"))
     return audit
