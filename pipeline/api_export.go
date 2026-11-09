@@ -11,17 +11,21 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 const exportSchema = "wasl-case-export/1"
 
-// caseDetailBody is the body of GET /api/cases/{id} (without the meta envelope). It must stay identical to the
-// projection in caseDetail (api.go); api_export_test.go pins the two against each other.
+// caseDetailBody is the canonical source for GET /api/cases/{id} (without the meta envelope). The handler serves a
+// deep copy with registration keys pseudonymized; api_export_test.go pins its redacted form to the export projection.
 func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	ev := []map[string]interface{}{}
 	links := []map[string]interface{}{}
@@ -57,8 +61,8 @@ func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	}
 }
 
-// caseAuditBody is the body of GET /api/cases/{id}/audit (without the meta envelope). It must stay identical to the
-// projection in caseAudit (api.go); api_export_test.go pins the two against each other.
+// caseAuditBody is the raw internal source for the redacted auditor response and export. It is not served directly:
+// caseAudit and caseExportDoc both pass it through redactedCaseAuditBody.
 func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 	chain := c.last.Chain
 	return map[string]interface{}{
@@ -73,6 +77,23 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 		}(),
 		"history": s.reviewsFor(c.ID),
 	}
+}
+
+// redactedCaseAuditBody is the only audit representation exposed to the auditor role. Raw chains remain available
+// inside queue-authorized clinical detail, while audit responses and exports share the same default-deny projection.
+func (s *apiServer) redactedCaseAuditBody(c *apiCase) (map[string]interface{}, error) {
+	live := s.caseAuditBody(c)
+	generic, err := exportGeneric(live)
+	if err != nil {
+		return nil, err
+	}
+	redacted, _ := redactExport(generic)
+	audit := redacted.(map[string]interface{})
+	audit["chain_verified"], audit["chain_length"] = verifyChain(c.last.Chain), len(c.last.Chain)
+	audit["chain_scope"] = "current"
+	audit["anchor_note"] = live["anchor_note"]
+	audit["chain_note"] = exportChainNote
+	return audit, nil
 }
 
 // ---- redaction -------------------------------------------------------------------------------------------------
@@ -107,9 +128,57 @@ type exportAllow struct {
 var exportLeaf = &exportAllow{leaf: true}
 var exportOperationalLeaf = &exportAllow{leaf: true, op: true}
 
+// exportCanaryString is a regression tripwire, not a clinical-text classifier. It prevents the synthetic canary from
+// being smuggled through an allowlisted structural field in raw, JSON-escaped, Base64, hex or percent-encoded form.
+func exportCanaryString(value string) bool {
+	if len(value) > 4096 {
+		return true
+	}
+	candidates := []string{value}
+	if strings.Contains(value, "%") {
+		if decoded, err := url.PathUnescape(value); err == nil {
+			candidates = append(candidates, decoded)
+		}
+	}
+	if strings.Contains(value, `\u`) {
+		if decoded, err := strconv.Unquote(`"` + value + `"`); err == nil {
+			candidates = append(candidates, decoded)
+		}
+	}
+	compact := strings.TrimSpace(value)
+	if len(compact) >= 8 {
+		if decoded, err := base64.StdEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+		if decoded, err := base64.RawStdEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+		if decoded, err := base64.URLEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+		if decoded, err := base64.RawURLEncoding.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+	}
+	if len(compact) >= 8 && len(compact)%2 == 0 {
+		if decoded, err := hex.DecodeString(compact); err == nil {
+			candidates = append(candidates, string(decoded))
+		}
+	}
+	for _, candidate := range candidates {
+		if strings.Contains(strings.ToUpper(candidate), "CANARY") {
+			return true
+		}
+	}
+	return false
+}
+
 func exportScalarOK(v interface{}, op bool) bool {
 	switch x := v.(type) {
 	case string:
+		if exportCanaryString(x) {
+			return false
+		}
 		if op {
 			return exportSafeOpValue(x)
 		}
@@ -212,12 +281,61 @@ var exportEvidenceAllow = &exportAllow{kids: func() map[string]*exportAllow {
 
 var exportTimelineAllow = &exportAllow{kids: exportKeys("seq", "type", "id", "provider", "status", "day", "arrival_day", "category", "raw_sha", "source")}
 
-var exportCitationAllow = &exportAllow{kids: exportKeys("tool", "arg", "field", "value")}
+var exportCitationAllow = &exportAllow{kids: exportKeys("tool", "field")}
 
 var exportSafeValue = regexp.MustCompile(`^[A-Za-z0-9_.:/|@=+#%-]{1,80}$`)
 
-// exportCitations keeps each citation's tool, arg, field and value and drops every other key (quote, excerpt and
-// any report-derived text). A string value is kept only when it is a single identifier-like token or date.
+var exportRegistrationAlias = regexp.MustCompile(`^reg_[0-9a-f]{64}$`)
+
+// pseudonymizeRegistration preserves operational equality joins without serving a registration key. This deterministic,
+// unkeyed pseudonym is not semantic anonymity: anyone who can guess a registration can compute the same alias.
+func pseudonymizeRegistration(value string) string {
+	if value == "" || exportRegistrationAlias.MatchString(value) {
+		return value
+	}
+	return "reg_" + sha([]byte("wasl-registration-pseudonym-v1\x00"+value))
+}
+
+// pseudonymizeRegistrationFields transforms only fields whose API contract carries registration keys. It operates on
+// generic JSON copies and is idempotent, so a redacted detail response can be projected again without changing aliases.
+func pseudonymizeRegistrationFields(v interface{}, parent string) interface{} {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		for key, child := range x {
+			lk := strings.ToLower(key)
+			registrationScalar := lk == "referral_patient" || lk == "registration" || (parent == "weakest_edge" && (lk == "a" || lk == "b"))
+			if registrationScalar {
+				if value, ok := child.(string); ok {
+					x[key] = pseudonymizeRegistration(value)
+				}
+				continue
+			}
+			x[key] = pseudonymizeRegistrationFields(child, lk)
+		}
+	case []interface{}:
+		for i, child := range x {
+			x[i] = pseudonymizeRegistrationFields(child, parent)
+		}
+	case []string:
+		out := make([]string, len(x))
+		for i, child := range x {
+			if parent == "pair" {
+				out[i] = pseudonymizeRegistration(child)
+			} else {
+				out[i] = child
+			}
+		}
+		return out
+	case string:
+		if parent == "pair" {
+			return pseudonymizeRegistration(x)
+		}
+	}
+	return v
+}
+
+// exportCitations keeps each citation's tool and field and drops arguments, values and every other key (quote, excerpt
+// and report-derived text). In particular, exact DOBs and registration-like citation arguments do not cross the boundary.
 func exportCitations(v interface{}) interface{} {
 	list, ok := v.([]interface{})
 	if !ok {
@@ -413,7 +531,7 @@ var exportDetailAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys()
 	m["review_ledger"] = exportObject(exportKeys("status", "events_applied"))
 	m["case"] = exportCaseAllow
-	m["identities"] = exportList(exportObject(exportKeys("registration", "provider", "role")))
+	m["identities"] = exportList(exportObject(exportKeys("provider", "role")))
 	m["timeline"] = exportList(exportTimelineAllow)
 	m["links"] = exportList(exportLinkAllow)
 	m["evidence"] = exportList(exportEvidenceAllow)
@@ -519,9 +637,14 @@ func exportChainList(v interface{}) interface{} {
 	return out
 }
 
-// redactExport projects the audit body through its default-deny schema. It never mutates its input.
+// redactExport projects the audit body through its default-deny schema and pseudonymizes registration joins. It never
+// mutates its input.
 func redactExport(v interface{}) (interface{}, bool) {
-	return exportProject(v, exportAuditAllow)
+	projected, keep := exportProject(v, exportAuditAllow)
+	if !keep {
+		return nil, false
+	}
+	return pseudonymizeRegistrationFields(projected, ""), true
 }
 
 // redactExportDetail projects every detail section, including nested chains and coordinator/consent overlays. There is
@@ -531,7 +654,7 @@ func redactExportDetail(det map[string]interface{}) map[string]interface{} {
 	if !keep {
 		return map[string]interface{}{}
 	}
-	return r.(map[string]interface{})
+	return pseudonymizeRegistrationFields(r, "").(map[string]interface{})
 }
 
 // exportGeneric deep-copies any value into generic JSON via a marshal/unmarshal round trip (so nothing aliases the
@@ -554,13 +677,23 @@ const exportChainNote = "Block bodies in this export are redacted copies. Block 
 	"cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted " +
 	"current chain and covers that chain only."
 
+// redactedExportMeta is a fixed server-written envelope. Log-derived policy, model, run names and any future metadata
+// never cross the redaction boundary, including in encoded or nested forms.
+func redactedExportMeta(meta map[string]interface{}) map[string]interface{} {
+	loadedAt, _ := meta["loaded_at"].(string)
+	if _, err := time.Parse(time.RFC3339, loadedAt); err != nil {
+		loadedAt = ""
+	}
+	return map[string]interface{}{
+		"api": apiVersion, "data_mode": "simulated", "loaded_at": loadedAt,
+		"policy": "redacted-internal-audit", "reader_model": "not-disclosed", "run": "redacted-internal-audit",
+		"note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
+	}
+}
+
 // caseExportDoc builds the export document for one case. Two calls return identical bytes while the run and the
 // case/review history are unchanged. detail and audit are deep copies; the live bodies and chains are never touched.
 func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
-	// computed from the original chain, before any redaction
-	verified, length := verifyChain(c.last.Chain), len(c.last.Chain)
-	liveAudit := s.caseAuditBody(c)
-	anchorNote := liveAudit["anchor_note"]
 	liveDetail := s.caseDetailBody(c)
 	contact, contactHistory := s.apiContactOverlay(c)
 	liveDetail["api_contact"] = map[string]interface{}{"overlay": contact, "history": contactHistory}
@@ -568,19 +701,14 @@ func (s *apiServer) caseExportDoc(c *apiCase) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	aud, err := exportGeneric(liveAudit)
+	audit, err := s.redactedCaseAuditBody(c)
 	if err != nil {
 		return nil, err
 	}
-	ra, _ := redactExport(aud)
-	detail, audit := redactExportDetail(det), ra.(map[string]interface{})
-	audit["chain_verified"], audit["chain_length"] = verified, length
-	audit["chain_scope"] = "current"
-	audit["anchor_note"] = anchorNote // static server text, not case data
-	audit["chain_note"] = exportChainNote
+	detail := redactExportDetail(det)
 	doc := map[string]interface{}{
 		"schema": exportSchema, "redacted": true,
-		"meta":   s.meta,
+		"meta":   redactedExportMeta(s.meta),
 		"detail": detail,
 		"audit":  audit,
 	}
@@ -623,27 +751,32 @@ func exportCaseID(path string) (string, bool) {
 	return id, true
 }
 
+func (s *apiServer) exportEnvelope(body map[string]interface{}) map[string]interface{} {
+	body["meta"] = redactedExportMeta(s.meta)
+	return body
+}
+
 // caseExportRoute serves GET /api/cases/{id}/export. It answers 404 for an unknown case and 405 for any other method.
 // It is self-contained so the integrator can register it, or call it from caseRoutes, without touching the export logic.
 func (s *apiServer) caseExportRoute(w http.ResponseWriter, r *http.Request) {
 	id, ok := exportCaseID(r.URL.Path)
 	if !ok {
-		writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "not found", "path": r.URL.Path}))
+		writeJSONResp(w, 404, s.exportEnvelope(map[string]interface{}{"error": "not found", "path": r.URL.Path}))
 		return
 	}
 	c := s.cases[id]
 	if c == nil {
-		writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "unknown case", "id": id,
+		writeJSONResp(w, 404, s.exportEnvelope(map[string]interface{}{"error": "unknown case", "id": id,
 			"hint": "case ids are loop ids such as ahs-mushrif/ServiceRequest/AHS-sr-1002; URL-encode the slashes or pass them as-is"}))
 		return
 	}
 	if r.Method != http.MethodGet {
-		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed"}))
+		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed"}))
 		return
 	}
 	doc, err := s.caseExportDoc(c)
 	if err != nil {
-		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "export could not be encoded"}))
+		writeJSONResp(w, 500, s.exportEnvelope(map[string]interface{}{"error": "export could not be encoded"}))
 		return
 	}
 	writeJSONResp(w, 200, doc)

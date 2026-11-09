@@ -5,8 +5,9 @@ package main
 //   wsi7 serve -run <run dir> -data <cohort dir> [-addr 127.0.0.1:8088]
 //
 // Everything served is derived from the run's own logs (out_log, fhir_log, review_queue, reviewer_decisions, anchors,
-// report7, dashboard) — no client-side or invented records. Patient data is synthetic. Review actions (POST) are
-// RBAC-checked and appended to <run>/api_reviews.ndjson as hash-chained events; nothing in the run is overwritten.
+// report7, dashboard) — no client-side or invented records. Patient data is synthetic. Every /api route requires a
+// token-bound principal; reads and mutations have separate RBAC checks. Review actions (POST) are appended to
+// <run>/api_reviews.ndjson as hash-chained events; nothing in the run is overwritten.
 
 import (
 	"bufio"
@@ -103,11 +104,25 @@ func apiHandler(s *apiServer) http.Handler {
 }
 
 func runServe(run, data, addr string) {
+	if os.Getenv("WASL_SYNTHETIC_DATA_ONLY") != "1" {
+		panic("serve requires WASL_SYNTHETIC_DATA_ONLY=1; the demo API must not be used with real clinical data")
+	}
 	s, err := loadAPIVerified(run, data)
 	if err != nil {
 		panic(err)
 	}
-	srv := &http.Server{Addr: addr, Handler: apiHandler(s), ReadHeaderTimeout: 5 * time.Second,
+	// Recovery deployments use their configured Basic-auth identities and TLS;
+	// all other serving modes require the bearer-bound synthetic-demo principals.
+	var handler http.Handler
+	if os.Getenv("WASL_API_USERS_FILE") != "" {
+		handler = apiHandler(s)
+	} else {
+		handler, err = s.handler(os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
+		if err != nil {
+			panic(err)
+		}
+	}
+	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	auth, err := apiAuthFromEnvironment()
 	if err != nil {
@@ -115,7 +130,7 @@ func runServe(run, data, addr string) {
 	}
 	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		apiHandler(s).ServeHTTP(w, r)
+		handler.ServeHTTP(w, r)
 		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
 	}))
 	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
@@ -137,17 +152,18 @@ func runServe(run, data, addr string) {
 	}
 }
 
+// cors is retained for direct in-process handler tests. It is origin-deny by default; external serving uses s.handler,
+// which additionally requires a verified bearer principal on every /api route. Recovery's Basic-auth listener uses
+// its single configured WASL_API_CORS_ORIGIN when browser access is explicitly enabled.
 func cors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("WASL_API_USERS_FILE") == "" {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		} else if origin := os.Getenv("WASL_API_CORS_ORIGIN"); origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-			w.Header().Set("Vary", "Origin")
+			corsWithOrigins(h, map[string]bool{}).ServeHTTP(w, r)
+			return
+		}
+		if origin := os.Getenv("WASL_API_CORS_ORIGIN"); origin != "" {
+			corsWithOrigins(h, map[string]bool{origin: true}).ServeHTTP(w, r)
+			return
 		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(204)
@@ -219,14 +235,24 @@ func loadAPI(run, data string) *apiServer {
 	s.pickAgentFixture()
 	s.loadReviews()
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
-		"policy": PolicyName, "reader_model": s.readerModel(), "loaded_at": time.Now().UTC().Format(time.RFC3339),
+		"policy": PolicyName, "reader_model": safeReaderModel(s.readerModel()), "loaded_at": time.Now().UTC().Format(time.RFC3339),
 		"note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."}
-	if len(s.order) > 0 {
-		if p := s.cases[s.order[0]].last.Policy; p != "" {
-			s.meta["policy"] = p
+	return s
+}
+
+func safeReaderModel(model string) string {
+	if model == "unknown" {
+		return model
+	}
+	if len(model) == 0 || len(model) > 160 || !strings.HasPrefix(model, "gemma-") || strings.ContainsAny(model, " \t\r\n") {
+		return "not-disclosed"
+	}
+	for _, r := range model {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && !strings.ContainsRune("-_.:/()+", r) {
+			return "not-disclosed"
 		}
 	}
-	return s
+	return model
 }
 
 // readerModel reports the second evidence reader actually recorded in this run's evidence provenance.
@@ -608,7 +634,11 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	id, _ := url.PathUnescape(rest)
 	c := s.cases[id]
 	if c == nil {
-		writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "unknown case", "id": id,
+		envelope := s.envelope
+		if sub == "audit" {
+			envelope = s.exportEnvelope
+		}
+		writeJSONResp(w, 404, envelope(map[string]interface{}{"error": "unknown case", "id": id,
 			"hint": "case ids are loop ids such as ahs-mushrif/ServiceRequest/AHS-sr-1002; URL-encode the slashes or pass them as-is"}))
 		return
 	}
@@ -630,24 +660,22 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	writeJSONResp(w, 200, s.envelope(s.caseDetailBody(c)))
+	body, err := exportGeneric(s.caseDetailBody(c))
+	if err != nil {
+		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "case detail could not be encoded"}))
+		return
+	}
+	body = pseudonymizeRegistrationFields(body, "").(map[string]interface{})
+	writeJSONResp(w, 200, s.envelope(body))
 }
 
 func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
-	chain := c.last.Chain
-	ok := verifyChain(chain)
-	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"case": c.ID, "chain": nz(chain), "chain_verified": ok, "chain_length": len(chain),
-		"anchors": s.anchors, "anchor_note": auditAnchorNote(s.anchors),
-		"decision_signatures": func() []map[string]string {
-			out := []map[string]string{}
-			for _, d := range c.decisions {
-				out = append(out, map[string]string{"decision_id": d.ID, "sig": d.Sig, "recomputed": decSig(d), "policy": d.Policy})
-			}
-			return out
-		}(),
-		"history": s.reviewsFor(c.ID),
-	}))
+	audit, err := s.redactedCaseAuditBody(c)
+	if err != nil {
+		writeJSONResp(w, 500, s.exportEnvelope(map[string]interface{}{"error": "audit could not be encoded"}))
+		return
+	}
+	writeJSONResp(w, 200, s.envelope(audit))
 }
 
 func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
@@ -1268,8 +1296,12 @@ type ledgerFile interface {
 }
 
 func appendLedgerLine(path string, line []byte) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
+		return err
+	}
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
 		return err
 	}
 	return appendToLedgerFile(f, line)

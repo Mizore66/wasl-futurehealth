@@ -56,6 +56,9 @@ type PollConsumer struct {
 }
 
 func runFhirPoll(base, runDir string) {
+	if validateLocalCallback(base) != nil || len(mockFHIRToken()) < 16 {
+		panic("fhirpoll requires a loopback mock endpoint and configured WASL_MOCK_FHIR_TOKEN")
+	}
 	nc, js := connect("fhirpoll")
 	defer nc.Close()
 	ctx := context.Background()
@@ -175,7 +178,7 @@ func (c *PollConsumer) poll() bool {
 			c.inc("poll_errors")
 			return false
 		}
-		r.Header.Set("Authorization", "Bearer "+MockToken)
+		r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 		resp, err := c.cl.http.Do(r)
 		if err != nil || resp.StatusCode != 200 {
 			if resp != nil {
@@ -254,7 +257,7 @@ func (c *PollConsumer) export(since float64) bool {
 	if err != nil {
 		return fail()
 	}
-	r.Header.Set("Authorization", "Bearer "+MockToken)
+	r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 	resp, err := c.cl.http.Do(r)
 	if err != nil || resp.StatusCode != 202 {
 		if resp != nil {
@@ -289,7 +292,7 @@ func (c *PollConsumer) export(since float64) bool {
 		if err != nil {
 			return fail()
 		}
-		r.Header.Set("Authorization", "Bearer "+MockToken)
+		r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 		fr, err := c.cl.http.Do(r)
 		if err != nil || fr.StatusCode != 200 {
 			if fr != nil {

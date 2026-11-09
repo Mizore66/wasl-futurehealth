@@ -530,6 +530,9 @@ func drSchema(kind string) map[string]interface{} {
 }
 
 func askDR(url, kind, text string) drGemma {
+	if err := validateLocalEndpoint(url); err != nil {
+		return drGemma{Kind: kind, Model: DRReaderModel, Error: "unsafe reader endpoint: " + err.Error()}
+	}
 	prompt := drClinicPrompt
 	if kind == "dr-screen" {
 		prompt = drScreenPrompt
@@ -612,7 +615,7 @@ func runDRCache(dirs, url, out string) {
 	close(ch)
 	wg.Wait()
 	b, _ := json.MarshalIndent(cache, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 	DRCache = cache
 	res := map[string]interface{}{}
 	for _, dir := range strings.Split(dirs, ",") {
