@@ -236,6 +236,9 @@ class WorkflowTests(unittest.TestCase):
         self.assertEqual(step["with"]["version"], "3.92.5")
 
     def test_container_is_built_from_checkout_and_smoke_tested(self):
+        env = self.jobs["container"]["env"]
+        for role in ("REVIEWER", "REVIEWER_2", "REVIEWER_3", "AUDITOR", "COORDINATOR", "CLINICIAN"):
+            self.assertIn(f"WASL_API_{role}_TOKEN", env)
         commands = self.runs("container")
         self.assertIn("docker build --no-cache", commands)
         self.assertIn("docker compose up --detach --no-build", commands)
