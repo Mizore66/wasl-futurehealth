@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from redacted_snapshot import _canary_string
+from redacted_snapshot import _canary_string, _registration_alias
 
 REQUIRED_FIXTURES = ("evidence_closure", "false_closure_trap", "review_hold")
 MAX_LIMIT = 500
@@ -150,6 +150,15 @@ def check_export_redaction(value, forbidden_keys, path="export"):
         for key, child in value.items():
             fixed_meta_note = path == "export.meta" and key == "note"
             check(fixed_meta_note or key not in forbidden_keys, f"{path}: sensitive field {key!r} was not redacted")
+            registration_scalar = (key in {"referral_patient", "registration"} or
+                                   path.endswith(".weakest_edge") and key in {"a", "b"})
+            if registration_scalar and child not in (None, ""):
+                check(isinstance(child, str) and child == _registration_alias(child),
+                      f"{path}.{key}: registration key was not pseudonymized")
+            if key == "pair" and isinstance(child, list):
+                for i, item in enumerate(child):
+                    check(isinstance(item, str) and (not item or item == _registration_alias(item)),
+                          f"{path}.pair[{i}]: registration key was not pseudonymized")
             check_export_redaction(child, forbidden_keys, f"{path}.{key}")
     elif isinstance(value, list):
         for i, child in enumerate(value):

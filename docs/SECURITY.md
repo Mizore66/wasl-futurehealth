@@ -33,9 +33,11 @@ central authorization and a production threat review; none of those is claimed h
 `GET /api/cases/{id}/export` is an **internal-audit export for an authenticated auditor**, not an external disclosure or
 a de-identification claim. Its metadata is rebuilt from fixed server values. Log-derived policy, model, run and unknown
 metadata are not copied. Identity registration keys and citation arguments/values (including exact DOBs) are omitted.
-Case/report IDs, programme, labels, measurements, dates, linkage information and chain hashes intentionally remain for
-internal audit and can be linkable; recipients must be access-controlled and the document must not be represented as
-HIPAA/GDPR-deidentified.
+Link referral/weakest-edge endpoints and registration pair fields in detail, current/audit chains, review/signoff/outreach
+and agent records use deterministic `reg_…` pseudonyms so equal registrations retain operational joins. These unkeyed,
+guessable pseudonyms remain linkable and are not semantic anonymity. Case/report IDs, programme, labels, measurements,
+dates, linkage information and chain hashes intentionally remain for internal audit and can be linkable; recipients must
+be access-controlled and the document must not be represented as HIPAA/GDPR-deidentified.
 
 The detail/audit projectors are default-deny. Canary regressions cover raw multiword text, escaped and nested values,
 standard and URL-safe Base64 (padded and raw), hex, percent/JSON-Unicode encodings, allowlisted fields, metadata and
@@ -99,6 +101,15 @@ Confirmed findings and disposition:
    clients and per-run environment credentials for the synthetic mock.
 6. **Low: demo output and permissive artifacts.** Names/registrations/quotes were removed from normal demo output;
    clinical writers were changed to 0700/0600 and key legacy ledgers are tightened on open.
+7. **Medium: registration-key exposure through structural allowlists.** The first hardening treated identifier-shaped
+   strings as safe, so link `referral_patient`, `weakest_edge.a/b` and pair arrays retained literal registrations in
+   secured detail, auditor current/audit chains, review/signoff/outreach records, exports and both snapshot converters.
+   Fixed by replacing every named registration-bearing field with the same deterministic, domain-separated SHA-256
+   `reg_…` pseudonym in served deep copies, including outreach-guard chains and agent-pair siblings. Canonical internal
+   chains/evidence remain unchanged, queue-authorized raw clinical quotes remain available, and equal source keys retain
+   operational joins. Non-CANARY MRN regressions cover the secured detail/audit/export routes, all named structures,
+   smoke validation and `detail_snapshot`/`audit_snapshot`. This is deterministic pseudonymization, not semantic
+   anonymity or de-identification; known registrations remain guessable and linkable.
 
 Limits of this remediation and review:
 
@@ -116,10 +127,12 @@ Limits of this remediation and review:
 ## Primary regressions
 
 - `pipeline/security_test.go`: authentication/RBAC/CORS, token identity binding, auditor redaction, metadata/errors,
-  raw/encoded canaries, direct identifiers, loopback egress, mock credentials/callbacks, demo output and file modes.
+  raw/encoded canaries, direct identifiers, non-CANARY registration joins across secured routes, loopback egress, mock
+  credentials/callbacks, demo output and file modes.
 - `pipeline/api_export_test.go`: path-sensitive redaction, deterministic hashes, live-source immutability and export
   status/hash contracts.
 - `scripts/api_smoke.py`: real-HTTP unauthenticated/RBAC checks and whole-export canary scanning.
-- `scripts/redacted_snapshot_test.py`: fail-closed snapshot conversion and raw/escaped/nested/encoded canaries.
+- `scripts/redacted_snapshot_test.py`: fail-closed snapshot conversion, raw/escaped/nested/encoded canaries and
+  deterministic non-CANARY registration pseudonyms across both converters.
 - `web/tests/source-auth.test.ts`: reviewer/auditor tokens, schema-conformant error envelopes and removal of
   self-asserted identity headers.

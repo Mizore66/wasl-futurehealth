@@ -24,8 +24,8 @@ import (
 
 const exportSchema = "wasl-case-export/1"
 
-// caseDetailBody is the body of GET /api/cases/{id} (without the meta envelope). It must stay identical to the
-// projection in caseDetail (api.go); api_export_test.go pins the two against each other.
+// caseDetailBody is the canonical source for GET /api/cases/{id} (without the meta envelope). The handler serves a
+// deep copy with registration keys pseudonymized; api_export_test.go pins its redacted form to the export projection.
 func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	ev := []map[string]interface{}{}
 	links := []map[string]interface{}{}
@@ -284,6 +284,55 @@ var exportTimelineAllow = &exportAllow{kids: exportKeys("seq", "type", "id", "pr
 var exportCitationAllow = &exportAllow{kids: exportKeys("tool", "field")}
 
 var exportSafeValue = regexp.MustCompile(`^[A-Za-z0-9_.:/|@=+#%-]{1,80}$`)
+
+var exportRegistrationAlias = regexp.MustCompile(`^reg_[0-9a-f]{64}$`)
+
+// pseudonymizeRegistration preserves operational equality joins without serving a registration key. This deterministic,
+// unkeyed pseudonym is not semantic anonymity: anyone who can guess a registration can compute the same alias.
+func pseudonymizeRegistration(value string) string {
+	if value == "" || exportRegistrationAlias.MatchString(value) {
+		return value
+	}
+	return "reg_" + sha([]byte("wasl-registration-pseudonym-v1\x00"+value))
+}
+
+// pseudonymizeRegistrationFields transforms only fields whose API contract carries registration keys. It operates on
+// generic JSON copies and is idempotent, so a redacted detail response can be projected again without changing aliases.
+func pseudonymizeRegistrationFields(v interface{}, parent string) interface{} {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		for key, child := range x {
+			lk := strings.ToLower(key)
+			registrationScalar := lk == "referral_patient" || lk == "registration" || (parent == "weakest_edge" && (lk == "a" || lk == "b"))
+			if registrationScalar {
+				if value, ok := child.(string); ok {
+					x[key] = pseudonymizeRegistration(value)
+				}
+				continue
+			}
+			x[key] = pseudonymizeRegistrationFields(child, lk)
+		}
+	case []interface{}:
+		for i, child := range x {
+			x[i] = pseudonymizeRegistrationFields(child, parent)
+		}
+	case []string:
+		out := make([]string, len(x))
+		for i, child := range x {
+			if parent == "pair" {
+				out[i] = pseudonymizeRegistration(child)
+			} else {
+				out[i] = child
+			}
+		}
+		return out
+	case string:
+		if parent == "pair" {
+			return pseudonymizeRegistration(x)
+		}
+	}
+	return v
+}
 
 // exportCitations keeps each citation's tool and field and drops arguments, values and every other key (quote, excerpt
 // and report-derived text). In particular, exact DOBs and registration-like citation arguments do not cross the boundary.
@@ -588,9 +637,14 @@ func exportChainList(v interface{}) interface{} {
 	return out
 }
 
-// redactExport projects the audit body through its default-deny schema. It never mutates its input.
+// redactExport projects the audit body through its default-deny schema and pseudonymizes registration joins. It never
+// mutates its input.
 func redactExport(v interface{}) (interface{}, bool) {
-	return exportProject(v, exportAuditAllow)
+	projected, keep := exportProject(v, exportAuditAllow)
+	if !keep {
+		return nil, false
+	}
+	return pseudonymizeRegistrationFields(projected, ""), true
 }
 
 // redactExportDetail projects every detail section, including nested chains and coordinator/consent overlays. There is
@@ -600,7 +654,7 @@ func redactExportDetail(det map[string]interface{}) map[string]interface{} {
 	if !keep {
 		return map[string]interface{}{}
 	}
-	return r.(map[string]interface{})
+	return pseudonymizeRegistrationFields(r, "").(map[string]interface{})
 }
 
 // exportGeneric deep-copies any value into generic JSON via a marshal/unmarshal round trip (so nothing aliases the

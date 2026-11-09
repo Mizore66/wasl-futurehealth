@@ -79,6 +79,55 @@ class RedactedSnapshotTest(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         convert(source)
 
+    def test_non_canary_registration_keys_are_pseudonymized_consistently(self):
+        referral = "clinic-a|MRN-738291"
+        downstream = "hospital-b|MRN-104857"
+        pair = [referral, downstream]
+        link = {"type": "link_decision", "body": {"referral_patient": referral,
+                "weakest_edge": {"a": referral, "b": downstream, "p": 0.99, "basis": "model"}}}
+        signoff = {"type": "human_signoff", "body": {"item": "link-item", "pair": pair}}
+        guard = {"type": "outreach_guard", "body": {"pair": pair}}
+        chain = [link, signoff, guard]
+        source = copy.deepcopy(self.export)
+        source["detail"].update({
+            "links": [link["body"]],
+            "current": {"chain": chain, "outreach": [{"pair": pair}]},
+            "outreach": [{"pair": pair}],
+            "decisions": [{"outreach": [{"pair": pair}]}],
+        })
+        source["detail"]["review_items"][0].update({"pair": pair, "chain": chain})
+        source["detail"]["signoffs"][0]["pair"] = pair
+        source["detail"]["agent_investigations"][0]["pair"] = pair
+        source["audit"]["chain"] = chain
+
+        detail = detail_snapshot(source)
+        audit = audit_snapshot(source)
+        for output in (detail, audit):
+            encoded = json.dumps(output)
+            self.assertNotIn(referral, encoded)
+            self.assertNotIn(downstream, encoded)
+            self.assertNotIn("MRN-738291", encoded)
+            self.assertNotIn("MRN-104857", encoded)
+        self.assertEqual(source["detail"]["links"][0]["referral_patient"], referral, "input export was mutated")
+
+        referral_alias = detail["links"][0]["referral_patient"]
+        downstream_alias = detail["links"][0]["weakest_edge"]["b"]
+        self.assertEqual(referral_alias, "reg_1df2acb61bcae715657386bf8c868361026674da9a05dbe962280e76a3ab2367")
+        self.assertEqual(downstream_alias, "reg_e3cee6f89fbb3c4faa10a54fca448976804fa980d6902b45ac447dc2370cb207")
+        self.assertRegex(referral_alias, r"^reg_[0-9a-f]{64}$")
+        self.assertRegex(downstream_alias, r"^reg_[0-9a-f]{64}$")
+        self.assertEqual(detail["links"][0]["weakest_edge"]["a"], referral_alias)
+        pair_outputs = [
+            detail["review_items"][0]["pair"], detail["signoffs"][0]["pair"],
+            detail["outreach"][0]["pair"], detail["current"]["outreach"][0]["pair"],
+            detail["decisions"][0]["outreach"][0]["pair"], detail["agent_investigations"][0]["pair"],
+        ]
+        pair_outputs.extend(block["body"]["pair"] for block in detail["current"]["chain"] if "pair" in block["body"])
+        pair_outputs.extend(block["body"]["pair"] for block in detail["review_items"][0]["chain"] if "pair" in block["body"])
+        pair_outputs.extend(block["body"]["pair"] for block in audit["chain"] if "pair" in block["body"])
+        for output in pair_outputs:
+            self.assertEqual(output, [referral_alias, downstream_alias])
+
     def test_non_redacted_or_wrong_schema_fails_closed(self):
         for mutate in (lambda e: e.update(redacted=False), lambda e: e.update(schema="other"), lambda e: e.pop("redacted")):
             source = copy.deepcopy(self.export)

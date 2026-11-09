@@ -341,6 +341,94 @@ func TestExportOmitsDirectIdentifiers(t *testing.T) {
 	}
 }
 
+// Returning a literal registration from any secured detail/audit/export path, or losing the stable joins between
+// pseudonymized copies, must fail this test. The canonical in-memory chain and raw clinical detail evidence must remain.
+func TestSecuredReadsPseudonymizeRegistrationKeysConsistently(t *testing.T) {
+	const referral = "clinic-a|MRN-738291"
+	const downstream = "hospital-b|MRN-104857"
+	s, _ := exportRun(t)
+	c := s.cases[exportLoop]
+	link := c.last.Chain[0].Body
+	link["referral_patient"] = referral
+	link["weakest_edge"] = map[string]interface{}{"a": referral, "b": downstream, "p": 0.99, "basis": "model"}
+	pair := []string{referral, downstream}
+	c.last.Chain = appendBlock(c.last.Chain, "human_signoff", map[string]interface{}{"item": "link-item", "pair": pair, "link": "same"})
+	c.last.Chain = appendBlock(c.last.Chain, "outreach_guard", map[string]interface{}{"loop": exportLoop, "pair": pair, "event": "event-1"})
+	c.last.Outreach = []Outreach{{Kind: "appointment_reminder", Pair: [2]string{referral, downstream}}}
+	s.queue[exportLoop] = []*ReviewItem{{ItemID: "link-item", LoopID: exportLoop, Pair: [2]string{referral, downstream}, Chain: c.last.Chain}}
+	s.signoffs[exportLoop] = []map[string]interface{}{{"item": "link-item", "loop": exportLoop, "pair": pair, "link": "same"}}
+	s.ids[exportLoop] = []map[string]string{{"registration": referral, "provider": "clinic-a", "role": "referral"}, {"registration": downstream, "provider": "hospital-b", "role": "downstream"}}
+	s.agentInv[exportLoop] = []agentInvestigation{{view: map[string]interface{}{"item": "link-item", "pair": pair, "label": "same"}}}
+
+	h := secureTestHandler(t, s, "")
+	responses := map[string]*httptest.ResponseRecorder{
+		"detail": securityRequest(t, h, http.MethodGet, "/api/cases/"+exportLoop, "reviewer-token-1234567890", nil),
+		"audit":  securityRequest(t, h, http.MethodGet, "/api/cases/"+exportLoop+"/audit", "auditor-token-1234567890", nil),
+		"export": securityRequest(t, h, http.MethodGet, "/api/cases/"+exportLoop+"/export", "auditor-token-1234567890", nil),
+	}
+	for name, response := range responses {
+		if response.Code != http.StatusOK {
+			t.Fatalf("%s: got %d: %s", name, response.Code, response.Body.String())
+		}
+		for _, registration := range []string{referral, downstream, "MRN-738291", "MRN-104857"} {
+			if strings.Contains(response.Body.String(), registration) {
+				t.Errorf("%s retained registration key %q", name, registration)
+			}
+		}
+	}
+	if !strings.Contains(responses["detail"].Body.String(), "caecum reached") {
+		t.Error("secured clinical detail lost its authorized raw evidence quote")
+	}
+	if got := c.last.Chain[0].Body["referral_patient"]; got != referral {
+		t.Fatalf("served projections mutated canonical referral registration: %#v", got)
+	}
+	if got := s.ids[exportLoop][0]["registration"]; got != referral {
+		t.Fatalf("served projections mutated canonical identities: %q", got)
+	}
+
+	doc := decodeMap(t, responses["export"].Body.Bytes())
+	detail := doc["detail"].(map[string]interface{})
+	first := func(v interface{}) map[string]interface{} { return v.([]interface{})[0].(map[string]interface{}) }
+	link = first(detail["links"])
+	referralAlias, _ := link["referral_patient"].(string)
+	downstreamAlias := link["weakest_edge"].(map[string]interface{})["b"]
+	if referralAlias != "reg_1df2acb61bcae715657386bf8c868361026674da9a05dbe962280e76a3ab2367" || downstreamAlias != "reg_e3cee6f89fbb3c4faa10a54fca448976804fa980d6902b45ac447dc2370cb207" {
+		t.Fatalf("registration pseudonyms diverged from fixed cross-language fixtures: %q %q", referralAlias, downstreamAlias)
+	}
+	if len(referralAlias) != 68 || !strings.HasPrefix(referralAlias, "reg_") {
+		t.Fatalf("referral pseudonym has wrong shape: %q", referralAlias)
+	}
+	if link["weakest_edge"].(map[string]interface{})["a"] != referralAlias {
+		t.Error("link endpoint and referral aliases differ")
+	}
+	assertPair := func(name string, value interface{}) {
+		t.Helper()
+		got, ok := value.([]interface{})
+		if !ok || len(got) != 2 || got[0] != referralAlias || got[1] != downstreamAlias {
+			t.Errorf("%s pair lost stable registration joins: %#v", name, got)
+		}
+	}
+	assertPair("review item", first(detail["review_items"])["pair"])
+	assertPair("signoff", first(detail["signoffs"])["pair"])
+	assertPair("outreach", first(detail["outreach"])["pair"])
+	assertPair("current outreach", first(detail["current"].(map[string]interface{})["outreach"])["pair"])
+	assertPair("decision history outreach", first(first(detail["decisions"])["outreach"])["pair"])
+	assertPair("agent investigation", first(detail["agent_investigations"])["pair"])
+	for _, root := range []interface{}{detail["current"].(map[string]interface{})["chain"], doc["audit"].(map[string]interface{})["chain"], first(detail["review_items"])["chain"]} {
+		for _, rawBlock := range root.([]interface{}) {
+			body := rawBlock.(map[string]interface{})["body"].(map[string]interface{})
+			switch rawBlock.(map[string]interface{})["type"] {
+			case "link_decision":
+				if body["referral_patient"] != referralAlias || body["weakest_edge"].(map[string]interface{})["a"] != referralAlias || body["weakest_edge"].(map[string]interface{})["b"] != downstreamAlias {
+					t.Errorf("chain link lost stable aliases: %#v", body)
+				}
+			case "human_signoff", "outreach_guard":
+				assertPair("chain "+rawBlock.(map[string]interface{})["type"].(string), body["pair"])
+			}
+		}
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
