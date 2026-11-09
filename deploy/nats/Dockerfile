@@ -24,7 +24,9 @@ RUN apk upgrade --no-cache \
 COPY --from=build /go/bin/nats-server /usr/local/bin/nats-server
 COPY --from=upstream /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 COPY nats.conf /etc/nats/wasl.conf
+COPY nats-production.conf /etc/nats/wasl-production.conf
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/wasl-nats-entrypoint.sh
+RUN chown -R 10001:10001 /data /etc/nats
 USER 10001:10001
 VOLUME ["/data"]
 ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]
