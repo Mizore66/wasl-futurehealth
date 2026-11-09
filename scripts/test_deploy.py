@@ -245,6 +245,24 @@ exit 2
             self.assertEqual(result.returncode, 0, result.stdout)
             self.assertIn("assets OK", result.stdout)
 
+    def test_demo_check_uses_listener_table_not_all_open_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bindir = Path(tmp) / "bin"
+            bindir.mkdir()
+            lsof = bindir / "lsof"
+            lsof.write_text("#!/bin/sh\nprintf '1 /bin/bash 0 /dev/null\\n'\n")
+            lsof.chmod(0o755)
+            netstat = bindir / "netstat"
+            netstat.write_text("#!/bin/sh\nprintf 'Active Internet connections (only servers)\\n'\n")
+            netstat.chmod(0o755)
+            env = os.environ.copy()
+            env.update(PATH=str(bindir) + os.pathsep + "/opt/anaconda3/bin" + os.pathsep + env["PATH"],
+                       WASL_NATS_EXTERNAL="1", WASL_NATS_URL="nats://nats-0:4222")
+            result = subprocess.run([str(ROOT / "scripts/demo.sh"), "check"], cwd=ROOT, env=env,
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertIn("assets OK", result.stdout)
+
     def test_demo_refuses_binary_older_than_sources(self):
         # ROOT is derived from the script location, so run a copy inside a minimal tree
         with tempfile.TemporaryDirectory() as tmp:
