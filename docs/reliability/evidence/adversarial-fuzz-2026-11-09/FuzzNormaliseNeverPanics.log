@@ -1,9 +1,9 @@
 === RUN   FuzzNormaliseNeverPanics
-fuzz: elapsed: 0s, gathering baseline coverage: 0/263 completed
-fuzz: elapsed: 1s, gathering baseline coverage: 263/263 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 37248 (12416/sec), new interesting: 14 (total: 277)
-fuzz: elapsed: 4s, execs: 37248 (0/sec), new interesting: 14 (total: 277)
---- PASS: FuzzNormaliseNeverPanics (4.06s)
+fuzz: elapsed: 0s, gathering baseline coverage: 0/290 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 290/290 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 19831 (6608/sec), new interesting: 5 (total: 295)
+fuzz: elapsed: 4s, execs: 19831 (0/sec), new interesting: 5 (total: 295)
+--- PASS: FuzzNormaliseNeverPanics (4.12s)
 === NAME  
 PASS
-ok  	wsi	5.059s
+ok  	wsi	4.844s

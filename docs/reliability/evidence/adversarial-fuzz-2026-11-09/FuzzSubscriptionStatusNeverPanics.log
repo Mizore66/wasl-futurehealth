@@ -1,9 +1,9 @@
 === RUN   FuzzSubscriptionStatusNeverPanics
-fuzz: elapsed: 0s, gathering baseline coverage: 0/235 completed
-fuzz: elapsed: 1s, gathering baseline coverage: 235/235 completed, now fuzzing with 4 workers
-fuzz: elapsed: 3s, execs: 29064 (9687/sec), new interesting: 19 (total: 254)
-fuzz: elapsed: 4s, execs: 29064 (0/sec), new interesting: 19 (total: 254)
---- PASS: FuzzSubscriptionStatusNeverPanics (4.07s)
+fuzz: elapsed: 0s, gathering baseline coverage: 0/270 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 270/270 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 9031 (3010/sec), new interesting: 1 (total: 271)
+fuzz: elapsed: 4s, execs: 9031 (0/sec), new interesting: 1 (total: 271)
+--- PASS: FuzzSubscriptionStatusNeverPanics (4.09s)
 === NAME  
 PASS
-ok  	wsi	4.408s
+ok  	wsi	4.467s
