@@ -101,10 +101,13 @@ class AugmentSbomTests(unittest.TestCase):
         )
         self.assertEqual(bom["metadata"]["component"]["bom-ref"], "wasl:source-root")
         self.assertEqual(next(c for c in bom["components"] if c.get("name") == "web/pnpm-lock.yaml")["bom-ref"], "wasl:manifest:web/pnpm-lock.yaml")
-        self.assertEqual(bom["dependencies"][0], {
-            "ref": "wasl:source-root", "dependsOn": ["wasl:manifest:web/pnpm-lock.yaml"],
-        })
-        self.assertEqual(bom["dependencies"][1]["ref"], "wasl:manifest:web/pnpm-lock.yaml")
+        dependencies = {d["ref"]: d for d in bom["dependencies"]}
+        self.assertEqual(dependencies["wasl:source-root"]["dependsOn"], ["wasl:manifest:web/pnpm-lock.yaml"])
+        self.assertEqual(dependencies["wasl:manifest:web/pnpm-lock.yaml"]["dependsOn"], ["npm-minimatch"])
+        self.assertEqual([c["bom-ref"] for c in bom["components"]], sorted(c["bom-ref"] for c in bom["components"]))
+        self.assertEqual([d["ref"] for d in bom["dependencies"]], sorted(d["ref"] for d in bom["dependencies"]))
+        for dependency in bom["dependencies"]:
+            self.assertEqual(dependency["dependsOn"], sorted(dependency["dependsOn"]))
 
     def test_refuses_a_dirty_tree_as_clean_release_evidence(self):
         with self.assertRaisesRegex(ValueError, "dirty"):

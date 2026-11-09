@@ -200,6 +200,10 @@ def augment_sbom(raw: dict, root: Path, *, revision: str, committed_at: str, dir
         {"name": "wasl:license-discovery-system", "value": platform.system().lower()},
         {"name": "wasl:license-discovery-machine", "value": platform.machine().lower()},
     ]
+    bom["components"].sort(key=lambda component: component.get("bom-ref", ""))
+    for dependency in bom.get("dependencies", []):
+        dependency["dependsOn"] = sorted(dependency.get("dependsOn", []))
+    bom.get("dependencies", []).sort(key=lambda dependency: dependency.get("ref", ""))
     bom["serialNumber"] = "urn:uuid:" + str(uuid.uuid5(uuid.NAMESPACE_URL, "wasl-source-sbom:" + revision))
     bom["version"] = 1
     return bom
