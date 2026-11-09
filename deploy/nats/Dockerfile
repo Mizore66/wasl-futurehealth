@@ -4,7 +4,7 @@
 # It holds no key: the JetStream key is read from $WASL_JS_KEY in the container environment.
 # entrypoint.sh refuses to start on retained stores with a wrong or missing key (nats-server would otherwise start,
 # fail to decrypt them and let the cluster reset the streams).
-FROM nats:2.12.1-alpine
+FROM --platform=linux/${TARGETARCH} nats:2.12.1-alpine
 COPY nats.conf /etc/nats/wasl.conf
 COPY --chmod=0755 entrypoint.sh /usr/local/bin/wasl-nats-entrypoint.sh
 ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]

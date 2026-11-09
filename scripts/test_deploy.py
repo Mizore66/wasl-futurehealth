@@ -169,6 +169,11 @@ exit 2
         self.assertRegex(df, r"COPY --chmod=0755 entrypoint\.sh /usr/local/bin/wasl-nats-entrypoint\.sh")
         self.assertIn('ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]', df)
 
+    def test_nats_base_is_resolved_for_target_architecture(self):
+        # A cached single-architecture tag must not override the requested build target.
+        df = (ROOT / "deploy/nats/Dockerfile").read_text()
+        self.assertIn("FROM --platform=linux/${TARGETARCH} nats:2.12.1-alpine", df)
+
     def test_nats_entrypoint_refuses_wrong_or_missing_key_on_retained_data(self):
         with tempfile.TemporaryDirectory() as tmp:
             data = Path(tmp) / "data"
