@@ -278,7 +278,7 @@ func (c *PollConsumer) export(since float64) bool {
 		} `json:"output"`
 	}
 	trimmed := bytes.TrimSpace(b)
-	if len(trimmed) == 0 || trimmed[0] != '{' || rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &man) != nil {
+	if len(trimmed) == 0 || trimmed[0] != '{' || rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &man) != nil || man.Output == nil {
 		return fail()
 	}
 	for _, o := range man.Output {
