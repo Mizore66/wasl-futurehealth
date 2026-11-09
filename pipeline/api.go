@@ -1275,6 +1275,32 @@ func appendToLedgerFile(f ledgerFile, line []byte) error {
 // rejectDuplicateKeys fails on any object that repeats a key: encoding/json keeps the last value silently, so
 // two readers could disagree about what was submitted.
 func rejectDuplicateKeys(raw []byte) error {
+	return rejectDuplicateKeysMode(raw, false)
+}
+
+// rejectSemanticDuplicateKeys also rejects case variants because typed Go JSON
+// decoding matches struct fields with the same Unicode simple-fold semantics.
+func rejectSemanticDuplicateKeys(raw []byte) error {
+	return rejectDuplicateKeysMode(raw, true)
+}
+
+func foldJSONName(s string) string {
+	var folded strings.Builder
+	folded.Grow(len(s))
+	for _, r := range s {
+		for {
+			next := unicode.SimpleFold(r)
+			if next <= r {
+				break
+			}
+			r = next
+		}
+		folded.WriteRune(r)
+	}
+	return folded.String()
+}
+
+func rejectDuplicateKeysMode(raw []byte, fold bool) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	var walk func() error
 	walk = func() error {
@@ -1302,8 +1328,12 @@ func rejectDuplicateKeys(raw []byte) error {
 				return err
 			}
 			k, _ := kt.(string)
+			original := k
+			if fold {
+				k = foldJSONName(k)
+			}
 			if seen[k] {
-				return fmt.Errorf("duplicate JSON key %q", k)
+				return fmt.Errorf("duplicate JSON key %q", original)
 			}
 			seen[k] = true
 			if err := walk(); err != nil {
@@ -1433,7 +1463,11 @@ func (s *apiServer) loadReviews() {
 	defer f.Close()
 	br := bufio.NewReaderSize(f, 1<<16)
 	for ln := 1; ; ln++ {
-		line, rerr := br.ReadBytes('\n')
+		line, rerr := readLedgerRecord(br)
+		if errors.Is(rerr, errLedgerRecordTooLarge) {
+			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, rerr)
+			return
+		}
 		if rerr != nil && rerr != io.EOF {
 			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, rerr)
 			return

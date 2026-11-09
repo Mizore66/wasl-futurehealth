@@ -98,7 +98,11 @@ func (c *ReaderClient) loadLedger() {
 		c.ledger = map[string]ReaderResult{}
 	}
 	for lineNo := 1; ; lineNo++ {
-		line, readErr := br.ReadBytes('\n')
+		line, readErr := readLedgerRecord(br)
+		if readErr == errLedgerRecordTooLarge {
+			invalid("reader ledger line %d: %v", lineNo, readErr)
+			return
+		}
 		if readErr == io.EOF && len(line) == 0 {
 			break
 		}

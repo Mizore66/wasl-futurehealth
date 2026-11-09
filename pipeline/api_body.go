@@ -22,7 +22,7 @@ func decodeAPIBody(w http.ResponseWriter, r *http.Request, limit int64, dst inte
 	if err != nil {
 		return fmt.Errorf("body unreadable or exceeds %d bytes", limit)
 	}
-	if err := rejectDuplicateKeys(raw); err != nil {
+	if err := rejectSemanticDuplicateKeys(raw); err != nil {
 		return err
 	}
 	trimmed := bytes.TrimSpace(raw)

@@ -124,6 +124,22 @@ func TestHL7ToResourceRejectsShapeConfusionWithoutPanics(t *testing.T) {
 	}
 }
 
+func TestHL7ToResourceRejectsResourceNormaliseDrops(t *testing.T) {
+	m, err := ParseHL7(hl7WithResource(t, `{"resourceType":"DiagnosticReport","contained":[null]}`, false))
+	if err != nil {
+		t.Fatal(err)
+	}
+	prov, msgID, res, err := m.ToResource()
+	if err == nil {
+		body, _ := json.Marshal(res)
+		event, signoff := normalise(prov, 0, body)
+		if event == nil && signoff == nil {
+			t.Fatalf("HL7 accepted a resource that normalise drops; listener would publish then acknowledge %s", msgID)
+		}
+		t.Fatal("shape-confused embedded resource accepted")
+	}
+}
+
 func TestMLLPBoundsPreambleAndFrame(t *testing.T) {
 	valid := mllpFrame([]byte(validHL7Header() + "\r"))
 	for name, raw := range map[string][]byte{
@@ -230,6 +246,18 @@ func TestHookValidatesBeforeAcknowledgement(t *testing.T) {
 	}
 }
 
+func TestHookRejectsDuplicateNotificationEnvelopeKeys(t *testing.T) {
+	raw := bytes.Replace(validHandshakeNotification(t), []byte(`"resourceType":"Bundle"`), []byte(`"resourceType":"Parameters","resourceType":"Bundle"`), 1)
+	c := hookTestConsumer(1)
+	req := httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(raw))
+	req.Header.Set("Authorization", "Bearer "+HookToken)
+	rec := httptest.NewRecorder()
+	c.hook(rec, req)
+	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
+		t.Fatalf("duplicate-key notification envelope acknowledged: code=%d queued=%d", rec.Code, len(c.inbox))
+	}
+}
+
 func TestHookRejectsInvalidInlineResourceAndFocusMismatch(t *testing.T) {
 	for name, resource := range map[string]string{
 		"shape confused": `{"resourceType":"DiagnosticReport","id":"r1","meta":{"source":"urn:ae:provider:p1","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"code":{"coding":[null]}}`,
@@ -333,6 +361,7 @@ func TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies(t *testing.T) {
 		url := srv.URL + "/api/cases/" + agentLoop("1") + "/review"
 		for name, body := range map[string]string{
 			"duplicate key":             `{"decision":"same","decision":"different"}`,
+			"case-variant duplicate":    `{"decision":"same","Decision":"different"}`,
 			"unknown field":             `{"decision":"same","unexpected":true}`,
 			"valid prefix beyond limit": `{"decision":"same"} ` + strings.Repeat(" ", adversarialReviewLimit+1),
 		} {
@@ -348,6 +377,7 @@ func TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies(t *testing.T) {
 		valid := consentBody("consent_granted", "sig-head-1", "")
 		for name, body := range map[string]string{
 			"duplicate key":             `{"event":"consent_granted","event":"consent_denied","expected_head":"sig-head-1"}`,
+			"case-variant duplicate":    `{"event":"consent_granted","Event":"consent_granted","expected_head":"sig-head-1"}`,
 			"unknown field":             strings.TrimSuffix(valid, "}") + `,"unexpected":true}`,
 			"valid prefix beyond limit": valid + strings.Repeat(" ", adversarialConsentLimit+1),
 		} {
@@ -361,6 +391,7 @@ func TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies(t *testing.T) {
 		target := r.review(undoCaseA, RoleReviewer, "r1", "same")
 		for name, body := range map[string]string{
 			"duplicate key":             fmt.Sprintf(`{"target":%q,"target":%q}`, target, target),
+			"case-variant duplicate":    fmt.Sprintf(`{"target":%q,"Target":%q}`, target, target),
 			"unknown field":             fmt.Sprintf(`{"target":%q,"unexpected":true}`, target),
 			"valid prefix beyond limit": fmt.Sprintf(`{"target":%q}`, target) + strings.Repeat(" ", adversarialUndoLimit+1),
 		} {
