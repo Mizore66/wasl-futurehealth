@@ -30,13 +30,13 @@ fi
 COMMON=(
   --config "$CONFIG"
   --ignorefile ""
-  --include-dev-deps
   --skip-java-db-update
   --skip-vex-repo-update
   --disable-telemetry
   --skip-version-check
   --no-progress
 )
+FS_COMMON=("${COMMON[@]}" --include-dev-deps)
 OFFLINE_ARGS=()
 if [[ "$OFFLINE" == 1 ]]; then
   OFFLINE_ARGS=(--offline-scan --skip-db-update)
@@ -45,6 +45,7 @@ MANIFEST_OFFLINE=()
 if [[ "$OFFLINE" == 1 ]]; then MANIFEST_OFFLINE=(--offline); fi
 IMAGE_SOURCE_ARGS=()
 if [[ -n "${TRIVY_IMAGE_SOURCE:-}" ]]; then IMAGE_SOURCE_ARGS=(--image-src "$TRIVY_IMAGE_SOURCE"); fi
+if [[ -n "${TRIVY_PODMAN_HOST:-}" ]]; then IMAGE_SOURCE_ARGS+=(--podman-host "$TRIVY_PODMAN_HOST"); fi
 
 case "$MODE" in
   generate|verify)
@@ -59,13 +60,13 @@ case "$MODE" in
     mkdir -p "$DESTINATION"
     "$PYTHON" -I "$TOOL" context --root "$ROOT" ${CONTEXT_ARGS[@]+"${CONTEXT_ARGS[@]}"} --output "$TEMP/context.json"
 
-    "$TRIVY" fs "${COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format cyclonedx --scanners license \
+    "$TRIVY" fs "${FS_COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format cyclonedx --scanners license \
       --output "$TEMP/repository.raw.json" "$ROOT"
     "$PYTHON" -I "$TOOL" augment-sbom --input "$TEMP/repository.raw.json" --context "$TEMP/context.json" \
       --output "$DESTINATION/repository.cdx.json"
 
     set +e
-    "$TRIVY" fs "${COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format json --scanners vuln --exit-code 1 \
+    "$TRIVY" fs "${FS_COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format json --scanners vuln --exit-code 1 \
       --output "$TEMP/vulnerabilities.raw.json" "$ROOT"
     VULNERABILITY_RC=$?
     set -e
@@ -73,7 +74,7 @@ case "$MODE" in
     "$PYTHON" -I "$TOOL" normalize-vulnerabilities --input "$TEMP/vulnerabilities.raw.json" \
       --context "$TEMP/context.json" --scanner "$TEMP/trivy-version.json" --output "$DESTINATION/vulnerabilities.json"
 
-    "$TRIVY" fs "${COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format json --scanners license \
+    "$TRIVY" fs "${FS_COMMON[@]}" ${OFFLINE_ARGS[@]+"${OFFLINE_ARGS[@]}"} --format json --scanners license \
       --output "$TEMP/licenses.raw.json" "$ROOT"
     "$PYTHON" -I "$TOOL" normalize-licenses --input "$TEMP/licenses.raw.json" \
       --context "$TEMP/context.json" --scanner "$TEMP/trivy-version.json" --output "$DESTINATION/licenses.json"
