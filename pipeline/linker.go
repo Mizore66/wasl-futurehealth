@@ -448,11 +448,7 @@ func (L *LinkerCore) candidates(r *Rec) []cand {
 }
 
 func dot(a, b []float32) float64 {
-	var s float32
-	for i := range a {
-		s += a[i] * b[i]
-	}
-	return float64(s)
+	return float64(dotR(a, b))
 }
 
 // reportContentKey: identity of a report's content for cross-transport de-duplication ("" for other events).

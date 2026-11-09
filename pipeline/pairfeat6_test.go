@@ -8,10 +8,10 @@ import (
 	"testing"
 )
 
-// featdump -persons 400 -seed 1019 -noise v1t -namesakes 0.1 -familynamesakes 0.1 (the pairfeat4/pairfeat5 train argv),
-// taken with the CLI (UrduFix on) at 931a823, before pairfeat6.
+// Fixture protocol: featdump -persons 400 -seed 1019 -noise v1t -namesakes 0.1 -familynamesakes 0.1
+// (the pairfeat4/pairfeat5 train argv), with the CLI's UrduFix on; hashes include explicit dot-product rounding.
 const (
-	goldenTrainNsFam1019   = "0b86ffd7f1082bc789b1cdfb2fc5e61af637b23ee9504b94dcd530ad1ec5b99e"
+	goldenTrainNsFam1019   = "51d17fba60e872bfe7ad6a14c4aec74d8cba4ae347b3e7d422912bd801836535"
 	goldenTrainNsFam1019Sc = "2e292038109d913b8d036f87bfaf8a06dd0a38246340c64914102497a3ca8c16"
 )
 
@@ -238,7 +238,7 @@ func TestPairfeat6OffFeatDumpGolden(t *testing.T) {
 		}
 	}
 	c, s := runFD2(t, "train", 1019, 0.1, 0.1)
-	if hex256(c) != goldenTrainNsFam1019 || hex256(s) != goldenTrainNsFam1019Sc {
+	if hex256(c) != goldenForArch(t, goldenTrainNsFam1019, goldenTrainNsFam1019AMD64) || hex256(s) != goldenTrainNsFam1019Sc {
 		t.Errorf("train 1019 -namesakes 0.1 -familynamesakes 0.1: csv %s sidecar %s", hex256(c), hex256(s))
 	}
 }

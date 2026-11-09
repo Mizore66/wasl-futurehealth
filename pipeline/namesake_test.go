@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -17,12 +18,35 @@ import (
 
 const (
 	// Step 1 goldens of the given-name path, taken at BASE with -namesakes 0.1 (train) and plain (cal).
-	goldenTrainNs1019   = "1f1b1722b57bd5e971036c3cb0dc9993b0c6ce9b99055222f93f7b5a73b6d80d"
+	// CSV goldens include dotR's explicit float32 product rounding; exact bytes remain architecture-specific below.
+	goldenTrainNs1019   = "64de7ab65acd7bd41cb7fb6c93046149cfd8113eab6e6c7e6da7ee2ad0fa1bb9"
 	goldenTrainNs1019Sc = "8e2ed2b80c1e180e3409ada6b095d361aa365fba8c8252c92b50c445dd1e145a"
 	goldenCal2011Sc     = "9c0ab119ec32be21080e15e1086c5bbc9f464eb58473d1e441917bc005653828"
-	goldenTrain1019     = "6badc8881764b6c5209c9f8ffdb6ab393fdcfa00f0188161d637667fca5dba5f"
-	goldenCal2011       = "7ed50419dda1df06b96091446c76c5be9ae63c1391999c5e2dc4100c98a8c9d2"
+	goldenTrain1019     = "0a014c8846aae1b7169af6bb5cf4edd08bec5d5b6c76139bd2db3db203cfd0d7"
+	goldenCal2011       = "92399cd0e226c68a2e2aaa412e30d11ada6569ac971a81dd186c2afd4280f65f"
+
+	// Exact AMD64 companions reproduced with Go 1.27.3 on Linux. float32 encoder/math results differ by a few ULPs
+	// between AMD64 and ARM64 (maximum observed feature delta 7.2e-7), so exact CSV hashes must remain architecture-specific.
+	goldenTrain1019AMD64      = "014dcd6bc799d4fd1486620238bb0a61f78cf9d9ce48c9fd84db507bf1ddf4e1"
+	goldenCal2011AMD64        = "7bfd5f067e07d584f3ab1aae83c528b990ee064bd34226edc57c54697105db31"
+	goldenTrainNs1019AMD64    = "1841782ab89bc08319e188033aa2ae42af872c29a4ff9176bb7f3a0423773b6b"
+	goldenTrainNsFam1019AMD64 = "3c3ffb3dee4337e50a39c0a7126c3e8e7e8cca6013c65e0fbdd1e05a40260f30"
+	goldenPF6Train1019AMD64   = "0d8bc6bcadac0148b270fef7697983a065043763410df776372dca02e97c65ec"
+	goldenPF6Cal2011AMD64     = "1464f5eee870f39c8d62bf6819c792befaa18d8b483622d67f3944756e747e15"
 )
+
+func goldenForArch(t *testing.T, arm64, amd64 string) string {
+	t.Helper()
+	switch runtime.GOARCH {
+	case "arm64":
+		return arm64
+	case "amd64":
+		return amd64
+	default:
+		t.Fatalf("no exact feature-dump golden for architecture %s", runtime.GOARCH)
+		return ""
+	}
+}
 
 func TestNamesakeValidate(t *testing.T) {
 	for _, c := range []struct {
@@ -179,7 +203,7 @@ func TestNamesakeFeatDumpRateZeroGolden(t *testing.T) {
 		split string
 		seed  int64
 		hash  string
-	}{{"train", 1019, goldenTrain1019}, {"cal", 2011, goldenCal2011}} {
+	}{{"train", 1019, goldenForArch(t, goldenTrain1019, goldenTrain1019AMD64)}, {"cal", 2011, goldenForArch(t, goldenCal2011, goldenCal2011AMD64)}} {
 		b, sc, _ := runFD(t, g.split, g.seed, 0)
 		h := sha256.Sum256(b)
 		if got := hex.EncodeToString(h[:]); got != g.hash {
@@ -372,11 +396,11 @@ func hex256(b []byte) string { h := sha256.Sum256(b); return hex.EncodeToString(
 
 func TestFamilyFeatDumpRateZeroGoldens(t *testing.T) {
 	c, s := runFD2(t, "train", 1019, 0.1, 0)
-	if hex256(c) != goldenTrainNs1019 || hex256(s) != goldenTrainNs1019Sc {
+	if hex256(c) != goldenForArch(t, goldenTrainNs1019, goldenTrainNs1019AMD64) || hex256(s) != goldenTrainNs1019Sc {
 		t.Errorf("train 1019 -namesakes 0.1: csv %s sidecar %s", hex256(c), hex256(s))
 	}
 	c, s = runFD2(t, "cal", 2011, 0, 0)
-	if hex256(c) != goldenCal2011 || hex256(s) != goldenCal2011Sc {
+	if hex256(c) != goldenForArch(t, goldenCal2011, goldenCal2011AMD64) || hex256(s) != goldenCal2011Sc {
 		t.Errorf("cal 2011: csv %s sidecar %s", hex256(c), hex256(s))
 	}
 }
