@@ -51,9 +51,11 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 ## Build and run
 
-**Requirements:** Go ≥1.22, Python 3.10+, and `nats-server` v2.10+ (`brew install nats-server`).
+**Requirements:** Go 1.27.2 or newer (matching `pipeline/go.mod`), Python 3.12+, and `nats-server` v2.10+ (`brew install nats-server`). CI uses NATS 2.12.1 and Python 3.12.16.
 
-Python packages: NumPy and SciPy for the booking engine (pinned in the `Dockerfile` as numpy 2.3.5 and scipy 1.16.3), and PyYAML for `scripts/check_deploy.py` and `scripts/test_deploy.py` (`pip install numpy scipy pyyaml`). A missing PyYAML is never a pass: `check_deploy.py` exits non-zero with "did NOT run", and the `test_deploy.py` compose tests error on the missing import (no test skips when PyYAML is absent).
+Python packages: NumPy and SciPy for the booking engine (pinned in the `Dockerfile` as numpy 2.3.5 and scipy 1.16.3), and PyYAML for `scripts/check_deploy.py` and `scripts/test_deploy.py`. For the complete pinned test and scanner environment, use `python3 -m pip install -r requirements-ci.txt`. A missing PyYAML is never a pass: `check_deploy.py` exits non-zero with "did NOT run", and the `test_deploy.py` compose tests error on the missing import (no test skips when PyYAML is absent).
+
+Pull-request CI runs all Go, Python, frontend, browser, security, and container gates described in [`docs/CI.md`](docs/CI.md). Branch protection requires the aggregate **CI required** check, which rejects failed, cancelled, skipped, or missing lanes.
 
 ```bash
 scripts/demo.sh          # check → build → test → cohort → integrated run → audit → tamper → report  (~5 min)
