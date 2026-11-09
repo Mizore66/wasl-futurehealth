@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -39,6 +40,58 @@ func TestPresentIDsTerminatesWithDuplicateStoredIDs(t *testing.T) {
 	ids := presentIDs(env.js, "DUPSCAN", ">")
 	if len(ids) != 1 || !ids["same-id"] {
 		t.Fatalf("unexpected recovered IDs: %v", ids)
+	}
+}
+
+func TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion(t *testing.T) {
+	for name, manifest := range map[string]string{
+		"null":   `null`,
+		"array":  `[]`,
+		"string": `"manifest"`,
+		"number": `1`,
+		"bool":   `true`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			env := startTestNATS(t)
+			srv := exportFaultServer(t, manifest, "")
+			defer srv.Close()
+			c := pollFaultConsumer(srv.URL, srv.Client())
+			c.js = env.js
+			var err error
+			c.kv, err = env.js.CreateOrUpdateKeyValue(env.ctx, jetstream.KeyValueConfig{Bucket: "FHIRPOLL", Replicas: 1})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var completed bool
+			requireNoPanic(t, func() { completed = c.export(-1) })
+			if completed {
+				t.Error("invalid manifest was accepted as a successful export")
+			}
+			if c.stats["export_errors"] == 0 || c.stats["exports"] != 0 {
+				t.Errorf("invalid manifest changed export success accounting: %v", c.stats)
+			}
+			if c.eof {
+				t.Error("invalid manifest set EOF state")
+			}
+			if len(c.done) != 0 {
+				t.Errorf("invalid manifest produced resource records: %v", c.done)
+			}
+			if _, err := c.kv.Get(env.ctx, "checkpoint"); !errors.Is(err, jetstream.ErrKeyNotFound) {
+				t.Errorf("invalid manifest wrote a checkpoint or checkpoint read failed: %v", err)
+			}
+			stream, err := env.js.Stream(env.ctx, "FHIR")
+			if err != nil {
+				t.Fatal(err)
+			}
+			info, err := stream.Info(env.ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.State.Msgs != 0 {
+				t.Errorf("invalid manifest published FHIR records or EOF controls: %+v", info.State)
+			}
+		})
 	}
 }
 
