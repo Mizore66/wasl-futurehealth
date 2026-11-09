@@ -12,7 +12,10 @@ entrypoint, so this is not a continuous-ingest or production-availability claim.
 `scripts/soak.24h.json` freezes the 86,400-second duration, sampling cadence, absolute restart schedule, HTTP latency
 budgets, leak windows, recovery budgets, and disk limits before T0. A full run requires a committed, clean source tree.
 The controller checks host disk, creates a unique project, loopback API port, image tags and protected key file, then
-builds and records image IDs before starting containers.
+builds and records image IDs before starting containers. **T0 is the persisted `steady_start_epoch` after bootstrap,
+NATS readiness, the mutating baseline smoke, artifact capture and export freezing complete.** Image build and bootstrap
+time are not included in the 86,400-second retained-read measurement. Pending action deadlines and the completion
+deadline are re-anchored to that T0; bootstrap samples cannot satisfy the observed-duration gate.
 
 ```bash
 python3 scripts/soak.py smoke --engine podman
@@ -31,10 +34,13 @@ python3 scripts/soak.py run --resume /absolute/path/to/run --engine podman
 python3 scripts/soak.py report --run-dir /absolute/path/to/run --status running
 ```
 
-The controller serializes a locked, append-only event journal and atomic state snapshot. Action deadlines are absolute
-UTC epochs and waits use a monotonic clock. A controller restart skips completed actions. An action left in `started`
-state has an unknown outcome and **blocks resume**; inspect and reconcile the actual project rather than blindly replaying
-it. A partial report is always marked incomplete and cannot pass.
+The controller serializes a locked, append-only event journal and atomic state snapshot. Resume recomputes the frozen
+manifest digest rather than trusting its stored hash, restores the last sample sequence and each service's latest
+container generation, and shares one state object between the scheduler and action book. Action deadlines are absolute UTC epochs and waits use a
+monotonic clock. A controller restart skips completed actions. An action left in `started` state has an unknown outcome
+and **blocks resume**; inspect and reconcile the actual project rather than blindly replaying it. A malformed,
+unterminated final JSONL fragment is treated as a crash tail and removed before the next append, including the prior
+hour's segment before an hourly rollover; malformed complete or interior records remain fatal. A partial report is always marked incomplete and cannot pass.
 
 Each run contains:
 
@@ -52,10 +58,16 @@ contain no key material.
 
 ## Measurements and cleanup
 
-API probes report client-observed latency distributions by route; pipeline ingest latency is not substituted. The API
+API probes report client-observed latency distributions by route; pipeline ingest latency is not substituted. Every
+full API cadence must cover health, dashboard, cases, fixtures, case detail, audit and export. Transport failures,
+invalid JSON and HTTP 4xx/5xx responses fail the API error gate; missing routes and empty latency evidence fail closed.
+Restart-stable export comparison requires actual comparison events, including every scheduled final comparison, and
+compares the complete frozen baseline fixture set so missing or unexpected current fixtures fail. The API
 exposes goroutine, heap/GC, FD, thread and current Linux RSS metrics only on container loopback. NATS samples include RSS,
 raw stack-derived goroutine count, unique route peers, stream replicas, storage, pending, ack-pending and redelivery counts.
-Container samples include state generation, restart count, health, CPU, RSS, PIDs and I/O.
+NATS health requires two routes and two current replica peers for every replicated stream, and health/ack-pending gates
+require non-empty steady observations. Storage-growth windows ignore cadence slots with no NATS payload rather than
+inserting zero-byte samples. Container samples include state generation, restart count, health, CPU, RSS, PIDs and I/O.
 
 The smoke checks the machinery and restart gates; its single short resource window is not leak evidence. The full soak
 requires six hourly post-warmup windows. The smoke uses volume-deleting cleanup only for its own unique disposable project.

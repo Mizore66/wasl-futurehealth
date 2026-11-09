@@ -53,7 +53,8 @@ class PersistenceTests(unittest.TestCase):
 
 class ResumeAndCleanupTests(unittest.TestCase):
     def manifest(self, tmp):
-        manifest = {"manifest_sha256": "abc", "project": "waslsoak-test", "run_id": "test"}
+        manifest = {"project": "waslsoak-test", "run_id": "test"}
+        manifest["manifest_sha256"] = soak.manifest_digest(manifest)
         path = Path(tmp) / "manifest.json"
         soak.atomic_write_json(path, manifest)
         return manifest
@@ -63,7 +64,7 @@ class ResumeAndCleanupTests(unittest.TestCase):
             manifest = self.manifest(tmp)
             path = Path(tmp) / "state.json"
             soak.atomic_write_json(path, {
-                "manifest_sha256": "abc", "actions": {"a1": {"status": "started", "due_epoch": 10}},
+                "manifest_sha256": manifest["manifest_sha256"], "actions": {"a1": {"status": "started", "due_epoch": 10}},
             })
             with self.assertRaisesRegex(soak.ResumeError, "unknown outcome"):
                 soak.resume_state(path, manifest)
@@ -73,7 +74,7 @@ class ResumeAndCleanupTests(unittest.TestCase):
             manifest = self.manifest(tmp)
             path = Path(tmp) / "state.json"
             soak.atomic_write_json(path, {
-                "manifest_sha256": "abc",
+                "manifest_sha256": manifest["manifest_sha256"],
                 "actions": {
                     "a1": {"status": "completed", "due_epoch": 10},
                     "a2": {"status": "pending", "due_epoch": 20},
@@ -551,10 +552,12 @@ class BootstrapTests(unittest.TestCase):
             runner = soak.SoakRunner.__new__(soak.SoakRunner)
             runner.root = Path(tmp)
             runner.compose = FakeCompose()
-            runner.config = {"bootstrap_timeout_s": 1200, "run_container_path": "/run"}
+            runner.config = {"bootstrap_timeout_s": 1200, "run_container_path": "/run", "schedule": []}
             runner.manifest = {"project": "waslsoak-test", "api_url": "http://127.0.0.1:1"}
             runner.journal = soak.EventJournal(Path(tmp) / "events.jsonl")
             import types
+            runner.state = {"actions": {}}
+            runner.book = types.SimpleNamespace(state=runner.state, save=lambda: None)
             runner.collector = types.SimpleNamespace(set_phase=lambda phase: None)
             runner.record_image_ids = lambda: None
             runner.wait_bootstrap = lambda: None
@@ -680,10 +683,12 @@ class ActiveLaneTests(unittest.TestCase):
             runner = soak.SoakRunner.__new__(soak.SoakRunner)
             runner.root = Path(tmp)
             runner.compose = FakeCompose()
-            runner.config = {"bootstrap_timeout_s": 3600, "run_container_path": "/run"}
+            runner.config = {"bootstrap_timeout_s": 3600, "run_container_path": "/run", "schedule": []}
             runner.manifest = {"project": "waslsoak-test", "api_url": "http://127.0.0.1:1"}
             runner.journal = soak.EventJournal(Path(tmp) / "events.jsonl")
             import types
+            runner.state = {"actions": {}}
+            runner.book = types.SimpleNamespace(state=runner.state, save=lambda: None)
             calls = []
             runner.collector = types.SimpleNamespace(set_phase=lambda phase: None)
             runner.record_image_ids = lambda: None
@@ -703,6 +708,332 @@ class TamperEvidenceTests(unittest.TestCase):
         self.assertEqual(soak.tamper_invariants(evidence), [])
         evidence["attacks"][1]["detected"] = False
         self.assertEqual(len(soak.tamper_invariants(evidence)), 1)
+
+
+class SteadyStateTimingTests(unittest.TestCase):
+    def test_bootstrap_reanchors_pending_actions_to_retained_read_start(self):
+        import types
+        from unittest.mock import patch
+        class FakeCompose:
+            def compose(self, *args, timeout):
+                return None
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = ConfigTests().config()
+            config["bootstrap_timeout_s"] = 1200
+            config["run_container_path"] = "/run"
+            config["schedule"].insert(0, {"id": "bootstrap", "at_s": 0, "kind": "bootstrap"})
+            state = soak.initial_state("abc", config, 1000)
+            runner = soak.SoakRunner.__new__(soak.SoakRunner)
+            runner.root = root
+            runner.compose = FakeCompose()
+            runner.config = config
+            runner.manifest = {"project": "waslsoak-test", "api_url": "http://127.0.0.1:1"}
+            runner.journal = soak.EventJournal(root / "events.jsonl")
+            runner.state = state
+            runner.book = types.SimpleNamespace(state=state, save=lambda: None)
+            runner.collector = types.SimpleNamespace(set_phase=lambda phase: None)
+            runner.record_image_ids = lambda: None
+            runner.wait_bootstrap = lambda: None
+            runner.wait_nats = lambda: None
+            runner.run_api_smoke = lambda *args: None
+            runner.save_artifacts = lambda *args: None
+            runner.freeze_exports = lambda *args: None
+            with patch("soak.time.time", return_value=5000):
+                runner.bootstrap()
+            self.assertEqual(state.get("steady_start_epoch"), 5000)
+            self.assertEqual(state["actions"]["a1"]["due_epoch"], 5060)
+
+    def test_duration_gate_excludes_bootstrap_elapsed_time(self):
+        config = GateTests().config()
+        bootstrap = GateTests().sample(10000)
+        bootstrap["phase"] = "bootstrap"
+        steady = GateTests().sample(10)
+        report = soak.build_report({"run_id": "r"}, config, [bootstrap, steady], [], "completed")
+        self.assertFalse(report["gates"]["completed_duration"]["passed"])
+        self.assertEqual(report["gates"]["completed_duration"]["observed_s"], 10)
+
+    def test_completion_deadline_uses_persisted_steady_start(self):
+        import types
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            runner = soak.SoakRunner.__new__(soak.SoakRunner)
+            runner.root = root
+            runner.manifest = {"start_epoch": 100, "project": "waslsoak-test"}
+            runner.config = {"duration_s": 10, "disposable": False}
+            runner.state = {"status": "running", "steady_start_epoch": 1000, "actions": {}}
+            runner.book = types.SimpleNamespace(state=runner.state, save=lambda: None)
+            runner.journal = soak.EventJournal(root / "events.jsonl")
+            runner.collector = types.SimpleNamespace(run=lambda: None, stop=lambda: None,
+                                                       sample_once=lambda: None, budget_violations=[])
+            runner.writer = types.SimpleNamespace(close=lambda: None)
+            runner.lock = types.SimpleNamespace(acquire=lambda: None, close=lambda: None)
+            runner.compose = types.SimpleNamespace(compose=lambda *args, **kwargs: None)
+            deadlines = []
+            runner.wait_until = deadlines.append
+            with patch("soak.write_report", return_value={"overall_pass": True}):
+                self.assertEqual(runner.run(), 0)
+            self.assertEqual(deadlines, [1010])
+
+
+class SchedulerStateTests(unittest.TestCase):
+    def test_runner_and_action_book_share_one_state_object(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = {"engine": "podman", "project": "waslsoak-test", "run_id": "r",
+                        "api_url": "http://127.0.0.1:1", "start_epoch": 0, "config": {}}
+            soak.atomic_write_json(root / "manifest.json", manifest)
+            soak.atomic_write_json(root / "state.json", {"actions": {}})
+            runner = soak.SoakRunner(root)
+            self.assertIs(runner.book.state, runner.state)
+
+
+class ManifestAuthenticationTests(unittest.TestCase):
+    def test_resume_recomputes_the_frozen_manifest_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = {"run_id": "r", "project": "waslsoak-test",
+                        "config": {"duration_s": 86400, "gates": {"max_api_p95_ms": 500}}}
+            manifest["manifest_sha256"] = soak.manifest_digest(manifest)
+            soak.atomic_write_json(root / "state.json", {
+                "manifest_sha256": manifest["manifest_sha256"], "actions": {}})
+            manifest["config"]["duration_s"] = 1
+            with self.assertRaisesRegex(soak.ResumeError, "digest"):
+                soak.resume_state(root / "state.json", manifest)
+
+
+class EvidenceCompletenessTests(unittest.TestCase):
+    def test_health_only_observations_do_not_satisfy_route_coverage_or_latency(self):
+        report = soak.build_report({"run_id": "r"}, GateTests().config(),
+                                   [GateTests().sample(0), GateTests().sample(10)], [], "completed")
+        self.assertIn("api_route_coverage", report["gates"])
+        self.assertFalse(report["gates"]["api_route_coverage"]["passed"])
+        self.assertFalse(report["gates"]["api_latency_p95"]["passed"])
+
+    def test_client_side_http_errors_fail_api_gate(self):
+        sample = GateTests().sample(0)
+        sample["api"]["routes"]["health"]["status"] = 404
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+        self.assertFalse(report["gates"]["api_errors"]["passed"])
+
+    def test_zero_steady_api_requests_cannot_pass(self):
+        sample = GateTests().sample(0)
+        sample["phase"] = "bootstrap"
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+        self.assertFalse(report["gates"]["api_errors"]["passed"])
+
+    def test_zero_export_comparisons_cannot_pass(self):
+        report = soak.build_report({"run_id": "r"}, GateTests().config(),
+                                   [GateTests().sample(0)], [], "completed")
+        self.assertFalse(report["gates"]["export_comparison"]["passed"])
+
+    def test_zero_steady_nats_observations_cannot_pass(self):
+        sample = GateTests().sample(0)
+        sample["phase"] = "bootstrap"
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+        self.assertFalse(report["gates"]["nats_health"]["passed"])
+        self.assertFalse(report["gates"]["nats_ack_pending"]["passed"])
+
+    def test_nats_health_requires_current_replicas(self):
+        sample = GateTests().sample(0)
+        sample["nats"]["nats-0"]["replicas_current"] = False
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+        self.assertFalse(report["gates"]["nats_health"]["passed"])
+
+    def test_nats_growth_ignores_cadence_slots_without_nats_payloads(self):
+        samples = [GateTests().sample(0, store=100), GateTests().sample(10), GateTests().sample(20),
+                   GateTests().sample(1800, store=5000), GateTests().sample(1810), GateTests().sample(1820)]
+        for sample in samples:
+            if sample["elapsed_s"] not in (0, 1800):
+                sample["nats"] = {}
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), samples, [], "completed")
+        self.assertFalse(report["gates"]["nats_store_growth"]["passed"])
+        self.assertEqual(report["gates"]["nats_store_growth"]["observed"], 4900)
+
+
+class NATSReplicaTests(unittest.TestCase):
+    def snapshot_with_replicas(self, replicas):
+        return soak.parse_nats_snapshot({}, {"account_details": [{"stream_detail": [{
+            "name": "FHIR", "state": {}, "cluster": {"leader": "n0", "replicas": replicas},
+        }]}]}, {"routes": [{"name": "n1"}, {"name": "n2"}]}, "")
+
+    def test_empty_replica_list_is_not_current(self):
+        self.assertFalse(self.snapshot_with_replicas([])["replicas_current"])
+
+    def test_one_current_peer_is_not_a_three_node_replicated_stream(self):
+        self.assertFalse(self.snapshot_with_replicas([{"name": "n1", "current": True}])["replicas_current"])
+
+    def test_two_current_peers_are_required(self):
+        snapshot = self.snapshot_with_replicas([{"name": "n1", "current": True},
+                                                {"name": "n2", "current": True}])
+        self.assertTrue(snapshot["replicas_current"])
+
+
+class RestartBaselineTests(unittest.TestCase):
+    def test_zero_container_start_timestamp_is_not_an_unexpected_restart(self):
+        previous = {"api": {"started_at": "0001-01-01T00:00:00Z", "restart_count": 0,
+                            "container_id": "api", "status": "created"}}
+        current = {"api": {"started_at": "2026-11-09T08:00:00Z", "restart_count": 0,
+                           "container_id": "api", "status": "running"}}
+        self.assertEqual(soak.detect_unexpected_restarts(previous, current), [])
+
+    def test_collector_restores_sequence_and_container_generation_from_samples(self):
+        import types
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            config = GateTests().config()
+            manifest = {"run_id": "r", "project": "waslsoak-r", "start_epoch": 0, "config": config}
+            writer = soak.SampleWriter(root, clock=lambda: 1000)
+            prior = {"seq": 17, "containers": {"api": {"started_at": "2026-11-09T08:00:00Z",
+                                                        "restart_count": 3, "container_id": "api"}}}
+            writer.append(prior)
+            writer.close()
+            collector = soak.Collector(root, manifest, types.SimpleNamespace(), soak.SampleWriter(root),
+                                       soak.EventJournal(root / "events.jsonl"))
+            self.assertEqual(collector.seq, 17)
+            self.assertEqual(collector.previous_containers, prior["containers"])
+
+
+class TornJournalTests(unittest.TestCase):
+    def test_event_journal_recovers_only_the_unterminated_trailing_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "events.jsonl"
+            path.write_text('{"seq":1,"event":"first"}\n{"seq":2,"event":"trunc')
+            try:
+                journal = soak.EventJournal(path)
+                journal.append("after_recovery")
+                events = soak.read_events(path)
+            except ValueError as exc:
+                self.fail("torn final journal record blocked recovery: %s" % exc)
+            self.assertEqual([row["event"] for row in events], ["first", "after_recovery"])
+            self.assertEqual([row["seq"] for row in events], [1, 2])
+
+    def test_sample_reader_and_writer_recover_a_torn_final_segment(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            segment = root / "samples" / "19700101T00.jsonl"
+            segment.parent.mkdir()
+            segment.write_text('{"seq":1}\n{"seq":2,"partial":')
+            try:
+                rows = soak.read_jsonl_segments(root)
+                writer = soak.SampleWriter(root, clock=lambda: 0)
+                writer.append({"seq": 2})
+                writer.close()
+                rows = soak.read_jsonl_segments(root)
+            except ValueError as exc:
+                self.fail("torn final sample record blocked recovery: %s" % exc)
+            self.assertEqual(rows, [{"seq": 1}, {"seq": 2}])
+
+
+class ExportCoverageTests(unittest.TestCase):
+    def test_restart_comparison_rejects_a_fixture_missing_from_current_exports(self):
+        import hashlib
+        import types
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            exports = root / "baseline" / "exports"
+            exports.mkdir(parents=True)
+            unsigned = {"schema": "wasl-case-export/1", "comparison_sha256": "stable"}
+            digest = hashlib.sha256(soak.export_canonical(unsigned)).hexdigest()
+            raw = json.dumps(dict(unsigned, content_sha256=digest)).encode()
+            for name in ("first.json", "second.json"):
+                (exports / name).write_bytes(raw)
+            soak.atomic_write_json(root / "baseline" / "artifact-hashes.json", {})
+            runner = soak.SoakRunner.__new__(soak.SoakRunner)
+            runner.root = root
+            runner.journal = soak.EventJournal(root / "events.jsonl")
+            runner.manifest = {"api_url": "http://127.0.0.1:1"}
+            runner.config = {"request_timeout_s": 1}
+            runner.freeze_exports = lambda destination: {"first": raw}
+            runner.current_artifact_hashes = lambda: {}
+            health = {"body": {"dependencies": {"review_ledger": "ok"}}}
+            with patch("soak.probe_json", return_value=health):
+                with self.assertRaisesRegex(RuntimeError, "comparison failed"):
+                    runner.compare_baseline("restart")
+
+
+class PartialContainerBaselineTests(unittest.TestCase):
+    def test_resume_merges_the_last_observed_generation_for_each_service(self):
+        import types
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            manifest = {"run_id": "r", "project": "waslsoak-r", "start_epoch": 0,
+                        "config": GateTests().config()}
+            writer = soak.SampleWriter(root, clock=lambda: 1000)
+            api = {"started_at": "2026-11-09T08:00:00Z", "restart_count": 0, "container_id": "api"}
+            writer.append({"seq": 1, "containers": {"api": api, "nats-0": {"container_id": "n0"}}})
+            writer.append({"seq": 2, "containers": {"nats-0": {"container_id": "n0"}}})
+            writer.close()
+            collector = soak.Collector(root, manifest, types.SimpleNamespace(), soak.SampleWriter(root),
+                                       soak.EventJournal(root / "events.jsonl"))
+            self.assertEqual(collector.previous_containers.get("api"), api)
+            changed = {"api": dict(api, started_at="2026-11-09T09:00:00Z"),
+                       "nats-0": {"container_id": "n0"}}
+            self.assertEqual(soak.detect_unexpected_restarts(collector.previous_containers, changed), ["api"])
+
+
+class HourlyTornSegmentTests(unittest.TestCase):
+    def test_new_hour_repairs_the_previous_segments_crash_tail(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            segment = root / "samples" / "19700101T00.jsonl"
+            segment.parent.mkdir()
+            segment.write_text('{"seq":1}\n{"seq":2,"partial":')
+            writer = soak.SampleWriter(root, clock=lambda: 3600)
+            writer.append({"seq": 2})
+            writer.close()
+            try:
+                rows = soak.read_jsonl_segments(root)
+            except ValueError as exc:
+                self.fail("hourly rollover stranded a torn sample: %s" % exc)
+            self.assertEqual(rows, [{"seq": 1}, {"seq": 2}])
+
+
+class ActiveFaultIsolationTests(unittest.TestCase):
+    def make_runner(self, root, cleanup_rc):
+        import types
+        runner = soak.SoakRunner.__new__(soak.SoakRunner)
+        runner.root = root
+        runner.repo = root
+        runner.manifest = {"engine": "podman"}
+        runner.config = {"outage_s": 0, "bootstrap_timeout_s": 1200}
+        runner.journal = soak.EventJournal(root / "events.jsonl")
+        runner.collector = types.SimpleNamespace(calls=[], set_outage=lambda value: runner.collector.calls.append(value))
+        runner.start_active_lane = lambda compose: None
+        runner.wait_active_ingest = lambda compose: None
+        runner.wait_nats = lambda *args: None
+        runner.wait_bootstrap = lambda *args: None
+        runner.run_api_smoke = lambda *args: None
+        runner.save_artifacts = lambda *args: None
+        runner.compose_logs = lambda *args: "pipeline logs"
+        result = types.SimpleNamespace(returncode=cleanup_rc, args=["podman", "compose", "down", "-v"],
+                                       stdout="", stderr="injected cleanup failure")
+        fake_compose = types.SimpleNamespace(compose=lambda *args, **kwargs: result)
+        return runner, fake_compose
+
+    def test_fresh_lane_fault_does_not_mark_retained_samples_as_outages(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".env").write_text("WASL_API_PORT=1\nWASL_JS_KEY=ktest\n")
+            runner, compose = self.make_runner(root, 0)
+            with patch("soak.Compose", return_value=compose):
+                runner.active_fault("active-test")
+            self.assertEqual(runner.collector.calls, [])
+
+    def test_fresh_lane_cleanup_failure_fails_without_verified_event(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".env").write_text("WASL_API_PORT=1\nWASL_JS_KEY=ktest\n")
+            runner, compose = self.make_runner(root, 1)
+            with patch("soak.Compose", return_value=compose):
+                with self.assertRaises(soak.CommandError):
+                    runner.active_fault("active-test")
+            events = soak.read_events(root / "events.jsonl")
+            self.assertNotIn("fresh_lane_verified", [row["event"] for row in events])
 
 
 if __name__ == "__main__":
