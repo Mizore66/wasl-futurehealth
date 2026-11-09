@@ -1,0 +1,69 @@
+{
+  "schema": "wasl-soak-config/1",
+  "evaluation_scope": "24-hour retained-read with separate fresh active-fault lanes; not continuous-ingest evidence",
+  "duration_s": 86400,
+  "warmup_s": 300,
+  "health_interval_s": 10,
+  "api_interval_s": 30,
+  "nats_interval_s": 30,
+  "container_interval_s": 60,
+  "disk_interval_s": 300,
+  "request_timeout_s": 5,
+  "bootstrap_timeout_s": 3600,
+  "outage_s": 5,
+  "cleanup": "down",
+  "disposable": false,
+  "require_clean_source": true,
+  "run_container_path": "/var/lib/wasl/run/v7strict-cached-fhir",
+  "disk": {
+    "min_host_free_bytes": 8589934592,
+    "max_artifact_bytes": 8589934592
+  },
+  "gates": {
+    "max_api_p95_ms": 2000,
+    "max_api_p99_ms": 5000,
+    "route_p95_ms": {
+      "health": 500,
+      "dashboard": 2000,
+      "cases": 2000,
+      "fixtures": 1000,
+      "case_detail": 2000,
+      "case_audit": 2000,
+      "case_export": 2000
+    },
+    "max_rss_growth_fraction": 0.25,
+    "max_goroutine_growth": 20,
+    "max_nats_store_growth_bytes": 67108864,
+    "leak_window_s": 3600,
+    "min_leak_windows": 6,
+    "max_sample_gap_s": 180,
+    "max_nats_store_fraction": 0.85,
+    "nats_store_capacity_bytes": 4294967296,
+    "max_recovery_s": {
+      "default": 180,
+      "api": 90,
+      "nats_node": 180,
+      "read_stack": 180,
+      "quorum": 180,
+      "active_fresh_nats": 3600
+    },
+    "required_restart_kinds": ["api", "nats_node", "read_stack", "quorum", "active_fresh_nats"]
+  },
+  "schedule": [
+    {"id": "bootstrap", "at_s": 0, "kind": "bootstrap"},
+    {"id": "active-fhir-01", "at_s": 3600, "kind": "active_fault"},
+    {"id": "api-graceful-02", "at_s": 7200, "kind": "api_restart"},
+    {"id": "nats2-stop-04", "at_s": 14400, "kind": "nats_restart", "node": "nats-2"},
+    {"id": "nats0-roll-06", "at_s": 21600, "kind": "nats_restart", "node": "nats-0"},
+    {"id": "nats1-roll-06", "at_s": 22200, "kind": "nats_restart", "node": "nats-1"},
+    {"id": "api-kill-08", "at_s": 28800, "kind": "api_kill"},
+    {"id": "nats0-roll-12", "at_s": 43200, "kind": "nats_restart", "node": "nats-0"},
+    {"id": "nats1-roll-12", "at_s": 43800, "kind": "nats_restart", "node": "nats-1"},
+    {"id": "nats2-roll-12", "at_s": 44400, "kind": "nats_restart", "node": "nats-2"},
+    {"id": "api-graceful-12", "at_s": 45000, "kind": "api_restart"},
+    {"id": "active-fhir-13", "at_s": 46800, "kind": "active_fault"},
+    {"id": "recreate-read-16", "at_s": 57600, "kind": "recreate_read_stack"},
+    {"id": "quorum-loss-18", "at_s": 64800, "kind": "quorum_loss"},
+    {"id": "final-compare-23", "at_s": 82800, "kind": "final_compare"}
+  ]
+}

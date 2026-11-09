@@ -20,7 +20,7 @@ RUN go mod init wasl-nats-build \
 # It holds no key: the JetStream key is read from $WASL_JS_KEY in the container environment.
 # entrypoint.sh refuses to start on retained stores with a wrong or missing key (nats-server would otherwise start,
 # fail to decrypt them and let the cluster reset the streams).
-FROM nats:${NATS_VERSION}-alpine
+FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine
 RUN apk upgrade --no-cache \
     && apk add --no-cache ca-certificates \
     && addgroup -g 10001 -S wasl \

@@ -168,14 +168,19 @@ exit 2
         df = (ROOT / "deploy/nats/Dockerfile").read_text()
         self.assertRegex(df, r"COPY --chmod=0755 entrypoint\.sh /usr/local/bin/wasl-nats-entrypoint\.sh")
         self.assertIn('ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]', df)
-        self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", df)
-        self.assertIn("github.com/klauspost/compress@v1.18.7", df)
-        self.assertIn("golang.org/x/crypto@v0.55.0", df)
-        self.assertIn("FROM golang:1.27.3-alpine AS build", df)
-        self.assertIn("FROM alpine:3.23", df)
+        self.assertIn("github.com/nats-io/nats-server/v2@v${NATS_VERSION}", df)
+        self.assertIn("github.com/klauspost/compress@v1.20.0", df)
+        self.assertIn("golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2", df)
+        self.assertIn("FROM golang:${GO_VERSION}-bookworm AS build", df)
+        self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", df)
         self.assertIn("USER 10001:10001", df)
         self.assertIn("chown -R 10001:10001 /data", df)
         self.assertIn('VOLUME ["/data"]', df)
+
+    def test_nats_base_is_resolved_for_target_architecture(self):
+        # A cached single-architecture tag must not override the requested build target.
+        df = (ROOT / "deploy/nats/Dockerfile").read_text()
+        self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", df)
 
     def test_nats_entrypoint_refuses_wrong_or_missing_key_on_retained_data(self):
         with tempfile.TemporaryDirectory() as tmp:
