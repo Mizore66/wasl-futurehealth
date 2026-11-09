@@ -275,6 +275,28 @@ class ProbeTests(unittest.TestCase):
         self.assertGreaterEqual(probe["latency_ms"], 0)
         self.assertFalse(probe["timeout"])
 
+    def test_http_probe_rejects_empty_success_response(self):
+        import threading
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(204)
+                self.end_headers()
+            def log_message(self, *_):
+                pass
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            probe = soak.probe_json("http://127.0.0.1:%d/healthz" % server.server_port, 2)
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
+        self.assertEqual(probe["status"], 204)
+        self.assertEqual(probe["bytes"], 0)
+        self.assertEqual(probe["error"], "empty JSON response")
+
 
 class ReportFileTests(unittest.TestCase):
     def test_report_generator_writes_machine_readable_partial_report(self):
