@@ -31,8 +31,8 @@ import (
 )
 
 var (
-	PollOverlap  = 0.5  // simulated days re-read on each poll
-	ExportBack   = 7.0  // simulated days covered by each nightly $export
+	PollOverlap  = 0.5 // simulated days re-read on each poll
+	ExportBack   = 7.0 // simulated days covered by each nightly $export
 	PollInterval = 50 * time.Millisecond
 	ExportOff    = false // negative control only: no $export catch-up (late commits beyond the overlap are lost)
 )
@@ -43,10 +43,10 @@ type PollConsumer struct {
 	kv        jetstream.KeyValue
 	seen      *SeenLedger
 	runDir    string
-	watermark float64            // simulated days
-	maxVid    map[string]int     // Type/id -> highest version published
-	done      map[string]bool    // Type/id/vid published
-	mu        sync.Mutex // guards stats, watermark and eof for statusLoop
+	watermark float64         // simulated days
+	maxVid    map[string]int  // Type/id -> highest version published
+	done      map[string]bool // Type/id/vid published
+	mu        sync.Mutex      // guards stats, watermark and eof for statusLoop
 	stats     map[string]int64
 	lastNight int
 	eof       bool
@@ -54,6 +54,9 @@ type PollConsumer struct {
 }
 
 func runFhirPoll(base, runDir string) {
+	if validateLocalCallback(base) != nil || len(mockFHIRToken()) < 16 {
+		panic("fhirpoll requires a loopback mock endpoint and configured WASL_MOCK_FHIR_TOKEN")
+	}
 	nc, js := connect("fhirpoll")
 	defer nc.Close()
 	ctx := context.Background()
@@ -115,7 +118,7 @@ func (c *PollConsumer) poll() bool {
 	for off := 0; ; {
 		q := "/_history?_since=" + url.QueryEscape(simInstant(since)) + "&_count=500&_offset=" + strconv.Itoa(off)
 		r, _ := http.NewRequest("GET", c.cl.base+q, nil)
-		r.Header.Set("Authorization", "Bearer "+MockToken)
+		r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 		resp, err := c.cl.http.Do(r)
 		if err != nil || resp.StatusCode != 200 {
 			if resp != nil {
@@ -165,7 +168,7 @@ func (c *PollConsumer) export(since float64) {
 		q += "?_since=" + url.QueryEscape(simInstant(since))
 	}
 	r, _ := http.NewRequest("GET", c.cl.base+q, nil)
-	r.Header.Set("Authorization", "Bearer "+MockToken)
+	r.Header.Set("Authorization", "Bearer "+mockFHIRToken())
 	resp, err := c.cl.http.Do(r)
 	if err != nil || resp.StatusCode != 202 {
 		c.inc("export_errors")

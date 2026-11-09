@@ -19,6 +19,22 @@ ROOT = Path(__file__).resolve().parent.parent
 SAMPLES = ROOT / "docs" / "api-samples"
 SMOKE = ROOT / "scripts" / "api_smoke.py"
 DEMO = ROOT / "scripts" / "demo.sh"
+TOKENS = {
+    "WASL_API_REVIEWER_TOKEN": "reviewer-token-1234567890",
+    "WASL_API_REVIEWER_2_TOKEN": "reviewer-2-token-1234567890",
+    "WASL_API_REVIEWER_3_TOKEN": "reviewer-3-token-1234567890",
+    "WASL_API_AUDITOR_TOKEN": "auditor-token-1234567890",
+    "WASL_API_COORDINATOR_TOKEN": "coordinator-token-1234567890",
+    "WASL_API_CLINICIAN_TOKEN": "clinician-token-1234567890",
+}
+PRINCIPALS = {
+    "reviewer-token-1234567890": ("reviewer", "smoke-reviewer-1"),
+    "reviewer-2-token-1234567890": ("reviewer", "smoke-reviewer-2"),
+    "reviewer-3-token-1234567890": ("reviewer", "smoke-reviewer-3"),
+    "auditor-token-1234567890": ("auditor", "smoke-auditor"),
+    "coordinator-token-1234567890": ("coordinator", "smoke-coordinator"),
+    "clinician-token-1234567890": ("clinician", "smoke-clinician"),
+}
 
 
 def load(name):
@@ -130,13 +146,26 @@ class Fake:
         redacted_audit = {"case": cid, "chain_verified": audit["chain_verified"],
                           "chain_length": audit["chain_length"], "decision_signatures": audit["decision_signatures"],
                           "history": safe_events}
-        doc = {"schema": "wasl-case-export/1", "redacted": True, "detail": redacted_detail, "audit": redacted_audit}
+        doc = {"schema": "wasl-case-export/1", "redacted": True,
+               "meta": {"api": "wasl-api/1", "data_mode": "simulated", "run": "redacted-internal-audit",
+                        "policy": "redacted-internal-audit", "reader_model": "not-disclosed",
+                        "loaded_at": "2026-11-09T00:00:00Z", "note": "safe synthetic note"},
+               "detail": redacted_detail, "audit": redacted_audit}
         doc["content_sha256"] = hashlib.sha256(json.dumps(doc, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
         return doc
 
     def route(self, method, path, query, body=None, role="", actor=""):
         if path == "/healthz":
             return 200, self.health
+        if path.startswith("/api/"):
+            if not role:
+                return 401, {"error": "authentication required"}
+            if method == "GET":
+                audit_route = path.endswith("/audit") or path.endswith("/export")
+                if audit_route and role != "auditor":
+                    return 403, {"error": "read permission denied"}
+                if not audit_route and role == "auditor":
+                    return 403, {"error": "read permission denied"}
         if path == "/api/dashboard":
             return 200, self.dash
         if path == "/api/fixtures":
@@ -220,11 +249,17 @@ class Fake:
         return 404, {"error": "no route"}
 
 
+def principal(headers):
+    scheme, _, token = headers.get("Authorization", "").partition(" ")
+    return PRINCIPALS.get(token, ("", "")) if scheme.lower() == "bearer" else ("", "")
+
+
 def make_handler(fake):
     class H(BaseHTTPRequestHandler):
         def do_GET(self):
             u = urlparse(self.path)
-            code, body = fake.route("GET", u.path, parse_qs(u.query), None, "", "")
+            role, actor = principal(self.headers)
+            code, body = fake.route("GET", u.path, parse_qs(u.query), None, role, actor)
             b = json.dumps(body).encode()
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
@@ -236,8 +271,8 @@ def make_handler(fake):
             u = urlparse(self.path)
             size = int(self.headers.get("Content-Length", "0"))
             body = json.loads(self.rfile.read(size) or b"{}")
-            code, body = fake.route("POST", u.path, parse_qs(u.query), body,
-                                    self.headers.get("X-Wasl-Role", ""), self.headers.get("X-Wasl-Actor", ""))
+            role, actor = principal(self.headers)
+            code, body = fake.route("POST", u.path, parse_qs(u.query), body, role, actor)
             b = json.dumps(body).encode()
             self.send_response(code)
             self.send_header("Content-Type", "application/json")
@@ -255,7 +290,7 @@ def run_smoke(fake):
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     try:
         return subprocess.run([sys.executable, str(SMOKE), "--base-url", f"http://127.0.0.1:{srv.server_port}", "--timeout", "5"],
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, text=True, timeout=60, env=dict(os.environ, **TOKENS))
     finally:
         srv.shutdown()
         srv.server_close()
@@ -464,7 +499,7 @@ class DemoShellTests(unittest.TestCase):
         b.write_text(FAKE_BIN)
         b.chmod(0o755)
         log = tmp / "serve.log"
-        env = dict(os.environ, WASL_BIN=str(tmp / "bin"), WASL_OUT=str(tmp / "out"), FAKE_LOG=str(log),
+        env = dict(os.environ, **TOKENS, WASL_BIN=str(tmp / "bin"), WASL_OUT=str(tmp / "out"), FAKE_LOG=str(log),
                    TEST_SCRIPTS=str(ROOT / "scripts"), WASL_SMOKE_PORT=str(free_port()), WASL_SMOKE_WAIT="10")
         if die:
             env["FAKE_DIE"] = "1"
@@ -520,7 +555,7 @@ class SnapshotTests(unittest.TestCase):
         srv = HTTPServer(("127.0.0.1", 0), make_handler(fake))
         threading.Thread(target=srv.serve_forever, daemon=True).start()
         try:
-            env = dict(os.environ, WASL_OUT=str(Path(target).parent / "out"), WASL_SNAPSHOT_DIR=str(target),
+            env = dict(os.environ, **TOKENS, WASL_OUT=str(Path(target).parent / "out"), WASL_SNAPSHOT_DIR=str(target),
                        WASL_API_ADDR=f"127.0.0.1:{srv.server_port}", WASL_BIN=str(Path(target).parent / "bin"))
             if programmes:
                 env["WASL_SNAPSHOT_PROGRAMMES"] = programmes

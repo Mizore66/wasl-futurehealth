@@ -67,11 +67,13 @@ type ReaderClient struct {
 	inflight map[string]chan struct{} // singleflight: concurrent reads of the same report wait for one model call
 	ledger   map[string]ReaderResult
 	ledgerFn string
+	configErr error
 }
 
 func NewReaderClient(url string, timeout time.Duration, retries int, ledgerPath string) *ReaderClient {
 	c := &ReaderClient{URL: strings.TrimRight(url, "/"), Timeout: timeout, Retries: retries,
 		http: &http.Client{Timeout: timeout}, ledger: map[string]ReaderResult{}, inflight: map[string]chan struct{}{}, ledgerFn: ledgerPath}
+	c.configErr = validateLocalEndpoint(url)
 	c.loadLedger()
 	return c
 }
@@ -102,8 +104,12 @@ func (c *ReaderClient) appendLedger(r ReaderResult) {
 	if c.ledgerFn == "" {
 		return
 	}
-	f, err := os.OpenFile(c.ledgerFn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(c.ledgerFn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
+		return
+	}
+	if f.Chmod(0600) != nil {
+		f.Close()
 		return
 	}
 	defer f.Close()
@@ -113,6 +119,9 @@ func (c *ReaderClient) appendLedger(r ReaderResult) {
 
 // Healthy reports whether the llama-server /health endpoint answers ok.
 func (c *ReaderClient) Healthy() bool {
+	if c.configErr != nil {
+		return false
+	}
 	cl := &http.Client{Timeout: 2 * time.Second}
 	resp, err := cl.Get(c.URL + "/health")
 	if err != nil {
@@ -214,6 +223,9 @@ func normWS(s string) string { return strings.ToLower(strings.TrimSpace(wsRe.Rep
 
 // Read returns the reader verdict for one report body. ok=false means "reader unavailable" (route to review).
 func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
+	if c.configErr != nil {
+		return ReaderResult{Model: ReaderModelVersion, State: "unavailable", Reason: "reader_unavailable", Error: "unsafe reader endpoint: " + c.configErr.Error()}, false
+	}
 	sh := textSha(text)
 	for {
 		c.mu.Lock()
@@ -266,6 +278,9 @@ func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
 }
 
 func (c *ReaderClient) chat(body []byte) (string, error) {
+	if c.configErr != nil {
+		return "", fmt.Errorf("unsafe reader endpoint: %v", c.configErr)
+	}
 	resp, err := c.http.Post(c.URL+"/v1/chat/completions", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", err
@@ -298,7 +313,6 @@ func (c *ReaderClient) call(body []byte) (ReaderResult, error) {
 	}
 	return r, nil
 }
-
 
 // ---- hybrid step 2: dedicated histology question (reader/orch4b_lib.py), verified 43/43 on histology ----
 // The single schema call over-calls histology (endoscopic impressions like "appeared adenomatous" read as results).
@@ -463,7 +477,7 @@ func ReaderCache(reportsPath, pathPath, out string, workers int) (n, ok int) {
 	close(ch)
 	wg.Wait()
 	b, _ = json.MarshalIndent(cache, "", " ")
-	if err := os.WriteFile(out, b, 0644); err != nil {
+	if err := os.WriteFile(out, b, 0600); err != nil {
 		panic(err)
 	}
 	return

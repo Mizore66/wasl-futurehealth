@@ -131,7 +131,7 @@ func (c *Codebook) Save(path string) {
 	b := c.bytesLE()
 	h := sha256.Sum256(b)
 	c.SHA = hex.EncodeToString(h[:])
-	os.WriteFile(path, b, 0644)
+	os.WriteFile(path, b, 0600)
 }
 func LoadCodebook(path string) *Codebook {
 	b, err := os.ReadFile(path)

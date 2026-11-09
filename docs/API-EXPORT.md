@@ -8,11 +8,13 @@
 GET /api/cases/{id}/export
 ```
 
-`{id}` is the loop id (URL-encode the slashes, as for the other `/api/cases/` routes).
+`{id}` is the loop id (URL-encode the slashes, as for the other `/api/cases/` routes). The route requires an authenticated principal with `ActReadAudit`; it is intended for internal audit, not external disclosure. Missing/invalid credentials receive 401 and non-auditor roles receive 403.
 
 | Status | When |
 |---|---|
-| 200 | Known case, GET. |
+| 200 | Known case, GET with `ActReadAudit`. |
+| 401 | Missing or invalid bearer token. |
+| 403 | Authenticated role without `ActReadAudit`. |
 | 404 | Unknown case, or a path that is not an export. |
 | 405 | Any method other than GET on a known case. |
 
@@ -21,9 +23,9 @@ GET /api/cases/{id}/export
 ```json
 {
   "schema": "wasl-case-export/1",
-  "meta": { "...": "same envelope as the other API responses" },
-  "detail": { "...": "exactly the body of GET /api/cases/{id}, without its meta" },
-  "audit":  { "...": "exactly the body of GET /api/cases/{id}/audit, without its meta" },
+  "meta": { "...": "fixed redacted envelope, not log-derived metadata" },
+  "detail": { "...": "default-deny redaction of GET /api/cases/{id}, without its meta" },
+  "audit":  { "...": "the redacted body of GET /api/cases/{id}/audit, without its meta" },
   "comparison_sha256": "hex sha256",
   "content_sha256": "hex sha256"
 }
@@ -92,11 +94,14 @@ array element or chain body: a future field must be added deliberately to the re
   verdicts, agree flags, reader model/rule/flags/state strings, structured DR/BI-RADS/Lung-RADS/nodule measurements and
   image-reader scores/hashes; reader `quote` is not listed. Timeline keeps
   seq/type/id/provider/status/day/category/raw_sha/source.
-- **Citations are recursed into, not dropped.** Each `agent_investigations[].citations` entry keeps only `tool`,
-  `arg`, `field` and `value`; quote, excerpt, result and future keys are dropped.
+- **Citations are recursed into, not dropped.** Each `agent_investigations[].citations` entry keeps only `tool` and
+  `field`; arguments, values (including exact DOBs), quote, excerpt, result and future keys are dropped. Identity entries
+  likewise omit registration keys and retain only provider/role.
 - **Listed strings still have a shape check.** Ordinary string leaves must be one structural token of at most 80
   characters from the identifier/date/hash character set; whitespace (including newlines), prose and longer strings
-  are dropped. Numbers, booleans and nulls remain. Server-generated operational fields such as review-item `reason`,
+  are dropped. A bounded canary tripwire also rejects the synthetic canary in raw, JSON-escaped, Base64, hex and
+  percent-encoded forms even when its outer shape matches an allowlisted structural field. Numbers, booleans and nulls
+  remain. Server-generated operational fields such as review-item `reason`,
   hold `why`, escalation codes and image/review `hint` accept lower-case machine tokens, including single-token codes
   such as `capacity` and `unowned`. The fixed server sentence used for a not-applicable booking is explicitly allowed.
 - **Dynamic maps are bounded.** IFHAS domain-status/deadline maps accept only `bp`, `glyc`, `lipid` and `weight`.
@@ -128,13 +133,14 @@ a parser that converts integers above 2^53 to doubles will not reproduce either 
 - Redaction is **not mathematical proof of de-identification** and not a guarantee that no clinical content remains.
   Default-deny schemas and string-shape checks limit accidental structural and prose leaks, but they do not establish
   HIPAA/GDPR de-identification, measure re-identification risk, or replace a disclosure review.
-- A listed field is trusted to have its documented structural meaning. Labels, flags, rules, reader states, citation
-  values, operational codes and identifiers can themselves contain sensitive or misleading single-token values; the
+- A listed field is trusted to have its documented structural meaning. Labels, flags, rules, reader states,
+  operational codes and identifiers can themselves contain sensitive or misleading single-token values; the
   projector checks their path and shape, not their clinical semantics. Unknown keys and strings outside the accepted
   shapes are dropped, but no prose classifier can recognise every possible representation.
-- Structural identifiers (patient registration keys, provider ids and report ids), enum-like clinical labels,
-  measurements and hashes are deliberately preserved where listed. The normal response `meta` envelope, including
-  `meta.note`, is not part of the detail/audit redactor and is served as is.
+- The recipient is an authenticated internal auditor, not an external or lower-privilege recipient. Case/report ids,
+  provider ids, enum-like clinical labels, measurements, dates and hashes are deliberately preserved where listed and
+  remain linkable. Registration keys and citation arguments/values (including exact DOBs) are omitted. The export `meta`
+  is rebuilt from fixed redacted constants and server-generated load time, not copied from logs or the normal envelope.
 - The redacted chain **cannot be recomputed**. `audit.chain_verified` and `chain_length` were computed by the server over the
   original unredacted chain, and a third party cannot reproduce them from the export. They must trust the server-side
   verification flag. `content_sha256` authenticates the served bytes only, not that the redaction was faithful, and
@@ -161,5 +167,7 @@ From `pipeline/`, run `go test -run TestExport -count=1 .`
 - Repeated exports are byte-identical. Changing only `meta.loaded_at` preserves `comparison_sha256` but changes
   `content_sha256`; a new review changes both the export and `comparison_sha256`.
 - Building exports leaves every file in the run directory unchanged.
-- 200, 404 (unknown case) and 405 (POST, PUT, DELETE, PATCH) are returned as specified.
-- Leak canaries: no salt, cache path, prompt path, reasoning or raw-message token, and no run directory path.
+- 200, 401/403 through the secured route wrapper, 404 (unknown case) and 405 (POST, PUT, DELETE, PATCH) are returned
+  as specified. Export error envelopes cannot leak log-derived metadata.
+- Leak canaries: no salt, cache path, prompt path, reasoning or raw-message token, and no run directory path. Metadata,
+  allowlisted structural fields and error bodies reject raw, escaped, nested, Base64, hex and percent-encoded canaries.

@@ -29,9 +29,22 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit): Promise<z.infer<S> | null> {
+function apiToken(role: Role): string {
+  const name = `WASL_API_${role.toUpperCase()}_TOKEN`;
+  const token = process.env[name]?.trim();
+  if (!token) throw new Error(`${name} is required for the live synthetic API`);
+  return token;
+}
+
+function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("authorization", `Bearer ${apiToken(role)}`);
+  return { cache: "no-store", ...init, headers };
+}
+
+async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role = "reviewer"): Promise<z.infer<S> | null> {
   const base = process.env.WASL_API_URL!.replace(/\/$/, "");
-  const res = await fetch(base + route, { cache: "no-store", ...init });
+  const res = await fetch(base + route, authenticated(init, role));
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return schema.parse(await res.json());
@@ -137,7 +150,7 @@ export async function getCase(id: string): Promise<CaseDetail | null> {
 }
 
 export async function getAudit(id: string): Promise<Audit | null> {
-  if (apiMode() === "live") return live(Audit, `/api/cases/${encodeURIComponent(id)}/audit`);
+  if (apiMode() === "live") return live(Audit, `/api/cases/${encodeURIComponent(id)}/audit`, undefined, "auditor");
   for (const f of await fixtureCaseFiles("_audit")) {
     const audit = await fixture(Audit, f);
     if (audit.case === id) return audit;
@@ -159,12 +172,11 @@ export async function postReview(
 
   if (apiMode() === "live") {
     const base = process.env.WASL_API_URL!.replace(/\/$/, "");
-    const res = await fetch(`${base}/api/cases/${encodeURIComponent(id)}/review`, {
+    const res = await fetch(`${base}/api/cases/${encodeURIComponent(id)}/review`, authenticated({
       method: "POST",
-      cache: "no-store",
-      headers: { "content-type": "application/json", "X-Wasl-Role": who.role, "X-Wasl-Actor": who.actor },
+      headers: { "content-type": "application/json" },
       body: JSON.stringify(request.data),
-    });
+    }, who.role));
     const json = await res.json();
     if (res.status === 201) return { ok: true, status: 201, response: ReviewResponse.parse(json) };
     if (res.status === 400 || res.status === 403 || res.status === 404) {

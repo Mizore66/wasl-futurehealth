@@ -93,7 +93,7 @@ func runEncEmbed(encPath, inPath, outPath string) {
 		out = append(out, row{s, n, enc.Embed(s)})
 	}
 	b, _ := json.Marshal(out)
-	if err := os.WriteFile(outPath, b, 0644); err != nil {
+	if err := os.WriteFile(outPath, b, 0600); err != nil {
 		panic(err)
 	}
 }
@@ -129,7 +129,7 @@ func runEncNoise(wasl, split, outPath string, seed int64) {
 		out = append(out, pair{p.Qid, a, l})
 	}
 	bb, _ := json.Marshal(out)
-	if err := os.WriteFile(outPath, bb, 0644); err != nil {
+	if err := os.WriteFile(outPath, bb, 0600); err != nil {
 		panic(err)
 	}
 }
@@ -261,7 +261,7 @@ func runNameIDF(wasl, split, outPath string, nPersons int, seeds []int64) {
 	if err != nil {
 		panic(err)
 	}
-	if err := os.WriteFile(outPath, append(b, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(outPath, append(b, '\n'), 0o600); err != nil {
 		panic(err)
 	}
 	fmt.Fprintf(os.Stderr, "nameidf %s: %d registrations, %d tokens\n", split, t.Registrations, len(t.Counts))
@@ -344,7 +344,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	r.Shuffle(len(regs), func(i, j int) { regs[i], regs[j] = regs[j], regs[i] })
 	enc := LoadEncoder(encPath)
 	L := NewLinkerCore(nil, 1)
-	f, err := os.Create(outPath)
+	f, err := os.OpenFile(outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	if err != nil {
 		panic(err)
 	}
@@ -438,7 +438,7 @@ func runFeatDump(wasl, encPath, gbmPath, split, outPath string, nPersons int, se
 	if err != nil {
 		panic(err)
 	}
-	if err := os.WriteFile(outPath+".namesakes.json", append(sc, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(outPath+".namesakes.json", append(sc, '\n'), 0o600); err != nil {
 		panic(err)
 	}
 	fmt.Fprintf(os.Stderr, "featdump %s: %d persons, %d registrations, %d positive / %d negative pairs\n", split, len(ps), len(regs), npos, nneg)
