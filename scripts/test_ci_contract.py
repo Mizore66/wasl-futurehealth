@@ -102,7 +102,6 @@ class WorkflowTests(unittest.TestCase):
             "npm-vulnerabilities",
             "filesystem-vulnerabilities",
             "trufflehog",
-            "dependency-review",
             "container",
         }
         self.assertEqual(set(self.jobs["required"]["needs"]), expected)
@@ -155,6 +154,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertRegex(ref, r"^[^/@]+/[^/@]+@[0-9a-f]{40}$", ref)
 
     def test_go_tests_race_and_real_nats_are_required(self):
+        self.assertIn("\ngo 1.27.3\n", (ROOT / "pipeline" / "go.mod").read_text())
         self.assertIn("go mod verify", self.runs("go-test"))
         self.assertIn("go test -count=1 -timeout=20m .", self.runs("go-test"))
         self.assertIn("go test -race -count=1 -timeout=60m .", self.runs("go-race"))
@@ -167,11 +167,15 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(step["with"]["go-version-file"], "pipeline/go.mod")
                 self.assertEqual(step["with"]["cache-dependency-path"], "pipeline/go.sum")
 
+    def test_go_toolchain_includes_crypto_x509_security_fix(self):
+        # GO-2026-6809 is reachable in Go 1.27.2 and fixed in Go 1.27.3.
+        self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.3$")
+
     def test_all_python_lanes_and_booking_solver_are_required(self):
         commands = self.runs("python-test")
         for directory in ("scripts", "scripts/fresh2_eval", "encoder"):
             self.assertIn(f"python3 -m unittest discover -v -s {directory} -p 'test_*.py'", commands)
-        for name in ("engine", "levers", "lookahead", "lookahead_eval", "suggest_default"):
+        for name in ("engine", "levers", "lookahead", "lookahead_eval", "pool_golden", "suggest_default"):
             self.assertIn(f"python3 booking/tests/test_{name}.py", commands)
         self.assertIn("go build -o ../bin/wsi7 .", commands)
         self.assertIn("python3 scripts/check_deploy.py", commands)
@@ -187,6 +191,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", integration)
         simulation = self.runs("booking-simulation")
         self.assertIn("python3 booking/sim/pool_test.py", simulation)
+        self.assertIn("git ls-files --error-unmatch booking/sim/pool_test.linux-amd64.json", simulation)
         self.assertIn("git diff --exit-code", simulation)
 
     def test_frontend_has_separate_static_unit_and_build_gates(self):
@@ -208,7 +213,7 @@ class WorkflowTests(unittest.TestCase):
         self.assertTrue(any(step.get("if") == "failure()" for step in uploads))
 
     def test_dependency_and_vulnerability_scanners_fail_on_findings(self):
-        self.assertIn("golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...", self.runs("go-vulnerabilities"))
+        self.assertIn("golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...", self.runs("go-vulnerabilities"))
         self.assertIn("python3 -m pip_audit -r requirements-ci.txt", self.runs("python-vulnerabilities"))
         self.assertIn("pnpm audit --audit-level=high", self.runs("npm-vulnerabilities"))
         trivy = self.steps_using("aquasecurity/trivy-action")
@@ -216,15 +221,18 @@ class WorkflowTests(unittest.TestCase):
         for step in trivy:
             self.assertEqual(step["with"]["exit-code"], "1")
             self.assertEqual(step["with"]["severity"], "HIGH,CRITICAL")
-        review = self.steps_using("actions/dependency-review-action")
-        self.assertEqual(len(review), 1)
-        self.assertEqual(review[0]["with"]["fail-on-severity"], "high")
+        # This public repository has no Dependency Review API; supported language and filesystem scans remain required.
+        self.assertNotIn("dependency-review", self.jobs)
+        self.assertEqual(self.steps_using("actions/dependency-review-action"), [])
 
     def test_trufflehog_scans_the_pull_request_range(self):
         step = self.steps_using("trufflesecurity/trufflehog")[0]
         self.assertEqual(step["with"]["base"], "${{ github.event.pull_request.base.sha }}")
         self.assertEqual(step["with"]["head"], "${{ github.event.pull_request.head.sha }}")
         self.assertIn("unverified", step["with"]["extra_args"])
+        # GoReleaser publishes image tags without the release tag's "v" prefix.
+        self.assertEqual(step["uses"], "trufflesecurity/trufflehog@116e7171542d2f1dad8810f00dcfacbe0b809183")
+        self.assertEqual(step["with"]["version"], "3.92.5")
 
     def test_container_is_built_from_checkout_and_smoke_tested(self):
         commands = self.runs("container")

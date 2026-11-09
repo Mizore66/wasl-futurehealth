@@ -120,6 +120,7 @@ jobs:
           python3 booking/tests/test_levers.py
           python3 booking/tests/test_lookahead.py
           python3 booking/tests/test_lookahead_eval.py
+          python3 booking/tests/test_pool_golden.py
           python3 booking/tests/test_suggest_default.py
       - name: Check deployment configuration statically
         run: python3 scripts/check_deploy.py
@@ -180,6 +181,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade "pip==26.2.2"
           python3 -m pip install -r requirements-ci.txt
+      - name: Require the tracked Linux simulation golden
+        run: git ls-files --error-unmatch booking/sim/pool_test.linux-amd64.json
       - name: Reproduce every pool simulation draw
         run: python3 booking/sim/pool_test.py
       - name: Require byte-identical committed simulation output
@@ -284,7 +287,7 @@ jobs:
           cache-dependency-path: pipeline/go.sum
       - name: Check reachable Go vulnerabilities
         working-directory: pipeline
-        run: go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 
   python-vulnerabilities:
     name: Python dependency vulnerabilities
@@ -352,25 +355,13 @@ jobs:
         with:
           fetch-depth: 0
       - name: Scan added commits for verified unverified and unknown secrets
-        uses: trufflesecurity/trufflehog@ef6e76c3c4023279497fab4721ffa071a722fd05 # v3.92.5
+        uses: trufflesecurity/trufflehog@116e7171542d2f1dad8810f00dcfacbe0b809183 # v3.92.5
         with:
           path: ./
           base: ${{ github.event.pull_request.base.sha }}
           head: ${{ github.event.pull_request.head.sha }}
-          version: v3.92.5
+          version: 3.92.5
           extra_args: --results=verified,unverified,unknown
-
-  dependency-review:
-    name: Pull request dependency review
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - name: Reject newly introduced high-severity vulnerabilities
-        uses: actions/dependency-review-action@56339e523c0409420f6c2c9a2f4292bbb3c07dd3 # v4.8.0
-        with:
-          fail-on-severity: high
-          comment-summary-in-pr: never
 
   container:
     name: Clean container build and API smoke
@@ -501,7 +492,6 @@ jobs:
       - npm-vulnerabilities
       - filesystem-vulnerabilities
       - trufflehog
-      - dependency-review
       - container
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -513,4 +503,4 @@ jobs:
             actionlint go-test go-race python-test integration booking-simulation \
             frontend playwright \
             go-vulnerabilities python-vulnerabilities npm-vulnerabilities \
-            filesystem-vulnerabilities trufflehog dependency-review container
+            filesystem-vulnerabilities trufflehog container

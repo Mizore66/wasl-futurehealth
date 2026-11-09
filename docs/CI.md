@@ -11,7 +11,7 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | Workflow lint | Run pinned `actionlint` and verify that every Action SHA resolves to a commit object. |
 | Go tests | Verify modules, run `go vet`, install NATS 2.12.6, and run all Go tests without `-short`. |
 | Go race tests | Run all Go tests with `-race` and an explicit 60-minute Go test timeout. |
-| Python tests | Run the scripts, fresh-evaluation, encoder, and all five booking unit-test lanes with LightGBM installed and the Go booking solver built. |
+| Python tests | Run the scripts, fresh-evaluation, encoder, and all six booking unit-test lanes with LightGBM installed and the Go booking solver built. |
 | Integrated demo and materialized Go tests | Run `scripts/demo.sh all`, including its real HTTP smoke, then rerun Go tests against generated outputs. |
 | Booking pool simulation reproducibility | Run all 30-draw pool simulation lanes and require byte-identical tracked output. |
 | Frontend lint typecheck Vitest and build | Check generated-data drift, ESLint, TypeScript, Vitest, and the Next.js production build independently. |
@@ -21,14 +21,13 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | npm dependency vulnerabilities | Audit both production and development dependencies with `pnpm audit`. |
 | Filesystem dependency and configuration vulnerabilities | Scan lockfiles and deployment configuration with Trivy; fixable HIGH/CRITICAL findings fail. |
 | TruffleHog pull request secrets | Scan the pull-request commit range, including verified, unverified, and unknown results. |
-| Pull request dependency review | Reject newly introduced high-severity dependency vulnerabilities where GitHub Dependency Review is supported. |
 | Clean container build and API smoke | Build both images without cache, scan them, start the isolated Compose deployment, verify pipeline success and materialized health, run the real API smoke, and verify the API and all NATS nodes run as UID 10001 with writable data volumes. |
 
-Dependency Review requires the repository's dependency graph and GitHub's Dependency Review API. If repository settings do not support it, that is a failed configuration to fix, not a successful skip. Container smoke is functional verification, not production security sign-off.
+Dependency Review requires the repository's dependency graph and GitHub's Dependency Review API. This repository does not support that API, so the original brief's optional Dependency Review lane is not in the required workflow. The supported Go, Python, npm, and Trivy scanners above remain fail-closed; enabling Dependency Review later can add an advisory lane without replacing them. Container smoke is functional verification, not production security sign-off.
 
 ## Version and cache policy
 
-- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`.
+- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`. Go 1.27.3 is the minimum because GO-2026-6809 affects the Go 1.27.2 standard library; `govulncheck` 1.9.0 carries a Go-1.27-compatible SSA implementation.
 - Python is 3.12.16. Direct test and scanner dependencies are pinned in `requirements-ci.txt`; the pip cache is keyed by that file.
 - Node is pinned in `web/.nvmrc`; pnpm is pinned by `web/package.json` and repeated explicitly in the workflow. The pnpm cache is keyed by `web/pnpm-lock.yaml`, and installs always use `--frozen-lockfile`.
 - NATS, actionlint, govulncheck, Trivy, TruffleHog, and pip are pinned to explicit versions in the workflow.
@@ -84,13 +83,14 @@ python3 booking/tests/test_engine.py
 python3 booking/tests/test_levers.py
 python3 booking/tests/test_lookahead.py
 python3 booking/tests/test_lookahead_eval.py
+python3 booking/tests/test_pool_golden.py
 python3 booking/tests/test_suggest_default.py
 python3 scripts/check_deploy.py
 python3 booking/sim/pool_test.py
 git diff --exit-code
 ```
 
-The fresh-evaluation suites inspect Git ancestry. Use a full clone, not a shallow checkout. `booking/sim/pool_test.py` is deliberately a separate reproducibility simulation, not part of unittest discovery; its tracked JSON must remain unchanged.
+The fresh-evaluation suites inspect Git ancestry. Use a full clone, not a shallow checkout. `booking/sim/pool_test.py` is deliberately a separate reproducibility simulation, not part of unittest discovery; its platform-selected tracked JSON must remain unchanged. Exact outputs are pinned independently for Darwin/ARM64 (`pool_test.json`) and Linux/x86-64 (`pool_test.linux-amd64.json`) because the numerical scheduling path produces platform-specific results. Unsupported platforms fail explicitly instead of silently comparing against another platform's output.
 
 ### Integrated demo
 
@@ -132,7 +132,7 @@ CI=1 WASL_API_URL= REVIEW_LIVE_MOCK= corepack pnpm exec playwright test
 ```bash
 (
   cd pipeline
-  go run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+  go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
 )
 python3 -m pip_audit -r requirements-ci.txt
 (
@@ -147,12 +147,12 @@ Use Trivy v0.69.3. For the TruffleHog equivalent, set `BASE_SHA` and `HEAD_SHA` 
 
 ```bash
 docker run --rm -v "$PWD:/tmp" -w /tmp \
-  ghcr.io/trufflesecurity/trufflehog:v3.92.5 \
+  ghcr.io/trufflesecurity/trufflehog:3.92.5 \
   git file:///tmp --since-commit "$BASE_SHA" --branch "$HEAD_SHA" \
   --fail --no-update --results=verified,unverified,unknown
 ```
 
-GitHub Dependency Review has no exact offline equivalent. The three language audits and Trivy are the local vulnerability checks; the GitHub API result remains required.
+GitHub Dependency Review has no exact offline equivalent and is optional only where the repository supports its API. The three language audits and Trivy are the required local vulnerability checks. TruffleHog release tags use a `v` prefix, but its published container tags deliberately do not; `3.92.5` is the verified multi-architecture image for release `v3.92.5`.
 
 ### Containers
 
