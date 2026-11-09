@@ -94,7 +94,10 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 	prev := "genesis"
 	br := bufio.NewReaderSize(f, 1<<20)
 	for n := 1; ; n++ {
-		line, readErr := br.ReadBytes('\n')
+		line, readErr := readLedgerRecord(br)
+		if errors.Is(readErr, errLedgerRecordTooLarge) {
+			return nil, fmt.Errorf("review ledger line %d: %w", n, readErr)
+		}
 		if readErr != nil && readErr != io.EOF {
 			return nil, readErr
 		}

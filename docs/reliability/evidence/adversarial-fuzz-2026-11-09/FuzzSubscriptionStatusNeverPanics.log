@@ -1,0 +1,9 @@
+=== RUN   FuzzSubscriptionStatusNeverPanics
+fuzz: elapsed: 0s, gathering baseline coverage: 0/235 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 235/235 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 29064 (9687/sec), new interesting: 19 (total: 254)
+fuzz: elapsed: 4s, execs: 29064 (0/sec), new interesting: 19 (total: 254)
+--- PASS: FuzzSubscriptionStatusNeverPanics (4.07s)
+=== NAME  
+PASS
+ok  	wsi	4.408s

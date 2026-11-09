@@ -105,6 +105,7 @@ func FuzzAPIReviewBodyNeverPanics(f *testing.F) {
 	for _, seed := range []string{
 		`{"decision":"same"}`,
 		`{"decision":"same","decision":"different"}`,
+		`{"decision":"same","Decision":"different"}`,
 		`{"decision":"same","unexpected":true}`,
 		`{"decision":"same"} {}`,
 		`{"decision":"same"} ` + strings.Repeat(" ", 32),

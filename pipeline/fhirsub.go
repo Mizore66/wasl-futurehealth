@@ -252,6 +252,9 @@ func (c *SubConsumer) stats_(k string) *int64 {
 // decodeNotification -> status + events with bodies (resolving id-only foci by vread).
 func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 	var bun Bundle
+	if err := rejectDuplicateKeys(b); err != nil {
+		return StatusInfo{}, nil, fmt.Errorf("invalid notification bundle: %v", err)
+	}
 	if err := json.Unmarshal(b, &bun); err != nil || bun.ResourceType != "Bundle" || len(bun.Entry) == 0 {
 		return StatusInfo{}, nil, fmt.Errorf("not a notification bundle")
 	}

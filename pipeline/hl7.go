@@ -228,6 +228,20 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		if r := recover(); r != nil {
 			prov, msgID, res = "", "", nil
 			err = fmt.Errorf("hl7: malformed embedded resource shape")
+			return
+		}
+		if err != nil {
+			return
+		}
+		raw, marshalErr := json.Marshal(res)
+		if marshalErr != nil {
+			prov, msgID, res = "", "", nil
+			err = fmt.Errorf("hl7: embedded resource cannot be encoded: %v", marshalErr)
+			return
+		}
+		if event, signoff := normalise(prov, 0, raw); event == nil && signoff == nil {
+			prov, msgID, res = "", "", nil
+			err = fmt.Errorf("hl7: embedded resource is not normalisable")
 		}
 	}()
 	z := m.seg("ZWS")

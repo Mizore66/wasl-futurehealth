@@ -9,7 +9,7 @@
     "go": "go1.27.3 darwin/arm64",
     "nats_server": "v2.15.2 at /opt/homebrew/bin/nats-server",
     "nats_test_wiring": "Temporary worktree-local bin/nats-server symlink to the system binary; not a source change.",
-    "fuzz": "Native Go fuzzing, four workers, three seconds per target for the recorded smoke run.",
+    "fuzz": "Native Go fuzzing, four workers, three seconds per target for the recorded smoke run. Raw per-target logs are retained under evidence/adversarial-fuzz-2026-11-09/; baseline-only or zero-generation passes are rejected.",
     "filesystem": "Local macOS filesystem. Write, short-write, sync, close and missing-parent faults are injected in process; physical ENOSPC and power loss were not injected."
   },
   "seed_policy": {
@@ -30,19 +30,19 @@
     {
       "id": "hl7-shape-order-frame-fuzz",
       "category": "Malformed, duplicate and out-of-order HL7/MLLP",
-      "command": "go -C pipeline test -run 'Test(HL7RejectsMalformedAndOutOfOrderSegments|HL7ToResourceRejectsShapeConfusionWithoutPanics|MLLPBoundsPreambleAndFrame)$' -count=1",
-      "seeds": ["duplicate MSH/ZWS", "MSH after PID", "missing MSH sender/control", "null embedded Patient", "64 KiB preamble limit", "1 MiB frame limit", "bad trailer"],
+      "command": "go -C pipeline test -run 'Test(HL7RejectsMalformedAndOutOfOrderSegments|HL7ToResourceRejectsShapeConfusionWithoutPanics|HL7ToResourceRejectsResourceNormaliseDrops|MLLPBoundsPreambleAndFrame)$' -count=1",
+      "seeds": ["duplicate MSH/ZWS", "MSH after PID", "missing MSH sender/control", "null embedded Patient with and without PID", "64 KiB preamble limit", "1 MiB frame limit", "bad trailer"],
       "status": "pass",
-      "evidence": "Invalid segments/resources return errors without panics; bounded framing rejects oversize input.",
+      "evidence": "Invalid segments/resources return errors without panics; ToResource rejects embedded resources that normalise drops; bounded framing rejects oversize input.",
       "limitations": "No network slow-client or connection-exhaustion matrix was run."
     },
     {
       "id": "subscription-validation-reorder-backpressure",
       "category": "Subscription malformed, duplicate and out-of-order input",
-      "command": "go -C pipeline test -run 'Test(ParseStatusValidatesRequiredFields|HookValidatesBeforeAcknowledgement|HookRejectsInvalidInlineResourceAndFocusMismatch|HookRejectsOversizeAndBackpressure|SubscriptionRequestRejectsMalformedURL|UnknownSubscriptionSourceDoesNotAdvanceAcknowledgement|SubscriptionReorderAndDuplicateHaveSingleOrderedEffect)$' -count=1",
-      "seeds": ["event number 1 and 2 reordered", "duplicate event 1", "invalid URL escape %", "unknown source", "full inbox depth 1", "1 MiB hook limit"],
+      "command": "go -C pipeline test -run 'Test(ParseStatusValidatesRequiredFields|HookValidatesBeforeAcknowledgement|HookRejectsDuplicateNotificationEnvelopeKeys|HookRejectsInvalidInlineResourceAndFocusMismatch|HookRejectsOversizeAndBackpressure|SubscriptionRequestRejectsMalformedURL|UnknownSubscriptionSourceDoesNotAdvanceAcknowledgement|SubscriptionReorderAndDuplicateHaveSingleOrderedEffect)$' -count=1",
+      "seeds": ["event number 1 and 2 reordered", "duplicate event 1", "duplicate outer resourceType key", "invalid URL escape %", "unknown source", "full inbox depth 1", "1 MiB hook limit"],
       "status": "pass",
-      "evidence": "One ordered dispatch per event, malformed or shape-confused hooks receive 400, focus/source mismatches are rejected, full inbox receives 503, and unknown sources do not advance acknowledgement.",
+      "evidence": "One ordered dispatch per event, duplicate envelope keys and malformed or shape-confused hooks receive 400 without queueing, focus/source mismatches are rejected, full inbox receives 503, and unknown sources do not advance acknowledgement.",
       "limitations": "The hook still acknowledges an in-memory queue, not downstream NATS durability; reorder overflow lacks a durable dead-letter."
     },
     {
@@ -58,9 +58,9 @@
       "id": "api-strict-json",
       "category": "API body parser robustness",
       "command": "go -C pipeline test -run 'TestAPIMutationsRejectDuplicateUnknownAndOversizedBodies' -count=1",
-      "seeds": ["duplicate keys", "unknown fields", "valid JSON prefix followed by whitespace beyond route limit", "trailing objects"],
+      "seeds": ["exact duplicate keys", "case-variant semantic duplicate keys", "unknown fields", "valid JSON prefix followed by whitespace beyond route limit", "trailing objects"],
       "status": "pass",
-      "evidence": "Review, consent and undo use bounded strict decoding and return 400 without appending."
+      "evidence": "Review, consent and undo use bounded strict decoding and return 400 without appending, including for case variants that Go's typed decoder would otherwise match to one field."
     },
     {
       "id": "native-fuzz-smoke",
@@ -68,8 +68,8 @@
       "command": "scripts/adversarial_fuzz.sh",
       "seeds": ["Checked-in seeds in pipeline/adversarial_fuzz_test.go", "FUZZTIME defaults to 3s", "four fuzz workers"],
       "status": "pass",
-      "evidence": "All five targets passed: 28,546 FHIR; 53,622 HL7; 37,887 MLLP; 29,029 SubscriptionStatus; 5,086 API executions in the final scripted run.",
-      "limitations": "Execution counts depend on host/cache and are evidence for this run only, not a coverage guarantee."
+      "evidence": "All five targets passed with raw logs in evidence/adversarial-fuzz-2026-11-09/. Total executions: 37,248 FHIR; 17,733 HL7; 52,728 MLLP; 29,064 SubscriptionStatus; 8,378 API. Generated beyond baseline: 36,985; 17,688; 52,722; 28,829; 8,168 respectively. The runner rejects baseline-only or zero-generation passes.",
+      "limitations": "Execution counts depend on host/cache and are evidence for this run only, not a coverage guarantee. Logs preserve the exact reported baseline and total counts."
     },
     {
       "id": "native-fuzz-longer",
@@ -92,10 +92,10 @@
     {
       "id": "corrupt-truncated-ledgers",
       "category": "Corrupt and truncated review/reader ledgers",
-      "command": "go -C pipeline test -run 'Test(ReviewLedgerRejectsDuplicateKeysAndInvalidBaseEvents|ReaderLedgerFailsClosedOnCorruptionAndStaleModel|ActionsMalformedLedgerFailsClosed|UndoRejectsTruncatedOrDeletedLedger|UndoAppendFailureLeavesNoTraceAndReloadRejectsTornLine)$' -count=1",
-      "seeds": ["duplicate-key ledger", "invalid base review", "malformed tail", "stale model", "conflicting duplicate answer", "torn NDJSON line"],
+      "command": "go -C pipeline test -run 'Test(ReadLedgerRecordStopsAtLimitWithoutReadingWholeInput|LedgerReadersRejectOversizedRecordsDuringBoundedReads|ReviewLedgerRejectsDuplicateKeysAndInvalidBaseEvents|ReaderLedgerFailsClosedOnCorruptionAndStaleModel|ActionsMalformedLedgerFailsClosed|UndoRejectsTruncatedOrDeletedLedger|UndoAppendFailureLeavesNoTraceAndReloadRejectsTornLine)$' -count=1",
+      "seeds": ["duplicate-key ledger", "invalid base review", "malformed tail", "stale model", "conflicting duplicate answer", "torn NDJSON line", "terminated and unterminated records over 16 MiB"],
       "status": "pass",
-      "evidence": "Writes are refused or reader becomes unavailable; unsafe replay is not accepted.",
+      "evidence": "Writes are refused or reader becomes unavailable; unsafe replay is not accepted. Bounded fragment reads reject oversized records before whole-record allocation.",
       "limitations": "Whole-reader-ledger quarantine is deliberately fail-stop and reduces availability until remediated."
     },
     {
@@ -119,10 +119,10 @@
     {
       "id": "full-and-race-regression",
       "category": "Regression baseline",
-      "command": "go -C pipeline test ./... -count=1 && go -C pipeline vet ./...",
+      "command": "go -C pipeline test ./... -count=1 -timeout=10m -json && go -C pipeline vet ./...",
       "seeds": ["Existing checked-in unit/integration fixtures", "temporary bin/nats-server symlink present"],
       "status": "pass",
-      "evidence": "Final full suite passed 1,028 test events with zero failures in 325.283 seconds; focused race suite passed in 4.200 seconds; vet passed after test cleanup.",
+      "evidence": "Fresh full suite passed 1,039 test events with zero failures in 353.052 seconds; focused race suite passed in 4.208 seconds; vet passed. Raw JSON events are retained in evidence/full-regression-2026-11-09.jsonl.",
       "limitations": "Six asset-dependent tests skipped in the final run: TestAPIBookingSupport, TestAPIDRFixtureRun, TestAPIFixturesAndContracts, TestAPIReviewRBACAndAppendOnly, TestFresh2Reader, TestHL7RoundTripCohort."
     },
     {
