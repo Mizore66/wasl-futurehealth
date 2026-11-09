@@ -1,4 +1,4 @@
-import copy
+import dataclasses
 import subprocess
 import unittest
 from unittest import mock
@@ -24,7 +24,7 @@ class MutationRunnerTests(unittest.TestCase):
         self.assertEqual(api_mutation.apply_mutation("before\n", self.mutant), "after\n")
 
     def test_equivalent_mutant_must_survive_named_oracle(self):
-        mutant = copy.replace(self.mutant, equivalent=True)
+        mutant = dataclasses.replace(self.mutant, equivalent=True)
         passed = subprocess.CompletedProcess(["go"], 0, "ok\n", "")
         with mock.patch.object(api_mutation, "run_go_test", return_value=passed):
             result = api_mutation.evaluate_mutant("/tmp/isolated", mutant)

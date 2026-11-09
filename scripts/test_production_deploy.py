@@ -2,6 +2,7 @@
 """Production-shaped deployment contracts, using generated throwaway secrets only."""
 import json
 import os
+import platform
 from pathlib import Path
 import shutil
 import stat
@@ -117,6 +118,10 @@ fi
     def test_nats_starts_fresh_with_both_passwords_digit_leading(self):
         """Unquoted environment expansion must not reinterpret hex credentials as numbers."""
         engine = "podman"
+        machine = platform.machine().lower()
+        if machine not in {"x86_64", "amd64", "arm64", "aarch64"}:
+            self.skipTest(f"unsupported container test architecture: {machine}")
+        target = "linux/amd64" if machine in {"x86_64", "amd64"} else "linux/arm64"
         suffix = f"{os.getpid()}-digit-leading"
         name = f"wasl-nats-{suffix}"
         secrets_volume = f"wasl-nats-secrets-{suffix}"
@@ -136,7 +141,7 @@ fi
 
         self.addCleanup(cleanup)
         if owns_image:
-            built = run([engine, "build", "--platform", "linux/arm64", "-t", image,
+            built = run([engine, "build", "--platform", target, "-t", image,
                          str(ROOT / "deploy/nats")])
             self.assertEqual(built.returncode, 0, built.stdout)
 
@@ -155,7 +160,7 @@ fi
             created = run([engine, "volume", "create", data_volume])
             self.assertEqual(created.returncode, 0, created.stdout)
             started = run([
-                engine, "run", "--detach", "--platform", "linux/arm64", "--name", name,
+                engine, "run", "--detach", "--platform", target, "--name", name,
                 "-e", "NATS_SERVER_NAME=n0", "-e", "WASL_NATS_USER=wasl-services",
                 "-e", "WASL_ROUTE_USER=wasl-routes",
                 "-e", "WASL_NATS_PASSWORD_FILE=/run/secrets/nats_password",
@@ -182,7 +187,7 @@ fi
                 logs = run([engine, "logs", name])
                 self.fail(f"NATS did not become healthy with digit-leading credentials:\n{logs.stdout}")
             authenticated = run([
-                engine, "run", "--rm", "--platform", "linux/arm64", "--network", f"container:{name}",
+                engine, "run", "--rm", "--platform", target, "--network", f"container:{name}",
                 "-v", f"{secrets_volume}:/run/secrets:ro", "-e", "NATS_URL=tls://127.0.0.1:4222",
                 "-e", "NATS_USER=wasl-services", "-e", "NATS_PASSWORD=1e" + "1234567890" * 6 + "12",
                 "-e", "NATS_CA=/run/secrets/ca.crt", "-e", "NATS_CERT=/run/secrets/server.crt",

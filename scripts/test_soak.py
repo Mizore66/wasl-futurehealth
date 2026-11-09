@@ -688,7 +688,8 @@ class ComposeTimeoutTests(unittest.TestCase):
                         os.kill(child, 0)
                     except ProcessLookupError:
                         return False
-                    stat = subprocess.check_output(["ps", "-p", str(child), "-o", "stat="], text=True).strip()
+                    stat = subprocess.run(["ps", "-p", str(child), "-o", "stat="], text=True,
+                                          stdout=subprocess.PIPE, check=False).stdout.strip()
                     return bool(stat) and not stat.startswith("Z")
                 deadline = time.monotonic() + 2
                 while running() and time.monotonic() < deadline:

@@ -260,7 +260,8 @@ def workflow_smoke(c, cid):
           "workflow: canonical audit verification changed")
     history = after_audit.get("history", [])
     check(history[:len(original_history)] == original_history, "workflow: prior durable audit history changed")
-    check(history[len(original_history):] == new_events, "workflow: durable audit history does not contain exactly the accepted events")
+    check([event.get("hash") for event in history[len(original_history):]] == [event["hash"] for event in new_events],
+          "workflow: durable audit history does not contain exactly the accepted event hashes in order")
 
     export = c.ok(path + "/export", "auditor")
     check(export.get("schema") == "wasl-case-export/1" and export.get("redacted") is True, "export: schema/redaction marker missing")
