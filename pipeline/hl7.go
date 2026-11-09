@@ -44,6 +44,9 @@ const (
 	mllpStart = 0x0b
 	mllpEnd1  = 0x1c
 	mllpEnd2  = 0x0d
+
+	maxMLLPFrameBytes    = 1 << 20 // one MiB of clinical payload, excluding MLLP delimiters
+	maxMLLPPreambleBytes = 64 << 10
 )
 
 // ---------- encoding: FHIR resource -> HL7 v2 message ----------
@@ -174,18 +177,33 @@ type HL7Msg struct {
 
 func ParseHL7(b []byte) (*HL7Msg, error) {
 	m := &HL7Msg{Segs: map[string][][]string{}}
+	singleton := map[string]bool{"MSH": true, "PID": true, "ORC": true, "OBR": true, "SCH": true, "PV1": true, "TXA": true, "ZWS": true}
+	segment := 0
 	for _, line := range strings.Split(strings.TrimRight(string(b), "\r\n"), "\r") {
 		if line == "" {
 			continue
 		}
 		f := strings.Split(line, "|")
+		if f[0] == "" {
+			return nil, fmt.Errorf("hl7: empty segment name")
+		}
+		if segment == 0 && f[0] != "MSH" {
+			return nil, fmt.Errorf("hl7: MSH must be the first segment")
+		}
+		if singleton[f[0]] && len(m.Segs[f[0]]) != 0 {
+			return nil, fmt.Errorf("hl7: duplicate %s segment", f[0])
+		}
 		m.Segs[f[0]] = append(m.Segs[f[0]], f)
+		segment++
 	}
 	msh := m.seg("MSH")
 	if msh == nil || len(msh) < 12 {
 		return nil, fmt.Errorf("hl7: missing/short MSH")
 	}
 	m.Sender, m.Type, m.Control = hl7Unesc(msh[3]), msh[8], hl7Unesc(msh[9])
+	if m.Sender == "" || m.Type == "" || m.Control == "" {
+		return nil, fmt.Errorf("hl7: MSH sender, message type and control id are required")
+	}
 	return m, nil
 }
 
@@ -206,6 +224,26 @@ func fld(s []string, i int) string {
 // ToResource rebuilds the internal resource: patient identity/demographics from PID, clinical payload from OBR/OBX/SCH/PV1,
 // and the remaining Wasl-specific fields from ZWS. Segment values override the ZWS copy (they are the v2 source of truth).
 func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interface{}, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			prov, msgID, res = "", "", nil
+			err = fmt.Errorf("hl7: malformed embedded resource shape")
+			return
+		}
+		if err != nil {
+			return
+		}
+		raw, marshalErr := json.Marshal(res)
+		if marshalErr != nil {
+			prov, msgID, res = "", "", nil
+			err = fmt.Errorf("hl7: embedded resource cannot be encoded: %v", marshalErr)
+			return
+		}
+		if event, signoff := normalise(prov, 0, raw); event == nil && signoff == nil {
+			prov, msgID, res = "", "", nil
+			err = fmt.Errorf("hl7: embedded resource is not normalisable")
+		}
+	}()
 	z := m.seg("ZWS")
 	if z == nil || len(z) < 3 {
 		return "", "", nil, fmt.Errorf("hl7: missing ZWS")
@@ -214,15 +252,28 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 	if err != nil {
 		return "", "", nil, fmt.Errorf("hl7: ZWS-2: %v", err)
 	}
-	if err := json.Unmarshal(raw, &res); err != nil {
-		return "", "", nil, err
+	if err := rejectDuplicateKeys(raw); err != nil {
+		return "", "", nil, fmt.Errorf("hl7: embedded resource: %v", err)
+	}
+	if err := json.Unmarshal(raw, &res); err != nil || res == nil || gs(res, "resourceType") == "" {
+		return "", "", nil, fmt.Errorf("hl7: embedded resource must be a typed FHIR object")
 	}
 	prov = m.Sender
+	if fld(z, 1) == "" {
+		return "", "", nil, fmt.Errorf("hl7: ZWS-1 resource identity is required")
+	}
 	msgID = prov + "/" + fld(z, 1)
-	if pid := m.seg("PID"); pid != nil && len(res["contained"].([]interface{})) > 0 {
-		pt := res["contained"].([]interface{})[0].(map[string]interface{})
+	if pid := m.seg("PID"); pid != nil {
+		contained, ok := res["contained"].([]interface{})
+		if !ok || len(contained) == 0 {
+			return "", "", nil, fmt.Errorf("hl7: PID requires a contained Patient")
+		}
+		pt, ok := contained[0].(map[string]interface{})
+		if !ok || pt == nil {
+			return "", "", nil, fmt.Errorf("hl7: contained Patient must be an object")
+		}
 		ids := []interface{}{}
-		for _, rep := range strings.Split(pid[3], "~") {
+		for _, rep := range strings.Split(fld(pid, 3), "~") {
 			c := strings.Split(rep, "^")
 			if len(c) < 5 {
 				continue
@@ -277,12 +328,34 @@ func mllpFrame(b []byte) []byte {
 	return append(out, mllpEnd1, mllpEnd2)
 }
 
-// readMLLP reads one framed message.
+// readMLLPUntil is the bounded replacement for ReadBytes: ErrBufferFull fragments
+// are accumulated only while the complete delimiter-terminated value fits limit.
+func readMLLPUntil(r *bufio.Reader, delim byte, limit int) ([]byte, error) {
+	out := make([]byte, 0, 4096)
+	for {
+		frag, err := r.ReadSlice(delim)
+		if len(out)+len(frag) > limit {
+			return nil, fmt.Errorf("mllp: value exceeds %d bytes", limit)
+		}
+		out = append(out, frag...)
+		switch err {
+		case nil:
+			return out, nil
+		case bufio.ErrBufferFull:
+			continue
+		default:
+			return nil, err
+		}
+	}
+}
+
+// readMLLP reads one bounded framed message. Oversized preambles and unterminated
+// frames are rejected without growing memory with the peer's input.
 func readMLLP(r *bufio.Reader) ([]byte, error) {
-	if _, err := r.ReadBytes(mllpStart); err != nil {
+	if _, err := readMLLPUntil(r, mllpStart, maxMLLPPreambleBytes); err != nil {
 		return nil, err
 	}
-	b, err := r.ReadBytes(mllpEnd1)
+	b, err := readMLLPUntil(r, mllpEnd1, maxMLLPFrameBytes+1)
 	if err != nil {
 		return nil, err
 	}

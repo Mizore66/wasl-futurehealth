@@ -73,7 +73,12 @@ type SubConsumer struct {
 	start     time.Time
 }
 
-const gapWait = 300 * time.Millisecond
+const (
+	gapWait                = 300 * time.Millisecond
+	maxHookBodyBytes       = 1 << 20
+	maxFHIRResponseBytes   = 16 << 20
+	maxSubscriptionReorder = 4096
+)
 
 func runFhirSub(base, hookAddr, content, runDir string) {
 	nc, js := connect("fhirsub")
@@ -113,7 +118,8 @@ fresh:
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hook", c.hook)
 	go func() {
-		if err := http.ListenAndServe(hookAddr, mux); err != nil {
+		srv := &http.Server{Addr: hookAddr, Handler: mux, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
+		if err := srv.ListenAndServe(); err != nil {
 			panic(err)
 		}
 	}()
@@ -137,7 +143,10 @@ func (c *SubConsumer) req(method, path string, body []byte) ([]byte, int, error)
 	if body != nil {
 		rd = bytes.NewReader(body)
 	}
-	r, _ := http.NewRequest(method, c.base+path, rd)
+	r, err := http.NewRequest(method, c.base+path, rd)
+	if err != nil {
+		return nil, 0, err
+	}
 	r.Header.Set("Authorization", "Bearer "+MockToken)
 	r.Header.Set("Accept", "application/fhir+json")
 	if body != nil {
@@ -148,8 +157,14 @@ func (c *SubConsumer) req(method, path string, body []byte) ([]byte, int, error)
 		return nil, 0, err
 	}
 	defer resp.Body.Close()
-	b, err := io.ReadAll(resp.Body)
-	return b, resp.StatusCode, err
+	b, err := io.ReadAll(io.LimitReader(resp.Body, maxFHIRResponseBytes+1))
+	if err != nil {
+		return nil, resp.StatusCode, err
+	}
+	if len(b) > maxFHIRResponseBytes {
+		return nil, resp.StatusCode, fmt.Errorf("FHIR response exceeds %d bytes", maxFHIRResponseBytes)
+	}
+	return b, resp.StatusCode, nil
 }
 
 func (c *SubConsumer) createSubscription() {
@@ -198,13 +213,25 @@ func (c *SubConsumer) hook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
-	b, err := io.ReadAll(r.Body)
+	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxHookBodyBytes))
 	if err != nil {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	c.inbox <- b
-	w.WriteHeader(200)
+	// Acknowledge only syntactically and semantically decodable notifications.
+	// A full in-memory inbox applies backpressure instead of blocking a handler forever.
+	if _, _, err := c.decode(b); err != nil {
+		atomic.AddInt64(c.stats_("hook_decode_rejected"), 1)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	select {
+	case c.inbox <- b:
+		w.WriteHeader(http.StatusOK)
+	default:
+		atomic.AddInt64(c.stats_("hook_backpressure"), 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}
 }
 
 // stats_ returns a stable counter pointer (updated atomically outside the lock).
@@ -225,6 +252,9 @@ func (c *SubConsumer) stats_(k string) *int64 {
 // decodeNotification -> status + events with bodies (resolving id-only foci by vread).
 func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 	var bun Bundle
+	if err := rejectDuplicateKeys(b); err != nil {
+		return StatusInfo{}, nil, fmt.Errorf("invalid notification bundle: %v", err)
+	}
 	if err := json.Unmarshal(b, &bun); err != nil || bun.ResourceType != "Bundle" || len(bun.Entry) == 0 {
 		return StatusInfo{}, nil, fmt.Errorf("not a notification bundle")
 	}
@@ -268,7 +298,36 @@ func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 		}()
 	}
 	wg.Wait()
-	return st, evs, ferr
+	if ferr != nil {
+		return st, evs, ferr
+	}
+	for _, ev := range evs {
+		if ev == nil || ev.Body == nil {
+			continue
+		}
+		typ, id, vid, _, err := parseResourceVersion(ev.Body)
+		if err != nil {
+			return st, nil, fmt.Errorf("invalid event resource: %s", ev.Focus)
+		}
+		ft, fid, fvid := splitFocus(ev.Focus)
+		if typ != ft || id != fid || (fvid != "" && vid != fvid) {
+			return st, nil, fmt.Errorf("event resource does not match focus: %s", ev.Focus)
+		}
+		var meta struct {
+			Meta struct{ Source string } `json:"meta"`
+		}
+		if err := json.Unmarshal(ev.Body, &meta); err != nil {
+			return st, nil, fmt.Errorf("invalid event metadata")
+		}
+		prov := provFromSource(meta.Meta.Source)
+		if _, ok := c.provCh[prov]; !ok || prov == "" {
+			return st, nil, fmt.Errorf("event has unknown source")
+		}
+		if resource, signoff := normalise(prov, 0, ev.Body); resource == nil && signoff == nil {
+			return st, nil, fmt.Errorf("event resource shape is invalid")
+		}
+	}
+	return st, evs, nil
 }
 
 func (c *SubConsumer) alreadyHave(n int64) bool {
@@ -311,18 +370,27 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) {
 		c.stats["accepted_"+via]++
 		if e.Num != c.next {
 			c.stats["buffered_ahead_"+via]++ // arrived before a predecessor (reorder or gap)
+			if len(c.buf) >= maxSubscriptionReorder {
+				c.stats["reorder_overflow_"+via]++
+				continue
+			}
 			c.buf[e.Num] = e
 			continue
 		}
-		c.dispatchLocked(e)
+		if !c.dispatchLocked(e) {
+			c.buf[e.Num] = e
+			continue
+		}
 		c.next++
 		for {
 			b, ok := c.buf[c.next]
 			if !ok {
 				break
 			}
+			if !c.dispatchLocked(b) {
+				break
+			}
 			delete(c.buf, c.next)
-			c.dispatchLocked(b)
 			c.next++
 		}
 	}
@@ -333,20 +401,22 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) {
 	}
 }
 
-func (c *SubConsumer) dispatchLocked(e *subEvent) {
+func (c *SubConsumer) dispatchLocked(e *subEvent) bool {
 	var meta struct {
 		Meta struct{ Source string } `json:"meta"`
 	}
-	json.Unmarshal(e.Body, &meta)
+	if err := json.Unmarshal(e.Body, &meta); err != nil {
+		c.stats["malformed_resource"]++
+		return false
+	}
 	prov := provFromSource(meta.Meta.Source)
 	ch, ok := c.provCh[prov]
-	if !ok {
+	if !ok || prov == "" {
 		c.stats["unknown_source"]++
-		c.acked[e.Num] = true // nothing to publish; still advances the checkpoint
-		c.advanceLocked()
-		return
+		return false // never checkpoint an event that was not handed to a publisher
 	}
 	ch <- e
+	return true
 }
 
 // PaceWindow bounds how far one provider's publisher may run ahead of the slowest: an event is published only once

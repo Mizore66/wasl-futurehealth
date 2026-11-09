@@ -94,7 +94,10 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 	prev := "genesis"
 	br := bufio.NewReaderSize(f, 1<<20)
 	for n := 1; ; n++ {
-		line, readErr := br.ReadBytes('\n')
+		line, readErr := readLedgerRecord(br)
+		if errors.Is(readErr, errLedgerRecordTooLarge) {
+			return nil, fmt.Errorf("review ledger line %d: %w", n, readErr)
+		}
 		if readErr != nil && readErr != io.EOF {
 			return nil, readErr
 		}
@@ -108,7 +111,11 @@ func readVerifiedLedger(path string) ([]map[string]interface{}, error) {
 			return nil, fmt.Errorf("review ledger line %d: record exceeds 16 MiB", n)
 		}
 		var ev map[string]interface{}
-		dec := json.NewDecoder(bytes.NewReader(bytes.TrimSuffix(line, []byte{'\n'})))
+		raw := bytes.TrimSuffix(line, []byte{'\n'})
+		if err := rejectDuplicateKeys(raw); err != nil {
+			return nil, fmt.Errorf("review ledger line %d: %v", n, err)
+		}
+		dec := json.NewDecoder(bytes.NewReader(raw))
 		if err := dec.Decode(&ev); err != nil || ev == nil {
 			return nil, fmt.Errorf("review ledger line %d: not a single JSON object", n)
 		}
@@ -164,6 +171,50 @@ func contestRejectedFor(events []map[string]interface{}, status map[string]strin
 	return false
 }
 
+func validateBaseReviewEvent(ev map[string]interface{}) error {
+	for _, field := range []string{"case", "decision", "role", "actor", "action", "head_signed", "at", "mode"} {
+		if _, ok := ev[field].(string); !ok {
+			return fmt.Errorf("base review field %s must be a string", field)
+		}
+	}
+	if sstr(ev, "case") == "" || sstr(ev, "decision") == "" {
+		return fmt.Errorf("base review case and decision are required")
+	}
+	if _, err := cleanText(sstr(ev, "actor"), maxActorRunes, true, false); err != nil {
+		return fmt.Errorf("invalid base review actor")
+	}
+	if sstr(ev, "mode") != "demo" {
+		return fmt.Errorf("base review mode must be demo")
+	}
+	if _, err := time.Parse(time.RFC3339Nano, sstr(ev, "at")); err != nil {
+		return fmt.Errorf("invalid base review timestamp")
+	}
+	if note, ok := ev["note"].(string); !ok || utf8.RuneCountInString(note) > maxNoteRunes {
+		return fmt.Errorf("invalid base review note")
+	}
+	action, decision := sstr(ev, "action"), sstr(ev, "decision")
+	if err := Authorize(sstr(ev, "role"), action); err != nil {
+		return fmt.Errorf("unauthorised base review: %v", err)
+	}
+	switch action {
+	case ActSignLink:
+		if decision != "same" && decision != "different" {
+			return fmt.Errorf("link review has an incompatible decision")
+		}
+	case ActRecordConsent:
+		if decision != "confirm_contact" {
+			if _, ok := consentEvents[decision]; !ok {
+				return fmt.Errorf("consent review has an incompatible decision")
+			}
+		}
+	case ActSignEvidence:
+		// Programme-specific evidence labels are validated by the write handler.
+	default:
+		return fmt.Errorf("unknown base review action")
+	}
+	return nil
+}
+
 // validateLedgerSemantics replays a chain-valid ledger and rejects impossible histories with the same rules the POST
 // handler enforces: unknown kinds, empty/unknown/cross-case targets, undo of non-reviews, self-undo, unauthorised
 // roles, resolution without an open contest, and a second contest after a rejected one.
@@ -179,7 +230,11 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 			continue
 		}
 		kind := evKind(ev)
-		if kind != "review" {
+		if kind == "review" {
+			if err := validateBaseReviewEvent(ev); err != nil {
+				return bad(err.Error())
+			}
+		} else {
 			if kind != evKindUndo && kind != evKindContest && kind != evKindResolution {
 				return bad("unknown event kind " + kind)
 			}
@@ -403,13 +458,8 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		Resolution string `json:"resolution"`
 		Note       string `json:"note"`
 	}
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&req); err != nil || req.Target == "" {
-		fail(400, "body must be {\"target\":\"<review event hash>\", \"contest\":false, \"note\":...}")
-		return
-	}
-	if _, err := dec.Token(); err != io.EOF {
-		fail(400, "body must contain one JSON object and no trailing data")
+	if err := decodeAPIBody(w, r, maxUndoBodyBytes, &req); err != nil || req.Target == "" {
+		fail(400, "body must be one strict JSON object with target, contest, resolution and note; duplicate or unknown fields and oversized/trailing data are rejected")
 		return
 	}
 	if utf8.RuneCountInString(req.Note) > maxNoteRunes {
@@ -431,6 +481,12 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 
 	// Verify the on-disk ledger on every write and require it to agree with what this process has served.
 	path := filepath.Join(s.run, "api_reviews.ndjson")
+	unlock, err := lockReviewLedger(path)
+	if err != nil {
+		fail(503, "review ledger could not be locked; refusing to append", "detail", err.Error())
+		return
+	}
+	defer unlock()
 	disk, err := readVerifiedLedger(path)
 	if err == nil {
 		err = validateLedgerSemantics(disk)
