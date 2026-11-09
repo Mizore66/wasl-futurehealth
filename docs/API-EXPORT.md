@@ -24,6 +24,7 @@ GET /api/cases/{id}/export
   "meta": { "...": "same envelope as the other API responses" },
   "detail": { "...": "exactly the body of GET /api/cases/{id}, without its meta" },
   "audit":  { "...": "exactly the body of GET /api/cases/{id}/audit, without its meta" },
+  "comparison_sha256": "hex sha256",
   "content_sha256": "hex sha256"
 }
 ```
@@ -32,27 +33,36 @@ GET /api/cases/{id}/export
   `caseDetail` calls the shared detail helper; tests compare both projections against the real wrapped live routes, including consent and ledger overlays.
 - The export adds **no** `exported_at`, no file list and no other field. Nothing is written to the run directory.
 
-## Hash
+## Hashes
 
-`content_sha256` = SHA-256 of the canonical JSON (`canon`, sorted keys) of the document with the
-`content_sha256` key removed. To verify a served export:
+The export carries two SHA-256 hashes over the same number-preserving canonical JSON (`canon`, sorted keys):
 
-1. Parse the JSON.
-2. Delete `content_sha256`.
-3. Serialise with sorted keys and no extra whitespace (`canon`).
-4. SHA-256 the bytes and compare with the served value.
+- `content_sha256` covers the **full export**, including `comparison_sha256` and `meta.loaded_at`. Only the
+  `content_sha256` key itself is removed before hashing, preserving the existing content-hash contract.
+- `comparison_sha256` covers the export with the `content_sha256` and `comparison_sha256` hash fields removed and
+  only `meta.loaded_at` removed from the payload. The rest of `meta`, plus `schema`, `redacted`, `detail` and `audit`,
+  are all included. Excluding the hash fields avoids self-reference; no other payload field is excluded.
 
-The hash is computed over the parsed form, so Go struct field order cannot change it.
+To verify `content_sha256`, parse with number preservation, delete only `content_sha256`, serialise with sorted keys
+and no extra whitespace, then compare the SHA-256 of those bytes with the served value. To verify
+`comparison_sha256`, delete both hash fields and `meta.loaded_at`, then apply the same canonicalisation and comparison.
+Both hashes are computed over the parsed form, so Go struct field order cannot change them.
 
-### What the hash does and does not prove
+### What the hashes do and do not prove
 
-- It **authenticates the document contents**: any change to a served field, a chain body, or a key breaks it
-  (covered by `TestExportHashVerificationAndMutation`).
-- It is **deterministic**: while the run and the case/review history are unchanged, repeated exports are
-  byte-identical. A new review changes the hash, as it should.
-- It is **not a cross-restart semantic ID**. `meta.loaded_at` is set when the server loads the run, so restarting
-  the server with the same run changes the document and its hash. Compare exports by content hash only within
-  one loaded run, or after removing `meta.loaded_at` if you need a restart-stable comparison.
+- `content_sha256` **authenticates the served document contents**: any change to a served field, a chain body, or a
+  key breaks it (covered by `TestExportHashVerificationAndMutation`). It remains deterministic within one loaded run,
+  but changes when `meta.loaded_at` changes after a restart.
+- `comparison_sha256` is a **restart-stable comparison convenience**: equivalent redacted exports have the same value
+  when only `meta.loaded_at` differs. A meaningful content change, including a new review, changes it. Mutating any
+  covered field or adding, dropping or changing a key makes verification fail; deliberately changing `meta.loaded_at`
+  alone does not.
+- A matching `comparison_sha256` does **not** prove that two exports came from the same source run, that their load
+  times match, that omitted or redacted source data was identical, or that the redaction was faithful. It compares
+  only the covered served representation, subject to SHA-256 collision resistance.
+- Neither hash is a signature or proof of server honesty. Anyone who can alter the document and recompute the hashes
+  can produce internally consistent values. Neither hash verifies the original unredacted chain; chain scope is
+  described separately below.
 
 ## Chain verification scope
 
@@ -107,11 +117,11 @@ from the served bodies**; do not run `verifyChain` over the export and expect tr
 
 ### Canonicalisation and number precision
 
-`content_sha256` hashes the generic-JSON form: Go's `encoding/json` with sorted object keys, no whitespace, HTML
+Both hashes use the generic-JSON form: Go's `encoding/json` with sorted object keys, no whitespace, HTML
 characters escaped (`<`, `>`, `&` as `\u003c` etc.). The document is decoded with `UseNumber`, so number literals keep
 the text produced by Go's marshaller (integers exact, floats in shortest round-trip form); they are not re-rounded
 through float64. A verifier must also parse with number-preserving decoding (or only reserialise via the same rules);
-a parser that converts integers above 2^53 to doubles will not reproduce the hash.
+a parser that converts integers above 2^53 to doubles will not reproduce either hash.
 
 ## Remaining privacy limits
 
@@ -146,9 +156,10 @@ From `pipeline/`, run `go test -run TestExport -count=1 .`
 - Intended structural ids, enums, measurements, hashes and server operational fields are pinned, including single-token
   escalation/booking codes, IFHAS dynamic-map values, coordinator/consent metadata and audit anchors. User-controlled
   actor/owner fields and coordinator/snooze reasons stay out. Integers above 2^53 and extreme floats keep their text.
-- The hash verifies on the served document, and mutations to a case field, a chain body, the audit verification
-  flag, a dropped key, or an added key are each detected.
-- Repeated exports are byte-identical, and a new review changes the export.
+- Both hashes verify on the served document, and mutations to a case field, a chain body, the audit verification
+  flag, a dropped key, or an added key are each detected. Number-preserving verification is checked for both hashes.
+- Repeated exports are byte-identical. Changing only `meta.loaded_at` preserves `comparison_sha256` but changes
+  `content_sha256`; a new review changes both the export and `comparison_sha256`.
 - Building exports leaves every file in the run directory unchanged.
 - 200, 404 (unknown case) and 405 (POST, PUT, DELETE, PATCH) are returned as specified.
 - Leak canaries: no salt, cache path, prompt path, reasoning or raw-message token, and no run directory path.
