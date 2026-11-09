@@ -1,0 +1,345 @@
+{
+ "analysis_wilson95": {
+  "ifhas-followup": {
+   "n": 25,
+   "reader_a_correct_wilson95": [
+    0.64,
+    0.445185,
+    0.797521
+   ],
+   "reader_b_correct_wilson95": [
+    0.56,
+    0.370673,
+    0.733344
+   ],
+   "readers_agree_wilson95": [
+    0.32,
+    0.172052,
+    0.515897
+   ]
+  },
+  "ifhas-screen": {
+   "n": 25,
+   "reader_a_correct_wilson95": [
+    0.96,
+    0.804559,
+    0.992904
+   ],
+   "reader_b_correct_wilson95": [
+    1.0,
+    0.866808,
+    1.0
+   ],
+   "readers_agree_wilson95": [
+    0.36,
+    0.202479,
+    0.554815
+   ]
+  },
+  "ldct-screen": {
+   "n": 25,
+   "reader_a_correct_wilson95": [
+    0.4,
+    0.234033,
+    0.592605
+   ],
+   "reader_b_correct_wilson95": [
+    0.8,
+    0.60869,
+    0.911394
+   ],
+   "readers_agree_wilson95": [
+    0.36,
+    0.202479,
+    0.554815
+   ]
+  },
+  "ldct-workup": {
+   "n": 25,
+   "reader_a_correct_wilson95": [
+    0.56,
+    0.370673,
+    0.733344
+   ],
+   "reader_b_correct_wilson95": [
+    0.72,
+    0.524234,
+    0.857161
+   ],
+   "readers_agree_wilson95": [
+    0.52,
+    0.334985,
+    0.699687
+   ]
+  }
+ },
+ "by_key_origin": {
+  "adjudicated": {
+   "agreed": {
+    "by_kind": {},
+    "note": "Scored against the agreed key. An agreed reader answer is wrong if it differs from the key or if the key expects review (indeterminate, a missing screening domain, or a coded/panel mismatch).",
+    "totals": {
+     "agree": 0,
+     "agreed_and_right": 0,
+     "agreed_but_wrong": 0,
+     "n": 0,
+     "reader_a_correct": 0,
+     "reader_b_correct": 0,
+     "reader_b_unavailable": 0,
+     "routed_to_review_key_decisive": 0,
+     "routed_to_review_key_expects_review": 0
+    }
+   },
+   "disputed": {
+    "by_kind": {},
+    "note": "Items the two labellers disagreed on have no key and are unscored for accuracy; only reader behaviour is counted here. Nothing in this block is evidence that the reader is right or wrong.",
+    "totals": {
+     "n": 0,
+     "reader_agreed": 0,
+     "reader_routed_to_review": 0
+    }
+   },
+   "models": {
+    "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+    "ifhas-screen": "coded_lab",
+    "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+    "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+   },
+   "schema": "fresh2-score/v1"
+  },
+  "agreed": {
+   "agreed": {
+    "by_kind": {
+     "ifhas-followup": {
+      "agree": 8,
+      "agreed_and_right": 8,
+      "agreed_but_wrong": 0,
+      "agreed_but_wrong_ids": [],
+      "n": 25,
+      "reader_a_correct": 16,
+      "reader_b_correct": 14,
+      "reader_b_unavailable": 5,
+      "routed_to_review_key_decisive": 12,
+      "routed_to_review_key_expects_review": 5
+     },
+     "ifhas-screen": {
+      "agree": 9,
+      "agreed_and_right": 9,
+      "agreed_but_wrong": 0,
+      "agreed_but_wrong_ids": [],
+      "n": 25,
+      "reader_a_correct": 24,
+      "reader_b_correct": 25,
+      "reader_b_unavailable": 4,
+      "routed_to_review_key_decisive": 1,
+      "routed_to_review_key_expects_review": 15
+     },
+     "ldct-screen": {
+      "agree": 9,
+      "agreed_and_right": 8,
+      "agreed_but_wrong": 1,
+      "agreed_but_wrong_ids": [
+       "f4l-017"
+      ],
+      "n": 25,
+      "reader_a_correct": 10,
+      "reader_b_correct": 20,
+      "reader_b_unavailable": 1,
+      "routed_to_review_key_decisive": 14,
+      "routed_to_review_key_expects_review": 2
+     },
+     "ldct-workup": {
+      "agree": 13,
+      "agreed_and_right": 11,
+      "agreed_but_wrong": 2,
+      "agreed_but_wrong_ids": [
+       "f4l-046",
+       "f4l-048"
+      ],
+      "n": 25,
+      "reader_a_correct": 14,
+      "reader_b_correct": 18,
+      "reader_b_unavailable": 0,
+      "routed_to_review_key_decisive": 8,
+      "routed_to_review_key_expects_review": 4
+     }
+    },
+    "note": "Scored against the agreed key. An agreed reader answer is wrong if it differs from the key or if the key expects review (indeterminate, a missing screening domain, or a coded/panel mismatch).",
+    "totals": {
+     "agree": 39,
+     "agreed_and_right": 36,
+     "agreed_but_wrong": 3,
+     "n": 100,
+     "reader_a_correct": 64,
+     "reader_b_correct": 77,
+     "reader_b_unavailable": 10,
+     "routed_to_review_key_decisive": 35,
+     "routed_to_review_key_expects_review": 26
+    }
+   },
+   "disputed": {
+    "by_kind": {},
+    "note": "Items the two labellers disagreed on have no key and are unscored for accuracy; only reader behaviour is counted here. Nothing in this block is evidence that the reader is right or wrong.",
+    "totals": {
+     "n": 0,
+     "reader_agreed": 0,
+     "reader_routed_to_review": 0
+    }
+   },
+   "models": {
+    "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+    "ifhas-screen": "coded_lab",
+    "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+    "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+   },
+   "schema": "fresh2-score/v1"
+  }
+ },
+ "counts": {
+  "adjudicated": 0,
+  "agreed": 100,
+  "items": 100,
+  "scoreable": 100,
+  "unadjudicated": 0,
+  "unresolved": 0
+ },
+ "frozen": {
+  "adjudicated_key_sha256": "e80bdc54e5351445f5122204dd5119fef33e8185e9257da84000090ac190cdf8",
+  "corpus_commit": "9fccd5c77e8fd28d9437e2e385e9e355cef42510",
+  "head": "9d653b4b1f6a2871651dbbcc64ef62e8b8c92fd0",
+  "labels_commit": "1c16f5d201011fed8b91cba3cc4707869e685be4",
+  "reader_cache_commit": "4a277c6e3df04bcb86331957cd1a50b7635b6074",
+  "reader_code_commit": "636b261bb18d0f12594b1ec3377080033afad4c4"
+ },
+ "models": {
+  "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "ifhas-screen": "coded_lab",
+  "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+ },
+ "pooled": {
+  "agreed": {
+   "by_kind": {
+    "ifhas-followup": {
+     "agree": 8,
+     "agreed_and_right": 8,
+     "agreed_but_wrong": 0,
+     "agreed_but_wrong_ids": [],
+     "n": 25,
+     "reader_a_correct": 16,
+     "reader_b_correct": 14,
+     "reader_b_unavailable": 5,
+     "routed_to_review_key_decisive": 12,
+     "routed_to_review_key_expects_review": 5
+    },
+    "ifhas-screen": {
+     "agree": 9,
+     "agreed_and_right": 9,
+     "agreed_but_wrong": 0,
+     "agreed_but_wrong_ids": [],
+     "n": 25,
+     "reader_a_correct": 24,
+     "reader_b_correct": 25,
+     "reader_b_unavailable": 4,
+     "routed_to_review_key_decisive": 1,
+     "routed_to_review_key_expects_review": 15
+    },
+    "ldct-screen": {
+     "agree": 9,
+     "agreed_and_right": 8,
+     "agreed_but_wrong": 1,
+     "agreed_but_wrong_ids": [
+      "f4l-017"
+     ],
+     "n": 25,
+     "reader_a_correct": 10,
+     "reader_b_correct": 20,
+     "reader_b_unavailable": 1,
+     "routed_to_review_key_decisive": 14,
+     "routed_to_review_key_expects_review": 2
+    },
+    "ldct-workup": {
+     "agree": 13,
+     "agreed_and_right": 11,
+     "agreed_but_wrong": 2,
+     "agreed_but_wrong_ids": [
+      "f4l-046",
+      "f4l-048"
+     ],
+     "n": 25,
+     "reader_a_correct": 14,
+     "reader_b_correct": 18,
+     "reader_b_unavailable": 0,
+     "routed_to_review_key_decisive": 8,
+     "routed_to_review_key_expects_review": 4
+    }
+   },
+   "note": "Scored against the agreed key. An agreed reader answer is wrong if it differs from the key or if the key expects review (indeterminate, a missing screening domain, or a coded/panel mismatch).",
+   "totals": {
+    "agree": 39,
+    "agreed_and_right": 36,
+    "agreed_but_wrong": 3,
+    "n": 100,
+    "reader_a_correct": 64,
+    "reader_b_correct": 77,
+    "reader_b_unavailable": 10,
+    "routed_to_review_key_decisive": 35,
+    "routed_to_review_key_expects_review": 26
+   }
+  },
+  "disputed": {
+   "by_kind": {},
+   "note": "Items the two labellers disagreed on have no key and are unscored for accuracy; only reader behaviour is counted here. Nothing in this block is evidence that the reader is right or wrong.",
+   "totals": {
+    "n": 0,
+    "reader_agreed": 0,
+    "reader_routed_to_review": 0
+   }
+  },
+  "models": {
+   "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+   "ifhas-screen": "coded_lab",
+   "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+   "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+  },
+  "schema": "fresh2-score/v1"
+ },
+ "raw_items": 100,
+ "schema": "fresh4-score/v1",
+ "semantics": {
+  "clinician_verified": false,
+  "model_labelled": true,
+  "statement": "Fresh4 keys are model-labelled and model-adjudicated from a frozen guide, not clinician-verified. Agreed and adjudicated strata are reported separately; neither is clinical truth or evidence of clinical effectiveness."
+ },
+ "wrong_direction": {
+  "closing": 0,
+  "holding": 3,
+  "items": [
+   {
+    "direction": "holding",
+    "id": "f4l-017",
+    "key": "indeterminate",
+    "key_origin": "agreed",
+    "kind": "ldct-screen",
+    "reader_label": "LR4A"
+   },
+   {
+    "direction": "holding",
+    "id": "f4l-046",
+    "key": "wk_surveillance",
+    "key_origin": "agreed",
+    "kind": "ldct-workup",
+    "reader_label": "wk_incomplete"
+   },
+   {
+    "direction": "holding",
+    "id": "f4l-048",
+    "key": "indeterminate",
+    "key_origin": "agreed",
+    "kind": "ldct-workup",
+    "reader_label": "wk_incomplete"
+   }
+  ],
+  "total": 3
+ }
+}
