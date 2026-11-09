@@ -29,7 +29,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|backup-nats|restore-nats|verify-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -41,6 +41,7 @@ func main() {
 	data := fs.String("data", "../cohort", "cohort dir")
 	wasl := fs.String("wasl", "../../wasl/data", "wasl data dir (persons, encoder, scorer)")
 	out := fs.String("out", "../cohort", "")
+	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats input JSON")
 	run := fs.String("run", "../run/default", "run dir")
 	prov := fs.String("prov", "", "")
 	name := fs.String("name", "0", "")
@@ -128,7 +129,7 @@ func main() {
 	pollSpeed := fs.Float64("pollspeed", 0, "malaffi: also serve _history and $export, HIE clock at this many simulated days per wall second (source=fhirpoll)")
 	lagFrac := fs.Float64("lagfrac", 0.02, "malaffi poll mode: fraction of versions visible only 0.1-2 days after their lastUpdated (late commits)")
 	pollOverlap := fs.Float64("overlap", 0.5, "fhirpoll: simulated days re-read before the watermark on each poll")
-		hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
+	hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
 	apiAddr := fs.String("addr", "127.0.0.1:8088", "serve: API listen address")
 	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
@@ -413,7 +414,7 @@ func main() {
 		v7Args = append(v7Args, "-eidguard")
 	}
 	v7Args = append(v7Args, demoGuardArgs()...) // strict demographic guard (demoguard.go): every child, only when on
-	if DRNextOn { // DR next loop (drnext.go): every child, only when on
+	if DRNextOn {                               // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
 	}
 	if HistClock { // linker and closure children, only when on
@@ -499,6 +500,32 @@ func main() {
 		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
+	case "backup-nats", "restore-nats", "verify-nats":
+		if *bundle == "" {
+			panic(cmd + " requires -bundle")
+		}
+		nc, js := connect(cmd)
+		defer nc.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+		defer cancel()
+		var summary recoverySummary
+		var err error
+		switch cmd {
+		case "backup-nats":
+			summary, err = backupNATS(ctx, js, *bundle)
+		case "restore-nats":
+			summary, err = restoreNATS(ctx, js, *bundle)
+		case "verify-nats":
+			summary, err = verifyNATS(ctx, js, *bundle)
+		}
+		if err != nil {
+			writeStructuredLog("error", "NATS recovery operation failed", "operation", cmd, "error", err.Error())
+			panic(err)
+		}
+		writeStructuredLog("info", "NATS recovery operation complete", "operation", cmd, "streams", summary.Streams, "messages", summary.Messages)
+		encoded, _ := json.Marshal(map[string]interface{}{"status": "ok", "operation": cmd, "summary": summary,
+			"nondeterministic_fields": []string{"nats_sequence", "nats_time", "consumer_delivered", "consumer_ack_floor"}})
+		fmt.Println(string(encoded))
 	case "producer":
 		runProducer(*data, *prov, *speed, absRun)
 	case "prep":
@@ -623,12 +650,12 @@ func main() {
 var RevArgs []string
 
 type srcCfg struct {
-	Source, Content, Hie, Hook string
+	Source, Content, Hie, Hook  string
 	PollSpeed, LagFrac, Overlap float64
-	Dup, Reorder, Drop         float64
-	SubKill                    int
-	HL7Addr                    string
-	HL7Drops                   int
+	Dup, Reorder, Drop          float64
+	SubKill                     int
+	HL7Addr                     string
+	HL7Drops                    int
 }
 
 var SrcCfg = srcCfg{Source: "file"}

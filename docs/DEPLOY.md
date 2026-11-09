@@ -3,7 +3,9 @@
 This is the package for the "second door" in [`WRITEUP.md`](WRITEUP.md): a provider network runs Wasl on its own
 servers to track its own patients across its own facilities. It is a demo-grade package: it brings up the same
 system that the integrated runs in [`pipeline/RESULTS.md`](../pipeline/RESULTS.md) use, on synthetic data. It is not
-production-ready; the gaps are listed at the end.
+production-ready; the gaps are listed at the end. For the separate production-shaped authenticated TLS, file-backed
+secret, persistent-message backup/restore, and reversible file-migration path, use [`RECOVERY.md`](RECOVERY.md). Its
+runbook includes actual isolated clean-restore evidence and the remaining verification limits.
 
 ## One command
 
@@ -195,5 +197,5 @@ storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/sc
   host-secret controls, KMS/HSM injection and a key-rotation procedure.
 - **NATS containers run as the image's default user** and NATS limits (4 GB file store per node) are the demo's;
   size them from the scale results in [`pipeline/results/scale/`](../pipeline/results/scale/).
-- **No backups, monitoring or alerting** (the SLOs in `WRITEUP.md` are a design, not implemented here).
+- **No centralized monitoring or alerting** (the SLOs in `WRITEUP.md` are a design, not implemented here). The separate recovery profile adds authenticated backup/restore; its storage encryption, RPO/RTO, and second-machine limits are documented in `RECOVERY.md`.
 - **The reader is the cached one.** A live local reader (Gemma 3 4B on llama-server) is not part of the package.

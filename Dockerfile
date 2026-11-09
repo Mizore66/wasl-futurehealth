@@ -19,7 +19,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
 # booking engine and scripts: numpy + scipy only
 RUN pip install --no-cache-dir "numpy==2.3.5" "scipy==1.16.3" \
  && useradd --uid 10001 --user-group --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin wasl \
- && mkdir -p /var/lib/wasl && chown wasl:wasl /var/lib/wasl
+ && mkdir -p /var/lib/wasl && chown wasl:wasl /var/lib /var/lib/wasl
 WORKDIR /app
 # synthetic cohort inputs and model weights (committed in the repo; no patient data)
 COPY data/ data/
@@ -31,7 +31,6 @@ COPY pipeline/augment_cohort.py pipeline/
 COPY pipeline/results/ltt/ltt_selection.json pipeline/results/ltt/
 COPY --from=build /out/wsi7 bin/wsi7
 USER 10001:10001
-VOLUME ["/var/lib/wasl"]
 EXPOSE 8088
 ENTRYPOINT ["/app/scripts/demo.sh"]
 CMD ["container"]

@@ -140,7 +140,13 @@ func (a *asyncPub) Publish(m *nats.Msg) {
 }
 
 func connect(name string) (*nats.Conn, jetstream.JetStream) {
-	nc, err := nats.Connect(NatsURL, nats.Name(name), nats.MaxReconnects(-1), nats.ReconnectWait(200*time.Millisecond))
+	security, err := natsSecurityOptions()
+	if err != nil {
+		panic(err)
+	}
+	opts := []nats.Option{nats.Name(name), nats.MaxReconnects(-1), nats.ReconnectWait(200 * time.Millisecond)}
+	opts = append(opts, security...)
+	nc, err := nats.Connect(NatsURL, opts...)
 	if err != nil {
 		panic(err)
 	}

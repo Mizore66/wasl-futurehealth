@@ -1,0 +1,158 @@
+# Production-shaped synthetic-data deployment. Run with a unique COMPOSE_PROJECT_NAME.
+# Destructive demo initialization exists only in the explicit `seed` profile; ordinary up/restart never reruns it.
+# All project data volumes are isolated by Compose. The external backup volume must be dedicated to this drill/deployment.
+x-wasl-env: &wasl-env
+  WASL_NATS_URL: tls://nats-0:4222,tls://nats-1:4222,tls://nats-2:4222
+  WASL_NATS_EXTERNAL: "1"
+  WASL_NATS_USER: wasl-services
+  WASL_NATS_PASSWORD_FILE: /run/secrets/nats_password
+  WASL_NATS_CA_FILE: /run/secrets/ca.crt
+  WASL_NATS_CERT_FILE: /run/secrets/server.crt
+  WASL_NATS_KEY_FILE: /run/secrets/server.key
+  WASL_OUT: /var/lib/wasl
+  WASL_SEED: ${WASL_SEED:-2026}
+  WASL_POLICY: ${WASL_POLICY:-v7strict}
+  WASL_SOURCE: ${WASL_SOURCE:-fhir}
+  WASL_READER: cached
+  WASL_LUNG: ${WASL_LUNG:-0}
+  WASL_DR: ${WASL_DR:-0}
+  WASL_BREAST: ${WASL_BREAST:-0}
+  WASL_LOOPS: ${WASL_LOOPS:-1500}
+  WASL_DISTRACT: ${WASL_DISTRACT:-700}
+  WASL_CERV: ${WASL_CERV:-600}
+  WASL_PERSONS: ${WASL_PERSONS:-6500}
+  WASL_QUIETTIMEOUT: ${WASL_QUIETTIMEOUT:-5m}
+
+x-wasl-service: &wasl-service
+  build: ..
+  image: wasl:local
+  read_only: true
+  tmpfs: ["/tmp:size=64m,mode=1777"]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: {max-size: 20m, max-file: "5"}
+
+x-nats: &nats
+  build: {context: ./nats, dockerfile: Dockerfile}
+  image: wasl-nats:local
+  user: "1000:1000"
+  command: ["nats-server", "-c", "/etc/nats/wasl-production.conf"]
+  read_only: true
+  tmpfs: ["/tmp:size=16m,mode=1777"]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  healthcheck:
+    test: ["CMD", "wget", "--no-check-certificate", "-q", "--spider", "https://127.0.0.1:8222/healthz?js-enabled-only=true"]
+    interval: 5s
+    timeout: 3s
+    retries: 24
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: {max-size: 20m, max-file: "5"}
+  environment: &nats-environment
+    NATS_SERVER_NAME: n0
+    WASL_NATS_USER: wasl-services
+    WASL_ROUTE_USER: wasl-routes
+    WASL_NATS_PASSWORD_FILE: /run/secrets/nats_password
+    WASL_ROUTE_PASSWORD_FILE: /run/secrets/route_password
+    WASL_JS_KEY_FILE: /run/secrets/js_key
+    WASL_NATS_REQUIRE_MARKER: "1"
+    WASL_NATS_TLS: "1"
+  volumes: &nats-volumes
+    - wasl-secrets:/run/secrets:ro
+
+services:
+  nats-0:
+    <<: *nats
+    hostname: nats-0
+    volumes:
+      - nats-0:/data
+      - wasl-secrets:/run/secrets:ro
+  nats-1:
+    <<: *nats
+    hostname: nats-1
+    environment:
+      <<: *nats-environment
+      NATS_SERVER_NAME: n1
+    volumes:
+      - nats-1:/data
+      - wasl-secrets:/run/secrets:ro
+  nats-2:
+    <<: *nats
+    hostname: nats-2
+    environment:
+      <<: *nats-environment
+      NATS_SERVER_NAME: n2
+    volumes:
+      - nats-2:/data
+      - wasl-secrets:/run/secrets:ro
+
+  # Explicit, destructive synthetic cohort initialization. Never included in an ordinary restart or restore.
+  pipeline:
+    <<: *wasl-service
+    profiles: [seed]
+    command: ["container"]
+    environment: *wasl-env
+    volumes:
+      - wasl-run:/var/lib
+      - wasl-secrets:/run/secrets:ro
+    depends_on:
+      nats-0: {condition: service_healthy}
+      nats-1: {condition: service_healthy}
+      nats-2: {condition: service_healthy}
+    restart: "no"
+
+  api:
+    <<: *wasl-service
+    command: ["serve"]
+    environment:
+      <<: *wasl-env
+      WASL_API_ADDR: 0.0.0.0:8443
+      WASL_API_USERS_FILE: /run/secrets/api_users.json
+      WASL_API_TLS_CERT_FILE: /run/secrets/server.crt
+      WASL_API_TLS_KEY_FILE: /run/secrets/server.key
+    volumes:
+      - wasl-run:/var/lib
+      - wasl-secrets:/run/secrets:ro
+    ports:
+      - "127.0.0.1:${WASL_API_PORT:-18443}:8443"
+    depends_on:
+      nats-0: {condition: service_healthy}
+      nats-1: {condition: service_healthy}
+      nats-2: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import base64,json,ssl,urllib.request; u=json.load(open('/run/secrets/api_users.json'))['reviewer']; p=open('/run/secrets/api_reviewer_password').read().strip(); r=urllib.request.Request('https://127.0.0.1:8443/healthz',headers={'Authorization':'Basic '+base64.b64encode(('reviewer:'+p).encode()).decode()}); urllib.request.urlopen(r,context=ssl.create_default_context(cafile='/run/secrets/ca.crt'),timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  recovery:
+    <<: *wasl-service
+    profiles: [recovery]
+    command: ["recovery-backup"]
+    environment: *wasl-env
+    volumes:
+      - wasl-run:/var/lib
+      - wasl-backup:/backup
+      - wasl-secrets:/run/secrets:ro
+    depends_on:
+      nats-0: {condition: service_healthy}
+      nats-1: {condition: service_healthy}
+      nats-2: {condition: service_healthy}
+    restart: "no"
+
+volumes:
+  nats-0:
+  nats-1:
+  nats-2:
+  wasl-run:
+  wasl-backup:
+    external: true
+    name: ${WASL_BACKUP_VOLUME:?set a deployment-specific external backup volume}
+  wasl-secrets:
+    external: true
+    name: ${WASL_SECRETS_VOLUME:?set a deployment-specific external secret volume}
