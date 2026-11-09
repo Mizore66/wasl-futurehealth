@@ -82,7 +82,7 @@ for name, s in svcs.items():
 # (Podman machine) does not share the checkout's directory
 for n in ("nats-0", "nats-1", "nats-2"):
     s = svcs.get(n, {})
-    if s.get("image") != "wasl-nats:local":
+    if s.get("image") not in ("wasl-nats:local", "${WASL_NATS_IMAGE:-wasl-nats:local}"):
         err("compose: %s must use the derived image wasl-nats:local" % n)
     b = s.get("build")
     if (b.get("context") if isinstance(b, dict) else b) != "./deploy/nats":
@@ -95,7 +95,7 @@ if not os.path.exists(ndf_path):
     err("deploy/nats/Dockerfile missing")
 else:
     ndf = open(ndf_path).read().splitlines()
-    if not any(re.match(r"FROM nats:\S+", l) for l in ndf):
+    if not any(re.match(r"FROM (?:--platform=\S+ )?nats:\S+", l) for l in ndf):
         err("deploy/nats/Dockerfile: must derive FROM nats:<tag>")
     if not any(re.match(r"COPY (--chmod=\d+ )?nats\.conf /etc/nats/wasl\.conf$", l) for l in ndf):
         err("deploy/nats/Dockerfile: must COPY nats.conf /etc/nats/wasl.conf")

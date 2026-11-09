@@ -111,6 +111,7 @@ func runServe(run, data, addr string) {
 	if err != nil {
 		panic(err)
 	}
+	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
 	// Recovery deployments use their configured Basic-auth identities and TLS;
 	// all other serving modes require the bearer-bound synthetic-demo principals.
 	var handler http.Handler

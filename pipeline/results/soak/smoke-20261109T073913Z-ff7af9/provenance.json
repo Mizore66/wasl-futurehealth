@@ -1,0 +1,15 @@
+{
+  "reason": "non-current JetStream replicas persisted after measured rolling and full NATS restarts; 24-hour soak not launched",
+  "schema": "wasl-soak-smoke-evidence/1",
+  "secret_exclusions": [
+    ".env",
+    "WASL_JS_KEY",
+    "full inspect",
+    "compose config",
+    "cohort/run exports"
+  ],
+  "selected_samples": 56,
+  "source_run_dir": "/Users/anasqumhiyeh/Documents/Codex/wasl-clean/.claude/worktrees/wf_61c763e6-7e4-3/pipeline/results/soak/runs/20261109T073913Z-ff7af9",
+  "source_samples": 392,
+  "status": "failed"
+}
