@@ -25,9 +25,20 @@ func gs(m map[string]interface{}, path ...string) string {
 	return s
 }
 
-func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
+func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Signoff) {
+	// The normaliser is a trust boundary for both live ingest and materialized-log replay.
+	// Keep a final recovery guard here: any missed nested FHIR shape assertion rejects the
+	// whole resource instead of crashing a worker or serving a partially decoded event.
+	defer func() {
+		if recover() != nil {
+			event, signoff = nil, nil
+		}
+	}()
 	var res map[string]interface{}
-	if err := json.Unmarshal(raw, &res); err != nil {
+	if err := rejectDuplicateKeys(raw); err != nil {
+		return nil, nil
+	}
+	if err := json.Unmarshal(raw, &res); err != nil || res == nil {
 		return nil, nil
 	}
 	rt := gs(res, "resourceType")
@@ -36,13 +47,21 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 			xm := x.(map[string]interface{})
 			if gs(xm, "url") == "urn:wsi:signoff" {
 				var so Signoff
-				json.Unmarshal([]byte(gs(xm, "valueString")), &so)
+				rawSignoff := []byte(gs(xm, "valueString"))
+				if rejectDuplicateKeys(rawSignoff) != nil || json.Unmarshal(rawSignoff, &so) != nil {
+					return nil, nil
+				}
 				return nil, &so
 			}
 		}
 		return nil, nil
 	}
 	e := &Event{ID: gs(res, "id"), Provider: prov, RType: rt, Status: gs(res, "status")}
+	switch rt {
+	case "ServiceRequest", "Communication", "Task", "Appointment", "DiagnosticReport", "Encounter", "Consent":
+	default:
+		return nil, nil
+	}
 	switch rt {
 	case "ServiceRequest":
 		e.Day = tsToDay(gs(res, "authoredOn"))
@@ -236,8 +255,8 @@ func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
 func signoffResource(so *Signoff) []byte {
 	b, _ := json.Marshal(so)
 	res := map[string]interface{}{"resourceType": "Provenance", "id": "prov-" + so.ItemID, "recorded": "2026-09-01T00:00:00Z",
-		"target": []interface{}{map[string]string{"reference": so.LoopID}},
-		"agent":  []interface{}{map[string]interface{}{"who": map[string]string{"display": so.Reviewer}}},
+		"target":    []interface{}{map[string]string{"reference": so.LoopID}},
+		"agent":     []interface{}{map[string]interface{}{"who": map[string]string{"display": so.Reviewer}}},
 		"extension": []interface{}{map[string]string{"url": "urn:wsi:signoff", "valueString": string(b)}}}
 	out, _ := json.Marshal(res)
 	return out

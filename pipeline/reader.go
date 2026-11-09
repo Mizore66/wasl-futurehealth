@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -38,35 +39,36 @@ Return ONLY JSON: {"caecum_reached":"yes|no|not_stated","caecum_quote":"","prep"
 
 // ReaderResult is the stable reader contract persisted for provenance.
 type ReaderResult struct {
-	ReportSha   string `json:"report_sha"`
-	Caecum      string `json:"caecum_reached"`
-	CaecumQuote string `json:"caecum_quote"`
-	Prep        string `json:"prep"`
-	PrepQuote   string `json:"prep_quote"`
-	Polyps      string `json:"tissue_taken"` // any tissue taken: polyp removed OR biopsy (v3; was polyps_removed)
-	PolypsQuote string `json:"tissue_quote"`
-	OldPolyps   string `json:"polyps_removed,omitempty"` // v2 ledgers: read back for replay
-	OldPolypsQ  string `json:"polyps_quote,omitempty"`
-	Histology   string `json:"histology_present"`
-	HistQuote   string `json:"histology_quote"`
-	State       string `json:"state"`
-	Reason      string `json:"reason"`
-	Model       string `json:"model_version"`
-	LatencyMs   int64  `json:"latency_ms"`
-	Error       string `json:"error,omitempty"`
+	ReportSha   string   `json:"report_sha"`
+	Caecum      string   `json:"caecum_reached"`
+	CaecumQuote string   `json:"caecum_quote"`
+	Prep        string   `json:"prep"`
+	PrepQuote   string   `json:"prep_quote"`
+	Polyps      string   `json:"tissue_taken"` // any tissue taken: polyp removed OR biopsy (v3; was polyps_removed)
+	PolypsQuote string   `json:"tissue_quote"`
+	OldPolyps   string   `json:"polyps_removed,omitempty"` // v2 ledgers: read back for replay
+	OldPolypsQ  string   `json:"polyps_quote,omitempty"`
+	Histology   string   `json:"histology_present"`
+	HistQuote   string   `json:"histology_quote"`
+	State       string   `json:"state"`
+	Reason      string   `json:"reason"`
+	Model       string   `json:"model_version"`
+	LatencyMs   int64    `json:"latency_ms"`
+	Error       string   `json:"error,omitempty"`
 	Downgraded  []string `json:"downgraded,omitempty"` // fields whose positive claim had no grounded quote
 }
 
 // ReaderClient talks to a local OpenAI-compatible server. Zero value is unusable; build with NewReaderClient.
 type ReaderClient struct {
-	URL      string
-	Timeout  time.Duration
-	Retries  int
-	http     *http.Client
-	mu       sync.Mutex
-	inflight map[string]chan struct{} // singleflight: concurrent reads of the same report wait for one model call
-	ledger   map[string]ReaderResult
-	ledgerFn string
+	URL       string
+	Timeout   time.Duration
+	Retries   int
+	http      *http.Client
+	mu        sync.Mutex
+	inflight  map[string]chan struct{} // singleflight: concurrent reads of the same report wait for one model call
+	ledger    map[string]ReaderResult
+	ledgerFn  string
+	ledgerErr error
 }
 
 func NewReaderClient(url string, timeout time.Duration, retries int, ledgerPath string) *ReaderClient {
@@ -81,34 +83,87 @@ func (c *ReaderClient) loadLedger() {
 		return
 	}
 	f, err := os.Open(c.ledgerFn)
+	if os.IsNotExist(err) {
+		return
+	}
 	if err != nil {
+		c.ledgerErr = fmt.Errorf("open reader ledger: %w", err)
 		return
 	}
 	defer f.Close()
-	sc := bufio.NewScanner(f)
-	sc.Buffer(make([]byte, 1<<20), 1<<24)
-	for sc.Scan() {
-		var r ReaderResult
-		if json.Unmarshal(sc.Bytes(), &r) == nil && r.ReportSha != "" && r.Error == "" {
-			if r.Polyps == "" && r.OldPolyps != "" { // v2 ledger
-				r.Polyps, r.PolypsQuote = r.OldPolyps, r.OldPolypsQ
-			}
-			c.ledger[r.ReportSha] = r
-		}
+	loaded := map[string]ReaderResult{}
+	br := bufio.NewReaderSize(f, 1<<20)
+	invalid := func(format string, args ...interface{}) {
+		c.ledgerErr = fmt.Errorf(format, args...)
+		c.ledger = map[string]ReaderResult{}
 	}
+	for lineNo := 1; ; lineNo++ {
+		line, readErr := br.ReadBytes('\n')
+		if readErr == io.EOF && len(line) == 0 {
+			break
+		}
+		if readErr != nil {
+			if readErr == io.EOF {
+				invalid("reader ledger line %d: truncated (no trailing newline)", lineNo)
+			} else {
+				invalid("reader ledger line %d: %v", lineNo, readErr)
+			}
+			return
+		}
+		if len(line) > 1<<24 {
+			invalid("reader ledger line %d exceeds 16 MiB", lineNo)
+			return
+		}
+		raw := bytes.TrimSuffix(line, []byte{'\n'})
+		var r ReaderResult
+		if err := rejectDuplicateKeys(raw); err != nil || json.Unmarshal(raw, &r) != nil || r.ReportSha == "" || r.Error != "" {
+			invalid("reader ledger line %d is not one valid reader result", lineNo)
+			return
+		}
+		if r.Polyps == "" && r.OldPolyps != "" { // v2 ledger
+			r.Polyps, r.PolypsQuote = r.OldPolyps, r.OldPolypsQ
+		}
+		if r.Model != ReaderModelVersion || validateReaderEnums(r) != nil {
+			invalid("reader ledger line %d is stale or violates the current schema", lineNo)
+			return
+		}
+		if prior, exists := loaded[r.ReportSha]; exists {
+			a, b := prior, r
+			a.LatencyMs, b.LatencyMs = 0, 0 // timing is provenance, not answer content
+			aj, _ := json.Marshal(a)
+			bj, _ := json.Marshal(b)
+			if !bytes.Equal(aj, bj) {
+				invalid("reader ledger line %d conflicts with an earlier answer for the same report", lineNo)
+				return
+			}
+			continue
+		}
+		loaded[r.ReportSha] = r
+	}
+	c.ledger = loaded
 }
 
-func (c *ReaderClient) appendLedger(r ReaderResult) {
+func (c *ReaderClient) appendLedger(r ReaderResult) error {
 	if c.ledgerFn == "" {
-		return
+		return nil
 	}
-	f, err := os.OpenFile(c.ledgerFn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	b, err := json.Marshal(r)
 	if err != nil {
-		return
+		return err
 	}
-	defer f.Close()
-	b, _ := json.Marshal(r)
-	f.Write(append(b, '\n'))
+	if err := appendLedgerLine(c.ledgerFn, append(b, '\n')); err != nil {
+		return err
+	}
+	// Persist a newly created directory entry as well as the file contents.
+	d, err := os.Open(filepath.Dir(c.ledgerFn))
+	if err != nil {
+		return err
+	}
+	syncErr, closeErr := d.Sync(), d.Close()
+	if syncErr != nil {
+		return syncErr
+	}
+	return closeErr
 }
 
 // Healthy reports whether the llama-server /health endpoint answers ok.
@@ -144,8 +199,9 @@ func readerSchema() map[string]interface{} {
 // validateReader enforces the enum schema (hard fail -> reader unavailable) and quote grounding per field (soft):
 // a positive claim whose quote is not found in the report (punctuation/whitespace-insensitive) is downgraded to its
 // conservative value, so an ungrounded answer can only ever make closure LESS likely:
-//   caecum yes->not_stated, prep adequate->not_stated, histology yes->no, polyps no->yes (i.e. wait for histology).
-func validateReader(r *ReaderResult, text string) error {
+//
+//	caecum yes->not_stated, prep adequate->not_stated, histology yes->no, polyps no->yes (i.e. wait for histology).
+func validateReaderEnums(r ReaderResult) error {
 	for f, v := range map[string]string{"caecum_reached": r.Caecum, "prep": r.Prep, "tissue_taken": r.Polyps, "histology_present": r.Histology} {
 		okv := false
 		for _, e := range readerEnums[f] {
@@ -154,6 +210,13 @@ func validateReader(r *ReaderResult, text string) error {
 		if !okv {
 			return fmt.Errorf("schema: %s=%q", f, v)
 		}
+	}
+	return nil
+}
+
+func validateReader(r *ReaderResult, text string) error {
+	if err := validateReaderEnums(*r); err != nil {
+		return err
 	}
 	nt := strings.ReplaceAll(normQuote(text), " ", "")
 	// grounded: the quote's alphanumerics (spaces removed) appear contiguously in the report. Tolerates the model's
@@ -206,20 +269,32 @@ func validateReader(r *ReaderResult, text string) error {
 var nonAlnum = regexp.MustCompile(`[^a-z0-9]+`)
 
 // normQ: lowercase, every run of non-alphanumerics -> one space (MTSamples bodies have ",  " artefacts the model normalises).
-func normQuote(s string) string { return strings.TrimSpace(nonAlnum.ReplaceAllString(strings.ToLower(s), " ")) }
+func normQuote(s string) string {
+	return strings.TrimSpace(nonAlnum.ReplaceAllString(strings.ToLower(s), " "))
+}
 
 var wsRe = regexp.MustCompile(`\s+`)
 
-func normWS(s string) string { return strings.ToLower(strings.TrimSpace(wsRe.ReplaceAllString(s, " "))) }
+func normWS(s string) string {
+	return strings.ToLower(strings.TrimSpace(wsRe.ReplaceAllString(s, " ")))
+}
 
 // Read returns the reader verdict for one report body. ok=false means "reader unavailable" (route to review).
 func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
 	sh := textSha(text)
+	if c.ledgerErr != nil {
+		return ReaderResult{ReportSha: sh, Model: ReaderModelVersion, State: "unavailable", Reason: "reader_ledger_invalid", Error: c.ledgerErr.Error()}, false
+	}
 	for {
 		c.mu.Lock()
 		if r, hit := c.ledger[sh]; hit {
-			c.mu.Unlock()
-			return r, true
+			// Replay is valid only for this exact report, model and current validator.
+			if r.ReportSha == sh && r.Model == ReaderModelVersion && validateReader(&r, text) == nil {
+				r.State, r.Reason = dohState(r.Caecum, r.Prep, r.Polyps, r.Histology)
+				c.mu.Unlock()
+				return r, true
+			}
+			delete(c.ledger, sh)
 		}
 		if ch, busy := c.inflight[sh]; busy {
 			c.mu.Unlock()
@@ -253,8 +328,11 @@ func (c *ReaderClient) Read(text string) (ReaderResult, bool) {
 				r.LatencyMs = time.Since(t0).Milliseconds()
 				r.State, r.Reason = dohState(r.Caecum, r.Prep, r.Polyps, r.Histology)
 				c.mu.Lock()
+				if err := c.appendLedger(r); err != nil {
+					c.mu.Unlock()
+					return ReaderResult{ReportSha: sh, Model: ReaderModelVersion, State: "unavailable", Reason: "reader_unavailable", Error: "reader ledger append: " + err.Error()}, false
+				}
 				c.ledger[sh] = r
-				c.appendLedger(r)
 				c.mu.Unlock()
 				return r, true
 			}
@@ -298,7 +376,6 @@ func (c *ReaderClient) call(body []byte) (ReaderResult, error) {
 	}
 	return r, nil
 }
-
 
 // ---- hybrid step 2: dedicated histology question (reader/orch4b_lib.py), verified 43/43 on histology ----
 // The single schema call over-calls histology (endoscopic impressions like "appeared adenomatous" read as results).

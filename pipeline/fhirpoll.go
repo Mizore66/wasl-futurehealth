@@ -17,6 +17,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,8 +32,8 @@ import (
 )
 
 var (
-	PollOverlap  = 0.5  // simulated days re-read on each poll
-	ExportBack   = 7.0  // simulated days covered by each nightly $export
+	PollOverlap  = 0.5 // simulated days re-read on each poll
+	ExportBack   = 7.0 // simulated days covered by each nightly $export
 	PollInterval = 50 * time.Millisecond
 	ExportOff    = false // negative control only: no $export catch-up (late commits beyond the overlap are lost)
 )
@@ -43,10 +44,10 @@ type PollConsumer struct {
 	kv        jetstream.KeyValue
 	seen      *SeenLedger
 	runDir    string
-	watermark float64            // simulated days
-	maxVid    map[string]int     // Type/id -> highest version published
-	done      map[string]bool    // Type/id/vid published
-	mu        sync.Mutex // guards stats, watermark and eof for statusLoop
+	watermark float64         // simulated days
+	maxVid    map[string]int  // Type/id -> highest version published
+	done      map[string]bool // Type/id/vid published
+	mu        sync.Mutex      // guards stats, watermark and eof for statusLoop
 	stats     map[string]int64
 	lastNight int
 	eof       bool
@@ -80,12 +81,16 @@ func runFhirPoll(base, runDir string) {
 	for !c.eof {
 		complete := c.poll()
 		if night := int(c.watermark); night > c.lastNight {
-			c.export(c.watermark - ExportBack)
-			c.lastNight = night
-			c.checkpoint()
+			if c.export(c.watermark - ExportBack) {
+				c.lastNight = night
+				c.checkpoint()
+			}
 		}
 		if complete {
-			c.export(-1) // final full catch-up, then end of stream
+			if !c.export(-1) { // final full catch-up must succeed before end of stream
+				time.Sleep(PollInterval)
+				continue
+			}
 			for _, pc := range Providers {
 				m := nats.NewMsg("fhir." + pc.ID + ".ctl")
 				m.Data = []byte(`{"eof":true}`)
@@ -105,6 +110,56 @@ func runFhirPoll(base, runDir string) {
 	select {}
 }
 
+func parseResourceVersion(body []byte) (typ, id, vid string, lastUpdated float64, err error) {
+	var r struct {
+		ResourceType string `json:"resourceType"`
+		ID           string `json:"id"`
+		Meta         struct {
+			VersionID   string `json:"versionId"`
+			LastUpdated string `json:"lastUpdated"`
+			Source      string `json:"source"`
+		} `json:"meta"`
+	}
+	if rejectDuplicateKeys(body) != nil || json.Unmarshal(body, &r) != nil {
+		return "", "", "", 0, fmt.Errorf("resource is not one strict FHIR object")
+	}
+	v, convErr := strconv.Atoi(r.Meta.VersionID)
+	lu, ok := parseInstant(r.Meta.LastUpdated)
+	if r.ResourceType == "" || r.ID == "" || convErr != nil || v <= 0 || !ok {
+		return "", "", "", 0, fmt.Errorf("resource type, id, positive versionId and valid lastUpdated are required")
+	}
+	return r.ResourceType, r.ID, r.Meta.VersionID, lu, nil
+}
+
+func resourceProvider(body []byte) (string, error) {
+	var meta struct {
+		Meta struct {
+			Source string `json:"source"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal(body, &meta); err != nil {
+		return "", err
+	}
+	prov := provFromSource(meta.Meta.Source)
+	for _, pc := range Providers {
+		if pc.ID == prov {
+			return prov, nil
+		}
+	}
+	return "", fmt.Errorf("unknown or missing meta.source")
+}
+
+func validateResourceForIngest(body []byte, lastUpdated float64) error {
+	prov, err := resourceProvider(body)
+	if err != nil {
+		return err
+	}
+	if ev, so := normalise(prov, lastUpdated, body); ev == nil && so == nil {
+		return fmt.Errorf("invalid resource shape")
+	}
+	return nil
+}
+
 // poll reads every page since watermark - overlap and publishes new versions; true when the HIE says it is complete.
 func (c *PollConsumer) poll() bool {
 	since := c.watermark - PollOverlap
@@ -114,7 +169,11 @@ func (c *PollConsumer) poll() bool {
 	complete := false
 	for off := 0; ; {
 		q := "/_history?_since=" + url.QueryEscape(simInstant(since)) + "&_count=500&_offset=" + strconv.Itoa(off)
-		r, _ := http.NewRequest("GET", c.cl.base+q, nil)
+		r, err := http.NewRequest("GET", c.cl.base+q, nil)
+		if err != nil {
+			c.inc("poll_errors")
+			return false
+		}
 		r.Header.Set("Authorization", "Bearer "+MockToken)
 		resp, err := c.cl.http.Do(r)
 		if err != nil || resp.StatusCode != 200 {
@@ -124,19 +183,40 @@ func (c *PollConsumer) poll() bool {
 			c.inc("poll_errors")
 			return false
 		}
-		var b Bundle
-		json.NewDecoder(resp.Body).Decode(&b)
+		body, readErr := io.ReadAll(io.LimitReader(resp.Body, maxFHIRResponseBytes+1))
 		resp.Body.Close()
+		var b Bundle
+		if readErr != nil || len(body) > maxFHIRResponseBytes || rejectDuplicateKeys(body) != nil || json.Unmarshal(body, &b) != nil || b.ResourceType != "Bundle" || b.Type != "history" {
+			c.inc("poll_errors")
+			return false
+		}
 		complete = resp.Header.Get("X-Wsi-Feed-Complete") == "true"
-		c.inc("polls")
 		maxW := c.watermark
-		for _, e := range b.Entry {
-			lm := c.watermark
-			if e.Response != nil {
-				if d, ok := parseInstant(e.Response.LastModified); ok {
-					lm = d
-				}
+		lastModified := make([]float64, len(b.Entry))
+		// Validate the complete page before publishing any member of it.
+		for i, e := range b.Entry {
+			_, _, _, lm, err := parseResourceVersion(e.Resource)
+			if err != nil {
+				c.inc("poll_errors")
+				return false
 			}
+			if err := validateResourceForIngest(e.Resource, lm); err != nil {
+				c.inc("poll_errors")
+				return false
+			}
+			if e.Response != nil {
+				d, ok := parseInstant(e.Response.LastModified)
+				if !ok || (e.Response.Status != "" && e.Response.Status != "200") {
+					c.inc("poll_errors")
+					return false
+				}
+				lm = d
+			}
+			lastModified[i] = lm
+		}
+		c.inc("polls")
+		for i, e := range b.Entry {
+			lm := lastModified[i]
 			if c.publish(e.Resource, lm, "poll") && lm > maxW {
 				maxW = lm
 			}
@@ -156,84 +236,139 @@ func (c *PollConsumer) poll() bool {
 }
 
 // export runs a Bulk Data export (since < 0: everything) and publishes what the polls missed.
-func (c *PollConsumer) export(since float64) {
+// Any malformed manifest, record, vread or stream error blocks checkpoint/EOF completion.
+func (c *PollConsumer) export(since float64) bool {
 	if ExportOff {
-		return
+		return true
+	}
+	fail := func() bool {
+		c.inc("export_errors")
+		return false
 	}
 	q := "/$export"
 	if since >= 0 {
 		q += "?_since=" + url.QueryEscape(simInstant(since))
 	}
-	r, _ := http.NewRequest("GET", c.cl.base+q, nil)
+	r, err := http.NewRequest("GET", c.cl.base+q, nil)
+	if err != nil {
+		return fail()
+	}
 	r.Header.Set("Authorization", "Bearer "+MockToken)
 	resp, err := c.cl.http.Do(r)
 	if err != nil || resp.StatusCode != 202 {
-		c.inc("export_errors")
-		return
+		if resp != nil {
+			resp.Body.Close()
+		}
+		return fail()
 	}
 	resp.Body.Close()
-	b, code, err := c.cl.req("GET", strings.TrimPrefix(resp.Header.Get("Content-Location"), "/fhir"), nil)
+	location := resp.Header.Get("Content-Location")
+	if location == "" {
+		return fail()
+	}
+	b, code, err := c.cl.req("GET", strings.TrimPrefix(location, "/fhir"), nil)
 	if err != nil || code != 200 {
-		c.inc("export_errors")
-		return
+		return fail()
 	}
 	var man struct {
-		Output []struct{ Type, URL string } `json:"output"`
+		Output []struct {
+			Type string `json:"type"`
+			URL  string `json:"url"`
+		} `json:"output"`
 	}
-	json.Unmarshal(b, &man)
-	c.inc("exports")
+	if rejectDuplicateKeys(b) != nil || json.Unmarshal(b, &man) != nil {
+		return fail()
+	}
 	for _, o := range man.Output {
-		fb, code, err := c.cl.req("GET", strings.TrimPrefix(o.URL, "/fhir"), nil)
-		if err != nil || code != 200 {
-			c.inc("export_errors")
-			continue
+		if o.Type == "" || o.URL == "" {
+			return fail()
 		}
-		sc := bufio.NewScanner(strings.NewReader(string(fb)))
+		r, err := http.NewRequest("GET", c.cl.base+strings.TrimPrefix(o.URL, "/fhir"), nil)
+		if err != nil {
+			return fail()
+		}
+		r.Header.Set("Authorization", "Bearer "+MockToken)
+		fr, err := c.cl.http.Do(r)
+		if err != nil || fr.StatusCode != 200 {
+			if fr != nil {
+				fr.Body.Close()
+			}
+			return fail()
+		}
+		sc := bufio.NewScanner(fr.Body)
 		sc.Buffer(make([]byte, 1<<20), 1<<24)
 		for sc.Scan() {
 			line := append([]byte(nil), sc.Bytes()...)
-			t, id, vid, lm := resourceVersion(line)
+			t, id, vid, lm, err := parseResourceVersion(line)
+			if err != nil {
+				fr.Body.Close()
+				return fail()
+			}
+			if err := validateResourceForIngest(line, lm); err != nil {
+				fr.Body.Close()
+				return fail()
+			}
 			v, _ := strconv.Atoi(vid)
 			key := t + "/" + id
 			for k := c.maxVid[key] + 1; k < v; k++ { // intermediate versions the polls never saw
-				if body, code, err := c.cl.req("GET", "/"+key+"/_history/"+strconv.Itoa(k), nil); err == nil && code == 200 {
-					_, _, _, lmk := resourceVersion(body)
-					if c.publish(body, lmk, "export_vread") {
-						c.inc("export_vread_recovered")
-					}
+				body, code, err := c.cl.req("GET", "/"+key+"/_history/"+strconv.Itoa(k), nil)
+				if err != nil || code != 200 {
+					fr.Body.Close()
+					return fail()
+				}
+				tk, idk, vidk, lmk, err := parseResourceVersion(body)
+				if err != nil || tk != t || idk != id || vidk != strconv.Itoa(k) {
+					fr.Body.Close()
+					return fail()
+				}
+				if err := validateResourceForIngest(body, lmk); err != nil {
+					fr.Body.Close()
+					return fail()
+				}
+				if c.publish(body, lmk, "export_vread") {
+					c.inc("export_vread_recovered")
 				}
 			}
 			if c.publish(line, lm, "export") {
 				c.inc("export_recovered")
 			}
 		}
+		scanErr, closeErr := sc.Err(), fr.Body.Close()
+		if scanErr != nil || closeErr != nil {
+			return fail()
+		}
 	}
+	c.inc("exports")
 	c.checkpoint()
+	return true
 }
 
 func resourceVersion(body []byte) (typ, id, vid string, lastUpdated float64) {
-	var r struct {
-		ResourceType, ID string
-		Meta             struct{ VersionID, LastUpdated string } `json:"meta"`
-	}
-	json.Unmarshal(body, &r)
-	lu, _ := parseInstant(r.Meta.LastUpdated)
-	return r.ResourceType, r.ID, r.Meta.VersionID, lu
+	typ, id, vid, lastUpdated, _ = parseResourceVersion(body)
+	return
 }
 
 // publish sends one resource version unless it was already published; true = newly published.
 func (c *PollConsumer) publish(body []byte, lastUpdated float64, via string) bool {
-	t, id, vid, _ := resourceVersion(body)
+	t, id, vid, _, err := parseResourceVersion(body)
+	if err != nil {
+		c.inc("invalid_resource")
+		return false
+	}
+	prov, err := resourceProvider(body)
+	if err != nil {
+		c.inc("unknown_source")
+		return false
+	}
+	if ev, so := normalise(prov, lastUpdated, body); ev == nil && so == nil {
+		c.inc("invalid_resource")
+		return false
+	}
 	key := t + "/" + id + "/" + vid
 	if c.done[key] {
 		c.inc("dup_dropped_" + via)
 		return false
 	}
-	var meta struct {
-		Meta struct{ Source string } `json:"meta"`
-	}
-	json.Unmarshal(body, &meta)
-	prov := provFromSource(meta.Meta.Source)
 	m := nats.NewMsg("fhir." + prov + ".res")
 	m.Data = body
 	m.Header.Set(jetstream.MsgIDHeader, prov+"/"+t+"/"+id+"/v"+vid)

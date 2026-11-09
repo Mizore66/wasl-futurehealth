@@ -42,45 +42,45 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string    `json:"state"`
-	Dropoff   string    `json:"dropoff"`
-	Owner     string    `json:"owner,omitempty"`
-	Provider  string    `json:"provider"`
-	SRDay     float64   `json:"referral_day"`
-	Deadline  float64   `json:"deadline_day,omitempty"`
-	Overdue   bool      `json:"overdue"`
-	Priority  string    `json:"priority,omitempty"`
-	Consent   string    `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string    `json:"review"`  // none | open | signed
-	Closed    bool      `json:"closed"`
-	ClosedDay float64   `json:"closed_day,omitempty"`
-	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string      `json:"state"`
+	Dropoff   string      `json:"dropoff"`
+	Owner     string      `json:"owner,omitempty"`
+	Provider  string      `json:"provider"`
+	SRDay     float64     `json:"referral_day"`
+	Deadline  float64     `json:"deadline_day,omitempty"`
+	Overdue   bool        `json:"overdue"`
+	Priority  string      `json:"priority,omitempty"`
+	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string      `json:"review"`  // none | open | signed
+	Closed    bool        `json:"closed"`
+	ClosedDay float64     `json:"closed_day,omitempty"`
+	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision // full last decision (detail view)
+	last      *Decision   // full last decision (detail view)
 	decisions []*Decision
 }
 
 type apiServer struct {
-	run, data string
-	meta      map[string]interface{}
-	cases     map[string]*apiCase
-	order     []string
-	queue     map[string][]*ReviewItem // loop -> raised items
-	signoffs  map[string][]map[string]interface{}
-	facts     map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids       map[string][]map[string]string     // loop -> linked registrations
-	dashboard map[string]interface{}
-	report    map[string]interface{}
-	anchors   map[string]string
-	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	fixtures  map[string]string
-	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu        sync.Mutex
-	reviews   []map[string]interface{}
-	ledgerErr  string // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	run, data  string
+	meta       map[string]interface{}
+	cases      map[string]*apiCase
+	order      []string
+	queue      map[string][]*ReviewItem // loop -> raised items
+	signoffs   map[string][]map[string]interface{}
+	facts      map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids        map[string][]map[string]string      // loop -> linked registrations
+	dashboard  map[string]interface{}
+	report     map[string]interface{}
+	anchors    map[string]string
+	booking    map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	fixtures   map[string]string
+	agentInv   map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu         sync.Mutex
+	reviews    []map[string]interface{}
+	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
@@ -103,7 +103,7 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
+	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
@@ -277,7 +277,9 @@ func (s *apiServer) loadTimelines() {
 			rows = append(rows, byPK[pk]...)
 		}
 		sort.Slice(rows, func(i, j int) bool { return rows[i]["seq"].(uint64) < rows[j]["seq"].(uint64) })
-		sort.Slice(ids, func(i, j int) bool { return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"]) })
+		sort.Slice(ids, func(i, j int) bool {
+			return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"])
+		})
 		s.facts[id], s.ids[id] = rows, ids
 	}
 }
@@ -292,10 +294,11 @@ func firstNonEmpty(a ...string) string {
 }
 
 // pickFixtures selects the demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
-//   evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
-//   false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
-//   review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
-//   dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
+//
+//	evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
+//	false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
+//	review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
+//	dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
 func (s *apiServer) pickFixtures() {
 	s.fixtures = map[string]string{}
 	ids := append([]string{}, s.order...)
@@ -321,7 +324,9 @@ func (s *apiServer) pickFixtures() {
 		}
 		if s.fixtures["evidence_closure"] == "" && c.Closed && c.Consent == "granted" &&
 			has(c, "link_decision", func(b Block) bool { return fmt.Sprint(b.Body["hops"]) != "0" }) &&
-			has(c, "evidence", func(b Block) bool { return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == "" }) {
+			has(c, "evidence", func(b Block) bool {
+				return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == ""
+			}) {
 			s.fixtures["evidence_closure"] = id
 		}
 		if s.fixtures["false_closure_trap"] == "" && !c.Closed && c.State == "inadequate" &&
@@ -628,14 +633,13 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 // Demo mode: appends a hash-chained review event; the run's decisions are never mutated.
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
-	var req struct{ Item, Decision, Note string }
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&req); err != nil || req.Decision == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"item\":..., \"decision\":..., \"note\":...}"}))
-		return
+	var req struct {
+		Item     string `json:"item"`
+		Decision string `json:"decision"`
+		Note     string `json:"note"`
 	}
-	if _, err := dec.Token(); err != io.EOF {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
+	if err := decodeAPIBody(w, r, maxReviewBodyBytes, &req); err != nil || req.Decision == "" {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note; duplicate or unknown fields and oversized/trailing data are rejected"}))
 		return
 	}
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
@@ -1177,6 +1181,23 @@ func (s *apiServer) lastHashLocked() string {
 // state is unknown (errLedgerIndeterminate) the ledger is marked failed and all later writes are refused, because
 // the in-memory hash could otherwise fork from the file.
 func (s *apiServer) appendEventLocked(ev map[string]interface{}) (map[string]interface{}, error) {
+	path := filepath.Join(s.run, "api_reviews.ndjson")
+	unlock, err := lockReviewLedger(path)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	// The process-local mutex cannot protect a shared run from another server.
+	// Revalidate after acquiring the interprocess lock so two writers cannot both
+	// acknowledge an event derived from the same previous hash.
+	disk, err := readVerifiedLedger(path)
+	if err == nil {
+		err = sameLedger(disk, s.reviews)
+	}
+	if err != nil {
+		s.ledgerErr = "ledger changed under another writer: " + err.Error()
+		return nil, err
+	}
 	ev["hash"] = apiEventHash(ev)
 	line, err := json.Marshal(ev)
 	if err != nil {
