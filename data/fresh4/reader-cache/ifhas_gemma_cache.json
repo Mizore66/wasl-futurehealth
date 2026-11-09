@@ -1,0 +1,392 @@
+{
+ "06b96663d6c381d073fb034d429405f2e1328d1770b1dc14bf8109c8beb2399e": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "BP confirmed hypertensive on repeat, 154/96;"
+   }
+  ],
+  "quote": "BP normal on repeat, return to routine screening, no treatment needed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5838,
+  "rev": "grounding-1"
+ },
+ "129db3f0536628b30c16839557ca827601c670569afaabc4ef494c59c7998133": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Repeat HbA1c 5.4%, normal - original sample was probably mislabelled."
+   },
+   {
+    "topic": "lipids",
+    "status": "not_confirmed",
+    "quote": "LDL repeat 118 mg/dL, below threshold; the first value 196 was a lab error."
+   }
+  ],
+  "quote": "Both back to routine screening.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10356,
+  "rev": "grounding-1"
+ },
+ "16b54e3d8605af8a2b5577d88bcd213c918ca6ff280078634735a458127f811c": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "HbA1c was 6.2 mmol/L"
+   }
+  ],
+  "quote": "The patient was advised to discuss this with their GP.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6472,
+  "rev": "grounding-1"
+ },
+ "192ae1b640df9bcba7a55aeacc4e60477fd53975e2a9b63edc4b95e0bfc9834a": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "pending",
+    "quote": "Attempted call at 11:00, no answer. Voicemail left."
+   }
+  ],
+  "quote": "Reschedule via call centre.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7058,
+  "rev": "grounding-1"
+ },
+ "2319c652b725b62a3bf9005b9d8cab00efc57ae6628c4f4b229d2013b2da0cef": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "Discussion was about the spouse's glucose sensor only."
+   }
+  ],
+  "quote": "Patient has no history of diabetes and no family clinic action was taken for the patient.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 4106,
+  "rev": "grounding-1"
+ },
+ "2cba54a62fd8304fc4dae8705d48b685cc9e43fbd775aaab0d030e8af067f9de": {
+  "attendance": "",
+  "findings": null,
+  "quote": "",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 0,
+  "error": "truncated: finish_reason=length",
+  "rev": "grounding-1"
+ },
+ "2d794891141a3b9027fc32af8f65a0995a702fcc306a10047b2653fed4fbd978": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "BMI 36."
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "pending",
+    "quote": "BP 146/94 at screening - repeat result is awaited from the lab after a nurse measurement; no decision yet."
+   }
+  ],
+  "quote": "Offered weight programme but patient deferred until after Ramadan-travel plans.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8585,
+  "rev": "grounding-1"
+ },
+ "3704deb4941ba91edf7e1875024d474e31c768c80fe8b250ec24252be1e97e06": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "pending",
+    "quote": "Screening BP 164/102. Today's clinic reading 160/100."
+   }
+  ],
+  "quote": "Not yet labelled hypertensive: asked to take two weeks of home readings and 24-hour ambulatory monitoring booked. Decision after results.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6347,
+  "rev": "grounding-1"
+ },
+ "447605e9749dde333ced04e4d4e4c04c79709ac2a7c342ef443232fc5ba703d0": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "HbA1c repeated at 8.2%, so diabetes is confirmed."
+   }
+  ],
+  "quote": "Nothing started.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5562,
+  "rev": "grounding-1"
+ },
+ "5571f8ec99db0434541348d0dbf3af31b2dd7d8d718f708669c61770146db940": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "LDL 4.9 mmol/L, raised"
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "BMI 31.5 confirmed"
+   }
+  ],
+  "quote": "referred to dietitian, appointment made. Counselled on diet and exercise.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6621,
+  "rev": "grounding-1"
+ },
+ "5a4e0f426fb4a43ad19f0e5b9175f11ad879b46ebf73c94db8fd7425bb2a77d1": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Screening BP was 152/96 and HbA1c 6.8%"
+   }
+  ],
+  "quote": "Will mail a new appointment.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7857,
+  "rev": "grounding-1"
+ },
+ "65bdd0174da2a17623909b27bb7fa14c7db1d5bff4ff3743f723d9662da78a47": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "dietary advice given"
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Repeat blood pressure 130/82 - normal, returns to routine screening. Patient reassured."
+   }
+  ],
+  "quote": "dietary advice given, routine re-screening in 12 months. Repeat blood pressure 130/82 - normal, returns to routine screening. Patient reassured.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 11689,
+  "rev": "grounding-1"
+ },
+ "7492d0b22409709d2eb082fba9b3ef7ec70dbba1a46f2e92f112ca510bfb5070": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "The patient reported feeling well."
+   }
+  ],
+  "quote": "The patient was offered an evening slot to attend the clinic.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 5988,
+  "rev": "grounding-1"
+ },
+ "75a00eda2ea1eaad98cbbbfba9fae5cabbd69d97e373b2a2e8b4d82e7fd8b461": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "BMI re-measured at 34.2 kg/m2, class I obesity confirmed."
+   }
+  ],
+  "quote": "Enrolled in the clinic's 12-week weight management programme today; first group session on Sunday.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6649,
+  "rev": "grounding-1"
+ },
+ "7e0f4a655e14cffe8e532517b7fd45f6786ff12a1947809900357cbf632ea2e8": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Random glucose 240 mg/dL at screening"
+   },
+   {
+    "topic": "lipids",
+    "status": "not_confirmed",
+    "quote": "LDL 205: statin offered but patient declined for now and wants to read about it."
+   }
+  ],
+  "quote": "Will revisit.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8974,
+  "rev": "grounding-1"
+ },
+ "7eb5573534e3e1308c0d3d0166eb1dc300f366c3d50857d890137b9cd7e16c32": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "HbA1c 6.0%: prediabetes range."
+   }
+  ],
+  "quote": "No medicine and no referral at this stage. Rescreen in a year.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6856,
+  "rev": "grounding-1"
+ },
+ "a32c013639c7460378f0ecd3bd343b8a689a6fe0c1541c5fd8df2711f1aa3cb2": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Hypertension confirmed on repeat (158/100): ramipril 5 mg started."
+   },
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "HbA1c repeat 7.1%: diabetes, referred to the diabetes clinic, referral sent."
+   },
+   {
+    "topic": "weight",
+    "status": "managed",
+    "quote": "BMI 32: enrolled in lifestyle programme."
+   }
+  ],
+  "quote": "Comprehensive review.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 11107,
+  "rev": "grounding-1"
+ },
+ "ac1547419713c34ccbc082bb1a5b58a9f3d403e63bc7dd42b81e0a0a7467ade3": {
+  "attendance": "",
+  "findings": null,
+  "quote": "",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 0,
+  "error": "truncated: finish_reason=length",
+  "rev": "grounding-1"
+ },
+ "b54d116999693cc5e425a859fa326d90576167f3954ca60ce7e103d3fcef272c": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "not_confirmed",
+    "quote": "HbA1c 6.1 mmol/mol"
+   }
+  ],
+  "quote": "The patient was advised to return for repeat testing if the result remained elevated.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6595,
+  "rev": "grounding-1"
+ },
+ "b887875825aee6f771091d3dfa5d97d8c9bb51d27a815e6531cb0fc9b9c4a7dc": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "managed",
+    "quote": "Repeat HbA1c 7.4% confirms type 2 diabetes."
+   },
+   {
+    "topic": "lipids",
+    "status": "managed",
+    "quote": "LDL 212 mg/dL confirmed, atorvastatin 40 mg prescribed."
+   }
+  ],
+  "quote": "Metformin started and dietitian appointment booked for 14 Nov.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 8009,
+  "rev": "grounding-1"
+ },
+ "d06ddfd41a3874d7083cc39cb436f6b4d1428fed244b97802ab73abf7aad659e": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "Glucose was noted to be elevated at screening."
+   }
+  ],
+  "quote": "Nothing else recorded.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6037,
+  "rev": "grounding-1"
+ },
+ "d1e8b0dd6bf9bad2561779542d4dfeeb1c3d9a2ec10ef7b98f8bed5a0c2eb626": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "not_confirmed",
+    "quote": "Repeat BP in clinic 126/78 and home average 122/76; the screening value of 150/95 was probably white-coat effect."
+   }
+  ],
+  "quote": "No treatment required. Routine rescreen in 1 year.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7802,
+  "rev": "grounding-1"
+ },
+ "e58fb67e9bfdba922d27731d5aa49fbecab7e6755ab2e228bbf66de53bfaf5ef": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "not_confirmed",
+    "quote": "Screening BMI of 31 was a data entry error: height recorded as 1.45 m rather than 1.65 m."
+   }
+  ],
+  "quote": "No weight programme needed.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 7597,
+  "rev": "grounding-1"
+ },
+ "e7464acbd23cfb78fa6e699a88d13f640d5727cece88ddda51a9dcb68395e548": {
+  "attendance": "did_not_attend",
+  "findings": [
+   {
+    "topic": "weight",
+    "status": "pending",
+    "quote": "Patient failed to attend."
+   },
+   {
+    "topic": "blood_pressure",
+    "status": "pending",
+    "quote": "BP 148/92"
+   },
+   {
+    "topic": "glycaemia",
+    "status": "pending",
+    "quote": "fasting glucose elevated"
+   }
+  ],
+  "quote": "Closed pending rebooking.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 10844,
+  "rev": "grounding-1"
+ },
+ "f324560714f41b7c5b432d6e814e59b1ec105c2d289f6e24f8d89ee58a673237": {
+  "attendance": "attended",
+  "findings": [
+   {
+    "topic": "blood_pressure",
+    "status": "managed",
+    "quote": "Repeat clinic readings 156/98 and 154/96 confirm hypertension."
+   }
+  ],
+  "quote": "Amlodipine 5 mg started today, home BP diary given, review in 4 weeks.",
+  "model": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "latency_ms": 6473,
+  "rev": "grounding-1"
+ }
+}
