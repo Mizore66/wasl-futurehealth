@@ -13,14 +13,16 @@ package main
 //    number for > gapWait, or when a heartbeat/$status reports events-since-subscription-start beyond what was seen;
 //    filled with GET Subscription/{id}/$events?eventsSinceNumber=&eventsUntilNumber=.
 //  - id-only payloads: each focus is vread (Type/id/_history/vid) with the bearer token, 16 in parallel.
-//  - crash/restart: the checkpoint (subscription id + contiguous acked event number) lives in a JetStream KV bucket
-//    (R3); on start the consumer resumes from checkpoint+1 via $status + $events. The HTTP 200 to the hook is not the
-//    durability point; the checkpoint is.
+//  - crash/restart: HTTP 200 follows durable FHIRIN acceptance. The inbox remains unacknowledged until every event has
+//    a FHIRSUB pending record; pending records survive reorder/overflow and are removed only after canonical publish.
+//    The checkpoint (subscription id + contiguous acked event number) resumes gap filling via $status + $events.
 //  - per-provider order: events are dispatched in event-number order to one in-order publisher per provider subject.
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,10 +39,10 @@ import (
 )
 
 type subEvent struct {
-	Num      int64
-	Focus    string
-	Occurred string
-	Body     []byte
+	Num      int64  `json:"num"`
+	Focus    string `json:"focus"`
+	Occurred string `json:"occurred"`
+	Body     []byte `json:"body"`
 }
 
 type SubConsumer struct {
@@ -48,36 +50,41 @@ type SubConsumer struct {
 	runDir                  string
 	http                    *http.Client
 	js                      jetstream.JetStream
+	notifications           jetstream.Consumer
 	kv                      jetstream.KeyValue
 	seen                    *SeenLedger
 	replays                 int64 // re-deliveries of already-ingested messages dropped by the seen ledger (seen.go)
 	subID                   string
 
-	mu        sync.Mutex
-	paced     *sync.Cond // publishers wait on it to stay within PaceWindow events of the ack high-water mark
-	next      int64      // next event number to dispatch
-	buf       map[int64]*subEvent
-	gapSince  time.Time
-	maxSeen   int64 // highest events-since-subscription-start reported by the HIE
-	feedOff   bool
-	eofSent   bool
-	filling   bool
-	inbox     chan []byte
-	provCh    map[string]chan *subEvent
-	acked     map[int64]bool
-	ackHWM    int64 // contiguous published+acked high-water mark (checkpointed)
-	stats     map[string]int64
-	ptrs      map[string]*int64
-	pubDup    int64
-	published int64
-	start     time.Time
+	mu              sync.Mutex
+	replayMu        sync.Mutex // serializes pending writes and durable pending scans
+	paced           *sync.Cond // publishers wait on it to stay within PaceWindow events of the ack high-water mark
+	next            int64      // next event number to dispatch
+	buf             map[int64]*subEvent
+	pending         map[int64]bool // event numbers with a durable FHIRSUB pending record
+	overflowPending bool           // durable records exist beyond the in-memory reorder capacity
+	gapSince        time.Time
+	maxSeen         int64 // highest events-since-subscription-start reported by the HIE
+	feedOff         bool
+	eofSent         bool
+	filling         bool
+	provCh          map[string]chan *subEvent
+	acked           map[int64]bool
+	ackHWM          int64 // contiguous published+acked high-water mark (checkpointed)
+	stats           map[string]int64
+	ptrs            map[string]*int64
+	pubDup          int64
+	published       int64
+	start           time.Time
 }
 
 const (
-	gapWait                = 300 * time.Millisecond
-	maxHookBodyBytes       = 1 << 20
-	maxFHIRResponseBytes   = 16 << 20
-	maxSubscriptionReorder = 4096
+	gapWait                 = 300 * time.Millisecond
+	maxHookBodyBytes        = 1 << 20
+	maxFHIRResponseBytes    = 16 << 20
+	maxSubscriptionReorder  = 4096
+	maxDurableInboxMessages = 4096
+	maxDurableInboxBytes    = 256 << 20
 )
 
 func runFhirSub(base, hookAddr, content, runDir string) {
@@ -88,7 +95,7 @@ func runFhirSub(base, hookAddr, content, runDir string) {
 	defer nc.Close()
 	ctx := context.Background()
 	c := &SubConsumer{base: base, hookAddr: hookAddr, content: content, runDir: runDir, js: js,
-		http: &http.Client{Timeout: 10 * time.Second}, buf: map[int64]*subEvent{}, inbox: make(chan []byte, 4096),
+		http: &http.Client{Timeout: 10 * time.Second}, buf: map[int64]*subEvent{},
 		provCh: map[string]chan *subEvent{}, acked: map[int64]bool{}, stats: map[string]int64{}, start: time.Now()}
 	c.paced = sync.NewCond(&c.mu)
 	retry("kv", func() (err error) {
@@ -118,6 +125,13 @@ fresh:
 		c.provCh[pc.ID] = ch
 		go c.publisher(pc.ID, ch)
 	}
+	retry("fhir notification inbox", func() (err error) {
+		c.notifications, err = js.Consumer(ctx, "FHIRIN", "notifications")
+		return
+	})
+	if err := c.recoverPending(); err != nil {
+		panic(fmt.Sprintf("recover FHIR pending events: %v", err))
+	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/hook", c.hook)
 	go func() {
@@ -142,11 +156,15 @@ fresh:
 }
 
 func (c *SubConsumer) req(method, path string, body []byte) ([]byte, int, error) {
+	return c.reqContext(context.Background(), method, path, body)
+}
+
+func (c *SubConsumer) reqContext(ctx context.Context, method, path string, body []byte) ([]byte, int, error) {
 	var rd io.Reader
 	if body != nil {
 		rd = bytes.NewReader(body)
 	}
-	r, err := http.NewRequest(method, c.base+path, rd)
+	r, err := http.NewRequestWithContext(ctx, method, c.base+path, rd)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -216,25 +234,42 @@ func (c *SubConsumer) hook(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(401)
 		return
 	}
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
 	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxHookBodyBytes))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	// Acknowledge only syntactically and semantically decodable notifications.
-	// A full in-memory inbox applies backpressure instead of blocking a handler forever.
-	if _, _, err := c.decode(b); err != nil {
+	// Decode, any id-only vreads, and durable publish share one bounded acceptance deadline.
+	// The stable body hash makes exact sender retries idempotent; event IDs provide logical dedupe after the stream window.
+	if _, _, err := c.decodeContext(ctx, b); err != nil {
 		atomic.AddInt64(c.stats_("hook_decode_rejected"), 1)
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			atomic.AddInt64(c.stats_("hook_retryable_accepts"), 1)
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
-	select {
-	case c.inbox <- b:
-		w.WriteHeader(http.StatusOK)
-	default:
+	if c.js == nil {
+		atomic.AddInt64(c.stats_("hook_retryable_accepts"), 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+		return
+	}
+	m := nats.NewMsg("fhirsub.notification")
+	m.Data = b
+	m.Header.Set(jetstream.MsgIDHeader, fmt.Sprintf("notification/%x", sha256.Sum256(b)))
+	_, err = c.js.PublishMsg(ctx, m)
+	if err != nil {
+		atomic.AddInt64(c.stats_("hook_retryable_accepts"), 1)
 		atomic.AddInt64(c.stats_("hook_backpressure"), 1)
 		w.WriteHeader(http.StatusServiceUnavailable)
+		return
 	}
+	atomic.AddInt64(c.stats_("hook_durable_accepts"), 1)
+	w.WriteHeader(http.StatusOK)
 }
 
 // stats_ returns a stable counter pointer (updated atomically outside the lock).
@@ -254,6 +289,10 @@ func (c *SubConsumer) stats_(k string) *int64 {
 
 // decodeNotification -> status + events with bodies (resolving id-only foci by vread).
 func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
+	return c.decodeContext(context.Background(), b)
+}
+
+func (c *SubConsumer) decodeContext(ctx context.Context, b []byte) (StatusInfo, []*subEvent, error) {
 	var bun Bundle
 	if err := rejectDuplicateKeys(b); err != nil {
 		return StatusInfo{}, nil, fmt.Errorf("invalid notification bundle: %v", err)
@@ -270,6 +309,13 @@ func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 	sem := make(chan bool, 16)
 	var ferr error
 	var emu sync.Mutex
+	setErr := func(err error) {
+		emu.Lock()
+		if ferr == nil {
+			ferr = err
+		}
+		emu.Unlock()
+	}
 	for i, ne := range st.Events {
 		ev := &subEvent{Num: ne.Num, Focus: ne.Focus, Occurred: ne.Occurred}
 		evs[i] = ev
@@ -280,24 +326,36 @@ func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 		if c.alreadyHave(ne.Num) {
 			continue // duplicate of something already dispatched: don't vread it again
 		}
+		select {
+		case sem <- true:
+		case <-ctx.Done():
+			setErr(ctx.Err())
+			continue
+		}
 		wg.Add(1)
-		sem <- true
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
 			t, id, vid := splitFocus(ev.Focus)
 			for try := 0; try < 5; try++ {
-				body, code, err := c.req("GET", "/"+t+"/"+id+"/_history/"+vid, nil)
+				body, code, err := c.reqContext(ctx, "GET", "/"+t+"/"+id+"/_history/"+vid, nil)
 				if err == nil && code == 200 {
 					ev.Body = body
 					atomic.AddInt64(c.stats_("vreads"), 1)
 					return
 				}
-				time.Sleep(100 * time.Millisecond)
+				if ctx.Err() != nil {
+					setErr(ctx.Err())
+					return
+				}
+				select {
+				case <-time.After(100 * time.Millisecond):
+				case <-ctx.Done():
+					setErr(ctx.Err())
+					return
+				}
 			}
-			emu.Lock()
-			ferr = fmt.Errorf("vread failed: %s", ev.Focus)
-			emu.Unlock()
+			setErr(fmt.Errorf("vread failed: %s", ev.Focus))
 		}()
 	}
 	wg.Wait()
@@ -336,23 +394,164 @@ func (c *SubConsumer) decode(b []byte) (StatusInfo, []*subEvent, error) {
 func (c *SubConsumer) alreadyHave(n int64) bool {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return n < c.next || c.buf[n] != nil
+	return n < c.next || c.buf[n] != nil || c.pending[n]
+}
+
+func (c *SubConsumer) processInboxMessage(msg jetstream.Msg) error {
+	if meta, err := msg.Metadata(); err == nil && meta.NumDelivered > 1 {
+		atomic.AddInt64(c.stats_("replayed_notifications"), 1)
+	}
+	st, evs, err := c.decode(msg.Data())
+	if err != nil {
+		atomic.AddInt64(c.stats_("bad_notifications"), 1)
+		return err
+	}
+	atomic.AddInt64(c.stats_("recv_"+st.Type), 1)
+	if err := c.absorb(st, evs, "push"); err != nil {
+		return err
+	}
+	// Scan only when overflow exists and dispatch freed reorder capacity; ordinary notifications do no backlog scan.
+	if c.replayNeeded() {
+		if err := c.recoverPending(); err != nil {
+			return err
+		}
+	}
+	// The original notification remains unacknowledged until every included event has durable pending state.
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	return msg.DoubleAck(ctx)
 }
 
 func (c *SubConsumer) processLoop() {
-	for b := range c.inbox {
-		st, evs, err := c.decode(b)
+	for {
+		batch, err := c.notifications.Fetch(1, jetstream.FetchMaxWait(2*time.Second))
 		if err != nil {
-			atomic.AddInt64(c.stats_("bad_notifications"), 1)
+			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		atomic.AddInt64(c.stats_("recv_"+st.Type), 1)
-		c.absorb(st, evs, "push")
+		for msg := range batch.Messages() {
+			if err := c.processInboxMessage(msg); err != nil {
+				atomic.AddInt64(c.stats_("inbox_retryable"), 1)
+				_ = msg.NakWithDelay(100 * time.Millisecond)
+			}
+		}
+		if err := batch.Error(); err != nil && !errors.Is(err, jetstream.ErrNoMessages) {
+			time.Sleep(100 * time.Millisecond)
+		}
 	}
 }
 
-// absorb inserts events into the reorder buffer and dispatches the contiguous prefix.
-func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) {
+// recoverPending restores the durable reorder set after restart and replays overflow when capacity becomes available.
+func (c *SubConsumer) recoverPending() error {
+	if c.kv == nil {
+		return fmt.Errorf("durable pending store is unavailable")
+	}
+	c.replayMu.Lock()
+	defer c.replayMu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel() // the key lister's watcher stops when this context is cancelled
+	keys, err := c.kv.ListKeysFiltered(ctx, "pending.*")
+	if errors.Is(err, jetstream.ErrNoKeysFound) {
+		c.mu.Lock()
+		c.overflowPending = false
+		c.mu.Unlock()
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	events := map[int64]*subEvent{}
+	var nums []int64
+	for key := range keys.Keys() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		entry, err := c.kv.Get(ctx, key)
+		cancel()
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+		var e subEvent
+		if err := json.Unmarshal(entry.Value(), &e); err != nil || e.Num <= 0 || len(e.Body) == 0 || pendingEventKey(e.Num) != key {
+			return fmt.Errorf("invalid durable pending record %q", key)
+		}
+		if events[e.Num] == nil {
+			nums = append(nums, e.Num)
+		}
+		events[e.Num] = &e
+	}
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("list durable pending records: %w", err)
+	}
+	sort.Slice(nums, func(i, j int) bool { return nums[i] < nums[j] })
+	c.mu.Lock()
+	c.overflowPending = false
+	if c.pending == nil {
+		c.pending = map[int64]bool{}
+	}
+	var stale []int64
+	for _, n := range nums {
+		e := events[n]
+		if n < c.next {
+			if n <= c.ackHWM {
+				stale = append(stale, n) // canonical publish acknowledgement is already contiguous through n
+			}
+			continue // a record above ackHWM may still be in flight; never delete it here
+		}
+		c.pending[n] = true
+		if n == c.next {
+			if !c.dispatchLocked(e) {
+				if len(c.buf) < maxSubscriptionReorder {
+					c.buf[n] = e
+				} else {
+					c.overflowPending = true
+				}
+				continue
+			}
+			c.stats["replayed_pending_events"]++
+			c.next++
+			for c.buf[c.next] != nil {
+				b := c.buf[c.next]
+				if !c.dispatchLocked(b) {
+					break
+				}
+				delete(c.buf, c.next)
+				c.next++
+			}
+			continue
+		}
+		if c.buf[n] == nil {
+			if len(c.buf) < maxSubscriptionReorder {
+				c.buf[n] = e
+				c.stats["replayed_pending_events"]++
+			} else {
+				c.overflowPending = true
+			}
+		}
+	}
+	c.mu.Unlock()
+	for _, n := range stale {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		err := c.kv.Delete(ctx, pendingEventKey(n))
+		cancel()
+		if err != nil && !errors.Is(err, jetstream.ErrKeyNotFound) {
+			return err
+		}
+		c.mu.Lock()
+		if n < c.next {
+			delete(c.pending, n)
+		}
+		c.mu.Unlock()
+	}
+	return nil
+}
+
+// absorb persists every event before inserting it into the reorder buffer and dispatching the contiguous prefix.
+// Overflow remains in FHIRSUB as durable pending state; it is never acknowledged and discarded.
+func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) error {
+	c.replayMu.Lock()
+	defer c.replayMu.Unlock()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if st.Type != "query-event" && st.EventsSince > c.maxSeen {
@@ -366,15 +565,33 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) {
 		if e.Body == nil {
 			continue
 		}
-		if e.Num < c.next || c.buf[e.Num] != nil {
+		if e.Num < c.next || c.buf[e.Num] != nil || c.pending[e.Num] {
 			c.stats["dup_dropped_"+via]++
 			continue
 		}
+		if c.kv == nil {
+			return fmt.Errorf("durable pending store is unavailable")
+		}
+		body, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_, err = c.kv.Put(ctx, pendingEventKey(e.Num), body)
+		cancel()
+		if err != nil {
+			return fmt.Errorf("persist event %d: %w", e.Num, err)
+		}
+		if c.pending == nil {
+			c.pending = map[int64]bool{}
+		}
+		c.pending[e.Num] = true
 		c.stats["accepted_"+via]++
 		if e.Num != c.next {
 			c.stats["buffered_ahead_"+via]++ // arrived before a predecessor (reorder or gap)
 			if len(c.buf) >= maxSubscriptionReorder {
-				c.stats["reorder_overflow_"+via]++
+				c.overflowPending = true
+				c.stats["reorder_pending_"+via]++
 				continue
 			}
 			c.buf[e.Num] = e
@@ -402,6 +619,15 @@ func (c *SubConsumer) absorb(st StatusInfo, evs []*subEvent, via string) {
 	} else if c.gapSince.IsZero() {
 		c.gapSince = time.Now()
 	}
+	return nil
+}
+
+func pendingEventKey(n int64) string { return fmt.Sprintf("pending.%020d", n) }
+
+func (c *SubConsumer) replayNeeded() bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.overflowPending && len(c.buf) < maxSubscriptionReorder
 }
 
 func (c *SubConsumer) dispatchLocked(e *subEvent) bool {
@@ -460,7 +686,20 @@ func (c *SubConsumer) publisher(prov string, ch chan *subEvent) {
 			atomic.AddInt64(&c.replays, 1)
 		}
 		atomic.AddInt64(&c.published, 1)
+		pendingDeleted := false
+		if c.kv != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			err := c.kv.Delete(ctx, pendingEventKey(e.Num))
+			cancel()
+			pendingDeleted = err == nil || errors.Is(err, jetstream.ErrKeyNotFound)
+		}
 		c.mu.Lock()
+		if pendingDeleted {
+			delete(c.pending, e.Num)
+		} else if c.kv != nil {
+			// Retained pending state makes a later restart republish with the same canonical event ID.
+			c.stats["pending_delete_errors"]++
+		}
 		c.acked[e.Num] = true
 		c.advanceLocked()
 		c.mu.Unlock()
@@ -578,7 +817,16 @@ func (c *SubConsumer) checkGap() {
 		}
 		atomic.AddInt64(c.stats_("gap_fills"), 1)
 		atomic.AddInt64(c.stats_("gap_events"), int64(len(evs)))
-		c.absorb(st, evs, "events")
+		if err := c.absorb(st, evs, "events"); err != nil {
+			atomic.AddInt64(c.stats_("gap_pending_errors"), 1)
+			return
+		}
+		if c.replayNeeded() {
+			if err := c.recoverPending(); err != nil {
+				atomic.AddInt64(c.stats_("gap_pending_errors"), 1)
+				return
+			}
+		}
 		from = to + 1
 	}
 }
@@ -595,6 +843,12 @@ func (c *SubConsumer) statusLoop() {
 		for k, p := range c.ptrs {
 			s[k] = atomic.LoadInt64(p)
 		}
+		for _, k := range []string{"hook_durable_accepts", "hook_retryable_accepts", "replayed_notifications", "dead_letters"} {
+			if _, ok := s[k]; !ok {
+				s[k] = 0
+			}
+		}
+		s["durable_pending"] = int64(len(c.pending))
 		c.mu.Unlock()
 		st["stats"], st["published"], st["nats_dup_suppressed"] = s, atomic.LoadInt64(&c.published), atomic.LoadInt64(&c.pubDup)
 		st["already_ingested_dropped"] = atomic.LoadInt64(&c.replays)

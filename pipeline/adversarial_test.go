@@ -15,6 +15,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 const (
@@ -222,8 +224,8 @@ func validHandshakeNotification(t *testing.T) []byte {
 	return hookNotification(t, string(rawStatus))
 }
 
-func hookTestConsumer(depth int) *SubConsumer {
-	c := &SubConsumer{inbox: make(chan []byte, depth), buf: map[int64]*subEvent{}, acked: map[int64]bool{}, stats: map[string]int64{}, ptrs: map[string]*int64{}}
+func hookTestConsumer(_ int) *SubConsumer {
+	c := &SubConsumer{buf: map[int64]*subEvent{}, acked: map[int64]bool{}, stats: map[string]int64{}, ptrs: map[string]*int64{}}
 	c.paced = sync.NewCond(&c.mu)
 	return c
 }
@@ -234,16 +236,23 @@ func TestHookValidatesBeforeAcknowledgement(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
-	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
-		t.Fatalf("malformed notification acknowledged: code=%d queued=%d", rec.Code, len(c.inbox))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("malformed notification acknowledged: code=%d", rec.Code)
 	}
 
 	req = httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(validHandshakeNotification(t)))
 	req.Header.Set("Authorization", "Bearer "+mockHookToken())
+	env := startTestNATS(t)
+	stream := createDurableHookInbox(t, env)
+	c = durableHookTestConsumer(t, env)
 	rec = httptest.NewRecorder()
 	c.hook(rec, req)
-	if rec.Code != http.StatusOK || len(c.inbox) != 1 {
-		t.Fatalf("valid notification rejected: code=%d queued=%d body=%s", rec.Code, len(c.inbox), rec.Body.String())
+	info, err := stream.Info(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusOK || info.State.Msgs != 1 {
+		t.Fatalf("valid notification rejected: code=%d durable=%d body=%s", rec.Code, info.State.Msgs, rec.Body.String())
 	}
 }
 
@@ -254,8 +263,8 @@ func TestHookRejectsDuplicateNotificationEnvelopeKeys(t *testing.T) {
 	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
-	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
-		t.Fatalf("duplicate-key notification envelope acknowledged: code=%d queued=%d", rec.Code, len(c.inbox))
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("duplicate-key notification envelope acknowledged: code=%d", rec.Code)
 	}
 }
 
@@ -278,39 +287,46 @@ func TestHookRejectsInvalidInlineResourceAndFocusMismatch(t *testing.T) {
 			req.Header.Set("Authorization", "Bearer "+mockHookToken())
 			rec := httptest.NewRecorder()
 			c.hook(rec, req)
-			if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
-				t.Fatalf("invalid inline notification acknowledged: code=%d queued=%d", rec.Code, len(c.inbox))
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("invalid inline notification acknowledged: code=%d", rec.Code)
 			}
 		})
 	}
 }
 
 func TestHookRejectsOversizeAndBackpressure(t *testing.T) {
-	c := hookTestConsumer(1)
+	env := startTestNATS(t)
+	stream := createDurableHookInbox(t, env)
+	c := durableHookTestConsumer(t, env)
 	req := httptest.NewRequest(http.MethodPost, "/hook", io.MultiReader(bytes.NewBufferString(`{"pad":"`), strings.NewReader(strings.Repeat("x", adversarialHookLimit)), bytes.NewBufferString(`"}`)))
 	req.Header.Set("Authorization", "Bearer "+mockHookToken())
 	rec := httptest.NewRecorder()
 	c.hook(rec, req)
-	if rec.Code != http.StatusBadRequest || len(c.inbox) != 0 {
+	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("oversized notification acknowledged: %d", rec.Code)
 	}
 
-	c.inbox <- []byte("already queued")
-	req = httptest.NewRequest(http.MethodPost, "/hook", bytes.NewReader(validHandshakeNotification(t)))
-	req.Header.Set("Authorization", "Bearer "+mockHookToken())
-	rec = httptest.NewRecorder()
-	done := make(chan struct{})
-	go func() {
-		c.hook(rec, req)
-		close(done)
-	}()
+	info, err := stream.Info(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := info.Config
+	cfg.MaxMsgs = 1
+	if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if rec := durableHookRequest(t, c, durableHookNotification(t, 1)); rec.Code != http.StatusOK {
+		t.Fatalf("first durable notification returned %d", rec.Code)
+	}
+	done := make(chan *httptest.ResponseRecorder, 1)
+	go func() { done <- durableHookRequest(t, c, durableHookNotification(t, 2)) }()
 	select {
-	case <-done:
+	case rec := <-done:
 		if rec.Code != http.StatusServiceUnavailable {
-			t.Fatalf("full inbox status = %d, want 503", rec.Code)
+			t.Fatalf("full durable inbox status = %d, want 503", rec.Code)
 		}
-	case <-time.After(250 * time.Millisecond):
-		t.Fatal("hook blocked indefinitely on a full inbox")
+	case <-time.After(3 * time.Second):
+		t.Fatal("hook exceeded its bounded wait on a full durable inbox")
 	}
 }
 
@@ -333,7 +349,13 @@ func TestUnknownSubscriptionSourceDoesNotAdvanceAcknowledgement(t *testing.T) {
 }
 
 func TestSubscriptionReorderAndDuplicateHaveSingleOrderedEffect(t *testing.T) {
-	c := hookTestConsumer(4)
+	env := startTestNATS(t)
+	c := durableHookTestConsumer(t, env)
+	var err error
+	c.kv, err = env.js.CreateOrUpdateKeyValue(env.ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 1, Storage: jetstream.FileStorage})
+	if err != nil {
+		t.Fatal(err)
+	}
 	c.next = 1
 	ch := make(chan *subEvent, 4)
 	c.provCh = map[string]chan *subEvent{"p1": ch}
