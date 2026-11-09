@@ -892,6 +892,102 @@ class NATSReplicaTests(unittest.TestCase):
         self.assertTrue(snapshot["replicas_current"])
 
 
+class LeaderAuthoritativeNATSTests(unittest.TestCase):
+    def raw_views(self):
+        views = {}
+        stream_names = ("FHIR", "PREP", "FACTS", "OUT")
+        for observer in range(3):
+            details = []
+            for index, name in enumerate(stream_names):
+                leader = index % 3
+                replicas = [{"name": "n%d" % peer,
+                             "current": observer == leader or peer == leader,
+                             "lag": 1000 if observer != leader and peer != leader else None}
+                            for peer in range(3) if peer != observer]
+                details.append({"name": name, "state": {"messages": 10, "bytes": 100},
+                                "cluster": {"leader": "n%d" % leader, "replicas": replicas}})
+            views["nats-%d" % observer] = {"account_details": [{"stream_detail": details}]}
+        return views
+
+    def parsed_views(self, views):
+        parsed = {}
+        for node, jsz in views.items():
+            snapshot = soak.parse_nats_snapshot({}, jsz, {"routes": [{"name": "n1"}, {"name": "n2"}]}, "")
+            snapshot.update(healthy=True, routes=2, ack_pending=0, store_bytes=100)
+            parsed[node] = snapshot
+        return parsed
+
+    def readiness(self, views):
+        import types
+        class FakeCompose:
+            def exec_result(self, node, args, timeout=10):
+                return types.SimpleNamespace(returncode=0)
+            def exec(self, node, args, timeout=15):
+                if "jsz?" in args[-1]:
+                    return json.dumps(views[node])
+                return json.dumps({"routes": [{"name": "n1"}, {"name": "n2"}]})
+        runner = soak.SoakRunner.__new__(soak.SoakRunner)
+        return runner.nats_ready(FakeCompose())
+
+    def report_health(self, views):
+        sample = GateTests().sample(0)
+        sample["nats"] = self.parsed_views(views)
+        report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+        return report["gates"]["nats_health"]
+
+    def test_readiness_ignores_follower_local_false_when_leaders_are_current(self):
+        ready, details = self.readiness(self.raw_views())
+        self.assertTrue(ready, details)
+
+    def test_readiness_rejects_a_leader_reporting_non_current_peers(self):
+        views = self.raw_views()
+        views["nats-0"]["account_details"][0]["stream_detail"][0]["cluster"]["replicas"][0]["current"] = False
+        ready, _ = self.readiness(views)
+        self.assertFalse(ready)
+
+    def test_readiness_rejects_a_missing_leader_authoritative_view(self):
+        views = self.raw_views()
+        views["nats-0"]["account_details"][0]["stream_detail"].pop(0)
+        ready, _ = self.readiness(views)
+        self.assertFalse(ready)
+
+    def test_steady_health_uses_the_same_leader_authoritative_views(self):
+        self.assertTrue(self.report_health(self.raw_views())["passed"])
+
+    def test_steady_health_rejects_non_current_or_missing_leader_views(self):
+        import copy
+        for mutation in ("non-current", "missing"):
+            with self.subTest(mutation=mutation):
+                views = self.parsed_views(self.raw_views())
+                leader_stream = views["nats-0"]["streams"]["FHIR"]
+                if mutation == "non-current":
+                    leader_stream["replicas_current"] = False
+                    leader_stream["current_replica_peers"] = 1
+                else:
+                    del views["nats-0"]["streams"]["FHIR"]
+                sample = GateTests().sample(0)
+                sample["nats"] = views
+                report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+                self.assertFalse(report["gates"]["nats_health"]["passed"])
+
+    def test_steady_health_preserves_health_routes_and_missing_node_checks(self):
+        import copy
+        baseline = self.parsed_views(self.raw_views())
+        for mutation in ("health", "routes", "missing"):
+            with self.subTest(mutation=mutation):
+                views = copy.deepcopy(baseline)
+                if mutation == "health":
+                    views["nats-1"]["healthy"] = False
+                elif mutation == "routes":
+                    views["nats-2"]["routes"] = 1
+                else:
+                    del views["nats-1"]
+                sample = GateTests().sample(0)
+                sample["nats"] = views
+                report = soak.build_report({"run_id": "r"}, GateTests().config(), [sample], [], "completed")
+                self.assertFalse(report["gates"]["nats_health"]["passed"])
+
+
 class RestartBaselineTests(unittest.TestCase):
     def test_zero_container_start_timestamp_is_not_an_unexpected_restart(self):
         previous = {"api": {"started_at": "0001-01-01T00:00:00Z", "restart_count": 0,
