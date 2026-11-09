@@ -10,9 +10,10 @@ export default defineConfig({
   // Screens go to test-results/screens; Playwright cleans only outputDir, so keep them apart.
   outputDir: "test-results/artifacts",
   fullyParallel: true,
+  forbidOnly: !!process.env.CI,
   // More workers than this starve next start on a laptop and clicks land before hydration.
   workers: 3,
-  reporter: [["list"]],
+  reporter: process.env.CI ? [["github"], ["list"], ["html", { open: "never" }]] : [["list"]],
   use: {
     baseURL: external ?? `http://localhost:${port}`,
     viewport: { width: 1440, height: 900 },
