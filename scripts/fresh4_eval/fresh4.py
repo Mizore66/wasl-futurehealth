@@ -312,7 +312,7 @@ def integrated_gates(summary):
     gates = [{"id": "I0_all_10_lanes_complete", "status": "pass" if observed == 10 else "fail",
               "observed_lanes": observed, "expected_lanes": 10, "seeds": INTEGRATED_SEEDS}]
     for noise in ("v1", "v2"):
-        safety = by_noise.get(noise, {}).get("safety", {})
+        safety = by_noise.get(noise, {}).get("safety_pooled", {})
         gates.append(_zero_gate("I1_%s_zero_listed_false_closures" % noise, noise, safety, FALSE_CLOSURE_METRICS))
         for prefix, name in (("I2", "zero_wrong_patient_or_unconsented_releases"),
                              ("I3", "zero_duplicate_loss_or_state_mismatch")):

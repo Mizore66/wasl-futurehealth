@@ -172,8 +172,8 @@ class IntegratedGates(unittest.TestCase):
             "tamper_false_alarms": [0, 5, None],
         }
         return {"manifest": {"seeds": X.INTEGRATED_SEEDS, "selected_noise_models": ["v1", "v2"]},
-                "by_noise": {"v1": {"seeds": 5, "safety": copy.deepcopy(safety)},
-                             "v2": {"seeds": 5, "safety": copy.deepcopy(safety)}}}
+                "by_noise": {"v1": {"seeds": 5, "safety_pooled": copy.deepcopy(safety)},
+                             "v2": {"seeds": 5, "safety_pooled": copy.deepcopy(safety)}}}
 
     def test_integrated_gates_pass_complete_zero_event_evidence(self):
         gates = X.integrated_gates(self.summary())
@@ -181,7 +181,7 @@ class IntegratedGates(unittest.TestCase):
 
     def test_integrated_gate_failure_preserves_count_and_denominator(self):
         s = self.summary()
-        s["by_noise"]["v2"]["safety"]["ldct_false_closures"] = [2, 101, None]
+        s["by_noise"]["v2"]["safety_pooled"]["ldct_false_closures"] = [2, 101, None]
         gates = X.integrated_gates(s)
         g = next(g for g in gates if g["id"] == "I1_v2_zero_listed_false_closures")
         self.assertEqual(g["status"], "fail")
