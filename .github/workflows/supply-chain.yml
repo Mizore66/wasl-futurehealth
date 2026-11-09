@@ -1,0 +1,104 @@
+name: supply-chain
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+
+permissions:
+  contents: read
+
+env:
+  TRIVY_VERSION: "0.76.2"
+  TRIVY_ARCHIVE_SHA256: "bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf"
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd # v4.2.0
+        with:
+          version: "10.32.1"
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - uses: actions/setup-go@d35c59abb061a4a18cc3c1a2007e3b0929a0317c # v5.5.0
+        with:
+          go-version-file: pipeline/go.mod
+          cache-dependency-path: pipeline/go.sum
+      - name: Install pinned Trivy after checksum verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trivy-download" "$RUNNER_TEMP/trivy-bin"
+          archive="$RUNNER_TEMP/trivy-download/trivy.tar.gz"
+          curl --fail --location --retry 3 --output "$archive" \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          printf '%s  %s\n' "$TRIVY_ARCHIVE_SHA256" "$archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP/trivy-bin" trivy
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+      - name: Install dependencies for license discovery
+        run: |
+          pnpm --dir web install --frozen-lockfile
+          go -C pipeline mod download
+      - name: Test supply-chain evidence tooling
+        run: python3 -I scripts/test_supply_chain.py
+      - name: Regenerate and compare source evidence
+        env:
+          WASL_SUPPLY_CHAIN_VERIFY_OUTPUT: out/supply-chain/source
+        run: ./scripts/supply-chain.sh verify
+      - name: Publish fresh source evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: source-supply-chain-${{ github.sha }}
+          path: out/supply-chain/source
+          if-no-files-found: warn
+          retention-days: 14
+
+  images:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Install pinned Trivy after checksum verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/trivy-download" "$RUNNER_TEMP/trivy-bin"
+          archive="$RUNNER_TEMP/trivy-download/trivy.tar.gz"
+          curl --fail --location --retry 3 --output "$archive" \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          printf '%s  %s\n' "$TRIVY_ARCHIVE_SHA256" "$archive" | sha256sum --check
+          tar -xzf "$archive" -C "$RUNNER_TEMP/trivy-bin" trivy
+          echo "$RUNNER_TEMP/trivy-bin" >> "$GITHUB_PATH"
+      - name: Build release candidate images
+        env:
+          IMAGE_SUFFIX: "${{ github.sha }}"
+        run: |
+          docker build --tag "wasl:${IMAGE_SUFFIX}" .
+          docker build --tag "wasl-nats:${IMAGE_SUFFIX}" ./deploy/nats
+      - name: Scan installed image packages and gate all severities
+        env:
+          IMAGE_SUFFIX: "${{ github.sha }}"
+        run: ./scripts/supply-chain.sh image "wasl:${IMAGE_SUFFIX}" "wasl-nats:${IMAGE_SUFFIX}"
+      - name: Publish image SBOMs and findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-supply-chain-${{ github.sha }}
+          path: out/supply-chain/images
+          if-no-files-found: warn
+          retention-days: 14

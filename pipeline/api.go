@@ -99,8 +99,15 @@ func apiHandler(s *apiServer) http.Handler {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-<<<<<<< HEAD
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second,
+	return cors(mux)
+}
+
+func runServe(run, data, addr string) {
+	s, err := loadAPIVerified(run, data)
+	if err != nil {
+		panic(err)
+	}
+	srv := &http.Server{Addr: addr, Handler: apiHandler(s), ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
 	auth, err := apiAuthFromEnvironment()
 	if err != nil {
@@ -108,7 +115,7 @@ func apiHandler(s *apiServer) http.Handler {
 	}
 	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		started := time.Now()
-		cors(mux).ServeHTTP(w, r)
+		apiHandler(s).ServeHTTP(w, r)
 		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
 	}))
 	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
@@ -126,19 +133,6 @@ func apiHandler(s *apiServer) http.Handler {
 		err = srv.ListenAndServe()
 	}
 	if err != nil {
-=======
-	return cors(mux)
-}
-
-func runServe(run, data, addr string) {
-	s, err := loadAPIVerified(run, data)
-	if err != nil {
-		panic(err)
-	}
-	srv := &http.Server{Addr: addr, Handler: apiHandler(s), ReadHeaderTimeout: 5 * time.Second}
-	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
-	if err := srv.ListenAndServe(); err != nil {
->>>>>>> 0676c4b0de1d849fafc214742955930c924c7134
 		panic(err)
 	}
 }

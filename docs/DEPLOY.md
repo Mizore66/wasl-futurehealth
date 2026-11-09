@@ -25,7 +25,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 built with Go 1.27.3 on Alpine 3.23, with `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.3 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -34,8 +34,8 @@ crashed service and performs the demo's chaos kills (linker, closure, prep, the 
 kill NATS nodes when the cluster is external (`WASL_NATS_EXTERNAL=1`), so the demo's NATS-node kill is skipped in
 this package; use `docker compose kill nats-2 && docker compose start nats-2` during a run to test it.
 
-The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12-slim` with numpy and scipy for the
-cohort augmentation, booking and summary scripts. It runs as uid 10001. It contains the committed synthetic inputs and
+The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12-alpine` with numpy and scipy for the
+cohort augmentation, booking and summary scripts. Alpine updates, Bash and util-linux are installed; the unused pip/ensurepip toolchain is removed after wheel installation. It runs as uid 10001. It contains the committed synthetic inputs and
 JSON model weights only: no keys, no patient data, no run outputs.
 
 ## Ports and volumes
