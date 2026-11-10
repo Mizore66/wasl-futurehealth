@@ -54,8 +54,22 @@ jobs:
           go mod verify
           go vet .
       - name: Run all Go tests without short mode
+        shell: bash
         working-directory: pipeline
-        run: go test -count=1 -timeout=20m .
+        run: go test -json -count=1 -timeout=20m . | tee "$RUNNER_TEMP/go-test.jsonl"
+      - name: Account for Go test skips
+        if: always()
+        run: python3 scripts/check_go_test_skips.py --input "$RUNNER_TEMP/go-test.jsonl" --lane go-test --output "$RUNNER_TEMP/go-test-manifest.json"
+      - name: Upload Go test skip evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: go-test-skips-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/go-test.jsonl
+            ${{ runner.temp }}/go-test-manifest.json
+          if-no-files-found: error
+          retention-days: 3
       - name: Reject tracked-file drift
         run: git diff --exit-code
 
@@ -75,8 +89,22 @@ jobs:
           GOBIN="$GITHUB_WORKSPACE/bin" go install github.com/nats-io/nats-server/v2@v2.12.6
           "$GITHUB_WORKSPACE/bin/nats-server" --version
       - name: Run all Go tests with the race detector
+        shell: bash
         working-directory: pipeline
-        run: go test -race -count=1 -timeout=60m .
+        run: go test -json -race -count=1 -timeout=60m . | tee "$RUNNER_TEMP/go-race.jsonl"
+      - name: Account for Go test skips
+        if: always()
+        run: python3 scripts/check_go_test_skips.py --input "$RUNNER_TEMP/go-race.jsonl" --lane go-race --output "$RUNNER_TEMP/go-race-manifest.json"
+      - name: Upload Go test skip evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: go-race-skips-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/go-race.jsonl
+            ${{ runner.temp }}/go-race-manifest.json
+          if-no-files-found: error
+          retention-days: 3
       - name: Reject tracked-file drift
         run: git diff --exit-code
 
@@ -151,8 +179,22 @@ jobs:
       - name: Run the cached-reader integrated demo and HTTP smoke
         run: scripts/demo.sh all
       - name: Re-run Go tests against generated materialized outputs
+        shell: bash
         working-directory: pipeline
-        run: go test -count=1 -timeout=20m .
+        run: go test -json -count=1 -timeout=20m . | tee "$RUNNER_TEMP/integration.jsonl"
+      - name: Account for Go test skips
+        if: always()
+        run: python3 scripts/check_go_test_skips.py --input "$RUNNER_TEMP/integration.jsonl" --lane integration --output "$RUNNER_TEMP/integration-manifest.json"
+      - name: Upload Go test skip evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: integration-skips-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/integration.jsonl
+            ${{ runner.temp }}/integration-manifest.json
+          if-no-files-found: error
+          retention-days: 3
       - name: Reject tracked-file drift
         run: git diff --exit-code
       - name: Upload integration diagnostics on failure

@@ -156,8 +156,8 @@ class WorkflowTests(unittest.TestCase):
     def test_go_tests_race_and_real_nats_are_required(self):
         self.assertIn("\ngo 1.27.3\n", (ROOT / "pipeline" / "go.mod").read_text())
         self.assertIn("go mod verify", self.runs("go-test"))
-        self.assertIn("go test -count=1 -timeout=20m .", self.runs("go-test"))
-        self.assertIn("go test -race -count=1 -timeout=60m .", self.runs("go-race"))
+        self.assertIn("go test -json -count=1 -timeout=20m .", self.runs("go-test"))
+        self.assertIn("go test -json -race -count=1 -timeout=60m .", self.runs("go-race"))
         self.assertEqual(self.jobs["go-race"]["timeout-minutes"], 80)
         for lane in ("go-test", "go-race"):
             self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", self.runs(lane))
@@ -184,10 +184,32 @@ class WorkflowTests(unittest.TestCase):
             self.assertEqual(step["with"]["cache"], "pip")
             self.assertEqual(step["with"]["cache-dependency-path"], "requirements-ci.txt")
 
+    def test_go_lanes_emit_check_and_upload_skip_manifests(self):
+        for lane in ("go-test", "go-race", "integration"):
+            with self.subTest(lane=lane):
+                steps = self.jobs[lane]["steps"]
+                commands = self.runs(lane)
+                self.assertEqual(next(step for step in steps if "go test -json" in step.get("run", ""))["shell"], "bash")
+                self.assertIn(f'tee "$RUNNER_TEMP/{lane}.jsonl"', commands)
+                checks = [step for step in steps if "scripts/check_go_test_skips.py" in step.get("run", "")]
+                self.assertEqual(len(checks), 1)
+                self.assertEqual(checks[0]["if"], "always()")
+                self.assertIn(f'--input "$RUNNER_TEMP/{lane}.jsonl"', checks[0]["run"])
+                self.assertIn(f'--lane {lane}', checks[0]["run"])
+                self.assertIn(f'--output "$RUNNER_TEMP/{lane}-manifest.json"', checks[0]["run"])
+                uploads = [step for step in steps if step.get("name") == "Upload Go test skip evidence"]
+                self.assertEqual(len(uploads), 1)
+                self.assertEqual(uploads[0]["if"], "always()")
+                self.assertEqual(uploads[0]["with"]["if-no-files-found"], "error")
+                paths = uploads[0]["with"]["path"]
+                self.assertIn(f'${{{{ runner.temp }}}}/{lane}.jsonl', paths)
+                self.assertIn(f'${{{{ runner.temp }}}}/{lane}-manifest.json', paths)
+                self.assertNotIn("out/run", paths)
+
     def test_integration_and_pool_simulation_are_explicit_required_lanes(self):
         integration = self.runs("integration")
         self.assertIn("scripts/demo.sh all", integration)
-        self.assertIn("go test -count=1 -timeout=20m .", integration)
+        self.assertIn("go test -json -count=1 -timeout=20m .", integration)
         self.assertIn("github.com/nats-io/nats-server/v2@v2.12.6", integration)
         simulation = self.runs("booking-simulation")
         self.assertIn("python3 booking/sim/pool_test.py", simulation)
