@@ -147,11 +147,11 @@
     {
       "id": "reviewer-crash-restart-matrix",
       "category": "Reviewer crash/restart and post-dedupe-window replay",
-      "command": "go -C pipeline test -run 'TestReviewer' -count=1 -v",
-      "seeds": ["not applicable"],
-      "status": "not-run",
-      "evidence": "No targeted reviewer crash-after-publish or post-window restart test exists in this change.",
-      "limitations": "Reviewer progress is not made durable by this change; duplicate local decisions/signoffs remain possible after restart."
+      "command": "go -C pipeline test . -run 'TestReviewer' -count=3",
+      "seeds": ["reviewer seed 1", "five crash windows x reuse off/on", "short-write, sync and close ledger faults", "conflicting FHIR sign-off and conflicting ledger"],
+      "status": "pass",
+      "evidence": "Built and tested for the bounded synthetic single-node matrix only: each crash window is compared with an uninterrupted control for one logical sign-off per item, identical worklists, status, exact ledger hash and stored record; conflicts stop without ACK or publish. Passed three times (305.6s), then full package (271.2s) and go vet. See evidence/reviewer-durable-restart-2026-11-10.md.",
+      "limitations": "Exactly-once external effects, physical power loss, cross-host locking and clinician performance remain unproven. The failed 24-hour soak limitation is preserved; no soak, normalization or AMD64 run was made."
     },
     {
       "id": "physical-os-fault-matrix",
@@ -169,7 +169,7 @@
     "MLLP read sizes are bounded, but per-connection deadlines, connection caps and slow-client network tests are not implemented.",
     "Clinical normalization proposal #2 and its revision/HL7 follow-up are covered by focused synthetic fixtures; real Malaffi mappings, report truth, clinician agreement, reader accuracy and clinical effectiveness remain unverified. HL7 identity coverage stops at ToResource before listener publish/ACK; non-report segment-only time reconstruction is unsupported.",
     "Durable FHIR acceptance/replay is tested only on a synthetic single node; OS-process kill, broker-accepted publish with lost acknowledgement, multi-node partitions, and post-dedupe-window time travel remain unresolved.",
-    "Reviewer restart idempotence, reviewer local-ledger I/O checking and reviewer status synchronization remain unresolved.",
+    "Reviewer restart is covered only by a bounded synthetic single-node matrix; exactly-once external effects, physical power loss, cross-host locking and clinician performance remain unproven, and the failed 24-hour soak limitation stands.",
     "writeStatus, materialization and stream-dump I/O errors are not comprehensively propagated; hermetic ledger append tests do not cover those paths.",
     "Malformed PREP/FACTS payloads do not yet have a durable dead-letter contract, and buffered FACTS FSeq provenance can inherit the draining message's sequence.",
     "Fresh setup destructively resets global external NATS streams; active-run namespacing/ownership is not implemented.",

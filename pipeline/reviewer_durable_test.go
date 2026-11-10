@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1102,4 +1103,282 @@ func TestReviewerRestartKeepsSeniorThirdRead(t *testing.T) {
 	if strings.Join(ledgerFields(t, run), "\n") != strings.Join(ledgerFields(t, crun), "\n") {
 		t.Fatal("ledger differs from control")
 	}
+}
+
+// ---------------- Task 4: bounded single-node restart matrix ----------------
+// These are characterization tests of the Task 1-3 implementation (no new production behaviour). They run a real
+// single-node NATS server and a synthetic reviewer; they do not claim power-loss, cross-host or clinical results.
+
+// reviewerSignoffCount counts retained FHIR bodies carrying Nats-Msg-Id "signoff/<itemID>".
+func reviewerSignoffCount(t *testing.T, env *natsEnv, itemID string) int {
+	t.Helper()
+	stream, err := env.js.Stream(env.ctx, "FHIR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := stream.Info(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for seq := info.State.FirstSeq; seq <= info.State.LastSeq && info.State.Msgs > 0; seq++ {
+		msg, err := stream.GetMsg(env.ctx, seq)
+		if err != nil {
+			continue
+		}
+		if msg.Header.Get(jetstream.MsgIDHeader) == "signoff/"+itemID {
+			count++
+		}
+	}
+	return count
+}
+
+func ledgerSHA(t *testing.T, run string) string {
+	t.Helper()
+	sum := sha256.Sum256([]byte(strings.Join(ledgerFields(t, run), "\n")))
+	return fmt.Sprintf("%x", sum)
+}
+
+type matrixEvent struct {
+	oe  OutEnvelope
+	seq uint64
+}
+
+// matrixEvents: a target link question, then a second-identifier and a link question over the same registrations
+// (skipped as twins when the reuse flags are on, reviewed otherwise).
+func matrixEvents() []matrixEvent {
+	target := reviewerEnvelope("rv-target", 1)
+	sid := reviewerEnvelope("rid-twin", 2)
+	sid.Item.Reason, sid.Item.Pair = "second_identifier", [2]string{"reg-b", "reg-a"}
+	twin := reviewerEnvelope("rv-twin", 3)
+	twin.Item.Pair = [2]string{"reg-b", "reg-a"}
+	return []matrixEvent{{target, 1}, {sid, 2}, {twin, 3}}
+}
+
+func TestReviewerCrashMatrixMatchesUninterruptedControl(t *testing.T) {
+	windows := []struct {
+		name, point string
+		lapse       bool
+	}{
+		{"prepared", "prepared", false},
+		{"ledger-appended-unrecorded", "appended-unrecorded", false},
+		{"ledger-written", "ledger_written", false},
+		{"published-unrecorded", "published-unrecorded", false},
+		{"published-unrecorded-after-dedupe-window", "published-unrecorded", true},
+	}
+	for _, reuse := range []bool{false, true} {
+		for _, w := range windows {
+			name := fmt.Sprintf("reuse=%v/%s", reuse, w.name)
+			t.Run(name, func(t *testing.T) {
+				if reuse {
+					withReuse(t)
+				}
+				events := matrixEvents()
+				cenv, crun := startTestNATS(t), t.TempDir()
+				control := newTestReviewerService(t, cenv, crun)
+				if err := control.recover(); err != nil {
+					t.Fatal(err)
+				}
+				for _, ev := range events {
+					if err := control.review(ev.oe, ev.seq); err != nil {
+						t.Fatal(err)
+					}
+				}
+
+				env, run := startTestNATS(t), t.TempDir()
+				first := newTestReviewerService(t, env, run)
+				advanceReviewer(t, first, events[0].oe, events[0].seq, w.point)
+				if w.lapse {
+					stream, err := env.js.Stream(env.ctx, "FHIR")
+					if err != nil {
+						t.Fatal(err)
+					}
+					cfg := stream.CachedInfo().Config
+					cfg.Duplicates = 100 * time.Millisecond
+					if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
+						t.Fatal(err)
+					}
+					time.Sleep(3 * time.Second)
+				}
+				restarted := newTestReviewerService(t, env, run)
+				if err := restarted.recover(); err != nil {
+					t.Fatal(err)
+				}
+				for _, ev := range events { // the whole OUT stream is redelivered after a restart
+					if err := restarted.review(ev.oe, ev.seq); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := restarted.recover(); err != nil { // a second restart changes nothing
+					t.Fatal(err)
+				}
+
+				if got := reviewerSignoffCount(t, env, "rv-target"); got != 1 {
+					t.Fatalf("logical sign-offs=%d", got)
+				}
+				if got, want := fhirMessageCount(t, env), fhirMessageCount(t, cenv); got != want {
+					t.Fatalf("FHIR messages %d, control %d", got, want)
+				}
+				if !reflect.DeepEqual(restarted.wl, control.wl) || !reflect.DeepEqual(restarted.lw, control.lw) {
+					t.Fatal("worklist changed")
+				}
+				if restarted.status() != control.status() {
+					t.Fatalf("status %+v, control %+v", restarted.status(), control.status())
+				}
+				if a, b := ledgerSHA(t, run), ledgerSHA(t, crun); a != b {
+					t.Fatal("exact ledger comparison hash changed")
+				}
+				got, want := storedReviewer(t, restarted, "rv-target"), storedReviewer(t, control, "rv-target")
+				if got.State != "published" || got.BodyHash != want.BodyHash || !sameJSON(got.Signoff, want.Signoff) || len(got.Signoff.Reads) < 2 {
+					t.Fatalf("record %+v, control %+v", got, want)
+				}
+				for _, id := range []string{"rid-twin", "rv-twin"} {
+					if g, w := storedReviewer(t, restarted, id).State, storedReviewer(t, control, id).State; g != w {
+						t.Fatalf("%s state %s, control %s", id, g, w)
+					}
+				}
+				for _, id := range []string{"rid-twin", "rv-twin"} {
+					if g, w := reviewerSignoffCount(t, env, id), reviewerSignoffCount(t, cenv, id); g != w || g > 1 {
+						t.Fatalf("%s sign-offs %d, control %d", id, g, w)
+					}
+				}
+			})
+		}
+	}
+}
+
+// Sync and close failure wrappers over the Task 2 fileLedger fake.
+type syncFailLedger struct{ *fileLedger }
+
+func (f *syncFailLedger) Sync() error { return errors.New("sync boom") }
+
+type closeFailLedger struct{ *fileLedger }
+
+func (f *closeFailLedger) Close() error { f.File.Close(); return errors.New("close boom") }
+
+func TestReviewerRestartMatrixLedgerFaultsThenRecovers(t *testing.T) {
+	faults := map[string]func(*os.File) ledgerFile{
+		"short-write": func(f *os.File) ledgerFile { return &fileLedger{File: f, partial: 10} },
+		"sync":        func(f *os.File) ledgerFile { return &syncFailLedger{&fileLedger{File: f}} },
+		"close":       func(f *os.File) ledgerFile { return &closeFailLedger{&fileLedger{File: f}} },
+	}
+	for name, mk := range faults {
+		t.Run(name, func(t *testing.T) {
+			oe := reviewerEnvelope("rv-fault", 7)
+			cenv, crun := startTestNATS(t), t.TempDir()
+			control := newTestReviewerService(t, cenv, crun)
+			if err := control.review(oe, 7); err != nil {
+				t.Fatal(err)
+			}
+
+			env, run := startTestNATS(t), t.TempDir()
+			first := newTestReviewerService(t, env, run)
+			advanceReviewer(t, first, oe, 7, "prepared")
+			reviewerAppendLine = func(p string, line []byte) error {
+				f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+				if err != nil {
+					return err
+				}
+				return appendToLedgerFile(mk(f), line)
+			}
+			t.Cleanup(func() { reviewerAppendLine = appendLedgerLine })
+			faulty := newTestReviewerService(t, env, run)
+			if err := faulty.recover(); err == nil {
+				t.Fatal("injected ledger fault must fail recovery")
+			}
+			if got := reviewerSignoffCount(t, env, "rv-fault"); got != 0 {
+				t.Fatalf("published despite ledger fault: %d", got)
+			}
+			reviewerAppendLine = appendLedgerLine
+			restarted := newTestReviewerService(t, env, run)
+			if err := restarted.recover(); err != nil {
+				t.Fatal(err)
+			}
+			if got := reviewerSignoffCount(t, env, "rv-fault"); got != 1 {
+				t.Fatalf("logical sign-offs=%d", got)
+			}
+			if !reflect.DeepEqual(restarted.wl, control.wl) || !reflect.DeepEqual(restarted.lw, control.lw) {
+				t.Fatal("worklist changed")
+			}
+			if restarted.status() != control.status() || ledgerSHA(t, run) != ledgerSHA(t, crun) {
+				t.Fatalf("status %+v vs %+v, or ledger hash differs", restarted.status(), control.status())
+			}
+			if n := len(ledgerFields(t, run)); n != 1 {
+				t.Fatalf("ledger lines=%d", n)
+			}
+		})
+	}
+}
+
+// serveOnceAckFloor serves the single OUT message at stream seq 1 and returns the consumer ack floor afterwards.
+func serveOnceAckFloor(t *testing.T, env *natsEnv, s *reviewerService, oe OutEnvelope) uint64 {
+	t.Helper()
+	b, _ := json.Marshal(oe)
+	pubSync(env.js, &nats.Msg{Subject: "out.p0", Data: b, Header: nats.Header{"Nats-Msg-Id": []string{"o1"}}})
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); serveReviewer(ctx, env.js, s) }()
+	time.Sleep(1500 * time.Millisecond)
+	cancel()
+	<-done
+	cons, err := env.js.Consumer(env.ctx, "OUT", "reviewer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := cons.Info(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return info.AckFloor.Stream
+}
+
+func TestReviewerConflictsStopWithoutAckOrPublish(t *testing.T) {
+	t.Run("conflicting-fhir-signoff", func(t *testing.T) {
+		env, run := startTestNATS(t), t.TempDir()
+		oe := reviewerEnvelope("rv-conf", 1)
+		first := newTestReviewerService(t, env, run)
+		advanceReviewer(t, first, oe, 1, "ledger_written")
+		m := nats.NewMsg("fhir.review")
+		m.Data = []byte(`{"resourceType":"Provenance","conflict":true}`)
+		m.Header.Set(jetstream.MsgIDHeader, "signoff/rv-conf")
+		if _, err := env.js.PublishMsg(env.ctx, m); err != nil {
+			t.Fatal(err)
+		}
+		restarted := newTestReviewerService(t, env, run)
+		if err := restarted.recover(); err == nil {
+			t.Fatal("conflicting retained sign-off must fail recovery")
+		}
+		if floor := serveOnceAckFloor(t, env, restarted, oe); floor != 0 {
+			t.Fatalf("acknowledged despite conflict: floor=%d", floor)
+		}
+		if n := reviewerSignoffCount(t, env, "rv-conf"); n != 1 || fhirMessageCount(t, env) != 1 {
+			t.Fatalf("publish after conflict: count=%d msgs=%d", n, fhirMessageCount(t, env))
+		}
+		if r := storedReviewer(t, restarted, "rv-conf"); r.State != "ledger_written" {
+			t.Fatalf("record advanced to %s", r.State)
+		}
+	})
+	t.Run("conflicting-local-ledger", func(t *testing.T) {
+		env, run := startTestNATS(t), t.TempDir()
+		oe := reviewerEnvelope("rv-lconf", 1)
+		first := newTestReviewerService(t, env, run)
+		advanceReviewer(t, first, oe, 1, "prepared")
+		bad := `{"item":"rv-lconf","link":"different"}` + "\n"
+		if err := os.WriteFile(filepath.Join(run, "reviewer_decisions.ndjson"), []byte(bad), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		restarted := newTestReviewerService(t, env, run)
+		if err := restarted.recover(); err == nil {
+			t.Fatal("conflicting ledger must fail recovery")
+		}
+		if floor := serveOnceAckFloor(t, env, restarted, oe); floor != 0 {
+			t.Fatalf("acknowledged despite conflict: floor=%d", floor)
+		}
+		if n := fhirMessageCount(t, env); n != 0 {
+			t.Fatalf("published despite ledger conflict: %d", n)
+		}
+		if b, _ := os.ReadFile(filepath.Join(run, "reviewer_decisions.ndjson")); string(b) != bad {
+			t.Fatalf("conflicting ledger was modified: %q", b)
+		}
+	})
 }
