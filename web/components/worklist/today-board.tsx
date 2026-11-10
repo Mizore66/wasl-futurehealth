@@ -13,8 +13,9 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, STANDARD_DAYS } from "./days";
+import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
-import { HANDOFF_OWNER } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus } from "./model";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
 import { recordAction } from "@/app/app/today/actions";
@@ -24,10 +25,14 @@ import type { CaseAction } from "@/lib/api/schema";
  * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
  * (POST /api/cases/{id}/actions) and shown only after a 201. The ledger is append-only, so there is no Undo.
  * Fixtures mode: the same buttons keep session state in the browser, with Undo.
+ *
+ * Live API, after a reload: the board position comes from the persisted overlay in the case list (model.ts workItem),
+ * and the open patient's trail from that ONE case's detail overlay (GET /app/today/ledger), never from session state.
+ * If ledger replay stopped part-way, the trail shows only the valid prefix under a warning and writes are disabled.
  */
 
 /** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
-type Contact = { what: string; when: string; who: string };
+type Contact = TrailEntry;
 type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
@@ -62,6 +67,7 @@ const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
   404: "the API does not know this case",
   409: "someone changed this case first; reload to see it",
+  500: "the case ledger failed validation, so the API refuses new actions",
   503: "no live API",
 };
 
@@ -69,6 +75,8 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
+  /** Live API: the open patient's persisted trail and ledger status, fetched once per case when it is opened. */
+  const [persisted, setPersisted] = useState<Record<string, PersistedLedger | "error">>({});
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -106,6 +114,25 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   /* The open patient is always one of the visible results, so Call, Snooze and Hand-off never act on someone filtered or moved out. */
   const p = list.find((x) => x.id === s.sel) ?? list[0];
   const fresh = { calling: null, stage: null, last: null };
+
+  /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
+  const selId = live ? p?.id : undefined;
+  const known = !!selId && persisted[selId] !== undefined;
+  useEffect(() => {
+    if (!selId || known) return;
+    const ac = new AbortController();
+    fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<PersistedLedger>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((ledger) => setPersisted((prev) => ({ ...prev, [selId]: ledger })))
+      .catch(() => {
+        if (!ac.signal.aborted) setPersisted((prev) => ({ ...prev, [selId]: "error" }));
+      });
+    return () => ac.abort();
+  }, [selId, known]);
+  const ledger = selId ? persisted[selId] : undefined;
+  const ledgerRead = ledger && ledger !== "error" ? ledger : null;
+  /* The list says so for every case when replay failed; the detail says why. Either way the API refuses writes. */
+  const ledgerInvalid = live && !!p && (p.ledgerStatus === "invalid" || ledgerRead?.status === "invalid");
 
   const top = toCall[0];
   const finding = !top
@@ -147,11 +174,12 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     setRefusal(null);
     if (!live) return apply(row, { what, when: `This session · ${clock()}`, who: SESSION_WHO }, patch, head, move, stage);
     if (busy) return;
+    if (ledgerInvalid) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[500]}` });
     if (!row.head) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[409]}` });
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor }, { ...patch, head: res.head }, head, move, stage);
+        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -211,7 +239,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: `No answer ×${na} · retry tomorrow`, snoozed: true }, "Logged: No answer", toEnd, {
+            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true }, "Logged: No answer", toEnd, {
               action: "contact_outcome",
               outcome: "no_answer",
               channel: "phone",
@@ -229,7 +257,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Appointment agreed",
-              { view: "waiting", status: "Booking needed · date to confirm", snoozed: false },
+              { view: "waiting", status: BOOKING_NEEDED, snoozed: false },
               "Logged: Appointment agreed",
               `${first} moved to Waiting`,
               { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
@@ -248,7 +276,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
             log(
               p,
               "Declined the procedure",
-              { view: "waiting", status: "Declined · GP to sign", snoozed: false },
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false },
               "Logged: Declined",
               `${first} moved to Waiting for the GP`,
               { action: "contact_outcome", outcome: "declined", channel: "phone" },
@@ -268,16 +296,21 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
   const nextUp = p ? list.find((x) => x.id !== p.id) : undefined;
   const callingNow = !!p && s.calling === p.id;
 
+  /* Persisted ledger records first (live), then this session's; a record saved here and already read back shows once. */
+  const kept = ledgerRead?.entries ?? [];
+  const keptHashes = new Set(kept.map((e) => e.hash).filter(Boolean));
+  const entries: Contact[] = p ? [...kept, ...p.log.filter((e) => !e.hash || !keptHashes.has(e.hash))] : [];
+  const nothingYet = !live
+    ? "No contact logged this session"
+    : ledger === undefined
+      ? "Reading the case ledger…"
+      : ledger === "error"
+        ? "Could not read the case ledger"
+        : "No contact on the case ledger yet";
   const trail: ChainNode[] = p
     ? [
-        ...p.log.slice(-3).map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: c.who, what: c.what, when: c.when })),
-        {
-          id: "next",
-          kind: "current",
-          who: "Next",
-          what: p.next,
-          when: p.log.length ? "Now" : p.ledgerActions ? `${p.ledgerActions} earlier action${p.ledgerActions === 1 ? "" : "s"} on the case ledger` : "No contact logged this session",
-        },
+        ...entries.map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: c.who, what: c.what, when: c.when })),
+        { id: "next", kind: "current", who: "Next", what: p.next, when: entries.length ? "Now" : nothingYet },
       ]
     : [];
 
@@ -446,7 +479,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 variant="quiet"
                 size="touch"
                 className="max-sm:flex-1"
-                disabled={busy}
+                disabled={busy || ledgerInvalid}
                 onClick={() =>
                   log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
                     action: "snooze",
@@ -462,7 +495,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   variant="quiet"
                   size="touch"
                   className="max-sm:flex-1"
-                  disabled={busy}
+                  disabled={busy || ledgerInvalid}
                   onClick={() =>
                     log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
                       action: "assign_owner",
@@ -477,7 +510,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   variant="quiet"
                   size="touch"
                   className="max-sm:flex-1"
-                  disabled={busy}
+                  disabled={busy || ledgerInvalid}
                   onClick={() =>
                     log(
                       p,
@@ -493,6 +526,18 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 </Button>
               )}
             </div>
+
+            {ledgerInvalid && (
+              <div role="alert" data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
+                <p className="m-0 font-medium text-warning">Case ledger incomplete: this patient&rsquo;s state here is not authoritative</p>
+                <p className="m-0 mt-1">
+                  The API stopped replaying the shared ledger at an invalid entry. Only the actions before it are shown
+                  {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
+                  operator repairs the ledger.
+                </p>
+                {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
+              </div>
+            )}
 
             {refusal?.id === p.id && (
               <p role="alert" className="m-0 mt-4 text-warning" data-testid="action-refused">
@@ -553,7 +598,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   {chips.map(([label, pick]) => (
                     <button
                       key={label}
-                      disabled={busy}
+                      disabled={busy || ledgerInvalid}
                       onClick={pick}
                       className={cn("h-11 cursor-pointer rounded-chip border bg-surface px-4 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
                     >

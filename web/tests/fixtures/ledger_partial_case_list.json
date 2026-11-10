@@ -1,0 +1,48 @@
+{
+  "cases": [
+    {
+      "api_overlay": {
+        "actions": 4,
+        "head": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+        "last_action_at": "2026-11-10T22:50:47.613354788Z",
+        "last_contact": {
+          "at": "2026-11-10T22:50:47.613354788Z",
+          "channel": "phone",
+          "event": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+          "outcome": "declined"
+        },
+        "ledger_status": "invalid",
+        "no_answer_streak": 0,
+        "owner": ""
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "deadline_day": 0,
+      "decisions": 1,
+      "dropoff": "not_booked",
+      "fixture": "",
+      "id": "exp-prov/ServiceRequest/EXP-sr-1",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "crc",
+      "provider": "exp-prov",
+      "referral_day": 3,
+      "review": "none",
+      "state": "open"
+    }
+  ],
+  "limit": 5,
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:50:47Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "offset": 0,
+  "total": 1
+}

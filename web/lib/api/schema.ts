@@ -220,14 +220,42 @@ export const IfhasFinding = z.looseObject({
   next_step: z.string().optional(),
 });
 
-/** Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. */
+/** One persisted contact outcome in the overlay. The list summary's `last_contact` carries no actor or note. */
+export const OverlayContact = z.looseObject({
+  at: z.string(),
+  event: z.string().default(""),
+  outcome: z.string(),
+  channel: z.string().default(""),
+  actor: z.string().optional(),
+  note: z.string().optional(),
+});
+export const OverlayNote = z.looseObject({ at: z.string(), event: z.string().default(""), actor: z.string().default(""), text: z.string() });
+
+/**
+ * Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. The list carries
+ * the summary form; case detail adds `contact_outcomes`, `notes` and `canonical_owner`. `ledger_status: invalid` means
+ * replay stopped at an invalid ledger line, so the overlay holds only the events before it and is not authoritative.
+ */
 export const ApiOverlay = z.looseObject({
   head: z.string(),
   actions: z.number().default(0),
   owner: z.string().default(""),
   last_action_at: z.string().default(""),
   ledger_status: z.enum(["ok", "invalid"]).default("ok"),
-  snooze: z.looseObject({ until: z.string(), reason: z.string().optional() }).optional(),
+  snooze: z.looseObject({ until: z.string(), reason: z.string().optional(), at: z.string().optional(), actor: z.string().optional() }).optional(),
+  last_contact: OverlayContact.optional(),
+  no_answer_streak: z.number().default(0),
+  contact_outcomes: z.array(OverlayContact).optional(),
+  notes: z.array(OverlayNote).optional(),
+  canonical_owner: z.string().optional(),
+});
+
+/** Case detail `review_ledger`: whether the shared ledger replayed completely. */
+export const ReviewLedger = z.looseObject({
+  status: z.enum(["ok", "invalid"]),
+  detail: z.string().optional(),
+  events_applied: z.number().optional(),
+  note: z.string().optional(),
 });
 
 export const CaseSummary = z.looseObject({
@@ -537,6 +565,9 @@ export const CaseDetail = withMeta({
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
   api_reviews: z.array(LedgerEvent),
+  /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
+  api_overlay: ApiOverlay.optional(),
+  review_ledger: ReviewLedger.optional(),
   current: CurrentDecision,
   booking: Booking,
 });
