@@ -850,3 +850,256 @@ func TestReviewerServeAcksOnlyAfterDurableState(t *testing.T) {
 		t.Fatalf("ack floor=%d, want 2", info.AckFloor.Stream)
 	}
 }
+
+// ---------------- Task 3 fix round 1 ----------------
+
+func TestReviewerRetriesInProcessAfterPublishFailure(t *testing.T) {
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	fails := 1
+	s.publish = func(js jetstream.JetStream, rec reviewerRecord) (uint64, error) {
+		if fails > 0 {
+			fails--
+			return 0, errors.New("injected publish failure")
+		}
+		return publishReviewerSignoff(js, rec)
+	}
+	oe := reviewerEnvelope("rv-pubfail", 7)
+	if err := s.review(oe, 7); err == nil {
+		t.Fatal("publish failure must surface")
+	}
+	if r := storedReviewer(t, s, "rv-pubfail"); r.State != "ledger_written" {
+		t.Fatalf("state %s, want ledger_written", r.State)
+	}
+	if err := s.review(oe, 7); err != nil { // redelivery, same process
+		t.Fatal(err)
+	}
+	if r := storedReviewer(t, s, "rv-pubfail"); r.State != "published" || r.FHIRSeq == 0 {
+		t.Fatalf("record %+v", r)
+	}
+	if got := fhirMessageCount(t, env); got != 1 {
+		t.Fatalf("sign-offs=%d", got)
+	}
+	if n := len(ledgerFields(t, s.runDir)); n != 1 {
+		t.Fatalf("ledger lines=%d", n)
+	}
+	if st := s.status(); st.Answered != 1 || st.LastOut != 7 {
+		t.Fatalf("status %+v", st)
+	}
+}
+
+func TestReviewerRetriesInProcessAfterPublishedPutFailure(t *testing.T) {
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	fail := true
+	s.store.afterPut = func(next reviewerRecord, expected string) error { // write lands, caller sees a timeout
+		if fail && next.State == "published" {
+			fail = false
+			return errors.New("injected ambiguous timeout")
+		}
+		return nil
+	}
+	oe := reviewerEnvelope("rv-pubput", 8)
+	if err := s.review(oe, 8); err == nil {
+		t.Fatal("ambiguous put must surface")
+	}
+	if err := s.review(oe, 8); err != nil {
+		t.Fatal(err)
+	}
+	if got := fhirMessageCount(t, env); got != 1 {
+		t.Fatalf("sign-offs=%d", got)
+	}
+	if st := s.status(); st.Answered != 1 {
+		t.Fatalf("status %+v", st)
+	}
+}
+
+func TestReviewerAmbiguousCreateRetryAdoptsStoredRecord(t *testing.T) {
+	withReuse(t)
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.review(reviewerEnvelope("rv-1", 1), 1); err != nil {
+		t.Fatal(err)
+	}
+	failState := reviewerSkipped
+	fail := true
+	s.store.afterPut = func(next reviewerRecord, expected string) error {
+		if fail && expected == "" && next.State == failState {
+			fail = false
+			return errors.New("injected ambiguous create timeout")
+		}
+		return nil
+	}
+	twin := reviewerEnvelope("rv-2", 2)
+	if err := s.review(twin, 2); err == nil {
+		t.Fatal("ambiguous skip create must surface")
+	}
+	if err := s.review(twin, 2); err != nil {
+		t.Fatalf("redelivery of landed skip: %v", err)
+	}
+	if st := s.status(); st.DedupedLink != 1 || st.Answered != 1 || st.LastOut != 2 {
+		t.Fatalf("status %+v", st)
+	}
+
+	failState, fail = "prepared", true
+	oe := reviewerEnvelope("rv-3", 3)
+	oe.Item.Pair = [2]string{"reg-x", "reg-y"} // a different pair, so it is not a twin
+	if err := s.review(oe, 3); err == nil {
+		t.Fatal("ambiguous prepared create must surface")
+	}
+	before := storedReviewer(t, s, "rv-3")
+	if err := s.review(oe, 3); err != nil {
+		t.Fatalf("redelivery of landed prepared record: %v", err)
+	}
+	after := storedReviewer(t, s, "rv-3")
+	if after.State != "published" || after.BodyHash != before.BodyHash || after.PubTS != before.PubTS {
+		t.Fatalf("adopted record changed: %+v vs %+v", after, before)
+	}
+	if got := fhirMessageCount(t, env); got != 2 {
+		t.Fatalf("sign-offs=%d, want 2", got)
+	}
+	if n := len(ledgerFields(t, s.runDir)); n != 2 {
+		t.Fatalf("ledger lines=%d, want 2", n)
+	}
+	// a conflicting stored record for the same id still fails closed
+	bad := reviewerEnvelope("rv-3", 3)
+	bad.Item.Head = "other-head"
+	if err := s.review(bad, 3); err != nil { // already seen: no-op, never overwrites
+		t.Fatal(err)
+	}
+}
+
+func holdEnvelope(id string) OutEnvelope {
+	item := &ReviewItem{ItemID: id, LoopID: "L-hold", Kinds: []string{"evidence"}, ReportID: "rep-1", Verdict: "disagree", Head: "h-" + id}
+	return OutEnvelope{Kind: "review", Item: item}
+}
+
+func newHoldService(t *testing.T, env *natsEnv, run string) *reviewerService {
+	t.Helper()
+	cfg := DefaultReviewer
+	cfg.Err = 0
+	s, err := newReviewerService(env.js, run, cfg, Truth{Reports: map[string]string{"rep-1": "adequate"}}, 1, 0, "L-hold")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+func TestReviewerHoldSurvivesFailedPutAndRestart(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	if err := os.WriteFile(filepath.Join(run, "HUMAN_DECISION.json"), []byte(`{"Evidence":"adequate","Reviewer":"dr-presenter"}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	holdFile := filepath.Join(run, "HOLD_ITEM.json")
+	s := newHoldService(t, env, run)
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	fail := true
+	s.store.beforePut = func(next reviewerRecord, expected string) error {
+		if fail {
+			fail = false
+			return errors.New("injected store failure")
+		}
+		return nil
+	}
+	if err := s.review(holdEnvelope("h-1"), 1); err == nil {
+		t.Fatal("store failure must surface")
+	}
+	if _, err := os.Stat(holdFile); err != nil {
+		t.Fatal("hold file not written")
+	}
+	os.Remove(holdFile)
+	if err := s.review(holdEnvelope("h-1"), 1); err != nil { // failed put must not consume the hold
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(holdFile); err != nil {
+		t.Fatal("hold skipped after a failed put")
+	}
+	r := storedReviewer(t, s, "h-1")
+	if len(r.Signoff.Reads) != 1 || r.Signoff.Reads[0] != "presenter" || r.Signoff.Reviewer != "dr-presenter" {
+		t.Fatalf("signoff %+v", r.Signoff)
+	}
+	os.Remove(holdFile)
+	if err := s.review(holdEnvelope("h-2"), 2); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(holdFile); err == nil {
+		t.Fatal("hold fired twice in one process")
+	}
+	// restart: the hold is derived from the recovered presenter sign-off, so a later item is not held again
+	restarted := newHoldService(t, env, run)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if err := restarted.review(holdEnvelope("h-3"), 3); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(holdFile); err == nil {
+		t.Fatal("hold fired again after restart")
+	}
+	if got := storedReviewer(t, restarted, "h-3").Signoff.Reads; len(got) == 1 && got[0] == "presenter" {
+		t.Fatalf("h-3 reads %v", got)
+	}
+}
+
+func TestReviewerRestartKeepsSeniorThirdRead(t *testing.T) {
+	cfg := DefaultReviewer
+	cfg.Err, cfg.Double = 0.5, "merge"
+	// Link draws are keyed to the registration pair, so vary the pair to find one whose reads disagree.
+	tr := Truth{PKQid: map[string]string{}, Reports: map[string]string{}}
+	var pair [2]string
+	for i := 0; i < 500; i++ {
+		x, y := fmt.Sprintf("reg-a%d", i), fmt.Sprintf("reg-b%d", i)
+		tr.PKQid[x], tr.PKQid[y] = "p", "p"
+		if so := cfg.Review(linkItem("probe", x, y), &tr); len(so.Reads) == 3 {
+			pair = [2]string{x, y}
+			break
+		}
+	}
+	if pair[0] == "" {
+		t.Fatal("no senior-third-read pair found")
+	}
+	id := "rv-senior"
+	mk := func(env *natsEnv, run string) *reviewerService {
+		s, err := newReviewerService(env.js, run, cfg, tr, 1, 0, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return s
+	}
+	oe := reviewerEnvelope(id, 4)
+	oe.Item.Pair = pair
+	env, run := startTestNATS(t), t.TempDir()
+	first := mk(env, run)
+	advanceReviewer(t, first, oe, 4, "prepared")
+	restarted := mk(env, run)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	cenv, crun := startTestNATS(t), t.TempDir()
+	control := mk(cenv, crun)
+	if err := control.review(oe, 4); err != nil {
+		t.Fatal(err)
+	}
+	got, want := storedReviewer(t, restarted, id), storedReviewer(t, control, id)
+	if len(got.Signoff.Reads) != 3 || got.Signoff.Reads[2] != "r3" {
+		t.Fatalf("reads %v", got.Signoff.Reads)
+	}
+	if !sameJSON(got.Signoff, want.Signoff) || got.BodyHash != want.BodyHash {
+		t.Fatalf("recovered %+v differs from control %+v", got.Signoff, want.Signoff)
+	}
+	if strings.Join(ledgerFields(t, run), "\n") != strings.Join(ledgerFields(t, crun), "\n") {
+		t.Fatal("ledger differs from control")
+	}
+}
