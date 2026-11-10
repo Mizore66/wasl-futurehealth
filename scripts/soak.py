@@ -1152,6 +1152,34 @@ def fetch_raw(url, timeout):
         return response.read()
 
 
+def frozen_source_dir(root):
+    source = root / "source"
+    for path in (source, source / "scripts"):
+        if path.is_symlink():
+            raise ResumeError("frozen source component must not be a symlink: " + str(path))
+    return source
+
+
+def freeze_source(repo, destination):
+    """Copy the buildable source once; later smoke and Compose commands must not follow checkout edits."""
+    listed = subprocess.run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"],
+                            cwd=repo, stdout=subprocess.PIPE, check=True).stdout
+    for raw_name in listed.split(b"\0"):
+        if not raw_name:
+            continue
+        name = Path(os.fsdecode(raw_name))
+        if name.is_absolute() or ".." in name.parts:
+            raise RuntimeError("refusing unsafe source path: " + str(name))
+        source = repo / name
+        if source.is_symlink():
+            raise RuntimeError("refusing source symlink: " + str(name))
+        if not source.exists():
+            continue  # A tracked deletion is part of a dirty working-tree smoke.
+        target = destination / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target, follow_symlinks=False)
+
+
 def create_run(config, output_root, engine, repo):
     validate_config(config)
     repo = Path(repo).resolve()
@@ -1169,6 +1197,7 @@ def create_run(config, output_root, engine, repo):
     root = Path(output_root).resolve() / run_id
     root.mkdir(parents=True, exist_ok=False)
     (root / "logs").mkdir()
+    freeze_source(repo, root / "source")
     env_file = root / ".env"
     port = free_loopback_port()
     image_suffix = run_id.lower().replace("z-", "z")
@@ -1180,7 +1209,7 @@ def create_run(config, output_root, engine, repo):
         handle.write(env_text)
         handle.flush()
         os.fsync(handle.fileno())
-    compose = Compose(engine, repo, project, env_file)
+    compose = Compose(engine, root / "source", project, env_file)
     existing = compose.run([engine, "ps", "-aq", "--filter",
                             "label=com.docker.compose.project=" + project], timeout=20).stdout.strip()
     if existing:
@@ -1202,7 +1231,7 @@ def create_run(config, output_root, engine, repo):
         "source": {"git_sha": head, "dirty_at_smoke_creation": bool(status)},
         "config": copy.deepcopy(config), "config_sha256": hashlib.sha256(
             json.dumps(config, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
-        "source_hashes": {name: file_sha256(repo / name) for name in
+        "source_hashes": {name: file_sha256(root / "source" / name) for name in
                           ("docker-compose.yml", "Dockerfile", "deploy/nats/nats.conf", "deploy/nats/entrypoint.sh")},
         "host": {"platform": sys.platform, "cpu_count": os.cpu_count(), "memory_bytes": total_memory,
                  "disk_free_bytes": shutil.disk_usage(root).free},
@@ -1221,7 +1250,9 @@ class SoakRunner:
         with (self.root / "manifest.json").open(encoding="utf-8") as handle:
             self.manifest = json.load(handle)
         self.config = self.manifest["config"]
-        self.repo = Path(__file__).resolve().parent.parent
+        self.repo = frozen_source_dir(self.root)
+        if not self.repo.is_dir():
+            raise ResumeError("run has no frozen source snapshot; refusing to use the live checkout")
         self.compose = Compose(self.manifest["engine"], self.repo, self.manifest["project"], self.root / ".env")
         self.journal = EventJournal(self.root / "events.jsonl")
         self.writer = SampleWriter(self.root)
@@ -1717,6 +1748,13 @@ def main(argv=None):
         return 0
     if args.command == "run" and args.resume:
         root = Path(args.resume).resolve()
+        frozen_controller = frozen_source_dir(root) / "scripts/soak.py"
+        if frozen_controller.is_symlink():
+            raise ResumeError("frozen controller must not be a symlink")
+        if Path(__file__).resolve() != frozen_controller.resolve():
+            if not frozen_controller.is_file():
+                raise ResumeError("run has no frozen controller; refusing to resume from the live checkout")
+            os.execv(sys.executable, [sys.executable, str(frozen_controller), *sys.argv[1:]])
     else:
         config_path = repo / (args.config if args.command == "run" else "scripts/soak.24h.json")
         with config_path.open(encoding="utf-8") as handle:
