@@ -7,7 +7,7 @@ import { wrapExpert } from "@/components/site/styles";
 import { TauPicker } from "@/components/site/tau-picker";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { getDashboard } from "@/lib/api/source";
-import { result, results } from "@/lib/results";
+import { result } from "@/lib/results";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "For experts" };
@@ -316,8 +316,7 @@ export default async function Page() {
               <strong className="font-semibold text-(--ink)">Simulated</strong>: a modelled mechanism on assumed inputs.{" "}
               <strong className="font-semibold text-(--ink)">Projected</strong>: modelled from published effect sizes.{" "}
               <strong className="font-semibold text-(--ink)">Designed</strong>: specified, not built. Figures come from the frozen evaluation
-              at commit {results.frozen_revision.slice(0, 7)} (5 seeds, held-out noise)
-              unless named otherwise.
+              of {frozenOn()} (5 seeds, held-out noise) unless named otherwise.
             </p>
           </div>
           <figure
@@ -482,7 +481,7 @@ export default async function Page() {
               <h3 className={cn(h3x, "mt-10")}>Changes made after a failure, disclosed</h3>
               <ul className="m-0 mt-3 grid gap-2.5 pl-5 text-[16px] leading-normal">
                 <li>τ 0.98 → 0.99, after one wrong-patient closure at the name-only cap.</li>
-                <li>The day-15 prep decision no longer skips pending histology, after 4 false closures in the first run at b53ce89.</li>
+                <li>The day-15 prep decision no longer skips pending histology, after 4 false closures in the first run of the frozen evaluation.</li>
                 <li>Short surnames corroborate a link only when the first name agrees, after 1 wrong-patient message in a run.</li>
                 <li>
                   Reports that never grade prep now wait for the unit’s grade. This lowers recall; held-out CRC recall is now {fixed("v2.crc_recall", 3)}.
@@ -508,7 +507,7 @@ export default async function Page() {
               { t: "Provider systems", d: "PHC, endoscopy, pathology. Emirates ID optional.", hl: false },
               { t: "Malaffi", d: "HL7 v2.5.1 over MLLP. Tested against a mock feed.", hl: true },
               { t: "Ingest", d: "NATS JetStream, exactly-once decisions.", hl: false },
-              { t: "Link, read, gate", d: "2.3 MB encoder in-process, two readers, v7strict.", hl: false },
+              { t: "Link, read, gate", d: "2.3 MB encoder in-process, two readers, safety gate.", hl: false },
               { t: "Ledger and worklist", d: "Hash-chained, role-gated sign-off.", hl: false },
             ].map((s, i, all) => (
               <li key={s.t} className={cn("relative rounded px-5 py-5", s.hl ? "bg-(--mint)" : "bg-(--sand)")}>
@@ -647,7 +646,6 @@ MSA|AA|SKM-dr-237|`}
               A free three-month shadow pilot: one primary care clinic, one endoscopy unit, a clinician confirming every closure, and your
               coordinator’s list as the reference.
             </p>
-            <p className="m-0 mt-8 text-[20px] font-semibold leading-normal">To request one, write to [team email].</p>
           </div>
           <div>
             <h3 className={h3x}>What the pilot needs from you</h3>
@@ -670,7 +668,7 @@ MSA|AA|SKM-dr-237|`}
         </div>
         <p className={cn("m-0 max-w-[62em] text-[14px] leading-[1.6] md:justify-self-end", muted)}>
           Synthetic cohort. All patients, names, messages and cases shown are synthetic; no outcomes on real patients are claimed. Frozen
-          evaluation: code {results.frozen_revision.slice(0, 7)}, policy v7strict, seeds 11, 23, 37, 41 and 59, held-out noise model v2, frozen {frozenOn()}. The 31-day KPI,
+          evaluation of {frozenOn()}: seeds 11, 23, 37, 41 and 59, held-out noise model v2. The 31-day KPI,
           drop-off counts and pilot streak come from single integrated runs; the gate sweep, reader corpora and Learn-then-Test certificate
           are reported in the project’s results files.
         </p>
