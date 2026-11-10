@@ -328,7 +328,8 @@ func (s *reviewerStore) load() ([]reviewerRecord, reviewerStatus, error) {
 var reviewerAppendLine = appendLedgerLine
 
 // findReviewerSignoff scans the retained FHIR sign-offs for Nats-Msg-Id "signoff/<itemID>" (JetStream dedupe may
-// have expired, so the stream itself is the truth). Same id with a different SHA-256 is a conflict. Never publishes.
+// have expired, so the stream itself is the truth). Identical retained copies reconcile to the first sequence;
+// same id with a different SHA-256 is a conflict. Never publishes.
 func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint64, bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -369,10 +370,9 @@ func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint6
 			if hex.EncodeToString(sum[:]) != bodyHash {
 				return 0, false, fmt.Errorf("reviewer signoff %q: retained FHIR message seq %d conflicts with record body hash", itemID, md.Sequence.Stream)
 			}
-			if found {
-				return 0, false, fmt.Errorf("reviewer signoff %q: duplicate retained messages at %d and %d", itemID, foundSeq, md.Sequence.Stream)
+			if !found {
+				found, foundSeq = true, md.Sequence.Stream
 			}
-			found, foundSeq = true, md.Sequence.Stream
 		}
 		gotAny, lastPending = true, md.NumPending
 		if md.NumPending == 0 {
