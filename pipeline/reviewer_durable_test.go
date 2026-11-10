@@ -1438,22 +1438,38 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 		t.Fatal(err)
 	}
 	info, err := stream.Info(env.ctx)
-	if err != nil || info.Config.Duplicates != 100*time.Millisecond {
-		t.Fatalf("dedupe config = %v, want 100ms (err %v)", info.Config.Duplicates, err)
+	if err != nil {
+		t.Fatal(err)
 	}
-	statusBefore, wlBefore, lwBefore := s.status(), fmt.Sprint(s.wl), fmt.Sprint(s.lw)
+	if info.Config.Duplicates != 100*time.Millisecond {
+		t.Fatalf("dedupe config = %v, want 100ms", info.Config.Duplicates)
+	}
+	if info.State.Msgs != 1 || reviewerSignoffCount(t, env, "rv-raw") != 1 {
+		t.Fatalf("precondition: stream has %d messages, want exactly one sign-off", info.State.Msgs)
+	}
+	before := newTestReviewerService(t, env, s.runDir)
+	if err := before.recover(); err != nil {
+		t.Fatal(err)
+	}
+	statusBefore, wlBefore, lwBefore := before.status(), fmt.Sprint(before.wl), fmt.Sprint(before.lw)
 	ledgerBefore, err := os.ReadFile(filepath.Join(s.runDir, "reviewer_decisions.ndjson"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	ledgerHashBefore := sha256.Sum256(ledgerBefore)
 	rec := storedReviewer(t, s, "rv-raw")
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(30 * time.Second)
+	lastDuplicate := false
 	for attempt := 1; ; attempt++ {
-		sequence, err := publishReviewerSignoff(env.js, rec)
+		msg := nats.NewMsg("fhir.review")
+		msg.Data = signoffResource(rec.Signoff)
+		msg.Header.Set(jetstream.MsgIDHeader, "signoff/"+rec.ItemID)
+		ack, err := env.js.PublishMsg(env.ctx, msg)
 		if err != nil {
 			t.Fatal(err)
 		}
+		sequence := ack.Sequence
+		lastDuplicate = ack.Duplicate
 		if sequence > info.State.LastSeq {
 			if got := reviewerSignoffCount(t, env, "rv-raw"); got != 2 {
 				t.Fatalf("accepted raw republish left %d copies, want exactly 2", got)
@@ -1464,11 +1480,15 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 			t.Fatalf("republish sequence=%d, prior=%d; expected duplicate suppression or one new message", sequence, info.State.LastSeq)
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("dedupe window did not expire after %d attempts: still one retained copy", attempt)
+			t.Fatalf("dedupe window did not expire after %d attempts: still one retained copy (PubAck.Duplicate=%v, server=%s)", attempt, lastDuplicate, env.nc.ConnectedServerVersion())
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	if after := s.status(); !reflect.DeepEqual(after, statusBefore) || fmt.Sprint(s.wl) != wlBefore || fmt.Sprint(s.lw) != lwBefore {
+	restarted := newTestReviewerService(t, env, s.runDir)
+	if err := restarted.recover(); err != nil {
+		t.Fatalf("recovery rejected identical retained sign-offs: %v", err)
+	}
+	if after := restarted.status(); !reflect.DeepEqual(after, statusBefore) || fmt.Sprint(restarted.wl) != wlBefore || fmt.Sprint(restarted.lw) != lwBefore {
 		t.Fatalf("raw republish changed recovered state: before=%+v/%v after=%+v/%v", statusBefore, wlBefore, after, s.wl)
 	}
 	ledgerAfter, err := os.ReadFile(filepath.Join(s.runDir, "reviewer_decisions.ndjson"))
