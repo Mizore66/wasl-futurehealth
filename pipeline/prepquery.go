@@ -17,14 +17,14 @@ package main
 //     evidence that clinicians err.
 
 var (
-	PrepQuery         = true // detect ungraded prep and run the query/escalation flow (flag -prepquery)
-	PrepP1            = 0.55 // P(unit answers within 5 working days)
-	PrepP2            = 0.20 // P(unit answers only after the coordinator escalation, before day 15)
-	PrepUsable        = 0.50 // P(an answer is a usable grade rather than "cannot determine")
-	PrepEscalateDays  = 7.0  // 5 working days, in calendar days
-	PrepDecideDays    = 15.0 // calendar days from the query to the clinician decision
-	ErrUngraded       = 0.25 // per-read error of the day-15 clinician decision (assumption)
-	PrepDay15Purpose  = "prep_ungraded_day15"
+	PrepQuery        = true // detect ungraded prep and run the query/escalation flow (flag -prepquery)
+	PrepP1           = 0.55 // P(unit answers within 5 working days)
+	PrepP2           = 0.20 // P(unit answers only after the coordinator escalation, before day 15)
+	PrepUsable       = 0.50 // P(an answer is a usable grade rather than "cannot determine")
+	PrepEscalateDays = 7.0  // 5 working days, in calendar days
+	PrepDecideDays   = 15.0 // calendar days from the query to the clinician decision
+	ErrUngraded      = 0.25 // per-read error of the day-15 clinician decision (assumption)
+	PrepDay15Purpose = "prep_ungraded_day15"
 )
 
 // prepThread is the simulated unit-lead thread for one ungraded-prep report. It uses its own hashed stream (u01), so the
@@ -71,9 +71,9 @@ func minf(a, b float64) float64 {
 
 // prepState: what the closure engine knows at `now` about the query thread for one report.
 type prepState struct {
-	queryDay float64 // -1 = no query seen
+	queryDay  float64 // -1 = no query seen
 	escalated bool
-	grade    string // adequate | inadequate | cannot_determine | ""
+	grade     string // adequate | inadequate | cannot_determine | ""
 }
 
 func prepStates(comms []CommFact, now float64) map[string]*prepState {
@@ -82,10 +82,11 @@ func prepStates(comms []CommFact, now float64) map[string]*prepState {
 		if cm.Report == "" || cm.Day > now+1e-9 {
 			continue
 		}
-		st := m[cm.Report]
+		key := reportVersionKey(cm.Report, cm.ReportVersion)
+		st := m[key]
 		if st == nil {
 			st = &prepState{queryDay: -1}
-			m[cm.Report] = st
+			m[key] = st
 		}
 		switch cm.Category {
 		case "prep-query":

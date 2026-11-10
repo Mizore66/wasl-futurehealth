@@ -309,7 +309,7 @@ func TestShadowHardConflictPairsAreNeverEligible(t *testing.T) {
 	withDemoGuard(t, true)
 	L := NewLinkerCoreANN(constGBM(), 1)
 	mk := func(seq uint64, id, pk, dob, sex string) *Prep {
-		return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: id, Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: pk, Name: "Lamia Eddinari", Dob: dob, Sex: sex, Day: 1}}
+		return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: id, Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: pk, Name: "Lamia Eddinari", Dob: dob, Sex: sex, Day: 1}}
 	}
 	L.Apply(mk(1, "S1", "ahs-mushrif|C1", "1999-07-19", "F"))
 	L.Apply(mk(2, "S2", "skmc-endo|C2", "1980-02-03", "F"))
@@ -731,7 +731,7 @@ func TestShadowEngineRefusesHardConflictLinkQuestion(t *testing.T) {
 	inv := &fakeInv{}
 	sh, _ := newShadow(t, o, nil, inv)
 	mk := func(seq uint64, id, prov, pk, dob, sex string) *Prep {
-		return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", PatientKey: pk, Name: "Lamia Eddinari", Dob: dob, Sex: sex, Day: 1}}
+		return &Prep{Seq: seq, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", Prog: "crc", PatientKey: pk, Name: "Lamia Eddinari", Dob: dob, Sex: sex, Day: 1}}
 	}
 	sh.OnPrep(mk(1, "S1", "ahs-mushrif", "ahs-mushrif|C1", "1999-07-19", "F"))
 	sh.OnPrep(mk(2, "S2", "skmc-endo", "skmc-endo|C2", "1980-02-03", "F"))

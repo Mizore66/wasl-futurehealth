@@ -60,6 +60,7 @@ type ImageReader struct {
 	http           *http.Client
 	mu             sync.Mutex
 	ledgerFn       string
+	configErr      error
 }
 
 // ImageR is set by -image cached|live|replay; nil = image reader off (v7strict results unchanged).
@@ -94,7 +95,7 @@ func LoadImageCache(path string) *ImageReader {
 // NewImageClient: live sidecar (or replay when url is unreachable); answers are appended to a sha256-keyed ledger.
 func NewImageClient(mode, url, ledger string, thrLand, thrPrep float64) *ImageReader {
 	r := &ImageReader{Mode: mode, Model: "hk-mnv3s-v1/" + mode, ThrLand: thrLand, ThrPr: thrPrep, cache: map[string]imgScore{}, url: url,
-		http: &http.Client{Timeout: 20 * time.Second}, ledgerFn: ledger}
+		http: &http.Client{Timeout: 20 * time.Second}, ledgerFn: ledger, configErr: validateLocalEndpoint(url)}
 	if f, err := os.Open(ledger); err == nil {
 		sc := bufio.NewScanner(f)
 		for sc.Scan() {
@@ -115,6 +116,9 @@ func (r *ImageReader) score(sha string) (imgScore, bool) {
 	if ok || r.Mode == "cached" || r.Mode == "replay" {
 		return s, ok
 	}
+	if r.configErr != nil {
+		return s, false
+	}
 	body, _ := json.Marshal(map[string]interface{}{"images": []string{sha}})
 	resp, err := r.http.Post(r.url+"/v1/image/read", "application/json", bytes.NewReader(body))
 	if err != nil {
@@ -132,7 +136,8 @@ func (r *ImageReader) score(sha string) (imgScore, bool) {
 	s.Model = out.Model
 	r.mu.Lock()
 	r.cache[sha] = s
-	if f, err := os.OpenFile(r.ledgerFn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644); err == nil {
+	if f, err := os.OpenFile(r.ledgerFn, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600); err == nil {
+		f.Chmod(0600)
 		b, _ := json.Marshal(s)
 		f.Write(append(b, '\n'))
 		f.Close()
@@ -142,6 +147,9 @@ func (r *ImageReader) score(sha string) (imgScore, bool) {
 }
 
 func (r *ImageReader) Healthy() bool {
+	if r.configErr != nil {
+		return false
+	}
 	resp, err := (&http.Client{Timeout: 3 * time.Second}).Get(r.url + "/health")
 	if err != nil {
 		return false

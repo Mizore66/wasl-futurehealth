@@ -44,10 +44,10 @@ func drScreenFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "dr-screen" {
+		if e.RType != "DiagnosticReport" || e.Category != "dr-screen" || !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "DRScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "DRScreen", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "diabetic_retinopathy", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
@@ -128,13 +128,13 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		pair := [2]string{r.d.Weak.A, r.d.Weak.B}
 		key, report := pair[0]+"|"+pair[1], ""
 		if kind == "evidence" {
-			key, report = r.d.ReportID, r.d.ReportID
+			key, report = reportVersionKey(r.d.ReportID, r.d.Version), r.d.ReportID
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		reason, hold := "", ""
 		if s, ok := signed[id]; ok && kind == "link" && heldLink(s) { // held "same": ask the confirming review (v7.go)
 			reason, hold, key = LinkConfirm, s.Hold, key+"#linkconfirm"
-			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
+			id = "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		}
 		if _, ok := signed[id]; ok || pendSet[id] {
 			return
@@ -146,7 +146,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if report != "" {
 				ch = appendBlock(ch, "evidence", drEvBlock(r.d, ""))
 			}
-			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report,
+			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report, ReportVersion: r.d.Version,
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq}
 			if r.d.Ev != nil {
 				it.Verdict, it.Quote = r.d.Ev.Label, r.d.Ev.Gemma.Quote
@@ -159,7 +159,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		}
 	}
 	labelOf := func(r row) (string, string) { // (label, human override)
-		if h, ok := f.EvOver[r.d.ReportID]; ok {
+		if h, ok := evidenceOverride(f.EvOver, r.d, ""); ok {
 			return h, h
 		}
 		if r.d.Ev != nil && r.d.Ev.Agree {
@@ -175,7 +175,7 @@ func (c *ClosureCore) evalDR(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := ls.raised[id]
-			if s, ok := signed[id]; ok && it.ReportID == report && s.SignedHead == it.Head {
+			if s, ok := signed[id]; ok && it.ReportID == report && sameReportReviewVersion(it.ReportVersion, currentReportVersion(f, report)) && s.SignedHead == it.Head {
 				return appendBlock(ch, "human_signoff", map[string]interface{}{"item": s.ItemID, "reviewer": s.Reviewer,
 					"link": s.Link, "evidence": s.Evidence, "signed_head": s.SignedHead}), true
 			}

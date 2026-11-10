@@ -164,6 +164,9 @@ func (m *HL7Msg) hl7DRRebuild(res map[string]interface{}) bool {
 	if st := map[string]string{"F": "final", "C": "corrected", "P": "preliminary"}[fld(obr, 25)]; st != "" {
 		res["status"] = st
 	}
+	delete(res, "conclusionCode")
+	delete(res, "presentedForm")
+	delete(res, "conclusion")
 	var text strings.Builder
 	tx := false
 	for _, obx := range m.Segs["OBX"] {

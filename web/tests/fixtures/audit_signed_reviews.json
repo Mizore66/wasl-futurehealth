@@ -1,0 +1,80 @@
+{
+  "anchor_note": "No local anchors are recorded for this materialised run; this response has no OUT stream ledger heads or FHIR log hash. `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
+  "case": "exp-prov/ServiceRequest/EXP-sr-1",
+  "chain": [
+    {
+      "body": {
+        "weakest_edge": {
+          "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+          "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76"
+        }
+      },
+      "hash": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+      "prev": "genesis",
+      "type": "link_decision"
+    },
+    {
+      "body": {
+        "agree": true,
+        "label": "adequate",
+        "reader_model": "gemma-4-26b/cached"
+      },
+      "hash": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+      "prev": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+      "type": "evidence"
+    },
+    {
+      "body": {
+        "why": "consent_unknown"
+      },
+      "hash": "ea5045fc2382248cc21d5d4139db2572ef129f9689c50cf0ff2cb7eb67bbfe65",
+      "prev": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+      "type": "hold_decision"
+    }
+  ],
+  "chain_length": 3,
+  "chain_note": "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted current chain and covers that chain only.",
+  "chain_scope": "current",
+  "chain_verified": true,
+  "decision_signatures": [
+    {
+      "decision_id": "dec-1",
+      "policy": "v7strict",
+      "recomputed": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+      "sig": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd"
+    }
+  ],
+  "history": [
+    {
+      "action": "signoff_link",
+      "at": "2026-11-10T21:50:39.167147565Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "same",
+      "hash": "3d409a0ad881509fb99364a36f065f3744483a3c2e4699e8f264c39ffb6df9ed",
+      "head_signed": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+      "mode": "demo",
+      "prev": "genesis",
+      "role": "reviewer"
+    },
+    {
+      "action": "signoff_link",
+      "at": "2026-11-10T21:50:39.167940775Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "different",
+      "hash": "910f4b95ec270107ce2facda4b8a128f260482bcca3deeda6fb7f4ebbefd24cc",
+      "head_signed": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+      "mode": "demo",
+      "prev": "3d409a0ad881509fb99364a36f065f3744483a3c2e4699e8f264c39ffb6df9ed",
+      "role": "reviewer"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T21:50:39Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  }
+}

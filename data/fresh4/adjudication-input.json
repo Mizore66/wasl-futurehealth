@@ -1,0 +1,6 @@
+{
+ "corpus_sha256": "5aa826689564db25cb8c9ade7bbf727b6d7240848241a2eaaa3b9f60c87852ce",
+ "instruction": "Disagreements only. Use the guide and text; no reader output, score or agreed item is present.",
+ "items": [],
+ "schema": "fresh4-adjudication-input/v1"
+}

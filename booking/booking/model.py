@@ -109,4 +109,7 @@ class NoShowModel:
              + math.log(self.or_hours) * hours_mm + math.log(self.or_sms) * sms + math.log(self.or_nurse) * nurse
              + math.log(self.or_travel) * travel_mm)
         p = 1 / (1 + np.exp(-z))
+        # Fix the numerical contract before probabilities drive assignment, nurse thresholds, or attendance draws.
+        # Twelve decimal places preserve the model while removing platform-specific libm/SIMD low-bit drift.
+        p = np.rint(p * 1_000_000_000_000) / 1_000_000_000_000
         return np.where(ram_conflict, np.maximum(p, self.p_ramadan), p)

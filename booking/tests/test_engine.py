@@ -11,7 +11,7 @@ from scipy.sparse import lil_matrix
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from booking.model import Prefs, Event, NoShowModel
 from booking.calendar import Calendar
-from booking.engine import BookingEngine, BIG
+from booking.engine import BookingEngine, BIG, deterministic_assignment
 
 
 def rand_cal(rng, n=60, days=50):
@@ -138,6 +138,25 @@ def test_earliest():
     return f"repeat booked on day 10 for day {out[0].day} (window 52-94)"
 
 
+def test_assignment_stabilizes_low_bit_cost_drift():
+    a = np.array([[0.0, 2**-50], [2**-50, 0.0]])
+    b = np.array([[2**-50, 0.0], [0.0, 2**-50]])
+    ra, ca = deterministic_assignment(a)
+    rb, cb = deterministic_assignment(b)
+    assert np.array_equal(ra, rb)
+    assert np.array_equal(ca, cb)
+
+
+def test_probability_stabilizes_low_bit_parameter_drift():
+    a = NoShowModel()
+    b = NoShowModel(p0=np.nextafter(a.p0, 1.0))
+    leads = np.arange(-50, 200)
+    pa = a.p(leads, 0, 0, 0, 0, 1, 0, False)
+    pb = b.p(leads, 0, 0, 0, 0, 1, 0, False)
+    assert np.array_equal(pa, pb), np.max(np.abs(pa - pb))
+
+
 if __name__ == "__main__":
-    for f in (test_optimality, test_constraints, test_interface, test_female_protection, test_earliest):
+    for f in (test_optimality, test_constraints, test_interface, test_female_protection, test_earliest,
+              test_assignment_stabilizes_low_bit_cost_drift, test_probability_stabilizes_low_bit_parameter_drift):
         print(f.__name__, ":", f())

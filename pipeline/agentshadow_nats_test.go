@@ -30,7 +30,14 @@ type natsEnv struct {
 func startTestNATS(t *testing.T) *natsEnv {
 	t.Helper()
 	bin, _ := filepath.Abs("../bin/nats-server")
+	override := os.Getenv("WASL_TEST_NATS_SERVER")
+	if override != "" {
+		bin = override
+	}
 	if _, err := os.Stat(bin); err != nil {
+		if override != "" {
+			t.Fatalf("WASL_TEST_NATS_SERVER %q is not executable: %v", override, err)
+		}
 		t.Skip("bin/nats-server not built")
 	}
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -41,6 +48,9 @@ func startTestNATS(t *testing.T) *natsEnv {
 	ln.Close()
 	srv := exec.Command(bin, "-js", "-sd", t.TempDir(), "-p", fmt.Sprint(port), "-a", "127.0.0.1")
 	if err := srv.Start(); err != nil {
+		if override != "" {
+			t.Fatalf("WASL_TEST_NATS_SERVER %q failed to start: %v", override, err)
+		}
 		t.Skip(err)
 	}
 	t.Cleanup(func() { srv.Process.Kill(); srv.Wait() })

@@ -1,0 +1,82 @@
+{
+ "frozen_at": "2026-11-09T07:09:16.962130Z",
+ "code_revision": "bc25c6968ebf914d5ef53a2c1b069a15d90c4184",
+ "policy": "v7strict",
+ "thresholds": {
+  "tau_high_messaging": 0.99,
+  "tau_close_v7strict": 0.99,
+  "uncorroborated_cap": 0.989,
+  "calibrator": "models/iso_v7.json (stratified)",
+  "dob_second_id_guard": true,
+  "reviewer_error": 0.04,
+  "double_review": "merge+close"
+ },
+ "reader": "cached second reader: gemma-4-26b-a4b-it-self (sha256-keyed)",
+ "reports": "data/evidence/reports43.json",
+ "models_dir": "models",
+ "source": "fhir",
+ "persons": "Wikidata eval split only (held out from encoder, scorer and calibrator training)",
+ "noise_models": {
+  "v1": "training-time corruptions (gen.go)",
+  "v2": "independent held-out corruptions (noise2.go), never used for training/calibration/rule design"
+ },
+ "selected_noise_models": [
+  "v1",
+  "v2"
+ ],
+ "eid_guard": false,
+ "lung_loops_per_run": 1088,
+ "dr_loops_per_run": 1200,
+ "breast_loops_per_run": 70,
+ "ldct_loops_per_run": 300,
+ "ifhas_loops_per_run": 800,
+ "crc_loops_per_run": 2040,
+ "cervical_loops_per_run": 816,
+ "persons_cap": "all held-out (8,871)",
+ "seeds": [
+  1103,
+  1109,
+  1117,
+  1121,
+  1123
+ ],
+ "chaos": "linker kill, closure+prep kill, ingest-adapter kill, NATS node kill",
+ "hashes": {
+  "models/encoder_weights.json": "5e6284f85a216c315d3cac05dacb90bbee39be5e94fbf12ab9c0aedf89ef1833",
+  "models/lgb_stream.json": "13d3e272cdc1af9d212e0f0b0bb39494a820369d50eeb9aa338c9204c86a54bb",
+  "models/iso.json": "17e434ad438258700b12e6007dbef156fa164c86186223d227d45ea5ea21459f",
+  "models/iso_v7.json": "63ef7bd03c0d6b90498b586bdd6cfc388de5499b6d9f840e731188e776309356",
+  "models/gemma_cache.json": "176e152f42ffd63b5fb2af83a2f927cae57d8d6b04e13840e328a4dae7784bcd",
+  "models/parse_cache.json": "f011874e611308ec9634dc5b1629f75cf54aeaa34bdb084f3ad04f8f39915b53",
+  "data/persons3.json": "b4dc4a53d60213cd3eeeb014ea9ee63c5e998229044bcb605b3269c48055bdff",
+  "data/evidence/reports43.json": "3384b90f32ff96c49013fef40a82d35ce9138345a2a5a3305aabc87dfabedad8",
+  "data/evidence/pathology_templates.json": "77c9f0c07a48dc2d34adca264d2626620f83a770f30cfa629226f6b434f1cad7",
+  "models/lung_gemma_cache.json": "6a6b829caf3b2a056c85b97c33cae6bce8ec3ed0462838ccc15e2f76985fc2d4",
+  "data/lung/finding_reports.json": "eef1263f68d4e02d1d63e7af7985612be3f210fe7defe2a8d804f95058886280",
+  "data/lung/followup_reports.json": "f4e29164cc84b7b1f48c8f7939ba10d0a7c994e362263d3596fb037f6a64f4cf",
+  "models/dr_gemma_cache.json": "6791669bce82247b8334e67e4dc09a9c45fc0f7fb37e44495b0155a50f9f50ca",
+  "data/dr/screen_reports.json": "db550575155c1db2f8c492837b41196ff54846d657c71ab8a294076954c01d39",
+  "data/dr/clinic_notes.json": "257cd0a3549cf2ea6ec322d697b0de0fb8df290da0712233f9e3eb6d19cbe436",
+  "models/breast_gemma_cache.json": "a16bf1659538da7bc8d37b88326e70a2692d557037e07a89c88dbf5cba0c0b93",
+  "data/breast/screen_reports.json": "8330c936c87f77a27a73a4ece7d687cd1c70db2a860d0eb5848ab38c2f3a1102",
+  "data/breast/assess_notes.json": "b95a6f7139823cd95712fabbf6d7e4fc35e9016eaed3b5339b230c06e1a93f8a",
+  "models/ldct_gemma_cache.json": "68abe29f4a79b8bc3cc6b972ea3e55667968d179d72646b91102e54dd7c88967",
+  "data/ldct/screen_reports.json": "0b8bc78004b880b71331acd88eba248e777de171d7b451b49f0adab41991b4a9",
+  "data/ldct/workup_notes.json": "362e25355b860ba1a76fa2231546b275ffd54a66d7eb02216a850907bc89c192",
+  "models/ifhas_gemma_cache.json": "836ffe14bf80d7acb4a646b5a50f31488636b59afdc0f3ccfa4f89e3b79fa266",
+  "data/ifhas/followup_notes.json": "54e37c8c97e8d261e25d9593773540f70757d477f3c8e4bbef8b0a00a4945980"
+ },
+ "annotation_status": "clinically_verified",
+ "labelling": "43 report texts clinically verified model-assisted labels; not independent human double-labelling; see docs/labelling/",
+ "limitations": [
+  "the evaluation is frozen to this commit but the v7 rules were designed on earlier v1-noise seeds; v2 noise is the honest held-out test",
+  "synthetic cohorts, reviewers, capacity",
+  "43 MTSamples report texts reused across loops; clinically verified model-assisted answer key; not independent human double-labelling",
+  "cached 26B reader answers (deterministic); the live local 4B reader is evaluated separately",
+  "one Abu Dhabi-shaped provider topology; real Malaffi feeds not accessed"
+ ],
+ "lung_pet_surveillance": "on (-lungsurv): surveillance CT due after a PET/CT low-uptake closure",
+ "dr_next_due": "on (-drnext): next due rescreen / clinic review and recall_overdue",
+ "handoff_xreflink": true,
+ "handoff_refreject": true
+}

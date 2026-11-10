@@ -35,6 +35,18 @@ POLICY="${WASL_POLICY:-v7strict}"   # v7strict (canonical) | v7ltt (closure tier
 SOURCE="${WASL_SOURCE:-fhir}"      # fhir (mock Malaffi FHIR Subscription) | hl7 (HL7 v2 over MLLP, production-shaped)
 READER="${WASL_READER:-cached}"    # cached (Gemma 26B answers, no model needed) | live (local llama-server) 
 READER_URL="${WASL_READER_URL:-http://127.0.0.1:8791}"
+# Local synthetic-demo API credentials. Every bearer token is bound server-side to its role and immutable actor; these
+# published development values are not production secrets. Override both the individual client tokens and
+# WASL_API_TOKENS together for a non-default local configuration.
+export WASL_SYNTHETIC_DATA_ONLY=1
+export WASL_API_REVIEWER_TOKEN="${WASL_API_REVIEWER_TOKEN:-wasl-demo-reviewer-1-token}"
+export WASL_API_REVIEWER_2_TOKEN="${WASL_API_REVIEWER_2_TOKEN:-wasl-demo-reviewer-2-token}"
+export WASL_API_REVIEWER_3_TOKEN="${WASL_API_REVIEWER_3_TOKEN:-wasl-demo-reviewer-3-token}"
+export WASL_API_AUDITOR_TOKEN="${WASL_API_AUDITOR_TOKEN:-wasl-demo-auditor-token}"
+export WASL_API_COORDINATOR_TOKEN="${WASL_API_COORDINATOR_TOKEN:-wasl-demo-coordinator-token}"
+export WASL_API_CLINICIAN_TOKEN="${WASL_API_CLINICIAN_TOKEN:-wasl-demo-clinician-token}"
+export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician}"
+export WASL_API_ORIGINS="${WASL_API_ORIGINS:-}"
 COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
 LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop type); 0 = off
 [ "$LUNG" = 0 ] || RUN="$RUN-lung"
@@ -154,7 +166,7 @@ check() {
   python3 -c "import numpy, scipy" 2>/dev/null || need "python3 numpy + scipy (booking engine)" "pip install numpy scipy"
   NPORTS="14822 14823 14824"; [ "${WASL_NATS_EXTERNAL:-}" != 1 ] || NPORTS=""
   for p in $NPORTS 28870 28880 28890; do p=$((p + ${WASL_PORT_OFFSET:-0}))
-    if lsof -nP -iTCP:$p -sTCP:LISTEN >/dev/null 2>&1; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
+    if netstat -tln 2>/dev/null | grep -E ":${p}[[:space:]]" >/dev/null; then need "free port $p" "another Wasl run (or service) is listening; stop it first"; fi
   done
   echo "assets OK"
 }
@@ -188,7 +200,7 @@ report() {
 }
 serve() {  # WASL_SERVE_RUN / WASL_SERVE_DATA serve an already materialised lane and cohort (no regeneration, no model calls)
   local addr="${1:-${WASL_API_ADDR:-127.0.0.1:8088}}" run="${WASL_SERVE_RUN:-$RUN}" data="${WASL_SERVE_DATA:-$COHORT}"
-  echo "Wasl API on http://$addr (run: $run)"
+  printf '{"level":"INFO","msg":"api starting","address":"%s","run":"%s"}\n' "$addr" "$run"
   cd "$BIN" && exec ./wsi7 serve -run "$run" -data "$data" -wasl "$ROOT/models" -policy "$POLICY" ${MARGS[@]+"${MARGS[@]}"} ${PARGS[@]+"${PARGS[@]}"} -addr "$addr"
 }
 smoke() {  # real HTTP smoke: serve on loopback (WASL_SMOKE_PORT, default 18088 + WASL_PORT_OFFSET), poll /healthz, run scripts/api_smoke.py
@@ -236,20 +248,29 @@ snapshot() {  # static API responses for frontend development (no backend needed
   S="$(mktemp -d "$SNAP_DIR.staging.XXXXXX")"
   SNAP_STAGE="$S"
   trap 'snapshot_cleanup' EXIT; trap 'snapshot_cleanup; exit 130' INT; trap 'snapshot_cleanup; exit 143' TERM  # nothing outlives the run
-  curl -sf --max-time "$MT" "http://$A/healthz" > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
-  curl -sf --max-time "$MT" "http://$A/api/dashboard" > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
-  curl -sf --max-time "$MT" "http://$A/api/fixtures" > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
+  curl -sf --max-time "$MT" "http://$A/healthz" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" health > "$S/healthz.json" || { echo "snapshot: healthz failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/dashboard" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" dashboard > "$S/dashboard.json" || { echo "snapshot: dashboard failed" >&2; return 1; }
+  curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/fixtures" |
+    python3 "$ROOT/scripts/redacted_snapshot.py" fixtures > "$S/fixtures.json" || { echo "snapshot: fixtures failed" >&2; return 1; }
   for prog in ${progs//,/ }; do
-    if ! { curl -sf --max-time "$MT" "http://$A/api/cases?programme=$prog&limit=25" > "$S/cases_${prog}_page1.json" &&
+    if ! { curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_REVIEWER_TOKEN" "http://$A/api/cases?programme=$prog&limit=25" |
+      python3 "$ROOT/scripts/redacted_snapshot.py" cases > "$S/cases_${prog}_page1.json" &&
       python3 -c "import json,sys;sys.exit(0 if json.load(open(sys.argv[1])).get('cases') else 1)" "$S/cases_${prog}_page1.json"; }; then
       echo "snapshot: programme page '$prog' is empty or failed; samples not replaced" >&2; return 1
     fi
   done
   for tag in $(python3 -c "import json,sys;print(' '.join(sorted(json.load(open(sys.argv[1]))['fixtures'])))" "$S/fixtures.json"); do
     id=$(python3 -c "import json,sys;print(json.load(open(sys.argv[1]))['fixtures'][sys.argv[2]]['id'])" "$S/fixtures.json" "$tag")
-    curl -sf --max-time "$MT" "http://$A/api/cases/$id" > "$S/case_$tag.json" && curl -sf --max-time "$MT" "http://$A/api/cases/$id/audit" > "$S/case_${tag}_audit.json" ||
-      { echo "snapshot: fixture $tag detail/audit failed" >&2; return 1; }
+    # Public fixtures are built only from the redacted auditor export, never from raw clinical detail/audit routes.
+    curl -sf --max-time "$MT" -H "Authorization: Bearer $WASL_API_AUDITOR_TOKEN" "http://$A/api/cases/$id/export" > "$S/$tag.export" &&
+      python3 "$ROOT/scripts/redacted_snapshot.py" detail < "$S/$tag.export" > "$S/case_$tag.json" &&
+      python3 "$ROOT/scripts/redacted_snapshot.py" audit < "$S/$tag.export" > "$S/case_${tag}_audit.json" ||
+      { echo "snapshot: fixture $tag redacted export failed" >&2; return 1; }
   done
+  python3 "$ROOT/scripts/redacted_snapshot.py" scan-dir "$S" ||
+    { echo "snapshot: staged output contains a private canary; samples not replaced" >&2; return 1; }
   mkdir -p "$SNAP_DIR"
   SNAP_OLD="$(mktemp -d "$SNAP_DIR.old.XXXXXX")"
   SNAP_SWAP=1
@@ -267,7 +288,31 @@ stale_bin() {
   local newer; newer="$(find "$ROOT/pipeline" -maxdepth 1 \( -name '*.go' -o -name go.mod -o -name go.sum \) -newer "$BIN/wsi7" | head -1)"
   [ -z "$newer" ] || { echo "stale binary: $BIN/wsi7 is older than ${newer#$ROOT/}; run: scripts/demo.sh build" >&2; exit 2; }
 }
+recovery_backup() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
+  mkdir -p "$directory"
+  [ ! -e "$directory/bundle" ] || { echo "recovery backup already exists: $directory/bundle" >&2; exit 1; }
+  "$BIN/wsi7" backup-nats -bundle "$directory/nats.json"
+  python3 "$ROOT/scripts/recovery.py" backup "$OUT" "$directory/bundle" --key-file "$key" --nats-json "$directory/nats.json"
+  rm -f "$directory/nats.json"
+}
+recovery_restore() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}" key="${WASL_RECOVERY_KEY_FILE:-/run/secrets/backup_key}"
+  # Authentication and every payload hash are checked before NATS is contacted or the destination is created.
+  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key"
+  "$BIN/wsi7" restore-nats -bundle "$directory/bundle/files/nats/nats.json"
+  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT"
+}
+recovery_verify() {
+  local directory="${WASL_RECOVERY_DIR:-/backup}"
+  "$BIN/wsi7" verify-nats -bundle "$directory/bundle/files/nats/nats.json"
+}
 validate_nats_config
+case "${1:-all}" in
+  recovery-backup) recovery_backup; exit 0;;
+  recovery-restore) recovery_restore; exit 0;;
+  recovery-verify) recovery_verify; exit 0;;
+esac
 case "${1:-all}" in cohort|run|audit|tamper|report|serve|smoke|snapshot|final) stale_bin;; esac
 mkdir -p "$OUT/run"
 case "${1:-all}" in

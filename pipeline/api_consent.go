@@ -154,7 +154,11 @@ func splitCasePath(rest string) (string, string) {
 
 // guardConfirmContact: once the overlay blocks contact, the demo "confirm_contact" outcome is refused (409).
 func (s *apiServer) guardConfirmContact(w http.ResponseWriter, r *http.Request, c *apiCase, next http.HandlerFunc) {
-	b, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	b, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxReviewBodyBytes))
+	if err != nil {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "review body is unreadable or oversized"}))
+		return
+	}
 	r.Body = io.NopCloser(bytes.NewReader(b))
 	var req struct{ Decision string }
 	if json.Unmarshal(b, &req) == nil && req.Decision == "confirm_contact" {
@@ -203,13 +207,8 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 		ExpectedHead string `json:"expected_head"`
 		Note         string `json:"note"`
 	}
-	dec := json.NewDecoder(io.LimitReader(r.Body, 16<<10))
-	if err := dec.Decode(&req); err != nil {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"event\":..., \"expected_head\":..., \"note\":...}"}))
-		return
-	}
-	if _, err := dec.Token(); err != io.EOF {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
+	if err := decodeAPIBody(w, r, maxConsentBodyBytes, &req); err != nil {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with event, expected_head and note; duplicate or unknown fields and oversized/trailing data are rejected"}))
 		return
 	}
 	if _, ok := consentEvents[req.Event]; !ok {

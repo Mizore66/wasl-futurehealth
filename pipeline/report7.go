@@ -581,6 +581,6 @@ func report7(data, wasl, run string, P int) {
 		im["two_reader"] = ifhasTwoReader(preps, &tr) // IFHAS: results (panel vs coded) and follow-up note agreement end to end
 	}
 	rb := marshalReport(res)
-	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0644)
+	os.WriteFile(filepath.Join(run, "report7.json"), rb, 0600)
 	fmt.Println(string(rb))
 }

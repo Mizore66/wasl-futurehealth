@@ -12,10 +12,13 @@ import decimal
 import hashlib
 import json
 import math
+import os
 import sys
 import urllib.error
 import urllib.parse
 import urllib.request
+
+from redacted_snapshot import _canary_string, _registration_alias
 
 REQUIRED_FIXTURES = ("evidence_closure", "false_closure_trap", "review_hold")
 MAX_LIMIT = 500
@@ -35,16 +38,26 @@ class Client:
     def __init__(self, base, timeout):
         self.base, self.timeout = base.rstrip("/"), timeout
 
-    def request(self, method, path, body=None, role=None, actor=None):
+    @staticmethod
+    def token(role, actor=None):
+        role = role or "reviewer"
+        suffix = ""
+        if role == "reviewer" and actor in {"smoke-reviewer-2", "smoke-reviewer-3"}:
+            suffix = "_" + actor.rsplit("-", 1)[1]
+        name = "WASL_API_" + role.upper() + suffix + "_TOKEN"
+        token = os.environ.get(name, "")
+        if not token:
+            raise SmokeFailure(f"missing {name} for authenticated smoke request")
+        return token
+
+    def request(self, method, path, body=None, role=None, actor=None, authenticate=True):
         """Return (status, parsed JSON). Transport errors and non-JSON bodies fail the smoke."""
         data = None if body is None else json.dumps(body, separators=(",", ":")).encode()
         headers = {}
         if data is not None:
             headers["Content-Type"] = "application/json"
-        if role is not None:
-            headers["X-Wasl-Role"] = role
-        if actor is not None:
-            headers["X-Wasl-Actor"] = actor
+        if authenticate:
+            headers["Authorization"] = "Bearer " + self.token(role, actor)
         req = urllib.request.Request(self.base + path, data=data, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
@@ -59,16 +72,16 @@ class Client:
         except ValueError:
             raise SmokeFailure(f"{method} {path}: status {code}, body is not JSON")
 
-    def get(self, path):
-        return self.request("GET", path)
+    def get(self, path, role=None):
+        return self.request("GET", path, role=role)
 
     def post(self, path, body, role, actor, expected=201):
         code, payload = self.request("POST", path, body, role, actor)
         check(code == expected, f"POST {path}: expected {expected}, got {code}")
         return payload
 
-    def ok(self, path):
-        code, body = self.get(path)
+    def ok(self, path, role=None):
+        code, body = self.get(path, role)
         check(code == 200, f"GET {path}: expected 200, got {code}")
         return body
 
@@ -135,18 +148,30 @@ def check_event_hash(event, label, prev=None):
 def check_export_redaction(value, forbidden_keys, path="export"):
     if isinstance(value, dict):
         for key, child in value.items():
-            check(key not in forbidden_keys, f"{path}: sensitive field {key!r} was not redacted")
+            fixed_meta_note = path == "export.meta" and key == "note"
+            check(fixed_meta_note or key not in forbidden_keys, f"{path}: sensitive field {key!r} was not redacted")
+            registration_scalar = (key in {"referral_patient", "registration"} or
+                                   path.endswith(".weakest_edge") and key in {"a", "b"})
+            if registration_scalar and child not in (None, ""):
+                check(isinstance(child, str) and child == _registration_alias(child),
+                      f"{path}.{key}: registration key was not pseudonymized")
+            if key == "pair" and isinstance(child, list):
+                for i, item in enumerate(child):
+                    check(isinstance(item, str) and (not item or item == _registration_alias(item)),
+                          f"{path}.pair[{i}]: registration key was not pseudonymized")
             check_export_redaction(child, forbidden_keys, f"{path}.{key}")
     elif isinstance(value, list):
         for i, child in enumerate(value):
             check_export_redaction(child, forbidden_keys, f"{path}[{i}]")
+    elif isinstance(value, str):
+        check(not _canary_string(value), f"{path}: test canary was not redacted")
 
 
 def workflow_smoke(c, cid):
     """Exercise demo overlays on one synthetic fixture; canonical decisions must not move."""
     path = case_path(cid)
     before = c.ok(path)
-    before_audit = c.ok(path + "/audit")
+    before_audit = c.ok(path + "/audit", "auditor")
     canonical_case = copy.deepcopy(before.get("case", {}))
     canonical_case.pop("api_overlay", None)
     canonical_before = (canonical_case, before.get("current"), before.get("decisions"))
@@ -224,7 +249,7 @@ def workflow_smoke(c, cid):
     check(projection.get("canonical_state") == before["case"].get("state"), "contest resolution: canonical state changed")
 
     after = c.ok(path)
-    after_audit = c.ok(path + "/audit")
+    after_audit = c.ok(path + "/audit", "auditor")
     after_case = copy.deepcopy(after.get("case", {}))
     after_case.pop("api_overlay", None)
     check((after_case, after.get("current"), after.get("decisions")) == canonical_before,
@@ -235,14 +260,15 @@ def workflow_smoke(c, cid):
           "workflow: canonical audit verification changed")
     history = after_audit.get("history", [])
     check(history[:len(original_history)] == original_history, "workflow: prior durable audit history changed")
-    check(history[len(original_history):] == new_events, "workflow: durable audit history does not contain exactly the accepted events")
+    check([event.get("hash") for event in history[len(original_history):]] == [event["hash"] for event in new_events],
+          "workflow: durable audit history does not contain exactly the accepted event hashes in order")
 
-    export = c.ok(path + "/export")
+    export = c.ok(path + "/export", "auditor")
     check(export.get("schema") == "wasl-case-export/1" and export.get("redacted") is True, "export: schema/redaction marker missing")
     served_hash = export.get("content_sha256")
     unsigned = {k: v for k, v in export.items() if k != "content_sha256"}
     check(hashlib.sha256(canonical_json(unsigned)).hexdigest() == served_hash, "export: content_sha256 does not authenticate the document")
-    redacted = {"detail": export.get("detail"), "audit": export.get("audit")}
+    redacted = export
     check_export_redaction(redacted, {"actor", "target_actor", "owner", "canonical_owner", "note", "text", "quote", "reasoning"})
     for canary in ("SMOKE-PRIVATE-COORDINATOR-TEXT", "SMOKE-PRIVATE-CONSENT-NOTE", "SMOKE-PRIVATE-REVIEW-NOTE",
                    "SMOKE-PRIVATE-UNDO-NOTE",
@@ -251,15 +277,19 @@ def workflow_smoke(c, cid):
         check(canary not in canonical_json(redacted).decode(), f"export: private canary {canary!r} leaked")
     check(export.get("audit", {}).get("chain_verified") is True and export.get("audit", {}).get("chain_length") == before_audit.get("chain_length"),
           "export: redaction changed canonical audit verification")
-    repeat = c.ok(path + "/export")
+    repeat = c.ok(path + "/export", "auditor")
     check(repeat == export, "export: unchanged case did not produce a deterministic document")
-    code, _ = c.request("POST", path + "/export", {})
+    code, _ = c.request("POST", path + "/export", {}, role="auditor")
     check(code == 405, f"export POST: expected 405, got {code}")
-    code, body = c.get(case_path("smoke-unknown/ServiceRequest/none", "/export"))
+    code, body = c.get(case_path("smoke-unknown/ServiceRequest/none", "/export"), "auditor")
     check(code == 404 and "error" in body, f"unknown export: expected JSON 404, got {code}")
 
 
 def smoke(c):
+    code, _ = c.request("GET", "/api/cases", authenticate=False)
+    check(code == 401, f"unauthenticated case list: expected 401, got {code}")
+    code, _ = c.get("/api/cases", "auditor")
+    check(code == 403, f"auditor raw case list: expected 403, got {code}")
     health = c.ok("/healthz")
     check(health.get("status") == "ok", f"healthz status is {health.get('status')!r}")
     check(health.get("meta", {}).get("data_mode") == "simulated", "healthz meta.data_mode is not simulated")
@@ -319,7 +349,7 @@ def smoke(c):
         else:
             check(len(inv) == 0 or prov.get("cached") is True, f"fixture {tag}: investigations without cached agent_provenance")
         check(isinstance(d.get("decisions"), list) and len(d["decisions"]) == f.get("decisions"), f"fixture {tag}: decision count differs from fixture")
-        code, a = c.get(case_path(cid, "/audit"))
+        code, a = c.get(case_path(cid, "/audit"), "auditor")
         check(code == 200, f"fixture {tag}: audit returned {code}")
         check(a.get("case") == cid, f"fixture {tag}: audit case differs")
         check(a.get("chain_verified") is True, f"fixture {tag}: audit chain_verified is not true")

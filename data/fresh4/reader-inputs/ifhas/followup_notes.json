@@ -1,0 +1,105 @@
+{
+ "reports": [
+  {
+   "id": "f4i-001",
+   "text": "Nurse clinic follow-up. Patient did not attend today's appointment despite two reminder texts. Screening BP was 152/96 and HbA1c 6.8% on the original panel. Will mail a new appointment."
+  },
+  {
+   "id": "f4i-002",
+   "text": "DNA - second review slot for raised LDL. Attempted call at 11:00, no answer. Voicemail left. Reschedule via call centre."
+  },
+  {
+   "id": "f4i-003",
+   "text": "Follow-up visit for abnormal screening (BMI 33, BP 148/92, fasting glucose elevated). Patient failed to attend. No assessment possible. Closed pending rebooking."
+  },
+  {
+   "id": "f4i-004",
+   "text": "Family medicine recall. No-show. Employer reports patient was on night shift. Old note: statin discussed last year. Offer evening slot."
+  },
+  {
+   "id": "f4i-005",
+   "text": "Did not attend scheduled post-screening consultation of 5 Nov. Quoted results from last year: HbA1c 6.8%, BP 150/94. Patient not seen, no examination or plan."
+  },
+  {
+   "id": "f4i-006",
+   "text": "Seen for raised BP at screening. Repeat clinic readings 156/98 and 154/96 confirm hypertension. Amlodipine 5 mg started today, home BP diary given, review in 4 weeks."
+  },
+  {
+   "id": "f4i-007",
+   "text": "Repeat HbA1c 7.4% confirms type 2 diabetes. Metformin started and dietitian appointment booked for 14 Nov. Repeat lipid panel: LDL 212 mg/dL confirmed, atorvastatin 40 mg prescribed. BP and weight not discussed at this visit."
+  },
+  {
+   "id": "f4i-008",
+   "text": "BMI re-measured at 34.2 kg/m2, class I obesity confirmed. Enrolled in the clinic's 12-week weight management programme today; first group session on Sunday."
+  },
+  {
+   "id": "f4i-009",
+   "text": "Comprehensive review. Hypertension confirmed on repeat (158/100): ramipril 5 mg started. HbA1c repeat 7.1%: diabetes, referred to the diabetes clinic, referral sent. BMI 32: enrolled in lifestyle programme. Lipids were normal and were not reviewed further."
+  },
+  {
+   "id": "f4i-010",
+   "text": "Confirmatory fasting lipids: LDL 4.9 mmol/L, raised, rosuvastatin commenced. BMI 31.5 confirmed; referred to dietitian, appointment made. Counselled on diet and exercise."
+  },
+  {
+   "id": "f4i-011",
+   "text": "Screening BP 164/102. Today's clinic reading 160/100. Not yet labelled hypertensive: asked to take two weeks of home readings and 24-hour ambulatory monitoring booked. Decision after results."
+  },
+  {
+   "id": "f4i-012",
+   "text": "Random glucose 240 mg/dL at screening; repeat fasting glucose ordered, sample taken this morning. LDL 205: statin offered but patient declined for now and wants to read about it. Will revisit."
+  },
+  {
+   "id": "f4i-013",
+   "text": "HbA1c repeated at 8.2%, so diabetes is confirmed. We ran out of time; treatment plan to be agreed at the next visit. Nothing started."
+  },
+  {
+   "id": "f4i-014",
+   "text": "BMI 36. Offered weight programme but patient deferred until after Ramadan-travel plans. BP 146/94 at screening - repeat result is awaited from the lab after a nurse measurement; no decision yet."
+  },
+  {
+   "id": "f4i-015",
+   "text": "Repeat lipid profile awaited, blood drawn today. Glucose was noted to be elevated at screening. Patient advised about results call. Nothing else recorded."
+  },
+  {
+   "id": "f4i-016",
+   "text": "Repeat BP in clinic 126/78 and home average 122/76; the screening value of 150/95 was probably white-coat effect. No treatment required. Routine rescreen in 1 year."
+  },
+  {
+   "id": "f4i-017",
+   "text": "HbA1c 6.0%: prediabetes range. Given advice on diet and walking, leaflet provided. No medicine and no referral at this stage. Rescreen in a year."
+  },
+  {
+   "id": "f4i-018",
+   "text": "Confirmatory tests today. Repeat HbA1c 5.4%, normal - original sample was probably mislabelled. LDL repeat 118 mg/dL, below threshold; the first value 196 was a lab error. Both back to routine screening."
+  },
+  {
+   "id": "f4i-019",
+   "text": "Prediabetes (HbA1c 6.2%): dietary advice given, routine re-screening in 12 months. Repeat blood pressure 130/82 - normal, returns to routine screening. Patient reassured."
+  },
+  {
+   "id": "f4i-020",
+   "text": "Screening BMI of 31 was a data entry error: height recorded as 1.45 m rather than 1.65 m. Re-measured BMI 27.8. No weight programme needed."
+  },
+  {
+   "id": "f4i-021",
+   "text": "Attended for a review. Last year LDL was 195 and BP 150/92 but this visit patient only wanted a medication refill for allergy symptoms and a sick-note. No screening result was discussed."
+  },
+  {
+   "id": "f4i-022",
+   "text": "Header: known hypertension, type 2 diabetes. Presenting complaint today: lower back pain after lifting. Examined, analgesia given, physiotherapy advised. Screening abnormalities were not mentioned."
+  },
+  {
+   "id": "f4i-023",
+   "text": "DISCHARGE SUMMARY. Admitted with community-acquired pneumonia, treated with IV antibiotics for 5 days, discharged on oral amoxicillin. Chest X-ray improving. Follow up with GP in 2 weeks."
+  },
+  {
+   "id": "f4i-024",
+   "text": "BP confirmed hypertensive on repeat, 154/96; amlodipine started today. Plan section (from template): BP normal on repeat, return to routine screening, no treatment needed."
+  },
+  {
+   "id": "f4i-025",
+   "text": "Patient attended with spouse. Spouse has diabetes and is on insulin. Patient has no history of diabetes and no family clinic action was taken for the patient. Discussion was about the spouse's glucose sensor only."
+  }
+ ],
+ "source": "fresh2 corpus, text only"
+}
