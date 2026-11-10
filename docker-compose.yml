@@ -86,6 +86,8 @@ services:
       <<: *wasl-env
       WASL_API_ADDR: 0.0.0.0:8088
       WASL_RUNTIME_ADDR: 127.0.0.1:8090
+      # token:role:actor entries (docs/DEPLOY.md, "Hosted frontend"). Empty = scripts/demo.sh's published loopback-demo tokens.
+      WASL_API_TOKENS: ${WASL_API_TOKENS:-}
     logging: *wasl-logging
     stop_grace_period: 10s
     volumes:

@@ -8,21 +8,32 @@ import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
-import { dayToDate, formatDay } from "@/lib/domain/day";
+import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
+import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, STANDARD_DAYS } from "./days";
+import type { PersistedLedger, TrailEntry } from "./ledger-trail";
 import type { View, WorkItem } from "./model";
+import { BOOKING_NEEDED, DECLINED_STATUS, HANDOFF_OWNER, noAnswerStatus } from "./model";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
+import { recordAction } from "@/app/app/today/actions";
+import type { CaseAction } from "@/lib/api/schema";
 
 /*
- * Gap G6: the API has no write endpoint for call outcomes, so every outcome here is session state.
- * `confirm_contact` needs a review item of kind contact; the pipeline raises only link and evidence items.
+ * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
+ * (POST /api/cases/{id}/actions) and shown only after a 201. The ledger is append-only, so there is no Undo.
+ * Fixtures mode: the same buttons keep session state in the browser, with Undo.
+ *
+ * Live API, after a reload: the board position comes from the persisted overlay in the case list (model.ts workItem),
+ * and the open patient's trail from that ONE case's detail overlay (GET /app/today/ledger), never from session state.
+ * If ledger replay stopped part-way, the trail shows only the valid prefix under a warning and writes are disabled.
  */
 
-type Contact = { what: string; when: string };
-type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; log: Contact[] };
+/** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
+type Contact = TrailEntry;
+type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -33,6 +44,8 @@ type State = {
   q: string;
   calling: string | null;
   stage: Stage | null;
+  /** Wall-clock ms when "Call back on…" was opened: the one instant every callback choice is computed from. */
+  callbackFrom: number;
   last: Logged | null;
   over: Record<string, Patch>;
 };
@@ -45,11 +58,25 @@ const TABS: [View, string][] = [
   ["none", "No owner"],
 ];
 
-const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: number; aside: React.ReactNode }) {
-  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {} });
+/** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
+const SESSION_WHO = "This browser";
+
+const REFUSED: Record<number, string> = {
+  403: "the coordinator role may not do this",
+  404: "the API does not know this case",
+  409: "someone changed this case first; reload to see it",
+  500: "the case ledger failed validation, so the API refuses new actions",
+  503: "no live API",
+};
+
+export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
+  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
+  /** Live API: the open patient's persisted trail and ledger status, fetched once per case when it is opened. */
+  const [persisted, setPersisted] = useState<Record<string, PersistedLedger | "error">>({});
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -88,6 +115,25 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const p = list.find((x) => x.id === s.sel) ?? list[0];
   const fresh = { calling: null, stage: null, last: null };
 
+  /* Only the selected case's detail is read (issue #47); every other row keeps its list summary. */
+  const selId = live ? p?.id : undefined;
+  const known = !!selId && persisted[selId] !== undefined;
+  useEffect(() => {
+    if (!selId || known) return;
+    const ac = new AbortController();
+    fetch(`/app/today/ledger?id=${encodeURIComponent(selId)}`, { signal: ac.signal, cache: "no-store" })
+      .then((r) => (r.ok ? (r.json() as Promise<PersistedLedger>) : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((ledger) => setPersisted((prev) => ({ ...prev, [selId]: ledger })))
+      .catch(() => {
+        if (!ac.signal.aborted) setPersisted((prev) => ({ ...prev, [selId]: "error" }));
+      });
+    return () => ac.abort();
+  }, [selId, known]);
+  const ledger = selId ? persisted[selId] : undefined;
+  const ledgerRead = ledger && ledger !== "error" ? ledger : null;
+  /* The list says so for every case when replay failed; the detail says why. Either way the API refuses writes. */
+  const ledgerInvalid = live && !!p && (p.ledgerStatus === "invalid" || ledgerRead?.status === "invalid");
+
   const top = toCall[0];
   const finding = !top
     ? { name: "Nobody", rest: "is left to call." }
@@ -100,13 +146,13 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
           ` ${toCall.length - 1} more to call.`,
       };
 
-  const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null = null) => {
+  const apply = (row: Row, entry: Contact, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null) => {
     setWant({ k: stage ? "chips" : "undo" });
     setS((prev) => {
       const before = prev.over[row.id] ?? { log: [] };
       return {
         ...prev,
-        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, { what, when: `This session · ${clock()}` }] } },
+        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, entry] } },
         sel: row.id,
         calling: null,
         stage,
@@ -120,6 +166,27 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
     });
   };
 
+  /**
+   * One action from the board. Live: append `action` to the ledger first and change the board only on success;
+   * a refusal (for example a contact outcome without contact permission) is shown and nothing changes.
+   */
+  const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, action: CaseAction, stage: Stage | null = null) => {
+    setRefusal(null);
+    if (!live) return apply(row, { what, when: `This session · ${clock()}`, who: SESSION_WHO }, patch, head, move, stage);
+    if (busy) return;
+    if (ledgerInvalid) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[500]}` });
+    if (!row.head) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[409]}` });
+    setBusy(true);
+    recordAction(row.id, row.head, action)
+      .then((res) => {
+        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor, hash: res.hash }, { ...patch, head: res.head }, head, move, stage);
+        else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
+        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
+      })
+      .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
+      .finally(() => setBusy(false));
+  };
+
   const last = s.last && p && s.last.id === p.id ? s.last : null;
   /* The last action moved its patient out of this result set: they are not shown, only the way back is. */
   const removed = s.last && !list.some((x) => x.id === s.last!.id) ? s.last : null;
@@ -130,10 +197,17 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const removedNotice = removed && (
     <div role="status" className="mb-4 flex min-h-11 flex-wrap items-center gap-x-gap" data-testid="removed-notice">
       <span>
-        <span className="font-medium">{removed.head}</span> · {removed.move} ·{" "}
-        <button data-focus="undo" onClick={() => undoLast(removed)} className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink">
-          Undo
-        </button>
+        <span className="font-medium">{removed.head}</span> · {removed.move}
+        {live ? (
+          <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+        ) : (
+          <>
+            {" "}·{" "}
+            <button data-focus="undo" onClick={() => undoLast(removed)} className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink">
+              Undo
+            </button>
+          </>
+        )}
       </span>
     </div>
   );
@@ -148,33 +222,73 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
     if (!last) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
-        ["Reached", () => log(p, "Reached on the phone", { status: `Reached · ${p.next}`, snoozed: false }, "Logged: Reached", "Next: book or set a call back", "reached")],
+        [
+          "Reached",
+          () =>
+            log(
+              p,
+              "Reached on the phone",
+              { status: `Reached · ${p.next}`, snoozed: false },
+              "Logged: Reached",
+              "Next: appointment agreed or a call back",
+              { action: "contact_outcome", outcome: "reached", channel: "phone" },
+              "reached",
+            ),
+        ],
         [
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: `No answer ×${na} · retry tomorrow`, snoozed: true }, "Logged: No answer", toEnd);
+            log(p, "Called, no answer", { noAnswer: na, status: noAnswerStatus(na), snoozed: true }, "Logged: No answer", toEnd, {
+              action: "contact_outcome",
+              outcome: "no_answer",
+              channel: "phone",
+            });
           },
         ],
       ];
     } else if (stage === "reached") {
       chipsTitle = "What next?";
       chips = [
-        ["Book", () => log(p, "Booked the procedure", { view: "waiting", status: "Booked · date to confirm", snoozed: false }, "Logged: Booked", `${first} moved to Waiting`)],
+        [
+          // The patient agreed to an appointment; no slot is chosen or reserved here, so the booking is still needed.
+          "Appointment agreed",
+          () =>
+            log(
+              p,
+              "Appointment agreed",
+              { view: "waiting", status: BOOKING_NEEDED, snoozed: false },
+              "Logged: Appointment agreed",
+              `${first} moved to Waiting`,
+              { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
+            ),
+        ],
         [
           "Call back on…",
           () => {
             setWant({ k: "chips" });
-            setS((prev) => ({ ...prev, stage: "callback" }));
+            setS((prev) => ({ ...prev, stage: "callback", callbackFrom: Date.now() }));
           },
         ],
-        ["Declined", () => log(p, "Declined the procedure", { view: "waiting", status: "Declined · GP to sign", snoozed: false }, "Logged: Declined", `${first} moved to Waiting for the GP`)],
+        [
+          "Declined",
+          () =>
+            log(
+              p,
+              "Declined the procedure",
+              { view: "waiting", status: DECLINED_STATUS, snoozed: false },
+              "Logged: Declined",
+              `${first} moved to Waiting for the GP`,
+              { action: "contact_outcome", outcome: "declined", channel: "phone" },
+            ),
+        ],
       ];
     } else if (stage === "callback") {
       chipsTitle = "Call back on";
+      // One wall-clock `until` per choice drives both the label and the saved snooze (issue #37); never the run day.
       chips = [1, 2, 3].map((k) => {
-        const d = WEEKDAY.format(dayToDate(Math.floor(now) + k));
-        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd)] as Chip;
+        const { label: d, action } = callbackChoice(k, s.callbackFrom);
+        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
       });
     }
   }
@@ -182,10 +296,21 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const nextUp = p ? list.find((x) => x.id !== p.id) : undefined;
   const callingNow = !!p && s.calling === p.id;
 
+  /* Persisted ledger records first (live), then this session's; a record saved here and already read back shows once. */
+  const kept = ledgerRead?.entries ?? [];
+  const keptHashes = new Set(kept.map((e) => e.hash).filter(Boolean));
+  const entries: Contact[] = p ? [...kept, ...p.log.filter((e) => !e.hash || !keptHashes.has(e.hash))] : [];
+  const nothingYet = !live
+    ? "No contact logged this session"
+    : ledger === undefined
+      ? "Reading the case ledger…"
+      : ledger === "error"
+        ? "Could not read the case ledger"
+        : "No contact on the case ledger yet";
   const trail: ChainNode[] = p
     ? [
-        ...p.log.slice(-3).map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: "Hessa Al Ali", what: c.what, when: c.when })),
-        { id: "next", kind: "current", who: "Next", what: p.next, when: p.log.length ? "Now" : "No contact logged this session" },
+        ...entries.map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: c.who, what: c.what, when: c.when })),
+        { id: "next", kind: "current", who: "Next", what: p.next, when: entries.length ? "Now" : nothingYet },
       ]
     : [];
 
@@ -340,22 +465,85 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5.5 2.5l1.5 3-1.5 1c.8 1.6 2 2.8 3.5 3.5l1-1.5 3 1.5-.5 2c-.2.6-.8 1-1.4.9C6.6 12.4 3.6 9.4 3.1 4.9c-.1-.6.3-1.2.9-1.4z" />
                 </svg>
-                <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
+                {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
+                {callingNow ? (
+                  <span>Logging call · {first}</span>
+                ) : (
+                  <span>
+                    Log call<span className="sr-only"> · {first}</span>
+                  </span>
+                )}
               </button>
               <span className="hidden flex-1 sm:block" />
-              <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
+              <Button
+                variant="quiet"
+                size="touch"
+                className="max-sm:flex-1"
+                disabled={busy || ledgerInvalid}
+                onClick={() =>
+                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
+                    action: "snooze",
+                    until: fromNow(1),
+                    reason: "Snoozed to tomorrow",
+                  })
+                }
+              >
                 Snooze to tomorrow
               </Button>
               {p.view === "none" ? (
-                <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
+                <Button
+                  variant="quiet"
+                  size="touch"
+                  className="max-sm:flex-1"
+                  disabled={busy || ledgerInvalid}
+                  onClick={() =>
+                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
+                      action: "assign_owner",
+                      owner: "Hessa Al Ali",
+                    })
+                  }
+                >
                   Take this patient
                 </Button>
               ) : (
-                <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
-                  Hand to Dr Al Kaabi
+                <Button
+                  variant="quiet"
+                  size="touch"
+                  className="max-sm:flex-1"
+                  disabled={busy || ledgerInvalid}
+                  onClick={() =>
+                    log(
+                      p,
+                      `Handed to ${HANDOFF_OWNER}`,
+                      { view: "waiting", status: `With ${HANDOFF_OWNER}`, owner: HANDOFF_OWNER },
+                      `Logged: Handed to ${HANDOFF_OWNER}`,
+                      `${first} moved to Waiting`,
+                      { action: "assign_owner", owner: HANDOFF_OWNER },
+                    )
+                  }
+                >
+                  Hand to {HANDOFF_OWNER}
                 </Button>
               )}
             </div>
+
+            {ledgerInvalid && (
+              <div role="alert" data-testid="ledger-invalid" className="mt-4 rounded-card border-2 border-warning p-3">
+                <p className="m-0 font-medium text-warning">Case ledger incomplete: this patient&rsquo;s state here is not authoritative</p>
+                <p className="m-0 mt-1">
+                  The API stopped replaying the shared ledger at an invalid entry. Only the actions before it are shown
+                  {ledgerRead?.applied != null ? ` (${ledgerRead.applied} ledger events applied)` : ""}, and the API refuses new actions until an
+                  operator repairs the ledger.
+                </p>
+                {ledgerRead?.detail && <p className="m-0 mt-1 text-small text-muted">API: {ledgerRead.detail}</p>}
+              </div>
+            )}
+
+            {refusal?.id === p.id && (
+              <p role="alert" className="m-0 mt-4 text-warning" data-testid="action-refused">
+                {refusal.text}
+              </p>
+            )}
 
             <AnimatePresence initial={false}>
               {last && (
@@ -368,14 +556,21 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
                 >
                   <span>
-                    <span className="font-medium">{last.head}</span> · {last.move} ·{" "}
-                    <button
-                      data-focus="undo"
-                      onClick={() => undoLast(last)}
-                      className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
-                    >
-                      Undo
-                    </button>
+                    <span className="font-medium">{last.head}</span> · {last.move}
+                    {live ? (
+                      <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+                    ) : (
+                      <>
+                        {" "}·{" "}
+                        <button
+                          data-focus="undo"
+                          onClick={() => undoLast(last)}
+                          className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
+                        >
+                          Undo
+                        </button>
+                      </>
+                    )}
                   </span>
                   {!stage && nextUp && (
                     <Button
@@ -403,6 +598,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   {chips.map(([label, pick]) => (
                     <button
                       key={label}
+                      disabled={busy || ledgerInvalid}
                       onClick={pick}
                       className={cn("h-11 cursor-pointer rounded-chip border bg-surface px-4 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
                     >

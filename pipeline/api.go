@@ -1206,6 +1206,17 @@ func (s *apiServer) overlayViewLocked(c *apiCase, full bool) map[string]interfac
 	if o.snooze != nil {
 		m["snooze"] = o.snooze
 	}
+	// The latest contact outcome (codes and time only, no actor or note) and the run of consecutive no-answers that
+	// ends it, so a worklist can place a case from its persisted outcomes without reading every case's detail.
+	if n := len(o.contacts); n > 0 {
+		last := o.contacts[n-1]
+		m["last_contact"] = map[string]interface{}{"at": last["at"], "event": last["event"], "outcome": last["outcome"], "channel": last["channel"]}
+		streak := 0
+		for i := n - 1; i >= 0 && o.contacts[i]["outcome"] == "no_answer"; i-- {
+			streak++
+		}
+		m["no_answer_streak"] = streak
+	}
 	if full {
 		m["contact_outcomes"] = nz(append([]map[string]interface{}{}, o.contacts...))
 		m["notes"] = nz(append([]map[string]interface{}{}, o.notes...))
