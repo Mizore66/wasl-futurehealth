@@ -1144,15 +1144,26 @@ type matrixEvent struct {
 	seq uint64
 }
 
-// matrixEvents: a target link question, then a second-identifier and a link question over the same registrations
-// (skipped as twins when the reuse flags are on, reviewed otherwise).
+// setReuse pins both reuse flags explicitly (the package defaults are on).
+func setReuse(t *testing.T, on bool) {
+	t.Helper()
+	oi, ol := ReuseIDConfirm, ReuseLinkAnswer
+	ReuseIDConfirm, ReuseLinkAnswer = on, on
+	t.Cleanup(func() { ReuseIDConfirm, ReuseLinkAnswer = oi, ol })
+}
+
+// matrixEvents: the target link question, an earlier second-identifier question (rid-first) whose "same" answer
+// feeds the id worklist, then a second-identifier twin (rid-twin) and a link twin (rv-twin) over the same pair.
+// With reuse on both twins must be skipped; with reuse off both must be reviewed and published.
 func matrixEvents() []matrixEvent {
 	target := reviewerEnvelope("rv-target", 1)
-	sid := reviewerEnvelope("rid-twin", 2)
+	first := reviewerEnvelope("rid-first", 2)
+	first.Item.Reason, first.Item.Pair = "second_identifier", [2]string{"reg-a", "reg-b"}
+	sid := reviewerEnvelope("rid-twin", 3)
 	sid.Item.Reason, sid.Item.Pair = "second_identifier", [2]string{"reg-b", "reg-a"}
-	twin := reviewerEnvelope("rv-twin", 3)
+	twin := reviewerEnvelope("rv-twin", 4)
 	twin.Item.Pair = [2]string{"reg-b", "reg-a"}
-	return []matrixEvent{{target, 1}, {sid, 2}, {twin, 3}}
+	return []matrixEvent{{target, 1}, {first, 2}, {sid, 3}, {twin, 4}}
 }
 
 func TestReviewerCrashMatrixMatchesUninterruptedControl(t *testing.T) {
@@ -1170,9 +1181,7 @@ func TestReviewerCrashMatrixMatchesUninterruptedControl(t *testing.T) {
 		for _, w := range windows {
 			name := fmt.Sprintf("reuse=%v/%s", reuse, w.name)
 			t.Run(name, func(t *testing.T) {
-				if reuse {
-					withReuse(t)
-				}
+				setReuse(t, reuse)
 				events := matrixEvents()
 				cenv, crun := startTestNATS(t), t.TempDir()
 				control := newTestReviewerService(t, cenv, crun)
@@ -1237,9 +1246,16 @@ func TestReviewerCrashMatrixMatchesUninterruptedControl(t *testing.T) {
 						t.Fatalf("%s state %s, control %s", id, g, w)
 					}
 				}
+				wantState, wantCount := "published", 1
+				if reuse {
+					wantState, wantCount = reviewerSkipped, 0
+				}
 				for _, id := range []string{"rid-twin", "rv-twin"} {
-					if g, w := reviewerSignoffCount(t, env, id), reviewerSignoffCount(t, cenv, id); g != w || g > 1 {
-						t.Fatalf("%s sign-offs %d, control %d", id, g, w)
+					if g := storedReviewer(t, restarted, id).State; g != wantState {
+						t.Fatalf("%s state %s, want %s (reuse=%v)", id, g, wantState, reuse)
+					}
+					if g, w := reviewerSignoffCount(t, env, id), reviewerSignoffCount(t, cenv, id); g != wantCount || w != wantCount {
+						t.Fatalf("%s sign-offs %d, control %d, want %d", id, g, w, wantCount)
 					}
 				}
 			})
@@ -1283,8 +1299,8 @@ func TestReviewerRestartMatrixLedgerFaultsThenRecovers(t *testing.T) {
 			}
 			t.Cleanup(func() { reviewerAppendLine = appendLedgerLine })
 			faulty := newTestReviewerService(t, env, run)
-			if err := faulty.recover(); err == nil {
-				t.Fatal("injected ledger fault must fail recovery")
+			if err := faulty.recover(); err == nil || !strings.Contains(err.Error(), "boom") && !errors.Is(err, io.ErrShortWrite) {
+				t.Fatalf("recovery error %v, want the injected ledger fault", err)
 			}
 			if got := reviewerSignoffCount(t, env, "rv-fault"); got != 0 {
 				t.Fatalf("published despite ledger fault: %d", got)
@@ -1310,7 +1326,8 @@ func TestReviewerRestartMatrixLedgerFaultsThenRecovers(t *testing.T) {
 	}
 }
 
-// serveOnceAckFloor serves the single OUT message at stream seq 1 and returns the consumer ack floor afterwards.
+// serveOnceAckFloor serves the single OUT message at stream seq 1 and returns the consumer ack floor, after proving
+// the reviewer was actually delivered the message (Delivered.Stream>=1) and left it pending (NumAckPending>0).
 func serveOnceAckFloor(t *testing.T, env *natsEnv, s *reviewerService, oe OutEnvelope) uint64 {
 	t.Helper()
 	b, _ := json.Marshal(oe)
@@ -1318,16 +1335,35 @@ func serveOnceAckFloor(t *testing.T, env *natsEnv, s *reviewerService, oe OutEnv
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})
 	go func() { defer close(done); serveReviewer(ctx, env.js, s) }()
-	time.Sleep(1500 * time.Millisecond)
+	var info *jetstream.ConsumerInfo
+	deadline := time.Now().Add(20 * time.Second)
+	for time.Now().Before(deadline) {
+		if cons, err := env.js.Consumer(env.ctx, "OUT", "reviewer"); err == nil {
+			if ci, err := cons.Info(env.ctx); err == nil && ci.Delivered.Stream >= 1 {
+				info = ci
+				break
+			}
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if info == nil {
+		cancel()
+		<-done
+		t.Fatal("reviewer consumer never delivered the OUT message")
+	}
+	time.Sleep(500 * time.Millisecond) // let the failed review (and its Nak) run; the assertion below is still on real state
 	cancel()
 	<-done
 	cons, err := env.js.Consumer(env.ctx, "OUT", "reviewer")
 	if err != nil {
 		t.Fatal(err)
 	}
-	info, err := cons.Info(env.ctx)
+	info, err = cons.Info(env.ctx)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if info.Delivered.Stream < 1 || info.NumAckPending == 0 || info.AckFloor.Stream != 0 {
+		t.Fatalf("no delivery proof (want delivered, ack-pending, floor 0): %+v", info)
 	}
 	return info.AckFloor.Stream
 }
@@ -1345,8 +1381,8 @@ func TestReviewerConflictsStopWithoutAckOrPublish(t *testing.T) {
 			t.Fatal(err)
 		}
 		restarted := newTestReviewerService(t, env, run)
-		if err := restarted.recover(); err == nil {
-			t.Fatal("conflicting retained sign-off must fail recovery")
+		if err := restarted.recover(); err == nil || !strings.Contains(err.Error(), "conflicts with record body hash") {
+			t.Fatalf("recovery error %v, want retained-signoff body hash conflict", err)
 		}
 		if floor := serveOnceAckFloor(t, env, restarted, oe); floor != 0 {
 			t.Fatalf("acknowledged despite conflict: floor=%d", floor)
@@ -1368,8 +1404,8 @@ func TestReviewerConflictsStopWithoutAckOrPublish(t *testing.T) {
 			t.Fatal(err)
 		}
 		restarted := newTestReviewerService(t, env, run)
-		if err := restarted.recover(); err == nil {
-			t.Fatal("conflicting ledger must fail recovery")
+		if err := restarted.recover(); err == nil || !strings.Contains(err.Error(), "conflicting line for item") {
+			t.Fatalf("recovery error %v, want conflicting ledger line", err)
 		}
 		if floor := serveOnceAckFloor(t, env, restarted, oe); floor != 0 {
 			t.Fatalf("acknowledged despite conflict: floor=%d", floor)
@@ -1377,8 +1413,74 @@ func TestReviewerConflictsStopWithoutAckOrPublish(t *testing.T) {
 		if n := fhirMessageCount(t, env); n != 0 {
 			t.Fatalf("published despite ledger conflict: %d", n)
 		}
+		if r := storedReviewer(t, restarted, "rv-lconf"); r.State != "prepared" {
+			t.Fatalf("record advanced to %s", r.State)
+		}
 		if b, _ := os.ReadFile(filepath.Join(run, "reviewer_decisions.ndjson")); string(b) != bad {
 			t.Fatalf("conflicting ledger was modified: %q", b)
 		}
 	})
+}
+
+// Control for the post-dedupe-window case: after the window lapses a raw republish of the same Nats-Msg-Id is
+// stored again, which is why recovery must scan the retained stream instead of relying on JetStream dedupe.
+func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	advanceReviewer(t, s, reviewerEnvelope("rv-raw", 1), 1, "published-unrecorded")
+	stream, err := env.js.Stream(env.ctx, "FHIR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := stream.CachedInfo().Config
+	cfg.Duplicates = 100 * time.Millisecond
+	if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(3 * time.Second)
+	rec := storedReviewer(t, s, "rv-raw")
+	if _, err := publishReviewerSignoff(env.js, rec); err != nil {
+		t.Fatal(err)
+	}
+	if got := reviewerSignoffCount(t, env, "rv-raw"); got != 2 {
+		t.Fatalf("raw republish after window left %d copies, want 2 (dedupe expired)", got)
+	}
+}
+
+// Crash on a skipped twin: the skip record is created, the process dies before the OUT ack, and the redelivered
+// message is adopted from the store on restart without a sign-off.
+func TestReviewerRestartAdoptsSkippedTwin(t *testing.T) {
+	setReuse(t, true)
+	env, run := startTestNATS(t), t.TempDir()
+	events := matrixEvents()
+	first := newTestReviewerService(t, env, run)
+	for _, ev := range events[:3] { // target, rid-first, rid-twin (skipped); crash before rv-twin
+		if err := first.review(ev.oe, ev.seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if r := storedReviewer(t, first, "rid-twin"); r.State != reviewerSkipped {
+		t.Fatalf("rid-twin %s, want skipped", r.State)
+	}
+	before := fhirMessageCount(t, env)
+	restarted := newTestReviewerService(t, env, run)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	for _, ev := range events { // redelivery of everything, including the already-skipped twin
+		if err := restarted.review(ev.oe, ev.seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := fhirMessageCount(t, env); got != before {
+		t.Fatalf("FHIR messages %d -> %d", before, got)
+	}
+	if st := restarted.status(); st.DedupedSecond != 1 || st.DedupedLink != 1 || st.Answered != 2 || st.LastOut != 4 {
+		t.Fatalf("status %+v", st)
+	}
+	for _, id := range []string{"rid-twin", "rv-twin"} {
+		if r := storedReviewer(t, restarted, id); r.State != reviewerSkipped {
+			t.Fatalf("%s %s", id, r.State)
+		}
+	}
 }
