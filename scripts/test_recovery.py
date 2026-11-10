@@ -498,15 +498,15 @@ class RecoveryV2Tests(unittest.TestCase):
         source.mkdir()
         for i in range(12):
             (source / f"f{i}.txt").write_text("same plaintext")
-        nonces, wrapped, deks = [], [], []
+        nonces, wrapped, cipher_hashes = [], [], []
         for i in range(8):
             manifest = write_file_bundle(source, self.root / f"n{i}", self.keyring)
             nonces += [r["nonce"] for r in manifest["files"]] + [manifest["wrap_nonce"]]
             wrapped.append(manifest["wrapped_dek"])
-            deks.append(manifest["files"][0]["ciphertext_sha256"])
+            cipher_hashes.append(manifest["files"][0]["ciphertext_sha256"])
         self.assertEqual(len(nonces), len(set(nonces)), "no nonce may repeat across files, wraps or bundles")
         self.assertEqual(len(wrapped), len(set(wrapped)))
-        self.assertEqual(len(deks), len(set(deks)), "identical plaintext must not give identical ciphertext")
+        self.assertEqual(len(cipher_hashes), len(set(cipher_hashes)), "identical plaintext must not give identical ciphertext")
 
     def test_cli_failures_redact_keys_paths_content_and_wrapped_material(self):
         source, nats = make_source_with_nats(self.root)

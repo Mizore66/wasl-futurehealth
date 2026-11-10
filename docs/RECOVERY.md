@@ -114,8 +114,14 @@ payload. Neither the keyring nor any data key is included.
   existing `backup_key`, which is kept only for legacy reads.
 - Restore decrypts into a private mode-0700 staging directory beside the destination (so the destination filesystem
   needs room for one full decrypted copy) and writes the NATS payload to a mode-0700 temporary directory under
-  `${TMPDIR:-/tmp}`. **The `/tmp` (or `TMPDIR`) filesystem must therefore hold the decrypted NATS payload**; on a
-  small or tmpfs `/tmp` set `TMPDIR` to a larger private location, otherwise the restore fails after decryption.
+  `${TMPDIR:-/tmp}`. **That filesystem must hold the decrypted NATS payload.** In `deploy/production.compose.yml` the
+  `recovery` service is `read_only: true` with `tmpfs: ["/tmp:size=64m,mode=1777"]`, so the cap is **64 MB** and `/tmp` is
+  the only writable scratch path there (the staging copy goes to the writable `wasl-run:/var/lib` volume beside
+  `/var/lib/wasl`). Keep `TMPDIR` unset or `/tmp` in that container: any other path is read-only and the restore
+  fails. For a payload larger than 64 MB raise the `size=` on that tmpfs, or mount a larger writable volume (for
+  example at `/scratch`) and set `TMPDIR=/scratch`. The size of the decrypted NATS payload in the 9 Nov drill (6 streams,
+  5,868 messages) was **not recorded** in any artifact, so whether it fits 64 MB is unproven; measure it before relying
+  on the cap (`python3 scripts/recovery.py extract-nats <bundle> <out> --key-file <keyring>; wc -c <out>`).
   Temporary plaintext is removed logically (unlink), which is **not physical secure erasure**.
 
 ## Restore into empty volumes from a clean checkout
@@ -262,6 +268,9 @@ rm -rf "$DRILL"   # only this drill's generated secrets, copies, and evidence di
 ```
 
 ## Observed evidence (9 Nov 2026 UTC)
+
+> **This block is v1 / HMAC-only evidence**: those bundles were authenticated but not encrypted and used the old
+> `backup_key`. It is not evidence of v2 encryption, the keyring, or the staged-restore order.
 
 The drill used synthetic data, isolated Compose projects `waslrecsrccb59036b`, `waslrecdstcb59036b`,
 `waslrectampercb59036b`, and final review-inclusive source/target `waslrecsrccb59036b` / `waslrecfinalcb59036b`.
