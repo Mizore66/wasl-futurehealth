@@ -16,7 +16,8 @@ RUN go vet . && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/wsi7 .
 FROM python:${PYTHON_VERSION}-alpine
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
     WASL_BIN=/app/bin WASL_OUT=/var/lib/wasl
-# booking engine and scripts: numpy + scipy only; pip is not needed at runtime and is removed with its vendored SBOM
+# booking engine and scripts: numpy + scipy, plus cryptography (AES-256-GCM recovery bundles, scripts/recovery_crypto.py);
+# pip is not needed at runtime and is removed with its vendored SBOM
 RUN apk upgrade --no-cache \
  && apk add --no-cache bash util-linux \
  && pip install --no-cache-dir --upgrade "pip==26.3" \

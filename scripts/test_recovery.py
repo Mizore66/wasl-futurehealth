@@ -23,7 +23,7 @@ from recovery import (  # noqa: E402
     verify_bundle,
     write_file_bundle,
 )
-from recovery_crypto import load_keyring, new_keyring  # noqa: E402
+from recovery_crypto import load_keyring, new_keyring, rotate_keyring  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parent
 
@@ -411,6 +411,136 @@ class RecoveryV2Tests(unittest.TestCase):
                 action(broken)
                 with self.assertRaises(ValueError):
                     verify_bundle(broken, self.keyring)
+
+    def test_old_key_generation_missing_from_keyring_refuses_old_bundle_only(self):
+        old_bundle, old_manifest = self.backup("old")
+        rotate_keyring(self.keyring)
+        new_bundle, new_manifest = self.backup("new")
+        doc, active, _ = load_keyring(self.keyring)
+        before = json.dumps(doc["keys"][old_manifest["key_id"]], sort_keys=True)
+        self.assertEqual(verify_bundle(old_bundle, self.keyring)["key_id"], old_manifest["key_id"])
+        self.assertEqual(before, json.dumps(load_keyring(self.keyring)[0]["keys"][old_manifest["key_id"]],
+                                            sort_keys=True), "verification must not modify old generations")
+        pruned = self.root / "pruned.json"
+        pruned.write_text(json.dumps({"schema": doc["schema"], "active": active,
+                                      "keys": {active: doc["keys"][active]}}))
+        self.assertEqual(verify_bundle(new_bundle, pruned)["key_id"], new_manifest["key_id"])
+        with self.assertRaisesRegex(ValueError, "key generation"):
+            verify_bundle(old_bundle, pruned)
+        # a keyring with only the old generation cannot read bundles written under the new one
+        stale = self.root / "stale.json"
+        stale.write_text(json.dumps({"schema": doc["schema"], "active": old_manifest["key_id"],
+                                     "keys": {old_manifest["key_id"]: doc["keys"][old_manifest["key_id"]]}}))
+        with self.assertRaisesRegex(ValueError, "key generation"):
+            verify_bundle(new_bundle, stale)
+
+    def test_manifest_and_ciphertext_truncation_and_extension_classes(self):
+        bundle, _ = self.backup()
+        manifest_path = bundle / "manifest.json"
+        good_manifest = manifest_path.read_bytes()
+        for label, data in (("empty", b""), ("half", good_manifest[: len(good_manifest) // 2]),
+                            ("one-byte-short", good_manifest[:-2]), ("not-object", b"[]\n"),
+                            ("bad-utf8", b"\xff\xfe")):
+            with self.subTest(label):
+                manifest_path.write_bytes(data)
+                with self.assertRaises(ValueError):
+                    verify_bundle(bundle, self.keyring)
+        manifest_path.write_bytes(good_manifest)
+        cipher = bundle / "files/run/audit.json.aead"
+        good = cipher.read_bytes()
+        for label, data in (("zero-length", b""), ("tag-only-minus-one", good[:15]), ("appended", good + b"\0"),
+                            ("prepended", b"\0" + good), ("tag-dropped", good[:-16])):
+            with self.subTest(label):
+                cipher.write_bytes(data)
+                with self.assertRaises(ValueError):
+                    verify_bundle(bundle, self.keyring)
+        cipher.write_bytes(good)
+        self.assertEqual(verify_bundle(bundle, self.keyring)["schema"], "wasl-file-backup-v2-aesgcm")
+
+    def test_authenticated_directory_records_with_unsafe_or_duplicate_paths_are_refused(self):
+        cases = (
+            ("traversal", lambda m: m["dirs"].append({"path": "../x", "mode": 0o700}), "unsafe|duplicate"),
+            ("absolute", lambda m: m["dirs"].append({"path": "/x", "mode": 0o700}), "unsafe|duplicate"),
+            ("duplicate", lambda m: m["dirs"].append(dict(m["dirs"][0])), "unsafe|duplicate"),
+            ("orphan-parent", lambda m: m["dirs"].append({"path": "gone/child", "mode": 0o700}), "malformed"),
+            ("file-is-dir", lambda m: m["dirs"].append({"path": m["files"][0]["path"], "mode": 0o700}),
+             "unsafe|duplicate"),
+            ("setuid-mode", lambda m: m["dirs"][0].__setitem__("mode", 0o4755), "malformed"),
+            ("extra-field", lambda m: m["dirs"][0].__setitem__("uid", 0), "malformed"),
+            ("file-setuid", lambda m: m["files"][0].__setitem__("mode", 0o4755), "malformed"),
+        )
+        for label, mutate, pattern in cases:
+            with self.subTest(label):
+                bundle, _ = self.backup(f"dir-{label}")
+                self.resign(bundle, mutate)
+                with self.assertRaisesRegex(ValueError, pattern):
+                    verify_bundle(bundle, self.keyring)
+
+    def test_backup_refuses_symlinks_and_never_overwrites_a_bundle(self):
+        source, nats = make_source_with_nats(self.root)
+        (source / "run/link").symlink_to(source / "run/audit.json")
+        with self.assertRaises(ValueError):
+            write_file_bundle(source, self.root / "linked", self.keyring, nats_json=nats)
+        (source / "run/link").unlink()
+        (source / "dirlink").symlink_to(source / "run")
+        with self.assertRaises(ValueError):
+            write_file_bundle(source, self.root / "dirlinked", self.keyring, nats_json=nats)
+        (source / "dirlink").unlink()
+        bundle = self.root / "once"
+        write_file_bundle(source, bundle, self.keyring, nats_json=nats)
+        before = (bundle / "manifest.json").read_bytes()
+        with self.assertRaises((ValueError, OSError)):
+            write_file_bundle(source, bundle, self.keyring, nats_json=nats)
+        self.assertEqual((bundle / "manifest.json").read_bytes(), before)
+
+    def test_nonces_are_unique_across_many_bundles_and_wraps(self):
+        source = self.root / "wide"
+        source.mkdir()
+        for i in range(12):
+            (source / f"f{i}.txt").write_text("same plaintext")
+        nonces, wrapped, deks = [], [], []
+        for i in range(8):
+            manifest = write_file_bundle(source, self.root / f"n{i}", self.keyring)
+            nonces += [r["nonce"] for r in manifest["files"]] + [manifest["wrap_nonce"]]
+            wrapped.append(manifest["wrapped_dek"])
+            deks.append(manifest["files"][0]["ciphertext_sha256"])
+        self.assertEqual(len(nonces), len(set(nonces)), "no nonce may repeat across files, wraps or bundles")
+        self.assertEqual(len(wrapped), len(set(wrapped)))
+        self.assertEqual(len(deks), len(set(deks)), "identical plaintext must not give identical ciphertext")
+
+    def test_cli_failures_redact_keys_paths_content_and_wrapped_material(self):
+        source, nats = make_source_with_nats(self.root)
+        bundle = self.root / "cli"
+        write_file_bundle(source, bundle, self.keyring, nats_json=nats)
+        manifest = json.loads((bundle / "manifest.json").read_text())
+        flip_last_byte(bundle / "files/run/audit.json.aead")
+        raw = self.root / "backup_key"
+        raw.write_bytes(b"S3CRET-" + b"r" * 40)
+        other = self.root / "other.json"
+        make_keyring(other)
+        script = str(SCRIPTS / "recovery.py")
+        runs = [["verify", str(bundle), "--key-file", str(self.keyring)],
+                ["verify", str(bundle), "--key-file", str(other)],
+                ["verify", str(bundle), "--key-file", str(raw)],
+                ["verify", str(bundle), "--key-file", str(raw), "--legacy-hmac"],
+                ["migrate", str(bundle), "--key-file", str(self.keyring), str(self.root / "dest")],
+                ["extract-nats", str(bundle), str(self.root / "n.json"), "--key-file", str(other)]]
+        secrets = [raw.read_bytes().decode(), "synthetic", manifest["wrapped_dek"], manifest["wrap_nonce"]]
+        for keyring in (self.keyring, other):
+            _, _, entry = load_keyring(keyring)
+            for value in entry.values():
+                secrets += [value, base64.b64decode(value).hex()]
+        for args in runs:
+            result = subprocess.run([sys.executable, script, *args], text=True, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT)
+            with self.subTest(args[0], key=Path(args[args.index("--key-file") + 1]).name):
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("recovery refused", result.stdout)
+                self.assertNotIn("Traceback", result.stdout)
+                for secret in secrets:
+                    self.assertNotIn(secret, result.stdout)
+        self.assertFalse((self.root / "dest").exists())
+        self.assertFalse((self.root / "n.json").exists())
 
     def test_legacy_hmac_requires_explicit_opt_in(self):
         source, _ = make_source_with_nats(self.root)

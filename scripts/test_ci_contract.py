@@ -167,6 +167,26 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(step["with"]["go-version-file"], "pipeline/go.mod")
                 self.assertEqual(step["with"]["cache-dependency-path"], "pipeline/go.sum")
 
+    def test_recovery_encryption_dependency_and_v2_keyring_defaults_are_pinned(self):
+        requirements = (ROOT / "requirements-ci.txt").read_text().splitlines()
+        self.assertIn("cryptography==50.0.2", requirements)
+        self.assertIn('"cryptography==50.0.2"', (ROOT / "Dockerfile").read_text())
+        self.assertIn("pip install -r requirements-ci.txt", self.runs("python-test"))
+        demo = (ROOT / "scripts" / "demo.sh").read_text()
+        self.assertIn("/run/secrets/recovery_keys.json", demo)
+        self.assertNotIn("/run/secrets/backup_key", demo)
+        compose = (ROOT / "deploy" / "production.compose.yml").read_text()
+        self.assertIn("WASL_RECOVERY_KEY_FILE: /run/secrets/recovery_keys.json", compose)
+        self.assertNotIn("WASL_RECOVERY_LEGACY_HMAC", compose)  # legacy reads are never a deployment default
+        self.assertIn("python3 -m unittest discover -v -s scripts -p 'test_*.py'", self.runs("python-test"))
+
+    def test_no_recovery_key_material_is_tracked(self):
+        tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, text=True, stdout=subprocess.PIPE, check=True).stdout
+        for name in tracked.splitlines():
+            base = Path(name).name
+            self.assertNotIn(base, {"recovery_keys.json", "backup_key", "js_key"}, name)
+            self.assertFalse(base.endswith((".aead", ".pem", ".key")), name)
+
     def test_go_toolchain_includes_crypto_x509_security_fix(self):
         # GO-2026-6809 is reachable in Go 1.27.2 and fixed in Go 1.27.3.
         self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.3$")
