@@ -45,8 +45,9 @@ FILE_AAD_PREFIX = SCHEMA_V2.encode() + b"|file|"
 TAG_BYTES = 16
 _HEX64 = re.compile(r"[0-9a-f]{64}")
 _MANIFEST_FIELDS = {"schema", "key_id", "created_at", "nondeterministic_fields", "wrapped_dek", "wrap_nonce",
-                    "files", "hmac_sha256"}
-_RECORD_FIELDS = {"path", "size", "sha256", "nonce", "ciphertext_sha256"}
+                    "dirs", "files", "hmac_sha256"}
+_RECORD_FIELDS = {"path", "size", "mode", "sha256", "nonce", "ciphertext_sha256"}
+_DIR_FIELDS = {"path", "mode"}
 
 
 def _canonical(value) -> bytes:
@@ -112,7 +113,22 @@ def _safe_path(value) -> str:
     return value
 
 
-def _check_path_set(paths: list[str]) -> None:
+def _check_path_set(paths: list[str], ciphertext: bool = True) -> None:
+    """Reject unsafe/duplicate paths and file/directory conflicts, for plaintext paths and their `.aead` names."""
+    _check_one_path_set(paths)
+    if ciphertext:  # e.g. files "x" and "x.aead/y" would need the ciphertext name "x.aead" to be file and directory
+        _check_one_path_set([path + ".aead" for path in paths])
+
+
+def _check_dirs_and_files(dirs: list[str], files: list[str]) -> None:
+    """Directory records are safe and unique, and no path is both a directory and a file."""
+    for path in dirs:
+        _safe_path(path)
+    if len(set(dirs)) != len(dirs) or set(dirs) & set(files):
+        raise ValueError(_UNSAFE)
+
+
+def _check_one_path_set(paths: list[str]) -> None:
     seen = set()
     for path in paths:
         _safe_path(path)
@@ -133,6 +149,16 @@ def _write_exclusive(path: Path, data: bytes, mode: int = 0o600) -> None:
         handle.flush()
         os.fchmod(handle.fileno(), mode)
         os.fsync(handle.fileno())
+
+
+def _source_dirs(source: Path) -> dict[str, int]:
+    """Every directory below `source` (including empty ones) with its permission bits."""
+    found = {}
+    for root, dirs, _ in os.walk(source):
+        for directory in dirs:
+            path = Path(root) / directory
+            found[path.relative_to(source).as_posix()] = stat.S_IMODE(path.lstat().st_mode)
+    return found
 
 
 def _source_files(source: Path) -> list[tuple[str, Path]]:
@@ -176,6 +202,7 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
     if bundle.exists() or bundle.is_symlink():
         raise ValueError(f"backup destination already exists: {bundle}")
     items = _source_files(source)
+    nats_source = None
     if nats_json is not None:
         nats_source = Path(nats_json)
         if nats_source.is_symlink() or not nats_source.is_file():
@@ -183,6 +210,14 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
         items.append(("nats/nats.json", nats_source))
     items.sort(key=lambda item: item[0])
     _check_path_set([relative for relative, _ in items])
+    dir_modes = _source_dirs(source)
+    if nats_json is not None:
+        dir_modes.setdefault("nats", 0o700)
+    for relative, _ in items:  # every ancestor directory is recorded so restore never invents a mode
+        parts = relative.split("/")
+        for i in range(1, len(parts)):
+            dir_modes.setdefault("/".join(parts[:i]), 0o700)
+    _check_dirs_and_files(list(dir_modes), [relative for relative, _ in items])
     bundle.parent.mkdir(parents=True, exist_ok=True)
     dek = new_dek()
     wrap_nonce, wrapped = wrap_dek(entry, key_id, dek)
@@ -192,12 +227,13 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
         records = []
         for relative, path in items:
             plaintext = path.read_bytes()
+            mode = 0o600 if path is nats_source else stat.S_IMODE(path.lstat().st_mode)
             sha256 = hashlib.sha256(plaintext).hexdigest()
             nonce, ciphertext = encrypt_payload(dek, _file_aad(key_id, relative, len(plaintext), sha256), plaintext)
             target = staging / "files" / (relative + ".aead")
             target.parent.mkdir(parents=True, exist_ok=True)
             _write_exclusive(target, ciphertext)
-            records.append({"path": relative, "size": len(plaintext), "sha256": sha256, "nonce": _b64(nonce),
+            records.append({"path": relative, "size": len(plaintext), "mode": mode, "sha256": sha256, "nonce": _b64(nonce),
                             "ciphertext_sha256": hashlib.sha256(ciphertext).hexdigest()})
         manifest = {
             "schema": SCHEMA_V2,
@@ -206,6 +242,7 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
             "nondeterministic_fields": NONDETERMINISTIC,
             "wrapped_dek": wrapped,
             "wrap_nonce": wrap_nonce,
+            "dirs": [{"path": d, "mode": dir_modes[d]} for d in sorted(dir_modes)],
             "files": records,
         }
         manifest["hmac_sha256"] = _manifest_mac(manifest, auth_key)
@@ -258,7 +295,7 @@ def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
         if not isinstance(record, dict) or set(record) != _RECORD_FIELDS:
             raise ValueError("backup manifest file record is malformed")
         size = record["size"]
-        if type(size) is not int or size < 0:
+        if type(size) is not int or size < 0 or type(record["mode"]) is not int or not 0 <= record["mode"] <= 0o777:
             raise ValueError("backup manifest file record is malformed")
         for name in ("sha256", "ciphertext_sha256"):
             if not isinstance(record[name], str) or not _HEX64.fullmatch(record[name]):
@@ -267,7 +304,22 @@ def _v2_check_manifest(keyring, manifest) -> tuple[bytes, list[dict]]:
         if nonce in nonces:
             raise ValueError("backup manifest reuses a file nonce")
         nonces.add(nonce)
-    _check_path_set([record["path"] for record in records])
+    dirs = manifest["dirs"]
+    if not isinstance(dirs, list):
+        raise ValueError("backup manifest is malformed")
+    for entry_ in dirs:
+        if (not isinstance(entry_, dict) or set(entry_) != _DIR_FIELDS or type(entry_["mode"]) is not int
+                or not 0 <= entry_["mode"] <= 0o777):
+            raise ValueError("backup manifest directory record is malformed")
+    file_paths = [record["path"] for record in records]
+    dir_paths = [entry_["path"] for entry_ in dirs]
+    _check_path_set(file_paths)
+    _check_dirs_and_files(dir_paths, file_paths)
+    known = set(dir_paths)
+    for path in dir_paths + file_paths:
+        parts = path.split("/")
+        if any("/".join(parts[:i]) not in known for i in range(1, len(parts))):
+            raise ValueError("backup manifest directory record is malformed")
     dek = unwrap_dek(entry, key_id, manifest["wrap_nonce"], manifest["wrapped_dek"])
     return dek, records
 
@@ -383,11 +435,14 @@ def _empty_directory(directory: Path) -> None:
             pass
 
 
-def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, destination: Path | str) -> None:
+def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, destination: Path | str,
+                         skip: frozenset = frozenset()) -> None:
     """Decrypt an authenticated v2 bundle into a caller-provided empty mode-0700 directory.
 
     The manifest is re-authenticated and the exact file set re-checked here, so a forged manifest cannot reach the
-    filesystem. On any error the staging directory is emptied again (this is not physical erasure).
+    filesystem. Recorded directories (including empty ones) and file modes are restored; `skip` names payload paths
+    that are deliberately not written. On any error the staging directory is emptied again (this is not physical
+    erasure).
     """
     bundle, destination = Path(bundle), Path(destination)
     try:
@@ -403,23 +458,53 @@ def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, dest
     dek, records = _v2_check_manifest(keyring, manifest)
     _v2_check_files(bundle, records)
     try:
-        made = [destination]
+        modes = {destination: stat.S_IMODE(info.st_mode)}
+        for entry in manifest["dirs"]:
+            prefix = entry["path"] + "/"
+            if (any(name.startswith(prefix) for name in skip)
+                    and not any(r["path"].startswith(prefix) and r["path"] not in skip for r in records)
+                    and not any(d["path"].startswith(prefix) for d in manifest["dirs"])):
+                continue  # a directory that only held skipped payloads
+            path = destination / entry["path"]
+            os.mkdir(path, 0o700)
+            modes[path] = entry["mode"]
         for record in records:
+            if record["path"] in skip:
+                continue
             plaintext = _v2_read_payload(bundle, dek, manifest["key_id"], record)
-            parts = record["path"].split("/")
-            current = destination
-            for part in parts[:-1]:
-                current = current / part
-                if not current.exists():
-                    os.mkdir(current, 0o700)
-                    os.chmod(current, 0o700)
-                    made.append(current)
-            _write_exclusive(current / parts[-1], plaintext)
-        for directory in reversed(made):
+            target = destination / record["path"]
+            _write_exclusive(target, plaintext, 0o600)
+            os.chmod(target, record["mode"])
+        for directory in sorted(modes, key=lambda p: len(p.parts), reverse=True):
             _fsync_directory(directory)
+        for directory, mode in modes.items():  # final modes last, so restrictive directories never block writes
+            os.chmod(directory, mode)
     except BaseException:
+        for directory in destination.rglob("*"):  # make directories traversable again before emptying
+            if directory.is_dir() and not directory.is_symlink():
+                os.chmod(directory, 0o700)
         _empty_directory(destination)
         raise
+
+
+def _cleanup_staging(staging: Path) -> None:
+    """Remove a plaintext staging directory and report (never hide) a failure; this is not physical erasure."""
+    failures = []
+    if not staging.exists() and not staging.is_symlink():
+        return  # already installed or removed
+
+    def onerror(function, path, exc_info):
+        failures.append(str(path))
+
+    for directory in staging.rglob("*"):
+        if directory.is_dir() and not directory.is_symlink():
+            try:
+                os.chmod(directory, 0o700)
+            except OSError:
+                pass
+    shutil.rmtree(staging, onerror=onerror)
+    if failures or staging.exists():
+        raise OSError(f"plaintext restore staging could not be fully removed: {staging}")
 
 
 def _fsync_directory(path: Path) -> None:
@@ -430,23 +515,17 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
-def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | str, replace: bool = False,
-                  legacy_hmac: bool = False) -> dict:
-    bundle, destination = Path(bundle).resolve(), Path(destination).resolve()
-    if _read_manifest(bundle).get("schema") == SCHEMA_V2:
-        # Encrypted restore is added with the transactional installer; never copy ciphertext as if it were plaintext.
-        raise ValueError("restoring encrypted v2 bundles is not supported by this command yet")
-    manifest = verify_bundle(bundle, key_file, legacy_hmac=legacy_hmac)
-    if destination.exists() and not destination.is_dir():
-        raise ValueError(f"migration destination is not a directory: {destination}")
+def install_staging_with_rollback(staging: Path, destination: Path, replace: bool) -> dict:
+    """Atomically install a fully prepared `staging` directory (same filesystem) as `destination`.
+
+    A non-empty destination is retained as a rollback generation (replace required). Returns the rollback path
+    (or None). On failure the previous generation is restored; the caller owns `staging`.
+    """
     has_contents = destination.exists() and any(destination.iterdir())
     if has_contents and not replace:
         raise ValueError(f"migration destination is not empty (use replace to retain a rollback): {destination}")
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
     rollback = None
     try:
-        _copy_tree_contents(bundle / "files", staging)
         if has_contents:
             rollback = Path(tempfile.mkdtemp(prefix=f".{destination.name}.rollback-", dir=destination.parent))
             rollback.rmdir()
@@ -458,12 +537,15 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
     except Exception:
         if rollback is not None and rollback.exists() and not destination.exists():
             os.replace(rollback, destination)
-        shutil.rmtree(staging, ignore_errors=True)
         raise
+    return {"rollback_path": str(rollback) if rollback is not None else None}
+
+
+def _write_journal(destination: Path, rollback_path, manifest: dict) -> dict:
     journal = {
         "schema": "wasl-file-migration-v1",
         "destination": str(destination),
-        "rollback_path": str(rollback) if rollback is not None else None,
+        "rollback_path": rollback_path,
         "installed_path": None,
         "bundle_hmac_sha256": manifest["hmac_sha256"],
         "completed_at": datetime.now(timezone.utc).isoformat(),
@@ -476,6 +558,62 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
     _fsync_directory(destination.parent)
     journal["journal_path"] = str(journal_path)
     return journal
+
+
+NATS_PAYLOAD = "nats/nats.json"
+
+
+def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | str, replace: bool = False,
+                  legacy_hmac: bool = False) -> dict:
+    bundle, destination = Path(bundle).resolve(), Path(destination).resolve()
+    manifest = verify_bundle(bundle, key_file, legacy_hmac=legacy_hmac)  # before any destination or staging write
+    if destination.exists() and not destination.is_dir():
+        raise ValueError(f"migration destination is not a directory: {destination}")
+    has_contents = destination.exists() and any(destination.iterdir())
+    if has_contents and not replace:
+        raise ValueError(f"migration destination is not empty (use replace to retain a rollback): {destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if manifest["schema"] == SCHEMA_V2:
+        keyring, _, _ = load_keyring(Path(key_file))
+        staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
+        try:
+            # The NATS payload is restored through `restore-nats`, never as a plaintext file in the run directory.
+            _decrypt_v2_payloads(bundle, keyring, manifest, staging, skip=frozenset({NATS_PAYLOAD}))
+            installed = install_staging_with_rollback(staging, destination, replace)
+        except BaseException as exc:
+            try:
+                _cleanup_staging(staging)
+            except OSError as cleanup:  # report, never hide, a plaintext cleanup failure
+                raise ValueError(f"{exc}; {cleanup}") from None
+            raise
+        try:
+            _cleanup_staging(staging)  # no-op after a successful rename; reports residue instead of hiding it
+        except OSError as cleanup:
+            raise ValueError(f"restore installed but {cleanup}") from None
+        return _write_journal(destination, installed["rollback_path"], manifest)
+    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
+    try:
+        _copy_tree_contents(bundle / "files", staging)
+        installed = install_staging_with_rollback(staging, destination, replace)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    return _write_journal(destination, installed["rollback_path"], manifest)
+
+
+def decrypt_nats_payload(bundle: Path | str, key_file: Path | str, output: Path | str) -> None:
+    """Authenticate a v2 bundle completely, then write only its NATS payload (mode 0600) to a new `output` path."""
+    bundle, output = Path(bundle), Path(output)
+    manifest = verify_bundle(bundle, key_file)
+    if manifest["schema"] != SCHEMA_V2:
+        raise ValueError("NATS payload extraction requires a v2 bundle")
+    keyring, _, _ = load_keyring(Path(key_file))
+    dek, records = _v2_check_manifest(keyring, manifest)
+    for record in records:
+        if record["path"] == NATS_PAYLOAD:
+            _write_exclusive(output, _v2_read_payload(bundle, dek, manifest["key_id"], record))
+            return
+    raise ValueError("bundle has no NATS payload")
 
 
 def rollback_files(journal: dict) -> None:
@@ -520,6 +658,10 @@ def main() -> None:
             command.add_argument("--replace", action="store_true")
     rotate = sub.add_parser("rotate-key")
     rotate.add_argument("--key-file", type=Path, required=True)
+    nats = sub.add_parser("extract-nats")
+    nats.add_argument("bundle", type=Path)
+    nats.add_argument("output", type=Path)
+    nats.add_argument("--key-file", type=Path, required=True)
     rollback = sub.add_parser("rollback")
     rollback.add_argument("journal", type=Path)
     args = parser.parse_args()
@@ -530,6 +672,9 @@ def main() -> None:
     elif args.command == "rotate-key":
         print(rotate_keyring(args.key_file))  # only the non-secret new generation id
         return
+    elif args.command == "extract-nats":
+        decrypt_nats_payload(args.bundle, args.key_file, args.output)
+        result = {"output": str(args.output)}
     elif args.command == "migrate":
         result = migrate_files(args.path, args.key_file, args.destination, args.replace, args.legacy_hmac)
     else:
