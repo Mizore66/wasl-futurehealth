@@ -317,7 +317,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
                     <NumberFlow value={p.days} />
                   </span>
                   <span className="text-muted">days since referral</span>
@@ -454,7 +454,7 @@ function Track({ days, referralDay }: { days: number; referralDay: number }) {
         <span className="absolute top-1 h-2 rounded-r-chip bg-negative" style={{ left: `${tick}%`, width: `${over}%` }} />
         <span className="absolute top-0 h-4 w-0.5 bg-ink" style={{ left: `${tick}%` }} />
       </div>
-      <div className="relative mt-1.5 h-4 text-small text-muted">
+      <div className="relative mt-1.5 h-4 text-small tabular-nums text-muted">
         <span className="absolute left-0">Referred {formatDay(referralDay)}</span>
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${tick}%` }}>
           Day {STANDARD_DAYS} · {formatDay(referralDay + STANDARD_DAYS)}

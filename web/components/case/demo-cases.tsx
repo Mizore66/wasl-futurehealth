@@ -29,7 +29,7 @@ export async function CaseNotFound({ base }: { base: "/app/patients" | "/app/rev
               >
                 <span className="font-medium">{person?.display_name ?? shortId(c.id)}</span>
                 <span className="text-muted">
-                  {plain(c.fixture)} · <span className="font-mono text-small">{shortId(c.id)}</span>
+                  {plain(c.fixture)} · <span className="text-small">{shortId(c.id)}</span>
                 </span>
               </Link>
             </li>

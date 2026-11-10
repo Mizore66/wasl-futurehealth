@@ -57,7 +57,7 @@ export function ReadersTable({ view, signed }: { view: ReviewView; signed?: Outc
           Is the report enough to close her case?
         </h2>
         <span className="text-small text-muted">
-          {view.unit} report <span className="font-mono">{view.report.id}</span> · {view.report.on}
+          {view.unit} report {view.report.id} · {view.report.on}
         </span>
       </div>
       <div className="mt-2" data-testid="readers">

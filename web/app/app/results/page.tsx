@@ -44,7 +44,7 @@ function FalseClosures() {
         <div
           role="img"
           aria-label={`Observed false-closure rate 0%. 95% upper bound ${upper.toFixed(2)}%, on a scale from 0% to ${SCALE}%.`}
-          className="relative mt-1.5 h-[60px]"
+          className="relative mt-1.5 h-[60px] tabular-nums"
         >
           <div className="absolute inset-x-0 top-[9px] h-0.5 bg-rule" />
           <div className="absolute left-0 top-2 h-1 bg-ink" style={{ width: ubAt }} />
@@ -104,7 +104,7 @@ function Kpi() {
       <div
         role="img"
         aria-label={`Within 31 days, held-out noise: Emirates ID only ${eid.display}, Wasl ${wasl.display}, truth ${truth.display}.`}
-        className="relative mt-5 h-[136px]"
+        className="relative mt-5 h-[136px] tabular-nums"
       >
         {ticks.map((t) => (
           <div key={t}>
@@ -181,7 +181,7 @@ function Review() {
       <div
         role="img"
         aria-label={`Two reviewers: 0 false closures in ${double.display}. One reviewer: ${single.display}.`}
-        className="mt-4 grid grid-cols-[104px_minmax(0,1fr)] items-center gap-y-2.5"
+        className="mt-4 grid grid-cols-[104px_minmax(0,1fr)] items-center gap-y-2.5 tabular-nums"
       >
         <span className="text-body">Two reviewers</span>
         <span data-testid="double-review" className="flex items-center gap-2">

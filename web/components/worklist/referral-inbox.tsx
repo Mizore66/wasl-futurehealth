@@ -272,7 +272,7 @@ export function ReferralInbox({
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" className={cn("text-lead font-bold", lateOpen ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" className={cn("text-lead font-bold tabular-nums", lateOpen ? "text-negative" : "text-ink")}>
                     {r.waiting}
                   </span>
                   <span className="text-muted">{r.state === "new" ? "days waiting" : "days since referral"}</span>
@@ -390,7 +390,7 @@ export function ReferralInbox({
               {r.details.map(([k, v]) => (
                 <div key={k}>
                   <dt className="text-small text-muted">{k}</dt>
-                  <dd className={cn("m-0", k === "Case" && "font-mono text-small text-muted")}>{v}</dd>
+                  <dd className={cn("m-0", k === "Case" && "text-small text-muted")}>{v}</dd>
                 </div>
               ))}
             </dl>

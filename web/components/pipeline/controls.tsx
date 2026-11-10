@@ -45,7 +45,7 @@ export function PlaybackControls({
     <div role="group" aria-label="Replay controls" className="flex w-full min-w-0 flex-col gap-2 sm:w-auto sm:items-end">
       <div className="flex flex-wrap items-center gap-3 sm:justify-end">
         <span className="flex min-w-0 flex-col sm:items-end">
-          <span className="text-body font-medium" data-testid="replay-position">
+          <span className="text-body font-medium tabular-nums" data-testid="replay-position">
             {position}
             {paused ? " · paused" : ""}
           </span>

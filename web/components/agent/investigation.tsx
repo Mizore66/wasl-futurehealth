@@ -22,11 +22,11 @@ export function InvestigationCard({ inv, near }: { inv: AgentInvestigation; near
       </p>
       <p className="m-0 mt-2 max-w-[72ch]">
         It compared the referral clinic&apos;s registration{" "}
-        <span className="break-all font-mono text-small">
+        <span className="break-all text-small">
           {a.provider} {a.mrn}
         </span>{" "}
         with the registration at the hospital that did the exam{" "}
-        <span className="break-all font-mono text-small">
+        <span className="break-all text-small">
           {b.provider} {b.mrn}
         </span>
         .{near && ` The match probability was ${near.p.toFixed(3)}, just under the ${near.tau} auto-close line, so a person had to decide.`}
