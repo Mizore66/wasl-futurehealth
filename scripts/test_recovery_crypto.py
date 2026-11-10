@@ -6,6 +6,7 @@ import os
 import stat
 import sys
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 
@@ -133,7 +134,45 @@ class KeyringTests(unittest.TestCase):
         self.assertNotEqual(new_entry["wrap_key"], old_entry["wrap_key"])
         self.assertNotEqual(new_entry["auth_key"], old_entry["auth_key"])
         self.assertEqual(unwrap_dek(new_entry, active, *wrap_dek(new_entry, active, old_dek)), old_dek)
-        self.assertEqual(sorted(os.listdir(self.root)), ["recovery_keys.json"])
+        self.assertEqual(sorted(os.listdir(self.root)), [".recovery_keys.json.lock", "recovery_keys.json"])
+
+    def test_trailing_newline_key_ids_rejected(self):
+        entry = {"wrap_key": b64(os.urandom(32)), "auth_key": b64(os.urandom(32))}
+        dek = new_dek()
+        with self.assertRaises(ValueError):
+            wrap_dek(entry, "g1\n", dek)
+        nonce, wrapped = wrap_dek(entry, "g1", dek)
+        with self.assertRaises(ValueError):
+            unwrap_dek(entry, "g1\n", nonce, wrapped)
+        self.assert_rejects_without_secret(self.good(active="g1\n", keys={"g1\n": entry}))
+        self.assert_rejects_without_secret(self.good(keys={"g1\n": entry}, active="g1\n"))
+
+    def test_concurrent_rotations_lose_no_generation(self):
+        initial = make_keyring(self.path)
+        before = os.stat(self.path)
+        count = 12
+        barrier = threading.Barrier(count)
+        ids, errors = [], []
+
+        def worker():
+            try:
+                barrier.wait()
+                ids.append(rotate_keyring(self.path))
+            except BaseException as exc:  # noqa: BLE001
+                errors.append(exc)
+
+        threads = [threading.Thread(target=worker) for _ in range(count)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(errors, [])
+        rotated, active, _ = load_keyring(self.path)
+        self.assertEqual(len(set(ids)), count)
+        self.assertEqual(set(rotated["keys"]), set(ids) | {initial["active"]})
+        self.assertIn(active, ids)
+        self.assertEqual(stat.S_IMODE(os.stat(self.path).st_mode), stat.S_IMODE(before.st_mode))
+        self.assertEqual(sorted(os.listdir(self.root)), [".recovery_keys.json.lock", "recovery_keys.json"])
 
     def test_rotate_rejects_invalid_keyring(self):
         self.write({"nope": 1})
