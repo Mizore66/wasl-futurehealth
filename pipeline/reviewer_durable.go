@@ -445,10 +445,35 @@ func ledgerLineItem(line []byte) (string, error) {
 	return id, nil
 }
 
-// reconcileReviewerLedger makes the local ledger hold rec.Ledger exactly once. Identical existing bytes are
-// accepted, a missing line is appended, anything else for the item (different bytes, duplicates, a malformed or
-// unterminated ledger) fails closed. Historical lines are never rewritten.
-func reconcileReviewerLedger(path string, rec reviewerRecord) error {
+// reviewerLedgerIndex maps item id -> its complete ledger lines (newline included), parsed strictly in one pass.
+type reviewerLedgerIndex map[string][]string
+
+func loadReviewerLedgerIndex(path string) (reviewerLedgerIndex, error) {
+	idx := reviewerLedgerIndex{}
+	existing, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("reviewer ledger %s: %w", path, err)
+	}
+	if len(existing) == 0 {
+		return idx, nil
+	}
+	if existing[len(existing)-1] != '\n' {
+		return nil, fmt.Errorf("reviewer ledger %s: unterminated final line", path)
+	}
+	for i, raw := range strings.SplitAfter(string(existing[:len(existing)-1])+"\n", "\n") {
+		if raw == "" {
+			continue
+		}
+		id, err := ledgerLineItem([]byte(strings.TrimSuffix(raw, "\n")))
+		if err != nil {
+			return nil, fmt.Errorf("reviewer ledger %s line %d: %w", path, i+1, err)
+		}
+		idx[id] = append(idx[id], raw)
+	}
+	return idx, nil
+}
+
+func checkReviewerLedgerLine(rec reviewerRecord) error {
 	want := []byte(rec.Ledger)
 	if len(want) == 0 || want[len(want)-1] != '\n' || bytes.Count(want, []byte("\n")) != 1 {
 		return fmt.Errorf("reviewer record %q: ledger line must be exactly one newline-terminated line", rec.ItemID)
@@ -456,39 +481,46 @@ func reconcileReviewerLedger(path string, rec reviewerRecord) error {
 	if id, err := ledgerLineItem(want[:len(want)-1]); err != nil || id != rec.ItemID {
 		return fmt.Errorf("reviewer record %q: ledger line invalid or for another item (%v)", rec.ItemID, err)
 	}
-	existing, err := os.ReadFile(path)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("reviewer ledger %s: %w", path, err)
+	return nil
+}
+
+// reconcileReviewerLedgerIdx makes the ledger hold rec.Ledger exactly once, using a pre-parsed index (updated after
+// an append). Identical existing bytes are accepted, a missing line is appended, anything else for the item
+// (different bytes, duplicates) fails closed.
+func reconcileReviewerLedgerIdx(path string, idx reviewerLedgerIndex, rec reviewerRecord) error {
+	if err := checkReviewerLedgerLine(rec); err != nil {
+		return err
 	}
-	matches := 0
-	if len(existing) > 0 {
-		if existing[len(existing)-1] != '\n' {
-			return fmt.Errorf("reviewer ledger %s: unterminated final line", path)
-		}
-		for i, raw := range strings.SplitAfter(string(existing[:len(existing)-1])+"\n", "\n") {
-			if raw == "" {
-				continue
-			}
-			id, err := ledgerLineItem([]byte(strings.TrimSuffix(raw, "\n")))
-			if err != nil {
-				return fmt.Errorf("reviewer ledger %s line %d: %w", path, i+1, err)
-			}
-			if id != rec.ItemID {
-				continue
-			}
-			if raw != rec.Ledger {
-				return fmt.Errorf("reviewer ledger %s: conflicting line for item %q", path, rec.ItemID)
-			}
-			matches++
+	lines := idx[rec.ItemID]
+	for _, l := range lines {
+		if l != rec.Ledger {
+			return fmt.Errorf("reviewer ledger %s: conflicting line for item %q", path, rec.ItemID)
 		}
 	}
 	switch {
-	case matches > 1:
-		return fmt.Errorf("reviewer ledger %s: item %q appears %d times", path, rec.ItemID, matches)
-	case matches == 1:
+	case len(lines) > 1:
+		return fmt.Errorf("reviewer ledger %s: item %q appears %d times", path, rec.ItemID, len(lines))
+	case len(lines) == 1:
 		return nil
 	}
-	return reviewerAppendLine(path, want)
+	if err := reviewerAppendLine(path, []byte(rec.Ledger)); err != nil {
+		return err
+	}
+	idx[rec.ItemID] = []string{rec.Ledger}
+	return nil
+}
+
+// reconcileReviewerLedger makes the local ledger hold rec.Ledger exactly once, parsing the whole file. Historical
+// lines are never rewritten; different bytes, duplicates or a malformed or unterminated ledger fail closed.
+func reconcileReviewerLedger(path string, rec reviewerRecord) error {
+	if err := checkReviewerLedgerLine(rec); err != nil {
+		return err
+	}
+	idx, err := loadReviewerLedgerIndex(path)
+	if err != nil {
+		return err
+	}
+	return reconcileReviewerLedgerIdx(path, idx, rec)
 }
 
 // ---------------- durable reviewer service ----------------
@@ -516,6 +548,13 @@ type reviewerService struct {
 	// holdFired: item whose prepare ran the presenter hold; held is set only after that record is durable.
 	holdFired string
 	pending   *reviewerRecord // stored record whose effects have not all completed (retried before any new item)
+	// pendingFull: the pending record needs the full ledger parse and retained-stream scan (adoption of a stored
+	// record, or a retry after a failed attempt). A freshly created record leaves it false: nothing can have landed.
+	pendingFull bool
+
+	// Test seams (defaults are the real functions).
+	findSignoff func(jetstream.JetStream, string, string) (uint64, bool, error)
+	loadLedger  func(string) (reviewerLedgerIndex, error)
 
 	statMu sync.Mutex
 	st     reviewerStatus
@@ -527,7 +566,7 @@ func newReviewerService(js jetstream.JetStream, runDir string, cfg ReviewerCfg, 
 		return nil, err
 	}
 	return &reviewerService{js: js, store: store, runDir: runDir, ledgerPath: filepath.Join(runDir, "reviewer_decisions.ndjson"),
-		cfg: cfg, tr: tr, seed: seed, revLat: revLat, hold: hold, publish: publishReviewerSignoff,
+		cfg: cfg, tr: tr, seed: seed, revLat: revLat, hold: hold, publish: publishReviewerSignoff, findSignoff: findReviewerSignoff, loadLedger: loadReviewerLedgerIndex,
 		seen: map[string]bool{}, wl: idWorklist{}, lw: linkWorklist{}}, nil
 }
 
@@ -554,9 +593,13 @@ func (s *reviewerService) recover() error {
 		return err
 	}
 	seen, wl, lw := map[string]bool{}, idWorklist{}, linkWorklist{}
+	idx, err := s.loadLedger(s.ledgerPath) // parsed once for every record
+	if err != nil {
+		return err
+	}
 	for _, r := range recs {
 		if r.State != reviewerSkipped {
-			if _, err := s.reconcile(r, true); err != nil {
+			if _, err := s.reconcile(r, true, idx); err != nil {
 				return err
 			}
 			wl.record(r.Item, r.Signoff)
@@ -570,16 +613,18 @@ func (s *reviewerService) recover() error {
 	if err := s.store.saveStatus(st); err != nil {
 		return err
 	}
-	s.seen, s.wl, s.lw, s.pending = seen, wl, lw, nil
+	s.seen, s.wl, s.lw, s.pending, s.pendingFull = seen, wl, lw, nil, false
 	s.statMu.Lock()
 	s.st = st
 	s.statMu.Unlock()
 	return nil
 }
 
-// reconcile moves rec to published, performing only the effects still missing. scan=true first looks for the
-// sign-off in the retained FHIR stream (restart: JetStream dedupe may have expired); scan=false publishes directly.
-func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerRecord, error) {
+// reconcile moves rec to published, performing only the effects still missing. full=true (recovery, retry after a
+// failure, adoption) validates the whole ledger (idx, parsed on demand when nil) and first looks for the sign-off
+// in the retained FHIR stream (JetStream dedupe may have expired). full=false is the fresh-record hot path: the
+// line is appended and the sign-off published directly, since nothing of this record can exist yet.
+func (s *reviewerService) reconcile(rec reviewerRecord, full bool, idx reviewerLedgerIndex) (reviewerRecord, error) {
 	// A previous attempt may have advanced the stored record (or its write landed despite an error): continue from
 	// the stored state once its payload is validated against ours. Never move backward.
 	stored, ok, err := s.store.get(rec.ItemID)
@@ -594,8 +639,23 @@ func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerReco
 	}
 	rec = stored
 	if rec.State == "prepared" {
-		if err := reconcileReviewerLedger(s.ledgerPath, rec); err != nil {
-			return rec, err
+		if full {
+			if idx == nil {
+				var err error
+				if idx, err = s.loadLedger(s.ledgerPath); err != nil {
+					return rec, err
+				}
+			}
+			if err := reconcileReviewerLedgerIdx(s.ledgerPath, idx, rec); err != nil {
+				return rec, err
+			}
+		} else {
+			if err := checkReviewerLedgerLine(rec); err != nil {
+				return rec, err
+			}
+			if err := reviewerAppendLine(s.ledgerPath, []byte(rec.Ledger)); err != nil {
+				return rec, err
+			}
 		}
 		next := rec
 		next.State = "ledger_written"
@@ -608,8 +668,8 @@ func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerReco
 		var seq uint64
 		var found bool
 		var err error
-		if scan {
-			if seq, found, err = findReviewerSignoff(s.js, rec.ItemID, rec.BodyHash); err != nil {
+		if full {
+			if seq, found, err = s.findSignoff(s.js, rec.ItemID, rec.BodyHash); err != nil {
 				return rec, err
 			}
 		}
@@ -625,7 +685,14 @@ func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerReco
 		}
 		return next, nil
 	}
-	return rec, reconcileReviewerLedger(s.ledgerPath, rec) // published: the ledger line must still be present once
+	// published (recovery or retry only): the ledger line must still be present exactly once
+	if idx == nil {
+		var err error
+		if idx, err = s.loadLedger(s.ledgerPath); err != nil {
+			return rec, err
+		}
+	}
+	return rec, reconcileReviewerLedgerIdx(s.ledgerPath, idx, rec)
 }
 
 // observe persists the highest OUT position handled so the status survives a restart.
@@ -670,7 +737,7 @@ func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 				return fmt.Errorf("reviewer record %q: create conflict: %v (%w)", it.ItemID, gerr, err)
 			}
 			if stored.State != reviewerSkipped {
-				s.pending = &stored
+				s.pending, s.pendingFull = &stored, true
 				return s.drainPending()
 			}
 			if stored.OutSeq != outSeq || !sameJSON(stored.Item, it) {
@@ -691,6 +758,7 @@ func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 		return s.store.saveStatus(st)
 	}
 	rec := s.prepare(oe, outSeq)
+	adopted := false
 	if rec.Signoff == nil {
 		return fmt.Errorf("reviewer: no sign-off produced for %q", it.ItemID)
 	}
@@ -705,12 +773,12 @@ func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 		if stored.State == reviewerSkipped || stored.OutSeq != outSeq || !sameJSON(stored.Item, it) {
 			return fmt.Errorf("reviewer record %q: conflicting stored record (%s)", it.ItemID, stored.State)
 		}
-		rec = stored // adopt: the stored sign-off, not a fresh draw, is the one to publish
+		rec, adopted = stored, true // adopt: the stored sign-off, not a fresh draw, is the one to publish
 	}
 	if s.holdFired == it.ItemID { // the hold is consumed only once its outcome is durable
 		s.held = true
 	}
-	s.pending = &rec
+	s.pending, s.pendingFull = &rec, adopted
 	return s.drainPending()
 }
 
@@ -720,12 +788,13 @@ func (s *reviewerService) drainPending() error {
 	if s.pending == nil {
 		return nil
 	}
-	done, err := s.reconcile(*s.pending, true)
+	done, err := s.reconcile(*s.pending, s.pendingFull, nil)
 	if err != nil {
+		s.pendingFull = true // anything may have landed before the failure: the retry validates everything
 		return err
 	}
 	s.finish(done)
-	s.pending = nil
+	s.pending, s.pendingFull = nil, false
 	return nil
 }
 

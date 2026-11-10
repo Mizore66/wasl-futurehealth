@@ -1484,3 +1484,127 @@ func TestReviewerRestartAdoptsSkippedTwin(t *testing.T) {
 		}
 	}
 }
+
+// ---------------- Task 3 final fix wave: no O(n) work on the fresh hot path ----------------
+
+func countingSeams(s *reviewerService) (scans, parses *int) {
+	scans, parses = new(int), new(int)
+	s.findSignoff = func(js jetstream.JetStream, id, hash string) (uint64, bool, error) {
+		*scans++
+		return findReviewerSignoff(js, id, hash)
+	}
+	s.loadLedger = func(p string) (reviewerLedgerIndex, error) {
+		*parses++
+		return loadReviewerLedgerIndex(p)
+	}
+	return scans, parses
+}
+
+func TestReviewerFreshRecordSkipsStreamScanAndLedgerParse(t *testing.T) {
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	scans, parses := countingSeams(s)
+	for i := 1; i <= 3; i++ {
+		id := fmt.Sprintf("rv-fresh-%d", i)
+		oe := reviewerEnvelope(id, uint64(i))
+		oe.Item.Pair = [2]string{fmt.Sprintf("reg-a%d", i), fmt.Sprintf("reg-b%d", i)}
+		if err := s.review(oe, uint64(i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if *scans != 0 || *parses != 0 {
+		t.Fatalf("fresh records did stream scans=%d ledger parses=%d, want 0 and 0", *scans, *parses)
+	}
+	if got := fhirMessageCount(t, env); got != 3 {
+		t.Fatalf("sign-offs=%d", got)
+	}
+	if n := len(ledgerFields(t, s.runDir)); n != 3 {
+		t.Fatalf("ledger lines=%d", n)
+	}
+}
+
+func TestReviewerRetryAfterFailureStillScansAndValidatesLedger(t *testing.T) {
+	env := startTestNATS(t)
+	s := newTestReviewerService(t, env, t.TempDir())
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	scans, parses := countingSeams(s)
+	fails := 1
+	s.publish = func(js jetstream.JetStream, rec reviewerRecord) (uint64, error) {
+		if fails > 0 {
+			fails--
+			return 0, errors.New("injected publish failure")
+		}
+		return publishReviewerSignoff(js, rec)
+	}
+	oe := reviewerEnvelope("rv-retry-full", 1)
+	if err := s.review(oe, 1); err == nil {
+		t.Fatal("publish failure must surface")
+	}
+	if *scans != 0 || *parses != 0 {
+		t.Fatalf("first attempt scanned: scans=%d parses=%d", *scans, *parses)
+	}
+	if err := s.review(oe, 1); err != nil {
+		t.Fatal(err)
+	}
+	if *scans != 1 {
+		t.Fatalf("retry scans=%d, want 1", *scans)
+	}
+	if got := fhirMessageCount(t, env); got != 1 {
+		t.Fatalf("sign-offs=%d", got)
+	}
+}
+
+func TestReviewerRecoveryParsesLedgerOnceAndScansPerRecord(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	first := newTestReviewerService(t, env, run)
+	for i := 1; i <= 3; i++ {
+		id := fmt.Sprintf("rv-rec-%d", i)
+		oe := reviewerEnvelope(id, uint64(i))
+		oe.Item.Pair = [2]string{fmt.Sprintf("reg-a%d", i), fmt.Sprintf("reg-b%d", i)}
+		advanceReviewer(t, first, oe, uint64(i), "published-unrecorded")
+	}
+	restarted := newTestReviewerService(t, env, run)
+	scans, parses := countingSeams(restarted)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if *parses != 1 {
+		t.Fatalf("recovery ledger parses=%d, want 1 for 3 records", *parses)
+	}
+	if *scans != 3 {
+		t.Fatalf("recovery scans=%d, want 3", *scans)
+	}
+	if got := fhirMessageCount(t, env); got != 3 {
+		t.Fatalf("sign-offs=%d", got)
+	}
+}
+
+func TestReviewerRecoveryRejectsDuplicateAndConflictingLedgerLinesViaIndex(t *testing.T) {
+	rec := preparedReviewerRecord("rv-idx", 1)
+	path := filepath.Join(t.TempDir(), "ledger.jsonl")
+	if err := os.WriteFile(path, []byte(rec.Ledger+rec.Ledger), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	idx, err := loadReviewerLedgerIndex(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileReviewerLedgerIdx(path, idx, rec); err == nil {
+		t.Fatal("duplicate line must fail")
+	}
+	other := rec
+	other.Ledger = strings.Replace(rec.Ledger, `"t":123`, `"t":124`, 1)
+	if err := os.WriteFile(path, []byte(other.Ledger), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	idx, _ = loadReviewerLedgerIndex(path)
+	if err := reconcileReviewerLedgerIdx(path, idx, rec); err == nil {
+		t.Fatal("conflicting line must fail")
+	}
+}
