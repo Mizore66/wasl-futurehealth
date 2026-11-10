@@ -59,7 +59,7 @@ func TestHL7RoundTripCohort(t *testing.T) {
 
 func TestHL7EscapingAndPIDOverride(t *testing.T) {
 	res := map[string]interface{}{"resourceType": "DiagnosticReport", "id": "R|1", "status": "final",
-		"meta": map[string]interface{}{"versionId": "2", "lastUpdated": "2026-05-02T00:00:00Z"},
+		"meta": map[string]interface{}{"versionId": "2", "lastUpdated": "2026-05-02T00:00:00Z"}, "effectiveDateTime": "2026-05-02T00:00:00Z",
 		"code": map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": "18746-8"}}},
 		"presentedForm": []interface{}{map[string]interface{}{"data": "UHJlcCB3YXMgZ29vZHxjZWN1bV5yZWFjaGVkICYgbm8gcG9seXBz"}}, // "Prep was good|cecum^reached & no polyps"
 		"contained": []interface{}{map[string]interface{}{"resourceType": "Patient", "id": "pt", "birthDate": "1980-09-19", "gender": "female",
@@ -73,7 +73,10 @@ func TestHL7EscapingAndPIDOverride(t *testing.T) {
 	if err != nil || m.Control != "ctl|9" || m.Type != "ORU^R01" {
 		t.Fatalf("parse: %v %+v", err, m)
 	}
-	_, _, back, _ := m.ToResource()
+	_, _, back, err := m.ToResource()
+	if err != nil {
+		t.Fatalf("toResource: %v", err)
+	}
 	bb, _ := json.Marshal(back)
 	e, _ := normalise("skmc-endo", 1, bb)
 	if e.Text != "Prep was good|cecum^reached & no polyps" || e.Eid != "784198045658287" || e.Dob != "1980-09-19" || e.Name != "علياء المنذر" || e.PatientKey != "skmc-endo|SKM-1" {

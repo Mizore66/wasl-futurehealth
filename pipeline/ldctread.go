@@ -540,6 +540,9 @@ func ldctSchema(kind string) map[string]interface{} {
 }
 
 func askLDCT(url, kind, text string) ldctGemma {
+	if err := validateLocalEndpoint(url); err != nil {
+		return ldctGemma{Kind: kind, Model: LDCTReaderModel, Error: "unsafe reader endpoint: " + err.Error()}
+	}
 	prompt := ldctWorkupPrompt
 	if kind == "ldct-screen" {
 		prompt = ldctScreenPrompt
@@ -622,7 +625,7 @@ func runLDCTCache(dirs, url, out string) {
 	close(ch)
 	wg.Wait()
 	b, _ := json.MarshalIndent(cache, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 	LDCTCache = cache
 	res := map[string]interface{}{"note": "dev corpus only: the readers were written against these texts (not a fair test)"}
 	for _, dir := range strings.Split(dirs, ",") {

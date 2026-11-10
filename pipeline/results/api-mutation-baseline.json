@@ -1,0 +1,312 @@
+{
+  "base_commit": "91cff71626e38a509395bef3c031d1d1f82a2773",
+  "go_version": "go version go1.27.3 darwin/arm64",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "cases-remove-id-sort",
+      "new": "\tids := append([]string{}, s.order...)\n\tsel := []map[string]interface{}{}\n",
+      "old": "\tids := append([]string{}, s.order...)\n\tsort.Strings(ids)\n\tsel := []map[string]interface{}{}\n",
+      "output": "--- FAIL: TestAPIContractReadModelFiltersPaginationAndDashboard (0.00s)\n    api_contract_fuzz_test.go:313: query limit=-1&offset=-9: IDs=[contract/ServiceRequest/d contract/ServiceRequest/c contract/ServiceRequest/a contract/ServiceRequest/b] want [contract/ServiceRequest/a contract/ServiceRequest/b contract/ServiceRequest/c contract/ServiceRequest/d]\nFAIL\nFAIL\twsi\t1.010s\nFAIL",
+      "rationale": "The independent read model requires sorted IDs on every filtered page.",
+      "status": "killed",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "cases-drop-programme-filter",
+      "new": "return eq(\"state\", c.State)",
+      "old": "return eq(\"programme\", c.Programme) && eq(\"state\", c.State)",
+      "output": "--- FAIL: TestAPIContractReadModelFiltersPaginationAndDashboard (0.01s)\n    api_contract_fuzz_test.go:302: query limit=-1&offset=-9&programme=crc: total/offset=4/0 want 2/0\nFAIL\nFAIL\twsi\t1.286s\nFAIL",
+      "rationale": "Programme is one conjunct in the compound list filter.",
+      "status": "killed",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "cases-total-before-filter",
+      "new": "\ttotal := len(s.order)\n",
+      "old": "\ttotal := len(sel)\n",
+      "output": "--- FAIL: TestAPIContractReadModelFiltersPaginationAndDashboard (0.00s)\npanic: runtime error: slice bounds out of range [:4] with capacity 2 [recovered, repanicked]\n\ngoroutine 38 [running]:\ntesting.tRunner.func1.2({0x100d4b018, 0x5af6298d44b0})\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2125 +0x1a0\ntesting.tRunner.func1()\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2128 +0x2c8\npanic({0x100d4b018?, 0x5af6298d44b0?})\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/runtime/panic.go:859 +0x120\nwsi.(*apiServer).getCases(0x5af6293ce000, {0x100d7bc68, 0x5af62974e500}, 0x5af62932ecc4?)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/02-cases-total-before-filter/api.go:569 +0x9b0\nnet/http.HandlerFunc.ServeHTTP(0x5af6294c6000?, {0x100d7bc68?, 0x5af62974e500?}, 0x5af6295d2c60?)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2358 +0x38\nnet/http.(*ServeMux).ServeHTTP(0x5af6295d2c60?, {0x100d7bc68, 0x5af62974e500}, 0x5af629304140)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2923 +0x194\nwsi.cors.func1({0x100d7bc68, 0x5af62974e500}, 0x5af629304140)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/02-cases-total-before-filter/api.go:126 +0x128\nnet/http.HandlerFunc.ServeHTTP(0x38?, {0x100d7bc68?, 0x5af62974e500?}, 0x1000ab2c4?)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2358 +0x38\nwsi.contractServeRequest(0x5af6294f0d88, {0x100d78b08, 0x5af6298aa618}, 0x5af629304140)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/02-cases-total-before-filter/api_contract_fuzz_test.go:120 +0xd8\nwsi.contractRequest(0x5af6294f0d88, {0x100d78b08, 0x5af6298aa618}, {0x1007172c7, 0x3}, {0x5af629330990, 0x2b}, {0x0, 0x0}, {0x0, ...}, ...)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/02-cases-total-before-filter/api_contract_fuzz_test.go:114 +0x344\nwsi.TestAPIContractReadModelFiltersPaginationAndDashboard(0x5af6294f0d88)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/02-cases-total-before-filter/api_contract_fuzz_test.go:281 +0x20c8\ntesting.tRunner(0x5af6294f0d88, 0x100d7ec18)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2195 +0xc4\ncreated by testing.(*T).Run in goroutine 1\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2260 +0x3b8\nFAIL\twsi\t0.866s\nFAIL",
+      "rationale": "total is the full filtered count, not the canonical run count.",
+      "status": "killed",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "cases-remove-negative-offset-clamp",
+      "new": "",
+      "old": "\tif offset < 0 {\n\t\toffset = 0\n\t}\n",
+      "output": "--- FAIL: TestAPIContractReadModelFiltersPaginationAndDashboard (0.00s)\npanic: runtime error: slice bounds out of range [-9:] [recovered, repanicked]\n\ngoroutine 49 [running]:\ntesting.tRunner.func1.2({0x105373018, 0x414a823b6210})\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2125 +0x1a0\ntesting.tRunner.func1()\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2128 +0x2c8\npanic({0x105373018?, 0x414a823b6210?})\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/runtime/panic.go:859 +0x120\nwsi.(*apiServer).getCases(0x414a8249a000, {0x1053a3c68, 0x414a829aadc0}, 0x414a823ba394?)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/03-cases-remove-negative-offset-clamp/api.go:566 +0x988\nnet/http.HandlerFunc.ServeHTTP(0x414a82546000?, {0x1053a3c68?, 0x414a829aadc0?}, 0x414a8281f050?)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2358 +0x38\nnet/http.(*ServeMux).ServeHTTP(0x414a8281f050?, {0x1053a3c68, 0x414a829aadc0}, 0x414a82810140)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2923 +0x194\nwsi.cors.func1({0x1053a3c68, 0x414a829aadc0}, 0x414a82810140)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/03-cases-remove-negative-offset-clamp/api.go:126 +0x128\nnet/http.HandlerFunc.ServeHTTP(0x38?, {0x1053a3c68?, 0x414a829aadc0?}, 0x1046d32c4?)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/net/http/server.go:2358 +0x38\nwsi.contractServeRequest(0x414a82570d88, {0x1053a0b08, 0x414a8239e630}, 0x414a82810140)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/03-cases-remove-negative-offset-clamp/api_contract_fuzz_test.go:120 +0xd8\nwsi.contractRequest(0x414a82570d88, {0x1053a0b08, 0x414a8239e630}, {0x104d3f2a7, 0x3}, {0x414a823d1248, 0x1d}, {0x0, 0x0}, {0x0, ...}, ...)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/03-cases-remove-negative-offset-clamp/api_contract_fuzz_test.go:114 +0x344\nwsi.TestAPIContractReadModelFiltersPaginationAndDashboard(0x414a82570d88)\n\t/private/var/folders/qg/j4nv2cms6ydckydvh4s6qjbw0000gp/T/wasl-api-mutation-vlhi4yac/03-cases-remove-negative-offset-clamp/api_contract_fuzz_test.go:281 +0x20c8\ntesting.tRunner(0x414a82570d88, 0x1053a6c18)\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2195 +0xc4\ncreated by testing.(*T).Run in goroutine 1\n\t/opt/homebrew/Cellar/go/1.27.3/libexec/src/testing/testing.go:2260 +0x3b8\nFAIL\twsi\t0.860s\nFAIL",
+      "rationale": "Negative offsets normalize to zero and must never slice at a negative index.",
+      "status": "killed",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "dashboard-drop-closed-counter",
+      "new": "\t\tif c.Closed {\n\t\t\tbyProg[c.Programme][\"closed\"]++\n\t\t}",
+      "old": "\t\tif c.Closed {\n\t\t\tclosed++\n\t\t\tbyProg[c.Programme][\"closed\"]++\n\t\t}",
+      "output": "--- FAIL: TestAPIContractReadModelFiltersPaginationAndDashboard (0.03s)\n    api_contract_fuzz_test.go:320: dashboard totals: map[by_programme:map[breast:map[cases:1] crc:map[cases:2 overdue:2] lung_ldct:map[cases:1 closed:1]] capacity:map[data_mode:simulated how:python booking/suggest.py <run dir> status:not_generated] cases:4 closed:0 dropoff:map[awaiting_consent:1 awaiting_evidence:1 awaiting_review:1 none:1] fixtures:map[evidence_closure:contract/ServiceRequest/d review_hold:contract/ServiceRequest/a] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:00Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] metrics:map[closure:<nil> consent_timing:<nil> crc_kpi_31d:<nil> forged:<nil> provenance:<nil> throughput_ev_s:<nil>] origins:<nil> overdue:2 providers:<nil> review:map[none:1 open:2 signed:1] sla:<nil> small_cell_rule:<nil> states:map[closed:1 open:2 review:1]]\nFAIL\nFAIL\twsi\t0.889s\nFAIL",
+      "rationale": "The top-level closed count must reconcile with the independent case model.",
+      "status": "killed",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractWorkflowReplayAndRestart)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "actions-bypass-rbac",
+      "new": "if err := Authorize(role, ActCoordinateCase); false {",
+      "old": "if err := Authorize(role, ActCoordinateCase); err != nil {",
+      "output": "--- FAIL: TestAPIContractWorkflowReplayAndRestart (0.03s)\n    api_contract_fuzz_test.go:378: action role auditor: 201\nFAIL\nFAIL\twsi\t0.883s\nFAIL",
+      "rationale": "Only coordinator may append coordinator actions.",
+      "status": "killed",
+      "tests": "TestAPIContractWorkflowReplayAndRestart"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestActionsStaleHeadConflict|TestActionsSameHeadConcurrencyExactlyOneWins|TestAPIContractWorkflowReplayAndRestart)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "actions-accept-stale-head",
+      "new": "if head := s.caseHead(c); false {",
+      "old": "if head := s.caseHead(c); expected != head {",
+      "output": "--- FAIL: TestActionsStaleHeadConflict (0.02s)\n    api_actions_test.go:224: stale: 201 map[api_overlay:map[actions:2 canonical_owner: contact_outcomes:[] head:539794618b87103cc49e801c8b7c24aa98133edb9eaa43d3397b415135ab94f2 last_action_at:2026-11-09T06:48:07.489598Z ledger_status:ok notes:[map[actor:nurse-1 at:2026-11-09T06:48:07.477854Z event:809d37041744c868282ff9bd76a340ee2de78c9866953f37953bd9f8e6475d83 text:first] map[actor:nurse-1 at:2026-11-09T06:48:07.489598Z event:539794618b87103cc49e801c8b7c24aa98133edb9eaa43d3397b415135ab94f2 text:second]] owner:] event:map[action:coordinate_case actor:nurse-1 at:2026-11-09T06:48:07.489598Z case:ahs-mushrif/ServiceRequest/AHS-sr-1 data:map[text:second] hash:539794618b87103cc49e801c8b7c24aa98133edb9eaa43d3397b415135ab94f2 head:genesis kind:note mode:demo prev:809d37041744c868282ff9bd76a340ee2de78c9866953f37953bd9f8e6475d83 role:coordinator seq:2 type:coordinator_action] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:07Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched]\n--- FAIL: TestActionsSameHeadConcurrencyExactlyOneWins (0.04s)\n    api_actions_test.go:260: want 1 winner, 15 conflicts; got [201 201 201 201 201 201 201 201 201 201 201 201 201 201 201 201]\n--- FAIL: TestAPIContractWorkflowReplayAndRestart (0.02s)\n    api_contract_fuzz_test.go:373: same-head action replay: code=201 ledger=5\nFAIL\nFAIL\twsi\t0.919s\nFAIL",
+      "rationale": "The overlay expected_head token permits exactly one same-head writer and rejects replay.",
+      "status": "killed",
+      "tests": "TestActionsStaleHeadConflict|TestActionsSameHeadConcurrencyExactlyOneWins|TestAPIContractWorkflowReplayAndRestart"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestActionInputRejectsDuplicateKeysAndFormatCharacters)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "actions-ignore-duplicate-keys",
+      "new": "if err := rejectDuplicateKeys(raw); false {",
+      "old": "if err := rejectDuplicateKeys(raw); err != nil {",
+      "output": "--- FAIL: TestActionInputRejectsDuplicateKeysAndFormatCharacters (0.01s)\n    api_actions_fix1_test.go:208: duplicate expected_head: want 400, got 201 map[api_overlay:map[actions:1 canonical_owner: contact_outcomes:[] head:cd21b08b6683d45179298a65a5512710602a053eca79e1b8eaf35929360e78f6 last_action_at:2026-11-09T06:48:11.25143Z ledger_status:ok notes:[map[actor:nurse-1 at:2026-11-09T06:48:11.25143Z event:cd21b08b6683d45179298a65a5512710602a053eca79e1b8eaf35929360e78f6 text:x]] owner:] event:map[action:coordinate_case actor:nurse-1 at:2026-11-09T06:48:11.25143Z case:ahs-mushrif/ServiceRequest/AHS-sr-1 data:map[text:x] hash:cd21b08b6683d45179298a65a5512710602a053eca79e1b8eaf35929360e78f6 head:genesis kind:note mode:demo prev:genesis role:coordinator seq:1 type:coordinator_action] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:11Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched]\n    api_actions_fix1_test.go:208: duplicate owner: want 400, got 409 map[conflict:head current_head:cd21b08b6683d45179298a65a5512710602a053eca79e1b8eaf35929360e78f6 error:stale expected_head: the case changed since it was read meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:11Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001]]\n    api_actions_fix1_test.go:212: rejected input reached the ledger: 1\nFAIL\nFAIL\twsi\t0.867s\nFAIL",
+      "rationale": "Coordinator JSON rejects duplicate keys instead of using last-value-wins.",
+      "status": "killed",
+      "tests": "TestActionInputRejectsDuplicateKeysAndFormatCharacters"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractWorkflowReplayAndRestart)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api_consent.go",
+      "id": "consent-allow-grant-after-optout",
+      "new": "if cur, _ := s.overlayLocked(c); cur[\"status\"] == \"impossible\" && req.Event != \"consent_opted_out\" {",
+      "old": "if cur, _ := s.overlayLocked(c); cur[\"status\"] == \"opted_out\" && req.Event != \"consent_opted_out\" {",
+      "output": "--- FAIL: TestAPIContractWorkflowReplayAndRestart (0.06s)\n    api_contract_fuzz_test.go:427: grant after opt-out: 201\nFAIL\nFAIL\twsi\t1.006s\nFAIL",
+      "rationale": "Opt-out is terminal in this demo flow; a later grant is a conflict.",
+      "status": "killed",
+      "tests": "TestAPIContractWorkflowReplayAndRestart"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestUndoSameActorAndUnauthorized|TestContestIsSeparateFromCanonicalAndNeedsResolution)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api_undo.go",
+      "id": "undo-allow-self-compensation",
+      "new": "if na == \"\\x00\" {",
+      "old": "if na == normActor(origActor) || (evKindNew == evKindResolution && na == normActor(sstr(target, \"actor\"))) {",
+      "output": "--- FAIL: TestUndoSameActorAndUnauthorized (0.01s)\n    api_undo_test.go:179: same actor: want 403, got 201 (map[auto_closure:false canonical_reopened:false canonical_state:open event:map[action:signoff_link action_head:86fd8b838195050671fadb93750e85300d019be0292a27aa53c32773bce5471f actor:r1 at:2026-11-09T06:48:19.353971Z case:site/ServiceRequest/A-1 hash:e193684d9e0bee5eb732547536ef240cacef3eeccb9f9dda5f2155c8e4232a05 head_signed:head-site/ServiceRequest/A-1 kind:undo mode:demo note: prev:86fd8b838195050671fadb93750e85300d019be0292a27aa53c32773bce5471f role:reviewer target:ee300bffb581e23536cc4de259bfb671cce341d196b8378b13b6ec81e019e9b8 target_action:signoff_link target_actor:r1] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:19Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:compensating event appended; the original event is preserved and the canonical decision is unchanged projection:map[canonical_state:open case:site/ServiceRequest/A-1 case_status:compensated events:[map[action:signoff_link actor:r1 at:2026-11-09T06:48:19.348187Z hash:ee300bffb581e23536cc4de259bfb671cce341d196b8378b13b6ec81e019e9b8 kind:review status:compensated target:] map[action:signoff_evidence actor:c1 at:2026-11-09T06:48:19.352356Z hash:86fd8b838195050671fadb93750e85300d019be0292a27aa53c32773bce5471f kind:review status:active target:] map[action:signoff_link actor:r1 at:2026-11-09T06:48:19.353971Z hash:e193684d9e0bee5eb732547536ef240cacef3eeccb9f9dda5f2155c8e4232a05 kind:undo status:applied target:ee300bffb581e23536cc4de259bfb671cce341d196b8378b13b6ec81e019e9b8]] note:case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest]])\n--- FAIL: TestContestIsSeparateFromCanonicalAndNeedsResolution (0.01s)\n    api_undo_test.go:220: self-contest: want 403, got 201 (map[auto_closure:false canonical_reopened:false canonical_state:open event:map[action:signoff_link action_head:4a7f9984ff7e537592d000dcaa4d33182097be906cb7adbf165266fbc586f314 actor:r1 at:2026-11-09T06:48:19.362639Z case:site/ServiceRequest/A-1 hash:fb95f07d02bd8c42812add66ecfe4d23cf8a6c0842602a335f6a30deddece307 head_signed:head-site/ServiceRequest/A-1 kind:contest mode:demo note: prev:4a7f9984ff7e537592d000dcaa4d33182097be906cb7adbf165266fbc586f314 role:reviewer target:4a7f9984ff7e537592d000dcaa4d33182097be906cb7adbf165266fbc586f314 target_action:signoff_link target_actor:r1] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:19Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:contest recorded; the case is not closed or reopened. A different authorised reviewer must resolve it. projection:map[canonical_state:open case:site/ServiceRequest/A-1 case_status:contested events:[map[action:signoff_link actor:r1 at:2026-11-09T06:48:19.359989Z hash:4a7f9984ff7e537592d000dcaa4d33182097be906cb7adbf165266fbc586f314 kind:review status:contested target:] map[action:signoff_link actor:r1 at:2026-11-09T06:48:19.362639Z hash:fb95f07d02bd8c42812add66ecfe4d23cf8a6c0842602a335f6a30deddece307 kind:contest status:open target:4a7f9984ff7e537592d000dcaa4d33182097be906cb7adbf165266fbc586f314]] note:case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest] requires_resolution:true])\nFAIL\nFAIL\twsi\t1.087s\nFAIL",
+      "rationale": "Undo, contest and resolution require an independent actor.",
+      "status": "killed",
+      "tests": "TestUndoSameActorAndUnauthorized|TestContestIsSeparateFromCanonicalAndNeedsResolution"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestUndoRejectsTruncatedOrDeletedLedger|TestUndoLedgerTamperRejected)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api_undo.go",
+      "id": "undo-skip-disk-integrity-check",
+      "new": "",
+      "old": "\t\terr = sameLedger(disk, s.reviews)\n",
+      "output": "--- FAIL: TestUndoRejectsTruncatedOrDeletedLedger (0.02s)\n    --- FAIL: TestUndoRejectsTruncatedOrDeletedLedger/truncated_tail (0.01s)\n        api_undo_test.go:391: ledger shorter than served: want 503, got 201 (map[auto_closure:false canonical_reopened:false canonical_state:open event:map[action:signoff_link action_head:f16b1f1b6d52894cad50eba71d7a25d6ec7e8e845471b32e0dde968701a48bb9 actor:r2 at:2026-11-09T06:48:23.527377Z case:site/ServiceRequest/A-1 hash:ae0387541097098b3d619c320a6d7a1f762ef0e9732726820e83991decae063d head_signed:head-site/ServiceRequest/A-1 kind:undo mode:demo note: prev:f16b1f1b6d52894cad50eba71d7a25d6ec7e8e845471b32e0dde968701a48bb9 role:reviewer target:0a049f930d7f18b296ad0e9c063f159e32b1621e154232855c1d3a4f66cfc7bf target_action:signoff_link target_actor:r1] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:23Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:compensating event appended; the original event is preserved and the canonical decision is unchanged projection:map[canonical_state:open case:site/ServiceRequest/A-1 case_status:compensated events:[map[action:signoff_link actor:r1 at:2026-11-09T06:48:23.524689Z hash:0a049f930d7f18b296ad0e9c063f159e32b1621e154232855c1d3a4f66cfc7bf kind:review status:compensated target:] map[action:signoff_evidence actor:c1 at:2026-11-09T06:48:23.526136Z hash:f16b1f1b6d52894cad50eba71d7a25d6ec7e8e845471b32e0dde968701a48bb9 kind:review status:active target:] map[action:signoff_link actor:r2 at:2026-11-09T06:48:23.527377Z hash:ae0387541097098b3d619c320a6d7a1f762ef0e9732726820e83991decae063d kind:undo status:applied target:0a049f930d7f18b296ad0e9c063f159e32b1621e154232855c1d3a4f66cfc7bf]] note:case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest]])\n    --- FAIL: TestUndoRejectsTruncatedOrDeletedLedger/deleted (0.01s)\n        api_undo_test.go:391: ledger shorter than served: want 503, got 201 (map[auto_closure:false canonical_reopened:false canonical_state:open event:map[action:signoff_link action_head:825ee08f130f8ef47321d2f791cafaf742a3a3b67bfee908ec6f8f49e31d3eaf actor:r2 at:2026-11-09T06:48:23.539347Z case:site/ServiceRequest/A-1 hash:d179912afcc88132c00a18af3aa84209862b9af85a4d2ab88bf658bd2d9a669b head_signed:head-site/ServiceRequest/A-1 kind:undo mode:demo note: prev:825ee08f130f8ef47321d2f791cafaf742a3a3b67bfee908ec6f8f49e31d3eaf role:reviewer target:155c9af0723abd1ffa4b853e0b70722296b810536e91dcea84b2b0a699da22e0 target_action:signoff_link target_actor:r1] meta:map[api:wasl-api/1 data_mode:simulated loaded_at:2026-11-09T06:48:23Z note:All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data. policy:v6 reader_model:unknown run:001] note:compensating event appended; the original event is preserved and the canonical decision is unchanged projection:map[canonical_state:open case:site/ServiceRequest/A-1 case_status:compensated events:[map[action:signoff_link actor:r1 at:2026-11-09T06:48:23.532971Z hash:155c9af0723abd1ffa4b853e0b70722296b810536e91dcea84b2b0a699da22e0 kind:review status:compensated target:] map[action:signoff_evidence actor:c1 at:2026-11-09T06:48:23.536324Z hash:825ee08f130f8ef47321d2f791cafaf742a3a3b67bfee908ec6f8f49e31d3eaf kind:review status:active target:] map[action:signoff_link actor:r2 at:2026-11-09T06:48:23.539347Z hash:d179912afcc88132c00a18af3aa84209862b9af85a4d2ab88bf658bd2d9a669b kind:undo status:applied target:155c9af0723abd1ffa4b853e0b70722296b810536e91dcea84b2b0a699da22e0]] note:case_status is a review-ledger projection; the canonical decision state and signatures are not changed by undo or contest]])\nFAIL\nFAIL\twsi\t1.300s\nFAIL",
+      "rationale": "Undo fails closed when the on-disk and in-memory ledgers diverge.",
+      "status": "killed",
+      "tests": "TestUndoRejectsTruncatedOrDeletedLedger|TestUndoLedgerTamperRejected"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestExportComparisonHashRestartStability|TestAPIContractWorkflowReplayAndRestart)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api_export.go",
+      "id": "export-hash-loaded-at",
+      "new": "if true {",
+      "old": "if k != \"loaded_at\" {",
+      "output": "--- FAIL: TestAPIContractWorkflowReplayAndRestart (0.05s)\n    api_contract_fuzz_test.go:444: export hashes do not independently verify\n--- FAIL: TestExportComparisonHashRestartStability (0.00s)\n    api_export_test.go:245: initial export fails comparison hash verification\nFAIL\nFAIL\twsi\t1.068s\nFAIL",
+      "rationale": "comparison_sha256 excludes only meta.loaded_at in addition to the two hash fields.",
+      "status": "killed",
+      "tests": "TestExportComparisonHashRestartStability|TestAPIContractWorkflowReplayAndRestart"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractShadowMalformedStatus)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api_shadow_status.go",
+      "id": "shadow-trust-foreign-status",
+      "new": "\tif false {",
+      "old": "\tif len(out) == 0 {",
+      "output": "--- FAIL: TestAPIContractShadowMalformedStatus (0.00s)\n    api_contract_fuzz_test.go:572: status file \"{}\": code=200 status=unknown\nFAIL\nFAIL\twsi\t1.184s\nFAIL",
+      "rationale": "A foreign or empty status document returns the 503 invalid envelope, never a live status.",
+      "status": "killed",
+      "tests": "TestAPIContractShadowMalformedStatus"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractWorkflowReplayAndRestart|FuzzAPIContractWriters)$",
+        "-count=1"
+      ],
+      "declared_equivalent": false,
+      "exit_code": 1,
+      "file": "api.go",
+      "id": "review-drop-queue-membership-check",
+      "new": "\t\tif false {\n",
+      "old": "\t\tif !found {\n",
+      "output": "--- FAIL: TestAPIContractWorkflowReplayAndRestart (0.03s)\n    api_contract_fuzz_test.go:384: unknown review item: 201 {\n         \"meta\": {\n          \"api\": \"wasl-api/1\",\n          \"data_mode\": \"simulated\",\n          \"loaded_at\": \"2026-11-09T06:48:35Z\",\n          \"note\": \"All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.\",\n          \"policy\": \"v6\",\n          \"reader_model\": \"unknown\",\n          \"run\": \"001\"\n         },\n         \"note\": \"appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path\",\n         \"review\": {\n          \"action\": \"signoff_link\",\n          \"actor\": \"reviewer-1\",\n          \"at\": \"2026-11-09T06:48:35.733371Z\",\n          \"case\": \"contract/ServiceRequest/undo\",\n          \"decision\": \"same\",\n          \"hash\": \"aa08deab682b3ac1dad71568ee396b9521580d17e8c9b65eadd0477730c1f4e6\",\n          \"head_signed\": \"450c87ef50ad5e959ede1dadc371b3c557159d6c690a11991ec3ab004dcb456d\",\n          \"item\": \"not-raised\",\n          \"mode\": \"demo\",\n          \"note\": \"\",\n          \"prev\": \"1cba886fc7c32a2db7abdc61025ef0a0cf9c5b3fc2e1941cf655cd3abcb3c912\",\n          \"role\": \"reviewer\"\n         }\n        }\nFAIL\nFAIL\twsi\t1.490s\nFAIL",
+      "rationale": "A non-empty review item must have been raised for the same case.",
+      "status": "killed",
+      "tests": "TestAPIContractWorkflowReplayAndRestart|FuzzAPIContractWriters"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(?:TestAPIContractReadModelFiltersPaginationAndDashboard)$",
+        "-count=1"
+      ],
+      "declared_equivalent": true,
+      "exit_code": 0,
+      "file": "api.go",
+      "id": "equivalent-limit-condition-order",
+      "new": "if limit > 500 || limit <= 0 {",
+      "old": "if limit <= 0 || limit > 500 {",
+      "output": "ok  \twsi\t0.914s",
+      "rationale": "Both comparisons are pure and short-circuit order has no observable effect.",
+      "status": "equivalent",
+      "tests": "TestAPIContractReadModelFiltersPaginationAndDashboard"
+    }
+  ],
+  "schema": "wasl-api-mutation/1",
+  "summary": {
+    "equivalent": 1,
+    "killed": 14,
+    "surviving": 0
+  }
+}

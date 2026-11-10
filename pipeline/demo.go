@@ -84,6 +84,16 @@ func pkNames(data string) map[string]string {
 	return m
 }
 
+func formatDemoLink(d *Decision, link map[string]interface{}) string {
+	return fmt.Sprintf("LINK  loop %s (%s)\n  basis=model (no Emirates ID match)  p_cal=%.4f >= tau 0.99  hops=%v\n  names and registration identifiers are available only in the authenticated clinical view\n",
+		d.LoopID, d.Prog, link["path_p_cal"], link["hops"])
+}
+
+func formatDemoHold(item ReviewItem, evidence map[string]interface{}) string {
+	return fmt.Sprintf("DISAGREE  loop %s  report %s\n  reader 1 (regex + DoH rules) : %v\n  reader 2 (Gemma 4 26B)       : %v\n  -> not closed automatically; held for a human (item %s, head %s...)\n  clinical quotes are available only in the authenticated clinical view\n",
+		item.LoopID, item.ReportID, evidence["regex"], evidence["gemma"], item.ItemID, item.Head[:12])
+}
+
 func runDemo(args []string, data, run string) {
 	if len(args) == 0 {
 		fmt.Println("demo outcount|link|hold|sign|econsult|verify")
@@ -131,8 +141,7 @@ func runDemo(args []string, data, run string) {
 					return
 				}
 				best = d
-				fmt.Printf("LINK  loop %s (%s)\n  referral registration : %-40s [%s]\n  hospital registration : %-40s [%s]\n  basis=model (no Emirates ID match)  p_cal=%.4f >= tau 0.99  hops=%v\n",
-					d.LoopID, d.Prog, names[ref], ref, names[hpk], hpk, lb["path_p_cal"], lb["hops"])
+				fmt.Print(formatDemoLink(d, lb))
 			})
 			if best == nil {
 				time.Sleep(500 * time.Millisecond)
@@ -154,8 +163,7 @@ func runDemo(args []string, data, run string) {
 				if len(h.Item.Chain) > 1 {
 					ev = h.Item.Chain[len(h.Item.Chain)-1].Body
 				}
-				fmt.Printf("DISAGREE  loop %s  report %s\n  reader 1 (regex + DoH rules) : %v\n  reader 2 (Gemma 4 26B)       : %v\n  Gemma quote: %q\n  -> not closed automatically; held for a human (item %s, head %s...)\n",
-					h.Item.LoopID, h.Item.ReportID, ev["regex"], ev["gemma"], h.Item.Quote, h.Item.ItemID, h.Item.Head[:12])
+				fmt.Print(formatDemoHold(h.Item, ev))
 				return
 			}
 			time.Sleep(200 * time.Millisecond)
@@ -185,7 +193,7 @@ func runDemo(args []string, data, run string) {
 			label = tr.Reports[h.Item.ReportID]
 		}
 		hb, _ := json.Marshal(map[string]string{"evidence": label, "reviewer": who})
-		os.WriteFile(filepath.Join(run, "HUMAN_DECISION.json"), hb, 0644)
+		os.WriteFile(filepath.Join(run, "HUMAN_DECISION.json"), hb, 0600)
 		fmt.Printf("SIGN  %s signs item %s as %q\n", who, h.Item.ItemID, label)
 		dl := time.Now().Add(60 * time.Second)
 		for time.Now().Before(dl) {
@@ -200,7 +208,7 @@ func runDemo(args []string, data, run string) {
 				}
 			})
 			if found != nil {
-				os.WriteFile(filepath.Join(run, "SIGNED_LOOP"), []byte(found.LoopID), 0644)
+				os.WriteFile(filepath.Join(run, "SIGNED_LOOP"), []byte(found.LoopID), 0600)
 				fmt.Printf("SIGN  loop %s -> state=%s, closed day %.1f; chain: ", found.LoopID, found.State, found.ClosedDay-found.SRDay)
 				for _, bl := range found.Chain {
 					fmt.Printf("%s(%s..) ", bl.Type, bl.Hash[:8])

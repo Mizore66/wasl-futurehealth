@@ -1,5 +1,16 @@
 # Fresh LDCT / IFHAS reader scores
 
+**Historical/staleness disclosure: reader implementation changed after scoring; results do not apply to current integration.**
+
+Substantively changed reader files:
+
+- `pipeline/ifhasread.go`
+- `pipeline/ldctread.go`
+- `pipeline/lungread.go`
+- `pipeline/reader.go`
+
+The historical scores below are preserved without rerunning readers or changing scores.
+
 **These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.**
 
 Items: 120; agreed 113; unadjudicated 7.

@@ -1,0 +1,19 @@
+Wasl soak report: INCOMPLETE
+Run: 20261109T073913Z-ff7af9 (short synchronous smoke; not 24-hour evidence)
+Overall gate result: FAIL
+Samples: 392; steady-state API requests: 0; planned-outage API requests: 0
+
+completed_duration           FAIL
+api_latency_p95              FAIL
+api_errors                   PASS
+api_goroutine_growth         FAIL
+api_rss_growth               FAIL
+nats_store_growth            FAIL
+restart_recovery             FAIL
+collector_heartbeat          FAIL
+unexpected_restarts          FAIL
+export_comparison            FAIL
+nats_store_capacity          PASS
+nats_ack_pending             PASS
+nats_health                  PASS
+disk_budget                  PASS

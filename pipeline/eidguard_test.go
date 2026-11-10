@@ -27,7 +27,7 @@ func guardFeed(t *testing.T, on bool, v7 bool, regs []guardReg, human [][2]strin
 	seq := uint64(0)
 	next := func() uint64 { seq++; return seq }
 	for i, r := range regs {
-		ev := &Event{ID: "R" + itoa(i), Provider: r.prov, PatientKey: r.pk, Name: r.name, Sex: r.sex, Dob: r.dob, Eid: r.eid, Day: 1}
+		ev := &Event{ID: "R" + itoa(i), Provider: r.prov, PatientKey: r.pk, Name: r.name, Sex: r.sex, Dob: r.dob, Eid: r.eid, Day: 1, Prog: "crc"}
 		if i == 0 {
 			ev.RType = "ServiceRequest"
 			ev.ID = "SR1"

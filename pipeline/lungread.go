@@ -365,6 +365,9 @@ func lungSchema(kind string) map[string]interface{} {
 }
 
 func askLung(url, kind, text string) lungGemma {
+	if err := validateLocalEndpoint(url); err != nil {
+		return lungGemma{Kind: kind, Model: LungReaderModel, Error: "unsafe reader endpoint: " + err.Error()}
+	}
 	prompt := lungFollowupPrompt
 	if kind == "lung-finding" {
 		prompt = lungFindingPrompt
@@ -475,7 +478,7 @@ func runLungCache(lungDir, url, out string) {
 	close(ch)
 	wg.Wait()
 	b, _ := json.MarshalIndent(cache, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 	LungCache = cache
 	fmt.Println(string(mustJSON(lungReaderScore(lungDir))))
 }

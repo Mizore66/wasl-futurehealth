@@ -94,7 +94,7 @@ func TestSetupStreamsResetsExternalRunState(t *testing.T) {
 				t.Fatalf("run %d: stale bucket %s remains: %v", run, bucket, err)
 			}
 		}
-		for _, stream := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
+		for _, stream := range []string{"FHIRIN", "FHIR", "PREP", "FACTS", "OUT"} {
 			st, err := js.Stream(ctx, stream)
 			if err != nil {
 				t.Fatal(err)

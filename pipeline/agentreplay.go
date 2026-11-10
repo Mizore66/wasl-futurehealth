@@ -78,7 +78,7 @@ func writeNDJSON(path string, lines []LogMsg) error {
 		sb.Write(b)
 		sb.WriteByte('\n')
 	}
-	return os.WriteFile(path, []byte(sb.String()), 0o644)
+	return os.WriteFile(path, []byte(sb.String()), 0o600)
 }
 
 // agentTruthWrong: does the sign-off contradict the truth (the live reviewer's "wrong" field)?
@@ -111,7 +111,7 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 	if err := os.RemoveAll(main); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(main, 0o755); err != nil {
+	if err := os.MkdirAll(main, 0o700); err != nil {
 		return err
 	}
 	if ar != nil && !strings.HasSuffix(PolicyName, "+agent") {
@@ -209,7 +209,7 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 		db.Write(lb)
 		db.WriteByte('\n')
 	}
-	if err := os.WriteFile(filepath.Join(main, "reviewer_decisions.ndjson"), []byte(db.String()), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(main, "reviewer_decisions.ndjson"), []byte(db.String()), 0o600); err != nil {
 		return err
 	}
 
@@ -218,7 +218,7 @@ func materializeAgentRun(o *offline, P int, cfg ReviewerCfg, ar *AgentRecs, run 
 	writeStatus(main, "linker", linkerStatus(rp.L, uint64(len(list)), 0, int64(rp.facts), 0, -1, 0, 0, 0))
 	ob, _ := json.MarshalIndent(map[string]interface{}{"offline_replay": true, "fhir_msgs": len(fhir), "out_msgs": len(outLog), "P": P,
 		"wall_s": 0, "throughput_ev_s": 0, "chaos": 0, "linker": readStatus(main, "linker"), "reviewer": cfg}, "", " ")
-	if err := os.WriteFile(filepath.Join(main, "orchestrate.json"), ob, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(main, "orchestrate.json"), ob, 0o600); err != nil {
 		return err
 	}
 
@@ -298,5 +298,5 @@ func writeAgentStats(path string, o *offline, cfg ReviewerCfg, ar *AgentRecs, rp
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(path, append(b, '\n'), 0o644)
+	return os.WriteFile(path, append(b, '\n'), 0o600)
 }

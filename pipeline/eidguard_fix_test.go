@@ -43,17 +43,21 @@ func gRun(t *testing.T, o gOpts, regs []gReg) (*LinkerCore, *ClosureCore, []OutM
 		}
 	}
 	seq := uint64(0)
+	prog := o.prog
+	if prog == "" {
+		prog = "crc"
+	}
 	for i, r := range regs {
 		seq++
 		ev := &Event{ID: fmt.Sprintf("E%d", i), Provider: r.prov, PatientKey: r.pk, Name: r.name, Sex: r.sex, Dob: r.dob, Eid: r.eid, Day: 1, RType: "Encounter"}
 		switch r.role {
 		case "sr":
-			ev.RType, ev.ID, ev.Prog = "ServiceRequest", "SR1", o.prog
+			ev.RType, ev.ID, ev.Prog = "ServiceRequest", "SR1", prog
 		case "rep":
 			ev.RType, ev.Status, ev.Category, ev.Day = "DiagnosticReport", "final", "colonoscopy", 20
 			ev.Text = "Caecum reached. Good prep. No polyps."
 			ev.Ev = &TwoVerdict{Kind: "colonoscopy", Agree: true, Label: "adequate"}
-			ev.Prog = o.prog
+			ev.Prog = prog
 		}
 		feed(L.Apply(&Prep{Seq: seq, Kind: "event", Ev: ev}))
 	}

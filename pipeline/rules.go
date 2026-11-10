@@ -94,7 +94,7 @@ func InKPICohort(prog, cat string) bool {
 }
 
 func progOfText(s string) string {
-	s = strings.ToLower(s)
+	s = strings.ToLower(strings.TrimSpace(s))
 	if strings.Contains(s, "lung cancer screening") { // LDCT screening (ldct.go); not the incidental-nodule loop
 		return "lung_ldct"
 	}
@@ -110,5 +110,11 @@ func progOfText(s string) string {
 	if strings.Contains(s, "colposcop") || strings.Contains(s, "cervical") {
 		return "cervical"
 	}
-	return "crc"
+	if strings.HasPrefix(s, "ifhas ") {
+		return "ifhas"
+	}
+	if strings.Contains(s, "colonoscop") || strings.Contains(s, "colorectal") || strings.Contains(s, "positive fit") || strings.Contains(s, "fit+") || strings.HasPrefix(s, "close crc ") {
+		return "crc"
+	}
+	return ""
 }
