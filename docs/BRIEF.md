@@ -86,7 +86,7 @@ Measured results live in `pipeline/RESULTS.md` (stages 0–7, LTT, image reader,
 | Encoder vs off-the-shelf | R@10 0.932 vs 0.604 (best single) and 0.928 (four combined). The gain over the combination is deployability (2.3 MB vs 236 MB), not accuracy. |
 | Booking simulator | 94.5% KPI at 1.5 slots per FIT+. The optimiser ties greedy even when capacity is scarce, so we make no optimisation claim. Below 1 slot per FIT+, the queue collapses under any policy. |
 | Queue levers (simulated) | At 1.2 slots per FIT+: direct-to-procedure plus prep targeting +13 pp ≤31-day completion (93% of draws better). Prep targeting frees about 88 repeat colonoscopies per 1,000. No lever helps below 1.0 slot. |
-| Network pooling, capacity misallocated across regions | ≤31 days for all FIT+ rises from 22.2% (no cross-site booking) to **42.1%** (pooled). No gain when capacity is short overall. |
+| Network pooling, capacity misallocated across regions | ≤31 days for all FIT+ rises from 21.5% (no cross-site booking) to **41.7%** (pooled), using deterministic numerics. No gain when capacity is short overall. |
 | Projection from published trial effects | Day-120 completion 22.5% → 40.7% with automated levers only (+18 pp); the base case uses +13 pp. |
 
 ## Constraints (state them up front)

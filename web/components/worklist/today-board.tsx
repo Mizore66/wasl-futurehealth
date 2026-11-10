@@ -5,6 +5,7 @@ import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { dayToDate, formatDay } from "@/lib/domain/day";
@@ -24,7 +25,8 @@ import type { CaseAction } from "@/lib/api/schema";
  * Fixtures mode: the same buttons keep session state in the browser, with Undo.
  */
 
-type Contact = { what: string; when: string };
+/** One trail entry. `who` is the actor the API recorded (live) or the browser that holds it (fixtures): never a guessed name. */
+type Contact = { what: string; when: string; who: string };
 type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
@@ -52,6 +54,9 @@ const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numer
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 /** A wall-clock RFC 3339 time `days` from now: the API checks snooze `until` against its own clock, not the run's. */
 const fromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().replace(/\.\d{3}Z$/, "Z");
+
+/** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
+const SESSION_WHO = "This browser";
 
 const REFUSED: Record<number, string> = {
   403: "the coordinator role may not do this",
@@ -114,13 +119,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           ` ${toCall.length - 1} more to call.`,
       };
 
-  const apply = (row: Row, what: string, when: string, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null) => {
+  const apply = (row: Row, entry: Contact, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null) => {
     setWant({ k: stage ? "chips" : "undo" });
     setS((prev) => {
       const before = prev.over[row.id] ?? { log: [] };
       return {
         ...prev,
-        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, { what, when }] } },
+        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, entry] } },
         sel: row.id,
         calling: null,
         stage,
@@ -140,13 +145,13 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
    */
   const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, action: CaseAction, stage: Stage | null = null) => {
     setRefusal(null);
-    if (!live) return apply(row, what, `This session · ${clock()}`, patch, head, move, stage);
+    if (!live) return apply(row, { what, when: `This session · ${clock()}`, who: SESSION_WHO }, patch, head, move, stage);
     if (busy) return;
     if (!row.head) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[409]}` });
     setBusy(true);
     recordAction(row.id, row.head, action)
       .then((res) => {
-        if (res.ok) apply(row, what, `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, { ...patch, head: res.head }, head, move, stage);
+        if (res.ok) apply(row, { what, when: `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, who: res.actor }, { ...patch, head: res.head }, head, move, stage);
         else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
@@ -268,7 +273,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
 
   const trail: ChainNode[] = p
     ? [
-        ...p.log.slice(-3).map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: "Hessa Al Ali", what: c.what, when: c.when })),
+        ...p.log.slice(-3).map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: c.who, what: c.what, when: c.when })),
         {
           id: "next",
           kind: "current",
@@ -408,7 +413,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" data-value={p.days} className={cn("text-lead font-bold tabular-nums", p.days > STANDARD_DAYS ? "text-negative" : "text-ink")}>
                     <NumberFlow value={p.days} />
                   </span>
                   <span className="text-muted">days since referral</span>
@@ -433,7 +438,9 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
               </button>
               <span className="hidden flex-1 sm:block" />
-              <Secondary
+              <Button
+                variant="quiet"
+                size="touch"
                 className="max-sm:flex-1"
                 disabled={busy}
                 onClick={() =>
@@ -445,9 +452,11 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 }
               >
                 Snooze to tomorrow
-              </Secondary>
+              </Button>
               {p.view === "none" ? (
-                <Secondary
+                <Button
+                  variant="quiet"
+                  size="touch"
                   className="max-sm:flex-1"
                   disabled={busy}
                   onClick={() =>
@@ -458,9 +467,11 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   }
                 >
                   Take this patient
-                </Secondary>
+                </Button>
               ) : (
-                <Secondary
+                <Button
+                  variant="quiet"
+                  size="touch"
                   className="max-sm:flex-1"
                   disabled={busy}
                   onClick={() =>
@@ -475,7 +486,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                   }
                 >
                   Hand to {HANDOFF_OWNER}
-                </Secondary>
+                </Button>
               )}
             </div>
 
@@ -513,7 +524,9 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                     )}
                   </span>
                   {!stage && nextUp && (
-                    <Secondary
+                    <Button
+                      variant="quiet"
+                      size="touch"
                       className="sm:ml-auto"
                       onClick={() => {
                         setWant({ k: "heading" });
@@ -521,7 +534,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                       }}
                     >
                       Next patient: {nextUp.name}
-                    </Secondary>
+                    </Button>
                   )}
                 </motion.div>
               )}
@@ -591,7 +604,7 @@ function Track({ days, referralDay }: { days: number; referralDay: number }) {
         <span className="absolute top-1 h-2 rounded-r-chip bg-negative" style={{ left: `${tick}%`, width: `${over}%` }} />
         <span className="absolute top-0 h-4 w-0.5 bg-ink" style={{ left: `${tick}%` }} />
       </div>
-      <div className="relative mt-1.5 h-4 text-small text-muted">
+      <div className="relative mt-1.5 h-4 text-small tabular-nums text-muted">
         <span className="absolute left-0">Referred {formatDay(referralDay)}</span>
         <span className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: `${tick}%` }}>
           Day {STANDARD_DAYS} · {formatDay(referralDay + STANDARD_DAYS)}
@@ -608,8 +621,4 @@ function Field({ label, value, warn = false }: { label: string; value: string; w
       <dd className={cn("m-0 mt-1 font-medium", warn ? "text-warning" : "text-ink")}>{value}</dd>
     </div>
   );
-}
-
-function Secondary({ className, ...props }: React.ComponentProps<"button">) {
-  return <button {...props} className={cn("h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control disabled:cursor-wait disabled:opacity-60", className)} />;
 }

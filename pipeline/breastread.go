@@ -462,6 +462,9 @@ func breastSchema(kind string) map[string]interface{} {
 }
 
 func askBreast(url, kind, text string) breastGemma {
+	if err := validateLocalEndpoint(url); err != nil {
+		return breastGemma{Kind: kind, Model: BreastReaderModel, Error: "unsafe reader endpoint: " + err.Error()}
+	}
 	prompt := breastAssessPrompt
 	if kind == "breast-screen" {
 		prompt = breastScreenPrompt
@@ -544,7 +547,7 @@ func runBreastCache(dirs, url, out string) {
 	close(ch)
 	wg.Wait()
 	b, _ := json.MarshalIndent(cache, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 	BreastCache = cache
 	res := map[string]interface{}{}
 	for _, dir := range strings.Split(dirs, ",") {

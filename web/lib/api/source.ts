@@ -32,14 +32,16 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-/**
- * Every live request. WASL_API_TOKEN (server-side only, never NEXT_PUBLIC) is sent as a bearer token when set: the
- * Go API requires it when it runs with the same WASL_API_TOKEN, which a publicly reachable API must.
- */
-function liveInit(init?: RequestInit): RequestInit {
+function apiToken(role: Role): string {
+  const name = `WASL_API_${role.toUpperCase()}_TOKEN`;
+  const token = process.env[name]?.trim();
+  if (!token) throw new Error(`${name} is required for the live synthetic API`);
+  return token;
+}
+
+function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
   const headers = new Headers(init?.headers);
-  const token = process.env.WASL_API_TOKEN?.trim();
-  if (token) headers.set("authorization", `Bearer ${token}`);
+  headers.set("authorization", `Bearer ${apiToken(role)}`);
   return { cache: "no-store", ...init, headers };
 }
 
@@ -47,8 +49,8 @@ function liveBase(): string {
   return process.env.WASL_API_URL!.replace(/\/$/, "");
 }
 
-async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit): Promise<z.infer<S> | null> {
-  const res = await fetch(liveBase() + route, liveInit(init));
+async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role = "reviewer"): Promise<z.infer<S> | null> {
+  const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return schema.parse(await res.json());
@@ -154,7 +156,7 @@ export async function getCase(id: string): Promise<CaseDetail | null> {
 }
 
 export async function getAudit(id: string): Promise<Audit | null> {
-  if (apiMode() === "live") return live(Audit, `/api/cases/${encodeURIComponent(id)}/audit`);
+  if (apiMode() === "live") return live(Audit, `/api/cases/${encodeURIComponent(id)}/audit`, undefined, "auditor");
   for (const f of await fixtureCaseFiles("_audit")) {
     const audit = await fixture(Audit, f);
     if (audit.case === id) return audit;
@@ -177,11 +179,7 @@ export async function postReview(
   if (apiMode() === "live") {
     const res = await fetch(
       `${liveBase()}/api/cases/${encodeURIComponent(id)}/review`,
-      liveInit({
-        method: "POST",
-        headers: { "content-type": "application/json", "X-Wasl-Role": who.role, "X-Wasl-Actor": who.actor },
-        body: JSON.stringify(request.data),
-      }),
+      authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, who.role),
     );
     const json = await res.json();
     if (res.status === 201) return { ok: true, status: 201, response: ReviewResponse.parse(json) };
@@ -201,20 +199,21 @@ export type ActionResult =
 
 /**
  * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
- * Coordinator role only. `expectedHead` is the case's `api_overlay.head`; a stale head returns 409 with the current one.
+ * Sent with the server-side coordinator credential (WASL_API_COORDINATOR_TOKEN); the API binds that token to its role
+ * and actor and records that actor, so no identity header is sent from here. `expectedHead` is the case's
+ * `api_overlay.head`; a stale head returns 409 with the current one.
  */
-export async function postAction(id: string, action: CaseAction, expectedHead: string, actor: string): Promise<ActionResult> {
+export async function postAction(id: string, action: CaseAction, expectedHead: string): Promise<ActionResult> {
   const body = CaseAction.safeParse(action);
   if (!body.success) return { ok: false, status: 400, error: body.error.message };
   if (apiMode() !== "live") throw new Error("postAction needs WASL_API_URL: fixtures mode cannot append coordinator events");
 
   const res = await fetch(
     `${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`,
-    liveInit({
-      method: "POST",
-      headers: { "content-type": "application/json", "X-Wasl-Role": "coordinator", "X-Wasl-Actor": actor },
-      body: JSON.stringify({ ...body.data, expected_head: expectedHead }),
-    }),
+    authenticated(
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, expected_head: expectedHead }) },
+      "coordinator",
+    ),
   );
   const json = await res.json();
   if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };

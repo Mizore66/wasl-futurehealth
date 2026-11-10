@@ -5,14 +5,14 @@ package main
 //   wsi7 serve -run <run dir> -data <cohort dir> [-addr 127.0.0.1:8088]
 //
 // Everything served is derived from the run's own logs (out_log, fhir_log, review_queue, reviewer_decisions, anchors,
-// report7, dashboard) — no client-side or invented records. Patient data is synthetic. Review actions (POST) are
-// RBAC-checked and appended to <run>/api_reviews.ndjson as hash-chained events; nothing in the run is overwritten.
+// report7, dashboard) — no client-side or invented records. Patient data is synthetic. Every /api route requires a
+// token-bound principal; reads and mutations have separate RBAC checks. Review actions (POST) are appended to
+// <run>/api_reviews.ndjson as hash-chained events; nothing in the run is overwritten.
 
 import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
-	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -43,53 +43,49 @@ func auditAnchorNote(anchors map[string]string) string {
 }
 
 type apiCase struct {
-	ID        string    `json:"id"`        // loop id (ServiceRequest reference)
-	Programme string    `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
-	State     string    `json:"state"`
-	Dropoff   string    `json:"dropoff"`
-	Owner     string    `json:"owner,omitempty"`
-	Provider  string    `json:"provider"`
-	SRDay     float64   `json:"referral_day"`
-	Deadline  float64   `json:"deadline_day,omitempty"`
-	Overdue   bool      `json:"overdue"`
-	Priority  string    `json:"priority,omitempty"`
-	Consent   string    `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
-	Review    string    `json:"review"`  // none | open | signed
-	Closed    bool      `json:"closed"`
-	ClosedDay float64   `json:"closed_day,omitempty"`
-	Fixture   string    `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
+	ID        string      `json:"id"`        // loop id (ServiceRequest reference)
+	Programme string      `json:"programme"` // crc | cervical | lung_nodule | diabetic_retinopathy | breast | lung_ldct | ifhas
+	State     string      `json:"state"`
+	Dropoff   string      `json:"dropoff"`
+	Owner     string      `json:"owner,omitempty"`
+	Provider  string      `json:"provider"`
+	SRDay     float64     `json:"referral_day"`
+	Deadline  float64     `json:"deadline_day,omitempty"`
+	Overdue   bool        `json:"overdue"`
+	Priority  string      `json:"priority,omitempty"`
+	Consent   string      `json:"consent"` // contact permission at last decision: unknown|granted|denied|opted_out
+	Review    string      `json:"review"`  // none | open | signed
+	Closed    bool        `json:"closed"`
+	ClosedDay float64     `json:"closed_day,omitempty"`
+	Fixture   string      `json:"fixture,omitempty"` // demo fixture tag, if this case is one of the demo cases
 	ov        caseOverlay // coordinator actions replayed from the ledger; never merged into the canonical fields above
-	last      *Decision // full last decision (detail view)
+	last      *Decision   // full last decision (detail view)
 	decisions []*Decision
 }
 
 type apiServer struct {
-	run, data string
-	meta      map[string]interface{}
-	cases     map[string]*apiCase
-	order     []string
-	queue     map[string][]*ReviewItem // loop -> raised items
-	signoffs  map[string][]map[string]interface{}
-	facts     map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
-	ids       map[string][]map[string]string     // loop -> linked registrations
-	dashboard map[string]interface{}
-	report    map[string]interface{}
-	anchors   map[string]string
-	booking   map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
-	fixtures  map[string]string
-	agentInv  map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
-	agentProv map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
-	mu        sync.Mutex
-	reviews   []map[string]interface{}
-	ledgerErr  string // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	run, data  string
+	meta       map[string]interface{}
+	cases      map[string]*apiCase
+	order      []string
+	queue      map[string][]*ReviewItem // loop -> raised items
+	signoffs   map[string][]map[string]interface{}
+	facts      map[string][]map[string]interface{} // loop -> FHIR timeline entries (no free text)
+	ids        map[string][]map[string]string      // loop -> linked registrations
+	dashboard  map[string]interface{}
+	report     map[string]interface{}
+	anchors    map[string]string
+	booking    map[string]interface{} // stage 6: simulated booking decision support (booking/suggest.py)
+	fixtures   map[string]string
+	agentInv   map[string][]agentInvestigation // loop -> cached agent investigations consumed by a sign-off
+	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
+	mu         sync.Mutex
+	reviews    []map[string]interface{}
+	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
-func runServe(run, data, addr string) {
-	s, err := loadAPIVerified(run, data)
-	if err != nil {
-		panic(err)
-	}
+func apiHandler(s *apiServer) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", s.healthz)
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
@@ -104,45 +100,76 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	token := os.Getenv("WASL_API_TOKEN")
-	if token != "" && len(token) < 24 {
-		panic("WASL_API_TOKEN must be at least 24 characters")
+	return cors(mux)
+}
+
+func basicAPIHandler(s *apiServer) http.Handler {
+	return s.authorizeVerified(apiHandler(s))
+}
+
+func runServe(run, data, addr string) {
+	if os.Getenv("WASL_SYNTHETIC_DATA_ONLY") != "1" {
+		panic("serve requires WASL_SYNTHETIC_DATA_ONLY=1; the demo API must not be used with real clinical data")
 	}
-	srv := &http.Server{Addr: addr, Handler: cors(requireToken(token, mux)), ReadHeaderTimeout: 5 * time.Second}
-	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v, token required: %v)\n", len(s.cases), run, addr, s.fixtures, token != "")
-	if err := srv.ListenAndServe(); err != nil {
+	s, err := loadAPIVerified(run, data)
+	if err != nil {
+		panic(err)
+	}
+	startRuntimeMetrics(os.Getenv("WASL_RUNTIME_ADDR"))
+	// Recovery deployments use their configured Basic-auth identities and TLS;
+	// all other serving modes require the bearer-bound synthetic-demo principals.
+	var handler http.Handler
+	if os.Getenv("WASL_API_USERS_FILE") != "" {
+		handler = basicAPIHandler(s)
+	} else {
+		handler, err = s.handler(os.Getenv("WASL_API_TOKENS"), os.Getenv("WASL_API_ORIGINS"))
+		if err != nil {
+			panic(err)
+		}
+	}
+	srv := &http.Server{Addr: addr, Handler: handler, ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 15 * time.Second, WriteTimeout: 30 * time.Second, IdleTimeout: 60 * time.Second}
+	auth, err := apiAuthFromEnvironment()
+	if err != nil {
+		panic(err)
+	}
+	srv.Handler = auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		started := time.Now()
+		handler.ServeHTTP(w, r)
+		writeStructuredLog("info", "api request", "method", r.Method, "path", r.URL.Path, "actor", r.Header.Get("X-Wasl-Actor"), "duration_ms", time.Since(started).Milliseconds())
+	}))
+	certFile, keyFile := os.Getenv("WASL_API_TLS_CERT_FILE"), os.Getenv("WASL_API_TLS_KEY_FILE")
+	if (certFile == "") != (keyFile == "") {
+		panic("WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE must be set together")
+	}
+	scheme := "http"
+	if certFile != "" {
+		scheme = "https"
+	}
+	writeStructuredLog("info", "api listener ready", "cases", len(s.cases), "run", run, "address", addr, "scheme", scheme)
+	if certFile != "" {
+		err = srv.ListenAndServeTLS(certFile, keyFile)
+	} else {
+		err = srv.ListenAndServe()
+	}
+	if err != nil {
 		panic(err)
 	}
 }
 
-// requireToken gates every /api route behind a shared bearer token when WASL_API_TOKEN is set, so the API can sit
-// behind a public URL for a hosted frontend. /healthz stays open for container and platform health checks. The token
-// authenticates the caller (the frontend server), not a person: X-Wasl-Role and X-Wasl-Actor are still asserted by
-// that caller. Unset keeps the original open loopback behaviour.
-func requireToken(token string, h http.Handler) http.Handler {
-	if token == "" {
-		return h
-	}
-	want := []byte("Bearer " + token)
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/healthz" {
-			h.ServeHTTP(w, r)
-			return
-		}
-		if subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), want) != 1 {
-			w.Header().Set("WWW-Authenticate", `Bearer realm="wasl"`)
-			writeJSONResp(w, 401, map[string]interface{}{"error": "missing or wrong bearer token"})
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
-}
-
+// cors is retained for direct in-process handler tests. It is origin-deny by default; external serving uses s.handler,
+// which additionally requires a verified bearer principal on every /api route. Recovery's Basic-auth listener uses
+// its single configured WASL_API_CORS_ORIGIN when browser access is explicitly enabled.
 func cors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Wasl-Role, X-Wasl-Actor")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		if os.Getenv("WASL_API_USERS_FILE") == "" {
+			corsWithOrigins(h, map[string]bool{}).ServeHTTP(w, r)
+			return
+		}
+		if origin := os.Getenv("WASL_API_CORS_ORIGIN"); origin != "" {
+			corsWithOrigins(h, map[string]bool{origin: true}).ServeHTTP(w, r)
+			return
+		}
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(204)
 			return
@@ -213,14 +240,24 @@ func loadAPI(run, data string) *apiServer {
 	s.pickAgentFixture()
 	s.loadReviews()
 	s.meta = map[string]interface{}{"api": apiVersion, "data_mode": "simulated", "run": filepath.Base(run),
-		"policy": PolicyName, "reader_model": s.readerModel(), "loaded_at": time.Now().UTC().Format(time.RFC3339),
+		"policy": PolicyName, "reader_model": safeReaderModel(s.readerModel()), "loaded_at": time.Now().UTC().Format(time.RFC3339),
 		"note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data."}
-	if len(s.order) > 0 {
-		if p := s.cases[s.order[0]].last.Policy; p != "" {
-			s.meta["policy"] = p
+	return s
+}
+
+func safeReaderModel(model string) string {
+	if model == "unknown" {
+		return model
+	}
+	if len(model) == 0 || len(model) > 160 || !strings.HasPrefix(model, "gemma-") || strings.ContainsAny(model, " \t\r\n") {
+		return "not-disclosed"
+	}
+	for _, r := range model {
+		if !unicode.IsLetter(r) && !unicode.IsDigit(r) && !strings.ContainsRune("-_.:/()+", r) {
+			return "not-disclosed"
 		}
 	}
-	return s
+	return model
 }
 
 // readerModel reports the second evidence reader actually recorded in this run's evidence provenance.
@@ -305,7 +342,9 @@ func (s *apiServer) loadTimelines() {
 			rows = append(rows, byPK[pk]...)
 		}
 		sort.Slice(rows, func(i, j int) bool { return rows[i]["seq"].(uint64) < rows[j]["seq"].(uint64) })
-		sort.Slice(ids, func(i, j int) bool { return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"]) })
+		sort.Slice(ids, func(i, j int) bool {
+			return ids[i]["role"] > ids[j]["role"] || (ids[i]["role"] == ids[j]["role"] && ids[i]["registration"] < ids[j]["registration"])
+		})
 		s.facts[id], s.ids[id] = rows, ids
 	}
 }
@@ -320,10 +359,11 @@ func firstNonEmpty(a ...string) string {
 }
 
 // pickFixtures selects the demo cases from real run data (docs/BACKEND-HANDOFF.md "Frontend contract"):
-//   evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
-//   false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
-//   review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
-//   dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
+//
+//	evidence_closure  : CRC loop closed by trusted cross-provider link + agreeing readers, consent granted
+//	false_closure_trap: a procedure exists but evidence is incomplete -> held/inadequate, never closed
+//	review_hold       : uncertain link or reader disagreement raised for review, outreach held for consent/guard, later signed
+//	dr_exam_closure   : (runs with DR loops only) referable DR screen closed by an eye-clinic exam, readers agree on both reports
 func (s *apiServer) pickFixtures() {
 	s.fixtures = map[string]string{}
 	ids := append([]string{}, s.order...)
@@ -349,7 +389,9 @@ func (s *apiServer) pickFixtures() {
 		}
 		if s.fixtures["evidence_closure"] == "" && c.Closed && c.Consent == "granted" &&
 			has(c, "link_decision", func(b Block) bool { return fmt.Sprint(b.Body["hops"]) != "0" }) &&
-			has(c, "evidence", func(b Block) bool { return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == "" }) {
+			has(c, "evidence", func(b Block) bool {
+				return b.Body["agree"] == true && b.Body["label"] == "adequate" && fmt.Sprint(b.Body["human_override"]) == ""
+			}) {
 			s.fixtures["evidence_closure"] = id
 		}
 		if s.fixtures["false_closure_trap"] == "" && !c.Closed && c.State == "inadequate" &&
@@ -597,7 +639,11 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	id, _ := url.PathUnescape(rest)
 	c := s.cases[id]
 	if c == nil {
-		writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "unknown case", "id": id,
+		envelope := s.envelope
+		if sub == "audit" {
+			envelope = s.exportEnvelope
+		}
+		writeJSONResp(w, 404, envelope(map[string]interface{}{"error": "unknown case", "id": id,
 			"hint": "case ids are loop ids such as ahs-mushrif/ServiceRequest/AHS-sr-1002; URL-encode the slashes or pass them as-is"}))
 		return
 	}
@@ -619,24 +665,22 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	writeJSONResp(w, 200, s.envelope(s.caseDetailBody(c)))
+	body, err := exportGeneric(s.caseDetailBody(c))
+	if err != nil {
+		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "case detail could not be encoded"}))
+		return
+	}
+	body = pseudonymizeRegistrationFields(body, "").(map[string]interface{})
+	writeJSONResp(w, 200, s.envelope(body))
 }
 
 func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
-	chain := c.last.Chain
-	ok := verifyChain(chain)
-	writeJSONResp(w, 200, s.envelope(map[string]interface{}{
-		"case": c.ID, "chain": nz(chain), "chain_verified": ok, "chain_length": len(chain),
-		"anchors": s.anchors, "anchor_note": auditAnchorNote(s.anchors),
-		"decision_signatures": func() []map[string]string {
-			out := []map[string]string{}
-			for _, d := range c.decisions {
-				out = append(out, map[string]string{"decision_id": d.ID, "sig": d.Sig, "recomputed": decSig(d), "policy": d.Policy})
-			}
-			return out
-		}(),
-		"history": s.reviewsFor(c.ID),
-	}))
+	audit, err := s.redactedCaseAuditBody(c)
+	if err != nil {
+		writeJSONResp(w, 500, s.exportEnvelope(map[string]interface{}{"error": "audit could not be encoded"}))
+		return
+	}
+	writeJSONResp(w, 200, s.envelope(audit))
 }
 
 func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
@@ -656,14 +700,13 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 // Demo mode: appends a hash-chained review event; the run's decisions are never mutated.
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
-	var req struct{ Item, Decision, Note string }
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(&req); err != nil || req.Decision == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be {\"item\":..., \"decision\":..., \"note\":...}"}))
-		return
+	var req struct {
+		Item     string `json:"item"`
+		Decision string `json:"decision"`
+		Note     string `json:"note"`
 	}
-	if _, err := dec.Token(); err != io.EOF {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must contain one JSON object and no trailing data"}))
+	if err := decodeAPIBody(w, r, maxReviewBodyBytes, &req); err != nil || req.Decision == "" {
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note; duplicate or unknown fields and oversized/trailing data are rejected"}))
 		return
 	}
 	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
@@ -1205,6 +1248,23 @@ func (s *apiServer) lastHashLocked() string {
 // state is unknown (errLedgerIndeterminate) the ledger is marked failed and all later writes are refused, because
 // the in-memory hash could otherwise fork from the file.
 func (s *apiServer) appendEventLocked(ev map[string]interface{}) (map[string]interface{}, error) {
+	path := filepath.Join(s.run, "api_reviews.ndjson")
+	unlock, err := lockReviewLedger(path)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	// The process-local mutex cannot protect a shared run from another server.
+	// Revalidate after acquiring the interprocess lock so two writers cannot both
+	// acknowledge an event derived from the same previous hash.
+	disk, err := readVerifiedLedger(path)
+	if err == nil {
+		err = sameLedger(disk, s.reviews)
+	}
+	if err != nil {
+		s.ledgerErr = "ledger changed under another writer: " + err.Error()
+		return nil, err
+	}
 	ev["hash"] = apiEventHash(ev)
 	line, err := json.Marshal(ev)
 	if err != nil {
@@ -1241,8 +1301,12 @@ type ledgerFile interface {
 }
 
 func appendLedgerLine(path string, line []byte) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
+		return err
+	}
+	if err := f.Chmod(0o600); err != nil {
+		f.Close()
 		return err
 	}
 	return appendToLedgerFile(f, line)
@@ -1282,6 +1346,32 @@ func appendToLedgerFile(f ledgerFile, line []byte) error {
 // rejectDuplicateKeys fails on any object that repeats a key: encoding/json keeps the last value silently, so
 // two readers could disagree about what was submitted.
 func rejectDuplicateKeys(raw []byte) error {
+	return rejectDuplicateKeysMode(raw, false)
+}
+
+// rejectSemanticDuplicateKeys also rejects case variants because typed Go JSON
+// decoding matches struct fields with the same Unicode simple-fold semantics.
+func rejectSemanticDuplicateKeys(raw []byte) error {
+	return rejectDuplicateKeysMode(raw, true)
+}
+
+func foldJSONName(s string) string {
+	var folded strings.Builder
+	folded.Grow(len(s))
+	for _, r := range s {
+		for {
+			next := unicode.SimpleFold(r)
+			if next <= r {
+				break
+			}
+			r = next
+		}
+		folded.WriteRune(r)
+	}
+	return folded.String()
+}
+
+func rejectDuplicateKeysMode(raw []byte, fold bool) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	var walk func() error
 	walk = func() error {
@@ -1309,8 +1399,12 @@ func rejectDuplicateKeys(raw []byte) error {
 				return err
 			}
 			k, _ := kt.(string)
+			original := k
+			if fold {
+				k = foldJSONName(k)
+			}
 			if seen[k] {
-				return fmt.Errorf("duplicate JSON key %q", k)
+				return fmt.Errorf("duplicate JSON key %q", original)
 			}
 			seen[k] = true
 			if err := walk(); err != nil {
@@ -1440,7 +1534,11 @@ func (s *apiServer) loadReviews() {
 	defer f.Close()
 	br := bufio.NewReaderSize(f, 1<<16)
 	for ln := 1; ; ln++ {
-		line, rerr := br.ReadBytes('\n')
+		line, rerr := readLedgerRecord(br)
+		if errors.Is(rerr, errLedgerRecordTooLarge) {
+			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, rerr)
+			return
+		}
 		if rerr != nil && rerr != io.EOF {
 			s.ledgerErr = fmt.Sprintf("line %d: %v", ln, rerr)
 			return

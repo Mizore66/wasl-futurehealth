@@ -19,8 +19,14 @@ x-wasl-env: &wasl-env
 
 x-nats: &nats
   build: ./deploy/nats
-  image: wasl-nats:local
+  image: ${WASL_NATS_IMAGE:-wasl-nats:local}
   command: ["nats-server", "-c", "/etc/nats/wasl.conf"]
+  logging: &wasl-logging
+    driver: json-file
+    options:
+      max-size: 50m
+      max-file: "3"
+  stop_grace_period: 10s
   healthcheck:
     test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8222/healthz?js-enabled-only=true"]
     interval: 5s
@@ -58,9 +64,11 @@ services:
   # then audit, tamper check, booking and the summary (scripts/demo.sh container). Exits 0 when the run is done.
   pipeline:
     build: .
-    image: wasl:local
+    image: ${WASL_IMAGE:-wasl:local}
     command: ["container"]
     environment: *wasl-env
+    logging: *wasl-logging
+    stop_grace_period: 10s
     volumes:
       - wasl-run:/var/lib/wasl
     depends_on:
@@ -72,13 +80,16 @@ services:
   # Read API over the finished run (docs/API.md), on the host's loopback only.
   api:
     build: .
-    image: wasl:local
+    image: ${WASL_IMAGE:-wasl:local}
     command: ["serve"]
     environment:
       <<: *wasl-env
       WASL_API_ADDR: 0.0.0.0:8088
-      # Set to require "Authorization: Bearer <token>" on /api (docs/DEPLOY.md, "Hosted frontend"). Empty = open.
-      WASL_API_TOKEN: ${WASL_API_TOKEN:-}
+      WASL_RUNTIME_ADDR: 127.0.0.1:8090
+      # token:role:actor entries (docs/DEPLOY.md, "Hosted frontend"). Empty = scripts/demo.sh's published loopback-demo tokens.
+      WASL_API_TOKENS: ${WASL_API_TOKENS:-}
+    logging: *wasl-logging
+    stop_grace_period: 10s
     volumes:
       - wasl-run:/var/lib/wasl
     ports:

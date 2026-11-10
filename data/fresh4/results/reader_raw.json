@@ -1,0 +1,950 @@
+{
+ "items": [
+  {
+   "a": "LR2",
+   "agree": true,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-001",
+   "kind": "ldct-screen",
+   "label": "LR2",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "LR4A",
+   "agree": true,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-002",
+   "kind": "ldct-screen",
+   "label": "LR4A",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR1",
+   "b_available": true,
+   "id": "f4l-003",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR3",
+   "agree": false,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-004",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR3",
+   "agree": true,
+   "b": "LR3",
+   "b_available": true,
+   "id": "f4l-005",
+   "kind": "ldct-screen",
+   "label": "LR3",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR3",
+   "b_available": true,
+   "id": "f4l-006",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR4X",
+   "b_available": true,
+   "id": "f4l-007",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR2",
+   "agree": true,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-008",
+   "kind": "ldct-screen",
+   "label": "LR2",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "LR4X",
+   "agree": true,
+   "b": "LR4X",
+   "b_available": true,
+   "id": "f4l-009",
+   "kind": "ldct-screen",
+   "label": "LR4X",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-010",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR1",
+   "agree": true,
+   "b": "LR1",
+   "b_available": true,
+   "id": "f4l-011",
+   "kind": "ldct-screen",
+   "label": "LR1",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "LR3",
+   "agree": true,
+   "b": "LR3",
+   "b_available": true,
+   "id": "f4l-012",
+   "kind": "ldct-screen",
+   "label": "LR3",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-013",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR4B",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4l-014",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR2",
+   "agree": true,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-015",
+   "kind": "ldct-screen",
+   "label": "LR2",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR0",
+   "b_available": true,
+   "id": "f4l-016",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR4A",
+   "agree": true,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-017",
+   "kind": "ldct-screen",
+   "label": "LR4A",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR1",
+   "b_available": true,
+   "id": "f4l-018",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR0",
+   "b_available": true,
+   "id": "f4l-019",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-020",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-021",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR4A",
+   "agree": false,
+   "b": "LR3",
+   "b_available": true,
+   "id": "f4l-022",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "LR4B",
+   "agree": false,
+   "b": "LR2",
+   "b_available": true,
+   "id": "f4l-023",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR4A",
+   "b_available": true,
+   "id": "f4l-024",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "LR0",
+   "b_available": true,
+   "id": "f4l-025",
+   "kind": "ldct-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_dna",
+   "agree": true,
+   "b": "wk_dna",
+   "b_available": true,
+   "id": "f4l-026",
+   "kind": "ldct-workup",
+   "label": "wk_dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_dna",
+   "agree": true,
+   "b": "wk_dna",
+   "b_available": true,
+   "id": "f4l-027",
+   "kind": "ldct-workup",
+   "label": "wk_dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_dna",
+   "agree": true,
+   "b": "wk_dna",
+   "b_available": true,
+   "id": "f4l-028",
+   "kind": "ldct-workup",
+   "label": "wk_dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_dna",
+   "agree": true,
+   "b": "wk_dna",
+   "b_available": true,
+   "id": "f4l-029",
+   "kind": "ldct-workup",
+   "label": "wk_dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_dna",
+   "agree": true,
+   "b": "wk_dna",
+   "b_available": true,
+   "id": "f4l-030",
+   "kind": "ldct-workup",
+   "label": "wk_dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-031",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": true,
+   "b": "wk_incomplete",
+   "b_available": true,
+   "id": "f4l-032",
+   "kind": "ldct-workup",
+   "label": "wk_incomplete",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-033",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": true,
+   "b": "wk_incomplete",
+   "b_available": true,
+   "id": "f4l-034",
+   "kind": "ldct-workup",
+   "label": "wk_incomplete",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-035",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": false,
+   "b": "wk_treatment",
+   "b_available": true,
+   "id": "f4l-036",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-037",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_treatment",
+   "agree": true,
+   "b": "wk_treatment",
+   "b_available": true,
+   "id": "f4l-038",
+   "kind": "ldct-workup",
+   "label": "wk_treatment",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-039",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": false,
+   "b": "wk_treatment",
+   "b_available": true,
+   "id": "f4l-040",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_benign",
+   "agree": true,
+   "b": "wk_benign",
+   "b_available": true,
+   "id": "f4l-041",
+   "kind": "ldct-workup",
+   "label": "wk_benign",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_benign",
+   "agree": true,
+   "b": "wk_benign",
+   "b_available": true,
+   "id": "f4l-042",
+   "kind": "ldct-workup",
+   "label": "wk_benign",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "wk_incomplete",
+   "b_available": true,
+   "id": "f4l-043",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "wk_benign",
+   "b_available": true,
+   "id": "f4l-044",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "wk_benign",
+   "b_available": true,
+   "id": "f4l-045",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": true,
+   "b": "wk_incomplete",
+   "b_available": true,
+   "id": "f4l-046",
+   "kind": "ldct-workup",
+   "label": "wk_incomplete",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_surveillance",
+   "agree": true,
+   "b": "wk_surveillance",
+   "b_available": true,
+   "id": "f4l-047",
+   "kind": "ldct-workup",
+   "label": "wk_surveillance",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": true,
+   "b": "wk_incomplete",
+   "b_available": true,
+   "id": "f4l-048",
+   "kind": "ldct-workup",
+   "label": "wk_incomplete",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "wk_incomplete",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-049",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "indeterminate",
+   "b_available": true,
+   "id": "f4l-050",
+   "kind": "ldct-workup",
+   "label": "disagree"
+  },
+  {
+   "a": "dna",
+   "agree": true,
+   "b": "dna",
+   "b_available": true,
+   "id": "f4i-001",
+   "kind": "ifhas-followup",
+   "label": "dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "dna",
+   "agree": true,
+   "b": "dna",
+   "b_available": true,
+   "id": "f4i-002",
+   "kind": "ifhas-followup",
+   "label": "dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "dna",
+   "agree": true,
+   "b": "dna",
+   "b_available": true,
+   "id": "f4i-003",
+   "kind": "ifhas-followup",
+   "label": "dna",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "dna",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-004",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "dna",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-005",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=managed",
+   "agree": true,
+   "b": "bp=managed",
+   "b_available": true,
+   "id": "f4i-006",
+   "kind": "ifhas-followup",
+   "label": "bp=managed",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "bp=pending;glyc=managed;lipid=managed;weight=pending",
+   "agree": false,
+   "b": "glyc=managed;lipid=managed",
+   "b_available": true,
+   "id": "f4i-007",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "weight=managed",
+   "agree": true,
+   "b": "weight=managed",
+   "b_available": true,
+   "id": "f4i-008",
+   "kind": "ifhas-followup",
+   "label": "weight=managed",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "bp=managed;glyc=managed;lipid=pending;weight=managed",
+   "agree": false,
+   "b": "bp=managed;glyc=managed;weight=managed",
+   "b_available": true,
+   "id": "f4i-009",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "lipid=managed;weight=managed",
+   "agree": true,
+   "b": "lipid=managed;weight=managed",
+   "b_available": true,
+   "id": "f4i-010",
+   "kind": "ifhas-followup",
+   "label": "lipid=managed;weight=managed",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "bp=managed",
+   "agree": false,
+   "b": "bp=pending",
+   "b_available": true,
+   "id": "f4i-011",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "glyc=pending;lipid=pending",
+   "agree": false,
+   "b": "glyc=pending;lipid=not_confirmed",
+   "b_available": true,
+   "id": "f4i-012",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "glyc=pending",
+   "agree": false,
+   "b": "glyc=managed",
+   "b_available": true,
+   "id": "f4i-013",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=pending;weight=pending",
+   "agree": false,
+   "b": "bp=pending;weight=not_confirmed",
+   "b_available": true,
+   "id": "f4i-014",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "glyc=pending;lipid=pending",
+   "agree": false,
+   "b": "glyc=pending",
+   "b_available": true,
+   "id": "f4i-015",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=not_confirmed",
+   "agree": true,
+   "b": "bp=not_confirmed",
+   "b_available": true,
+   "id": "f4i-016",
+   "kind": "ifhas-followup",
+   "label": "bp=not_confirmed",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "glyc=pending",
+   "agree": false,
+   "b": "glyc=not_confirmed",
+   "b_available": true,
+   "id": "f4i-017",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "glyc=not_confirmed;lipid=pending",
+   "agree": false,
+   "b": "glyc=not_confirmed;lipid=not_confirmed",
+   "b_available": true,
+   "id": "f4i-018",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=pending;glyc=pending",
+   "agree": false,
+   "b": "bp=not_confirmed;glyc=not_confirmed",
+   "b_available": true,
+   "id": "f4i-019",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "weight=not_confirmed",
+   "agree": true,
+   "b": "weight=not_confirmed",
+   "b_available": true,
+   "id": "f4i-020",
+   "kind": "ifhas-followup",
+   "label": "weight=not_confirmed",
+   "rule": "two_reader_field_consensus"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-021",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=pending;glyc=pending",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-022",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "indeterminate",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-023",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=not_confirmed",
+   "agree": false,
+   "b": "bp=managed",
+   "b_available": true,
+   "id": "f4i-024",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "glyc=pending",
+   "agree": false,
+   "b": "glyc=not_confirmed",
+   "b_available": true,
+   "id": "f4i-025",
+   "kind": "ifhas-followup",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=H;glyc=D;lipid=N;weight=N",
+   "agree": true,
+   "b": "bp=H;glyc=D;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-026",
+   "kind": "ifhas-screen",
+   "label": "bp=H;glyc=D;lipid=N;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=H;weight=O",
+   "agree": true,
+   "b": "bp=N;glyc=P;lipid=H;weight=O",
+   "b_available": true,
+   "id": "f4i-027",
+   "kind": "ifhas-screen",
+   "label": "bp=N;glyc=P;lipid=H;weight=O",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=S;glyc=D;lipid=H;weight=O",
+   "agree": true,
+   "b": "bp=S;glyc=D;lipid=H;weight=O",
+   "b_available": true,
+   "id": "f4i-028",
+   "kind": "ifhas-screen",
+   "label": "bp=S;glyc=D;lipid=H;weight=O",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=S;glyc=S;lipid=N;weight=N",
+   "agree": true,
+   "b": "bp=S;glyc=S;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-029",
+   "kind": "ifhas-screen",
+   "label": "bp=S;glyc=S;lipid=N;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=H;glyc=S;lipid=H;weight=N",
+   "agree": true,
+   "b": "bp=H;glyc=S;lipid=H;weight=N",
+   "b_available": true,
+   "id": "f4i-030",
+   "kind": "ifhas-screen",
+   "label": "bp=H;glyc=S;lipid=H;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=X;glyc=X;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=H;glyc=P;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-031",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=N;lipid=N;weight=X",
+   "agree": false,
+   "b": "bp=N;glyc=N;lipid=N;weight=O",
+   "b_available": true,
+   "id": "f4i-032",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=X;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=P;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-033",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=D;lipid=N;weight=O",
+   "agree": false,
+   "b": "bp=X;glyc=D;lipid=N;weight=O",
+   "b_available": true,
+   "id": "f4i-034",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=H;glyc=X;lipid=X;weight=O",
+   "agree": false,
+   "b": "bp=H;glyc=X;lipid=X;weight=O",
+   "b_available": true,
+   "id": "f4i-035",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=N;weight=N",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-036",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=X;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=P;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-037",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=H;glyc=N;lipid=N;weight=N",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-038",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=N;lipid=N;weight=X",
+   "agree": false,
+   "b": "bp=N;glyc=N;lipid=N;weight=O",
+   "b_available": true,
+   "id": "f4i-039",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=X;glyc=P;lipid=N;weight=N",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-040",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=N;weight=N",
+   "agree": false,
+   "b": "unavailable",
+   "b_available": false,
+   "id": "f4i-041",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=H;glyc=N;lipid=N;weight=N",
+   "agree": true,
+   "b": "bp=H;glyc=N;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-042",
+   "kind": "ifhas-screen",
+   "label": "bp=H;glyc=N;lipid=N;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=N;glyc=X;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=N;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-043",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=N;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=X;glyc=X;lipid=X;weight=X",
+   "b_available": true,
+   "id": "f4i-044",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=X;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=D;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-045",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=N;lipid=N;weight=N",
+   "agree": true,
+   "b": "bp=N;glyc=N;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-046",
+   "kind": "ifhas-screen",
+   "label": "bp=N;glyc=N;lipid=N;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=N;weight=O",
+   "agree": true,
+   "b": "bp=N;glyc=P;lipid=N;weight=O",
+   "b_available": true,
+   "id": "f4i-047",
+   "kind": "ifhas-screen",
+   "label": "bp=N;glyc=P;lipid=N;weight=O",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=H;glyc=N;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=N;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-048",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  },
+  {
+   "a": "bp=N;glyc=N;lipid=N;weight=N",
+   "agree": true,
+   "b": "bp=N;glyc=N;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-049",
+   "kind": "ifhas-screen",
+   "label": "bp=N;glyc=N;lipid=N;weight=N",
+   "rule": "panel_and_coded_results_agree"
+  },
+  {
+   "a": "bp=N;glyc=P;lipid=N;weight=N",
+   "agree": false,
+   "b": "bp=N;glyc=D;lipid=N;weight=N",
+   "b_available": true,
+   "id": "f4i-050",
+   "kind": "ifhas-screen",
+   "label": "disagree"
+  }
+ ],
+ "models": {
+  "ifhas-followup": "gemma-3-4b-it-Q4_K_M/ifhas-v2(cached)",
+  "ifhas-screen": "coded_lab",
+  "ldct-screen": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)",
+  "ldct-workup": "gemma-3-4b-it-Q4_K_M/ldct-v2(cached)"
+ },
+ "schema": "fresh2-reader-raw/v1"
+}

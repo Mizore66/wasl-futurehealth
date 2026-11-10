@@ -3,7 +3,9 @@
 This is the package for the "second door" in [`WRITEUP.md`](WRITEUP.md): a provider network runs Wasl on its own
 servers to track its own patients across its own facilities. It is a demo-grade package: it brings up the same
 system that the integrated runs in [`pipeline/RESULTS.md`](../pipeline/RESULTS.md) use, on synthetic data. It is not
-production-ready; the gaps are listed at the end.
+production-ready; the gaps are listed at the end. For the separate production-shaped authenticated TLS, file-backed
+secret, persistent-message backup/restore, and reversible file-migration path, use [`RECOVERY.md`](RECOVERY.md). Its
+runbook includes actual isolated clean-restore evidence and the remaining verification limits.
 
 ## One command
 
@@ -13,7 +15,7 @@ scripts/deploy_up.sh            # = random environment key + docker compose up -
 
 This builds the image, starts a 3-node NATS JetStream cluster, runs the demo cohort end to end (with kill/restart
 chaos) and then serves the read API on `http://127.0.0.1:8088` ([`API.md`](API.md)). Check it with
-`curl 127.0.0.1:8088/healthz` and `curl 127.0.0.1:8088/api/fixtures`. The run summary is the last output of the
+`curl 127.0.0.1:8088/healthz` and `curl -H 'Authorization: Bearer wasl-demo-reviewer-1-token' 127.0.0.1:8088/api/fixtures`. Every `/api` route requires a role-bound bearer token; the published value here is only the loopback synthetic-demo default, not a production secret. The run summary is the last output of the
 `pipeline` container (`docker compose logs pipeline`).
 
 `scripts/check_deploy.py` checks the package statically without Docker (compose references, non-root image, key
@@ -23,7 +25,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: `nats:2.12.1-alpine` with `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes) | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.3 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -32,8 +34,8 @@ crashed service and performs the demo's chaos kills (linker, closure, prep, the 
 kill NATS nodes when the cluster is external (`WASL_NATS_EXTERNAL=1`), so the demo's NATS-node kill is skipped in
 this package; use `docker compose kill nats-2 && docker compose start nats-2` during a run to test it.
 
-The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12-slim` with numpy and scipy for the
-cohort augmentation, booking and summary scripts. It runs as uid 10001. It contains the committed synthetic inputs and
+The image is multi-stage: a static Go build (`CGO_ENABLED=0`), then `python:3.12-alpine` with numpy and scipy for the
+cohort augmentation, booking and summary scripts. Alpine updates, Bash and util-linux are installed; the unused pip/ensurepip toolchain is removed after wheel installation. It runs as uid 10001. It contains the committed synthetic inputs and
 JSON model weights only: no keys, no patient data, no run outputs.
 
 ## Ports and volumes
@@ -43,7 +45,7 @@ JSON model weights only: no keys, no patient data, no run outputs.
 | API | `127.0.0.1:8088` on the host (`WASL_API_PORT` to change) | loopback only; put a TLS reverse proxy with authentication in front for anything else |
 | NATS client 4222, cluster 6222, monitor 8222 | compose network only | not published to the host |
 | Mock HIE, FHIR rest-hook, HL7 MLLP | `127.0.0.1` inside the `pipeline` container | demo traffic only |
-| `nats-0`, `nats-1`, `nats-2` volumes | `/data/jetstream` | encrypted JetStream stores; unreadable without `WASL_JS_KEY` |
+| `nats-0`, `nats-1`, `nats-2` volumes | `/data/jetstream` | encrypted JetStream stores; unreadable without `WASL_JS_KEY`; new named volumes are writable by NATS UID 10001 |
 | `wasl-run` volume | `/var/lib/wasl` | cohort and run outputs (`run/<policy>-cached-<source>/`): logs, decisions, `report7.json`, review queue. The API reads it |
 
 ## Configuration
@@ -55,6 +57,9 @@ JSON model weights only: no keys, no patient data, no run outputs.
 - **Retained volumes need the original key.** If this Compose project's `nats-*` volumes exist and `WASL_JS_KEY` is
   unset, `deploy_up.sh` refuses to generate an incompatible key. Supply the original key to keep the data. To discard
   this deployment's stores and run data intentionally, run `docker compose down -v`, then rerun `deploy_up.sh`.
+  When upgrading volumes created by the former root-running NATS image, first make each retained store writable with
+  `docker compose run --rm --no-deps --user root --entrypoint /bin/chown <nats-node> -R 10001:10001 /data`; keep the
+  normal runtime non-root.
 - `WASL_SEED`, `WASL_POLICY` (`v7strict`, `v7ltt`, `v6`), `WASL_SOURCE` (`fhir`, `hl7`), `WASL_LUNG`, `WASL_DR`,
   `WASL_BREAST`: as in `scripts/demo.sh`. The reader is the cached one (no model server in the package).
 - `docker compose down` keeps the volumes; `docker compose down -v` deletes the stores and the run. Each new pipeline
@@ -63,6 +68,11 @@ JSON model weights only: no keys, no patient data, no run outputs.
   service restarts within that run still resume from their checkpoints. Setup fails if reset fails.
 - `WASL_NATS_URL` and `WASL_NATS_EXTERNAL=1` must be set together. Either setting alone is rejected by the Go commands
   and `scripts/demo.sh`; with neither set, the demo uses its local three-node cluster.
+- `WASL_API_TOKENS` (required by direct `wsi7 serve`) contains comma-separated `token:role:actor` entries;
+  `WASL_SYNTHETIC_DATA_ONLY=1` is a mandatory acknowledgment. `scripts/demo.sh` supplies documented loopback-demo
+  defaults and separate `WASL_API_*_TOKEN` client variables. Override both together. CORS is off unless exact origins
+  are listed in `WASL_API_ORIGINS`. See [`SECURITY.md`](SECURITY.md) before any non-demo use; this static-token API is
+  not approved for real clinical data.
 
 ## Pointing it at real HL7 feeds
 
@@ -187,35 +197,53 @@ The Next.js app in `web/` reads the API from its **server** (React Server Compon
 the browser, so the API needs a public HTTPS URL but no CORS changes. Vercel cannot run the Go API or NATS: run this
 package on any host with Docker, put an HTTPS endpoint in front of the loopback port, and point Vercel at it.
 
-1. On the API host, pick a long random token and start the package with it:
+**Status: designed, not verified.** This section has not been run end to end against a hosted deployment.
+
+Every `/api` route needs a bearer token that the API binds to one role and one actor (`WASL_API_TOKENS`, see
+[`SECURITY.md`](SECURITY.md)). The published `scripts/demo.sh` defaults are loopback-only constants: a publicly
+reachable API must not use them, so generate fresh tokens for each role.
+
+1. On the API host, generate one token per role the frontend uses, bind each to a role and the actor the ledger should
+   record, and start the package detached, then wait for the API:
 
    ```bash
-   export WASL_API_TOKEN="$(openssl rand -hex 32)"   # keep it; Vercel needs the same value
-   scripts/deploy_up.sh
-   curl -s 127.0.0.1:8088/healthz                    # open, for health checks
-   curl -s -H "Authorization: Bearer $WASL_API_TOKEN" 127.0.0.1:8088/api/dashboard | head -c 200
+   umask 077
+   for r in reviewer clinician auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   scripts/deploy_up.sh -d                            # detached: does not attach to the logs
+   until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
+   curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
+   curl -s -H "Authorization: Bearer $(cat wasl-reviewer.token)" 127.0.0.1:8088/api/dashboard | head -c 200
    ```
 
-   With `WASL_API_TOKEN` set (24+ characters), every `/api/...` request needs `Authorization: Bearer <token>`;
-   `/healthz` stays open. Unset, the API is open, which is only acceptable on loopback.
+   `docker-compose.yml` passes `WASL_API_TOKENS` to the `api` service. Left unset or empty, `scripts/demo.sh serve`
+   falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
+   characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
+   `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
 2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
    on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
 3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
-   wanted), then redeploy:
+   wanted), then redeploy. All are server-only: never prefix any of them with `NEXT_PUBLIC_`.
 
-   | Variable | Value |
-   |---|---|
-   | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path |
-   | `WASL_API_TOKEN` | the same token as step 1 (server-only: never prefix it with `NEXT_PUBLIC_`) |
+   | Variable | Value | Used for |
+   |---|---|---|
+   | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review actions |
+   | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
+   | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
 
-The token authenticates the frontend server, not a person: the API still takes `X-Wasl-Role`/`X-Wasl-Actor` from it,
-and the frontend derives the role from the action. Anyone who can use the hosted site can therefore sign demo reviews
-and coordinator actions on the synthetic run; protect the Vercel deployment (Vercel Authentication or a password) if
-that matters. Review and coordinator events are appended to `api_reviews.ndjson` on the `wasl-run` volume and survive
-an API restart; a new pipeline run that changes case heads makes the old ledger invalid (see `API.md`).
+The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
+`X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the
+action, so every Today action is recorded as the coordinator token's actor and every review as the reviewer or clinician
+token's actor. Anyone who can use the hosted site can therefore act with those identities on the synthetic run: protect
+the Vercel deployment (Vercel Authentication or a password). Review and coordinator events are appended to
+`api_reviews.ndjson` on the `wasl-run` volume and survive an API restart; a new pipeline run that changes case heads
+makes the old ledger invalid (see `API.md`). To rotate a credential, change both `WASL_API_TOKENS` on the API host
+(then rerun `scripts/deploy_up.sh -d` with the original `WASL_JS_KEY` exported) and the matching Vercel variable.
 
 ## Not production-ready
 
@@ -231,5 +259,5 @@ an API restart; a new pipeline run that changes case heads makes the old ledger 
   host-secret controls, KMS/HSM injection and a key-rotation procedure.
 - **NATS containers run as the image's default user** and NATS limits (4 GB file store per node) are the demo's;
   size them from the scale results in [`pipeline/results/scale/`](../pipeline/results/scale/).
-- **No backups, monitoring or alerting** (the SLOs in `WRITEUP.md` are a design, not implemented here).
+- **No centralized monitoring or alerting** (the SLOs in `WRITEUP.md` are a design, not implemented here). The separate recovery profile adds authenticated backup/restore; its storage encryption, RPO/RTO, and second-machine limits are documented in `RECOVERY.md`.
 - **The reader is the cached one.** A live local reader (Gemma 3 4B on llama-server) is not part of the package.

@@ -38,7 +38,7 @@ export function AgentChain({ audit }: { audit: AgentAudit }) {
         {audit.chain.map((e, i) => (
           <li key={e.hash} className="border-t border-rule py-3" data-entry={e.type}>
             <div className="flex items-baseline gap-3">
-              <span className="w-5 flex-none text-right text-muted">{i + 1}</span>
+              <span className="w-5 flex-none text-right tabular-nums text-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="m-0 font-medium">{entryLabel(e.type)}</p>
                 <p className="m-0 mt-1">{entryText(e)}</p>

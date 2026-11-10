@@ -290,33 +290,48 @@ for (const vp of WIDTHS) {
   });
 }
 
-test("landing at 1440x900: wheel notches never skip a line, and every cue stays fully readable for 4 notches", async ({ page }) => {
-  test.setTimeout(150_000);
+/** Exercises one continuous wheel-walk segment without making one browser page pay the whole story's tracing cost. */
+async function wheelStory(page: Page, from: number, stop: number, expected: typeof CUES) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openStory(page);
+  if (from > 0) await scrollStory(page, from);
   await page.mouse.move(1000, 500);
   const readable = new Map<string, number>();
   let run = { cue: "", notches: 0 };
   let end = false;
+  const target = pageAt(stop);
   for (let notch = 0; notch < 400 && !end; notch++) {
-    const now = await page.evaluate(() => {
+    const now = await page.evaluate(async ({ wait, target, last }) => {
+      // Settle and sample in one browser call: a separate waitForTimeout doubles the traced CDP overhead per notch.
+      if (wait) await new Promise((resolve) => setTimeout(resolve, 170));
       const track = document.querySelector<HTMLElement>('[data-story="3d"]')!;
       const cue = document.querySelector<HTMLElement>("[data-cue][data-on]");
       const full = !!cue && [cue, ...cue.querySelectorAll("[data-w]")].every((el) => Number(getComputedStyle(el).opacity) === 1);
-      return { id: full ? cue.dataset.cue! : "", done: track.getBoundingClientRect().bottom <= innerHeight + 1 };
-    });
+      const top = track.getBoundingClientRect().top + scrollY;
+      const progress = (scrollY - top) / (track.offsetHeight - innerHeight);
+      return { id: full ? cue.dataset.cue! : "", done: last ? track.getBoundingClientRect().bottom <= innerHeight + 1 : progress >= target };
+    }, { wait: notch > 0, target, last: stop === 1 });
     run = now.id === run.cue ? { cue: run.cue, notches: run.notches + 1 } : { cue: now.id, notches: 1 };
     if (run.cue) readable.set(run.cue, Math.max(readable.get(run.cue) ?? 0, run.notches));
     end = now.done;
-    if (!end) {
-      await page.mouse.wheel(0, 100);
-      await page.waitForTimeout(170);
-    }
+    if (!end) await page.mouse.wheel(0, 100);
   }
-  expect(end, "the wheel reaches the end of the story").toBe(true);
-  const short = CUES.filter((c) => (readable.get(c.id) ?? 0) < 4).map((c) => `${c.id}: ${readable.get(c.id) ?? 0}`);
+  expect(end, "the wheel reaches the segment boundary").toBe(true);
+  const short = expected.filter((c) => (readable.get(c.id) ?? 0) < 4).map((c) => `${c.id}: ${readable.get(c.id) ?? 0}`);
   expect(short, "fully readable notches for each cue").toEqual([]);
-});
+}
+
+// No cue straddles 0.545: `missed` ends at 0.542 and `wasl` starts at 0.552. Both halves assert every one of
+// their cues for four notches, with the same 150-second deadline and 100-pixel wheel input as the former whole walk.
+for (const half of [
+  { name: "opening", from: 0, stop: 0.545, cues: CUES.filter((c) => c.to <= 0.545) },
+  { name: "closing", from: 0.545, stop: 1, cues: CUES.filter((c) => c.from >= 0.545) },
+]) {
+  test(`landing at 1440x900: wheel notches never skip a line, and every ${half.name} cue stays fully readable for 4 notches`, async ({ page }) => {
+    test.setTimeout(150_000);
+    await wheelStory(page, half.from, half.stop, half.cues);
+  });
+}
 
 /** Waits for scroll and damping to end, then counts the frames drawn over `ms`. */
 async function idleFrames(page: Page, ms: number) {
@@ -664,6 +679,32 @@ test("experts: KPI bars and outcome table use current sourced run figures", asyn
   await expect(cell("Review items per 100 loops")).toHaveText("83.8");
   await expect(cell("False closures, with review")).toHaveText("0");
   await expect(tiers.locator('[aria-pressed="true"]')).toHaveCount(1);
+});
+
+test("experts: no placeholder contact or build identifier renders, and the evidence and limits stay", async ({ page }) => {
+  await page.goto("/experts");
+  await visitAll(page);
+  const text = await page.locator("body").innerText();
+  const meta = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8")) as { frozen_revision: string; frozen_on: string };
+  const frozen = meta.frozen_revision;
+  const [y, m, d] = meta.frozen_on.split("-").map(Number);
+  const frozenOn = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+  // Bracketed placeholders such as "[team email]" or "[link]".
+  expect(text).not.toMatch(/\[[A-Za-z][A-Za-z .'’-]*\]/);
+  // Commit-like hex identifiers (7–40 chars, at least one letter and one digit) and the frozen revision itself.
+  expect(text).not.toMatch(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/i);
+  expect(text).not.toContain(frozen.slice(0, 7));
+  // The policy version is not printed as evaluation metadata (the demo run name, which embeds it, is shown on purpose).
+  expect(text).not.toMatch(/policy v7strict|two readers, v7strict/);
+
+  const footer = page.locator("footer").last();
+  for (const s of ["Synthetic cohort", "no outcomes on real patients are claimed", frozenOn, "seeds 11, 23, 37, 41 and 59", "held-out noise model v2", "results files"]) {
+    await expect(footer).toContainText(s);
+  }
+  await expect(page.locator("#limits tbody tr").first()).toBeVisible();
+  await expect(page.locator("#pilot")).toContainText("A free three-month shadow pilot");
+  await expect(page.locator("#pilot")).not.toContainText("To request one");
 });
 
 test("figure lab: a figure wears its seed's look, and at known 0 it is the grey question mark", async ({ page }) => {

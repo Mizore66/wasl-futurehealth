@@ -23,12 +23,15 @@ Fixtures mode serves the three demo cases and a 25-case page. `postReview` and `
 scripts/demo.sh            # once, from the repo root: materialise a run (~5 min)
 scripts/demo.sh serve      # API on http://127.0.0.1:8088
 cd web
-WASL_API_URL=http://127.0.0.1:8088 pnpm dev
+WASL_API_URL=http://127.0.0.1:8088 \
+WASL_API_REVIEWER_TOKEN=wasl-demo-reviewer-1-token \
+WASL_API_AUDITOR_TOKEN=wasl-demo-auditor-token \
+WASL_API_COORDINATOR_TOKEN=wasl-demo-coordinator-token \
+WASL_API_CLINICIAN_TOKEN=wasl-demo-clinician-token \
+pnpm dev
 ```
 
-If the API runs with `WASL_API_TOKEN`, set the same `WASL_API_TOKEN` here (server-side only). On Vercel, set `WASL_API_URL` and `WASL_API_TOKEN` in the project's environment variables: see [`../docs/DEPLOY.md`](../docs/DEPLOY.md#hosted-frontend-vercel).
-
-To run the end-to-end suite against the live API, build and test with the variable set:
+The tokens are read only by the Next.js server, never exposed as `NEXT_PUBLIC_*` values. The API binds each token to its configured role/actor; the browser's selected actor label is not identity evidence. Use the same development values printed above only for the loopback synthetic demo. Today's coordinator actions (`postAction`) use `WASL_API_COORDINATOR_TOKEN`. For a hosted frontend (Vercel) with fresh per-role tokens, see [`../docs/DEPLOY.md`](../docs/DEPLOY.md#hosted-frontend-vercel). To run the end-to-end suite against the live API, build and test with `WASL_API_URL` and the required role tokens set:
 
 ```bash
 WASL_API_URL=http://127.0.0.1:8088 pnpm verify

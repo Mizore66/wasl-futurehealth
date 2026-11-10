@@ -55,7 +55,7 @@ func newLinkFunnelWriter(path string, cfg LinkFunnelConfig) *linkFunnelWriter {
 		return nil
 	}
 	w := &linkFunnelWriter{}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
 		w.err = err
 		return w

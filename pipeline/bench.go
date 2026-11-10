@@ -113,11 +113,11 @@ func runAnnSynth(wasl, models, out string, n int, seed int64, threads int) {
 	var pool []Person
 	json.Unmarshal(b, &pool)
 	enc := LoadEncoder(filepath.Join(models, mf("encoder_weights.json")))
-	os.MkdirAll(out, 0755)
+	os.MkdirAll(out, 0700)
 	do := func(tag string, n int, seed int64) {
 		t0 := time.Now()
 		regs := synthRegs(pool, n, seed)
-		f, _ := os.Create(filepath.Join(out, tag+"_regs.jsonl"))
+		f, _ := os.OpenFile(filepath.Join(out, tag+"_regs.jsonl"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		w := bufio.NewWriter(f)
 		for _, rg := range regs {
 			bb, _ := json.Marshal(rg)
@@ -132,7 +132,7 @@ func runAnnSynth(wasl, models, out string, n int, seed int64, threads int) {
 			copy(embs[i*enc.OUT:(i+1)*enc.OUT], enc.Embed(regs[i].Name))
 		})
 		el := time.Since(t1).Seconds()
-		g, _ := os.Create(filepath.Join(out, tag+"_emb.f32"))
+		g, _ := os.OpenFile(filepath.Join(out, tag+"_emb.f32"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		bw := bufio.NewWriter(g)
 		binary.Write(bw, binary.LittleEndian, embs)
 		bw.Flush()

@@ -39,7 +39,7 @@ export function KpiChart({ kpi, target }: { kpi: Record<Source, KpiSet>; target:
         />
       </div>
 
-      <div className="mt-5 flex flex-wrap items-end gap-x-12 gap-y-3">
+      <div className="mt-5 flex flex-wrap items-end gap-x-12 gap-y-3 tabular-nums">
         <div data-testid="kpi-eid">
           <div className="text-small text-muted">Reported, Emirates ID only</div>
           <div className="mt-1 text-lead font-medium tracking-[-0.02em] text-muted">{pct(eid)}</div>

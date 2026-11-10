@@ -5,6 +5,7 @@ import sys, os, json, numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE); os.chdir(HERE)
 import sim
+from pool_golden import output_name
 skew = np.array([0.40, 0.50, 0.10])   # capacity share by region (patients stay 0.55/0.35/0.10)
 orig_make_calendar = sim.make_calendar
 def make_cal_skew(rng, P, c):
@@ -35,4 +36,4 @@ for cap in (1.0, 1.2):
         m = sim.measures(C, colo, cal, st, P); vals.append((m["d1_31"], m["d3_31"]))
     v = np.array(vals); out[f"{label}@{cap}"] = [round(float(np.median(v[:,0]))*100,1), round(float(np.median(v[:,1]))*100,1)]
     print(label, cap, out[f"{label}@{cap}"], flush=True)
-json.dump(out, open(os.path.join(HERE, "pool_test.json"), "w"), indent=1)
+json.dump(out, open(os.path.join(HERE, output_name()), "w"), indent=1)

@@ -1,0 +1,26 @@
+{
+ "schema": "fresh4-cache-manifest/v1",
+ "created_after_labels_commit": "1c16f5d201011fed8b91cba3cc4707869e685be4",
+ "reader_url": "http://127.0.0.1:8791",
+ "model": "gemma-3-4b-it-Q4_K_M",
+ "model_file": "/Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf",
+ "server_command": "llama-server -m /Users/anasqumhiyeh/models/gemma/gemma-3-4b-it-Q4_K_M.gguf --port 8791 -c 8192 -ngl 99 -np 4",
+ "settings": "shipped prompts and JSON schemas; temperature 0; seed 1; no tuning or retries to improve answers",
+ "ldct": {
+  "command": "bin/wsi7 ldctcache -ldctdata data/fresh4/reader-inputs/ldct -reader-url http://127.0.0.1:8791 -out data/fresh4/reader-cache/ldct_gemma_cache.json",
+  "entries": 50,
+  "cache_errors": 0,
+  "cache_sha256": "180b68d4f8f0d7e556dedc9175f3cb3bcaabbd9f0b5670bd1fc27124dfe88001",
+  "log_sha256": "aee93e1e5d87140101b3af2d52e4b9ef124e52427cfab7d23b5fd48dd31427af"
+ },
+ "ifhas": {
+  "command": "bin/wsi7 ifhascache -ifhasdata data/fresh4/reader-inputs/ifhas -reader-url http://127.0.0.1:8791 -out data/fresh4/reader-cache/ifhas_gemma_cache.json",
+  "entries": 25,
+  "cache_errors": 2,
+  "revisions": ["grounding-1"],
+  "cache_sha256": "2d02ef04d0d64eea04863213a01f24696df913b735af173412196298af4aaa3e",
+  "log_sha256": "29330ef85a0a80032d99b8844bb966d8a6743f34758e5f22ab0a564381702681"
+ },
+ "diagnostic_logs_not_scores": "The shipped cache commands also print key-free diagnostics with want=<nil>. Those are not evaluation scores and were not used to tune anything. The official scored reader replay has not run.",
+ "official_results_directory_exists": false
+}

@@ -215,7 +215,7 @@ function Count({
       </>
     );
   }
-  return <span className="ml-auto text-small text-muted">{n}</span>;
+  return <span className="ml-auto text-small tabular-nums text-muted">{n}</span>;
 }
 
 function TipCount({
