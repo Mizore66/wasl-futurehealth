@@ -19,7 +19,8 @@ Design spec `5a0c27f` and implementation plan `38ec2b4` are committed.
 - Task 1 passed independent spec and quality review after fixes.
 - Task 2 passed independent review with no Critical or Important findings. Deferred minors include ciphertext path/name limits, legacy validation and operational hardening.
 - Task 3's 12 local replay tests pass with a real single-node NATS. Source backup, restore summary and target backup logical stream hash maps match. Recovery/crypto tests pass; CI contract and focused Go tests/vet pass.
-- Task 3 independent review is pending at checkpoint time. It must assess the partial-restore concern and additional deployment changes.
+- Task 3 independent review returned **Needs fixes** after the initial checkpoint. Important findings: `demo.sh` runs `restore-nats` before file installation, so a file-side failure can strand a populated NATS target and the empty-target guard blocks retry. There is no shell-level restore-order/NATS-failure test. The required next fix is to preflight/stage/decrypt before `restore-nats`, install files last, and add a stub-`wsi7` ordering/failure test; document that a failed `restore-nats` needs a manual purge before retry.
+- The same review identified nonblocking follow-ups: mask special mode bits, apply directory modes deepest-first, journal before reporting cleanup failure, clean temporary plaintext directories on interruption, document keyring volume upgrade and Dockerfile dependency comments. No Critical findings were reported.
 - `test_production_deploy.py::test_nats_starts_fresh_with_both_passwords_digit_leading` failed because Podman returned `connection refused`; this was not shown to be a base-regression and is not claimed as a product test pass.
 
 ## Known limitations requiring review
