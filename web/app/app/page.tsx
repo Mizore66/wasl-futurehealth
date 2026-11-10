@@ -139,12 +139,16 @@ export default async function ProgrammePage() {
         )}
       </div>
 
-      <section aria-label="Safety" className="mt-gap flex items-center gap-3 rounded-card border border-line bg-surface px-pad py-4">
-        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-        <p className="m-0 text-body">
+      {/* Static supporting copy with no object state, so it sits on the page grid unframed (DEC-3); the chart panels above keep their surfaces. */}
+      <section aria-labelledby="safety-h" className="mt-8">
+        <h2 id="safety-h" className="m-0 flex items-center gap-2 text-section font-medium">
+          <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-none">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          Safety
+        </h2>
+        <p className="m-0 mt-1 text-body">
           {safety.value} false closures in {safety.denominator?.toLocaleString("en-US")} tested. Every closure has evidence or two signatures.{" "}
           <Link href="/app/results" className="font-medium no-underline">
             See proof
