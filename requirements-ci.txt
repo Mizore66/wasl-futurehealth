@@ -4,3 +4,4 @@ PyYAML==6.0.3
 scikit-learn==1.9.1
 lightgbm==4.7.0
 pip-audit==2.10.1
+cryptography==50.0.2
