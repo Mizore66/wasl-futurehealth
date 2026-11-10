@@ -135,8 +135,10 @@ print("clean restore and restart comparison hashes match")
 PY
 ```
 
-`recovery-restore` performs HMAC and payload verification first, refuses a nonempty JetStream, restores and reads each
-message, and only then migrates the run generation. `recovery-verify` independently rereads every retained message after
+`recovery-restore` authenticates the bundle, stages and decrypts the run files, refuses a nonempty JetStream, restores
+and reads each message, and only then installs the run generation. A file-side failure (wrong key, tamper, populated
+destination without `WASL_RECOVERY_REPLACE=1`) therefore leaves NATS untouched. If `restore-nats` itself fails, JetStream
+may be partly populated: purge it manually before retrying, because the empty-target guard is deliberately not relaxed. `recovery-verify` independently rereads every retained message after
 restart. A clean empty-volume/container restore on one Podman host does **not** prove physical second-machine recovery.
 
 ## Reversible file migration and rollback

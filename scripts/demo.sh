@@ -291,21 +291,6 @@ stale_bin() {
 # v2 (encrypted) bundles use the versioned keyring recovery_keys.json. A legacy HMAC-only bundle needs
 # WASL_RECOVERY_LEGACY_HMAC=1 and WASL_RECOVERY_KEY_FILE pointing at the old backup_key; it is never a default.
 recovery_key_file() { echo "${WASL_RECOVERY_KEY_FILE:-/run/secrets/recovery_keys.json}"; }
-recovery_legacy_flag() { [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" = "1" ] && echo "--legacy-hmac" || true; }
-# Decrypt only the NATS payload into a private temporary directory (mode 0700) and remove it afterwards. Removal is
-# logical cleanup, not a claim of physical erasure.
-with_nats_payload() {
-  local directory="$1" key="$2" action="$3" tmp rc=0
-  tmp="$(mktemp -d "${TMPDIR:-/tmp}/wasl-nats-payload.XXXXXX")"; chmod 0700 "$tmp"
-  if [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" = "1" ]; then
-    "$BIN/wsi7" "$action" -bundle "$directory/bundle/files/nats/nats.json" || rc=$?
-  else
-    python3 "$ROOT/scripts/recovery.py" extract-nats "$directory/bundle" "$tmp/nats.json" --key-file "$key" >/dev/null &&
-      "$BIN/wsi7" "$action" -bundle "$tmp/nats.json" || rc=$?
-  fi
-  rm -rf "$tmp" || { echo "warning: could not remove $tmp" >&2; rc=1; }
-  return "$rc"
-}
 recovery_backup() {
   local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
   [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || { echo "legacy HMAC bundles are read-only; backup always writes v2" >&2; exit 1; }
@@ -318,17 +303,33 @@ recovery_backup() {
   rm -rf "$plain" || { echo "warning: could not remove $plain" >&2; rc=1; }
   return "$rc"
 }
+# Order: authenticate, stage and decrypt the files, restore NATS, and only then install the file generation. A file-side
+# failure (wrong key, tamper, populated $OUT without WASL_RECOVERY_REPLACE=1, staging error) therefore happens before NATS
+# is touched. If restore-nats itself fails, JetStream may be partly populated: purge it manually before retrying
+# (the empty-target guard is deliberately not relaxed). The decrypted NATS payload lives in a private temp dir that is
+# removed afterwards (logical cleanup, not physical erasure).
 recovery_restore() {
   local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
-  # Authentication and every payload hash are checked before NATS is contacted or the destination is created.
-  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key" $(recovery_legacy_flag)
-  with_nats_payload "$directory" "$key" restore-nats
-  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT" $(recovery_legacy_flag)
+  local extra=()
+  [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || extra+=(--legacy-hmac)
+  [ "${WASL_RECOVERY_REPLACE:-0}" != "1" ] || extra+=(--replace)
+  python3 "$ROOT/scripts/recovery.py" migrate "$directory/bundle" --key-file "$key" "$OUT" \
+    --nats-restore-command "$(printf '%q' "$BIN/wsi7") restore-nats -bundle" ${extra[@]+"${extra[@]}"}
 }
 recovery_verify() {
   local directory="${WASL_RECOVERY_DIR:-/backup}" key; key="$(recovery_key_file)"
-  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key" $(recovery_legacy_flag) >/dev/null
-  with_nats_payload "$directory" "$key" verify-nats
+  local extra=()
+  [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" != "1" ] || extra+=(--legacy-hmac)
+  python3 "$ROOT/scripts/recovery.py" verify "$directory/bundle" --key-file "$key" ${extra[@]+"${extra[@]}"} >/dev/null
+  local tmp rc=0; tmp="$(mktemp -d "${TMPDIR:-/tmp}/wasl-nats-payload.XXXXXX")"; chmod 0700 "$tmp"
+  if [ "${WASL_RECOVERY_LEGACY_HMAC:-0}" = "1" ]; then
+    "$BIN/wsi7" verify-nats -bundle "$directory/bundle/files/nats/nats.json" || rc=$?
+  else
+    { python3 "$ROOT/scripts/recovery.py" extract-nats "$directory/bundle" "$tmp/nats.json" --key-file "$key" >/dev/null &&
+      "$BIN/wsi7" verify-nats -bundle "$tmp/nats.json"; } || rc=$?
+  fi
+  rm -rf "$tmp" || { echo "warning: could not remove $tmp" >&2; rc=1; }
+  return "$rc"
 }
 validate_nats_config
 case "${1:-all}" in

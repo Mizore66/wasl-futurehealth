@@ -4,6 +4,7 @@
 Logical hashes come from the Go `wsi7` summaries (never reimplemented here). This is a local single-node check; it is
 not a Linux Docker, multi-node or soak result.
 """
+import base64
 import hashlib
 import json
 import os
@@ -179,6 +180,46 @@ class TransactionalRestoreTests(unittest.TestCase):
                 mock.patch.object(recovery.shutil, "rmtree", failing_rmtree):
             with self.assertRaisesRegex(ValueError, "could not be fully removed"):
                 migrate_files(bundle, self.keys, self.work / "live")
+        journal = json.loads((self.work / ".live.migration.json").read_text())
+        self.assertEqual(journal["destination"], str((self.work / "live").resolve()))
+        self.assertEqual((self.work / "live/top.txt").read_text(), "top")
+
+    def resign(self, bundle, mutate):
+        manifest = json.loads((bundle / "manifest.json").read_text())
+        mutate(manifest)
+        manifest.pop("hmac_sha256", None)
+        doc, _, _ = load_keyring(self.keys)
+        auth = base64.b64decode(doc["keys"][manifest["key_id"]]["auth_key"])
+        manifest["hmac_sha256"] = recovery._manifest_mac(manifest, auth)
+        (bundle / "manifest.json").write_bytes(recovery._canonical(manifest) + b"\n")
+
+    def test_special_mode_bits_are_masked_at_backup_and_rejected_in_manifests(self):
+        os.chmod(self.source / "run/empty", 0o1777)
+        os.chmod(self.source / "top.txt", 0o4755)
+        bundle = self.backup()
+        manifest = json.loads((bundle / "manifest.json").read_text())
+        self.assertTrue(all(0 <= d["mode"] <= 0o777 for d in manifest["dirs"]))
+        self.assertTrue(all(0 <= f["mode"] <= 0o777 for f in manifest["files"]))
+        migrate_files(bundle, self.keys, self.work / "live")
+        self.assertEqual(stat.S_IMODE((self.work / "live/top.txt").stat().st_mode), 0o755)
+        for label, mutate in (("dir", lambda m: m["dirs"][0].__setitem__("mode", 0o1777)),
+                              ("file", lambda m: m["files"][0].__setitem__("mode", 0o4755))):
+            bad = self.backup("bad-" + label)
+            self.resign(bad, mutate)
+            with self.assertRaisesRegex(ValueError, "malformed"):
+                migrate_files(bad, self.keys, self.work / ("x-" + label))
+            self.assertFalse((self.work / ("x-" + label)).exists())
+
+    def test_directory_modes_apply_deepest_first(self):
+        bundle = self.backup()
+        self.resign(bundle, lambda m: [d.__setitem__("mode", 0o600) for d in m["dirs"] if d["path"] == "run"])
+        destination = self.work / "live"
+        migrate_files(bundle, self.keys, destination)
+        self.addCleanup(os.chmod, destination / "run", 0o700)
+        self.assertEqual(stat.S_IMODE((destination / "run").stat().st_mode), 0o600)
+        self.assertEqual(self.leftovers(), [])
+        os.chmod(destination / "run", 0o700)
+        self.assertEqual(stat.S_IMODE((destination / "run/empty").stat().st_mode), 0o750)
 
     def test_ciphertext_path_collision_is_rejected_cleanly(self):
         (self.source / "a").write_text("1")
@@ -199,6 +240,92 @@ class TransactionalRestoreTests(unittest.TestCase):
         refused = self.root / "refused.json"
         self.assertNotEqual(cli("extract-nats", bundle, refused, "--key-file", self.keys).returncode, 0)
         self.assertFalse(refused.exists())
+
+
+class ShellRestoreOrderTests(unittest.TestCase):
+    """demo.sh recovery-restore with a stub wsi7: files are staged/decrypted before NATS, installed after."""
+
+    def setUp(self):
+        self.root = Path(tempfile.mkdtemp())
+        self.addCleanup(shutil.rmtree, self.root, True)
+        self.keys = self.root / "recovery_keys.json"
+        new_keyring(self.keys)
+        self.source = make_tree(self.root)
+        self.nats = self.root / "nats.json"
+        self.nats.write_text('{"schema":"wasl-nats-backup-v1","streams":[]}')
+        self.backups = self.root / "backups"
+        self.backups.mkdir()
+        write_file_bundle(self.source, self.backups / "bundle", self.keys, nats_json=self.nats)
+        self.bin = self.root / "bin"
+        self.bin.mkdir()
+        self.calls = self.root / "calls"
+        self.out = self.root / "work" / "out"
+        self.out.parent.mkdir()
+        shim = self.bin / "python3"
+        shim.write_text(f'#!/bin/sh\nexec "{sys.executable}" "$@"\n')
+        shim.chmod(0o755)
+        self.stub(0)
+
+    def stub(self, code):
+        wsi = self.bin / "wsi7"
+        # records the call, whether the destination holds files yet, and whether a staging dir exists right now
+        wsi.write_text(f'#!/bin/sh\necho "$1 out=$(ls "{self.out}" 2>/dev/null | wc -l | tr -d " ") '
+                       f'staged=$(ls -a "{self.out.parent}" | grep -c restore-)" >> "{self.calls}"\nexit {code}\n')
+        wsi.chmod(0o755)
+
+    def run_restore(self, key=None, **extra):
+        env = dict(os.environ, PATH=f"{self.bin}{os.pathsep}{os.environ['PATH']}", WASL_BIN=str(self.bin),
+                   WASL_OUT=str(self.out), WASL_RECOVERY_DIR=str(self.backups),
+                   WASL_RECOVERY_KEY_FILE=str(key or self.keys), WASL_NATS_URL="nats://invalid:4222",
+                   WASL_NATS_EXTERNAL="1", **extra)
+        return subprocess.run([str(SCRIPTS / "demo.sh"), "recovery-restore"], env=env, text=True,
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    def recorded(self):
+        return self.calls.read_text().splitlines() if self.calls.exists() else []
+
+    def test_success_order_is_stage_then_nats_then_install(self):
+        result = self.run_restore()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.recorded(), ["restore-nats out=0 staged=1"])
+        self.assertEqual((self.out / "top.txt").read_text(), "top")
+        self.assertEqual(sorted(p.name for p in self.out.parent.iterdir()), [".out.migration.json", "out"])
+
+    def test_populated_destination_without_replace_never_reaches_nats(self):
+        self.out.mkdir()
+        (self.out / "keep").write_text("keep")
+        result = self.run_restore()
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(self.recorded(), [])
+        self.assertEqual(os.listdir(self.out), ["keep"])
+
+    def test_wrong_key_and_invalid_destination_leave_nats_untouched(self):
+        wrong = self.root / "wrong.json"
+        new_keyring(wrong)
+        self.assertNotEqual(self.run_restore(key=wrong).returncode, 0)
+        self.assertEqual(self.recorded(), [])
+        self.assertFalse(self.out.exists())
+        self.out.write_text("a file, not a directory")
+        self.assertNotEqual(self.run_restore().returncode, 0)
+        self.assertEqual(self.recorded(), [])
+
+    def test_nats_failure_installs_nothing_and_names_the_manual_purge(self):
+        self.out.mkdir()
+        (self.out / "old").write_text("old")
+        self.stub(3)
+        result = self.run_restore(WASL_RECOVERY_REPLACE="1")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(len(self.recorded()), 1)
+        self.assertIn("manual", result.stdout)
+        self.assertEqual(os.listdir(self.out), ["old"])
+        self.assertEqual([p.name for p in self.out.parent.iterdir() if "restore-" in p.name], [])
+
+    def test_nats_payload_temp_is_gone_after_restore(self):
+        pattern = ".wasl-nats-payload-*"
+        roots = (self.out.parent, Path(tempfile.gettempdir()))
+        before = {str(p) for r in roots for p in r.glob(pattern)}
+        self.run_restore()
+        self.assertEqual({str(p) for r in roots for p in r.glob(pattern)}, before)
 
 
 class DeploymentKeyringTests(unittest.TestCase):

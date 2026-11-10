@@ -157,7 +157,7 @@ def _source_dirs(source: Path) -> dict[str, int]:
     for root, dirs, _ in os.walk(source):
         for directory in dirs:
             path = Path(root) / directory
-            found[path.relative_to(source).as_posix()] = stat.S_IMODE(path.lstat().st_mode)
+            found[path.relative_to(source).as_posix()] = stat.S_IMODE(path.lstat().st_mode) & 0o777  # no setuid/setgid/sticky
     return found
 
 
@@ -227,7 +227,7 @@ def write_file_bundle(source: Path | str, bundle: Path | str, key_file: Path | s
         records = []
         for relative, path in items:
             plaintext = path.read_bytes()
-            mode = 0o600 if path is nats_source else stat.S_IMODE(path.lstat().st_mode)
+            mode = 0o600 if path is nats_source else stat.S_IMODE(path.lstat().st_mode) & 0o777
             sha256 = hashlib.sha256(plaintext).hexdigest()
             nonce, ciphertext = encrypt_payload(dek, _file_aad(key_id, relative, len(plaintext), sha256), plaintext)
             target = staging / "files" / (relative + ".aead")
@@ -477,14 +477,27 @@ def _decrypt_v2_payloads(bundle: Path | str, keyring: dict, manifest: dict, dest
             os.chmod(target, record["mode"])
         for directory in sorted(modes, key=lambda p: len(p.parts), reverse=True):
             _fsync_directory(directory)
-        for directory, mode in modes.items():  # final modes last, so restrictive directories never block writes
-            os.chmod(directory, mode)
+        # Final modes last and deepest first: a non-searchable parent must not block chmod of its children.
+        for directory in sorted(modes, key=lambda p: len(p.parts), reverse=True):
+            os.chmod(directory, modes[directory])
     except BaseException:
-        for directory in destination.rglob("*"):  # make directories traversable again before emptying
-            if directory.is_dir() and not directory.is_symlink():
-                os.chmod(directory, 0o700)
+        _make_traversable(destination)
         _empty_directory(destination)
         raise
+
+
+def _make_traversable(root: Path) -> None:
+    """chmod 0700 every real directory below `root`, parents first, so removal can descend."""
+    pending = [root]
+    while pending:
+        current = pending.pop()
+        try:
+            os.chmod(current, 0o700)
+            for entry in os.scandir(current):
+                if entry.is_dir(follow_symlinks=False):
+                    pending.append(Path(entry.path))
+        except OSError:
+            pass
 
 
 def _cleanup_staging(staging: Path) -> None:
@@ -496,12 +509,7 @@ def _cleanup_staging(staging: Path) -> None:
     def onerror(function, path, exc_info):
         failures.append(str(path))
 
-    for directory in staging.rglob("*"):
-        if directory.is_dir() and not directory.is_symlink():
-            try:
-                os.chmod(directory, 0o700)
-            except OSError:
-                pass
+    _make_traversable(staging)
     shutil.rmtree(staging, onerror=onerror)
     if failures or staging.exists():
         raise OSError(f"plaintext restore staging could not be fully removed: {staging}")
@@ -564,7 +572,11 @@ NATS_PAYLOAD = "nats/nats.json"
 
 
 def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | str, replace: bool = False,
-                  legacy_hmac: bool = False) -> dict:
+                  legacy_hmac: bool = False, before_install=None) -> dict:
+    """Restore files transactionally. `before_install` (optional callable) runs after the bundle is authenticated and
+    the files are fully decrypted into staging, and immediately before the generation is installed; if it raises, the
+    destination is untouched and staging is removed. Use it for the NATS restore so a file-side failure never leaves
+    a populated NATS behind."""
     bundle, destination = Path(bundle).resolve(), Path(destination).resolve()
     manifest = verify_bundle(bundle, key_file, legacy_hmac=legacy_hmac)  # before any destination or staging write
     if destination.exists() and not destination.is_dir():
@@ -579,6 +591,8 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
         try:
             # The NATS payload is restored through `restore-nats`, never as a plaintext file in the run directory.
             _decrypt_v2_payloads(bundle, keyring, manifest, staging, skip=frozenset({NATS_PAYLOAD}))
+            if before_install is not None:
+                before_install()
             installed = install_staging_with_rollback(staging, destination, replace)
         except BaseException as exc:
             try:
@@ -586,14 +600,17 @@ def migrate_files(bundle: Path | str, key_file: Path | str, destination: Path | 
             except OSError as cleanup:  # report, never hide, a plaintext cleanup failure
                 raise ValueError(f"{exc}; {cleanup}") from None
             raise
+        journal = _write_journal(destination, installed["rollback_path"], manifest)  # before reporting residue
         try:
             _cleanup_staging(staging)  # no-op after a successful rename; reports residue instead of hiding it
         except OSError as cleanup:
-            raise ValueError(f"restore installed but {cleanup}") from None
-        return _write_journal(destination, installed["rollback_path"], manifest)
+            raise ValueError(f"restore installed (journal {journal['journal_path']}) but {cleanup}") from None
+        return journal
     staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=destination.parent))
     try:
         _copy_tree_contents(bundle / "files", staging)
+        if before_install is not None:
+            before_install()
         installed = install_staging_with_rollback(staging, destination, replace)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
@@ -640,6 +657,31 @@ def rollback_files(journal: dict) -> None:
     _fsync_directory(destination.parent)
 
 
+def _nats_hook(args):
+    import shlex
+    import subprocess
+    argv = shlex.split(args.nats_restore_command)
+
+    def call(extra: list[str]) -> None:
+        if subprocess.run(argv + extra).returncode != 0:
+            raise ValueError("NATS restore command failed; JetStream may be partly populated and needs a manual "
+                             "purge before this restore is retried")
+
+    def run() -> None:
+        legacy_payload = args.path / "files" / NATS_PAYLOAD
+        if args.legacy_hmac:
+            call([str(legacy_payload)])
+            return
+        private = Path(tempfile.mkdtemp(prefix=".wasl-nats-payload-"))
+        try:
+            decrypt_nats_payload(args.path, args.key_file, private / "nats.json")
+            call([str(private / "nats.json")])
+        finally:
+            _make_traversable(private)
+            shutil.rmtree(private, ignore_errors=True)  # logical cleanup, not physical erasure
+    return run
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -656,6 +698,8 @@ def main() -> None:
         if name == "migrate":
             command.add_argument("destination", type=Path)
             command.add_argument("--replace", action="store_true")
+            command.add_argument("--nats-restore-command", help="shell-quoted command run, with the authenticated NATS "
+                                 "payload path appended, after files are staged and before they are installed")
     rotate = sub.add_parser("rotate-key")
     rotate.add_argument("--key-file", type=Path, required=True)
     nats = sub.add_parser("extract-nats")
@@ -676,7 +720,8 @@ def main() -> None:
         decrypt_nats_payload(args.bundle, args.key_file, args.output)
         result = {"output": str(args.output)}
     elif args.command == "migrate":
-        result = migrate_files(args.path, args.key_file, args.destination, args.replace, args.legacy_hmac)
+        result = migrate_files(args.path, args.key_file, args.destination, args.replace, args.legacy_hmac,
+                               _nats_hook(args) if args.nats_restore_command else None)
     else:
         result = rollback_files(json.loads(args.journal.read_text()))
     print(json.dumps({"status": "ok", "command": args.command, "result": result}, sort_keys=True, default=str))
