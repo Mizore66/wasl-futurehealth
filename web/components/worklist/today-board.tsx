@@ -202,7 +202,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
               "Reached on the phone",
               { status: `Reached · ${p.next}`, snoozed: false },
               "Logged: Reached",
-              "Next: book or set a call back",
+              "Next: appointment agreed or a call back",
               { action: "contact_outcome", outcome: "reached", channel: "phone" },
               "reached",
             ),
@@ -223,13 +223,17 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       chipsTitle = "What next?";
       chips = [
         [
-          "Book",
+          // The patient agreed to an appointment; no slot is chosen or reserved here, so the booking is still needed.
+          "Appointment agreed",
           () =>
-            log(p, "Booked the procedure", { view: "waiting", status: "Booked · date to confirm", snoozed: false }, "Logged: Booked", `${first} moved to Waiting`, {
-              action: "contact_outcome",
-              outcome: "appointment_agreed",
-              channel: "phone",
-            }),
+            log(
+              p,
+              "Appointment agreed",
+              { view: "waiting", status: "Booking needed · date to confirm", snoozed: false },
+              "Logged: Appointment agreed",
+              `${first} moved to Waiting`,
+              { action: "contact_outcome", outcome: "appointment_agreed", channel: "phone" },
+            ),
         ],
         [
           "Call back on…",
@@ -428,7 +432,14 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
                 <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M5.5 2.5l1.5 3-1.5 1c.8 1.6 2 2.8 3.5 3.5l1-1.5 3 1.5-.5 2c-.2.6-.8 1-1.4.9C6.6 12.4 3.6 9.4 3.1 4.9c-.1-.6.3-1.2.9-1.4z" />
                 </svg>
-                <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
+                {/* No dialer is connected: this only opens call logging, so it never says a call is active (issue #36). */}
+                {callingNow ? (
+                  <span>Logging call · {first}</span>
+                ) : (
+                  <span>
+                    Log call<span className="sr-only"> · {first}</span>
+                  </span>
+                )}
               </button>
               <span className="hidden flex-1 sm:block" />
               <Button
