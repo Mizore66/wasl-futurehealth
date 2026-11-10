@@ -124,13 +124,13 @@ describe("workItem with a ledger overlay", () => {
   });
 
   it("takes the head, a running snooze and a hand-off owner from the overlay", () => {
-    const overlay = { head: "h9", actions: 3, owner: HANDOFF_OWNER, last_action_at: "", ledger_status: "ok" as const, snooze: { until: "2026-11-11T00:00:00Z", reason: "Call back Tue" } };
+    const overlay = { head: "h9", actions: 3, owner: HANDOFF_OWNER, last_action_at: "", ledger_status: "ok" as const, no_answer_streak: 0, snooze: { until: "2026-11-11T00:00:00Z", reason: "Call back Tue" } };
     const it = workItem({ ...c, api_overlay: overlay }, 120, false, NOW);
     expect([it.head, it.ledgerActions, it.snoozed, it.status, it.owner, it.view]).toEqual(["h9", 3, true, "Call back Tue", HANDOFF_OWNER, "waiting"]);
   });
 
   it("ignores a snooze that has run out", () => {
-    const overlay = { head: "h9", actions: 1, owner: "", last_action_at: "", ledger_status: "ok" as const, snooze: { until: "2026-11-01T00:00:00Z" } };
+    const overlay = { head: "h9", actions: 1, owner: "", last_action_at: "", ledger_status: "ok" as const, no_answer_streak: 0, snooze: { until: "2026-11-01T00:00:00Z" } };
     expect(workItem({ ...c, api_overlay: overlay }, 120, false, NOW).snoozed).toBe(false);
   });
 });

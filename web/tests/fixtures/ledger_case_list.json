@@ -3,16 +3,23 @@
     {
       "api_overlay": {
         "actions": 6,
-        "head": "3dc1613bf9e2c23bbf2ff3e24ad40e4a6fcb2e102a2fa0739d129e18eddf7b36",
-        "last_action_at": "2026-11-10T22:42:03.084100627Z",
+        "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+        "last_action_at": "2026-11-10T22:50:47.59902562Z",
+        "last_contact": {
+          "at": "2026-11-10T22:50:47.59902562Z",
+          "channel": "phone",
+          "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+          "outcome": "declined"
+        },
         "ledger_status": "ok",
+        "no_answer_streak": 0,
         "owner": "coordinator-bound",
         "snooze": {
           "actor": "coordinator-bound",
-          "at": "2026-11-10T22:42:03.079120992Z",
-          "event": "aec5999806d24b8dc22c7a7b0ab7ae8122cd8f7bba45795396d31d36baaf43eb",
+          "at": "2026-11-10T22:50:47.592819664Z",
+          "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
           "reason": "Call back Fri 13 Nov",
-          "until": "2026-11-13T22:42:03Z"
+          "until": "2026-11-13T22:50:47Z"
         }
       },
       "closed": false,
@@ -37,7 +44,7 @@
   "meta": {
     "api": "wasl-api/1",
     "data_mode": "simulated",
-    "loaded_at": "2026-11-10T22:42:03Z",
+    "loaded_at": "2026-11-10T22:50:47Z",
     "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
     "policy": "v6",
     "reader_model": "gemma-4-26b/cached",

@@ -124,16 +124,33 @@ export type WorkItem = {
   head?: string;
   /** Coordinator actions already on the API ledger for this case (live API only). */
   ledgerActions?: number;
-  /** A ledger snooze that has not run out yet (live API only); snoozed rows sink on Today. */
+  /** A running ledger snooze or a no-answer logged in the last day (live API only); these rows sink on Today. */
   snoozed?: boolean;
+  /** Consecutive persisted no-answers ending the case's contact log (live API only). */
+  noAnswer?: number;
+  /** `invalid`: ledger replay stopped part-way, so this row's overlay is only a prefix and not authoritative. */
+  ledgerStatus?: "ok" | "invalid";
 };
+
+/** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
+export const BOOKING_NEEDED = "Booking needed · date to confirm";
+export const DECLINED_STATUS = "Declined · GP to sign";
+export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
+
+const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
+const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
 
 /** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
 export const HANDOFF_OWNER = "Dr Al Kaabi";
 
 /**
- * `wallNow` (ms) is only used to tell whether a ledger snooze is still running: the API checks snooze `until`
- * against the server's wall clock, not the run clock.
+ * `wallNow` (ms) is only used for ledger times: whether a snooze is still running (the API checks snooze `until`
+ * against the server's wall clock, not the run clock) and whether a no-answer was logged within the last day.
+ *
+ * Live API: the board position comes from the persisted overlay, so a reload shows what the ledger says, not what one
+ * browser session did. The latest contact outcome places the row the way logging it does on Today: an agreed
+ * appointment or a decline moves it to Waiting, a no-answer sinks it for a day. A snooze logged after that outcome
+ * sets the status instead.
  */
 export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
@@ -143,8 +160,25 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
   let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
   if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
   if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
-  const snoozed = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
-  if (snoozed) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  const lc = ov?.last_contact;
+  let sinks = false;
+  if (lc) {
+    if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
+      view = "waiting";
+      words.status = lc.outcome === "declined" ? DECLINED_STATUS : BOOKING_NEEDED;
+    } else if (lc.outcome === "no_answer") {
+      words.status = noAnswerStatus(Math.max(1, ov!.no_answer_streak));
+      sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
+    } else if (lc.outcome === "reached") {
+      words.status = `Reached · ${words.next}`;
+    } else {
+      words.status = outcomeStatus(lc.outcome);
+    }
+  }
+  const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
+  const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || ov!.snooze!.at > lc.at);
+  if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  const snoozed = snoozeRunning || sinks;
   return {
     id: c.id,
     short: shortId(c.id),
@@ -164,7 +198,7 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNo
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
-    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed } : {}),
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status } : {}),
   };
 }
 

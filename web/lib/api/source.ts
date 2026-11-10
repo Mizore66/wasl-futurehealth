@@ -195,13 +195,14 @@ export async function postReview(
 
 export type ActionResult =
   | { ok: true; status: 201; response: ActionResponse }
-  | { ok: false; status: 400 | 403 | 404 | 409; error: string; conflict?: string; currentHead?: string };
+  | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
 
 /**
  * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
  * Sent with the server-side coordinator credential (WASL_API_COORDINATOR_TOKEN); the API binds that token to its role
  * and actor and records that actor, so no identity header is sent from here. `expectedHead` is the case's
- * `api_overlay.head`; a stale head returns 409 with the current one.
+ * `api_overlay.head`; a stale head returns 409 with the current one. A 500 that the API explains (its ledger failed
+ * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown.
  */
 export async function postAction(id: string, action: CaseAction, expectedHead: string): Promise<ActionResult> {
   const body = CaseAction.safeParse(action);
@@ -221,6 +222,8 @@ export async function postAction(id: string, action: CaseAction, expectedHead: s
     const e = ActionError.parse(json);
     return { ok: false, status: res.status, error: e.error, conflict: e.conflict, currentHead: e.current_head };
   }
+  const refused = res.status === 500 ? ActionError.safeParse(json) : null;
+  if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
   throw new Error(`POST actions: HTTP ${res.status}`);
 }
 

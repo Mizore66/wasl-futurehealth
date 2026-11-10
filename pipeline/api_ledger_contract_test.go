@@ -242,3 +242,96 @@ func TestLedgerContractFixtures(t *testing.T) {
 		"ledger_audit.json":       audit,
 	})
 }
+
+// A ledger whose replay stops part-way: valid coordinator events, then one that names a case head the case no longer
+// has (what a re-materialised run leaves behind), with a correct hash chain so the API still starts. The API must serve
+// only the valid prefix, say ledger_status invalid in the list and the detail, and refuse writes. The served detail,
+// list and refusal become the partial-replay fixtures web/tests/today-ledger.test.ts reads.
+func TestLedgerPartialReplayFixtures(t *testing.T) {
+	run := ledgerRun(t)
+	s := loadAPI(run, "")
+	h := ledgerHandler(t, s)
+	casePath := "/api/cases/" + url.PathEscape(ledgerLoop)
+	head := s.caseHead(s.cases[ledgerLoop])
+	for _, body := range []string{
+		`"action":"contact_outcome","outcome":"no_answer","channel":"phone"`,
+		`"action":"contact_outcome","outcome":"reached","channel":"phone","note":"synthetic call note"`,
+		`"action":"note","text":"synthetic coordinator note"`,
+		`"action":"contact_outcome","outcome":"declined","channel":"phone"`,
+	} {
+		resp := ledgerPost(t, h, casePath+"/actions", tokCoordinator, fmt.Sprintf(`{%s,"expected_head":%q}`, body, head), http.StatusCreated)
+		head = resp["api_overlay"].(map[string]interface{})["head"].(string)
+	}
+	prev := fmt.Sprint(s.reviews[len(s.reviews)-1]["hash"])
+	stale := map[string]interface{}{"type": coordEventType, "kind": "contact_outcome", "case": ledgerLoop,
+		"data": map[string]interface{}{"outcome": "appointment_agreed", "channel": "phone"}, "role": RoleCoordinator, "actor": "coordinator-bound",
+		"action": ActCoordinateCase, "at": time.Now().UTC().Format(time.RFC3339Nano), "head": "head-of-a-previous-run", "seq": 5, "mode": "demo", "prev": prev}
+	stale["hash"] = apiEventHash(stale)
+	line, _ := json.Marshal(stale)
+	if err := appendLedgerLine(filepath.Join(run, "api_reviews.ndjson"), append(line, '\n')); err != nil {
+		t.Fatal(err)
+	}
+
+	// The start-up ledger check (the part of loadAPIVerified that reads the ledger) accepts it: the chain is intact.
+	if err := validateReviewLedger(filepath.Join(run, "api_reviews.ndjson")); err != nil {
+		t.Fatalf("a chain-valid ledger must pass the start-up check: %v", err)
+	}
+	s2 := loadAPI(run, "")
+	h2 := ledgerHandler(t, s2)
+	detail := ledgerGet(t, h2, casePath, tokCoordinator)
+	list := ledgerGet(t, h2, "/api/cases?limit=5", tokCoordinator)
+	refused := ledgerPost(t, h2, casePath+"/actions", tokCoordinator,
+		fmt.Sprintf(`{"action":"note","text":"after the failure","expected_head":%q}`, head), http.StatusInternalServerError)
+
+	ov := detail["api_overlay"].(map[string]interface{})
+	if ov["ledger_status"] != "invalid" || len(ov["contact_outcomes"].([]interface{})) != 3 || len(ov["notes"].([]interface{})) != 1 || ov["head"] != head {
+		t.Fatalf("partial overlay must hold exactly the valid prefix: %v", ov)
+	}
+	if rl := detail["review_ledger"].(map[string]interface{}); rl["status"] != "invalid" || rl["events_applied"] != float64(4) {
+		t.Fatalf("review_ledger: %v", rl)
+	}
+	if lo := list["cases"].([]interface{})[0].(map[string]interface{})["api_overlay"].(map[string]interface{}); lo["ledger_status"] != "invalid" {
+		t.Fatalf("list overlay must say invalid too: %v", lo)
+	}
+	if !strings.Contains(fmt.Sprint(refused["error"]), "writes refused") {
+		t.Fatalf("refusal: %v", refused)
+	}
+
+	writeOrCompareLedgerFixtures(t, map[string]map[string]interface{}{
+		"ledger_partial_case_detail.json":    detail,
+		"ledger_partial_case_list.json":      list,
+		"ledger_partial_action_refused.json": refused,
+	})
+}
+
+// The list overlay carries the latest contact outcome and the trailing no-answer run, so Today can place a case from
+// persisted outcomes after a reload without fetching every case's detail.
+func TestOverlaySummaryLastContact(t *testing.T) {
+	s := loadAPI(ledgerRun(t), "")
+	h := ledgerHandler(t, s)
+	casePath := "/api/cases/" + url.PathEscape(ledgerLoop)
+	head := s.caseHead(s.cases[ledgerLoop])
+	summary := func() map[string]interface{} {
+		return ledgerGet(t, h, "/api/cases?limit=5", tokCoordinator)["cases"].([]interface{})[0].(map[string]interface{})["api_overlay"].(map[string]interface{})
+	}
+	if _, ok := summary()["last_contact"]; ok {
+		t.Fatal("no contact yet: last_contact must be absent")
+	}
+	for i, outcome := range []string{"no_answer", "no_answer", "declined", "no_answer"} {
+		resp := ledgerPost(t, h, casePath+"/actions", tokCoordinator,
+			fmt.Sprintf(`{"action":"contact_outcome","outcome":%q,"channel":"phone","note":"x","expected_head":%q}`, outcome, head), http.StatusCreated)
+		head = resp["api_overlay"].(map[string]interface{})["head"].(string)
+		ov := summary()
+		lc := ov["last_contact"].(map[string]interface{})
+		want := []float64{1, 2, 0, 1}[i]
+		if lc["outcome"] != outcome || ov["no_answer_streak"] != want {
+			t.Fatalf("after %s: last_contact %v, streak %v (want %v)", outcome, lc, ov["no_answer_streak"], want)
+		}
+		if _, leaks := lc["note"]; leaks {
+			t.Fatal("the list summary must not carry the contact note")
+		}
+		if _, leaks := lc["actor"]; leaks {
+			t.Fatal("the list summary must not carry the actor")
+		}
+	}
+}
