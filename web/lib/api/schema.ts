@@ -366,7 +366,7 @@ export const Signoff = z.looseObject({
   sim_s: z.number().optional(),
 });
 
-/** One appended demo review action (POST /review response and api_reviews / audit history). */
+/** One appended demo review action (POST /review response and case detail api_reviews). */
 export const ApiReview = z.looseObject({
   case: z.string(),
   item: z.string(),
@@ -374,6 +374,25 @@ export const ApiReview = z.looseObject({
   note: z.string(),
   role: z.string(),
   actor: z.string(),
+  action: z.string(),
+  at: z.string(),
+  mode: z.string(),
+  prev: z.string(),
+  hash: z.string(),
+});
+
+/**
+ * One review action as GET /audit serves it to the auditor. The redacted projection (exportReviewEventAllow in
+ * pipeline/api_export.go) never carries actor or note, and drops an empty or out-of-pattern value, such as the empty
+ * item of a review not tied to a queue item. Pinned by tests/fixtures/audit_signed_reviews.json.
+ */
+export const AuditReview = z.looseObject({
+  case: z.string(),
+  item: z.string().optional(),
+  decision: z.string().optional(),
+  note: z.string().optional(),
+  role: z.string(),
+  actor: z.string().optional(),
   action: z.string(),
   at: z.string(),
   mode: z.string(),
@@ -424,9 +443,10 @@ export const Audit = withMeta({
   decision_signatures: z.array(
     z.looseObject({ decision_id: z.string(), policy: z.string(), sig: z.string(), recomputed: z.string() }),
   ),
-  anchors: z.record(z.string(), z.string()),
+  /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
+  anchors: z.record(z.string(), z.string()).default({}),
   anchor_note: z.string().optional(),
-  history: z.array(ApiReview),
+  history: z.array(AuditReview),
 });
 
 export const CaseList = withMeta({
@@ -561,3 +581,4 @@ export type Healthz = z.infer<typeof Healthz>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ApiReview = z.infer<typeof ApiReview>;
+export type AuditReview = z.infer<typeof AuditReview>;
