@@ -142,6 +142,9 @@ func runServe(run, data, addr string) {
 	if (certFile == "") != (keyFile == "") {
 		panic("WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE must be set together")
 	}
+	if os.Getenv("WASL_API_USERS_FILE") != "" && certFile == "" {
+		panic("WASL_API_USERS_FILE requires WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE")
+	}
 	scheme := "http"
 	if certFile != "" {
 		scheme = "https"
@@ -518,7 +521,7 @@ func (s *apiServer) healthz(w http.ResponseWriter, r *http.Request) {
 	if st := readStatus(s.run, "hl7mllp"); st != nil {
 		src = "hl7v2"
 	}
-	writeJSONResp(w, 200, s.envelope(map[string]interface{}{"status": "ok", "cases": len(s.cases),
+	writeJSONResp(w, 200, s.exportEnvelope(map[string]interface{}{"status": "ok", "cases": len(s.cases),
 		"dependencies": map[string]string{"materialised_run": "loaded", "nats": nats, "reader": reader, "ingest_adapter": src, "review_ledger": s.ledgerStatus()}}))
 }
 
@@ -658,9 +661,9 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 		s.caseAction(w, r, c)
 	case sub == "actions":
 		w.Header().Set("Allow", "POST")
-		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
+		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed", "allow": "POST"}))
 	default:
-		writeJSONResp(w, 405, s.envelope(map[string]interface{}{"error": "method not allowed"}))
+		writeJSONResp(w, 405, s.exportEnvelope(map[string]interface{}{"error": "method not allowed"}))
 	}
 }
 
@@ -680,7 +683,7 @@ func (s *apiServer) caseAudit(w http.ResponseWriter, c *apiCase) {
 		writeJSONResp(w, 500, s.exportEnvelope(map[string]interface{}{"error": "audit could not be encoded"}))
 		return
 	}
-	writeJSONResp(w, 200, s.envelope(audit))
+	writeJSONResp(w, 200, s.exportEnvelope(audit))
 }
 
 func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
