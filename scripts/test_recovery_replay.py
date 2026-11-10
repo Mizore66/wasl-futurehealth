@@ -153,6 +153,73 @@ class TransactionalRestoreTests(unittest.TestCase):
         self.assertEqual(os.listdir(destination), ["keep"])
         self.assertEqual(sorted(p.name for p in self.work.iterdir()), ["live"])
 
+    def test_restore_refuses_missing_key_and_pruned_old_generation_before_any_write(self):
+        old = self.backup("old")
+        rotate_keyring(self.keys)
+        new = self.backup("new")
+        doc, active, _ = load_keyring(self.keys)
+        pruned = self.root / "pruned.json"
+        pruned.write_text(json.dumps({"schema": doc["schema"], "active": active, "keys": {active: doc["keys"][active]}}))
+        destination = self.work / "live"
+        for bundle, keys in ((old, pruned), (old, self.root / "absent.json"), (new, self.root / "absent.json")):
+            with self.assertRaises(ValueError):
+                migrate_files(bundle, keys, destination)
+        self.assertEqual(sorted(p.name for p in self.work.iterdir()), [])
+        migrate_files(new, pruned, destination)  # the pruned keyring still serves the active generation
+        self.assertEqual(tree_state(destination), tree_state(self.source))
+
+    def test_every_tamper_class_leaves_destination_and_siblings_untouched(self):
+        cases = {
+            "ciphertext-flip": lambda b: flip_last_byte(b / "files/top.txt.aead"),
+            "ciphertext-truncate": lambda b: (b / "files/top.txt.aead").write_bytes(b""),
+            "ciphertext-missing": lambda b: (b / "files/top.txt.aead").unlink(),
+            "extra-file": lambda b: (b / "files/extra.aead").write_bytes(b"x"),
+            "plaintext-leak-file": lambda b: (b / "leak.txt").write_text("x"),
+            "manifest-flip": lambda b: flip_last_byte(b / "manifest.json"),
+            "manifest-empty": lambda b: (b / "manifest.json").write_bytes(b""),
+            "manifest-removed": lambda b: (b / "manifest.json").unlink(),
+        }
+        for label, tamper in cases.items():
+            with self.subTest(label):
+                bundle = self.backup(f"t-{label}")
+                tamper(bundle)
+                destination = self.work / "live"
+                destination.mkdir(exist_ok=True)
+                (destination / "keep").write_text("keep")
+                with self.assertRaises(ValueError):
+                    migrate_files(bundle, self.keys, destination, replace=True)
+                self.assertEqual(os.listdir(destination), ["keep"])
+                self.assertEqual(sorted(p.name for p in self.work.iterdir()), ["live"])
+
+    def test_rollback_is_single_use_and_refuses_a_fresh_restore_journal(self):
+        bundle = self.backup()
+        fresh = migrate_files(bundle, self.keys, self.work / "fresh")
+        with self.assertRaisesRegex(ValueError, "rollback"):
+            rollback_files(fresh)
+        destination = self.work / "live"
+        destination.mkdir()
+        (destination / "old").write_text("old generation")
+        journal = migrate_files(bundle, self.keys, destination, replace=True)
+        rollback_files(dict(journal))
+        reversed_journal = json.loads(Path(journal["journal_path"]).read_text())
+        with self.assertRaisesRegex(ValueError, "already reversed|invalid"):
+            rollback_files(reversed_journal)
+        self.assertEqual((destination / "old").read_text(), "old generation")
+
+    def test_nats_hook_failure_after_decrypt_names_manual_purge_and_leaves_no_plaintext(self):
+        bundle = self.backup()
+        stub = self.root / "stub.sh"
+        stub.write_text("#!/bin/sh\nexit 3\n")
+        stub.chmod(0o755)
+        destination = self.work / "live"
+        before = {str(p) for p in Path(tempfile.gettempdir()).glob(".wasl-nats-payload-*")}
+        result = cli("migrate", bundle, "--key-file", self.keys, destination, "--nats-restore-command", stub)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("manual purge", result.stdout)
+        self.assertFalse(destination.exists())
+        self.assertEqual(self.leftovers(), [])
+        self.assertEqual({str(p) for p in Path(tempfile.gettempdir()).glob(".wasl-nats-payload-*")}, before)
+
     def test_legacy_bundle_requires_explicit_opt_in_for_restore(self):
         key = self.root / "backup_key"
         key.write_text("k" * 64 + "\n")
