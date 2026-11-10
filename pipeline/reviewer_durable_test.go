@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1464,6 +1465,7 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 		msg := nats.NewMsg("fhir.review")
 		msg.Data = signoffResource(rec.Signoff)
 		msg.Header.Set(jetstream.MsgIDHeader, "signoff/"+rec.ItemID)
+		msg.Header.Set("Wsi-Ots", strconv.FormatInt(rec.PubTS, 10))
 		ack, err := env.js.PublishMsg(env.ctx, msg)
 		if err != nil {
 			t.Fatal(err)
@@ -1484,12 +1486,16 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
+	sequence, found, err := findReviewerSignoff(env.js, rec.ItemID, rec.BodyHash)
+	if err != nil || !found || sequence != 1 {
+		t.Fatalf("two-copy lookup sequence=%d found=%v err=%v, want first sequence 1", sequence, found, err)
+	}
 	restarted := newTestReviewerService(t, env, s.runDir)
 	if err := restarted.recover(); err != nil {
 		t.Fatalf("recovery rejected identical retained sign-offs: %v", err)
 	}
 	if after := restarted.status(); !reflect.DeepEqual(after, statusBefore) || fmt.Sprint(restarted.wl) != wlBefore || fmt.Sprint(restarted.lw) != lwBefore {
-		t.Fatalf("raw republish changed recovered state: before=%+v/%v after=%+v/%v", statusBefore, wlBefore, after, s.wl)
+		t.Fatalf("raw republish changed recovered state: before=%+v/%v after=%+v/%v", statusBefore, wlBefore, after, restarted.wl)
 	}
 	ledgerAfter, err := os.ReadFile(filepath.Join(s.runDir, "reviewer_decisions.ndjson"))
 	if err != nil {
