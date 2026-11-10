@@ -110,9 +110,6 @@
   * {
     @apply border-border;
   }
-  html {
-    font-variant-numeric: tabular-nums;
-  }
   body {
     @apply bg-ground text-ink font-sans text-body;
   }

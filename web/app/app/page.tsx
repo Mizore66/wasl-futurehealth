@@ -99,7 +99,7 @@ export default async function ProgrammePage() {
               {capacity.openCases.toLocaleString("en-US")} open cases.
             </p>
 
-            <dl data-testid="capacity-summary" className="m-0 mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+            <dl data-testid="capacity-summary" className="m-0 mt-4 grid grid-cols-2 gap-x-4 gap-y-3 tabular-nums sm:grid-cols-3">
               {(
                 [
                   ["Within 31 days", pct(capacity.summary.within31dShare * 100)],

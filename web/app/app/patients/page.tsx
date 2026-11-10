@@ -189,17 +189,17 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                         {it.nameAr}
                       </span>
                     )}
-                    {it.named && <span className="font-mono text-small text-muted">{it.short}</span>}
+                    {it.named && <span className="text-small text-muted">{it.short}</span>}
                   </span>
                 </td>
                 <td className="px-4 py-2.5 max-md:block max-md:p-0">
                   <StatusMark status={mark(c)} label={c.closed ? `Closed day ${closedInDays(c)}` : it.status} className="max-md:text-body" />
                 </td>
-                <td className="px-4 py-2.5 text-muted max-md:block max-md:p-0">
+                <td className="px-4 py-2.5 tabular-nums text-muted max-md:block max-md:p-0">
                   <span className="md:hidden">Referred </span>
                   {formatDay(c.referral_day)}
                 </td>
-                <td className={cn("px-4 py-2.5 max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
+                <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
                   <span className="md:hidden">Due </span>
                   {formatDay(c.referral_day + dueIn(c))}
                   {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}

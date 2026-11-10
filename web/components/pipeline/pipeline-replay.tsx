@@ -162,7 +162,7 @@ export function PipelineReplay({ heading, tamper, rules, health }: { heading: Re
                       <span className="min-w-0 truncate">· {f.note}</span>
                     </div>
                   </div>
-                  <span className="text-small text-muted">step {f.step}</span>
+                  <span className="text-small tabular-nums text-muted">step {f.step}</span>
                 </li>
               );
             })}
