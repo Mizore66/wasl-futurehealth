@@ -502,7 +502,8 @@ class NatsReplayTests(unittest.TestCase):
         self.assertEqual(target_summary["messages"], source_summary["messages"])
         migrate_files(bundle, keys, work / "live")
         self.assertEqual(tree_state(work / "live"), tree_state(files))
-        # The existing API export helper compares redacted source/restored documents.
+        # Synthetic documents only: this exercises soak.compare_exports and is NOT an API comparison_sha256 restore match.
+        # The real restore evidence in this test is the per-stream logical hashes compared above.
         self.assertTrue(soak.compare_exports({"f": self.export("c" * 64)}, {"f": self.export("c" * 64)})["matched"])
         self.assertFalse(soak.compare_exports({"f": self.export("c" * 64)}, {"f": self.export("d" * 64)})["matched"])
 

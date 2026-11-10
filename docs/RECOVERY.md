@@ -65,7 +65,7 @@ podman compose -f "$COMPOSE_FILE" config --quiet
 `production_secrets.sh` refuses to overwrite an existing path. `production_volume_load.sh` creates a new external secret
 volume and copies files with `podman cp`; it does not depend on the Podman VM sharing host paths. Preserve that volume
 and a separately protected copy of its recovery keys. Losing the JetStream key makes encrypted retained stores
-unreadable; losing the backup key prevents bundle authentication.
+unreadable; losing the recovery keyring (`recovery_keys.json`, v2 bundles) or the legacy `backup_key` (v1 bundles) prevents bundle authentication and decryption.
 
 ## Optional explicit synthetic seed
 
@@ -110,8 +110,16 @@ payload. Neither the keyring nor any data key is included.
 - Legacy v1 (HMAC-only, unencrypted) bundles are read-only and are accepted only with an explicit opt-in:
   `--legacy-hmac` on `verify`/`migrate`, or `WASL_RECOVERY_LEGACY_HMAC=1` with `WASL_RECOVERY_KEY_FILE` pointing at the
   old `backup_key`. It is never a default; `backup` always writes v2.
-- Upgrading an existing secrets volume: re-run the secret bootstrap so `recovery_keys.json` is added next to the
-  existing `backup_key`, which is kept only for legacy reads.
+- Adding or rotating the keyring on an existing deployment: **in-place change of an existing secrets volume is not
+  supported.** `production_secrets.sh` refuses an existing directory, `production_volume_load.sh` refuses an existing
+  volume, and the `recovery` service mounts the secrets volume read-only. The working path is to create a **new**
+  secret directory and **new** volume: run `production_secrets.sh <new-dir>`, then copy the existing `backup_key`
+  (for legacy reads) and, to keep earlier v2 bundles restorable, the existing `recovery_keys.json` from your protected
+  copy over the new files, run `recovery.py rotate-key --key-file <new-dir>/recovery_keys.json` on that host copy if
+  you want a fresh active generation, load it with `production_volume_load.sh <new-volume> <new-dir>`, and point
+  `WASL_SECRETS_VOLUME` at it. Keep the same `js_key` and TLS/password files if the retained JetStream stores and
+  clients must keep working; replacing only the recovery files means copying the old values for those too. This
+  procedure is documented, not exercised in a container drill.
 - Both **backup** (`recovery-backup` writes the plaintext `wsi7 backup-nats` output to a mode-0700 `mktemp` directory
   before encrypting it) and **restore** (the decrypted NATS payload handed to `restore-nats`) place a plaintext NATS
   file under `${TMPDIR:-/tmp}`. Restore also decrypts the run files into a private mode-0700 staging directory beside the
