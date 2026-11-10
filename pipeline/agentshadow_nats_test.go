@@ -30,6 +30,9 @@ type natsEnv struct {
 func startTestNATS(t *testing.T) *natsEnv {
 	t.Helper()
 	bin, _ := filepath.Abs("../bin/nats-server")
+	if override := os.Getenv("WASL_TEST_NATS_SERVER"); override != "" {
+		bin = override
+	}
 	if _, err := os.Stat(bin); err != nil {
 		t.Skip("bin/nats-server not built")
 	}
