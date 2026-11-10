@@ -22,6 +22,9 @@ const reviewerStatusKey = "status"
 
 var reviewerStateRank = map[string]int{"prepared": 1, "ledger_written": 2, "published": 3}
 
+// reviewerSkipped marks a dropped worklist twin (second-ID or link). It is terminal and carries no signoff.
+const reviewerSkipped = "skipped"
+
 type reviewerRecord struct {
 	Schema   int         `json:"schema"`
 	ItemID   string      `json:"item"`
@@ -34,6 +37,8 @@ type reviewerRecord struct {
 	OutSeq   uint64      `json:"out_seq"`
 	PubTS    int64       `json:"pub_ts,omitempty"`
 	FHIRSeq  uint64      `json:"fhir_seq,omitempty"`
+	// SkippedBy: for state "skipped", the item id (or reason) of the answered twin that made this item redundant.
+	SkippedBy string `json:"skipped_by,omitempty"`
 }
 
 type reviewerStatus struct {
@@ -64,6 +69,24 @@ func reviewerKey(itemID string) string {
 }
 
 func (r reviewerRecord) validate() error {
+	if r.State == reviewerSkipped {
+		switch {
+		case r.Schema != 1:
+			return fmt.Errorf("reviewer record %q: unsupported schema %d", r.ItemID, r.Schema)
+		case r.ItemID == "":
+			return errors.New("reviewer record: empty item id")
+		case r.Item == nil || r.Item.ItemID != r.ItemID:
+			return fmt.Errorf("reviewer record %q: review item missing or id mismatch", r.ItemID)
+		case r.SkippedBy == "":
+			return fmt.Errorf("reviewer record %q: skipped requires skipped_by", r.ItemID)
+		case r.Ledger != "" || r.Signoff != nil || r.BodyHash != "" || r.Wrong:
+			return fmt.Errorf("reviewer record %q: skipped forbids ledger, signoff, body hash and wrong", r.ItemID)
+		}
+		return nil
+	}
+	if r.SkippedBy != "" {
+		return fmt.Errorf("reviewer record %q: skipped_by only valid in state skipped", r.ItemID)
+	}
 	rank := reviewerStateRank[r.State]
 	switch {
 	case r.Schema != 1:
@@ -92,6 +115,9 @@ func sameJSON(a, b any) bool {
 
 // checkTransition: cur -> next must keep the item's identity and payload and never move the state backward.
 func checkTransition(cur, next reviewerRecord) error {
+	if cur.State == reviewerSkipped || next.State == reviewerSkipped {
+		return fmt.Errorf("reviewer record %q: skipped is terminal (%s -> %s)", cur.ItemID, cur.State, next.State)
+	}
 	if reviewerStateRank[next.State] < reviewerStateRank[cur.State] {
 		return fmt.Errorf("reviewer record %q: state regression %s -> %s", cur.ItemID, cur.State, next.State)
 	}
@@ -127,7 +153,7 @@ func (s *reviewerStore) put(next reviewerRecord, expected string) error {
 		}
 		return nil
 	}
-	if reviewerStateRank[expected] == 0 {
+	if reviewerStateRank[expected] == 0 && expected != reviewerSkipped {
 		return fmt.Errorf("reviewer record %q: unknown expected state %q", next.ItemID, expected)
 	}
 	entry, err := s.kv.Get(ctx, key)
@@ -218,5 +244,32 @@ func (s *reviewerStore) load() ([]reviewerRecord, reviewerStatus, error) {
 		}
 		return recs[i].ItemID < recs[j].ItemID
 	})
+	// Records are authoritative: status is only a hint. LastOut is raised to cover every stored OUT position and the
+	// counters are rebuilt from the records, so a stale or missing status cannot desynchronise a restart.
+	if st.Answered < 0 || st.Wrong < 0 || st.DedupedSecond < 0 || st.DedupedLink < 0 {
+		return nil, st, errors.New("reviewer status: negative counter")
+	}
+	st.Answered, st.Wrong, st.DedupedSecond, st.DedupedLink = 0, 0, 0, 0
+	seenOut := map[uint64]string{}
+	for _, r := range recs {
+		if prev, dup := seenOut[r.OutSeq]; dup {
+			return nil, st, fmt.Errorf("reviewer records %q and %q share OUT position %d", prev, r.ItemID, r.OutSeq)
+		}
+		seenOut[r.OutSeq] = r.ItemID
+		if r.OutSeq > st.LastOut {
+			st.LastOut = r.OutSeq
+		}
+		switch {
+		case r.State == reviewerSkipped && isLinkQuestion(r.Item):
+			st.DedupedLink++
+		case r.State == reviewerSkipped:
+			st.DedupedSecond++
+		default:
+			st.Answered++
+			if r.Wrong {
+				st.Wrong++
+			}
+		}
+	}
 	return recs, st, nil
 }
