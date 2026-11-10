@@ -78,7 +78,7 @@ function ScoreTrack({ score, line }: { score: number; line: number }) {
     <div
       role="img"
       aria-label={`Link score ${score.toFixed(3)} on a scale from 0.95 to 1.00, ${above ? "at or above" : "below"} the ${line} auto-close line.`}
-      className="relative mt-2 h-[52px]"
+      className="relative mt-2 h-[52px] tabular-nums"
     >
       <div className="absolute inset-x-0 top-[22px] h-1 rounded-sm bg-control" />
       <div className="absolute top-3.5 h-5 w-0.5 -ml-px bg-ink" style={{ left: at(line) }} />

@@ -33,7 +33,7 @@ export default async function Page() {
         <div className="min-w-0">
           <h1 className="m-0 text-title font-semibold">Agent review</h1>
           <p className="m-0 mt-1 max-w-[72ch] text-muted">
-            One case where an experimental evidence agent gave a cited read beside a human reviewer. Case <span className="font-mono text-small">{shortId(detail.case.id)}</span>.
+            One case where an experimental evidence agent gave a cited read beside a human reviewer. Case <span className="text-small">{shortId(detail.case.id)}</span>.
           </p>
         </div>
         <HonestyLabel kind="simulated">Simulated, experimental</HonestyLabel>

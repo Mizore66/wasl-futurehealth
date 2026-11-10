@@ -1,5 +1,7 @@
+import { ChevronDown } from "lucide-react";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { apiMode, getDashboard } from "@/lib/api/source";
+import { runStripCopy } from "./run-meta-copy";
 
 const SOURCE = {
   live: "Live Wasl API",
@@ -17,11 +19,13 @@ export function RunMetaFallback() {
 }
 
 /**
- * Which run, policy and reader model the numbers on this screen come from, and whether the data is
- * live or a published snapshot. Built: reads `meta` from the same source every screen uses.
+ * Whether the numbers on this screen are simulated and when they were taken, in plain words (issue #50). The run, policy,
+ * reader model and API version behind them sit in the expanded technical panel, one click away for reproducibility.
+ * Built: reads `meta` from the same source every screen uses.
  */
 export async function RunMeta() {
-  const source = SOURCE[apiMode()];
+  const mode = apiMode();
+  const source = SOURCE[mode];
   let meta: Awaited<ReturnType<typeof getDashboard>>["meta"];
   try {
     meta = (await getDashboard()).meta;
@@ -36,11 +40,12 @@ export async function RunMeta() {
     );
   }
 
+  const copy = runStripCopy(meta, mode);
   const rows: [string, string][] = [
     ["Data source", source],
+    ["Run", meta.run],
     ["Policy", meta.policy],
     ["Reader model", meta.reader_model],
-    ["Loaded", meta.loaded_at],
     ["API", meta.api],
   ];
 
@@ -50,31 +55,40 @@ export async function RunMeta() {
       className="mb-6 rounded-card border border-line bg-surface text-small"
     >
       <details className="group">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-card px-3 md:min-h-9 [&::-webkit-details-marker]:hidden">
-          <HonestyLabel kind="simulated">
-            data_mode: {meta.data_mode}
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 rounded-card px-3 py-1 md:min-h-9 [&::-webkit-details-marker]:hidden">
+          <HonestyLabel kind="simulated" className="self-center">
+            {copy.data}
           </HonestyLabel>
-          <span className="min-w-0 flex-1 truncate text-ink-soft">
-            <span className="text-muted">Run </span>
-            <span className="font-mono">{meta.run}</span>
-          </span>
-          <span className="flex-none text-muted group-open:hidden">
-            Details
-          </span>
-          <span className="hidden flex-none text-muted group-open:inline">
-            Hide
+          {/* Wraps to two lines at phone width rather than cutting the time off. */}
+          <time
+            dateTime={meta.loaded_at}
+            className="min-w-0 flex-1 leading-tight text-ink-soft"
+          >
+            {copy.when}
+          </time>
+          <span className="flex flex-none items-center gap-1 text-muted">
+            <span className="max-sm:sr-only group-open:hidden">Details</span>
+            <span className="hidden max-sm:sr-only group-open:inline">
+              Hide
+            </span>
+            <ChevronDown
+              aria-hidden
+              className="size-4 group-open:rotate-180 motion-safe:transition-transform"
+            />
           </span>
         </summary>
-        <dl className="m-0 grid gap-x-6 gap-y-2 border-t border-line px-3 py-3 sm:grid-cols-[max-content_1fr]">
-          {rows.map(([k, v]) => (
-            <div key={k} className="contents">
-              <dt className="text-muted">{k}</dt>
-              <dd className="m-0 break-all font-mono text-ink-soft">{v}</dd>
-            </div>
-          ))}
-          <dt className="text-muted">Note</dt>
-          <dd className="m-0 text-ink-soft">{meta.note}</dd>
-        </dl>
+        <div className="border-t border-line px-3 py-3">
+          <p className="m-0 text-ink-soft">{meta.note}</p>
+          <p className="m-0 mt-3 font-medium text-muted">Technical detail</p>
+          <dl className="m-0 mt-2 grid gap-x-6 gap-y-2 sm:grid-cols-[max-content_1fr]">
+            {rows.map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-muted">{k}</dt>
+                <dd className="m-0 break-all font-mono text-ink-soft">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </details>
     </section>
   );
