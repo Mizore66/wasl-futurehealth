@@ -614,27 +614,182 @@ class LifecycleTests(unittest.TestCase):
 
 
 class CreateRunTests(unittest.TestCase):
-    def test_create_run_initializes_a_missing_output_parent(self):
+    def make_source(self, root):
         import subprocess
+        repo = root / "repo"
+        (repo / "deploy/nats").mkdir(parents=True)
+        (repo / "scripts").mkdir()
+        for name in ("docker-compose.yml", "Dockerfile", "deploy/nats/nats.conf", "deploy/nats/entrypoint.sh"):
+            (repo / name).write_text("test\n")
+        (repo / "scripts/api_smoke.py").write_text("print('frozen-smoke')\n")
+        (repo / "scripts/soak.py").write_text("print('live-controller')\n")
+        (repo / "README.md").write_text("base\n")
+        subprocess.run(["git", "init", "-q", str(repo)], check=True)
+        subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(repo), "-c", "user.email=test@example.invalid", "-c", "user.name=test",
+                        "commit", "-qm", "base"], check=True)
+        engine_log = root / "engine.log"
+        engine = root / "engine"
+        engine.write_text("#!/usr/bin/env python3\nimport os, sys\nfrom pathlib import Path\n"
+                          "with Path(%r).open('a') as log:\n"
+                          "    log.write(os.getcwd() + '|' + ' '.join(sys.argv[1:]) + '\\n')\n" % str(engine_log))
+        engine.chmod(0o755)
+        return repo, engine, engine_log
+
+    def create(self, root):
+        repo, engine, engine_log = self.make_source(root)
+        config = ConfigTests().config()
+        config["require_clean_source"] = True
+        run_dir = soak.create_run(config, root / "missing/nested/runs", str(engine), repo)
+        return repo, run_dir, engine_log
+
+    def test_create_run_initializes_a_missing_output_parent(self):
         with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            repo = root / "repo"
-            (repo / "deploy/nats").mkdir(parents=True)
-            (repo / "scripts").mkdir()
-            for name in ("docker-compose.yml", "Dockerfile", "deploy/nats/nats.conf", "deploy/nats/entrypoint.sh"):
-                (repo / name).write_text("test\n")
-            subprocess.run(["git", "init", "-q", str(repo)], check=True)
-            subprocess.run(["git", "-C", str(repo), "-c", "user.email=test@example.invalid", "-c", "user.name=test",
-                            "commit", "--allow-empty", "-qm", "base"], check=True)
-            engine = root / "engine"
-            engine.write_text("#!/bin/sh\nexit 0\n")
-            engine.chmod(0o755)
-            config = ConfigTests().config()
-            config["require_clean_source"] = False
-            output = root / "missing/nested/runs"
-            run_dir = soak.create_run(config, output, str(engine), repo)
+            run_dir = self.create(Path(tmp))[1]
             self.assertTrue((run_dir / "manifest.json").exists())
             self.assertEqual((run_dir / ".env").stat().st_mode & 0o777, 0o600)
+
+    def test_dirty_smoke_snapshot_includes_modified_and_untracked_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo, engine, _ = self.make_source(root)
+            (repo / "docker-compose.yml").write_text("dirty-compose\n")
+            (repo / "scripts/untracked_helper.py").write_text("untracked = True\n")
+            config = ConfigTests().config()
+            config["require_clean_source"] = False
+            run_dir = soak.create_run(config, root / "runs", str(engine), repo)
+            self.assertEqual((run_dir / "source/docker-compose.yml").read_text(), "dirty-compose\n")
+            self.assertEqual((run_dir / "source/scripts/untracked_helper.py").read_text(), "untracked = True\n")
+
+    def test_dirty_smoke_snapshot_omits_a_deleted_tracked_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo, engine, _ = self.make_source(root)
+            (repo / "README.md").unlink()
+            config = ConfigTests().config()
+            config["require_clean_source"] = False
+            run_dir = soak.create_run(config, root / "runs", str(engine), repo)
+            self.assertFalse((run_dir / "source/README.md").exists())
+
+    def test_create_run_rejects_source_symlinks(self):
+        for relative in (False, True):
+            with self.subTest(relative=relative), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                repo, engine, _ = self.make_source(root)
+                target = root / "live-smoke.py"
+                target.write_text("print('live-smoke')\n")
+                link = repo / "scripts/api_smoke.py"
+                link.unlink()
+                link.symlink_to("../../live-smoke.py" if relative else target)
+                config = ConfigTests().config()
+                config["require_clean_source"] = False
+                with self.assertRaisesRegex(RuntimeError, "symlink"):
+                    soak.create_run(config, root / "runs", str(engine), repo)
+
+    def test_smoke_uses_source_frozen_before_a_checkout_edit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo, run_dir, _ = self.create(Path(tmp))
+            (repo / "scripts/api_smoke.py").write_text("print('live-smoke')\n")
+            runner = soak.SoakRunner(run_dir)
+            try:
+                runner.run_api_smoke("http://127.0.0.1:1", run_dir / "smoke.log")
+            except RuntimeError:
+                pass
+            self.assertEqual((run_dir / "smoke.log").read_text().strip(), "frozen-smoke")
+
+    def test_compose_actions_use_the_frozen_source_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo, run_dir, engine_log = self.create(Path(tmp))
+            (repo / "docker-compose.yml").write_text("changed-after-launch\n")
+            engine_log.write_text("")
+            runner = soak.SoakRunner(run_dir)
+            runner.compose.compose("restart", "api")
+            last_call = engine_log.read_text().splitlines()[-1]
+            self.assertEqual(last_call.split("|", 1)[0], str(run_dir / "source"))
+            self.assertRegex(last_call, r"\|compose --env-file .* -p \S+ restart api$")
+
+    def test_resume_executes_the_frozen_controller(self):
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "run"
+            frozen = run_dir / "source/scripts/soak.py"
+            frozen.parent.mkdir(parents=True)
+            frozen.write_text("print('frozen-controller')\n")
+            result = subprocess.run([sys.executable, str(Path(soak.__file__).resolve()),
+                                     "run", "--resume", str(run_dir)], text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), "frozen-controller")
+
+    def test_resume_refuses_a_missing_frozen_controller(self):
+        import subprocess
+        import sys
+        for with_source in (False, True):
+            with self.subTest(with_source=with_source), tempfile.TemporaryDirectory() as tmp:
+                run_dir = Path(tmp) / "run"
+                if with_source:
+                    (run_dir / "source/scripts").mkdir(parents=True)
+                else:
+                    run_dir.mkdir()
+                result = subprocess.run([sys.executable, str(Path(soak.__file__).resolve()),
+                                         "run", "--resume", str(run_dir)], text=True,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("no frozen controller", result.stderr)
+
+    def test_resume_refuses_symlinked_frozen_parent_directories(self):
+        import subprocess
+        import sys
+        for component in ("source", "scripts"):
+            with self.subTest(component=component), tempfile.TemporaryDirectory() as tmp:
+                run_dir = Path(tmp) / "run"
+                external = Path(tmp) / "external"
+                (external / "scripts").mkdir(parents=True)
+                (external / "scripts/soak.py").write_text("print('external-controller-executed')\n")
+                if component == "source":
+                    run_dir.mkdir()
+                    (run_dir / "source").symlink_to(external, target_is_directory=True)
+                else:
+                    (run_dir / "source").mkdir(parents=True)
+                    (run_dir / "source/scripts").symlink_to(external / "scripts", target_is_directory=True)
+                result = subprocess.run([sys.executable, str(Path(soak.__file__).resolve()),
+                                         "run", "--resume", str(run_dir)], text=True,
+                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("symlink", result.stderr)
+                self.assertNotIn("external-controller-executed", result.stdout)
+
+    def test_runner_refuses_a_symlinked_frozen_source_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "run"
+            external = Path(tmp) / "external"
+            external.mkdir()
+            root.mkdir()
+            (root / "source").symlink_to(external, target_is_directory=True)
+            soak.atomic_write_json(root / "manifest.json", {"engine": "podman", "project": "waslsoak-test",
+                                                            "run_id": "r", "api_url": "http://127.0.0.1:1",
+                                                            "start_epoch": 0, "config": {}})
+            soak.atomic_write_json(root / "state.json", {"actions": {}})
+            with self.assertRaisesRegex(soak.ResumeError, "symlink"):
+                soak.SoakRunner(root)
+
+    def test_resume_refuses_a_symlinked_frozen_controller(self):
+        import subprocess
+        import sys
+        with tempfile.TemporaryDirectory() as tmp:
+            run_dir = Path(tmp) / "run"
+            frozen = run_dir / "source/scripts/soak.py"
+            frozen.parent.mkdir(parents=True)
+            live = run_dir / "live-controller.py"
+            live.write_text("print('live-controller-executed')\n")
+            frozen.symlink_to("../../live-controller.py")
+            result = subprocess.run([sys.executable, str(Path(soak.__file__).resolve()),
+                                     "run", "--resume", str(run_dir)], text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("symlink", result.stderr)
+            self.assertNotIn("live-controller-executed", result.stdout)
 
 
 class SafetyGateTests(unittest.TestCase):
@@ -970,6 +1125,7 @@ class SchedulerStateTests(unittest.TestCase):
     def test_runner_and_action_book_share_one_state_object(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
+            (root / "source").mkdir()
             manifest = {"engine": "podman", "project": "waslsoak-test", "run_id": "r",
                         "api_url": "http://127.0.0.1:1", "start_epoch": 0, "config": {}}
             soak.atomic_write_json(root / "manifest.json", manifest)

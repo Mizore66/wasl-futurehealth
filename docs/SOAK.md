@@ -11,7 +11,12 @@ entrypoint, so this is not a continuous-ingest or production-availability claim.
 
 `scripts/soak.24h.json` freezes the 86,400-second duration, sampling cadence, absolute restart schedule, HTTP latency
 budgets, leak windows, recovery budgets, and disk limits before T0. A full run requires a committed, clean source tree.
-The controller checks host disk, creates a unique project, loopback API port, image tags and protected key file, then
+Run creation copies the Git-listed working source into `run/source`; modified and non-ignored untracked files are included,
+tracked working-tree deletions are omitted, and symlinks are rejected so the snapshot cannot point back to mutable source.
+Image builds, API smoke scripts and every later
+Compose action use that snapshot, so commits or edits in the original checkout cannot change a run in progress. Resume
+re-executes `run/source/scripts/soak.py`; missing snapshots and symlinks in the source, scripts or controller paths are
+refused rather than resumed from a live checkout. The controller checks host disk, creates a unique project, loopback API port, image tags and protected key file, then
 builds and records image IDs before starting containers. **T0 is the persisted `steady_start_epoch` after bootstrap,
 NATS readiness, the mutating baseline smoke, artifact capture and export freezing complete.** Image build and bootstrap
 time are not included in the 86,400-second retained-read measurement. Pending action deadlines and the completion
@@ -44,6 +49,7 @@ hour's segment before an hourly rollover; malformed complete or interior records
 
 Each run contains:
 
+- `source/`: frozen Git-listed working source used by the build, controller resume, smoke and Compose actions;
 - `manifest.json`: source/configuration hashes, engine versions, isolated project, host context and pre-registered gates;
 - `images.json`: immutable image tags and IDs captured after build and before pipeline start;
 - `samples/*.jsonl`: fsynced, UTC-hour-rotated API, runtime, process, NATS, queue, health, container and disk samples;
