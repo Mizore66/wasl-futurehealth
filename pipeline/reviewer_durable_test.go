@@ -427,3 +427,101 @@ func TestReviewerLedgerAppendFailuresLeaveRecordRecoverable(t *testing.T) {
 		})
 	}
 }
+
+func TestReviewerRecoveryScanTimeoutOnlyEndsDrainedScan(t *testing.T) {
+	if !reviewerScanDrained(true, 0, 5) {
+		t.Fatal("timeout after pending==0 is a drained scan")
+	}
+	if reviewerScanDrained(true, 3, 5) {
+		t.Fatal("timeout with pending messages must not be treated as drained")
+	}
+	if reviewerScanDrained(false, 0, 5) {
+		t.Fatal("timeout before any message on a non-empty stream must not be drained")
+	}
+	if !reviewerScanDrained(false, 0, 0) {
+		t.Fatal("timeout on an empty stream is drained")
+	}
+}
+
+func TestReviewerRecoveryFindOnEmptyStreamNotFound(t *testing.T) {
+	env := startTestNATS(t)
+	if _, found, err := findReviewerSignoff(env.js, "rv-none", "abc"); err != nil || found {
+		t.Fatalf("found=%v err=%v", found, err)
+	}
+}
+
+// fileLedger is a real file whose Write/Sync/Truncate can be made to misbehave.
+type fileLedger struct {
+	*os.File
+	partial  int // write only this many bytes then report a short write
+	truncErr error
+}
+
+func (f *fileLedger) Write(b []byte) (int, error) {
+	if f.partial > 0 {
+		n, _ := f.File.Write(b[:f.partial])
+		return n, io.ErrShortWrite
+	}
+	return f.File.Write(b)
+}
+
+func (f *fileLedger) Truncate(n int64) error {
+	if f.truncErr != nil {
+		return f.truncErr
+	}
+	return f.File.Truncate(n)
+}
+
+func appendViaFake(mk func(*os.File) *fileLedger) func(string, []byte) error {
+	return func(p string, line []byte) error {
+		f, err := os.OpenFile(p, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+		if err != nil {
+			return err
+		}
+		return appendToLedgerFile(mk(f), line)
+	}
+}
+
+func TestReviewerLedgerShortWriteRollsBackThenAppends(t *testing.T) {
+	rec := preparedReviewerRecord("rv-roll", 3)
+	prior := preparedReviewerRecord("rv-prior", 1)
+	path := filepath.Join(t.TempDir(), "l.jsonl")
+	os.WriteFile(path, []byte(prior.Ledger), 0o600)
+	reviewerAppendLine = appendViaFake(func(f *os.File) *fileLedger { return &fileLedger{File: f, partial: 10} })
+	t.Cleanup(func() { reviewerAppendLine = appendLedgerLine })
+	if err := reconcileReviewerLedger(path, rec); !errors.Is(err, io.ErrShortWrite) || errors.Is(err, errLedgerIndeterminate) {
+		t.Fatalf("err=%v, want clean short write", err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != prior.Ledger {
+		t.Fatalf("partial line left behind: %q", b)
+	}
+	reviewerAppendLine = appendLedgerLine
+	if err := reconcileReviewerLedger(path, rec); err != nil {
+		t.Fatal(err)
+	}
+	if b, _ := os.ReadFile(path); string(b) != prior.Ledger+rec.Ledger {
+		t.Fatalf("ledger=%q", b)
+	}
+}
+
+func TestReviewerLedgerTruncateFailureLeavesPartialRejected(t *testing.T) {
+	rec := preparedReviewerRecord("rv-trunc", 3)
+	path := filepath.Join(t.TempDir(), "l.jsonl")
+	reviewerAppendLine = appendViaFake(func(f *os.File) *fileLedger {
+		return &fileLedger{File: f, partial: 10, truncErr: errors.New("truncate boom")}
+	})
+	t.Cleanup(func() { reviewerAppendLine = appendLedgerLine })
+	if err := reconcileReviewerLedger(path, rec); !errors.Is(err, errLedgerIndeterminate) {
+		t.Fatalf("err=%v, want indeterminate", err)
+	}
+	if b, _ := os.ReadFile(path); len(b) != 10 {
+		t.Fatalf("expected 10-byte partial, got %q", b)
+	}
+	reviewerAppendLine = appendLedgerLine
+	if err := reconcileReviewerLedger(path, rec); err == nil {
+		t.Fatal("unterminated partial line must be rejected, not appended after")
+	}
+	if b, _ := os.ReadFile(path); len(b) != 10 {
+		t.Fatal("partial ledger must not be modified")
+	}
+}
