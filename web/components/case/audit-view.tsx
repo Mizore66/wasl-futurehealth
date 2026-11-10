@@ -65,7 +65,7 @@ export function ChainCard({ audit }: { audit: Audit }) {
         {audit.chain.map((e, i) => (
           <li key={e.hash} className="border-t border-rule py-3" data-entry={e.type}>
             <div className="flex items-baseline gap-3">
-              <span className="w-5 flex-none text-right text-muted">{i + 1}</span>
+              <span className="w-5 flex-none text-right tabular-nums text-muted">{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <p className="m-0 font-medium">
                   <TechTerm id={e.type} label={entryLabel(e.type)} />
@@ -164,9 +164,11 @@ export function HistoryCard({ audit, programme }: { audit: Audit; programme: Pro
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
           {audit.history.map((r, i) => (
             <li key={r.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{reviewWords(r.decision, programme)}</p>
+              <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
+              {/* The auditor's redacted history never names the actor or quotes the note. */}
               <p className="m-0 text-muted">
-                {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)}
+                {r.actor ? `${r.actor} · ` : ""}
+                {roleWords(r.role)} · {atWords(r.at)}
               </p>
               {r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
               <p className="m-0 mt-1 text-small leading-5">

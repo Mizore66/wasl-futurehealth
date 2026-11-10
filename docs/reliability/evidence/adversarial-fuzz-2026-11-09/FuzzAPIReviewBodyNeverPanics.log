@@ -1,0 +1,9 @@
+=== RUN   FuzzAPIReviewBodyNeverPanics
+fuzz: elapsed: 0s, gathering baseline coverage: 0/243 completed
+fuzz: elapsed: 1s, gathering baseline coverage: 243/243 completed, now fuzzing with 4 workers
+fuzz: elapsed: 3s, execs: 5294 (1765/sec), new interesting: 3 (total: 246)
+fuzz: elapsed: 4s, execs: 5294 (0/sec), new interesting: 3 (total: 246)
+--- PASS: FuzzAPIReviewBodyNeverPanics (4.08s)
+=== NAME  
+PASS
+ok  	wsi	4.394s

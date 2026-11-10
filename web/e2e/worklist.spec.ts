@@ -80,7 +80,7 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Reached" }).click();
     await open.getByRole("button", { name: "Book" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Booked · AHS-sr-1002 moved to Waiting");
+    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Booked · AHS-sr-1002 moved to Waiting");
     await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Waiting 7" })).toBeVisible();
 

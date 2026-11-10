@@ -1,17 +1,7 @@
 import { HonestyLabel } from "@/components/wasl/honesty-label";
+import { formatUtcInstant as utc } from "@/lib/domain/day";
 import { DEPENDENCY_GLOSS, DEPENDENCY_ORDER, type HealthState } from "./health";
 import { TechnicalDetail } from "./technical";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-/** "31 Oct 2026, 23:47 UTC" from an ISO instant; the raw string if it does not parse. */
-function utc(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
-  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${hh}:${mm} UTC`;
-}
 
 /**
  * Read-only `/healthz` details, kept apart from the replay (issue #11). The replay is a recording; this panel is the only place

@@ -190,5 +190,5 @@ func WriteAgentNeed(path string, rp *replayOut, recs ...*AgentRecs) error {
 		sb.Write(b)
 		sb.WriteByte('\n')
 	}
-	return os.WriteFile(path, []byte(sb.String()), 0o644)
+	return os.WriteFile(path, []byte(sb.String()), 0o600)
 }

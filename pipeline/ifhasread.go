@@ -539,6 +539,9 @@ func ifhasSchema() map[string]interface{} {
 }
 
 func askIfhas(url, text string) ifhasGemma {
+	if err := validateLocalEndpoint(url); err != nil {
+		return ifhasGemma{Model: IfhasReaderModel, Error: "unsafe reader endpoint: " + err.Error()}
+	}
 	body, _ := json.Marshal(map[string]interface{}{
 		"messages":    []map[string]string{{"role": "user", "content": fmt.Sprintf(ifhasNotePrompt, text)}},
 		"temperature": 0, "seed": 1, "max_tokens": 360,
@@ -619,7 +622,7 @@ func runIfhasCache(dirs, url, out string) {
 	close(ch)
 	wg.Wait()
 	b, _ := json.MarshalIndent(cache, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 	IfhasCache = cache
 	res := map[string]interface{}{}
 	for _, dir := range strings.Split(dirs, ",") {

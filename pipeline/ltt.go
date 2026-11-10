@@ -133,8 +133,8 @@ func lttCollect(dataDirs, wasl string, P int, grid string, cfg ReviewerCfg, out 
 		}
 	}
 	b, _ := json.MarshalIndent(map[string]interface{}{"policy": PolicyName, "reviewer": cfg, "grid": taus, "rows": rows}, "", " ")
-	os.MkdirAll(filepath.Dir(out), 0755)
-	if err := os.WriteFile(out, b, 0644); err != nil {
+	os.MkdirAll(filepath.Dir(out), 0700)
+	if err := os.WriteFile(out, b, 0600); err != nil {
 		panic(err)
 	}
 }

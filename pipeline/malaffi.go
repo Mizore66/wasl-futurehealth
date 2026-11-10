@@ -92,7 +92,18 @@ func loadHIE(dataDir string) []*hieEvent {
 	return out
 }
 
+func mockCallbackAllowed(endpoint string) bool {
+	configured := os.Getenv("WASL_MOCK_CALLBACK_URL")
+	return configured != "" && endpoint == configured && validateLocalCallback(configured) == nil
+}
+
 func runMalaffi(dataDir, addr string, speed float64, seed int64, dup, reorder, drop float64, runDir string, pollSpeed, lagFrac float64) {
+	if pollSpeed <= 0 && validateLocalCallback(os.Getenv("WASL_MOCK_CALLBACK_URL")) != nil {
+		panic("mock Malaffi requires WASL_MOCK_CALLBACK_URL to be the configured loopback consumer hook")
+	}
+	if len(mockFHIRToken()) < 16 || len(mockHookToken()) < 16 {
+		panic("mock Malaffi requires WASL_MOCK_FHIR_TOKEN and WASL_MOCK_HOOK_TOKEN (at least 16 characters each)")
+	}
 	m := &Malaffi{events: loadHIE(dataDir), byKey: map[string]*hieEvent{}, latest: map[string]*hieEvent{}, speed: speed,
 		rng: rand.New(rand.NewSource(seed)), stats: map[string]int{}, runDir: runDir, client: &http.Client{Timeout: 5 * time.Second}}
 	m.faults.dup, m.faults.reorder, m.faults.drop = dup, reorder, drop
@@ -138,7 +149,7 @@ func outcome(code, msg string) map[string]interface{} {
 }
 
 func (m *Malaffi) handle(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Authorization") != "Bearer "+MockToken {
+	if r.Header.Get("Authorization") != "Bearer "+mockFHIRToken() {
 		m.mu.Lock()
 		m.stats["auth_rejected"]++
 		m.mu.Unlock()
@@ -216,6 +227,10 @@ func (m *Malaffi) createSub(w http.ResponseWriter, r *http.Request) {
 		writeFHIR(w, 422, outcome("not-supported", "only rest-hook on "+MalaffiTopic))
 		return
 	}
+	if !mockCallbackAllowed(gs(ch, "endpoint")) {
+		writeFHIR(w, 422, outcome("security", "subscription callback must equal the configured loopback consumer hook"))
+		return
+	}
 	ms := &mockSub{ID: fmt.Sprintf("wsi-crc-%d", time.Now().UnixNano()%1e9), Endpoint: gs(ch, "endpoint"), Content: "id-only",
 		MaxCount: 50, Heartbeat: time.Second, status: "requested"}
 	if hs, ok := ch["header"].([]interface{}); ok && len(hs) > 0 {
@@ -274,6 +289,9 @@ func (m *Malaffi) bundle(st StatusInfo, evs []*hieEvent, full bool) []byte {
 }
 
 func (m *Malaffi) post(body []byte, kind string) bool {
+	if m.sub == nil || !mockCallbackAllowed(m.sub.Endpoint) {
+		return false
+	}
 	req, _ := http.NewRequest("POST", m.sub.Endpoint, strings.NewReader(string(body)))
 	req.Header.Set("Content-Type", "application/fhir+json")
 	if h := m.sub.HookHdr; h != "" {
@@ -376,7 +394,7 @@ func (m *Malaffi) deliver() {
 			m.mu.Lock()
 			if m.sub.status != "off" {
 				m.sub.status = "off" // feed complete: tells the consumer nothing follows events-since
-				f, _ := os.Create(filepath.Join(m.runDir, "malaffi_release.ndjson"))
+				f, _ := os.OpenFile(filepath.Join(m.runDir, "malaffi_release.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 				bw := bufio.NewWriter(f)
 				for _, e := range m.events {
 					fmt.Fprintf(bw, "{\"n\":%d,\"w\":%d}\n", e.Num, e.relWall)

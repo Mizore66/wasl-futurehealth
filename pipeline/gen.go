@@ -17,18 +17,18 @@ import (
 )
 
 type Person struct {
-	Qid string   `json:"qid"`
-	Ar  string   `json:"ar"`
-	En  string   `json:"en"`
-	Als []string `json:"als"`
-	Dob string   `json:"dob"`
-	Sex string   `json:"sex"`
-	Cc  string   `json:"cc"`
-	Eid string   `json:"eid"`
-	Spl string   `json:"split"`
-	Origin string `json:"origin"`
-	ArSrc  string `json:"ar_src"`
-	Idx    int    `json:"-"` // 1 + index in the persons file (readPersons); 0 for synthetic namesakes (pairfeat6 leave-own-out)
+	Qid    string   `json:"qid"`
+	Ar     string   `json:"ar"`
+	En     string   `json:"en"`
+	Als    []string `json:"als"`
+	Dob    string   `json:"dob"`
+	Sex    string   `json:"sex"`
+	Cc     string   `json:"cc"`
+	Eid    string   `json:"eid"`
+	Spl    string   `json:"split"`
+	Origin string   `json:"origin"`
+	ArSrc  string   `json:"ar_src"`
+	Idx    int      `json:"-"` // 1 + index in the persons file (readPersons); 0 for synthetic namesakes (pairfeat6 leave-own-out)
 }
 
 type ProvCfg struct {
@@ -55,49 +55,49 @@ type GenEvent struct {
 }
 
 type LoopTruth struct {
-	Loop       string  `json:"loop"`
-	Qid        string  `json:"qid"`
-	Cc         string  `json:"cc"`
-	Origin     string  `json:"origin"`
-	ArSrc      string  `json:"ar_src"`
-	Prov       string  `json:"prov"`
-	Hosp       string  `json:"hosp"`
-	Pathway    string  `json:"pathway"`
-	SRDay      float64 `json:"sr_day"`
-	State      string  `json:"state"`
-	ClosedDay  float64 `json:"closed_day,omitempty"`
-	Overdue    bool    `json:"overdue"`
-	Unowned    bool    `json:"unowned"`
-	ScriptSR   string  `json:"script_sr"`
-	ScriptHosp string  `json:"script_hosp"`
-	TrueLang   string  `json:"true_lang"`  // patient's actual preferred language
-	RecLang    string  `json:"rec_lang"`   // language recorded at the referring provider ("" = not recorded)
-	ExpLang    string  `json:"exp_lang"`   // language the notification must use (recorded, else provider default)
-	NotifDay   float64 `json:"notif_day"`  // first valid (approved, correct-language, delivered) notification; -1 none
-	AckDay     float64 `json:"ack_day"`    // -1 none
-	RefStatus  string  `json:"ref_status"` // latest receiving-unit response: accepted|rejected|none
-	RefDay     float64 `json:"ref_day"`    // first response day; -1 none
-	Dropoff    string  `json:"dropoff"`
+	Loop       string   `json:"loop"`
+	Qid        string   `json:"qid"`
+	Cc         string   `json:"cc"`
+	Origin     string   `json:"origin"`
+	ArSrc      string   `json:"ar_src"`
+	Prov       string   `json:"prov"`
+	Hosp       string   `json:"hosp"`
+	Pathway    string   `json:"pathway"`
+	SRDay      float64  `json:"sr_day"`
+	State      string   `json:"state"`
+	ClosedDay  float64  `json:"closed_day,omitempty"`
+	Overdue    bool     `json:"overdue"`
+	Unowned    bool     `json:"unowned"`
+	ScriptSR   string   `json:"script_sr"`
+	ScriptHosp string   `json:"script_hosp"`
+	TrueLang   string   `json:"true_lang"`  // patient's actual preferred language
+	RecLang    string   `json:"rec_lang"`   // language recorded at the referring provider ("" = not recorded)
+	ExpLang    string   `json:"exp_lang"`   // language the notification must use (recorded, else provider default)
+	NotifDay   float64  `json:"notif_day"`  // first valid (approved, correct-language, delivered) notification; -1 none
+	AckDay     float64  `json:"ack_day"`    // -1 none
+	RefStatus  string   `json:"ref_status"` // latest receiving-unit response: accepted|rejected|none
+	RefDay     float64  `json:"ref_day"`    // first response day; -1 none
+	Dropoff    string   `json:"dropoff"`
 	BadMsgs    []string `json:"bad_msgs,omitempty"` // injected non-compliant outbound messages (kind)
 	Reports    []string `json:"reports,omitempty"`  // MTSamples uids used on this loop's colonoscopies
 	// v6
-	Prog       string   `json:"prog"`
-	Cat        string   `json:"icat,omitempty"`
-	Priority   string   `json:"prio,omitempty"`
-	IndexDay   float64  `json:"iday"`
-	Deadline   float64  `json:"deadline"`
-	ProcDay    float64  `json:"proc_day"`             // first fulfilled procedure day (any adequacy); -1 none
-	EcState    string   `json:"ec_state"`             // last e-consult state by TEnd
-	EcTurns    int      `json:"ec_turns"`
-	EcTrigger  string   `json:"ec_trigger,omitempty"` // rejected|unanswered|inadequate
-	TBState    string   `json:"tb_state"`             // last teach-back state by TEnd
-	TBLatent   string   `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
-	Lung       *LungTruth `json:"lung,omitempty"`     // incidental lung-nodule loop (genlung.go)
-	DR         *DRTruth   `json:"dr,omitempty"`       // diabetic retinopathy loop (gendr.go)
-	Breast     *BreastTruth `json:"breast,omitempty"` // breast recall loop (genbreast.go)
-	LDCT       *LDCTTruth   `json:"ldct,omitempty"`   // lung cancer screening (LDCT) loop (genldct.go)
-	Handoff    *HandoffTruth `json:"handoff,omitempty"` // finally rejected referral: packet day and the referrer's action (handoff.go)
-	Ifhas      *IfhasTruth   `json:"ifhas,omitempty"`   // IFHAS abnormal-result follow-up loop (genifhas.go)
+	Prog      string        `json:"prog"`
+	Cat       string        `json:"icat,omitempty"`
+	Priority  string        `json:"prio,omitempty"`
+	IndexDay  float64       `json:"iday"`
+	Deadline  float64       `json:"deadline"`
+	ProcDay   float64       `json:"proc_day"` // first fulfilled procedure day (any adequacy); -1 none
+	EcState   string        `json:"ec_state"` // last e-consult state by TEnd
+	EcTurns   int           `json:"ec_turns"`
+	EcTrigger string        `json:"ec_trigger,omitempty"` // rejected|unanswered|inadequate
+	TBState   string        `json:"tb_state"`             // last teach-back state by TEnd
+	TBLatent  string        `json:"tb_latent,omitempty"`  // first teach-back reply label (patient comprehension at first contact)
+	Lung      *LungTruth    `json:"lung,omitempty"`       // incidental lung-nodule loop (genlung.go)
+	DR        *DRTruth      `json:"dr,omitempty"`         // diabetic retinopathy loop (gendr.go)
+	Breast    *BreastTruth  `json:"breast,omitempty"`     // breast recall loop (genbreast.go)
+	LDCT      *LDCTTruth    `json:"ldct,omitempty"`       // lung cancer screening (LDCT) loop (genldct.go)
+	Handoff   *HandoffTruth `json:"handoff,omitempty"`    // finally rejected referral: packet day and the referrer's action (handoff.go)
+	Ifhas     *IfhasTruth   `json:"ifhas,omitempty"`      // IFHAS abnormal-result follow-up loop (genifhas.go)
 }
 
 // HandoffTruth: the simulated hand-off of a finally rejected referral.
@@ -111,15 +111,15 @@ type HandoffTruth struct {
 }
 
 type Truth struct {
-	Loops   map[string]*LoopTruth `json:"loops"`
-	PKQid   map[string]string     `json:"pk_qid"`
-	PKCc    map[string]string     `json:"pk_cc"`
-	Reports map[string]string     `json:"reports"` // report id -> adequate|inadequate|awaiting_histology|histology|no_histology
-	ReportUID map[string]string   `json:"report_uid"` // report id -> MTSamples uid or pathology template id
-	Distract map[string]bool      `json:"distract_reports"`
-	Photos   map[string][]PhotoTruth `json:"report_photos,omitempty"` // -imgphotos: photo refs attached to each report, with true class
-	WrongEID map[string]*WrongEIDTruth `json:"wrong_eid,omitempty"` // -wrongeid: registrations carrying a relative's Emirates ID (genadv.go)
-	WrongRef map[string]*WrongRefTruth `json:"wrong_ref,omitempty"` // -wrongref: intakes citing the wrong referral (genadv.go)
+	Loops     map[string]*LoopTruth     `json:"loops"`
+	PKQid     map[string]string         `json:"pk_qid"`
+	PKCc      map[string]string         `json:"pk_cc"`
+	Reports   map[string]string         `json:"reports"`    // report id -> adequate|inadequate|awaiting_histology|histology|no_histology
+	ReportUID map[string]string         `json:"report_uid"` // report id -> MTSamples uid or pathology template id
+	Distract  map[string]bool           `json:"distract_reports"`
+	Photos    map[string][]PhotoTruth   `json:"report_photos,omitempty"` // -imgphotos: photo refs attached to each report, with true class
+	WrongEID  map[string]*WrongEIDTruth `json:"wrong_eid,omitempty"`     // -wrongeid: registrations carrying a relative's Emirates ID (genadv.go)
+	WrongRef  map[string]*WrongRefTruth `json:"wrong_ref,omitempty"`     // -wrongref: intakes citing the wrong referral (genadv.go)
 }
 
 // ---------- noise (port of wasl/src/common.py) ----------
@@ -487,15 +487,15 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	lognorm := func(median, sigma float64) float64 { return median * math.Exp(sigma*r.NormFloat64()) }
 	b64 := func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
 	type colo struct {
-		apptID, hosp        string
-		g                   *reg
-		book, day, bookArr  float64
-		status              string
-		truth               string // adequate|awaiting_histology|inadequate (from the real text's resolved key)
-		reportID            string
-		reportArr, fulArr   float64
-		histArr             float64 // arrival of a final pathology report with histology; Inf = none by TEnd
-		prepUngraded        bool    // the report text never grades bowel prep (answer key prep = not_stated)
+		apptID, hosp       string
+		g                  *reg
+		book, day, bookArr float64
+		status             string
+		truth              string // adequate|awaiting_histology|inadequate (from the real text's resolved key)
+		reportID           string
+		reportArr, fulArr  float64
+		histArr            float64 // arrival of a final pathology report with histology; Inf = none by TEnd
+		prepUngraded       bool    // the report text never grades bowel prep (answer key prep = not_stated)
 	}
 	intake := func(p *Person, hosp ProvCfg, day float64, status, reason, ref, prog string) {
 		g := getReg(p, hosp)
@@ -547,9 +547,9 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		c.reportArr = arr
 		dr := map[string]interface{}{"resourceType": "DiagnosticReport", "id": c.reportID, "status": "final",
-			"code": map[string]interface{}{"coding": []interface{}{map[string]string{"system": "http://loinc.org", "code": "18746-8", "display": "Colonoscopy study"}}},
+			"code":              map[string]interface{}{"coding": []interface{}{map[string]string{"system": "http://loinc.org", "code": "18746-8", "display": "Colonoscopy study"}}},
 			"effectiveDateTime": dayToTS(day),
-			"presentedForm": []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": b64(src.Text), "title": "MTSamples " + src.UID}}}
+			"presentedForm":     []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": b64(src.Text), "title": "MTSamples " + src.UID}}}
 		if photos != nil { // separate seeded stream: the rest of the cohort is byte-identical with or without photos
 			media, pt := photos.attach(seed, c.reportID, src)
 			dr["media"] = media
@@ -568,7 +568,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			emitPath := func(tp PathTpl, at float64) {
 				pid := nextID(hosp.ID, "path")
 				emit(hosp.ID, at, map[string]interface{}{"resourceType": "DiagnosticReport", "id": pid, "status": "final",
-					"code": map[string]interface{}{"coding": []interface{}{map[string]string{"system": "http://loinc.org", "code": "11526-1", "display": "Pathology study"}}},
+					"code":              map[string]interface{}{"coding": []interface{}{map[string]string{"system": "http://loinc.org", "code": "11526-1", "display": "Pathology study"}}},
 					"effectiveDateTime": dayToTS(at - 1),
 					"extension":         []interface{}{map[string]string{"url": "urn:wsi:addendum-to", "valueString": "DiagnosticReport/" + c.reportID}},
 					"presentedForm":     []interface{}{map[string]string{"contentType": "text/plain; charset=utf-8", "data": b64(tp.Text), "title": "pathology " + tp.ID}}}, g)
@@ -943,7 +943,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 			lt.AckDay = ackDay
 		}
 		// --- v6 teach-back: after the acknowledgement the patient is asked to restate the next step in their own words
-		tbFinal := "none"     // comprehension after the teach-back exchange (drives booking)
+		tbFinal := "none" // comprehension after the teach-back exchange (drives booking)
 		callback := false
 		setTB := func(st string, d float64) {
 			if d <= TEnd {
@@ -1036,7 +1036,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		// --- receiving unit response to the referral (hospital intake ServiceRequest, linked by identity only)
 		respDay := inf
 		rejectedFinal, unanswered := false, false
-		rejDay := inf // day the referral was finally rejected (hand-off packet)
+		rejDay := inf             // day the referral was finally rejected (hand-off packet)
 		redirectRejected := false // the unit a redirect pointed to also rejected (a final rejection in any branch)
 		noReplyAtEnd := inf       // reject_no_reply deadline reached before a reply that comes after the run ends
 		lastResp, lastRespDay := "none", -1.0
@@ -1250,7 +1250,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		}
 		// finalize: the loop's truth from its procedures (a deferred hand-off re-runs it with the re-referral's procedures)
 		finalize = func(cs []*colo, pw string) {
-	lt.Pathway = pw
+			lt.Pathway = pw
 			if len(cs) > 0 {
 				lt.ScriptHosp = cs[0].g.script
 			}
@@ -1264,8 +1264,8 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 							}
 							text := map[string]string{"prep-query": "Please grade the bowel preparation (Boston or Aronchick) for colonoscopy " + c.reportID + ".",
 								"prep-escalation": "Escalation: bowel-preparation grade for colonoscopy " + c.reportID + " not received within 5 working days.",
-								"prep-reply": "Bowel preparation for " + c.reportID + ": " + strings.ReplaceAll(pm.Grade, "_", " ") + "."}[pm.Cat]
-							ext := map[string]string{"urn:wsi:report": c.reportID}
+								"prep-reply":      "Bowel preparation for " + c.reportID + ": " + strings.ReplaceAll(pm.Grade, "_", " ") + "."}[pm.Cat]
+							ext := map[string]string{"urn:wsi:report": c.reportID, "urn:wsi:report-version": "1"}
 							if pm.Cat == "prep-reply" {
 								ext["urn:wsi:prep-grade"] = pm.Grade
 								ext["urn:wsi:sender"] = c.hosp
@@ -1456,11 +1456,11 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 		job()
 	}
 	sort.SliceStable(evs, func(i, j int) bool { return evs[i].Arrival < evs[j].Arrival })
-	os.MkdirAll(outDir, 0755)
+	os.MkdirAll(outDir, 0700)
 	byProv := map[string]*os.File{}
 	cnt := map[string]int{}
 	for _, pc := range Providers {
-		f, _ := os.Create(filepath.Join(outDir, "fhir_"+pc.ID+".ndjson"))
+		f, _ := os.OpenFile(filepath.Join(outDir, "fhir_"+pc.ID+".ndjson"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 		byProv[pc.ID] = f
 	}
 	for _, e := range evs {
@@ -1473,7 +1473,7 @@ func runGen(dataDir, outDir, reportsPath, pathPath string, seed int64, nLoops, n
 	}
 	wj := func(name string, v interface{}) {
 		bb, _ := json.MarshalIndent(v, "", " ")
-		os.WriteFile(filepath.Join(outDir, name), bb, 0644)
+		os.WriteFile(filepath.Join(outDir, name), bb, 0600)
 	}
 	adv.finish()
 	wj("truth.json", tr)

@@ -1,0 +1,29 @@
+{
+ "adjudicator": {
+  "clinician_verified": false,
+  "id": "fresh4-adjudicator-agent",
+  "kind": "model",
+  "model": "sonnet",
+  "model_family": "anthropic-claude",
+  "prompt_sha256": "598d93c6ed655a97b77df8900b8fabb0a111b1f19bf541f88a4223d879fe651d",
+  "run_date": "2026-11-09",
+  "saw_reader_outputs": false,
+  "saw_scores": false,
+  "session_isolated": true
+ },
+ "counts": {
+  "adjudicated": 0,
+  "agreed": 100,
+  "items": 100,
+  "scoreable": 100,
+  "unadjudicated": 0,
+  "unresolved": 0
+ },
+ "note": "Direct agreement is measured before adjudication. Adjudicated items remain a separate scoring stratum.",
+ "schema": "fresh4-post-adjudication-agreement/v1",
+ "uncertainty": {
+  "high": 0,
+  "low": 0,
+  "moderate": 0
+ }
+}

@@ -1,0 +1,100 @@
+{
+ "age_band": {
+  "observed_ratio": 1.1689,
+  "null_median": 1.0977,
+  "null_p95": 1.1823,
+  "p_value": 0.089,
+  "groups": {
+   "40-59": {
+    "loops": 564,
+    "items": 353,
+    "items_per_loop_hist": {
+     "0": 271,
+     "1": 237,
+     "2": 52,
+     "3": 4
+    },
+    "crc_truly_closed": 202,
+    "crc_closed_by_wasl": 165,
+    "crc_false_closures": 0
+   },
+   "60-79": {
+    "loops": 529,
+    "items": 387,
+    "items_per_loop_hist": {
+     "0": 233,
+     "1": 217,
+     "2": 68,
+     "3": 10,
+     "4": 1
+    },
+    "crc_truly_closed": 199,
+    "crc_closed_by_wasl": 175,
+    "crc_false_closures": 0
+   },
+   "80+": {
+    "loops": 419,
+    "items": 301,
+    "items_per_loop_hist": {
+     "0": 182,
+     "1": 182,
+     "2": 48,
+     "3": 6,
+     "5": 1
+    },
+    "crc_truly_closed": 153,
+    "crc_closed_by_wasl": 121,
+    "crc_false_closures": 0
+   },
+   "<40": {
+    "loops": 528,
+    "items": 373,
+    "items_per_loop_hist": {
+     "0": 228,
+     "1": 232,
+     "2": 63,
+     "3": 5
+    },
+    "crc_truly_closed": 187,
+    "crc_closed_by_wasl": 158,
+    "crc_false_closures": 0
+   }
+  }
+ },
+ "sex": {
+  "observed_ratio": 1.0748,
+  "null_median": 1.0349,
+  "null_p95": 1.1011,
+  "p_value": 0.145,
+  "groups": {
+   "F": {
+    "loops": 1420,
+    "items": 962,
+    "items_per_loop_hist": {
+     "0": 653,
+     "1": 591,
+     "2": 158,
+     "3": 17,
+     "4": 1
+    },
+    "crc_truly_closed": 504,
+    "crc_closed_by_wasl": 424,
+    "crc_false_closures": 0
+   },
+   "M": {
+    "loops": 618,
+    "items": 450,
+    "items_per_loop_hist": {
+     "0": 260,
+     "1": 277,
+     "2": 72,
+     "3": 8,
+     "5": 1
+    },
+    "crc_truly_closed": 235,
+    "crc_closed_by_wasl": 193,
+    "crc_false_closures": 0
+   }
+  }
+ }
+}

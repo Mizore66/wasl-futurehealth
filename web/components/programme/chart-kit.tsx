@@ -115,7 +115,7 @@ export function ChartFigure({ caption, table, children, className }: { caption: 
           Show as table
         </button>
       </div>
-      <div className="mt-3">
+      <div className="mt-3 tabular-nums">
         {asTable ? (
           <table className="w-full border-collapse text-small">
             <caption className="sr-only">{table.caption}</caption>

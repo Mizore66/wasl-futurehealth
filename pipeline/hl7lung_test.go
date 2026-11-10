@@ -14,7 +14,7 @@ func lungDR(code, text, coded string) map[string]interface{} {
 		"code":              map[string]interface{}{"coding": []interface{}{map[string]interface{}{"system": "urn:wsi:proc", "code": code, "display": "x"}}},
 		"effectiveDateTime": dayToTS(12.25),
 		"presentedForm":     []interface{}{map[string]interface{}{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text))}},
-		"meta":              map[string]interface{}{"versionId": "1"}, "contained": []interface{}{}}
+		"meta":              map[string]interface{}{"versionId": "1", "lastUpdated": dayToTS(12.25)}, "contained": []interface{}{}}
 	if coded != "" {
 		r["conclusionCode"] = []interface{}{map[string]interface{}{"text": coded}}
 	}

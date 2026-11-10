@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { caseHref } from "@/lib/domain/ids";
@@ -219,14 +220,14 @@ export function ReferralInbox({
                   </button>
                   <span className="flex-none pr-1">
                     {inline && (
-                      <button onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10 h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
+                      <Button variant="cta" size="touch" onClick={() => accept(x)} aria-label={`Accept referral for ${x.name}`} className="relative z-10">
                         Accept
-                      </button>
+                      </Button>
                     )}
                     {review && (
-                      <button onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10 h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">
+                      <Button variant="quiet" size="touch" onClick={() => open(x.id)} aria-label={`Review the referral for ${x.name}`} className="relative z-10">
                         Review
-                      </button>
+                      </Button>
                     )}
                     {!inline && !review && <span className="pr-2 text-small text-muted">{{ returned: "Returned", accepted: "Accepted", done: "Closed", new: "", grade: "" }[x.state]}</span>}
                   </span>
@@ -272,7 +273,7 @@ export function ReferralInbox({
               </div>
               <div className="sm:flex-none sm:text-right">
                 <div className="flex items-baseline gap-1.5 sm:justify-end">
-                  <span data-testid="lead-days" className={cn("text-lead font-bold", lateOpen ? "text-negative" : "text-ink")}>
+                  <span data-testid="lead-days" className={cn("text-lead font-bold tabular-nums", lateOpen ? "text-negative" : "text-ink")}>
                     {r.waiting}
                   </span>
                   <span className="text-muted">{r.state === "new" ? "days waiting" : "days since referral"}</span>
@@ -292,11 +293,11 @@ export function ReferralInbox({
             <div className="mt-4">
               {r.state === "new" && mode === null && (
                 <div className="flex flex-wrap gap-gap">
-                  <button onClick={() => accept(r)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
+                  <Button variant="cta" size="touch" onClick={() => accept(r)}>
                     Accept referral
-                  </button>
-                  <Secondary data-focus="open-cond" onClick={() => choose("cond")}>Accept with conditions</Secondary>
-                  <Secondary data-focus="open-ret" onClick={() => choose("ret")}>Return to GP</Secondary>
+                  </Button>
+                  <Button variant="quiet" size="touch" data-focus="open-cond" onClick={() => choose("cond")}>Accept with conditions</Button>
+                  <Button variant="quiet" size="touch" data-focus="open-ret" onClick={() => choose("ret")}>Return to GP</Button>
                 </div>
               )}
               {r.state === "new" && mode === "cond" && (
@@ -312,10 +313,10 @@ export function ReferralInbox({
                     ))}
                   </div>
                   <div className="mt-3 flex gap-gap">
-                    <button onClick={() => accept(r, picked)} className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white">
+                    <Button variant="cta" size="touch" onClick={() => accept(r, picked)}>
                       {picked.length ? `Accept with ${picked.length} ${picked.length === 1 ? "condition" : "conditions"}` : "Accept with no conditions"}
-                    </button>
-                    <Secondary onClick={() => cancel(r.id, "open-cond")}>Cancel</Secondary>
+                    </Button>
+                    <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-cond")}>Cancel</Button>
                   </div>
                 </div>
               )}
@@ -334,16 +335,17 @@ export function ReferralInbox({
                   <p className="m-0 mt-2 text-small text-muted">Returning hands the case back to the {r.clinic} GP, who must act by {actBy}.</p>
                   <div className="mt-3 flex items-center gap-gap">
                     {picked[0] ? (
-                      <button
+                      <Button
+                        variant="cta"
+                        size="touch"
                         onClick={() => act(r.id, "returned", `Returned to the ${r.clinic} GP. Reason: ${picked[0].toLowerCase()}. Act by ${actBy}.`, `Returned to the GP: ${picked[0].toLowerCase()}`)}
-                        className="h-11 cursor-pointer rounded-control bg-cta px-4 text-body font-medium text-white"
                       >
                         Return to GP
-                      </button>
+                      </Button>
                     ) : (
                       <span className="text-muted">Choose a reason to return it.</span>
                     )}
-                    <Secondary onClick={() => cancel(r.id, "open-ret")}>Cancel</Secondary>
+                    <Button variant="quiet" size="touch" onClick={() => cancel(r.id, "open-ret")}>Cancel</Button>
                   </div>
                 </div>
               )}
@@ -369,7 +371,7 @@ export function ReferralInbox({
                 {outcome && (
                   <motion.div key="outcome" role="status" initial={reduce ? false : { opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: reduce ? 0 : 0.15 }} className="flex flex-wrap items-center gap-gap">
                     <p className="m-0 flex-1">{outcome}</p>
-                    <Secondary data-focus="undo" onClick={() => undo(r.id)}>Undo</Secondary>
+                    <Button variant="quiet" size="touch" data-focus="undo" onClick={() => undo(r.id)}>Undo</Button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -390,7 +392,7 @@ export function ReferralInbox({
               {r.details.map(([k, v]) => (
                 <div key={k}>
                   <dt className="text-small text-muted">{k}</dt>
-                  <dd className={cn("m-0", k === "Case" && "font-mono text-small text-muted")}>{v}</dd>
+                  <dd className={cn("m-0", k === "Case" && "text-small text-muted")}>{v}</dd>
                 </div>
               ))}
             </dl>
@@ -424,8 +426,4 @@ function lineFor(x: Referral, o: Override | undefined): string {
     case "done":
       return "Closed with evidence";
   }
-}
-
-function Secondary(props: React.ComponentProps<"button">) {
-  return <button {...props} className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control" />;
 }

@@ -134,7 +134,7 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
               </span>
               <span className="flex-none text-right">
                 <span className="block text-small text-muted">Record number</span>
-                <span className="font-mono text-small">{idn.registration.split("|")[1]}</span>
+                <span className="text-small">{idn.registration.split("|")[1]}</span>
               </span>
             </li>
           );
@@ -161,7 +161,7 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
                     {basisWords(l.weakest_edge.basis)}, p {l.weakest_edge.p.toFixed(3)}
                   </dd>
                   <dt className="text-muted">Report joined</dt>
-                  <dd className="m-0 font-mono text-small leading-6">{shortId(l.downstream_event)}</dd>
+                  <dd className="m-0 text-small leading-6">{shortId(l.downstream_event)}</dd>
                 </dl>
                 <details className="mt-2 text-small text-muted">
                   <summary className="min-h-6 cursor-pointer">Linker details</summary>
@@ -275,7 +275,7 @@ export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev:
         <p className="m-0">{read.quote ? `“${read.quote}”` : "The report states none of these in words."}</p>
         {quoteB && quoteB !== read.quote && <p className="m-0 mt-2 text-muted">Reader B quotes: “{quoteB}”</p>}
         <p className="m-0 mt-1 text-small text-muted">
-          {providerLabel(reportUnit)} report <span className="font-mono">{shortId(ev.report)}</span>
+          {providerLabel(reportUnit)} report {shortId(ev.report)}
           {ev.reader_model ? ` · second reader ${ev.reader_model}` : ""}
         </p>
       </blockquote>
@@ -454,11 +454,11 @@ export function TimelineCard({ detail }: { detail: CaseDetail }) {
       <ol className="m-0 mt-3 list-none p-0" aria-label="Timeline">
         {events.map((e) => (
           <li key={`${e.id}@${e.seq}`} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 border-t border-rule py-2">
-            <span className="text-muted">{formatDay(e.day)}</span>
+            <span className="tabular-nums text-muted">{formatDay(e.day)}</span>
             <span className="min-w-0">
               {eventWords(e, detail.case.id)}
               <span className="block text-small text-muted">
-                {providerLabel(e.provider)} · <span className="break-all font-mono">{shortId(e.id)}</span>
+                {providerLabel(e.provider)} · <span className="break-all">{shortId(e.id)}</span>
               </span>
             </span>
           </li>

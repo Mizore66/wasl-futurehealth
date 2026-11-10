@@ -21,7 +21,11 @@ var hl7LungLOINC = map[string][2]string{
 	LungPETCode: {"81555-5", "PT+CT whole body FDG"}, LungPathCode: {"11526-1", "Pathology study"},
 }
 
-var hl7Status = map[string]string{"final": "F", "corrected": "C", "amended": "C", "preliminary": "P"}
+var hl7Status = map[string]string{
+	"final": "F", "corrected": "C", "amended": "C", "appended": "C",
+	"preliminary": "P", "partial": "S", "registered": "O",
+	"cancelled": "X", "entered-in-error": "E", "unknown": "U",
+}
 
 var reSection = regexp.MustCompile(`(?i)\b(findings|impression|recommendations?|indication|diagnosis)\s*:`)
 
@@ -113,6 +117,9 @@ func (m *HL7Msg) hl7LungRebuild(res map[string]interface{}) bool {
 	if st := map[string]string{"F": "final", "C": "corrected", "P": "preliminary"}[fld(obr, 25)]; st != "" {
 		res["status"] = st
 	}
+	delete(res, "conclusionCode")
+	delete(res, "presentedForm")
+	delete(res, "conclusion")
 	var text strings.Builder
 	tx := false
 	for _, obx := range m.Segs["OBX"] {
