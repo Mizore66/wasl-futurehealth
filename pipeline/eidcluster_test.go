@@ -9,7 +9,7 @@ import "testing"
 func constGBM() *GBM { return &GBM{trees: []*gbmNode{{leaf: true, value: 10}}} }
 
 func eidEvent(id, prov, mrn, name, dob, eid string) *Prep {
-	return &Prep{Seq: 0, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", PatientKey: prov + "|" + mrn,
+	return &Prep{Seq: 0, Kind: "event", Ev: &Event{ID: id, Provider: prov, RType: "ServiceRequest", Prog: "crc", PatientKey: prov + "|" + mrn,
 		Name: name, Dob: dob, Sex: "F", Eid: eid, Day: 1}}
 }
 

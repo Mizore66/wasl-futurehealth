@@ -19,9 +19,9 @@ const CompletionPurpose = "completion_undocumented"
 
 // signedCompletion: a completion-review item for this report was signed (its sign-off carries CompletionPurpose). Such
 // items exist only where -r1review was on, so with the flag off everywhere this is always false.
-func signedCompletion(sos []Signoff, reportID string) bool {
+func signedCompletion(sos []Signoff, reportID string, version int) bool {
 	for _, s := range sos {
-		if s.Purpose == CompletionPurpose && s.ReportID == reportID {
+		if s.Purpose == CompletionPurpose && s.ReportID == reportID && (s.ReportVersion == version || s.ReportVersion <= 1 && version <= 1) {
 			return true
 		}
 	}

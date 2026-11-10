@@ -447,7 +447,8 @@ func TestExportRedactsEveryPath(t *testing.T) {
 	h := exportRoutes(s)
 	_, live := fetchBody(t, h, "GET", "/api/cases/"+exportLoop)
 	_, liveAud := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/audit")
-	d, a := decodeMap(t, live), decodeMap(t, liveAud)
+	d := decodeMap(t, live)
+	a := s.caseAuditBody(s.cases[exportLoop]) // raw source for setup assertions; the served auditor audit is redacted
 	first := func(v interface{}) map[string]interface{} {
 		if l, ok := v.([]interface{}); ok && len(l) > 0 {
 			m, _ := l[0].(map[string]interface{})
@@ -481,7 +482,7 @@ func TestExportRedactsEveryPath(t *testing.T) {
 	// 2. the canary never appears in the export
 	_, raw := fetchBody(t, h, "GET", "/api/cases/"+exportLoop+"/export")
 	body := string(raw)
-	for _, banned := range []string{"CANARY", "caecum", "prep was good", `"quote"`, "gemma_quote", `"reasoning"`, "future_field", "two_words", `"raw_text"`, `"message"`, `"text"`, `"rationale"`, `"excerpt"`, `"extra"`} {
+	for _, banned := range []string{"CANARY", "caecum", "prep was good", "1976-01-01", `"quote"`, "gemma_quote", `"reasoning"`, "future_field", "two_words", `"raw_text"`, `"message"`, `"text"`, `"rationale"`, `"excerpt"`, `"extra"`} {
 		if strings.Contains(body, banned) {
 			t.Errorf("export contains %q", banned)
 		}
@@ -496,7 +497,7 @@ func TestExportRedactsEveryPath(t *testing.T) {
 	}
 	norm := strings.ReplaceAll(body, ": ", ":")
 	for _, keep := range []string{`"label":"adequate"`, `"agree":true`, "exp-prov/DiagnosticReport/r1", `"reviewer":"r1"`, `"evidence":"adequate"`,
-		`"tool":"get_record"`, `"arg":"p|1"`, `"field":"dob"`, `"value":"1976-01-01"`, `"regex":"y/y/n/n"`} {
+		`"tool":"get_record"`, `"field":"dob"`, `"regex":"y/y/n/n"`} {
 		if !strings.Contains(norm, keep) {
 			t.Errorf("export lost structured field %s", keep)
 		}
@@ -540,13 +541,13 @@ func TestExportAllowlistDropsShortPhrases(t *testing.T) {
 		map[string]interface{}{"tool": "get_report", "arg": "r1", "field": "dx", "value": "tubular adenoma", "snip": "malignancy"}}}}}
 	_, raw := fetchBody(t, exportRoutes(s), "GET", "/api/cases/"+exportLoop+"/export")
 	body := string(raw)
-	for _, banned := range []string{"polyp", "adenoma", "melaena", "malignancy", "reached", `"poor"`, "positive", `"dx":`, "display", "code_text"} {
+	for _, banned := range []string{"polyp", "adenoma", "melaena", "malignancy", "reached", "1976-01-01", `"poor"`, "positive", `"dx":`, "display", "code_text"} {
 		if strings.Contains(body, banned) {
 			t.Errorf("export leaked %q", banned)
 		}
 	}
 	norm := strings.ReplaceAll(body, ": ", ":")
-	for _, keep := range []string{`"label":"adequate"`, `"label":"inadequate"`, `"tool":"get_record"`, `"tool":"get_report"`, `"field":"dob"`, `"id":"p/Observation/1"`, `"1976-01-01"`} {
+	for _, keep := range []string{`"label":"adequate"`, `"label":"inadequate"`, `"tool":"get_record"`, `"tool":"get_report"`, `"field":"dob"`, `"id":"p/Observation/1"`} {
 		if !strings.Contains(norm, keep) {
 			t.Errorf("export lost %s", keep)
 		}
@@ -618,6 +619,8 @@ func TestExportDefaultDenyRemainingSections(t *testing.T) {
 		"capacity_condition": "adequate", "pooling_relevant": false, "reason": "capacity",
 	}
 	det["agent_investigations"].([]interface{})[0].(map[string]interface{})["human"] = map[string]interface{}{"link": "same", "role": RoleReviewer}
+	det["review_items"].([]interface{})[0].(map[string]interface{})["report_version"] = json.Number("2")
+	det["signoffs"].([]interface{})[0].(map[string]interface{})["report_version"] = json.Number("2")
 
 	get := func(root map[string]interface{}, path string) map[string]interface{} {
 		var cur interface{} = root
@@ -696,9 +699,9 @@ func TestExportDefaultDenyRemainingSections(t *testing.T) {
 		{"current", "id", "dec-1"}, {"current", "state", "closed"}, {"current", "sr_day", json.Number("0")},
 		{"current.handoff", "referral_id", exportLoop}, {"current.handoff", "reason_code", "needs_more_info"},
 		{"current.chain[4].body.domain_status", "bp", "managed"}, {"current.chain[4].body.resolved_day", "bp", json.Number("8")},
-		{"links[0].weakest_edge", "a", "p|1"}, {"holds[0]", "why", "consent_unknown"},
-		{"review_items[0]", "item", "it1"}, {"review_items[0]", "conf", json.Number("0.9")},
-		{"signoffs[0]", "reviewer", "r1"}, {"signoffs[0]", "evidence", "adequate"},
+		{"links[0].weakest_edge", "a", "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789"}, {"holds[0]", "why", "consent_unknown"},
+		{"review_items[0]", "item", "it1"}, {"review_items[0]", "conf", json.Number("0.9")}, {"review_items[0]", "report_version", json.Number("2")},
+		{"signoffs[0]", "reviewer", "r1"}, {"signoffs[0]", "evidence", "adequate"}, {"signoffs[0]", "report_version", json.Number("2")},
 		{"api_overlay", "head", "abc123"}, {"api_overlay", "actions", json.Number("2")},
 		{"api_overlay.snooze", "until", "2026-11-10T00:00:00Z"}, {"api_overlay.snooze", "event", "def456"},
 		{"api_overlay.contact_outcomes[0]", "outcome", "reached"}, {"api_overlay.contact_outcomes[0]", "channel", "phone"},

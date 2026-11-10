@@ -3,7 +3,8 @@
 
 Checks docker-compose.yml (YAML, service/volume/depends_on references, the JetStream key comes only from the
 environment and is required), the Dockerfile (multi-stage, non-root USER, no secret-looking ENV/ARG, every COPY
-source exists and survives .dockerignore) and deploy/nats/nats.conf (encryption at rest, 3 routes).
+source exists and survives .dockerignore), deploy/nats/nats.conf (encryption at rest, 3 routes) and that every NATS
+service in docker-compose.yml and deploy/production.compose.yml runs as the deploy/nats/Dockerfile USER that owns /data.
 It is not a substitute for `docker compose config` and `docker build`. Usage: scripts/check_deploy.py
 """
 import fnmatch, os, re, sys
@@ -82,7 +83,7 @@ for name, s in svcs.items():
 # (Podman machine) does not share the checkout's directory
 for n in ("nats-0", "nats-1", "nats-2"):
     s = svcs.get(n, {})
-    if s.get("image") != "wasl-nats:local":
+    if s.get("image") not in ("wasl-nats:local", "${WASL_NATS_IMAGE:-wasl-nats:local}"):
         err("compose: %s must use the derived image wasl-nats:local" % n)
     b = s.get("build")
     if (b.get("context") if isinstance(b, dict) else b) != "./deploy/nats":
@@ -95,7 +96,7 @@ if not os.path.exists(ndf_path):
     err("deploy/nats/Dockerfile missing")
 else:
     ndf = open(ndf_path).read().splitlines()
-    if not any(re.match(r"FROM nats:\S+", l) for l in ndf):
+    if not any(re.match(r"FROM (?:--platform=\S+ )?nats:\S+", l) for l in ndf):
         err("deploy/nats/Dockerfile: must derive FROM nats:<tag>")
     if not any(re.match(r"COPY (--chmod=\d+ )?nats\.conf /etc/nats/wasl\.conf$", l) for l in ndf):
         err("deploy/nats/Dockerfile: must COPY nats.conf /etc/nats/wasl.conf")
@@ -111,6 +112,25 @@ else:
         for need in ("umask 077", 'mv "$tmp" "$marker"', "healthz?js-enabled-only=true", "refusing to start"):
             if need not in ep:
                 err("deploy/nats/entrypoint.sh: missing %r" % need)
+    # The image owns /data as its final USER, and a fresh named volume copies up that ownership (mode 755). A compose
+    # `user:` with another UID cannot create /data/jetstream, so JetStream and the healthcheck never come up.
+    nats_users = [l.split()[1] for l in ndf if l.startswith("USER ")]
+    nats_user = nats_users[-1] if nats_users else None
+    if not nats_user or nats_user.split(":")[0] in ("0", "root"):
+        err("deploy/nats/Dockerfile: final USER is root or missing")
+    elif not re.search(r"chown -R %s (?:\S+ )*/data\b" % re.escape(nats_user), "\n".join(ndf)):
+        err("deploy/nats/Dockerfile: /data is not chowned to the final USER %s" % nats_user)
+    prod_path = os.environ.get("WASL_PRODUCTION_COMPOSE_FILE") or os.path.join(ROOT, "deploy/production.compose.yml")
+    prod_svcs = (yaml.safe_load(open(prod_path).read()) or {}).get("services", {})
+    for label, services, required in (("compose", svcs, False), ("production compose", prod_svcs, True)):
+        for n in ("nats-0", "nats-1", "nats-2"):
+            s = services.get(n)
+            if s is None:
+                if required:
+                    err("%s: missing service %s" % (label, n))
+                continue
+            if (required or "user" in s) and str(s.get("user")) != nats_user:
+                err("%s: %s runs as user %r, but deploy/nats/Dockerfile owns /data as USER %s" % (label, n, s.get("user"), nats_user))
 for n in ("nats-0", "nats-1", "nats-2"):
     if "WASL_JS_KEY" not in (svcs.get(n, {}).get("environment") or {}):
         err("compose: %s gets no JetStream key" % n)

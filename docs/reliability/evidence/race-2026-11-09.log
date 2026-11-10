@@ -1,0 +1,41 @@
+=== RUN   TestIndependentServersCannotForkReviewLedger
+--- PASS: TestIndependentServersCannotForkReviewLedger (0.04s)
+=== RUN   TestReaderDoesNotCacheAnswerBeforeDurableAppend
+--- PASS: TestReaderDoesNotCacheAnswerBeforeDurableAppend (0.01s)
+=== RUN   TestAppendToLedgerFileErrorClasses
+--- PASS: TestAppendToLedgerFileErrorClasses (0.00s)
+=== RUN   TestIndeterminateAppendMarksLedgerFailedAndRefusesWrites
+--- PASS: TestIndeterminateAppendMarksLedgerFailedAndRefusesWrites (0.04s)
+=== RUN   TestActionsSameHeadConcurrencyExactlyOneWins
+--- PASS: TestActionsSameHeadConcurrencyExactlyOneWins (0.02s)
+=== RUN   TestActionsIndependentCasesConcurrent
+--- PASS: TestActionsIndependentCasesConcurrent (0.03s)
+=== RUN   TestActionsAppendFailureLeavesStateUntouched
+--- PASS: TestActionsAppendFailureLeavesStateUntouched (0.02s)
+=== RUN   TestUndoIndeterminateAppendBlocksEveryWriter
+--- PASS: TestUndoIndeterminateAppendBlocksEveryWriter (0.03s)
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/string
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/number
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/bool
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/empty_object
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null_output
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null
+streams ready, replicas 1
+=== RUN   TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/array
+streams ready, replicas 1
+--- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion (1.32s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/string (0.30s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/number (0.18s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/bool (0.16s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/empty_object (0.17s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null_output (0.17s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/null (0.17s)
+    --- PASS: TestExportRejectsNullAndNonObjectManifestsWithoutNATSCompletion/array (0.17s)
+PASS
+ok  	wsi	6.422s

@@ -29,3 +29,4 @@ models/*_pairfeat8.json
 *.prof
 *.pprof
 coverage.out
+/pipeline/results/soak/runs/

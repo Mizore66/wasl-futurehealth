@@ -8,15 +8,15 @@ import (
 	"testing"
 )
 
-// The pairfeat6 training dumps at 400 persons, taken with the CLI (UrduFix on) at acefac5, before pairfeat7:
+// The pairfeat6 training-dump protocol at 400 persons, with the CLI (UrduFix on); hashes include explicit dot-product rounding:
 // wsi nameidf -split train -persons 400 -noise v1t -idfseeds 1019; featdump -split train -persons 400 -noise v1t
 // -seed 1019 -namesakes 0.1 -familynamesakes 0.1 -xsnamesakes 0.1 -nameidf <that table>; featdump -split cal
 // -persons 400 -noise v1t -seed 2011 -nameidf <that table>.
 const (
 	goldenPF6IDF1019     = "c6491f0ae65573e417cf9539684afcdfe74ad497643b32637ec2484fca987512"
-	goldenPF6Train1019   = "b151d686140719a1d92b164de18a53159977804a0f81724d757f64bb6ed63d01"
+	goldenPF6Train1019   = "2c251234dfde7fb42ce016904bcc0cb5a6e2c20f722a69a382ee19334d776b58"
 	goldenPF6Train1019Sc = "d08510f57fd43b124a8d84b0bd089a5600817665b81188a26455edd0398bd79b"
-	goldenPF6Cal2011     = "7f5cd895b195bbbbf2a8ac8c953f7cea8f7ee637bbed8c10c1fc4a9c1d6d7a39"
+	goldenPF6Cal2011     = "8d03727f6d17e51bf6cf19af2bd3155926934257df8ecd7f6c126e065914069d"
 )
 
 // cliState: the CLI's UrduFix and noise v1t, with only the base providers (earlier tests may leave the lung/DR/
@@ -82,11 +82,11 @@ func TestPairfeat6DumpsUnchangedGolden(t *testing.T) {
 		t.Errorf("name-rarity table %s", hex256(raw))
 	}
 	c, s := pf6Dump(t, "train", 1019, 0.1, tb)
-	if hex256(c) != goldenPF6Train1019 || hex256(s) != goldenPF6Train1019Sc {
+	if hex256(c) != goldenForArch(t, goldenPF6Train1019, goldenPF6Train1019AMD64) || hex256(s) != goldenPF6Train1019Sc {
 		t.Errorf("pairfeat6 train dump: csv %s sidecar %s", hex256(c), hex256(s))
 	}
 	c, _ = pf6Dump(t, "cal", 2011, 0, tb)
-	if hex256(c) != goldenPF6Cal2011 {
+	if hex256(c) != goldenForArch(t, goldenPF6Cal2011, goldenPF6Cal2011AMD64) {
 		t.Errorf("pairfeat6 cal dump: csv %s", hex256(c))
 	}
 }

@@ -1,0 +1,84 @@
+{
+ "by_kind": {
+  "ifhas-followup": {
+   "agreed": 25,
+   "disagreements": [],
+   "fields": {
+    "label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    }
+   },
+   "item_agreement": 1.0,
+   "n": 25
+  },
+  "ifhas-screen": {
+   "agreed": 25,
+   "disagreements": [],
+   "fields": {
+    "coded_label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    },
+    "label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    }
+   },
+   "item_agreement": 1.0,
+   "n": 25
+  },
+  "ldct-screen": {
+   "agreed": 25,
+   "disagreements": [],
+   "fields": {
+    "label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    }
+   },
+   "item_agreement": 1.0,
+   "n": 25
+  },
+  "ldct-workup": {
+   "agreed": 25,
+   "disagreements": [],
+   "fields": {
+    "label": {
+     "kappa": 1.0,
+     "kappa_note": "",
+     "n": 25,
+     "observed_agreement": 1.0
+    }
+   },
+   "item_agreement": 1.0,
+   "n": 25
+  }
+ },
+ "labellers": [
+  "fresh4-labeller-a",
+  "fresh4-labeller-b"
+ ],
+ "overall": {
+  "agreed": 100,
+  "item_agreement": 1.0,
+  "items": 100
+ },
+ "schema": "fresh2-agreement/v1",
+ "semantics": {
+  "clinician_verified": false,
+  "model_labelled": true,
+  "statement": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness."
+ },
+ "warnings": [
+  "both labellers are the same model family; agreement overstates independence"
+ ]
+}

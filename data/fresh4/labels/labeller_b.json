@@ -1,0 +1,444 @@
+{
+ "corpus_sha256": "5aa826689564db25cb8c9ade7bbf727b6d7240848241a2eaaa3b9f60c87852ce",
+ "labeller": {
+  "clinician_verified": false,
+  "guide_sha256": "628a945665297dc91bb523a24ea07da7646554992a13bd1c5d0de7c5dc9e0197",
+  "id": "fresh4-labeller-b",
+  "kind": "model",
+  "model": "sonnet",
+  "model_family": "anthropic-claude",
+  "prompt_sha256": "e5e28fbc0251574b9980ada97547fee946ac98d443b4d208e888e76ec1b1d97a",
+  "run_date": "2026-11-09",
+  "saw_other_labels": false,
+  "saw_reader_implementation": false,
+  "session_isolated": true
+ },
+ "labels": [
+  {
+   "id": "f4l-001",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-002",
+   "label": "LR4A"
+  },
+  {
+   "id": "f4l-003",
+   "label": "LR1"
+  },
+  {
+   "id": "f4l-004",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-005",
+   "label": "LR3"
+  },
+  {
+   "id": "f4l-006",
+   "label": "LR3"
+  },
+  {
+   "id": "f4l-007",
+   "label": "LR4X"
+  },
+  {
+   "id": "f4l-008",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-009",
+   "label": "LR4X"
+  },
+  {
+   "id": "f4l-010",
+   "label": "LR3"
+  },
+  {
+   "id": "f4l-011",
+   "label": "LR1"
+  },
+  {
+   "id": "f4l-012",
+   "label": "LR3"
+  },
+  {
+   "id": "f4l-013",
+   "label": "LR4A"
+  },
+  {
+   "id": "f4l-014",
+   "label": "LR4X"
+  },
+  {
+   "id": "f4l-015",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-016",
+   "label": "LR0"
+  },
+  {
+   "id": "f4l-017",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-018",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-019",
+   "label": "LR0"
+  },
+  {
+   "id": "f4l-020",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-021",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-022",
+   "label": "LR3"
+  },
+  {
+   "id": "f4l-023",
+   "label": "LR2"
+  },
+  {
+   "id": "f4l-024",
+   "label": "LR4A"
+  },
+  {
+   "id": "f4l-025",
+   "label": "LR0"
+  },
+  {
+   "id": "f4l-026",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f4l-027",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f4l-028",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f4l-029",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f4l-030",
+   "label": "wk_dna"
+  },
+  {
+   "id": "f4l-031",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f4l-032",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f4l-033",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f4l-034",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f4l-035",
+   "label": "wk_incomplete"
+  },
+  {
+   "id": "f4l-036",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f4l-037",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-038",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f4l-039",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-040",
+   "label": "wk_treatment"
+  },
+  {
+   "id": "f4l-041",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f4l-042",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f4l-043",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-044",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f4l-045",
+   "label": "wk_benign"
+  },
+  {
+   "id": "f4l-046",
+   "label": "wk_surveillance"
+  },
+  {
+   "id": "f4l-047",
+   "label": "wk_surveillance"
+  },
+  {
+   "id": "f4l-048",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-049",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4l-050",
+   "label": "wk_surveillance"
+  },
+  {
+   "id": "f4i-001",
+   "label": "dna"
+  },
+  {
+   "id": "f4i-002",
+   "label": "dna"
+  },
+  {
+   "id": "f4i-003",
+   "label": "dna"
+  },
+  {
+   "id": "f4i-004",
+   "label": "dna"
+  },
+  {
+   "id": "f4i-005",
+   "label": "dna"
+  },
+  {
+   "id": "f4i-006",
+   "label": "bp=managed"
+  },
+  {
+   "id": "f4i-007",
+   "label": "glyc=managed;lipid=managed"
+  },
+  {
+   "id": "f4i-008",
+   "label": "weight=managed"
+  },
+  {
+   "id": "f4i-009",
+   "label": "bp=managed;glyc=managed;weight=managed"
+  },
+  {
+   "id": "f4i-010",
+   "label": "lipid=managed;weight=managed"
+  },
+  {
+   "id": "f4i-011",
+   "label": "bp=pending"
+  },
+  {
+   "id": "f4i-012",
+   "label": "glyc=pending;lipid=pending"
+  },
+  {
+   "id": "f4i-013",
+   "label": "glyc=pending"
+  },
+  {
+   "id": "f4i-014",
+   "label": "bp=pending;weight=pending"
+  },
+  {
+   "id": "f4i-015",
+   "label": "glyc=pending;lipid=pending"
+  },
+  {
+   "id": "f4i-016",
+   "label": "bp=not_confirmed"
+  },
+  {
+   "id": "f4i-017",
+   "label": "glyc=not_confirmed"
+  },
+  {
+   "id": "f4i-018",
+   "label": "glyc=not_confirmed;lipid=not_confirmed"
+  },
+  {
+   "id": "f4i-019",
+   "label": "bp=not_confirmed;glyc=not_confirmed"
+  },
+  {
+   "id": "f4i-020",
+   "label": "weight=not_confirmed"
+  },
+  {
+   "id": "f4i-021",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4i-022",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4i-023",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4i-024",
+   "label": "indeterminate"
+  },
+  {
+   "id": "f4i-025",
+   "label": "indeterminate"
+  },
+  {
+   "coded_label": "bp=H;glyc=D;lipid=N;weight=N",
+   "id": "f4i-026",
+   "label": "bp=H;glyc=D;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=H;weight=O",
+   "id": "f4i-027",
+   "label": "bp=N;glyc=P;lipid=H;weight=O"
+  },
+  {
+   "coded_label": "bp=S;glyc=D;lipid=H;weight=O",
+   "id": "f4i-028",
+   "label": "bp=S;glyc=D;lipid=H;weight=O"
+  },
+  {
+   "coded_label": "bp=S;glyc=S;lipid=N;weight=N",
+   "id": "f4i-029",
+   "label": "bp=S;glyc=S;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=S;lipid=H;weight=N",
+   "id": "f4i-030",
+   "label": "bp=H;glyc=S;lipid=H;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=P;lipid=N;weight=N",
+   "id": "f4i-031",
+   "label": "bp=X;glyc=X;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+   "id": "f4i-032",
+   "label": "bp=N;glyc=N;lipid=N;weight=X"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+   "id": "f4i-033",
+   "label": "bp=N;glyc=P;lipid=X;weight=N"
+  },
+  {
+   "coded_label": "bp=X;glyc=D;lipid=N;weight=O",
+   "id": "f4i-034",
+   "label": "bp=N;glyc=D;lipid=N;weight=O"
+  },
+  {
+   "coded_label": "bp=H;glyc=X;lipid=X;weight=O",
+   "id": "f4i-035",
+   "label": "bp=H;glyc=X;lipid=X;weight=O"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f4i-036",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=N",
+   "id": "f4i-037",
+   "label": "bp=N;glyc=X;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f4i-038",
+   "label": "bp=H;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=O",
+   "id": "f4i-039",
+   "label": "bp=N;glyc=N;lipid=N;weight=X"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f4i-040",
+   "label": "bp=X;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "unavailable",
+   "id": "f4i-041",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=H;glyc=N;lipid=N;weight=N",
+   "id": "f4i-042",
+   "label": "bp=H;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f4i-043",
+   "label": "bp=N;glyc=X;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=X;glyc=X;lipid=X;weight=X",
+   "id": "f4i-044",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+   "id": "f4i-045",
+   "label": "bp=N;glyc=D;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f4i-046",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=P;lipid=N;weight=O",
+   "id": "f4i-047",
+   "label": "bp=N;glyc=P;lipid=N;weight=O"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f4i-048",
+   "label": "bp=H;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=N;lipid=N;weight=N",
+   "id": "f4i-049",
+   "label": "bp=N;glyc=N;lipid=N;weight=N"
+  },
+  {
+   "coded_label": "bp=N;glyc=D;lipid=N;weight=N",
+   "id": "f4i-050",
+   "label": "bp=N;glyc=P;lipid=N;weight=N"
+  }
+ ],
+ "schema": "fresh2-labels/v1"
+}

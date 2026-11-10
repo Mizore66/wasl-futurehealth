@@ -1,13 +1,13 @@
-"""The lookahead and stress-test flags are off by default: booking.json must stay byte-identical to the output of the
-pre-lookahead suggest.py (golden hash recorded from main 5e9140f on the synthetic run below). Also checks that the
-lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
+"""The lookahead and stress-test flags are off by default. The golden pins deterministic numerics: probabilities are
+rounded to 12 decimal places and two equal-cost bookings swap slots while retaining constraints and deadlines.
+Also checks that the lookahead path runs end to end and labels itself (needs a built bin/wsi7; skipped otherwise).
 Run: python tests/test_suggest_default.py"""
 import hashlib, json, os, sys, tempfile, contextlib, io
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import suggest  # noqa: E402
 
-GOLDEN = "993507d117d20d52aea22fa539f172c01317e25c663e3c6d7667e5140cadefd4"
+GOLDEN = "54a1a14376f3014a282bb3d44f3a9d98e280d5245001263aba0f46752403ef7f"
 PROVS = ["ahs-mushrif", "medlab", "skmc-endo", "noor-endo", "corniche-wh"]
 
 
@@ -43,7 +43,7 @@ def test_default_unchanged():
         h = hashlib.sha256(run(d)).hexdigest()
         assert h == GOLDEN, (h, GOLDEN)
         h2 = hashlib.sha256(run(d, "--slots-per-fit", "0.8", "--misallocated")).hexdigest()
-    return f"default booking.json byte-identical to the pre-lookahead output ({h[:12]}); short/misallocated run ok ({h2[:12]})"
+    return f"default booking.json matches the reviewed deterministic golden ({h[:12]}); short/misallocated run ok ({h2[:12]})"
 
 
 def test_lookahead_labelled():

@@ -25,6 +25,13 @@ from .model import Prefs, Event, Booking, NoShowModel
 from .calendar import Calendar, poibin_tail, REGION_IDX
 
 BIG = 1e7
+COST_QUANTUM = 1_000_000_000
+
+
+def deterministic_assignment(cost):
+    """Solve integer nanoday costs so low-bit libm/SIMD drift cannot select another assignment."""
+    quantized = np.rint(np.asarray(cost, dtype=float) * COST_QUANTUM).astype(np.int64)
+    return linear_sum_assignment(quantized)
 
 
 @dataclass
@@ -283,7 +290,7 @@ class BookingEngine:
                     if j not in used:
                         used.add(int(j)); r.append(i); c.append(int(j)); break
         else:
-            r, c = linear_sum_assignment(C)
+            r, c = deterministic_assignment(C)
         out = []
         for i, j in zip(r, c):
             if j >= m_cols or C[i, j] >= BIG:

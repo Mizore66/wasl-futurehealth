@@ -17,7 +17,7 @@ func brRes(code, text, cpt string) map[string]interface{} {
 		"code":              map[string]interface{}{"coding": []interface{}{map[string]interface{}{"system": "urn:wsi:proc", "code": code, "display": disp}}},
 		"effectiveDateTime": dayToTS(-33.6),
 		"presentedForm":     []interface{}{map[string]interface{}{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text))}},
-		"meta":              map[string]interface{}{"versionId": "1"}, "contained": []interface{}{}}
+		"meta":              map[string]interface{}{"versionId": "1", "lastUpdated": dayToTS(-33.6)}, "contained": []interface{}{}}
 	if cpt != "" {
 		r["conclusionCode"] = []interface{}{map[string]interface{}{"system": "http://www.ama-assn.org/go/cpt", "code": cpt, "text": cpt}}
 	}
@@ -29,7 +29,7 @@ func brSRRes() map[string]interface{} {
 		"category": []interface{}{map[string]interface{}{"text": "breast-screening"}}, "authoredOn": dayToTS(-33.6),
 		"code":           map[string]interface{}{"text": "Breast screening mammogram: recall to the diagnostic breast assessment unit if BI-RADS 0, 3, 4 or 5 (DoH 3.8.3)"},
 		"supportingInfo": []interface{}{map[string]interface{}{"reference": "DiagnosticReport/BSU-br-000042"}},
-		"meta":           map[string]interface{}{"versionId": "1"}, "contained": []interface{}{}}
+		"meta":           map[string]interface{}{"versionId": "1", "lastUpdated": dayToTS(-33.6)}, "contained": []interface{}{}}
 }
 
 // brClinical: every field normalise reads for breast reports and the breast tracking order.
@@ -126,7 +126,9 @@ func TestHL7BreastFailClosed(t *testing.T) {
 		}
 		return m
 	}
-	report := func() map[string]interface{} { return brRes("breast-screen", "Right breast: BI-RADS 4. Final assessment: BI-RADS 4.", "3344F") }
+	report := func() map[string]interface{} {
+		return brRes("breast-screen", "Right breast: BI-RADS 4. Final assessment: BI-RADS 4.", "3344F")
+	}
 	for _, tc := range []struct {
 		name string
 		res  map[string]interface{}

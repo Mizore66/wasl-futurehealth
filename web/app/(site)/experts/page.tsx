@@ -194,7 +194,7 @@ export default async function Page() {
           <B>
             {eid.display} → {wasl.display}
           </B>{" "}
-          (truth {truth.display}). At 1.2 slots per FIT+: queue levers +13 pp; pooling 22.2% → 42.1%, both simulated.
+          (truth {truth.display}). At 1.2 slots per FIT+: queue levers +13 pp; pooling 21.5% → 41.7%, both simulated.
         </>
       ),
       stops: "Measurement alone does not raise attendance. Uplift sizes are borrowed from published trials until the stepped-wedge pilot.",
