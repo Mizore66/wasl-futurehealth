@@ -12,16 +12,20 @@ import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
 import { byUrgency, STANDARD_DAYS } from "./days";
 import type { View, WorkItem } from "./model";
+import { HANDOFF_OWNER } from "./model";
 import { SearchField } from "./search-field";
 import { TAB_FOCUS, useRovingTabs } from "./use-roving-tabs";
+import { recordAction } from "@/app/app/today/actions";
+import type { CaseAction } from "@/lib/api/schema";
 
 /*
- * Gap G6: the API has no write endpoint for call outcomes, so every outcome here is session state.
- * `confirm_contact` needs a review item of kind contact; the pipeline raises only link and evidence items.
+ * Live API (`live`): every outcome, snooze and owner change is first appended to the API's coordinator ledger
+ * (POST /api/cases/{id}/actions) and shown only after a 201. The ledger is append-only, so there is no Undo.
+ * Fixtures mode: the same buttons keep session state in the browser, with Undo.
  */
 
 type Contact = { what: string; when: string };
-type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; log: Contact[] };
+type Patch = { view?: View; status?: string; snoozed?: boolean; noAnswer?: number; owner?: string; head?: string; log: Contact[] };
 type Stage = "reached" | "callback";
 type Logged = { id: string; head: string; move: string; undo: Pick<State, "over" | "stage" | "last"> };
 type State = {
@@ -46,9 +50,20 @@ const TABS: [View, string][] = [
 
 const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+/** A wall-clock RFC 3339 time `days` from now: the API checks snooze `until` against its own clock, not the run's. */
+const fromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().replace(/\.\d{3}Z$/, "Z");
 
-export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: number; aside: React.ReactNode }) {
+const REFUSED: Record<number, string> = {
+  403: "the coordinator role may not do this",
+  404: "the API does not know this case",
+  409: "someone changed this case first; reload to see it",
+  503: "no live API",
+};
+
+export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
   const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {} });
+  const [busy, setBusy] = useState(false);
+  const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
 
   const reduce = useReducedMotion();
   const headingRef = useRef<HTMLHeadingElement>(null);
@@ -99,13 +114,13 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
           ` ${toCall.length - 1} more to call.`,
       };
 
-  const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null = null) => {
+  const apply = (row: Row, what: string, when: string, patch: Omit<Patch, "log">, head: string, move: string, stage: Stage | null) => {
     setWant({ k: stage ? "chips" : "undo" });
     setS((prev) => {
       const before = prev.over[row.id] ?? { log: [] };
       return {
         ...prev,
-        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, { what, when: `This session · ${clock()}` }] } },
+        over: { ...prev.over, [row.id]: { ...before, ...patch, log: [...before.log, { what, when }] } },
         sel: row.id,
         calling: null,
         stage,
@@ -119,6 +134,25 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
     });
   };
 
+  /**
+   * One action from the board. Live: append `action` to the ledger first and change the board only on success;
+   * a refusal (for example a contact outcome without contact permission) is shown and nothing changes.
+   */
+  const log = (row: Row, what: string, patch: Omit<Patch, "log">, head: string, move: string, action: CaseAction, stage: Stage | null = null) => {
+    setRefusal(null);
+    if (!live) return apply(row, what, `This session · ${clock()}`, patch, head, move, stage);
+    if (busy) return;
+    if (!row.head) return setRefusal({ id: row.id, text: `Not saved: ${REFUSED[409]}` });
+    setBusy(true);
+    recordAction(row.id, row.head, action)
+      .then((res) => {
+        if (res.ok) apply(row, what, `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, { ...patch, head: res.head }, head, move, stage);
+        else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
+      })
+      .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
+      .finally(() => setBusy(false));
+  };
+
   const last = s.last && p && s.last.id === p.id ? s.last : null;
   /* The last action moved its patient out of this result set: they are not shown, only the way back is. */
   const removed = s.last && !list.some((x) => x.id === s.last!.id) ? s.last : null;
@@ -129,10 +163,17 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const removedNotice = removed && (
     <div role="status" className="mb-4 flex min-h-11 flex-wrap items-center gap-x-gap" data-testid="removed-notice">
       <span>
-        <span className="font-medium">{removed.head}</span> · {removed.move} ·{" "}
-        <button data-focus="undo" onClick={() => undoLast(removed)} className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink">
-          Undo
-        </button>
+        <span className="font-medium">{removed.head}</span> · {removed.move}
+        {live ? (
+          <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+        ) : (
+          <>
+            {" "}·{" "}
+            <button data-focus="undo" onClick={() => undoLast(removed)} className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink">
+              Undo
+            </button>
+          </>
+        )}
       </span>
     </div>
   );
@@ -147,19 +188,43 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
     if (!last) {
       chipsTitle = s.calling === p.id ? "How did it go?" : "After the call";
       chips = [
-        ["Reached", () => log(p, "Reached on the phone", { status: `Reached · ${p.next}`, snoozed: false }, "Logged: Reached", "Next: book or set a call back", "reached")],
+        [
+          "Reached",
+          () =>
+            log(
+              p,
+              "Reached on the phone",
+              { status: `Reached · ${p.next}`, snoozed: false },
+              "Logged: Reached",
+              "Next: book or set a call back",
+              { action: "contact_outcome", outcome: "reached", channel: "phone" },
+              "reached",
+            ),
+        ],
         [
           "No answer",
           () => {
             const na = (p.noAnswer ?? 0) + 1;
-            log(p, "Called, no answer", { noAnswer: na, status: `No answer ×${na} · retry tomorrow`, snoozed: true }, "Logged: No answer", toEnd);
+            log(p, "Called, no answer", { noAnswer: na, status: `No answer ×${na} · retry tomorrow`, snoozed: true }, "Logged: No answer", toEnd, {
+              action: "contact_outcome",
+              outcome: "no_answer",
+              channel: "phone",
+            });
           },
         ],
       ];
     } else if (stage === "reached") {
       chipsTitle = "What next?";
       chips = [
-        ["Book", () => log(p, "Booked the procedure", { view: "waiting", status: "Booked · date to confirm", snoozed: false }, "Logged: Booked", `${first} moved to Waiting`)],
+        [
+          "Book",
+          () =>
+            log(p, "Booked the procedure", { view: "waiting", status: "Booked · date to confirm", snoozed: false }, "Logged: Booked", `${first} moved to Waiting`, {
+              action: "contact_outcome",
+              outcome: "appointment_agreed",
+              channel: "phone",
+            }),
+        ],
         [
           "Call back on…",
           () => {
@@ -167,13 +232,32 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
             setS((prev) => ({ ...prev, stage: "callback" }));
           },
         ],
-        ["Declined", () => log(p, "Declined the procedure", { view: "waiting", status: "Declined · GP to sign", snoozed: false }, "Logged: Declined", `${first} moved to Waiting for the GP`)],
+        [
+          "Declined",
+          () =>
+            log(
+              p,
+              "Declined the procedure",
+              { view: "waiting", status: "Declined · GP to sign", snoozed: false },
+              "Logged: Declined",
+              `${first} moved to Waiting for the GP`,
+              { action: "contact_outcome", outcome: "declined", channel: "phone" },
+            ),
+        ],
       ];
     } else if (stage === "callback") {
       chipsTitle = "Call back on";
       chips = [1, 2, 3].map((k) => {
         const d = WEEKDAY.format(dayToDate(Math.floor(now) + k));
-        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd)] as Chip;
+        return [
+          d,
+          () =>
+            log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, {
+              action: "snooze",
+              until: fromNow(k),
+              reason: `Call back ${d}`,
+            }),
+        ] as Chip;
       });
     }
   }
@@ -184,7 +268,13 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
   const trail: ChainNode[] = p
     ? [
         ...p.log.slice(-3).map((c, i) => ({ id: `log-${i}`, kind: "human" as const, who: "Hessa Al Ali", what: c.what, when: c.when })),
-        { id: "next", kind: "current", who: "Next", what: p.next, when: p.log.length ? "Now" : "No contact logged this session" },
+        {
+          id: "next",
+          kind: "current",
+          who: "Next",
+          what: p.next,
+          when: p.log.length ? "Now" : p.ledgerActions ? `${p.ledgerActions} earlier action${p.ledgerActions === 1 ? "" : "s"} on the case ledger` : "No contact logged this session",
+        },
       ]
     : [];
 
@@ -342,19 +432,57 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
               </button>
               <span className="hidden flex-1 sm:block" />
-              <Secondary className="max-sm:flex-1" onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
+              <Secondary
+                className="max-sm:flex-1"
+                disabled={busy}
+                onClick={() =>
+                  log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd, {
+                    action: "snooze",
+                    until: fromNow(1),
+                    reason: "Snoozed to tomorrow",
+                  })
+                }
+              >
                 Snooze to tomorrow
               </Secondary>
               {p.view === "none" ? (
-                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
+                <Secondary
+                  className="max-sm:flex-1"
+                  disabled={busy}
+                  onClick={() =>
+                    log(p, "Took this patient", { view: "call", status: "Yours now", owner: "Hessa Al Ali" }, "Logged: Yours now", `${first} moved to To call`, {
+                      action: "assign_owner",
+                      owner: "Hessa Al Ali",
+                    })
+                  }
+                >
                   Take this patient
                 </Secondary>
               ) : (
-                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
-                  Hand to Dr Al Kaabi
+                <Secondary
+                  className="max-sm:flex-1"
+                  disabled={busy}
+                  onClick={() =>
+                    log(
+                      p,
+                      `Handed to ${HANDOFF_OWNER}`,
+                      { view: "waiting", status: `With ${HANDOFF_OWNER}`, owner: HANDOFF_OWNER },
+                      `Logged: Handed to ${HANDOFF_OWNER}`,
+                      `${first} moved to Waiting`,
+                      { action: "assign_owner", owner: HANDOFF_OWNER },
+                    )
+                  }
+                >
+                  Hand to {HANDOFF_OWNER}
                 </Secondary>
               )}
             </div>
+
+            {refusal?.id === p.id && (
+              <p role="alert" className="m-0 mt-4 text-warning" data-testid="action-refused">
+                {refusal.text}
+              </p>
+            )}
 
             <AnimatePresence initial={false}>
               {last && (
@@ -367,14 +495,21 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   className="mt-4 flex min-h-11 flex-wrap items-center gap-x-gap"
                 >
                   <span>
-                    <span className="font-medium">{last.head}</span> · {last.move} ·{" "}
-                    <button
-                      data-focus="undo"
-                      onClick={() => undoLast(last)}
-                      className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
-                    >
-                      Undo
-                    </button>
+                    <span className="font-medium">{last.head}</span> · {last.move}
+                    {live ? (
+                      <span data-focus="undo" tabIndex={-1} className="text-muted"> · saved to the case ledger</span>
+                    ) : (
+                      <>
+                        {" "}·{" "}
+                        <button
+                          data-focus="undo"
+                          onClick={() => undoLast(last)}
+                          className="inline-flex min-h-11 cursor-pointer items-center bg-transparent px-1 text-body text-hue hover:text-ink"
+                        >
+                          Undo
+                        </button>
+                      </>
+                    )}
                   </span>
                   {!stage && nextUp && (
                     <Secondary
@@ -400,6 +535,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                   {chips.map(([label, pick]) => (
                     <button
                       key={label}
+                      disabled={busy}
                       onClick={pick}
                       className={cn("h-11 cursor-pointer rounded-chip border bg-surface px-4 text-body text-ink hover:bg-ground", chipsLive ? "border-ink" : "border-control")}
                     >
@@ -474,5 +610,5 @@ function Field({ label, value, warn = false }: { label: string; value: string; w
 }
 
 function Secondary({ className, ...props }: React.ComponentProps<"button">) {
-  return <button {...props} className={cn("h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control", className)} />;
+  return <button {...props} className={cn("h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control disabled:cursor-wait disabled:opacity-60", className)} />;
 }
