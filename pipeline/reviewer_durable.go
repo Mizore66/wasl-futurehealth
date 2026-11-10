@@ -8,10 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -443,4 +446,320 @@ func reconcileReviewerLedger(path string, rec reviewerRecord) error {
 		return nil
 	}
 	return reviewerAppendLine(path, want)
+}
+
+// ---------------- durable reviewer service ----------------
+
+// reviewerService owns the simulated reviewer's durable state: the REVIEWER KV store, the local decision ledger,
+// the seen set, both worklists and the status counters. Every effect (sign-off publish, ledger line, status) is
+// recorded in the store before the OUT message is acknowledged, so a restart rebuilds the pre-crash state.
+type reviewerService struct {
+	js         jetstream.JetStream
+	store      *reviewerStore
+	runDir     string
+	ledgerPath string
+	cfg        ReviewerCfg
+	tr         Truth
+	seed       int64
+	revLat     float64
+	hold       string
+
+	mu      sync.Mutex // serialises review/recover; may be held for a presenter hold
+	seen    map[string]bool
+	wl      idWorklist
+	lw      linkWorklist
+	held    bool
+	pending *reviewerRecord // stored record whose effects have not all completed (retried before any new item)
+
+	statMu sync.Mutex
+	st     reviewerStatus
+}
+
+func newReviewerService(js jetstream.JetStream, runDir string, cfg ReviewerCfg, tr Truth, seed int64, revLat float64, hold string) (*reviewerService, error) {
+	store, err := openReviewerStore(js)
+	if err != nil {
+		return nil, err
+	}
+	return &reviewerService{js: js, store: store, runDir: runDir, ledgerPath: filepath.Join(runDir, "reviewer_decisions.ndjson"),
+		cfg: cfg, tr: tr, seed: seed, revLat: revLat, hold: hold,
+		seen: map[string]bool{}, wl: idWorklist{}, lw: linkWorklist{}}, nil
+}
+
+func (s *reviewerService) status() reviewerStatus {
+	s.statMu.Lock()
+	defer s.statMu.Unlock()
+	return s.st
+}
+
+func (s *reviewerService) mutateStatus(f func(*reviewerStatus)) reviewerStatus {
+	s.statMu.Lock()
+	defer s.statMu.Unlock()
+	f(&s.st)
+	return s.st
+}
+
+// recover loads every stored record, completes any unfinished effect (ledger line; sign-off found in the retained
+// FHIR stream or published once) and rebuilds seen, worklists and status. It never invokes ReviewerCfg.Review.
+func (s *reviewerService) recover() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	recs, st, err := s.store.load()
+	if err != nil {
+		return err
+	}
+	seen, wl, lw := map[string]bool{}, idWorklist{}, linkWorklist{}
+	for _, r := range recs {
+		if r.State != reviewerSkipped {
+			if _, err := s.reconcile(r, true); err != nil {
+				return err
+			}
+			wl.record(r.Item, r.Signoff)
+			lw.record(r.Item, r.Signoff)
+		}
+		seen[r.ItemID] = true
+	}
+	if err := s.store.saveStatus(st); err != nil {
+		return err
+	}
+	s.seen, s.wl, s.lw, s.pending = seen, wl, lw, nil
+	s.statMu.Lock()
+	s.st = st
+	s.statMu.Unlock()
+	return nil
+}
+
+// reconcile moves rec to published, performing only the effects still missing. scan=true first looks for the
+// sign-off in the retained FHIR stream (restart: JetStream dedupe may have expired); scan=false publishes directly.
+func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerRecord, error) {
+	if rec.State == "prepared" {
+		if err := reconcileReviewerLedger(s.ledgerPath, rec); err != nil {
+			return rec, err
+		}
+		next := rec
+		next.State = "ledger_written"
+		if err := s.store.put(next, "prepared"); err != nil {
+			return rec, err
+		}
+		rec = next
+	}
+	if rec.State == "ledger_written" {
+		var seq uint64
+		var found bool
+		var err error
+		if scan {
+			if seq, found, err = findReviewerSignoff(s.js, rec.ItemID, rec.BodyHash); err != nil {
+				return rec, err
+			}
+		}
+		if !found {
+			if seq, err = publishReviewerSignoff(s.js, rec); err != nil {
+				return rec, err
+			}
+		}
+		next := rec
+		next.State, next.FHIRSeq = "published", seq
+		if err := s.store.put(next, "ledger_written"); err != nil {
+			return rec, err
+		}
+		return next, nil
+	}
+	return rec, reconcileReviewerLedger(s.ledgerPath, rec) // published: the ledger line must still be present once
+}
+
+// observe persists the highest OUT position handled so the status survives a restart.
+func (s *reviewerService) observe(outSeq uint64) error {
+	st := s.mutateStatus(func(st *reviewerStatus) {
+		if outSeq > st.LastOut {
+			st.LastOut = outSeq
+		}
+	})
+	return s.store.saveStatus(st)
+}
+
+// review durably handles one OUT message at JetStream stream position outSeq. A nil error means every effect is
+// stored and the caller may acknowledge the message.
+func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.pending != nil {
+		rec, err := s.reconcile(*s.pending, true)
+		if err != nil {
+			return err
+		}
+		s.finish(rec)
+		s.pending = nil
+	}
+	if oe.Kind != "review" {
+		return s.observe(outSeq)
+	}
+	if oe.Item == nil {
+		return errors.New("reviewer: review envelope without item")
+	}
+	it := oe.Item
+	if s.seen[it.ItemID] {
+		return s.observe(outSeq)
+	}
+	if s.wl.skip(it) || s.lw.skip(it) {
+		pk := pairKey(it.Pair[0], it.Pair[1])
+		rec := reviewerRecord{Schema: 1, ItemID: it.ItemID, State: reviewerSkipped, Item: it, OutSeq: outSeq,
+			SkippedBy: "pair:" + pk[0] + "|" + pk[1]}
+		if err := s.store.put(rec, ""); err != nil {
+			return err
+		}
+		s.seen[it.ItemID] = true
+		st := s.mutateStatus(func(st *reviewerStatus) {
+			if isLinkQuestion(it) {
+				st.DedupedLink++
+			} else {
+				st.DedupedSecond++
+			}
+			if outSeq > st.LastOut {
+				st.LastOut = outSeq
+			}
+		})
+		return s.store.saveStatus(st)
+	}
+	rec := s.prepare(oe, outSeq)
+	if rec.Signoff == nil {
+		return fmt.Errorf("reviewer: no sign-off produced for %q", it.ItemID)
+	}
+	if err := s.store.put(rec, ""); err != nil {
+		return err
+	}
+	s.pending = &rec
+	done, err := s.reconcile(rec, false)
+	if err != nil {
+		return err
+	}
+	s.finish(done)
+	s.pending = nil
+	return nil
+}
+
+// finish applies a published record to the in-memory set, worklists and status. The saved status is only a hint:
+// load() rebuilds the counters from the records.
+func (s *reviewerService) finish(rec reviewerRecord) {
+	s.seen[rec.ItemID] = true
+	s.wl.record(rec.Item, rec.Signoff)
+	s.lw.record(rec.Item, rec.Signoff)
+	st := s.mutateStatus(func(st *reviewerStatus) {
+		st.Answered++
+		if rec.Wrong {
+			st.Wrong++
+		}
+		if rec.OutSeq > st.LastOut {
+			st.LastOut = rec.OutSeq
+		}
+	})
+	s.store.saveStatus(st)
+}
+
+// prepare runs the (noisy, timed) reviewer once and returns the record to persist before anything is published:
+// the sign-off, its body hash, the exact ledger line and the OUT position. The presenter hold and the optional
+// wall-clock pause happen here, so the stored sign-off is the final one. A nil sign-off (agent deferral) yields a
+// record without one, which review rejects.
+func (s *reviewerService) prepare(oe OutEnvelope, outSeq uint64) reviewerRecord {
+	it := oe.Item
+	t0 := time.Now()
+	so := s.cfg.Review(it, &s.tr)
+	if so == nil {
+		return reviewerRecord{Schema: 1, ItemID: it.ItemID, State: "prepared", Item: it, OutSeq: outSeq}
+	}
+	truthWrong := func() bool {
+		for _, k := range it.Kinds {
+			if k == "link" {
+				same := s.tr.PKQid[it.Pair[0]] != "" && s.tr.PKQid[it.Pair[0]] == s.tr.PKQid[it.Pair[1]]
+				if (so.Link == "same") != same {
+					return true
+				}
+			}
+			if k == "evidence" {
+				ev := s.tr.Reports[it.ReportID]
+				if ev == "" {
+					ev = "inadequate"
+				}
+				if so.Evidence != ev {
+					return true
+				}
+			}
+		}
+		return false
+	}
+	isWrong := truthWrong()
+	isEv := len(it.Kinds) == 1 && it.Kinds[0] == "evidence"
+	if s.hold != "" && !s.held && isEv && it.Verdict == "disagree" && it.LoopID == s.hold {
+		s.held = true
+		hb, _ := json.MarshalIndent(map[string]interface{}{"item": it, "held_at": time.Now().Format(time.RFC3339Nano)}, "", " ")
+		os.WriteFile(filepath.Join(s.runDir, "HOLD_ITEM.json"), hb, 0600)
+		dl := time.Now().Add(90 * time.Second)
+		for time.Now().Before(dl) {
+			if hb, err := os.ReadFile(filepath.Join(s.runDir, "HUMAN_DECISION.json")); err == nil {
+				var hd struct{ Evidence, Reviewer string }
+				if json.Unmarshal(hb, &hd) == nil && hd.Evidence != "" {
+					so.Evidence, so.Reviewer, so.Role, so.Reads = hd.Evidence, hd.Reviewer, RoleClinician, []string{"presenter"}
+					isWrong = truthWrong()
+					break
+				}
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	} else if s.revLat > 0 {
+		h := sha([]byte(fmt.Sprint(s.seed) + "|lat|" + it.ItemID))
+		v, _ := strconv.ParseUint(h[:12], 16, 64)
+		d := s.revLat * math.Exp(0.6*normQ(float64(v)/float64(uint64(1)<<48)))
+		time.Sleep(time.Duration(d * float64(time.Millisecond)))
+	}
+	body := signoffResource(so)
+	sum := sha256.Sum256(body)
+	lb, _ := json.Marshal(map[string]interface{}{"item": it.ItemID, "loop": it.LoopID, "kinds": it.Kinds, "verdict": it.Verdict,
+		"link": so.Link, "evidence": so.Evidence, "wrong": isWrong, "role": so.Role, "reads": so.Reads, "sim_s": so.DurationS,
+		"reviewer": so.Reviewer, "ms": time.Since(t0).Milliseconds(), "t": time.Now().UnixNano()})
+	return reviewerRecord{Schema: 1, ItemID: it.ItemID, State: "prepared", Item: it, Signoff: so, BodyHash: hex.EncodeToString(sum[:]),
+		Ledger: string(lb) + "\n", Wrong: isWrong, OutSeq: outSeq, PubTS: time.Now().UnixNano()}
+}
+
+// serveReviewer consumes OUT with a durable explicit-ACK consumer until ctx ends. A message is acknowledged only
+// after review returned nil; undecodable messages and failures stay unacknowledged and are redelivered.
+func serveReviewer(ctx context.Context, js jetstream.JetStream, s *reviewerService) {
+	var it jetstream.MessagesContext
+	retry("reviewer consumer", func() error {
+		cons, err := js.CreateOrUpdateConsumer(ctx, "OUT", jetstream.ConsumerConfig{Durable: "reviewer", AckPolicy: jetstream.AckExplicitPolicy,
+			AckWait: 3 * time.Minute, MaxAckPending: 1000, DeliverPolicy: jetstream.DeliverAllPolicy})
+		if err != nil {
+			return err
+		}
+		it, err = cons.Messages(jetstream.PullMaxMessages(500))
+		return err
+	})
+	go func() { <-ctx.Done(); it.Stop() }()
+	for {
+		msg, err := it.Next()
+		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, jetstream.ErrMsgIteratorClosed) {
+				return
+			}
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		var oe OutEnvelope
+		if err := json.Unmarshal(msg.Data(), &oe); err != nil {
+			fmt.Fprintf(os.Stderr, "reviewer: undecodable OUT message left unacknowledged: %v\n", err)
+			continue
+		}
+		md, err := msg.Metadata()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "reviewer: OUT metadata: %v\n", err)
+			continue
+		}
+		if err := s.review(oe, md.Sequence.Stream); err != nil {
+			fmt.Fprintf(os.Stderr, "reviewer: OUT %d not acknowledged: %v\n", md.Sequence.Stream, err)
+			msg.NakWithDelay(2 * time.Second)
+			continue
+		}
+		actx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		if err := msg.DoubleAck(actx); err != nil {
+			fmt.Fprintf(os.Stderr, "reviewer: ack OUT %d: %v\n", md.Sequence.Stream, err)
+		}
+		cancel()
+	}
 }

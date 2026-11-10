@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
@@ -12,6 +13,10 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
+
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 func TestReviewerStoreRestoresSeenStatusAndWorklists(t *testing.T) {
@@ -523,5 +528,325 @@ func TestReviewerLedgerTruncateFailureLeavesPartialRejected(t *testing.T) {
 	}
 	if b, _ := os.ReadFile(path); len(b) != 10 {
 		t.Fatal("partial ledger must not be modified")
+	}
+}
+
+// ---------------- Task 3: durable reviewer service ----------------
+
+func reviewerEnvelope(id string, outSeq uint64) OutEnvelope {
+	item := linkItem(id, "reg-a", "reg-b")
+	item.Head = "head-" + id
+	return OutEnvelope{Kind: "review", Item: item, OSeq: outSeq}
+}
+
+func newTestReviewerService(t *testing.T, env *natsEnv, runDir string) *reviewerService {
+	t.Helper()
+	cfg := DefaultReviewer
+	cfg.Err = 0
+	cfg.Double = "merge"
+	tr := Truth{PKQid: map[string]string{"reg-a": "same-person", "reg-b": "same-person"}, Reports: map[string]string{}}
+	service, err := newReviewerService(env.js, runDir, cfg, tr, 1, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return service
+}
+
+func withReuse(t *testing.T) {
+	t.Helper()
+	oi, ol := ReuseIDConfirm, ReuseLinkAnswer
+	ReuseIDConfirm, ReuseLinkAnswer = true, true
+	t.Cleanup(func() { ReuseIDConfirm, ReuseLinkAnswer = oi, ol })
+}
+
+// ledgerFields returns the ledger lines of runDir with the wall-clock fields (t, ms) removed.
+func ledgerFields(t *testing.T, runDir string) []string {
+	t.Helper()
+	b, err := os.ReadFile(filepath.Join(runDir, "reviewer_decisions.ndjson"))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		t.Fatal(err)
+	}
+	var out []string
+	for _, l := range strings.Split(strings.TrimSpace(string(b)), "\n") {
+		if l == "" {
+			continue
+		}
+		var m map[string]interface{}
+		if err := json.Unmarshal([]byte(l), &m); err != nil {
+			t.Fatal(err)
+		}
+		delete(m, "t")
+		delete(m, "ms")
+		nb, _ := json.Marshal(m)
+		out = append(out, string(nb))
+	}
+	return out
+}
+
+func storedReviewer(t *testing.T, s *reviewerService, id string) reviewerRecord {
+	t.Helper()
+	recs, _, err := s.store.load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range recs {
+		if r.ItemID == id {
+			return r
+		}
+	}
+	t.Fatalf("no record for %s", id)
+	return reviewerRecord{}
+}
+
+// advanceReviewer drives the durable steps by hand up to a crash point, then the caller discards the service.
+func advanceReviewer(t *testing.T, s *reviewerService, oe OutEnvelope, outSeq uint64, point string) {
+	t.Helper()
+	rec := s.prepare(oe, outSeq)
+	if err := s.store.put(rec, ""); err != nil {
+		t.Fatal(err)
+	}
+	if point == "prepared" {
+		return
+	}
+	if err := reconcileReviewerLedger(s.ledgerPath, rec); err != nil {
+		t.Fatal(err)
+	}
+	if point == "appended-unrecorded" {
+		return
+	}
+	rec.State = "ledger_written"
+	if err := s.store.put(rec, "prepared"); err != nil {
+		t.Fatal(err)
+	}
+	if point == "ledger_written" {
+		return
+	}
+	if _, err := publishReviewerSignoff(s.js, rec); err != nil { // published, record not yet updated
+		t.Fatal(err)
+	}
+}
+
+func TestReviewerRestartCompletesPreparedSignoffExactlyOnce(t *testing.T) {
+	for _, point := range []string{"prepared", "appended-unrecorded", "ledger_written", "published-unrecorded"} {
+		t.Run(point, func(t *testing.T) {
+			env := startTestNATS(t)
+			run := t.TempDir()
+			first := newTestReviewerService(t, env, run)
+			oe := reviewerEnvelope("rv-crash", 11)
+			advanceReviewer(t, first, oe, 11, point)
+
+			restarted := newTestReviewerService(t, env, run)
+			if err := restarted.recover(); err != nil {
+				t.Fatal(err)
+			}
+			if got := fhirMessageCount(t, env); got != 1 {
+				t.Fatalf("sign-offs=%d, want 1", got)
+			}
+			if err := restarted.recover(); err != nil {
+				t.Fatal(err)
+			}
+			if got := fhirMessageCount(t, env); got != 1 {
+				t.Fatalf("after replay sign-offs=%d, want 1", got)
+			}
+
+			cenv := startTestNATS(t) // control: uninterrupted
+			crun := t.TempDir()
+			control := newTestReviewerService(t, cenv, crun)
+			if err := control.recover(); err != nil {
+				t.Fatal(err)
+			}
+			if err := control.review(oe, 11); err != nil {
+				t.Fatal(err)
+			}
+			got, want := storedReviewer(t, restarted, "rv-crash"), storedReviewer(t, control, "rv-crash")
+			if got.State != "published" || got.FHIRSeq == 0 || got.BodyHash != want.BodyHash || got.OutSeq != 11 {
+				t.Fatalf("record %+v vs control %+v", got, want)
+			}
+			if !sameJSON(got.Signoff, want.Signoff) || len(got.Signoff.Reads) < 2 {
+				t.Fatalf("signoff differs or reads lost: %+v vs %+v", got.Signoff, want.Signoff)
+			}
+			gl, wl := ledgerFields(t, run), ledgerFields(t, crun)
+			if len(gl) != 1 || strings.Join(gl, "\n") != strings.Join(wl, "\n") {
+				t.Fatalf("ledger %v vs control %v", gl, wl)
+			}
+			if restarted.status() != control.status() || restarted.status().Answered != 1 || restarted.status().LastOut != 11 {
+				t.Fatalf("status %+v vs control %+v", restarted.status(), control.status())
+			}
+		})
+	}
+}
+
+func TestReviewerRestartReusesWorklistsWithoutReview(t *testing.T) {
+	withReuse(t)
+	env := startTestNATS(t)
+	run := t.TempDir()
+	first := newTestReviewerService(t, env, run)
+	if err := first.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if err := first.review(reviewerEnvelope("rv-1", 1), 101); err != nil {
+		t.Fatal(err)
+	}
+	sid := reviewerEnvelope("rid-1", 2)
+	sid.Item.Reason, sid.Item.Pair = "second_identifier", [2]string{"reg-a", "reg-b"}
+	if err := first.review(sid, 102); err != nil {
+		t.Fatal(err)
+	}
+	if st := first.status(); st.Answered != 2 {
+		t.Fatalf("status %+v", st)
+	}
+	before := fhirMessageCount(t, env)
+
+	restarted := newTestReviewerService(t, env, run)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	twinLink := reviewerEnvelope("rv-2", 3)
+	twinID := reviewerEnvelope("rid-2", 4)
+	twinID.Item.Reason, twinID.Item.Pair = "second_identifier", [2]string{"reg-b", "reg-a"}
+	for _, ev := range []struct {
+		oe  OutEnvelope
+		seq uint64
+	}{{twinLink, 103}, {twinID, 104}, {twinLink, 105}} { // the last is a redelivery of an already-recorded item
+		if err := restarted.review(ev.oe, ev.seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if got := fhirMessageCount(t, env); got != before {
+		t.Fatalf("twins published: %d -> %d", before, got)
+	}
+	b := restarted.status()
+	if b.DedupedLink != 1 || b.DedupedSecond != 1 || b.Answered != 2 || b.LastOut != 105 {
+		t.Fatalf("status restarted=%+v", b)
+	}
+	// control: the same stream with no restart gives identical skip results
+	cenv := startTestNATS(t)
+	control := newTestReviewerService(t, cenv, t.TempDir())
+	for _, ev := range []struct {
+		oe  OutEnvelope
+		seq uint64
+	}{{reviewerEnvelope("rv-1", 1), 101}, {sid, 102}, {twinLink, 103}, {twinID, 104}, {twinLink, 105}} {
+		if err := control.review(ev.oe, ev.seq); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if control.status() != b {
+		t.Fatalf("control %+v != restarted %+v", control.status(), b)
+	}
+	for _, id := range []string{"rv-2", "rid-2"} {
+		if r := storedReviewer(t, restarted, id); r.State != reviewerSkipped {
+			t.Fatalf("%s state %s", id, r.State)
+		}
+	}
+	if n := len(ledgerFields(t, run)); n != 2 {
+		t.Fatalf("ledger lines=%d, want 2", n)
+	}
+}
+
+func TestReviewerRestartPostDedupeWindowUsesRetainedStream(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	first := newTestReviewerService(t, env, run)
+	advanceReviewer(t, first, reviewerEnvelope("rv-window", 5), 5, "published-unrecorded")
+	stream, err := env.js.Stream(env.ctx, "FHIR")
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := stream.CachedInfo().Config
+	cfg.Duplicates = 100 * time.Millisecond
+	if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(3 * time.Second) // let the dedupe window lapse so a republish would be stored again
+	restarted := newTestReviewerService(t, env, run)
+	if err := restarted.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if got := fhirMessageCount(t, env); got != 1 {
+		t.Fatalf("sign-offs=%d after dedupe window, want 1", got)
+	}
+	if r := storedReviewer(t, restarted, "rv-window"); r.State != "published" || r.FHIRSeq != 1 {
+		t.Fatalf("record %+v", r)
+	}
+}
+
+func TestReviewerRecoverFailsClosedOnLedgerConflict(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	first := newTestReviewerService(t, env, run)
+	advanceReviewer(t, first, reviewerEnvelope("rv-bad", 3), 3, "prepared")
+	bad := `{"item":"rv-bad","link":"different"}` + "\n"
+	if err := os.WriteFile(filepath.Join(run, "reviewer_decisions.ndjson"), []byte(bad), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	restarted := newTestReviewerService(t, env, run)
+	if err := restarted.recover(); err == nil {
+		t.Fatal("conflicting ledger line must fail recovery")
+	}
+	if got := fhirMessageCount(t, env); got != 0 {
+		t.Fatalf("published despite ledger conflict: %d", got)
+	}
+}
+
+func TestReviewerObserveNonReviewPersistsLastOut(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	s := newTestReviewerService(t, env, run)
+	if err := s.review(OutEnvelope{Kind: "decision"}, 42); err != nil {
+		t.Fatal(err)
+	}
+	r := newTestReviewerService(t, env, run)
+	if err := r.recover(); err != nil {
+		t.Fatal(err)
+	}
+	if r.status().LastOut != 42 {
+		t.Fatalf("last out %d, want 42", r.status().LastOut)
+	}
+}
+
+func TestReviewerServeAcksOnlyAfterDurableState(t *testing.T) {
+	env := startTestNATS(t)
+	run := t.TempDir()
+	s := newTestReviewerService(t, env, run)
+	if err := s.recover(); err != nil {
+		t.Fatal(err)
+	}
+	oe := reviewerEnvelope("rv-serve", 0)
+	b, _ := json.Marshal(oe)
+	pubSync(env.js, &nats.Msg{Subject: "out.p0", Data: b, Header: nats.Header{"Nats-Msg-Id": []string{"o1"}}})
+	dec, _ := json.Marshal(OutEnvelope{Kind: "decision"})
+	pubSync(env.js, &nats.Msg{Subject: "out.p0", Data: dec, Header: nats.Header{"Nats-Msg-Id": []string{"o2"}}})
+	pubSync(env.js, &nats.Msg{Subject: "out.p0", Data: []byte("{not json"), Header: nats.Header{"Nats-Msg-Id": []string{"o3"}}})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { defer close(done); serveReviewer(ctx, env.js, s) }()
+	deadline := time.Now().Add(20 * time.Second)
+	for s.status().LastOut < 2 && time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+	}
+	time.Sleep(500 * time.Millisecond)
+	cancel()
+	<-done
+	if got := fhirMessageCount(t, env); got != 1 {
+		t.Fatalf("sign-offs=%d, want 1", got)
+	}
+	if r := storedReviewer(t, s, "rv-serve"); r.OutSeq != 1 || r.State != "published" {
+		t.Fatalf("record %+v (must use JetStream stream position)", r)
+	}
+	cons, err := env.js.Consumer(env.ctx, "OUT", "reviewer")
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := cons.Info(env.ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Config.AckPolicy != jetstream.AckExplicitPolicy {
+		t.Fatalf("ack policy %v", info.Config.AckPolicy)
+	}
+	// seq 1 (review) and 2 (decision) acked; seq 3 (bad JSON) must not be acknowledged.
+	if info.AckFloor.Stream != 2 {
+		t.Fatalf("ack floor=%d, want 2", info.AckFloor.Stream)
 	}
 }
