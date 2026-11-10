@@ -24,6 +24,17 @@ printf '%s\n' "$js_key" > "$dir/js_key"
 printf '%s\n' "$nats_password" > "$dir/nats_password"
 printf '%s\n' "$route_password" > "$dir/route_password"
 printf '%s\n' "$backup_key" > "$dir/backup_key"
+# Versioned recovery keyring for encrypted v2 bundles; generated in Python so no key reaches argv, stdout or logs.
+# `backup_key` above is kept only for explicitly opted-in legacy HMAC bundles.
+WASL_KEYRING_PATH="$dir/recovery_keys.json" python3 - <<'PY'
+import base64, json, os
+key_id = "g-" + os.urandom(8).hex()
+entry = {name: base64.b64encode(os.urandom(32)).decode() for name in ("wrap_key", "auth_key")}
+doc = {"schema": "wasl-recovery-keyring-v1", "active": key_id, "keys": {key_id: entry}}
+fd = os.open(os.environ["WASL_KEYRING_PATH"], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+with os.fdopen(fd, "w") as handle:
+    handle.write(json.dumps(doc, sort_keys=True, indent=2) + "\n")
+PY
 for user in coordinator clinician reviewer auditor; do
   password="$(openssl rand -hex 24)"
   printf '%s\n' "$password" > "$dir/api_${user}_password"
