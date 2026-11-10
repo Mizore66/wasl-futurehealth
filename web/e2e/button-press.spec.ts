@@ -24,12 +24,16 @@ test.describe("shared Button press", () => {
     rest = await width(search(page));
   });
 
-  test("squeezes to exactly 0.96 while held and returns to 1 on release, over 150ms of transform only", async ({ page }) => {
+  test("squeezes to exactly 0.96 while held and returns to 1 on release, over 150ms with no layout property", async ({ page }) => {
     const b = search(page);
-    expect(await b.evaluate((el) => {
+    const [props, durations] = await b.evaluate((el) => {
       const cs = getComputedStyle(el);
-      return [cs.transitionProperty, cs.transitionDuration];
-    })).toEqual(["transform, scale", "0.15s"]);
+      return [cs.transitionProperty.split(", "), cs.transitionDuration.split(", ")];
+    });
+    expect(props).toEqual(expect.arrayContaining(["transform", "scale"]));
+    // Paint-only properties: the squeeze and hover fade can never move surrounding content.
+    for (const p of props) expect(["color", "background-color", "border-color", "box-shadow", "transform", "scale"]).toContain(p);
+    expect(new Set(durations)).toEqual(new Set(["0.15s"]));
 
     await pressOn(page, b);
     await expect.poll(() => scale(b)).toBe("0.96");
