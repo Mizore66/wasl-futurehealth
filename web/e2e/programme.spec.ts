@@ -5,6 +5,7 @@ const stallCard = (page: Page) => page.locator('section[aria-labelledby="stall-h
 const kpiCard = (page: Page) => page.locator('section[aria-labelledby="kpi-h"]');
 const progCard = (page: Page) => page.locator('section[aria-labelledby="prog-h"]');
 const capCard = (page: Page) => page.locator('section[aria-labelledby="cap-h"]');
+const SOURCE_CARDS = ["kpi-h", "prog-h", "stall-h", "cap-h"] as const;
 
 test.describe("Programme", () => {
   test("leads with reported vs measured, bars against the target and the truth line", async ({ page }) => {
@@ -40,6 +41,81 @@ test.describe("Programme", () => {
     }
   });
 
+  test("each Source note keeps aria-controls resolvable and is out of reach while closed", async ({ page }) => {
+    await page.goto("/app");
+    for (const card of SOURCE_CARDS) {
+      const section = page.locator(`section[aria-labelledby="${card}"]`);
+      const button = section.getByRole("button", { name: "Source" });
+      const note = page.locator(`[id="${await button.getAttribute("aria-controls")}"]`);
+      await expect(note).toHaveCount(1);
+      await expect(note).toHaveAttribute("inert", "");
+      await expect(note).toBeHidden();
+      await button.click();
+      await expect(note).not.toHaveAttribute("inert");
+      await expect(note).toBeVisible();
+      await section.getByRole("button", { name: "Hide source" }).click();
+      // Inert from the first frame of closing, so focus and screen readers never land in a collapsing note.
+      await expect(note).toHaveAttribute("inert", "");
+      await expect(note).toBeHidden();
+      await expect(section.getByRole("button", { name: "Source" })).toBeFocused();
+    }
+  });
+
+  /** React has attached its handlers to the Source buttons, so a scripted click is handled. */
+  async function hydrated(page: Page) {
+    await page.waitForFunction(() =>
+      [...document.querySelectorAll("main button[aria-controls]")].every((b) => Object.keys(b).some((k) => k.startsWith("__reactProps"))),
+    );
+  }
+
+  /** Clicks a card's Source button and records the card's height on every frame for 400ms. */
+  async function heightsWhileOpening(page: Page, card: string): Promise<number[]> {
+    return page.evaluate(
+      (card) =>
+        new Promise<number[]>((done) => {
+          const section = document.querySelector<HTMLElement>(`section[aria-labelledby="${card}"]`)!;
+          const heights = [section.getBoundingClientRect().height];
+          const start = performance.now();
+          section.querySelector<HTMLButtonElement>("button[aria-controls]")!.click();
+          const tick = () => {
+            heights.push(section.getBoundingClientRect().height);
+            if (performance.now() - start < 400) requestAnimationFrame(tick);
+            else done(heights);
+          };
+          requestAnimationFrame(tick);
+        }),
+      card,
+    );
+  }
+
+  test("Source notes open over several frames, not in one step", async ({ page }) => {
+    await page.goto("/app");
+    await hydrated(page);
+    for (const card of SOURCE_CARDS) {
+      const heights = await heightsWhileOpening(page, card);
+      const growth = heights.at(-1)! - heights[0];
+      const steps = heights.slice(1).map((h, i) => h - heights[i]);
+      const between = heights.filter((h) => h > heights[0] + 1 && h < heights.at(-1)! - 1);
+      expect(growth, `${card} grows`).toBeGreaterThan(40);
+      expect(between.length, `${card} passes through in-between heights`).toBeGreaterThanOrEqual(2);
+      expect(Math.max(...steps), `${card} largest single-frame step`).toBeLessThan(growth * 0.7);
+    }
+  });
+
+  test("with reduced motion the Source note opens at once", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/app");
+    await hydrated(page);
+    for (const card of SOURCE_CARDS) {
+      const heights = await heightsWhileOpening(page, card);
+      const growth = heights.at(-1)! - heights[0];
+      expect(growth, `${card} grows`).toBeGreaterThan(40);
+      // One step, from closed to open, within the frame or two React and Motion take to commit.
+      expect(heights.filter((h) => h !== heights[0] && h !== heights.at(-1)), `${card} has no in-between heights`).toEqual([]);
+      expect(heights.indexOf(heights.at(-1)!), `${card} frames until full height`).toBeLessThanOrEqual(2);
+    }
+  });
+
   test("the top three stalls each link to the filtered patient list", async ({ page }) => {
     await page.goto("/app");
     const rows = stallCard(page).locator("ol a");
@@ -71,6 +147,39 @@ test.describe("Programme", () => {
   test("every number on the screen is in results.json or the dashboard", async ({ page }) => {
     await page.goto("/app");
     expect(await unsourced(page)).toEqual([]);
+  });
+});
+
+test.describe("Programme on a 390px touch screen", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("Source buttons have 44px hit areas that overlap no other control, and nothing scrolls sideways", async ({ page }) => {
+    await page.goto("/app");
+    for (const card of SOURCE_CARDS) {
+      const section = page.locator(`section[aria-labelledby="${card}"]`);
+      for (const name of ["Source", "Hide source"]) {
+        const button = section.getByRole("button", { name });
+        await expect(button).toBeVisible();
+        const box = (await button.boundingBox())!;
+        expect(box.width, `${card} ${name} width`).toBeGreaterThanOrEqual(44);
+        expect(box.height, `${card} ${name} height`).toBeGreaterThanOrEqual(44);
+        const hits = await button.evaluate((mine) => {
+          const a = mine.getBoundingClientRect();
+          return [...document.querySelectorAll('a, button, input, select, [tabindex]:not([tabindex="-1"])')]
+            .filter((el) => el !== mine)
+            .map((el) => ({ el, r: el.getBoundingClientRect() }))
+            .filter(({ r }) => r.width > 0 && r.height > 0 && r.left < a.right && a.left < r.right && r.top < a.bottom && a.top < r.bottom)
+            .map(({ el }) => el.outerHTML.slice(0, 80));
+        });
+        expect(hits, `${card} ${name} overlaps`).toEqual([]);
+        await button.tap();
+        await expect(section.getByRole("button", { name: name === "Source" ? "Hide source" : "Source" })).toBeVisible();
+        if (name === "Source") {
+          expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), "no sideways scroll with the note open").toBe(true);
+          if (card === "kpi-h") await page.screenshot({ path: "test-results/screens/programme-source-390.png", fullPage: true });
+        }
+      }
+    }
   });
 });
 
