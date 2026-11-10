@@ -120,12 +120,31 @@ export type WorkItem = {
   review: CaseSummary["review"];
   dropoff: Dropoff;
   hasRecord: boolean;
+  /** The case's `api_overlay.head` (live API only): what the next coordinator action must name as `expected_head`. */
+  head?: string;
+  /** Coordinator actions already on the API ledger for this case (live API only). */
+  ledgerActions?: number;
+  /** A ledger snooze that has not run out yet (live API only); snoozed rows sink on Today. */
+  snoozed?: boolean;
 };
 
-export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkItem {
+/** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
+export const HANDOFF_OWNER = "Dr Al Kaabi";
+
+/**
+ * `wallNow` (ms) is only used to tell whether a ledger snooze is still running: the API checks snooze `until`
+ * against the server's wall clock, not the run clock.
+ */
+export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
-  const words = statusWords(c);
-  const view: View = c.owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  const words = { ...statusWords(c) };
+  const ov = c.api_overlay;
+  const owner = ov?.owner || c.owner;
+  let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
+  if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
+  const snoozed = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
+  if (snoozed) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
   return {
     id: c.id,
     short: shortId(c.id),
@@ -141,10 +160,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkI
     overdue: c.overdue,
     referralDay: c.referral_day,
     textsAllowed: c.consent === "granted",
-    owner: ownerLabel(c.owner),
+    owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed } : {}),
   };
 }
 

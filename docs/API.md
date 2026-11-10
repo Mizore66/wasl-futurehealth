@@ -11,7 +11,7 @@ scripts/demo.sh serve      # API on http://127.0.0.1:8088   (WASL_API_ADDR to ch
 
 **No backend at all?** Static responses for every endpoint are in [`api-samples/`](api-samples/). They were produced by `scripts/demo.sh snapshot` against a real run, so you can build the UI against them.
 
-CORS is open (`*`) for local development.
+CORS is open (`*`) for local development. Set `WASL_API_TOKEN` (24+ characters) on `serve` to require `Authorization: Bearer <token>` on every `/api/...` route (`/healthz` stays open, 401 otherwise); the web app sends its own `WASL_API_TOKEN` when set. See [`DEPLOY.md`](DEPLOY.md#hosted-frontend-vercel).
 
 ## Envelope
 

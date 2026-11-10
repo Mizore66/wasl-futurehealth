@@ -220,6 +220,16 @@ export const IfhasFinding = z.looseObject({
   next_step: z.string().optional(),
 });
 
+/** Coordinator overlay (POST /actions). Absent in snapshots taken before the actions endpoint existed. */
+export const ApiOverlay = z.looseObject({
+  head: z.string(),
+  actions: z.number().default(0),
+  owner: z.string().default(""),
+  last_action_at: z.string().default(""),
+  ledger_status: z.enum(["ok", "invalid"]).default("ok"),
+  snooze: z.looseObject({ until: z.string(), reason: z.string().optional() }).optional(),
+});
+
 export const CaseSummary = z.looseObject({
   id: z.string(),
   programme: Programme,
@@ -242,6 +252,7 @@ export const CaseSummary = z.looseObject({
   breast: BreastFinding.optional(),
   ldct: LdctFinding.optional(),
   ifhas: IfhasFinding.optional(),
+  api_overlay: ApiOverlay.optional(),
 });
 
 export const ChainEntry = z.looseObject({
@@ -542,6 +553,24 @@ export const ReviewRequest = z.object({
 });
 
 export const ReviewResponse = withMeta({ review: ApiReview, note: z.string().optional() });
+
+/** POST /api/cases/{id}/actions body (docs/API.md, "POST actions"). `expected_head` is added by the caller. */
+export const CaseAction = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
+  z.object({ action: z.literal("snooze"), until: z.string(), reason: z.string().max(200).optional() }),
+  z.object({
+    action: z.literal("contact_outcome"),
+    outcome: z.enum(["reached", "no_answer", "voicemail", "wrong_number", "declined", "appointment_agreed"]),
+    channel: z.enum(["phone", "sms", "email", "in_person"]),
+    note: z.string().max(1000).optional(),
+  }),
+  z.object({ action: z.literal("note"), text: z.string().min(1).max(1000) }),
+]);
+export const ActionResponse = withMeta({
+  event: z.looseObject({ hash: z.string(), at: z.string() }),
+  api_overlay: ApiOverlay,
+});
+export const ActionError = withMeta({ error: z.string(), conflict: z.string().optional(), current_head: z.string().optional() });
 export const ApiError = withMeta({ error: z.string() });
 
 export type Programme = z.infer<typeof Programme>;
@@ -561,3 +590,6 @@ export type Healthz = z.infer<typeof Healthz>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ApiReview = z.infer<typeof ApiReview>;
+export type ApiOverlay = z.infer<typeof ApiOverlay>;
+export type CaseAction = z.infer<typeof CaseAction>;
+export type ActionResponse = z.infer<typeof ActionResponse>;

@@ -77,6 +77,8 @@ services:
     environment:
       <<: *wasl-env
       WASL_API_ADDR: 0.0.0.0:8088
+      # Set to require "Authorization: Bearer <token>" on /api (docs/DEPLOY.md, "Hosted frontend"). Empty = open.
+      WASL_API_TOKEN: ${WASL_API_TOKEN:-}
     volumes:
       - wasl-run:/var/lib/wasl
     ports:

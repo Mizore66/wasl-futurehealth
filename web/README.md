@@ -15,7 +15,7 @@ pnpm gen        # copy the API samples, build data/replay.json, results.json, pe
 pnpm dev        # http://localhost:3000/app
 ```
 
-Fixtures mode serves the three demo cases and a 25-case page. `postReview` requires `WASL_API_URL` and throws in fixtures mode because fixtures cannot append review events.
+Fixtures mode serves the three demo cases and a 25-case page. `postReview` and `postAction` require `WASL_API_URL` and throw in fixtures mode because fixtures cannot append ledger events; Today keeps its call log in the browser instead.
 
 ## Run against the live API
 
@@ -25,6 +25,8 @@ scripts/demo.sh serve      # API on http://127.0.0.1:8088
 cd web
 WASL_API_URL=http://127.0.0.1:8088 pnpm dev
 ```
+
+If the API runs with `WASL_API_TOKEN`, set the same `WASL_API_TOKEN` here (server-side only). On Vercel, set `WASL_API_URL` and `WASL_API_TOKEN` in the project's environment variables: see [`../docs/DEPLOY.md`](../docs/DEPLOY.md#hosted-frontend-vercel).
 
 To run the end-to-end suite against the live API, build and test with the variable set:
 
@@ -47,7 +49,7 @@ pnpm verify     # tsc → eslint → vitest → next build → playwright
 | Path | What | Who edits |
 |---|---|---|
 | `lib/api/schema.ts` | zod schemas for every endpoint; objects are loose, enums are closed | shared, read-only in phase 2 |
-| `lib/api/source.ts` | `getDashboard`, `getCases`, `getCase`, `getAudit`, `getFixtures`, `postReview` | shared |
+| `lib/api/source.ts` | `getDashboard`, `getCases`, `getCase`, `getAudit`, `getFixtures`, `postReview`, `postAction` | shared |
 | `lib/domain/` | `dayToDate`, `formatDay`, `caseStage` (the 8-step vocabulary), case id helpers | shared |
 | `lib/replay/` | `step(state, event)`, `next(replay, state)`, `initialState` | shared |
 | `lib/results/`, `lib/people/` | typed access to `data/results.json` and `data/people.json` | shared |

@@ -12,6 +12,7 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -103,17 +104,44 @@ func runServe(run, data, addr string) {
 		caseAPI.ServeHTTP(w, r)
 	}))
 	mux.HandleFunc("/api/fixtures", s.getFixtures)
-	srv := &http.Server{Addr: addr, Handler: cors(mux), ReadHeaderTimeout: 5 * time.Second}
-	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v)\n", len(s.cases), run, addr, s.fixtures)
+	token := os.Getenv("WASL_API_TOKEN")
+	if token != "" && len(token) < 24 {
+		panic("WASL_API_TOKEN must be at least 24 characters")
+	}
+	srv := &http.Server{Addr: addr, Handler: cors(requireToken(token, mux)), ReadHeaderTimeout: 5 * time.Second}
+	fmt.Fprintf(os.Stderr, "wasl api: %d cases from %s on http://%s (fixtures: %v, token required: %v)\n", len(s.cases), run, addr, s.fixtures, token != "")
 	if err := srv.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }
 
+// requireToken gates every /api route behind a shared bearer token when WASL_API_TOKEN is set, so the API can sit
+// behind a public URL for a hosted frontend. /healthz stays open for container and platform health checks. The token
+// authenticates the caller (the frontend server), not a person: X-Wasl-Role and X-Wasl-Actor are still asserted by
+// that caller. Unset keeps the original open loopback behaviour.
+func requireToken(token string, h http.Handler) http.Handler {
+	if token == "" {
+		return h
+	}
+	want := []byte("Bearer " + token)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/healthz" {
+			h.ServeHTTP(w, r)
+			return
+		}
+		if subtle.ConstantTimeCompare([]byte(r.Header.Get("Authorization")), want) != 1 {
+			w.Header().Set("WWW-Authenticate", `Bearer realm="wasl"`)
+			writeJSONResp(w, 401, map[string]interface{}{"error": "missing or wrong bearer token"})
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
+}
+
 func cors(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, X-Wasl-Role, X-Wasl-Actor")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Wasl-Role, X-Wasl-Actor")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(204)

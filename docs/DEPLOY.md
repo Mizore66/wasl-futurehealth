@@ -181,6 +181,42 @@ but does not replace a security audit of, encryption at rest. All emulation proc
 The separate normal and approximately 10× scale measurements, including the x10 safety failures and annual-volume
 storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/scale/).
 
+## Hosted frontend (Vercel)
+
+The Next.js app in `web/` reads the API from its **server** (React Server Components and server actions), never from
+the browser, so the API needs a public HTTPS URL but no CORS changes. Vercel cannot run the Go API or NATS: run this
+package on any host with Docker, put an HTTPS endpoint in front of the loopback port, and point Vercel at it.
+
+1. On the API host, pick a long random token and start the package with it:
+
+   ```bash
+   export WASL_API_TOKEN="$(openssl rand -hex 32)"   # keep it; Vercel needs the same value
+   scripts/deploy_up.sh
+   curl -s 127.0.0.1:8088/healthz                    # open, for health checks
+   curl -s -H "Authorization: Bearer $WASL_API_TOKEN" 127.0.0.1:8088/api/dashboard | head -c 200
+   ```
+
+   With `WASL_API_TOKEN` set (24+ characters), every `/api/...` request needs `Authorization: Bearer <token>`;
+   `/healthz` stays open. Unset, the API is open, which is only acceptable on loopback.
+2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
+   on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
+3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
+   wanted), then redeploy:
+
+   | Variable | Value |
+   |---|---|
+   | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path |
+   | `WASL_API_TOKEN` | the same token as step 1 (server-only: never prefix it with `NEXT_PUBLIC_`) |
+
+   Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
+   the browser.
+
+The token authenticates the frontend server, not a person: the API still takes `X-Wasl-Role`/`X-Wasl-Actor` from it,
+and the frontend derives the role from the action. Anyone who can use the hosted site can therefore sign demo reviews
+and coordinator actions on the synthetic run; protect the Vercel deployment (Vercel Authentication or a password) if
+that matters. Review and coordinator events are appended to `api_reviews.ndjson` on the `wasl-run` volume and survive
+an API restart; a new pipeline run that changes case heads makes the old ledger invalid (see `API.md`).
+
 ## Not production-ready
 
 - **Verified under Podman + Docker Compose provider only.** Docker Engine and other hosts are untested. A retained-volume restart is checked under Podman only (7 Nov, above): a correct-key restart recovers the stores without decryption warnings and a wrong key is refused; retained messages are not shown to be read back, and the pipeline reruns a fresh cohort. The key marker script is not exercised on Docker Engine.

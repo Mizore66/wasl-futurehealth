@@ -28,7 +28,7 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
     await expect(open.getByTestId("lead-days")).toHaveAttribute("data-value", "108");
-    await expect(page.locator("[data-honesty=designed]")).toHaveText("Call log: designed, not built");
+    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser (no live API)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
