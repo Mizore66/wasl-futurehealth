@@ -59,8 +59,8 @@ unavailable. Test keyrings are generated in temp dirs at run time.
 ## Limits
 
 - Any failure after the NATS step begins needs a manual JetStream purge before retry; file/NATS atomicity is not claimed.
-- The compose `recovery` container has a read-only root and a **64 MB** `/tmp` tmpfs, the only writable scratch for the decrypted NATS payload (set `TMPDIR` to another writable mount if larger); the 9 Nov drill's payload size is unrecorded, so fit is unproven. Destination capacity for a staged copy is also needed.
+- The compose `recovery` container has a read-only root and a **64 MB** `/tmp` tmpfs, the default writable scratch for the plaintext NATS payload in both backup and restore (set `TMPDIR` to a writable mount such as a volume if larger; the root filesystem is read-only); the 9 Nov drill's payload size is unrecorded, so fit is unproven. Destination capacity for a staged copy is also needed.
 - Cleanup is logical deletion, not physical secure erasure. Old key generations must be retained for as long as their bundles must be restorable; rotation does not re-encrypt.
 - Legacy v1 bundles are unencrypted and explicit opt-in only.
 - No external exactly-once guarantee, production RPO/RTO or 24-hour soak is claimed. Hosted CI results are unconfirmed until run on GitHub.
-- Independent review (Task 4 step 4) was not performed in this session by instruction.
+- Review outcomes: Task 1 and Task 2 passed independent review. Task 3 review first returned Needs fixes (restore ordering, shell-level test) and was approved after the fixes. Task 4 was independently reviewed; after fix rounds 1 and 2 (documentation and test-assertion changes only) the re-review approved it. The reviews were run by the coordinator, not by this agent; their reports are not reproduced here. Final whole-branch review and hosted CI remain outstanding.

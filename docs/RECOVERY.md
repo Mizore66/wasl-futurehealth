@@ -112,13 +112,15 @@ payload. Neither the keyring nor any data key is included.
   old `backup_key`. It is never a default; `backup` always writes v2.
 - Upgrading an existing secrets volume: re-run the secret bootstrap so `recovery_keys.json` is added next to the
   existing `backup_key`, which is kept only for legacy reads.
-- Restore decrypts into a private mode-0700 staging directory beside the destination (so the destination filesystem
-  needs room for one full decrypted copy) and writes the NATS payload to a mode-0700 temporary directory under
-  `${TMPDIR:-/tmp}`. **That filesystem must hold the decrypted NATS payload.** In `deploy/production.compose.yml` the
-  `recovery` service is `read_only: true` with `tmpfs: ["/tmp:size=64m,mode=1777"]`, so the cap is **64 MB** and `/tmp` is
-  the only writable scratch path there (the staging copy goes to the writable `wasl-run:/var/lib` volume beside
-  `/var/lib/wasl`). Keep `TMPDIR` unset or `/tmp` in that container: any other path is read-only and the restore
-  fails. For a payload larger than 64 MB raise the `size=` on that tmpfs, or mount a larger writable volume (for
+- Both **backup** (`recovery-backup` writes the plaintext `wsi7 backup-nats` output to a mode-0700 `mktemp` directory
+  before encrypting it) and **restore** (the decrypted NATS payload handed to `restore-nats`) place a plaintext NATS
+  file under `${TMPDIR:-/tmp}`. Restore also decrypts the run files into a private mode-0700 staging directory beside the
+  destination, so the destination filesystem needs room for one full decrypted copy. **The temp filesystem must hold the
+  plaintext NATS payload for both operations.** In `deploy/production.compose.yml` the
+  `recovery` service is `read_only: true` with `tmpfs: ["/tmp:size=64m,mode=1777"]`, so the cap is **64 MB** for both operations and `/tmp` is
+  the default writable scratch path there (the staging copy goes to the writable `wasl-run:/var/lib` volume beside
+  `/var/lib/wasl`). Keep `TMPDIR` unset or `/tmp` in that container: any path not backed by a writable mount (the root filesystem is
+  read-only; `/var/lib` and `/backup` are writable volumes) makes the operation fail. For a payload larger than 64 MB raise the `size=` on that tmpfs, or mount a larger writable volume (for
   example at `/scratch`) and set `TMPDIR=/scratch`. The size of the decrypted NATS payload in the 9 Nov drill (6 streams,
   5,868 messages) was **not recorded** in any artifact, so whether it fits 64 MB is unproven; measure it before relying
   on the cap (`python3 scripts/recovery.py extract-nats <bundle> <out> --key-file <keyring>; wc -c <out>`).
