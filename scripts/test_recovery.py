@@ -331,7 +331,7 @@ class RecoveryV2Tests(unittest.TestCase):
             ("duplicate", lambda m: m["files"][0].__setitem__("path", m["files"][1]["path"]), "unsafe|duplicate"),
             ("file-dir-clash", lambda m: m["files"][0].__setitem__("path", m["files"][1]["path"] + "/x"),
              "unsafe|duplicate"),
-            ("extra-field", field("mode", 1), "malformed"),
+            ("extra-field", field("owner", 1), "malformed"),
             ("bool-size", field("size", True), "malformed"),
             ("negative-size", field("size", -1), "malformed"),
             ("short-nonce", field("nonce", "AAAA"), "malformed"),
@@ -445,12 +445,6 @@ class RecoveryV2Tests(unittest.TestCase):
                                text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.assertEqual(opted.returncode, 0, opted.stdout)
 
-    def test_migrate_refuses_v2_until_transactional_restore_exists(self):
-        bundle, _ = self.backup()
-        with self.assertRaisesRegex(ValueError, "not supported"):
-            migrate_files(bundle, self.keyring, self.root / "live")
-        self.assertFalse((self.root / "live").exists())
-
     def test_decrypt_into_empty_private_staging(self):
         bundle, _ = self.backup()
         doc, _, _ = load_keyring(self.keyring)
@@ -459,8 +453,9 @@ class RecoveryV2Tests(unittest.TestCase):
         _decrypt_v2_payloads(bundle, doc, manifest, staging)
         self.assertEqual((staging / "run/audit.json").read_text(), '{"synthetic":true}\n')
         self.assertIn(b"synthetic clinical marker", (staging / "nats/nats.json").read_bytes())
-        self.assertEqual(stat.S_IMODE((staging / "run/audit.json").stat().st_mode), 0o600)
-        self.assertEqual(stat.S_IMODE((staging / "run").stat().st_mode), 0o700)
+        recorded = (self.root / "source/run/audit.json").stat().st_mode & 0o777
+        self.assertEqual(stat.S_IMODE((staging / "run/audit.json").stat().st_mode), recorded)
+        self.assertEqual(stat.S_IMODE((staging / "run").stat().st_mode), (self.root / "source/run").stat().st_mode & 0o777)
         with self.assertRaisesRegex(ValueError, "empty"):
             _decrypt_v2_payloads(bundle, doc, manifest, staging)
         loose = self.root / "loose"

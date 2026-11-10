@@ -147,7 +147,7 @@ Stop the API/workflow writers before replacing a generation. NATS is not modifie
 export COMPOSE_PROJECT_NAME="$TARGET"
 podman compose -f "$COMPOSE_FILE" stop api
 podman compose -f "$COMPOSE_FILE" --profile recovery run --rm --entrypoint python3 recovery \
-  /app/scripts/recovery.py migrate /backup/bundle --key-file /run/secrets/backup_key /var/lib/wasl --replace
+  /app/scripts/recovery.py migrate /backup/bundle --key-file /run/secrets/recovery_keys.json /var/lib/wasl --replace
 podman compose -f "$COMPOSE_FILE" --profile recovery run --rm --entrypoint python3 recovery \
   /app/scripts/recovery.py rollback /var/lib/.wasl.migration.json
 podman compose -f "$COMPOSE_FILE" start api

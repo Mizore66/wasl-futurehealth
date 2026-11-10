@@ -20,7 +20,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
 RUN apk upgrade --no-cache \
  && apk add --no-cache bash util-linux \
  && pip install --no-cache-dir --upgrade "pip==26.3" \
- && pip install --no-cache-dir "numpy==2.3.5" "scipy==1.16.3" \
+ && pip install --no-cache-dir "numpy==2.3.5" "scipy==1.16.3" "cryptography==50.0.2" \
  && pip uninstall -y pip \
  && rm -f /usr/local/bin/pip /usr/local/bin/pip3 /usr/local/bin/pip3.12 \
  && rm -rf /usr/local/lib/python3.12/ensurepip \

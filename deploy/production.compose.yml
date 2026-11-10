@@ -10,6 +10,7 @@ x-wasl-env: &wasl-env
   WASL_NATS_CERT_FILE: /run/secrets/server.crt
   WASL_NATS_KEY_FILE: /run/secrets/server.key
   WASL_OUT: /var/lib/wasl
+  WASL_RECOVERY_KEY_FILE: /run/secrets/recovery_keys.json
   WASL_SEED: ${WASL_SEED:-2026}
   WASL_POLICY: ${WASL_POLICY:-v7strict}
   WASL_SOURCE: ${WASL_SOURCE:-fhir}

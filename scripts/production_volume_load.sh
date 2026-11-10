@@ -11,7 +11,7 @@ directory="$2"
 case "$volume" in *[!A-Za-z0-9_.-]*|"") echo "invalid secret volume name" >&2; exit 2;; esac
 [ -d "$directory" ] || { echo "secret directory not found" >&2; exit 1; }
 files=(js_key nats_password route_password api_users.json api_coordinator_password api_clinician_password
-       api_reviewer_password api_auditor_password backup_key ca.crt server.crt server.key)
+       api_reviewer_password api_auditor_password backup_key recovery_keys.json ca.crt server.crt server.key)
 for file in "${files[@]}"; do
   [ -f "$directory/$file" ] || { echo "required secret file missing: $file" >&2; exit 1; }
 done
