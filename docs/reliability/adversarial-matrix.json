@@ -150,7 +150,7 @@
       "command": "go -C pipeline test . -run 'TestReviewer' -count=3",
       "seeds": ["reviewer seed 1", "five crash windows x reuse off/on", "short-write, sync and close ledger faults", "conflicting FHIR sign-off and conflicting ledger"],
       "status": "pass",
-      "evidence": "Built and tested for the bounded synthetic single-node matrix only: each crash window is compared with an uninterrupted control for one logical sign-off per item, identical worklists, status, exact ledger hash and stored record; conflicts stop without ACK or publish. Passed three times (305.6s), then full package (271.2s) and go vet. See evidence/reviewer-durable-restart-2026-11-10.md.",
+      "evidence": "Built and tested for the bounded synthetic single-node matrix only: each crash window is compared with an uninterrupted control for one logical sign-off per item, identical worklists, status, exact ledger hash and stored record; conflicts stop without ACK or publish. Passed three times (316.0s), then full package (275.3s) and go vet. See evidence/reviewer-durable-restart-2026-11-10.md.",
       "limitations": "Exactly-once external effects, physical power loss, cross-host locking and clinician performance remain unproven. The failed 24-hour soak limitation is preserved; no soak, normalization or AMD64 run was made."
     },
     {
