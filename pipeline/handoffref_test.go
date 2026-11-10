@@ -24,10 +24,10 @@ func xrSetup(t *testing.T) (*LinkerCore, *ClosureCore, []OutMsg) {
 			outs = append(outs, C.Apply(&fs[i])...)
 		}
 	}
-	feed(L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1})))
+	feed(L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1})))
 	feed(L.Apply(xrEvent(2, &Event{ID: "q1", Provider: "ahs-mushrif", RType: "Communication", Focus: "ServiceRequest/SR1", Day: 5, Category: "econsult-question", Reason: "rejected", Recipient: Providers[2].ID})))
 	feed(L.Apply(xrEvent(3, &Event{ID: "a1", Provider: "ahs-mushrif", RType: "Communication", Focus: "ServiceRequest/SR1", Day: 6, Category: "econsult-reply", Parse: "redirect"})))
-	feed(L.Apply(xrEvent(4, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", PatientKey: Providers[3].ID + "|N1",
+	feed(L.Apply(xrEvent(4, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N1",
 		Name: "J. Maclean", Day: 9, Status: "revoked", Reason: "capacity", XRef: xrLoop})))
 	outs = append(outs, C.Apply(&FactsMsg{ID: "t", IsTick: true, TickDay: 10, InSeq: 6})...)
 	return L, C, outs
@@ -110,11 +110,11 @@ func TestXRefIgnoredWhenIdentityPointsElsewhere(t *testing.T) {
 	if !luhnOK(eid) {
 		t.Fatal("test EID must be Luhn-valid")
 	}
-	L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1}))
-	L.Apply(xrEvent(2, &Event{ID: "SR2", Provider: "medlab", RType: "ServiceRequest", PatientKey: "medlab|M2", Name: "Mona Saleh", Eid: eid, Day: 1}))
-	L.Apply(xrEvent(3, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", PatientKey: Providers[3].ID + "|N2",
+	L.Apply(xrEvent(1, &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Jane McLean", Day: 1}))
+	L.Apply(xrEvent(2, &Event{ID: "SR2", Provider: "medlab", RType: "ServiceRequest", Prog: "crc", PatientKey: "medlab|M2", Name: "Mona Saleh", Eid: eid, Day: 1}))
+	L.Apply(xrEvent(3, &Event{ID: "NOO-intake-1", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N2",
 		Name: "Mona Saleh", Eid: eid, Day: 9, Status: "revoked", Reason: "capacity", XRef: xrLoop}))
-	L.Apply(xrEvent(4, &Event{ID: "NOO-intake-2", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", PatientKey: Providers[3].ID + "|N3",
+	L.Apply(xrEvent(4, &Event{ID: "NOO-intake-2", Provider: Providers[3].ID, RType: "ServiceRequest", Category: "referral-intake", Prog: "crc", PatientKey: Providers[3].ID + "|N3",
 		Name: "J. Maclean", Day: 9, Status: "active", XRef: xrLoop}))
 	for _, x := range lastFactsOf(L, xrLoop).Down {
 		t.Fatalf("intake attached against identity or not a rejection: %+v", x)

@@ -158,7 +158,10 @@ func validateResourceForIngest(body []byte, lastUpdated float64) error {
 	if err != nil {
 		return err
 	}
-	if ev, so := normalise(prov, lastUpdated, body); ev == nil && so == nil {
+	if ev, so, normErr := normaliseChecked(prov, lastUpdated, body); ev == nil && so == nil {
+		if normErr != nil {
+			return normErr
+		}
 		return fmt.Errorf("invalid resource shape")
 	}
 	return nil
@@ -365,7 +368,7 @@ func (c *PollConsumer) publish(body []byte, lastUpdated float64, via string) boo
 		c.inc("unknown_source")
 		return false
 	}
-	if ev, so := normalise(prov, lastUpdated, body); ev == nil && so == nil {
+	if ev, so, _ := normaliseChecked(prov, lastUpdated, body); ev == nil && so == nil {
 		c.inc("invalid_resource")
 		return false
 	}

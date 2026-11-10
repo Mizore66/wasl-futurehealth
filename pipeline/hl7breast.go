@@ -200,8 +200,8 @@ func (m *HL7Msg) hl7BreastRebuild(res map[string]interface{}) bool {
 	if hl7BreastDisplay[c[0]] == "" || gs(res, "resourceType") != "DiagnosticReport" {
 		return false
 	}
-	st := map[string]string{"F": "final", "C": "corrected", "P": "preliminary"}[fld(obr, 25)]
-	if st == "" {
+	st, ok := hl7ClinicalStatus(fld(obr, 25))
+	if !ok {
 		return false
 	}
 	res["code"] = map[string]interface{}{"coding": []interface{}{
@@ -210,6 +210,7 @@ func (m *HL7Msg) hl7BreastRebuild(res map[string]interface{}) bool {
 	if t := ts(fld(obr, 7)); t != "" {
 		res["effectiveDateTime"] = t
 	}
+	delete(res, "conclusion")
 	delete(res, "conclusionCode")
 	delete(res, "presentedForm")
 	var text strings.Builder

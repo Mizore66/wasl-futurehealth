@@ -12,7 +12,7 @@ func TestContradictingSecondIDNeedsConfirmation(t *testing.T) {
 	L, loop1 := newLoopLinker(t)
 	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
 	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
-	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	loop2 := "ahs-mushrif/ServiceRequest/SR2"
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
 	k := pk2(L.byPk[pair[0]], L.byPk[pair[1]])
@@ -59,7 +59,7 @@ func TestContradictingSecondIDNeedsConfirmation(t *testing.T) {
 	LinkContradictionConfirm = false
 	L2, l2 := newLoopLinker(t)
 	L2.recs[L2.byPk["ahs-mushrif|M1"]].Sex = "F"
-	L2.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	L2.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	k2 := pk2(L2.byPk[pair[0]], L2.byPk[pair[1]])
 	L2.Link(k2[0], k2[1], 0.995, false, "wasl")
 	p := so(10, "g1", "second_identifier", "same")
@@ -75,7 +75,7 @@ func TestContradictingSecondIDNeedsConfirmation(t *testing.T) {
 func TestHeldSecondIDRaisesConfirmingItem(t *testing.T) {
 	defer func(g bool) { V7Guard = g }(V7Guard)
 	V7Guard = true
-	down := DownFact{EventID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", Day: 10, Strength: 0.995,
+	down := DownFact{EventID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", Day: 10, Strength: 0.995,
 		Weak: Edge{A: "P|1", B: "H|9", Basis: "wasl"}, RecPk: "H|9", RecDob: "1980-01-01"}
 	run := func(sos ...Signoff) (*Decision, []*ReviewItem) {
 		C := NewClosureCore(0, nil)
@@ -154,7 +154,7 @@ func TestSecondIDConfirmFlagOff(t *testing.T) {
 	V7Guard, ReuseIDConfirm, LinkContradictionConfirm, SecondIDContradictionConfirm = true, true, true, false
 	L, loop := newLoopLinker(t)
 	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
-	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
 	k := pk2(L.byPk[pair[0]], L.byPk[pair[1]])
 	L.Link(k[0], k[1], 0.995, false, "wasl")
@@ -172,7 +172,7 @@ func TestSecondIDConfirmFlagOff(t *testing.T) {
 	// the link path keeps its own confirm: a plain link 'same' on the contradicting pair is still held
 	L2, loop2 := newLoopLinker(t)
 	L2.recs[L2.byPk[pair[0]]].Sex = "F"
-	L2.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	L2.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	p := so(3, "i1", "")
 	p.So.LoopID = loop2
 	L2.Apply(p)

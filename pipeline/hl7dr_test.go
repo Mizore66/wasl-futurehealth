@@ -16,7 +16,7 @@ func drRes(code, text, coded string) map[string]interface{} {
 		"code":              map[string]interface{}{"coding": []interface{}{map[string]interface{}{"system": "urn:wsi:proc", "code": code, "display": "Diabetic eye screening (retinal photography)"}}},
 		"effectiveDateTime": dayToTS(-33.6),
 		"presentedForm":     []interface{}{map[string]interface{}{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(text))}},
-		"meta":              map[string]interface{}{"versionId": "1"}, "contained": []interface{}{}}
+		"meta":              map[string]interface{}{"versionId": "1", "lastUpdated": dayToTS(-33.6)}, "contained": []interface{}{}}
 	if coded != "" {
 		r["conclusionCode"] = []interface{}{map[string]interface{}{"text": coded}}
 	}
@@ -28,7 +28,7 @@ func drSRRes() map[string]interface{} {
 		"category": []interface{}{map[string]interface{}{"text": "dr-screening"}}, "authoredOn": dayToTS(-33.6),
 		"code":           map[string]interface{}{"text": "Diabetic eye screening: refer to ophthalmology if referable (DoH 3.13.85)"},
 		"supportingInfo": []interface{}{map[string]interface{}{"reference": "DiagnosticReport/PHC-dr-000042"}},
-		"meta":           map[string]interface{}{"versionId": "1"}, "contained": []interface{}{}}
+		"meta":           map[string]interface{}{"versionId": "1", "lastUpdated": dayToTS(-33.6)}, "contained": []interface{}{}}
 }
 
 // drClinical: the fields the DR mapping must carry in segments (everything normalise reads for these resources).

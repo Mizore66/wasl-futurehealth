@@ -619,6 +619,8 @@ func TestExportDefaultDenyRemainingSections(t *testing.T) {
 		"capacity_condition": "adequate", "pooling_relevant": false, "reason": "capacity",
 	}
 	det["agent_investigations"].([]interface{})[0].(map[string]interface{})["human"] = map[string]interface{}{"link": "same", "role": RoleReviewer}
+	det["review_items"].([]interface{})[0].(map[string]interface{})["report_version"] = json.Number("2")
+	det["signoffs"].([]interface{})[0].(map[string]interface{})["report_version"] = json.Number("2")
 
 	get := func(root map[string]interface{}, path string) map[string]interface{} {
 		var cur interface{} = root
@@ -698,8 +700,8 @@ func TestExportDefaultDenyRemainingSections(t *testing.T) {
 		{"current.handoff", "referral_id", exportLoop}, {"current.handoff", "reason_code", "needs_more_info"},
 		{"current.chain[4].body.domain_status", "bp", "managed"}, {"current.chain[4].body.resolved_day", "bp", json.Number("8")},
 		{"links[0].weakest_edge", "a", "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789"}, {"holds[0]", "why", "consent_unknown"},
-		{"review_items[0]", "item", "it1"}, {"review_items[0]", "conf", json.Number("0.9")},
-		{"signoffs[0]", "reviewer", "r1"}, {"signoffs[0]", "evidence", "adequate"},
+		{"review_items[0]", "item", "it1"}, {"review_items[0]", "conf", json.Number("0.9")}, {"review_items[0]", "report_version", json.Number("2")},
+		{"signoffs[0]", "reviewer", "r1"}, {"signoffs[0]", "evidence", "adequate"}, {"signoffs[0]", "report_version", json.Number("2")},
 		{"api_overlay", "head", "abc123"}, {"api_overlay", "actions", json.Number("2")},
 		{"api_overlay.snooze", "until", "2026-11-10T00:00:00Z"}, {"api_overlay.snooze", "event", "def456"},
 		{"api_overlay.contact_outcomes[0]", "outcome", "reached"}, {"api_overlay.contact_outcomes[0]", "channel", "phone"},

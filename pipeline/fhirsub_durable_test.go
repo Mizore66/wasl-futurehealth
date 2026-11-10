@@ -31,7 +31,7 @@ func durableHookNotification(t *testing.T, number int64) []byte {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resource := fmt.Sprintf(`{"resourceType":"DiagnosticReport","id":"durable-r%d","meta":{"source":"urn:ae:provider:p1","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z"}`, number)
+	resource := fmt.Sprintf(`{"resourceType":"DiagnosticReport","id":"durable-r%d","meta":{"source":"urn:ae:provider:p1","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z","status":"final","code":{"coding":[{"code":"18746-8"}]}}`, number)
 	body, err := json.Marshal(Bundle{ResourceType: "Bundle", Type: "history", Entry: []BEntry{
 		{Resource: rawStatus},
 		{Resource: json.RawMessage(resource)},
@@ -57,7 +57,7 @@ func durableSubscriptionNotification(t *testing.T, sub, provider string, number 
 	if err != nil {
 		t.Fatal(err)
 	}
-	resource := fmt.Sprintf(`{"resourceType":"DiagnosticReport","id":%q,"meta":{"source":"urn:ae:provider:%s","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z"}`, resourceID, provider)
+	resource := fmt.Sprintf(`{"resourceType":"DiagnosticReport","id":%q,"meta":{"source":"urn:ae:provider:%s","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z","status":"final","code":{"coding":[{"code":"18746-8"}]}}`, resourceID, provider)
 	body, err := json.Marshal(Bundle{ResourceType: "Bundle", Type: "history", Entry: []BEntry{
 		{Resource: rawStatus},
 		{Resource: json.RawMessage(resource)},
@@ -333,6 +333,41 @@ func TestDurableInboxRestartReplaysAcceptedNotificationOnce(t *testing.T) {
 	}
 }
 
+func TestReplacementConsumerReplaysFullPendingSet(t *testing.T) {
+	env := startTestNATS(t)
+	first := durableHookTestConsumer(t, env)
+	var err error
+	first.kv, err = env.js.CreateOrUpdateKeyValue(env.ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 1, Storage: jetstream.FileStorage})
+	if err != nil {
+		t.Fatal(err)
+	}
+	first.next = 1
+	for n := int64(1); n <= 3; n++ {
+		absorbDurableNotification(t, first, durableHookNotification(t, n), "push")
+	}
+	if keys := durableKeys(t, first.kv, "pending.>"); len(keys) != 3 {
+		t.Fatalf("fixture has %d pending records, want 3", len(keys))
+	}
+
+	restarted := durableWorkerTestConsumer(t, env)
+	if err := restarted.recoverPending(); err != nil {
+		t.Fatal(err)
+	}
+	waitSubscriptionAck(t, restarted, 3)
+	if got := fhirMessageCount(t, env); got != 3 {
+		t.Fatalf("replacement published %d canonical events, want the full pending set of 3", got)
+	}
+	if got := atomic.LoadInt64(&restarted.published); got != 3 {
+		t.Fatalf("replacement publisher reported %d events, want 3", got)
+	}
+	if got := restarted.stats["replayed_pending_events"]; got != 3 {
+		t.Fatalf("replacement replayed %d pending events, want 3", got)
+	}
+	if keys := durableKeys(t, restarted.kv, "pending.>"); len(keys) != 0 {
+		t.Fatalf("full replay left %d pending records, want 0", len(keys))
+	}
+}
+
 func TestDurablePendingRecoveryRestartsReorderAndOverflow(t *testing.T) {
 	t.Run("reorder", func(t *testing.T) {
 		env := startTestNATS(t)
@@ -535,6 +570,62 @@ func TestGapFillReplaysDurableOverflowWithoutInbox(t *testing.T) {
 			}
 		case <-time.After(time.Second):
 			t.Fatalf("missing replayed event %d", want)
+		}
+	}
+}
+
+func TestSubscriptionBatchAcceptsReceivedOnlyCommunication(t *testing.T) {
+	env := startTestNATS(t)
+	c := durableHookTestConsumer(t, env)
+	var err error
+	c.kv, err = env.js.CreateOrUpdateKeyValue(env.ctx, jetstream.KeyValueConfig{Bucket: "FHIRSUB", Replicas: 1, Storage: jetstream.FileStorage})
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.next = 1
+	st := StatusInfo{Sub: "Subscription/durable-test", Topic: MalaffiTopic, Status: "active", Type: "query-event", EventsSince: 2,
+		Events: []NotifEvent{
+			{Num: 1, Focus: "Communication/sent-1/_history/1", Occurred: "2026-05-02T00:00:00Z"},
+			{Num: 2, Focus: "Communication/received-2/_history/1", Occurred: "2026-05-03T00:00:00Z"},
+		}}
+	rawStatus, err := json.Marshal(st.toParams())
+	if err != nil {
+		t.Fatal(err)
+	}
+	communication := func(id string, timestamps map[string]string) json.RawMessage {
+		body := map[string]interface{}{"resourceType": "Communication", "id": id, "status": "completed",
+			"meta": map[string]interface{}{"source": "urn:ae:provider:p1", "versionId": "1", "lastUpdated": "2026-05-03T00:00:00Z"}}
+		for field, value := range timestamps {
+			body[field] = value
+		}
+		raw, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	batch, err := json.Marshal(Bundle{ResourceType: "Bundle", Type: "history", Entry: []BEntry{
+		{Resource: rawStatus},
+		{Resource: communication("sent-1", map[string]string{"sent": "2026-05-02T00:00:00Z"})},
+		{Resource: communication("received-2", map[string]string{"received": "2026-05-03T00:00:00Z"})},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, events, err := c.decode(batch)
+	if err != nil {
+		t.Fatalf("subscription batch with received-only Communication was rejected: %v", err)
+	}
+	if err := c.absorb(decoded, events, "events"); err != nil {
+		t.Fatal(err)
+	}
+	if c.next != 3 {
+		t.Fatalf("subscription batch advanced to %d, want 3", c.next)
+	}
+	for want := int64(1); want <= 2; want++ {
+		got := <-c.provCh["p1"]
+		if got.Num != want {
+			t.Fatalf("dispatched event %d, want %d", got.Num, want)
 		}
 	}
 }
@@ -1253,7 +1344,7 @@ func TestLegacyOverflowExactRetryDoesNotDuplicateIdentity(t *testing.T) {
 	for n := int64(2); n <= maxSubscriptionReorder+1; n++ {
 		first.buf[n] = &subEvent{Num: n}
 	}
-	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Focus: "DiagnosticReport/legacy-overflow/_history/1", Occurred: "2026-01-01T00:00:00Z", Body: []byte(`{"resourceType":"DiagnosticReport","id":"legacy-overflow","meta":{"source":"urn:ae:provider:p1","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z"}`)}
+	overflow := &subEvent{Num: maxSubscriptionReorder + 2, Focus: "DiagnosticReport/legacy-overflow/_history/1", Occurred: "2026-01-01T00:00:00Z", Body: []byte(`{"resourceType":"DiagnosticReport","id":"legacy-overflow","meta":{"source":"urn:ae:provider:p1","versionId":"1","lastUpdated":"2026-01-01T00:00:00Z"},"effectiveDateTime":"2026-01-01T00:00:00Z","status":"final","code":{"coding":[{"code":"18746-8"}]}}`)}
 	body, err := json.Marshal(overflow)
 	if err != nil {
 		t.Fatal(err)

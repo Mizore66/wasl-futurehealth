@@ -478,7 +478,10 @@ func (c *SubConsumer) decodeContext(ctx context.Context, b []byte) (StatusInfo, 
 		if _, ok := c.provCh[prov]; !ok || prov == "" {
 			return st, nil, fmt.Errorf("event has unknown source")
 		}
-		if resource, signoff := normalise(prov, 0, ev.Body); resource == nil && signoff == nil {
+		if resource, signoff, normErr := normaliseChecked(prov, 0, ev.Body); resource == nil && signoff == nil {
+			if normErr != nil {
+				return st, nil, normErr
+			}
 			return st, nil, fmt.Errorf("event resource shape is invalid")
 		}
 	}

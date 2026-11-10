@@ -625,7 +625,10 @@ func main() {
 	case "ltt":
 		lttCollect(*data, *wasl, *P, *lttGrid, rcfg, *lttOut)
 	case "tamper":
-		tamper(*data, *wasl, absRun, *P, *role, *seed)
+		if err := tamper(*data, *wasl, absRun, *P, *role, *seed); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
 	case "encembed":
 		runEncEmbed(*encFile, *inFile, *out)
 	case "encnoise":

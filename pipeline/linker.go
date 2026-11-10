@@ -7,69 +7,73 @@ package main
 //  - emits per-loop LoopFacts (with widest-path link strength) whenever a loop's cluster or evidence changes
 // The same code runs in the live linker process and in the offline audit replay.
 import (
-	"strconv"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 type Rec struct {
-	Pk, Prov, Kind string
-	Name, Dob, Sex string
-	Eid            string
-	eidOK          bool
-	idx            int
-	lat            string
-	tok, skel      []string
-	isAr           bool
-	tid            int // featdump only: 1 + persons-file index of the registering person, 0 = none (pairfeat6 leave-own-out)
-	emb            []float32
-	keys           []string
-	evOrder        []string
-	evs            map[string]*Event
-	srs            []string // loop ids owned by this record
-	reportByBody   map[string]string // report content key -> event key (cross-transport duplicates)
+	Pk, Prov, Kind    string
+	Name, Dob, Sex    string
+	Eid               string
+	eidOK             bool
+	idx               int
+	lat               string
+	tok, skel         []string
+	isAr              bool
+	tid               int // featdump only: 1 + persons-file index of the registering person, 0 = none (pairfeat6 leave-own-out)
+	emb               []float32
+	keys              []string
+	evOrder           []string
+	evs               map[string]*Event
+	srs               []string          // loop ids owned by this record
+	reportByBody      map[string]string // report content key -> event key (cross-transport duplicates)
+	reportRetired     map[string]int    // event key -> cross-report version that superseded it
+	reportBodyLatest  map[string]int    // normalized body -> newest accepted version, including withdrawals
+	reportLineage     map[string]string // event key -> durable logical-report group, independent of later body edits
+	reportGroupLatest map[string]int    // logical-report group -> newest accepted version
 }
 
 type LinkerCore struct {
-	P            int
-	K, Cap       int
-	Thr, Lo      float64
-	GuardThr     float64
-	gbm          *GBM
-	recs         []*Rec
-	byPk         map[string]int
-	keyIdx       map[string][]int
-	eidIdx       map[string][]int
-	parent       []int
-	members      map[int][]int
-	adj          map[int]map[int]float64
-	basis        map[[2]int]string
-	idConfirmed  map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
-	cannot       map[int]map[int]bool
-	pscore       map[[2]int]float64
-	near         map[int]map[int]float64 // lo <= p < thr
-	demoMissing  map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
-	loops        map[string]*LoopFacts   // static part (sr info)
-	loopRec      map[string]int
-	tasks        map[string][]TaskFact // loop -> tasks
-	comms        map[string][]CommFact // loop -> communications
-	signoffs     map[string][]Signoff
-	evOver       map[string]map[string]string
-	lastHash     map[string]string
-	Stats        map[string]int
-	provLast     map[string]float64
-	provDone     map[string]bool
-	lastTick     int
-	streamT      float64 // HistClock: latest input arrival day seen
-	streamSeen   bool
-	PSeq         []uint64
-	optOut       map[string]bool // v6: pk -> outreach consent withheld
-	contact      map[string]string // stage 3: pk -> granted|denied|opted_out (absent = unknown)
-	pcal7        map[[2]int]float64 // v7: calibrated probability of each model edge
-	xref         map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
-	ann          ANNIndex
-	trace        func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
-	traceSeq     uint64
+	P           int
+	K, Cap      int
+	Thr, Lo     float64
+	GuardThr    float64
+	gbm         *GBM
+	recs        []*Rec
+	byPk        map[string]int
+	keyIdx      map[string][]int
+	eidIdx      map[string][]int
+	parent      []int
+	members     map[int][]int
+	adj         map[int]map[int]float64
+	basis       map[[2]int]string
+	idConfirmed map[[2]int]bool // second-identifier "same" from any loop, per registration pair (ReuseIDConfirm)
+	cannot      map[int]map[int]bool
+	pscore      map[[2]int]float64
+	near        map[int]map[int]float64 // lo <= p < thr
+	demoMissing map[[2]string]bool      // demoguard: pairs emitted as near/demographic_missing
+	loops       map[string]*LoopFacts   // static part (sr info)
+	loopRec     map[string]int
+	tasks       map[string][]TaskFact // loop -> tasks
+	comms       map[string][]CommFact // loop -> communications
+	signoffs    map[string][]Signoff
+	evOver      map[string]map[string]string
+	lastHash    map[string]string
+	Stats       map[string]int
+	provLast    map[string]float64
+	provDone    map[string]bool
+	lastTick    int
+	streamT     float64 // HistClock: latest input arrival day seen
+	streamSeen  bool
+	PSeq        []uint64
+	optOut      map[string]bool    // v6: pk -> outreach consent withheld
+	contact     map[string]string  // stage 3: pk -> granted|denied|opted_out (absent = unknown)
+	pcal7       map[[2]int]float64 // v7: calibrated probability of each model edge
+	xref        map[string][]int   // loop -> hospital records with a rejected intake citing its referral (handoffref.go)
+	ann         ANNIndex
+	trace       func(LinkTrace) // diagnostics only (link_funnel.go); nil = off
+	traceSeq    uint64
 }
 
 var annMode = new(string)
@@ -451,8 +455,8 @@ func dot(a, b []float32) float64 {
 	return float64(dotR(a, b))
 }
 
-// reportContentKey: identity of a report's content for cross-transport de-duplication ("" for other events).
-func reportContentKey(e *Event) string {
+// reportBodyKey identifies the normalized clinical content shared by cross-transport IDs.
+func reportBodyKey(e *Event) string {
 	if e.RType != "DiagnosticReport" {
 		return ""
 	}
@@ -464,6 +468,36 @@ func reportContentKey(e *Event) string {
 		body = sha([]byte(e.Text))
 	}
 	return e.Category + "|" + e.Focus + "|" + strconv.FormatFloat(e.Day, 'f', 3, 64) + "|" + e.Coded + "|" + body
+}
+
+// reportContentKey adds revision semantics to exact cross-transport dedupe.
+func reportContentKey(e *Event) string {
+	if body := reportBodyKey(e); body != "" {
+		return strconv.Itoa(e.Version) + "|" + e.Status + "|" + body
+	}
+	return ""
+}
+
+// retireReport suppresses an older cross-transport ID and its body ownership.
+// The raw FHIR/audit log remains append-only; this is the linker's active view.
+func retireReport(rec *Rec, key string, version int) {
+	if rec.reportRetired == nil {
+		rec.reportRetired = map[string]int{}
+	}
+	rec.reportRetired[key] = version
+	previous := rec.evs[key]
+	delete(rec.evs, key)
+	for i, existing := range rec.evOrder {
+		if existing == key {
+			rec.evOrder = append(rec.evOrder[:i], rec.evOrder[i+1:]...)
+			break
+		}
+	}
+	if previous != nil {
+		if contentKey := reportContentKey(previous); rec.reportByBody[contentKey] == key {
+			delete(rec.reportByBody, contentKey)
+		}
+	}
 }
 
 func (L *LinkerCore) clusterOf(i int) []int { return L.members[L.Find(i)] }
@@ -725,6 +759,9 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		if e.RType != "Appointment" && e.RType != "DiagnosticReport" && e.RType != "ServiceRequest" {
 			continue
 		}
+		if e.RType == "DiagnosticReport" && !diagnosticReportEvidenceEligible(e.Status) {
+			continue
+		}
 		if near && e.RType != "DiagnosticReport" {
 			continue
 		}
@@ -734,7 +771,7 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 		}
 		prog := e.Prog
 		if e.RType == "DiagnosticReport" {
-			prog = map[string]string{"colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
+			prog = map[string]string{"colonoscopy": "crc", "pathology": "crc", "colposcopy": "cervical", "lung-ct": "lung_nodule", "lung-finding": "lung_nodule", LungPETCode: "lung_nodule", LungPathCode: "lung_nodule",
 				"dr-screen": "diabetic_retinopathy", "dr-clinic": "diabetic_retinopathy", "breast-screen": "breast", "breast-assess": "breast",
 				"ldct-screen": "lung_ldct", "ldct-workup": "lung_ldct"}[e.Category]
 			if e.Category == "pathology" && e.Coded != "" {
@@ -745,9 +782,10 @@ func (L *LinkerCore) downOf(rec *Rec, strength float64, weak Edge, hops int, nea
 			}
 		}
 		if prog == "" {
-			prog = "crc"
+			L.Stats["unknown_programme"]++
+			continue
 		}
-		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID,
+		out = append(out, DownFact{EventID: e.ID, Provider: e.Provider, RType: rt, Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
 			Reason: e.Reason, Ev: e.Ev, Strength: round4(strength), Weak: weak, Hops: hops, NearMiss: near, Prog: prog})
 		if rt == "Pathology" {
 			out[len(out)-1].Parent = e.Focus
@@ -999,10 +1037,14 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			}
 		}
 		if so.Evidence != "" && so.ReportID != "" {
+			if so.ReportVersion >= 2 && so.ItemID != evidenceReviewItemID(so.LoopID, so.ReportID, so.ReportVersion, so.Purpose) {
+				L.Stats["mismatched_evidence_signoff"]++
+				break
+			}
 			if L.evOver[so.LoopID] == nil {
 				L.evOver[so.LoopID] = map[string]string{}
 			}
-			key := so.ReportID
+			key := reportVersionKey(so.ReportID, so.ReportVersion)
 			if so.Purpose == OverrideConfirm { // confirmation of an override against the report (closure.go)
 				key += "#confirm"
 			} else if k := pilotKey(so.Purpose); k != "" { // pilot shadow confirmation / post-closure audit (pilot.go)
@@ -1030,7 +1072,7 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		if e.RType == "Communication" {
 			loop := e.Provider + "/" + e.Focus
-			cf := CommFact{ID: e.ID, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha}
+			cf := CommFact{ID: e.ID, Day: e.Day, Category: e.Category, Template: e.Template, Lang: e.CommLang, Channel: e.Channel, Status: e.Status, Parse: e.Parse, Sha: e.TextSha, ReportVersion: e.ReportVersion}
 			if strings.HasPrefix(e.Category, "prep-") { // ungraded-prep query thread (closure.go): report + structured grade
 				cf.Report = e.ReportID
 				if e.Category == "prep-reply" {
@@ -1095,17 +1137,184 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 		}
 		rec := L.recs[i]
 		key := e.RType + "/" + e.ID
-		if ck := reportContentKey(e); ck != "" {
-			// the same result sent twice under two ids (a FHIR DiagnosticReport and an HL7 ORU with its own filler
-			// number): same registration, kind, effective day and text. Keep the first; a correction keeps its id.
+		var previousReport *Event
+		if e.RType == "DiagnosticReport" {
+			if retired := rec.reportRetired[key]; retired > 0 && e.Version <= retired {
+				L.Stats["stale_report_version"]++
+				break
+			}
+			if current, seen := rec.evs[key]; seen {
+				previousReport = current
+				switch {
+				case e.Version < current.Version:
+					L.Stats["stale_report_version"]++
+					break
+				case e.Version == current.Version:
+					if string(canon(e)) != string(canon(current)) {
+						retireReport(rec, key, e.Version)
+						L.Stats["conflicting_report_version"]++
+						affRoots[L.Find(i)] = true
+					}
+					break
+				}
+				if e.Version <= current.Version {
+					break
+				}
+			}
+		}
+		contentKey := reportContentKey(e)
+		if contentKey != "" {
+			// Exact same-generation cross-transport copies dedupe. A newer revision of
+			// an already stored ID must instead reach the supersession logic below.
 			if rec.reportByBody == nil {
 				rec.reportByBody = map[string]string{}
 			}
-			if prev, ok := rec.reportByBody[ck]; ok && prev != key {
+			if prev, ok := rec.reportByBody[contentKey]; ok && prev != key && previousReport == nil {
+				if group := rec.reportLineage[prev]; group != "" {
+					if rec.reportLineage == nil {
+						rec.reportLineage = map[string]string{}
+					}
+					// An exact duplicate has no active facts of its own, but its ID remains an
+					// alias of the logical report so a later changed-body revision supersedes it.
+					rec.reportLineage[key] = group
+				}
 				L.Stats["duplicate_report_other_id"]++
 				break
 			}
-			rec.reportByBody[ck] = key
+		}
+		bodyKey := reportBodyKey(e)
+		group := ""
+		if bodyKey != "" {
+			for _, otherKey := range rec.evOrder {
+				other := rec.evs[otherKey]
+				if otherKey != key && other != nil && reportBodyKey(other) == bodyKey {
+					group = rec.reportLineage[otherKey]
+					if group != "" {
+						break
+					}
+				}
+			}
+		}
+		if group == "" {
+			group = rec.reportLineage[key]
+		}
+		if group == "" && e.RType == "DiagnosticReport" {
+			group = key
+		}
+		if group != "" {
+			if rec.reportLineage == nil {
+				rec.reportLineage = map[string]string{}
+			}
+			if rec.reportGroupLatest == nil {
+				rec.reportGroupLatest = map[string]int{}
+			}
+			latest, seen := rec.reportGroupLatest[group]
+			if seen && e.Version < latest {
+				retireReport(rec, key, latest)
+				L.Stats["stale_report_version"]++
+				affRoots[L.Find(i)] = true
+				break
+			}
+			if seen && e.Version == latest && previousReport == nil {
+				conflict := false
+				for _, otherKey := range rec.evOrder {
+					other := rec.evs[otherKey]
+					if otherKey != key && other != nil && rec.reportLineage[otherKey] == group && other.Version == latest {
+						conflict = true
+						break
+					}
+				}
+				if conflict {
+					for _, otherKey := range append([]string(nil), rec.evOrder...) {
+						other := rec.evs[otherKey]
+						if otherKey != key && other != nil && rec.reportLineage[otherKey] == group && other.Version <= latest {
+							retireReport(rec, otherKey, latest)
+						}
+					}
+					retireReport(rec, key, latest)
+					L.Stats["conflicting_report_version"]++
+					affRoots[L.Find(i)] = true
+					break
+				}
+			}
+			rec.reportLineage[key] = group
+			if !seen || e.Version > latest {
+				rec.reportGroupLatest[group] = e.Version
+			}
+			for _, otherKey := range append([]string(nil), rec.evOrder...) {
+				if otherKey == key || rec.reportLineage[otherKey] != group {
+					continue
+				}
+				other := rec.evs[otherKey]
+				if other == nil {
+					continue
+				}
+				if e.Version > other.Version || previousReport != nil && e.Version >= other.Version {
+					retireReport(rec, otherKey, e.Version)
+				}
+			}
+		}
+		if bodyKey != "" {
+			latest, seen := rec.reportBodyLatest[bodyKey]
+			if seen && e.Version < latest {
+				retireReport(rec, key, latest)
+				L.Stats["stale_report_version"]++
+				affRoots[L.Find(i)] = true
+				break
+			}
+			if seen && e.Version == latest && previousReport == nil {
+				// Exact duplicates already took the idempotent branch above. Only an
+				// active same-generation other ID makes this a semantic conflict.
+				conflict := false
+				for _, otherKey := range rec.evOrder {
+					other := rec.evs[otherKey]
+					if otherKey != key && other != nil && reportBodyKey(other) == bodyKey && other.Version == latest {
+						conflict = true
+						break
+					}
+				}
+				if conflict {
+					for _, otherKey := range append([]string(nil), rec.evOrder...) {
+						other := rec.evs[otherKey]
+						if otherKey != key && other != nil && reportBodyKey(other) == bodyKey && other.Version <= latest {
+							retireReport(rec, otherKey, latest)
+						}
+					}
+					retireReport(rec, key, latest)
+					L.Stats["conflicting_report_version"]++
+					affRoots[L.Find(i)] = true
+					break
+				}
+			}
+		}
+		if previousReport != nil {
+			if oldKey := reportContentKey(previousReport); oldKey != "" && oldKey != contentKey && rec.reportByBody[oldKey] == key {
+				delete(rec.reportByBody, oldKey)
+			}
+		}
+		delete(rec.reportRetired, key)
+		if bodyKey != "" {
+			if rec.reportBodyLatest == nil {
+				rec.reportBodyLatest = map[string]int{}
+			}
+			if latest, seen := rec.reportBodyLatest[bodyKey]; !seen || e.Version > latest {
+				rec.reportBodyLatest[bodyKey] = e.Version
+			}
+			for _, otherKey := range append([]string(nil), rec.evOrder...) {
+				if otherKey == key {
+					continue
+				}
+				other := rec.evs[otherKey]
+				if other == nil || reportBodyKey(other) != bodyKey {
+					continue
+				}
+				if e.Version > other.Version || previousReport != nil && e.Version >= other.Version {
+					retireReport(rec, otherKey, e.Version)
+				}
+			}
+		}
+		if contentKey != "" {
+			rec.reportByBody[contentKey] = key
 		}
 		if _, seen := rec.evs[key]; !seen {
 			rec.evOrder = append(rec.evOrder, key)
@@ -1119,7 +1328,8 @@ func (L *LinkerCore) Apply(p *Prep) []FactsMsg {
 			if _, ok := L.loops[loop]; !ok {
 				prog := e.Prog
 				if prog == "" {
-					prog = "crc"
+					L.Stats["unknown_programme"]++
+					break
 				}
 				L.loops[loop] = &LoopFacts{LoopID: loop, Provider: e.Provider, SRDay: e.Day, SRRec: rec.Pk, SRLang: e.PrefLang,
 					Prog: prog, Priority: e.Priority, Cat: e.Cat, IndexDay: e.IndexDay, Lung: e.Lung, DR: e.DR, Breast: e.Breast, LDCT: e.LDCT}

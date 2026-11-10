@@ -287,7 +287,7 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 	var cons jetstream.Consumer
 	retry("prep consumer", func() (err error) { cons, err = js.Consumer(ctx, "FHIR", "prep"); return })
 	var cache sync.Map
-	var done, dups int64
+	var done, dups, rejected int64
 	var wg sync.WaitGroup
 	for t := 0; t < threads; t++ {
 		wg.Add(1)
@@ -303,6 +303,9 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 				}
 				md, _ := msg.Metadata()
 				p := prepMsg(md.Sequence.Stream, msg.Subject(), msg.Headers(), msg.Data(), enc, &cache)
+				if p.Reject != nil {
+					atomic.AddInt64(&rejected, 1)
+				}
 				b, _ := json.Marshal(p)
 				out := nats.NewMsg("prep")
 				out.Data = b
@@ -317,7 +320,7 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 	}
 	go func() {
 		for {
-			writeStatus(runDir, "prep-"+name, map[string]interface{}{"done": atomic.LoadInt64(&done), "dup_suppressed": atomic.LoadInt64(&dups)})
+			writeStatus(runDir, "prep-"+name, map[string]interface{}{"done": atomic.LoadInt64(&done), "dup_suppressed": atomic.LoadInt64(&dups), "normalization_rejected": atomic.LoadInt64(&rejected)})
 			time.Sleep(500 * time.Millisecond)
 		}
 	}()
@@ -340,22 +343,22 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 	p := &Prep{Seq: seq, OriginTs: ots}
 	switch {
 	case subj == "fhir.review":
-		_, so := normalise("review", 0, data)
+		_, so, normErr := normaliseChecked("review", 0, data)
 		if so == nil {
-			p.Skip = true
+			p.Skip, p.Reject = true, normErr
 		} else {
 			p.Kind, p.So = "signoff", so
 		}
 	case len(subj) > 4 && subj[len(subj)-4:] == ".ctl":
 		p.Kind, p.Tick, p.Ev = "eof", arr, &Event{Provider: prov}
 	default:
-		ev, so := normalise(prov, arr, data)
+		ev, so, normErr := normaliseChecked(prov, arr, data)
 		if ev == nil && so != nil { // v6: a Provenance sign-off arriving on a provider feed (RBAC decides if it counts)
 			p.Kind, p.So = "signoff", so
 			break
 		}
 		if ev == nil {
-			p.Skip = true
+			p.Skip, p.Reject = true, normErr
 			break
 		}
 		p.Kind, p.Ev, p.Tick = "event", ev, arr

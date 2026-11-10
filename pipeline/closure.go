@@ -14,18 +14,18 @@ import (
 var LinkReview = 0.20 // below: ignored; -linkfloor may lower review routing only
 
 const (
-	TauHigh       = 0.99 // calibrated link probability gate (v3 operating point)
-	OwnerGrace    = 3.0
-	NotifSLA      = 21.0 // days from referral to a compliant result notification
-	AckSLA        = 7.0  // days from notification to patient acknowledgement
-	RefRespSLA    = 7.0  // days from referral to a receiving-unit accept/reject
-	HistoSLA      = 21.0 // days from procedure to a final pathology report when polyps were removed
+	TauHigh    = 0.99 // calibrated link probability gate (v3 operating point)
+	OwnerGrace = 3.0
+	NotifSLA   = 21.0 // days from referral to a compliant result notification
+	AckSLA     = 7.0  // days from notification to patient acknowledgement
+	RefRespSLA = 7.0  // days from referral to a receiving-unit accept/reject
+	HistoSLA   = 21.0 // days from procedure to a final pathology report when polyps were removed
 )
 
 type loopState struct {
 	facts   *LoopFacts
 	last    *Decision
-	lastFU  *Decision // lung: the surveillance loop opened by a stable follow-up (lung.go)
+	lastFU  *Decision            // lung: the surveillance loop opened by a stable follow-up (lung.go)
 	lastFU2 map[string]*Decision // lung -lungsurv2: the later surveillance loops (<loop>#surv2, #surv3; lungsurv.go)
 	raised  map[string]*ReviewItem
 	contact map[string]string // stage 3: event|kind -> last outreach consent status (held|released|cancelled)
@@ -123,7 +123,7 @@ func (c *ClosureCore) pcal(p float64) float64 {
 
 func linkBlock(f *LoopFacts, d DownFact, pc float64) map[string]interface{} {
 	b := map[string]interface{}{"loop": f.LoopID, "referral_patient": f.SRRec, "downstream_event": d.Provider + "/" + d.RType + "/" + d.EventID,
-		"weakest_edge": map[string]interface{}{"a": d.Weak.A, "b": d.Weak.B, "p": d.Weak.P, "basis": d.Weak.Basis},
+		"weakest_edge":  map[string]interface{}{"a": d.Weak.A, "b": d.Weak.B, "p": d.Weak.P, "basis": d.Weak.Basis},
 		"path_strength": d.Strength, "path_p_cal": round4(pc), "tau": TauHigh, "hops": d.Hops, "near_miss": d.NearMiss, "linker": "wasl-v3-retrained+iso+eid"}
 	if d.EIDContra != "" { // eidguard.go: the weakest edge shown is the pair put to review, not an edge of the link graph
 		b["eid_contra"], b["review_pair_substituted"] = d.EIDContra, true
@@ -359,9 +359,9 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 	pqs, prepQ := prepStates(f.Comms, now), "" // ungraded-prep query threads per report (prepquery.go)
 	var chain []Block
 	inadequate, awaiting, humanAssisted := false, false, false
-	var holdRow *row // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
+	var holdRow *row                                       // stage 5: evidence that prevented closure (inadequate / awaiting histology), for provenance
 	completionPending, completionRow := false, (*row)(nil) // r1review.go: a report waiting on the completion review
-	var auditNote map[string]interface{} // pilot: a post-closure audit that disagreed with the automatic verdict
+	var auditNote map[string]interface{}                   // pilot: a post-closure audit that disagreed with the automatic verdict
 	pending := []string{}
 	pendSet := map[string]bool{}
 	unlinked := false
@@ -372,7 +372,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		pair := [2]string{r.d.Weak.A, r.d.Weak.B}
 		key, report := pair[0]+"|"+pair[1], ""
 		if kind == "evidence" {
-			key, report = r.d.ReportID, r.d.ReportID
+			key, report = reportVersionKey(r.d.ReportID, r.d.Version), r.d.ReportID
 		}
 		if purpose == OverrideConfirm {
 			key += "#confirm"
@@ -380,9 +380,12 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			key += k
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
+		if kind == "evidence" {
+			id = evidenceReviewItemID(f.LoopID, r.d.ReportID, r.d.Version, purpose)
+		}
 		if s, ok := signed[id]; ok && kind == "link" && purpose == "" && heldLink(s) { // held "same": ask the confirming review
 			purpose, key = LinkConfirm, key+"#linkconfirm"
-			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
+			id = "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		}
 		if _, ok := signed[id]; ok || pendSet[id] {
 			return
@@ -394,7 +397,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			if report != "" {
 				ch = appendBlock(ch, "evidence", evBlock(r.d, ""))
 			}
-			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report,
+			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report, ReportVersion: r.d.Version,
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq, OverdueAtRaise: now-f.SRDay > SLADays}
 			if r.d.Ev != nil {
 				it.Verdict, it.Quote = r.d.Ev.Label, r.d.Ev.Gemma.Quote
@@ -406,7 +409,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				it.Reason = purpose
 			}
 			if purpose == LinkConfirm {
-				it.Verdict = signed["rv-"+sha([]byte(f.LoopID+"|link|"+pair[0]+"|"+pair[1]))[:16]].Hold
+				it.Verdict = signed["rv-"+sha([]byte(f.LoopID + "|link|" + pair[0] + "|" + pair[1]))[:16]].Hold
 			}
 			if pilotKey(purpose) != "" {
 				it.Day = round4(now)
@@ -422,12 +425,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			ids = append(ids, id)
 		}
 		sort.Strings(ids)
+		version := currentReportVersion(f, report)
 		for _, id := range ids {
 			it := ls.raised[id]
 			if it.Reason == AutoAudit { // a post-closure audit does not make the closure human-assisted
 				continue
 			}
-			if s, ok := signed[id]; ok && it.ReportID == report && s.SignedHead == it.Head {
+			if s, ok := signed[id]; ok && it.ReportID == report && sameReportReviewVersion(it.ReportVersion, version) && s.SignedHead == it.Head {
 				s := s
 				return &s
 			}
@@ -444,7 +448,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			continue
 		}
 		label, human := "", ""
-		if h, ok := f.EvOver[r.d.ReportID]; ok {
+		if h, ok := evidenceOverride(f.EvOver, r.d, ""); ok {
 			label, human = h, h
 			// ungraded prep (prepquery.go): the day-15 clinician decides the prep only, "closed with a documentation flag"
 			// or "repeat required". Closing still follows the report's own tissue/histology fields, so with tissue taken
@@ -455,13 +459,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			// completion review (r1review.go): the clinician decides completion only; tissue still waits for histology.
 			// Keyed on the signed item's purpose as well as on the verdict, so it holds even if a re-judging process
 			// reverted the verdict (final review M3, defence in depth)
-			if h == "adequate" && (R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review || signedCompletion(f.Signoffs, r.d.ReportID)) {
+			if h == "adequate" && (R1ReviewOn && r.d.Ev != nil && r.d.Ev.R1Review || signedCompletion(f.Signoffs, r.d.ReportID, r.d.Version)) {
 				label = completionLabel(r.d.Ev)
 			}
 			// a human "adequate" against an explicit inadequacy in the report itself (coded unsatisfactory, caecum not
 			// reached, inadequate prep) needs a confirming review that sees the quote; until then the loop stays open
 			if h == "adequate" && explicitInadequate(r.d.Ev) {
-				if c, ok := f.EvOver[r.d.ReportID+"#confirm"]; ok {
+				if c, ok := evidenceOverride(f.EvOver, r.d, "#confirm"); ok {
 					label, human = c, c+"_confirmed_against_report"
 				} else {
 					raiseFor(r, "evidence", OverrideConfirm)
@@ -476,13 +480,13 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		} else if r.d.Ev != nil && r.d.Ev.Agree && r.d.Ev.Label != "needs_human" {
 			label = r.d.Ev.Label
 			if ShadowMode { // pilot: an automatic closure is only a suggestion until a clinician signs it
-				if s, ok := f.EvOver[r.d.ReportID+pilotKey(ShadowConfirm)]; ok {
+				if s, ok := evidenceOverride(f.EvOver, r.d, pilotKey(ShadowConfirm)); ok {
 					label, human = s, "shadow:"+s // the signed answer decides, whether or not it confirms the readers
 				} else if label == "adequate" && state != "closed" {
 					raiseFor(r, "evidence", ShadowConfirm)
 					continue
 				}
-			} else if s, ok := f.EvOver[r.d.ReportID+pilotKey(AutoAudit)]; ok && AutoAuditP > 0 && s != label {
+			} else if s, ok := evidenceOverride(f.EvOver, r.d, pilotKey(AutoAudit)); ok && AutoAuditP > 0 && s != label {
 				// pilot: the post-closure audit disagreed; the loop follows the clinician and re-opens
 				auditNote = map[string]interface{}{"loop": f.LoopID, "report": r.d.ReportID, "auto_verdict": label, "audit_answer": s, "result": "reopened"}
 				label, human = s, "audit:"+s
@@ -491,7 +495,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 		if label == "" && PrepQuery && r.d.Ev != nil && r.d.Ev.PrepUngraded {
 			// ungraded prep: no reviewer can grade it from the text either, so query the unit (done_quality_unverified);
 			// a unit grade resolves it; "cannot determine" or no grade by day 15 goes to a clinician decision
-			ps := pqs[r.d.ReportID]
+			ps := pqs[reportVersionKey(r.d.ReportID, r.d.Version)]
 			switch {
 			case ps != nil && (ps.grade == "adequate" || ps.grade == "inadequate"):
 				prepQ, human = "unit_graded", "unit_prep_grade_"+ps.grade
@@ -527,7 +531,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			has := false
 			for _, p := range paths[r.d.ReportID] {
 				pl := ""
-				if h, ok := f.EvOver[p.d.ReportID]; ok {
+				if h, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 					pl = h
 				} else if p.d.Ev != nil && p.d.Ev.Agree {
 					pl = p.d.Ev.Label
@@ -537,7 +541,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 				}
 				if pl == "histology" && p.trusted {
 					has = true
-					if _, ok := f.EvOver[p.d.ReportID]; ok {
+					if _, ok := evidenceOverride(f.EvOver, p.d, ""); ok {
 						human = "histology"
 					}
 				}
@@ -572,11 +576,11 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 					// pilot: sampled automatic closure -> post-closure clinician audit; the loop stays closed meanwhile
 					raiseFor(r, "evidence", AutoAudit)
 					st := "sampled"
-					if s, ok := f.EvOver[r.d.ReportID+pilotKey(AutoAudit)]; ok {
+					if s, ok := evidenceOverride(f.EvOver, r.d, pilotKey(AutoAudit)); ok {
 						st = "confirmed:" + s
 					}
 					chain = appendBlock(chain, "auto_audit", map[string]interface{}{"loop": f.LoopID, "report": r.d.ReportID,
-						"item": "rv-" + sha([]byte(f.LoopID + "|evidence|" + r.d.ReportID + pilotKey(AutoAudit)))[:16], "p": AutoAuditP, "status": st})
+						"item": evidenceReviewItemID(f.LoopID, r.d.ReportID, r.d.Version, AutoAudit), "p": AutoAuditP, "status": st})
 				}
 			}
 		case "inadequate":
@@ -736,7 +740,7 @@ func (c *ClosureCore) eval(ls *loopState, inSeq uint64, mid string) []OutMsg {
 			reason, hold := "second_identifier", ""
 			if s, ok := signed[id]; ok && heldIDConfirm(s) { // held "same" on contradicting records: ask the confirming review (v7.go)
 				reason, hold = IDConfirm, s.Hold
-				id = "rv-" + sha([]byte(f.LoopID+"|link|"+o.Pair[0]+"|"+o.Pair[1]+"#idconfirm"))[:16]
+				id = "rv-" + sha([]byte(f.LoopID + "|link|" + o.Pair[0] + "|" + o.Pair[1] + "#idconfirm"))[:16]
 			}
 			if _, ok := signed[id]; ok {
 				continue
