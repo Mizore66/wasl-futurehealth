@@ -1437,13 +1437,46 @@ func TestReviewerPostWindowRawRepublishIsAccepted(t *testing.T) {
 	if _, err := env.js.UpdateStream(env.ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
-	time.Sleep(3 * time.Second)
-	rec := storedReviewer(t, s, "rv-raw")
-	if _, err := publishReviewerSignoff(env.js, rec); err != nil {
+	info, err := stream.Info(env.ctx)
+	if err != nil || info.Config.Duplicates != 100*time.Millisecond {
+		t.Fatalf("dedupe config = %v, want 100ms (err %v)", info.Config.Duplicates, err)
+	}
+	statusBefore, wlBefore, lwBefore := s.status(), fmt.Sprint(s.wl), fmt.Sprint(s.lw)
+	ledgerBefore, err := os.ReadFile(filepath.Join(s.runDir, "reviewer_decisions.ndjson"))
+	if err != nil {
 		t.Fatal(err)
 	}
-	if got := reviewerSignoffCount(t, env, "rv-raw"); got != 2 {
-		t.Fatalf("raw republish after window left %d copies, want 2 (dedupe expired)", got)
+	ledgerHashBefore := sha256.Sum256(ledgerBefore)
+	rec := storedReviewer(t, s, "rv-raw")
+	deadline := time.Now().Add(5 * time.Second)
+	for attempt := 1; ; attempt++ {
+		sequence, err := publishReviewerSignoff(env.js, rec)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sequence > info.State.LastSeq {
+			if got := reviewerSignoffCount(t, env, "rv-raw"); got != 2 {
+				t.Fatalf("accepted raw republish left %d copies, want exactly 2", got)
+			}
+			break
+		}
+		if sequence != info.State.LastSeq {
+			t.Fatalf("republish sequence=%d, prior=%d; expected duplicate suppression or one new message", sequence, info.State.LastSeq)
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("dedupe window did not expire after %d attempts: still one retained copy", attempt)
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	if after := s.status(); !reflect.DeepEqual(after, statusBefore) || fmt.Sprint(s.wl) != wlBefore || fmt.Sprint(s.lw) != lwBefore {
+		t.Fatalf("raw republish changed recovered state: before=%+v/%v after=%+v/%v", statusBefore, wlBefore, after, s.wl)
+	}
+	ledgerAfter, err := os.ReadFile(filepath.Join(s.runDir, "reviewer_decisions.ndjson"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha256.Sum256(ledgerAfter) != ledgerHashBefore {
+		t.Fatal("raw republish changed exact reviewer ledger bytes")
 	}
 }
 
