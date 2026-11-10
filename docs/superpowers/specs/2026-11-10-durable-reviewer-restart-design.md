@@ -22,7 +22,7 @@ Create an R3 file-backed JetStream KV bucket `REVIEWER` for each isolated run. K
 A review-item key is a bounded hash of the item ID; the record retains the literal item ID and validates it on decode. Records contain:
 
 - schema version and item ID;
-- state: `prepared`, `published`, or `ledger_written` (plus a durable skipped-item marker);
+- state, moving forward only in this order: `prepared`, then `ledger_written`, then `published` (plus a durable skipped-item marker);
 - the review item and final `Signoff` as prepared by the existing reviewer policy;
 - SHA-256 of the canonical sign-off resource body;
 - exact bytes of the existing `reviewer_decisions.ndjson` line, including its original timing fields;

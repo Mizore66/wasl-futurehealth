@@ -244,7 +244,7 @@ Expected: compile failure because the durable service does not exist.
 
 `reviewerService` owns store, JS, run directory, cfg/truth/seed, `seen`, both worklists and recovered status. `recover` loads store/ledger before returning, reconciles all records and derives worklists/status without invoking `ReviewerCfg.Review`.
 
-`review` persists skips before returning. For a new item it performs the existing review/hold policy, creates exact ledger bytes, stores `prepared`, publishes/reconciles, stores `published`, reconciles the ledger, stores `ledger_written` and updates status. The existing `ReviewerCfg.Review` result is the only sign-off schema.
+`review` persists skips before returning. For a new item it performs the existing review/hold policy, creates exact ledger bytes, stores `prepared`, appends the ledger line and stores `ledger_written`, publishes and stores `published`, then updates status. A fresh record appends and publishes directly; recovery and retry after a failure validate the whole ledger and scan the retained FHIR stream first. The existing `ReviewerCfg.Review` result is the only sign-off schema.
 
 Replace `runReviewer`’s ordered consumer with durable `reviewer` explicit ACK configuration. Process JSON errors without ACK. ACK only after `review` or durable non-review status persistence succeeds; check ACK errors. Status JSON comes from `service.status()`.
 
