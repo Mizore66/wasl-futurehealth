@@ -8,9 +8,10 @@ import { Avatar } from "@/components/avatar/avatar";
 import { Button } from "@/components/ui/button";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
-import { dayToDate, formatDay } from "@/lib/domain/day";
+import { formatDay } from "@/lib/domain/day";
 import { caseHref } from "@/lib/domain/ids";
 import { cn } from "@/lib/utils";
+import { callbackChoice, fromNow } from "./callback";
 import { byUrgency, STANDARD_DAYS } from "./days";
 import type { View, WorkItem } from "./model";
 import { HANDOFF_OWNER } from "./model";
@@ -38,6 +39,8 @@ type State = {
   q: string;
   calling: string | null;
   stage: Stage | null;
+  /** Wall-clock ms when "Call back on…" was opened: the one instant every callback choice is computed from. */
+  callbackFrom: number;
   last: Logged | null;
   over: Record<string, Patch>;
 };
@@ -50,10 +53,7 @@ const TABS: [View, string][] = [
   ["none", "No owner"],
 ];
 
-const WEEKDAY = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const clock = () => new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-/** A wall-clock RFC 3339 time `days` from now: the API checks snooze `until` against its own clock, not the run's. */
-const fromNow = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString().replace(/\.\d{3}Z$/, "Z");
 
 /** Fixtures mode: nothing reaches a ledger, so the trail names the browser that holds the entry, not a person. */
 const SESSION_WHO = "This browser";
@@ -66,7 +66,7 @@ const REFUSED: Record<number, string> = {
 };
 
 export function TodayBoard({ items, now, aside, live = false }: { items: WorkItem[]; now: number; aside: React.ReactNode; live?: boolean }) {
-  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {} });
+  const [s, setS] = useState<State>({ tab: "call", mobile: "detail", sel: null, q: "", calling: null, stage: null, last: null, over: {}, callbackFrom: 0 });
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<{ id: string; text: string } | null>(null);
 
@@ -235,7 +235,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
           "Call back on…",
           () => {
             setWant({ k: "chips" });
-            setS((prev) => ({ ...prev, stage: "callback" }));
+            setS((prev) => ({ ...prev, stage: "callback", callbackFrom: Date.now() }));
           },
         ],
         [
@@ -253,17 +253,10 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
       ];
     } else if (stage === "callback") {
       chipsTitle = "Call back on";
+      // One wall-clock `until` per choice drives both the label and the saved snooze (issue #37); never the run day.
       chips = [1, 2, 3].map((k) => {
-        const d = WEEKDAY.format(dayToDate(Math.floor(now) + k));
-        return [
-          d,
-          () =>
-            log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, {
-              action: "snooze",
-              until: fromNow(k),
-              reason: `Call back ${d}`,
-            }),
-        ] as Chip;
+        const { label: d, action } = callbackChoice(k, s.callbackFrom);
+        return [d, () => log(p, `Asked for a call back on ${d}`, { status: `Call back ${d}`, snoozed: true }, `Logged: Call back ${d}`, toEnd, action)] as Chip;
       });
     }
   }

@@ -55,6 +55,9 @@ test.describe("Today", () => {
   });
 
   test("Call, then Reached offers Book and Call back on…", async ({ page }) => {
+    // The wall clock is on another date than the run clock (late August), one step before a UTC midnight: the
+    // call-back days are the dates of the wall-clock `until` that is saved, never the run's days (issue #37).
+    await page.clock.setFixedTime(new Date("2026-11-10T23:59:30Z"));
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Call AHS-sr-1002" }).click();
@@ -68,9 +71,9 @@ test.describe("Today", () => {
 
     await next.getByRole("button", { name: "Call back on…" }).click();
     const days = open.getByRole("group", { name: "Call back on" });
-    await expect(days.getByRole("button")).toHaveText(["Sun 30 Aug", "Mon 31 Aug", "Tue 1 Sept"]);
-    await days.getByRole("button", { name: "Sun 30 Aug" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Call back Sun 30 Aug");
+    await expect(days.getByRole("button")).toHaveText(["Wed 11 Nov", "Thu 12 Nov", "Fri 13 Nov"]);
+    await days.getByRole("button", { name: "Wed 11 Nov" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Call back Wed 11 Nov");
     await expect(open.getByRole("button", { name: /^Next patient/ })).toBeVisible();
     await shot(page, "today-callback");
   });
@@ -344,13 +347,14 @@ test.describe("Phone width, 390px", () => {
   });
 
   test("Today: after the call, the outcome buttons stay beside Call", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-11-10T09:00:00Z"));
     await page.goto("/app/today");
     await page.getByRole("button", { name: "Call AHS-sr-1002" }).click();
     await page.getByRole("button", { name: "Reached" }).click();
     await page.getByRole("button", { name: "Call back on…" }).click();
     await noSideScroll(page);
     await targetsAre44(page);
-    await page.getByRole("button", { name: "Sun 30 Aug" }).click();
+    await page.getByRole("button", { name: "Wed 11 Nov" }).click();
     await targetsAre44(page);
     await shot(page, "today-logged-390");
   });
