@@ -306,29 +306,66 @@
  "schema": "fresh2-analysis/v1",
  "semantics": "These keys are model-labelled and not clinician-verified. Two independent labelling passes agreed on the listed items; every item they disagreed on is `unadjudicated` and carries no key. Agreement between two models, or between a model and a human reading the same guide, is not clinical truth, and results scored against this key are not evidence of clinical effectiveness.",
  "verification": {
+  "integration_staleness": {
+   "changed_reader_files": [
+    "pipeline/ifhasread.go",
+    "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go"
+   ],
+   "current_history_scoring_equivalent": "5b00feb765673a60370e9c07645d0570d0ffe7d7",
+   "disclosure": "reader implementation changed after scoring; results do not apply to current integration",
+   "historical_results_match_original_scoring_commit": true,
+   "original_scoring_commit": "8a883fc1a5b8e3758a27bebdb81d4e90a06ff07b",
+   "stored_score_and_raw_results_unchanged": true
+  },
   "manifest": {
-   "check_freeze_after_score_errors": [],
+   "check_freeze_after_score_errors": [
+    "pipeline/evidence.go changed since reader_code_commit",
+    "pipeline/ifhasread.go changed since reader_code_commit",
+    "pipeline/ldctread.go changed since reader_code_commit",
+    "pipeline/lungread.go changed since reader_code_commit",
+    "pipeline/reader.go changed since reader_code_commit"
+   ],
    "equal": true,
    "manifest_file": {
-    "corpus_commit": "94504af4876c4ce622f109e55c4e413e9d498860",
-    "labels_commit": "14469f386ac58e662da51f5a9b27152c78c023b5",
-    "reader_cache_commit": "19e8da41f38ab8df6766e9f3192bed576873dcff",
-    "reader_code_commit": "2fe3a75bf3a041c37d990b48c99db3507eb82e28"
+    "corpus_commit": "78b1fcadf79f29e975bb9b3afdaa59a57a7ec6c1",
+    "labels_commit": "634c447eeb8948d2af511aeaae4bf7a3fe3ae894",
+    "reader_cache_commit": "e955ff884205d63a62ffeeeea683d5e6cc7a1c12",
+    "reader_code_commit": "fa53c499beb2aec06886ed988542235e083b91f1"
    },
    "note": "uncommitted-file warnings are excluded from this record so the committed analysis is reproducible; run `fresh2.py check-freeze --after-score` for the live cleanliness check",
    "rederived": {
-    "corpus_commit": "94504af4876c4ce622f109e55c4e413e9d498860",
-    "labels_commit": "14469f386ac58e662da51f5a9b27152c78c023b5",
-    "reader_cache_commit": "19e8da41f38ab8df6766e9f3192bed576873dcff",
-    "reader_code_commit": "2fe3a75bf3a041c37d990b48c99db3507eb82e28"
+    "corpus_commit": "78b1fcadf79f29e975bb9b3afdaa59a57a7ec6c1",
+    "labels_commit": "634c447eeb8948d2af511aeaae4bf7a3fe3ae894",
+    "reader_cache_commit": "e955ff884205d63a62ffeeeea683d5e6cc7a1c12",
+    "reader_code_commit": "fa53c499beb2aec06886ed988542235e083b91f1"
    }
   },
   "original_scores": {
    "score_json_matches_recomputation": true
   },
   "protected_files": {
-   "changed": [],
-   "changed_since_scoring_commit": [],
+   "changed": [
+    "data/fresh2/FREEZE.json",
+    "data/fresh2/results/SCORE.md",
+    "pipeline/evidence.go",
+    "pipeline/ifhasread.go",
+    "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go",
+    "scripts/fresh2_eval/fresh2.py"
+   ],
+   "changed_since_scoring_commit": [
+    "data/fresh2/FREEZE.json",
+    "data/fresh2/results/SCORE.md",
+    "pipeline/evidence.go",
+    "pipeline/ifhasread.go",
+    "pipeline/ldctread.go",
+    "pipeline/lungread.go",
+    "pipeline/reader.go",
+    "scripts/fresh2_eval/fresh2.py"
+   ],
    "checked": [
     "pipeline/ldctread.go",
     "pipeline/ldctrule.go",
@@ -355,7 +392,7 @@
     "scripts/fresh2_eval/LABELLING-GUIDE.md"
    ],
    "protected_changed_since_reader_code_commit": [],
-   "scoring_commit": "8a883fc",
+   "scoring_commit": "5b00feb765673a60370e9c07645d0570d0ffe7d7",
    "uncommitted": []
   }
  }

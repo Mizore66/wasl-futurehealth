@@ -168,6 +168,19 @@ exit 2
         df = (ROOT / "deploy/nats/Dockerfile").read_text()
         self.assertRegex(df, r"COPY --chmod=0755 entrypoint\.sh /usr/local/bin/wasl-nats-entrypoint\.sh")
         self.assertIn('ENTRYPOINT ["/usr/local/bin/wasl-nats-entrypoint.sh"]', df)
+        self.assertIn("github.com/nats-io/nats-server/v2@v${NATS_VERSION}", df)
+        self.assertIn("github.com/klauspost/compress@v1.20.0", df)
+        self.assertIn("golang.org/x/crypto@v0.58.1-0.20261009181718-2f1f834330b2", df)
+        self.assertIn("FROM golang:${GO_VERSION}-bookworm AS build", df)
+        self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", df)
+        self.assertIn("USER 10001:10001", df)
+        self.assertIn("chown -R 10001:10001 /data", df)
+        self.assertIn('VOLUME ["/data"]', df)
+
+    def test_nats_base_is_resolved_for_target_architecture(self):
+        # A cached single-architecture tag must not override the requested build target.
+        df = (ROOT / "deploy/nats/Dockerfile").read_text()
+        self.assertIn("FROM --platform=linux/${TARGETARCH} nats:${NATS_VERSION}-alpine", df)
 
     def test_nats_entrypoint_refuses_wrong_or_missing_key_on_retained_data(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -216,6 +229,39 @@ exit 2
                                         text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 self.assertEqual(result.returncode, 2, result.stdout)
                 self.assertIn(message, result.stdout)
+
+    def test_demo_check_ignores_empty_lsof_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bindir = Path(tmp) / "bin"
+            bindir.mkdir()
+            lsof = bindir / "lsof"
+            lsof.write_text("#!/bin/sh\nexit 0\n")
+            lsof.chmod(0o755)
+            env = os.environ.copy()
+            env.update(PATH=str(bindir) + os.pathsep + "/opt/anaconda3/bin" + os.pathsep + env["PATH"],
+                       WASL_NATS_EXTERNAL="1", WASL_NATS_URL="nats://nats-0:4222")
+            result = subprocess.run([str(ROOT / "scripts/demo.sh"), "check"], cwd=ROOT, env=env,
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertIn("assets OK", result.stdout)
+
+    def test_demo_check_uses_listener_table_not_all_open_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bindir = Path(tmp) / "bin"
+            bindir.mkdir()
+            lsof = bindir / "lsof"
+            lsof.write_text("#!/bin/sh\nprintf '1 /bin/bash 0 /dev/null\\n'\n")
+            lsof.chmod(0o755)
+            netstat = bindir / "netstat"
+            netstat.write_text("#!/bin/sh\nprintf 'Active Internet connections (only servers)\\n'\n")
+            netstat.chmod(0o755)
+            env = os.environ.copy()
+            env.update(PATH=str(bindir) + os.pathsep + "/opt/anaconda3/bin" + os.pathsep + env["PATH"],
+                       WASL_NATS_EXTERNAL="1", WASL_NATS_URL="nats://nats-0:4222")
+            result = subprocess.run([str(ROOT / "scripts/demo.sh"), "check"], cwd=ROOT, env=env,
+                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(result.returncode, 0, result.stdout)
+            self.assertIn("assets OK", result.stdout)
 
     def test_demo_refuses_binary_older_than_sources(self):
         # ROOT is derived from the script location, so run a copy inside a minimal tree
@@ -426,6 +472,45 @@ exit 2
     def test_static_check_accepts_existing_absolute_bind_source(self):
         code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append(str(ROOT / "scripts") + ":/x"))
         self.assertEqual(code, 0, out)
+
+    def check_production(self, mutate):
+        """Run check_deploy.py against a mutated copy of deploy/production.compose.yml; returns (returncode, output)."""
+        import yaml
+        compose = yaml.safe_load((ROOT / "deploy/production.compose.yml").read_text())
+        mutate(compose)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "production.compose.yml"
+            path.write_text(yaml.safe_dump(compose))
+            env = dict(os.environ, WASL_PRODUCTION_COMPOSE_FILE=str(path))
+            r = subprocess.run([sys.executable, str(ROOT / "scripts/check_deploy.py")], cwd=ROOT, env=env,
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return r.returncode, r.stdout
+
+    def test_production_nats_user_matches_image_owner(self):
+        import yaml
+        dockerfile = (ROOT / "deploy/nats/Dockerfile").read_text().splitlines()
+        image_user = [l.split()[1] for l in dockerfile if l.startswith("USER ")][-1]
+        services = yaml.safe_load((ROOT / "deploy/production.compose.yml").read_text())["services"]
+        for name in ("nats-0", "nats-1", "nats-2"):
+            self.assertEqual(services[name].get("user"), image_user, name)
+        self.assertIn("chown -R %s" % image_user, "\n".join(dockerfile))
+
+    def test_static_check_rejects_production_nats_user_mismatch(self):
+        def mutate(c):
+            c["services"]["nats-1"]["user"] = "1000:1000"
+        code, out = self.check_production(mutate)
+        self.assertEqual(code, 1, out)
+        self.assertIn("production compose: nats-1 runs as user '1000:1000'", out)
+
+    def test_static_check_rejects_production_nats_without_user(self):
+        code, out = self.check_production(lambda c: c["services"]["nats-2"].pop("user"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("production compose: nats-2 runs as user None", out)
+
+    def test_static_check_rejects_dev_nats_user_mismatch(self):
+        code, out = self.check_compose(lambda c: c["services"]["nats-0"].__setitem__("user", "1000:1000"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("compose: nats-0 runs as user '1000:1000'", out)
 
 
 if __name__ == "__main__":

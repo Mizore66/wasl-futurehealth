@@ -9,9 +9,18 @@ scripts/demo.sh            # once: builds and runs the pipeline, writes out/run/
 scripts/demo.sh serve      # API on http://127.0.0.1:8088   (WASL_API_ADDR to change)
 ```
 
-**No backend at all?** Static responses for every endpoint are in [`api-samples/`](api-samples/). They were produced by `scripts/demo.sh snapshot` against a real run, so you can build the UI against them.
+**No backend at all?** Static responses for every endpoint are in [`api-samples/`](api-samples/). They were produced against a real synthetic run, so you can build the UI against them. The committed files are legacy public synthetic fixtures; newly generated snapshots use only redacted auditor exports. See [`SECURITY.md`](SECURITY.md) for that intentional exception.
 
-CORS is open (`*`) for local development.
+Every `/api` route requires a bearer token. `scripts/demo.sh` supplies loopback-only development tokens and the required `WASL_SYNTHETIC_DATA_ONLY=1` acknowledgment. For example:
+
+```bash
+curl -H 'Authorization: Bearer wasl-demo-reviewer-1-token' http://127.0.0.1:8088/api/fixtures
+curl -H 'Authorization: Bearer wasl-demo-auditor-token' http://127.0.0.1:8088/api/cases/<id>/audit
+```
+
+A direct `wsi7 serve` requires `WASL_API_TOKENS` entries in `token:role:actor` form (comma-separated). Missing/invalid credentials receive 401; a valid principal without the required read action receives 403. Client-supplied `X-Wasl-Role` and `X-Wasl-Actor` headers are not authentication and are overwritten from the token. These static demo tokens are not a production identity system.
+
+CORS is disabled by default. Set `WASL_API_ORIGINS` to an exact comma-separated trusted-origin allowlist if a browser client needs it; wildcard origins and self-asserted identity headers are not allowed.
 
 ## Envelope
 
@@ -27,20 +36,22 @@ Lists are always `[]`, never `null`.
 
 ## Endpoints
 
+Read authorization is least-privilege: coordinator/clinician/reviewer tokens have `ActReadQueue` for dashboard, fixtures, lists and raw case detail; auditor tokens have `ActReadAudit` for redacted audit and export and cannot read the raw queue. `/healthz` is the sole unauthenticated operational route. Raw quotes and review notes are clinical-by-design and limited to queue-authorized detail; registration keys in detail, audit and export copies are replaced by deterministic `reg_…` pseudonyms that preserve equality joins. These unkeyed, linkable pseudonyms are not semantic anonymity. Audit responses use the redacted chain.
+
 | Method | Path | Returns |
 |---|---|---|
 | GET | `/healthz` | `status`, case count, `dependencies` (materialised_run, nats, reader, ingest_adapter) |
 | GET | `/api/dashboard` | KPI and SLA, `states`, `dropoff`, `review` counts, `by_programme`, per-provider and per-origin tables (small-cell suppressed), headline `metrics` (31-day KPI, closure P/R, consent invariant, forged, provenance, exactly-once), `fixtures`, `capacity` (simulated booking: condition adequate, misallocated or short_overall, slots per case by region, pooling_relevant, summary, `levers`: pathway and prep-risk counts; `inputs.optimiser` appears only when the booking stage ran with a non-default optimiser or stress test, e.g. {optimiser: lookahead, lookahead_days, gamma, forecast, method}; absent = the default myopic engine) |
 | GET | `/api/fixtures` | The demo cases (summaries): three CRC cases, plus `dr_exam_closure` when the run has DR loops. `review_hold` falls back to a closed, signed loop whose outreach was stopped by the consent hold or the second-identifier guard when no loop had consent held then granted |
 | GET | `/api/cases` | Filterable case summaries. Query: `programme` (crc\|cervical\|lung_nodule\|diabetic_retinopathy\|breast\|lung_ldct), `state`, `dropoff`, `owner`, `provider`, `consent`, `review` (none\|open\|signed), `overdue` (true\|false), `fixture=1`, `q` (id substring), `limit` (≤500, default 100), `offset` |
-| GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registrations), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
-| GET | `/api/cases/{id}/audit` | `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; review `history` |
+| GET | `/api/cases/{id}` | Full case: `case`, `identities` (linked registration pseudonyms), `timeline` (every linked FHIR/HL7 event, no free text), `links`, `evidence` (both readers, per-field values, quote, model), `holds` (why it didn't close), `outreach`, `decisions` (history, with `consent_log` and that decision's `outreach`), `review_items`, `signoffs`, `api_reviews`, `current`, `agent_investigations`, `agent_provenance` (see "Cached agent investigations"), `booking` (simulated suggestion and capacity condition; `status`: suggested, no_slot_within_horizon, or not_applicable; from `wasl-booking/2` also `pathway` {route: direct\|clinic, reasons, checklist_notes}, `prep_risk` {score, band: low\|high, factors, suggested_intervention, requires_clinician_order: true} and synthetic `app9` fields; `target_days` (14 or 31) only in the `--crc-urgent-share` stress test) |
+| GET | `/api/cases/{id}/audit` | Redacted `chain` plus `chain_verified`; `decision_signatures` (stored vs recomputed); `anchors`; redacted review `history` |
 | POST | `/api/cases/{id}/review` | Demo review action (below) |
 | POST | `/api/cases/{id}/actions` | Coordinator case action: assign owner, snooze, contact outcome, note (below) |
 | GET | `/api/agentshadow/status` | Read-only agent-shadow lifecycle/progress/caps, `available`, `status`, `clean_success`, optional `health.ts`; `done` is not success ([details](AGENT-SHADOW.md#status-api)) |
 | POST | `/api/cases/{id}/consent` | Demo consent event (`consent_granted`, `consent_denied`, `consent_opted_out`) plus distinct `api_contact`/`demo_pending_consent` overlays; canonical consent/outreach unchanged ([details](API-CONSENT.md)) |
 | POST | `/api/cases/{id}/undo` | Compensating undo/contest event with target, independent reviewer and preserved history ([details](API-UNDO.md)) |
-| GET | `/api/cases/{id}/export` | Sanitized `wasl-case-export/1` with detail, audit, deterministic `content_sha256` and restart-stable `comparison_sha256`; clinical text is redacted ([details](API-EXPORT.md)) |
+| GET | `/api/cases/{id}/export` | Auditor-only, internal-audit `wasl-case-export/1` with redacted detail/audit, fixed metadata, deterministic `content_sha256` and restart-stable `comparison_sha256`; not de-identified or approved for external disclosure ([details](API-EXPORT.md)) |
 
 `{id}` is the loop id, e.g. `ahs-mushrif/ServiceRequest/AHS-sr-1102`. You can pass the slashes as-is or URL-encode them.
 

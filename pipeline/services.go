@@ -140,7 +140,13 @@ func (a *asyncPub) Publish(m *nats.Msg) {
 }
 
 func connect(name string) (*nats.Conn, jetstream.JetStream) {
-	nc, err := nats.Connect(NatsURL, nats.Name(name), nats.MaxReconnects(-1), nats.ReconnectWait(200*time.Millisecond))
+	security, err := natsSecurityOptions()
+	if err != nil {
+		panic(err)
+	}
+	opts := []nats.Option{nats.Name(name), nats.MaxReconnects(-1), nats.ReconnectWait(200 * time.Millisecond)}
+	opts = append(opts, security...)
+	nc, err := nats.Connect(NatsURL, opts...)
 	if err != nil {
 		panic(err)
 	}
@@ -159,7 +165,7 @@ func setupStreams(replicas, P int) {
 	ctx := context.Background()
 	// A cohort is a fresh run, not a service restart. In particular, external NATS volumes survive the run directory:
 	// retaining SEEN would suppress regenerated ids, while FHIRSUB/FHIRPOLL could resume beyond or at EOF of new input.
-	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL"} {
+	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL", "REVIEWER"} {
 		var err error
 		for try := 0; try < 30; try++ {
 			err = js.DeleteKeyValue(ctx, bucket)
@@ -173,7 +179,7 @@ func setupStreams(replicas, P int) {
 			panic(fmt.Sprintf("reset KV bucket %s: %v", bucket, err))
 		}
 	}
-	for _, s := range []string{"FHIR", "PREP", "FACTS", "OUT"} {
+	for _, s := range []string{"FHIRIN", "FHIR", "PREP", "FACTS", "OUT"} {
 		var err error
 		for try := 0; try < 30; try++ {
 			err = js.DeleteStream(ctx, s)
@@ -202,7 +208,19 @@ func setupStreams(replicas, P int) {
 			panic(fmt.Sprint(s, err))
 		}
 	}
-	_, err := js.CreateOrUpdateConsumer(ctx, "FHIR", jetstream.ConsumerConfig{Durable: "prep", AckPolicy: jetstream.AckExplicitPolicy,
+	_, err := js.CreateOrUpdateStream(ctx, jetstream.StreamConfig{Name: "FHIRIN", Subjects: []string{"fhirsub.notification"},
+		Storage: jetstream.FileStorage, Retention: jetstream.WorkQueuePolicy, Replicas: replicas, Duplicates: time.Hour,
+		MaxMsgs: maxDurableInboxMessages, MaxBytes: maxDurableInboxBytes, MaxMsgSize: maxHookBodyBytes,
+		Discard: jetstream.DiscardNew, AllowDirect: true})
+	if err != nil {
+		panic(fmt.Sprintf("FHIRIN: %v", err))
+	}
+	_, err = js.CreateOrUpdateConsumer(ctx, "FHIRIN", jetstream.ConsumerConfig{Durable: "notifications", AckPolicy: jetstream.AckExplicitPolicy,
+		AckWait: 30 * time.Second, MaxAckPending: 128, MaxDeliver: -1, DeliverPolicy: jetstream.DeliverAllPolicy})
+	if err != nil {
+		panic(fmt.Sprintf("FHIRIN consumer: %v", err))
+	}
+	_, err = js.CreateOrUpdateConsumer(ctx, "FHIR", jetstream.ConsumerConfig{Durable: "prep", AckPolicy: jetstream.AckExplicitPolicy,
 		AckWait: 30 * time.Second, MaxAckPending: 4000, DeliverPolicy: jetstream.DeliverAllPolicy})
 	if err != nil {
 		panic(err)
@@ -213,7 +231,7 @@ func setupStreams(replicas, P int) {
 func writeStatus(dir, name string, v interface{}) {
 	b, _ := json.Marshal(v)
 	tmp := filepath.Join(dir, "status-"+name+".json.tmp")
-	os.WriteFile(tmp, b, 0644)
+	os.WriteFile(tmp, b, 0600)
 	os.Rename(tmp, filepath.Join(dir, "status-"+name+".json"))
 }
 
@@ -269,7 +287,7 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 	var cons jetstream.Consumer
 	retry("prep consumer", func() (err error) { cons, err = js.Consumer(ctx, "FHIR", "prep"); return })
 	var cache sync.Map
-	var done, dups int64
+	var done, dups, rejected int64
 	var wg sync.WaitGroup
 	for t := 0; t < threads; t++ {
 		wg.Add(1)
@@ -285,6 +303,9 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 				}
 				md, _ := msg.Metadata()
 				p := prepMsg(md.Sequence.Stream, msg.Subject(), msg.Headers(), msg.Data(), enc, &cache)
+				if p.Reject != nil {
+					atomic.AddInt64(&rejected, 1)
+				}
 				b, _ := json.Marshal(p)
 				out := nats.NewMsg("prep")
 				out.Data = b
@@ -299,7 +320,7 @@ func runPrep(dataDir, name string, threads int, runDir string) {
 	}
 	go func() {
 		for {
-			writeStatus(runDir, "prep-"+name, map[string]interface{}{"done": atomic.LoadInt64(&done), "dup_suppressed": atomic.LoadInt64(&dups)})
+			writeStatus(runDir, "prep-"+name, map[string]interface{}{"done": atomic.LoadInt64(&done), "dup_suppressed": atomic.LoadInt64(&dups), "normalization_rejected": atomic.LoadInt64(&rejected)})
 			time.Sleep(500 * time.Millisecond)
 		}
 	}()
@@ -322,22 +343,22 @@ func prepMsg(seq uint64, subj string, h nats.Header, data []byte, enc *Encoder, 
 	p := &Prep{Seq: seq, OriginTs: ots}
 	switch {
 	case subj == "fhir.review":
-		_, so := normalise("review", 0, data)
+		_, so, normErr := normaliseChecked("review", 0, data)
 		if so == nil {
-			p.Skip = true
+			p.Skip, p.Reject = true, normErr
 		} else {
 			p.Kind, p.So = "signoff", so
 		}
 	case len(subj) > 4 && subj[len(subj)-4:] == ".ctl":
 		p.Kind, p.Tick, p.Ev = "eof", arr, &Event{Provider: prov}
 	default:
-		ev, so := normalise(prov, arr, data)
+		ev, so, normErr := normaliseChecked(prov, arr, data)
 		if ev == nil && so != nil { // v6: a Provenance sign-off arriving on a provider feed (RBAC decides if it counts)
 			p.Kind, p.So = "signoff", so
 			break
 		}
 		if ev == nil {
-			p.Skip = true
+			p.Skip, p.Reject = true, normErr
 			break
 		}
 		p.Kind, p.Ev, p.Tick = "event", ev, arr
@@ -452,7 +473,8 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 	var cons jetstream.Consumer
 	retry("scan consumer", func() (err error) { cons, err = s.OrderedConsumer(ctx, cfg); return })
 	misses := 0
-	for uint64(len(ids)) < want {
+	scanned := uint64(0)
+	for scanned < want {
 		b, err := cons.Fetch(2000, jetstream.FetchMaxWait(2*time.Second))
 		if err != nil {
 			if misses++; misses > 20 {
@@ -465,6 +487,7 @@ func presentIDs(js jetstream.JetStream, stream, filter string) map[string]bool {
 			ids[m.Headers().Get(jetstream.MsgIDHeader)] = true
 			got++
 		}
+		scanned += uint64(got) // stream progress, not unique-ID count: stored IDs may be empty or duplicated
 		if got == 0 {
 			if misses++; misses > 20 {
 				panic("cannot scan " + stream)
@@ -684,121 +707,23 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 	var tr Truth
 	b, _ := os.ReadFile(filepath.Join(dataDir, "truth.json"))
 	json.Unmarshal(b, &tr)
-	ctx := context.Background()
-	var it jetstream.MessagesContext
-	retry("reviewer consumer", func() error {
-		cons, err := js.OrderedConsumer(ctx, "OUT", jetstream.OrderedConsumerConfig{})
-		if err != nil {
-			return err
-		}
-		it, err = cons.Messages(jetstream.PullMaxMessages(500))
+	var service *reviewerService
+	retry("reviewer store", func() (err error) {
+		service, err = newReviewerService(js, runDir, cfg, tr, seed, revLat, hold)
 		return err
 	})
-	seen := map[string]bool{}
-	wl, lw := idWorklist{}, linkWorklist{}
-	answered, wrong, deduped, dedupedLink := 0, 0, 0, 0
-	held := false
-	var lastOut uint64
-	logf, _ := os.OpenFile(filepath.Join(runDir, "reviewer_decisions.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// Restore before consuming: a store or ledger that cannot be trusted stops the reviewer instead of guessing.
+	if err := service.recover(); err != nil {
+		panic(fmt.Sprintf("reviewer recovery: %v", err))
+	}
 	go func() {
 		for {
-			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": answered, "wrong": wrong, "deduped_second_id": deduped, "deduped_link": dedupedLink, "last_out_seq": atomic.LoadUint64(&lastOut), "cfg": cfg})
+			st := service.status()
+			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": st.Answered, "wrong": st.Wrong, "deduped_second_id": st.DedupedSecond, "deduped_link": st.DedupedLink, "last_out_seq": st.LastOut, "cfg": cfg})
 			time.Sleep(300 * time.Millisecond)
 		}
 	}()
-	urand := func(id, salt string) float64 {
-		h := sha([]byte(fmt.Sprint(seed) + "|" + salt + "|" + id))
-		v, _ := strconv.ParseUint(h[:12], 16, 64)
-		return float64(v) / float64(uint64(1)<<48)
-	}
-	for {
-		msg, err := it.Next()
-		if err != nil {
-			continue
-		}
-		var oe OutEnvelope
-		json.Unmarshal(msg.Data(), &oe)
-		if oe.Kind != "review" || seen[oe.Item.ItemID] {
-			if md, err := msg.Metadata(); err == nil {
-				atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-			}
-			continue
-		}
-		it2 := oe.Item
-		seen[it2.ItemID] = true
-		if wl.skip(it2) || lw.skip(it2) {
-			if lw.skip(it2) {
-				dedupedLink++
-			} else {
-				deduped++
-			}
-			if md, err := msg.Metadata(); err == nil {
-				atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-			}
-			continue
-		}
-		t0 := time.Now()
-		so := cfg.Review(it2, &tr) // v6-gov: noisy, timed reviewer (error rate, lognormal seconds, optional double read)
-		wl.record(it2, so)
-		lw.record(it2, so)
-		truthWrong := func() bool {
-			for _, k := range it2.Kinds {
-				if k == "link" {
-					same := tr.PKQid[it2.Pair[0]] != "" && tr.PKQid[it2.Pair[0]] == tr.PKQid[it2.Pair[1]]
-					if (so.Link == "same") != same {
-						return true
-					}
-				}
-				if k == "evidence" {
-					ev := tr.Reports[it2.ReportID]
-					if ev == "" {
-						ev = "inadequate"
-					}
-					if so.Evidence != ev {
-						return true
-					}
-				}
-			}
-			return false
-		}
-		isWrong := truthWrong()
-		isEv := len(it2.Kinds) == 1 && it2.Kinds[0] == "evidence"
-		if hold != "" && !held && isEv && it2.Verdict == "disagree" && it2.LoopID == hold {
-			held = true
-			hb, _ := json.MarshalIndent(map[string]interface{}{"item": it2, "held_at": time.Now().Format(time.RFC3339Nano)}, "", " ")
-			os.WriteFile(filepath.Join(runDir, "HOLD_ITEM.json"), hb, 0644)
-			dl := time.Now().Add(90 * time.Second)
-			for time.Now().Before(dl) {
-				if hb, err := os.ReadFile(filepath.Join(runDir, "HUMAN_DECISION.json")); err == nil {
-					var hd struct{ Evidence, Reviewer string }
-					if json.Unmarshal(hb, &hd) == nil && hd.Evidence != "" {
-						so.Evidence, so.Reviewer, so.Role, so.Reads = hd.Evidence, hd.Reviewer, RoleClinician, []string{"presenter"}
-						isWrong = truthWrong()
-						break
-					}
-				}
-				time.Sleep(100 * time.Millisecond)
-			}
-		} else if revLat > 0 {
-			d := revLat * math.Exp(0.6*normQ(urand(it2.ItemID, "lat")))
-			time.Sleep(time.Duration(d * float64(time.Millisecond)))
-		}
-		if isWrong {
-			wrong++
-		}
-		m := nats.NewMsg("fhir.review")
-		m.Data = signoffResource(so)
-		m.Header.Set(jetstream.MsgIDHeader, "signoff/"+it2.ItemID)
-		m.Header.Set("Wsi-Ots", strconv.FormatInt(time.Now().UnixNano(), 10))
-		pubSync(js, m)
-		answered++
-		lb, _ := json.Marshal(map[string]interface{}{"item": it2.ItemID, "loop": it2.LoopID, "kinds": it2.Kinds, "verdict": it2.Verdict,
-			"link": so.Link, "evidence": so.Evidence, "wrong": isWrong, "role": so.Role, "reads": so.Reads, "sim_s": so.DurationS, "reviewer": so.Reviewer, "ms": time.Since(t0).Milliseconds(), "t": time.Now().UnixNano()})
-		logf.Write(append(lb, '\n'))
-		if md, err := msg.Metadata(); err == nil {
-			atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-		}
-	}
+	serveReviewer(context.Background(), js, service)
 }
 
 // normQ: approximate standard normal quantile (Acklam-free; Box-Muller on one uniform via erfinv-ish logistic approx).

@@ -178,8 +178,8 @@ func TestLDCTFollowupRejectsAddendumAndEarlyReread(t *testing.T) {
 
 func TestLDCTScanFactsCarryAddendumIdentity(t *testing.T) {
 	rec := &Rec{Pk: lcSRRec, evOrder: []string{"a", "b"}, evs: map[string]*Event{
-		"a": {ID: "a", RType: "DiagnosticReport", Category: "ldct-screen", ReportID: "LCS-ct-1"},
-		"b": {ID: "b", RType: "DiagnosticReport", Category: "ldct-screen", ReportID: "LCS-ct-add", Focus: "LCS-ct-1"},
+		"a": {ID: "a", RType: "DiagnosticReport", Status: "final", Category: "ldct-screen", ReportID: "LCS-ct-1"},
+		"b": {ID: "b", RType: "DiagnosticReport", Status: "final", Category: "ldct-screen", ReportID: "LCS-ct-add", Focus: "LCS-ct-1"},
 	}}
 	facts := ldctScanFacts(rec)
 	if len(facts) != 2 || facts[0].Parent != "" || facts[1].Parent != "LCS-ct-1" {

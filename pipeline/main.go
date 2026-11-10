@@ -29,7 +29,7 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup")
+		fmt.Println("usage: wsi gen|orchestrate|audit|producer|prep|linker|closure|reviewer|setup|serve|backup-nats|restore-nats|verify-nats")
 		os.Exit(2)
 	}
 	cmd := os.Args[1]
@@ -41,6 +41,7 @@ func main() {
 	data := fs.String("data", "../cohort", "cohort dir")
 	wasl := fs.String("wasl", "../../wasl/data", "wasl data dir (persons, encoder, scorer)")
 	out := fs.String("out", "../cohort", "")
+	bundle := fs.String("bundle", "", "backup-nats output or restore-nats/verify-nats input JSON")
 	run := fs.String("run", "../run/default", "run dir")
 	prov := fs.String("prov", "", "")
 	name := fs.String("name", "0", "")
@@ -128,7 +129,7 @@ func main() {
 	pollSpeed := fs.Float64("pollspeed", 0, "malaffi: also serve _history and $export, HIE clock at this many simulated days per wall second (source=fhirpoll)")
 	lagFrac := fs.Float64("lagfrac", 0.02, "malaffi poll mode: fraction of versions visible only 0.1-2 days after their lastUpdated (late commits)")
 	pollOverlap := fs.Float64("overlap", 0.5, "fhirpoll: simulated days re-read before the watermark on each poll")
-		hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
+	hl7Addr := fs.String("hl7", fmt.Sprintf("127.0.0.1:%d", 28870+PortOff), "HL7 v2 MLLP listener addr (source=hl7)")
 	apiAddr := fs.String("addr", "127.0.0.1:8088", "serve: API listen address")
 	hl7Drops := fs.Int("hl7drops", 2, "mock HIE: TCP connection drops mid-stream (source=hl7)")
 	v7cal := fs.String("v7cal", "", "v7: stratified conservative calibrator json (enables v7 path p_cal)")
@@ -357,7 +358,7 @@ func main() {
 	case "cached":
 	case "live", "replay":
 		absRunR, _ := filepath.Abs(*run)
-		os.MkdirAll(absRunR, 0755)
+		os.MkdirAll(absRunR, 0700)
 		url := *readerURL
 		if *readerMode == "replay" {
 			url = "http://127.0.0.1:1" // nothing listens: ledger hits only, misses fail safe to review
@@ -380,7 +381,7 @@ func main() {
 	case "live", "replay":
 		c := LoadImageCache(*imgCache) // thresholds are frozen with the model; live answers go to the ledger
 		absRunI, _ := filepath.Abs(*run)
-		os.MkdirAll(absRunI, 0755)
+		os.MkdirAll(absRunI, 0700)
 		url := *imageURL
 		if *imageMode == "replay" {
 			url = "http://127.0.0.1:1"
@@ -413,7 +414,7 @@ func main() {
 		v7Args = append(v7Args, "-eidguard")
 	}
 	v7Args = append(v7Args, demoGuardArgs()...) // strict demographic guard (demoguard.go): every child, only when on
-	if DRNextOn { // DR next loop (drnext.go): every child, only when on
+	if DRNextOn {                               // DR next loop (drnext.go): every child, only when on
 		v7Args = append(v7Args, "-drnext")
 	}
 	if HistClock { // linker and closure children, only when on
@@ -499,6 +500,32 @@ func main() {
 		runGen(*wasl, *out, *reports, *pathT, *seed, *loops, *distract, *persons, *cerv, loadPools(*ecPool, *tbPool), *lungN, *lungData, *drN, *drData, *breastN, *breastData)
 	case "setup":
 		setupStreams(*replicas, *P)
+	case "backup-nats", "restore-nats", "verify-nats":
+		if *bundle == "" {
+			panic(cmd + " requires -bundle")
+		}
+		nc, js := connect(cmd)
+		defer nc.Close()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+		defer cancel()
+		var summary recoverySummary
+		var err error
+		switch cmd {
+		case "backup-nats":
+			summary, err = backupNATS(ctx, js, *bundle)
+		case "restore-nats":
+			summary, err = restoreNATS(ctx, js, *bundle)
+		case "verify-nats":
+			summary, err = verifyNATS(ctx, js, *bundle)
+		}
+		if err != nil {
+			writeStructuredLog("error", "NATS recovery operation failed", "operation", cmd, "error", err.Error())
+			panic(err)
+		}
+		writeStructuredLog("info", "NATS recovery operation complete", "operation", cmd, "streams", summary.Streams, "messages", summary.Messages)
+		encoded, _ := json.Marshal(map[string]interface{}{"status": "ok", "operation": cmd, "summary": summary,
+			"nondeterministic_fields": []string{"nats_sequence", "nats_time", "consumer_delivered", "consumer_ack_floor"}})
+		fmt.Println(string(encoded))
 	case "producer":
 		runProducer(*data, *prov, *speed, absRun)
 	case "prep":
@@ -598,7 +625,10 @@ func main() {
 	case "ltt":
 		lttCollect(*data, *wasl, *P, *lttGrid, rcfg, *lttOut)
 	case "tamper":
-		tamper(*data, *wasl, absRun, *P, *role, *seed)
+		if err := tamper(*data, *wasl, absRun, *P, *role, *seed); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
 	case "encembed":
 		runEncEmbed(*encFile, *inFile, *out)
 	case "encnoise":
@@ -623,12 +653,12 @@ func main() {
 var RevArgs []string
 
 type srcCfg struct {
-	Source, Content, Hie, Hook string
+	Source, Content, Hie, Hook  string
 	PollSpeed, LagFrac, Overlap float64
-	Dup, Reorder, Drop         float64
-	SubKill                    int
-	HL7Addr                    string
-	HL7Drops                   int
+	Dup, Reorder, Drop          float64
+	SubKill                     int
+	HL7Addr                     string
+	HL7Drops                    int
 }
 
 var SrcCfg = srcCfg{Source: "file"}
@@ -660,8 +690,8 @@ func (o *Orch) start(name string, bin string, args ...string) {
 		p = &proc{name: name, args: args}
 		o.procs[name] = p
 		o.order = append(o.order, name)
-		os.MkdirAll(filepath.Join(o.run, "logs"), 0755)
-		p.log, _ = os.OpenFile(filepath.Join(o.run, "logs", name+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		os.MkdirAll(filepath.Join(o.run, "logs"), 0700)
+		p.log, _ = os.OpenFile(filepath.Join(o.run, "logs", name+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	}
 	o.mu.Unlock()
 	if bin != "" {
@@ -739,7 +769,8 @@ func readStatus(run, name string) map[string]interface{} {
 
 func natsConf(run string, i int) string {
 	dir := filepath.Join(run, fmt.Sprintf("nats-%d", i))
-	os.MkdirAll(dir, 0755)
+	os.MkdirAll(dir, 0700)
+	os.Chmod(dir, 0700)
 	routes := []string{}
 	for j := 0; j < 3; j++ {
 		routes = append(routes, fmt.Sprintf("nats-route://127.0.0.1:%d", 16822+PortOff+j))
@@ -751,7 +782,8 @@ jetstream { store_dir: "%s", max_memory_store: 256MB, max_file_store: 4GB, ciphe
 cluster { name: wsi, listen: 127.0.0.1:%d, routes: [%s] }
 `, i, 14822+PortOff+i, 18822+PortOff+i, dir, 16822+PortOff+i, strings.Join(routes, ", "))
 	p := filepath.Join(dir, "nats.conf")
-	os.WriteFile(p, []byte(conf), 0644)
+	os.WriteFile(p, []byte(conf), 0600)
+	os.Chmod(p, 0600)
 	return p
 }
 
@@ -760,6 +792,7 @@ func natsBinaryPath(executable string) string {
 }
 
 func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, chaos int, natsKill bool, replicas int, noReview bool, seed int64) {
+	ensureMockCredentials()
 	keepFiles := map[string][]byte{} // keep the live-reader ledgers across reruns (model answers are reused, not re-asked)
 	for _, n := range []string{"reader_ledger.jsonl", "image_ledger.jsonl"} {
 		if b, _ := os.ReadFile(filepath.Join(run, n)); len(b) > 0 {
@@ -767,9 +800,9 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 		}
 	}
 	os.RemoveAll(run)
-	os.MkdirAll(run, 0755)
+	os.MkdirAll(run, 0700)
 	for n, b := range keepFiles {
-		os.WriteFile(filepath.Join(run, n), b, 0644)
+		os.WriteFile(filepath.Join(run, n), b, 0600)
 	}
 	self, _ := os.Executable()
 	o := &Orch{run: run, bin: self, procs: map[string]*proc{}}
@@ -820,6 +853,7 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 	time.Sleep(2500 * time.Millisecond) // encoder load in prep workers
 	t0 := time.Now()
 	if SrcCfg.Source == "fhir" {
+		os.Setenv("WASL_MOCK_CALLBACK_URL", "http://"+SrcCfg.Hook+"/hook")
 		o.start("malaffi", "", c("malaffi", "-speed", fmt.Sprint(speed), "-seed", fmt.Sprint(seed), "-hie", SrcCfg.Hie,
 			"-fdup", fmt.Sprint(SrcCfg.Dup), "-freorder", fmt.Sprint(SrcCfg.Reorder), "-fdrop", fmt.Sprint(SrcCfg.Drop))...)
 		time.Sleep(700 * time.Millisecond) // mock loads + sorts the cohort
@@ -1093,13 +1127,13 @@ func orchestrate(data, wasl, run string, P, preps, threads int, speed float64, c
 			anchors["out.p"+fmt.Sprint(k)] = fmt.Sprint(st["ledger_head"])
 		}
 	}
-	defer func() { // FHIR input anchor: computed over the dumped log, written once (0444) next to the OUT heads
+	defer func() { // FHIR input anchor: computed over the dumped log, written once (0400) next to the OUT heads
 		anchors["fhir"] = fhirAnchor(readLog(filepath.Join(run, "fhir_log.ndjson")))
 		ab, _ := json.MarshalIndent(anchors, "", " ")
-		os.WriteFile(filepath.Join(run, "anchors.json"), ab, 0444)
+		os.WriteFile(filepath.Join(run, "anchors.json"), ab, 0400)
 	}()
 	b, _ := json.MarshalIndent(res, "", " ")
-	os.WriteFile(filepath.Join(run, "orchestrate.json"), b, 0644)
+	os.WriteFile(filepath.Join(run, "orchestrate.json"), b, 0600)
 	for _, s := range []string{"FHIR", "OUT", "PREP"} {
 		n := dumpStream(js, s, filepath.Join(run, strings.ToLower(s)+"_log.ndjson"))
 		fmt.Printf("dumped %s: %d msgs\n", s, n)
@@ -1133,7 +1167,7 @@ func dumpStream(js jetstream.JetStream, stream, path string) int {
 		cons, err = s.OrderedConsumer(ctx, jetstream.OrderedConsumerConfig{})
 		return
 	})
-	f, _ := os.Create(path)
+	f, _ := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
 	defer f.Close()
 	n := 0
 	misses := 0

@@ -416,17 +416,17 @@ func analyze(fhir []LogMsg, preps []*Prep, rp *replayOut, gbm *GBM, iso *Iso, P 
 	}
 	if run != "" {
 		ex, _ := json.MarshalIndent(example, "", " ")
-		os.WriteFile(filepath.Join(run, "provenance_example.json"), ex, 0644)
+		os.WriteFile(filepath.Join(run, "provenance_example.json"), ex, 0600)
 		q := []*ReviewItem{}
 		for _, it := range rp.items {
 			q = append(q, it)
 		}
 		sort.Slice(q, func(i, j int) bool { return q[i].InSeq < q[j].InSeq || (q[i].InSeq == q[j].InSeq && q[i].ItemID < q[j].ItemID) })
 		qb, _ := json.MarshalIndent(q, "", " ")
-		os.WriteFile(filepath.Join(run, "review_queue.json"), qb, 0644)
+		os.WriteFile(filepath.Join(run, "review_queue.json"), qb, 0600)
 		dash := dashboard(rp.final, tr)
 		db, _ := json.MarshalIndent(dash, "", " ")
-		os.WriteFile(filepath.Join(run, "dashboard.json"), db, 0644)
+		os.WriteFile(filepath.Join(run, "dashboard.json"), db, 0600)
 		writeHTML(filepath.Join(run, "dashboard.html"), dash)
 	}
 	// sample outbound messages for the record
@@ -554,7 +554,7 @@ func writeHTML(path string, dash map[string]interface{}) {
 		}
 		sb.WriteString("</table>")
 	}
-	os.WriteFile(path, []byte(sb.String()), 0644)
+	os.WriteFile(path, []byte(sb.String()), 0600)
 }
 
 // sim: offline single-process run over the cohort in global arrival order (no broker): same cores, same metrics.
@@ -634,7 +634,7 @@ func simOffline(data, wasl string, P int, withReview bool, run string) {
 			sha([]byte(strings.Join(rp.ids, "\n")))[:16], sha([]byte(strings.Join(fin, "\n")))[:16], sha([]byte(strings.Join(ck, "\n")))[:16], rs, pct(rp.svcL, .5), pct(rp.svcL, .99))
 	}
 	if run != "" {
-		os.MkdirAll(run, 0755)
+		os.MkdirAll(run, 0700)
 	}
 	res := analyze(fhir, preps, rp, gbm, iso, P, &tr, run) // run != "": also writes review_queue.json etc. (used by augment_cohort.py)
 	rb := marshalReport(res)

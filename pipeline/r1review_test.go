@@ -258,7 +258,7 @@ func TestR1PhotoGateFlagOffNoOp(t *testing.T) {
 // prep-stage integration: the FHIR report goes through prepMsg (judge, image reader, gate) and then closure.
 func r1PrepReport(t *testing.T, text string, media []map[string]interface{}) *TwoVerdict {
 	res := map[string]interface{}{"resourceType": "DiagnosticReport", "id": "R1", "status": "final",
-		"effectiveDateTime": "2026-01-11T00:00:00Z", "conclusion": text}
+		"effectiveDateTime": "2026-01-11T00:00:00Z", "code": map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": "18746-8"}}}, "conclusion": text}
 	if media != nil {
 		res["media"] = media
 	}

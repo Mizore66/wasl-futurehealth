@@ -506,9 +506,9 @@ func sweep(data, wasl string, P int, out string) {
 			"false_closures": acc["false_closures"], "closed_pred": acc["closed_pred"], "fc_upper95": acc["false_closure_rate_upper95"], "items_raised": len(rp.items), "attribution": acc["attribution"], "gov": govMetrics(o, rp)}
 	}()
 	wg.Wait()
-	os.MkdirAll(filepath.Dir(out), 0755)
+	os.MkdirAll(filepath.Dir(out), 0700)
 	b, _ := json.MarshalIndent(res, "", " ")
-	os.WriteFile(out, b, 0644)
+	os.WriteFile(out, b, 0600)
 }
 
 // auditStats scores the senior audits against the truth (analysis only; the reviewer never sees the truth):

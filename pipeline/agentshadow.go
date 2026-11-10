@@ -209,7 +209,7 @@ func NewAgentShadow(cfg AgentShadowCfg, gbm *GBM, iso *Iso, P int, inv Investiga
 	if cfg.StopFile == "" {
 		cfg.StopFile = filepath.Join(cfg.Dir, "STOP")
 	}
-	if err := os.MkdirAll(cfg.Dir, 0o755); err != nil {
+	if err := os.MkdirAll(cfg.Dir, 0o700); err != nil {
 		return nil, err
 	}
 	s := &AgentShadow{cfg: cfg, inv: inv, P: P, start: cfg.Now(), next: 1, pend: map[uint64]*Prep{},
@@ -610,7 +610,7 @@ func (s *AgentShadow) record(o shadowOutcome) {
 	o.Pair = s.pairAlias(o.Pair) // raw registration keys never reach observations.ndjson
 	s.outcomes[o.Item] = o
 	b, _ := json.Marshal(o)
-	if f, err := os.OpenFile(s.obsPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err == nil {
+	if f, err := os.OpenFile(s.obsPath(), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600); err == nil {
 		f.Write(append(b, '\n'))
 		f.Close()
 	}
@@ -627,7 +627,7 @@ func (s *AgentShadow) saveUsage() error {
 	b, _ := json.MarshalIndent(s.usage, "", " ")
 	tmp := s.usagePath() + ".tmp"
 	err := func() error {
-		f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+		f, err := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 		if err != nil {
 			return err
 		}
@@ -965,7 +965,7 @@ func (s *AgentShadow) WriteStatus(run string, done bool) {
 	}
 	hb, _ := json.Marshal(map[string]interface{}{"ts": s.cfg.Now().UTC().Format(time.RFC3339), "degraded": st["degraded"], "killed": st["killed"], "done": done})
 	tmp := filepath.Join(s.cfg.Dir, "health.json.tmp")
-	if os.WriteFile(tmp, hb, 0o644) == nil {
+	if os.WriteFile(tmp, hb, 0o600) == nil {
 		os.Rename(tmp, filepath.Join(s.cfg.Dir, "health.json"))
 	}
 }
@@ -976,5 +976,5 @@ func (s *AgentShadow) WriteReport() error {
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(filepath.Join(s.cfg.Dir, "report.json"), append(b, '\n'), 0o644)
+	return os.WriteFile(filepath.Join(s.cfg.Dir, "report.json"), append(b, '\n'), 0o600)
 }

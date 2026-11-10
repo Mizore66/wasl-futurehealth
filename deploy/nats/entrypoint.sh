@@ -8,6 +8,29 @@ set -eu
 data="${WASL_NATS_DATA:-/data}"
 marker="$data/.wasl-key-check"
 health="http://127.0.0.1:8222/healthz?js-enabled-only=true"
+if [ -z "${WASL_JS_KEY:-}" ] && [ -n "${WASL_JS_KEY_FILE:-}" ]; then
+  WASL_JS_KEY="$(cat "$WASL_JS_KEY_FILE")" || { echo "WASL_JS_KEY_FILE is unreadable; refusing to start." >&2; exit 1; }
+  export WASL_JS_KEY
+fi
+for pair in WASL_NATS_PASSWORD:WASL_NATS_PASSWORD_FILE WASL_ROUTE_PASSWORD:WASL_ROUTE_PASSWORD_FILE; do
+  variable="${pair%%:*}" file_variable="${pair#*:}"
+  eval 'current="${'"$variable"':-}"; path="${'"$file_variable"':-}"'
+  if [ -z "$current" ] && [ -n "$path" ]; then
+    value="$(cat "$path")" || { echo "$file_variable is unreadable; refusing to start." >&2; exit 1; }
+    eval "$variable=\"\$value\""
+    export "$variable"
+  fi
+done
+if [ -n "${WASL_NATS_REQUIRE_MARKER:-}" ] && [ ! -f "$marker" ] && [ -d "$data/jetstream" ] && [ -n "$(ls -A "$data/jetstream" 2>/dev/null)" ]; then
+  echo "Retained JetStream data has no verified key marker; refusing production start." >&2
+  exit 1
+fi
+if [ "${WASL_NATS_TLS:-0}" = 1 ]; then
+  health="https://127.0.0.1:8222/healthz?js-enabled-only=true"
+  wget_tls="--no-check-certificate"
+else
+  wget_tls=""
+fi
 if [ -z "${WASL_JS_KEY:-}" ]; then
   echo "WASL_JS_KEY is not set; refusing to start." >&2
   exit 1
@@ -42,6 +65,24 @@ write_marker() {
   return 1
 }
 
+if [ "${WASL_NATS_TLS:-0}" = 1 ]; then
+  if [ -z "${WASL_ROUTE_USER:-}" ] || [ -z "${WASL_ROUTE_PASSWORD:-}" ]; then
+    echo "NATS route credentials are missing; refusing to start." >&2
+    exit 1
+  fi
+  runtime="${WASL_NATS_RUNTIME_CONFIG:-/tmp/wasl-production.conf}"
+  template="${WASL_NATS_CONFIG_TEMPLATE:-/etc/nats/wasl-production.conf}"
+  umask 077
+  # NATS does not expand variables inside quoted strings. Quoted config-only values make its variable parser
+  # preserve arbitrary generated hex credentials as strings, including numeric and exponent-shaped prefixes.
+  WASL_NATS_PASSWORD_CONFIG="\"$WASL_NATS_PASSWORD\""
+  WASL_ROUTE_PASSWORD_CONFIG="\"$WASL_ROUTE_PASSWORD\""
+  export WASL_NATS_PASSWORD_CONFIG WASL_ROUTE_PASSWORD_CONFIG
+  sed -e "s/__WASL_ROUTE_USER__/$WASL_ROUTE_USER/g" -e "s/__WASL_ROUTE_PASSWORD__/$WASL_ROUTE_PASSWORD/g" \
+    "$template" > "$runtime"
+  set -- nats-server -c "$runtime"
+fi
+
 docker-entrypoint.sh "$@" &
 pid=$!
 trap 'kill -TERM "$pid" 2>/dev/null || true' TERM INT
@@ -50,7 +91,7 @@ watcher=""
 if [ "$record" = 1 ]; then
   (
     while kill -0 "$pid" 2>/dev/null; do
-      if wget -q --spider "$health" 2>/dev/null; then
+      if wget $wget_tls -q --spider "$health" 2>/dev/null; then
         write_marker || echo "Could not record the key check marker." >&2
         exit 0
       fi

@@ -7,8 +7,12 @@ import fixtures from "../data/api/fixtures.json";
 
 /*
  * Fixtures mode: run against a dev server without WASL_API_URL.
- * Live mode: set REVIEW_LIVE_MOCK=1 and start the dev server with WASL_API_URL=http://127.0.0.1:3293;
- * this spec serves that address with a mock of the Go API that records every POST.
+ * Live mode: start `next start` yourself with WASL_API_URL=http://127.0.0.1:3293 and the four role tokens
+ * (WASL_API_REVIEWER_TOKEN, WASL_API_CLINICIAN_TOKEN, WASL_API_AUDITOR_TOKEN, WASL_API_COORDINATOR_TOKEN), then run
+ * this spec with REVIEW_LIVE_MOCK=1, PLAYWRIGHT_BASE_URL pointing at that server and the same four tokens. (A
+ * Playwright-started server never becomes ready: its /app check needs the mock, which starts with the tests.)
+ * This spec serves 127.0.0.1:3293 with a mock of the Go API that binds each token to a role and actor, like the real
+ * API, and records every POST.
  */
 const LIVE = !!process.env.REVIEW_LIVE_MOCK;
 const MOCK_PORT = 3293;
@@ -205,7 +209,10 @@ test.describe("review, fixtures mode", () => {
   });
 });
 
-type Posted = { path: string; headers: IncomingHttpHeaders; body: Record<string, unknown> };
+type Posted = { path: string; headers: IncomingHttpHeaders; role: string; actor: string; body: Record<string, unknown> };
+
+/** The one signer every role token is bound to in this mock: two answers from one person, under two roles. */
+const SIGNER = "Dr Omar Al Kaabi";
 
 test.describe("review, live mode against a mock API", () => {
   test.skip(!LIVE, "set REVIEW_LIVE_MOCK=1 with the dev server pointed at the mock");
@@ -226,7 +233,19 @@ test.describe("review, live mode against a mock API", () => {
   let settledEvidence: "disagreeing" | "missing" | undefined;
   let server: Server;
 
+  /*
+   * Like the Go API (pipeline/api_security.go), the mock takes role and actor only from the bearer token, never from
+   * request headers. The tokens are the ones the Next.js server sends (lib/api/source.ts reads WASL_API_<ROLE>_TOKEN).
+   */
+  const principals = new Map<string, { role: string; actor: string }>();
+
   test.beforeAll(async () => {
+    for (const role of ["reviewer", "clinician", "auditor", "coordinator"]) {
+      const name = `WASL_API_${role.toUpperCase()}_TOKEN`;
+      const token = process.env[name]?.trim();
+      if (!token) throw new Error(`${name} must be set for the live mock, with the same value the server sends`);
+      principals.set(token, { role, actor: SIGNER });
+    }
     server = createServer((req, res) => {
       const url = new URL(req.url ?? "/", "http://mock");
       const send = (status: number, body: unknown) => {
@@ -234,16 +253,24 @@ test.describe("review, live mode against a mock API", () => {
         res.end(JSON.stringify(body));
       };
       const p = decodeURIComponent(url.pathname);
+      const [scheme, token] = (req.headers.authorization ?? "").split(" ");
+      const principal = scheme === "Bearer" && token ? principals.get(token) : undefined;
+      if (p.startsWith("/api/") && !principal) return send(401, { error: "authentication required" });
+      // Only the auditor reads /audit, and the auditor reads nothing else (apiReadAction in pipeline/api_security.go).
+      if (p.startsWith("/api/") && (principal?.role === "auditor") !== p.endsWith("/audit")) {
+        return send(403, { error: "read permission denied" });
+      }
       if (req.method === "POST" && p.endsWith("/review")) {
         let raw = "";
         req.on("data", (c) => (raw += c));
         req.on("end", () => {
           const body = JSON.parse(raw);
-          posted.push({ path: p, headers: req.headers, body });
-          const role = req.headers["x-wasl-role"];
+          const { role, actor } = principal!;
+          posted.push({ path: p, headers: req.headers, role, actor, body });
           if (role === refuse) return send(403, { meta, error: `rbac: role "${role}" may not sign this` });
-          const review = { case: holdId, item: body.item, decision: body.decision, note: body.note, role, actor: req.headers["x-wasl-actor"], action: "signoff", at: "2026-10-31T10:00:00Z", mode: "api", prev: "genesis", hash: `hash-${posted.length}-0123456789abcdef` };
-          history.push(review);
+          const review = { case: holdId, item: body.item, decision: body.decision, note: body.note, role, actor, action: "signoff", at: "2026-10-31T10:00:00Z", mode: "api", prev: "genesis", hash: `hash-${posted.length}-0123456789abcdef` };
+          // The auditor's redacted audit history never carries actor or note (exportReviewEventAllow in pipeline/api_export.go).
+          history.push(Object.fromEntries(Object.entries(review).filter(([k]) => k !== "actor" && k !== "note")));
           send(201, { meta, review });
         });
         return;
@@ -318,13 +345,22 @@ test.describe("review, live mode against a mock API", () => {
     await expect(history.getByRole("listitem").nth(0)).toContainText("Same patient");
     await expect(history.getByRole("listitem").nth(0)).toContainText("Reviewer");
     await expect(history.getByRole("listitem").nth(1)).toContainText("Clinician");
+    // The auditor's history is redacted: no actor is shown, and no placeholder for one.
+    await expect(history).not.toContainText(SIGNER);
+    await expect(history).not.toContainText("undefined");
+    await expect(history).not.toContainText("Unnamed");
 
     // Focus moved to the confirmation, not <body>.
     await expect(r.getByRole("heading", { name: /Demo answers appended; case open/ })).toBeFocused();
 
-    expect(posted.map((x) => [x.path, x.headers["x-wasl-role"], x.headers["x-wasl-actor"], x.body])).toEqual([
-      [`/api/cases/${holdId}/review`, "reviewer", "Dr Omar Al Kaabi", { item: LINK_ITEM, decision: "same", note: "" }],
-      [`/api/cases/${holdId}/review`, "clinician", "Dr Omar Al Kaabi", { item: EVIDENCE_ITEM, decision: "adequate", note: "" }],
+    expect(posted.map((x) => [x.path, x.role, x.actor, x.body])).toEqual([
+      [`/api/cases/${holdId}/review`, "reviewer", SIGNER, { item: LINK_ITEM, decision: "same", note: "" }],
+      [`/api/cases/${holdId}/review`, "clinician", SIGNER, { item: EVIDENCE_ITEM, decision: "adequate", note: "" }],
+    ]);
+    // Identity comes from the token alone: the server never asserts a role or actor header.
+    expect(posted.map((x) => [x.headers["x-wasl-role"], x.headers["x-wasl-actor"]])).toEqual([
+      [undefined, undefined],
+      [undefined, undefined],
     ]);
     await page.screenshot({ path: "test-results/screens/review-live-saved.png", fullPage: true });
     await noSeriousAxe(page);
@@ -417,7 +453,7 @@ test.describe("review, live mode against a mock API", () => {
     await expect(r).not.toContainText("Closed: both answers recorded");
     await expect(signedNodes(page)).toHaveCount(1);
     await expect(page.getByRole("list", { name: "Review history" }).getByRole("listitem")).toHaveCount(1);
-    expect(posted.map((x) => x.headers["x-wasl-role"])).toEqual(["reviewer", "clinician"]);
+    expect(posted.map((x) => x.role)).toEqual(["reviewer", "clinician"]);
     await page.screenshot({ path: "test-results/screens/review-live-403.png", fullPage: true });
     await noSeriousAxe(page);
 
@@ -439,7 +475,7 @@ test.describe("review, live mode against a mock API", () => {
     await expect(r.getByRole("alert")).toHaveText("Not saved: the reviewer role is not allowed to sign the identity answer.");
     await expect(r.getByRole("status")).toHaveCount(0);
     await expect(signedNodes(page)).toHaveCount(0);
-    expect(posted.map((x) => x.headers["x-wasl-role"])).toEqual(["reviewer"]);
+    expect(posted.map((x) => x.role)).toEqual(["reviewer"]);
     // The failed save leaves focus on the button, not <body>.
     await expect(r.getByRole("button", { name: "Close the case" })).toBeFocused();
   });

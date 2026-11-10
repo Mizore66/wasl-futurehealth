@@ -1,0 +1,21 @@
+{
+ "schema": "fresh4-adjudication-manifest/v1",
+ "disagreements_presented": 0,
+ "decisions_returned": 0,
+ "adjudicated": 0,
+ "unresolved": 0,
+ "rationale_and_uncertainty": "No item-level rationale or uncertainty was applicable because the two blind files had no disagreements. The adjudicator still ran fresh on the empty disagreements-only input before scores.",
+ "session_id": "f355723f-3cc7-4e0a-8a28-a47560ca5d6a",
+ "requested_model": "sonnet",
+ "canonical_model": "claude-sonnet-5-5",
+ "model_family": "anthropic-claude",
+ "session_isolated": true,
+ "saw_reader_outputs": false,
+ "saw_scores": false,
+ "agent_wrote_files": false,
+ "rendered_prompt_sha256": "9a20637165f3dd6e9f7ba6932eae868cb459ad6e4c7f1224452b09d219616de2",
+ "raw_result_sha256": "54a9cf80544f74b65e8596f8d535ce53771db11ec3abe05b3cadb546c640c130",
+ "adjudication_sha256": "0502718b1f6f8b3165ad7c00359c06aeb790273562660509ded0478629a90308",
+ "adjudicated_key_sha256": "e80bdc54e5351445f5122204dd5119fef33e8185e9257da84000090ac190cdf8",
+ "clinician_verified": false
+}

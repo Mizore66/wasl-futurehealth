@@ -249,7 +249,7 @@ func TestReuseIDConfirmAcrossLoops(t *testing.T) {
 	V7Guard, ReuseIDConfirm = true, true
 	L, loop1 := newLoopLinker(t)
 	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR2", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 2, Prog: "cervical"}})
-	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Persn", Day: 5}})
+	L.Apply(&Prep{Seq: 3, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Persn", Day: 5}})
 	loop2 := "ahs-mushrif/ServiceRequest/SR2"
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
 	so := func(seq uint64, link string) *Prep {
@@ -265,7 +265,7 @@ func TestReuseIDConfirmAcrossLoops(t *testing.T) {
 	if !L.idConfirmed[k] {
 		t.Fatal("confirmation not recorded for the pair")
 	}
-	d := DownFact{EventID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", Day: 10, Strength: 0.995,
+	d := DownFact{EventID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", Day: 10, Strength: 0.995,
 		Weak: Edge{Basis: "wasl"}, RecPk: pair[1], RecDob: "1980-01-01"}
 	f := &LoopFacts{LoopID: loop2, SRRec: pair[0], SRDay: 2, SRDob: "1980-01-01", Contact: "granted", Down: []DownFact{d}}
 	if o := BuildOutreach(f, func(p float64) float64 { return p }); len(o) != 1 || o[0].Released {
@@ -389,7 +389,7 @@ func TestContradictingLinkNeedsConfirmation(t *testing.T) {
 	LinkContradictionConfirm = true
 	L, loop := newLoopLinker(t)
 	L.recs[L.byPk["ahs-mushrif|M1"]].Sex = "F"
-	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "A1", Provider: "skmc-endo", RType: "Appointment", Prog: "crc", Status: "booked", PatientKey: "skmc-endo|H1", Name: "Test Person", Sex: "M", Day: 5}})
 	a, b := L.byPk["ahs-mushrif|M1"], L.byPk["skmc-endo|H1"]
 	pair := [2]string{"ahs-mushrif|M1", "skmc-endo|H1"}
 	so := func(seq uint64, id, purpose string) *Prep {

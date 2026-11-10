@@ -1,0 +1,19 @@
+{
+ "gates": [
+  {
+   "expected_items": 100,
+   "id": "R1_complete_raw_output",
+   "observed_items": 100,
+   "status": "pass"
+  },
+  {
+   "clopper_pearson_note": "Zero events do not establish a zero clinical risk; denominator is pooled scoreable items.",
+   "denominator": 100,
+   "id": "R2_zero_closing_direction",
+   "numerator": 0,
+   "status": "pass",
+   "threshold": 0
+  }
+ ],
+ "schema": "fresh4-reader-gates/v1"
+}

@@ -168,11 +168,11 @@ describe("programmeView: capacity", () => {
 });
 
 describe("poolingRuns", () => {
-  it("reads the measured pooling test from results.json: 22.2% without pooling, 42.1% with, at 1.2 slots per FIT+", () => {
+  it("reads the deterministic pooling test from results.json: 21.5% without pooling, 41.7% with, at 1.2 slots per FIT+", () => {
     const [enough, short] = poolingRuns();
     expect(enough.slotsPerCase).toBe("1.2");
-    expect(enough.rows.map((r) => r.display)).toEqual(["40.4%", "22.2%", "37.2%", "42.1%"]);
-    expect(short.rows.map((r) => r.display)).toEqual(["6.9%", "18.6%", "7.3%", "7.8%"]);
+    expect(enough.rows.map((r) => r.display)).toEqual(["40.8%", "21.5%", "36.9%", "41.7%"]);
+    expect(short.rows.map((r) => r.display)).toEqual(["7.3%", "18.5%", "7.1%", "8.2%"]);
     expect(result("pool.1_2.skewed_pool_60").source).toBe("booking/sim/pool_test.json");
   });
 });

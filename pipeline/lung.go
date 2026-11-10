@@ -46,21 +46,21 @@ func lungSRExt(l *LungSR, url, v string) *LungSR {
 
 // LungDecision: the lung-specific part of a decision (also served by the API).
 type LungDecision struct {
-	Finding      string  `json:"finding_report,omitempty"`
-	FindingLabel string  `json:"finding_label,omitempty"` // type/band/count both readers (or a clinician) agreed on
-	Risk         string  `json:"risk"`                    // as used: low | high (unknown -> high)
-	RiskRecorded bool    `json:"risk_recorded"`
-	Rec          *FlRec  `json:"rec,omitempty"`
-	WindowStart  float64 `json:"window_start_day,omitempty"`
-	WindowEnd    float64 `json:"window_end_day,omitempty"`
-	Outcome      string  `json:"outcome,omitempty"`
-	FollowUp     string  `json:"followup_report,omitempty"`
-	WithinWindow bool    `json:"within_window,omitempty"`
-	FollowUpCT   bool    `json:"followup_ct_seen,omitempty"` // a trusted follow-up CT exists (Decision.ProcDay is its day)
-	Closer       string  `json:"closer,omitempty"`          // > 8 mm work-up (lungworkup.go): ct | pet | tissue
-	TissueDue    float64 `json:"tissue_due_day,omitempty"`  // FDG-avid PET/CT: tissue result expected by this day
-	Surveillance *LungSurv `json:"surveillance,omitempty"`  // -lungsurv: surveillance CT due after a PET/CT low-uptake closure (lungsurv.go)
-	Scope        string  `json:"scope"`                      // in_scope | <exclusion reason>
+	Finding      string    `json:"finding_report,omitempty"`
+	FindingLabel string    `json:"finding_label,omitempty"` // type/band/count both readers (or a clinician) agreed on
+	Risk         string    `json:"risk"`                    // as used: low | high (unknown -> high)
+	RiskRecorded bool      `json:"risk_recorded"`
+	Rec          *FlRec    `json:"rec,omitempty"`
+	WindowStart  float64   `json:"window_start_day,omitempty"`
+	WindowEnd    float64   `json:"window_end_day,omitempty"`
+	Outcome      string    `json:"outcome,omitempty"`
+	FollowUp     string    `json:"followup_report,omitempty"`
+	WithinWindow bool      `json:"within_window,omitempty"`
+	FollowUpCT   bool      `json:"followup_ct_seen,omitempty"` // a trusted follow-up CT exists (Decision.ProcDay is its day)
+	Closer       string    `json:"closer,omitempty"`           // > 8 mm work-up (lungworkup.go): ct | pet | tissue
+	TissueDue    float64   `json:"tissue_due_day,omitempty"`   // FDG-avid PET/CT: tissue result expected by this day
+	Surveillance *LungSurv `json:"surveillance,omitempty"`     // -lungsurv: surveillance CT due after a PET/CT low-uptake closure (lungsurv.go)
+	Scope        string    `json:"scope"`                      // in_scope | <exclusion reason>
 }
 
 // lungFindingFacts: the index CT on the tracking ServiceRequest's own registration (no identity link needed).
@@ -68,10 +68,10 @@ func lungFindingFacts(rec *Rec) []DownFact {
 	var out []DownFact
 	for _, k := range rec.evOrder {
 		e := rec.evs[k]
-		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" {
+		if e.RType != "DiagnosticReport" || e.Category != "lung-finding" || !diagnosticReportEvidenceEligible(e.Status) {
 			continue
 		}
-		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LungFinding", Status: e.Status, Day: e.Day, ReportID: e.ReportID,
+		d := DownFact{EventID: e.ID, Provider: e.Provider, RType: "LungFinding", Status: e.Status, Day: e.Day, ReportID: e.ReportID, Version: e.Version,
 			Ev: e.Ev, Strength: 1, Weak: Edge{A: rec.Pk, B: rec.Pk, P: 1, Basis: "self"}, Prog: "lung_nodule", RecPk: rec.Pk}
 		if V7Cal != nil {
 			d.PCal = 1
@@ -168,13 +168,13 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		pair := [2]string{r.d.Weak.A, r.d.Weak.B}
 		key, report := pair[0]+"|"+pair[1], ""
 		if kind == "evidence" {
-			key, report = r.d.ReportID, r.d.ReportID
+			key, report = reportVersionKey(r.d.ReportID, r.d.Version), r.d.ReportID
 		}
 		id := "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		reason, hold := "", ""
 		if s, ok := signed[id]; ok && kind == "link" && heldLink(s) { // held "same": ask the confirming review (v7.go)
 			reason, hold, key = LinkConfirm, s.Hold, key+"#linkconfirm"
-			id = "rv-" + sha([]byte(f.LoopID+"|"+kind+"|"+key))[:16]
+			id = "rv-" + sha([]byte(f.LoopID + "|" + kind + "|" + key))[:16]
 		}
 		if _, ok := signed[id]; ok {
 			return
@@ -192,7 +192,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			if report != "" {
 				ch = appendBlock(ch, "evidence", lungEvBlock(r.d, ""))
 			}
-			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report,
+			it := &ReviewItem{ItemID: id, LoopID: f.LoopID, Kinds: []string{kind}, Pair: pair, P: r.pc, ReportID: report, ReportVersion: r.d.Version,
 				Chain: ch, Head: ch[len(ch)-1].Hash, InSeq: inSeq}
 			if r.d.Ev != nil {
 				it.Verdict, it.Quote = r.d.Ev.Label, r.d.Ev.Gemma.Quote
@@ -205,7 +205,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		}
 	}
 	labelOf := func(r row) (string, string) { // (label, human override)
-		if h, ok := f.EvOver[r.d.ReportID]; ok {
+		if h, ok := evidenceOverride(f.EvOver, r.d, ""); ok {
 			return h, h
 		}
 		if r.d.Ev != nil && r.d.Ev.Agree {
@@ -221,7 +221,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 		sort.Strings(ids)
 		for _, id := range ids {
 			it := ls.raised[id]
-			if s, ok := signed[id]; ok && it.ReportID == report && s.SignedHead == it.Head {
+			if s, ok := signed[id]; ok && it.ReportID == report && sameReportReviewVersion(it.ReportVersion, currentReportVersion(f, report)) && s.SignedHead == it.Head {
 				s := s
 				return &s
 			}
@@ -356,7 +356,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 				body := map[string]interface{}{"loop": f.LoopID, "state": "closed", "programme": "lung_nodule",
 					"rule": "fleischner2017", "outcome": lab, "closer": ld.Closer, "closed_day": round4(closedDay),
 					"next_step": map[string]string{"pet_low": "CT surveillance (BTS 2015: Herder < 10%)", "benign": "benign tissue diagnosis: management per lung MDT"}[lab],
-					"policy": "trusted link AND the coded result agrees with the report text (or clinician sign-off); Fleischner > 8 mm: CT at 3 months, PET/CT or tissue sampling"}
+					"policy":    "trusted link AND the coded result agrees with the report text (or clinician sign-off); Fleischner > 8 mm: CT at 3 months, PET/CT or tissue sampling"}
 				if LungPETSurv && lab == "pet_low" { // the work-up closes; the surveillance CT becomes the child loop's obligation (lungsurv.go)
 					body["closed_into"], body["surveillance_loop"] = "surveillance_ct_due", f.LoopID+"#surv"
 					body["surveillance_ct_due_day"] = round4(closedDay + PETSurvHiDays)
@@ -396,7 +396,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 			}
 		}
 	}
-	var petChild *Decision // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
+	var petChild *Decision               // -lungsurv: surveillance CT after a PET/CT low-uptake closure (lungsurv.go)
 	record := func(fn func()) []string { // the items a child raised, in order, once each
 		var log []string
 		raiseLog = &log
@@ -487,7 +487,7 @@ func (c *ClosureCore) evalLung(ls *loopState, inSeq uint64, mid string) []OutMsg
 	if OutreachOn {
 		d.Outreach = lungOutreach(f, ld, state, d.Overdue, now)
 		rejectedOutreach(d, f, "lung_nodule", "lung_referral_rejected") // -rejmsg (outreachgaps.go)
-		d.ConsentLog = lungConsentLog(ls, f, d.Outreach) // consent hold / cancel history, as for the screening programmes
+		d.ConsentLog = lungConsentLog(ls, f, d.Outreach)                // consent hold / cancel history, as for the screening programmes
 	}
 	d.Contact = f.Contact
 	d.Policy = PolicyName
