@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -323,6 +324,26 @@ func TestAPIAuthenticationDerivesRoleAndActor(t *testing.T) {
 	if resp.Code != http.StatusNoContent || role != RoleReviewer || actor != "dr.sara" {
 		t.Fatalf("authenticated identity: code=%d role=%q actor=%q", resp.Code, role, actor)
 	}
+}
+
+func TestBasicAuthRequiresTLS(t *testing.T) {
+	_, run := contractRun(t, []contractCase{{suffix: "plaintext-startup", item: "rv-plaintext-startup"}})
+	users := filepath.Join(t.TempDir(), "users.json")
+	if err := os.WriteFile(users, []byte(`{"auditor":{"password":"secret","role":"auditor"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("WASL_SYNTHETIC_DATA_ONLY", "1")
+	t.Setenv("WASL_API_USERS_FILE", users)
+	t.Setenv("WASL_API_TLS_CERT_FILE", "")
+	t.Setenv("WASL_API_TLS_KEY_FILE", "")
+	defer func() {
+		got := recover()
+		if got == nil || !strings.Contains(fmt.Sprint(got), "WASL_API_USERS_FILE requires WASL_API_TLS_CERT_FILE and WASL_API_TLS_KEY_FILE") {
+			t.Fatalf("plaintext Basic-auth startup panic = %v, want explicit TLS refusal", got)
+		}
+	}()
+	// The invalid address keeps the vulnerable path from blocking: before the security check it panics with a listen error.
+	runServe(run, "", "invalid-address")
 }
 
 func TestBasicAuthEnforcesReadRBACAndPreflight(t *testing.T) {

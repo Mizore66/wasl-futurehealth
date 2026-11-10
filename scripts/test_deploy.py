@@ -309,7 +309,7 @@ exit 2
     def test_snapshot_sigint_removes_staging_and_keeps_samples(self):
         import signal, time
         with tempfile.TemporaryDirectory() as tmp:
-            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; esac\necho "{}"\n')
+            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\' && exit 0;; esac\necho "{}"\n')
             p = subprocess.Popen([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, start_new_session=True,
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             try:
@@ -330,7 +330,7 @@ exit 2
     def test_snapshot_sigterm_exits_143_and_cleans_everything(self):
         import signal, time
         with tempfile.TemporaryDirectory() as tmp:
-            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; esac\necho "{}"\n')
+            env, samples = self.snapshot_env(tmp, 'case "$*" in *dashboard*) sleep 30;; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\' && exit 0;; esac\necho "{}"\n')
             p = subprocess.Popen([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, start_new_session=True,
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             try:
@@ -353,7 +353,7 @@ exit 2
     def test_snapshot_curls_are_time_bounded(self):
         with tempfile.TemporaryDirectory() as tmp:
             log = Path(tmp) / "curl.log"
-            body = 'echo "$*" >> %s\ncase "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n' % log
+            body = 'echo "$*" >> %s\ncase "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n' % log
             env, samples = self.snapshot_env(tmp, body)
             r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -364,7 +364,7 @@ exit 2
                 self.assertIn("--max-time", l)
 
     def test_snapshot_success_removes_stale_files_keeps_readme(self):
-        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n'
+        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n'
         with tempfile.TemporaryDirectory() as tmp:
             env, samples = self.snapshot_env(tmp, ok)
             (samples / "stale_case.json").write_text("old\n")
@@ -378,7 +378,7 @@ exit 2
             self.assertEqual([x.name for x in Path(tmp).iterdir() if ".staging." in x.name or ".old." in x.name], [])
 
     def test_snapshot_failure_and_success_leave_no_staging(self):
-        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"cases":[1]}\';; *) echo "{}";; esac\n'
+        ok = 'case "$*" in *fixtures*) echo \'{"fixtures":{}}\';; *programme*) echo \'{"total":1,"offset":0,"limit":100,"cases":[{"id":"case-1"}]}\';; *healthz*) echo \'{"status":"ok","cases":1,"dependencies":{"materialised_run":"loaded","nats":"not_required_for_read_api","reader":"cached","ingest_adapter":"fhir","review_ledger":"ok"}}\';; *) echo \'{"cases":1,"closed":0,"overdue":0,"states":{},"dropoff":{},"review":{},"by_programme":{},"sla":{},"providers":[],"origins":[],"small_cell_rule":"counts 1-4 shown as <5","metrics":{},"fixtures":{},"capacity":{}}\';; esac\n'
         with tempfile.TemporaryDirectory() as tmp:
             env, samples = self.snapshot_env(tmp, "exit 22\n")
             r = subprocess.run([str(ROOT / "scripts/demo.sh"), "snapshot"], cwd=ROOT, env=env, text=True,

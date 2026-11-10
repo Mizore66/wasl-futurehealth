@@ -195,6 +195,38 @@ func TestLoadAPIMetadataRejectsLogProse(t *testing.T) {
 	}
 }
 
+func TestExportCanaryStringFailsClosedBeyondDecodeDepth(t *testing.T) {
+	nested := "CANARY"
+	for i := 0; i < 6; i++ {
+		nested = base64.RawStdEncoding.EncodeToString([]byte(nested))
+	}
+	if !exportCanaryString(nested) {
+		t.Fatal("over-depth nested Base64 canary was accepted")
+	}
+	malformed := base64.StdEncoding.EncodeToString([]byte("CANARY private clinical text")) + "%"
+	if !exportCanaryString(malformed) {
+		t.Fatal("recoverable Base64 canary with trailing junk was accepted")
+	}
+	interior := base64.StdEncoding.EncodeToString([]byte("CANARY private clinical text"))
+	interior = interior[:1] + "%" + interior[1:]
+	if !exportCanaryString(interior) {
+		t.Fatal("recoverable Base64 canary with interior junk was accepted")
+	}
+	if !exportCanaryString("%43%41%4E%41%52%59%ZZ") {
+		t.Fatal("partially decoded percent canary was accepted")
+	}
+	benign := "adequate"
+	for i := 0; i < 4; i++ {
+		benign = base64.RawStdEncoding.EncodeToString([]byte(benign))
+	}
+	if exportCanaryString(benign) {
+		t.Fatal("benign value with exactly four Base64 layers was rejected")
+	}
+	if exportCanaryString("adequate") {
+		t.Fatal("ordinary operational label was rejected")
+	}
+}
+
 // Copying log-derived metadata into a redacted export must fail this test.
 func TestExportRedactsWholeMetadataEnvelope(t *testing.T) {
 	s, _ := exportRun(t)
@@ -254,6 +286,13 @@ func TestExportRejectsEncodedCanariesInAllowlistedFields(t *testing.T) {
 		fmt.Sprintf("%x", []byte(prose)),
 		percent.String(),
 	}
+	nested := prose
+	for i := 0; i < 6; i++ {
+		nested = base64.RawStdEncoding.EncodeToString([]byte(nested))
+		values = append(values, nested)
+	}
+	folded := base64.URLEncoding.EncodeToString([]byte(prose))
+	values = append(values, folded[:12]+"\n"+folded[12:])
 	for _, field := range []string{"label", "reader_model", "report", "gemma", "rule", "policy"} {
 		for _, value := range values {
 			t.Run(field+"/"+value, func(t *testing.T) {

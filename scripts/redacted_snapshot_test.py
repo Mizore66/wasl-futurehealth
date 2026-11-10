@@ -2,9 +2,39 @@
 import base64
 import copy
 import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 from redacted_snapshot import audit_snapshot, detail_snapshot
+
+
+def valid_public_payload(kind):
+    payloads = {
+        "health": {
+            "status": "ok", "cases": 1,
+            "dependencies": {"materialised_run": "loaded", "nats": "not_required_for_read_api", "reader": "cached", "ingest_adapter": "fhir", "review_ledger": "ok"},
+        },
+        "dashboard": {
+            "cases": 0, "closed": 0, "overdue": 0, "states": {}, "dropoff": {}, "review": {}, "by_programme": {}, "fixtures": {},
+            "small_cell_rule": "counts 1-4 shown as <5",
+            "sla": {"ack_days": 1, "colonoscopy_days": 31, "notification_days": 2, "referral_response_days": 3},
+            "providers": [], "origins": [],
+            "metrics": {key: {} for key in ("closure", "consent_timing", "crc_kpi_31d", "forged", "provenance", "throughput_ev_s")},
+            "capacity": {
+                "condition": {}, "data_mode": "simulated", "inputs": {}, "levers": {},
+                "note": "Synthetic endoscopy calendar and constraint/no-show assumptions; not live scheduling. Optimiser ~= greedy (no optimisation claim).",
+                "status": "ok", "summary": {},
+            },
+        },
+        "fixtures": {"fixtures": {}},
+        "cases": {"total": 0, "offset": 0, "limit": 100, "cases": []},
+    }
+    payload = copy.deepcopy(payloads[kind])
+    payload["meta"] = {}
+    return payload
 
 
 class RedactedSnapshotTest(unittest.TestCase):
@@ -59,6 +89,12 @@ class RedactedSnapshotTest(unittest.TestCase):
             "".join(f"\\u{ord(char):04x}" for char in "CANARY") + " private clinical text",
             "".join(f"%{byte:02X}" for byte in prose.encode()),
         ]
+        nested = prose
+        for _ in range(6):
+            nested = base64.urlsafe_b64encode(nested.encode()).decode().rstrip("=")
+            encoded.append(nested)
+        folded = base64.urlsafe_b64encode(prose.encode()).decode()
+        encoded.extend([folded[:12] + "\n" + folded[12:], folded[:12] + " \t" + folded[12:]])
         for value in encoded:
             source = copy.deepcopy(self.export)
             source["detail"]["future"] = value
@@ -134,6 +170,98 @@ class RedactedSnapshotTest(unittest.TestCase):
             mutate(source)
             with self.assertRaises(ValueError):
                 detail_snapshot(source)
+
+    def run_snapshot(self, arguments, payload=None):
+        return subprocess.run(
+            [sys.executable, str(Path(__file__).with_name("redacted_snapshot.py")), *arguments],
+            input=None if payload is None else json.dumps(payload), text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
+        )
+
+    def test_public_reads_drop_unknown_fields_and_rebuild_metadata(self):
+        meta = {"api": "wasl-api/1", "data_mode": "simulated", "note": "rectal bleeding", "run": "MRN-1234"}
+        payloads = {}
+        for kind in ("health", "dashboard", "fixtures", "cases"):
+            payloads[kind] = valid_public_payload(kind)
+            payloads[kind]["meta"] = copy.deepcopy(meta)
+            payloads[kind]["future_clinical"] = "rectal bleeding"
+        payloads["fixtures"]["fixtures"] = {"review_hold": {"id": "case-1", "owner": "operator", "future_clinical": "rectal bleeding"}}
+        payloads["cases"]["cases"] = [{"id": "case-1", "owner": "operator", "future_clinical": "rectal bleeding"}]
+        for kind, payload in payloads.items():
+            with self.subTest(kind=kind):
+                proc = self.run_snapshot([kind], payload)
+                self.assertEqual(proc.returncode, 0, proc.stderr)
+                self.assertNotIn("future_clinical", proc.stdout)
+                self.assertNotIn("rectal bleeding", proc.stdout)
+                self.assertNotIn("MRN-1234", proc.stdout)
+                self.assertNotIn("operator", proc.stdout)
+
+    def test_public_dashboard_rejects_nonconstant_clinical_note(self):
+        payload = valid_public_payload("dashboard")
+        payload["capacity"]["note"] = "sessile adenoma"
+        proc = self.run_snapshot(["dashboard"], payload)
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertNotIn("sessile adenoma", proc.stdout)
+
+    def test_staged_public_snapshot_rejects_unknown_clinical_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            payload = valid_public_payload("dashboard")
+            payload["capacity"].update(note="sessile adenoma", future_clinical="rectal bleeding")
+            Path(directory, "dashboard.json").write_text(json.dumps(payload))
+            proc = self.run_snapshot(["scan-dir", directory])
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertNotIn("sessile adenoma", proc.stdout)
+
+    def test_nested_public_objects_drop_unknown_keys_and_overlay_narratives(self):
+        dashboard = valid_public_payload("dashboard")
+        dashboard["metrics"]["closure"] = {"future_clinical": "rectal_bleeding", "patient": "MRN-738291"}
+        proc = self.run_snapshot(["dashboard"], dashboard)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(json.loads(proc.stdout)["metrics"]["closure"], {})
+
+        cases = valid_public_payload("cases")
+        cases["cases"] = [{"id": "case-1", "api_overlay": {"snooze": {
+            "until": "2026-11-11T00:00:00Z", "reason": "patient asked to wait", "future_clinical": "rectal_bleeding",
+        }}}]
+        proc = self.run_snapshot(["cases"], cases)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        snooze = json.loads(proc.stdout)["cases"][0]["api_overlay"]["snooze"]
+        self.assertEqual(snooze, {"until": "2026-11-11T00:00:00Z"})
+        self.assertNotIn("rectal_bleeding", proc.stdout)
+        self.assertNotIn("patient asked to wait", proc.stdout)
+
+    def test_non_utf8_and_malformed_encoded_canaries_fail_closed(self):
+        raw = b"CANARY private clinical text\xff"
+        encoded = [
+            base64.b64encode(raw).decode(), raw.hex(),
+            base64.b64encode(b"CANARY private clinical text").decode() + "%",
+            "%43%41%4E%41%52%59%ZZ",
+        ]
+        for value in encoded:
+            source = copy.deepcopy(self.export)
+            source["detail"]["future"] = value
+            with self.subTest(value=value):
+                with self.assertRaises(ValueError):
+                    detail_snapshot(source)
+
+    def test_exactly_four_base64_layers_around_benign_text_is_accepted(self):
+        benign = "adequate"
+        for _ in range(4):
+            benign = base64.urlsafe_b64encode(benign.encode()).decode().rstrip("=")
+        source = copy.deepcopy(self.export)
+        source["detail"]["future"] = benign
+        converted = detail_snapshot(source)
+        self.assertEqual(converted["future"], benign)
+
+    def test_staged_scan_rejects_unrecognized_json_filename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "cases_crc_page2.json").write_text('{"clinical":"rectal bleeding"}')
+            proc = self.run_snapshot(["scan-dir", directory])
+            self.assertNotEqual(proc.returncode, 0)
+
+    def test_health_requires_documented_fields(self):
+        proc = self.run_snapshot(["health"], {"meta": {}})
+        self.assertNotEqual(proc.returncode, 0)
 
 
 if __name__ == "__main__":
