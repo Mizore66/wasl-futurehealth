@@ -473,6 +473,45 @@ exit 2
         code, out = self.check_compose(lambda c: c["services"]["api"].setdefault("volumes", []).append(str(ROOT / "scripts") + ":/x"))
         self.assertEqual(code, 0, out)
 
+    def check_production(self, mutate):
+        """Run check_deploy.py against a mutated copy of deploy/production.compose.yml; returns (returncode, output)."""
+        import yaml
+        compose = yaml.safe_load((ROOT / "deploy/production.compose.yml").read_text())
+        mutate(compose)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "production.compose.yml"
+            path.write_text(yaml.safe_dump(compose))
+            env = dict(os.environ, WASL_PRODUCTION_COMPOSE_FILE=str(path))
+            r = subprocess.run([sys.executable, str(ROOT / "scripts/check_deploy.py")], cwd=ROOT, env=env,
+                               text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        return r.returncode, r.stdout
+
+    def test_production_nats_user_matches_image_owner(self):
+        import yaml
+        dockerfile = (ROOT / "deploy/nats/Dockerfile").read_text().splitlines()
+        image_user = [l.split()[1] for l in dockerfile if l.startswith("USER ")][-1]
+        services = yaml.safe_load((ROOT / "deploy/production.compose.yml").read_text())["services"]
+        for name in ("nats-0", "nats-1", "nats-2"):
+            self.assertEqual(services[name].get("user"), image_user, name)
+        self.assertIn("chown -R %s" % image_user, "\n".join(dockerfile))
+
+    def test_static_check_rejects_production_nats_user_mismatch(self):
+        def mutate(c):
+            c["services"]["nats-1"]["user"] = "1000:1000"
+        code, out = self.check_production(mutate)
+        self.assertEqual(code, 1, out)
+        self.assertIn("production compose: nats-1 runs as user '1000:1000'", out)
+
+    def test_static_check_rejects_production_nats_without_user(self):
+        code, out = self.check_production(lambda c: c["services"]["nats-2"].pop("user"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("production compose: nats-2 runs as user None", out)
+
+    def test_static_check_rejects_dev_nats_user_mismatch(self):
+        code, out = self.check_compose(lambda c: c["services"]["nats-0"].__setitem__("user", "1000:1000"))
+        self.assertEqual(code, 1, out)
+        self.assertIn("compose: nats-0 runs as user '1000:1000'", out)
+
 
 if __name__ == "__main__":
     unittest.main()

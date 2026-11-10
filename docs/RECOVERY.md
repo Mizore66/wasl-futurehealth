@@ -19,9 +19,10 @@ Built controls:
 - NATS clients and routes use authenticated mutual TLS. The API uses HTTPS and Basic credentials from a file-backed
   user/role map; it overwrites caller-supplied role and actor headers with the authenticated identity. Anonymous API
   requests fail. CORS is disabled unless one explicit origin is configured.
-- Containers run as NATS UID 1000 or Wasl UID 10001, with capabilities dropped, no-new-privileges, private tmpfs, and
-  JSON-file log rotation. Go API/recovery logs are JSON records. Secret values are never command-line arguments or log
-  fields. The runtime route config is mode 0600 in a private tmpfs.
+- NATS and Wasl containers both run as UID 10001 (each image's USER; the NATS image owns `/data` as that UID), with
+  capabilities dropped, no-new-privileges, private tmpfs, and JSON-file log rotation. Go API/recovery logs are JSON
+  records. Secret values are never command-line arguments or log fields. The runtime route config is mode 0600 in a
+  private tmpfs.
 - Destructive cohort generation exists only behind the explicit `seed` profile. Ordinary `up`, `restart`, and recovery
   commands never regenerate the cohort or delete streams/run files.
 
