@@ -58,6 +58,34 @@ type reviewerStatus struct {
 
 type reviewerStore struct {
 	kv jetstream.KeyValue
+	// Test hooks, nil in production. beforePut fails a write before it reaches the KV; afterPut reports an error
+	// after the write succeeded (an ambiguous timeout).
+	beforePut func(next reviewerRecord, expected string) error
+	afterPut  func(next reviewerRecord, expected string) error
+}
+
+// get returns the stored record for an item, validated and stored under the right key.
+func (s *reviewerStore) get(itemID string) (reviewerRecord, bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	e, err := s.kv.Get(ctx, reviewerKey(itemID))
+	if errors.Is(err, jetstream.ErrKeyNotFound) {
+		return reviewerRecord{}, false, nil
+	}
+	if err != nil {
+		return reviewerRecord{}, false, fmt.Errorf("reviewer record %q: get: %w", itemID, err)
+	}
+	var r reviewerRecord
+	if err := json.Unmarshal(e.Value(), &r); err != nil {
+		return r, false, fmt.Errorf("reviewer record %q corrupt: %w", itemID, err)
+	}
+	if err := r.validate(); err != nil {
+		return r, false, err
+	}
+	if r.ItemID != itemID {
+		return r, false, fmt.Errorf("reviewer record %q: stored under another item %q", itemID, r.ItemID)
+	}
+	return r, true, nil
 }
 
 func openReviewerStore(js jetstream.JetStream) (*reviewerStore, error) {
@@ -144,8 +172,23 @@ func checkTransition(cur, next reviewerRecord) error {
 // put writes next. expected == "" creates the record (fails if it exists); otherwise the stored record must be in
 // state `expected`, the transition must be valid, and the update is guarded by the KV revision.
 func (s *reviewerStore) put(next reviewerRecord, expected string) error {
+	if err := s.putRaw(next, expected); err != nil {
+		return err
+	}
+	if s.afterPut != nil {
+		return s.afterPut(next, expected)
+	}
+	return nil
+}
+
+func (s *reviewerStore) putRaw(next reviewerRecord, expected string) error {
 	if err := next.validate(); err != nil {
 		return err
+	}
+	if s.beforePut != nil {
+		if err := s.beforePut(next, expected); err != nil {
+			return err
+		}
 	}
 	body, err := json.Marshal(next)
 	if err != nil {
@@ -463,13 +506,16 @@ type reviewerService struct {
 	seed       int64
 	revLat     float64
 	hold       string
+	publish    func(jetstream.JetStream, reviewerRecord) (uint64, error) // publishReviewerSignoff; tests inject failures
 
-	mu      sync.Mutex // serialises review/recover; may be held for a presenter hold
-	seen    map[string]bool
-	wl      idWorklist
-	lw      linkWorklist
-	held    bool
-	pending *reviewerRecord // stored record whose effects have not all completed (retried before any new item)
+	mu   sync.Mutex // serialises review/recover; may be held for a presenter hold
+	seen map[string]bool
+	wl   idWorklist
+	lw   linkWorklist
+	held bool
+	// holdFired: item whose prepare ran the presenter hold; held is set only after that record is durable.
+	holdFired string
+	pending   *reviewerRecord // stored record whose effects have not all completed (retried before any new item)
 
 	statMu sync.Mutex
 	st     reviewerStatus
@@ -481,7 +527,7 @@ func newReviewerService(js jetstream.JetStream, runDir string, cfg ReviewerCfg, 
 		return nil, err
 	}
 	return &reviewerService{js: js, store: store, runDir: runDir, ledgerPath: filepath.Join(runDir, "reviewer_decisions.ndjson"),
-		cfg: cfg, tr: tr, seed: seed, revLat: revLat, hold: hold,
+		cfg: cfg, tr: tr, seed: seed, revLat: revLat, hold: hold, publish: publishReviewerSignoff,
 		seen: map[string]bool{}, wl: idWorklist{}, lw: linkWorklist{}}, nil
 }
 
@@ -517,6 +563,9 @@ func (s *reviewerService) recover() error {
 			lw.record(r.Item, r.Signoff)
 		}
 		seen[r.ItemID] = true
+		if s.isPresenterHold(r) {
+			s.held = true
+		}
 	}
 	if err := s.store.saveStatus(st); err != nil {
 		return err
@@ -531,6 +580,19 @@ func (s *reviewerService) recover() error {
 // reconcile moves rec to published, performing only the effects still missing. scan=true first looks for the
 // sign-off in the retained FHIR stream (restart: JetStream dedupe may have expired); scan=false publishes directly.
 func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerRecord, error) {
+	// A previous attempt may have advanced the stored record (or its write landed despite an error): continue from
+	// the stored state once its payload is validated against ours. Never move backward.
+	stored, ok, err := s.store.get(rec.ItemID)
+	if err != nil {
+		return rec, err
+	}
+	if !ok {
+		return rec, fmt.Errorf("reviewer record %q: vanished from store", rec.ItemID)
+	}
+	if err := checkTransition(rec, stored); err != nil {
+		return rec, err
+	}
+	rec = stored
 	if rec.State == "prepared" {
 		if err := reconcileReviewerLedger(s.ledgerPath, rec); err != nil {
 			return rec, err
@@ -552,7 +614,7 @@ func (s *reviewerService) reconcile(rec reviewerRecord, scan bool) (reviewerReco
 			}
 		}
 		if !found {
-			if seq, err = publishReviewerSignoff(s.js, rec); err != nil {
+			if seq, err = s.publish(s.js, rec); err != nil {
 				return rec, err
 			}
 		}
@@ -581,13 +643,8 @@ func (s *reviewerService) observe(outSeq uint64) error {
 func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.pending != nil {
-		rec, err := s.reconcile(*s.pending, true)
-		if err != nil {
-			return err
-		}
-		s.finish(rec)
-		s.pending = nil
+	if err := s.drainPending(); err != nil {
+		return err
 	}
 	if oe.Kind != "review" {
 		return s.observe(outSeq)
@@ -604,7 +661,21 @@ func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 		rec := reviewerRecord{Schema: 1, ItemID: it.ItemID, State: reviewerSkipped, Item: it, OutSeq: outSeq,
 			SkippedBy: "pair:" + pk[0] + "|" + pk[1]}
 		if err := s.store.put(rec, ""); err != nil {
-			return err
+			if !errors.Is(err, jetstream.ErrKeyExists) {
+				return err
+			}
+			// An earlier create landed although it reported failure: adopt the stored record, or fail closed.
+			stored, ok, gerr := s.store.get(it.ItemID)
+			if gerr != nil || !ok {
+				return fmt.Errorf("reviewer record %q: create conflict: %v (%w)", it.ItemID, gerr, err)
+			}
+			if stored.State != reviewerSkipped {
+				s.pending = &stored
+				return s.drainPending()
+			}
+			if stored.OutSeq != outSeq || !sameJSON(stored.Item, it) {
+				return fmt.Errorf("reviewer record %q: conflicting stored skip", it.ItemID)
+			}
 		}
 		s.seen[it.ItemID] = true
 		st := s.mutateStatus(func(st *reviewerStatus) {
@@ -624,16 +695,44 @@ func (s *reviewerService) review(oe OutEnvelope, outSeq uint64) error {
 		return fmt.Errorf("reviewer: no sign-off produced for %q", it.ItemID)
 	}
 	if err := s.store.put(rec, ""); err != nil {
-		return err
+		if !errors.Is(err, jetstream.ErrKeyExists) {
+			return err
+		}
+		stored, ok, gerr := s.store.get(it.ItemID)
+		if gerr != nil || !ok {
+			return fmt.Errorf("reviewer record %q: create conflict: %v (%w)", it.ItemID, gerr, err)
+		}
+		if stored.State == reviewerSkipped || stored.OutSeq != outSeq || !sameJSON(stored.Item, it) {
+			return fmt.Errorf("reviewer record %q: conflicting stored record (%s)", it.ItemID, stored.State)
+		}
+		rec = stored // adopt: the stored sign-off, not a fresh draw, is the one to publish
+	}
+	if s.holdFired == it.ItemID { // the hold is consumed only once its outcome is durable
+		s.held = true
 	}
 	s.pending = &rec
-	done, err := s.reconcile(rec, false)
+	return s.drainPending()
+}
+
+// drainPending completes the stored record whose effects are unfinished. On error it stays pending and the next
+// attempt re-reads its stored state, so a failure after any partial step is retried in-process.
+func (s *reviewerService) drainPending() error {
+	if s.pending == nil {
+		return nil
+	}
+	done, err := s.reconcile(*s.pending, true)
 	if err != nil {
 		return err
 	}
 	s.finish(done)
 	s.pending = nil
 	return nil
+}
+
+// isPresenterHold: the record is the held loop's presenter sign-off, so the one-shot hold has been consumed.
+func (s *reviewerService) isPresenterHold(r reviewerRecord) bool {
+	return s.hold != "" && r.Signoff != nil && r.Item != nil && r.Item.LoopID == s.hold &&
+		len(r.Signoff.Reads) == 1 && r.Signoff.Reads[0] == "presenter"
 }
 
 // finish applies a published record to the in-memory set, worklists and status. The saved status is only a hint:
@@ -688,7 +787,7 @@ func (s *reviewerService) prepare(oe OutEnvelope, outSeq uint64) reviewerRecord 
 	isWrong := truthWrong()
 	isEv := len(it.Kinds) == 1 && it.Kinds[0] == "evidence"
 	if s.hold != "" && !s.held && isEv && it.Verdict == "disagree" && it.LoopID == s.hold {
-		s.held = true
+		s.holdFired = it.ItemID
 		hb, _ := json.MarshalIndent(map[string]interface{}{"item": it, "held_at": time.Now().Format(time.RFC3339Nano)}, "", " ")
 		os.WriteFile(filepath.Join(s.runDir, "HOLD_ITEM.json"), hb, 0600)
 		dl := time.Now().Add(90 * time.Second)
