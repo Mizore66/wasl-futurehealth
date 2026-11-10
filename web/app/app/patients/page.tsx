@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
 import { caseDeadlineDays } from "@/components/worklist/days";
@@ -149,7 +150,7 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
               <span className="sr-only">Search case id</span>
               <input type="search" name="q" defaultValue={filters.q} placeholder="Case id" className="w-full min-w-0 h-11 border-0 bg-transparent text-body outline-none md:w-40" />
             </label>
-            <button className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">Search</button>
+            <Button variant="quiet" size="touch">Search</Button>
           </form>
         </div>
 

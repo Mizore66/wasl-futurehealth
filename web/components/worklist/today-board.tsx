@@ -5,6 +5,7 @@ import Link from "next/link";
 import NumberFlow from "@number-flow/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { SealedChain, type ChainNode } from "@/components/wasl/sealed-chain";
 import { dayToDate, formatDay } from "@/lib/domain/day";
@@ -342,17 +343,17 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                 <span>{callingNow ? `On the call · ${first}` : `Call ${first}`}</span>
               </button>
               <span className="hidden flex-1 sm:block" />
-              <Secondary className="max-sm:flex-1" onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
+              <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Snoozed to tomorrow", { status: "Snoozed to tomorrow", snoozed: true }, "Logged: Snoozed to tomorrow", toEnd)}>
                 Snooze to tomorrow
-              </Secondary>
+              </Button>
               {p.view === "none" ? (
-                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
+                <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Took this patient", { view: "call", status: "Yours now" }, "Logged: Yours now", `${first} moved to To call`)}>
                   Take this patient
-                </Secondary>
+                </Button>
               ) : (
-                <Secondary className="max-sm:flex-1" onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
+                <Button variant="quiet" size="touch" className="max-sm:flex-1" onClick={() => log(p, "Handed to Dr Al Kaabi", { view: "waiting", status: "With Dr Al Kaabi" }, "Logged: Handed to Dr Al Kaabi", `${first} moved to Waiting`)}>
                   Hand to Dr Al Kaabi
-                </Secondary>
+                </Button>
               )}
             </div>
 
@@ -377,7 +378,9 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                     </button>
                   </span>
                   {!stage && nextUp && (
-                    <Secondary
+                    <Button
+                      variant="quiet"
+                      size="touch"
                       className="sm:ml-auto"
                       onClick={() => {
                         setWant({ k: "heading" });
@@ -385,7 +388,7 @@ export function TodayBoard({ items, now, aside }: { items: WorkItem[]; now: numb
                       }}
                     >
                       Next patient: {nextUp.name}
-                    </Secondary>
+                    </Button>
                   )}
                 </motion.div>
               )}
@@ -471,8 +474,4 @@ function Field({ label, value, warn = false }: { label: string; value: string; w
       <dd className={cn("m-0 mt-1 font-medium", warn ? "text-warning" : "text-ink")}>{value}</dd>
     </div>
   );
-}
-
-function Secondary({ className, ...props }: React.ComponentProps<"button">) {
-  return <button {...props} className={cn("h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control", className)} />;
 }
