@@ -26,18 +26,40 @@ Date: 2026-11-10. Branch `reliability/confidential-recovery-aa26e439`, base `e54
 
 No new production behavior was needed; the added tests passed on first run against the Task 1-3 implementation (they are regression coverage, not RED-first fixes).
 
-## Size and timing (single sample, 100,003-byte source, this laptop)
+## Size and timing (single sample, this laptop)
 
-Bundle 100,973 bytes (about 1.0% overhead: 16-byte tags, 12-byte nonces, manifest). Backup 8.4 ms, verify 1.2 ms. Not a production RPO/RTO.
+Reproduce (repo scripts plus stdlib; run from the repository root):
+
+```bash
+d=$(mktemp -d) && mkdir -p "$d/src/run" && /tmp/wasl-ci-venv/bin/python -c "open('$d/src/run/a.txt','w').write('a'*100000)" && echo '{}' > "$d/n.json" \
+&& /tmp/wasl-ci-venv/bin/python -c "
+import sys,time
+from pathlib import Path
+sys.path.insert(0,'scripts')
+from recovery import write_file_bundle, verify_bundle
+from recovery_crypto import new_keyring
+d=Path('$d'); new_keyring(d/'k.json')
+t=time.time(); write_file_bundle(d/'src',d/'b',d/'k.json',nats_json=d/'n.json'); a=time.time()-t
+t=time.time(); verify_bundle(d/'b',d/'k.json'); v=time.time()-t
+src=sum(p.stat().st_size for p in (d/'src').rglob('*') if p.is_file())+(d/'n.json').stat().st_size
+size=sum(p.stat().st_size for p in (d/'b').rglob('*') if p.is_file())
+print(f'source={src} B bundle={size} B backup={a*1000:.1f}ms verify={v*1000:.1f}ms')"; rm -rf "$d"
+```
+
+Observed once: `source=100003 B bundle=100973 B backup=8.4ms verify=1.2ms` (about 1.0% overhead; timings vary per run). Not a production RPO/RTO. The decrypted NATS payload size of the 9 Nov Podman drill was never recorded in any artifact, so no production-size figure is claimed.
 
 ## Secret hygiene
 
-Diff against `e54fc9b` scanned for base64 keys, private-key headers, 64-hex values: none. `git ls-files` has no `recovery_keys.json`, `backup_key`, `js_key` or `.aead`. Test keyrings are generated in temp dirs at run time.
+Commands (heuristic scan, not a proof of absence; the 64-hex pattern would flag any real key hash):
+`git diff e54fc9b | grep -E '^\+' | grep -E '[A-Za-z0-9+/]{43}=|BEGIN .*PRIVATE|AKIA|[0-9a-f]{64}'` and
+`git ls-files | grep -E 'recovery_keys|backup_key|\.aead$|js_key'`. The diff scan's only hit is the line in this document that quotes the scan command itself (a false positive); the file-name scan printed nothing. The CI contract test
+`test_no_recovery_key_material_is_tracked` repeats the file-name check and is **skipped, not passed,** when git metadata is
+unavailable. Test keyrings are generated in temp dirs at run time.
 
 ## Limits
 
 - Any failure after the NATS step begins needs a manual JetStream purge before retry; file/NATS atomicity is not claimed.
-- Restore needs `/tmp` (or `TMPDIR`) capacity for the decrypted NATS payload and destination capacity for a staged copy.
+- The compose `recovery` container has a read-only root and a **64 MB** `/tmp` tmpfs, the only writable scratch for the decrypted NATS payload (set `TMPDIR` to another writable mount if larger); the 9 Nov drill's payload size is unrecorded, so fit is unproven. Destination capacity for a staged copy is also needed.
 - Cleanup is logical deletion, not physical secure erasure. Old key generations must be retained for as long as their bundles must be restorable; rotation does not re-encrypt.
 - Legacy v1 bundles are unencrypted and explicit opt-in only.
 - No external exactly-once guarantee, production RPO/RTO or 24-hour soak is claimed. Hosted CI results are unconfirmed until run on GitHub.

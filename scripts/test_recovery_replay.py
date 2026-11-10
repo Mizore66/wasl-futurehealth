@@ -79,7 +79,10 @@ class TransactionalRestoreTests(unittest.TestCase):
         return self.root / name
 
     def leftovers(self):
-        return sorted(p.name for p in self.work.iterdir() if ".restore-" in p.name)
+        """Every dot-prefixed entry except the migration journal and a deliberately retained rollback/rejected generation."""
+        return sorted(p.name for p in self.work.iterdir() if p.name.startswith(".")
+                      and not p.name.endswith(".migration.json") and ".rollback-" not in p.name
+                      and not p.name.endswith(".rejected"))
 
     def test_restore_reproduces_bytes_modes_and_empty_directories_without_plaintext_nats(self):
         bundle = self.backup()
