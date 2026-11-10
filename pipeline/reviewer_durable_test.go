@@ -1,7 +1,14 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -277,5 +284,146 @@ func TestReviewerStoreEmptyAndMissing(t *testing.T) {
 	}
 	if store.put(baseRec("rv-none", 1), "prepared") == nil {
 		t.Fatal("put with expected state on missing key succeeded")
+	}
+}
+
+func preparedReviewerRecord(id string, outSeq uint64) reviewerRecord {
+	item := linkItem(id, "reg-a", "reg-b")
+	so := &Signoff{ItemID: id, LoopID: item.LoopID, Kinds: item.Kinds, Pair: item.Pair,
+		Link: "same", Role: RoleReviewer, Reads: []string{"r1", "r2"}, SignedHead: item.Head}
+	body := signoffResource(so)
+	line, _ := json.Marshal(map[string]interface{}{"item": id, "loop": item.LoopID,
+		"kinds": item.Kinds, "link": so.Link, "role": so.Role, "reads": so.Reads, "t": int64(123)})
+	return reviewerRecord{Schema: 1, ItemID: id, State: "prepared", Item: item, Signoff: so,
+		BodyHash: fmt.Sprintf("%x", sha256.Sum256(body)), Ledger: string(line) + "\n", OutSeq: outSeq, PubTS: 123}
+}
+
+func TestReviewerRecoveryReconcilesPublishedSignoffWithoutRepublish(t *testing.T) {
+	env := startTestNATS(t)
+	rec := preparedReviewerRecord("rv-post-window", 9)
+	pubSeq, err := publishReviewerSignoff(env.js, rec)
+	if err != nil || pubSeq == 0 {
+		t.Fatalf("publish seq=%d err=%v", pubSeq, err)
+	}
+	before := fhirMessageCount(t, env)
+	seq, found, err := findReviewerSignoff(env.js, rec.ItemID, rec.BodyHash)
+	if err != nil || !found || seq != pubSeq {
+		t.Fatalf("seq=%d found=%v err=%v", seq, found, err)
+	}
+	if got := fhirMessageCount(t, env); got != before {
+		t.Fatalf("messages=%d, want %d", got, before)
+	}
+	if _, found, err := findReviewerSignoff(env.js, "rv-absent", rec.BodyHash); err != nil || found {
+		t.Fatalf("absent: found=%v err=%v", found, err)
+	}
+	if _, _, err := findReviewerSignoff(env.js, rec.ItemID, "deadbeef"); err == nil {
+		t.Fatal("same id with different body must be a conflict")
+	}
+}
+
+func TestReviewerRecoveryPublishKeepsPubTSAndBody(t *testing.T) {
+	env := startTestNATS(t)
+	rec := preparedReviewerRecord("rv-pubts", 4)
+	seq, err := publishReviewerSignoff(env.js, rec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stream, _ := env.js.Stream(env.ctx, "FHIR")
+	m, err := stream.GetMsg(env.ctx, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m.Header.Get("Wsi-Ots") != "123" || m.Header.Get("Nats-Msg-Id") != "signoff/rv-pubts" || m.Subject != "fhir.review" {
+		t.Fatalf("headers=%v subject=%s", m.Header, m.Subject)
+	}
+	if fmt.Sprintf("%x", sha256.Sum256(m.Data)) != rec.BodyHash {
+		t.Fatal("published body hash differs from record")
+	}
+	bad := rec
+	bad.Signoff = nil
+	if _, err := publishReviewerSignoff(env.js, bad); err == nil {
+		t.Fatal("record without signoff must not publish")
+	}
+}
+
+func TestReviewerLedgerReconcileIdempotentAndConflict(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "ledger.jsonl")
+	other := preparedReviewerRecord("rv-other", 1)
+	rec := preparedReviewerRecord("rv-led", 2)
+	if err := os.WriteFile(path, []byte(other.Ledger), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := reconcileReviewerLedger(path, rec); err != nil {
+		t.Fatal(err)
+	}
+	first, _ := os.ReadFile(path)
+	if string(first) != other.Ledger+rec.Ledger {
+		t.Fatalf("ledger=%q", first)
+	}
+	if err := reconcileReviewerLedger(path, rec); err != nil {
+		t.Fatal(err)
+	}
+	second, _ := os.ReadFile(path)
+	if string(first) != string(second) {
+		t.Fatal("reconcile not idempotent")
+	}
+	// conflicting same-item line
+	conf := rec
+	conf.Ledger = strings.Replace(rec.Ledger, `"same"`, `"different"`, 1)
+	if err := reconcileReviewerLedger(path, conf); err == nil {
+		t.Fatal("conflicting content must fail")
+	}
+	if after, _ := os.ReadFile(path); string(after) != string(first) {
+		t.Fatal("conflict must not rewrite ledger")
+	}
+	// duplicate of same item (two lines) and malformed lines fail closed
+	dup := filepath.Join(t.TempDir(), "dup.jsonl")
+	os.WriteFile(dup, []byte(rec.Ledger+rec.Ledger), 0o600)
+	if err := reconcileReviewerLedger(dup, rec); err == nil {
+		t.Fatal("duplicate item lines must fail")
+	}
+	for name, content := range map[string]string{"garbage": "not json\n", "dupkey": `{"item":"x","item":"y"}` + "\n",
+		"partial": strings.TrimSuffix(other.Ledger, "\n")} {
+		p := filepath.Join(t.TempDir(), name)
+		os.WriteFile(p, []byte(content), 0o600)
+		if err := reconcileReviewerLedger(p, rec); err == nil {
+			t.Fatalf("%s ledger must fail closed", name)
+		}
+	}
+	// bad record ledger
+	for _, l := range []string{"", "{}\n", `{"item":"other"}` + "\n", rec.Ledger + rec.Ledger} {
+		bad := rec
+		bad.Ledger = l
+		if err := reconcileReviewerLedger(filepath.Join(t.TempDir(), "x"), bad); err == nil {
+			t.Fatalf("record ledger %q must be rejected", l)
+		}
+	}
+}
+
+func TestReviewerLedgerAppendFailuresLeaveRecordRecoverable(t *testing.T) {
+	rec := preparedReviewerRecord("rv-fail", 3)
+	for name, errInj := range map[string]error{"short": io.ErrShortWrite, "sync": errLedgerIndeterminate, "close": errLedgerIndeterminate} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "l.jsonl")
+			reviewerAppendLine = func(p string, line []byte) error {
+				if name == "short" {
+					return errInj
+				}
+				// indeterminate: line landed on disk but caller saw an error
+				appendLedgerLine(p, line)
+				return errInj
+			}
+			t.Cleanup(func() { reviewerAppendLine = appendLedgerLine })
+			if err := reconcileReviewerLedger(path, rec); !errors.Is(err, errInj) {
+				t.Fatalf("err=%v", err)
+			}
+			reviewerAppendLine = appendLedgerLine
+			if err := reconcileReviewerLedger(path, rec); err != nil {
+				t.Fatalf("retry: %v", err)
+			}
+			if b, _ := os.ReadFile(path); string(b) != rec.Ledger {
+				t.Fatalf("ledger=%q want exactly one line", b)
+			}
+		})
 	}
 }

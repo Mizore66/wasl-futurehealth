@@ -8,9 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -272,4 +276,139 @@ func (s *reviewerStore) load() ([]reviewerRecord, reviewerStatus, error) {
 		}
 	}
 	return recs, st, nil
+}
+
+// reviewerAppendLine is the ledger append primitive; tests replace it to inject write, sync and close failures.
+var reviewerAppendLine = appendLedgerLine
+
+// findReviewerSignoff scans the retained FHIR sign-offs for Nats-Msg-Id "signoff/<itemID>" (JetStream dedupe may
+// have expired, so the stream itself is the truth). Same id with a different SHA-256 is a conflict. Never publishes.
+func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint64, bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	cons, err := js.OrderedConsumer(ctx, "FHIR", jetstream.OrderedConsumerConfig{FilterSubjects: []string{"fhir.review"}})
+	if err != nil {
+		return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
+	}
+	want := "signoff/" + itemID
+	var found bool
+	var foundSeq uint64
+	for {
+		msg, err := cons.Next(jetstream.FetchMaxWait(2 * time.Second))
+		if errors.Is(err, nats.ErrTimeout) || errors.Is(err, context.DeadlineExceeded) {
+			if ctx.Err() != nil {
+				return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, ctx.Err())
+			}
+			return foundSeq, found, nil // drained: no further retained messages
+		}
+		if err != nil {
+			return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
+		}
+		md, err := msg.Metadata()
+		if err != nil {
+			return 0, false, err
+		}
+		if msg.Headers().Get(jetstream.MsgIDHeader) == want {
+			sum := sha256.Sum256(msg.Data())
+			if hex.EncodeToString(sum[:]) != bodyHash {
+				return 0, false, fmt.Errorf("reviewer signoff %q: retained FHIR message seq %d conflicts with record body hash", itemID, md.Sequence.Stream)
+			}
+			if found {
+				return 0, false, fmt.Errorf("reviewer signoff %q: duplicate retained messages at %d and %d", itemID, foundSeq, md.Sequence.Stream)
+			}
+			found, foundSeq = true, md.Sequence.Stream
+		}
+		if md.NumPending == 0 {
+			return foundSeq, found, nil
+		}
+	}
+}
+
+// publishReviewerSignoff publishes the stored sign-off exactly as the live path builds it (same body, msg id and
+// the recorded Wsi-Ots) and returns the FHIR stream sequence. On error the caller leaves the record prepared.
+func publishReviewerSignoff(js jetstream.JetStream, rec reviewerRecord) (uint64, error) {
+	if rec.Signoff == nil || rec.Signoff.ItemID != rec.ItemID {
+		return 0, fmt.Errorf("reviewer record %q: no signoff to publish", rec.ItemID)
+	}
+	body := signoffResource(rec.Signoff)
+	if sum := sha256.Sum256(body); hex.EncodeToString(sum[:]) != rec.BodyHash {
+		return 0, fmt.Errorf("reviewer record %q: signoff body does not match stored hash", rec.ItemID)
+	}
+	m := nats.NewMsg("fhir.review")
+	m.Data = body
+	m.Header.Set(jetstream.MsgIDHeader, "signoff/"+rec.ItemID)
+	m.Header.Set("Wsi-Ots", strconv.FormatInt(rec.PubTS, 10))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	ack, err := js.PublishMsg(ctx, m)
+	if err != nil {
+		return 0, fmt.Errorf("reviewer record %q: publish: %w", rec.ItemID, err)
+	}
+	return ack.Sequence, nil
+}
+
+// ledgerLineItem strictly parses one complete ledger line and returns its item id.
+func ledgerLineItem(line []byte) (string, error) {
+	if err := rejectDuplicateKeys(line); err != nil {
+		return "", err
+	}
+	var obj map[string]json.RawMessage
+	if err := json.Unmarshal(line, &obj); err != nil {
+		return "", err
+	}
+	raw, ok := obj["item"]
+	if !ok {
+		return "", errors.New("no item field")
+	}
+	var id string
+	if err := json.Unmarshal(raw, &id); err != nil || id == "" {
+		return "", errors.New("bad item field")
+	}
+	return id, nil
+}
+
+// reconcileReviewerLedger makes the local ledger hold rec.Ledger exactly once. Identical existing bytes are
+// accepted, a missing line is appended, anything else for the item (different bytes, duplicates, a malformed or
+// unterminated ledger) fails closed. Historical lines are never rewritten.
+func reconcileReviewerLedger(path string, rec reviewerRecord) error {
+	want := []byte(rec.Ledger)
+	if len(want) == 0 || want[len(want)-1] != '\n' || bytes.Count(want, []byte("\n")) != 1 {
+		return fmt.Errorf("reviewer record %q: ledger line must be exactly one newline-terminated line", rec.ItemID)
+	}
+	if id, err := ledgerLineItem(want[:len(want)-1]); err != nil || id != rec.ItemID {
+		return fmt.Errorf("reviewer record %q: ledger line invalid or for another item (%v)", rec.ItemID, err)
+	}
+	existing, err := os.ReadFile(path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("reviewer ledger %s: %w", path, err)
+	}
+	matches := 0
+	if len(existing) > 0 {
+		if existing[len(existing)-1] != '\n' {
+			return fmt.Errorf("reviewer ledger %s: unterminated final line", path)
+		}
+		for i, raw := range strings.SplitAfter(string(existing[:len(existing)-1])+"\n", "\n") {
+			if raw == "" {
+				continue
+			}
+			id, err := ledgerLineItem([]byte(strings.TrimSuffix(raw, "\n")))
+			if err != nil {
+				return fmt.Errorf("reviewer ledger %s line %d: %w", path, i+1, err)
+			}
+			if id != rec.ItemID {
+				continue
+			}
+			if raw != rec.Ledger {
+				return fmt.Errorf("reviewer ledger %s: conflicting line for item %q", path, rec.ItemID)
+			}
+			matches++
+		}
+	}
+	switch {
+	case matches > 1:
+		return fmt.Errorf("reviewer ledger %s: item %q appears %d times", path, rec.ItemID, matches)
+	case matches == 1:
+		return nil
+	}
+	return reviewerAppendLine(path, want)
 }
