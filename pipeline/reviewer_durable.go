@@ -292,14 +292,24 @@ func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint6
 	}
 	want := "signoff/" + itemID
 	var found bool
-	var foundSeq uint64
+	var foundSeq, lastPending uint64
+	var gotAny bool
 	for {
 		msg, err := cons.Next(jetstream.FetchMaxWait(2 * time.Second))
 		if errors.Is(err, nats.ErrTimeout) || errors.Is(err, context.DeadlineExceeded) {
 			if ctx.Err() != nil {
 				return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, ctx.Err())
 			}
-			return foundSeq, found, nil // drained: no further retained messages
+			var retained uint64
+			if !gotAny {
+				if retained, err = reviewerRetainedSignoffs(ctx, js); err != nil {
+					return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
+				}
+			}
+			if reviewerScanDrained(gotAny, lastPending, retained) {
+				return foundSeq, found, nil
+			}
+			return 0, false, fmt.Errorf("reviewer signoff lookup %q: scan stalled (got=%v pending=%d)", itemID, gotAny, lastPending)
 		}
 		if err != nil {
 			return 0, false, fmt.Errorf("reviewer signoff lookup %q: %w", itemID, err)
@@ -318,10 +328,32 @@ func findReviewerSignoff(js jetstream.JetStream, itemID, bodyHash string) (uint6
 			}
 			found, foundSeq = true, md.Sequence.Stream
 		}
+		gotAny, lastPending = true, md.NumPending
 		if md.NumPending == 0 {
 			return foundSeq, found, nil
 		}
 	}
+}
+
+// reviewerScanDrained: a Next timeout ends the scan only if the last message left nothing pending, or nothing was
+// received and the stream holds no sign-off messages at all. Any other timeout is a stall and must fail closed.
+func reviewerScanDrained(gotAny bool, lastPending, retained uint64) bool {
+	if gotAny {
+		return lastPending == 0
+	}
+	return retained == 0
+}
+
+func reviewerRetainedSignoffs(ctx context.Context, js jetstream.JetStream) (uint64, error) {
+	stream, err := js.Stream(ctx, "FHIR")
+	if err != nil {
+		return 0, err
+	}
+	info, err := stream.Info(ctx, jetstream.WithSubjectFilter("fhir.review"))
+	if err != nil {
+		return 0, err
+	}
+	return info.State.Subjects["fhir.review"], nil
 }
 
 // publishReviewerSignoff publishes the stored sign-off exactly as the live path builds it (same body, msg id and
