@@ -1,0 +1,32 @@
+{
+  "schema": "wasl-go-test-policy/1",
+  "required_by_lane": {
+    "integration": [
+      "TestAPIFixturesAndContracts",
+      "TestAPIReviewRBACAndAppendOnly",
+      "TestAPIBookingSupport",
+      "TestHL7RoundTripCohort"
+    ]
+  },
+  "allowed_skips": {
+    "TestFresh2Reader": "Optional held-out FRESH2_CORPUS reader evidence; do not enable evaluation data to remove a skip.",
+    "TestAPIDRFixtureRun": "Optional DR materialized-run fixture; the default integration cohort has no DR loops.",
+    "TestNATSBackupRestorePreservesRepeatedMessageIDs": "Optional external-target recovery drill configured only by WASL_TEST_RECOVERY_NATS.",
+    "TestNATSBackupRestoreReadsRetainedMessagesOnEmptyCluster": "Optional external-target recovery drill configured only by WASL_TEST_RECOVERY_NATS."
+  },
+  "allowed_skips_by_lane": {
+    "go-test": {
+      "TestAPIFixturesAndContracts": "Materialized API fixtures are generated only in the integration lane.",
+      "TestAPIReviewRBACAndAppendOnly": "Materialized API fixtures are generated only in the integration lane.",
+      "TestAPIBookingSupport": "Materialized booking output is generated only in the integration lane.",
+      "TestHL7RoundTripCohort": "Materialized HL7 cohort is generated only in the integration lane."
+    },
+    "go-race": {
+      "TestAPIFixturesAndContracts": "Materialized API fixtures are generated only in the integration lane.",
+      "TestAPIReviewRBACAndAppendOnly": "Materialized API fixtures are generated only in the integration lane.",
+      "TestAPIBookingSupport": "Materialized booking output is generated only in the integration lane.",
+      "TestHL7RoundTripCohort": "Materialized HL7 cohort is generated only in the integration lane."
+    }
+  },
+  "owner_doc": "docs/CI.md"
+}

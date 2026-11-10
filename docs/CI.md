@@ -9,10 +9,10 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | Job | Required behavior |
 | --- | --- |
 | Workflow lint | Run pinned `actionlint` and verify that every Action SHA resolves to a commit object. |
-| Go tests | Verify modules, run `go vet`, install NATS 2.12.6, and run all Go tests without `-short`. |
-| Go race tests | Run all Go tests with `-race` and an explicit 60-minute Go test timeout. |
+| Go tests | Verify modules, run `go vet`, install NATS 2.12.6, run all Go tests without `-short`, and account for every skip. |
+| Go race tests | Run all Go tests with `-race` and an explicit 60-minute Go test timeout, and account for every skip. |
 | Python tests | Run the scripts, fresh-evaluation, encoder, and all six booking unit-test lanes with LightGBM installed and the Go booking solver built. |
-| Integrated demo and materialized Go tests | Run `scripts/demo.sh all`, including its real HTTP smoke, then rerun Go tests against generated outputs. |
+| Integrated demo and materialized Go tests | Run `scripts/demo.sh all`, including its real HTTP smoke, then rerun Go tests against generated outputs and require the named API/RBAC/booking/HL7 tests to pass without hidden subtest skips. |
 | Booking pool simulation reproducibility | Run all 30-draw pool simulation lanes and require byte-identical tracked output. |
 | Frontend lint typecheck Vitest and build | Check generated-data drift, ESLint, TypeScript, Vitest, and the Next.js production build independently. |
 | Playwright all projects | Install Chromium with OS dependencies and run every Chromium project, including serial landing and performance coverage. |
@@ -24,6 +24,14 @@ Require **`CI required`** in the repository's branch-protection rules. This aggr
 | Clean container build and API smoke | Build both images without cache, scan them, start the isolated Compose deployment, verify pipeline success and materialized health, run the real API smoke, and verify the API and all NATS nodes run as UID 10001 with writable data volumes. |
 
 Dependency Review requires the repository's dependency graph and GitHub's Dependency Review API. This repository does not support that API, so the original brief's optional Dependency Review lane is not in the required workflow. The supported Go, Python, npm, and Trivy scanners above remain fail-closed; enabling Dependency Review later can add an advisory lane without replacing them. Container smoke is functional verification, not production security sign-off.
+
+## Go test skip accounting
+
+All three Go lanes emit `go test -json` JSONL and run `scripts/check_go_test_skips.py` with `if: always()`. The exact-name policy is `scripts/ci_test_policy.json`: ordinary/race lanes may skip materialized-output tests because only integration generates those outputs; integration must instead record passes for `TestAPIFixturesAndContracts`, `TestAPIReviewRBACAndAppendOnly`, `TestAPIBookingSupport`, and `TestHL7RoundTripCohort`. A skip in any required test or subtest fails. Package-level failures/skips, unexpected skips, malformed JSON and missing required passes also fail.
+
+The only other allowed skips are the optional `TestFresh2Reader`, `TestAPIDRFixtureRun`, and the two external-target NATS recovery drills. Review `scripts/ci_test_policy.json` on every test rename; do not enable held-out evaluation data or external recovery targets merely to remove a skip. Each lane uploads its raw Go JSON and a `wasl-go-test-skip-manifest/1` manifest containing only test names, counts, required status and errors. `if-no-files-found: error` prevents an evidence upload from passing by omission. A hosted result is claimed only from GitHub, never from this local documentation.
+
+For a local NATS version check, set `WASL_TEST_NATS_SERVER=/absolute/path/to/nats-server`. An explicitly configured missing or non-starting binary fails the test rather than silently skipping it.
 
 ## Version and cache policy
 
@@ -53,9 +61,11 @@ GOBIN="$PWD/bin" go install github.com/nats-io/nats-server/v2@v2.12.6
   go mod download
   go mod verify
   go vet .
-  go test -count=1 -timeout=20m .
-  go test -race -count=1 -timeout=60m .
+  go test -json -count=1 -timeout=20m . | tee /tmp/wasl-go-test.jsonl
+  go test -json -race -count=1 -timeout=60m . | tee /tmp/wasl-go-race.jsonl
 )
+python3 scripts/check_go_test_skips.py --input /tmp/wasl-go-test.jsonl --lane go-test --output /tmp/wasl-go-test-manifest.json
+python3 scripts/check_go_test_skips.py --input /tmp/wasl-go-race.jsonl --lane go-race --output /tmp/wasl-go-race-manifest.json
 ```
 
 Do not run the ordinary and race suites concurrently in the same network namespace: some integration tests bind fixed ports.
@@ -100,8 +110,9 @@ With the Python environment and `bin/nats-server` above available:
 scripts/demo.sh all
 (
   cd pipeline
-  go test -count=1 -timeout=20m .
+  go test -json -count=1 -timeout=20m . | tee /tmp/wasl-integration.jsonl
 )
+python3 scripts/check_go_test_skips.py --input /tmp/wasl-integration.jsonl --lane integration --output /tmp/wasl-integration-manifest.json
 git diff --exit-code
 ```
 
