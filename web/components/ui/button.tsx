@@ -5,11 +5,11 @@ import { Slot } from "radix-ui"
 
 /**
  * Pressed feedback every variant shares: the button squeezes to 0.96 over 150ms and springs back on release.
- * Only `transform`/`scale` transitions, never a layout property. No squeeze under reduced motion, and none on a
+ * Transitions paint-only properties (colour, shadow, transform/scale), never a layout property. No squeeze under reduced motion, and none on a
  * disabled, aria-disabled or aria-busy button, so a control that will not act does not look as if it did.
  */
 const press =
-  "transition-[transform,scale] duration-150 ease-out motion-safe:not-disabled:not-aria-disabled:not-aria-busy:active:scale-[0.96]"
+  "transition-[color,background-color,border-color,box-shadow,transform,scale] duration-150 ease-out motion-safe:not-disabled:not-aria-disabled:not-aria-busy:active:scale-[0.96]"
 
 /** The stock shadcn look: a 3px ring replaces the app's global focus outline. */
 const stock =

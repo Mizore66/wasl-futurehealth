@@ -14,11 +14,15 @@ describe("shared Button pressed feedback", () => {
     expect(c.filter((k) => /scale-/.test(k))).toEqual([PRESS]);
   });
 
-  it.each(VARIANTS)("%s transitions transform only, within 100 to 160ms", (variant) => {
+  it.each(VARIANTS)("%s transitions paint-only properties, within 100 to 160ms", (variant) => {
     const c = classes({ variant });
-    expect(c).toContain("transition-[transform,scale]");
+    const transition = c.filter((k) => k.startsWith("transition"));
+    expect(transition).toHaveLength(1);
+    const props = transition[0].replace(/^transition-\[|\]$/g, "").split(",");
+    expect(props).toEqual(expect.arrayContaining(["transform", "scale"]));
+    // Never a layout property, so the squeeze cannot shift surrounding content.
+    for (const p of props) expect(["color", "background-color", "border-color", "box-shadow", "transform", "scale"]).toContain(p);
     expect(c).toContain("duration-150");
-    expect(c.filter((k) => k.startsWith("transition"))).toEqual(["transition-[transform,scale]"]);
   });
 
   it("keeps the shadcn ring on the stock variants", () => {
