@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+import fcntl
 import json
 import os
 import re
@@ -18,7 +19,7 @@ SCHEMA = "wasl-recovery-keyring-v1"
 KEY_BYTES = 32
 NONCE_BYTES = 12
 WRAP_AAD_PREFIX = b"wasl-file-backup-v2-aesgcm|"
-_KEY_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
+_KEY_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
 
 
 def _b64(raw: bytes) -> str:
@@ -39,7 +40,7 @@ def _unb64(value, size: int | None, label: str) -> bytes:
 
 
 def _check_key_id(key_id) -> str:
-    if not isinstance(key_id, str) or not _KEY_ID.match(key_id):
+    if not isinstance(key_id, str) or not _KEY_ID.fullmatch(key_id):
         raise ValueError("recovery key id is invalid")
     return key_id
 
@@ -134,15 +135,21 @@ def load_keyring(path: Path) -> tuple[dict, str, dict]:
 def rotate_keyring(path: Path) -> str:
     """Add a fresh active generation, retaining all old ones; preserves owner and mode."""
     path = Path(path)
-    doc, _, _ = load_keyring(path)
-    st = os.stat(path)
-    key_id = "g-" + os.urandom(8).hex()
-    while key_id in doc["keys"]:
+    lock_path = path.with_name(f".{path.name}.lock")
+    lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        doc, _, _ = load_keyring(path)
+        st = os.stat(path)
         key_id = "g-" + os.urandom(8).hex()
-    doc["keys"][key_id] = _new_entry()
-    doc["active"] = key_id
-    _atomic_write(path, doc, st.st_mode & 0o7777, st.st_uid, st.st_gid, replace=True)
-    return key_id
+        while key_id in doc["keys"]:
+            key_id = "g-" + os.urandom(8).hex()
+        doc["keys"][key_id] = _new_entry()
+        doc["active"] = key_id
+        _atomic_write(path, doc, st.st_mode & 0o7777, st.st_uid, st.st_gid, replace=True)
+        return key_id
+    finally:
+        os.close(lock_fd)  # releases the flock
 
 
 def new_dek() -> bytes:
