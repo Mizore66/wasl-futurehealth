@@ -165,7 +165,7 @@ func setupStreams(replicas, P int) {
 	ctx := context.Background()
 	// A cohort is a fresh run, not a service restart. In particular, external NATS volumes survive the run directory:
 	// retaining SEEN would suppress regenerated ids, while FHIRSUB/FHIRPOLL could resume beyond or at EOF of new input.
-	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL"} {
+	for _, bucket := range []string{"SEEN", "FHIRSUB", "FHIRPOLL", "REVIEWER"} {
 		var err error
 		for try := 0; try < 30; try++ {
 			err = js.DeleteKeyValue(ctx, bucket)
@@ -707,121 +707,23 @@ func runReviewer(dataDir string, runDir string, cfg ReviewerCfg, revLat float64,
 	var tr Truth
 	b, _ := os.ReadFile(filepath.Join(dataDir, "truth.json"))
 	json.Unmarshal(b, &tr)
-	ctx := context.Background()
-	var it jetstream.MessagesContext
-	retry("reviewer consumer", func() error {
-		cons, err := js.OrderedConsumer(ctx, "OUT", jetstream.OrderedConsumerConfig{})
-		if err != nil {
-			return err
-		}
-		it, err = cons.Messages(jetstream.PullMaxMessages(500))
+	var service *reviewerService
+	retry("reviewer store", func() (err error) {
+		service, err = newReviewerService(js, runDir, cfg, tr, seed, revLat, hold)
 		return err
 	})
-	seen := map[string]bool{}
-	wl, lw := idWorklist{}, linkWorklist{}
-	answered, wrong, deduped, dedupedLink := 0, 0, 0, 0
-	held := false
-	var lastOut uint64
-	logf, _ := os.OpenFile(filepath.Join(runDir, "reviewer_decisions.ndjson"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	// Restore before consuming: a store or ledger that cannot be trusted stops the reviewer instead of guessing.
+	if err := service.recover(); err != nil {
+		panic(fmt.Sprintf("reviewer recovery: %v", err))
+	}
 	go func() {
 		for {
-			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": answered, "wrong": wrong, "deduped_second_id": deduped, "deduped_link": dedupedLink, "last_out_seq": atomic.LoadUint64(&lastOut), "cfg": cfg})
+			st := service.status()
+			writeStatus(runDir, "reviewer", map[string]interface{}{"answered": st.Answered, "wrong": st.Wrong, "deduped_second_id": st.DedupedSecond, "deduped_link": st.DedupedLink, "last_out_seq": st.LastOut, "cfg": cfg})
 			time.Sleep(300 * time.Millisecond)
 		}
 	}()
-	urand := func(id, salt string) float64 {
-		h := sha([]byte(fmt.Sprint(seed) + "|" + salt + "|" + id))
-		v, _ := strconv.ParseUint(h[:12], 16, 64)
-		return float64(v) / float64(uint64(1)<<48)
-	}
-	for {
-		msg, err := it.Next()
-		if err != nil {
-			continue
-		}
-		var oe OutEnvelope
-		json.Unmarshal(msg.Data(), &oe)
-		if oe.Kind != "review" || seen[oe.Item.ItemID] {
-			if md, err := msg.Metadata(); err == nil {
-				atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-			}
-			continue
-		}
-		it2 := oe.Item
-		seen[it2.ItemID] = true
-		if wl.skip(it2) || lw.skip(it2) {
-			if lw.skip(it2) {
-				dedupedLink++
-			} else {
-				deduped++
-			}
-			if md, err := msg.Metadata(); err == nil {
-				atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-			}
-			continue
-		}
-		t0 := time.Now()
-		so := cfg.Review(it2, &tr) // v6-gov: noisy, timed reviewer (error rate, lognormal seconds, optional double read)
-		wl.record(it2, so)
-		lw.record(it2, so)
-		truthWrong := func() bool {
-			for _, k := range it2.Kinds {
-				if k == "link" {
-					same := tr.PKQid[it2.Pair[0]] != "" && tr.PKQid[it2.Pair[0]] == tr.PKQid[it2.Pair[1]]
-					if (so.Link == "same") != same {
-						return true
-					}
-				}
-				if k == "evidence" {
-					ev := tr.Reports[it2.ReportID]
-					if ev == "" {
-						ev = "inadequate"
-					}
-					if so.Evidence != ev {
-						return true
-					}
-				}
-			}
-			return false
-		}
-		isWrong := truthWrong()
-		isEv := len(it2.Kinds) == 1 && it2.Kinds[0] == "evidence"
-		if hold != "" && !held && isEv && it2.Verdict == "disagree" && it2.LoopID == hold {
-			held = true
-			hb, _ := json.MarshalIndent(map[string]interface{}{"item": it2, "held_at": time.Now().Format(time.RFC3339Nano)}, "", " ")
-			os.WriteFile(filepath.Join(runDir, "HOLD_ITEM.json"), hb, 0600)
-			dl := time.Now().Add(90 * time.Second)
-			for time.Now().Before(dl) {
-				if hb, err := os.ReadFile(filepath.Join(runDir, "HUMAN_DECISION.json")); err == nil {
-					var hd struct{ Evidence, Reviewer string }
-					if json.Unmarshal(hb, &hd) == nil && hd.Evidence != "" {
-						so.Evidence, so.Reviewer, so.Role, so.Reads = hd.Evidence, hd.Reviewer, RoleClinician, []string{"presenter"}
-						isWrong = truthWrong()
-						break
-					}
-				}
-				time.Sleep(100 * time.Millisecond)
-			}
-		} else if revLat > 0 {
-			d := revLat * math.Exp(0.6*normQ(urand(it2.ItemID, "lat")))
-			time.Sleep(time.Duration(d * float64(time.Millisecond)))
-		}
-		if isWrong {
-			wrong++
-		}
-		m := nats.NewMsg("fhir.review")
-		m.Data = signoffResource(so)
-		m.Header.Set(jetstream.MsgIDHeader, "signoff/"+it2.ItemID)
-		m.Header.Set("Wsi-Ots", strconv.FormatInt(time.Now().UnixNano(), 10))
-		pubSync(js, m)
-		answered++
-		lb, _ := json.Marshal(map[string]interface{}{"item": it2.ItemID, "loop": it2.LoopID, "kinds": it2.Kinds, "verdict": it2.Verdict,
-			"link": so.Link, "evidence": so.Evidence, "wrong": isWrong, "role": so.Role, "reads": so.Reads, "sim_s": so.DurationS, "reviewer": so.Reviewer, "ms": time.Since(t0).Milliseconds(), "t": time.Now().UnixNano()})
-		logf.Write(append(lb, '\n'))
-		if md, err := msg.Metadata(); err == nil {
-			atomic.StoreUint64(&lastOut, md.Sequence.Stream)
-		}
-	}
+	serveReviewer(context.Background(), js, service)
 }
 
 // normQ: approximate standard normal quantile (Acklam-free; Box-Muller on one uniform via erfinv-ish logistic approx).
