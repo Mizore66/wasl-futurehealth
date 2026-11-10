@@ -367,6 +367,7 @@ func writeTinyCohort(t *testing.T) string {
 				"serviceType": []interface{}{map[string]string{"text": "Colonoscopy"}}, "contained": pt("skmc-endo", "H1", ""), "subject": subj}},
 			{Arrival: repDay, Prov: "skmc-endo", MsgID: "skmc-endo/DiagnosticReport/DR1/v1", Res: map[string]interface{}{
 				"resourceType": "DiagnosticReport", "id": "DR1", "status": "final", "effectiveDateTime": dayTS(repDay),
+				"code":       map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": "18746-8"}}},
 				"conclusion": "Complete colonoscopy to the caecum, adequate bowel preparation.", "contained": pt("skmc-endo", "H1", ""), "subject": subj}},
 		},
 	}

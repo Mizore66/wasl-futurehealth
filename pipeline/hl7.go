@@ -62,11 +62,101 @@ func hl7Unesc(s string) string {
 }
 
 func hl7TS(iso string) string {
-	t, err := time.Parse(time.RFC3339, iso)
+	t, err := parseClinicalTime(iso)
 	if err != nil {
 		return ""
 	}
 	return t.UTC().Format("20060102150405")
+}
+
+func hl7TimeToFHIR(value string) (string, error) {
+	base := value
+	fraction := ""
+	if len(value) > 14 && value[14] == '.' {
+		base, fraction = value[:14], value[14:]
+		for _, r := range value[15:] {
+			if r < '0' || r > '9' {
+				return "", fmt.Errorf("invalid_timestamp: invalid HL7 timestamp fraction")
+			}
+		}
+		if len(fraction) == 1 {
+			return "", fmt.Errorf("invalid_timestamp: empty HL7 timestamp fraction")
+		}
+	}
+	var out string
+	switch len(base) {
+	case 4:
+		out = base
+	case 6:
+		out = base[:4] + "-" + base[4:6]
+	case 8:
+		out = base[:4] + "-" + base[4:6] + "-" + base[6:8]
+	case 14:
+		out = base[:4] + "-" + base[4:6] + "-" + base[6:8] + "T" + base[8:10] + ":" + base[10:12] + ":" + base[12:14] + fraction + "Z"
+	default:
+		return "", fmt.Errorf("invalid_timestamp: unsupported HL7 timestamp precision")
+	}
+	if _, err := tsToDay(out); err != nil {
+		return "", fmt.Errorf("invalid_timestamp: %v", err)
+	}
+	return out, nil
+}
+
+func hl7ClinicalStatus(value string) (string, bool) {
+	if diagnosticReportStatuses[value] {
+		return value, true
+	}
+	status, ok := map[string]string{
+		"F": "final", "C": "corrected", "P": "preliminary", "S": "partial",
+		"O": "registered", "X": "cancelled", "E": "entered-in-error", "U": "unknown",
+	}[value]
+	return status, ok
+}
+
+// applyClinicalOBR makes OBR authoritative before any specialised converter or
+// ZWS fallback can preserve a conflicting, clinically safer-looking value.
+func (m *HL7Msg) applyClinicalOBR(res map[string]interface{}) error {
+	rt := gs(res, "resourceType")
+	if rt != "DiagnosticReport" && rt != "ServiceRequest" {
+		return nil
+	}
+	obr := m.seg("OBR")
+	if obr == nil {
+		return normalizationError(rt, gs(res, "id"), "invalid_resource", "OBR", "clinical HL7 resource requires OBR")
+	}
+	code := strings.Split(fld(obr, 4), "^")
+	if rt == "DiagnosticReport" && (len(code) == 0 || code[0] == "") {
+		return normalizationError(rt, gs(res, "id"), "unknown_programme", "OBR-4", "clinical code is required")
+	}
+	if rt == "ServiceRequest" && len(code) < 2 && (len(code) == 0 || code[0] == "") {
+		return normalizationError(rt, gs(res, "id"), "unknown_programme", "OBR-4", "clinical programme text is required")
+	}
+	if rt == "DiagnosticReport" {
+		timestamp, err := hl7TimeToFHIR(fld(obr, 7))
+		if err != nil {
+			return normalizationError(rt, gs(res, "id"), "invalid_timestamp", "OBR-7", err.Error())
+		}
+		status, ok := hl7ClinicalStatus(fld(obr, 25))
+		if !ok {
+			return normalizationError(rt, gs(res, "id"), "invalid_report_status", "OBR-25", "missing or unsupported report status")
+		}
+		res["effectiveDateTime"] = timestamp
+		res["status"] = status
+		res["code"] = map[string]interface{}{"coding": []interface{}{map[string]interface{}{"code": code[0]}}}
+		return nil
+	}
+	timeField := 6
+	timestamp, err := hl7TimeToFHIR(fld(obr, timeField))
+	if err != nil {
+		return normalizationError(rt, gs(res, "id"), "invalid_timestamp", fmt.Sprintf("OBR-%d", timeField), err.Error())
+	}
+	res["authoredOn"] = timestamp
+	text := code[0]
+	if len(code) > 1 {
+		text = code[1]
+	}
+	res["code"] = map[string]interface{}{"text": text}
+	return nil
 }
 
 var hl7Types = map[string]string{"Encounter": "ADT^A04", "ServiceRequest": "ORM^O01", "DiagnosticReport": "ORU^R01",
@@ -143,7 +233,14 @@ func EncodeHL7(prov string, res map[string]interface{}, ctl string) []byte {
 				code = gs(cd[0].(map[string]interface{}), "code")
 			}
 		}
-		segs = append(segs, fmt.Sprintf("OBR|1||%s|%s^^LN|||%s||||||||||||||||%s", hl7Esc(gs(res, "id")), hl7Esc(code), hl7TS(gs(res, "effectiveDateTime")), hl7Esc(gs(res, "status"))))
+		status := hl7Status[gs(res, "status")]
+		if status == "" {
+			status = gs(res, "status")
+		}
+		obr := make([]string, 26)
+		obr[0], obr[1], obr[3], obr[4] = "OBR", "1", hl7Esc(gs(res, "id")), hl7Esc(code)+"^^LN"
+		obr[7], obr[25] = hl7TS(gs(res, "effectiveDateTime")), hl7Esc(status)
+		segs = append(segs, strings.Join(obr, "|"))
 		if pf, ok := res["presentedForm"].([]interface{}); ok && len(pf) > 0 {
 			if d := gs(pf[0].(map[string]interface{}), "data"); d != "" {
 				if raw, err := base64.StdEncoding.DecodeString(d); err == nil {
@@ -239,14 +336,18 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 			err = fmt.Errorf("hl7: embedded resource cannot be encoded: %v", marshalErr)
 			return
 		}
-		if event, signoff := normalise(prov, 0, raw); event == nil && signoff == nil {
+		if event, signoff, normErr := normaliseChecked(prov, 0, raw); event == nil && signoff == nil {
 			prov, msgID, res = "", "", nil
-			err = fmt.Errorf("hl7: embedded resource is not normalisable")
+			if normErr != nil {
+				err = fmt.Errorf("hl7: %w", normErr)
+			} else {
+				err = fmt.Errorf("hl7: embedded resource is not normalisable")
+			}
 		}
 	}()
 	z := m.seg("ZWS")
-	if z == nil || len(z) < 3 {
-		return "", "", nil, fmt.Errorf("hl7: missing ZWS")
+	if z == nil || len(z) < 4 {
+		return "", "", nil, fmt.Errorf("hl7: missing ZWS identity, body or version")
 	}
 	raw, err := base64.StdEncoding.DecodeString(z[2])
 	if err != nil {
@@ -259,8 +360,22 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		return "", "", nil, fmt.Errorf("hl7: embedded resource must be a typed FHIR object")
 	}
 	prov = m.Sender
-	if fld(z, 1) == "" {
-		return "", "", nil, fmt.Errorf("hl7: ZWS-1 resource identity is required")
+	identity := strings.Split(fld(z, 1), "/")
+	if len(identity) != 3 || identity[0] == "" || identity[1] == "" || !strings.HasPrefix(identity[2], "v") {
+		return "", "", nil, fmt.Errorf("hl7: ZWS-1 must be ResourceType/id/vversion")
+	}
+	resourceType, resourceID, version, _, parseErr := parseResourceVersion(raw)
+	if parseErr != nil {
+		return "", "", nil, fmt.Errorf("hl7: embedded resource metadata: %v", parseErr)
+	}
+	if identity[0] != resourceType || identity[1] != resourceID || identity[2] != "v"+version {
+		return "", "", nil, fmt.Errorf("hl7: ZWS-1 and embedded resource identity differ")
+	}
+	if fld(z, 3) != version {
+		return "", "", nil, fmt.Errorf("hl7: ZWS-1/ZWS-3 and embedded resource versions differ")
+	}
+	if resourceType == "DiagnosticReport" && fld(m.seg("OBR"), 3) != resourceID {
+		return "", "", nil, fmt.Errorf("hl7: OBR-3 and embedded DiagnosticReport id differ")
 	}
 	msgID = prov + "/" + fld(z, 1)
 	if pid := m.seg("PID"); pid != nil {
@@ -296,6 +411,9 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 			pt["gender"] = "unknown"
 		}
 	}
+	if err := m.applyClinicalOBR(res); err != nil {
+		return "", "", nil, fmt.Errorf("hl7: %w", err)
+	}
 	if rt := gs(res, "resourceType"); (rt == "DiagnosticReport" || rt == "ServiceRequest") && m.hl7DRRebuild(res) { // hl7dr.go: OBR-4 decides
 		return prov, msgID, res, nil
 	}
@@ -311,12 +429,15 @@ func (m *HL7Msg) ToResource() (prov string, msgID string, res map[string]interfa
 		return prov, msgID, res, nil
 	}
 	if gs(res, "resourceType") == "DiagnosticReport" {
+		delete(res, "presentedForm")
+		delete(res, "conclusion")
+		delete(res, "conclusionCode")
 		for _, obx := range m.Segs["OBX"] {
 			switch fld(obx, 2) {
 			case "TX":
 				res["presentedForm"] = []interface{}{map[string]interface{}{"contentType": "text/plain; charset=utf-8", "data": base64.StdEncoding.EncodeToString([]byte(fld(obx, 5)))}}
-			case "CE":
-				res["conclusionCode"] = []interface{}{map[string]interface{}{"text": fld(obx, 5)}}
+			case "CE", "CWE":
+				res["conclusionCode"] = []interface{}{map[string]interface{}{"text": strings.Split(fld(obx, 5), "^")[0]}}
 			}
 		}
 	}

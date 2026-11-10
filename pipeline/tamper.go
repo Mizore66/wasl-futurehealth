@@ -346,7 +346,7 @@ func releger(out []LogMsg) {
 
 // ---------------- driver ----------------
 
-func tamper(data, wasl, run string, P int, role string, seed int64) {
+func tamper(data, wasl, run string, P int, role string, seed int64) error {
 	if err := Authorize(role, ActReadAudit); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(3)
@@ -419,6 +419,9 @@ func tamper(data, wasl, run string, P int, role string, seed int64) {
 		if target != "" {
 			break
 		}
+	}
+	if target == "" {
+		return fmt.Errorf("tamper: no closed human-signed prediction; refusing tamper evaluation")
 	}
 	soPos := -1
 	for i, m := range t.fhir {
@@ -579,4 +582,5 @@ func tamper(data, wasl, run string, P int, role string, seed int64) {
 		"target_signoff": soItem, "anchors": t.anchors, "attacks": rows}
 	b, _ := json.MarshalIndent(res, "", " ")
 	fmt.Println(string(b))
+	return nil
 }

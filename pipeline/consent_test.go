@@ -16,7 +16,9 @@ func outreachFor(t *testing.T, L *LinkerCore, loop string, outs []FactsMsg) []Ou
 	return BuildOutreach(f, func(p float64) float64 { return p })
 }
 
-func contactPrep(seq uint64, kind string) *Prep { return consentPrep(seq, "ahs-mushrif|M1", RoleCoordinator, kind) }
+func contactPrep(seq uint64, kind string) *Prep {
+	return consentPrep(seq, "ahs-mushrif|M1", RoleCoordinator, kind)
+}
 
 func TestConsentReferralBeforeConsentHoldsThenReleases(t *testing.T) {
 	L, loop := newLoopLinker(t) // referral arrives; no consent record yet
@@ -39,7 +41,7 @@ func TestConsentReferralBeforeConsentHoldsThenReleases(t *testing.T) {
 func TestConsentBeforeReferral(t *testing.T) {
 	L := NewLinkerCore(nil, 1)
 	L.Apply(contactPrep(1, "permit")) // consent on file before the referral exists
-	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}})
+	L.Apply(&Prep{Seq: 2, Kind: "event", Ev: &Event{ID: "SR1", Provider: "ahs-mushrif", RType: "ServiceRequest", Prog: "crc", PatientKey: "ahs-mushrif|M1", Name: "Test Person", Day: 1}})
 	o := outreachFor(t, L, "ahs-mushrif/ServiceRequest/SR1", nil)
 	if !o[0].Released {
 		t.Fatalf("consent-before-referral must release, got %+v", o)

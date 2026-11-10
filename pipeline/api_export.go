@@ -438,7 +438,7 @@ var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 }())
 
 var exportSignoffAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("item", "loop", "kinds", "pair", "report", "link", "evidence", "reviewer", "signed_head", "run", "role", "reads",
+	m := exportKeys("item", "loop", "kinds", "pair", "report", "report_version", "link", "evidence", "reviewer", "signed_head", "run", "role", "reads",
 		"dur_s", "purpose", "hold", "agent_read", "agent_s", "wrong", "raw_id", "quoted_by", "raw_sha")
 	m["hint"] = exportOperationalLeaf
 	m["why"] = exportOperationalLeaf
@@ -460,7 +460,7 @@ var exportHoldAllow = exportObject(func() map[string]*exportAllow {
 }())
 
 var exportReviewItemAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("item", "loop", "kinds", "pair", "p", "report", "verdict", "conf", "head", "in_seq", "overdue", "day")
+	m := exportKeys("item", "loop", "kinds", "pair", "p", "report", "report_version", "verdict", "conf", "head", "in_seq", "overdue", "day")
 	m["reason"] = exportOperationalLeaf
 	m["chain"] = &exportAllow{chain: true}
 	return m

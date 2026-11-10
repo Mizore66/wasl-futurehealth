@@ -25,21 +25,60 @@ func gs(m map[string]interface{}, path ...string) string {
 	return s
 }
 
-func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Signoff) {
+func normalise(prov string, arr float64, raw []byte) (*Event, *Signoff) {
+	event, signoff, _ := normaliseChecked(prov, arr, raw)
+	return event, signoff
+}
+
+func setClinicalDay(e *Event, res map[string]interface{}, path ...string) *NormalizationError {
+	day, err := tsToDay(gs(res, path...))
+	if err != nil {
+		return normalizationError(e.RType, e.ID, "invalid_timestamp", strings.Join(path, "."), err.Error())
+	}
+	e.Day = day
+	return nil
+}
+
+var diagnosticReportStatuses = map[string]bool{
+	"registered": true, "partial": true, "preliminary": true, "final": true,
+	"amended": true, "corrected": true, "appended": true, "cancelled": true,
+	"entered-in-error": true, "unknown": true,
+}
+
+func diagnosticReportEvidenceEligible(status string) bool {
+	switch status {
+	case "final", "amended", "corrected", "appended":
+		return true
+	default:
+		return false
+	}
+}
+
+func diagnosticReportRevisionRequired(status string) bool {
+	switch status {
+	case "amended", "corrected", "appended", "cancelled", "entered-in-error":
+		return true
+	default:
+		return false
+	}
+}
+
+func normaliseChecked(prov string, arr float64, raw []byte) (event *Event, signoff *Signoff, normErr *NormalizationError) {
 	// The normaliser is a trust boundary for both live ingest and materialized-log replay.
 	// Keep a final recovery guard here: any missed nested FHIR shape assertion rejects the
 	// whole resource instead of crashing a worker or serving a partially decoded event.
 	defer func() {
 		if recover() != nil {
 			event, signoff = nil, nil
+			normErr = normalizationError("", "", "invalid_resource", "", "malformed nested resource shape")
 		}
 	}()
 	var res map[string]interface{}
 	if err := rejectDuplicateKeys(raw); err != nil {
-		return nil, nil
+		return nil, nil, normalizationError("", "", "invalid_resource", "", "invalid or unsupported resource")
 	}
 	if err := json.Unmarshal(raw, &res); err != nil || res == nil {
-		return nil, nil
+		return nil, nil, normalizationError("", "", "invalid_resource", "", "invalid or unsupported resource")
 	}
 	rt := gs(res, "resourceType")
 	if rt == "Provenance" {
@@ -49,30 +88,36 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 				var so Signoff
 				rawSignoff := []byte(gs(xm, "valueString"))
 				if rejectDuplicateKeys(rawSignoff) != nil || json.Unmarshal(rawSignoff, &so) != nil {
-					return nil, nil
+					return nil, nil, normalizationError("", "", "invalid_resource", "", "invalid or unsupported resource")
 				}
-				return nil, &so
+				return nil, &so, nil
 			}
 		}
-		return nil, nil
+		return nil, nil, normalizationError("", "", "invalid_resource", "", "invalid or unsupported resource")
 	}
 	e := &Event{ID: gs(res, "id"), Provider: prov, RType: rt, Status: gs(res, "status")}
 	switch rt {
 	case "ServiceRequest", "Communication", "Task", "Appointment", "DiagnosticReport", "Encounter", "Consent":
 	default:
-		return nil, nil
+		return nil, nil, normalizationError("", "", "invalid_resource", "", "invalid or unsupported resource")
 	}
 	switch rt {
 	case "ServiceRequest":
-		e.Day = tsToDay(gs(res, "authoredOn"))
+		if normErr := setClinicalDay(e, res, "authoredOn"); normErr != nil {
+			return nil, nil, normErr
+		}
 		e.Prog = progOfText(gs(res, "code", "text"))
 		e.Priority = map[string]string{"urgent": "urgent", "asap": "soon", "routine": "routine"}[gs(res, "priority")]
 		e.IndexDay = e.Day
 		if cs, ok := res["category"].([]interface{}); ok && len(cs) > 0 {
 			e.Category = gs(cs[0].(map[string]interface{}), "text")
 		}
-		if e.Category == "ifhas-screening" && IfhasOn {
-			e.Prog = "ifhas"
+		if e.Category == "ifhas-screening" {
+			if IfhasOn {
+				e.Prog = "ifhas"
+			} else if e.Prog == "" {
+				e.Prog = "crc" // explicit legacy routing for a structured IFHAS category with the IFHAS engine disabled
+			}
 		}
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
@@ -83,7 +128,11 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 				case "urn:wsi:index-category":
 					e.Cat = gs(xm, "valueString")
 				case "urn:wsi:specimen-date":
-					e.IndexDay = tsToDay(gs(xm, "valueString"))
+					day, err := tsToDay(gs(xm, "valueString"))
+					if err != nil {
+						return nil, nil, normalizationError(e.RType, e.ID, "invalid_timestamp", "extension[urn:wsi:specimen-date].valueString", err.Error())
+					}
+					e.IndexDay = day
 				case "urn:wsi:patient-age", "urn:wsi:fleischner-exclusion", "urn:wsi:fleischner-risk":
 					e.Lung = lungSRExt(e.Lung, gs(xm, "url"), gs(xm, "valueString"))
 				}
@@ -115,10 +164,16 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 				e.Lung.Finding = strings.TrimPrefix(gs(si[0].(map[string]interface{}), "reference"), "DiagnosticReport/")
 			}
 		}
+		if e.Prog == "" {
+			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "code.text", "no explicit Wasl programme mapping")
+		}
 	case "Communication":
-		e.Day = tsToDay(gs(res, "sent"))
-		if s := gs(res, "received"); s != "" {
-			e.Day = tsToDay(s)
+		timestamp := "sent"
+		if _, present := res["received"]; present {
+			timestamp = "received"
+		}
+		if normErr := setClinicalDay(e, res, timestamp); normErr != nil {
+			return nil, nil, normErr
 		}
 		if cs, ok := res["category"].([]interface{}); ok && len(cs) > 0 {
 			e.Category = gs(cs[0].(map[string]interface{}), "text")
@@ -143,27 +198,56 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 					e.Reason = gs(xm, "valueString")
 				case "urn:wsi:report":
 					e.ReportID = gs(xm, "valueString")
+				case "urn:wsi:report-version":
+					version, err := strconv.Atoi(gs(xm, "valueString"))
+					if err != nil || version <= 0 {
+						return nil, nil, normalizationError(e.RType, e.ID, "invalid_report_version", "extension[urn:wsi:report-version].valueString", "report version must be a positive integer")
+					}
+					e.ReportVersion = version
 				case "urn:wsi:recipient":
 					e.Recipient = gs(xm, "valueString")
 				}
 			}
 		}
 	case "Task":
-		e.Day = tsToDay(gs(res, "lastModified"))
+		if normErr := setClinicalDay(e, res, "lastModified"); normErr != nil {
+			return nil, nil, normErr
+		}
 		e.Focus = gs(res, "focus", "reference")
 		e.Owner = gs(res, "owner", "reference")
 	case "Appointment":
-		e.Day = tsToDay(gs(res, "start"))
+		if normErr := setClinicalDay(e, res, "start"); normErr != nil {
+			return nil, nil, normErr
+		}
 		if st, ok := res["serviceType"].([]interface{}); ok && len(st) > 0 {
 			e.Prog = progOfText(gs(st[0].(map[string]interface{}), "text"))
 		}
+		if e.Prog == "" {
+			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "serviceType.text", "no explicit Wasl programme mapping")
+		}
 	case "DiagnosticReport":
-		e.Day = tsToDay(gs(res, "effectiveDateTime"))
+		if !diagnosticReportStatuses[e.Status] {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_report_status", "status", "missing or unsupported DiagnosticReport status")
+		}
+		if rawVersion := gs(res, "meta", "versionId"); rawVersion != "" {
+			version, err := strconv.Atoi(rawVersion)
+			if err != nil || version <= 0 {
+				return nil, nil, normalizationError(e.RType, e.ID, "invalid_report_version", "meta.versionId", "versionId must be a positive integer")
+			}
+			e.Version = version
+		}
+		if diagnosticReportRevisionRequired(e.Status) && e.Version < 2 {
+			return nil, nil, normalizationError(e.RType, e.ID, "invalid_report_version", "meta.versionId", "revision and withdrawal statuses require versionId >= 2")
+		}
+		if normErr := setClinicalDay(e, res, "effectiveDateTime"); normErr != nil {
+			return nil, nil, normErr
+		}
 		e.ReportID = e.ID
-		e.Category = "colonoscopy"
 		if cs, ok := res["code"].(map[string]interface{}); ok {
 			if cd, ok := cs["coding"].([]interface{}); ok && len(cd) > 0 {
 				switch gs(cd[0].(map[string]interface{}), "code") {
+				case "18746-8":
+					e.Category = "colonoscopy"
 				case "11526-1":
 					e.Category = "pathology"
 				case "colposcopy":
@@ -209,10 +293,17 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 				}
 			}
 		}
+		if e.Category == "" {
+			return nil, nil, normalizationError(e.RType, e.ID, "unknown_programme", "code", "no explicit Wasl DiagnosticReport category mapping")
+		}
 	case "Encounter":
-		e.Day = tsToDay(gs(res, "period", "start"))
+		if normErr := setClinicalDay(e, res, "period", "start"); normErr != nil {
+			return nil, nil, normErr
+		}
 	case "Consent": // v6: patient outreach consent (provision deny = opt out of automated messages)
-		e.Day = tsToDay(gs(res, "dateTime"))
+		if normErr := setClinicalDay(e, res, "dateTime"); normErr != nil {
+			return nil, nil, normErr
+		}
 		e.Status = gs(res, "provision", "type")
 		if xs, ok := res["extension"].([]interface{}); ok {
 			for _, x := range xs {
@@ -249,7 +340,7 @@ func normalise(prov string, arr float64, raw []byte) (event *Event, signoff *Sig
 			e.Sex = "U"
 		}
 	}
-	return e, nil
+	return e, nil, nil
 }
 
 func signoffResource(so *Signoff) []byte {
