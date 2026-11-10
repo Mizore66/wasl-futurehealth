@@ -1,0 +1,13 @@
+{
+  "detail": "line 5: head does not follow the case's previous event",
+  "error": "review ledger failed validation; writes refused",
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:50:47Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  }
+}
