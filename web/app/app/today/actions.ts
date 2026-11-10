@@ -10,7 +10,7 @@ const COORDINATOR = "Hessa Al Ali";
 
 export type RecordResult =
   | { ok: true; head: string; hash: string; at: string }
-  | { ok: false; status: number; error: string; currentHead?: string };
+  | { ok: false; status: number; error: string; conflict?: string; currentHead?: string };
 
 const Args = z.object({ caseId: z.string().min(1).max(200), head: z.string().min(1).max(128), action: CaseAction });
 
@@ -20,7 +20,7 @@ export async function recordAction(caseId: string, head: string, action: z.input
   const args = Args.safeParse({ caseId, head, action });
   if (!args.success) return { ok: false, status: 400, error: "malformed action" };
   const res = await postAction(args.data.caseId, args.data.action, args.data.head, COORDINATOR);
-  if (!res.ok) return { ok: false, status: res.status, error: res.error, currentHead: res.currentHead };
+  if (!res.ok) return { ok: false, status: res.status, error: res.error, conflict: res.conflict, currentHead: res.currentHead };
   revalidatePath("/app/today");
   revalidatePath("/app/patients/[id]", "page");
   return { ok: true, head: res.response.api_overlay.head, hash: res.response.event.hash, at: res.response.event.at };
