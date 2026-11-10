@@ -101,7 +101,8 @@
   --accent-foreground: var(--color-ink);
   --destructive: var(--color-negative);
   --border: var(--color-line);
-  --input: var(--color-control);
+  /* Input and select boundaries: muted clears 3:1 on surface, raised, ground and active (WCAG 1.4.11); control stays the fill. */
+  --input: var(--color-muted);
   --ring: var(--color-hue);
 }
 

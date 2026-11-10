@@ -40,7 +40,7 @@ export function Refine({ facets, filters, base = "/app/patients" }: { facets: Fa
                 <select
                   name={k}
                   defaultValue={filters[k] ?? ""}
-                  className="h-11 w-full min-w-0 rounded-control border border-control bg-surface px-2 text-body text-ink"
+                  className="h-11 w-full min-w-0 rounded-control border border-input bg-surface px-2 text-body text-ink"
                 >
                   <option value="">
                     {ALL_WORDS[k]} ({total})
