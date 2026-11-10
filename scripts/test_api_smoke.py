@@ -653,14 +653,16 @@ class SnapshotTests(unittest.TestCase):
                 self.assertNotIn('"owner"', published, name)
                 self.assertNotIn('"canonical_owner"', published, name)
 
-    def test_snapshot_scans_staging_and_preserves_previous_samples_on_canary(self):
+    def test_staged_scanner_rejects_canary_before_publication(self):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "samples"
             target.mkdir()
             (target / "case_old.json").write_text('{"preserved":true}')
-            def m(f):
-                f.dash["future_server_field"] = "PRIVATE-OWNER-CANARY"
-            r = self.snap(Fake(m), target, programmes="crc")
+            (target / "case_staged.json").write_text('{"note":"PRIVATE-OWNER-CANARY"}')
+            r = subprocess.run(
+                [sys.executable, str(ROOT / "scripts" / "redacted_snapshot.py"), "scan-dir", str(target)],
+                capture_output=True, text=True, check=False,
+            )
             self.assertNotEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertIn("canary", (r.stdout + r.stderr).lower())
             self.assertTrue((target / "case_old.json").exists())
