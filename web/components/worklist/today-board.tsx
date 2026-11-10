@@ -147,6 +147,7 @@ export function TodayBoard({ items, now, aside, live = false }: { items: WorkIte
     recordAction(row.id, row.head, action)
       .then((res) => {
         if (res.ok) apply(row, what, `Saved · ${clock()} · ${res.hash.slice(0, 8)}`, { ...patch, head: res.head }, head, move, stage);
+        else if (res.conflict === "consent") setRefusal({ id: row.id, text: "Not saved: this patient has not given contact permission" });
         else setRefusal({ id: row.id, text: `Not saved: ${res.status === 400 ? res.error : (REFUSED[res.status] ?? res.error)}` });
       })
       .catch(() => setRefusal({ id: row.id, text: "Not saved: the API did not answer" }))
