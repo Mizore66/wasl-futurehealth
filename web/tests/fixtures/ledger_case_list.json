@@ -1,0 +1,48 @@
+{
+  "cases": [
+    {
+      "api_overlay": {
+        "actions": 6,
+        "head": "3dc1613bf9e2c23bbf2ff3e24ad40e4a6fcb2e102a2fa0739d129e18eddf7b36",
+        "last_action_at": "2026-11-10T22:42:03.084100627Z",
+        "ledger_status": "ok",
+        "owner": "coordinator-bound",
+        "snooze": {
+          "actor": "coordinator-bound",
+          "at": "2026-11-10T22:42:03.079120992Z",
+          "event": "aec5999806d24b8dc22c7a7b0ab7ae8122cd8f7bba45795396d31d36baaf43eb",
+          "reason": "Call back Fri 13 Nov",
+          "until": "2026-11-13T22:42:03Z"
+        }
+      },
+      "closed": false,
+      "closed_day": 0,
+      "consent": "granted",
+      "deadline_day": 0,
+      "decisions": 1,
+      "dropoff": "not_booked",
+      "fixture": "",
+      "id": "exp-prov/ServiceRequest/EXP-sr-1",
+      "overdue": false,
+      "owner": "",
+      "priority": "",
+      "programme": "crc",
+      "provider": "exp-prov",
+      "referral_day": 3,
+      "review": "none",
+      "state": "open"
+    }
+  ],
+  "limit": 5,
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:42:03Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "offset": 0,
+  "total": 1
+}

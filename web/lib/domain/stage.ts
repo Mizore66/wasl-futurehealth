@@ -49,7 +49,8 @@ function stage(key: StageKey, technical: string): CaseStage {
 }
 
 function openReviewItems(c: CaseDetail) {
-  const signed = new Set([...c.signoffs.map((s) => s.item), ...c.api_reviews.map((r) => r.item)]);
+  // Only review events answer a review item; coordinator and undo/contest events share the ledger but carry no item.
+  const signed = new Set([...c.signoffs.map((s) => s.item), ...c.api_reviews.flatMap((r) => (r.ledger === "review" ? [r.item] : []))]);
   return c.review_items.filter((r) => !signed.has(r.item));
 }
 

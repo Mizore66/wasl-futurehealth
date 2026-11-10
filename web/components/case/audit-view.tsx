@@ -4,7 +4,8 @@ import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
 import type { Audit, Programme } from "@/lib/api/schema";
 import { Card } from "./sections";
-import { atWords, bodySummary, entryLabel, reviewWords, roleWords, shortHash } from "./words";
+import { cn } from "@/lib/utils";
+import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
 
 /** Full hash on a disclosure; the short form is for comparing by eye. */
 function Hash({ label, value }: { label: string; value: string }) {
@@ -154,7 +155,7 @@ export function HistoryCard({ audit, programme }: { audit: Audit; programme: Pro
       id="history"
       title="Review history"
       aside={<HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
-      note="Append-only. A new answer is added below; an old one is never edited."
+      note="Append-only: reviews, coordinator actions and undo/contest events share one chain. A new entry is added below; an old one is never edited."
     >
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
@@ -163,17 +164,24 @@ export function HistoryCard({ audit, programme }: { audit: Audit; programme: Pro
       ) : (
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
           {audit.history.map((r, i) => (
-            <li key={r.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
+            <li key={r.hash || `unknown-${i}`} className="border-t border-rule py-3">
+              {r.ledger === "review" ? (
+                <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
+              ) : (
+                /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
+                <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
+                  <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
+                </div>
+              )}
               {/* The auditor's redacted history never names the actor or quotes the note. */}
               <p className="m-0 text-muted">
                 {r.actor ? `${r.actor} · ` : ""}
-                {roleWords(r.role)} · {atWords(r.at)}
+                {r.role ? roleWords(r.role) : "role not recorded"} · {r.at ? atWords(r.at) : "time not recorded"}
               </p>
-              {r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+              {r.ledger !== "unknown" && r.ledger !== "coordinator" && typeof r.note === "string" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
               <p className="m-0 mt-1 text-small leading-5">
-                <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />
-                <Hash label="Hash" value={r.hash} />
+                {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
+                {r.hash && <Hash label="Hash" value={r.hash} />}
               </p>
             </li>
           ))}

@@ -411,6 +411,100 @@ export const AuditReview = z.looseObject({
   hash: z.string(),
 });
 
+/*
+ * The shared ledger (`<run>/api_reviews.ndjson`) holds more than reviews: coordinator actions (pipeline/api.go
+ * caseAction) and undo/contest compensation events (pipeline/api_undo.go) share its hash chain, so case detail
+ * `api_reviews` and audit `history` list all of them in order. Each entry is parsed by its own shape and tagged with
+ * `ledger`. A review keeps every required field; anything that matches no known shape becomes an explicit
+ * `unknown` entry instead of failing the whole response, so one new event kind cannot take down every page that reads
+ * a case. Pinned by tests/fixtures/ledger_*.json (pipeline/api_ledger_contract_test.go).
+ */
+export const COORDINATOR_KINDS = ["assign_owner", "snooze", "contact_outcome", "note"] as const;
+export const COMPENSATION_KINDS = ["undo", "contest", "contest_resolution"] as const;
+
+const ledgerCore = {
+  case: z.string(),
+  role: z.string(),
+  action: z.string(),
+  at: z.string(),
+  mode: z.string(),
+  prev: z.string(),
+  hash: z.string(),
+};
+
+/** `data` of a coordinator action. The redacted audit keeps only `until`, `outcome` and `channel`. */
+export const CoordinatorData = z.looseObject({
+  owner: z.string().optional(),
+  until: z.string().optional(),
+  reason: z.string().optional(),
+  outcome: z.string().optional(),
+  channel: z.string().optional(),
+  note: z.string().optional(),
+  text: z.string().optional(),
+});
+
+const coordinatorShape = {
+  ...ledgerCore,
+  type: z.literal("coordinator_action"),
+  kind: z.enum(COORDINATOR_KINDS),
+  data: CoordinatorData,
+  head: z.string(),
+  seq: z.number(),
+};
+const compensationShape = {
+  ...ledgerCore,
+  kind: z.enum(COMPENSATION_KINDS),
+  target: z.string(),
+  target_action: z.string(),
+  action_head: z.string(),
+  head_signed: z.string().optional(),
+  resolution: z.enum(["upheld", "rejected"]).optional(),
+};
+
+/** A coordinator action as case detail serves it (actor and free text included). */
+export const CoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string() });
+/** An undo, contest or contest resolution as case detail serves it. */
+export const CompensationEvent = z.looseObject({ ...compensationShape, actor: z.string(), target_actor: z.string(), note: z.string() });
+/** The auditor's redacted forms: no actor, note or target actor (exportReviewEventAllow in pipeline/api_export.go). */
+export const AuditCoordinatorEvent = z.looseObject({ ...coordinatorShape, actor: z.string().optional() });
+export const AuditCompensationEvent = z.looseObject({ ...compensationShape, actor: z.string().optional(), note: z.string().optional() });
+
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+
+/** A ledger entry that matches no known shape: shown as unrecognised, never dropped and never guessed at. */
+export const UnknownLedgerEvent = z.unknown().transform((raw) => {
+  const o = raw !== null && typeof raw === "object" && !Array.isArray(raw) ? (raw as Record<string, unknown>) : {};
+  return {
+    ledger: "unknown" as const,
+    hash: str(o.hash),
+    prev: str(o.prev),
+    at: str(o.at),
+    actor: str(o.actor),
+    role: str(o.role),
+    /** `type/kind` as the API wrote them, or "" when absent. */
+    label: [str(o.type), str(o.kind)].filter(Boolean).join("/"),
+  };
+});
+
+const tag =
+  <L extends string>(ledger: L) =>
+  <T extends object>(e: T) => ({ ...e, ledger });
+
+/** One case-detail `api_reviews` entry. */
+export const LedgerEvent = z.union([
+  CoordinatorEvent.transform(tag("coordinator")),
+  CompensationEvent.transform(tag("compensation")),
+  ApiReview.transform(tag("review")),
+  UnknownLedgerEvent,
+]);
+/** One audit `history` entry (redacted). */
+export const AuditLedgerEvent = z.union([
+  AuditCoordinatorEvent.transform(tag("coordinator")),
+  AuditCompensationEvent.transform(tag("compensation")),
+  AuditReview.transform(tag("review")),
+  UnknownLedgerEvent,
+]);
+
 export const Booking = z.looseObject({
   status: z.enum(["suggested", "no_slot_within_horizon", "not_applicable", "not_generated"]),
   data_mode: z.string().optional(),
@@ -441,7 +535,8 @@ export const CaseDetail = withMeta({
   decisions: z.array(Decision),
   review_items: z.array(ReviewItem),
   signoffs: z.array(Signoff),
-  api_reviews: z.array(ApiReview),
+  /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
+  api_reviews: z.array(LedgerEvent),
   current: CurrentDecision,
   booking: Booking,
 });
@@ -457,7 +552,7 @@ export const Audit = withMeta({
   /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
   anchors: z.record(z.string(), z.string()).default({}),
   anchor_note: z.string().optional(),
-  history: z.array(AuditReview),
+  history: z.array(AuditLedgerEvent),
 });
 
 export const CaseList = withMeta({
@@ -612,6 +707,8 @@ export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
 export type ApiReview = z.infer<typeof ApiReview>;
 export type AuditReview = z.infer<typeof AuditReview>;
+export type LedgerEvent = z.infer<typeof LedgerEvent>;
+export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
 export type ActionResponse = z.infer<typeof ActionResponse>;

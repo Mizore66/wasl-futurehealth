@@ -1,0 +1,233 @@
+{
+  "anchor_note": "No local anchors are recorded for this materialised run; this response has no OUT stream ledger heads or FHIR log hash. `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
+  "case": "exp-prov/ServiceRequest/EXP-sr-1",
+  "chain": [
+    {
+      "body": {
+        "downstream_event": "exp-prov/Appointment/EXP-ap-1",
+        "hops": 1,
+        "linker": "test-linker",
+        "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+        "near_miss": false,
+        "path_p_cal": 0.97,
+        "path_strength": 0.97,
+        "referral_patient": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+        "tau": 0.9,
+        "weakest_edge": {
+          "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+          "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+          "basis": "eid",
+          "p": 0.97
+        }
+      },
+      "hash": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+      "prev": "genesis",
+      "type": "link_decision"
+    },
+    {
+      "body": {
+        "agree": true,
+        "label": "adequate",
+        "reader_model": "gemma-4-26b/cached",
+        "report": "exp-prov/DiagnosticReport/EXP-dr-1"
+      },
+      "hash": "e750524b53de4f1f963c0b81d1b60a96bc3adf699ede0de1f24ff74f0874216f",
+      "prev": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+      "type": "evidence"
+    }
+  ],
+  "chain_length": 2,
+  "chain_note": "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted current chain and covers that chain only.",
+  "chain_scope": "current",
+  "chain_verified": true,
+  "decision_signatures": [
+    {
+      "decision_id": "dec-1",
+      "policy": "v7strict",
+      "recomputed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "sig": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae"
+    }
+  ],
+  "history": [
+    {
+      "action": "record_consent",
+      "at": "2026-11-10T22:42:03.07069195Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "consent_granted",
+      "hash": "c197184ded36be35f345ca1bd7a426e67d28a235724de5af1dfaf3965c6f59c0",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "mode": "demo",
+      "prev": "genesis",
+      "role": "coordinator"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.074366459Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {},
+      "hash": "7a47b860ec175875f5be79a9f63f87718f523441e7933beb37c0437fcd4acbe4",
+      "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "assign_owner",
+      "mode": "demo",
+      "prev": "c197184ded36be35f345ca1bd7a426e67d28a235724de5af1dfaf3965c6f59c0",
+      "role": "coordinator",
+      "seq": 1,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "at": "2026-11-10T22:42:03.075327069Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "same",
+      "hash": "fc10ab69d14dddc3b3e047a9ea2afb5fee994a3d58adb66b35030a7eecd72f96",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "mode": "demo",
+      "prev": "7a47b860ec175875f5be79a9f63f87718f523441e7933beb37c0437fcd4acbe4",
+      "role": "reviewer"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.076068328Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "reached"
+      },
+      "hash": "77f9cc5ce6b667ef741cef9f11b9c2b741832941e396b4a015fa3c8881741ce2",
+      "head": "7a47b860ec175875f5be79a9f63f87718f523441e7933beb37c0437fcd4acbe4",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "fc10ab69d14dddc3b3e047a9ea2afb5fee994a3d58adb66b35030a7eecd72f96",
+      "role": "coordinator",
+      "seq": 2,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.077373628Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "appointment_agreed"
+      },
+      "hash": "15dd5d5a1d1b19da1fb61379ab975bbe05915927ddfdb8e7c7dda5dd2b2a58d5",
+      "head": "77f9cc5ce6b667ef741cef9f11b9c2b741832941e396b4a015fa3c8881741ce2",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "77f9cc5ce6b667ef741cef9f11b9c2b741832941e396b4a015fa3c8881741ce2",
+      "role": "coordinator",
+      "seq": 3,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "at": "2026-11-10T22:42:03.077836771Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "different",
+      "hash": "0c584ab010358b83fd152ff7ce26b3a366682591474ab5425fbc0d33af09e763",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "mode": "demo",
+      "prev": "15dd5d5a1d1b19da1fb61379ab975bbe05915927ddfdb8e7c7dda5dd2b2a58d5",
+      "role": "reviewer"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.079120992Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "until": "2026-11-13T22:42:03Z"
+      },
+      "hash": "aec5999806d24b8dc22c7a7b0ab7ae8122cd8f7bba45795396d31d36baaf43eb",
+      "head": "15dd5d5a1d1b19da1fb61379ab975bbe05915927ddfdb8e7c7dda5dd2b2a58d5",
+      "kind": "snooze",
+      "mode": "demo",
+      "prev": "0c584ab010358b83fd152ff7ce26b3a366682591474ab5425fbc0d33af09e763",
+      "role": "coordinator",
+      "seq": 4,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.079670143Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {},
+      "hash": "59ddec1dc60ff8186a6106499b7da497c2b6445665990799130adff1949619d0",
+      "head": "aec5999806d24b8dc22c7a7b0ab7ae8122cd8f7bba45795396d31d36baaf43eb",
+      "kind": "note",
+      "mode": "demo",
+      "prev": "aec5999806d24b8dc22c7a7b0ab7ae8122cd8f7bba45795396d31d36baaf43eb",
+      "role": "coordinator",
+      "seq": 5,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "59ddec1dc60ff8186a6106499b7da497c2b6445665990799130adff1949619d0",
+      "at": "2026-11-10T22:42:03.081153466Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "030f84708d42931d9ea21d3ea78e0d59c039649581658378cda602caa146c82f",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "undo",
+      "mode": "demo",
+      "prev": "59ddec1dc60ff8186a6106499b7da497c2b6445665990799130adff1949619d0",
+      "role": "reviewer",
+      "target": "fc10ab69d14dddc3b3e047a9ea2afb5fee994a3d58adb66b35030a7eecd72f96",
+      "target_action": "signoff_link"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "030f84708d42931d9ea21d3ea78e0d59c039649581658378cda602caa146c82f",
+      "at": "2026-11-10T22:42:03.082405304Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "308f36da1724fc682953aca1a03a798ca78dedefb217fb87d6b1f2c913c9eba3",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "contest",
+      "mode": "demo",
+      "prev": "030f84708d42931d9ea21d3ea78e0d59c039649581658378cda602caa146c82f",
+      "role": "reviewer",
+      "target": "0c584ab010358b83fd152ff7ce26b3a366682591474ab5425fbc0d33af09e763",
+      "target_action": "signoff_link"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "308f36da1724fc682953aca1a03a798ca78dedefb217fb87d6b1f2c913c9eba3",
+      "at": "2026-11-10T22:42:03.083740907Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "cccb5439fb96f543ae51dbaf1996fdd0502f82916a71dceef7a22b1376f00253",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "contest_resolution",
+      "mode": "demo",
+      "prev": "308f36da1724fc682953aca1a03a798ca78dedefb217fb87d6b1f2c913c9eba3",
+      "resolution": "rejected",
+      "role": "reviewer",
+      "target": "308f36da1724fc682953aca1a03a798ca78dedefb217fb87d6b1f2c913c9eba3",
+      "target_action": "signoff_link"
+    },
+    {
+      "action": "coordinate_case",
+      "at": "2026-11-10T22:42:03.084100627Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "declined"
+      },
+      "hash": "3dc1613bf9e2c23bbf2ff3e24ad40e4a6fcb2e102a2fa0739d129e18eddf7b36",
+      "head": "59ddec1dc60ff8186a6106499b7da497c2b6445665990799130adff1949619d0",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "cccb5439fb96f543ae51dbaf1996fdd0502f82916a71dceef7a22b1376f00253",
+      "role": "coordinator",
+      "seq": 6,
+      "type": "coordinator_action"
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:42:03Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  }
+}
