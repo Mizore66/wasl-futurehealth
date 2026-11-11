@@ -16,6 +16,7 @@ from supply_chain import _npm_integrity  # noqa: E402
 
 EVIDENCE_CLASSES = ("direct-gitHead", "tag-candidate", "unresolved-native")
 PRODUCTION_COUNTS = {"direct-gitHead": 47, "tag-candidate": 21, "unresolved-native": 13}
+BUNDLE_NAME = "THIRD-PARTY-NOTICES.txt"
 MANIFEST_REL = Path("supply-chain") / "notice-evidence.json"
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -52,7 +53,11 @@ def _notice_file(root: Path, rel: object, label: str) -> Path:
     pure = PurePosixPath(rel)
     if pure.is_absolute() or ".." in pure.parts or "\\" in rel or not pure.parts:
         raise ValueError(f"{label}: invalid notice path {rel!r}")
-    return root / "supply-chain" / Path(*pure.parts)
+    base = (root / "supply-chain").resolve()
+    resolved = (base / Path(*pure.parts)).resolve()
+    if not resolved.is_relative_to(base):
+        raise ValueError(f"{label}: notice path {rel!r} escapes supply-chain")
+    return resolved
 
 
 def _read_notice(root: Path, entry: object, label: str) -> str:
@@ -95,7 +100,8 @@ def _validate_package(package: object, index: int) -> tuple[str, str]:
         if not isinstance(commit, str) or not COMMIT_RE.match(commit):
             raise ValueError(f"{label}: direct row requires a 40-character source commit")
     elif cls == "tag-candidate":
-        _nonempty_str(source.get("tag"), f"{label} requires source tag; tag")
+        if not isinstance(source.get("tag"), str) or not source["tag"].strip():
+            raise ValueError(f"{label}: tag row requires source tag")
         commit = source.get("resolved_commit")
         if not isinstance(commit, str) or not COMMIT_RE.match(commit):
             raise ValueError(f"{label}: tag row requires a 40-character resolved_commit")
@@ -189,6 +195,17 @@ def render_notice_bundle(manifest: dict, root: Path) -> str:
     return "\n".join(lines).rstrip("\n") + "\n"
 
 
+def check_bundle(manifest: dict, root: Path) -> None:
+    """Fail unless the tracked bundle is byte-identical to the rendered manifest."""
+    bundle = Path(root) / "supply-chain" / BUNDLE_NAME
+    try:
+        tracked = bundle.read_bytes()
+    except OSError as error:
+        raise ValueError(f"cannot read supply-chain/{BUNDLE_NAME}: {error}") from error
+    if tracked != render_notice_bundle(manifest, root).encode("utf-8"):
+        raise ValueError(f"supply-chain/{BUNDLE_NAME} differs from the rendered manifest; regenerate it")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -205,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
         validate_notice_manifest(manifest, args.root, counts)
         if args.command == "render":
             args.output.write_text(render_notice_bundle(manifest, args.root), encoding="utf-8")
+        else:
+            check_bundle(manifest, args.root)
     except (ValueError, OSError) as error:
         print(f"notices: {error}", file=sys.stderr)
         return 1
