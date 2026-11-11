@@ -9,9 +9,9 @@ import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { ReviewerLogin } from "@/components/review/reviewer-login";
+import { gatedHistory } from "@/lib/api/protocol-history";
 import { getReviewCase } from "@/lib/api/reviewer-session";
-import { apiMode, getAudit, getUndoProjection } from "@/lib/api/source";
-import { concealsInitialRead } from "@/lib/domain/stage";
+import { apiMode } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 
 /* The title never reads the case: a shared credential must not be a second path to review data. */
@@ -44,11 +44,12 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
     </>
   ) : undefined;
   /*
-   * The append-only history and governance projection exist only against the live API. The auditor history is fetched
-   * with a shared credential, so it is never requested while any first read is still concealed.
+   * The append-only history and governance projection exist only against the live API. They are read with shared
+   * credentials, so gatedHistory withholds them while any first read is concealed, re-checking after the fetch.
    */
-  const concealed = live && concealsInitialRead(detail.api_review_states ?? []);
-  const [audit, projection] = live && !concealed ? await Promise.all([getAudit(id), getUndoProjection(id)]) : [null, null];
+  const history = live ? await gatedHistory(id, { before: viewer }) : { status: "ok" as const, audit: null, projection: null };
+  const concealed = history.status === "concealed";
+  const { audit, projection } = history;
 
   const total = queue?.cases.length ?? 0;
   const at = queue ? queue.cases.findIndex((c) => c.case.id === id) : live ? 0 : -1;

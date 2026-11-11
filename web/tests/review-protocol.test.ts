@@ -267,8 +267,8 @@ describe("review page uses the viewer's own credential", () => {
 
   it("shows sign-in before any queue or case read, and gates embedded history on concealment", () => {
     expect(page.indexOf("ReviewerLogin")).toBeLessThan(page.indexOf("reviewQueue()"));
-    expect(page).toMatch(/concealsInitialRead/);
-    expect(page).toMatch(/!concealed/);
+    expect(page).toMatch(/gatedHistory/);
+    expect(page).toMatch(/history\.status === "concealed"/);
   });
 
   it("the desk consumes only the one-read action", () => {

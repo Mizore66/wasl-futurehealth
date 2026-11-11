@@ -89,7 +89,7 @@ export function finalDecisions(c: WithStates, question: ReviewState["question"])
 
 /** True when any first read is hidden from this viewer (or from anyone else): the auditor history would leak it. */
 export function concealsInitialRead(states: readonly ReviewState[]): boolean {
-  return states.some((s) => s.state === "awaiting_r2" || s.reads.some((r) => r.submitted && r.read !== "r3" && r.decision === undefined));
+  return states.some((s) => s.state === "awaiting_r2" || s.reads.some((r) => r.submitted && r.read !== "r3" && (r.decision === undefined || (r as { concealed?: boolean }).concealed === true)));
 }
 
 /** "1 of 2 questions resolved", or undefined for the legacy workflow. */
