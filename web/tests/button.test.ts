@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buttonVariants } from "@/components/ui/button";
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>["variant"];
-const VARIANTS: Variant[] = ["default", "destructive", "outline", "secondary", "ghost", "link", "cta", "quiet"];
+const VARIANTS: Variant[] = ["default", "destructive", "outline", "secondary", "ghost", "link", "cta", "quiet", "chip"];
 const PRESS = "motion-safe:not-disabled:not-aria-disabled:not-aria-busy:active:scale-[0.96]";
 const classes = (...args: Parameters<typeof buttonVariants>) => buttonVariants(...args).split(" ");
 
@@ -26,7 +26,7 @@ describe("shared Button pressed feedback", () => {
   });
 
   it("keeps the shadcn ring on the stock variants", () => {
-    for (const variant of VARIANTS.filter((v) => v !== "cta" && v !== "quiet")) {
+    for (const variant of VARIANTS.filter((v) => v !== "cta" && v !== "quiet" && v !== "chip")) {
       const c = classes({ variant });
       expect(c).toEqual(expect.arrayContaining(["outline-none", "focus-visible:ring-[3px]", "font-medium", "whitespace-nowrap", "shrink-0"]));
     }
