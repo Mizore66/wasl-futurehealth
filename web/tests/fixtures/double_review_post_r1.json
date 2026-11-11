@@ -1,0 +1,59 @@
+{
+  "canonical_unchanged": true,
+  "event": {
+    "action": "signoff_link",
+    "actor": "reviewer-one",
+    "at": "2026-11-11T09:25:45.438242501Z",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "decision": "same",
+    "hash": "81cdeff1d43c095ea1da3eacd15e06999306e784a11c34024d72b75a84ea8939",
+    "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "item": "rv-dr-link-0001",
+    "kind": "read",
+    "mode": "demo",
+    "nonce": "04809598895f4ebc3f5915352c0ae8dd",
+    "note": "synthetic first read note",
+    "phase_after": "awaiting_reads",
+    "prev": "genesis",
+    "question": "link",
+    "read": "r1",
+    "role": "reviewer",
+    "round_head": "genesis",
+    "round_seq": 1,
+    "type": "double_review"
+  },
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-11T09:25:45Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "note": "read recorded; the other initial read stays hidden until it is submitted. Demo overlay only: the canonical decision, signatures and review status are unchanged",
+  "round": {
+    "action": "signoff_link",
+    "head": "81cdeff1d43c095ea1da3eacd15e06999306e784a11c34024d72b75a84ea8939",
+    "item": "rv-dr-link-0001",
+    "phase": "awaiting_reads",
+    "question": "link",
+    "r3_open": false,
+    "reads": {
+      "r1": {
+        "actor": "reviewer-one",
+        "at": "2026-11-11T09:25:45.438242501Z",
+        "blinded": false,
+        "decision": "same",
+        "hash": "81cdeff1d43c095ea1da3eacd15e06999306e784a11c34024d72b75a84ea8939",
+        "note": "synthetic first read note",
+        "read": "r1",
+        "role": "reviewer"
+      },
+      "r2": null,
+      "r3": null
+    },
+    "seq": 1,
+    "viewer_may": []
+  }
+}

@@ -483,7 +483,8 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel"))
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
-		"head", "seq", "target", "target_action", "resolution", "action_head")
+		"head", "seq", "target", "target_action", "resolution", "action_head",
+		"question", "read", "round_head", "round_seq", "phase_after", "final", "blinded") // double-review reads: never actor, note or nonce
 	m["data"] = exportCoordinatorDataAllow
 	return m
 }())
