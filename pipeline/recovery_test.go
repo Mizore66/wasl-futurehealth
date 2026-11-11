@@ -41,6 +41,26 @@ func TestNATSRecoveryBundleValidatesEveryStreamBeforeRestore(t *testing.T) {
 	}
 }
 
+func TestRecoveryApplicationHeaderDropsWritePreconditions(t *testing.T) {
+	header := nats.Header{}
+	header.Set("Nats-Msg-Id", "message-id")
+	header.Set("KV-Operation", "DEL")
+	header.Set("Nats-Expected-Last-Subject-Sequence", "50")
+	header.Set("Nats-Expected-Last-Sequence", "50")
+	header.Set("Nats-Expected-Last-Msg-Id", "prior-id")
+	header.Set("Nats-Expected-Stream", "prior-stream")
+	header.Set("Nats-Stream", "source-stream")
+	got := recoveryApplicationHeader(header)
+	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Stream"} {
+		if _, found := got[key]; found {
+			t.Errorf("source write precondition %q was retained: %v", key, got[key])
+		}
+	}
+	if nats.Header(got).Get("Nats-Msg-Id") != "message-id" || nats.Header(got).Get("KV-Operation") != "DEL" {
+		t.Fatalf("application/KV headers were lost: %v", got)
+	}
+}
+
 func TestStructuredLogEmitsOneJSONRecord(t *testing.T) {
 	var output bytes.Buffer
 	writeStructuredLogTo(&output, "info", "recovery complete", "streams", 2)
