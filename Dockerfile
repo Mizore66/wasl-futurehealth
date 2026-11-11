@@ -3,7 +3,7 @@
 # cohort augmentation, booking and summary scripts. Runs as a non-root user. No keys or secrets are baked in: the
 # JetStream encryption key lives only in the NATS containers' environment (docker-compose.yml).
 
-ARG GO_VERSION=1.27.3
+ARG GO_VERSION=1.27.4
 ARG PYTHON_VERSION=3.12
 
 FROM golang:${GO_VERSION}-bookworm AS build

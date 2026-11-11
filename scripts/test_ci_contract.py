@@ -154,7 +154,7 @@ class WorkflowTests(unittest.TestCase):
             self.assertRegex(ref, r"^[^/@]+/[^/@]+@[0-9a-f]{40}$", ref)
 
     def test_go_tests_race_and_real_nats_are_required(self):
-        self.assertIn("\ngo 1.27.3\n", (ROOT / "pipeline" / "go.mod").read_text())
+        self.assertIn("\ngo 1.27.4\n", (ROOT / "pipeline" / "go.mod").read_text())
         self.assertIn("go mod verify", self.runs("go-test"))
         self.assertIn("go test -json -count=1 -timeout=20m .", self.runs("go-test"))
         self.assertIn("go test -json -race -count=1 -timeout=60m .", self.runs("go-race"))
@@ -195,9 +195,9 @@ class WorkflowTests(unittest.TestCase):
             self.assertNotIn(base, {"recovery_keys.json", "backup_key", "js_key"}, name)
             self.assertFalse(base.endswith((".aead", ".pem", ".key")), name)
 
-    def test_go_toolchain_includes_crypto_x509_security_fix(self):
-        # GO-2026-6809 is reachable in Go 1.27.2 and fixed in Go 1.27.3.
-        self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.3$")
+    def test_go_toolchain_includes_net_http_security_fix(self):
+        # GO-2026-6859 is reachable in Go 1.27.3 and fixed in Go 1.27.4.
+        self.assertRegex((ROOT / "pipeline" / "go.mod").read_text(), r"(?m)^go 1\.27\.4$")
 
     def test_all_python_lanes_and_booking_solver_are_required(self):
         commands = self.runs("python-test")
