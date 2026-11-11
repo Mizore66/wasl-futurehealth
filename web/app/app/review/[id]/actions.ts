@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { apiMode, postReview } from "@/lib/api/source";
+import { ReviewDecision } from "@/lib/api/schema";
 import { roleFor, SIGNER, type SaveFailure, type Signature } from "@/components/review/decision";
 
 const Signatures = z
-  .array(z.object({ item: z.string().min(1), decision: z.enum(["same", "different", "adequate", "inadequate"]) }))
+  .array(z.object({ item: z.string().min(1), decision: ReviewDecision.refine((decision) => decision !== "confirm_contact", "confirm_contact is not a review-desk signature") }))
   .min(1)
   .max(2);
 

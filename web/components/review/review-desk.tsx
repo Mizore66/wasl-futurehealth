@@ -16,7 +16,7 @@ import {
   recordedOutcome,
   roleFor,
   SIGNER,
-  SIGNS,
+  signWords,
   signaturesFor,
   type Draft,
   type IdentityAnswer,
@@ -74,6 +74,41 @@ function Chips<T extends string>({
   );
 }
 
+function EvidenceChoices({
+  name,
+  options,
+  value,
+  onPick,
+  disabled,
+}: {
+  name: string;
+  options: [ReportAnswer, string][];
+  value: ReportAnswer | undefined;
+  onPick: (value: ReportAnswer) => void;
+  disabled: boolean;
+}) {
+  if (options.length <= 3) return <Chips name={name} options={options} value={value} onPick={onPick} disabled={disabled} />;
+  return (
+    <select
+      name={name}
+      aria-label="Evidence label"
+      value={value ?? ""}
+      disabled={disabled}
+      onChange={(event) => onPick(event.target.value)}
+      className="mt-2 min-h-11 w-full rounded-control border border-control bg-surface px-3 text-ink"
+    >
+      <option value="" disabled>
+        Select an evidence label
+      </option>
+      {options.map(([value, label]) => (
+        <option key={value} value={value}>
+          {label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /**
  * Signed nodes appear as soon as the API holds them, so a partial live save shows its one square.
  * In fixtures mode nothing is signed: the answers show as a preview, never as a signature.
@@ -81,12 +116,12 @@ function Chips<T extends string>({
 function trailFor(view: ReviewView, draft: Draft, done: Done | undefined, saved: SavedEvent[], mode: ApiMode): ChainNode[] {
   const answers = signaturesFor(draft, view.items).filter((s) => done || mode === "fixtures" || saved.some((x) => x.item === s.item));
   if (mode === "fixtures") {
-    const now = done ? OUTCOMES[done.outcome].next(view.unit) : { who: SIGNER.name, what: "your answers" };
+    const now = done ? OUTCOMES[done.outcome].next(view.unit, Boolean(view.items.link)) : { who: SIGNER.name, what: "your answers" };
     const preview: ChainNode[] = answers.map((s) => ({
       id: `preview-${s.item}`,
       kind: "current",
       who: SIGNER.name,
-      what: `preview, not saved: ${SIGNS[s.decision]} (as ${roleFor(s.decision)})`,
+      what: `preview, not saved: ${signWords(s.decision)} (as ${roleFor(s.decision)})`,
       when: "not saved",
     }));
     return [...view.trail, ...preview, { id: "now", kind: "current", ...now, when: done ? "if saved" : "waiting" }];
@@ -97,7 +132,7 @@ function trailFor(view: ReviewView, draft: Draft, done: Done | undefined, saved:
       id: `signed-${s.item}`,
       kind: "human",
       who: ev?.actor || SIGNER.name,
-      what: `${SIGNS[s.decision]} (as ${ev?.role || roleFor(s.decision)})`,
+      what: `${signWords(s.decision)} (as ${ev?.role || roleFor(s.decision)})`,
       when: "just now",
       hash: ev?.hash,
     };
@@ -116,10 +151,13 @@ export function ReviewDesk({
   next,
   waiting = true,
   settled,
+  sharedEvidence,
 }: {
   view: ReviewView;
   mode: ApiMode;
   next: NextCase;
+  /** Shared programme finding and reader projections from the case page. */
+  sharedEvidence?: React.ReactNode;
   /** False once the API no longer lists this case as open. The desk stays if the confirmation is still on screen. */
   waiting?: boolean;
   /** What to show instead of the desk when the case is not waiting. */
@@ -137,7 +175,13 @@ export function ReviewDesk({
   const q1 = useId();
   const q2 = useId();
 
-  const pending = outcomeOf(draft);
+  const hasLink = Boolean(view.items.link);
+  const hasEvidence = Boolean(view.items.evidence);
+  const evidenceOptions: [ReportAnswer, string][] = [
+    ...view.evidenceChoices.map((label) => [label, label] as [ReportAnswer, string]),
+    ...(view.programme === "crc" && hasEvidence ? [["ask", "Ask the unit"] as [ReportAnswer, string]] : []),
+  ];
+  const pending = outcomeOf(draft, view.items);
   const outcome = done && OUTCOMES[done.outcome];
   const live = mode === "live";
   const confirmedClosed = Boolean(live && done?.outcome === "close" && view.closed);
@@ -190,9 +234,11 @@ export function ReviewDesk({
 
   if (!waiting && !done) return <>{settled}</>;
 
-  const asks = draft.identity === "same";
+  const asks = hasEvidence && (!hasLink || draft.identity === "same");
+  const questionCount = hasLink && hasEvidence ? 2 : 1;
+  const evidenceNumber = hasLink ? 2 : 1;
   const announce = asks
-    ? "Question 2 of 2 is now showing: is the colonoscopy report adequate?"
+    ? `Question ${evidenceNumber} of ${questionCount} is now showing: ${view.evidenceQuestion}`
     : draft.identity === "different"
       ? "Not the same patient. There is no second question."
       : "";
@@ -207,7 +253,7 @@ export function ReviewDesk({
           </h2>
           <p className="m-0 mt-0.5 text-small text-muted">
             {live
-              ? `One signer, two answers: ${SIGNER.name} (${SIGNER.title}) gives both, each recorded under its own role. That is not independent double review.`
+              ? `One signer, ${hasLink && hasEvidence ? "two answers" : "one answer"}: ${SIGNER.name} (${SIGNER.title}) records each under its own role. Two roles from one person are not independent double review.`
               : "A reconstruction: nothing here is appended or saved. Signing needs the live API."}
           </p>
 
@@ -216,45 +262,47 @@ export function ReviewDesk({
               <div aria-live="polite" className="sr-only">
                 {announce}
               </div>
-              <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q1}-who`}>
-                <legend className="p-0 text-body font-medium">1. Is it the same patient?</legend>
-                <p id={`${q1}-who`} className="m-0 mt-0.5 text-small text-muted">
-                  Recorded as reviewer: {SIGNER.name}.
-                </p>
-                <Chips
-                  name={`${q1}-identity`}
-                  options={[
-                    ["same", "Same patient"],
-                    ["different", "Not the same patient"],
-                  ]}
-                  value={draft.identity}
-                  onPick={pickIdentity}
-                  disabled={saving}
-                />
-              </fieldset>
+              {hasLink && (
+                <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q1}-who`}>
+                  <legend className="p-0 text-body font-medium">1. Is it the same patient?</legend>
+                  <p id={`${q1}-who`} className="m-0 mt-0.5 text-small text-muted">
+                    Recorded as reviewer: {SIGNER.name}.
+                  </p>
+                  <Chips
+                    name={`${q1}-identity`}
+                    options={[
+                      ["same", "Same patient"],
+                      ["different", "Not the same patient"],
+                    ]}
+                    value={draft.identity}
+                    onPick={pickIdentity}
+                    disabled={saving}
+                  />
+                </fieldset>
+              )}
               <AnimatePresence initial={false}>
                 {asks && (
-                  <motion.div key="q2" {...appear} className="border-t border-rule pt-3">
-                    <fieldset className="m-0 min-w-0 border-0 p-0" aria-describedby={`${q2}-who ${q2}-ask`}>
-                      <legend className="p-0 text-body font-medium">2. Is the colonoscopy report adequate?</legend>
+                  <motion.div key="q2" {...appear} className={hasLink ? "border-t border-rule pt-3" : undefined}>
+                    <fieldset
+                      className="m-0 min-w-0 border-0 p-0"
+                      aria-describedby={`${q2}-who${view.programme === "crc" ? ` ${q2}-ask` : ""}`}
+                    >
+                      <legend className="p-0 text-body font-medium">
+                        {evidenceNumber}. {view.evidenceQuestion}
+                      </legend>
                       <p id={`${q2}-who`} className="m-0 mt-0.5 text-small text-muted">
-                        {view.disputed.length > 0 ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. ` : ""}
-                        One answer covers {view.disputed.length > 1 ? "all of them" : "it"}. Recorded as clinician: {SIGNER.name}, the same person as question 1.
+                        {view.disputed.length > 0
+                          ? `The readers could not settle: ${view.disputed.map((d) => d.says).join("; ")}. One answer covers ${view.disputed.length > 1 ? "all of them" : "it"}. `
+                          : "Use the exact programme evidence label. "}
+                        Recorded as clinician: {SIGNER.name}
+                        {hasLink ? ", the same person as question 1" : ""}.
                       </p>
-                      <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
-                        &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
-                      </p>
-                      <Chips
-                        name={`${q2}-report`}
-                        options={[
-                          ["adequate", "Adequate"],
-                          ["inadequate", "Not adequate"],
-                          ["ask", "Ask the unit"],
-                        ]}
-                        value={draft.report}
-                        onPick={pickReport}
-                        disabled={saving}
-                      />
+                      {view.programme === "crc" && (
+                        <p id={`${q2}-ask`} className="m-0 mt-0.5 text-small text-muted">
+                          &ldquo;Ask the unit&rdquo; is designed, not built: it records the identity answer only and sends nothing.
+                        </p>
+                      )}
+                      <EvidenceChoices name={`${q2}-report`} options={evidenceOptions} value={draft.report} onPick={pickReport} disabled={saving} />
                     </fieldset>
                   </motion.div>
                 )}
@@ -270,7 +318,9 @@ export function ReviewDesk({
                 </button>
               ) : (
                 <p className="m-0 text-small text-muted">
-                  {draft.identity === "same" ? "Answer the colonoscopy report question to sign." : "Answer both questions to sign."}
+                  {draft.identity === "same" && hasEvidence
+                    ? `Answer the evidence question to sign.`
+                    : `Answer ${hasLink && hasEvidence ? "both questions" : hasLink ? "the identity question" : "the evidence question"} to sign.`}
                 </p>
               )}
               {error && (
@@ -329,7 +379,7 @@ export function ReviewDesk({
                       <HonestyLabel kind="designed">Reconstruction: nothing was saved</HonestyLabel>
                     </div>
                     <p className="m-0 mt-2">
-                      No event was appended and no hash exists. If this were saved against the live API: {outcome.text(view.name.split(" ")[0], view.unit)}
+                      No event was appended and no hash exists. If this were saved against the live API: {outcome.text(view.name.split(" ")[0], view.unit, hasLink)}
                     </p>
                   </>
                 )}
@@ -378,14 +428,18 @@ export function ReviewDesk({
         </aside>
 
         <div className="flex min-w-0 flex-col gap-3 xl:col-start-1 xl:row-start-1">
-          <IdentityBridge view={view} answer={draft.identity} />
-          <ReadersTable
-            view={view}
-            signed={
-              outcome &&
-              (live ? recorded?.recordedAnswerCell : { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` })
-            }
-          />
+          {hasLink && <IdentityBridge view={view} answer={draft.identity} />}
+          {view.programme === "crc" ? (
+            <ReadersTable
+              view={view}
+              signed={
+                outcome &&
+                (live ? recorded?.recordedAnswerCell : { ...outcome.answerCell, word: `${outcome.answerCell.word.replace(", signed", "")} (preview, not saved)` })
+              }
+            />
+          ) : (
+            sharedEvidence
+          )}
         </div>
       </div>
     </MotionConfig>

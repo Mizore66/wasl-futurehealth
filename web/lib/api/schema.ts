@@ -671,13 +671,57 @@ export const Healthz = z.looseObject({
 });
 
 const CRC_DECISIONS = ["same", "different", "adequate", "inadequate", "confirm_contact"] as const;
-const LUNG_OUTCOMES = ["stable", "resolved", "growing", "suspicious_solid", "not_assessable"] as const;
+const LUNG_OUTCOMES = [
+  "stable",
+  "resolved",
+  "growing",
+  "suspicious_solid",
+  "not_assessable",
+  "pet_low",
+  "pet_avid",
+  "benign",
+  "nondiagnostic",
+  "malignant",
+] as const;
+const LUNG_TYPES = ["solid", "ground_glass", "part_solid"] as const;
+const LUNG_SIZES = ["<6", "6-8", ">8", ">=6"] as const;
+const LUNG_COUNTS = ["single", "multiple"] as const;
 /** Index-CT labels such as `solid/6-8/single` or `ground_glass/<6/multiple`. */
-const LUNG_INDEX_LABEL = /^[a-z_]+\/[^/\s]+\/[a-z]+$/;
+const LUNG_INDEX_LABEL = /^(solid|ground_glass|part_solid)\/(<6|6-8|>8|>=6)\/(single|multiple)$/;
 
 /** DR screening grades as the review endpoint accepts them: `R{0|1|2|3A|3S}M{0|1}`, optional `/urgent`, or `U`. */
 const DR_GRADE = /^(R(0|1|2|3A|3S)M[01](\/urgent)?|U)$/;
 const BREAST_LABELS = ["B0", "B1", "B2", "B3", "B4", "B5", "TR", ...BREAST_OUTCOMES] as const;
+
+const lungIndexLabels = LUNG_TYPES.flatMap((type) => LUNG_SIZES.flatMap((size) => LUNG_COUNTS.map((count) => `${type}/${size}/${count}`)));
+const drGradeLabels = ["0", "1", "2", "3A", "3S"].flatMap((r) => ["0", "1"].flatMap((m) => [`R${r}M${m}`, `R${r}M${m}/urgent`]));
+const ifhasScreenLabels = ["N", "H", "S"].flatMap((bp) =>
+  ["N", "P", "D", "S"].flatMap((glyc) => ["N", "H"].flatMap((lipid) => ["N", "O"].map((weight) => `bp=${bp};glyc=${glyc};lipid=${lipid};weight=${weight}`))),
+);
+function ifhasFollowupLabels(): string[] {
+  const labels = ["dna"];
+  const statuses = ["managed", "not_confirmed", "pending"];
+  const visit = (index: number, parts: string[]) => {
+    if (index === IFHAS_DOMAINS.length) {
+      if (parts.length > 0) labels.push(parts.join(";"));
+      return;
+    }
+    visit(index + 1, parts);
+    for (const status of statuses) visit(index + 1, [...parts, `${IFHAS_DOMAINS[index]}=${status}`]);
+  };
+  visit(0, []);
+  return labels;
+}
+
+/** Every evidence label the corresponding backend programme accepts, including procedure and structured-result labels. */
+export const GUIDED_EVIDENCE_LABELS: Record<"crc" | "lung_nodule" | "diabetic_retinopathy" | "breast" | "lung_ldct" | "ifhas", string[]> = {
+  crc: ["adequate", "inadequate"],
+  lung_nodule: [...LUNG_OUTCOMES, ...lungIndexLabels],
+  diabetic_retinopathy: [...drGradeLabels, "U", ...DR_OUTCOMES],
+  breast: [...BREAST_LABELS],
+  lung_ldct: [...LDCT_LABELS, ...LDCT_WORKUP_LABELS],
+  ifhas: [...ifhasScreenLabels, ...ifhasFollowupLabels()],
+};
 
 export const ReviewDecision = z.union([
   z.enum(CRC_DECISIONS),
