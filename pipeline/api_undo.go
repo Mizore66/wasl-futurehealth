@@ -56,7 +56,8 @@ func (s *apiServer) undoRoutes(next http.HandlerFunc) http.HandlerFunc {
 		}
 		switch r.Method {
 		case http.MethodGet:
-			writeJSONResp(w, 200, s.envelope(s.undoProjection(id)))
+			viewer := apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
+			writeJSONResp(w, 200, s.envelope(s.undoProjectionFor(id, &viewer)))
 		case http.MethodPost:
 			s.caseUndo(w, r, c)
 		default:
@@ -221,12 +222,11 @@ func validateBaseReviewEvent(ev map[string]interface{}) error {
 func validateLedgerSemantics(evs []map[string]interface{}) error {
 	byHash := map[string]map[string]interface{}{}
 	var prior []map[string]interface{}
+	proto := map[reviewQuestionKey]*reviewProtocolState{}
 	for i, ev := range evs {
 		bad := func(msg string) error { return fmt.Errorf("review ledger event %d: %s", i+1, msg) }
 		// Coordinator events share the hash chain but are schema-validated by loadReviews, not by undo semantics.
-		// Double-review reads likewise share the chain and are protocol-validated by loadReviews (replayDoubleRead); keeping
-		// them in byHash means an undo or contest that targets one is refused as "not a review event".
-		if t := sstr(ev, "type"); t == coordEventType || t == doubleReviewType {
+		if sstr(ev, "type") == coordEventType {
 			byHash[sstr(ev, "hash")] = ev
 			prior = append(prior, ev)
 			continue
@@ -235,6 +235,11 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 		if kind == "review" {
 			if err := validateBaseReviewEvent(ev); err != nil {
 				return bad(err.Error())
+			}
+			if hasProtocolFields(ev) { // the same transition validator the POST handler and the replay use
+				if err := applyReviewProtocol(proto, ev); err != nil {
+					return bad("independent review: " + err.Error())
+				}
 			}
 		} else {
 			if kind != evKindUndo && kind != evKindContest && kind != evKindResolution {
@@ -247,6 +252,9 @@ func validateLedgerSemantics(evs []map[string]interface{}) error {
 			t := byHash[tgt]
 			if t == nil || sstr(t, "case") != sstr(ev, "case") {
 				return bad("target is not an earlier event of the same case")
+			}
+			if isProtocolEvent(t) {
+				return bad("an independent review read cannot be undone or contested")
 			}
 			events := caseOf(prior, sstr(ev, "case"))
 			status, _ := foldUndo(events)
@@ -403,9 +411,18 @@ func (s *apiServer) caseEvents(id string) []map[string]interface{} {
 
 // undoProjection is the read model. canonical_state comes from the pipeline decision and is never changed by it.
 func (s *apiServer) undoProjection(id string) map[string]interface{} {
+	return s.undoProjectionFor(id, nil)
+}
+
+// undoProjectionFor hides first reads concealed from the viewer (hash, actor and status) so this route is not a side channel.
+func (s *apiServer) undoProjectionFor(id string, viewer *apiPrincipal) map[string]interface{} {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.undoProjectionLocked(id, s.caseEvents(id))
+	events := s.caseEvents(id)
+	if viewer != nil {
+		events = viewerEvents(events, s.concealedHashesLocked(*viewer))
+	}
+	return s.undoProjectionLocked(id, events)
 }
 
 func (s *apiServer) undoProjectionLocked(id string, events []map[string]interface{}) map[string]interface{} {
@@ -512,6 +529,10 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 		fail(404, "target is not a review event of this case", "target", req.Target)
 		return
 	}
+	if isProtocolEvent(target) {
+		fail(409, "an independent review read cannot be undone or contested in this version", "target", req.Target)
+		return
+	}
 	status, _ := foldUndo(events)
 	kind := evKind(target)
 	targetAction := sstr(target, "action")
@@ -595,8 +616,8 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 	}
 	s.reviews = append(s.reviews, ev)
 
-	body := map[string]interface{}{"event": ev, "canonical_reopened": false, "auto_closure": false,
-		"canonical_state": c.State, "projection": s.undoProjectionLocked(c.ID, s.caseEvents(c.ID))}
+	body := map[string]interface{}{"event": s.shownEventLocked(ev, apiPrincipal{role: role, actor: actor}), "canonical_reopened": false, "auto_closure": false,
+		"canonical_state": c.State, "projection": s.undoProjectionLocked(c.ID, viewerEvents(s.caseEvents(c.ID), s.concealedHashesLocked(apiPrincipal{role: role, actor: actor})))}
 	switch evKindNew {
 	case evKindContest:
 		body["requires_resolution"] = true

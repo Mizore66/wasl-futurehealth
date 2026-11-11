@@ -19,6 +19,7 @@ import {
   Dashboard,
   Fixtures,
   Healthz,
+  ReviewError,
   ReviewRequest,
   ReviewResponse,
   UndoProjection,
@@ -50,21 +51,20 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
 
 /**
- * The server-side variable holding a role's own credential, e.g. `WASL_API_REVIEWER_TOKEN`. Independent double review
- * (lib/api/double-review.ts) passes only a `Role`, so it never sends the governance credentials (`_2_`, `_3_`).
+ * `web_reviewer` is the credential for generic shared reads (dashboard, lists, case detail on shared pages). It is bound
+ * to its own non-reader actor, so a first read concealed from everyone but its author is concealed from these pages too.
+ * It never falls back to the assigned reviewer tokens, which are initial readers.
  */
-export function credentialName(role: Role): string {
-  return `WASL_API_${role.toUpperCase()}_TOKEN`;
-}
+export type WebCredential = "web_reviewer";
 
-function apiToken(credential: Role | GovernanceCredential): string {
+function apiToken(credential: Role | GovernanceCredential | WebCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();
   if (!token) throw new Error(`${name} is required for the live synthetic API`);
   return token;
 }
 
-export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential): RequestInit {
+export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential | WebCredential): RequestInit {
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${apiToken(credential)}`);
   return { cache: "no-store", ...init, headers };
@@ -74,7 +74,7 @@ export function liveBase(): string {
   return process.env.WASL_API_URL!.replace(/\/$/, "");
 }
 
-async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role = "reviewer"): Promise<z.infer<S> | null> {
+async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role | WebCredential = "web_reviewer"): Promise<z.infer<S> | null> {
   const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
@@ -349,4 +349,53 @@ export async function getHealthz(): Promise<Healthz> {
     return health;
   }
   return fixture(Healthz, "healthz.json");
+}
+
+/**
+ * Raw-token review helpers. The reviewer's own assigned API token is the credential, sent as-is on GET and POST;
+ * the API binds it to a role and actor, so no identity header is ever sent. The shared role tokens above are untouched.
+ */
+function bearer(init: RequestInit | undefined, token: string): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("authorization", `Bearer ${token}`);
+  return { cache: "no-store", ...init, headers };
+}
+
+export type ReviewerCaseResult =
+  | { ok: true; detail: CaseDetail }
+  | { ok: false; status: 401 | 403 | 404 };
+
+/** One case as the holder of `token` may see it (concealed first reads stay concealed). Other statuses throw. */
+export async function getCaseWithToken(id: string, token: string): Promise<ReviewerCaseResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
+  if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
+  return { ok: true, detail: CaseDetail.parse(await res.json()) };
+}
+
+export type ReviewReadResult =
+  /** `response` is null when the event was appended (201) but its body could not be parsed. */
+  | { ok: true; status: 201; response: ReviewResponse | null }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409; error: string; currentHead?: string };
+
+/** Appends one independent-review read with the reviewer's own token. 400/401/403/404/409 are refusals, never successes. */
+export async function postReviewWithToken(id: string, body: ReviewRequest, token: string): Promise<ReviewReadResult> {
+  const request = ReviewRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  const route = `/api/cases/${encodeURIComponent(id)}/review`;
+  const res = await fetch(
+    liveBase() + route,
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, token),
+  );
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) {
+    const saved = ReviewResponse.safeParse(json);
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
+  if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const e = ReviewError.safeParse(json);
+    return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}`, currentHead: e.success ? e.data.current_head : undefined };
+  }
+  throw new Error(`POST review: HTTP ${res.status}`);
 }

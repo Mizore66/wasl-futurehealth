@@ -2,14 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
-import { DoubleReviewReadsCard } from "@/components/review/double-review/reads-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
-import { caseStage } from "@/lib/domain/stage";
+import { allQuestionsResolved, caseStage, resolvedItems } from "@/lib/domain/stage";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
@@ -59,7 +58,10 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
   const due = caseDeadlineDays(c);
   const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
-  const waiting = c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item));
+  /* Independent review: only a terminal state on every question clears waiting, even while canonical review is still open. */
+  const waiting = allQuestionsResolved(detail)
+    ? false
+    : c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item) && !resolvedItems(detail).has(r.item));
   const [latest, ...earlier] = [...detail.evidence].reverse();
 
   return (
@@ -223,7 +225,6 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           ))}
           <ConsentCard detail={detail} />
           <SignoffsCard detail={detail} />
-          <DoubleReviewReadsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>
         <div className="flex min-w-0 flex-col gap-gap">

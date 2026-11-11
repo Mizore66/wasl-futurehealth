@@ -35,18 +35,31 @@ fd = os.open(os.environ["WASL_KEYRING_PATH"], os.O_WRONLY | os.O_CREAT | os.O_EX
 with os.fdopen(fd, "w") as handle:
     handle.write(json.dumps(doc, sort_keys=True, indent=2) + "\n")
 PY
-for user in coordinator clinician reviewer auditor; do
+# Distinct credentials for the independent double-review protocol (wasl-independent-review/1): two ordinary
+# initial reviewers and clinicians plus one senior of each discipline. Names are the API actor identities. The first
+# reviewer/clinician keep their original names and password files (the health check reads them); the added identities
+# live only in api_users.json. Nothing is printed.
+specs=""
+for entry in coordinator:coordinator clinician:clinician reviewer:reviewer reviewer-2:reviewer senior-reviewer:senior_reviewer \
+             clinician-2:clinician senior-clinician:senior_clinician auditor:auditor; do
+  user="${entry%%:*}"; role="${entry#*:}"
   password="$(openssl rand -hex 24)"
-  printf '%s\n' "$password" > "$dir/api_${user}_password"
-  variable="WASL_BOOTSTRAP_$(printf '%s' "$user" | tr '[:lower:]' '[:upper:]')"
+  slug="$(printf '%s' "$user" | tr '-' '_')"
+  case "$user" in coordinator|clinician|reviewer|auditor) printf '%s\n' "$password" > "$dir/api_${slug}_password";; esac
+  variable="WASL_BOOTSTRAP_$(printf '%s' "$slug" | tr '[:lower:]' '[:upper:]')"
   export "$variable=$password"
+  specs="$specs $user:$role:$variable"
 done
-WASL_BOOTSTRAP_DIR="$dir" python3 - <<'PY'
+WASL_BOOTSTRAP_DIR="$dir" WASL_BOOTSTRAP_SPECS="$specs" python3 - <<'PY'
 import json, os
 from pathlib import Path
 root = Path(os.environ["WASL_BOOTSTRAP_DIR"])
-users = {role: {"password": os.environ["WASL_BOOTSTRAP_" + role.upper()], "role": role}
-         for role in ("coordinator", "clinician", "reviewer", "auditor")}
+users = {}
+for spec in os.environ["WASL_BOOTSTRAP_SPECS"].split():
+    name, role, variable = spec.split(":")
+    users[name] = {"password": os.environ[variable], "role": role}
+if len({u["password"] for u in users.values()}) != len(users) or len({n.lower() for n in users}) != len(users):
+    raise SystemExit("bootstrap credentials are not distinct")
 (root / "api_users.json").write_text(json.dumps(users, sort_keys=True) + "\n")
 PY
 openssl req -x509 -newkey rsa:3072 -sha256 -days 3650 -nodes -subj '/CN=Wasl recovery test CA' \

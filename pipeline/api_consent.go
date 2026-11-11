@@ -32,10 +32,20 @@ var consentEvents = map[string]string{ // event -> overlay status
 }
 
 // apiContactOverlay derives the separate api_contact overlay (status plus demo_pending_consent, never canonical case.consent) for one case from the review ledger.
-func (s *apiServer) apiContactOverlay(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
+// An optional verified viewer hides consent events that chain on a concealed first read (prev); no viewer = unfiltered
+// (internal callers and the auditor-only export).
+func (s *apiServer) apiContactOverlay(c *apiCase, viewer ...apiPrincipal) (map[string]interface{}, []map[string]interface{}) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.overlayLocked(c)
+	o, h := s.overlayLocked(c)
+	if len(viewer) > 0 {
+		h = viewerEvents(h, s.concealedHashesLocked(viewer[0]))
+	}
+	return o, h
+}
+
+func requestViewer(r *http.Request) apiPrincipal {
+	return apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
 }
 
 func (s *apiServer) overlayLocked(c *apiCase) (map[string]interface{}, []map[string]interface{}) {
@@ -94,7 +104,7 @@ func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {
 		case sub == "" && r.Method == http.MethodGet:
 			rec := &bufRecorder{h: http.Header{}, code: 200}
 			next(rec, r)
-			out, ok := spliceAPIContact(rec.buf.Bytes(), s, c)
+			out, ok := spliceAPIContact(rec.buf.Bytes(), s, c, requestViewer(r))
 			if rec.code != 200 || !ok {
 				rec.copyTo(w)
 				return
@@ -114,12 +124,12 @@ func (s *apiServer) withConsent(next http.HandlerFunc) http.HandlerFunc {
 
 // spliceAPIContact appends "api_contact" to the upstream JSON object by byte splicing, so every upstream value
 // (large integers, ids, timestamps, escapes, key order) is kept exactly as the detail handler wrote it.
-func spliceAPIContact(body []byte, s *apiServer, c *apiCase) ([]byte, bool) {
+func spliceAPIContact(body []byte, s *apiServer, c *apiCase, viewer ...apiPrincipal) ([]byte, bool) {
 	t := bytes.TrimRight(body, " \t\r\n")
 	if !json.Valid(t) || len(t) < 2 || t[0] != '{' || t[len(t)-1] != '}' {
 		return nil, false
 	}
-	o, h := s.apiContactOverlay(c)
+	o, h := s.apiContactOverlay(c, viewer...)
 	ac, err := json.Marshal(map[string]interface{}{"overlay": o, "history": h})
 	if err != nil {
 		return nil, false
@@ -183,7 +193,7 @@ func (s *apiServer) consentRoute(w http.ResponseWriter, r *http.Request, rawID s
 	}
 	switch r.Method {
 	case http.MethodGet:
-		o, h := s.apiContactOverlay(c)
+		o, h := s.apiContactOverlay(c, requestViewer(r))
 		writeJSONResp(w, 200, s.envelope(map[string]interface{}{"case": c.ID, "overlay": o, "history": h}))
 	case http.MethodPost:
 		s.postConsent(w, r, c)
@@ -242,7 +252,7 @@ func (s *apiServer) postConsent(w http.ResponseWriter, r *http.Request, c *apiCa
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
 		o, _ := s.overlayLocked(c)
-		return 201, map[string]interface{}{"review": stored, "overlay": o,
+		return 201, map[string]interface{}{"review": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "overlay": o,
 			"note": "appended to the review ledger; demo overlay only. Canonical consent and outreach are unchanged and nothing was sent."}
 	}()
 	writeJSONResp(w, code, s.envelope(body))

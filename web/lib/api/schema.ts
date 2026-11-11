@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { DoubleReviewEvent, blindOpenReads } from "./double-review-schema";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -549,21 +548,8 @@ const tag =
   <L extends string>(ledger: L) =>
   <T extends object>(e: T) => ({ ...e, ledger });
 
-/**
- * Any entry with `type: "double_review"`: a read when it parses as one, otherwise an explicit `unknown` entry (which
- * carries no decision or note). Either way it is settled here, first in each union below, so a double-review event
- * with one wrongly typed field can never fall through to a single-signer review shape and be counted, shown or
- * offered undo/contest as a sign-off.
- */
-const DoubleReviewEntry = z.looseObject({ type: z.literal("double_review") }).transform((raw) => {
-  const read = DoubleReviewEvent.safeParse(raw);
-  return read.success ? tag("double_review")(read.data) : UnknownLedgerEvent.parse(raw);
-});
-
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
-  /* Double-review entries first: they carry review-like fields but are never single-signer reviews (block at the end). */
-  DoubleReviewEntry,
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
   ApiReview.transform(tag("review")),
@@ -571,7 +557,6 @@ export const LedgerEvent = z.union([
 ]);
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
-  DoubleReviewEntry,
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReview.transform(tag("review")),
@@ -597,6 +582,31 @@ export const CurrentDecision = z.looseObject({
   ifhas: IfhasFinding.optional(),
 });
 
+export const ReviewSlot = z.enum(["r1", "r2", "r3"]);
+
+/** One read slot of an independent review. Concealed initial answers carry no decision or hash. */
+export const ReviewRead = z.looseObject({
+  read: ReviewSlot,
+  submitted: z.boolean(),
+  decision: z.string().optional(),
+  hash: z.string().optional(),
+});
+
+/** One (item, question) independent-review state machine as the API projects it for the calling credential. */
+export const ReviewState = z.looseObject({
+  item: z.string(),
+  question: z.enum(["link", "evidence"]),
+  state: z.enum(["awaiting_r1", "awaiting_r2", "awaiting_r3", "resolved_agreed", "resolved_senior"]),
+  head: z.string(),
+  next_read: ReviewSlot.nullable(),
+  may_submit: z.boolean(),
+  reads: z.array(ReviewRead),
+  disagreement: z.boolean(),
+  final_decision: z.string().optional(),
+  resolution_basis: z.string().optional(),
+  canonical_unchanged: z.literal(true),
+});
+
 export const CaseDetail = withMeta({
   case: CaseSummary,
   identities: z.array(Identity),
@@ -609,12 +619,14 @@ export const CaseDetail = withMeta({
   review_items: z.array(ReviewItem),
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
-  api_reviews: z.array(LedgerEvent).transform(blindOpenReads),
+  api_reviews: z.array(LedgerEvent),
   /** Separate demo contact overlay; canonical case consent and outreach stay untouched. */
   api_contact: ApiContact.optional(),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
   review_ledger: ReviewLedger.optional(),
+  /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
+  api_review_states: z.array(ReviewState).optional(),
   current: CurrentDecision,
   booking: Booking,
 });
@@ -630,7 +642,7 @@ export const Audit = withMeta({
   /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
   anchors: z.record(z.string(), z.string()).default({}),
   anchor_note: z.string().optional(),
-  history: z.array(AuditLedgerEvent).transform(blindOpenReads),
+  history: z.array(AuditLedgerEvent),
 });
 
 export const CaseList = withMeta({
@@ -797,13 +809,23 @@ export const ReviewDecision = z.union([
   IfhasFollowupLabel,
 ]);
 
+/** `read` and `expected_head` are additive: a request without them is the legacy append-only review event. */
 export const ReviewRequest = z.object({
   item: z.string(),
   decision: ReviewDecision,
   note: z.string().default(""),
+  read: ReviewSlot.optional(),
+  expected_head: z.string().optional(),
 });
 
-export const ReviewResponse = withMeta({ review: ApiReview, note: z.string().optional() });
+export const ReviewResponse = withMeta({
+  review: ApiReview,
+  note: z.string().optional(),
+  api_review_states: z.array(ReviewState).optional(),
+});
+
+/** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
+export const ReviewError = withMeta({ error: z.string(), current_head: z.string().optional() });
 
 /** GET /api/cases/{id}/undo: a projection only; canonical_state is reported for comparison, never rewritten. */
 export const UndoStatus = z.enum(["", "active", "contested", "compensated", "open", "upheld", "rejected", "applied"]);
@@ -881,6 +903,10 @@ export type Dashboard = z.infer<typeof Dashboard>;
 export type Healthz = z.infer<typeof Healthz>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
+export type ReviewRead = z.infer<typeof ReviewRead>;
+export type ReviewState = z.infer<typeof ReviewState>;
+export type ReviewSlot = z.infer<typeof ReviewSlot>;
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string };
 export type UndoRequest = z.input<typeof UndoRequest>;
 export type ContestRequest = z.input<typeof ContestRequest>;
 export type ContestResolutionRequest = z.input<typeof ContestResolutionRequest>;
@@ -900,18 +926,3 @@ export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
 export type ActionResponse = z.infer<typeof ActionResponse>;
-
-/* ---- Independent double review (issue #41; docs/API-DOUBLE-REVIEW.md) ----
- * The shapes live in ./double-review-schema so the ledger unions above can list the read event first without an import
- * cycle. A `type: "double_review"` entry in `api_reviews` or audit `history` is tagged `ledger: "double_review"` when
- * it parses as a read, and `ledger: "unknown"` when it does not; never `ledger: "review"`.
- */
-export {
-  DoubleReadRequest,
-  DoubleReadResponse,
-  DoubleReviewError,
-  DoubleReviewEvent,
-  DoubleReviewRound,
-  DoubleReviewState,
-} from "./double-review-schema";
-export type { DoubleReadView, Phase as DoubleReviewPhase, ReadName } from "./double-review-schema";

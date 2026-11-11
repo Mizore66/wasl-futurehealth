@@ -209,7 +209,7 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    ```bash
    umask 077
    for r in reviewer reviewer-2 reviewer-3 clinician clinician-2 clinician-3 auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
-   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):senior_reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):senior_clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
    scripts/deploy_up.sh -d                            # detached: does not attach to the logs
    until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
    curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
@@ -220,6 +220,13 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
    characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
    `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
+   The command above already binds the third reviewer and clinician tokens to `senior_reviewer` / `senior_clinician`
+   (credentials 1 and 2 stay `reviewer` / `clinician`), each with a different actor. Two tokens bound to the same actor are not independent and the API refuses
+   the second read. Reviewers sign in on the website with their own assigned bearer token (HttpOnly cookie, HTTPS required). This bearer-token form is the synthetic-demo path.
+   `scripts/production_secrets.sh` generates, for the Basic-auth production package, `api_users.json` entries `reviewer`, `reviewer-2`,
+   `senior-reviewer`, `clinician`, `clinician-2`, `senior-clinician`, `coordinator` and `auditor`, each with its own
+   random password, without printing them. These credentials identify configured actors, not separate humans; there is
+   no OIDC. **Limitation:** the Basic-auth production package exposes independent review through its API only; the web sign-in form accepts bearer tokens, so those Basic passwords do not work in it and there is no production web path for independent review yet. The smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
 2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
    on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
 3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
@@ -228,25 +235,18 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | Variable | Value | Used for |
    |---|---|---|
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
-   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review, governance, and this deployment's one double-review read of link items |
+   | `WASL_API_WEB_REVIEWER_TOKEN` | a token bound to a reviewer-role actor that is **not** an assigned reader | dashboard, lists and case detail on shared pages; never an r1/r2 credential |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | link/evidence review and governance |
    | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
-   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | a contest resolver independent of both prior actors |
-   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions, and this deployment's one double-review read of evidence items |
+   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | the senior_reviewer: r3 resolution of a disagreement (and contest resolver) independent of both initial readers |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |
    | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | independent evidence/contest actions and consent resolution |
-   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | an evidence contest resolver independent of both prior actors |
+   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | the senior_clinician: r3 resolution of an evidence disagreement (and contest resolver) independent of both initial readers |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
-
-   Independent double review ([`API-DOUBLE-REVIEW.md`](API-DOUBLE-REVIEW.md)) uses only `WASL_API_REVIEWER_TOKEN` and
-   `WASL_API_CLINICIAN_TOKEN`, never the `_2_`/`_3_` credentials, so a hosted site is **one** double-review reader.
-   It can give at most one read of an item and shows only its own blinded answer. The second initial read and any
-   senior read must come from other people's credentials: another deployment, or a direct API client. Per-person web
-   sign-in, which would map each signed-in person to exactly one credential, is **designed, not built**. Bind every
-   credential to one canonical actor name per human. The API compares actors trimmed and case-insensitive, so it cannot
-   tell that two different names, or lookalike names, belong to one person.
 
 The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
 `X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the

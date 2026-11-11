@@ -104,6 +104,7 @@ describe("GET /app/today/ledger", () => {
   it("reads the one selected case with the server-side token and returns its persisted trail", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-secret-1234567890");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(load("ledger_partial_case_detail.json")), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const res = await GET(req(`?id=${encodeURIComponent(partial.case.id)}`));

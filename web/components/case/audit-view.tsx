@@ -7,6 +7,7 @@ import type { GovernanceCredential } from "@/lib/api/source";
 import { Card } from "./sections";
 import { GovernanceControls } from "./governance-controls";
 import { cn } from "@/lib/utils";
+import { protocolRead, READ_LABEL } from "@/lib/domain/stage";
 import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
 
 /** Full hash on a disclosure; the short form is for comparing by eye. */
@@ -203,7 +204,10 @@ export function HistoryCard({
             return (
               <li key={r.hash || `unknown-${i}`} id={r.hash ? `review-event-${r.hash}` : undefined} className="scroll-mt-4 border-t border-rule py-3">
                 {r.ledger === "review" ? (
-                  <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
+                  <p className="m-0 font-medium">
+                    {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
+                    {r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}
+                  </p>
                 ) : (
                   /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
                   <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
@@ -239,7 +243,7 @@ export function HistoryCard({
                   {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
                   {r.hash && <Hash label="Hash" value={r.hash} />}
                 </p>
-                {governance && r.ledger === "review" && eventStatus === "active" && credentials.length > 1 && (
+                {governance && r.ledger === "review" && !protocolRead(r) && eventStatus === "active" && credentials.length > 1 && (
                   <div className="mt-1 grid gap-2 sm:grid-cols-2">
                     <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" credentials={credentials} />
                     {!rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" credentials={credentials} />}

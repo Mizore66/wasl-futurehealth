@@ -65,6 +65,7 @@
     ],
     "owner": ""
   },
+  "api_review_states": [],
   "api_reviews": [
     {
       "action": "coordinate_case",

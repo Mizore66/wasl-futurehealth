@@ -164,7 +164,7 @@ func (s *apiServer) handler(tokenConfig, originConfig string) (http.Handler, err
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
-	caseAPI := s.doubleReviewRoutes(s.withConsent(s.undoRoutes(s.caseRoutes))) // /double-review: api_double_review.go
+	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)

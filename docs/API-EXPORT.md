@@ -129,6 +129,10 @@ the text produced by Go's marshaller (integers exact, floats in shortest round-t
 through float64. A verifier must also parse with number-preserving decoding (or only reserialise via the same rules);
 a parser that converts integers above 2^53 to doubles will not reproduce either hash.
 
+### Independent-review events
+
+Protocol events keep `protocol`, `read`, `question`, `expected_head`, `resolution_reads`, `prev` and `hash` so slot order and the `r3` links to `r1`/`r2` stay verifiable; `actor`, `target_actor` and `note` are removed as for every other event. Decisions of unresolved questions are not served to the second reader; the export is auditor-only. `scripts/api_smoke.py` checks this with planted note and actor canaries.
+
 ## Remaining privacy limits
 
 - Redaction is **not mathematical proof of de-identification** and not a guarantee that no clinical content remains.

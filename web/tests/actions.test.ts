@@ -14,6 +14,7 @@ afterEach(() => {
 
 const TOKENS = {
   WASL_API_REVIEWER_TOKEN: "reviewer-secret-1234567890",
+  WASL_API_WEB_REVIEWER_TOKEN: "web-reviewer-secret-1234567890",
   WASL_API_CLINICIAN_TOKEN: "clinician-secret-1234567890",
   WASL_API_AUDITOR_TOKEN: "auditor-secret-1234567890",
   WASL_API_COORDINATOR_TOKEN: "coordinator-secret-1234567890",
@@ -38,7 +39,7 @@ describe("live API per-role tokens", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(getDashboard()).rejects.toThrow("HTTP 500");
     expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.test/api/dashboard");
-    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("authorization")).toBe(`Bearer ${TOKENS.WASL_API_REVIEWER_TOKEN}`);
+    expect(new Headers(fetchMock.mock.calls[0][1].headers).get("authorization")).toBe(`Bearer ${TOKENS.WASL_API_WEB_REVIEWER_TOKEN}`);
   });
 
   it("refuses to make a live request without the role's token", async () => {
