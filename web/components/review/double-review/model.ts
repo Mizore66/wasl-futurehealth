@@ -167,10 +167,10 @@ function whyNot(round: DoubleReviewRound, phase: Phase, viewer: string, hasChoic
   if (phase === "agreed") return "The two initial reads agree, so no senior read is needed.";
   const mine = [round.reads.r1, round.reads.r2].find((r) => r && isOwn(r.actor, viewer));
   if (phase === "disagreement") {
-    if (mine) return `This deployment gave ${mine.read} as ${viewer}. The senior read must come from a third person.`;
+    if (mine) return `This deployment gave ${mine.read} as ${viewer}. The senior read must come from a third actor.`;
     return "This deployment's credential may not give the senior read for this question.";
   }
-  if (mine) return `You gave ${mine.read} as ${mine.actor}. The other initial read must come from a different person.`;
+  if (mine) return `You gave ${mine.read} as ${mine.actor}. The other initial read must come from a different actor.`;
   if (!hasChoices) return "This programme's answer labels are accepted by the API but have no form on this page yet.";
   return "This deployment's credential may not answer this question.";
 }
@@ -188,7 +188,7 @@ export function readsByItem<E extends Pick<DoubleReviewEvent, "item" | "kind">>(
 /** Plain words for the API's refusal codes. */
 export function refusalWords(f: { status: number; error: string; reason?: string; conflict?: string }): string {
   if (f.status === 403 && f.reason === "same_actor") {
-    return `Not saved: the API refused because this deployment's credential belongs to someone who already read this item. ${f.error}.`;
+    return `Not saved: the API refused because the actor bound to this deployment's credential already read this item. ${f.error}.`;
   }
   if (f.status === 403) return `Not saved: this deployment's credential is not allowed to answer this question (${f.error}).`;
   if (f.status === 409 && f.conflict === "head") return "Not saved: someone else read this item since the page loaded. The page now shows the current state; answer again.";

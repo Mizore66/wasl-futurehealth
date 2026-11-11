@@ -274,8 +274,8 @@ test.describe("independent double review, live mode against a mock API", () => {
     await expect(linkRound(page)).toContainText("Initial reads disagree: senior read open");
     await expect(linkRound(page).getByTestId("read-r1")).toContainText("Not the same patient · mock-other-2");
     await expect(linkRound(page).getByTestId("read-r2")).toContainText("Same patient · your read, as mock-reviewer-1");
-    // It gave an initial read, so it cannot resolve: the senior read must come from a third person.
-    await expect(linkRound(page).getByTestId("why")).toHaveText("This deployment gave r2 as mock-reviewer-1. The senior read must come from a third person.");
+    // It gave an initial read, so it cannot resolve: the senior read must come from a third actor.
+    await expect(linkRound(page).getByTestId("why")).toHaveText("This deployment gave r2 as mock-reviewer-1. The senior read must come from a third actor.");
     await expect(page.getByRole("button", { name: "Record the senior read" })).toHaveCount(0);
 
     // A third person resolves through their own credential.
@@ -308,7 +308,7 @@ test.describe("independent double review, live mode against a mock API", () => {
     await linkRound(page).getByRole("radio", { name: "Same patient", exact: true }).check();
     await linkRound(page).getByRole("button", { name: "Record your read" }).click();
     await expect(linkRound(page).getByTestId("read-r1")).toContainText("Same patient · your read, as mock-reviewer-1");
-    await expect(linkRound(page).getByTestId("why")).toHaveText("You gave r1 as mock-reviewer-1. The other initial read must come from a different person.");
+    await expect(linkRound(page).getByTestId("why")).toHaveText("You gave r1 as mock-reviewer-1. The other initial read must come from a different actor.");
     await expect(linkRound(page).getByRole("button", { name: "Record your read" })).toHaveCount(0);
 
     // A leftover ?seat= link changes nothing: there is no seat to switch to.

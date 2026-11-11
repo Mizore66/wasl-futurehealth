@@ -43,8 +43,9 @@ function CellRow({ cell, programme }: { cell: ReadCell; programme: Programme }) 
 
 /**
  * Independent double review for one case, as this deployment's one credential per question role sees it.
- * Server-rendered from `ownView` of the API's blinded view: while a round awaits its initial reads, the only answer
- * that can reach this page's HTML or RSC payload is this deployment's own.
+ * Server-rendered from `ownView` of the API's blinded view: unless the API reports the round revealed AND both r1 and
+ * r2 are present, the only answer that can reach this page's HTML or RSC payload is this deployment's own (judged by
+ * actor name), and no settled answer is shown.
  */
 export function DoubleReviewPanel({ caseId, programme, items, views }: { caseId: string; programme: Programme; items: DoubleItem[]; views: DeskView[] }) {
   const own = views.map((v) => (v.status === "ok" ? { ...v, state: ownView(v.state) } : v));
@@ -58,10 +59,11 @@ export function DoubleReviewPanel({ caseId, programme, items, views }: { caseId:
         <HonestyLabel kind="built">Built: demo review log, synthetic patients</HonestyLabel>
       </div>
       <p className="m-0 mt-1 max-w-[80ch] text-small text-muted">
-        Two different people read each item without seeing each other&rsquo;s answer; if they disagree, a third person resolves it. This deployment
-        is one reader: it answers with a single server-held credential per question, and the API records the person bound to it. It can give at
-        most one read of each item, and the API refuses a second initial read by the same person. The other reads come from other people,
-        through their own credentials. Signing in as different people on this page is designed, not built.
+        Two different actors read each item without seeing each other&rsquo;s answer; if they disagree, a third actor resolves it. This deployment
+        is one reader: it answers with a single server-held credential per question, and the API records the actor name bound to it. It can give
+        at most one read of each item, and the API refuses a second read by the same actor. The API compares actor names only, so the reads are
+        independent only if the operator issues one actor name per person. The other reads come through other credentials. Signing in as
+        different people on this page is designed, not built.
       </p>
 
       <ul className="m-0 mt-3 list-none p-0 text-small" aria-label="Who this deployment is recorded as">
