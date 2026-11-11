@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "source": {
-    "revision": "23536198371b5dea19a3419ce832d3cfcc6291cb",
-    "committed_at": "2026-11-11T04:27:14Z"
+    "revision": "7ad364c71862a8a4567f701e11df6468b81a4dc2",
+    "committed_at": "2026-11-11T08:33:30Z"
   },
   "scanner": {
     "name": "trivy",
@@ -13,21 +13,21 @@
     "machine": "arm64"
   },
   "summary": {
-    "packages": 760,
-    "with_discovered_license": 632,
+    "packages": 767,
+    "with_discovered_license": 639,
     "without_discovered_license": 128,
     "license_counts": {
       "(MIT OR CC0-1.0)": 1,
       "0BSD": 1,
       "Apache-2.0": 36,
-      "BSD-2-Clause": 11,
+      "BSD-2-Clause": 12,
       "BSD-3-Clause": 11,
       "BlueOak-1.0.0": 3,
       "CC-BY-4.0": 1,
       "CC0-1.0": 1,
       "ISC": 20,
       "LGPL-3.0-or-later": 1,
-      "MIT": 541,
+      "MIT": 547,
       "MPL-2.0": 6,
       "Python-2.0": 1
     }
@@ -2393,6 +2393,26 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "@types/whatwg-mimetype",
+      "version": "3.0.2",
+      "purl": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "@types/ws",
+      "version": "8.18.2",
+      "purl": "pkg:npm/%40types/ws@8.18.2",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "@typescript-eslint/eslint-plugin",
       "version": "8.72.1",
       "purl": "pkg:npm/%40typescript-eslint/eslint-plugin@8.72.1",
@@ -3041,6 +3061,16 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "buffer-image-size",
+      "version": "0.6.4",
+      "purl": "pkg:npm/buffer-image-size@0.6.4",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "bundle-name",
       "version": "4.1.1",
       "purl": "pkg:npm/bundle-name@4.1.1",
@@ -3587,6 +3617,16 @@
       "development": true,
       "licenses": [
         "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "entities",
+      "version": "7.0.1",
+      "purl": "pkg:npm/entities@7.0.1",
+      "development": true,
+      "licenses": [
+        "BSD-2-Clause"
       ]
     },
     {
@@ -4387,6 +4427,16 @@
       "development": true,
       "licenses": [
         "ISC"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "happy-dom",
+      "version": "21.0.4",
+      "purl": "pkg:npm/happy-dom@21.0.4",
+      "development": true,
+      "licenses": [
+        "MIT"
       ]
     },
     {
@@ -7231,6 +7281,16 @@
     },
     {
       "target": "web/pnpm-lock.yaml",
+      "name": "whatwg-mimetype",
+      "version": "3.0.0",
+      "purl": "pkg:npm/whatwg-mimetype@3.0.0",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
       "name": "which",
       "version": "2.0.2",
       "purl": "pkg:npm/which@2.0.2",
@@ -7304,6 +7364,16 @@
       "name": "word-wrap",
       "version": "1.2.5",
       "purl": "pkg:npm/word-wrap@1.2.5",
+      "development": true,
+      "licenses": [
+        "MIT"
+      ]
+    },
+    {
+      "target": "web/pnpm-lock.yaml",
+      "name": "ws",
+      "version": "8.22.2",
+      "purl": "pkg:npm/ws@8.22.2",
       "development": true,
       "licenses": [
         "MIT"
