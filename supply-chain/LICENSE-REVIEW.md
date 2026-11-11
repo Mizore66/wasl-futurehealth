@@ -406,3 +406,39 @@ git diff --check
 ```
 
 The repository supply-chain verifier was not run while this report was dirty. Its post-commit result is recorded separately in the handoff rather than retroactively asserted here. No container, AMD64, soak, package lifecycle, package binary, or dependency-install command was run.
+
+## Notice bundle: scope, commands and evidence limits
+
+This section documents the offline notice bundle that packages the evidence above. It appends to the review and does not alter the 128-row table, the 81-row addendum, or any historical row evidence.
+
+### Bundle counts
+
+The 81 packaging-concern records in the addendum split into three evidence classes:
+
+| Class | Count | Meaning |
+| --- | ---: | --- |
+| Direct `gitHead`-pinned | **47** | Exact upstream commit and notice text, each with SHA-256. |
+| Tag-based qualified | **21** | Seven Next.js and 14 Rolldown records. Exact tag and resolved commit are qualified context, not direct npm-artifact-to-commit proof. |
+| Unresolved | **13** | Nine libvips and four Sharp compound records. Missing declared or bundled notices stay explicitly unresolved. No notice text is invented. |
+
+47 + 21 + 13 = 81. The 21 tag-based records are exactly the rows whose npm manifests omit `gitHead`, as stated above.
+
+### Commands
+
+```sh
+python3 -I scripts/notices.py check --root "$PWD"
+./scripts/supply-chain.sh verify
+```
+
+The first command is intended to validate the notice manifest, the notice files and their SHA-256 values, and the 47/21/13 counts offline, and it runs no package code. Only `notices.py check` is offline by design. The checker and the bundle texts land with the notice-bundle implementation (Tasks 1-3), which is not on this base. Until that merge, the command fails on a tree without `scripts/notices.py`, and that failure is not a validation result.
+
+`./scripts/supply-chain.sh verify` is not offline by default. It is offline only with `WASL_SUPPLY_CHAIN_OFFLINE=1`. Whether it runs the notice check depends on the merged implementation; this section does not claim that it does on this base.
+
+### Limitations
+
+- **Upstream text, not tarball text.** Once the bundle lands, each bundled notice is intended to be copied from an exact upstream commit or tag. It is not extracted from the npm tarball. Upstream copies do not prove which texts the published tarballs ship. The tarball-absence findings in the addendum still stand unchanged.
+- **Tag-based records (21).** The resolved commit of an exact `v<version>` tag is qualified context. It is not a direct binding from the npm artifact to that commit, because npm omits `gitHead`.
+- **Unresolved records (13).** These carry a limitation and no invented text. They are not counted as resolved and must stay visible in the generated notice output.
+- **No legal clearance.** Nothing here is a legal-clearance, compliance, or licence-permission determination.
+- **No exhaustive audit.** Native and bundled third-party components were not exhaustively audited. This section does not claim that the bundle covers every bundled component.
+- **Provenance is regenerated after merge.** Scanner evidence (`repository.cdx.json`, `vulnerabilities.json`, `licenses.json`, `manifest.json`) is regenerated with the pinned Trivy 0.76.2 only after all parallel lanes merge. This section does not assert regenerated provenance.
