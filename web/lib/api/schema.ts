@@ -84,6 +84,8 @@ export const LungFinding = z.looseObject({
   finding_report: z.string().optional(),
   finding_label: z.string().optional(),
   risk: z.string().optional(),
+  /** False when no risk was recorded and pipeline/lung.go assumed "high" for the Fleischner rule. */
+  risk_recorded: z.boolean().optional(),
   scope: z.string().optional(),
   window_start_day: z.number().optional(),
   window_end_day: z.number().optional(),
@@ -660,8 +662,19 @@ export const Dashboard = withMeta({
     review_hold: z.string(),
     dr_exam_closure: z.string().optional(),
   }),
-  providers: z.array(z.looseObject({ provider: z.string(), loops: Count })),
-  origins: z.array(z.looseObject({ origin: z.string(), loops: Count })),
+  // --- Provider/origin breakdowns (issue #45) ---
+  // The API copies these from the run's dashboard.json and serves null when the run has none (pipeline/api.go getDashboard),
+  // so a missing or null array reads as empty rather than failing the whole dashboard. Rows stay loose; the Programme model
+  // (components/programme/model.ts) parses the counts it shows, small-cell "<5" strings included.
+  providers: z
+    .array(z.looseObject({ provider: z.string(), loops: Count }))
+    .nullish()
+    .transform((v) => v ?? []),
+  origins: z
+    .array(z.looseObject({ origin: z.string(), loops: Count }))
+    .nullish()
+    .transform((v) => v ?? []),
+  // --- end issue #45 ---
   metrics: z.looseObject({
     closure: z.record(
       z.string(),
