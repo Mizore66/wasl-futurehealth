@@ -1,0 +1,363 @@
+{
+ "audit": {
+  "anchor_note": "No local anchors are recorded for this materialised run; this response has no OUT stream ledger heads or FHIR log hash. `wsi7 tamper` re-verifies the whole run. External in-UAE WORM storage and co-signing are designed, not built",
+  "case": "exp-prov/ServiceRequest/EXP-sr-1",
+  "chain": [
+   {
+    "body": {
+     "weakest_edge": {
+      "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+      "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76"
+     }
+    },
+    "hash": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+    "prev": "genesis",
+    "type": "link_decision"
+   },
+   {
+    "body": {
+     "agree": true,
+     "label": "adequate",
+     "reader_model": "gemma-4-26b/cached"
+    },
+    "hash": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+    "prev": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+    "type": "evidence"
+   },
+   {
+    "body": {
+     "why": "consent_unknown"
+    },
+    "hash": "ea5045fc2382248cc21d5d4139db2572ef129f9689c50cf0ff2cb7eb67bbfe65",
+    "prev": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+    "type": "hold_decision"
+   },
+   {
+    "body": {
+     "agree": true,
+     "fields": {
+      "reader": "y/y/n/n",
+      "regex": "y/y/n/n"
+     },
+     "label": "adequate",
+     "reader_b_fields": {
+      "label": "adequate"
+     },
+     "report": "exp-prov/DiagnosticReport/r1"
+    },
+    "hash": "99655325223e0d5e8784d8179c195cbfa0bf0c6d132ef29b84bdbfcb32df1dd3",
+    "prev": "ea5045fc2382248cc21d5d4139db2572ef129f9689c50cf0ff2cb7eb67bbfe65",
+    "type": "evidence"
+   }
+  ],
+  "chain_length": 4,
+  "chain_note": "Block bodies in this export are redacted copies. Block hashes were computed over the original bodies and cannot be recomputed from the served bodies; chain_verified was computed server-side over the original, unredacted current chain and covers that chain only.",
+  "chain_scope": "current",
+  "chain_verified": true,
+  "decision_signatures": [
+   {
+    "decision_id": "dec-1",
+    "policy": "v7strict",
+    "recomputed": "d908f155afebb8552afd0e38c26e90530a658129fca9b2af8cecca272b93bb33",
+    "sig": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd"
+   }
+  ],
+  "history": [
+   {
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "decision": "same"
+   }
+  ]
+ },
+ "comparison_sha256": "a747a733eb31d00c869ba053ca572395d019678a990f7d00ce6e3114ca2860ec",
+ "content_sha256": "5b55c7025f1071f94613a494aade3f08067c8647829134fe1e290fdf6d523b51",
+ "detail": {
+  "agent_investigations": [
+   {
+    "citations": [
+     {
+      "field": "dob",
+      "tool": "get_record"
+     }
+    ],
+    "item": "it1",
+    "recommendation": "same"
+   }
+  ],
+  "agent_provenance": {
+   "cached": true,
+   "experimental": true,
+   "model": "m1"
+  },
+  "api_contact": {
+   "history": [],
+   "overlay": {
+    "canonical_consent": "granted",
+    "canonical_unchanged": true,
+    "contact_blocked": false,
+    "events": 0,
+    "mode": "demo",
+    "status": "none"
+   }
+  },
+  "api_overlay": {
+   "actions": 0,
+   "contact_outcomes": [],
+   "head": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+   "ledger_status": "ok"
+  },
+  "api_reviews": [
+   {
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "decision": "same"
+   }
+  ],
+  "booking": {
+   "data_mode": "simulated",
+   "decision_support_only": true
+  },
+  "case": {
+   "api_overlay": {
+    "actions": 0,
+    "head": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+    "ledger_status": "ok"
+   },
+   "closed": true,
+   "closed_day": 0,
+   "consent": "granted",
+   "deadline_day": 0,
+   "decisions": 1,
+   "dropoff": "none",
+   "id": "exp-prov/ServiceRequest/EXP-sr-1",
+   "overdue": false,
+   "programme": "crc",
+   "provider": "exp-prov",
+   "referral_day": 0,
+   "review": "none",
+   "state": "closed"
+  },
+  "current": {
+   "ack_day": 0,
+   "chain": [
+    {
+     "body": {
+      "weakest_edge": {
+       "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+       "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76"
+      }
+     },
+     "hash": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+     "prev": "genesis",
+     "type": "link_decision"
+    },
+    {
+     "body": {
+      "agree": true,
+      "label": "adequate",
+      "reader_model": "gemma-4-26b/cached"
+     },
+     "hash": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+     "prev": "06d2f75f0adc29af75f810df3b7e2f636e108daf67ce429a4d48dd35c9fddc99",
+     "type": "evidence"
+    },
+    {
+     "body": {
+      "why": "consent_unknown"
+     },
+     "hash": "ea5045fc2382248cc21d5d4139db2572ef129f9689c50cf0ff2cb7eb67bbfe65",
+     "prev": "da585357e69a44dee9776c874051e8ec614ba561f94ba09fd45545ffc790e87e",
+     "type": "hold_decision"
+    },
+    {
+     "body": {
+      "agree": true,
+      "fields": {
+       "reader": "y/y/n/n",
+       "regex": "y/y/n/n"
+      },
+      "label": "adequate",
+      "reader_b_fields": {
+       "label": "adequate"
+      },
+      "report": "exp-prov/DiagnosticReport/r1"
+     },
+     "hash": "99655325223e0d5e8784d8179c195cbfa0bf0c6d132ef29b84bdbfcb32df1dd3",
+     "prev": "ea5045fc2382248cc21d5d4139db2572ef129f9689c50cf0ff2cb7eb67bbfe65",
+     "type": "evidence"
+    }
+   ],
+   "consent_log": [
+    {
+     "contact": "granted",
+     "to": "held"
+    }
+   ],
+   "contact": "granted",
+   "dropoff": "none",
+   "esc": [],
+   "id": "dec-1",
+   "in_seq": 7,
+   "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+   "notif_day": 0,
+   "now": 0,
+   "outreach": [
+    {
+     "kind": "appointment_reminder",
+     "p_cal": 0,
+     "pair": [],
+     "released": false
+    }
+   ],
+   "overdue": false,
+   "policy": "v7strict",
+   "proc_day": 0,
+   "prog": "crc",
+   "prov": "exp-prov",
+   "ref_day": 0,
+   "reported_closed": false,
+   "sig": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+   "sr_day": 0,
+   "state": "closed",
+   "unowned": false
+  },
+  "decisions": [
+   {
+    "consent_log": [
+     {
+      "contact": "granted",
+      "to": "held"
+     }
+    ],
+    "decision_id": "dec-1",
+    "dropoff": "none",
+    "escalations": [],
+    "in_seq": 7,
+    "outreach": [
+     {
+      "kind": "appointment_reminder",
+      "p_cal": 0,
+      "pair": [],
+      "released": false
+     }
+    ],
+    "overdue": false,
+    "policy": "v7strict",
+    "sig": "1dc842d9d8bb62f2ff6f967ed611fa133f34cb19c00d270391167700a5d131bd",
+    "state": "closed"
+   }
+  ],
+  "evidence": [
+   {
+    "agree": true,
+    "label": "adequate",
+    "reader_model": "gemma-4-26b/cached"
+   },
+   {
+    "agree": true,
+    "fields": {
+     "reader": "y/y/n/n",
+     "regex": "y/y/n/n"
+    },
+    "label": "adequate",
+    "reader_b_fields": {
+     "label": "adequate"
+    },
+    "report": "exp-prov/DiagnosticReport/r1"
+   }
+  ],
+  "holds": [
+   {
+    "why": "consent_unknown"
+   }
+  ],
+  "identities": [
+   {
+    "provider": "p",
+    "role": "downstream"
+   },
+   {
+    "provider": "p",
+    "role": "downstream"
+   }
+  ],
+  "links": [
+   {
+    "weakest_edge": {
+     "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+     "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76"
+    }
+   }
+  ],
+  "outreach": [
+   {
+    "kind": "appointment_reminder",
+    "p_cal": 0,
+    "pair": [],
+    "released": false
+   }
+  ],
+  "review_items": [
+   {
+    "chain": [
+     {
+      "body": {
+       "agree": true,
+       "fields": {
+        "reader": "y/y/n/n",
+        "regex": "y/y/n/n"
+       },
+       "label": "adequate",
+       "reader_b_fields": {
+        "label": "adequate"
+       },
+       "report": "exp-prov/DiagnosticReport/r1"
+      },
+      "hash": "cda1454910b2fe8dfb8bf6dcff10d45c3b45d7bf5625a90e82cc22a2efd745c7",
+      "prev": "genesis",
+      "type": "evidence"
+     }
+    ],
+    "conf": 0.9,
+    "head": "cda1454910b2fe8dfb8bf6dcff10d45c3b45d7bf5625a90e82cc22a2efd745c7",
+    "in_seq": 0,
+    "item": "it1",
+    "kinds": null,
+    "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+    "overdue": false,
+    "p": 0,
+    "pair": [],
+    "verdict": "same"
+   }
+  ],
+  "review_ledger": {
+   "events_applied": 1,
+   "status": "ok"
+  },
+  "signoffs": [
+   {
+    "evidence": "adequate",
+    "item": "it1",
+    "reviewer": "r1"
+   }
+  ],
+  "timeline": [
+   {
+    "id": "o1",
+    "seq": 1,
+    "status": "final",
+    "type": "Observation"
+   }
+  ]
+ },
+ "meta": {
+  "api": "wasl-api/1",
+  "data_mode": "simulated",
+  "loaded_at": "2026-11-11T09:18:15Z",
+  "note": "Synthetic demo data only. Redacted internal-audit export; not de-identified or approved for external disclosure.",
+  "policy": "redacted-internal-audit",
+  "reader_model": "not-disclosed",
+  "run": "redacted-internal-audit"
+ },
+ "redacted": true,
+ "schema": "wasl-case-export/1"
+}
