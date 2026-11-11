@@ -3,6 +3,7 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ConsentCard, SignoffsCard } from "@/components/case/sections";
+import { reviewWords } from "@/components/case/words";
 import { CaseDetail } from "@/lib/api/schema";
 import * as apiSource from "@/lib/api/source";
 
@@ -298,5 +299,28 @@ describe("consent card demo overlay", () => {
     const html = renderToStaticMarkup(SignoffsCard({ detail }));
     expect(html).not.toContain("Consent granted");
     expect(html).not.toContain("Permission recorded");
+  });
+
+  it("keeps a confirm_contact review in the sign-offs although the API stores it as record_consent", () => {
+    const raw = rawDetail();
+    const consent = raw.api_contact.history[0];
+    raw.api_reviews = [
+      ...raw.api_reviews,
+      {
+        ...consent,
+        decision: "confirm_contact",
+        action: "record_consent",
+        actor: "contact-confirmer",
+        role: "clinician",
+        note: "synthetic confirm contact",
+        hash: "confirm-contact-hash",
+        prev: raw.api_reviews.at(-1).hash,
+      },
+    ];
+    const detail = CaseDetail.parse(raw);
+    const html = renderToStaticMarkup(SignoffsCard({ detail }));
+    expect(html).toContain(reviewWords("confirm_contact", detail.case.programme));
+    expect(html).toContain("contact-confirmer");
+    expect(html).not.toContain("coordinator-bound · ");
   });
 });

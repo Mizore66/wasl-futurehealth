@@ -3,7 +3,7 @@ import { Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
-import type { CaseDetail } from "@/lib/api/schema";
+import { ConsentEventName, type CaseDetail } from "@/lib/api/schema";
 import { apiMode } from "@/lib/api/source";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -416,11 +416,19 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
   );
 }
 
+const CONSENT_EVENTS: ReadonlySet<string> = new Set(ConsentEventName.options);
+
 /** Human sign-offs: the run's simulated reviewers, and anything appended through the API. */
 export function SignoffsCard({ detail }: { detail: CaseDetail }) {
   const { signoffs } = detail;
-  /* Reviews and their undo/contest events. Coordinator actions share the ledger but are not sign-offs: LedgerCard. */
-  const appended = detail.api_reviews.filter((r) => (r.ledger === "review" && r.action !== "record_consent") || r.ledger === "compensation");
+  /*
+   * Reviews and their undo/contest events. Coordinator actions share the ledger but are not sign-offs: LedgerCard.
+   * Demo consent events are shown by ConsentCard. A confirm_contact review also carries action record_consent, so
+   * match the consent event decision, not the action.
+   */
+  const appended = detail.api_reviews.filter(
+    (r) => (r.ledger === "review" && !CONSENT_EVENTS.has(r.decision)) || r.ledger === "compensation",
+  );
   return (
     <Card
       id="signoffs"
