@@ -36,7 +36,7 @@ const ACTIONS: { event: ConsentEventName; label: string; confirmation: string; c
     event: "consent_opted_out",
     label: "Record opt-out",
     confirmation:
-      "Cancels queued demo outreach and blocks a later grant in this demo flow. No message is sent and the canonical simulation does not change.",
+      "Cancels queued demo outreach and blocks a later grant or denial in this demo flow; only another opt-out can follow. No message is sent and the canonical simulation does not change.",
     confirm: "Confirm opt-out",
   },
 ];
@@ -78,9 +78,14 @@ export function ConsentActions({
   const [updatedHead, setUpdatedHead] = useState<string>();
   const [notes, setNotes] = useState<Partial<Record<ConsentEventName, string>>>({});
   const [message, setMessage] = useState<{ kind: "error" | "success" | "warning"; text: string } | null>(null);
+  /** Set when the API refused an event because the patient had already opted out. */
+  const [refusedOptOut, setRefusedOptOut] = useState(false);
   const [pending, startTransition] = useTransition();
   const current = saved ?? contact;
   const head = updatedHead ?? expectedHead;
+  /* After an opt-out the API refuses everything except a repeat opt-out (pipeline/api_consent.go). */
+  const optedOut = refusedOptOut || current?.overlay.status === "opted_out";
+  const offered = optedOut ? ACTIONS.filter((action) => action.event === "consent_opted_out") : ACTIONS;
 
   function append(event: ConsentEventName) {
     if (pending || !live || !canWrite || !head) return;
@@ -89,7 +94,11 @@ export function ConsentActions({
       try {
         const result = await recordConsent(caseId, head, event, notes[event] ?? "");
         if (!result.ok) {
-          if (result.status === 409) setUpdatedHead("");
+          /* A stale head carries current_head; the opt-out refusal does not and leaves the head valid. */
+          const stale = result.status === 409 && !!result.currentHead;
+          const refused = result.status === 409 && !result.currentHead;
+          if (stale) setUpdatedHead("");
+          if (refused) setRefusedOptOut(true);
           const text =
             result.status === 400
               ? `Not saved: ${result.error}`
@@ -97,9 +106,11 @@ export function ConsentActions({
                 ? "Not saved: the coordinator role is not authorised to record consent."
                 : result.status === 404
                   ? "Not saved: the API does not know this case. Reload the case."
-                  : result.status === 409
+                  : stale
                     ? `Not saved: ${result.error}. Reload and review the latest case before retrying.`
-                    : `Not saved: ${result.error}`;
+                    : refused
+                      ? "Not saved: the patient has opted out of contact in this demo flow, so consent cannot be granted or denied. Only another opt-out can be recorded. Reload to see the opt-out in the history."
+                      : `Not saved: ${result.error}`;
           setMessage({ kind: "error", text });
           return;
         }
@@ -133,7 +144,13 @@ export function ConsentActions({
 
       {live && canWrite && head ? (
         <div className="mt-3 flex flex-col gap-2" aria-label="Record demo contact permission">
-          {ACTIONS.map((action) => (
+          {optedOut && (
+            <p className="m-0 text-small text-muted">
+              The patient has opted out of contact in this demo flow. Consent can no longer be granted or denied here; only another
+              opt-out can be recorded.
+            </p>
+          )}
+          {offered.map((action) => (
             <details key={action.event} className="rounded-control border border-control px-3 py-1">
               <summary className="min-h-11 cursor-pointer py-2 font-medium">{action.label}</summary>
               <p className="m-0 mt-1">{action.confirmation}</p>
@@ -161,7 +178,9 @@ export function ConsentActions({
             ? "Recording consent needs the live API. This snapshot is read-only."
             : !canWrite
               ? "Consent actions are unavailable because the case ledger did not validate."
-              : "Consent actions are unavailable because the case head signature is missing."}
+              : updatedHead === ""
+                ? "Consent actions are paused. Reload the latest case before recording another event."
+                : "Consent actions are unavailable because the case head signature is missing."}
         </p>
       )}
       <div className="min-h-6" aria-live="polite">
