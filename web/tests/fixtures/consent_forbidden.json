@@ -1,0 +1,14 @@
+{
+  "action": "record_consent",
+  "error": "rbac: role \"reviewer\" may not record_consent",
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-11T09:24:32Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "role": "reviewer"
+}

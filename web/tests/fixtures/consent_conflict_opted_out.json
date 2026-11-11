@@ -1,0 +1,23 @@
+{
+  "api_contact": {
+    "canonical_consent": "granted",
+    "canonical_unchanged": true,
+    "contact_blocked": true,
+    "demo_pending_consent": "cancelled",
+    "events": 5,
+    "last_event_hash": "d61ea42ed9fa4f454ec56d33eec57252aecc8f69671b20482301bc755d1aefae",
+    "mode": "demo",
+    "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+    "status": "opted_out"
+  },
+  "error": "patient has opted out; a later grant needs a new, separately recorded consent flow",
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-11T09:24:32Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  }
+}
