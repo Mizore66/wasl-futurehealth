@@ -109,7 +109,7 @@ The candidate image license scans discovered identifiers for 73 of 81 applicatio
 
 ## Licence notice bundle
 
-The notice bundle packages upstream licence and notice text for the 81 packaging-concern records documented in `LICENSE-REVIEW.md`, so reviewers can check those notices once the bundle lands. It is evidence for packaging review, **not legal clearance**, and it does not claim an exhaustive audit of native or bundled components.
+The notice bundle packages upstream licence and notice text for the 81 packaging-concern records documented in `LICENSE-REVIEW.md`, so reviewers can check those notices. It is evidence for packaging review, **not legal clearance**, and it does not claim an exhaustive audit of native or bundled components.
 
 Validate the bundle with:
 
@@ -118,7 +118,9 @@ python3 -I scripts/notices.py check --root "$PWD"
 ./scripts/supply-chain.sh verify
 ```
 
-`python3 -I scripts/notices.py check` is offline by design. It needs no network access and runs no package code. It ships with the notice-bundle implementation (Tasks 1-3), which is not on this base. On a tree that lacks `scripts/notices.py`, the command fails, and that failure is not a validation result.
+`python3 -I scripts/notices.py check` is offline by design. It needs no network access and runs no package code.
+
+`./scripts/supply-chain.sh generate` and `./scripts/supply-chain.sh verify` run `notices.py check` before the vulnerability gate. A notice-check failure aborts the run under `set -e`.
 
 `./scripts/supply-chain.sh verify` is not offline by default. It regenerates the scanner reports with Trivy, which may update the vulnerability database over the network. It is offline only with `WASL_SUPPLY_CHAIN_OFFLINE=1`. Do not describe `verify` as offline unless that variable is set.
 
@@ -128,6 +130,6 @@ The bundle covers exactly 81 records in three classes:
 - **21 tag-based** records (seven Next.js, 14 Rolldown). Their exact tags and resolved commits are qualified context, not direct npm-artifact-to-commit proof.
 - **13 unresolved** records (nine libvips, four Sharp compound). Missing notices stay unresolved, with a stated limitation and no invented text. They are visible and must not be read as resolved.
 
-Once the bundle lands, notice text is intended to be copied from upstream commits or tags, not extracted from the npm tarballs. Upstream copies do not prove the texts that the published packages ship.
+Notice text is copied from upstream commits or tags, not extracted from the npm tarballs. Upstream copies do not prove the texts that the published packages ship.
 
 Scanner provenance (`repository.cdx.json`, `vulnerabilities.json`, `licenses.json`, `manifest.json`) is regenerated with the pinned Trivy 0.76.2 after all lanes merge. This README does not assert regenerated provenance.
