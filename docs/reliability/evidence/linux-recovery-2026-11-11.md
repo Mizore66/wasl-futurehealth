@@ -2,7 +2,7 @@
 
 ## Scope and revision
 
-Production-shaped recovery drill using synthetic data and Linux containers on one Podman host. Base `main` was `75e6010a9890c58727c780b87cbec17e011ac948`; the clean target used `b2c01b805130bf30250b87deb80344d310048508` after drill findings were fixed. Compose provider was Docker Compose v5.1.4. No real patient/feed data and no second physical machine were used.
+Production-shaped recovery drill using synthetic data and Linux containers on one Podman host. Base `main` was `75e6010a9890c58727c780b87cbec17e011ac948`; the clean target used `b2c01b805130bf30250b87deb80344d310048508` after drill findings were fixed. Compose provider was Docker Compose v5.1.4. No real patient/feed data and no second physical machine were used. `928360b` is a documentation-only follow-up to the tested code.
 
 ## Verified
 
@@ -21,7 +21,7 @@ Production-shaped recovery drill using synthetic data and Linux containers on on
 2. Empty streams have `FirstSeq=LastSeq=0`; `readRecoveryStream` attempted sequence 0 and failed. Fixed in `23ef49e`, with a real-NATS empty-stream regression.
 3. Existing KV bundles carried source write preconditions such as `Nats-Expected-Last-Subject-Sequence`. Republishing them failed with `wrong last sequence`. Backup-side filtering was insufficient because the existing bundle retained them. Fixed in `a791160` and `b2c01b8`: original digests are validated, then broker-only preconditions are normalized before restore/readback. A regression loads an existing bundle containing a write precondition and restores it.
 
-Partially restored targets were preserved for diagnosis and not reused. Every successful restore used a new empty project/volumes and the exact committed fix revision.
+Partially restored targets were preserved for diagnosis and not reused. Every successful restore used a new empty project/volumes and the exact committed fix revision. Bundle digests are validated before normalization; broker write preconditions are then excluded from normalized restore/readback digests, so those normalized digests can differ from the original bundle's raw logical digest.
 
 ## Not proven / remaining limits
 

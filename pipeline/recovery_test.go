@@ -47,11 +47,12 @@ func TestRecoveryApplicationHeaderDropsWritePreconditions(t *testing.T) {
 	header.Set("KV-Operation", "DEL")
 	header.Set("Nats-Expected-Last-Subject-Sequence", "50")
 	header.Set("Nats-Expected-Last-Sequence", "50")
+	header.Set("nats-expected-last-sequence", "50")
 	header.Set("Nats-Expected-Last-Msg-Id", "prior-id")
 	header.Set("Nats-Expected-Stream", "prior-stream")
 	header.Set("Nats-Stream", "source-stream")
 	got := recoveryApplicationHeader(header)
-	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Stream"} {
+	for _, key := range []string{"Nats-Expected-Last-Subject-Sequence", "Nats-Expected-Last-Sequence", "nats-expected-last-sequence", "Nats-Expected-Last-Msg-Id", "Nats-Expected-Stream", "Nats-Stream"} {
 		if _, found := got[key]; found {
 			t.Errorf("source write precondition %q was retained: %v", key, got[key])
 		}
@@ -92,6 +93,43 @@ func TestRestoreDropsWritePreconditionsFromExistingBundle(t *testing.T) {
 	}
 	if _, err := restoreNATS(env.ctx, env.js, path); err != nil {
 		t.Fatal(err)
+	}
+	stream, err := env.js.Stream(env.ctx, "RECOVERY_PRECONDITION")
+	if err != nil {
+		t.Fatal(err)
+	}
+	restoredRaw, err := stream.GetMsg(env.ctx, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if restoredRaw.Header.Get("Nats-Expected-Last-Subject-Sequence") != "" {
+		t.Fatalf("write precondition was stored during restore: %v", restoredRaw.Header)
+	}
+	if restoredRaw.Header.Get("KV-Operation") != "DEL" {
+		t.Fatalf("KV operation was lost during restore: %v", restoredRaw.Header)
+	}
+}
+
+func TestExistingBundleTamperFailsBeforeHeaderNormalization(t *testing.T) {
+	message := recoveryMessage{Sequence: 1, Subject: "recovery.precondition",
+		Header: map[string][]string{"Nats-Expected-Last-Subject-Sequence": {"0"}}, Data: []byte("original")}
+	digest, err := recoveryLogicalDigest([]recoveryMessage{message})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bundle := recoveryNATSBundle{Schema: "wasl-nats-backup-v1", Streams: []recoveryStream{{
+		Config: jetstream.StreamConfig{Name: "RECOVERY_PRECONDITION"}, Messages: []recoveryMessage{message}, Digest: digest}}}
+	bundle.Streams[0].Messages[0].Data = []byte("tampered")
+	raw, err := json.Marshal(bundle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "bundle.json")
+	if err := os.WriteFile(path, raw, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := loadNATSRecoveryBundle(path); err == nil || !strings.Contains(err.Error(), "logical hash mismatch") {
+		t.Fatalf("tampered bundle passed original-digest validation: %v", err)
 	}
 }
 
