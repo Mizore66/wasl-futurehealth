@@ -743,3 +743,69 @@ export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
 export type ActionResponse = z.infer<typeof ActionResponse>;
+
+/*
+ * ---------------------------------------------------------------------------------------------------------------
+ * Consent demo overlay (issue #42): GET/POST /api/cases/{id}/consent and case detail `api_contact`
+ * (pipeline/api_consent.go, docs/API-CONSENT.md). Pinned by tests/fixtures/consent_*.json
+ * (pipeline/api_consent_contract_test.go). The overlay is derived from the review ledger and is demo-only: it never
+ * changes the canonical `case.consent`, a decision's outreach or consent_log, and nothing is sent.
+ * ---------------------------------------------------------------------------------------------------------------
+ */
+export const CONSENT_EVENTS = ["consent_granted", "consent_denied", "consent_opted_out"] as const;
+export const ConsentEvent = z.enum(CONSENT_EVENTS);
+
+export const ConsentOverlay = z.looseObject({
+  status: z.enum(["none", "granted", "denied", "opted_out"]),
+  /** What the demo hold would do: released after a grant, cancelled after a denial or opt-out, "" before any event. */
+  demo_pending_consent: z.enum(["", "released", "cancelled"]),
+  events: z.number(),
+  contact_blocked: z.boolean(),
+  mode: z.literal("demo"),
+  canonical_consent: z.string(),
+  canonical_unchanged: z.literal(true),
+  last_event_hash: z.string(),
+  note: z.string().optional(),
+});
+
+/** One consent event on the shared ledger, as GET /consent and `api_contact.history` serve it. */
+export const ConsentHistoryEvent = z.looseObject({
+  case: z.string(),
+  item: z.string(),
+  decision: ConsentEvent,
+  note: z.string(),
+  role: z.string(),
+  actor: z.string(),
+  action: z.literal("record_consent"),
+  at: z.string(),
+  head_signed: z.string(),
+  mode: z.string(),
+  prev: z.string(),
+  hash: z.string(),
+});
+
+/** Case detail `api_contact`. Absent from snapshots taken before the consent endpoint existed. */
+export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
+export const ConsentState = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentHistoryEvent) });
+
+/** POST body. `expected_head` is the case's current decision signature (`current.sig`), not the coordinator overlay head. */
+export const ConsentRequest = z.object({
+  event: ConsentEvent,
+  expected_head: z.string().min(1).max(128),
+  note: z.string().max(500).default(""),
+});
+export const ConsentResponse = withMeta({ review: ConsentHistoryEvent, overlay: ConsentOverlay, note: z.string().optional() });
+/** A refusal. 409 carries `current_head` (stale head) or `api_contact` (a grant after an opt-out). */
+export const ConsentError = z.looseObject({
+  meta: Meta.optional(),
+  error: z.string(),
+  current_head: z.string().optional(),
+  api_contact: ConsentOverlay.optional(),
+});
+
+export type ConsentEvent = z.infer<typeof ConsentEvent>;
+export type ConsentOverlay = z.infer<typeof ConsentOverlay>;
+export type ConsentHistoryEvent = z.infer<typeof ConsentHistoryEvent>;
+export type ApiContact = z.infer<typeof ApiContact>;
+export type ConsentState = z.infer<typeof ConsentState>;
+export type ConsentResponse = z.infer<typeof ConsentResponse>;
