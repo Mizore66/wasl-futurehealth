@@ -82,6 +82,7 @@ type apiServer struct {
 	mu         sync.Mutex
 	reviews    []map[string]interface{}
 	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	drNonces   map[string]bool    // nonces of double-review reads in the ledger (api_double_review.go); built on first use
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
@@ -91,7 +92,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
-	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
+	caseAPI := s.doubleReviewRoutes(s.withConsent(s.undoRoutes(s.caseRoutes))) // /double-review: api_double_review.go
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)
@@ -695,7 +696,7 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 			out = append(out, r)
 		}
 	}
-	return out
+	return blindDoubleReview(out) // initial double-review reads stay hidden until both are in (api_double_review.go)
 }
 
 // POST /api/cases/{id}/review   headers: X-Wasl-Role (coordinator|clinician|reviewer|auditor), X-Wasl-Actor
@@ -1596,6 +1597,9 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 	if _, isCoord := ev["type"]; !isCoord {
 		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
 		return nil
+	}
+	if ev["type"] == doubleReviewType {
+		return s.replayDoubleRead(ev) // same rules as the write path (api_double_review.go)
 	}
 	if ev["type"] != coordEventType {
 		return fmt.Errorf("unknown event type %v", ev["type"])

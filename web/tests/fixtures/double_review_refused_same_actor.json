@@ -1,0 +1,13 @@
+{
+  "error": "independent double review needs two different actors: this credential's actor already gave r1",
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-11T09:25:45Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "reason": "same_actor"
+}

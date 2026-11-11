@@ -7,6 +7,7 @@ import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
+import { DoubleReviewSection } from "@/components/review/double-review/section";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { apiMode, getAudit, getCase, getUndoProjection } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
@@ -117,6 +118,10 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           <SignoffsCard detail={detail} />
         </div>
       )}
+      {/* Independent double review (issue #41): this deployment is one reader, with one credential per question role. */}
+      <div className="mt-3">
+        <DoubleReviewSection detail={detail} />
+      </div>
       {audit && (
         <div className="mt-3">
           <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection } : undefined} />

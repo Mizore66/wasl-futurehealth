@@ -283,13 +283,16 @@ type LedgerLike =
   | { ledger: "coordinator"; kind: string; data: { owner?: string; until?: string; outcome?: string; channel?: string } }
   | { ledger: "compensation"; kind: string; resolution?: string }
   | { ledger: "review"; decision?: string; action?: string }
-  | { ledger: "unknown"; label: string };
+  | { ledger: "unknown"; label: string }
+  /* Independent double review reads (pipeline/api_double_review.go): blinded reads carry no decision. */
+  | { ledger: "double_review"; kind: string; read: string; decision?: string; blinded: boolean; phase_after: string; final?: string };
 
 /** The system identifier of a ledger event as the API wrote it: `type/kind`, the compensation kind, or the review's action. */
 export function ledgerId(e: LedgerLike): string {
   if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
   if (e.ledger === "compensation") return e.kind;
   if (e.ledger === "unknown") return e.label || "unrecognised";
+  if (e.ledger === "double_review") return `double_review/${e.read || e.kind || "read"}`;
   return e.action ?? "review";
 }
 
@@ -310,5 +313,24 @@ export function ledgerWords(e: LedgerLike): string {
     return plain(e.kind);
   }
   if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
+  if (e.ledger === "double_review") return doubleReadWords(e);
   return e.decision ? plain(e.decision) : "Review";
+}
+
+/* ---- Independent double review (issue #41): one ledger line per read ---- */
+
+const DOUBLE_READ: Record<string, string> = { r1: "First read", r2: "Second read", r3: "Senior read" };
+const DOUBLE_AFTER: Record<string, string> = {
+  agreed: "the initial reads agree",
+  disagreement: "the initial reads disagree, senior read opened",
+  resolved: "resolved by the senior read",
+};
+
+/** A double-review read in words: which read, its answer (or that it is still hidden), and the transition it made. */
+export function doubleReadWords(e: { kind: string; read: string; decision?: string; blinded: boolean; phase_after: string }): string {
+  if (e.kind !== "read") return `Double review event (${e.kind || "unnamed"})`;
+  const which = DOUBLE_READ[e.read] ?? `Double-review read ${e.read || "(unnamed)"}`;
+  const answer = e.blinded || e.decision === undefined ? "answer hidden until both initial reads are in" : plain(e.decision);
+  const after = DOUBLE_AFTER[e.phase_after];
+  return after ? `${which}: ${answer}; ${after}` : `${which}: ${answer}`;
 }
