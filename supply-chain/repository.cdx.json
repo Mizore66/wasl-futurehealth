@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:e974391d-16e9-560f-851c-82aa4436fc20",
+  "serialNumber": "urn:uuid:1987be74-6932-539d-9aa6-8437c096c9a6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-09T17:10:58Z",
+    "timestamp": "2026-11-11T03:27:43Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "46f3cff79867f037c93425c4c890119a73f32418"
+      "version": "48e0f0daedf72d786d592403aaded766558a9c6c"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "46f3cff79867f037c93425c4c890119a73f32418"
+        "value": "48e0f0daedf72d786d592403aaded766558a9c6c"
       },
       {
         "name": "wasl:source-tree",
@@ -22334,6 +22334,24 @@
         {
           "alg": "SHA-512",
           "content": "83c5b60f6914e9af2e9ed734e777d7d6e5412b333bcaa0315bfdf3c24f37fba472176f9228eb95f9cd30043854c335753da19aa66647fab99c5333dffb7086c2"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:pypi/cryptography@50.0.2",
+      "type": "library",
+      "name": "cryptography",
+      "version": "50.0.2",
+      "purl": "pkg:pypi/cryptography@50.0.2",
+      "scope": "required",
+      "properties": [
+        {
+          "name": "wasl:declared-in",
+          "value": "Dockerfile"
+        },
+        {
+          "name": "wasl:inventory-note",
+          "value": "Python runtime declaration; use the image SBOM for installed artifacts and licenses"
         }
       ]
     },
