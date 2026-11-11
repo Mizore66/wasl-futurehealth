@@ -409,7 +409,7 @@ The repository supply-chain verifier was not run while this report was dirty. It
 
 ## Notice bundle: scope, commands and evidence limits
 
-This section documents the offline notice bundle that packages the evidence above. It appends to the review and does not alter the 128-row table, the 81-row addendum, or any historical row evidence.
+This section documents the notice bundle that packages the evidence above. It appends to the review and does not alter the 128-row table, the 81-row addendum, or any historical row evidence.
 
 ### Bundle counts
 
@@ -430,13 +430,15 @@ python3 -I scripts/notices.py check --root "$PWD"
 ./scripts/supply-chain.sh verify
 ```
 
-The first command is intended to validate the notice manifest, the notice files and their SHA-256 values, and the 47/21/13 counts offline, and it runs no package code. Only `notices.py check` is offline by design. The checker and the bundle texts land with the notice-bundle implementation (Tasks 1-3), which is not on this base. Until that merge, the command fails on a tree without `scripts/notices.py`, and that failure is not a validation result.
+The first command validates the notice manifest, the notice files and their SHA-256 values, and the 47/21/13 counts offline, and it runs no package code. Only `notices.py check` is offline by design.
 
-`./scripts/supply-chain.sh verify` is not offline by default. It is offline only with `WASL_SUPPLY_CHAIN_OFFLINE=1`. Whether it runs the notice check depends on the merged implementation; this section does not claim that it does on this base.
+`./scripts/supply-chain.sh generate` and `./scripts/supply-chain.sh verify` run `notices.py check` before the vulnerability gate. A notice-check failure aborts the run under `set -e`.
+
+`./scripts/supply-chain.sh verify` is not offline by default. It is offline only with `WASL_SUPPLY_CHAIN_OFFLINE=1`.
 
 ### Limitations
 
-- **Upstream text, not tarball text.** Once the bundle lands, each bundled notice is intended to be copied from an exact upstream commit or tag. It is not extracted from the npm tarball. Upstream copies do not prove which texts the published tarballs ship. The tarball-absence findings in the addendum still stand unchanged.
+- **Upstream text, not tarball text.** Each bundled notice is copied from an exact upstream commit or tag. It is not extracted from the npm tarball. Upstream copies do not prove which texts the published tarballs ship. The tarball-absence findings in the addendum still stand unchanged.
 - **Tag-based records (21).** The resolved commit of an exact `v<version>` tag is qualified context. It is not a direct binding from the npm artifact to that commit, because npm omits `gitHead`.
 - **Unresolved records (13).** These carry a limitation and no invented text. They are not counted as resolved and must stay visible in the generated notice output.
 - **No legal clearance.** Nothing here is a legal-clearance, compliance, or licence-permission determination.
