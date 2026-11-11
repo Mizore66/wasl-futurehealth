@@ -11,11 +11,14 @@ const TRANSITION: Record<string, string> = {
   resolved: "Resolved by the senior read.",
 };
 
+/** A read settled its round only if both initial reads are on the ledger and the read itself recorded agreement or resolution. */
+const settled = (open: boolean, phaseAfter: string) => !open && (phaseAfter === "agreed" || phaseAfter === "resolved");
+
 /**
  * Every double-review read on the case's ledger, each on its own line, as case detail `api_reviews` serves them. A read
  * the API still blinds is listed without its answer, and so is every read of an item whose two initial reads are not
- * both on the ledger, whatever the response says (case detail blinds for everyone, the author included). Renders
- * nothing when the case has no reads.
+ * both on the ledger, whatever the response says (case detail blinds for everyone, the author included). A settled
+ * answer is shown only on a read that settled its round. Renders nothing when the case has no reads.
  */
 export function DoubleReviewReadsCard({ detail }: { detail: CaseDetail }) {
   const events = detail.api_reviews.flatMap((e) => (e.ledger === "double_review" ? [e] : []));
@@ -47,7 +50,7 @@ export function DoubleReviewReadsCard({ detail }: { detail: CaseDetail }) {
                     · {r.actor || "actor not shown"} ({roleWords(r.role)}) · {atWords(r.at)}
                   </span>
                   {TRANSITION[r.phase_after] && <span className="block text-small text-muted">{TRANSITION[r.phase_after]}</span>}
-                  {r.final && <span className="block text-small font-medium">Settled answer: {reviewWords(r.final, programme)}</span>}
+                  {r.final && settled(open, r.phase_after) && <span className="block text-small font-medium">Settled answer: {reviewWords(r.final, programme)}</span>}
                 </li>
               ))}
             </ol>

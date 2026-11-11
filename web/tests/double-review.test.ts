@@ -88,6 +88,45 @@ describe("double review contract (real Go handler output)", () => {
     expect(full.map((e) => (e.ledger === "double_review" ? e.decision : ""))).toEqual(["same", "different", "same"]);
   });
 
+  it("an open read keeps only the allow-listed fields: no final, no unknown extras, no transition it cannot have made", () => {
+    const raw = load("double_review_blinded_case_detail.json");
+    const leak = (e: Record<string, unknown>) =>
+      e.type === "double_review" ? { ...e, final: "same", phase_after: "agreed", extra_answer: "LEAKED-EXTRA", decision_hint: "same" } : e;
+    const detail = CaseDetail.parse({ ...raw, api_reviews: raw.api_reviews.map(leak) });
+    const read = detail.api_reviews[0];
+    if (read.ledger !== "double_review") throw new Error("narrow");
+    expect([read.final, read.phase_after, read.blinded, read.actor, read.read]).toEqual([undefined, "", true, "reviewer-one", "r1"]);
+    expect(Object.keys(read).sort()).toEqual(
+      ["action", "actor", "at", "blinded", "case", "hash", "head_signed", "item", "kind", "ledger", "mode", "phase_after", "prev", "question", "read", "role", "round_head", "round_seq", "type"].sort(),
+    );
+    expect(JSON.stringify(detail.api_reviews)).not.toMatch(/LEAKED-EXTRA|decision_hint/);
+    const audit = load("double_review_blinded_audit.json");
+    const history = Audit.parse({ ...audit, history: audit.history.map(leak) }).history;
+    expect(history[0].ledger === "double_review" && [history[0].final, history[0].phase_after]).toEqual([undefined, ""]);
+    // The real awaiting_reads transition is kept on an open read.
+    const plain = CaseDetail.parse(raw).api_reviews[0];
+    expect(plain.ledger === "double_review" && plain.phase_after).toBe("awaiting_reads");
+    // Once both initial reads exist, final stays where the API put it.
+    const settled = CaseDetail.parse(load("double_review_case_detail.json")).api_reviews;
+    expect(settled.map((e) => (e.ledger === "double_review" ? (e.final ?? "") : ""))).toEqual(["", "", "same"]);
+  });
+
+  it("the case card shows a settled answer only for a settled round", () => {
+    const raw = load("double_review_blinded_case_detail.json");
+    // A final on an open read: blindOpenReads drops it, and the card would not show it even if it did not.
+    const leaked = { ...raw, api_reviews: raw.api_reviews.map((e: Record<string, unknown>) => ({ ...e, final: "same", phase_after: "agreed" })) };
+    expect(renderToStaticMarkup(DoubleReviewReadsCard({ detail: CaseDetail.parse(leaked) })!)).not.toContain("Settled answer");
+    const parsed = CaseDetail.parse(leaked);
+    const forced = { ...parsed, api_reviews: parsed.api_reviews.map((e) => (e.ledger === "double_review" ? { ...e, final: "same", phase_after: "agreed" } : e)) };
+    expect(renderToStaticMarkup(DoubleReviewReadsCard({ detail: forced })!)).not.toContain("Settled answer");
+    // Both initial reads present, but a final on the read that only opened a disagreement is not a settled answer.
+    const full = CaseDetail.parse(load("double_review_case_detail.json"));
+    const r2final = { ...full, api_reviews: full.api_reviews.map((e) => (e.ledger === "double_review" && e.read === "r2" ? { ...e, final: "different" } : e)) };
+    const html = renderToStaticMarkup(DoubleReviewReadsCard({ detail: r2final })!);
+    expect(html).not.toContain("Settled answer: Not the same patient");
+    expect(html).toContain("Settled answer: Same patient");
+  });
+
   it("parses the refusals with their machine-readable reason", () => {
     expect(DoubleReviewError.parse(load("double_review_refused_same_actor.json")).reason).toBe("same_actor");
     const head = DoubleReviewError.parse(load("double_review_refused_head.json"));
