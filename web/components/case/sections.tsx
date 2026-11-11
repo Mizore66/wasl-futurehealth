@@ -3,7 +3,6 @@ import { Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
-import { apiContactOf, consentHead } from "@/lib/api/consent";
 import type { CaseDetail } from "@/lib/api/schema";
 import { formatDay, formatDayYear } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -11,8 +10,6 @@ import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
-import { ConsentActions } from "./consent-actions";
-import { DEMO_OVERLAY_WORDS, historyRows, overlayWords } from "./consent-model";
 import {
   atWords,
   basisWords,
@@ -519,61 +516,8 @@ export function ProgrammeFindingCard({ detail }: { detail: CaseDetail }): React.
   return <></>;
 }
 
-/**
- * The consent demo overlay (issue #42): its current state, its events in ledger order, and the actions that append to
- * it. The canonical history above it is never rewritten.
- */
-function ConsentOverlaySection({ detail, live }: { detail: CaseDetail; live: boolean }) {
-  const view = apiContactOf(detail);
-  const overlay = view.kind === "ok" ? view.contact.overlay : null;
-  const rows = view.kind === "ok" ? historyRows(view.contact.history) : [];
-  return (
-    <section aria-labelledby="consent-overlay-h" className="mt-4 border-t border-rule pt-3" data-testid="consent-overlay">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h3 id="consent-overlay-h" className="m-0 text-body font-medium">
-          Demo consent overlay
-        </h3>
-        <HonestyLabel kind="simulated">Demo overlay</HonestyLabel>
-      </div>
-      <p className="m-0 mt-1 text-small text-muted">{DEMO_OVERLAY_WORDS}</p>
-      {view.kind === "absent" && <Empty>This case data carries no demo consent overlay.</Empty>}
-      {view.kind === "unreadable" && (
-        <p role="alert" className="m-0 mt-3 text-warning">
-          The API sent a consent overlay this page cannot read, so it is not shown.
-        </p>
-      )}
-      {overlay && (
-        <>
-          <p className="m-0 mt-3" data-testid="consent-overlay-now">
-            {overlayWords(overlay)}
-          </p>
-          <p className="m-0 mt-1 text-small text-muted">Simulation consent unchanged: {consentNow(overlay.canonical_consent).toLowerCase()}.</p>
-          {rows.length === 0 ? (
-            <Empty>No demo consent events recorded.</Empty>
-          ) : (
-            <ol className="m-0 mt-2 list-none p-0" aria-label="Demo consent events">
-              {rows.map((r) => (
-                <li key={r.key} className="border-t border-rule py-2">
-                  <span className="block">
-                    <span className="font-medium">{r.what}</span> · {r.effect}
-                  </span>
-                  <span className="block text-muted">
-                    {r.actor || "Actor not recorded"} · {roleWords(r.role)} · {atWords(r.at)}
-                  </span>
-                  {r.note && <span className="block">&ldquo;{r.note}&rdquo;</span>}
-                </li>
-              ))}
-            </ol>
-          )}
-        </>
-      )}
-      <ConsentActions caseId={detail.case.id} head={consentHead(detail)} live={live} status={overlay?.status ?? null} />
-    </section>
-  );
-}
-
-/** Consent history and the messages Wasl sent or held back, then the demo consent overlay and its actions. */
-export function ConsentCard({ detail, live = false }: { detail: CaseDetail; live?: boolean }) {
+/** Consent history and the messages Wasl sent or held back. */
+export function ConsentCard({ detail }: { detail: CaseDetail }) {
   const consent = consentRows(detail);
   const out = outreachRows(detail);
   return (
@@ -611,7 +555,6 @@ export function ConsentCard({ detail, live = false }: { detail: CaseDetail; live
           ))}
         </ul>
       )}
-      <ConsentOverlaySection detail={detail} live={live} />
     </Card>
   );
 }
@@ -620,8 +563,7 @@ export function ConsentCard({ detail, live = false }: { detail: CaseDetail; live
 export function SignoffsCard({ detail }: { detail: CaseDetail }) {
   const { signoffs } = detail;
   /* Reviews and their undo/contest events. Coordinator actions share the ledger but are not sign-offs: LedgerCard. */
-  /* Consent events share the ledger as reviews but are not sign-offs: ConsentCard lists them with the demo overlay. */
-  const appended = detail.api_reviews.filter((r) => (r.ledger === "review" && r.action !== "record_consent") || r.ledger === "compensation");
+  const appended = detail.api_reviews.filter((r) => r.ledger === "review" || r.ledger === "compensation");
   return (
     <Card
       id="signoffs"

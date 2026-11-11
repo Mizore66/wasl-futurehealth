@@ -6,7 +6,7 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
-import { apiMode, getAudit, getCase } from "@/lib/api/source";
+import { getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
 import { personForLoop } from "@/lib/people";
@@ -220,7 +220,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           {earlier.map((ev) => (
             <ReadersCard key={ev.report} detail={detail} ev={ev} id={`readers-${shortId(ev.report)}`} title={`Earlier reading: report ${shortId(ev.report)}`} />
           ))}
-          <ConsentCard detail={detail} live={apiMode() === "live"} />
+          <ConsentCard detail={detail} />
           <SignoffsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>
