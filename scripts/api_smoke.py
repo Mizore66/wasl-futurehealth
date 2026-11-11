@@ -50,14 +50,22 @@ class Client:
             raise SmokeFailure(f"missing {name} for authenticated smoke request")
         return token
 
-    def request(self, method, path, body=None, role=None, actor=None, authenticate=True):
-        """Return (status, parsed JSON). Transport errors and non-JSON bodies fail the smoke."""
+    @staticmethod
+    def env_token(name):
+        token = os.environ.get(name, "")
+        if not token:
+            raise SmokeFailure(f"missing {name} for authenticated smoke request")
+        return token
+
+    def request(self, method, path, body=None, role=None, actor=None, authenticate=True, token_env=None):
+        """Return (status, parsed JSON). Transport errors and non-JSON bodies fail the smoke.
+        `token_env` names the environment variable holding the exact bearer token to send (independent-review actors)."""
         data = None if body is None else json.dumps(body, separators=(",", ":")).encode()
         headers = {}
         if data is not None:
             headers["Content-Type"] = "application/json"
         if authenticate:
-            headers["Authorization"] = "Bearer " + self.token(role, actor)
+            headers["Authorization"] = "Bearer " + (self.env_token(token_env) if token_env else self.token(role, actor))
         req = urllib.request.Request(self.base + path, data=data, headers=headers, method=method)
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:
@@ -285,6 +293,251 @@ def workflow_smoke(c, cid):
     check(code == 404 and "error" in body, f"unknown export: expected JSON 404, got {code}")
 
 
+# ---------------------------------------------------------------------------------------------------------------------
+# Independent double review (protocol wasl-independent-review/1). Separate from the legacy workflow above: it uses only
+# raised, still-unsigned synthetic items discovered from the API and never the legacy blank-item undo/contest fixtures.
+# ---------------------------------------------------------------------------------------------------------------------
+PROTOCOL = "wasl-independent-review/1"
+PROTOCOL_FIELDS = ("protocol", "read", "question", "expected_head", "resolution_reads")
+STATES = {"awaiting_r1", "awaiting_r2", "awaiting_r3", "resolved_agreed", "resolved_senior"}
+# question -> credentials (r1, r2, senior), decisions (first, second), and a credential of the other discipline.
+DISCIPLINES = {
+    "link": {"r1": "WASL_API_REVIEWER_TOKEN", "r2": "WASL_API_REVIEWER_2_TOKEN", "senior": "WASL_API_REVIEWER_3_TOKEN",
+             "other": "WASL_API_CLINICIAN_TOKEN", "decisions": ("same", "different")},
+    "evidence": {"r1": "WASL_API_CLINICIAN_TOKEN", "r2": "WASL_API_CLINICIAN_2_TOKEN", "senior": "WASL_API_CLINICIAN_3_TOKEN",
+                 "other": "WASL_API_REVIEWER_TOKEN", "decisions": ("adequate", "inadequate")},
+}
+INDEPENDENT_ACTORS = ("smoke-reviewer-1", "smoke-reviewer-2", "smoke-reviewer-3",
+                      "smoke-clinician", "smoke-clinician-2", "smoke-clinician-3")
+
+
+def review_state(detail, item, question, label):
+    matches = [s for s in detail.get("api_review_states", []) if s.get("item") == item and s.get("question") == question]
+    check(len(matches) == 1, f"{label}: expected exactly one api_review_states entry for {item}/{question}, got {len(matches)}")
+    state = matches[0]
+    check(state.get("state") in STATES, f"{label}: unknown protocol state {state.get('state')!r}")
+    check(state.get("canonical_unchanged") is True, f"{label}: state does not disclose canonical_unchanged")
+    return state
+
+
+def read_entry(state, slot):
+    found = [r for r in state.get("reads", []) if r.get("read") == slot]
+    return found[0] if found else None
+
+
+def discover_independent_items(c, programmes, need=2):
+    """Raised synthetic items awaiting r1 for which the discipline's r1 credential may submit; discovered, never hard-coded."""
+    found = []
+    for programme in programmes:
+        page = c.ok(f"/api/cases?programme={urllib.parse.quote(programme)}&review=open&limit={MAX_LIMIT}")
+        for row in page.get("cases", []):
+            cid = row.get("id")
+            viewers = [("link", "WASL_API_REVIEWER_TOKEN")]
+            if programme == "crc":  # evidence decisions are programme-specific labels; adequate/inadequate is the CRC set
+                viewers.append(("evidence", "WASL_API_CLINICIAN_TOKEN"))
+            for question, env in viewers:
+                code, detail = c.request("GET", case_path(cid), token_env=env)
+                check(code == 200, f"independent discovery: GET {cid} returned {code}")
+                for st in detail.get("api_review_states", []):
+                    if st.get("question") == question and st.get("state") == "awaiting_r1" and st.get("may_submit") is True:
+                        found.append((cid, st["item"], question))
+            if len(found) >= need:
+                return found[:need]
+    raise SmokeFailure(f"independent review: found {len(found)} raised unsigned item(s) awaiting r1, need {need}")
+
+
+class Reader:
+    """One configured actor: every request carries that actor's exact bearer token and no identity header."""
+
+    def __init__(self, c, env):
+        self.c, self.env = c, env
+
+    def detail(self, cid):
+        code, body = self.c.request("GET", case_path(cid), token_env=self.env)
+        check(code == 200, f"GET {cid} as {self.env}: expected 200, got {code}")
+        return body
+
+    def read(self, cid, item, decision, slot, head, note="", expected=201, raw_body=None):
+        body = raw_body if raw_body is not None else {"item": item, "decision": decision, "note": note,
+                                                     "read": slot, "expected_head": head}
+        code, payload = self.c.request("POST", case_path(cid, "/review"), body, token_env=self.env)
+        check(code == expected, f"POST {slot} {item} as {self.env}: expected {expected}, got {code} ({payload.get('error', '')})")
+        return payload
+
+
+def protocol_event(response, slot, question, label):
+    event = response.get("review")
+    check(isinstance(event, dict), f"{label}: response has no review event")
+    check(event.get("protocol") == PROTOCOL and event.get("read") == slot and event.get("question") == question,
+          f"{label}: event does not carry protocol/read/question {PROTOCOL}/{slot}/{question}")
+    return event
+
+
+def canonical_view(detail):
+    case = copy.deepcopy(detail.get("case", {}))
+    case.pop("api_overlay", None)
+    return (case, detail.get("current"), detail.get("decisions"))
+
+
+def independent_review_smoke(c, programmes):
+    """Real-HTTP proof of blinded r1/r2, disagreement-gated senior r3 and agreement without r3. Synthetic data only."""
+    (cid_a, item_a, q_a), (cid_b, item_b, q_b) = discover_independent_items(c, programmes)
+    canon = {}
+    for cid in {cid_a, cid_b}:
+        d = c.ok(case_path(cid))
+        a = c.ok(case_path(cid, "/audit"), "auditor")
+        canon[cid] = (canonical_view(d), a.get("decision_signatures"), a.get("chain"), a.get("chain_length"), len(a.get("history", [])))
+    accepted = []   # (case, item, question, slot, event) in acceptance order
+    chain_prev = [None]
+
+    def accept(response, cid, item, question, slot, label):
+        event = protocol_event(response, slot, question, label)
+        check_event_hash(event, label)
+        if chain_prev[0] is not None:
+            check(event.get("prev") == chain_prev[0], f"{label}: prev does not link to the prior accepted event")
+        chain_prev[0] = event["hash"]
+        accepted.append((cid, item, question, slot, event))
+        state = response.get("review_state")
+        check(isinstance(state, dict) and state.get("item") == item and state.get("question") == question,
+              f"{label}: response has no matching review_state")
+        check(state.get("canonical_unchanged") is True, f"{label}: review_state does not disclose canonical_unchanged")
+        return event, state
+
+    # A: disagreement -> senior r3.        B: agreement -> no r3.
+    for cid, item, question, outcome in ((cid_a, item_a, q_a, "disagree"), (cid_b, item_b, q_b, "agree")):
+        d = DISCIPLINES[question]
+        first, second = d["decisions"]
+        r1, r2, senior = Reader(c, d["r1"]), Reader(c, d["r2"]), Reader(c, d["senior"])
+        other = Reader(c, d["other"])
+        tag = f"{outcome} {item}/{question}"
+        note1 = f"SMOKE-INDEP-R1-NOTE-{outcome}"
+        start = review_state(r1.detail(cid), item, question, tag + " initial")
+        check(start.get("state") == "awaiting_r1" and start.get("next_read") == "r1" and not start.get("head"),
+              f"{tag}: initial state is not awaiting_r1 with an empty head")
+
+        # Requests that must be refused without consuming the slot.
+        r1.read(cid, item, first, "r1", "", raw_body={"item": item, "decision": first, "note": "", "read": "r1"}, expected=400)
+        other.read(cid, item, first, "r1", "", expected=403)
+        check(c.request("POST", case_path(cid, "/review"), {"item": item, "decision": first, "read": "r1", "expected_head": ""},
+                        authenticate=False)[0] == 401, f"{tag}: unauthenticated protocol read was not 401")
+        senior.read(cid, item, first, "r1", "", expected=403)       # senior is not an initial reader
+        check(review_state(r1.detail(cid), item, question, tag).get("state") == "awaiting_r1", f"{tag}: refused writes moved the state")
+
+        e1, s1 = accept(r1.read(cid, item, first, "r1", "", note=note1), cid, item, question, "r1", tag + " r1")
+        check(s1.get("state") == "awaiting_r2" and s1.get("next_read") == "r2", f"{tag}: r1 did not open awaiting_r2")
+        r1_own_state = review_state(r1.detail(cid), item, question, tag + " own view")
+        r1_own = read_entry(r1_own_state, "r1")
+        check(r1_own and r1_own.get("decision") == first, f"{tag}: the first reader cannot see their own answer")
+
+        # Same actor and duplicate slot are refused; the second reader is blinded to r1.
+        r1.read(cid, item, first, "r2", r1_own_state["head"], expected=403)   # same actor, current head as that actor sees it
+        r2.read(cid, item, second if outcome == "disagree" else first, "r1", "", expected=409)
+        blind = r2.detail(cid)
+        blind_state = review_state(blind, item, question, tag + " blinded view")
+        check(blind_state.get("state") == "awaiting_r2" and blind_state.get("may_submit") is True,
+              f"{tag}: second reader is not offered r2")
+        entry = read_entry(blind_state, "r1")
+        check(entry is None or (entry.get("submitted") is True and "decision" not in entry and "hash" not in entry),
+              f"{tag}: blinded r1 entry exposes decision or hash")
+        full = json.dumps(blind, sort_keys=True)
+        check(note1 not in full, f"{tag}: r1 note leaked to the second reader")
+        check(e1["hash"] not in full, f"{tag}: r1 event hash leaked to the second reader")
+        check(not any(e.get("hash") == e1["hash"] or (e.get("item") == item and e.get("read") == "r1")
+                      for e in blind.get("api_reviews", [])), f"{tag}: r1 event present in the second reader's api_reviews")
+        senior.read(cid, item, first, "r3", blind_state["head"], expected=409)      # premature r3
+        stale = r2.read(cid, item, second if outcome == "disagree" else first, "r2", "stale-smoke-head", expected=409)
+        check(note1 not in json.dumps(stale) and e1["hash"] not in json.dumps(stale), f"{tag}: stale-head refusal leaked r1")
+
+        decision2 = second if outcome == "disagree" else first
+        e2, s2 = accept(r2.read(cid, item, decision2, "r2", blind_state["head"], note=f"SMOKE-INDEP-R2-NOTE-{outcome}"),
+                        cid, item, question, "r2", tag + " r2")
+        check(e2.get("prev") == e1["hash"], f"{tag}: r2 is not chained after r1")
+        revealed = review_state(r1.detail(cid), item, question, tag + " after r2")
+        slots = {r["read"]: r for r in revealed.get("reads", [])}
+        check(slots.get("r1", {}).get("decision") == first and slots.get("r2", {}).get("decision") == decision2
+              and slots["r1"].get("hash") == e1["hash"] and slots["r2"].get("hash") == e2["hash"],
+              f"{tag}: both initial answers and hashes are not visible after r2")
+
+        if outcome == "agree":
+            check(s2.get("state") == "resolved_agreed" and s2.get("next_read") is None and s2.get("may_submit") is False
+                  and s2.get("disagreement") is False and s2.get("final_decision") == first,
+                  f"{tag}: agreement did not resolve without r3")
+            senior.read(cid, item, first, "r3", s2["head"], expected=409)
+            continue
+
+        check(s2.get("state") == "awaiting_r3" and s2.get("disagreement") is True and s2.get("next_read") == "r3",
+              f"{tag}: disagreement did not open awaiting_r3")
+        head3 = s2["head"]
+        check(review_state(r1.detail(cid), item, question, tag).get("may_submit") is False
+              and review_state(r2.detail(cid), item, question, tag).get("may_submit") is False,
+              f"{tag}: an initial reader is offered r3")
+        check(review_state(senior.detail(cid), item, question, tag).get("may_submit") is True,
+              f"{tag}: the senior is not offered r3")
+        r1.read(cid, item, first, "r3", head3, expected=403)         # ordinary role, initial actor
+        r2.read(cid, item, first, "r3", head3, expected=403)
+        other.read(cid, item, first, "r3", head3, expected=403)      # wrong discipline
+        senior.read(cid, item, first, "r3", "stale-smoke-head", expected=409)
+        e3, s3 = accept(senior.read(cid, item, first, "r3", head3, note=f"SMOKE-INDEP-R3-NOTE-{outcome}"),
+                        cid, item, question, "r3", tag + " r3")
+        check(e3.get("resolution_reads") == [e1["hash"], e2["hash"]] and e3.get("prev") == e2["hash"],
+              f"{tag}: r3 does not link both initial reads")
+        check(s3.get("state") == "resolved_senior" and s3.get("next_read") is None and s3.get("final_decision") == first
+              and bool(s3.get("resolution_basis")), f"{tag}: r3 did not produce resolved_senior with a basis")
+        senior.read(cid, item, first, "r3", s3["head"], expected=409)   # terminal
+        r1.read(cid, item, first, "r2", s3["head"], expected=409)
+        code, body = c.request("POST", case_path(cid, "/undo"), {"target": e1["hash"], "note": ""}, token_env=d["r2"])
+        check(code == 409, f"{tag}: undo of a protocol read expected 409, got {code}")
+
+    # Reload from the server and verify ordered slots, hashes, redaction and unchanged canonical data.
+    for cid in sorted({a[0] for a in accepted}):
+        path = case_path(cid)
+        mine = [a for a in accepted if a[0] == cid]
+        for item, question in sorted({(a[1], a[2]) for a in mine}):
+            d = DISCIPLINES[question]
+            state = review_state(Reader(c, d["senior"]).detail(cid), item, question, "reload")
+            want = [a for a in mine if a[1] == item and a[2] == question]
+            check([r.get("read") for r in state["reads"] if r.get("submitted")] == [a[3] for a in want],
+                  f"reload {item}/{question}: submitted slots are not ordered as accepted")
+            check([r.get("hash") for r in state["reads"] if r.get("submitted")] == [a[4]["hash"] for a in want],
+                  f"reload {item}/{question}: slot hashes differ from the accepted events")
+            check(state["state"] == ("resolved_senior" if len(want) == 3 else "resolved_agreed"),
+                  f"reload {item}/{question}: terminal state is {state['state']!r}")
+        audit = c.ok(path + "/audit", "auditor")
+        history = audit.get("history", [])
+        proto = [e for e in history if e.get("protocol")]
+        check([e.get("hash") for e in proto if e.get("hash") in {a[4]["hash"] for a in mine}] == [a[4]["hash"] for a in mine],
+              f"{cid}: audit history lacks the accepted protocol events in order")
+        for e in proto:
+            if e.get("hash") not in {a[4]["hash"] for a in mine}:
+                continue
+            check(e.get("protocol") == PROTOCOL and e.get("read") in {"r1", "r2", "r3"} and e.get("question") in DISCIPLINES,
+                  f"{cid}: audit event lost protocol/read/question")
+            check(not ({"actor", "note", "target_actor"} & set(e)), f"{cid}: audit event exposes actor or note")
+            if e.get("read") == "r3":
+                by_hash = {a[4]["hash"]: a for a in mine}
+                check(e.get("resolution_reads") == by_hash[e["hash"]][4].get("resolution_reads"),
+                      f"{cid}: audit r3 lost its resolution links")
+        blob = canonical_json(audit).decode()
+        for canary in ["SMOKE-INDEP-R1-NOTE", "SMOKE-INDEP-R2-NOTE", "SMOKE-INDEP-R3-NOTE", *INDEPENDENT_ACTORS]:
+            check(canary not in blob, f"{cid}: audit leaked private canary {canary!r}")
+        export = c.ok(path + "/export", "auditor")
+        unsigned = {k: v for k, v in export.items() if k != "content_sha256"}
+        check(hashlib.sha256(canonical_json(unsigned)).hexdigest() == export.get("content_sha256"),
+              f"{cid}: export content_sha256 does not authenticate the document")
+        check_export_redaction(export, {"actor", "target_actor", "owner", "canonical_owner", "note", "text", "quote", "reasoning"})
+        blob = canonical_json(export).decode()
+        for canary in ["SMOKE-INDEP-R1-NOTE", "SMOKE-INDEP-R2-NOTE", "SMOKE-INDEP-R3-NOTE", *INDEPENDENT_ACTORS]:
+            check(canary not in blob, f"{cid}: export leaked private canary {canary!r}")
+        before = canon[cid]
+        after_detail = c.ok(path)
+        check(canonical_view(after_detail) == before[0], f"{cid}: canonical case or decisions changed under independent review")
+        check(audit.get("decision_signatures") == before[1] and audit.get("chain") == before[2]
+              and audit.get("chain_length") == before[3], f"{cid}: canonical audit chain or decision signatures changed")
+        check(audit.get("chain_verified") is True, f"{cid}: canonical audit chain no longer verifies")
+        check(len(history) >= before[4] + len(mine), f"{cid}: audit history did not grow by the accepted reads")
+    return len(accepted)
+
+
 def smoke(c):
     code, _ = c.request("GET", "/api/cases", authenticate=False)
     check(code == 401, f"unauthenticated case list: expected 401, got {code}")
@@ -359,6 +612,7 @@ def smoke(c):
     check(code == 404, f"unknown case: expected 404, got {code}")
     check("error" in body, "unknown case: 404 body has no error")
     workflow_smoke(c, fx["review_hold"]["id"])
+    independent_review_smoke(c, list(progs))
     return len(fx), total
 
 
@@ -372,7 +626,7 @@ def main(argv=None):
     except SmokeFailure as e:
         print(f"api smoke FAILED: {e}", file=sys.stderr)
         return 1
-    print(f"api smoke OK: {total} cases, {nfx} fixtures and workflow routes checked ({args.base_url})")
+    print(f"api smoke OK: {total} cases, {nfx} fixtures, workflow routes and independent double review checked ({args.base_url})")
     return 0
 
 
