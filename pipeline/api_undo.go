@@ -616,7 +616,7 @@ func (s *apiServer) caseUndo(w http.ResponseWriter, r *http.Request, c *apiCase)
 	}
 	s.reviews = append(s.reviews, ev)
 
-	body := map[string]interface{}{"event": ev, "canonical_reopened": false, "auto_closure": false,
+	body := map[string]interface{}{"event": s.shownEventLocked(ev, apiPrincipal{role: role, actor: actor}), "canonical_reopened": false, "auto_closure": false,
 		"canonical_state": c.State, "projection": s.undoProjectionLocked(c.ID, viewerEvents(s.caseEvents(c.ID), s.concealedHashesLocked(apiPrincipal{role: role, actor: actor})))}
 	switch evKindNew {
 	case evKindContest:

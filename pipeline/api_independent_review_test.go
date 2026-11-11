@@ -365,7 +365,7 @@ func TestIndependentReviewReplayAndFailClosed(t *testing.T) {
 	mk := func(actor, read, head string) map[string]interface{} {
 		return map[string]interface{}{"case": ledgerLoop, "item": irLinkItem, "decision": "same", "note": "", "role": "reviewer", "actor": actor,
 			"action": ActSignLink, "at": "2026-11-12T00:00:00Z", "head_signed": "x", "mode": "demo", "protocol": reviewProtocolName,
-			"read": read, "question": "link", "expected_head": head}
+			"nonce": strings.Repeat("ab", 16), "read": read, "question": "link", "expected_head": head}
 	}
 	a, b := mk("a", "r1", ""), mk("b", "r1", "")
 	ha := forge(a, "genesis")
@@ -429,5 +429,166 @@ func TestIndependentReviewProjectionJSON(t *testing.T) {
 		if rd.(map[string]interface{})["submitted"] != true {
 			t.Fatalf("both reads submitted: %s", raw)
 		}
+	}
+}
+
+// Every successful write response from any ledger writer, after r1 is planted, must omit the concealed r1 hash.
+func TestIndependentReviewWriteResponsesDoNotLeakConcealedHash(t *testing.T) {
+	e := newIR(t)
+	m := e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201)
+	r1Hash := m["review"].(map[string]interface{})["hash"].(string)
+	post := func(token, path, body string, want int) {
+		t.Helper()
+		r := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
+		r.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		e.h.ServeHTTP(w, r)
+		if w.Code != want {
+			t.Fatalf("POST %s %s: got %d want %d: %s", path, body, w.Code, want, w.Body.String())
+		}
+		if strings.Contains(w.Body.String(), r1Hash) {
+			t.Errorf("POST %s response leaks the concealed first-read hash: %s", path, w.Body.String())
+		}
+	}
+	// coordinator action chained directly on r1
+	head := e.s.caseHead(e.s.cases[ledgerLoop])
+	post(irCoord, e.path+"/actions", fmt.Sprintf(`{"action":"note","text":"synthetic","expected_head":%q}`, head), 201)
+	// consent chained on the previous event
+	post(irCoord, e.path+"/consent", fmt.Sprintf(`{"event":"consent_granted","expected_head":%q,"note":"synthetic"}`, e.s.cases[ledgerLoop].last.Sig), 201)
+	// legacy review by another reviewer
+	leg := e.must(t, irRevB, fmt.Sprintf(`{"item":%q,"decision":"same","note":"legacy"}`, irLinkItem), 201)
+	if strings.Contains(fmt.Sprint(leg), r1Hash) {
+		t.Errorf("legacy review response leaks r1: %v", leg)
+	}
+	// undo of that legacy event; its response event/projection chain after r1 too
+	legHash := leg["review"].(map[string]interface{})["hash"].(string)
+	post(irSR, e.path+"/undo", fmt.Sprintf(`{"target":%q,"note":"x"}`, legHash), 201)
+	// protocol refusals and the author's own events stay usable
+	post(irRevB, e.path+"/review", irBody(irLinkItem, "same", "r2", "bad"), 400)
+}
+
+// A canonical sign-off after legal protocol reads freezes the history: restart keeps it, other writes still work.
+func TestIndependentReviewSignoffFreezesProtocolHistory(t *testing.T) {
+	e := newIR(t)
+	h1 := stateOf(e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201))["head"].(string)
+	h2 := stateOf(e.must(t, irRevB, irBody(irLinkItem, "different", "r2", h1), 201))["head"].(string)
+	so := fmt.Sprintf(`{"item":%q,"loop":%q,"kinds":["link"],"link":"same","reviewer":"canon","wrong":false}`+"\n", irLinkItem, ledgerLoop)
+	if err := os.WriteFile(filepath.Join(e.run, "reviewer_decisions.ndjson"), []byte(so), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s2 := loadAPI(e.run, "")
+	if s2.ledgerErr != "" {
+		t.Fatalf("a later canonical sign-off must not invalidate history: %s", s2.ledgerErr)
+	}
+	h, err := s2.handler(irTokens, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	d := ledgerGet(t, h, e.path, irCoord)
+	var found map[string]interface{}
+	for _, v := range d["api_review_states"].([]interface{}) {
+		m := v.(map[string]interface{})
+		if m["item"] == irLinkItem {
+			found = m
+		}
+		if m["item"] == irEvItem && false {
+			t.Fatal("unreachable")
+		}
+	}
+	if found == nil || found["state"] != "awaiting_r3" || found["head"] != h2 {
+		t.Fatalf("frozen state not projected after restart: %v", found)
+	}
+	// new protocol writes on the signed item: 409; r3 included
+	r := httptest.NewRequest(http.MethodPost, e.path+"/review", strings.NewReader(irBody(irLinkItem, "same", "r3", h2)))
+	r.Header.Set("Authorization", "Bearer "+irSR)
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 409 {
+		t.Fatalf("r3 on a signed item: %d %s", w.Code, w.Body.String())
+	}
+	// unrelated writes still work
+	head := s2.caseHead(s2.cases[ledgerLoop])
+	ledgerPost(t, h, e.path+"/actions", irCoord, fmt.Sprintf(`{"action":"note","text":"synthetic","expected_head":%q}`, head), 201)
+	ledgerPost(t, h, e.path+"/consent", irCoord, fmt.Sprintf(`{"event":"consent_granted","expected_head":%q,"note":"synthetic"}`, s2.cases[ledgerLoop].last.Sig), 201)
+	// untouched signed item gets no new state; untouched unsigned items still listed
+	for _, v := range ledgerGet(t, h, e.path, irCoord)["api_review_states"].([]interface{}) {
+		if v.(map[string]interface{})["item"] == irLinkItem && v.(map[string]interface{})["state"] == "awaiting_r1" {
+			t.Fatal("signed item must not get a fresh awaiting_r1 state")
+		}
+	}
+}
+
+// Consent history (GET /consent and the detail api_contact splice) chains on r1 through prev: both are viewer-aware.
+func TestIndependentReviewConsentViewsDoNotLeakConcealedHash(t *testing.T) {
+	e := newIR(t)
+	m := e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201)
+	r1Hash := m["review"].(map[string]interface{})["hash"].(string)
+	// consent event written right after r1: its prev is r1's hash
+	ledgerPost(t, e.h, e.path+"/consent", irCoord, fmt.Sprintf(`{"event":"consent_granted","expected_head":%q,"note":"synthetic"}`, e.s.cases[ledgerLoop].last.Sig), 201)
+	for _, tok := range []string{irCoord, irRevB, irSR} {
+		for _, path := range []string{e.path + "/consent", e.path} {
+			w := securityRequest(t, e.h, http.MethodGet, path, tok, nil)
+			if w.Code != 200 {
+				t.Fatalf("GET %s: %d", path, w.Code)
+			}
+			if strings.Contains(w.Body.String(), r1Hash) {
+				t.Errorf("GET %s as %s leaks the concealed first-read hash", path, tok)
+			}
+		}
+	}
+	// the author may see it (their own event); and after r2 it is public to everyone
+	if !strings.Contains(securityRequest(t, e.h, http.MethodGet, e.path+"/consent", irRevA, nil).Body.String(), r1Hash) {
+		t.Error("author's own consent view should still chain on their r1")
+	}
+	h1 := stateOf(m)["head"].(string)
+	e.must(t, irRevB, irBody(irLinkItem, "same", "r2", h1), 201)
+	if !strings.Contains(securityRequest(t, e.h, http.MethodGet, e.path+"/consent", irCoord, nil).Body.String(), r1Hash) {
+		t.Error("after r2 the consent history is unfiltered")
+	}
+}
+
+func TestIndependentReviewNonce(t *testing.T) {
+	e := newIR(t)
+	m1 := e.must(t, irRevA, irBody(irLinkItem, "same", "r1", ""), 201)
+	m2 := e.must(t, irRevA, irBody(irBoth, "same", "r1", ""), 201)
+	n1, _ := m1["review"].(map[string]interface{})["nonce"].(string)
+	n2, _ := m2["review"].(map[string]interface{})["nonce"].(string)
+	if !reviewNonceRE.MatchString(n1) || n1 == n2 {
+		t.Fatalf("each read needs its own 128-bit nonce: %q %q", n1, n2)
+	}
+	// never in the auditor history or the redacted export
+	for _, path := range []string{e.path + "/audit", e.path + "/export"} {
+		tok := irAud
+		w := securityRequest(t, e.h, http.MethodGet, path, tok, nil)
+		if w.Code != 200 || strings.Contains(w.Body.String(), n1) || strings.Contains(w.Body.String(), `"nonce"`) {
+			t.Errorf("%s: %d, nonce exposed", path, w.Code)
+		}
+	}
+	// validator refuses a missing or malformed nonce
+	ev := map[string]interface{}{"case": ledgerLoop, "item": irLinkItem, "decision": "same", "note": "", "role": "reviewer", "actor": "x",
+		"action": ActSignLink, "at": "2026-11-12T00:00:00Z", "head_signed": "x", "mode": "demo", "prev": "genesis", "hash": "h",
+		"protocol": reviewProtocolName, "read": "r1", "question": "link", "expected_head": ""}
+	for _, bad := range []interface{}{nil, "short", strings.Repeat("AB", 16), 5} {
+		if bad != nil {
+			ev["nonce"] = bad
+		} else {
+			delete(ev, "nonce")
+		}
+		if err := applyReviewProtocol(map[reviewQuestionKey]*reviewProtocolState{}, ev); err == nil {
+			t.Errorf("nonce %v accepted", bad)
+		}
+	}
+}
+
+// Replay rejects a protocol read signed against a case head the run no longer has, like coordinator events.
+func TestIndependentReviewReplayRejectsForeignHeadSigned(t *testing.T) {
+	run := irRun(t)
+	ev := map[string]interface{}{"case": ledgerLoop, "item": irLinkItem, "decision": "same", "note": "", "role": "reviewer", "actor": "a",
+		"action": ActSignLink, "at": "2026-11-12T00:00:00Z", "head_signed": "not-the-case-head", "mode": "demo", "prev": "genesis",
+		"protocol": reviewProtocolName, "nonce": strings.Repeat("cd", 16), "read": "r1", "question": "link", "expected_head": ""}
+	ev["hash"] = apiEventHash(ev)
+	os.WriteFile(filepath.Join(run, "api_reviews.ndjson"), append(canon(ev), '\n'), 0o600)
+	if s := loadAPI(run, ""); s.ledgerErr == "" {
+		t.Fatal("foreign head_signed must fail replay closed")
 	}
 }

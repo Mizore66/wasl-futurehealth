@@ -763,7 +763,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
-		return 201, map[string]interface{}{"review": stored,
+		return 201, map[string]interface{}{"review": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}),
 			"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}
 	}()
 	writeJSONResp(w, code, s.envelope(body)) // never write the response while holding s.mu
@@ -1525,7 +1525,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
 		c.applyOverlay(stored)
-		return 201, map[string]interface{}{"event": stored, "api_overlay": s.overlayViewLocked(c, true),
+		return 201, map[string]interface{}{"event": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "api_overlay": s.overlayViewLocked(c, true),
 			"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}
 	}()
 	writeJSONResp(w, code, s.envelope(body))
