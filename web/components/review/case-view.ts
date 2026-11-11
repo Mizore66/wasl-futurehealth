@@ -1,4 +1,4 @@
-import type { CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -22,8 +22,11 @@ export type ReviewView = {
   caseId: string;
   /** Canonical case state from the latest server render, never inferred from a 201. */
   closed: boolean;
-  /** Only CRC uses the guided same-patient / colonoscopy report form. */
+  /** CRC and the five API-supported non-CRC programmes use the guided review desk. */
   guided: boolean;
+  programme: CaseDetail["case"]["programme"];
+  evidenceQuestion: string;
+  evidenceChoices: string[];
   shortId: string;
   name: string;
   nameAr: string;
@@ -111,14 +114,17 @@ export function reviewView(c: CaseDetail): ReviewView {
   const b = downstream && personFor(downstream.registration);
   const linkItem = c.review_items.find((r) => r.kinds.includes("link"));
   const evidenceItem = c.review_items.find((r) => r.kinds.includes("evidence"));
-  const ev = c.evidence[0];
+  const ev = evidenceItem ? c.evidence.find((e) => shortId(e.report) === shortId(evidenceItem.report)) : c.evidence[0];
   const link = c.links[0];
   const guard = linkItem?.chain.find((e) => e.type === "outreach_guard")?.body;
   const reportEvent = c.timeline.find((e) => ev && e.id === ev.report);
   const unit = providerName(downstream?.provider ?? "");
-  const copy = PROGRAMME_COPY[c.case.programme];
-  const guided = c.case.programme === "crc";
-  const checks = guided ? checksFrom(ev?.fields) : [];
+  const programme = c.case.programme;
+  const copy = PROGRAMME_COPY[programme];
+  const guided = isGuided(programme);
+  const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
+  const evidenceQuestion = programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
+  const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
   /*
    * The API names the guard that raised the link item: "second_identifier" means no exact date of birth, and no Emirates ID
    * with agreeing name, sex and date of birth, was on file for the pair. It does not say which side lacks it, so the screen
@@ -134,7 +140,7 @@ export function reviewView(c: CaseDetail): ReviewView {
           ? `neither reader found ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}`
           : `the readers differ on ${PLAIN_FIELD[k.field] ?? k.field.toLowerCase()}: rules reader ${READER_WORD[k.rules] ?? k.rules}, second reader ${READER_WORD[k.second] ?? k.second}`,
     }));
-  const evidenceHold = guided
+  const evidenceHold = programme === "crc"
     ? disputed.length > 0 && `the two readers could not settle ${disputed.map((d) => PLAIN_FIELD[d.field] ?? d.field).join(" and ")}`
     : ev && !ev.agree && `${copy.report} readers disagree`;
   const held = [noSecondId && "no second identifier is confirmed for the two records", evidenceHold].filter((r): r is string => !!r);
@@ -188,6 +194,9 @@ export function reviewView(c: CaseDetail): ReviewView {
     caseId: c.case.id,
     closed: c.case.closed,
     guided,
+    programme,
+    evidenceQuestion,
+    evidenceChoices: [...evidenceChoices],
     shortId: shortId(c.case.id),
     name: a?.display_name ?? shortId(c.case.id),
     nameAr: a?.display_name_ar ?? "",

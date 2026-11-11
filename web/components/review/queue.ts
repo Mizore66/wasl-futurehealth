@@ -1,5 +1,5 @@
 import { getCase, getCases, getFixtures } from "@/lib/api/source";
-import type { CaseDetail } from "@/lib/api/schema";
+import { isGuided, type CaseDetail } from "@/lib/api/schema";
 import { beforeReview } from "@/lib/people/identity";
 
 export type ReviewQueue = {
@@ -8,11 +8,12 @@ export type ReviewQueue = {
   source: "open" | "rebuilt";
 };
 
-/** CRC cases waiting for a person's answer, oldest referral first: the desk asks the CRC questions. */
+/** Cases waiting for a person's answer in every programme the desk can sign, oldest referral first. Cervical has no answer panel. */
 export async function reviewQueue(): Promise<ReviewQueue> {
-  const open = await getCases({ review: "open", programme: "crc", limit: 50 });
-  if (open.cases.length > 0) {
-    const details = await Promise.all(open.cases.map((c) => getCase(c.id)));
+  const open = await getCases({ review: "open", limit: 50 });
+  const guided = open.cases.filter((c) => isGuided(c.programme));
+  if (guided.length > 0) {
+    const details = await Promise.all(guided.map((c) => getCase(c.id)));
     const cases = details.filter((d): d is CaseDetail => d !== null && d.review_items.length > 0);
     if (cases.length > 0) return { cases: cases.sort((a, b) => a.case.referral_day - b.case.referral_day), source: "open" };
   }
