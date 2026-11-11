@@ -204,6 +204,12 @@ class NoticesTest(unittest.TestCase):
         self.assertEqual(out, notices.render_notice_bundle(copy.deepcopy(m), self.root))
         self.assertNotIn(str(self.root), out)
 
+    def test_render_ends_with_exactly_one_newline(self):
+        for m in (manifest(), {"schema_version": 1, "packages": []}):
+            out = notices.render_notice_bundle(m, self.root)
+            self.assertTrue(out.endswith("\n"))
+            self.assertFalse(out.endswith("\n\n"))
+
     def test_render_input_order(self):
         m = manifest()
         second = direct()
