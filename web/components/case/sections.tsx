@@ -4,12 +4,14 @@ import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { closureChecks, linkScore, providerLabel, readerLabels } from "@/components/worklist/model";
 import type { CaseDetail } from "@/lib/api/schema";
+import { apiMode } from "@/lib/api/source";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
+import { ConsentActions } from "./consent-actions";
 import {
   atWords,
   basisWords,
@@ -371,9 +373,9 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
   return (
     <Card id="consent" title="Consent and messages" aside={<HonestyLabel kind="simulated">Simulated messages</HonestyLabel>}>
       <p className="m-0 mt-3">
-        Now: <span className="font-medium">{consentNow(detail.case.consent)}</span>
+        Canonical simulation now: <span className="font-medium">{consentNow(detail.case.consent)}</span>
       </p>
-      <h3 className="m-0 mt-3 text-body font-medium">Consent history</h3>
+      <h3 className="m-0 mt-3 text-body font-medium">Canonical consent history</h3>
       {consent.length === 0 ? (
         <Empty>No consent events on record.</Empty>
       ) : (
@@ -386,6 +388,13 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
           ))}
         </ul>
       )}
+      <ConsentActions
+        caseId={detail.case.id}
+        expectedHead={detail.current.sig}
+        contact={detail.api_contact}
+        live={apiMode() === "live"}
+        canWrite={detail.review_ledger?.status !== "invalid"}
+      />
       <h3 className="m-0 mt-3 text-body font-medium">Messages</h3>
       {out.length === 0 ? (
         <Empty>No messages were sent or held for this case.</Empty>
@@ -411,7 +420,7 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
 export function SignoffsCard({ detail }: { detail: CaseDetail }) {
   const { signoffs } = detail;
   /* Reviews and their undo/contest events. Coordinator actions share the ledger but are not sign-offs: LedgerCard. */
-  const appended = detail.api_reviews.filter((r) => r.ledger === "review" || r.ledger === "compensation");
+  const appended = detail.api_reviews.filter((r) => (r.ledger === "review" && r.action !== "record_consent") || r.ledger === "compensation");
   return (
     <Card
       id="signoffs"
