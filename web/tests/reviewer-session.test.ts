@@ -57,7 +57,7 @@ describe("signInReviewer", () => {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
-      path: "/app/review",
+      path: "/app",
       maxAge: 8 * 60 * 60,
     });
     expect(JSON.stringify([log.mock.calls, err.mock.calls])).not.toContain(TOKEN);
@@ -81,7 +81,7 @@ describe("signInReviewer", () => {
 describe("signOutReviewer", () => {
   it("deletes the review-path cookie and revalidates the case", async () => {
     await signOutReviewer("c1");
-    expect(store.delete).toHaveBeenCalledWith({ name: "wasl_review_token", path: "/app/review" });
+    expect(store.delete).toHaveBeenCalledWith({ name: "wasl_review_token", path: "/app" });
     expect(revalidateMock).toHaveBeenCalledWith("/app/review/c1");
   });
 });

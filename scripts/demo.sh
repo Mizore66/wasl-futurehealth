@@ -41,6 +41,9 @@ READER_URL="${WASL_READER_URL:-http://127.0.0.1:8791}"
 # credential 3 is the senior (senior_reviewer / senior_clinician) who alone may submit the r3 resolution read.
 export WASL_SYNTHETIC_DATA_ONLY=1
 export WASL_API_REVIEWER_TOKEN="${WASL_API_REVIEWER_TOKEN:-wasl-demo-reviewer-1-token}"
+# The web server's generic shared reads (dashboard, lists, case pages) use their own reviewer credential bound to a
+# non-reader actor, so a first read concealed from everyone but its author is never shown under an initial reader's identity.
+export WASL_API_WEB_REVIEWER_TOKEN="${WASL_API_WEB_REVIEWER_TOKEN:-wasl-demo-web-reviewer-token}"
 export WASL_API_REVIEWER_2_TOKEN="${WASL_API_REVIEWER_2_TOKEN:-wasl-demo-reviewer-2-token}"
 export WASL_API_REVIEWER_3_TOKEN="${WASL_API_REVIEWER_3_TOKEN:-wasl-demo-reviewer-3-token}"
 export WASL_API_AUDITOR_TOKEN="${WASL_API_AUDITOR_TOKEN:-wasl-demo-auditor-token}"
@@ -48,7 +51,7 @@ export WASL_API_COORDINATOR_TOKEN="${WASL_API_COORDINATOR_TOKEN:-wasl-demo-coord
 export WASL_API_CLINICIAN_TOKEN="${WASL_API_CLINICIAN_TOKEN:-wasl-demo-clinician-token}"
 export WASL_API_CLINICIAN_2_TOKEN="${WASL_API_CLINICIAN_2_TOKEN:-wasl-demo-clinician-2-token}"
 export WASL_API_CLINICIAN_3_TOKEN="${WASL_API_CLINICIAN_3_TOKEN:-wasl-demo-clinician-3-token}"
-export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:senior_reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician,$WASL_API_CLINICIAN_2_TOKEN:clinician:smoke-clinician-2,$WASL_API_CLINICIAN_3_TOKEN:senior_clinician:smoke-clinician-3}"
+export WASL_API_TOKENS="${WASL_API_TOKENS:-$WASL_API_REVIEWER_TOKEN:reviewer:smoke-reviewer-1,$WASL_API_WEB_REVIEWER_TOKEN:reviewer:smoke-web-reviewer,$WASL_API_REVIEWER_2_TOKEN:reviewer:smoke-reviewer-2,$WASL_API_REVIEWER_3_TOKEN:senior_reviewer:smoke-reviewer-3,$WASL_API_AUDITOR_TOKEN:auditor:smoke-auditor,$WASL_API_COORDINATOR_TOKEN:coordinator:smoke-coordinator,$WASL_API_CLINICIAN_TOKEN:clinician:smoke-clinician,$WASL_API_CLINICIAN_2_TOKEN:clinician:smoke-clinician-2,$WASL_API_CLINICIAN_3_TOKEN:senior_clinician:smoke-clinician-3}"
 export WASL_API_ORIGINS="${WASL_API_ORIGINS:-}"
 COHORT="$OUT/cohort"; BASE="$OUT/cohort-base"; RUN="$OUT/run/$POLICY-$READER-$SOURCE"; [ "${WASL_IMAGE:-off}" = off ] || RUN="$RUN-image"
 LUNG="${WASL_LUNG:-0}"             # incidental lung-nodule loops (second loop type); 0 = off

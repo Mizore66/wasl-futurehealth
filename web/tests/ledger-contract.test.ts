@@ -283,6 +283,7 @@ describe("one Today action does not break pages that read every fixture's case d
   it("runClock and the worklist read a detail whose ledger holds coordinator events", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-secret-1234567890");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
     vi.stubGlobal(
       "fetch",

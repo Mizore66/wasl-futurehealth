@@ -50,14 +50,21 @@ const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
 export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
 
-function apiToken(credential: Role | GovernanceCredential): string {
+/**
+ * `web_reviewer` is the credential for generic shared reads (dashboard, lists, case detail on shared pages). It is bound
+ * to its own non-reader actor, so a first read concealed from everyone but its author is concealed from these pages too.
+ * It never falls back to the assigned reviewer tokens, which are initial readers.
+ */
+export type WebCredential = "web_reviewer";
+
+function apiToken(credential: Role | GovernanceCredential | WebCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
   const token = process.env[name]?.trim();
   if (!token) throw new Error(`${name} is required for the live synthetic API`);
   return token;
 }
 
-export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential): RequestInit {
+export function authenticated(init: RequestInit | undefined, credential: Role | GovernanceCredential | WebCredential): RequestInit {
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${apiToken(credential)}`);
   return { cache: "no-store", ...init, headers };
@@ -67,7 +74,7 @@ export function liveBase(): string {
   return process.env.WASL_API_URL!.replace(/\/$/, "");
 }
 
-async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role = "reviewer"): Promise<z.infer<S> | null> {
+async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role | WebCredential = "web_reviewer"): Promise<z.infer<S> | null> {
   const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
