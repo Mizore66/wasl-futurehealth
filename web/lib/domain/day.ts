@@ -13,6 +13,13 @@ export function formatDay(day: number): string {
   return SHORT.format(dayToDate(day));
 }
 
+const WITH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+/** "14 Sep 2027": for windows and due dates that can fall in another year. */
+export function formatDayYear(day: number): string {
+  return WITH_YEAR.format(dayToDate(day));
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /**
