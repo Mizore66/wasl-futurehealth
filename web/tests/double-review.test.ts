@@ -261,6 +261,15 @@ describe("rendered reads", () => {
     expect(html).toContain("Senior read: Same; resolved by the senior read");
     expect(html).not.toContain("reviewer-one");
   });
+
+  it("offers no undo or contest control on a double-review read, even live with every read active", () => {
+    const audit = Audit.parse(load("double_review_audit.json"));
+    const events = audit.history.map((e) => ({ hash: e.hash, kind: "review", actor: "", action: "signoff_link", target: "", status: "active" as const, at: "" }));
+    const projection = { meta: audit.meta, case: audit.case, case_status: "active" as const, canonical_state: "open" as const, note: "", events };
+    const html = renderToStaticMarkup(HistoryCard({ audit, programme: "crc", governance: { caseId: audit.case, projection } }));
+    expect(html).toContain("Senior read: Same");
+    expect(html).not.toMatch(/Append compensation|Contest review|Resolve contest/);
+  });
 });
 
 describe("one deployment credential per question role", () => {

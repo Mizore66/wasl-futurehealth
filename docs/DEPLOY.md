@@ -228,10 +228,10 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | Variable | Value | Used for |
    |---|---|---|
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
-   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review and governance |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review, governance, and this deployment's one double-review read of link items |
    | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
    | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | a contest resolver independent of both prior actors |
-   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions, and this deployment's one double-review read of evidence items |
    | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | independent evidence/contest actions and consent resolution |
    | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | an evidence contest resolver independent of both prior actors |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
@@ -239,6 +239,14 @@ reachable API must not use them, so generate fresh tokens for each role and inde
 
    Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
    the browser.
+
+   Independent double review ([`API-DOUBLE-REVIEW.md`](API-DOUBLE-REVIEW.md)) uses only `WASL_API_REVIEWER_TOKEN` and
+   `WASL_API_CLINICIAN_TOKEN`, never the `_2_`/`_3_` credentials, so a hosted site is **one** double-review reader.
+   It can give at most one read of an item and shows only its own blinded answer. The second initial read and any
+   senior read must come from other people's credentials: another deployment, or a direct API client. Per-person web
+   sign-in, which would map each signed-in person to exactly one credential, is **designed, not built**. Bind every
+   credential to one canonical actor name per human. The API compares actors trimmed and case-insensitive, so it cannot
+   tell that two different names, or lookalike names, belong to one person.
 
 The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
 `X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the
