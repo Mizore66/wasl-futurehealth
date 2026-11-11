@@ -180,6 +180,16 @@ func loadNATSRecoveryBundle(path string) (recoveryNATSBundle, error) {
 	if err := validateNATSRecoveryBundle(bundle); err != nil {
 		return recoveryNATSBundle{}, err
 	}
+	for streamIndex, saved := range bundle.Streams {
+		for messageIndex, message := range saved.Messages {
+			saved.Messages[messageIndex].Header = recoveryApplicationHeader(nats.Header(message.Header))
+		}
+		digest, err := recoveryLogicalDigest(saved.Messages)
+		if err != nil {
+			return recoveryNATSBundle{}, err
+		}
+		bundle.Streams[streamIndex].Digest = digest
+	}
 	return bundle, nil
 }
 
