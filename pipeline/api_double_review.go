@@ -23,6 +23,14 @@ package main
 //     permission. The demo token configuration has no separate seniority tier (see the doc);
 //   - expected_head is the round's head ("genesis" before its first read, then the hash of its latest read);
 //     a stale head is refused with 409 conflict "head".
+//
+// Fields the handler fills in itself are checked on replay against what it would have written: head_signed is the
+// case's decision signature, at is a canonical UTC RFC 3339 time no earlier than the round's previous read (the handler
+// clamps a clock that stepped back), and every nonce is unique in the ledger (the handler redraws a collision).
+//
+// Independence rests on the operator: actors are compared trimmed and case-insensitive (normActor), so two tokens
+// bound to "Reviewer-One" and "reviewer-one" are one person, but the API cannot tell that two different names (or a
+// Unicode lookalike of a name) belong to one human. Issue one canonical actor name per human (docs/API-DOUBLE-REVIEW.md).
 
 import (
 	"crypto/rand"
@@ -56,12 +64,19 @@ var drEventKeys = map[string]bool{"type": true, "kind": true, "case": true, "ite
 	"decision": true, "note": true, "nonce": true, "role": true, "actor": true, "action": true, "at": true, "head_signed": true,
 	"round_head": true, "round_seq": true, "phase_after": true, "final": true, "mode": true, "prev": true, "hash": true}
 
+// drNonceSource draws a read's commitment nonce (replaceable in tests to force a collision).
+var drNonceSource = rand.Read
+
+// drNow is the handler's clock (replaceable in tests to step it back).
+var drNow = time.Now
+
 // drRound is the folded state of one review item's double review.
 type drRound struct {
 	item  string
 	reads map[string]map[string]interface{} // r1 | r2 | r3 -> ledger event
 	head  string
 	seq   int
+	at    time.Time // the latest read's timestamp; a later read may not be earlier
 }
 
 func newDRRound(item string) *drRound {
@@ -113,6 +128,9 @@ func foldDoubleReview(events []map[string]interface{}) map[string]*drRound {
 		r.reads[sstr(ev, "read")] = ev
 		r.head = sstr(ev, "hash")
 		r.seq++
+		if at, err := time.Parse(time.RFC3339Nano, sstr(ev, "at")); err == nil {
+			r.at = at
+		}
 	}
 	return rounds
 }
@@ -271,15 +289,23 @@ func (s *apiServer) replayDoubleRead(ev map[string]interface{}) error {
 	if sstr(ev, "kind") != doubleReviewKind || sstr(ev, "mode") != "demo" {
 		return errors.New("double review event has a bad kind or mode")
 	}
-	if !drNonce.MatchString(sstr(ev, "nonce")) {
+	nonce := sstr(ev, "nonce")
+	if !drNonce.MatchString(nonce) {
 		return errors.New("double review event has a bad nonce")
 	}
-	if _, err := time.Parse(time.RFC3339Nano, sstr(ev, "at")); err != nil {
+	if s.drNonceUsed(nonce) {
+		return errors.New("double review event reuses a nonce")
+	}
+	at, err := time.Parse(time.RFC3339Nano, sstr(ev, "at"))
+	if err != nil || at.UTC().Format(time.RFC3339Nano) != sstr(ev, "at") {
 		return errors.New("double review event has a bad timestamp")
 	}
 	c := s.cases[sstr(ev, "case")]
 	if c == nil {
 		return errors.New("double review event for unknown case")
+	}
+	if sstr(ev, "head_signed") != drHeadSigned(c) {
+		return errors.New("double review event head_signed is not the case's decision signature")
 	}
 	rounds := foldDoubleReview(s.caseEvents(c.ID))
 	in := drRead{item: sstr(ev, "item"), read: sstr(ev, "read"), decision: sstr(ev, "decision"), note: sstr(ev, "note"),
@@ -298,6 +324,9 @@ func (s *apiServer) replayDoubleRead(ev map[string]interface{}) error {
 	if seq, isNum := ev["round_seq"].(float64); !isNum || seq != float64(r.seq+1) {
 		return errors.New("double review event has a bad round sequence")
 	}
+	if at.Before(r.at) {
+		return errors.New("double review event is earlier than the round's previous read")
+	}
 	after := *r
 	after.reads = map[string]map[string]interface{}{}
 	for k, v := range r.reads {
@@ -312,7 +341,54 @@ func (s *apiServer) replayDoubleRead(ev map[string]interface{}) error {
 		return errors.New("double review event final does not match the replayed round")
 	}
 	s.reviews = append(s.reviews, ev)
+	s.drNonces[nonce] = true
 	return nil
+}
+
+// drNonceUsed reports whether a read in the ledger already carries nonce. The set is built from s.reviews on first use,
+// then kept current by every append (replay and write), always under s.mu or during single-threaded start-up.
+func (s *apiServer) drNonceUsed(nonce string) bool {
+	if s.drNonces == nil {
+		s.drNonces = map[string]bool{}
+		for _, ev := range s.reviews {
+			if isDoubleRead(ev) {
+				s.drNonces[sstr(ev, "nonce")] = true
+			}
+		}
+	}
+	return s.drNonces[nonce]
+}
+
+// drFreshNonce draws a nonce no read in the ledger carries yet, so the write path never produces what replay refuses.
+func (s *apiServer) drFreshNonce() (string, error) {
+	b := make([]byte, 16)
+	for try := 0; try < 4; try++ {
+		if _, err := drNonceSource(b); err != nil {
+			return "", err
+		}
+		if n := hex.EncodeToString(b); !s.drNonceUsed(n) {
+			return n, nil
+		}
+	}
+	return "", errors.New("nonce source keeps repeating")
+}
+
+// drHeadSigned is the case decision signature a read records (head_signed): the API never changes it.
+func drHeadSigned(c *apiCase) string {
+	if c.last == nil {
+		return ""
+	}
+	return c.last.Sig
+}
+
+// drReadTime is the timestamp the handler records: now in UTC, clamped so it is never earlier than the round's
+// previous read (a wall clock that stepped back must not write a history replay refuses).
+func drReadTime(now time.Time, r *drRound) string {
+	now = now.UTC()
+	if now.Before(r.at) {
+		now = r.at.UTC()
+	}
+	return now.Format(time.RFC3339Nano)
 }
 
 // blindDoubleReview returns one case's ledger events as they may be served to anyone: an initial read of a round
@@ -436,11 +512,6 @@ func (s *apiServer) postDoubleRead(w http.ResponseWriter, r *http.Request, c *ap
 		fail(refuse(400, "body must be one strict JSON object with item, read, decision, note and expected_head; duplicate or unknown fields and oversized/trailing data are rejected"))
 		return
 	}
-	nonce := make([]byte, 16)
-	if _, err := rand.Read(nonce); err != nil {
-		fail(refuse(500, "could not draw the read's commitment nonce; nothing was recorded"))
-		return
-	}
 	code, body := func() (int, map[string]interface{}) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
@@ -458,9 +529,13 @@ func (s *apiServer) postDoubleRead(w http.ResponseWriter, r *http.Request, c *ap
 			rd = newDRRound(req.Item)
 			rounds[req.Item] = rd
 		}
+		nonce, err := s.drFreshNonce()
+		if err != nil {
+			return 500, map[string]interface{}{"error": "could not draw the read's commitment nonce; nothing was recorded"}
+		}
 		ev := map[string]interface{}{"type": doubleReviewType, "kind": doubleReviewKind, "case": c.ID, "item": req.Item, "question": question,
-			"read": req.Read, "decision": req.Decision, "note": req.Note, "nonce": hex.EncodeToString(nonce), "role": role, "actor": actor,
-			"action": action, "at": time.Now().UTC().Format(time.RFC3339Nano), "head_signed": c.last.Sig, "round_head": rd.head,
+			"read": req.Read, "decision": req.Decision, "note": req.Note, "nonce": nonce, "role": role, "actor": actor,
+			"action": action, "at": drReadTime(drNow(), rd), "head_signed": drHeadSigned(c), "round_head": rd.head,
 			"round_seq": rd.seq + 1, "mode": "demo", "prev": s.lastHashLocked()}
 		probe := *rd
 		probe.reads = map[string]map[string]interface{}{}
@@ -476,6 +551,7 @@ func (s *apiServer) postDoubleRead(w http.ResponseWriter, r *http.Request, c *ap
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
+		s.drNonces[nonce] = true // drFreshNonce built the set
 		after := foldDoubleReview(s.caseEvents(c.ID))
 		round := s.roundView(c, s.raisedItem(c, req.Item), after[req.Item], role, actor)
 		note := "read recorded; the other initial read stays hidden until it is submitted"

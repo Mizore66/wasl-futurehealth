@@ -82,6 +82,7 @@ type apiServer struct {
 	mu         sync.Mutex
 	reviews    []map[string]interface{}
 	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	drNonces   map[string]bool    // nonces of double-review reads in the ledger (api_double_review.go); built on first use
 	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
 }
 
