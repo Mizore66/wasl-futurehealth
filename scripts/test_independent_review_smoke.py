@@ -36,7 +36,8 @@ class FakeProtocolTests(unittest.TestCase):
         self.assertEqual(r1["review_state"]["state"], "awaiting_r2")
         head = r1["review_state"]["head"]
         self.assertEqual(self.post("reviewer-token-1234567890", self.body("same", "r2", head))[0], 403)
-        self.assertEqual(self.post("reviewer-2-token-1234567890", self.body("same", "r2", "stale"))[0], 409)
+        self.assertEqual(self.post("reviewer-2-token-1234567890", self.body("same", "r2", "0" * 64))[0], 409)
+        self.assertEqual(self.post("reviewer-2-token-1234567890", self.body("same", "r2", "not-a-head"))[0], 400)
         code, view = self.fake.route("GET", f"/api/cases/{self.cid}", {}, None, "reviewer", "smoke-reviewer-2")
         text = json.dumps(view)
         self.assertNotIn(r1["review"]["hash"], text)
@@ -58,7 +59,7 @@ class FakeProtocolTests(unittest.TestCase):
         self.assertEqual(r2["review_state"]["state"], "awaiting_r3")
         self.assertEqual(self.post("reviewer-token-1234567890", self.body("same", "r3", head))[0], 403)
         self.assertEqual(self.post("clinician-3-token-1234567890", self.body("same", "r3", head))[0], 403)
-        self.assertEqual(self.post("reviewer-3-token-1234567890", self.body("same", "r3", "stale"))[0], 409)
+        self.assertEqual(self.post("reviewer-3-token-1234567890", self.body("same", "r3", "0" * 64))[0], 409)
         code, r3 = self.post("reviewer-3-token-1234567890", self.body("same", "r3", head))
         self.assertEqual(code, 201)
         self.assertEqual(r3["review"]["resolution_reads"], [r1["review"]["hash"], r2["review"]["hash"]])
@@ -112,7 +113,7 @@ class IndependentSmokeDetectsViolations(unittest.TestCase):
         def m(f):
             orig = f.pstate
             f.pstate = lambda cid, item, q: ("awaiting_r3", orig(cid, item, q)[1]) if orig(cid, item, q)[0] == "resolved_agreed" else orig(cid, item, q)
-        self.assertFails(m, "")
+        self.assertFails(m, "agreement did not resolve")
 
     def test_ordinary_role_r3_is_caught(self):
         def m(f):
@@ -126,14 +127,20 @@ class IndependentSmokeDetectsViolations(unittest.TestCase):
 
     def test_stale_head_acceptance_is_caught(self):
         def m(f):
-            f.shown_head = lambda cid, item, question: "stale-smoke-head"
-        self.assertFails(m, "")
+            orig = f.protocol_review
+            def lax(cid, body, role, actor):  # accepts a well-formed but stale head by substituting the real one
+                if body.get("expected_head") == "0" * 64:
+                    item = body["item"]
+                    body = dict(body, expected_head=f.shown_head(cid, item, f.raised[cid][item]))
+                return orig(cid, body, role, actor)
+            f.protocol_review = lax
+        self.assertFails(m, "expected 409")
 
     def test_audit_actor_or_note_leak_is_caught(self):
         def m(f):
             orig = f.live_audit
             f.live_audit = lambda cid: dict(orig(cid), history=f.case_events(cid))
-        self.assertFails(m, "")
+        self.assertFails(m, "exposes actor or note")
 
     def test_undo_of_protocol_read_must_be_409(self):
         def m(f):
@@ -144,7 +151,7 @@ class IndependentSmokeDetectsViolations(unittest.TestCase):
                     return 201, {"event": {}}
                 return orig(method, path, query, body, role, actor)
             f.route = lax
-        self.assertFails(m, "undo of a protocol read")
+        self.assertFails(m, "undo of a concealed r1")
 
     def test_canonical_change_is_caught(self):
         def m(f):

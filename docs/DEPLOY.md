@@ -209,7 +209,7 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    ```bash
    umask 077
    for r in reviewer reviewer-2 reviewer-3 clinician clinician-2 clinician-3 auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
-   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer-1,$(cat wasl-reviewer-2.token):reviewer:hosted-reviewer-2,$(cat wasl-reviewer-3.token):senior_reviewer:hosted-reviewer-3,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-clinician-2.token):clinician:hosted-clinician-2,$(cat wasl-clinician-3.token):senior_clinician:hosted-clinician-3,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
    scripts/deploy_up.sh -d                            # detached: does not attach to the logs
    until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
    curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
@@ -220,14 +220,13 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
    characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
    `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
-   For the independent double-review protocol, bind the third reviewer and clinician tokens to the senior roles, and give
-   every credential a different actor: `...:senior_reviewer:hosted-reviewer-3` and `...:senior_clinician:hosted-clinician-3`
-   (credentials 1 and 2 stay `reviewer` / `clinician`). Two tokens bound to the same actor are not independent and the API refuses
-   the second read. Reviewers sign in on the website with their own assigned token (HttpOnly cookie, HTTPS required).
+   The command above already binds the third reviewer and clinician tokens to `senior_reviewer` / `senior_clinician`
+   (credentials 1 and 2 stay `reviewer` / `clinician`), each with a different actor. Two tokens bound to the same actor are not independent and the API refuses
+   the second read. Reviewers sign in on the website with their own assigned bearer token (HttpOnly cookie, HTTPS required). This bearer-token form is the synthetic-demo path.
    `scripts/production_secrets.sh` generates, for the Basic-auth production package, `api_users.json` entries `reviewer`, `reviewer-2`,
    `senior-reviewer`, `clinician`, `clinician-2`, `senior-clinician`, `coordinator` and `auditor`, each with its own
    random password, without printing them. These credentials identify configured actors, not separate humans; there is
-   no OIDC, and the smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
+   no OIDC. **Limitation:** the Basic-auth production package exposes independent review through its API only; the web sign-in form accepts bearer tokens, so those Basic passwords do not work in it and there is no production web path for independent review yet. The smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
 2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
    on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
 3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
@@ -238,10 +237,10 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
    | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review and governance |
    | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
-   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | a contest resolver independent of both prior actors |
+   | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | the senior_reviewer: r3 resolution of a disagreement (and contest resolver) independent of both initial readers |
    | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |
    | `WASL_API_CLINICIAN_2_TOKEN` | contents of `wasl-clinician-2.token` | independent evidence/contest actions and consent resolution |
-   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | an evidence contest resolver independent of both prior actors |
+   | `WASL_API_CLINICIAN_3_TOKEN` | contents of `wasl-clinician-3.token` | the senior_clinician: r3 resolution of an evidence disagreement (and contest resolver) independent of both initial readers |
    | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
    | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
 

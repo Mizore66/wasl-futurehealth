@@ -59,6 +59,15 @@ class ProductionDeploymentTests(unittest.TestCase):
             self.assertRegex(line, r"\$WASL_API_%s_TOKEN:%s:" % (variable, role))
         self.assertNotRegex(line, r"_TOKEN:(reviewer|clinician):smoke-(reviewer|clinician)-3")
 
+    def test_deploy_doc_binds_third_credentials_as_senior_and_states_basic_limit(self):
+        doc = (ROOT / "docs/DEPLOY.md").read_text()
+        command = next(l for l in doc.splitlines() if l.strip().startswith("export WASL_API_TOKENS="))
+        for role in ("reviewer", "clinician"):
+            self.assertIn(f"wasl-{role}-3.token):senior_{role}:", command)
+            self.assertNotIn(f"wasl-{role}-3.token):{role}:", command)
+        self.assertNotIn("a contest resolver independent of both prior actors", doc)
+        self.assertIn("passwords do not work in it", doc)
+
     def test_secret_volume_loader_copies_files_without_bind_mounts_or_logging_values(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

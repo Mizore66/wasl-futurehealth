@@ -277,7 +277,9 @@ An agreement never opens `r3`. A disagreement alone opens it. `r3` records `reso
 
 **Undo and contest:** targeting a protocol read returns 409 in this version (dependent invalidation is not designed). Legacy compensation is unchanged.
 
-**Web sign-in (cookie scope):** the review page uses a reviewer-supplied assigned API token. A Next.js server action verifies it with an authenticated API request, then stores it in an `HttpOnly; Secure; SameSite=Strict` cookie (`wasl_review_token`) scoped to the review path. Review reads and writes send that exact credential; the browser never supplies actor or role headers. Sign-out clears the cookie. Fixture mode requests no credential and persists nothing.
+**Web sign-in (cookie scope):** the review page uses a reviewer-supplied assigned API token. A Next.js server action verifies it with an authenticated API request, then stores it in an `HttpOnly; Secure; SameSite=Strict` cookie (`wasl_review_token`) scoped to the review path. Review reads and writes send that exact credential; the browser never supplies actor or role headers. Sign-out clears the cookie. This is the synthetic-demo path: the Basic-auth production-shaped package (`WASL_API_USERS_FILE`) serves the protocol through the API, but its passwords are not bearer tokens and do not work in the web form. Fixture mode requests no credential and persists nothing.
+
+**Smoke coverage:** the real-HTTP smoke checks mid-state blinding for a second ordinary reader, undo/contest of a concealed r1 (409) and that a reviewer credential cannot read `/audit` or `/export` (403). Auditor audit/export are not blinded; the review desk must not fetch them mid-state. Same-actor-via-two-tokens and concurrent duplicate writes are covered by Go handler tests, not the smoke.
 
 **Limits:** tokens establish configured actor identities, not proof that separate humans (or real clinicians) participated. The ledger is a hash chain, not WORM storage. There is no OIDC, professional identity proof or live Malaffi. Canonical state is never rewritten by interactive review. Deployment must use HTTPS.
 

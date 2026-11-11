@@ -195,7 +195,8 @@ class Fake:
     def protocol_review(self, cid, body, role, actor):
         current = self.detail[cid]["current"]
         read, head = body.get("read"), body.get("expected_head")
-        if read not in ("r1", "r2", "r3") or not isinstance(head, str) or not isinstance(body.get("item"), str):
+        if read not in ("r1", "r2", "r3") or not isinstance(head, str) or not isinstance(body.get("item"), str) or \
+                not (head == "" or (len(head) == 64 and all(ch in "0123456789abcdef" for ch in head))):
             return 400, {"error": "malformed protocol request"}
         item = body["item"]
         if item not in self.raised.get(cid, {}):
