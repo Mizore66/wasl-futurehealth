@@ -12,6 +12,16 @@ const OPERATION_WORDS = {
   resolve: "Resolve contest",
 } as const;
 
+const CREDENTIAL_WORDS: Record<GovernanceCredential, string> = {
+  reviewer: "Reviewer 1",
+  reviewer_2: "Reviewer 2",
+  reviewer_3: "Reviewer 3",
+  clinician: "Clinician 1",
+  clinician_2: "Clinician 2",
+  clinician_3: "Clinician 3",
+  coordinator: "Coordinator",
+};
+
 /** Live-only controls. Fixture history never receives this component, so a preview cannot look persisted. */
 export function GovernanceControls({
   caseId,
@@ -60,7 +70,7 @@ export function GovernanceControls({
             <option value="">Choose a credential</option>
             {credentials.map((credential) => (
               <option key={credential} value={credential}>
-                {credential === "reviewer" ? "Reviewer 1" : credential === "reviewer_2" ? "Reviewer 2" : credential === "reviewer_3" ? "Reviewer 3" : credential === "clinician" ? "Clinician" : "Coordinator"}
+                {CREDENTIAL_WORDS[credential]}
               </option>
             ))}
           </select>

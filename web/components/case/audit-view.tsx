@@ -172,9 +172,9 @@ export function HistoryCard({
     action === "signoff_link"
       ? ["reviewer", "reviewer_2", "reviewer_3"]
       : action === "record_consent"
-        ? ["coordinator", "clinician"]
+        ? ["coordinator", "clinician", "clinician_2"]
         : action === "signoff_evidence"
-          ? ["clinician"]
+          ? ["clinician", "clinician_2", "clinician_3"]
           : [];
 
   return (

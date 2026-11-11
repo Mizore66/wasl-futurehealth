@@ -11,7 +11,7 @@ const GovernanceInput = z
     operation: z.enum(["undo", "contest", "resolve"]),
     resolution: z.enum(["upheld", "rejected"]).optional(),
     reason: z.string().trim().min(1).max(1000),
-    credential: z.enum(["reviewer", "reviewer_2", "reviewer_3", "clinician", "coordinator"]),
+    credential: z.enum(["reviewer", "reviewer_2", "reviewer_3", "clinician", "clinician_2", "clinician_3", "coordinator"]),
   })
   .superRefine((input, ctx) => {
     if (input.operation === "resolve" && !input.resolution) ctx.addIssue({ code: "custom", message: "A resolution is required" });

@@ -42,7 +42,7 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3";
+export type GovernanceCredential = Exclude<Role, "auditor"> | "reviewer_2" | "reviewer_3" | "clinician_2" | "clinician_3";
 
 function apiToken(credential: Role | GovernanceCredential): string {
   const name = `WASL_API_${credential.toUpperCase()}_TOKEN`;
