@@ -186,7 +186,7 @@ def render_notice_bundle(manifest: dict, root: Path) -> str:
             text = _read_notice(root, entry, f"{package['name']}@{package['version']}")
             lines += ["", f"Notice {entry['path']} (SHA-256 {entry['sha256']}):", "", text.rstrip("\n")]
         lines.append("")
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines).rstrip("\n") + "\n"
 
 
 def main(argv: list[str] | None = None) -> int:
