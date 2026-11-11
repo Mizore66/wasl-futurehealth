@@ -17,7 +17,10 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
   } catch {
     // A malformed percent-escape: answered below as a missing id.
   }
-  if (!id || id.length > 200) return Response.json({ error: "A case id is required." }, { status: 400, headers: noStore });
+  // "." and ".." survive encodeURIComponent and fetch's URL parser collapses them, which would point the auditor token
+  // at another API route (e.g. /api/export). No case id is a bare dot segment, so refuse them outright.
+  if (!id || id.length > 200 || id === "." || id === "..")
+    return Response.json({ error: "A case id is required." }, { status: 400, headers: noStore });
 
   const got = await fetchCaseExport(id);
   if (!got.ok) return Response.json({ error: got.message }, { status: got.status, headers: noStore });

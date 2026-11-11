@@ -181,6 +181,17 @@ describe("GET /app/patients/[id]/audit/export", () => {
     expect((await download("x".repeat(201))).status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("refuses a bare dot segment, which would point the auditor token at another API route", async () => {
+    const fetchMock = vi.fn();
+    live(fetchMock);
+    // Next hands the route an already-decoded param, so %252E%252E in the URL arrives as "%2E%2E" and decodes to "..".
+    for (const param of ["%2E%2E", "%2E", "..", "."]) {
+      const res = await GET(new NextRequest(`http://localhost/app/patients/${param}/audit/export`), { params: Promise.resolve({ id: param }) });
+      expect(res.status).toBe(400);
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("export filename", () => {
