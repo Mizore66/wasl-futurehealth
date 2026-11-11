@@ -315,9 +315,18 @@ jobs:
               fi
             done
           fi
+      # TEMPORARY (2026-11-11): GitHub's runners could not resolve any Ubuntu archive host, so the system-dependency
+      # install failed before a single test ran. The runner image already carries Chromium's required libraries; only
+      # optional CJK/Thai/unifont fonts were unreachable. If the full install fails, install the browser alone with a
+      # warning. Every Playwright test below still runs and still fails if the browser cannot start. Remove this
+      # fallback once Ubuntu's archives resolve again, so this step returns to failing closed.
       - name: Install Chromium and its system dependencies
         working-directory: web
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          if ! pnpm exec playwright install --with-deps chromium; then
+            echo "::warning::Ubuntu packages were unreachable; installed Chromium without refreshing system packages (temporary fallback)."
+            pnpm exec playwright install chromium
+          fi
       - name: Run every Playwright project
         working-directory: web
         run: pnpm exec playwright test
