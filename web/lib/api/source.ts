@@ -218,7 +218,8 @@ export async function postReview(
 }
 
 export type ConsentResult =
-  | { ok: true; status: 201; response: ConsentAppendResponse }
+  /** `response` is null when the event was appended (201) but its body could not be read. */
+  | { ok: true; status: 201; response: ConsentAppendResponse | null }
   | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; currentHead?: string };
 
 /** Append one demo consent event. The API binds the coordinator token to its role and actor; browsers never supply either. */
@@ -234,8 +235,12 @@ export async function postConsent(id: string, body: ConsentRequestInput): Promis
       "coordinator",
     ),
   );
+  if (res.status === 201) {
+    /* The append already happened: an unreadable body must not be reported as a failure. */
+    const saved = ConsentAppendResponse.safeParse(await res.json().catch(() => undefined));
+    return { ok: true, status: 201, response: saved.success ? saved.data : null };
+  }
   const json = await res.json();
-  if (res.status === 201) return { ok: true, status: 201, response: ConsentAppendResponse.parse(json) };
   if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
     const e = ConsentError.parse(json);
     return { ok: false, status: res.status, error: e.error, currentHead: e.current_head };

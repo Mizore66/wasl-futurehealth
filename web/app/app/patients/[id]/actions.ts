@@ -37,7 +37,10 @@ export async function recordConsent(
   const path = `/app/patients/${encodeURIComponent(args.data.caseId)}`;
   revalidatePath(path);
   revalidatePath(`${path}/audit`);
-  const detail = await getCase(args.data.caseId);
+  /* The review page renders SignoffsCard from the same ledger. */
+  revalidatePath(`/app/review/${encodeURIComponent(args.data.caseId)}`);
+  /* The event is already appended: a failed read-back is a warning, not "the API did not answer". */
+  const detail = await getCase(args.data.caseId).catch(() => null);
   if (!detail?.api_contact) {
     return {
       ok: true,
