@@ -39,13 +39,13 @@ function apiToken(role: Role): string {
   return token;
 }
 
-export function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
+function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
   const headers = new Headers(init?.headers);
   headers.set("authorization", `Bearer ${apiToken(role)}`);
   return { cache: "no-store", ...init, headers };
 }
 
-export function liveBase(): string {
+function liveBase(): string {
   return process.env.WASL_API_URL!.replace(/\/$/, "");
 }
 
