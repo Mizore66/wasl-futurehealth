@@ -25,6 +25,10 @@ const (
 	RoleReviewer    = "reviewer"    // identity reviewer (HIM / registration): merge / split
 	RoleAuditor     = "auditor"     // read-only: verifies the ledger, publishes anchors, no PHI writes
 	RoleSystem      = "system"      // linker / closure services
+
+	// Senior resolution roles (independent double review, r3): the discipline's sign capability, never the r1/r2 slots.
+	RoleSeniorReviewer  = "senior_reviewer"
+	RoleSeniorClinician = "senior_clinician"
 )
 
 const (
@@ -48,6 +52,9 @@ var rbac = map[string]map[string]bool{
 	RoleReviewer:    {ActSignLink: true, ActReadQueue: true},
 	RoleAuditor:     {ActReadAudit: true, ActAnchor: true},
 	RoleSystem:      {ActEmitDecision: true, ActAutoLink: true},
+
+	RoleSeniorReviewer:  {ActSignLink: true, ActReadQueue: true},
+	RoleSeniorClinician: {ActSignEvidence: true, ActReadQueue: true},
 }
 
 // RBACEnforce can be switched off only by the counterfactual audit replay ("what would forged events have done").
