@@ -89,7 +89,7 @@ export function ConsentActions({
       try {
         const result = await recordConsent(caseId, head, event, notes[event] ?? "");
         if (!result.ok) {
-          if (result.status === 409 && result.currentHead) setUpdatedHead(result.currentHead);
+          if (result.status === 409) setUpdatedHead("");
           const text =
             result.status === 400
               ? `Not saved: ${result.error}`
