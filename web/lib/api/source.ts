@@ -9,12 +9,17 @@ import {
   Audit,
   CaseDetail,
   CaseList,
+  ConsentAppendResponse,
+  ConsentError,
+  ConsentRequest,
+  ConsentResponse,
   Dashboard,
   Fixtures,
   Healthz,
   ReviewRequest,
   ReviewResponse,
   type CaseSummary,
+  type ConsentRequest as ConsentRequestInput,
   type Role,
 } from "./schema";
 
@@ -155,6 +160,13 @@ export async function getCase(id: string): Promise<CaseDetail | null> {
   return null;
 }
 
+export async function getConsent(id: string): Promise<ConsentResponse | null> {
+  if (apiMode() === "live") return live(ConsentResponse, `/api/cases/${encodeURIComponent(id)}/consent`);
+  const detail = await getCase(id);
+  if (!detail?.api_contact) return null;
+  return ConsentResponse.parse({ meta: detail.meta, case: detail.case.id, ...detail.api_contact });
+}
+
 export async function getAudit(id: string): Promise<Audit | null> {
   if (apiMode() === "live") return live(Audit, `/api/cases/${encodeURIComponent(id)}/audit`, undefined, "auditor");
   for (const f of await fixtureCaseFiles("_audit")) {
@@ -191,6 +203,34 @@ export async function postReview(
 
   // Fixtures mode has no log to append to. Fabricating an event with a made-up hash would present a click as a saved review.
   throw new Error("postReview needs WASL_API_URL: fixtures mode cannot append review events");
+}
+
+export type ConsentResult =
+  | { ok: true; status: 201; response: ConsentAppendResponse }
+  | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; currentHead?: string };
+
+/** Append one demo consent event. The API binds the coordinator token to its role and actor; browsers never supply either. */
+export async function postConsent(id: string, body: ConsentRequestInput): Promise<ConsentResult> {
+  const request = ConsentRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  if (apiMode() !== "live") throw new Error("postConsent needs WASL_API_URL: fixtures mode cannot append consent events");
+
+  const res = await fetch(
+    `${liveBase()}/api/cases/${encodeURIComponent(id)}/consent`,
+    authenticated(
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) },
+      "coordinator",
+    ),
+  );
+  const json = await res.json();
+  if (res.status === 201) return { ok: true, status: 201, response: ConsentAppendResponse.parse(json) };
+  if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const e = ConsentError.parse(json);
+    return { ok: false, status: res.status, error: e.error, currentHead: e.current_head };
+  }
+  const refused = res.status === 500 ? ConsentError.safeParse(json) : null;
+  if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
+  throw new Error(`POST consent: HTTP ${res.status}`);
 }
 
 export type ActionResult =
