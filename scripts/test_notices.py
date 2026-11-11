@@ -221,15 +221,47 @@ class NoticesTest(unittest.TestCase):
         out = notices.render_notice_bundle(m, self.root)
         self.assertLess(out.index("example@1.0.0"), out.index("aaa@1.0.0"))
 
-    def test_cli(self):
+    def _write_manifest(self):
         (self.root / "supply-chain" / "notice-evidence.json").write_text(json.dumps(manifest()), encoding="utf-8")
-        out = self.root / "out.txt"
-        self.assertEqual(notices.main(["check", "--root", str(self.root), "--no-production-counts"]), 0)
+
+    def _bundle(self):
+        return self.root / "supply-chain" / "THIRD-PARTY-NOTICES.txt"
+
+    def test_cli(self):
+        self._write_manifest()
+        out = self._bundle()
         self.assertEqual(
             notices.main(["render", "--root", str(self.root), "--output", str(out), "--no-production-counts"]), 0
         )
         self.assertIn("Example MIT notice", out.read_text(encoding="utf-8"))
+        self.assertEqual(notices.main(["check", "--root", str(self.root), "--no-production-counts"]), 0)
         self.assertNotEqual(notices.main(["check", "--root", str(self.root)]), 0)
+
+    def test_check_fails_on_bundle_drift(self):
+        self._write_manifest()
+        out = self._bundle()
+        notices.main(["render", "--root", str(self.root), "--output", str(out), "--no-production-counts"])
+        out.write_text(out.read_text(encoding="utf-8") + "drift\n", encoding="utf-8")
+        self.assertEqual(notices.main(["check", "--root", str(self.root), "--no-production-counts"]), 1)
+
+    def test_check_fails_on_missing_bundle(self):
+        self._write_manifest()
+        self.assertEqual(notices.main(["check", "--root", str(self.root), "--no-production-counts"]), 1)
+
+    def test_symlink_escape_rejected(self):
+        outside = Path(self._tmp.name) / "outside.txt"
+        outside.write_bytes(TEXT.encode())
+        link = self.root / "supply-chain" / "notices" / "link.txt"
+        link.symlink_to(outside)
+        m = manifest()
+        m["packages"][0]["notices"][0]["path"] = "notices/link.txt"
+        self.fails(m, "escapes supply-chain")
+
+    def test_tag_missing_tag_message(self):
+        m = manifest()
+        as_tag(m)
+        del m["packages"][0]["source"]["tag"]
+        self.fails(m, "tag row requires source tag$")
 
 
 if __name__ == "__main__":

@@ -281,6 +281,11 @@ class WorkflowTests(unittest.TestCase):
         generate_verify = script[script.index("  generate|verify)"):script.index("  image)")]
         self.assertIn('"$PYTHON" -I "$ROOT/scripts/notices.py" check --root "$ROOT"', generate_verify)
         self.assertNotIn("notices.py", script[script.index("  image)"):])
+        notices_source = (ROOT / "scripts" / "notices.py").read_text(encoding="utf-8")
+        check_body = notices_source[notices_source.index("def check_bundle"):notices_source.index("def main")]
+        self.assertIn("THIRD-PARTY-NOTICES.txt", notices_source)
+        self.assertIn("render_notice_bundle", check_body)
+        self.assertIn("differs", check_body)
         docs = (ROOT / "docs" / "CI.md").read_text(encoding="utf-8")
         self.assertIn("notices.py check --root", docs)
         self.assertIn("no network", docs.lower())
