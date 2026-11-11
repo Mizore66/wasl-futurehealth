@@ -392,8 +392,10 @@ func itemHasKind(it *ReviewItem, kind string) bool {
 func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[string]interface{} {
 	states := s.protoStatesLocked()
 	view := map[reviewQuestionKey]*reviewProtocolState{}
+	frozen := map[string]bool{}
 	for _, it := range s.queue[c.ID] {
 		signed := s.itemSigned(c.ID, it.ItemID)
+		frozen[it.ItemID] = signed
 		for _, q := range it.Kinds {
 			if q != "link" && q != "evidence" {
 				continue
@@ -406,7 +408,15 @@ func (s *apiServer) reviewStatesLocked(c *apiCase, viewer apiPrincipal) []map[st
 			}
 		}
 	}
-	return projectReviewStates(view, viewer)
+	out := projectReviewStates(view, viewer)
+	for _, m := range out {
+		// A canonical sign-off freezes the item: history stays, but no form is actionable.
+		m["frozen"] = frozen[m["item"].(string)]
+		if m["frozen"] == true {
+			m["may_submit"] = false
+		}
+	}
+	return out
 }
 
 func (s *apiServer) reviewStates(c *apiCase, viewer apiPrincipal) []map[string]interface{} {
@@ -523,8 +533,13 @@ func (s *apiServer) replayProtocol(ev map[string]interface{}) error {
 		return fmt.Errorf("protocol read for an item not raised for this case")
 	}
 	// A canonical sign-off that arrived later freezes the item; it does not invalidate legal earlier reads.
-	if sstr(ev, "head_signed") != c.last.Sig {
-		return fmt.Errorf("protocol read signed against a different case head")
+	// head_signed is the case head at write time: any decision the case has had, not only the latest.
+	knownHead := false
+	for _, d := range c.decisions {
+		knownHead = knownHead || d.Sig == sstr(ev, "head_signed")
+	}
+	if !knownHead {
+		return fmt.Errorf("protocol read signed against a head the case never had")
 	}
 	act := reviewActFor(c, sstr(ev, "decision"))
 	if act == "" || act == ActRecordConsent || act != sstr(ev, "action") || questionForAct(act) != sstr(ev, "question") || !itemHasKind(it, sstr(ev, "question")) {
