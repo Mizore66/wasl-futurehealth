@@ -184,6 +184,7 @@ describe("recordConsent server action", () => {
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).expected_head).toBe(detail.current.sig);
     expect(nextCache.revalidatePath).toHaveBeenCalledWith(`/app/patients/${encodeURIComponent(detail.case.id)}`);
     expect(nextCache.revalidatePath).toHaveBeenCalledWith(`/app/patients/${encodeURIComponent(detail.case.id)}/audit`);
+    expect(nextCache.revalidatePath).toHaveBeenCalledWith(`/app/review/${encodeURIComponent(detail.case.id)}`);
   });
 
   it("returns a stale-head conflict without refreshing or reporting a save", async () => {
@@ -218,6 +219,44 @@ describe("recordConsent server action", () => {
     const result = await recordConsent(detail.case.id, detail.current.sig, "consent_denied", "Patient declined contact");
     expect(result).toMatchObject({ ok: true, contact: null, warning: "Consent event saved, but the updated case could not be read. Reload before another action." });
     expect(result).not.toMatchObject({ ok: false });
+  });
+
+  it("says the event was saved if the read-back throws after a 201", async () => {
+    live();
+    const { detail, denied } = deniedDetail();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(json(201, { meta, review: denied, overlay: detail.api_contact.overlay, note: "demo overlay only" }))
+      .mockRejectedValueOnce(new TypeError("fetch failed"));
+    vi.stubGlobal("fetch", fetchMock);
+    const { recordConsent } = await actionModule();
+    expect(recordConsent).toBeTypeOf("function");
+    if (!recordConsent) return;
+
+    await expect(recordConsent(detail.case.id, detail.current.sig, "consent_denied", "")).resolves.toMatchObject({
+      ok: true,
+      contact: null,
+      warning: "Consent event saved, but the updated case could not be read. Reload before another action.",
+    });
+    expect(nextCache.revalidatePath).toHaveBeenCalledWith(`/app/patients/${encodeURIComponent(detail.case.id)}`);
+  });
+
+  it("treats a 201 with an unreadable body as saved and reads the case back", async () => {
+    live();
+    const { detail } = deniedDetail();
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response("not json", { status: 201 }))
+      .mockResolvedValueOnce(json(200, detail));
+    vi.stubGlobal("fetch", fetchMock);
+    const { recordConsent } = await actionModule();
+    expect(recordConsent).toBeTypeOf("function");
+    if (!recordConsent) return;
+
+    await expect(recordConsent(detail.case.id, detail.current.sig, "consent_denied", "")).resolves.toMatchObject({
+      ok: true,
+      expectedHead: detail.current.sig,
+      contact: { overlay: { status: "denied" } },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });
 
