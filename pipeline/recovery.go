@@ -424,7 +424,8 @@ func apiAuthFromEnvironment() (func(http.Handler) http.Handler, error) {
 		if name == "" || user.Password == "" {
 			return nil, fmt.Errorf("API users file contains an empty identity or password")
 		}
-		if user.Role != RoleCoordinator && user.Role != RoleClinician && user.Role != RoleReviewer && user.Role != RoleAuditor {
+		if user.Role != RoleCoordinator && user.Role != RoleClinician && user.Role != RoleReviewer && user.Role != RoleAuditor &&
+			user.Role != RoleSeniorReviewer && user.Role != RoleSeniorClinician {
 			return nil, fmt.Errorf("API user %s has invalid role", name)
 		}
 	}

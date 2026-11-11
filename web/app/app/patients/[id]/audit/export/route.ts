@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { exportFilename, fetchCaseExport } from "@/lib/api/export";
+import { exportConcealsInitialRead } from "@/lib/api/export-guard";
 import { caseIdFromParam } from "@/lib/domain/ids";
 
 /**
@@ -24,7 +25,24 @@ export async function GET(_request: NextRequest, ctx: RouteContext<"/app/patient
 
   const got = await fetchCaseExport(id);
   if (!got.ok) return Response.json({ error: got.message }, { status: got.status, headers: noStore });
-  return new Response(got.response.body, {
+  /*
+   * Read the bytes once and decide on exactly those bytes, so a first read cannot slip in between a check and a fetch.
+   * Permitted bytes are returned unmodified, which keeps the document's content hashes valid.
+   */
+  const bytes = await got.response.arrayBuffer();
+  let doc: unknown;
+  try {
+    doc = JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    doc = null;
+  }
+  if (exportConcealsInitialRead(doc)) {
+    return Response.json(
+      { error: "The export is withheld while an initial review read is still hidden from its second reader. Try again once the second read is in." },
+      { status: 409, headers: noStore },
+    );
+  }
+  return new Response(bytes, {
     status: 200,
     headers: {
       ...noStore,

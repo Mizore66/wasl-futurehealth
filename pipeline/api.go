@@ -81,9 +81,9 @@ type apiServer struct {
 	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu         sync.Mutex
 	reviews    []map[string]interface{}
-	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
-	drNonces   map[string]bool    // nonces of double-review reads in the ledger (api_double_review.go); built on first use
-	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
+	rstates    map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	ledgerErr  string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -92,7 +92,7 @@ func apiHandler(s *apiServer) http.Handler {
 	mux.HandleFunc("/api/dashboard", s.getDashboard)
 	mux.HandleFunc("/api/cases", s.getCases)
 	mux.HandleFunc("/api/agentshadow/status", s.getAgentShadowStatus)
-	caseAPI := s.doubleReviewRoutes(s.withConsent(s.undoRoutes(s.caseRoutes))) // /double-review: api_double_review.go
+	caseAPI := s.withConsent(s.undoRoutes(s.caseRoutes))
 	mux.HandleFunc("/api/cases/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/export") {
 			s.caseExportRoute(w, r)
@@ -653,7 +653,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case sub == "" && r.Method == http.MethodGet:
-		s.caseDetail(w, c)
+		s.caseDetail(w, r, c)
 	case sub == "audit" && r.Method == http.MethodGet:
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
@@ -668,8 +668,9 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	body, err := exportGeneric(s.caseDetailBody(c))
+func (s *apiServer) caseDetail(w http.ResponseWriter, r *http.Request, c *apiCase) {
+	viewer := apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
+	body, err := exportGeneric(s.caseDetailFor(c, &viewer))
 	if err != nil {
 		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "case detail could not be encoded"}))
 		return
@@ -696,7 +697,7 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 			out = append(out, r)
 		}
 	}
-	return blindDoubleReview(out) // initial double-review reads stay hidden until both are in (api_double_review.go)
+	return out
 }
 
 // POST /api/cases/{id}/review   headers: X-Wasl-Role (coordinator|clinician|reviewer|auditor), X-Wasl-Actor
@@ -705,31 +706,17 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	var req struct {
-		Item     string `json:"item"`
-		Decision string `json:"decision"`
-		Note     string `json:"note"`
+		Item         string  `json:"item"`
+		Decision     string  `json:"decision"`
+		Note         string  `json:"note"`
+		Read         string  `json:"read"`
+		ExpectedHead *string `json:"expected_head"`
 	}
 	if err := decodeAPIBody(w, r, maxReviewBodyBytes, &req); err != nil || req.Decision == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note; duplicate or unknown fields and oversized/trailing data are rejected"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note (and read with expected_head for an independent read); duplicate or unknown fields and oversized/trailing data are rejected"}))
 		return
 	}
-	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
-		"confirm_contact": ActRecordConsent}[req.Decision]
-	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(req.Decision) != nil { // lung evidence labels (stable, solid/6-8/single, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "diabetic_retinopathy" && drEvAlt(req.Decision) != nil { // DR evidence labels (R2M0, examined_followup, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(req.Decision) != nil { // IFHAS labels (bp=H;glyc=N;lipid=N;weight=O, glyc=managed, dna)
-		act = ActSignEvidence
-	}
+	act := reviewActFor(c, req.Decision)
 	if act == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
@@ -756,6 +743,14 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			return
 		}
 	}
+	if req.Read != "" || req.ExpectedHead != nil { // independent double review; without these fields the legacy path below is unchanged
+		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, act); msg != "" {
+			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": msg}))
+			return
+		}
+		s.protocolReview(w, c, s.queueItem(c.ID, req.Item), act, req.Read, *req.ExpectedHead, req.Decision, req.Note, apiPrincipal{role: role, actor: actor})
+		return
+	}
 	code, body := func() (int, map[string]interface{}) {
 		s.mu.Lock()
 		defer s.mu.Unlock()
@@ -768,7 +763,7 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 		if err != nil {
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
-		return 201, map[string]interface{}{"review": stored,
+		return 201, map[string]interface{}{"review": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}),
 			"note": "appended to the review ledger; in a live deployment this is published as a signed Provenance sign-off and replayed through the linker/closure path"}
 	}()
 	writeJSONResp(w, code, s.envelope(body)) // never write the response while holding s.mu
@@ -1530,7 +1525,7 @@ func (s *apiServer) caseAction(w http.ResponseWriter, r *http.Request, c *apiCas
 			return 500, map[string]interface{}{"error": "could not append to the review ledger; nothing was recorded"}
 		}
 		c.applyOverlay(stored)
-		return 201, map[string]interface{}{"event": stored, "api_overlay": s.overlayViewLocked(c, true),
+		return 201, map[string]interface{}{"event": s.shownEventLocked(stored, apiPrincipal{role: role, actor: actor}), "api_overlay": s.overlayViewLocked(c, true),
 			"note": "recorded in the review ledger as overlay metadata; decisions and signatures are unchanged and nothing was dispatched"}
 	}()
 	writeJSONResp(w, code, s.envelope(body))
@@ -1595,11 +1590,13 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		return errors.New("hash mismatch")
 	}
 	if _, isCoord := ev["type"]; !isCoord {
+		if hasProtocolFields(ev) {
+			if err := s.replayProtocol(ev); err != nil {
+				return fmt.Errorf("independent review: %v", err)
+			}
+		}
 		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
 		return nil
-	}
-	if ev["type"] == doubleReviewType {
-		return s.replayDoubleRead(ev) // same rules as the write path (api_double_review.go)
 	}
 	if ev["type"] != coordEventType {
 		return fmt.Errorf("unknown event type %v", ev["type"])

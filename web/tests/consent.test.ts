@@ -26,6 +26,7 @@ const consentClient = apiSource as unknown as ConsentClient;
 function live() {
   vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088/");
   vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-secret-1234567890");
+  vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
   vi.stubEnv("WASL_API_COORDINATOR_TOKEN", "coordinator-secret-1234567890");
 }
 

@@ -65,6 +65,7 @@ const created = () => json(201, {
 
 const TOKENS = {
   WASL_API_REVIEWER_TOKEN: "reviewer-one-token-123456",
+  WASL_API_WEB_REVIEWER_TOKEN: "web-reviewer-token-123456",
   WASL_API_REVIEWER_2_TOKEN: "reviewer-two-token-123456",
   WASL_API_REVIEWER_3_TOKEN: "reviewer-three-token-12345",
   WASL_API_CLINICIAN_TOKEN: "clinician-token-1234567890",

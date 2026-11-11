@@ -10,6 +10,7 @@ import { shortId } from "@/lib/domain/ids";
 import { plain } from "@/lib/domain/terms";
 import { personFor } from "@/lib/people";
 import { recordFace } from "@/lib/people/identity";
+import { protocolRead, READ_LABEL, resolutionProgress } from "@/lib/domain/stage";
 import { cn } from "@/lib/utils";
 import { ConsentActions } from "./consent-actions";
 import {
@@ -610,8 +611,13 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
       id="signoffs"
       title="Human sign-offs"
       aside={<HonestyLabel kind="simulated">Simulated reviewers</HonestyLabel>}
-      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review."
+      note="Each answer shows who gave it and in which role. Two answers from one person are not independent double review. A first or second read is not a final sign-off; only an agreed or senior-resolved question is."
     >
+      {resolutionProgress(detail) && (
+        <p className="m-0 mt-3 text-small text-muted" data-testid="resolution-progress">
+          Independent review: {resolutionProgress(detail)}.
+        </p>
+      )}
       {signoffs.length === 0 && appended.length === 0 ? (
         <Empty>No human sign-offs recorded for this case.</Empty>
       ) : (
@@ -632,7 +638,10 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
           {appended.map((r) => (
             <li key={r.hash} className="border-t border-rule py-3">
               {r.ledger === "review" ? (
-                <p className="m-0 font-medium">{reviewWords(r.decision, detail.case.programme)}</p>
+                <p className="m-0 font-medium">
+                  {protocolRead(r) && <span className="mr-2 text-muted" data-protocol-read={protocolRead(r)}>{READ_LABEL[protocolRead(r)!]}:</span>}
+                  {reviewWords(r.decision, detail.case.programme)}
+                </p>
               ) : (
                 <div className="font-medium">
                   <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
@@ -640,6 +649,7 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
               )}
               <p className="m-0 text-muted">
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
+                {r.ledger === "review" && protocolRead(r) && " · one independent read, not a final sign-off"}
               </p>
               {r.ledger === "compensation" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
             </li>

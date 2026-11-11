@@ -27,15 +27,28 @@ TOKENS = {
     "WASL_API_AUDITOR_TOKEN": "auditor-token-1234567890",
     "WASL_API_COORDINATOR_TOKEN": "coordinator-token-1234567890",
     "WASL_API_CLINICIAN_TOKEN": "clinician-token-1234567890",
+    "WASL_API_CLINICIAN_2_TOKEN": "clinician-2-token-1234567890",
+    "WASL_API_CLINICIAN_3_TOKEN": "clinician-3-token-1234567890",
 }
 PRINCIPALS = {
     "reviewer-token-1234567890": ("reviewer", "smoke-reviewer-1"),
     "reviewer-2-token-1234567890": ("reviewer", "smoke-reviewer-2"),
-    "reviewer-3-token-1234567890": ("reviewer", "smoke-reviewer-3"),
+    "reviewer-3-token-1234567890": ("senior_reviewer", "smoke-reviewer-3"),
     "auditor-token-1234567890": ("auditor", "smoke-auditor"),
     "coordinator-token-1234567890": ("coordinator", "smoke-coordinator"),
     "clinician-token-1234567890": ("clinician", "smoke-clinician"),
+    "clinician-2-token-1234567890": ("clinician", "smoke-clinician-2"),
+    "clinician-3-token-1234567890": ("senior_clinician", "smoke-clinician-3"),
 }
+PROTOCOL = "wasl-independent-review/1"
+# question -> (ordinary role, senior role, accepted decisions)
+QUESTIONS = {"link": ("reviewer", "senior_reviewer", {"same", "different"}),
+             "evidence": ("clinician", "senior_clinician", {"adequate", "inadequate"})}
+RAISED = {"link": "fake-indep/ServiceRequest/LINK-1", "evidence": "fake-indep/ServiceRequest/EVID-1"}
+
+
+def norm_actor(actor):
+    return actor.strip().lower()
 
 
 def load(name):
@@ -62,6 +75,18 @@ class Fake:
                 self.pages[prog] = json.loads(p.read_text())
         self.extra_cases = 0
         self.events = []
+        self.protocol = {}          # (case, item, question) -> accepted protocol events in order
+        self.raised = {}            # case -> {item: question}; clones of a synthetic fixture with one raised, unsigned item
+        self._viewer = ("", "")
+        template = next(iter(self.fix["fixtures"].values()))["id"]
+        for question, cid in RAISED.items():
+            item = "rv-fake-" + question
+            self.detail[cid] = copy.deepcopy(self.detail[template])
+            self.detail[cid]["case"]["id"] = cid
+            self.detail[cid]["case"]["review"] = "open"
+            self.audit[cid] = copy.deepcopy(self.audit[template])
+            self.audit[cid]["case"] = cid
+            self.raised[cid] = {item: question}
         if mutate:
             mutate(self)
 
@@ -115,26 +140,118 @@ class Fake:
             row["status"] = statuses[row["hash"]]
         return {"case": cid, "case_status": "compensated", "canonical_state": self.detail[cid]["case"]["state"], "events": rows}
 
+    def pstate(self, cid, item, question):
+        events = self.protocol.get((cid, item, question), [])
+        if not events:
+            return "awaiting_r1", ""
+        if len(events) == 1:
+            return "awaiting_r2", events[0]["hash"]
+        if len(events) == 2:
+            return ("resolved_agreed" if events[0]["decision"] == events[1]["decision"] else "awaiting_r3"), events[1]["hash"]
+        return "resolved_senior", events[2]["hash"]
+
+    def shown_head(self, cid, item, question):
+        state, head = self.pstate(cid, item, question)
+        # While r1 is concealed the head is an opaque token, never the hidden r1 event hash.
+        return hashlib.sha256(b"head:" + head.encode()).hexdigest() if state == "awaiting_r2" else head
+
+    def review_state(self, cid, item, question, role, actor):
+        events = self.protocol.get((cid, item, question), [])
+        state, _ = self.pstate(cid, item, question)
+        ordinary, senior, _ = QUESTIONS[question]
+        first = norm_actor(events[0]["actor"]) if events else None
+        initial = {norm_actor(e["actor"]) for e in events[:2]}
+        mine = norm_actor(actor)
+        nxt = {"awaiting_r1": "r1", "awaiting_r2": "r2", "awaiting_r3": "r3"}.get(state)
+        may = ((nxt in ("r1", "r2") and role == ordinary and mine != first) or
+               (nxt == "r3" and role == senior and mine not in initial))
+        concealed = state == "awaiting_r2" and mine != first
+        reads = []
+        for e in events:
+            row = {"read": e["read"], "submitted": True}
+            if not (concealed and e["read"] == "r1"):
+                row.update(decision=e["decision"], hash=e["hash"])
+            reads.append(row)
+        disagreement = len(events) >= 2 and events[0]["decision"] != events[1]["decision"]
+        out = {"item": item, "question": question, "state": state, "head": self.shown_head(cid, item, question),
+               "next_read": nxt, "may_submit": bool(may), "reads": reads, "disagreement": disagreement,
+               "canonical_unchanged": True}
+        if state == "resolved_agreed":
+            out.update(final_decision=events[0]["decision"], resolution_basis="agreement")
+        if state == "resolved_senior":
+            out.update(final_decision=events[2]["decision"], resolution_basis="senior_resolution")
+        return out
+
+    def visible_events(self, cid, actor):
+        out = []
+        for e in self.case_events(cid):
+            if e.get("protocol") and e["read"] == "r1":
+                state, _ = self.pstate(cid, e["item"], e["question"])
+                if state == "awaiting_r2" and norm_actor(actor) != norm_actor(e["actor"]):
+                    continue
+            out.append(e)
+        return out
+
+    def protocol_review(self, cid, body, role, actor):
+        current = self.detail[cid]["current"]
+        read, head = body.get("read"), body.get("expected_head")
+        if read not in ("r1", "r2", "r3") or not isinstance(head, str) or not isinstance(body.get("item"), str) or \
+                not (head == "" or (len(head) == 64 and all(ch in "0123456789abcdef" for ch in head))):
+            return 400, {"error": "malformed protocol request"}
+        item = body["item"]
+        if item not in self.raised.get(cid, {}):
+            return 404, {"error": "item not raised"}
+        question = self.raised[cid][item]
+        if body.get("decision") not in QUESTIONS[question][2]:
+            return 400, {"error": "decision does not answer the item question"}
+        ordinary, senior, _ = QUESTIONS[question]
+        if role != (senior if read == "r3" else ordinary):
+            return 403, {"error": "role may not submit this read"}
+        events = self.protocol.setdefault((cid, item, question), [])
+        state, _ = self.pstate(cid, item, question)
+        if {"awaiting_r1": "r1", "awaiting_r2": "r2", "awaiting_r3": "r3"}.get(state) != read:
+            return 409, {"error": "wrong state for this read", "conflict": "state"}
+        if head != self.shown_head(cid, item, question):
+            return 409, {"error": "stale head", "conflict": "head"}
+        blocked = {norm_actor(e["actor"]) for e in events}
+        if norm_actor(actor) in blocked:
+            return 403, {"error": "actor already read this question"}
+        values = {"case": cid, "item": item, "decision": body["decision"], "note": body.get("note", ""),
+                  "role": role, "actor": actor, "action": "signoff_link" if question == "link" else "signoff_evidence",
+                  "head_signed": current["sig"], "protocol": PROTOCOL, "read": read, "question": question,
+                  "expected_head": head}
+        if read == "r3":
+            values["resolution_reads"] = [events[0]["hash"], events[1]["hash"]]
+        ev = self.event(values)
+        events.append(ev)
+        return 201, {"review": ev, "review_state": self.review_state(cid, item, question, role, actor)}
+
     def live_detail(self, cid):
+        role, actor = self._viewer
         detail = copy.deepcopy(self.detail[cid])
         overlay = self.coordinator_overlay(cid)
         detail["api_overlay"] = overlay
         detail["case"]["api_overlay"] = {k: v for k, v in overlay.items() if k not in ("notes", "contact_outcomes", "canonical_owner")}
-        detail["api_reviews"] = self.case_events(cid)
+        visible = self.visible_events(cid, actor)
+        detail["api_reviews"] = visible
+        detail["api_review_states"] = [self.review_state(cid, item, question, role, actor)
+                                       for item, question in sorted(self.raised.get(cid, {}).items())]
         detail["review_ledger"] = {"status": "ok", "events_applied": len(self.events)}
-        detail["api_contact"] = {"overlay": self.consent_overlay(cid), "history": self.case_events(cid)}
+        detail["api_contact"] = {"overlay": self.consent_overlay(cid), "history": visible}
         return detail
 
     def live_audit(self, cid):
         audit = copy.deepcopy(self.audit[cid])
-        audit["history"] = self.case_events(cid)
+        audit["history"] = [{k: v for k, v in e.items() if k not in ("actor", "note", "target_actor")}
+                            for e in self.case_events(cid)]
         return audit
 
     def export_doc(self, cid):
         detail = self.live_detail(cid)
         audit = self.live_audit(cid)
         safe_keys = {"case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash",
-                     "type", "kind", "head", "seq", "target", "target_action", "resolution", "action_head"}
+                     "type", "kind", "head", "seq", "target", "target_action", "resolution", "action_head",
+                     "protocol", "read", "question", "expected_head", "resolution_reads"}
         safe_events = [{k: v for k, v in e.items() if k in safe_keys} for e in self.case_events(cid)]
         overlay = self.consent_overlay(cid)
         overlay.pop("canonical_consent", None)  # keep the fake projection small; structural fields remain
@@ -171,6 +288,11 @@ class Fake:
             return 200, self.dash
         if path == "/api/fixtures":
             return 200, self.fix
+        if path == "/api/cases" and query.get("review", [""])[0] == "open":
+            prog = query.get("programme", [""])[0]
+            rows = [dict(next(iter(self.pages.values()))["cases"][0], id=cid, programme=prog, review="open")
+                    for cid in self.raised] if prog == "crc" else []
+            return 200, {"total": len(rows), "offset": 0, "limit": 100, "cases": rows, "meta": self.health.get("meta", {})}
         if path == "/api/cases":
             prog = query.get("programme", [""])[0]
             page = copy.deepcopy(next(iter(self.pages.values())))
@@ -212,6 +334,8 @@ class Fake:
                         ev = self.event({"case": cid, "item": "", "decision": body["event"], "note": body["note"],
                                          "role": role, "actor": actor, "action": "record_consent", "head_signed": current["sig"]})
                         return 201, {"review": ev, "overlay": self.consent_overlay(cid)}
+                    if suffix == "/review" and "read" in body:
+                        return self.protocol_review(cid, body, role, actor)
                     if suffix == "/review":
                         ev = self.event({"case": cid, "item": body.get("item", ""), "decision": body["decision"],
                                          "note": body.get("note", ""), "role": role, "actor": actor,
@@ -221,6 +345,8 @@ class Fake:
                         if method == "GET":
                             return 200, self.undo_projection(cid)
                         target = next(e for e in self.events if e["hash"] == body["target"])
+                        if target.get("protocol"):
+                            return 409, {"error": "protocol reads cannot be undone or contested in this version"}
                         if body.get("contest"):
                             ev = self.event({"kind": "contest", "case": cid, "target": target["hash"],
                                              "target_actor": target["actor"], "target_action": target["action"],
@@ -245,6 +371,7 @@ class Fake:
             audit = rest.endswith("/audit")
             cid = rest[:-len("/audit")] if audit else rest
             if cid in self.detail:
+                self._viewer = (role, actor)
                 return 200, self.live_audit(cid) if audit else self.live_detail(cid)
             return 404, {"error": "unknown case", "id": cid}
         return 404, {"error": "no route"}
@@ -353,7 +480,7 @@ class SmokeValidatorTests(unittest.TestCase):
             orig = f.live_audit
             def redacted(cid):
                 doc = orig(cid)
-                allowed = {"case", "type", "kind", "at", "hash"}
+                allowed = {"case", "type", "kind", "at", "hash", "protocol", "read", "question", "expected_head", "resolution_reads"}
                 doc["history"] = [{k: v for k, v in event.items() if k in allowed}
                                   for event in doc["history"]]
                 return doc

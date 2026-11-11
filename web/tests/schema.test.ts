@@ -144,3 +144,26 @@ describe("ReviewRequest", () => {
     },
   );
 });
+
+describe("independent review contracts", async () => {
+  const { ReviewState, ReviewRead, ReviewResponse } = await import("@/lib/api/schema");
+  const state = { item: "i", question: "link", state: "awaiting_r2", head: "h", next_read: "r2", may_submit: false, reads: [{ read: "r1", submitted: true }, { read: "r2", submitted: false }], disagreement: false, canonical_unchanged: true };
+
+  it("parses a concealed projection and keeps unknown fields", () => {
+    expect(ReviewRead.parse({ read: "r1", submitted: true })).toEqual({ read: "r1", submitted: true });
+    expect(ReviewState.parse({ ...state, extra: 1 })).toMatchObject({ extra: 1, next_read: "r2" });
+    expect(ReviewState.parse({ ...state, state: "resolved_agreed", next_read: null }).next_read).toBeNull();
+  });
+
+  it("rejects unknown slots, states and a false canonical_unchanged", () => {
+    expect(ReviewState.safeParse({ ...state, state: "done" }).success).toBe(false);
+    expect(ReviewState.safeParse({ ...state, canonical_unchanged: false }).success).toBe(false);
+    expect(ReviewRead.safeParse({ read: "r4", submitted: true }).success).toBe(false);
+  });
+
+  it("keeps the legacy request valid and accepts additive protocol fields", () => {
+    expect(ReviewRequest.parse({ item: "i", decision: "same" })).toEqual({ item: "i", decision: "same", note: "" });
+    expect(ReviewRequest.parse({ item: "i", decision: "same", read: "r1", expected_head: "" })).toMatchObject({ read: "r1", expected_head: "" });
+    expect(ReviewResponse).toBeDefined();
+  });
+});
