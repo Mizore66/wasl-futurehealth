@@ -71,6 +71,9 @@ func readRecoveryStream(ctx context.Context, stream jetstream.Stream) ([]recover
 		return nil, err
 	}
 	messages := make([]recoveryMessage, 0, info.State.Msgs)
+	if info.State.Msgs == 0 {
+		return messages, nil
+	}
 	for sequence := info.State.FirstSeq; sequence <= info.State.LastSeq; sequence++ {
 		raw, err := stream.GetMsg(ctx, sequence)
 		if errors.Is(err, jetstream.ErrMsgNotFound) {
