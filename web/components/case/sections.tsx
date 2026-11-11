@@ -323,6 +323,20 @@ function dayRange(from: number | undefined, to: number | undefined): string | nu
   return from === undefined || to === undefined ? null : `${formatDayYear(from)} to ${formatDayYear(to)}`;
 }
 
+/**
+ * The screening clock. Refer, recall, urgent and repeat actions run a deadline with an overdue clock; a routine
+ * rescreen interval (DR rescreen, breast routine) has none (pipeline/drrule.go, pipeline/breastrule.go), so it reads
+ * as the next screen, not as a deadline.
+ */
+function ClockRow({ days, day, routine }: { days: number | undefined; day: number | undefined; routine: boolean }) {
+  const length = days !== undefined ? `${days} days` : NOT_RECORDED;
+  if (routine) {
+    const when = day !== undefined ? `, ${formatDayYear(day)}` : "";
+    return <FindingRow label="Next screen">{`${length}${when} (routine interval, no overdue clock)`}</FindingRow>;
+  }
+  return <FindingRow label="Deadline">{`${length}${day !== undefined ? `, due ${formatDayYear(day)}` : ""}`}</FindingRow>;
+}
+
 /** "91 to 183 days" from the rule's window, plus the absolute dates when the API sent them. */
 function windowWords(lo: number | undefined, hi: number | undefined, dates: string | null): string {
   const days = lo === undefined || hi === undefined ? null : `${lo} to ${hi} days`;
@@ -335,13 +349,15 @@ function LungNoduleRows({ detail }: { detail: CaseDetail }) {
   if (!f) return <Empty>The API sent no lung-nodule finding for this case yet.</Empty>;
   const rec = f.rec;
   const window = dayRange(f.window_start_day, f.window_end_day);
+  // pipeline/lung.go applies the Fleischner rule as high risk when no risk was recorded, and says so with risk_recorded.
+  const riskAssumed = f.risk_recorded === false;
   return (
     <>
       <dl className="m-0 mt-3 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2" aria-label="Lung-nodule finding">
         <FindingRow label="Index CT report">{f.finding_report ? shortId(f.finding_report) : "Not on this case"}</FindingRow>
         <FindingRow label="Nodule">{f.finding_label ?? "Not read yet"}</FindingRow>
         <FindingRow label="Fleischner category">{rec?.cell ?? "Not assigned yet"}</FindingRow>
-        <FindingRow label="Patient risk">{f.risk ? plain(f.risk) : NOT_RECORDED}</FindingRow>
+        <FindingRow label="Patient risk">{f.risk ? `${plain(f.risk)}${riskAssumed ? " (assumed: risk not recorded)" : ""}` : NOT_RECORDED}</FindingRow>
         {f.scope && <FindingRow label="Scope">{plain(f.scope)}</FindingRow>}
         <FindingRow label="Recommendation">
           {rec ? `${LUNG_ACTION[rec.action] ?? plain(rec.action)}${rec.optional ? " (optional)" : ""}` : "Not decided yet"}
@@ -351,12 +367,17 @@ function LungNoduleRows({ detail }: { detail: CaseDetail }) {
             ? "Not set yet"
             : rec.action === "none"
               ? "No follow-up window"
-              : windowWords(rec.win_lo_days, rec.win_hi_days, window)}
+              : `${windowWords(rec.win_lo_days, rec.win_hi_days, window)}${riskAssumed ? ` (assumes ${f.risk ?? "high"} risk)` : ""}`}
         </FindingRow>
         <FindingRow label="Follow-up outcome">
           {f.outcome ? plain(f.outcome) : rec?.action === "none" ? "None needed" : "Pending: no follow-up CT read yet"}
         </FindingRow>
       </dl>
+      {rec && riskAssumed && (
+        <p className="m-0 mt-3 border-t border-rule pt-3" role="note">
+          {`Risk was not recorded, so the rule treated this patient as ${f.risk ?? "high"} risk. The Fleischner category, recommendation and follow-up window rest on that assumption.`}
+        </p>
+      )}
       {rec?.next_step && <p className="m-0 mt-3 border-t border-rule pt-3">Next step: {rec.next_step}.</p>}
     </>
   );
@@ -378,10 +399,7 @@ function DrRows({ detail }: { detail: CaseDetail }) {
       </FindingRow>
       <FindingRow label="Recommendation">{rec ? (DR_ACTION[rec.action] ?? plain(rec.action)) : "Not decided yet"}</FindingRow>
       <FindingRow label="Urgency">{rec?.urgency ? plain(rec.urgency) : rec ? "Not a referral" : "Not decided yet"}</FindingRow>
-      <FindingRow label="Deadline">
-        {rec?.deadline_days !== undefined ? `${rec.deadline_days} days` : NOT_RECORDED}
-        {f.deadline_day !== undefined ? `, due ${formatDayYear(f.deadline_day)}` : ""}
-      </FindingRow>
+      <ClockRow days={rec?.deadline_days} day={f.deadline_day} routine={rec?.action === "rescreen"} />
       {rec?.action === "refer" && (
         <FindingRow label="Eye-clinic note">{f.clinic_note ? shortId(f.clinic_note) : "Pending: no eye-clinic note read yet"}</FindingRow>
       )}
@@ -405,7 +423,8 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
   if (!f) return <Empty>The API sent no breast screening finding for this case yet.</Empty>;
   const rec = f.rec;
   const within = yesNoWords(f.within_deadline);
-  const assessed = rec && rec.action !== "routine";
+  // Only a recall expects an assessment-unit document; a repeat mammogram (TR) waits for a new screen (pipeline/breast.go).
+  const assessed = rec?.action === "recall";
   return (
     <dl className="m-0 mt-3 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2" aria-label="Breast screening finding">
       <FindingRow label="Screening report">{f.screen_report ? shortId(f.screen_report) : "Not received yet"}</FindingRow>
@@ -416,12 +435,17 @@ function BreastRows({ detail }: { detail: CaseDetail }) {
       <FindingRow label="Recall recommendation">
         {rec ? `${BREAST_ACTION[rec.action] ?? plain(rec.action)}${rec.urgency ? `, ${rec.urgency}` : ""}` : "Not decided yet"}
       </FindingRow>
-      <FindingRow label="Deadline">
-        {rec?.deadline_days !== undefined ? `${rec.deadline_days} days` : NOT_RECORDED}
-        {f.deadline_day !== undefined ? `, due ${formatDayYear(f.deadline_day)}` : ""}
-      </FindingRow>
+      <ClockRow days={rec?.deadline_days} day={f.deadline_day} routine={rec?.action === "routine"} />
       {assessed && <FindingRow label="Assessment document">{f.assessment_document ? shortId(f.assessment_document) : "Pending: none read yet"}</FindingRow>}
-      <FindingRow label="Outcome">{f.outcome ? (BREAST_OUTCOME[f.outcome] ?? plain(f.outcome)) : assessed ? "Pending" : rec ? "None: no recall" : "Not decided yet"}</FindingRow>
+      <FindingRow label="Outcome">{f.outcome
+          ? (BREAST_OUTCOME[f.outcome] ?? plain(f.outcome))
+          : assessed
+            ? "Pending"
+            : rec?.action === "repeat_mammogram"
+              ? "None: repeat mammogram due, no assessment"
+              : rec
+                ? "None: no recall"
+                : "Not decided yet"}</FindingRow>
       {within && <FindingRow label="Within deadline">{within}</FindingRow>}
     </dl>
   );

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { ProgrammeFindingCard } from "@/components/case/sections";
-import { CaseDetail } from "@/lib/api/schema";
+import { BreastFinding, CaseDetail } from "@/lib/api/schema";
 import { formatDayYear } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
 import { findingDetail, servedSummary } from "./finding-cases";
@@ -41,6 +41,23 @@ describe("lung nodule (Fleischner)", () => {
     const html = render(findingDetail("lung_nodule", "rad-imaging/ServiceRequest/RAD-sr-101"));
     expect(row(html, "Follow-up outcome")).toBe("Stable");
     expect(row(html, "Patient risk")).toBe("High");
+    expect(html).not.toContain("assume");
+  });
+
+  it("a risk the pipeline assumed high because none was recorded says so, and the window rests on it", () => {
+    const id = "rad-imaging/ServiceRequest/RAD-sr-111";
+    const lung = servedSummary("lung_nodule", id).lung!;
+    expect(lung.risk).toBe("high");
+    expect(lung.risk_recorded).toBe(false);
+    const html = render(findingDetail("lung_nodule", id));
+    expect(row(html, "Patient risk")).toBe("High (assumed: risk not recorded)");
+    expect(row(html, "Fleischner category")).toBe("subsolid/ground_glass/multiple/&lt;6");
+    expect(row(html, "Risk window")).toBe(
+      `91 to 183 days, ${formatDayYear(lung.window_start_day!)} to ${formatDayYear(lung.window_end_day!)} (assumes high risk)`,
+    );
+    expect(html).toContain(
+      "Risk was not recorded, so the rule treated this patient as high risk. The Fleischner category, recommendation and follow-up window rest on that assumption.",
+    );
   });
 
   it("a Fleischner cell with no routine follow-up has no window and needs no outcome", () => {
@@ -99,6 +116,8 @@ describe("diabetic retinopathy", () => {
     expect(row(html, "Urgency")).toBe("Not a referral");
     expect(row(html, "Eye-clinic note")).toBeNull();
     expect(row(html, "Outcome")).toBeNull();
+    expect(row(html, "Deadline")).toBeNull();
+    expect(row(html, "Next screen")).toBe(`365 days, ${formatDayYear(dr.deadline_day!)} (routine interval, no overdue clock)`);
     expect(row(html, "Next due")).toBe(`Rescreen ${formatDayYear(dr.next_due!.due_day)} (doh2024dr annual rescreen)`);
   });
 
@@ -125,7 +144,8 @@ describe("breast", () => {
     expect(html).toContain("Breast screening (BI-RADS)");
     expect(row(html, "BI-RADS category")).toBe("B2 (coded assessment matched the text)");
     expect(row(html, "Recall recommendation")).toBe("Routine screening, no recall");
-    expect(row(html, "Deadline")).toBe(`${breast.rec!.deadline_days} days, due ${formatDayYear(breast.deadline_day!)}`);
+    expect(row(html, "Deadline")).toBeNull();
+    expect(row(html, "Next screen")).toBe(`730 days, ${formatDayYear(breast.deadline_day!)} (routine interval, no overdue clock)`);
     expect(row(html, "Assessment document")).toBeNull();
     expect(row(html, "Outcome")).toBe("None: no recall");
   });
@@ -137,6 +157,28 @@ describe("breast", () => {
     expect(row(html, "Assessment document")).toBe("Pending: none read yet");
     expect(row(html, "Outcome")).toBe("Pending");
     expect(row(html, "Within deadline")).toBeNull();
+    expect(row(html, "Next screen")).toBeNull();
+    expect(row(html, "Deadline")).toBe(`14 days, due ${formatDayYear(6.138969907407407)}`);
+  });
+
+  it("a technically inadequate (TR) screen keeps its repeat deadline and expects no assessment", () => {
+    const detail = findingDetail("breast", "bsu-screen/ServiceRequest/BSU-sr-15");
+    // Hand-built in the API's shape (pipeline/breast.go, breastrule.go): no TR case is on the committed breast page.
+    const breast = BreastFinding.parse({
+      screen_report: "BSU-br-90",
+      screen_label: "TR",
+      coded_birads: false,
+      rec: { action: "repeat_mammogram", deadline_days: 21, cell: "TR" },
+      screen_day: 10,
+      deadline_day: 31,
+    });
+    const html = render({ ...detail, case: { ...detail.case, breast }, current: { ...detail.current, breast } });
+    expect(row(html, "BI-RADS category")).toBe("TR");
+    expect(row(html, "Recall recommendation")).toBe("Repeat mammogram");
+    expect(row(html, "Deadline")).toBe(`21 days, due ${formatDayYear(31)}`);
+    expect(row(html, "Next screen")).toBeNull();
+    expect(row(html, "Assessment document")).toBeNull();
+    expect(row(html, "Outcome")).toBe("None: repeat mammogram due, no assessment");
   });
 
   it("an assessment outcome the API read is shown with its document and deadline result", () => {
