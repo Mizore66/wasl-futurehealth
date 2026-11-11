@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -480,6 +481,7 @@ func TestDoubleReviewBoundariesAndLegacyReview(t *testing.T) {
 // Replay applies the write rules to every stored read: a chain-valid but forged history (the same actor as r1 and r2,
 // a premature r3, or an extra field) stops the replay and refuses every ledger write.
 func TestDoubleReviewReplayRejectsForgedHistory(t *testing.T) {
+	var firstNonce string // the r1 nonce of the forgery being built, for the "reused nonce" case
 	forge := func(t *testing.T, mutate func(ev map[string]interface{})) (*apiServer, string) {
 		t.Helper()
 		_, h, run := drServer(t)
@@ -491,6 +493,8 @@ func TestDoubleReviewReplayRejectsForgedHistory(t *testing.T) {
 		delete(ev, "hash")
 		ev["read"], ev["decision"], ev["round_head"], ev["round_seq"], ev["phase_after"], ev["final"] = "r2", "same", first["hash"], 2, drPhaseAgreed, "same"
 		ev["prev"], ev["at"] = first["hash"], time.Now().UTC().Format(time.RFC3339Nano)
+		firstNonce = first["nonce"].(string)
+		ev["nonce"] = drOtherNonce(firstNonce) // a fresh commitment: replay refuses a reused nonce
 		mutate(ev)
 		ev["hash"] = apiEventHash(ev)
 		line, _ := json.Marshal(ev)
@@ -503,21 +507,42 @@ func TestDoubleReviewReplayRejectsForgedHistory(t *testing.T) {
 	if s, _ := forge(t, func(ev map[string]interface{}) { ev["actor"] = "reviewer-two" }); s.ledgerErr != "" {
 		t.Fatalf("a valid r2 must replay: %s", s.ledgerErr)
 	}
+	why := map[string]string{ // the refusal each forgery must hit, so a case cannot pass on an unrelated check
+		"same actor": "double review read refused on replay: independent double review needs two different actors", "premature r3": "double review read refused on replay: senior resolution",
+		"extra field": "double review event has unknown field", "wrong phase": "double review event phase_after",
+		"unauthorised": "double review read refused on replay: rbac", "bad round seq": "double review event has a bad round sequence",
+		"no nonce": "double review event has a bad nonce", "reused nonce": "double review event reuses a nonce",
+		"forged head_signed": "double review event head_signed", "earlier than r1": "double review event is earlier than",
+		"non-canonical at": "double review event has a bad timestamp",
+	}
 	for name, mutate := range map[string]func(map[string]interface{}){
-		"same actor":    func(ev map[string]interface{}) { ev["actor"] = " REVIEWER-ONE " },
+		"same actor":    func(ev map[string]interface{}) { ev["actor"] = "REVIEWER-ONE" }, // case-folded: the same person
 		"premature r3":  func(ev map[string]interface{}) { ev["actor"], ev["read"] = "reviewer-three", "r3" },
 		"extra field":   func(ev map[string]interface{}) { ev["actor"], ev["override"] = "reviewer-two", true },
 		"wrong phase":   func(ev map[string]interface{}) { ev["actor"], ev["phase_after"] = "reviewer-two", drPhaseDisagreement },
 		"unauthorised":  func(ev map[string]interface{}) { ev["actor"], ev["role"] = "clinician-two", RoleClinician },
 		"bad round seq": func(ev map[string]interface{}) { ev["actor"], ev["round_seq"] = "reviewer-two", 5 },
 		"no nonce":      func(ev map[string]interface{}) { ev["actor"], ev["nonce"] = "reviewer-two", "" },
+		// Fields the handler fills in itself: replay refuses anything the handler would never have written.
+		"reused nonce": func(ev map[string]interface{}) {
+			ev["actor"], ev["nonce"] = "reviewer-two", firstNonce
+		},
+		"forged head_signed": func(ev map[string]interface{}) {
+			ev["actor"], ev["head_signed"] = "reviewer-two", "forged-signature"
+		},
+		"earlier than r1": func(ev map[string]interface{}) {
+			ev["actor"], ev["at"] = "reviewer-two", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339Nano)
+		},
+		"non-canonical at": func(ev map[string]interface{}) { // a later instant, but with an offset the handler never writes
+			ev["actor"], ev["at"] = "reviewer-two", time.Now().Add(time.Hour).In(time.FixedZone("GST", 4*3600)).Format(time.RFC3339Nano)
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			s, run := forge(t, mutate)
 			if err := validateReviewLedger(filepath.Join(run, "api_reviews.ndjson")); err != nil {
 				t.Fatalf("the chain is valid, so the start-up chain check passes: %v", err)
 			}
-			if s.ledgerErr == "" || !strings.Contains(s.ledgerErr, "line 2") {
+			if s.ledgerErr == "" || !strings.Contains(s.ledgerErr, "line 2: "+why[name]) {
 				t.Fatalf("forged read accepted on replay: %q", s.ledgerErr)
 			}
 			h, _ := s.handler(drTokens, "")
@@ -526,6 +551,76 @@ func TestDoubleReviewReplayRejectsForgedHistory(t *testing.T) {
 				t.Fatalf("writes after a failed replay: %d %s", res.code, res.raw)
 			}
 		})
+	}
+}
+
+// drOtherNonce is a well-formed nonce different from n.
+func drOtherNonce(n string) string {
+	if n == strings.Repeat("a", 32) {
+		return strings.Repeat("b", 32)
+	}
+	return strings.Repeat("a", 32)
+}
+
+// The handler never writes what replay refuses: a colliding nonce is redrawn, a clock that stepped back is clamped to
+// the round's previous read, head_signed is the case's decision signature, and a restart replays the result cleanly.
+func TestDoubleReviewWriteMatchesReplay(t *testing.T) {
+	s, h, run := drServer(t)
+	fixed := func(b byte) []byte { return bytes.Repeat([]byte{b}, 16) }
+	queue := [][]byte{fixed(0x11), fixed(0x11), fixed(0x22)} // r1 draws 0x11; r2 draws 0x11 again (taken), then 0x22
+	draws := 0
+	drNonceSource = func(b []byte) (int, error) {
+		next := queue[draws]
+		draws++
+		return copy(b, next), nil
+	}
+	base := time.Now()
+	drNow = func() time.Time { return base }
+	t.Cleanup(func() { drNonceSource, drNow = rand.Read, time.Now })
+
+	r1 := drPost(t, h, drRev1, drLinkItem, "r1", "same", "", 201).body["event"].(map[string]interface{})
+	drNow = func() time.Time { return base.Add(-time.Hour) } // the wall clock steps back an hour
+	r2 := drPost(t, h, drRev2, drLinkItem, "r2", "different", "", 201).body["event"].(map[string]interface{})
+	if r1["nonce"] != strings.Repeat("11", 16) || r2["nonce"] != strings.Repeat("22", 16) || draws != 3 {
+		t.Fatalf("a colliding nonce must be redrawn: r1 %v, r2 %v after %d draws", r1["nonce"], r2["nonce"], draws)
+	}
+	if r2["at"] != r1["at"] || r1["at"] != base.UTC().Format(time.RFC3339Nano) {
+		t.Fatalf("a clock that stepped back must be clamped to the previous read: r1 %v, r2 %v", r1["at"], r2["at"])
+	}
+	if sig := s.cases[ledgerLoop].last.Sig; r1["head_signed"] != sig || r2["head_signed"] != sig {
+		t.Fatalf("head_signed must be the case's decision signature %q: %v %v", sig, r1["head_signed"], r2["head_signed"])
+	}
+	// A source that only ever repeats a used nonce gives up (500) and records nothing.
+	drNonceSource = func(b []byte) (int, error) { return copy(b, fixed(0x22)), nil }
+	drNow = time.Now
+	if res := drPost(t, h, drRev3, drLinkItem, "r3", "same", "", 500); !strings.Contains(fmt.Sprint(res.body["error"]), "nonce") {
+		t.Fatalf("exhausted nonce source: %v", res.body)
+	}
+	if n := len(drLedger(t, run)); n != 2 {
+		t.Fatalf("a refused write appended: %d events", n)
+	}
+	if again := loadAPI(run, ""); again.ledgerErr != "" {
+		t.Fatalf("what the handler wrote must replay: %s", again.ledgerErr)
+	}
+}
+
+// After both initial reads, both slots are filled, so a further r1 or r2 is a slot conflict (409 conflict "read",
+// carrying the round's phase), whatever the phase. The docs list exactly this.
+func TestDoubleReviewInitialReadAfterBothIsReadConflict(t *testing.T) {
+	for _, second := range []string{"same", "different"} {
+		_, h, run := drServer(t)
+		drPost(t, h, drRev1, drLinkItem, "r1", "same", "", 201)
+		drPost(t, h, drRev2, drLinkItem, "r2", second, "", 201)
+		want := map[string]string{"same": drPhaseAgreed, "different": drPhaseDisagreement}[second]
+		for _, read := range []string{"r1", "r2"} {
+			res := drPost(t, h, drRev3, drLinkItem, read, "same", "", 409)
+			if res.body["conflict"] != "read" || res.body["phase"] != want {
+				t.Fatalf("%s after both reads (%s): %v", read, want, res.body)
+			}
+		}
+		if n := len(drLedger(t, run)); n != 2 {
+			t.Fatalf("refusals appended: %d events", n)
+		}
 	}
 }
 
