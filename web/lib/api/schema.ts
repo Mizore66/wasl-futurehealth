@@ -84,6 +84,8 @@ export const LungFinding = z.looseObject({
   finding_report: z.string().optional(),
   finding_label: z.string().optional(),
   risk: z.string().optional(),
+  /** False when no risk was recorded and pipeline/lung.go assumed "high" for the Fleischner rule. */
+  risk_recorded: z.boolean().optional(),
   scope: z.string().optional(),
   window_start_day: z.number().optional(),
   window_end_day: z.number().optional(),
@@ -420,6 +422,34 @@ export const ApiReview = z.looseObject({
   hash: z.string(),
 });
 
+/** Consent events and the demo-only contact overlay (pipeline/api_consent.go). */
+export const ConsentEventName = z.enum(["consent_granted", "consent_denied", "consent_opted_out"]);
+export const ConsentEvent = ApiReview.extend({
+  decision: ConsentEventName,
+  action: z.literal("record_consent"),
+  head_signed: z.string(),
+});
+export const ConsentOverlay = z.looseObject({
+  status: z.enum(["none", "granted", "denied", "opted_out"]),
+  demo_pending_consent: z.enum(["", "released", "cancelled"]),
+  events: z.number(),
+  contact_blocked: z.boolean(),
+  mode: z.literal("demo"),
+  canonical_consent: Consent,
+  canonical_unchanged: z.literal(true),
+  last_event_hash: z.string(),
+  note: z.string(),
+});
+export const ApiContact = z.looseObject({ overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentRequest = z.object({
+  event: ConsentEventName,
+  expected_head: z.string().min(1),
+  note: z.string().max(500).default(""),
+});
+export const ConsentResponse = withMeta({ case: z.string(), overlay: ConsentOverlay, history: z.array(ConsentEvent) });
+export const ConsentAppendResponse = withMeta({ review: ConsentEvent, overlay: ConsentOverlay, note: z.string() });
+export const ConsentError = withMeta({ error: z.string(), current_head: z.string().optional(), api_contact: ConsentOverlay.optional() });
+
 /**
  * One review action as GET /audit serves it to the auditor. The redacted projection (exportReviewEventAllow in
  * pipeline/api_export.go) never carries actor or note, and drops an empty or out-of-pattern value, such as the empty
@@ -565,6 +595,8 @@ export const CaseDetail = withMeta({
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
   api_reviews: z.array(LedgerEvent),
+  /** Separate demo contact overlay; canonical case consent and outreach stay untouched. */
+  api_contact: ApiContact.optional(),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
   review_ledger: ReviewLedger.optional(),
@@ -630,8 +662,19 @@ export const Dashboard = withMeta({
     review_hold: z.string(),
     dr_exam_closure: z.string().optional(),
   }),
-  providers: z.array(z.looseObject({ provider: z.string(), loops: Count })),
-  origins: z.array(z.looseObject({ origin: z.string(), loops: Count })),
+  // --- Provider/origin breakdowns (issue #45) ---
+  // The API copies these from the run's dashboard.json and serves null when the run has none (pipeline/api.go getDashboard),
+  // so a missing or null array reads as empty rather than failing the whole dashboard. Rows stay loose; the Programme model
+  // (components/programme/model.ts) parses the counts it shows, small-cell "<5" strings included.
+  providers: z
+    .array(z.looseObject({ provider: z.string(), loops: Count }))
+    .nullish()
+    .transform((v) => v ?? []),
+  origins: z
+    .array(z.looseObject({ origin: z.string(), loops: Count }))
+    .nullish()
+    .transform((v) => v ?? []),
+  // --- end issue #45 ---
   metrics: z.looseObject({
     closure: z.record(
       z.string(),
@@ -829,6 +872,13 @@ export type ContestResolutionRequest = z.input<typeof ContestResolutionRequest>;
 export type CompensationResponse = z.infer<typeof CompensationResponse>;
 export type UndoProjection = z.infer<typeof UndoProjection>;
 export type ApiReview = z.infer<typeof ApiReview>;
+export type ConsentEventName = z.infer<typeof ConsentEventName>;
+export type ConsentEvent = z.infer<typeof ConsentEvent>;
+export type ConsentOverlay = z.infer<typeof ConsentOverlay>;
+export type ApiContact = z.infer<typeof ApiContact>;
+export type ConsentRequest = z.input<typeof ConsentRequest>;
+export type ConsentResponse = z.infer<typeof ConsentResponse>;
+export type ConsentAppendResponse = z.infer<typeof ConsentAppendResponse>;
 export type AuditReview = z.infer<typeof AuditReview>;
 export type LedgerEvent = z.infer<typeof LedgerEvent>;
 export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;

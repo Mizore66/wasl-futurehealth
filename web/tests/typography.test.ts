@@ -17,6 +17,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "app/app/patients/[id]/page.tsx", line: /\{e\.hash\.slice/, why: "audit entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.hash\)/, why: "agent ledger entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.prev\)/, why: "agent ledger previous hash" },
+  { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },
   { file: "components/case/audit-view.tsx", line: /title=\{value\}/, why: "Hash component (chain, signature and head hashes)" },
   { file: "components/case/audit-view.tsx", line: /prev \{e\.prev\}/, why: "full previous hash" },
   { file: "components/case/audit-view.tsx", line: /hash \{e\.hash\}/, why: "full entry hash" },
