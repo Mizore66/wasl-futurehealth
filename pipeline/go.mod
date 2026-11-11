@@ -1,6 +1,6 @@
 module wsi
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/nats-io/nats.go v1.54.0

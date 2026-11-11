@@ -28,7 +28,7 @@ test.describe("Today", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1002");
     await expect(open.getByTestId("lead-days")).toHaveAttribute("data-value", "108");
-    await expect(page.locator("[data-honesty=designed]")).toHaveText("Call log: designed, not built");
+    await expect(page.locator("[data-honesty=illustrative]")).toHaveText("Call log: kept in this browser (no live API)");
     await shot(page, "today");
     await noSeriousAxe(page);
   });
@@ -54,41 +54,76 @@ test.describe("Today", () => {
     await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
   });
 
-  test("Call, then Reached offers Book and Call back on…", async ({ page }) => {
+  test("Log call, then Reached offers Appointment agreed and Call back on…", async ({ page }) => {
+    // The wall clock is on another date than the run clock (late August), one step before a UTC midnight: the
+    // call-back days are the dates of the wall-clock `until` that is saved, never the run's days (issue #37).
+    await page.clock.setFixedTime(new Date("2026-11-10T23:59:30Z"));
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Call AHS-sr-1002" }).click();
-    await expect(open.getByRole("button", { name: "On the call · AHS-sr-1002" })).toBeVisible();
+    await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+    await expect(open.getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
     await expect(open.getByRole("group", { name: "How did it go?" })).toBeVisible();
 
     await open.getByRole("button", { name: "Reached" }).click();
     const next = open.getByRole("group", { name: "What next?" });
-    await expect(next.getByRole("button")).toHaveText(["Book", "Call back on…", "Declined"]);
+    await expect(next.getByRole("button")).toHaveText(["Appointment agreed", "Call back on…", "Declined"]);
     await expect(open.getByRole("button", { name: /^Next patient/ })).toHaveCount(0);
 
     await next.getByRole("button", { name: "Call back on…" }).click();
     const days = open.getByRole("group", { name: "Call back on" });
-    await expect(days.getByRole("button")).toHaveText(["Sun 30 Aug", "Mon 31 Aug", "Tue 1 Sept"]);
-    await days.getByRole("button", { name: "Sun 30 Aug" }).click();
-    await expect(open.getByRole("status")).toContainText("Logged: Call back Sun 30 Aug");
+    await expect(days.getByRole("button")).toHaveText(["Wed 11 Nov", "Thu 12 Nov", "Fri 13 Nov"]);
+    await days.getByRole("button", { name: "Wed 11 Nov" }).click();
+    await expect(open.getByRole("status")).toContainText("Logged: Call back Wed 11 Nov");
     await expect(open.getByRole("button", { name: /^Next patient/ })).toBeVisible();
     await shot(page, "today-callback");
   });
 
-  test("Book moves the patient to Waiting; Take moves an unowned one to To call", async ({ page }) => {
+  test("Appointment agreed moves the patient to Waiting, booking still needed; Take moves an unowned one to To call", async ({ page }) => {
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Reached" }).click();
-    await open.getByRole("button", { name: "Book" }).click();
-    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Booked · AHS-sr-1002 moved to Waiting");
+    await open.getByRole("button", { name: "Appointment agreed" }).click();
+    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Appointment agreed · AHS-sr-1002 moved to Waiting");
     await expect(page.getByRole("tab", { name: "To call 7" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "Waiting 7" })).toBeVisible();
+    await page.getByRole("tab", { name: "Waiting 7" }).click();
+    await expect(page.getByRole("region", { name: "Your list" }).getByRole("button", { name: /AHS-sr-1002/ })).toContainText("Booking needed · date to confirm");
 
     await page.getByRole("tab", { name: "No owner 2" }).click();
     await open.getByRole("button", { name: "Take this patient" }).click();
     await expect(page.getByRole("tab", { name: "To call 8" })).toBeVisible();
     await expect(page.getByRole("tab", { name: "No owner 1" })).toBeVisible();
   });
+
+  // Issue #36: nothing is booked and no dialer is connected, so no step of the workflow may say so.
+  for (const width of [1440, 390]) {
+    test(`no step says Book, Booked or On the call (${width}px)`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/app/today");
+      const open = page.getByRole("region", { name: "Open patient" });
+      const seen: string[] = [];
+      const look = async () => {
+        seen.push(await page.locator("main").innerText());
+        for (const b of await page.getByRole("button").all()) seen.push((await b.getAttribute("aria-label")) ?? (await b.textContent()) ?? "");
+      };
+      await look();
+      await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
+      await expect(open.getByRole("button", { name: "Logging call · AHS-sr-1002" })).toBeVisible();
+      await look();
+      await open.getByRole("button", { name: "Reached" }).click();
+      await look();
+      await open.getByRole("button", { name: "Appointment agreed" }).click();
+      await look();
+      // Below lg the list and the open patient take turns.
+      if (width < 1024) await open.getByRole("button", { name: /^Your list/ }).click();
+      await page.getByRole("tab", { name: /^Waiting/ }).click();
+      await look();
+      const text = seen.join("\n");
+      expect(text).toContain("Booking needed · date to confirm");
+      expect(text).not.toMatch(/\bBook(ed)?\b/);
+      expect(text).not.toContain("On the call");
+    });
+  }
 
   test("search narrows the list; Waiting opens Aisha's record", async ({ page }) => {
     await page.goto("/app/today");
@@ -323,7 +358,7 @@ test.describe("Phone width, 390px", () => {
   test("Today: Call is in the first screen; the list takes its turn", async ({ page }) => {
     await page.goto("/app/today");
     await noSideScroll(page);
-    const call = page.getByRole("button", { name: "Call AHS-sr-1002" });
+    const call = page.getByRole("button", { name: "Log call · AHS-sr-1002" });
     const box = (await call.boundingBox())!;
     expect(box.y + box.height).toBeLessThanOrEqual(PHONE.height);
     await targetsAre44(page);
@@ -340,17 +375,18 @@ test.describe("Phone width, 390px", () => {
 
     await page.getByRole("button", { name: /AHS-sr-1023/ }).click();
     await expect(page.getByRole("heading", { level: 2, name: "AHS-sr-1023" })).toBeFocused();
-    await expect(page.getByRole("button", { name: "Call AHS-sr-1023" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Log call · AHS-sr-1023" })).toBeVisible();
   });
 
   test("Today: after the call, the outcome buttons stay beside Call", async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-11-10T09:00:00Z"));
     await page.goto("/app/today");
-    await page.getByRole("button", { name: "Call AHS-sr-1002" }).click();
+    await page.getByRole("button", { name: "Log call · AHS-sr-1002" }).click();
     await page.getByRole("button", { name: "Reached" }).click();
     await page.getByRole("button", { name: "Call back on…" }).click();
     await noSideScroll(page);
     await targetsAre44(page);
-    await page.getByRole("button", { name: "Sun 30 Aug" }).click();
+    await page.getByRole("button", { name: "Wed 11 Nov" }).click();
     await targetsAre44(page);
     await shot(page, "today-logged-390");
   });
@@ -386,7 +422,7 @@ test.describe("Phone width, 390px", () => {
       [...main.querySelectorAll<HTMLElement>("*")].filter((el) => getComputedStyle(el).animationName !== "none" && parseFloat(getComputedStyle(el).animationDuration) > 0).length,
     );
     expect(moving).toBe(0);
-    await page.getByRole("button", { name: "Call AHS-sr-1002" }).focus();
+    await page.getByRole("button", { name: "Log call · AHS-sr-1002" }).focus();
     const outline = await page.evaluate(() => {
       const s = getComputedStyle(document.activeElement!);
       return { w: s.outlineWidth, style: s.outlineStyle };

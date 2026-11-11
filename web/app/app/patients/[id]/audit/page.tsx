@@ -32,7 +32,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
           <div className="min-w-0">
             <h1 className="m-0 text-title font-semibold">Audit trail</h1>
             <p className="m-0 mt-1 text-muted">
-              {person?.display_name ?? shortId(detail.case.id)} · <span className="font-mono text-small">{shortId(detail.case.id)}</span>
+              {person?.display_name ?? shortId(detail.case.id)} · <span className="text-small">{shortId(detail.case.id)}</span>
             </p>
           </div>
         </div>

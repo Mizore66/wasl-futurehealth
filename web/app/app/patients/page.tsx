@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
+import { Button } from "@/components/ui/button";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { StatusMark, type Status } from "@/components/wasl/status-mark";
 import { caseDeadlineDays } from "@/components/worklist/days";
@@ -145,11 +146,11 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
             {filters.state && <input type="hidden" name="state" value={filters.state} />}
             {filters.dropoff && <input type="hidden" name="dropoff" value={filters.dropoff} />}
             {filters.overdue !== undefined && <input type="hidden" name="overdue" value={String(filters.overdue)} />}
-            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-control border border-control px-2.5 md:flex-none">
+            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-control border border-input px-2.5 md:flex-none">
               <span className="sr-only">Search case id</span>
               <input type="search" name="q" defaultValue={filters.q} placeholder="Case id" className="w-full min-w-0 h-11 border-0 bg-transparent text-body outline-none md:w-40" />
             </label>
-            <button className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">Search</button>
+            <Button variant="quiet" size="touch">Search</Button>
           </form>
         </div>
 
@@ -189,17 +190,17 @@ export default async function Page({ searchParams }: PageProps<"/app/patients">)
                         {it.nameAr}
                       </span>
                     )}
-                    {it.named && <span className="font-mono text-small text-muted">{it.short}</span>}
+                    {it.named && <span className="text-small text-muted">{it.short}</span>}
                   </span>
                 </td>
                 <td className="px-4 py-2.5 max-md:block max-md:p-0">
                   <StatusMark status={mark(c)} label={c.closed ? `Closed day ${closedInDays(c)}` : it.status} className="max-md:text-body" />
                 </td>
-                <td className="px-4 py-2.5 text-muted max-md:block max-md:p-0">
+                <td className="px-4 py-2.5 tabular-nums text-muted max-md:block max-md:p-0">
                   <span className="md:hidden">Referred </span>
                   {formatDay(c.referral_day)}
                 </td>
-                <td className={cn("px-4 py-2.5 max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
+                <td className={cn("px-4 py-2.5 tabular-nums max-md:block max-md:p-0", !c.closed && c.overdue ? "text-negative" : "text-muted")}>
                   <span className="md:hidden">Due </span>
                   {formatDay(c.referral_day + dueIn(c))}
                   {!c.closed && c.overdue && ` · ${it.days - dueIn(c)} over`}

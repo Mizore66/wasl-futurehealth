@@ -147,7 +147,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                               {k.ar}
                             </span>
                           </span>
-                          <span className="text-body">{k.similarity.toFixed(2)}</span>
+                          <span className="text-body tabular-nums">{k.similarity.toFixed(2)}</span>
                         </div>
                         <div aria-hidden className="mt-0.5 h-1 rounded-sm bg-raised">
                           <div className={cn("h-1 rounded-sm", best ? "bg-hue" : "bg-ink")} style={{ width: `${Math.round(k.similarity * 100)}%` }} />
@@ -314,7 +314,7 @@ export function MatchingReplay({ heading, cases, referrals }: { heading: React.R
                   ? `Link probability ${C.p.toFixed(3)} on a scale from 0.95 to 1.00; the auto-close line is ${C.tau}.`
                   : `Link probability not calibrated yet; the auto-close line is ${C.tau}.`
               }
-              className="relative mt-1 h-14"
+              className="relative mt-1 h-14 tabular-nums"
             >
               <div className="absolute inset-x-0 top-6 h-1 rounded-sm bg-control" />
               <div className="absolute top-3.5 -ml-px h-6 w-0.5 bg-ink" style={{ left: `${lineAt}%` }} />

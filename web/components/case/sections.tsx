@@ -18,6 +18,8 @@ import {
   consentRows,
   eventWords,
   holdWords,
+  ledgerId,
+  ledgerWords,
   outreachRows,
   reviewWords,
   roleWords,
@@ -134,7 +136,7 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
               </span>
               <span className="flex-none text-right">
                 <span className="block text-small text-muted">Record number</span>
-                <span className="font-mono text-small">{idn.registration.split("|")[1]}</span>
+                <span className="text-small">{idn.registration.split("|")[1]}</span>
               </span>
             </li>
           );
@@ -161,7 +163,7 @@ export function IdentitiesCard({ detail }: { detail: CaseDetail }) {
                     {basisWords(l.weakest_edge.basis)}, p {l.weakest_edge.p.toFixed(3)}
                   </dd>
                   <dt className="text-muted">Report joined</dt>
-                  <dd className="m-0 font-mono text-small leading-6">{shortId(l.downstream_event)}</dd>
+                  <dd className="m-0 text-small leading-6">{shortId(l.downstream_event)}</dd>
                 </dl>
                 <details className="mt-2 text-small text-muted">
                   <summary className="min-h-6 cursor-pointer">Linker details</summary>
@@ -275,7 +277,7 @@ export function ReadersCard({ detail, ev, id, title }: { detail: CaseDetail; ev:
         <p className="m-0">{read.quote ? `“${read.quote}”` : "The report states none of these in words."}</p>
         {quoteB && quoteB !== read.quote && <p className="m-0 mt-2 text-muted">Reader B quotes: “{quoteB}”</p>}
         <p className="m-0 mt-1 text-small text-muted">
-          {providerLabel(reportUnit)} report <span className="font-mono">{shortId(ev.report)}</span>
+          {providerLabel(reportUnit)} report {shortId(ev.report)}
           {ev.reader_model ? ` · second reader ${ev.reader_model}` : ""}
         </p>
       </blockquote>
@@ -407,7 +409,9 @@ export function ConsentCard({ detail }: { detail: CaseDetail }) {
 
 /** Human sign-offs: the run's simulated reviewers, and anything appended through the API. */
 export function SignoffsCard({ detail }: { detail: CaseDetail }) {
-  const { signoffs, api_reviews: appended } = detail;
+  const { signoffs } = detail;
+  /* Reviews and their undo/contest events. Coordinator actions share the ledger but are not sign-offs: LedgerCard. */
+  const appended = detail.api_reviews.filter((r) => r.ledger === "review" || r.ledger === "compensation");
   return (
     <Card
       id="signoffs"
@@ -434,10 +438,53 @@ export function SignoffsCard({ detail }: { detail: CaseDetail }) {
           ))}
           {appended.map((r) => (
             <li key={r.hash} className="border-t border-rule py-3">
-              <p className="m-0 font-medium">{reviewWords(r.decision, detail.case.programme)}</p>
+              {r.ledger === "review" ? (
+                <p className="m-0 font-medium">{reviewWords(r.decision, detail.case.programme)}</p>
+              ) : (
+                <div className="font-medium">
+                  <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
+                </div>
+              )}
               <p className="m-0 text-muted">
                 {r.actor || "Unnamed"} · {roleWords(r.role)} · {atWords(r.at)} · saved through the API
               </p>
+              {r.ledger === "compensation" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}
+
+/**
+ * Coordinator actions on the shared ledger (owner, snooze, contact outcomes, notes), in ledger order, each named by its
+ * real `type/kind` and the actor the API recorded. Entries the client cannot read are listed as unrecognised.
+ */
+export function LedgerCard({ detail }: { detail: CaseDetail }) {
+  const events = detail.api_reviews.filter((r) => r.ledger === "coordinator" || r.ledger === "unknown");
+  return (
+    <Card
+      id="ledger"
+      title="Coordinator actions"
+      aside={<HonestyLabel kind="simulated">Demo ledger, synthetic patients</HonestyLabel>}
+      note="Append-only overlay: these never change a decision, consent or signature, and nothing was sent to the patient."
+    >
+      {events.length === 0 ? (
+        <Empty>No coordinator actions recorded for this case.</Empty>
+      ) : (
+        <ul className="m-0 mt-3 list-none p-0" aria-label="Coordinator actions">
+          {events.map((e, i) => (
+            <li key={e.hash || `unknown-${i}`} className="border-t border-rule py-3">
+              <div className={cn("font-medium", e.ledger === "unknown" && "text-warning")}>
+                <TechTerm id={ledgerId(e)} label={ledgerWords(e)} />
+              </div>
+              <p className="m-0 text-muted">
+                {e.actor || "Actor not recorded"} · {e.role ? roleWords(e.role) : "role not recorded"} · {e.at ? atWords(e.at) : "time not recorded"}
+              </p>
+              {e.ledger === "coordinator" && (e.data.note || e.data.text || e.data.reason) && (
+                <p className="m-0 mt-1">&ldquo;{e.data.note || e.data.text || e.data.reason}&rdquo;</p>
+              )}
             </li>
           ))}
         </ul>
@@ -454,11 +501,11 @@ export function TimelineCard({ detail }: { detail: CaseDetail }) {
       <ol className="m-0 mt-3 list-none p-0" aria-label="Timeline">
         {events.map((e) => (
           <li key={`${e.id}@${e.seq}`} className="grid grid-cols-[4.5rem_minmax(0,1fr)] gap-x-3 border-t border-rule py-2">
-            <span className="text-muted">{formatDay(e.day)}</span>
+            <span className="tabular-nums text-muted">{formatDay(e.day)}</span>
             <span className="min-w-0">
               {eventWords(e, detail.case.id)}
               <span className="block text-small text-muted">
-                {providerLabel(e.provider)} · <span className="break-all font-mono">{shortId(e.id)}</span>
+                {providerLabel(e.provider)} · <span className="break-all">{shortId(e.id)}</span>
               </span>
             </span>
           </li>

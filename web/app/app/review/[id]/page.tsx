@@ -48,7 +48,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
             )}
             <span className="text-small text-muted">
               {view.age > 0 && `${view.age} · `}
-              <span className="font-mono">{view.shortId}</span>
+              {view.shortId}
             </span>
           </div>
           <p className="m-0 mt-1 text-muted">

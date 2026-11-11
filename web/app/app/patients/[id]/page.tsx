@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
-import { BookingCard, ConsentCard, IdentitiesCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
@@ -41,6 +41,7 @@ const SECTIONS = [
   ["readers", "Readers"],
   ["consent", "Consent"],
   ["signoffs", "Sign-offs"],
+  ["ledger", "Coordinator actions"],
   ["timeline", "Timeline"],
   ["booking", "Booking"],
 ] as const;
@@ -75,7 +76,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
               )}
               <span className="text-small text-muted">
                 {person && `${person.age} · `}
-                <span className="font-mono">{shortId(c.id)}</span>
+                {shortId(c.id)}
               </span>
             </div>
             <p className="m-0 mt-1 flex flex-wrap items-center gap-2">
@@ -187,7 +188,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
                 <ol aria-label="Entry hashes" className="m-0 list-none p-0 pb-2">
                   {audit.chain.map((e, i) => (
                     <li key={e.hash} className="flex min-h-7 items-center gap-2 text-small">
-                      <span className="w-4 text-right text-muted">{i + 1}</span>
+                      <span className="w-4 text-right tabular-nums text-muted">{i + 1}</span>
                       <span className="min-w-0 flex-1 truncate">{entryLabel(e.type)}</span>
                       <span className="font-mono text-muted">{e.hash.slice(0, 8)}</span>
                     </li>
@@ -221,6 +222,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           ))}
           <ConsentCard detail={detail} />
           <SignoffsCard detail={detail} />
+          <LedgerCard detail={detail} />
         </div>
         <div className="flex min-w-0 flex-col gap-gap">
           <BookingCard detail={detail} />

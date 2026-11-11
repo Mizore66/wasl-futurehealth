@@ -1,0 +1,466 @@
+{
+  "agent_investigations": [],
+  "agent_provenance": {
+    "cached": false,
+    "experimental": false
+  },
+  "api_contact": {
+    "history": [
+      {
+        "action": "record_consent",
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.586841904Z",
+        "case": "exp-prov/ServiceRequest/EXP-sr-1",
+        "decision": "consent_granted",
+        "hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+        "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+        "item": "",
+        "mode": "demo",
+        "note": "synthetic consent note",
+        "prev": "genesis",
+        "role": "coordinator"
+      }
+    ],
+    "overlay": {
+      "canonical_consent": "granted",
+      "canonical_unchanged": true,
+      "contact_blocked": false,
+      "demo_pending_consent": "released",
+      "events": 1,
+      "last_event_hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "mode": "demo",
+      "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+      "status": "granted"
+    }
+  },
+  "api_overlay": {
+    "actions": 6,
+    "canonical_owner": "",
+    "contact_outcomes": [
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.58919077Z",
+        "channel": "phone",
+        "event": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+        "note": "synthetic call note",
+        "outcome": "reached"
+      },
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.590121924Z",
+        "channel": "phone",
+        "event": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+        "outcome": "appointment_agreed"
+      },
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.59902562Z",
+        "channel": "phone",
+        "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+        "outcome": "declined"
+      }
+    ],
+    "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+    "last_action_at": "2026-11-10T22:50:47.59902562Z",
+    "last_contact": {
+      "at": "2026-11-10T22:50:47.59902562Z",
+      "channel": "phone",
+      "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+      "outcome": "declined"
+    },
+    "ledger_status": "ok",
+    "no_answer_streak": 0,
+    "notes": [
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.594584827Z",
+        "event": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+        "text": "synthetic coordinator note"
+      }
+    ],
+    "owner": "coordinator-bound",
+    "snooze": {
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.592819664Z",
+      "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "reason": "Call back Fri 13 Nov",
+      "until": "2026-11-13T22:50:47Z"
+    }
+  },
+  "api_reviews": [
+    {
+      "action": "record_consent",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.586841904Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "consent_granted",
+      "hash": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "item": "",
+      "mode": "demo",
+      "note": "synthetic consent note",
+      "prev": "genesis",
+      "role": "coordinator"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.587896468Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "owner": "coordinator-bound"
+      },
+      "hash": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "assign_owner",
+      "mode": "demo",
+      "prev": "b3b383f50d738437b288c264fad09aec9d04f02a3f0313bd77c0692bc01d0ac5",
+      "role": "coordinator",
+      "seq": 1,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "actor": "reviewer-one",
+      "at": "2026-11-10T22:50:47.588275934Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "same",
+      "hash": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "item": "",
+      "mode": "demo",
+      "note": "synthetic review one",
+      "prev": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "role": "reviewer"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.58919077Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "note": "synthetic call note",
+        "outcome": "reached"
+      },
+      "hash": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+      "head": "e7fae2dad5b7f5e7bc76e8c72ade2f498629ed5226941b609db0a8c025e4e16a",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "role": "coordinator",
+      "seq": 2,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.590121924Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "appointment_agreed"
+      },
+      "hash": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+      "head": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "cb073c2fc5826ad853685888e94ab2feac7d95249bcaca33ad2f2090d351e89b",
+      "role": "coordinator",
+      "seq": 3,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "actor": "reviewer-one",
+      "at": "2026-11-10T22:50:47.592160596Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "decision": "different",
+      "hash": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "item": "",
+      "mode": "demo",
+      "note": "synthetic review two",
+      "prev": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+      "role": "reviewer"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.592819664Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "reason": "Call back Fri 13 Nov",
+        "until": "2026-11-13T22:50:47Z"
+      },
+      "hash": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "head": "75725675f9e334c6fef4d988f976a926a08ea548d60ae91acfd3b36944f52a4a",
+      "kind": "snooze",
+      "mode": "demo",
+      "prev": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "role": "coordinator",
+      "seq": 4,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.594584827Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "text": "synthetic coordinator note"
+      },
+      "hash": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "head": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "kind": "note",
+      "mode": "demo",
+      "prev": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+      "role": "coordinator",
+      "seq": 5,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "actor": "reviewer-two",
+      "at": "2026-11-10T22:50:47.59624318Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "undo",
+      "mode": "demo",
+      "note": "synthetic undo note",
+      "prev": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "role": "reviewer",
+      "target": "7fc7252b6b9f35df2d2c91108344dd6926b90b12ec975442635dcfd75f2ef0a6",
+      "target_action": "signoff_link",
+      "target_actor": "reviewer-one"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "actor": "reviewer-two",
+      "at": "2026-11-10T22:50:47.5973082Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "contest",
+      "mode": "demo",
+      "note": "synthetic contest note",
+      "prev": "65b393e61ceaea6ca5cbf6d4acef8944effbf3245cbad9eb0e14278553fc0ada",
+      "role": "reviewer",
+      "target": "99ffafc9b9bdd63f22122db8d61494db6783c6b457a51e1c79611a7e18b85597",
+      "target_action": "signoff_link",
+      "target_actor": "reviewer-one"
+    },
+    {
+      "action": "signoff_link",
+      "action_head": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "actor": "reviewer-three",
+      "at": "2026-11-10T22:50:47.598663998Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "hash": "87e1a4c663c4cafdea9b157707ad0d90b82e82a83a2a95047cb0fea62ff56283",
+      "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "contest_resolution",
+      "mode": "demo",
+      "note": "",
+      "prev": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "resolution": "rejected",
+      "role": "reviewer",
+      "target": "67552972c6f010ff5fb2a23bfd1a49e2ba66ace26cab11fc36c7dd0a594f3551",
+      "target_action": "signoff_link",
+      "target_actor": "reviewer-one"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.59902562Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "declined"
+      },
+      "hash": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+      "head": "398f7b9d684fb7447b08632eb6a83713180f0ee25983335fa87939f4d061ac3c",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "87e1a4c663c4cafdea9b157707ad0d90b82e82a83a2a95047cb0fea62ff56283",
+      "role": "coordinator",
+      "seq": 6,
+      "type": "coordinator_action"
+    }
+  ],
+  "booking": {
+    "status": "not_generated"
+  },
+  "case": {
+    "api_overlay": {
+      "actions": 6,
+      "head": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+      "last_action_at": "2026-11-10T22:50:47.59902562Z",
+      "last_contact": {
+        "at": "2026-11-10T22:50:47.59902562Z",
+        "channel": "phone",
+        "event": "499da1e4e834ec803dbb87f04692e2488a2c319797118d11d4dfcef17337c2ca",
+        "outcome": "declined"
+      },
+      "ledger_status": "ok",
+      "no_answer_streak": 0,
+      "owner": "coordinator-bound",
+      "snooze": {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.592819664Z",
+        "event": "d8346bd7b71dda1d6177ff579a9d80f791b1da45e8a33b46a106c62f60bc47fe",
+        "reason": "Call back Fri 13 Nov",
+        "until": "2026-11-13T22:50:47Z"
+      }
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "granted",
+    "deadline_day": 0,
+    "decisions": 1,
+    "dropoff": "not_booked",
+    "fixture": "",
+    "id": "exp-prov/ServiceRequest/EXP-sr-1",
+    "overdue": false,
+    "owner": "",
+    "priority": "",
+    "programme": "crc",
+    "provider": "exp-prov",
+    "referral_day": 3,
+    "review": "none",
+    "state": "open"
+  },
+  "current": {
+    "ack_day": -1,
+    "chain": [
+      {
+        "body": {
+          "downstream_event": "exp-prov/Appointment/EXP-ap-1",
+          "hops": 1,
+          "linker": "test-linker",
+          "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+          "near_miss": false,
+          "path_p_cal": 0.97,
+          "path_strength": 0.97,
+          "referral_patient": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+          "tau": 0.9,
+          "weakest_edge": {
+            "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+            "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+            "basis": "eid",
+            "p": 0.97
+          }
+        },
+        "hash": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+        "prev": "genesis",
+        "type": "link_decision"
+      },
+      {
+        "body": {
+          "agree": true,
+          "label": "adequate",
+          "quote": "caecum reached",
+          "reader_model": "gemma-4-26b/cached",
+          "report": "exp-prov/DiagnosticReport/EXP-dr-1"
+        },
+        "hash": "e750524b53de4f1f963c0b81d1b60a96bc3adf699ede0de1f24ff74f0874216f",
+        "prev": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+        "type": "evidence"
+      }
+    ],
+    "contact": "granted",
+    "dropoff": "not_booked",
+    "id": "dec-1",
+    "in_seq": 7,
+    "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+    "notif_day": -1,
+    "now": 40,
+    "overdue": false,
+    "policy": "v7strict",
+    "proc_day": -1,
+    "prog": "crc",
+    "prov": "exp-prov",
+    "ref_day": 0,
+    "ref_status": "",
+    "reported_closed": false,
+    "sig": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "sr_day": 3,
+    "state": "open",
+    "unowned": false
+  },
+  "decisions": [
+    {
+      "consent_log": [],
+      "decision_id": "dec-1",
+      "dropoff": "not_booked",
+      "escalations": [],
+      "in_seq": 7,
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v7strict",
+      "sig": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "state": "open"
+    }
+  ],
+  "evidence": [
+    {
+      "agree": true,
+      "label": "adequate",
+      "quote": "caecum reached",
+      "reader_model": "gemma-4-26b/cached",
+      "report": "exp-prov/DiagnosticReport/EXP-dr-1"
+    }
+  ],
+  "holds": [],
+  "identities": [
+    {
+      "provider": "p",
+      "registration": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+      "role": "downstream"
+    },
+    {
+      "provider": "p",
+      "registration": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+      "role": "downstream"
+    }
+  ],
+  "links": [
+    {
+      "downstream_event": "exp-prov/Appointment/EXP-ap-1",
+      "hops": 1,
+      "linker": "test-linker",
+      "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+      "near_miss": false,
+      "path_p_cal": 0.97,
+      "path_strength": 0.97,
+      "referral_patient": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+      "tau": 0.9,
+      "weakest_edge": {
+        "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+        "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+        "basis": "eid",
+        "p": 0.97
+      }
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:50:47Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "outreach": [],
+  "review_items": [],
+  "review_ledger": {
+    "events_applied": 12,
+    "status": "ok"
+  },
+  "signoffs": [],
+  "timeline": []
+}

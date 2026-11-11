@@ -59,7 +59,7 @@ The pipeline replay is a **pure reducer over a scripted event list**: `step(stat
 | G3 | No replay or event stream endpoint. | `build-replay.ts` turns the showcase run files into `replay.json`. Later: `GET /api/stream` (SSE) over the same log. | simulated replay of a recorded run |
 | G4 | No results endpoint. | `results.json` generated from the frozen evaluation. | built (frozen) |
 | G5 | `api-samples` are stale (τ 0.98, 27 Oct). | Regenerate with `scripts/demo.sh snapshot` on a machine with `nats-server`. Schemas must accept both. | — |
-| G6 | Today (calls, outcomes, Undo) has no write endpoint beyond `confirm_contact`. | Client-side session state, clearly marked demo; `confirm_contact` uses the real POST. | designed |
+| G6 | Today (calls, outcomes, owner, snooze). | Live API: each action is appended through `POST /api/cases/{id}/actions` (contact outcome, snooze, assign owner) and shown only after a 201; no Undo because the ledger is append-only. Fixtures: browser session state with Undo. | built (live) / illustrative (fixtures) |
 | G7 | Linker runner-up candidates are not in the API. | Shown from `replay.json`, labelled illustrative. | illustrative |
 | G8 | Referrals search was not wired in the canvas. | Wire `q` to `/api/cases?q=`. | built |
 | G9 | Two "0 lost" figures (201,285 in PITCH.md vs 136,669 in SUMMARY.md v2; v1 + v2 sum to 276,133). | Both recorded in `results.json` `conflicts`; no screen shows an exactly-once denominator until the backend owner picks one. | — |

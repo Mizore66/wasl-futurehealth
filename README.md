@@ -52,7 +52,7 @@ In our simulation, Emirates-ID-only tracking reports **12.4%** of referrals reac
 
 ## Build and run
 
-**Requirements:** Go 1.27.3 or newer (matching `pipeline/go.mod`), Python 3.12+, and `nats-server` v2.10+ (`brew install nats-server`). CI uses NATS 2.12.6 and Python 3.12.16.
+**Requirements:** Go 1.27.4 or newer (matching `pipeline/go.mod`), Python 3.12+, and `nats-server` v2.10+ (`brew install nats-server`). CI uses NATS 2.12.6 and Python 3.12.16.
 
 Python packages: NumPy and SciPy for the booking engine (pinned in the `Dockerfile` as numpy 2.3.5 and scipy 1.16.3), and PyYAML for `scripts/check_deploy.py` and `scripts/test_deploy.py`. For the complete pinned test and scanner environment, use `python3 -m pip install -r requirements-ci.txt`. A missing PyYAML is never a pass: `check_deploy.py` exits non-zero with "did NOT run", and the `test_deploy.py` compose tests error on the missing import (no test skips when PyYAML is absent).
 
