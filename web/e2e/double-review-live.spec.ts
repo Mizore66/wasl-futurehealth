@@ -360,7 +360,8 @@ test.describe("independent double review, live mode against a mock API", () => {
     const caseUrl = `/app/patients/${encodeURIComponent(id)}`;
     for (const url of [desk, caseUrl, `${caseUrl}/audit`]) {
       for (const body of Object.values(await payloads(request, url))) {
-        expect(body).toContain("mock-other-2");
+        // The audit mock serves only the malformed event, so only the review and case pages name the r1 reader.
+        if (!url.endsWith("/audit")) expect(body).toContain("mock-other-2");
         for (const s of [CANARY, MALFORMED_NOTE]) expect(body).not.toContain(s);
         expect(body).not.toMatch(new RegExp(`${FINAL_CANARY}|${DECISION_CANARY}`, "i"));
       }
