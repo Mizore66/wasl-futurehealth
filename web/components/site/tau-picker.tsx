@@ -5,7 +5,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { LTT_TIERS, OPERATING_TAU } from "./ltt";
 
-const valueClass = "m-0 mt-1 block text-[clamp(1.75rem,1rem_+_1.5vw,2.5rem)] font-semibold leading-[1.1] tracking-[-0.02em]";
+const valueClass = "m-0 mt-1 block text-[clamp(1.75rem,1rem_+_1.5vw,2.5rem)] font-semibold leading-[1.1] tracking-[-0.02em] tabular-nums";
 
 /** Pick a closure tier; the six calibration figures for it tick into place. */
 export function TauPicker() {

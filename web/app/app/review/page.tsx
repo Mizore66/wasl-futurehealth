@@ -68,7 +68,7 @@ export default async function Page() {
                 <span className="block font-medium">{view.name}</span>
                 <span className="block break-words text-small text-muted">
                   {view.age > 0 && `${view.age} · `}
-                  <span className="font-mono">{view.shortId}</span> · report <span className="font-mono">{view.report.id}</span>
+                  {view.shortId} · report {view.report.id}
                 </span>
               </span>
               <span className="col-start-2 min-w-0 text-muted md:col-start-auto">{view.held}</span>

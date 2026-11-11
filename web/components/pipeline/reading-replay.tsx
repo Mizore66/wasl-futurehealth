@@ -112,7 +112,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
               )}
               <MarkShape mark={g.mark} hue={g.mark === "working"} className="absolute left-0 top-0 size-2.5" />
               <div className="text-body font-medium">{g.label}</div>
-              <div className="text-small text-muted">
+              <div className="text-small text-muted tabular-nums">
                 {WORD[g.mark]}
                 {g.mark !== "queued" && g.detail ? ` · ${g.detail}` : ""}
               </div>
@@ -195,7 +195,7 @@ export function ReadingReplay({ heading, standsFor }: { heading: React.ReactNode
                 <span className="h-1 w-16 flex-none rounded-sm bg-raised">
                   <span className="block h-1 rounded-sm bg-hue" style={{ width: `${Math.round((v.elapsedMs / c.ai.latencyMs) * 100)}%` }} />
                 </span>
-                <span className="truncate" data-testid="ai-timer">
+                <span className="truncate tabular-nums" data-testid="ai-timer">
                   {f < 1 ? "queued" : v.aiDone ? `${s1(c.ai.latencyMs)} s recorded` : `reading · ${s1(v.elapsedMs)} s`}
                 </span>
               </span>

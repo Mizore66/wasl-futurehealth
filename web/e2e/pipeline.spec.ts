@@ -244,6 +244,48 @@ test("pipeline: Fatima's profile, opened from its link, leads to her patient rec
   await expect(page.locator("h1")).toContainText("Fatima");
 });
 
+test.describe("on a 390px touch screen", () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test("pipeline: the profile's close control is a 44px target that overlaps nothing and works by keyboard and tap", async ({ page }) => {
+    const fatima = replay.cases.find((c) => c.person.name === "Fatima Al Zaabi")!;
+    await page.goto(`/app/pipeline?person=${fatima.id}`);
+    const sheet = page.getByRole("dialog");
+    const close = sheet.getByRole("button", { name: "Close" });
+    await expect(sheet.getByRole("heading", { name: "Fatima Al Zaabi" })).toBeVisible();
+    await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
+
+    const box = (await close.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(44);
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    const hits = await close.evaluate((mine) => {
+      const a = mine.getBoundingClientRect();
+      return [...mine.closest('[role="dialog"]')!.querySelectorAll('a, button, input, [tabindex]:not([tabindex="-1"])')]
+        .filter((el) => el !== mine)
+        .map((el) => ({ el, r: el.getBoundingClientRect() }))
+        .filter(({ r }) => r.width > 0 && r.height > 0 && r.left < a.right && a.left < r.right && r.top < a.bottom && a.top < r.bottom)
+        .map(({ el }) => el.outerHTML.slice(0, 80));
+    });
+    expect(hits).toEqual([]);
+    // The 16px icon stays where it was, 16px in from the sheet's top-right corner.
+    const sheetBox = (await sheet.boundingBox())!;
+    const icon = (await close.locator("svg").boundingBox())!;
+    expect(Math.round(sheetBox.x + sheetBox.width - (icon.x + icon.width))).toBe(16);
+    expect(Math.round(icon.y - sheetBox.y)).toBe(16);
+    expect(Math.round(icon.width)).toBe(16);
+
+    await close.focus();
+    await expect(close).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(sheet).toHaveCount(0);
+
+    await page.goto(`/app/pipeline?person=${fatima.id}`);
+    await expect(sheet.getByRole("heading", { name: "Fatima Al Zaabi" })).toBeVisible();
+    await close.tap();
+    await expect(sheet).toHaveCount(0);
+  });
+});
+
 test("pipeline: a generated person's profile says there is no record", async ({ page }) => {
   const generated = replay.cases.find((c) => c.person.source === "generated")!;
   await page.goto(`/app/pipeline?person=${generated.id}`);

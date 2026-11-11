@@ -119,7 +119,7 @@ test.describe("Today: tabs", () => {
 test.describe("Today: stale patient actions (issue #12)", () => {
   const actions = (page: Page) => {
     const open = page.getByRole("region", { name: "Open patient" });
-    return open.getByRole("button", { name: /^(Call |On the call|Snooze to tomorrow|Hand to Dr Al Kaabi|Take this patient)/ });
+    return open.getByRole("button", { name: /^(Log call|Logging call|Snooze to tomorrow|Hand to Dr Al Kaabi|Take this patient)/ });
   };
 
   test("Hand-off advances to the next patient; a no-match search leaves no patient actions, only Undo", async ({ page }) => {
@@ -127,8 +127,8 @@ test.describe("Today: stale patient actions (issue #12)", () => {
     const open = page.getByRole("region", { name: "Open patient" });
     await open.getByRole("button", { name: "Hand to Dr Al Kaabi" }).click();
     await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
-    await expect(open.getByRole("button", { name: "Call AHS-sr-1023" })).toBeVisible();
-    await expect(open.getByRole("button", { name: "Call AHS-sr-1002" })).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1023" })).toBeVisible();
+    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
     const notice = open.getByTestId("removed-notice");
     await expect(notice).toContainText("Logged: Handed to Dr Al Kaabi · AHS-sr-1002 moved to Waiting");
     await focused(page, notice.getByRole("button", { name: "Undo" }));
@@ -158,7 +158,7 @@ test.describe("Today: stale patient actions (issue #12)", () => {
     await page.getByRole("searchbox").fill("1023");
     await expect(open.getByRole("heading", { level: 2 })).toHaveText("AHS-sr-1023");
     await expect(open.getByRole("button", { name: "Snooze to tomorrow" })).toHaveCount(1);
-    await expect(open.getByRole("button", { name: "Call AHS-sr-1002" })).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
 
     await page.getByRole("searchbox").fill("zzzz-no-match");
     await expect(actions(page)).toHaveCount(0);
@@ -176,7 +176,7 @@ test.describe("Today: stale patient actions (issue #12)", () => {
     await page.getByRole("searchbox").fill("");
     await page.getByRole("tab", { name: /^Waiting/ }).click();
     await expect(open.getByRole("heading", { level: 2 })).not.toHaveText("AHS-sr-1002");
-    await expect(open.getByRole("button", { name: "Call AHS-sr-1002" })).toHaveCount(0);
+    await expect(open.getByRole("button", { name: "Log call · AHS-sr-1002" })).toHaveCount(0);
     await page.getByRole("searchbox").fill("1002");
     await expect(actions(page)).toHaveCount(0);
     await expect(page.getByText("Nobody left in this view.")).toBeVisible();
@@ -184,20 +184,20 @@ test.describe("Today: stale patient actions (issue #12)", () => {
 });
 
 test.describe("Today: focus through the call workflow (issue #14)", () => {
-  test("Reached moves focus to the next group; Book lands on Undo and Tab stays in the workflow", async ({ page }) => {
+  test("Reached moves focus to the next group; Appointment agreed lands on Undo and Tab stays in the workflow", async ({ page }) => {
     await page.goto("/app/today");
     const open = page.getByRole("region", { name: "Open patient" });
-    await open.getByRole("button", { name: "Call AHS-sr-1002" }).focus();
+    await open.getByRole("button", { name: "Log call · AHS-sr-1002" }).focus();
     await page.keyboard.press("Enter");
     await expect(open.getByRole("group", { name: "How did it go?" })).toBeVisible();
     await open.getByRole("button", { name: "Reached" }).focus();
     await page.keyboard.press("Enter");
     await focused(page, open.getByRole("heading", { name: "What next?" }));
     await tabStaysIn(page, open);
-    await focused(page, open.getByRole("button", { name: "Book" }));
+    await focused(page, open.getByRole("button", { name: "Appointment agreed" }));
 
     await page.keyboard.press("Enter");
-    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Booked");
+    await expect(open.getByTestId("removed-notice")).toContainText("Logged: Appointment agreed");
     await focused(page, open.getByTestId("removed-notice").getByRole("button", { name: "Undo" }));
     await tabStaysIn(page, open);
   });

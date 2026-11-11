@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { Audit, CaseDetail } from "@/lib/api/schema";
+import { Audit, AuditLedgerEvent, CaseDetail } from "@/lib/api/schema";
 import { dayToDate, formatDay } from "@/lib/domain/day";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
@@ -184,7 +184,7 @@ describe("programme-specific case evidence", () => {
     const audit = {
       ...Audit.parse(loadSample("case_dr_exam_closure_audit.json")),
       history: [
-        {
+        AuditLedgerEvent.parse({
           case: detail.case.id,
           item: "rv-ldct-evidence",
           decision: "LR4X",
@@ -196,7 +196,7 @@ describe("programme-specific case evidence", () => {
           mode: "api",
           prev: "genesis",
           hash: "ldct-review-hash",
-        },
+        }),
       ],
     };
     const html = renderToStaticMarkup(HistoryCard({ audit, programme: detail.case.programme }));

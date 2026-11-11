@@ -22,27 +22,27 @@ type DropoffWords = { status: string; next: string; view: Exclude<View, "none"> 
 export const DROPOFF_WORDS: Record<Exclude<Dropoff, "">, DropoffWords> = {
   never_notified: { status: "Never notified", next: "Call to tell them the result", view: "call" },
   no_acknowledgement: { status: "Notified, hasn't confirmed", next: "Call to check they understood", view: "call" },
-  not_booked: { status: "Not booked", next: "Book the colonoscopy", view: "call" },
+  not_booked: { status: "Not booked", next: "Arrange the colonoscopy", view: "call" },
   referral_rejected: { status: "Referral returned by the unit", next: "Call the GP to re-refer", view: "call" },
   referral_unanswered: { status: "Unit hasn't answered", next: "Chase the endoscopy unit", view: "call" },
-  no_show: { status: "No-show, rebook", next: "Rebook", view: "call" },
-  no_followup_ct: { status: "No follow-up CT booked", next: "Book the CT", view: "call" },
+  no_show: { status: "No-show, rebook", next: "Arrange a new date", view: "call" },
+  no_followup_ct: { status: "No follow-up CT booked", next: "Arrange the CT", view: "call" },
   not_assessable: { status: "Not assessable", next: "Clinician to decide on a repeat", view: "waiting" },
-  no_eye_exam: { status: "No eye-clinic exam yet", next: "Book the eye-clinic exam", view: "call" },
-  ungradable_no_repeat: { status: "Retinal photo ungradable", next: "Book the repeat photo", view: "call" },
-  technical_repeat_not_done: { status: "Mammogram to repeat", next: "Book the repeat mammogram", view: "call" },
+  no_eye_exam: { status: "No eye-clinic exam yet", next: "Arrange the eye-clinic exam", view: "call" },
+  ungradable_no_repeat: { status: "Retinal photo ungradable", next: "Arrange the repeat photo", view: "call" },
+  technical_repeat_not_done: { status: "Mammogram to repeat", next: "Arrange the repeat mammogram", view: "call" },
   no_assessment_outcome: { status: "Waiting on the assessment outcome", next: "Wait for the assessment result", view: "waiting" },
   awaiting_tissue: { status: "Waiting on tissue sampling", next: "Specialist team to arrange it", view: "waiting" },
   inadequate: { status: "Report incomplete · with the doctors", next: "Doctors to decide on a repeat", view: "waiting" },
   awaiting_histology: { status: "Waiting on pathology", next: "Wait for the pathology result", view: "waiting" },
-  in_progress: { status: "Booked", next: "Prep call before the appointment", view: "waiting" },
+  in_progress: { status: "Appointment in the record", next: "Prep call before the appointment", view: "waiting" },
   unlinked: { status: "Report not matched yet", next: "Wait for the match", view: "waiting" },
   escalated: { status: "With the specialist team", next: "Specialist team to decide", view: "waiting" },
   out_of_scope: { status: "Clinician to decide", next: "Clinician to decide", view: "waiting" },
-  incomplete_scan_not_completed: { status: "LDCT incomplete, repeat not done", next: "Book the repeat LDCT", view: "call" },
-  followup_ldct_not_done: { status: "Follow-up LDCT not done", next: "Book the follow-up LDCT", view: "call" },
+  incomplete_scan_not_completed: { status: "LDCT incomplete, repeat not done", next: "Arrange the repeat LDCT", view: "call" },
+  followup_ldct_not_done: { status: "Follow-up LDCT not done", next: "Arrange the follow-up LDCT", view: "call" },
   no_workup_outcome: { status: "Waiting on the work-up outcome", next: "Wait for the work-up result", view: "waiting" },
-  no_followup_documented: { status: "No follow-up visit documented", next: "Book the follow-up visit", view: "call" },
+  no_followup_documented: { status: "No follow-up visit documented", next: "Arrange the follow-up visit", view: "call" },
 };
 
 export function statusWords(c: CaseSummary): { status: string; next: string } {
@@ -120,12 +120,65 @@ export type WorkItem = {
   review: CaseSummary["review"];
   dropoff: Dropoff;
   hasRecord: boolean;
+  /** The case's `api_overlay.head` (live API only): what the next coordinator action must name as `expected_head`. */
+  head?: string;
+  /** Coordinator actions already on the API ledger for this case (live API only). */
+  ledgerActions?: number;
+  /** A running ledger snooze or a no-answer logged in the last day (live API only); these rows sink on Today. */
+  snoozed?: boolean;
+  /** Consecutive persisted no-answers ending the case's contact log (live API only). */
+  noAnswer?: number;
+  /** `invalid`: ledger replay stopped part-way, so this row's overlay is only a prefix and not authoritative. */
+  ledgerStatus?: "ok" | "invalid";
 };
 
-export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkItem {
+/** Today's status after an appointment was agreed: nothing is booked until a slot is confirmed. */
+export const BOOKING_NEEDED = "Booking needed · date to confirm";
+export const DECLINED_STATUS = "Declined · GP to sign";
+export const noAnswerStatus = (n: number) => `No answer ×${n} · retry tomorrow`;
+
+const OUTCOME_STATUS: Record<string, string> = { voicemail: "Left a voicemail · retry", wrong_number: "Wrong number · check the record" };
+const outcomeStatus = (o: string) => OUTCOME_STATUS[o] ?? plain(o);
+
+/** Who "Hand to …" on Today hands a patient to; a ledger owner equal to this puts them in Waiting. */
+export const HANDOFF_OWNER = "Dr Al Kaabi";
+
+/**
+ * `wallNow` (ms) is only used for ledger times: whether a snooze is still running (the API checks snooze `until`
+ * against the server's wall clock, not the run clock) and whether a no-answer was logged within the last day.
+ *
+ * Live API: the board position comes from the persisted overlay, so a reload shows what the ledger says, not what one
+ * browser session did. The latest contact outcome places the row the way logging it does on Today: an agreed
+ * appointment or a decline moves it to Waiting, a no-answer sinks it for a day. A snooze logged after that outcome
+ * sets the status instead.
+ */
+export function workItem(c: CaseSummary, now: number, hasRecord: boolean, wallNow = Date.now()): WorkItem {
   const person = personForLoop(c.id);
-  const words = statusWords(c);
-  const view: View = c.owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  const words = { ...statusWords(c) };
+  const ov = c.api_overlay;
+  const owner = ov?.owner || c.owner;
+  let view: View = owner === "" ? "none" : c.dropoff === "" ? "waiting" : DROPOFF_WORDS[c.dropoff].view;
+  if (ov?.owner === HANDOFF_OWNER && view === "call") view = "waiting";
+  if (ov?.owner === HANDOFF_OWNER) words.status = `With ${HANDOFF_OWNER}`;
+  const lc = ov?.last_contact;
+  let sinks = false;
+  if (lc) {
+    if (lc.outcome === "appointment_agreed" || lc.outcome === "declined") {
+      view = "waiting";
+      words.status = lc.outcome === "declined" ? DECLINED_STATUS : BOOKING_NEEDED;
+    } else if (lc.outcome === "no_answer") {
+      words.status = noAnswerStatus(Math.max(1, ov!.no_answer_streak));
+      sinks = Date.parse(lc.at) + 86_400_000 > wallNow;
+    } else if (lc.outcome === "reached") {
+      words.status = `Reached · ${words.next}`;
+    } else {
+      words.status = outcomeStatus(lc.outcome);
+    }
+  }
+  const snoozeRunning = !!ov?.snooze && Date.parse(ov.snooze.until) > wallNow;
+  const snoozeLater = snoozeRunning && (!lc || !ov!.snooze!.at || ov!.snooze!.at > lc.at);
+  if (snoozeLater) words.status = ov!.snooze!.reason || `Snoozed until ${ov!.snooze!.until.slice(0, 10)}`;
+  const snoozed = snoozeRunning || sinks;
   return {
     id: c.id,
     short: shortId(c.id),
@@ -141,10 +194,11 @@ export function workItem(c: CaseSummary, now: number, hasRecord: boolean): WorkI
     overdue: c.overdue,
     referralDay: c.referral_day,
     textsAllowed: c.consent === "granted",
-    owner: ownerLabel(c.owner),
+    owner: ownerLabel(owner),
     review: c.review,
     dropoff: c.dropoff,
     hasRecord,
+    ...(ov ? { head: ov.head, ledgerActions: ov.actions, snoozed, noAnswer: ov.no_answer_streak, ledgerStatus: ov.ledger_status } : {}),
   };
 }
 
