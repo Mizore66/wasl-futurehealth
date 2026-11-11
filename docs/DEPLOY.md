@@ -25,7 +25,7 @@ handling, NATS config baked into `wasl-nats:local` with no host bind mount, ever
 
 | Service | Image | What it does | Lifetime |
 |---|---|---|---|
-| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.3 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
+| `nats-0`, `nats-1`, `nats-2` | `wasl-nats:local` (`deploy/nats/Dockerfile`: NATS 2.12.6 rebuilt with Go 1.27.4 and patched modules on `nats:2.12.6-alpine`, with Alpine upgrades and `nats.conf` copied in) | JetStream cluster from [`deploy/nats/nats.conf`](../deploy/nats/nats.conf): file store, **ChaCha20-Poly1305 encryption at rest**, streams with 3 replicas (Raft quorum writes); runs as UID 10001 | long-running |
 | `pipeline` | `wasl:local` (this repo's `Dockerfile`) | `scripts/demo.sh container`: generate the synthetic cohort, run every pipeline service against the cluster (mock HIE, FHIR subscription consumer or HL7 MLLP listener, 3 prep workers, linker, 4 closure partitions, simulated reviewer), then audit, tamper check, booking and the summary | one-shot, exits 0 |
 | `api` | `wasl:local` | `scripts/demo.sh serve`: the read API over the finished run | long-running, starts after `pipeline` succeeds |
 
@@ -190,6 +190,60 @@ but does not replace a security audit of, encryption at rest. All emulation proc
 
 The separate normal and approximately 10× scale measurements, including the x10 safety failures and annual-volume
 storage extrapolation, are in [`pipeline/results/scale/`](../pipeline/results/scale/).
+
+## Hosted frontend (Vercel)
+
+The Next.js app in `web/` reads the API from its **server** (React Server Components and server actions), never from
+the browser, so the API needs a public HTTPS URL but no CORS changes. Vercel cannot run the Go API or NATS: run this
+package on any host with Docker, put an HTTPS endpoint in front of the loopback port, and point Vercel at it.
+
+**Status: designed, not verified.** This section has not been run end to end against a hosted deployment.
+
+Every `/api` route needs a bearer token that the API binds to one role and one actor (`WASL_API_TOKENS`, see
+[`SECURITY.md`](SECURITY.md)). The published `scripts/demo.sh` defaults are loopback-only constants: a publicly
+reachable API must not use them, so generate fresh tokens for each role.
+
+1. On the API host, generate one token per role the frontend uses, bind each to a role and the actor the ledger should
+   record, and start the package detached, then wait for the API:
+
+   ```bash
+   umask 077
+   for r in reviewer clinician auditor coordinator; do openssl rand -hex 32 > "wasl-$r.token"; done
+   export WASL_API_TOKENS="$(cat wasl-reviewer.token):reviewer:hosted-reviewer,$(cat wasl-clinician.token):clinician:hosted-clinician,$(cat wasl-auditor.token):auditor:hosted-auditor,$(cat wasl-coordinator.token):coordinator:hosted-coordinator"
+   scripts/deploy_up.sh -d                            # detached: does not attach to the logs
+   until curl -sf 127.0.0.1:8088/healthz >/dev/null; do sleep 10; done   # the pipeline runs first (~5 min)
+   curl -s -o /dev/null -w '%{http_code}\n' 127.0.0.1:8088/api/dashboard   # 401: no token
+   curl -s -H "Authorization: Bearer $(cat wasl-reviewer.token)" 127.0.0.1:8088/api/dashboard | head -c 200
+   ```
+
+   `docker-compose.yml` passes `WASL_API_TOKENS` to the `api` service. Left unset or empty, `scripts/demo.sh serve`
+   falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
+   characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
+   `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
+2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
+   on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
+3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
+   wanted), then redeploy. All are server-only: never prefix any of them with `NEXT_PUBLIC_`.
+
+   | Variable | Value | Used for |
+   |---|---|---|
+   | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review |
+   | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review actions |
+   | `WASL_API_AUDITOR_TOKEN` | contents of `wasl-auditor.token` | the redacted audit view |
+   | `WASL_API_COORDINATOR_TOKEN` | contents of `wasl-coordinator.token` | Today's coordinator actions (`POST /actions`) |
+
+   Without `WASL_API_URL` the site serves the committed snapshots (`web/data/api`) and review/Today writes stay in
+   the browser.
+
+The tokens authenticate the frontend **server**, not the person using the site. The API ignores client-supplied
+`X-Wasl-Role`/`X-Wasl-Actor` headers and records the actor bound to the token that the frontend server selected for the
+action, so every Today action is recorded as the coordinator token's actor and every review as the reviewer or clinician
+token's actor. Anyone who can use the hosted site can therefore act with those identities on the synthetic run: protect
+the Vercel deployment (Vercel Authentication or a password). Review and coordinator events are appended to
+`api_reviews.ndjson` on the `wasl-run` volume and survive an API restart; a new pipeline run that changes case heads
+makes the old ledger invalid (see `API.md`). To rotate a credential, change both `WASL_API_TOKENS` on the API host
+(then rerun `scripts/deploy_up.sh -d` with the original `WASL_JS_KEY` exported) and the matching Vercel variable.
 
 ## Not production-ready
 

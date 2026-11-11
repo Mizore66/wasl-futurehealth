@@ -42,7 +42,7 @@ export function SearchField({ label, restoreKey, className, ...input }: Props) {
   return (
     <label
       className={cx(
-        "flex items-center gap-2 rounded-control border border-control bg-surface px-2.5",
+        "flex items-center gap-2 rounded-control border border-input bg-surface px-2.5",
         "focus-within:border-hue focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-hue",
         className,
       )}

@@ -681,6 +681,32 @@ test("experts: KPI bars and outcome table use current sourced run figures", asyn
   await expect(tiers.locator('[aria-pressed="true"]')).toHaveCount(1);
 });
 
+test("experts: no placeholder contact or build identifier renders, and the evidence and limits stay", async ({ page }) => {
+  await page.goto("/experts");
+  await visitAll(page);
+  const text = await page.locator("body").innerText();
+  const meta = JSON.parse(readFileSync(path.join(repo, "web/data/results.json"), "utf8")) as { frozen_revision: string; frozen_on: string };
+  const frozen = meta.frozen_revision;
+  const [y, m, d] = meta.frozen_on.split("-").map(Number);
+  const frozenOn = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+  // Bracketed placeholders such as "[team email]" or "[link]".
+  expect(text).not.toMatch(/\[[A-Za-z][A-Za-z .'’-]*\]/);
+  // Commit-like hex identifiers (7–40 chars, at least one letter and one digit) and the frozen revision itself.
+  expect(text).not.toMatch(/\b(?=[0-9a-f]*[a-f])(?=[0-9a-f]*\d)[0-9a-f]{7,40}\b/i);
+  expect(text).not.toContain(frozen.slice(0, 7));
+  // The policy version is not printed as evaluation metadata (the demo run name, which embeds it, is shown on purpose).
+  expect(text).not.toMatch(/policy v7strict|two readers, v7strict/);
+
+  const footer = page.locator("footer").last();
+  for (const s of ["Synthetic cohort", "no outcomes on real patients are claimed", frozenOn, "seeds 11, 23, 37, 41 and 59", "held-out noise model v2", "results files"]) {
+    await expect(footer).toContainText(s);
+  }
+  await expect(page.locator("#limits tbody tr").first()).toBeVisible();
+  await expect(page.locator("#pilot")).toContainText("A free three-month shadow pilot");
+  await expect(page.locator("#pilot")).not.toContainText("To request one");
+});
+
 test("figure lab: a figure wears its seed's look, and at known 0 it is the grey question mark", async ({ page }) => {
   await page.goto("/lab/figures");
   await expect(page.getByText("Lab · not part of the product")).toBeVisible();

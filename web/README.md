@@ -15,7 +15,7 @@ pnpm gen        # copy the API samples, build data/replay.json, results.json, pe
 pnpm dev        # http://localhost:3000/app
 ```
 
-Fixtures mode serves the three demo cases and a 25-case page. `postReview` requires `WASL_API_URL` and throws in fixtures mode because fixtures cannot append review events.
+Fixtures mode serves the three demo cases and a 25-case page. `postReview` and `postAction` require `WASL_API_URL` and throw in fixtures mode because fixtures cannot append ledger events; Today keeps its call log in the browser instead.
 
 ## Run against the live API
 
@@ -31,7 +31,7 @@ WASL_API_CLINICIAN_TOKEN=wasl-demo-clinician-token \
 pnpm dev
 ```
 
-The tokens are read only by the Next.js server, never exposed as `NEXT_PUBLIC_*` values. The API binds each token to its configured role/actor; the browser's selected actor label is not identity evidence. Use the same development values printed above only for the loopback synthetic demo. To run the end-to-end suite against the live API, build and test with `WASL_API_URL` and the required role tokens set:
+The tokens are read only by the Next.js server, never exposed as `NEXT_PUBLIC_*` values. The API binds each token to its configured role/actor; the browser's selected actor label is not identity evidence. Use the same development values printed above only for the loopback synthetic demo. Today's coordinator actions (`postAction`) use `WASL_API_COORDINATOR_TOKEN`. For a hosted frontend (Vercel) with fresh per-role tokens, see [`../docs/DEPLOY.md`](../docs/DEPLOY.md#hosted-frontend-vercel). To run the end-to-end suite against the live API, build and test with `WASL_API_URL` and the required role tokens set:
 
 ```bash
 WASL_API_URL=http://127.0.0.1:8088 pnpm verify
@@ -52,7 +52,7 @@ pnpm verify     # tsc → eslint → vitest → next build → playwright
 | Path | What | Who edits |
 |---|---|---|
 | `lib/api/schema.ts` | zod schemas for every endpoint; objects are loose, enums are closed | shared, read-only in phase 2 |
-| `lib/api/source.ts` | `getDashboard`, `getCases`, `getCase`, `getAudit`, `getFixtures`, `postReview` | shared |
+| `lib/api/source.ts` | `getDashboard`, `getCases`, `getCase`, `getAudit`, `getFixtures`, `postReview`, `postAction` | shared |
 | `lib/domain/` | `dayToDate`, `formatDay`, `caseStage` (the 8-step vocabulary), case id helpers | shared |
 | `lib/replay/` | `step(state, event)`, `next(replay, state)`, `initialState` | shared |
 | `lib/results/`, `lib/people/` | typed access to `data/results.json` and `data/people.json` | shared |

@@ -12,3 +12,17 @@ const SHORT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short",
 export function formatDay(day: number): string {
   return SHORT.format(dayToDate(day));
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * "31 Oct 2026, 23:47 UTC" from an ISO instant; the raw string if it does not parse. Always UTC, so the server render and
+ * the browser agree whatever the viewer's time zone.
+ */
+export function formatUtcInstant(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}, ${hh}:${mm} UTC`;
+}
