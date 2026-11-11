@@ -20,6 +20,7 @@ const NEXT_PORT = 3298;
 const NEXT_URL = `http://127.0.0.1:${NEXT_PORT}`;
 const SHARED = {
   WASL_API_REVIEWER_TOKEN: "synthetic-shared-reviewer-0001",
+  WASL_API_WEB_REVIEWER_TOKEN: "synthetic-web-reviewer-00001",
   WASL_API_CLINICIAN_TOKEN: "synthetic-shared-clinician-0001",
   WASL_API_AUDITOR_TOKEN: "synthetic-shared-auditor-00001",
   WASL_API_COORDINATOR_TOKEN: "synthetic-shared-coord-000001",
@@ -29,7 +30,8 @@ const desk = `${NEXT_URL}/app/review/${encodeURIComponent(holdId)}`;
 const LINK = "rv-636161dc42837e08";
 const EVIDENCE = "rv-d55f7ccf9f12c409";
 
-type Kind = "r1" | "r2" | "senior";
+type Kind = "r1" | "r2" | "senior" | "web";
+type Reader = Exclude<Kind, "web">;
 type Read = { read: "r1" | "r2" | "r3"; actor: string; decision: string; hash: string; role: string; at: string; prev: string };
 type Principal = { actor: string; kind: Kind };
 
@@ -105,7 +107,8 @@ test.describe("independent double review, live mock", () => {
       if (token.length < 16) throw new Error(`REVIEW_${kind.toUpperCase()}_TOKEN must be set (16+ characters)`);
       principals.set(token, { kind: kind as Kind, actor: `synthetic-${kind}` });
     }
-    for (const [name, token] of Object.entries(SHARED)) principals.set(token, { kind: "r1", actor: `shared-${name.toLowerCase()}` });
+    // Shared server credentials are bound to their own non-reader actors, never to r1/r2/senior.
+    for (const [name, token] of Object.entries(SHARED)) principals.set(token, { kind: "web", actor: `shared-${name.toLowerCase()}` });
     server = createServer((req, res) => {
       const send = (status: number, body: unknown) => {
         res.writeHead(status, { "content-type": "application/json" });
@@ -160,7 +163,7 @@ test.describe("independent double review, live mock", () => {
           failGetOnce = false;
           return send(500, { meta, error: "temporary" });
         }
-        if (!["r1", "r2", "senior"].some((k) => tokens[k as Kind] === token)) sharedReviewGets += 1;
+        if (!["r1", "r2", "senior"].some((k) => tokens[k as Reader] === token)) sharedReviewGets += 1;
         const detail = read("case_review_hold.json");
         return send(200, { ...detail, case: { ...detail.case, closed: false, review: "open" }, signoffs: [], api_reviews: ledger(who), api_review_states: projection(who) });
       }
@@ -183,7 +186,7 @@ test.describe("independent double review, live mock", () => {
     if (server) await new Promise((resolve) => server.close(resolve));
   });
 
-  async function viewer(browser: Browser, kind: Kind) {
+  async function viewer(browser: Browser, kind: Reader) {
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.goto(desk);
@@ -365,5 +368,52 @@ test.describe("independent double review, live mock", () => {
     await expect(page.getByTestId("committed-lock")).toHaveCount(0);
     await noSeriousAxe(page);
     await context.close();
+  });
+
+  test("shared pages read as a non-reader and never show a concealed r1, and the cookie reaches the audit page", async ({ browser }) => {
+    for (const q of Object.values(questions)) q.reads.length = 0;
+    const patient = `${NEXT_URL}/app/patients/${encodeURIComponent(holdId)}`;
+    const audit = `${patient}/audit`;
+    // r1 submits; the cookie (path /app) must also reach the audit page.
+    const r1 = await viewer(browser, "r1");
+    await card(r1.page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
+    await card(r1.page, "link").getByRole("button", { name: "Submit first read" }).click();
+    await expect(card(r1.page, "link")).toContainText("Your first read is in");
+    await r1.context.close();
+
+    // Anonymous visitors and r2 both open the shared pages while r1 is concealed.
+    const r2 = await viewer(browser, "r2");
+    for (const url of [patient, audit]) {
+      await r2.page.goto(url);
+      const html = await r2.page.content();
+      expect(html).not.toContain(hash(LINK, "r1"));
+      expect(html).not.toContain("synthetic-r1");
+      await expect(r2.page.getByRole("list", { name: "Review history" })).toHaveCount(0);
+    }
+    await expect(r2.page.getByTestId("history-withheld")).toBeVisible();
+    await r2.context.close();
+    const anon = await browser.newContext();
+    const anonPage = await anon.newPage();
+    await anonPage.goto(patient);
+    expect(await anonPage.content()).not.toContain("synthetic-r1");
+    await anon.close();
+
+    // Resolve everything, then the signed-in cookie shows the resolved r1/r2/r3 history on the audit page.
+    const second = await viewer(browser, "r2");
+    await card(second.page, "link").getByRole("radio", { name: "Not the same patient" }).click();
+    await card(second.page, "link").getByRole("button", { name: "Submit second read" }).click();
+    await expect(card(second.page, "link")).toContainText("waiting for a senior");
+    await second.context.close();
+    const sr = await viewer(browser, "senior");
+    await card(sr.page, "link").getByRole("radio", { name: "Same patient", exact: true }).click();
+    await card(sr.page, "link").getByRole("button", { name: "Submit senior resolution" }).click();
+    await expect(card(sr.page, "link")).toContainText("Resolved by a senior");
+    await sr.page.goto(audit);
+    const history = sr.page.getByRole("list", { name: "Review history" });
+    await expect(history).toBeVisible();
+    for (const label of ["First read", "Second read", "Senior resolution"]) await expect(history).toContainText(label);
+    await expect(history).not.toContainText("synthetic-");
+    await noSeriousAxe(sr.page);
+    await sr.context.close();
   });
 });

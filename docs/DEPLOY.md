@@ -235,7 +235,8 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    | Variable | Value | Used for |
    |---|---|---|
    | `WASL_API_URL` | the public HTTPS URL from step 2, no trailing path | every request |
-   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | dashboard, lists, case detail, link/evidence review and governance |
+   | `WASL_API_WEB_REVIEWER_TOKEN` | a token bound to a reviewer-role actor that is **not** an assigned reader | dashboard, lists and case detail on shared pages; never an r1/r2 credential |
+   | `WASL_API_REVIEWER_TOKEN` | contents of `wasl-reviewer.token` | link/evidence review and governance |
    | `WASL_API_REVIEWER_2_TOKEN` | contents of `wasl-reviewer-2.token` | independent undo, contest and resolution |
    | `WASL_API_REVIEWER_3_TOKEN` | contents of `wasl-reviewer-3.token` | the senior_reviewer: r3 resolution of a disagreement (and contest resolver) independent of both initial readers |
    | `WASL_API_CLINICIAN_TOKEN` | contents of `wasl-clinician.token` | clinician review and consent actions |

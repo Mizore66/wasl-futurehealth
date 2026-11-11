@@ -20,7 +20,8 @@ afterEach(() => {
 describe("live API authentication", () => {
   it("uses separate server-side reviewer and auditor bearer tokens", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
-    vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-secret-1234567890");
+    vi.stubEnv("WASL_API_REVIEWER_TOKEN", "assigned-reader-secret-1234567890");
+    vi.stubEnv("WASL_API_WEB_REVIEWER_TOKEN", "reviewer-secret-1234567890");
     vi.stubEnv("WASL_API_AUDITOR_TOKEN", "auditor-secret-1234567890");
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(response(200, health))
