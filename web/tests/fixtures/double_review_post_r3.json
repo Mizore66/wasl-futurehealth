@@ -1,0 +1,79 @@
+{
+  "canonical_unchanged": true,
+  "event": {
+    "action": "signoff_link",
+    "actor": "reviewer-three",
+    "at": "2026-11-11T09:25:45.449329587Z",
+    "case": "exp-prov/ServiceRequest/EXP-sr-1",
+    "decision": "same",
+    "final": "same",
+    "hash": "c3500293f0225ad767dc78de9b7dc98f43f1b3687c81f0ae7f94d850099020ff",
+    "head_signed": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "item": "rv-dr-link-0001",
+    "kind": "read",
+    "mode": "demo",
+    "nonce": "18d2956c75e76798fc8d43320fea371c",
+    "note": "synthetic senior note",
+    "phase_after": "resolved",
+    "prev": "fb9e8cc5f6fcb98b86516c7e7b8aecbf3acd21db7344261178edeb2217844421",
+    "question": "link",
+    "read": "r3",
+    "role": "reviewer",
+    "round_head": "fb9e8cc5f6fcb98b86516c7e7b8aecbf3acd21db7344261178edeb2217844421",
+    "round_seq": 3,
+    "type": "double_review"
+  },
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-11T09:25:45Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "note": "senior resolution recorded; every read stays in the ledger. Demo overlay only: the canonical decision, signatures and review status are unchanged",
+  "round": {
+    "action": "signoff_link",
+    "final": "same",
+    "head": "c3500293f0225ad767dc78de9b7dc98f43f1b3687c81f0ae7f94d850099020ff",
+    "item": "rv-dr-link-0001",
+    "phase": "resolved",
+    "question": "link",
+    "r3_open": false,
+    "reads": {
+      "r1": {
+        "actor": "reviewer-one",
+        "at": "2026-11-11T09:25:45.438242501Z",
+        "blinded": false,
+        "decision": "same",
+        "hash": "81cdeff1d43c095ea1da3eacd15e06999306e784a11c34024d72b75a84ea8939",
+        "note": "synthetic first read note",
+        "read": "r1",
+        "role": "reviewer"
+      },
+      "r2": {
+        "actor": "reviewer-two",
+        "at": "2026-11-11T09:25:45.447585012Z",
+        "blinded": false,
+        "decision": "different",
+        "hash": "fb9e8cc5f6fcb98b86516c7e7b8aecbf3acd21db7344261178edeb2217844421",
+        "note": "synthetic second read note",
+        "read": "r2",
+        "role": "reviewer"
+      },
+      "r3": {
+        "actor": "reviewer-three",
+        "at": "2026-11-11T09:25:45.449329587Z",
+        "blinded": false,
+        "decision": "same",
+        "hash": "c3500293f0225ad767dc78de9b7dc98f43f1b3687c81f0ae7f94d850099020ff",
+        "note": "synthetic senior note",
+        "read": "r3",
+        "role": "reviewer"
+      }
+    },
+    "seq": 3,
+    "viewer_may": []
+  }
+}
