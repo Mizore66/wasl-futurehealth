@@ -32,24 +32,21 @@ export function apiMode(): ApiMode {
 
 const FIXTURE_DIR = path.join(process.cwd(), "data", "api");
 
-/**
- * The server-side variable holding a role's credential. `slot` names a further credential of the same role bound to a
- * different person, e.g. `WASL_API_REVIEWER_2_TOKEN` for a second reviewer (lib/api/double-review.ts).
- */
-export function credentialName(role: Role, slot = ""): string {
-  return `WASL_API_${role.toUpperCase()}${slot ? `_${slot}` : ""}_TOKEN`;
+/** The server-side variable holding a role's credential, e.g. `WASL_API_REVIEWER_TOKEN`. */
+export function credentialName(role: Role): string {
+  return `WASL_API_${role.toUpperCase()}_TOKEN`;
 }
 
-function apiToken(role: Role, slot = ""): string {
-  const name = credentialName(role, slot);
+function apiToken(role: Role): string {
+  const name = credentialName(role);
   const token = process.env[name]?.trim();
   if (!token) throw new Error(`${name} is required for the live synthetic API`);
   return token;
 }
 
-export function authenticated(init: RequestInit | undefined, role: Role, slot = ""): RequestInit {
+export function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
   const headers = new Headers(init?.headers);
-  headers.set("authorization", `Bearer ${apiToken(role, slot)}`);
+  headers.set("authorization", `Bearer ${apiToken(role)}`);
   return { cache: "no-store", ...init, headers };
 }
 

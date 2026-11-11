@@ -8,14 +8,15 @@ import { cn } from "@/lib/utils";
 import { refusalWords, type Choice } from "./model";
 
 /**
- * One read for one item, sent with this seat's server-held credential. The page shows only what the API has recorded:
- * after a 201 it re-reads the round from the API, so the confirmation is the API's own account of who gave the read.
+ * One read for one item, sent with this deployment's one server-held credential for the question. The browser names no
+ * seat or credential: the server fills the slot the API offers (`read` here only labels it). The page shows only what
+ * the API has recorded: after a 201 it re-reads the round, so the confirmation is the API's own account of who read.
  */
 export function DoubleReadForm({
   caseId,
   item,
   question,
-  seat,
+  read,
   head,
   choices,
   senior,
@@ -25,11 +26,12 @@ export function DoubleReadForm({
   caseId: string;
   item: string;
   question: "link" | "evidence";
-  seat: ReadName;
+  /** The slot the API offers this deployment now (label only: the server action picks the slot again). */
+  read: ReadName;
   head: string;
   choices: Choice[];
   senior: boolean;
-  /** The actor the API bound to this seat's credential (GET /double-review `viewer`). */
+  /** The actor the API bound to this deployment's credential (GET /double-review `viewer`). */
   recordedAs: string;
   legend: string;
 }) {
@@ -42,7 +44,7 @@ export function DoubleReadForm({
   function send() {
     if (!pick || saving) return;
     start(async () => {
-      const res = await submitDoubleRead({ caseId, item, question, seat, decision: pick, expectedHead: head });
+      const res = await submitDoubleRead({ caseId, item, question, senior, decision: pick, expectedHead: head });
       setResult(res);
       if (res.ok || res.conflict === "head") router.refresh();
     });
@@ -54,7 +56,7 @@ export function DoubleReadForm({
       <p id={`${id}-who`} className="m-0 mt-0.5 text-small text-muted">
         {senior
           ? `Senior read, recorded as ${recordedAs}. Both initial answers are shown above.`
-          : `Your ${seat} answer, recorded as ${recordedAs}. The other initial answer stays hidden until yours is in.`}
+          : `Your answer is recorded as ${read}, by ${recordedAs}. The other initial answer stays hidden until both are in.`}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         {choices.map((c) => (
@@ -84,7 +86,7 @@ export function DoubleReadForm({
         aria-disabled={!pick || saving}
         className="mt-3 min-h-11 rounded-control bg-cta px-4 font-medium text-white hover:bg-ink aria-disabled:opacity-60"
       >
-        {saving ? "Saving…" : senior ? "Record the senior read" : `Record ${seat}`}
+        {saving ? "Saving…" : senior ? "Record the senior read" : "Record your read"}
       </button>
       {result && !result.ok && (
         <p role="alert" className="m-0 mt-2 rounded-control bg-pill-negative-bg px-3 py-2 text-pill-negative-ink">

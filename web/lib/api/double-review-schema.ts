@@ -43,6 +43,30 @@ export const DoubleReviewEvent = z.looseObject({
   blinded: z.boolean().default(false),
 });
 
+const WITHHELD = new Set(["decision", "note", "nonce"]);
+
+/**
+ * Case detail `api_reviews` and audit `history` blind an initial read for EVERYONE, its author included, until both
+ * initial reads of its item exist (docs/API-DOUBLE-REVIEW.md). This repeats that rule on the parsed list: any
+ * double-review read of an item without both r1 and r2 in the list loses its decision, note and nonce, whatever the
+ * response carried. A misbehaving API therefore cannot get another person's blinded answer onto a case or audit page.
+ */
+export function blindOpenReads<E extends { ledger: string }>(events: E[]): E[] {
+  const reads = (e: E) => (e.ledger === "double_review" ? (e as unknown as { item: string; read: string; kind: string }) : null);
+  const initial = new Map<string, Set<string>>();
+  for (const e of events) {
+    const r = reads(e);
+    if (r && r.kind === "read") initial.set(r.item, (initial.get(r.item) ?? new Set()).add(r.read));
+  }
+  return events.map((e) => {
+    const r = reads(e);
+    if (!r) return e;
+    const seen = initial.get(r.item);
+    if (seen?.has("r1") && seen.has("r2")) return e;
+    return Object.fromEntries([...Object.entries(e).filter(([k]) => !WITHHELD.has(k)), ["blinded", true]]) as E;
+  });
+}
+
 /** One read as GET /double-review shows it to the calling credential. A blinded read has no decision or note. */
 export const DoubleReadView = z.looseObject({
   read: z.string(),

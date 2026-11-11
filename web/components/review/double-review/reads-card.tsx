@@ -13,7 +13,9 @@ const TRANSITION: Record<string, string> = {
 
 /**
  * Every double-review read on the case's ledger, each on its own line, as case detail `api_reviews` serves them. A read
- * the API still blinds is listed without its answer. Renders nothing when the case has no reads.
+ * the API still blinds is listed without its answer, and so is every read of an item whose two initial reads are not
+ * both on the ledger, whatever the response says (case detail blinds for everyone, the author included). Renders
+ * nothing when the case has no reads.
  */
 export function DoubleReviewReadsCard({ detail }: { detail: CaseDetail }) {
   const events = detail.api_reviews.flatMap((e) => (e.ledger === "double_review" ? [e] : []));
@@ -30,25 +32,28 @@ export function DoubleReviewReadsCard({ detail }: { detail: CaseDetail }) {
       <p className="m-0 mt-1 text-small text-muted">
         Each read was given by the person the API recorded for its credential. A demo overlay: the case&rsquo;s own decision and signatures are unchanged.
       </p>
-      {[...readsByItem(events)].map(([item, reads]) => (
-        <div key={item} className="mt-3">
-          <p className="m-0 text-small text-muted">{item}</p>
-          <ol className="m-0 list-none p-0" aria-label={`Reads for ${item}`}>
-            {reads.map((r) => (
-              <li key={r.hash} className="border-t border-rule py-2">
-                <span className="font-medium">{label(r.read)}: </span>
-                {r.blinded || r.decision === undefined ? <em>answer hidden until both initial reads are in</em> : reviewWords(r.decision, programme)}
-                <span className="text-muted">
-                  {" "}
-                  · {r.actor || "actor not shown"} ({roleWords(r.role)}) · {atWords(r.at)}
-                </span>
-                {TRANSITION[r.phase_after] && <span className="block text-small text-muted">{TRANSITION[r.phase_after]}</span>}
-                {r.final && <span className="block text-small font-medium">Settled answer: {reviewWords(r.final, programme)}</span>}
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
+      {[...readsByItem(events)].map(([item, reads]) => {
+        const open = !(reads.some((r) => r.read === "r1") && reads.some((r) => r.read === "r2"));
+        return (
+          <div key={item} className="mt-3">
+            <p className="m-0 text-small text-muted">{item}</p>
+            <ol className="m-0 list-none p-0" aria-label={`Reads for ${item}`}>
+              {reads.map((r) => (
+                <li key={r.hash} className="border-t border-rule py-2">
+                  <span className="font-medium">{label(r.read)}: </span>
+                  {open || r.blinded || r.decision === undefined ? <em>answer hidden until both initial reads are in</em> : reviewWords(r.decision, programme)}
+                  <span className="text-muted">
+                    {" "}
+                    · {r.actor || "actor not shown"} ({roleWords(r.role)}) · {atWords(r.at)}
+                  </span>
+                  {TRANSITION[r.phase_after] && <span className="block text-small text-muted">{TRANSITION[r.phase_after]}</span>}
+                  {r.final && <span className="block text-small font-medium">Settled answer: {reviewWords(r.final, programme)}</span>}
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })}
     </section>
   );
 }
