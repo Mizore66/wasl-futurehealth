@@ -4,7 +4,7 @@ import { Avatar } from "@/components/avatar/avatar";
 import { ExportCard } from "@/components/case/audit-export";
 import { AnchorsCard, ChainCard, HistoryCard, SignaturesCard, VerifiedCard } from "@/components/case/audit-view";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
-import { getAudit, getCase } from "@/lib/api/source";
+import { apiMode, getAudit, getCase, getUndoProjection } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
@@ -16,7 +16,11 @@ export async function generateMetadata({ params }: PageProps<"/app/patients/[id]
 
 export default async function Page({ params }: PageProps<"/app/patients/[id]/audit">) {
   const id = caseIdFromParam((await params).id);
-  const [detail, audit] = await Promise.all([getCase(id), getAudit(id)]);
+  const [detail, audit, projection] = await Promise.all([
+    getCase(id),
+    getAudit(id),
+    apiMode() === "live" ? getUndoProjection(id) : Promise.resolve(null),
+  ]);
   if (!detail || !audit) notFound();
   const person = personForLoop(detail.case.id);
 
@@ -46,7 +50,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]/aud
           <ChainCard audit={audit} />
           <div className="flex min-w-0 flex-col gap-gap">
             <SignaturesCard audit={audit} />
-            <HistoryCard audit={audit} programme={detail.case.programme} />
+            <HistoryCard audit={audit} programme={detail.case.programme} governance={projection ? { caseId: id, projection } : undefined} />
             <AnchorsCard audit={audit} />
           </div>
         </div>
