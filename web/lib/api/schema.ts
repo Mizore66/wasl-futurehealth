@@ -704,6 +704,46 @@ export const ReviewRequest = z.object({
 
 export const ReviewResponse = withMeta({ review: ApiReview, note: z.string().optional() });
 
+/** GET /api/cases/{id}/undo: a projection only; canonical_state is reported for comparison, never rewritten. */
+export const UndoStatus = z.enum(["", "active", "contested", "compensated", "open", "upheld", "rejected", "applied"]);
+export const UndoEventProjection = z.looseObject({
+  hash: z.string(),
+  kind: z.string(),
+  actor: z.string(),
+  action: z.string(),
+  target: z.string(),
+  status: UndoStatus,
+  at: z.string(),
+});
+const undoProjectionShape = {
+  case: z.string(),
+  case_status: z.enum(["none", "active", "contested", "compensated"]),
+  canonical_state: CaseState,
+  note: z.string(),
+  events: z.array(UndoEventProjection),
+};
+export const UndoProjectionData = z.looseObject(undoProjectionShape);
+export const UndoProjection = withMeta(undoProjectionShape);
+
+const governanceTarget = z.string().min(1);
+const governanceReason = z.string().trim().min(1).max(1000);
+export const UndoRequest = z.object({ target: governanceTarget, contest: z.literal(false).default(false), note: governanceReason });
+export const ContestRequest = z.object({ target: governanceTarget, contest: z.literal(true).default(true), note: governanceReason });
+export const ContestResolutionRequest = z.object({
+  target: governanceTarget,
+  resolution: z.enum(["upheld", "rejected"]),
+  note: governanceReason,
+});
+export const CompensationResponse = withMeta({
+  event: CompensationEvent,
+  canonical_reopened: z.literal(false),
+  auto_closure: z.literal(false),
+  canonical_state: CaseState,
+  requires_resolution: z.literal(true).optional(),
+  projection: UndoProjectionData,
+  note: z.string(),
+});
+
 /** POST /api/cases/{id}/actions body (docs/API.md, "POST actions"). `expected_head` is added by the caller. */
 export const CaseAction = z.discriminatedUnion("action", [
   z.object({ action: z.literal("assign_owner"), owner: z.string().min(1).max(64) }),
@@ -740,6 +780,11 @@ export type Dashboard = z.infer<typeof Dashboard>;
 export type Healthz = z.infer<typeof Healthz>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
+export type UndoRequest = z.input<typeof UndoRequest>;
+export type ContestRequest = z.input<typeof ContestRequest>;
+export type ContestResolutionRequest = z.input<typeof ContestResolutionRequest>;
+export type CompensationResponse = z.infer<typeof CompensationResponse>;
+export type UndoProjection = z.infer<typeof UndoProjection>;
 export type ApiReview = z.infer<typeof ApiReview>;
 export type AuditReview = z.infer<typeof AuditReview>;
 export type LedgerEvent = z.infer<typeof LedgerEvent>;
