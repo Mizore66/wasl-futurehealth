@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Avatar } from "@/components/avatar/avatar";
 import { BookingCard, ConsentCard, IdentitiesCard, LedgerCard, ProgrammeFindingCard, ReadersCard, ReasonCard, SignoffsCard, TimelineCard } from "@/components/case/sections";
+import { DoubleReviewReadsCard } from "@/components/review/double-review/reads-card";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { SealedChain } from "@/components/wasl/sealed-chain";
 import { caseDeadlineDays } from "@/components/worklist/days";
@@ -222,6 +223,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
           ))}
           <ConsentCard detail={detail} />
           <SignoffsCard detail={detail} />
+          <DoubleReviewReadsCard detail={detail} />
           <LedgerCard detail={detail} />
         </div>
         <div className="flex min-w-0 flex-col gap-gap">
