@@ -148,6 +148,18 @@ a parser that converts integers above 2^53 to doubles will not reproduce either 
   anyone who can alter the server can alter both.
 - Number preservation requires a number-preserving parser (see above); a float64 parse changes integers above 2^53
   and the hash will not reproduce.
+
+## Web download
+
+**Built** (issue #46). The case audit page (`/app/patients/{id}/audit`) shows the export's `content_sha256` and
+`comparison_sha256` below the chain and links to `/app/patients/{id}/audit/export`. That route handler fetches this
+endpoint on the server with `WASL_API_AUDITOR_TOKEN` (`web/lib/api/export.ts`, marked `server-only`) and streams the
+API's bytes unchanged as `wasl-synthetic-redacted-export_<sanitised id>.json`. A 401, 403 or 404 from the API becomes
+a fixed message; the API's error body and metadata are never passed on. Without `WASL_API_URL` (fixtures mode) there
+is no auditor API, so the action is disabled with that reason and no file is generated. `web/tests/fixtures/export_redacted.json`
+is real handler output pinned by `TestExportContractFixture` (regenerate with `WASL_WRITE_EXPORT_FIXTURE=1`), and
+`web/tests/audit-export.test.ts` checks byte-for-byte passthrough and recomputes both hashes from the downloaded bytes.
+
 ## What the tests check
 
 From `pipeline/`, run `go test -run TestExport -count=1 .`
