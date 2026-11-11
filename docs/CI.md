@@ -35,7 +35,7 @@ For a local NATS version check, set `WASL_TEST_NATS_SERVER=/absolute/path/to/nat
 
 ## Version and cache policy
 
-- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`. Go 1.27.3 is the minimum because GO-2026-6809 affects the Go 1.27.2 standard library; `govulncheck` 1.9.0 carries a Go-1.27-compatible SSA implementation.
+- Go comes from `pipeline/go.mod`; its module cache is keyed by `pipeline/go.sum`. Go 1.27.4 is the minimum because GO-2026-6859 affects the Go 1.27.3 standard library; `govulncheck` 1.9.0 carries a Go-1.27-compatible SSA implementation.
 - Python is 3.12.16. Direct test and scanner dependencies are pinned in `requirements-ci.txt`; the pip cache is keyed by that file.
 - Node is pinned in `web/.nvmrc`; pnpm is pinned by `web/package.json` and repeated explicitly in the workflow. The pnpm cache is keyed by `web/pnpm-lock.yaml`, and installs always use `--frozen-lockfile`.
 - NATS, actionlint, govulncheck, Trivy, TruffleHog, and pip are pinned to explicit versions in the workflow.
