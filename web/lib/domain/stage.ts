@@ -1,4 +1,4 @@
-import type { CaseDetail } from "@/lib/api/schema";
+import type { CaseDetail, ReviewState } from "@/lib/api/schema";
 
 /*
  * The 8-step pipeline vocabulary (pipeline-brief "The state vocabulary").
@@ -48,9 +48,67 @@ function stage(key: StageKey, technical: string): CaseStage {
   return { key, ...STAGES[key], technical };
 }
 
-function openReviewItems(c: CaseDetail) {
+/*
+ * Independent double-review overlay. The API projects one state machine per (item, question) in `api_review_states`;
+ * only a terminal state (agreed, or resolved by a senior) is a final answer. A first or second read, even the viewer's
+ * own, is never a sign-off, so `caseStage` and `linkTrust` ignore it. Canonical case data is never rewritten.
+ */
+export type ReviewSlot = "r1" | "r2" | "r3";
+export const READ_LABEL: Record<ReviewSlot, string> = { r1: "First read", r2: "Second read", r3: "Senior resolution" };
+const TERMINAL: ReadonlySet<string> = new Set(["resolved_agreed", "resolved_senior"]);
+
+type WithStates = Pick<CaseDetail, "api_review_states">;
+
+/** The independent-review slot a ledger event carries, or undefined for a legacy review event or any other ledger entry. */
+export function protocolRead(event: object): ReviewSlot | undefined {
+  const e = event as { ledger?: unknown; protocol?: unknown; read?: unknown };
+  if (e.ledger !== "review" || typeof e.protocol !== "string") return undefined;
+  return e.read === "r1" || e.read === "r2" || e.read === "r3" ? e.read : undefined;
+}
+
+export const isTerminalState = (s: Pick<ReviewState, "state">) => TERMINAL.has(s.state);
+export const reviewStates = (c: WithStates): ReviewState[] => c.api_review_states ?? [];
+
+/** Items whose every raised question has reached a terminal state. */
+export function resolvedItems(c: WithStates): Set<string> {
+  const byItem = new Map<string, boolean>();
+  for (const s of reviewStates(c)) byItem.set(s.item, (byItem.get(s.item) ?? true) && isTerminalState(s));
+  return new Set([...byItem].filter(([, done]) => done).map(([item]) => item));
+}
+
+/** True once the server reports states and every one is terminal. No states means the legacy workflow, never "done". */
+export function allQuestionsResolved(c: WithStates): boolean {
+  const states = reviewStates(c);
+  return states.length > 0 && states.every(isTerminalState);
+}
+
+/** Final decisions of terminal states for one question. */
+export function finalDecisions(c: WithStates, question: ReviewState["question"]): string[] {
+  return reviewStates(c).flatMap((s) => (s.question === question && isTerminalState(s) && s.final_decision ? [s.final_decision] : []));
+}
+
+/** True when any first read is hidden from this viewer (or from anyone else): the auditor history would leak it. */
+export function concealsInitialRead(states: readonly ReviewState[]): boolean {
+  return states.some((s) => s.state === "awaiting_r2" || s.reads.some((r) => r.submitted && r.read !== "r3" && r.decision === undefined));
+}
+
+/** "1 of 2 questions resolved", or undefined for the legacy workflow. */
+export function resolutionProgress(c: WithStates): string | undefined {
+  const states = reviewStates(c);
+  if (states.length === 0) return undefined;
+  const done = states.filter(isTerminalState).length;
+  return `${done} of ${states.length} ${states.length === 1 ? "question" : "questions"} resolved`;
+}
+
+/** Review items with no final answer: signed in the run, answered by a legacy event, or resolved by the protocol. */
+export function openReviewItems(c: CaseDetail) {
   // Only review events answer a review item; coordinator and undo/contest events share the ledger but carry no item.
-  const signed = new Set([...c.signoffs.map((s) => s.item), ...c.api_reviews.flatMap((r) => (r.ledger === "review" ? [r.item] : []))]);
+  // Protocol reads answer nothing until the server reports a terminal state for every question of the item.
+  const signed = new Set([
+    ...c.signoffs.map((s) => s.item),
+    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && !protocolRead(r) ? [r.item] : [])),
+    ...resolvedItems(c),
+  ]);
   return c.review_items.filter((r) => !signed.has(r.item));
 }
 

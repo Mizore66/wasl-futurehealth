@@ -1,5 +1,6 @@
 import type { CaseDetail } from "@/lib/api/schema";
 import { people } from ".";
+import { finalDecisions, protocolRead } from "@/lib/domain/stage";
 import type { PersonSeed } from "./types";
 
 /*
@@ -30,14 +31,16 @@ export type Trust = "auto" | "signed" | "held" | "below" | "rejected";
 
 export const TRUSTED: Record<Trust, boolean> = { auto: true, signed: true, held: false, below: false, rejected: false };
 
-export type LinkFacts = Pick<CaseDetail, "links" | "review_items" | "signoffs" | "api_reviews">;
+export type LinkFacts = Pick<CaseDetail, "links" | "review_items" | "signoffs" | "api_reviews" | "api_review_states">;
 type Link = CaseDetail["links"][number];
 
 export function linkTrust(c: LinkFacts, link: Link): Trust {
   const items = c.review_items.filter((r) => r.loop === link.loop && r.kinds.includes("link")).map((r) => r.item);
   const said = [
     ...c.signoffs.filter((s) => s.loop === link.loop && s.kinds.includes("link")).map((s) => s.link),
-    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && items.includes(r.item) ? [r.decision] : [])),
+    // Legacy events keep their meaning. A first, second or own read is not an answer: only a terminal protocol state is.
+    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && !protocolRead(r) && items.includes(r.item) ? [r.decision] : [])),
+    ...finalDecisions({ api_review_states: (c.api_review_states ?? []).filter((s) => items.includes(s.item)) }, "link"),
   ];
   if (said.includes("different")) return "rejected";
   if (said.includes("same")) return "signed";
@@ -62,5 +65,5 @@ export function recordFace(c: CaseDetail, registration: string): Face {
 
 /** The case as it stood before any person answered its review items. */
 export function beforeReview<C extends LinkFacts>(c: C): C {
-  return { ...c, signoffs: [], api_reviews: [] };
+  return { ...c, signoffs: [], api_reviews: [], api_review_states: [] };
 }
