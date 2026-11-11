@@ -22,6 +22,14 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
   const detail = queue.cases.find((c) => c.case.id === id) ?? (await getCase(id));
   if (!detail) notFound();
   const view = reviewView(detail);
+  const sharedEvidence = view.programme !== "crc" && view.programme !== "cervical" ? (
+    <>
+      <ProgrammeFindingCard detail={detail} />
+      {detail.evidence.map((ev, i) => (
+        <ReadersCard key={ev.report} detail={detail} ev={ev} id={`programme-readers-${i}`} />
+      ))}
+    </>
+  ) : undefined;
   /** The append-only history exists only against the live API; a snapshot has nothing the desk could have added. */
   const audit = apiMode() === "live" ? await getAudit(id) : null;
 
@@ -70,6 +78,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           view={view}
           mode={apiMode()}
           next={next}
+          sharedEvidence={sharedEvidence}
           waiting={at >= 0}
           settled={
             <div className="mt-6 flex flex-col gap-3">
@@ -94,6 +103,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
                   </Link>
                 </div>
               </Card>
+              {sharedEvidence}
               <SignoffsCard detail={detail} />
             </div>
           }

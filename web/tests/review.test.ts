@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
-import { failureSentence, outcomeOf, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
+import { failureSentence, outcomeOf, OUTCOMES, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
 import { CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
 import { programmeDetail } from "./programme-cases";
@@ -30,6 +30,31 @@ describe("review decision", () => {
     expect(signaturesFor({ identity: "different", report: "adequate" }, items)).toEqual([{ item: "rv-link", decision: "different" }]);
     expect(signaturesFor({ identity: "same", report: "ask" }, items)).toEqual([{ item: "rv-link", decision: "same" }]);
     expect(signaturesFor({ identity: "same" }, items)).toEqual([]);
+  });
+
+  it("signs a link-only case without requiring an evidence answer", () => {
+    expect(outcomeOf({ identity: "same" }, { link: "rv-link" })).toBe("linkSame");
+    expect(signaturesFor({ identity: "same" }, { link: "rv-link" })).toEqual([{ item: "rv-link", decision: "same" }]);
+  });
+
+  it("signs an evidence-only CRC case without inventing a link answer", () => {
+    expect(outcomeOf({ report: "adequate" }, { evidence: "rv-evidence" })).toBe("close");
+    const signatures = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
+    expect(signatures).toEqual([{ item: "rv-evidence", decision: "adequate" }]);
+    expect(recordedOutcome("close", signatures)).toEqual({
+      recordedText: "Report adequate was appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+      recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
+    });
+    expect(OUTCOMES.close.next("Noor endoscopy", false)).toEqual({ who: "Case data", what: "no downstream effect inferred" });
+  });
+
+  it("signs a non-CRC evidence label without turning it into a CRC closure answer", () => {
+    expect(outcomeOf({ report: "wk_benign" }, { evidence: "rv-ldct" })).toBe("evidence");
+    const signatures = signaturesFor({ report: "wk_benign" }, { evidence: "rv-ldct" });
+    expect(signatures).toEqual([{ item: "rv-ldct", decision: "wk_benign" }]);
+    expect(recordedOutcome("evidence", signatures).recordedText).toBe(
+      "Evidence answer wk_benign was appended to the demo review log. No downstream effect is confirmed.",
+    );
   });
 
   it.each([
@@ -110,7 +135,7 @@ describe("programme-specific review copy", () => {
 
   it("describes LDCT evidence as a screening LDCT, never a colonoscopy", () => {
     const view = reviewView(programmeDetail("lung_ldct"));
-    expect(view.guided).toBe(false);
+    expect(view.guided).toBe(true);
     expect(view.referralSource).toBe("lcs-centre · lung cancer screening referral");
     expect(view.reportSource).toBe("lcs-centre · LDCT report");
     expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
@@ -123,7 +148,7 @@ describe("programme-specific review copy", () => {
 
   it("describes IFHAS evidence as cardiometabolic screening and follow-up", () => {
     const view = reviewView(programmeDetail("ifhas"));
-    expect(view.guided).toBe(false);
+    expect(view.guided).toBe(true);
     expect(view.referralSource).toBe("ifh-screen · IFHAS screening referral");
     expect(view.reportSource).toBe("ifh-screen · IFHAS results report");
     expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
