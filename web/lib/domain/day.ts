@@ -13,14 +13,16 @@ export function formatDay(day: number): string {
   return SHORT.format(dayToDate(day));
 }
 
-const WITH_YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-
-/** "14 Sep 2027": for windows and due dates that can fall in another year. */
-export function formatDayYear(day: number): string {
-  return WITH_YEAR.format(dayToDate(day));
-}
-
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/**
+ * "14 Sep 2027": for windows and due dates that can fall in another year. Uses the same month table as
+ * formatUtcInstant, because Node's ICU formats en-GB September as "Sept".
+ */
+export function formatDayYear(day: number): string {
+  const d = dayToDate(day);
+  return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
 
 /**
  * "31 Oct 2026, 23:47 UTC" from an ISO instant; the raw string if it does not parse. Always UTC, so the server render and
