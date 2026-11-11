@@ -28,6 +28,13 @@ const exportSchema = "wasl-case-export/1"
 // caseDetailBody is the canonical source for GET /api/cases/{id} (without the meta envelope). The handler serves a
 // deep copy with registration keys pseudonymized; api_export_test.go pins its redacted form to the export projection.
 func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
+	return s.caseDetailFor(c, nil)
+}
+
+// caseDetailFor is caseDetailBody for one verified viewer: concealed first reads are removed from api_reviews and the
+// per-question protocol projection is added. A nil viewer (the redacted export) sees all events and a projection with
+// every concealed first read withheld; it adds no actor or note either way.
+func (s *apiServer) caseDetailFor(c *apiCase, viewer *apiPrincipal) map[string]interface{} {
 	ev := []map[string]interface{}{}
 	links := []map[string]interface{}{}
 	holds := []map[string]interface{}{}
@@ -57,7 +64,7 @@ func (s *apiServer) caseDetailBody(c *apiCase) map[string]interface{} {
 	return map[string]interface{}{
 		"case": s.summary(c), "identities": nz(s.ids[c.ID]), "timeline": nz(s.facts[c.ID]), "links": links, "evidence": ev, "holds": holds,
 		"outreach": nz(c.last.Outreach), "decisions": hist, "review_items": nz(s.queue[c.ID]), "signoffs": nz(s.signoffs[c.ID]),
-		"api_reviews": s.reviewsFor(c.ID), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
+		"api_reviews": s.reviewsForViewer(c.ID, viewer), "api_review_states": s.reviewStates(c, viewerOrNobody(viewer)), "api_overlay": s.overlayView(c, true), "review_ledger": s.ledgerView(), "current": c.last, "booking": s.bookingFor(c.ID),
 		"agent_investigations": s.agentFor(c.ID), "agent_provenance": s.agentProvenance(),
 	}
 }
@@ -78,6 +85,13 @@ func (s *apiServer) caseAuditBody(c *apiCase) map[string]interface{} {
 		}(),
 		"history": s.reviewsFor(c.ID),
 	}
+}
+
+func viewerOrNobody(v *apiPrincipal) apiPrincipal {
+	if v == nil {
+		return apiPrincipal{role: "export"}
+	}
+	return *v
 }
 
 // redactedCaseAuditBody is the only audit representation exposed to the auditor role. Raw chains remain available
@@ -483,7 +497,8 @@ var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
 var exportCoordinatorDataAllow = exportObject(exportKeys("until", "outcome", "channel"))
 var exportReviewEventAllow = exportObject(func() map[string]*exportAllow {
 	m := exportKeys("case", "item", "decision", "role", "action", "at", "head_signed", "mode", "prev", "hash", "type", "kind",
-		"head", "seq", "target", "target_action", "resolution", "action_head")
+		"head", "seq", "target", "target_action", "resolution", "action_head",
+		"protocol", "read", "question", "expected_head", "resolution_reads")
 	m["data"] = exportCoordinatorDataAllow
 	return m
 }())

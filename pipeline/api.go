@@ -81,8 +81,9 @@ type apiServer struct {
 	agentProv  map[string]interface{}          // cached provenance allow-list (ordinary run: cached=false)
 	mu         sync.Mutex
 	reviews    []map[string]interface{}
-	ledgerErr  string             // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
-	appendLine func([]byte) error // appends one ledger line durably (replaceable in tests)
+	rstates    map[reviewQuestionKey]*reviewProtocolState // independent double review overlay, rebuilt from the ledger
+	ledgerErr  string                                     // non-empty: api_reviews.ndjson failed validation at replay; coordinator writes are refused
+	appendLine func([]byte) error                         // appends one ledger line durably (replaceable in tests)
 }
 
 func apiHandler(s *apiServer) http.Handler {
@@ -652,7 +653,7 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 	switch {
 	case sub == "" && r.Method == http.MethodGet:
-		s.caseDetail(w, c)
+		s.caseDetail(w, r, c)
 	case sub == "audit" && r.Method == http.MethodGet:
 		s.caseAudit(w, c)
 	case sub == "review" && r.Method == http.MethodPost:
@@ -667,8 +668,9 @@ func (s *apiServer) caseRoutes(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *apiServer) caseDetail(w http.ResponseWriter, c *apiCase) {
-	body, err := exportGeneric(s.caseDetailBody(c))
+func (s *apiServer) caseDetail(w http.ResponseWriter, r *http.Request, c *apiCase) {
+	viewer := apiPrincipal{role: r.Header.Get("X-Wasl-Role"), actor: r.Header.Get("X-Wasl-Actor")}
+	body, err := exportGeneric(s.caseDetailFor(c, &viewer))
 	if err != nil {
 		writeJSONResp(w, 500, s.envelope(map[string]interface{}{"error": "case detail could not be encoded"}))
 		return
@@ -704,31 +706,17 @@ func (s *apiServer) reviewsFor(id string) []map[string]interface{} {
 func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCase) {
 	role, actor := r.Header.Get("X-Wasl-Role"), r.Header.Get("X-Wasl-Actor")
 	var req struct {
-		Item     string `json:"item"`
-		Decision string `json:"decision"`
-		Note     string `json:"note"`
+		Item         string  `json:"item"`
+		Decision     string  `json:"decision"`
+		Note         string  `json:"note"`
+		Read         string  `json:"read"`
+		ExpectedHead *string `json:"expected_head"`
 	}
 	if err := decodeAPIBody(w, r, maxReviewBodyBytes, &req); err != nil || req.Decision == "" {
-		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note; duplicate or unknown fields and oversized/trailing data are rejected"}))
+		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "body must be one strict JSON object with item, decision and note (and read with expected_head for an independent read); duplicate or unknown fields and oversized/trailing data are rejected"}))
 		return
 	}
-	act := map[string]string{"same": ActSignLink, "different": ActSignLink, "adequate": ActSignEvidence, "inadequate": ActSignEvidence,
-		"confirm_contact": ActRecordConsent}[req.Decision]
-	if act == "" && c.Programme == "lung_nodule" && lungEvAlt(req.Decision) != nil { // lung evidence labels (stable, solid/6-8/single, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "diabetic_retinopathy" && drEvAlt(req.Decision) != nil { // DR evidence labels (R2M0, examined_followup, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "breast" && breastEvAlt(req.Decision) != nil { // breast evidence labels (B4, return_routine, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "lung_ldct" && ldctEvAlt(req.Decision) != nil { // LDCT evidence labels (LR4A, wk_benign, ...)
-		act = ActSignEvidence
-	}
-	if act == "" && c.Programme == "ifhas" && ifhasEvAlt(req.Decision) != nil { // IFHAS labels (bp=H;glyc=N;lipid=N;weight=O, glyc=managed, dna)
-		act = ActSignEvidence
-	}
+	act := reviewActFor(c, req.Decision)
 	if act == "" {
 		writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": "decision must be same|different|adequate|inadequate|confirm_contact, or a programme evidence label on lung_nodule / diabetic_retinopathy / breast / lung_ldct / ifhas cases (docs/API.md)"}))
 		return
@@ -754,6 +742,14 @@ func (s *apiServer) caseReview(w http.ResponseWriter, r *http.Request, c *apiCas
 			writeJSONResp(w, 404, s.envelope(map[string]interface{}{"error": "review item not raised for this case", "item": req.Item}))
 			return
 		}
+	}
+	if req.Read != "" || req.ExpectedHead != nil { // independent double review; without these fields the legacy path below is unchanged
+		if msg := protocolShapeErr(req.Item, req.Read, req.ExpectedHead, act); msg != "" {
+			writeJSONResp(w, 400, s.envelope(map[string]interface{}{"error": msg}))
+			return
+		}
+		s.protocolReview(w, c, s.queueItem(c.ID, req.Item), act, req.Read, *req.ExpectedHead, req.Decision, req.Note, apiPrincipal{role: role, actor: actor})
+		return
 	}
 	code, body := func() (int, map[string]interface{}) {
 		s.mu.Lock()
@@ -1594,6 +1590,11 @@ func (s *apiServer) replayLedgerLine(line []byte) error {
 		return errors.New("hash mismatch")
 	}
 	if _, isCoord := ev["type"]; !isCoord {
+		if hasProtocolFields(ev) {
+			if err := s.replayProtocol(ev); err != nil {
+				return fmt.Errorf("independent review: %v", err)
+			}
+		}
 		s.reviews = append(s.reviews, ev) // legacy review event: chain-checked only
 		return nil
 	}
