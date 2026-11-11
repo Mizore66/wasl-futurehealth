@@ -52,7 +52,9 @@ func recoveryApplicationHeader(header nats.Header) map[string][]string {
 	// Direct-get adds broker read metadata. Republishing it makes the server append a second value and changes the
 	// logical header set; application headers such as Nats-Msg-Id and KV rollup markers must be retained.
 	brokerOnly := map[string]bool{"Nats-Stream": true, "Nats-Subject": true, "Nats-Sequence": true,
-		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true}
+		"Nats-Time-Stamp": true, "Nats-Num-Pending": true, "Nats-Last-Sequence": true, "Nats-Msg-Size": true,
+		"Nats-Expected-Last-Subject-Sequence": true, "Nats-Expected-Last-Sequence": true,
+		"Nats-Expected-Last-Msg-Id": true, "Nats-Expected-Stream": true}
 	out := map[string][]string{}
 	for key, values := range header {
 		if !brokerOnly[key] {
