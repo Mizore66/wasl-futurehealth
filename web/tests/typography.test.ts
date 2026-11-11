@@ -18,6 +18,7 @@ const MONO_ALLOWED: { file: string; line?: RegExp; why: string }[] = [
   { file: "components/review/double-review/read-form.tsx", line: /\{result\.recorded\.hash\.slice/, why: "audit hash of the saved double-review read" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.hash\)/, why: "agent ledger entry hash" },
   { file: "components/agent/chain.tsx", line: /shortHash\(e\.prev\)/, why: "agent ledger previous hash" },
+  { file: "components/case/audit-export.tsx", line: /\{h\.value\}/, why: "full export content and comparison hashes" },
   { file: "components/case/audit-view.tsx", line: /title=\{value\}/, why: "Hash component (chain, signature and head hashes)" },
   { file: "components/case/audit-view.tsx", line: /prev \{e\.prev\}/, why: "full previous hash" },
   { file: "components/case/audit-view.tsx", line: /hash \{e\.hash\}/, why: "full entry hash" },

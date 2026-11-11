@@ -73,7 +73,7 @@ export default async function Page() {
               </span>
               <span className="col-start-2 min-w-0 text-muted md:col-start-auto">{view.held}</span>
               <span className="col-start-2 text-small text-muted md:col-start-auto">
-                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : "Colonoscopy report")).join(" · ")}
+                {detail.review_items.map((r) => (r.kinds.includes("link") ? "Identity" : detail.case.programme === "crc" ? "Colonoscopy report" : "Evidence")).join(" · ")}
               </span>
             </Link>
             <span className="pointer-events-none absolute left-[17px] top-1/2 flex -translate-y-1/2 items-center md:left-[25px]">

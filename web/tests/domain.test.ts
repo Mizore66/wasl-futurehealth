@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Audit, AuditLedgerEvent, CaseDetail } from "@/lib/api/schema";
-import { dayToDate, formatDay } from "@/lib/domain/day";
+import { dayToDate, formatDay, formatDayYear } from "@/lib/domain/day";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
 import { caseStage } from "@/lib/domain/stage";
 import { ProgrammeFindingCard, ReadersCard, SignoffsCard } from "@/components/case/sections";
@@ -24,6 +24,13 @@ describe("dayToDate", () => {
   it("formats the evidence-closure fixture's closing day", () => {
     const c = load("evidence_closure");
     expect(formatDay(c.case.closed_day)).toBe("20 Jun");
+  });
+
+  it("formatDayYear uses the app's three-letter months, not ICU's en-GB \"Sept\"", () => {
+    expect(formatDayYear(136)).toBe("14 Sep 2026");
+    expect(formatDayYear(136.9)).toBe("14 Sep 2026");
+    expect(formatDayYear(-1)).toBe("30 Apr 2026");
+    expect(formatDayYear(501)).toBe("14 Sep 2027");
   });
 });
 

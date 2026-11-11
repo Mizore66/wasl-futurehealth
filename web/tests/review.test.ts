@@ -1,8 +1,12 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { reviewView } from "@/components/review/case-view";
-import { failureSentence, outcomeOf, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
+import { failureSentence, outcomeOf, OUTCOMES, recordedOutcome, roleFor, signaturesFor } from "@/components/review/decision";
+import { ReviewDesk } from "@/components/review/review-desk";
 import { CaseDetail } from "@/lib/api/schema";
 import hold from "@/data/api/case_review_hold.json";
+import multiReport from "@/data/api/case_dr_exam_closure.json";
 import { programmeDetail } from "./programme-cases";
 
 const detail = CaseDetail.parse(hold);
@@ -30,6 +34,31 @@ describe("review decision", () => {
     expect(signaturesFor({ identity: "different", report: "adequate" }, items)).toEqual([{ item: "rv-link", decision: "different" }]);
     expect(signaturesFor({ identity: "same", report: "ask" }, items)).toEqual([{ item: "rv-link", decision: "same" }]);
     expect(signaturesFor({ identity: "same" }, items)).toEqual([]);
+  });
+
+  it("signs a link-only case without requiring an evidence answer", () => {
+    expect(outcomeOf({ identity: "same" }, { link: "rv-link" })).toBe("linkSame");
+    expect(signaturesFor({ identity: "same" }, { link: "rv-link" })).toEqual([{ item: "rv-link", decision: "same" }]);
+  });
+
+  it("signs an evidence-only CRC case without inventing a link answer", () => {
+    expect(outcomeOf({ report: "adequate" }, { evidence: "rv-evidence" })).toBe("close");
+    const signatures = signaturesFor({ report: "adequate" }, { evidence: "rv-evidence" });
+    expect(signatures).toEqual([{ item: "rv-evidence", decision: "adequate" }]);
+    expect(recordedOutcome("close", signatures)).toEqual({
+      recordedText: "Report adequate was appended to the demo review log. Current case data still shows the case as open; closure is not confirmed.",
+      recordedAnswerCell: { word: "adequate, signed", tone: "positive" },
+    });
+    expect(OUTCOMES.close.next("Noor endoscopy", false)).toEqual({ who: "Case data", what: "no downstream effect inferred" });
+  });
+
+  it("signs a non-CRC evidence label without turning it into a CRC closure answer", () => {
+    expect(outcomeOf({ report: "wk_benign" }, { evidence: "rv-ldct" })).toBe("evidence");
+    const signatures = signaturesFor({ report: "wk_benign" }, { evidence: "rv-ldct" });
+    expect(signatures).toEqual([{ item: "rv-ldct", decision: "wk_benign" }]);
+    expect(recordedOutcome("evidence", signatures).recordedText).toBe(
+      "Evidence answer wk_benign was appended to the demo review log. No downstream effect is confirmed.",
+    );
   });
 
   it.each([
@@ -88,6 +117,26 @@ describe("fixtures mode cannot append", () => {
   });
 });
 
+describe("evidence-only CRC review desk", () => {
+  it("offers only evidence answers that can produce an outcome", () => {
+    const evidenceOnly = reviewView({
+      ...detail,
+      review_items: detail.review_items.filter((item) => item.kinds.includes("evidence")),
+    });
+    const markup = renderToStaticMarkup(
+      createElement(ReviewDesk, {
+        view: evidenceOnly,
+        mode: "fixtures",
+        next: { href: "/app/review", label: "Back to Review", last: true },
+      }),
+    );
+
+    expect(markup).toContain("Answer the evidence question to sign.");
+    expect(markup).not.toContain("Ask the unit");
+    expect(markup).not.toContain("records the identity answer only");
+  });
+});
+
 describe("programme-specific review copy", () => {
   it.each(["lung_ldct", "ifhas"] as const)("does not invent a bowel-prep hold for a closed, agreeing %s case", (programme) => {
     const detail = programmeDetail(programme);
@@ -110,7 +159,7 @@ describe("programme-specific review copy", () => {
 
   it("describes LDCT evidence as a screening LDCT, never a colonoscopy", () => {
     const view = reviewView(programmeDetail("lung_ldct"));
-    expect(view.guided).toBe(false);
+    expect(view.guided).toBe(true);
     expect(view.referralSource).toBe("lcs-centre · lung cancer screening referral");
     expect(view.reportSource).toBe("lcs-centre · LDCT report");
     expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
@@ -123,11 +172,30 @@ describe("programme-specific review copy", () => {
 
   it("describes IFHAS evidence as cardiometabolic screening and follow-up", () => {
     const view = reviewView(programmeDetail("ifhas"));
-    expect(view.guided).toBe(false);
+    expect(view.guided).toBe(true);
     expect(view.referralSource).toBe("ifh-screen · IFHAS screening referral");
     expect(view.reportSource).toBe("ifh-screen · IFHAS results report");
     expect(view.trail.map((n) => n.what).join(" ")).not.toContain("colonoscopy");
     expect(view.trail.map((n) => n.what)).toContain("IFHAS results report IFH-dr-100");
+  });
+});
+
+describe("multi-report evidence selection", () => {
+  it("uses the report named by the open evidence item throughout the review view", () => {
+    const open = CaseDetail.parse(multiReport);
+    const openItem = detail.review_items.find((item) => item.kinds.includes("evidence"))!;
+    open.case.closed = false;
+    open.review_items = [{ ...openItem, report: open.evidence[1].report }];
+    open.evidence[0].quote = "first report quote";
+    open.evidence[1].quote = "later report quote";
+    open.evidence[1].agree = false;
+
+    const selected = reviewView(open);
+    expect(selected.report.id).toBe("EYE-dr-83");
+    expect(selected.quote).toBe("later report quote");
+    expect(selected.held).toBe("Held: eye exam report readers disagree.");
+    expect(selected.trail.map((node) => node.what)).toContain("eye exam report EYE-dr-83");
+    expect(selected.trail.map((node) => node.what)).toContain("eye exam report readers disagree; needs a person");
   });
 });
 
