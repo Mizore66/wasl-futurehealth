@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DoubleReviewEvent } from "./double-review-schema";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -520,6 +521,8 @@ const tag =
 
 /** One case-detail `api_reviews` entry. */
 export const LedgerEvent = z.union([
+  /* Double-review reads first: they carry review-like fields but are never single-signer reviews (block at the end). */
+  DoubleReviewEvent.transform(tag("double_review")),
   CoordinatorEvent.transform(tag("coordinator")),
   CompensationEvent.transform(tag("compensation")),
   ApiReview.transform(tag("review")),
@@ -527,6 +530,7 @@ export const LedgerEvent = z.union([
 ]);
 /** One audit `history` entry (redacted). */
 export const AuditLedgerEvent = z.union([
+  DoubleReviewEvent.transform(tag("double_review")),
   AuditCoordinatorEvent.transform(tag("coordinator")),
   AuditCompensationEvent.transform(tag("compensation")),
   AuditReview.transform(tag("review")),
@@ -743,3 +747,17 @@ export type AuditLedgerEvent = z.infer<typeof AuditLedgerEvent>;
 export type ApiOverlay = z.infer<typeof ApiOverlay>;
 export type CaseAction = z.infer<typeof CaseAction>;
 export type ActionResponse = z.infer<typeof ActionResponse>;
+
+/* ---- Independent double review (issue #41; docs/API-DOUBLE-REVIEW.md) ----
+ * The shapes live in ./double-review-schema so the ledger unions above can list the read event first without an import
+ * cycle. A `type: "double_review"` entry in `api_reviews` or audit `history` is tagged `ledger: "double_review"`.
+ */
+export {
+  DoubleReadRequest,
+  DoubleReadResponse,
+  DoubleReviewError,
+  DoubleReviewEvent,
+  DoubleReviewRound,
+  DoubleReviewState,
+} from "./double-review-schema";
+export type { DoubleReadView, Phase as DoubleReviewPhase, ReadName } from "./double-review-schema";

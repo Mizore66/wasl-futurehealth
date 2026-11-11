@@ -7,6 +7,7 @@ import { reviewView } from "@/components/review/case-view";
 import { reviewQueue } from "@/components/review/queue";
 import { QueueLabel } from "@/components/review/queue-label";
 import { ReviewDesk, type NextCase } from "@/components/review/review-desk";
+import { DoubleReviewSection, parseSeat } from "@/components/review/double-review/section";
 import { RecordAvatar } from "@/components/wasl/record-avatar";
 import { apiMode, getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam } from "@/lib/domain/ids";
@@ -16,8 +17,9 @@ export async function generateMetadata({ params }: PageProps<"/app/review/[id]">
   return { title: detail ? `Review ${reviewView(detail).name}` : "Review" };
 }
 
-export default async function Page({ params }: PageProps<"/app/review/[id]">) {
+export default async function Page({ params, searchParams }: PageProps<"/app/review/[id]">) {
   const id = caseIdFromParam((await params).id);
+  const seat = parseSeat((await searchParams).seat);
   const queue = await reviewQueue();
   const detail = queue.cases.find((c) => c.case.id === id) ?? (await getCase(id));
   if (!detail) notFound();
@@ -107,6 +109,18 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           <SignoffsCard detail={detail} />
         </div>
       )}
+      {/* Independent double review (issue #41): its own seats and credentials, alongside the single-signer desk above. */}
+      <div className="mt-3">
+        <DoubleReviewSection
+          detail={detail}
+          seat={seat}
+          hrefFor={{
+            r1: `${caseHref("/app/review", id)}?seat=r1#double-review`,
+            r2: `${caseHref("/app/review", id)}?seat=r2#double-review`,
+            r3: `${caseHref("/app/review", id)}?seat=r3#double-review`,
+          }}
+        />
+      </div>
       {audit && (
         <div className="mt-3">
           <HistoryCard audit={audit} programme={detail.case.programme} />
