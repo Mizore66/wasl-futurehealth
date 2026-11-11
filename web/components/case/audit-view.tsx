@@ -2,8 +2,10 @@ import { Mark, Pill } from "@/components/review/marks";
 import { HonestyLabel } from "@/components/wasl/honesty-label";
 import { TechTerm } from "@/components/wasl/tech-term";
 import { apiMode } from "@/lib/api/source";
-import type { Audit, Programme } from "@/lib/api/schema";
+import type { Audit, Programme, UndoProjection } from "@/lib/api/schema";
+import type { GovernanceCredential } from "@/lib/api/source";
 import { Card } from "./sections";
+import { GovernanceControls } from "./governance-controls";
 import { cn } from "@/lib/utils";
 import { atWords, bodySummary, entryLabel, ledgerId, ledgerWords, reviewWords, roleWords, shortHash } from "./words";
 
@@ -149,7 +151,32 @@ export function SignaturesCard({ audit }: { audit: Audit }) {
 }
 
 /** Review actions appended through the API: append-only, each linked to the one before. */
-export function HistoryCard({ audit, programme }: { audit: Audit; programme: Programme }) {
+export function HistoryCard({
+  audit,
+  programme,
+  governance,
+}: {
+  audit: Audit;
+  programme: Programme;
+  governance?: { caseId: string; projection: UndoProjection };
+}) {
+  const status = new Map(governance?.projection.events.map((event) => [event.hash, event.status]));
+  const rejectedContests = new Set(
+    audit.history.flatMap((event) => {
+      if (event.ledger !== "compensation" || event.kind !== "contest_resolution" || event.resolution !== "rejected") return [];
+      const contest = audit.history.find((candidate) => candidate.hash === event.target);
+      return contest?.ledger === "compensation" ? [contest.target] : [];
+    }),
+  );
+  const credentialsFor = (action: string): GovernanceCredential[] =>
+    action === "signoff_link"
+      ? ["reviewer", "reviewer_2", "reviewer_3"]
+      : action === "record_consent"
+        ? ["coordinator", "clinician"]
+        : action === "signoff_evidence"
+          ? ["clinician"]
+          : [];
+
   return (
     <Card
       id="history"
@@ -157,34 +184,73 @@ export function HistoryCard({ audit, programme }: { audit: Audit; programme: Pro
       aside={<HonestyLabel kind="simulated">Demo actions, not clinical sign-offs</HonestyLabel>}
       note="Append-only: reviews, coordinator actions and undo/contest events share one chain. A new entry is added below; an old one is never edited."
     >
+      {governance && (
+        <p className="m-0 mt-3 max-w-[72ch] text-small text-muted" role="status">
+          Review projection: {governance.projection.case_status}. Canonical decision state: {governance.projection.canonical_state}; compensation does not rewrite it.
+        </p>
+      )}
       {audit.history.length === 0 ? (
         <p className="m-0 mt-3 text-muted">
           Nobody has signed this case through the API yet. The simulated reviewers&rsquo; sign-offs from the run are on the case page.
         </p>
       ) : (
         <ol className="m-0 mt-3 list-none p-0" aria-label="Review history">
-          {audit.history.map((r, i) => (
-            <li key={r.hash || `unknown-${i}`} className="border-t border-rule py-3">
-              {r.ledger === "review" ? (
-                <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
-              ) : (
-                /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
-                <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
-                  <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
-                </div>
-              )}
-              {/* The auditor's redacted history never names the actor or quotes the note. */}
-              <p className="m-0 text-muted">
-                {r.actor ? `${r.actor} · ` : ""}
-                {r.role ? roleWords(r.role) : "role not recorded"} · {r.at ? atWords(r.at) : "time not recorded"}
-              </p>
-              {r.ledger !== "unknown" && r.ledger !== "coordinator" && typeof r.note === "string" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
-              <p className="m-0 mt-1 text-small leading-5">
-                {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
-                {r.hash && <Hash label="Hash" value={r.hash} />}
-              </p>
-            </li>
-          ))}
+          {audit.history.map((r, i) => {
+            const eventStatus = status.get(r.hash);
+            const target = r.ledger === "compensation" ? r.target : "";
+            const resolving = audit.history.filter((event) => event.ledger === "compensation" && event.target === r.hash);
+            const credentials = r.ledger === "review" || r.ledger === "compensation" ? credentialsFor(r.action) : [];
+            return (
+              <li key={r.hash || `unknown-${i}`} id={r.hash ? `review-event-${r.hash}` : undefined} className="scroll-mt-4 border-t border-rule py-3">
+                {r.ledger === "review" ? (
+                  <p className="m-0 font-medium">{r.decision ? reviewWords(r.decision, programme) : roleWords(r.action)}</p>
+                ) : (
+                  /* Coordinator actions and undo/contest events share the chain: named by their real type/kind. */
+                  <div className={cn("font-medium", r.ledger === "unknown" && "text-warning")}>
+                    <TechTerm id={ledgerId(r)} label={ledgerWords(r)} />
+                  </div>
+                )}
+                {/* The auditor's redacted history never names the actor or quotes the note. */}
+                <p className="m-0 text-muted">
+                  {r.actor ? `${r.actor} · ` : ""}
+                  {r.role ? roleWords(r.role) : "role not recorded"} · {r.at ? atWords(r.at) : "time not recorded"}
+                </p>
+                {r.ledger !== "unknown" && r.ledger !== "coordinator" && typeof r.note === "string" && r.note && <p className="m-0 mt-1">&ldquo;{r.note}&rdquo;</p>}
+                {eventStatus && (
+                  <p className="m-0 mt-1 text-small font-medium" data-compensation-status={eventStatus}>
+                    {r.ledger === "review" ? "Review" : r.ledger === "compensation" && r.kind === "contest" ? "Contest" : "Compensation"} status: {eventStatus}
+                  </p>
+                )}
+                {(target || resolving.length > 0) && (
+                  <p className="m-0 mt-1 flex flex-wrap gap-x-3 gap-y-1 text-small">
+                    {target && (
+                      <a href={`#review-event-${target}`} className="underline">
+                        {r.ledger === "compensation" && r.kind === "contest_resolution" ? "Contest event" : "Original event"}
+                      </a>
+                    )}
+                    {resolving.map((event) => (
+                      <a key={event.hash} href={`#review-event-${event.hash}`} className="underline">
+                        Resolving event: {event.ledger === "compensation" ? event.kind.replaceAll("_", " ") : "event"}
+                      </a>
+                    ))}
+                  </p>
+                )}
+                <p className="m-0 mt-1 text-small leading-5">
+                  {r.prev && <Hash label={i === 0 ? "Starts the log" : "After"} value={r.prev} />}
+                  {r.hash && <Hash label="Hash" value={r.hash} />}
+                </p>
+                {governance && r.ledger === "review" && eventStatus === "active" && credentials.length > 1 && (
+                  <div className="mt-1 grid gap-2 sm:grid-cols-2">
+                    <GovernanceControls caseId={governance.caseId} target={r.hash} operation="undo" credentials={credentials} />
+                    {!rejectedContests.has(r.hash) && <GovernanceControls caseId={governance.caseId} target={r.hash} operation="contest" credentials={credentials} />}
+                  </div>
+                )}
+                {governance && r.ledger === "compensation" && r.kind === "contest" && eventStatus === "open" && credentials.length > 1 && (
+                  <GovernanceControls caseId={governance.caseId} target={r.hash} operation="resolve" credentials={credentials} />
+                )}
+              </li>
+            );
+          })}
         </ol>
       )}
     </Card>
