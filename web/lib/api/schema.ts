@@ -84,6 +84,8 @@ export const LungFinding = z.looseObject({
   finding_report: z.string().optional(),
   finding_label: z.string().optional(),
   risk: z.string().optional(),
+  /** False when no risk was recorded and pipeline/lung.go assumed "high" for the Fleischner rule. */
+  risk_recorded: z.boolean().optional(),
   scope: z.string().optional(),
   window_start_day: z.number().optional(),
   window_end_day: z.number().optional(),

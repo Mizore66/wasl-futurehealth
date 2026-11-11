@@ -15,8 +15,12 @@ const detail = JSON.parse(readFileSync(path.join(dir, "case_dr_exam_closure.json
 const dr = detail.case.dr;
 const href = `/app/patients/${encodeURIComponent(fixtures.fixtures.dr_exam_closure!.id)}`;
 
-const YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-const day = (d: number) => YEAR.format(new Date(Date.UTC(2026, 4, 1) + Math.round(d * 86_400_000)));
+// The app's three-letter months ("Sep", not Node ICU's en-GB "Sept"), as lib/domain/day.ts formatDayYear writes them.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const day = (d: number) => {
+  const t = new Date(Date.UTC(2026, 4, 1) + Math.round(d * 86_400_000));
+  return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${t.getUTCFullYear()}`;
+};
 
 async function noSeriousAxe(page: Page) {
   const axe = await new AxeBuilder({ page }).analyze();

@@ -21,8 +21,12 @@ type Json = Record<string, unknown>;
 const dir = path.join(process.cwd(), "data", "api");
 const read = (f: string) => JSON.parse(readFileSync(path.join(dir, f), "utf8"));
 
-const YEAR = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
-const day = (d: number) => YEAR.format(new Date(Date.UTC(2026, 4, 1) + Math.round(d * 86_400_000)));
+// The app's three-letter months ("Sep", not Node ICU's en-GB "Sept"), as lib/domain/day.ts formatDayYear writes them.
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const day = (d: number) => {
+  const t = new Date(Date.UTC(2026, 4, 1) + Math.round(d * 86_400_000));
+  return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${t.getUTCFullYear()}`;
+};
 const caseHref = (id: string) => `/app/patients/${encodeURIComponent(id)}`;
 
 function value(page: Page, card: string, label: string) {
@@ -117,6 +121,16 @@ test.describe("case detail, live mode against a mock API", () => {
           await noSideScroll(page, width);
           await page.screenshot({ path: `test-results/screens/case-live-lung-${id.split("-").pop()}-${width}.png`, fullPage: true });
         }
+
+        const assumed = byId.get("rad-imaging/ServiceRequest/RAD-sr-111")!.lung as Json & { rec: Json };
+        expect(assumed.risk_recorded).toBe(false);
+        await page.goto(caseHref("rad-imaging/ServiceRequest/RAD-sr-111"));
+        await expect(value(page, card, "Patient risk")).toHaveText("High (assumed: risk not recorded)");
+        await expect(value(page, card, "Risk window")).toHaveText(
+          `${assumed.rec.win_lo_days} to ${assumed.rec.win_hi_days} days, ${day(assumed.window_start_day as number)} to ${day(assumed.window_end_day as number)} (assumes high risk)`,
+        );
+        await expect(page.getByRole("region", { name: card }).getByRole("note")).toContainText("rest on that assumption");
+        await noSideScroll(page, width);
       });
 
       test("diabetic retinopathy: grade, urgency and next due, pending and closed", async ({ page }) => {
@@ -149,7 +163,11 @@ test.describe("case detail, live mode against a mock API", () => {
         await page.screenshot({ path: `test-results/screens/case-live-breast-recall-${width}.png`, fullPage: true });
 
         await page.goto(caseHref("bsu-screen/ServiceRequest/BSU-sr-1"));
+        const routine = byId.get("bsu-screen/ServiceRequest/BSU-sr-1")!.breast as Json & { rec: Json };
         await expect(value(page, card, "Recall recommendation")).toHaveText("Routine screening, no recall");
+        await expect(value(page, card, "Next screen")).toHaveText(
+          `${routine.rec.deadline_days} days, ${day(routine.deadline_day as number)} (routine interval, no overdue clock)`,
+        );
         await expect(value(page, card, "Outcome")).toHaveText("None: no recall");
         await noSideScroll(page, width);
       });
