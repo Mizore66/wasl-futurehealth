@@ -39,6 +39,45 @@ const ORDER = [
 const order = (events: { ledger: string; kind?: unknown; decision?: unknown }[]) =>
   events.map((e) => `${e.ledger}:${String(e.ledger === "review" ? e.decision : e.kind)}`);
 
+function renderGovernanceHistory(events: Record<string, unknown>[], statuses: [string, string][]) {
+  const audit = Audit.parse({ ...rawAudit, history: events });
+  const byHash = new Map(events.map((event) => [event.hash, event]));
+  const governance = {
+    caseId: rawAudit.case,
+    projection: {
+      ...rawAudit.meta,
+      case: rawAudit.case,
+      case_status: "contested",
+      canonical_state: rawDetail.case.state,
+      note: "projection only",
+      events: statuses.map(([hash, status]) => {
+        const event = byHash.get(hash)!;
+        return { hash, kind: event.kind ?? "review", actor: "projection-actor", action: event.action, target: event.target ?? "", status, at: event.at };
+      }),
+    },
+  };
+  return renderToStaticMarkup(HistoryCard({ audit, programme: "crc", governance } as never));
+}
+
+function reviewFor(action: "record_consent" | "signoff_evidence") {
+  return {
+    ...rawAudit.history.find((event: { decision?: string }) => event.decision === "same"),
+    hash: action === "record_consent" ? "d".repeat(64) : "e".repeat(64),
+    action,
+    decision: action === "record_consent" ? "consent_granted" : "adequate",
+  };
+}
+
+function contestFor(review: Record<string, unknown>) {
+  return {
+    ...rawAudit.history.find((event: { kind?: string }) => event.kind === "contest"),
+    hash: "f".repeat(64),
+    target: review.hash,
+    target_action: review.action,
+    action: review.action,
+  };
+}
+
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
@@ -188,6 +227,32 @@ describe("shared ledger contract (real Go handler output)", () => {
     const fixtureHtml = renderToStaticMarkup(HistoryCard({ audit, programme: "crc" }));
     expect(fixtureHtml).not.toContain("Append compensation");
     expect(fixtureHtml).not.toContain("Contest review");
+  });
+
+  it("offers a third consent-authorised actor to resolve a contest independently", () => {
+    const review = reviewFor("record_consent");
+    const contest = contestFor(review);
+    const html = renderGovernanceHistory([review, contest], [[review.hash, "contested"], [contest.hash, "open"]]);
+    expect(html).toContain("Resolve contest");
+    expect(html).toContain('<option value="coordinator">Coordinator</option>');
+    expect(html).toContain('<option value="clinician">Clinician 1</option>');
+    expect(html).toContain('<option value="clinician_2">Clinician 2</option>');
+  });
+
+  it("offers undo and contest controls with independent clinicians for an active evidence review", () => {
+    const review = reviewFor("signoff_evidence");
+    const html = renderGovernanceHistory([review], [[review.hash, "active"]]);
+    expect(html).toContain("Append compensation");
+    expect(html).toContain("Contest review");
+    for (const credential of ["clinician", "clinician_2", "clinician_3"]) expect(html).toContain(`value="${credential}"`);
+  });
+
+  it("offers a third independent clinician to resolve an evidence contest", () => {
+    const review = reviewFor("signoff_evidence");
+    const contest = contestFor(review);
+    const html = renderGovernanceHistory([review, contest], [[review.hash, "contested"], [contest.hash, "open"]]);
+    expect(html).toContain("Resolve contest");
+    for (const credential of ["clinician", "clinician_2", "clinician_3"]) expect(html).toContain(`value="${credential}"`);
   });
 });
 
