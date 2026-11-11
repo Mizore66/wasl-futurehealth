@@ -8,7 +8,7 @@ import { caseDeadlineDays } from "@/components/worklist/days";
 import { closedInDays, ownerLabel, recordNodes, statusWords } from "@/components/worklist/model";
 import { getAudit, getCase } from "@/lib/api/source";
 import { caseHref, caseIdFromParam, shortId } from "@/lib/domain/ids";
-import { caseStage } from "@/lib/domain/stage";
+import { caseStage, resolvedItems } from "@/lib/domain/stage";
 import { personForLoop } from "@/lib/people";
 import { referralSeed } from "@/lib/people/identity";
 import { cn } from "@/lib/utils";
@@ -58,7 +58,7 @@ export default async function Page({ params }: PageProps<"/app/patients/[id]">) 
   /** CRC runs to the DoH 31-day standard; annual LDCT instead shows its 365-day screening interval. */
   const due = caseDeadlineDays(c);
   const dueWords = c.programme === "crc" ? `${due}-day standard` : c.ldct?.rec?.action === "annual" ? `${due}-day screening interval` : `${due}-day deadline`;
-  const waiting = c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item));
+  const waiting = c.review === "open" || detail.review_items.some((r) => !detail.signoffs.some((s) => s.item === r.item) && !resolvedItems(detail).has(r.item));
   const [latest, ...earlier] = [...detail.evidence].reverse();
 
   return (

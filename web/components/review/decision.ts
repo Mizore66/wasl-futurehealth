@@ -1,4 +1,5 @@
-import type { Role } from "@/lib/api/schema";
+import type { Role, ReviewRead, ReviewState } from "@/lib/api/schema";
+import { READ_LABEL, type ReviewSlot } from "@/lib/domain/stage";
 
 /*
  * Review decisions in the order the reviewer answers them: identity first (reviewer role) when a link item exists,
@@ -220,5 +221,89 @@ export function failureSentence(sig: Signature, failure: SaveFailure): string {
       return `Not saved: this case has no open review item for ${what}.`;
     case 400:
       return `Not saved: the server could not read ${what} (${failure.error}).`;
+  }
+}
+
+/*
+ * Independent double review: one server-projected state per (item, question). The browser only drafts and submits one
+ * read at a time; what each viewer may see and submit is decided by the API and never inferred here.
+ */
+
+export type Question = "link" | "evidence";
+
+/** The draft for a question is keyed by the read it will become, so a changed server state never reuses a stale answer. */
+export const draftKey = (item: string, question: Question, nextRead: ReviewSlot) => `${item}:${question}:${nextRead}`;
+
+export const SUBMIT_LABEL: Record<ReviewSlot, string> = {
+  r1: "Submit first read",
+  r2: "Submit second read",
+  r3: "Submit senior resolution",
+};
+
+/** Link first, then evidence; items keep the server's order. */
+export function orderedStates(states: readonly ReviewState[]): ReviewState[] {
+  const rank = (s: ReviewState) => (s.question === "link" ? 0 : 1);
+  return states.map((s, i) => ({ s, i })).sort((a, b) => rank(a.s) - rank(b.s) || a.i - b.i).map((x) => x.s);
+}
+
+/** What this question needs now, from the viewer's side. Concealment is the server's: this only words what arrived. */
+export function stateHeadline(s: ReviewState): { text: string; tone: "positive" | "negative" | "warning" | "muted" } {
+  const own = s.reads.some((r) => r.read === "r1" && r.submitted && r.decision !== undefined);
+  switch (s.state) {
+    case "awaiting_r1":
+      return s.may_submit ? { text: "First read due", tone: "warning" } : { text: "Waiting for a first read", tone: "muted" };
+    case "awaiting_r2":
+      if (s.may_submit) return { text: "Second read due", tone: "warning" };
+      return { text: own ? "Your first read is in; waiting for a different reviewer" : "Waiting for a second read", tone: "muted" };
+    case "awaiting_r3":
+      return s.may_submit ? { text: "Disagreement: senior resolution due", tone: "warning" } : { text: "Disagreement: waiting for a senior", tone: "negative" };
+    case "resolved_agreed":
+      return { text: "Resolved: both reads agree", tone: "positive" };
+    case "resolved_senior":
+      return { text: "Resolved by a senior", tone: "positive" };
+  }
+}
+
+/** A decision as a sentence, keeping the programme's own evidence labels. CRC keeps its adequacy wording. */
+export function answerWords(decision: string, question: Question): string {
+  if (decision === "same") return "Same patient";
+  if (decision === "different") return "Not the same patient";
+  if (decision === "adequate") return "Report adequate";
+  if (decision === "inadequate") return "Report not adequate";
+  return question === "evidence" ? `Evidence label ${decision}` : decision;
+}
+
+const SLOT_ORDER: Record<string, number> = { r1: 0, r2: 1, r3: 2 };
+
+/** Submitted reads in slot order. A concealed read keeps its slot but has no decision. */
+export function submittedReads(s: ReviewState): ReviewRead[] {
+  return s.reads.filter((r) => r.submitted).sort((a, b) => (SLOT_ORDER[a.read] ?? 9) - (SLOT_ORDER[b.read] ?? 9));
+}
+
+export function readLine(r: ReviewRead, question: Question): string {
+  const label = READ_LABEL[r.read];
+  return r.decision === undefined ? `${label}: submitted; the answer stays hidden until the second read` : `${label}: ${answerWords(r.decision, question)}`;
+}
+
+/** The disputed-rows cell once the evidence question is final. Never set before a terminal state. */
+export function resolvedCell(decision: string): { word: string; tone: "positive" | "negative" | "warning" | "muted" } {
+  if (decision === "adequate") return { word: "adequate, resolved", tone: "positive" };
+  if (decision === "inadequate") return { word: "not adequate, resolved", tone: "negative" };
+  return { word: "resolved", tone: "muted" };
+}
+
+/** The API's refusals for one read, as sentences a reviewer can act on. Nothing here claims a save. */
+export function readFailureSentence(failure: { status: number; error: string }): string {
+  switch (failure.status) {
+    case 401:
+      return "Not saved: sign in with your reviewer token to continue.";
+    case 403:
+      return "Not saved: this credential cannot submit the next read for this question.";
+    case 404:
+      return "Not saved: no independent review is open for this question.";
+    case 409:
+      return "Not saved: the review changed while you were answering. The current state is shown; check it before answering again.";
+    default:
+      return `Not saved: the server could not read the answer (${failure.error}).`;
   }
 }
