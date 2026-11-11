@@ -146,6 +146,7 @@ function QuestionCard({
   error,
   onSubmit,
   headingRef,
+  locked,
 }: {
   state: ReviewState;
   view: ReviewView;
@@ -157,6 +158,8 @@ function QuestionCard({
   error: string | undefined;
   onSubmit: () => void;
   headingRef: (el: HTMLHeadingElement | null) => void;
+  /** The server committed a read here but its fresh state could not be read: no form until a reload. */
+  locked: boolean;
 }) {
   const id = useId();
   const link = state.question === "link";
@@ -164,7 +167,7 @@ function QuestionCard({
   const reads = submittedReads(state);
   const terminal = state.state === "resolved_agreed" || state.state === "resolved_senior";
   const next = state.next_read;
-  const canAnswer = state.may_submit && next !== null && !terminal;
+  const canAnswer = state.may_submit && next !== null && !terminal && !locked;
   const evidenceOptions: [ReportAnswer, string][] = view.evidenceChoices.map((label) => {
     const display = view.programme === "crc" ? ({ adequate: "Adequate", inadequate: "Not adequate" } as Record<string, string>)[label] ?? label : label;
     return [label, display];
@@ -217,13 +220,18 @@ function QuestionCard({
         </p>
       )}
       {terminal && <p className="m-0 mt-1 text-small text-muted">Case data is unchanged: this is a demo overlay, not a canonical decision.</p>}
-      {state.state === "awaiting_r3" && !canAnswer && (
+      {locked && (
+        <p className="m-0 mt-2 text-small text-muted" data-testid="committed-lock">
+          Your read was recorded. This form is closed until the page is reloaded so the current state can be shown.
+        </p>
+      )}
+      {state.state === "awaiting_r3" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">The two reads differ. Only an authorised senior can resolve it; a third read from you is not accepted.</p>
       )}
-      {state.state === "awaiting_r2" && !canAnswer && (
+      {state.state === "awaiting_r2" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">The first answer stays hidden from everyone but its author until the second read is in.</p>
       )}
-      {state.state === "awaiting_r1" && !canAnswer && (
+      {state.state === "awaiting_r1" && !canAnswer && !locked && (
         <p className="m-0 mt-2 text-small text-muted">Your credential cannot give the first read for this question.</p>
       )}
 
@@ -301,7 +309,11 @@ export function ReviewDesk({
   const [draft, setDraft] = useState<Draft>({});
   const [done, setDone] = useState<Done>();
   const [drafts, setDrafts] = useState<Drafts>({});
+  /* Failures are keyed by question, not by draft key: a 409 changes next_read and the draft key with it. */
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [locked, setLocked] = useState<Record<string, true>>({});
+  const lockedAt = useRef<Record<string, string>>({});
+  const [announcement, setAnnouncement] = useState("");
   const [busy, setBusy] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [seen, setSeen] = useState(states);
@@ -317,6 +329,10 @@ export function ReviewDesk({
   if (seen !== states) {
     setSeen(states);
     setOverride(undefined);
+    /* A lock lifts only when the server's head for that question has moved past the one we wrote against. */
+    setLocked((l) =>
+      Object.fromEntries(Object.entries(l).filter(([qk]) => (states ?? []).some((x) => `${x.item}:${x.question}` === qk && x.head === lockedAt.current[qk]))),
+    );
   }
   const current = live ? orderedStates(override ?? states ?? []) : [];
   const resolved = live && allQuestionsResolved({ api_review_states: current });
@@ -367,20 +383,30 @@ export function ReviewDesk({
     if (!decision) return;
     setBusy(key);
     setNotice(undefined);
-    setErrors((e) => ({ ...e, [key]: "" }));
+    const qk = `${state.item}:${state.question}`;
+    setErrors((e) => ({ ...e, [qk]: "" }));
     try {
       const res = await submitReviewRead(view.caseId, { item: state.item, question: state.question, decision, expectedHead: state.head });
       if (res.states) setOverride(res.states);
       if (res.ok) {
         setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
-        if (res.committed) setNotice("The server recorded your read, but its confirmation could not be read. The state shown is read again from the server; do not submit again.");
+        if (res.committed) {
+          if (!res.states) {
+            lockedAt.current[qk] = state.head;
+            setLocked((l) => ({ ...l, [qk]: true }));
+          }
+          setNotice("The server recorded your read, but its confirmation could not be read. Do not submit again; reload to see the current state.");
+        }
+        const label = state.question === "link" ? "identity" : "evidence";
+        setAnnouncement(`Your ${READ_LABEL[res.read as "r1" | "r2" | "r3"]?.toLowerCase() ?? "read"} for the ${label} question was recorded. The question status has been updated.`);
         requestAnimationFrame(() => headings.current[`${state.item}:${state.question}`]?.focus());
       } else {
-        setErrors((e) => ({ ...e, [key]: readFailureSentence(res.failure) }));
+        setErrors((e) => ({ ...e, [qk]: readFailureSentence(res.failure) }));
+        if (res.failure.status === 409) setAnnouncement(`The ${state.question === "link" ? "identity" : "evidence"} question changed on the server. The current state is shown.`);
         if (res.failure.status === 409) setDrafts((d) => Object.fromEntries(Object.entries(d).filter(([k]) => k !== key)));
       }
     } catch {
-      setErrors((e) => ({ ...e, [key]: "Not saved: the request failed. Check the current state before trying again." }));
+      setErrors((e) => ({ ...e, [qk]: "Not saved: the request failed. Check the current state before trying again." }));
     } finally {
       setBusy(undefined);
     }
@@ -445,10 +471,11 @@ export function ReviewDesk({
                     draft={drafts[key]}
                     onDraft={(value) => {
                       setDrafts((d) => ({ ...d, [key]: value }));
-                      setErrors((e) => ({ ...e, [key]: "" }));
+                      setErrors((e) => ({ ...e, [`${state.item}:${state.question}`]: "" }));
                     }}
                     busy={busy === key}
-                    error={errors[key] || undefined}
+                    error={errors[`${state.item}:${state.question}`] || undefined}
+                    locked={Boolean(locked[`${state.item}:${state.question}`])}
                     onSubmit={() => submitRead(state)}
                     headingRef={(el) => {
                       headings.current[`${state.item}:${state.question}`] = el;
@@ -456,6 +483,9 @@ export function ReviewDesk({
                   />
                 );
               })}
+              <p role="status" aria-live="polite" className="sr-only" data-testid="read-announcement">
+                {announcement}
+              </p>
               {notice && (
                 <p role="status" className="m-0 rounded-control bg-ground px-3 py-2">
                   {notice}
