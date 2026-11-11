@@ -19,6 +19,7 @@ import {
   Dashboard,
   Fixtures,
   Healthz,
+  ReviewError,
   ReviewRequest,
   ReviewResponse,
   UndoProjection,
@@ -341,4 +342,49 @@ export async function getHealthz(): Promise<Healthz> {
     return health;
   }
   return fixture(Healthz, "healthz.json");
+}
+
+/**
+ * Raw-token review helpers. The reviewer's own assigned API token is the credential, sent as-is on GET and POST;
+ * the API binds it to a role and actor, so no identity header is ever sent. The shared role tokens above are untouched.
+ */
+function bearer(init: RequestInit | undefined, token: string): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set("authorization", `Bearer ${token}`);
+  return { cache: "no-store", ...init, headers };
+}
+
+export type ReviewerCaseResult =
+  | { ok: true; detail: CaseDetail }
+  | { ok: false; status: 401 | 403 | 404 };
+
+/** One case as the holder of `token` may see it (concealed first reads stay concealed). Other statuses throw. */
+export async function getCaseWithToken(id: string, token: string): Promise<ReviewerCaseResult> {
+  const route = `/api/cases/${encodeURIComponent(id)}`;
+  const res = await fetch(liveBase() + route, bearer(undefined, token));
+  if (res.status === 401 || res.status === 403 || res.status === 404) return { ok: false, status: res.status };
+  if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
+  return { ok: true, detail: CaseDetail.parse(await res.json()) };
+}
+
+export type ReviewReadResult =
+  | { ok: true; status: 201; response: ReviewResponse }
+  | { ok: false; status: 400 | 401 | 403 | 404 | 409; error: string; currentHead?: string };
+
+/** Appends one independent-review read with the reviewer's own token. 400/401/403/404/409 are refusals, never successes. */
+export async function postReviewWithToken(id: string, body: ReviewRequest, token: string): Promise<ReviewReadResult> {
+  const request = ReviewRequest.safeParse(body);
+  if (!request.success) return { ok: false, status: 400, error: request.error.message };
+  const route = `/api/cases/${encodeURIComponent(id)}/review`;
+  const res = await fetch(
+    liveBase() + route,
+    bearer({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, token),
+  );
+  const json = await res.json().catch(() => undefined);
+  if (res.status === 201) return { ok: true, status: 201, response: ReviewResponse.parse(json) };
+  if (res.status === 400 || res.status === 401 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const e = ReviewError.safeParse(json);
+    return { ok: false, status: res.status, error: e.success ? e.data.error : `HTTP ${res.status}`, currentHead: e.success ? e.data.current_head : undefined };
+  }
+  throw new Error(`POST review: HTTP ${res.status}`);
 }

@@ -582,6 +582,31 @@ export const CurrentDecision = z.looseObject({
   ifhas: IfhasFinding.optional(),
 });
 
+export const ReviewSlot = z.enum(["r1", "r2", "r3"]);
+
+/** One read slot of an independent review. Concealed initial answers carry no decision or hash. */
+export const ReviewRead = z.looseObject({
+  read: ReviewSlot,
+  submitted: z.boolean(),
+  decision: z.string().optional(),
+  hash: z.string().optional(),
+});
+
+/** One (item, question) independent-review state machine as the API projects it for the calling credential. */
+export const ReviewState = z.looseObject({
+  item: z.string(),
+  question: z.enum(["link", "evidence"]),
+  state: z.enum(["awaiting_r1", "awaiting_r2", "awaiting_r3", "resolved_agreed", "resolved_senior"]),
+  head: z.string(),
+  next_read: ReviewSlot.nullable(),
+  may_submit: z.boolean(),
+  reads: z.array(ReviewRead),
+  disagreement: z.boolean(),
+  final_decision: z.string().optional(),
+  resolution_basis: z.string().optional(),
+  canonical_unchanged: z.literal(true),
+});
+
 export const CaseDetail = withMeta({
   case: CaseSummary,
   identities: z.array(Identity),
@@ -600,6 +625,8 @@ export const CaseDetail = withMeta({
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
   review_ledger: ReviewLedger.optional(),
+  /** Independent-review projection for the calling credential; absent from snapshots and older APIs. */
+  api_review_states: z.array(ReviewState).optional(),
   current: CurrentDecision,
   booking: Booking,
 });
@@ -782,13 +809,23 @@ export const ReviewDecision = z.union([
   IfhasFollowupLabel,
 ]);
 
+/** `read` and `expected_head` are additive: a request without them is the legacy append-only review event. */
 export const ReviewRequest = z.object({
   item: z.string(),
   decision: ReviewDecision,
   note: z.string().default(""),
+  read: ReviewSlot.optional(),
+  expected_head: z.string().optional(),
 });
 
-export const ReviewResponse = withMeta({ review: ApiReview, note: z.string().optional() });
+export const ReviewResponse = withMeta({
+  review: ApiReview,
+  note: z.string().optional(),
+  api_review_states: z.array(ReviewState).optional(),
+});
+
+/** Error body of a protocol POST: a 409 names the current head so the desk can show server truth. */
+export const ReviewError = withMeta({ error: z.string(), current_head: z.string().optional() });
 
 /** GET /api/cases/{id}/undo: a projection only; canonical_state is reported for comparison, never rewritten. */
 export const UndoStatus = z.enum(["", "active", "contested", "compensated", "open", "upheld", "rejected", "applied"]);
@@ -866,6 +903,10 @@ export type Dashboard = z.infer<typeof Dashboard>;
 export type Healthz = z.infer<typeof Healthz>;
 export type ReviewRequest = z.input<typeof ReviewRequest>;
 export type ReviewResponse = z.infer<typeof ReviewResponse>;
+export type ReviewRead = z.infer<typeof ReviewRead>;
+export type ReviewState = z.infer<typeof ReviewState>;
+export type ReviewSlot = z.infer<typeof ReviewSlot>;
+export type ReviewReadInput = { item: string; question: "link" | "evidence"; decision: string; expectedHead: string };
 export type UndoRequest = z.input<typeof UndoRequest>;
 export type ContestRequest = z.input<typeof ContestRequest>;
 export type ContestResolutionRequest = z.input<typeof ContestResolutionRequest>;

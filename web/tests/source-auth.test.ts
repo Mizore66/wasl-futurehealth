@@ -47,3 +47,21 @@ describe("live API authentication", () => {
     expect(headers.has("x-wasl-actor")).toBe(false);
   });
 });
+
+describe("raw reviewer-token helpers", () => {
+  it("send only the supplied bearer on GET and POST and leave role-token helpers unchanged", async () => {
+    const { getCaseWithToken, postReviewWithToken } = await import("@/lib/api/source");
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    const fetchMock = vi.fn().mockResolvedValue(response(409, { error: "stale", current_head: "h", meta: health.meta }));
+    vi.stubGlobal("fetch", fetchMock);
+    const post = await postReviewWithToken("c1", { item: "i", decision: "same", note: "", read: "r1", expected_head: "" }, "raw-token-1234567890");
+    expect(post).toEqual({ ok: false, status: 409, error: "stale", currentHead: "h" });
+    fetchMock.mockResolvedValue(response(403, { error: "no", meta: health.meta }));
+    expect(await getCaseWithToken("c1", "raw-token-1234567890")).toEqual({ ok: false, status: 403 });
+    for (const call of fetchMock.mock.calls) {
+      expect(call[1].headers.get("authorization")).toBe("Bearer raw-token-1234567890");
+      expect(call[1].headers.has("x-wasl-role")).toBe(false);
+      expect(call[1].headers.has("x-wasl-actor")).toBe(false);
+    }
+  });
+});
