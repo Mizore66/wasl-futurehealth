@@ -2,7 +2,10 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { z } from "zod";
 import {
+  ActionError,
+  ActionResponse,
   ApiError,
+  CaseAction,
   Audit,
   CaseDetail,
   CaseList,
@@ -42,9 +45,12 @@ function authenticated(init: RequestInit | undefined, role: Role): RequestInit {
   return { cache: "no-store", ...init, headers };
 }
 
+function liveBase(): string {
+  return process.env.WASL_API_URL!.replace(/\/$/, "");
+}
+
 async function live<S extends z.ZodType>(schema: S, route: string, init?: RequestInit, role: Role = "reviewer"): Promise<z.infer<S> | null> {
-  const base = process.env.WASL_API_URL!.replace(/\/$/, "");
-  const res = await fetch(base + route, authenticated(init, role));
+  const res = await fetch(liveBase() + route, authenticated(init, role));
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${route}: HTTP ${res.status}`);
   return schema.parse(await res.json());
@@ -171,12 +177,10 @@ export async function postReview(
   if (!request.success) return { ok: false, status: 400, error: request.error.message };
 
   if (apiMode() === "live") {
-    const base = process.env.WASL_API_URL!.replace(/\/$/, "");
-    const res = await fetch(`${base}/api/cases/${encodeURIComponent(id)}/review`, authenticated({
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(request.data),
-    }, who.role));
+    const res = await fetch(
+      `${liveBase()}/api/cases/${encodeURIComponent(id)}/review`,
+      authenticated({ method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(request.data) }, who.role),
+    );
     const json = await res.json();
     if (res.status === 201) return { ok: true, status: 201, response: ReviewResponse.parse(json) };
     if (res.status === 400 || res.status === 403 || res.status === 404) {
@@ -187,6 +191,40 @@ export async function postReview(
 
   // Fixtures mode has no log to append to. Fabricating an event with a made-up hash would present a click as a saved review.
   throw new Error("postReview needs WASL_API_URL: fixtures mode cannot append review events");
+}
+
+export type ActionResult =
+  | { ok: true; status: 201; response: ActionResponse }
+  | { ok: false; status: 400 | 403 | 404 | 409 | 500; error: string; conflict?: string; currentHead?: string };
+
+/**
+ * A coordinator action (assign owner, snooze, contact outcome, note), appended to the API's hash-chained ledger.
+ * Sent with the server-side coordinator credential (WASL_API_COORDINATOR_TOKEN); the API binds that token to its role
+ * and actor and records that actor, so no identity header is sent from here. `expectedHead` is the case's
+ * `api_overlay.head`; a stale head returns 409 with the current one. A 500 that the API explains (its ledger failed
+ * validation, or an append failed and nothing was recorded) is returned as a refusal, not thrown.
+ */
+export async function postAction(id: string, action: CaseAction, expectedHead: string): Promise<ActionResult> {
+  const body = CaseAction.safeParse(action);
+  if (!body.success) return { ok: false, status: 400, error: body.error.message };
+  if (apiMode() !== "live") throw new Error("postAction needs WASL_API_URL: fixtures mode cannot append coordinator events");
+
+  const res = await fetch(
+    `${liveBase()}/api/cases/${encodeURIComponent(id)}/actions`,
+    authenticated(
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body.data, expected_head: expectedHead }) },
+      "coordinator",
+    ),
+  );
+  const json = await res.json();
+  if (res.status === 201) return { ok: true, status: 201, response: ActionResponse.parse(json) };
+  if (res.status === 400 || res.status === 403 || res.status === 404 || res.status === 409) {
+    const e = ActionError.parse(json);
+    return { ok: false, status: res.status, error: e.error, conflict: e.conflict, currentHead: e.current_head };
+  }
+  const refused = res.status === 500 ? ActionError.safeParse(json) : null;
+  if (refused?.success) return { ok: false, status: 500, error: refused.data.error };
+  throw new Error(`POST actions: HTTP ${res.status}`);
 }
 
 /**

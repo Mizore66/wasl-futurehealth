@@ -37,7 +37,7 @@ export function linkTrust(c: LinkFacts, link: Link): Trust {
   const items = c.review_items.filter((r) => r.loop === link.loop && r.kinds.includes("link")).map((r) => r.item);
   const said = [
     ...c.signoffs.filter((s) => s.loop === link.loop && s.kinds.includes("link")).map((s) => s.link),
-    ...c.api_reviews.filter((r) => items.includes(r.item)).map((r) => r.decision),
+    ...c.api_reviews.flatMap((r) => (r.ledger === "review" && items.includes(r.item) ? [r.decision] : [])),
   ];
   if (said.includes("different")) return "rejected";
   if (said.includes("same")) return "signed";

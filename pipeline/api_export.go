@@ -473,8 +473,9 @@ var exportConsentTransitionAllow = exportObject(exportKeys("ev", "kind", "from",
 var exportSnoozeAllow = exportObject(exportKeys("at", "event", "until"))
 var exportContactOutcomeAllow = exportObject(exportKeys("at", "event", "outcome", "channel"))
 var exportOverlayAllow = exportObject(func() map[string]*exportAllow {
-	m := exportKeys("head", "actions", "last_action_at", "ledger_status")
+	m := exportKeys("head", "actions", "last_action_at", "ledger_status", "no_answer_streak")
 	m["snooze"] = exportSnoozeAllow
+	m["last_contact"] = exportContactOutcomeAllow
 	m["contact_outcomes"] = exportList(exportContactOutcomeAllow)
 	return m
 }())

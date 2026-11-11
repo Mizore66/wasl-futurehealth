@@ -228,7 +228,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 ### POST review (demo mode)
 
-**Headers:** `X-Wasl-Role` (`coordinator` | `clinician` | `reviewer` | `auditor`) and `X-Wasl-Actor` (who is signing).
+**Identity:** the role (`coordinator` | `clinician` | `reviewer` | `auditor`) and the actor (who is signing) come from the bearer token's `WASL_API_TOKENS` entry. `X-Wasl-Role`/`X-Wasl-Actor` sent by a client are overwritten.
 
 **Body:** `{"item": "<review item id from review_items>", "decision": "same|different|adequate|inadequate|confirm_contact", "note": "…"}`
 
@@ -254,7 +254,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 Workflow A coordinator actions. Overlay metadata only: they never change a decision, the `out_log`, a signature, consent or the canonical `owner`, and they never dispatch a message.
 
-**Headers:** `X-Wasl-Role: coordinator` (the only role holding the narrow `coordinate_case` permission) and `X-Wasl-Actor` (1 to 64 characters).
+**Identity:** a bearer token bound to the `coordinator` role (the only role holding the narrow `coordinate_case` permission); the event records that token's actor (1 to 64 characters). The web app sends `WASL_API_COORDINATOR_TOKEN` from its server and no identity headers.
 
 **Body:** one JSON object, at most 8 KiB, no unknown or cross-action fields, no trailing data. `action` and `expected_head` are always required; `expected_head` is the case's current `api_overlay.head` (from `GET /api/cases/{id}` or the case summary).
 
@@ -278,7 +278,7 @@ Text must be valid UTF-8, without surrounding whitespace or control characters.
 
 **Concurrency:** the head of a case is its last decision signature until its first coordinator event, then the hash of its latest coordinator event. Two writers holding the same head: exactly one gets 201, the other 409 and must re-read. Different cases never conflict. The event is appended and synced to the ledger first; memory is updated only after that succeeds.
 
-**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
+**`api_overlay`** (on the case summary and the detail): `head`, `actions` (count), `owner`, `snooze` (latest), `last_action_at`, `last_contact` (the latest contact outcome: `at`, `event`, `outcome`, `channel`; no actor or note; absent before the first one), `no_answer_streak` (consecutive `no_answer` outcomes ending the contact log), `ledger_status` (`ok` or `invalid`; when `invalid` the overlay may be partial, so the case list says so too, not only the detail); the detail also has `contact_outcomes`, `notes` and `canonical_owner`. `case.owner` stays the pipeline's value.
 
 **Ledger and restart:** coordinator events share `<run>/api_reviews.ndjson` and its hash chain with review events (`type: "coordinator_action"`, with `kind`, `data`, `head`, per-case `seq`). On start-up the whole ledger is replayed and validated: JSON, chain, hash, case, role permission, head and sequence continuity, action fields (the same validation as the write path), consent for contact outcomes, and a complete final line. The first failure stops the replay, sets `healthz` `dependencies.review_ledger` to `invalid`, and makes `/review` and `/actions` return 500. The read endpoints keep working. Nothing is repaired or skipped silently.
 

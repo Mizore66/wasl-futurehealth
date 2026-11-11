@@ -259,3 +259,56 @@ export function atWords(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso : `${d.toISOString().slice(0, 10)} ${d.toISOString().slice(11, 16)} UTC`;
 }
+
+/* ---- The shared ledger: coordinator actions and undo/contest events (pipeline/api.go, pipeline/api_undo.go) ---- */
+
+/** Contact outcome codes the API accepts (`contact_outcome`). The words say what was logged, not that anything was booked. */
+const OUTCOME_WORDS: Record<string, string> = {
+  reached: "Reached",
+  no_answer: "No answer",
+  voicemail: "Left a voicemail",
+  wrong_number: "Wrong number",
+  declined: "Declined the procedure",
+  appointment_agreed: "Appointment agreed",
+};
+const CHANNEL_WORDS: Record<string, string> = { phone: "phone", sms: "SMS", email: "email", in_person: "in person" };
+
+export function outcomeWords(outcome: string | undefined, channel?: string): string {
+  const o = outcome ? (OUTCOME_WORDS[outcome] ?? plain(outcome)) : "Contact outcome";
+  const c = channel ? (CHANNEL_WORDS[channel] ?? plain(channel).toLowerCase()) : "";
+  return c ? `${o} (${c})` : o;
+}
+
+type LedgerLike =
+  | { ledger: "coordinator"; kind: string; data: { owner?: string; until?: string; outcome?: string; channel?: string } }
+  | { ledger: "compensation"; kind: string; resolution?: string }
+  | { ledger: "review"; decision?: string; action?: string }
+  | { ledger: "unknown"; label: string };
+
+/** The system identifier of a ledger event as the API wrote it: `type/kind`, the compensation kind, or the review's action. */
+export function ledgerId(e: LedgerLike): string {
+  if (e.ledger === "coordinator") return `coordinator_action/${e.kind}`;
+  if (e.ledger === "compensation") return e.kind;
+  if (e.ledger === "unknown") return e.label || "unrecognised";
+  return e.action ?? "review";
+}
+
+/** A coordinator, compensation or unrecognised ledger event as a sentence, built only from fields it carries. */
+export function ledgerWords(e: LedgerLike): string {
+  if (e.ledger === "coordinator") {
+    const d = e.data;
+    if (e.kind === "assign_owner") return d.owner ? `Owner set to ${d.owner}` : "Owner changed";
+    if (e.kind === "snooze") return d.until ? `Snoozed until ${atWords(d.until)}` : "Snoozed";
+    if (e.kind === "contact_outcome") return `Contact logged: ${outcomeWords(d.outcome, d.channel)}`;
+    if (e.kind === "note") return "Note added";
+    return `Coordinator action: ${plain(e.kind)}`;
+  }
+  if (e.ledger === "compensation") {
+    if (e.kind === "undo") return "Undid an earlier sign-off";
+    if (e.kind === "contest") return "Contested an earlier sign-off";
+    if (e.kind === "contest_resolution") return e.resolution ? `Contest resolved: ${e.resolution}` : "Contest resolved";
+    return plain(e.kind);
+  }
+  if (e.ledger === "unknown") return e.label ? `Unrecognised ledger event (${e.label})` : "Unrecognised ledger event";
+  return e.decision ? plain(e.decision) : "Review";
+}

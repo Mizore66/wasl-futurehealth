@@ -1,0 +1,310 @@
+{
+  "agent_investigations": [],
+  "agent_provenance": {
+    "cached": false,
+    "experimental": false
+  },
+  "api_contact": {
+    "history": [],
+    "overlay": {
+      "canonical_consent": "granted",
+      "canonical_unchanged": true,
+      "contact_blocked": false,
+      "demo_pending_consent": "",
+      "events": 0,
+      "last_event_hash": "",
+      "mode": "demo",
+      "note": "demo overlay derived from the review ledger; canonical case.consent and the decision's outreach are not changed and no message is sent",
+      "status": "none"
+    }
+  },
+  "api_overlay": {
+    "actions": 4,
+    "canonical_owner": "",
+    "contact_outcomes": [
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.611127902Z",
+        "channel": "phone",
+        "event": "6180bd92fbaebe7f788db378dfdfe2e591de62adcc99009c8050c8da5eeefb9d",
+        "outcome": "no_answer"
+      },
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.611794451Z",
+        "channel": "phone",
+        "event": "c328aae5c9957000fb8764c8e89f59965e77e8b781b23ffe3d14efb0cadaf76b",
+        "note": "synthetic call note",
+        "outcome": "reached"
+      },
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.613354788Z",
+        "channel": "phone",
+        "event": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+        "outcome": "declined"
+      }
+    ],
+    "head": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+    "last_action_at": "2026-11-10T22:50:47.613354788Z",
+    "last_contact": {
+      "at": "2026-11-10T22:50:47.613354788Z",
+      "channel": "phone",
+      "event": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+      "outcome": "declined"
+    },
+    "ledger_status": "invalid",
+    "no_answer_streak": 0,
+    "notes": [
+      {
+        "actor": "coordinator-bound",
+        "at": "2026-11-10T22:50:47.61226296Z",
+        "event": "c0bd02cc5857671a53c87e3959f4619d04c915365f629cbe9d5d8cf3f7ea169a",
+        "text": "synthetic coordinator note"
+      }
+    ],
+    "owner": ""
+  },
+  "api_reviews": [
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.611127902Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "no_answer"
+      },
+      "hash": "6180bd92fbaebe7f788db378dfdfe2e591de62adcc99009c8050c8da5eeefb9d",
+      "head": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "genesis",
+      "role": "coordinator",
+      "seq": 1,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.611794451Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "note": "synthetic call note",
+        "outcome": "reached"
+      },
+      "hash": "c328aae5c9957000fb8764c8e89f59965e77e8b781b23ffe3d14efb0cadaf76b",
+      "head": "6180bd92fbaebe7f788db378dfdfe2e591de62adcc99009c8050c8da5eeefb9d",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "6180bd92fbaebe7f788db378dfdfe2e591de62adcc99009c8050c8da5eeefb9d",
+      "role": "coordinator",
+      "seq": 2,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.61226296Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "text": "synthetic coordinator note"
+      },
+      "hash": "c0bd02cc5857671a53c87e3959f4619d04c915365f629cbe9d5d8cf3f7ea169a",
+      "head": "c328aae5c9957000fb8764c8e89f59965e77e8b781b23ffe3d14efb0cadaf76b",
+      "kind": "note",
+      "mode": "demo",
+      "prev": "c328aae5c9957000fb8764c8e89f59965e77e8b781b23ffe3d14efb0cadaf76b",
+      "role": "coordinator",
+      "seq": 3,
+      "type": "coordinator_action"
+    },
+    {
+      "action": "coordinate_case",
+      "actor": "coordinator-bound",
+      "at": "2026-11-10T22:50:47.613354788Z",
+      "case": "exp-prov/ServiceRequest/EXP-sr-1",
+      "data": {
+        "channel": "phone",
+        "outcome": "declined"
+      },
+      "hash": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+      "head": "c0bd02cc5857671a53c87e3959f4619d04c915365f629cbe9d5d8cf3f7ea169a",
+      "kind": "contact_outcome",
+      "mode": "demo",
+      "prev": "c0bd02cc5857671a53c87e3959f4619d04c915365f629cbe9d5d8cf3f7ea169a",
+      "role": "coordinator",
+      "seq": 4,
+      "type": "coordinator_action"
+    }
+  ],
+  "booking": {
+    "status": "not_generated"
+  },
+  "case": {
+    "api_overlay": {
+      "actions": 4,
+      "head": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+      "last_action_at": "2026-11-10T22:50:47.613354788Z",
+      "last_contact": {
+        "at": "2026-11-10T22:50:47.613354788Z",
+        "channel": "phone",
+        "event": "ad6af924eb976c698724ef4502fa6a34eddbac672a5db2e635df9deb0a43b94c",
+        "outcome": "declined"
+      },
+      "ledger_status": "invalid",
+      "no_answer_streak": 0,
+      "owner": ""
+    },
+    "closed": false,
+    "closed_day": 0,
+    "consent": "granted",
+    "deadline_day": 0,
+    "decisions": 1,
+    "dropoff": "not_booked",
+    "fixture": "",
+    "id": "exp-prov/ServiceRequest/EXP-sr-1",
+    "overdue": false,
+    "owner": "",
+    "priority": "",
+    "programme": "crc",
+    "provider": "exp-prov",
+    "referral_day": 3,
+    "review": "none",
+    "state": "open"
+  },
+  "current": {
+    "ack_day": -1,
+    "chain": [
+      {
+        "body": {
+          "downstream_event": "exp-prov/Appointment/EXP-ap-1",
+          "hops": 1,
+          "linker": "test-linker",
+          "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+          "near_miss": false,
+          "path_p_cal": 0.97,
+          "path_strength": 0.97,
+          "referral_patient": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+          "tau": 0.9,
+          "weakest_edge": {
+            "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+            "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+            "basis": "eid",
+            "p": 0.97
+          }
+        },
+        "hash": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+        "prev": "genesis",
+        "type": "link_decision"
+      },
+      {
+        "body": {
+          "agree": true,
+          "label": "adequate",
+          "quote": "caecum reached",
+          "reader_model": "gemma-4-26b/cached",
+          "report": "exp-prov/DiagnosticReport/EXP-dr-1"
+        },
+        "hash": "e750524b53de4f1f963c0b81d1b60a96bc3adf699ede0de1f24ff74f0874216f",
+        "prev": "ba03233a2dd34782620c87e2a5a8bc58a626024165a7ae0639fb53a1a0f9db64",
+        "type": "evidence"
+      }
+    ],
+    "contact": "granted",
+    "dropoff": "not_booked",
+    "id": "dec-1",
+    "in_seq": 7,
+    "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+    "notif_day": -1,
+    "now": 40,
+    "overdue": false,
+    "policy": "v7strict",
+    "proc_day": -1,
+    "prog": "crc",
+    "prov": "exp-prov",
+    "ref_day": 0,
+    "ref_status": "",
+    "reported_closed": false,
+    "sig": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+    "sr_day": 3,
+    "state": "open",
+    "unowned": false
+  },
+  "decisions": [
+    {
+      "consent_log": [],
+      "decision_id": "dec-1",
+      "dropoff": "not_booked",
+      "escalations": [],
+      "in_seq": 7,
+      "outreach": [],
+      "overdue": false,
+      "owner": "",
+      "policy": "v7strict",
+      "sig": "ca5a441deffc4e4cd1effff9ba9cd624ac77ede60ec1adf031b0cd278d66b5ae",
+      "state": "open"
+    }
+  ],
+  "evidence": [
+    {
+      "agree": true,
+      "label": "adequate",
+      "quote": "caecum reached",
+      "reader_model": "gemma-4-26b/cached",
+      "report": "exp-prov/DiagnosticReport/EXP-dr-1"
+    }
+  ],
+  "holds": [],
+  "identities": [
+    {
+      "provider": "p",
+      "registration": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+      "role": "downstream"
+    },
+    {
+      "provider": "p",
+      "registration": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+      "role": "downstream"
+    }
+  ],
+  "links": [
+    {
+      "downstream_event": "exp-prov/Appointment/EXP-ap-1",
+      "hops": 1,
+      "linker": "test-linker",
+      "loop": "exp-prov/ServiceRequest/EXP-sr-1",
+      "near_miss": false,
+      "path_p_cal": 0.97,
+      "path_strength": 0.97,
+      "referral_patient": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+      "tau": 0.9,
+      "weakest_edge": {
+        "a": "reg_d5c7a39ae59b7f339d1c66af4a229f78be4338bfb5ebf253a66237589a727789",
+        "b": "reg_56b836eaad2794677402abb55b14a50bb78e4dcae1dd631ec085402109d13e76",
+        "basis": "eid",
+        "p": 0.97
+      }
+    }
+  ],
+  "meta": {
+    "api": "wasl-api/1",
+    "data_mode": "simulated",
+    "loaded_at": "2026-11-10T22:50:47Z",
+    "note": "All patients, providers and outcomes are synthetic (Wikidata names, MTSamples report texts). Not real patient data.",
+    "policy": "v6",
+    "reader_model": "gemma-4-26b/cached",
+    "run": "001"
+  },
+  "outreach": [],
+  "review_items": [],
+  "review_ledger": {
+    "detail": "line 5: head does not follow the case's previous event",
+    "events_applied": 4,
+    "note": "api_overlay reflects only the ledger events before the failure; coordinator writes are refused",
+    "status": "invalid"
+  },
+  "signoffs": [],
+  "timeline": []
+}

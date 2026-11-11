@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { filtersHref, type CaseFilters } from "@/components/worklist/filters";
 import { activeRefinements, FACET_LABELS, type FacetKey, type Facets } from "./facets";
 
@@ -40,7 +41,7 @@ export function Refine({ facets, filters, base = "/app/patients" }: { facets: Fa
                 <select
                   name={k}
                   defaultValue={filters[k] ?? ""}
-                  className="h-11 w-full min-w-0 rounded-control border border-control bg-surface px-2 text-body text-ink"
+                  className="h-11 w-full min-w-0 rounded-control border border-input bg-surface px-2 text-body text-ink"
                 >
                   <option value="">
                     {ALL_WORDS[k]} ({total})
@@ -55,7 +56,7 @@ export function Refine({ facets, filters, base = "/app/patients" }: { facets: Fa
             );
           })}
           <div className="flex items-end">
-            <button className="h-11 cursor-pointer rounded-control bg-active px-4 text-body text-ink hover:bg-control">Apply filters</button>
+            <Button variant="quiet" size="touch">Apply filters</Button>
           </div>
         </form>
       </details>
