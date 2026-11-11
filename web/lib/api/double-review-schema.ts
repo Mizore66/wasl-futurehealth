@@ -16,9 +16,10 @@ export type Phase = (typeof PHASES)[number];
 const text = z.string().default("");
 
 /**
- * One read event as case detail `api_reviews` and the auditor's `history` serve it. Every field but `type` is lenient,
- * so any `double_review` event lands here and is never mistaken for a single-signer review: a blinded read has no
- * `decision`, `note` or `nonce`, and the auditor's form never has `actor`, `note` or `nonce`.
+ * One read event as case detail `api_reviews` and the auditor's `history` serve it. Fields the API may omit are
+ * optional or defaulted: a blinded read has no `decision`, `note` or `nonce`, and the auditor's form never has `actor`,
+ * `note` or `nonce`. A field of the wrong type fails this shape; schema.ts then makes the entry `unknown`, never a
+ * single-signer review.
  */
 export const DoubleReviewEvent = z.looseObject({
   type: z.literal("double_review"),
@@ -43,16 +44,43 @@ export const DoubleReviewEvent = z.looseObject({
   blinded: z.boolean().default(false),
 });
 
-const WITHHELD = new Set(["decision", "note", "nonce"]);
+/**
+ * The fields of a double-review event that may be shown while its item is open (lacks an r1 or r2 read): who read,
+ * when, and where it sits in the ledger, never what was answered. An allow-list, so `decision`, `note`, `nonce`,
+ * `final` and any field a future or misbehaving API adds are all withheld. `phase_after` is handled separately: it is
+ * kept only as `awaiting_reads`, the one transition a read on an open item can have made.
+ */
+const OPEN_READ_FIELDS = new Set([
+  "ledger",
+  "type",
+  "kind",
+  "case",
+  "item",
+  "question",
+  "read",
+  "role",
+  "actor",
+  "action",
+  "at",
+  "mode",
+  "prev",
+  "hash",
+  "head_signed",
+  "round_head",
+  "round_seq",
+]);
 
 /**
  * Case detail `api_reviews` and audit `history` blind an initial read for EVERYONE, its author included, until both
- * initial reads of its item exist (docs/API-DOUBLE-REVIEW.md). This repeats that rule on the parsed list: any
- * double-review read of an item without both r1 and r2 in the list loses its decision, note and nonce, whatever the
- * response carried. A misbehaving API therefore cannot get another person's blinded answer onto a case or audit page.
+ * initial reads of its item exist (docs/API-DOUBLE-REVIEW.md). This repeats that rule on the parsed list: every
+ * double-review event of an item without both an r1 and an r2 read in the list keeps only OPEN_READ_FIELDS and is
+ * marked blinded, whatever the response carried. A misbehaving API therefore cannot get another person's blinded
+ * answer, or a settled answer for a round that is not settled, onto a case or audit page through these lists. A
+ * `type: "double_review"` entry that does not parse as one never gets here as one: schema.ts makes it an `unknown`
+ * ledger entry, which carries no answer or note.
  */
 export function blindOpenReads<E extends { ledger: string }>(events: E[]): E[] {
-  const reads = (e: E) => (e.ledger === "double_review" ? (e as unknown as { item: string; read: string; kind: string }) : null);
+  const reads = (e: E) => (e.ledger === "double_review" ? (e as unknown as { item: string; read: string; kind: string; phase_after: string }) : null);
   const initial = new Map<string, Set<string>>();
   for (const e of events) {
     const r = reads(e);
@@ -63,7 +91,8 @@ export function blindOpenReads<E extends { ledger: string }>(events: E[]): E[] {
     if (!r) return e;
     const seen = initial.get(r.item);
     if (seen?.has("r1") && seen.has("r2")) return e;
-    return Object.fromEntries([...Object.entries(e).filter(([k]) => !WITHHELD.has(k)), ["blinded", true]]) as E;
+    const kept = Object.entries(e).filter(([k]) => OPEN_READ_FIELDS.has(k));
+    return Object.fromEntries([...kept, ["phase_after", r.phase_after === "awaiting_reads" ? r.phase_after : ""], ["blinded", true]]) as E;
   });
 }
 
