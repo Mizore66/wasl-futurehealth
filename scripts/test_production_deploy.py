@@ -33,7 +33,16 @@ class ProductionDeploymentTests(unittest.TestCase):
                                             check=True, text=True, stdout=subprocess.PIPE).stdout
             self.assertIn("CA:TRUE", ca_certificate)
             users = json.loads((secrets / "api_users.json").read_text())
-            self.assertEqual({u["role"] for u in users.values()}, {"coordinator", "clinician", "reviewer", "auditor"})
+            self.assertEqual({u["role"] for u in users.values()},
+                             {"coordinator", "clinician", "reviewer", "auditor", "senior_reviewer", "senior_clinician"})
+            self.assertEqual(len({u["password"] for u in users.values()}), len(users), "every API credential is distinct")
+            self.assertEqual(len({name.lower() for name in users}), len(users), "actor names are distinct after normalisation")
+            for discipline in ("reviewer", "clinician"):
+                initial = [n for n, u in users.items() if u["role"] == discipline]
+                senior = [n for n, u in users.items() if u["role"] == "senior_" + discipline]
+                self.assertEqual((len(initial) >= 2, len(senior)), (True, 1), discipline + " needs r1, r2 and one senior")
+            for name, user in users.items():
+                self.assertNotIn(user["password"], result.stdout, name + " credential appeared in bootstrap output")
             for value in [(secrets / name).read_text().strip() for name in ("js_key", "nats_password", "route_password", "backup_key")]:
                 self.assertNotIn(value, result.stdout, "secret material appeared in bootstrap output")
             before = (secrets / "js_key").read_bytes()
@@ -41,6 +50,14 @@ class ProductionDeploymentTests(unittest.TestCase):
                                    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             self.assertNotEqual(again.returncode, 0)
             self.assertEqual((secrets / "js_key").read_bytes(), before)
+
+    def test_demo_credential_three_is_senior_and_one_two_are_ordinary(self):
+        text = (ROOT / "scripts/demo.sh").read_text()
+        line = next(l for l in text.splitlines() if l.startswith('export WASL_API_TOKENS='))
+        for variable, role in (("REVIEWER", "reviewer"), ("REVIEWER_2", "reviewer"), ("REVIEWER_3", "senior_reviewer"),
+                               ("CLINICIAN", "clinician"), ("CLINICIAN_2", "clinician"), ("CLINICIAN_3", "senior_clinician")):
+            self.assertRegex(line, r"\$WASL_API_%s_TOKEN:%s:" % (variable, role))
+        self.assertNotRegex(line, r"_TOKEN:(reviewer|clinician):smoke-(reviewer|clinician)-3")
 
     def test_secret_volume_loader_copies_files_without_bind_mounts_or_logging_values(self):
         with tempfile.TemporaryDirectory() as tmp:

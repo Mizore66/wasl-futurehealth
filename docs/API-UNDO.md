@@ -37,6 +37,10 @@ Headers as for `/review`: `X-Wasl-Role`, `X-Wasl-Actor` (both required).
 - A target can be undone or contested only while `active`. Undoing an undo, contest or resolution is refused (409). A second undo or contest of the same target is refused (409), including a new contest of a target whose earlier contest was rejected. A contest must be resolved before anything else happens to its target.
 - A contest never closes or reopens the case. Responses carry `canonical_reopened: false`, `auto_closure: false`; contests also carry `requires_resolution: true`.
 
+## Independent-review reads
+
+Events with `protocol: "wasl-independent-review/1"` (reads `r1`, `r2`, `r3`) cannot be undone or contested in this version: a target that is a protocol read returns 409. Undoing one would need dependent invalidation of the later reads, which is not designed. Legacy `/review` events keep the behaviour in this document.
+
 ## Event
 
 Compensating events carry: `kind` (`undo|contest|contest_resolution`), `case`, `target`, `target_actor`, `target_action`, `action`, `role`, `actor`, `note`, `head_signed` (the case's current decision signature), `action_head` (the ledger head for the case at append time), `at`, `prev`, `hash`.

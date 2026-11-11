@@ -228,7 +228,7 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 
 ### POST review (demo mode)
 
-**Identity:** the role (`coordinator` | `clinician` | `reviewer` | `auditor`) and the actor (who is signing) come from the bearer token's `WASL_API_TOKENS` entry. `X-Wasl-Role`/`X-Wasl-Actor` sent by a client are overwritten.
+**Identity:** the role (`coordinator` | `clinician` | `reviewer` | `senior_reviewer` | `senior_clinician` | `auditor`) and the actor (who is signing) come from the bearer token's `WASL_API_TOKENS` entry. `X-Wasl-Role`/`X-Wasl-Actor` sent by a client are overwritten.
 
 **Body:** `{"item": "<review item id from review_items>", "decision": "same|different|adequate|inadequate|confirm_contact", "note": "…"}`
 
@@ -249,6 +249,37 @@ Read authorization is least-privilege: coordinator/clinician/reviewer tokens hav
 - 400 for a malformed body or missing actor.
 
 **Append-only:** every action is appended to `<run>/api_reviews.ndjson` as a hash-chained event (`prev` → `hash`). The run's decisions are never modified. Review history shows in `api_reviews` and in `/audit` → `history`.
+
+### POST review: independent double review (`wasl-independent-review/1`)
+
+**Status: built for the synthetic demo; verified by Go handler tests and the real-HTTP smoke (`scripts/api_smoke.py`, `independent_review_smoke`) only where that smoke has actually been run.** It does not change the pipeline, canonical case state, `out_log.ndjson`, `fhir_log.ndjson` or `reviewer_decisions.ndjson`; every response carries `canonical_unchanged: true`.
+
+A body with `read` (`r1` | `r2` | `r3`) uses the protocol; a body without it is the legacy append-only event above. A legacy event never advances protocol state and stays labelled as not independently double-reviewed. Protocol bodies also need `expected_head` (a string; empty for the first read). `read` is a workflow slot, not a role. The server derives `question` (`link` or `evidence`) from the raised item and decision; a combined-kind item has one independent state machine per question.
+
+| State | Accepted write | Result |
+|---|---|---|
+| `awaiting_r1` | ordinary `reviewer` (link) or `clinician` (evidence) submits `r1` at the empty head | `awaiting_r2` |
+| `awaiting_r2` | a different actor (trimmed, case-insensitive) submits `r2` at the current head | `resolved_agreed` if the answers match, else `awaiting_r3` |
+| `awaiting_r3` | a `senior_reviewer` (link) or `senior_clinician` (evidence), distinct from both initial actors, submits `r3` at the current head | `resolved_senior` |
+| `resolved_agreed`, `resolved_senior` | nothing | 409 |
+
+An agreement never opens `r3`. A disagreement alone opens it. `r3` records `resolution_reads` (the `r1` and `r2` event hashes). An item with a canonical final sign-off accepts no protocol write.
+
+**Status codes:** 400 malformed input (unknown `read`, missing `expected_head`, decision that does not answer the question); 401 no valid token; 403 role not allowed for the slot or discipline, or the same normalised actor already read the question (two tokens bound to one actor are not independent); 404 unknown case or item; 409 wrong state, duplicate slot, premature `r3`, stale head or terminal state; 500 ledger append failure (memory is left unchanged). Validation and append happen under the server mutex, so two writers at one head get one 201 and one 409.
+
+**Response:** 201 with `review` (the event, with additive fields `protocol`, `read`, `question`, `expected_head`, `resolution_reads` on `r3`) and `review_state`. Case detail adds `api_review_states`, sorted by item then question: `item`, `question`, `state`, `head`, `next_read`, `may_submit`, `reads`, `disagreement`, `final_decision`, `resolution_basis`, `canonical_unchanged`.
+
+**Blinding:** while a question is `awaiting_r2`, any actor other than the `r1` author receives no `r1` decision, note, event hash or `api_reviews` entry, in detail or in POST responses. They see only that a first read was submitted. After `r2` both initial answers are visible. Auditor history is actor- and note-redacted but keeps `protocol`, `read`, `question`, `expected_head`, `resolution_reads`, `prev` and `hash`; the web review page suppresses the embedded auditor history while any initial answer is concealed.
+
+**Senior authority:** `senior_reviewer` and `senior_clinician` hold the sign and queue-read capabilities of their discipline, and only they may submit `r3`; only the ordinary roles may submit `r1`/`r2`. In `scripts/demo.sh` the third reviewer and clinician tokens are the seniors. No header, browser-selected role or actor label grants authority.
+
+**Mixed ledgers:** legacy and protocol events share `api_reviews.ndjson` and its hash chain. Start-up replay applies the same transition validator as live writes, so a chain-valid but impossible history fails closed (`review_ledger: invalid`, writes 500).
+
+**Undo and contest:** targeting a protocol read returns 409 in this version (dependent invalidation is not designed). Legacy compensation is unchanged.
+
+**Web sign-in (cookie scope):** the review page uses a reviewer-supplied assigned API token. A Next.js server action verifies it with an authenticated API request, then stores it in an `HttpOnly; Secure; SameSite=Strict` cookie (`wasl_review_token`) scoped to the review path. Review reads and writes send that exact credential; the browser never supplies actor or role headers. Sign-out clears the cookie. Fixture mode requests no credential and persists nothing.
+
+**Limits:** tokens establish configured actor identities, not proof that separate humans (or real clinicians) participated. The ledger is a hash chain, not WORM storage. There is no OIDC, professional identity proof or live Malaffi. Canonical state is never rewritten by interactive review. Deployment must use HTTPS.
 
 ### POST actions (coordinator, demo mode)
 

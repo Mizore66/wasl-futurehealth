@@ -220,6 +220,14 @@ reachable API must not use them, so generate fresh tokens for each role and inde
    falls back to the published demo tokens, which is only acceptable on loopback. Each token needs at least 16
    characters; actors are the names the ledger records, so choose ones that identify who operates each credential.
    `/healthz` is the only unauthenticated route. Keep the token files out of the repository.
+   For the independent double-review protocol, bind the third reviewer and clinician tokens to the senior roles, and give
+   every credential a different actor: `...:senior_reviewer:hosted-reviewer-3` and `...:senior_clinician:hosted-clinician-3`
+   (credentials 1 and 2 stay `reviewer` / `clinician`). Two tokens bound to the same actor are not independent and the API refuses
+   the second read. Reviewers sign in on the website with their own assigned token (HttpOnly cookie, HTTPS required).
+   `scripts/production_secrets.sh` generates, for the Basic-auth production package, `api_users.json` entries `reviewer`, `reviewer-2`,
+   `senior-reviewer`, `clinician`, `clinician-2`, `senior-clinician`, `coordinator` and `auditor`, each with its own
+   random password, without printing them. These credentials identify configured actors, not separate humans; there is
+   no OIDC, and the smoke (`scripts/demo.sh smoke`) exercises the protocol only on synthetic data.
 2. Expose `127.0.0.1:8088` over HTTPS, for example `caddy reverse-proxy --from api.example.org --to 127.0.0.1:8088`
    on a host with a DNS name, or a tunnel (`cloudflared tunnel --url http://127.0.0.1:8088`) for a short demo.
 3. In the Vercel project (root directory `web`), set these environment variables for Production (and Preview if
