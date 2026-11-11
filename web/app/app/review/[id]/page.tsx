@@ -23,6 +23,14 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
   const detail = queue.cases.find((c) => c.case.id === id) ?? (await getCase(id));
   if (!detail) notFound();
   const view = reviewView(detail);
+  const sharedEvidence = view.programme !== "crc" && view.programme !== "cervical" ? (
+    <>
+      <ProgrammeFindingCard detail={detail} />
+      {detail.evidence.map((ev, i) => (
+        <ReadersCard key={ev.report} detail={detail} ev={ev} id={`programme-readers-${i}`} />
+      ))}
+    </>
+  ) : undefined;
   /** The append-only history and governance projection exist only against the live API. */
   const [audit, projection] = apiMode() === "live" ? await Promise.all([getAudit(id), getUndoProjection(id)]) : [null, null];
 
@@ -71,6 +79,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
           view={view}
           mode={apiMode()}
           next={next}
+          sharedEvidence={sharedEvidence}
           waiting={at >= 0}
           settled={
             <div className="mt-6 flex flex-col gap-3">
@@ -95,6 +104,7 @@ export default async function Page({ params }: PageProps<"/app/review/[id]">) {
                   </Link>
                 </div>
               </Card>
+              {sharedEvidence}
               <SignoffsCard detail={detail} />
             </div>
           }

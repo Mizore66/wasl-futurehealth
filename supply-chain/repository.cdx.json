@@ -2,10 +2,10 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.7.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.7",
-  "serialNumber": "urn:uuid:e3e78dcc-32e5-594f-a0ff-aebdc20478c0",
+  "serialNumber": "urn:uuid:9bb303d5-bf5b-5ece-9740-f48e11fd0cd4",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T04:27:14Z",
+    "timestamp": "2026-11-11T08:33:30Z",
     "tools": {
       "components": [
         {
@@ -29,12 +29,12 @@
           "value": "2"
         }
       ],
-      "version": "23536198371b5dea19a3419ce832d3cfcc6291cb"
+      "version": "7ad364c71862a8a4567f701e11df6468b81a4dc2"
     },
     "properties": [
       {
         "name": "wasl:source-revision",
-        "value": "23536198371b5dea19a3419ce832d3cfcc6291cb"
+        "value": "7ad364c71862a8a4567f701e11df6468b81a4dc2"
       },
       {
         "name": "wasl:source-tree",
@@ -7383,6 +7383,68 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "type": "library",
+      "group": "@types",
+      "name": "whatwg-mimetype",
+      "version": "3.0.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@types/whatwg-mimetype@3.0.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "73600abc34fc4e8c4b20e525379d604e21d77e5b1f2058ac4b8a4eee90cfa0aa2e242112921667132eb6de0c0ff65682cb99672c3030d6f033bb6bccd982ceac"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/%40types/ws@8.18.2",
+      "type": "library",
+      "group": "@types",
+      "name": "ws",
+      "version": "8.18.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/%40types/ws@8.18.2",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "@types/ws@8.18.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "ebb31097e7e958a5534f53587679a8dd4e2c73fc4fa3fcd00677159c8ef8aa641ad33fdbfb583a898a8d98608f6f13becf3d9a9256f4f1ad281df7a0895774ff"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/%40typescript-eslint/eslint-plugin@8.72.1",
       "type": "library",
       "group": "@typescript-eslint",
@@ -9340,6 +9402,36 @@
       ]
     },
     {
+      "bom-ref": "pkg:npm/buffer-image-size@0.6.4",
+      "type": "library",
+      "name": "buffer-image-size",
+      "version": "0.6.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/buffer-image-size@0.6.4",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "buffer-image-size@0.6.4"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9c487e91938f635c3e81c08ca1b67a113529f567e26e7767a2c6e9c01d62264ffc1ade591766e14baf81e9b3d8cf8db82adc2c47a45f95cded0b3d7f8215f675"
+        }
+      ]
+    },
+    {
       "bom-ref": "pkg:npm/bundle-name@4.1.1",
       "type": "library",
       "name": "bundle-name",
@@ -10986,6 +11078,36 @@
         {
           "alg": "SHA-512",
           "content": "ad1a8983fea0779dfc547bd1dcf4ab75105bff5572d987f31eacef6e11884290d12886b816057fe786f9435c584b138ec0abe35f0792dba13443e9c0330a76a5"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/entities@7.0.1",
+      "type": "library",
+      "name": "entities",
+      "version": "7.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:npm/entities@7.0.1",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "entities@7.0.1"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "4d6ae02ce1544131fdf78614ca5d724f8bb26af6399cd0799ae7dff91b566aa3550802b8d3c6f96679db34050458b4c2a6e9bdc3a6ab4fbd22d57750e1478e3c"
         }
       ]
     },
@@ -13386,6 +13508,36 @@
         {
           "alg": "SHA-512",
           "content": "45b279fe398570d342703579a3d7939c12c9fc7b33595d0fef76dcf857f89d2feb263f98692e881b288e2f45680585fe9755ab97793ade1fcaac7fa7849d17bd"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/happy-dom@21.0.4",
+      "type": "library",
+      "name": "happy-dom",
+      "version": "21.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/happy-dom@21.0.4",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "happy-dom@21.0.4"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "b459be19a2c1828ea8d1ac079ef1da368ada568dbba89fb6b5912d67e7086b4f215db7a2b6bc4025a8cb234e61b14cbfdbf61329c523418cc77b998272b68b07"
         }
       ]
     },
@@ -21873,7 +22025,7 @@
       "properties": [
         {
           "name": "aquasecurity:trivy:PkgID",
-          "value": "vitest@5.0.5(@types/node@20.19.43)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
+          "value": "vitest@5.0.5(@types/node@20.19.43)(happy-dom@21.0.4)(vite@8.3.5(@types/node@20.19.43)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15))"
         },
         {
           "name": "aquasecurity:trivy:PkgType",
@@ -21884,6 +22036,36 @@
         {
           "alg": "SHA-512",
           "content": "70f38338c17c627922898b43747a3a9f8c16981ace0416ce2181f6777dcce25dc274d9fbda1faa3263bab977df50de80e406455cd343fddfa4ad2f668245d17e"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/whatwg-mimetype@3.0.0",
+      "type": "library",
+      "name": "whatwg-mimetype",
+      "version": "3.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/whatwg-mimetype@3.0.0",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "whatwg-mimetype@3.0.0"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "9edf8dd9dcc8bad551c40471d678213ca1afd711e2914ec729d7da7ca90b34b8a77663d4fdc877537d4d38218603f7663dc99bd559687ced2f9ca01cb26d28fd"
         }
       ]
     },
@@ -22124,6 +22306,36 @@
         {
           "alg": "SHA-512",
           "content": "04ddb607979a30c23d50cb63ac677983978260fa423c3532d052576d8b1a4f9cd8c6314e7244b9dd2403137a56915a16a475d56f706b61c10de13c1ae7907970"
+        }
+      ]
+    },
+    {
+      "bom-ref": "pkg:npm/ws@8.22.2",
+      "type": "library",
+      "name": "ws",
+      "version": "8.22.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/ws@8.22.2",
+      "properties": [
+        {
+          "name": "aquasecurity:trivy:PkgID",
+          "value": "ws@8.22.2"
+        },
+        {
+          "name": "aquasecurity:trivy:PkgType",
+          "value": "pnpm"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-512",
+          "content": "feb119d9e8e8c27d8de60c554c752ef5b5550bbb6dbb4fd38337f985b4ce8b147716cee66db5e09f60db75b70a8093a6a5032dac85168afb58b95327a7f5bfc8"
         }
       ]
     },
@@ -24339,6 +24551,16 @@
       "dependsOn": []
     },
     {
+      "ref": "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+      "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/%40types/ws@8.18.2",
+      "dependsOn": [
+        "pkg:npm/%40types/node@20.19.43"
+      ]
+    },
+    {
       "ref": "pkg:npm/%40typescript-eslint/eslint-plugin@8.72.1",
       "dependsOn": [
         "pkg:npm/%40eslint-community/regexpp@4.12.2",
@@ -24770,6 +24992,12 @@
       ]
     },
     {
+      "ref": "pkg:npm/buffer-image-size@0.6.4",
+      "dependsOn": [
+        "pkg:npm/%40types/node@20.19.43"
+      ]
+    },
+    {
       "ref": "pkg:npm/bundle-name@4.1.1",
       "dependsOn": [
         "pkg:npm/run-applescript@7.1.0"
@@ -25068,6 +25296,10 @@
         "pkg:npm/ansi-colors@4.1.3",
         "pkg:npm/strip-ansi@6.0.1"
       ]
+    },
+    {
+      "ref": "pkg:npm/entities@7.0.1",
+      "dependsOn": []
     },
     {
       "ref": "pkg:npm/env-paths@2.2.1",
@@ -25760,6 +25992,18 @@
     {
       "ref": "pkg:npm/graceful-fs@4.2.11",
       "dependsOn": []
+    },
+    {
+      "ref": "pkg:npm/happy-dom@21.0.4",
+      "dependsOn": [
+        "pkg:npm/%40types/node@20.19.43",
+        "pkg:npm/%40types/whatwg-mimetype@3.0.2",
+        "pkg:npm/%40types/ws@8.18.2",
+        "pkg:npm/buffer-image-size@0.6.4",
+        "pkg:npm/entities@7.0.1",
+        "pkg:npm/whatwg-mimetype@3.0.0",
+        "pkg:npm/ws@8.22.2"
+      ]
     },
     {
       "ref": "pkg:npm/has-bigints@1.1.0",
@@ -27637,6 +27881,7 @@
         "pkg:npm/chai@6.3.0",
         "pkg:npm/es-module-lexer@2.3.2",
         "pkg:npm/expect-type@1.4.0",
+        "pkg:npm/happy-dom@21.0.4",
         "pkg:npm/magic-string@1.4.5",
         "pkg:npm/obug@3.0.0",
         "pkg:npm/picomatch@4.0.7",
@@ -27647,6 +27892,10 @@
         "pkg:npm/vite@8.3.5",
         "pkg:npm/why-is-node-running@3.2.1"
       ]
+    },
+    {
+      "ref": "pkg:npm/whatwg-mimetype@3.0.0",
+      "dependsOn": []
     },
     {
       "ref": "pkg:npm/which-boxed-primitive@1.1.1",
@@ -27718,6 +27967,10 @@
       "dependsOn": []
     },
     {
+      "ref": "pkg:npm/ws@8.22.2",
+      "dependsOn": []
+    },
+    {
       "ref": "pkg:npm/wsl-utils@1.0.1",
       "dependsOn": [
         "pkg:npm/is-wsl@3.1.1",
@@ -27773,6 +28026,7 @@
         "pkg:npm/cn@0.5.1",
         "pkg:npm/eslint-config-next@16.4.3",
         "pkg:npm/eslint@9.39.5",
+        "pkg:npm/happy-dom@21.0.4",
         "pkg:npm/lucide-react@1.66.0",
         "pkg:npm/motion@14.9.0",
         "pkg:npm/next@16.4.3",
