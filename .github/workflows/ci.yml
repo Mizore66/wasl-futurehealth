@@ -299,6 +299,22 @@ jobs:
         run: |
           pnpm exec next typegen
           pnpm build
+      # The runner's apt sources go through azure.archive.ubuntu.com first. When that host stops resolving, apt cannot
+      # refresh its lists and the system-dependency install below fails before any test runs. Only in that case, point
+      # apt at the primary Ubuntu archive; otherwise the runner's sources are left exactly as they are.
+      - name: Use the primary Ubuntu archive if the runner's Azure mirror does not resolve
+        run: |
+          echo 'Acquire::Retries "3";' | sudo tee /etc/apt/apt.conf.d/80-wasl-retries >/dev/null
+          if getent hosts azure.archive.ubuntu.com >/dev/null; then
+            echo "azure.archive.ubuntu.com resolves; keeping the runner's apt sources."
+          else
+            echo "::warning::azure.archive.ubuntu.com does not resolve; using archive.ubuntu.com for apt."
+            for sources in /etc/apt/sources.list.d/ubuntu.sources /etc/apt/sources.list; do
+              if [ -f "$sources" ]; then
+                sudo sed -i 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' "$sources"
+              fi
+            done
+          fi
       - name: Install Chromium and its system dependencies
         working-directory: web
         run: pnpm exec playwright install --with-deps chromium
