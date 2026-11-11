@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { apiMode, getCase, postReview } from "@/lib/api/source";
-import { GUIDED_EVIDENCE_LABELS, ReviewDecision, type CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, ReviewDecision, type CaseDetail } from "@/lib/api/schema";
 import { roleFor, SIGNER, type SaveFailure, type Signature } from "@/components/review/decision";
 
 const Signatures = z
@@ -25,7 +25,7 @@ function refusal(detail: CaseDetail | null, signature: Signature): SaveFailure |
   const programme = detail.case.programme;
   const allowed = [
     ...(item.kinds.includes("link") ? ["same", "different"] : []),
-    ...(item.kinds.includes("evidence") && programme !== "cervical" ? GUIDED_EVIDENCE_LABELS[programme] : []),
+    ...(item.kinds.includes("evidence") && isGuided(programme) ?GUIDED_EVIDENCE_LABELS[programme] : []),
   ];
   if (!allowed.includes(signature.decision)) return { status: 400, error: `${signature.decision} does not answer this ${item.kinds.join("/")} item` };
 }

@@ -1,4 +1,4 @@
-import { GUIDED_EVIDENCE_LABELS, type CaseDetail } from "@/lib/api/schema";
+import { GUIDED_EVIDENCE_LABELS, isGuided, type CaseDetail } from "@/lib/api/schema";
 import type { ChainNode } from "@/components/wasl/sealed-chain";
 import { formatDay } from "@/lib/domain/day";
 import { shortId } from "@/lib/domain/ids";
@@ -121,8 +121,8 @@ export function reviewView(c: CaseDetail): ReviewView {
   const unit = providerName(downstream?.provider ?? "");
   const programme = c.case.programme;
   const copy = PROGRAMME_COPY[programme];
-  const guided = programme !== "cervical";
-  const evidenceChoices = guided ? GUIDED_EVIDENCE_LABELS[programme] : [];
+  const guided = isGuided(programme);
+  const evidenceChoices = guided ?GUIDED_EVIDENCE_LABELS[programme] : [];
   const evidenceQuestion = programme === "crc" ? "Is the colonoscopy report adequate?" : `Select the ${copy.report} evidence label`;
   const checks = programme === "crc" ? checksFrom(ev?.fields) : [];
   /*
