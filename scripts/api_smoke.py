@@ -298,6 +298,8 @@ def workflow_smoke(c, cid):
 # raised, still-unsigned synthetic items discovered from the API and never the legacy blank-item undo/contest fixtures.
 # ---------------------------------------------------------------------------------------------------------------------
 PROTOCOL = "wasl-independent-review/1"
+STALE_HEAD = "0" * 64   # well-formed but never a real head: must reach stale handling (409)
+MALFORMED_HEAD = "not-a-head"  # not empty and not 64 hex: must be rejected as malformed (400)
 PROTOCOL_FIELDS = ("protocol", "read", "question", "expected_head", "resolution_reads")
 STATES = {"awaiting_r1", "awaiting_r2", "awaiting_r3", "resolved_agreed", "resolved_senior"}
 # question -> credentials (r1, r2, senior), decisions (first, second), and a credential of the other discipline.
@@ -445,7 +447,19 @@ def independent_review_smoke(c, programmes):
         check(not any(e.get("hash") == e1["hash"] or (e.get("item") == item and e.get("read") == "r1")
                       for e in blind.get("api_reviews", [])), f"{tag}: r1 event present in the second reader's api_reviews")
         senior.read(cid, item, first, "r3", blind_state["head"], expected=409)      # premature r3
-        stale = r2.read(cid, item, second if outcome == "disagree" else first, "r2", "stale-smoke-head", expected=409)
+        # Mid-state: a hidden r1 cannot be undone or contested by another ordinary actor (the target hash is not disclosed
+        # to them, so a guessed/known hash must not be actionable), and the second reader's view carries no r1 event.
+        code, _ = c.request("POST", case_path(cid, "/undo"), {"target": e1["hash"], "note": ""}, token_env=d["r2"])
+        check(code == 409, f"{tag}: mid-state undo of a concealed r1 expected 409, got {code}")
+        code, _ = c.request("POST", case_path(cid, "/undo"), {"target": e1["hash"], "contest": True, "note": ""}, token_env=d["r2"])
+        check(code == 409, f"{tag}: mid-state contest of a concealed r1 expected 409, got {code}")
+        # The review desk reads only the viewer-authorised detail; audit/export are auditor-authorised and are not
+        # fetched with a reviewer credential.
+        for suffix in ("/audit", "/export"):
+            code, _ = c.request("GET", case_path(cid, suffix), token_env=d["r2"])
+            check(code == 403, f"{tag}: reviewer credential read {suffix} mid-state (expected 403, got {code})")
+        r2.read(cid, item, first, "r2", MALFORMED_HEAD, expected=400)
+        stale = r2.read(cid, item, second if outcome == "disagree" else first, "r2", STALE_HEAD, expected=409)
         check(note1 not in json.dumps(stale) and e1["hash"] not in json.dumps(stale), f"{tag}: stale-head refusal leaked r1")
 
         decision2 = second if outcome == "disagree" else first
@@ -476,7 +490,7 @@ def independent_review_smoke(c, programmes):
         r1.read(cid, item, first, "r3", head3, expected=403)         # ordinary role, initial actor
         r2.read(cid, item, first, "r3", head3, expected=403)
         other.read(cid, item, first, "r3", head3, expected=403)      # wrong discipline
-        senior.read(cid, item, first, "r3", "stale-smoke-head", expected=409)
+        senior.read(cid, item, first, "r3", STALE_HEAD, expected=409)
         e3, s3 = accept(senior.read(cid, item, first, "r3", head3, note=f"SMOKE-INDEP-R3-NOTE-{outcome}"),
                         cid, item, question, "r3", tag + " r3")
         check(e3.get("resolution_reads") == [e1["hash"], e2["hash"]] and e3.get("prev") == e2["hash"],
