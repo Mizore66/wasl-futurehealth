@@ -31,6 +31,8 @@ const buttonVariants = cva(
         cta: "cursor-pointer rounded-control bg-cta text-body font-medium text-white",
         /** Secondary action beside a primary one. */
         quiet: "cursor-pointer rounded-control bg-active text-body text-ink hover:bg-control",
+        /** A one-tap choice among several, such as a call outcome. The caller sets the border colour. */
+        chip: "cursor-pointer rounded-chip border bg-surface text-body text-ink hover:bg-ground",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
