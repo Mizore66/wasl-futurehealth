@@ -85,6 +85,8 @@ case "$MODE" in
     if [[ "$MODE" == verify ]]; then
       "$PYTHON" -I "$TOOL" compare --generated "$DESTINATION" --tracked "$TRACKED"
     fi
+    # Offline: validates the notice manifest and the exact generated bundle; a failure aborts under set -e.
+    "$PYTHON" -I "$ROOT/scripts/notices.py" check --root "$ROOT"
     "$PYTHON" -I "$TOOL" gate --input "$DESTINATION/vulnerabilities.json"
     ;;
 

@@ -348,12 +348,14 @@ class SupplyChainShellTests(unittest.TestCase):
                     }
                 print(json.dumps(result))
                 raise SystemExit(0)
-            if sys.argv[1] == "image":
+            if sys.argv[1] in ("image", "fs"):
                 if os.environ["FAKE_TRIVY_ACQUIRES_DB"] == "1":
                     database.touch()
                 output = Path(sys.argv[sys.argv.index("--output") + 1])
                 if "cyclonedx" in sys.argv:
                     result = {"metadata": {"component": {"bom-ref": "image-test"}}, "components": []}
+                    if sys.argv[1] == "fs":
+                        result = {"bomFormat": "CycloneDX", "specVersion": "1.6", "components": []}
                 else:
                     result = {"Results": []}
                 output.write_text(json.dumps(result), encoding="utf-8")
@@ -380,6 +382,96 @@ class SupplyChainShellTests(unittest.TestCase):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
+
+    def install_fake_python(self):
+        """A python wrapper that logs each tool subcommand and can force the notice check to fail."""
+        wrapper = self.root.parent / "fake-python"
+        log = self.root.parent / "python-calls.log"
+        wrapper.write_text(textwrap.dedent(f"""\
+            #!/usr/bin/env bash
+            args=("$@")
+            for ((i = 0; i < ${{#args[@]}}; i++)); do
+              case "${{args[$i]}}" in
+                */scripts/notices.py)
+                  echo "notices ${{args[@]:$((i + 1))}}" >> {log}
+                  if [[ -n "${{FAKE_NOTICES_RC:-}}" ]]; then echo "notice checker failed" >&2; exit "$FAKE_NOTICES_RC"; fi
+                  exit 0 ;;
+                */scripts/supply_chain.py)
+                  # Stub the evidence tool: these tests only prove ordering and exit-code propagation.
+                  echo "tool ${{args[$((i + 1))]}}" >> {log}
+                  for ((j = i + 1; j < ${{#args[@]}}; j++)); do
+                    if [[ "${{args[$j]}}" == --output ]]; then echo '{{}}' > "${{args[$((j + 1))]}}"; fi
+                  done
+                  exit 0 ;;
+              esac
+            done
+            exec {sys.executable} "$@"
+        """), encoding="utf-8")
+        wrapper.chmod(0o755)
+        return wrapper, log
+
+    def run_source_scan(self, mode, *, notices_rc=None):
+        wrapper, log = self.install_fake_python()
+        if log.exists():
+            log.unlink()
+        self.database.touch()
+        environment = os.environ.copy()
+        environment.update({
+            "FAKE_TRIVY_DATABASE": str(self.database),
+            "FAKE_TRIVY_ACQUIRES_DB": "0",
+            "PYTHON": str(wrapper),
+            "TRIVY": str(self.trivy),
+            "WASL_SUPPLY_CHAIN_OFFLINE": "0",
+        })
+        environment.pop("FAKE_NOTICES_RC", None)
+        if notices_rc is not None:
+            environment["FAKE_NOTICES_RC"] = str(notices_rc)
+        result = subprocess.run(
+            [str(self.root / "scripts" / "supply-chain.sh"), mode],
+            cwd=self.root, env=environment, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        )
+        calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+        return result, calls
+
+    def test_script_declares_offline_notice_check_in_generate_and_verify_path_only(self):
+        text = (ROOT / "scripts" / "supply-chain.sh").read_text(encoding="utf-8")
+        command = '"$PYTHON" -I "$ROOT/scripts/notices.py" check --root "$ROOT"'
+        self.assertEqual(text.count(command), 1)
+        position = text.index(command)
+        self.assertGreater(position, text.index("  generate|verify)"))
+        self.assertLess(position, text.index("  image)"))
+        self.assertGreater(position, text.index('"$PYTHON" -I "$TOOL" compare'))
+        self.assertLess(position, text.index('"$PYTHON" -I "$TOOL" gate'))
+
+    def test_generate_runs_notice_check_after_manifest_before_gate(self):
+        result, calls = self.run_source_scan("generate")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(sum(c.startswith("notices ") for c in calls), 1, calls)
+        notices = next(i for i, c in enumerate(calls) if c.startswith("notices "))
+        self.assertTrue(calls[notices].startswith("notices check --root "), calls)
+        self.assertLess(calls.index("tool manifest"), notices)
+        self.assertLess(notices, calls.index("tool gate"))
+
+    def test_verify_runs_notice_check_after_compare_before_gate(self):
+        generated, _ = self.run_source_scan("generate")
+        self.assertEqual(generated.returncode, 0, generated.stdout + generated.stderr)
+        result, calls = self.run_source_scan("verify")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        notices = next(i for i, c in enumerate(calls) if c.startswith("notices "))
+        self.assertLess(calls.index("tool compare"), notices)
+        self.assertLess(notices, calls.index("tool gate"))
+
+    def test_notice_check_failure_is_returned_and_blocks_the_gate(self):
+        for mode in ("generate", "verify"):
+            with self.subTest(mode=mode):
+                if mode == "verify":
+                    ok, _ = self.run_source_scan("generate")
+                    self.assertEqual(ok.returncode, 0, ok.stdout + ok.stderr)
+                result, calls = self.run_source_scan(mode, notices_rc=7)
+                self.assertEqual(result.returncode, 7, result.stdout + result.stderr)
+                self.assertIn("notice checker failed", result.stderr)
+                self.assertNotIn("tool gate", calls)
 
     def test_image_manifest_refreshes_metadata_after_cold_database_download(self):
         result = self.run_image_scan(acquires_database=True)
