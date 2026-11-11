@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DoubleReviewEvent } from "./double-review-schema";
+import { DoubleReviewEvent, blindOpenReads } from "./double-review-schema";
 
 /*
  * The backend contract (docs/API.md), parsed once at the boundary.
@@ -568,7 +568,7 @@ export const CaseDetail = withMeta({
   review_items: z.array(ReviewItem),
   signoffs: z.array(Signoff),
   /** Every ledger event of the case, in ledger order: reviews, consent, coordinator actions, undo/contest. */
-  api_reviews: z.array(LedgerEvent),
+  api_reviews: z.array(LedgerEvent).transform(blindOpenReads),
   /** Full coordinator overlay; absent in snapshots taken before the actions endpoint existed. */
   api_overlay: ApiOverlay.optional(),
   review_ledger: ReviewLedger.optional(),
@@ -587,7 +587,7 @@ export const Audit = withMeta({
   /** The redacted audit omits anchors when the run recorded none (anchor_note then says so). */
   anchors: z.record(z.string(), z.string()).default({}),
   anchor_note: z.string().optional(),
-  history: z.array(AuditLedgerEvent),
+  history: z.array(AuditLedgerEvent).transform(blindOpenReads),
 });
 
 export const CaseList = withMeta({

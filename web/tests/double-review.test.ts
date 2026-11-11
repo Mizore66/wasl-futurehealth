@@ -5,14 +5,17 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { HistoryCard } from "@/components/case/audit-view";
 import { SignoffsCard } from "@/components/case/sections";
 import { ledgerId, ledgerWords } from "@/components/case/words";
-import { roundModel } from "@/components/review/double-review/model";
+import { ownView, roundModel, slotFor } from "@/components/review/double-review/model";
 import { DoubleReviewPanel } from "@/components/review/double-review/panel";
 import { DoubleReviewReadsCard } from "@/components/review/double-review/reads-card";
-import { doubleItems, parseSeat } from "@/components/review/double-review/section";
-import { getDoubleReview, postDoubleRead, seatCredentialName } from "@/lib/api/double-review";
+import { doubleItems } from "@/components/review/double-review/section";
+import { submitDoubleRead } from "@/app/app/review/[id]/double-review-actions";
+import { deskCredentialName, getDoubleReview, postDoubleRead } from "@/lib/api/double-review";
 import { Audit, CaseDetail, DoubleReviewError, DoubleReviewRound, DoubleReviewState, LedgerEvent } from "@/lib/api/schema";
 import { caseStage } from "@/lib/domain/stage";
 import { linkTrust } from "@/lib/people/identity";
+
+vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 /*
  * fixtures/double_review_*.json are the Go API's own responses (pipeline/api_double_review_test.go,
@@ -70,6 +73,21 @@ describe("double review contract (real Go handler output)", () => {
     expect(blindAudit[0].blinded).toBe(true);
   });
 
+  it("case detail and audit re-blind a read whose item lacks either initial read, even if the response leaked it", () => {
+    const raw = load("double_review_blinded_case_detail.json");
+    const leak = (e: Record<string, unknown>) => (e.type === "double_review" ? { ...e, blinded: false, decision: "same", note: "LEAKED", nonce: "f".repeat(32) } : e);
+    const detail = CaseDetail.parse({ ...raw, api_reviews: raw.api_reviews.map(leak) });
+    const read = detail.api_reviews[0];
+    expect(read.ledger === "double_review" && [read.blinded, read.decision, read.note, "nonce" in read]).toEqual([true, undefined, undefined, false]);
+    const audit = load("double_review_blinded_audit.json");
+    const history = Audit.parse({ ...audit, history: audit.history.map(leak) }).history;
+    expect(JSON.stringify(history)).not.toContain("LEAKED");
+    expect(history[0].ledger === "double_review" && history[0].decision).toBeUndefined();
+    // Once both initial reads exist the answers are served to queue readers, and kept.
+    const full = CaseDetail.parse(load("double_review_case_detail.json")).api_reviews;
+    expect(full.map((e) => (e.ledger === "double_review" ? e.decision : ""))).toEqual(["same", "different", "same"]);
+  });
+
   it("parses the refusals with their machine-readable reason", () => {
     expect(DoubleReviewError.parse(load("double_review_refused_same_actor.json")).reason).toBe("same_actor");
     const head = DoubleReviewError.parse(load("double_review_refused_head.json"));
@@ -97,9 +115,9 @@ describe("double review contract (real Go handler output)", () => {
   });
 });
 
-describe("round state per item and read role", () => {
-  it("the second reader sees r1 as given but hidden, and is offered only r2", () => {
-    const m = roundModel(round("double_review_state_blinded.json"), "r2", "reviewer-two", "crc");
+describe("round state per item and read role (one deployment, one credential per role)", () => {
+  it("a deployment that has not read sees r1 as given but hidden, and the API's open initial slot is its form", () => {
+    const m = roundModel(round("double_review_state_blinded.json"), "reviewer-two", "crc");
     expect(m.cells.map((c) => [c.read, c.state])).toEqual([
       ["r1", "hidden"],
       ["r2", "empty"],
@@ -107,17 +125,48 @@ describe("round state per item and read role", () => {
     expect(m.form).toEqual({ read: "r2", senior: false, choices: [expect.objectContaining({ value: "same" }), expect.objectContaining({ value: "different" })] });
   });
 
-  it("senior resolution is never offered before a disagreement, even if a response claimed it was", () => {
-    const awaiting = round("double_review_state_blinded.json");
-    const m = roundModel(awaiting, "r3", "reviewer-three", "crc");
-    expect([m.form, m.why]).toEqual([undefined, "Senior resolution opens only if the two initial reads disagree."]);
-    const forged: DoubleReviewRound = { ...awaiting, viewer_may: ["r3"] };
-    expect(roundModel(forged, "r3", "reviewer-three", "crc").form).toBeUndefined();
-    expect(roundModel({ ...awaiting, phase: "agreed", viewer_may: ["r3"] }, "r3", "reviewer-three", "crc").form).toBeUndefined();
+  it("the author sees its own read as 'your read' and gets no second initial read, even if a response offered one", () => {
+    const own = round("double_review_state_own.json");
+    const m = roundModel(own, "reviewer-one", "crc");
+    expect(m.cells[0]).toMatchObject({ read: "r1", state: "shown", decision: "same", mine: true });
+    expect([m.form, m.why]).toEqual([undefined, "You gave r1 as reviewer-one. The other initial read must come from a different person."]);
+    // The form follows the API's viewer_may, and the API refuses the second seat (403 same_actor) if a response lies.
+    expect(slotFor({ ...own, viewer_may: ["r2"] }, false)).toBe("r2");
+    expect(slotFor({ ...own, viewer_may: [] }, false)).toBeUndefined();
   });
 
-  it("after a disagreement the senior seat gets the form and both initial answers are shown", () => {
-    const m = roundModel(round("double_review_state_disagreement.json"), "r3", "reviewer-three", "crc");
+  it("ownView drops every answer that is not the deployment's own while the round awaits its initial reads", () => {
+    const blinded = state("double_review_state_blinded.json");
+    const r = blinded.rounds.find((x) => x.item === LINK)!;
+    // A misbehaving API that leaks the first reader's answer, note, nonce and a final to reviewer-two.
+    const leaky: DoubleReviewState = {
+      ...blinded,
+      rounds: [{ ...r, final: "same", reads: { ...r.reads, r1: { ...r.reads.r1!, blinded: false, decision: "same", note: "LEAKED-NOTE", nonce: "f".repeat(32) } } }],
+    };
+    const view = ownView(leaky);
+    const r1 = view.rounds[0].reads.r1!;
+    expect([r1.blinded, r1.decision, r1.note, "nonce" in r1, view.rounds[0].final]).toEqual([true, undefined, undefined, false, undefined]);
+    expect(JSON.stringify(view)).not.toContain("LEAKED-NOTE");
+    // roundModel repeats the rule for a round that did not pass through ownView.
+    expect(roundModel(leaky.rounds[0], "reviewer-two", "crc").cells[0].state).toBe("hidden");
+    // The deployment's own answer survives, and every answer survives once the API reveals the round.
+    expect(ownView(state("double_review_state_own.json")).rounds.find((x) => x.item === LINK)!.reads.r1!.decision).toBe("same");
+    const revealed = ownView(state("double_review_state_disagreement.json")).rounds.find((x) => x.item === LINK)!;
+    expect([revealed.reads.r1!.decision, revealed.reads.r2!.decision]).toEqual(["same", "different"]);
+  });
+
+  it("senior resolution is never offered before a disagreement, even if a response claimed it was", () => {
+    const awaiting = round("double_review_state_blinded.json");
+    const m = roundModel({ ...awaiting, viewer_may: [] }, "reviewer-three", "crc");
+    expect(m.form).toBeUndefined();
+    const forged: DoubleReviewRound = { ...awaiting, viewer_may: ["r3"] };
+    expect(roundModel(forged, "reviewer-three", "crc").form).toBeUndefined();
+    expect(roundModel({ ...awaiting, phase: "agreed", viewer_may: ["r3"] }, "reviewer-three", "crc").form).toBeUndefined();
+    expect(slotFor(forged, true)).toBeUndefined();
+  });
+
+  it("after a disagreement a third person gets the senior form and both initial answers are shown", () => {
+    const m = roundModel(round("double_review_state_disagreement.json"), "reviewer-three", "crc");
     expect(m.phase).toBe("disagreement");
     expect(m.form).toMatchObject({ read: "r3", senior: true });
     expect(m.cells.map((c) => [c.read, c.state, c.state === "shown" ? c.decision : ""])).toEqual([
@@ -125,65 +174,77 @@ describe("round state per item and read role", () => {
       ["r2", "shown", "different"],
       ["r3", "empty", ""],
     ]);
-    // An initial reader's seat has nothing to do now.
-    expect(roundModel(round("double_review_state_disagreement.json"), "r1", "reviewer-one", "crc").form).toBeUndefined();
-  });
-
-  it("explains a credential bound to the person who already read, instead of offering a second initial read", () => {
-    const sameActor: DoubleReviewRound = { ...round("double_review_state_blinded.json"), viewer_may: [] };
-    const m = roundModel(sameActor, "r2", "reviewer-one", "crc");
-    expect(m.form).toBeUndefined();
-    expect(m.why).toContain("One person cannot give both initial reads");
+    // An initial reader has nothing to do now: the API does not offer it r3.
+    const initial = roundModel({ ...round("double_review_state_disagreement.json"), viewer_may: [] }, "reviewer-one", "crc");
+    expect([initial.form, initial.why]).toEqual([undefined, "This deployment gave r1 as reviewer-one. The senior read must come from a third person."]);
   });
 
   it("a resolved round shows every read and the settled answer, with no form", () => {
-    const m = roundModel(round("double_review_state_resolved.json"), "r3", "reviewer-three", "crc");
+    const m = roundModel(round("double_review_state_resolved.json"), "reviewer-three", "crc");
     expect([m.phase, m.final, m.form, m.cells.length]).toEqual(["resolved", "same", undefined, 3]);
   });
 
-  it("picks the items the API double-reviews and parses the seat", () => {
+  it("picks the items the API double-reviews", () => {
     const detail = CaseDetail.parse(load("double_review_case_detail.json"));
     expect(doubleItems(detail)).toEqual([
       { item: "rv-dr-link-0001", question: "link" },
       { item: "rv-dr-evidence-01", question: "evidence" },
     ]);
-    expect([parseSeat("r2"), parseSeat("r3"), parseSeat(undefined), parseSeat("admin"), parseSeat(["r2"])]).toEqual(["r2", "r3", "r1", "r1", "r1"]);
   });
 });
 
 describe("rendered reads", () => {
-  const hrefFor = { r1: "?seat=r1", r2: "?seat=r2", r3: "?seat=r3" };
+  const items = [
+    { item: LINK, question: "link" as const },
+    { item: "rv-dr-evidence-01", question: "evidence" as const },
+  ];
 
-  it("the panel for a seat with nothing to submit shows who the API records and never the hidden answer", () => {
+  it("the panel has no seat switcher, says who this deployment is, and never renders another person's blinded answer", () => {
     const blinded = state("double_review_state_blinded.json");
+    const r = blinded.rounds.find((x) => x.item === LINK)!;
+    // Even a response that leaks r1's answer to reviewer-two renders it hidden.
+    // (viewer_may is emptied so no client form renders outside an app router.)
+    const leaky = { ...blinded, rounds: [{ ...r, viewer_may: [], reads: { ...r.reads, r1: { ...r.reads.r1!, blinded: false, decision: "same", note: "LEAKED-NOTE" } } }] };
     const html = renderToStaticMarkup(
       DoubleReviewPanel({
         caseId: blinded.case,
         programme: "crc",
-        seat: "r3",
-        hrefFor,
-        items: [{ item: LINK, question: "link" }, { item: "rv-dr-evidence-01", question: "evidence" }],
+        items,
         views: [
-          { role: "reviewer", credential: "WASL_API_REVIEWER_3_TOKEN", status: "ok", state: { ...blinded, viewer: { role: "reviewer", actor: "reviewer-three" } } },
-          { role: "clinician", credential: "WASL_API_CLINICIAN_3_TOKEN", status: "missing" },
+          { role: "reviewer", credential: "WASL_API_REVIEWER_TOKEN", status: "ok", state: leaky },
+          { role: "clinician", credential: "WASL_API_CLINICIAN_TOKEN", status: "missing" },
         ],
       }),
     );
-    expect(html).toContain("does not make one person into independent reviewers");
-    expect(html).toContain("recorded by the API as <strong>reviewer-three</strong>");
+    expect(html).toContain("This deployment is one reader");
+    expect(html).toContain("designed, not built");
+    expect(html).toContain("this deployment is recorded by the API as <strong>reviewer-two</strong>");
     expect(html).toContain("given by reviewer-one");
-    expect(html).toContain("Answer hidden until your own read is in.");
-    expect(html).not.toContain("Same patient");
-    expect(html).toContain("Senior resolution opens only if the two initial reads disagree.");
-    expect(html).toContain("WASL_API_CLINICIAN_3_TOKEN");
-    expect(html).toContain("Nothing falls back to another seat");
+    expect(html).toContain("Answer hidden until both initial reads are in.");
+    expect(html).not.toContain("Same patient ·");
+    expect(html).not.toContain("LEAKED-NOTE");
+    expect(html).not.toMatch(/Read as|\?seat=|_2_TOKEN|_3_TOKEN/);
+    expect(html).toContain("WASL_API_CLINICIAN_TOKEN</code> is not set on the server");
     expect(html).not.toContain("<form");
+  });
+
+  it("the author's own blinded read is shown to it as 'your read'", () => {
+    const own = state("double_review_state_own.json");
+    const html = renderToStaticMarkup(
+      DoubleReviewPanel({ caseId: own.case, programme: "crc", items: [items[0]], views: [{ role: "reviewer", credential: "WASL_API_REVIEWER_TOKEN", status: "ok", state: own }] }),
+    );
+    expect(html).toContain("Same patient · your read, as reviewer-one");
+    expect(html).toContain("synthetic first read note");
   });
 
   it("the case page lists each read separately, blinded ones without their answer", () => {
     const blinded = renderToStaticMarkup(DoubleReviewReadsCard({ detail: CaseDetail.parse(load("double_review_blinded_case_detail.json")) })!);
     expect(blinded).toContain("answer hidden until both initial reads are in");
     expect(blinded).not.toContain("Same patient");
+    // A case detail that leaked an answer before both initial reads exist still renders it hidden.
+    const raw = load("double_review_blinded_case_detail.json");
+    const leaked = { ...raw, api_reviews: raw.api_reviews.map((e: Record<string, unknown>) => ({ ...e, blinded: false, decision: "same" })) };
+    expect(renderToStaticMarkup(DoubleReviewReadsCard({ detail: CaseDetail.parse(leaked) })!)).not.toContain("Same patient");
 
     const html = renderToStaticMarkup(DoubleReviewReadsCard({ detail: CaseDetail.parse(load("double_review_case_detail.json")) })!);
     for (const s of ["First read (r1)", "Second read (r2)", "Senior read (r3)", "reviewer-one", "reviewer-two", "reviewer-three", "senior read is open", "Settled answer: Same patient"]) {
@@ -202,56 +263,101 @@ describe("rendered reads", () => {
   });
 });
 
-describe("seat credentials", () => {
+describe("one deployment credential per question role", () => {
   const meta = { api: "wasl-api/1", data_mode: "simulated", run: "r", policy: "p", reader_model: "m", loaded_at: "2026-11-10T00:00:00Z", note: "synthetic" };
   const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-  it("each seat sends its own credential and no identity header", async () => {
+  it("reads with the role's own credential, never a _2_/_3_ credential, and sends no identity header", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
     vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-one-secret-123456");
     vi.stubEnv("WASL_API_REVIEWER_2_TOKEN", "reviewer-two-secret-123456");
     vi.stubEnv("WASL_API_REVIEWER_3_TOKEN", "reviewer-three-secret-1234");
+    vi.stubEnv("WASL_API_CLINICIAN_TOKEN", "clinician-one-secret-12345");
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, { meta, ...load("double_review_state_blinded.json") })));
     vi.stubGlobal("fetch", fetchMock);
-    for (const seat of ["r1", "r2", "r3"] as const) await getDoubleReview("case/1", seat, "reviewer");
+    await getDoubleReview("case/1", "reviewer");
+    await getDoubleReview("case/1", "clinician");
     const auth = fetchMock.mock.calls.map(([, init]) => new Headers(init.headers).get("authorization"));
-    expect(auth).toEqual(["Bearer reviewer-one-secret-123456", "Bearer reviewer-two-secret-123456", "Bearer reviewer-three-secret-1234"]);
+    expect(auth).toEqual(["Bearer reviewer-one-secret-123456", "Bearer clinician-one-secret-12345"]);
     for (const [, init] of fetchMock.mock.calls) {
       expect(new Headers(init.headers).has("x-wasl-actor")).toBe(false);
       expect(new Headers(init.headers).has("x-wasl-role")).toBe(false);
     }
     expect(fetchMock.mock.calls[0][0]).toBe("http://127.0.0.1:8088/api/cases/case%2F1/double-review");
-    expect([seatCredentialName("r2", "clinician"), seatCredentialName("r1", "reviewer")]).toEqual(["WASL_API_CLINICIAN_2_TOKEN", "WASL_API_REVIEWER_TOKEN"]);
+    expect([deskCredentialName("clinician"), deskCredentialName("reviewer")]).toEqual(["WASL_API_CLINICIAN_TOKEN", "WASL_API_REVIEWER_TOKEN"]);
   });
 
-  it("a missing seat credential fails instead of borrowing another seat's", async () => {
+  it("a missing credential fails instead of borrowing another", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_CLINICIAN_TOKEN", "");
     vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-one-secret-123456");
-    vi.stubEnv("WASL_API_REVIEWER_2_TOKEN", "");
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    await expect(getDoubleReview("c", "r2", "reviewer")).rejects.toThrow("WASL_API_REVIEWER_2_TOKEN is required");
+    await expect(getDoubleReview("c", "clinician")).rejects.toThrow("WASL_API_CLINICIAN_TOKEN is required");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("returns the API's refusals and the recorded actor of a 201", async () => {
     vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
-    vi.stubEnv("WASL_API_REVIEWER_2_TOKEN", "reviewer-two-secret-123456");
+    vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-two-secret-123456");
     const body = { item: LINK, read: "r2" as const, decision: "different", expected_head: "genesis" };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(403, load("double_review_refused_same_actor.json"))));
-    expect(await postDoubleRead("c", "r2", "reviewer", body)).toMatchObject({ ok: false, status: 403, reason: "same_actor" });
+    expect(await postDoubleRead("c", "reviewer", body)).toMatchObject({ ok: false, status: 403, reason: "same_actor" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(json(409, load("double_review_refused_head.json"))));
-    expect(await postDoubleRead("c", "r2", "reviewer", body)).toMatchObject({ ok: false, status: 409, conflict: "head" });
+    expect(await postDoubleRead("c", "reviewer", body)).toMatchObject({ ok: false, status: 409, conflict: "head" });
     const created = load("double_review_post_r3.json");
     const fetchMock = vi.fn().mockResolvedValue(json(201, created));
     vi.stubGlobal("fetch", fetchMock);
-    const res = await postDoubleRead("c", "r2", "reviewer", body);
+    const res = await postDoubleRead("c", "reviewer", body);
     expect(res.ok && [res.response.event.actor, res.response.round.phase]).toEqual(["reviewer-three", "resolved"]);
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ ...body, note: "" });
   });
 
   it("fixtures mode cannot read or append double review", async () => {
     vi.stubEnv("WASL_API_URL", "");
-    await expect(getDoubleReview("c", "r1", "reviewer")).rejects.toThrow("needs WASL_API_URL");
+    await expect(getDoubleReview("c", "reviewer")).rejects.toThrow("needs WASL_API_URL");
+  });
+});
+
+describe("the server action acts through one credential and fills only the slot the API offers", () => {
+  const meta = { api: "wasl-api/1", data_mode: "simulated", run: "r", policy: "p", reader_model: "m", loaded_at: "2026-11-10T00:00:00Z", note: "synthetic" };
+  const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+  function live() {
+    vi.stubEnv("WASL_API_URL", "http://127.0.0.1:8088");
+    vi.stubEnv("WASL_API_REVIEWER_TOKEN", "reviewer-one-secret-123456");
+    vi.stubEnv("WASL_API_REVIEWER_2_TOKEN", "reviewer-two-secret-123456");
+    vi.stubEnv("WASL_API_REVIEWER_3_TOKEN", "reviewer-three-secret-1234");
+  }
+  const auths = (m: ReturnType<typeof vi.fn>) => m.mock.calls.map(([, init]) => new Headers(init.headers).get("authorization"));
+
+  it("an initial read takes the open slot the API lists, with the role's one credential, whatever extra fields the browser sends", async () => {
+    live();
+    const blinded = load("double_review_state_blinded.json");
+    const fetchMock = vi.fn().mockImplementation((_url: string, init: RequestInit) =>
+      Promise.resolve(init.method === "POST" ? json(201, load("double_review_post_r1.json")) : json(200, { meta, ...blinded })),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const head = blinded.rounds.find((r: { item: string }) => r.item === LINK).head;
+    const input = { caseId: "c", item: LINK, question: "link" as const, senior: false, decision: "different", expectedHead: head };
+    // A browser naming a seat or credential is ignored: the action has no input that selects either.
+    const res = await submitDoubleRead({ ...input, ...({ seat: "r1", read: "r1", credential: "reviewer_2" } as object) });
+    expect(res.ok).toBe(true);
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toMatchObject({ item: LINK, read: "r2", decision: "different", expected_head: head });
+    expect(auths(fetchMock)).toEqual(["Bearer reviewer-one-secret-123456", "Bearer reviewer-one-secret-123456"]);
+  });
+
+  it("the author of r1 is offered no second seat, so nothing is posted", async () => {
+    live();
+    const own = load("double_review_state_own.json");
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(json(200, { meta, ...own })));
+    vi.stubGlobal("fetch", fetchMock);
+    const head = own.rounds.find((r: { item: string }) => r.item === LINK).head;
+    for (const senior of [false, true]) {
+      const res = await submitDoubleRead({ caseId: "c", item: LINK, question: "link", senior, decision: "different", expectedHead: head });
+      expect(res).toMatchObject({ ok: false, status: 0 });
+    }
+    expect(fetchMock.mock.calls.every(([, init]) => (init.method ?? "GET") === "GET")).toBe(true);
+    expect(new Set(auths(fetchMock))).toEqual(new Set(["Bearer reviewer-one-secret-123456"]));
   });
 });
